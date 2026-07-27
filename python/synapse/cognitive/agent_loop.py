@@ -122,6 +122,12 @@ class AgentTurnResult:
             serialized form.
         error: Free-form error string populated when status in
             {api_error, unknown_stop_reason}. Empty otherwise.
+        usage: One record per completed API round-trip, in order, each
+            holding whichever of ``input_tokens`` / ``output_tokens`` /
+            ``cache_read_input_tokens`` / ``cache_creation_input_tokens``
+            the response actually carried. **Never estimated.** An empty
+            list means no usage was observed — which is the honest state
+            for a test double or a provider that does not report it.
     """
 
     status: str
@@ -130,6 +136,17 @@ class AgentTurnResult:
     tool_calls_made: int = 0
     tool_errors: List[AgentToolError] = field(default_factory=list)
     error: str = ""
+    usage: List[Dict[str, int]] = field(default_factory=list)
+
+    def total_tokens(self) -> int:
+        """Sum of input+output tokens across every round-trip that reported
+        them. Returns 0 when nothing was observed — a caller distinguishes
+        "free" from "unmeasured" by checking ``usage`` itself, never by
+        trusting this number alone."""
+        return sum(
+            r.get("input_tokens", 0) + r.get("output_tokens", 0)
+            for r in self.usage
+        )
 
 
 # -- Internal helpers -------------------------------------------------------
@@ -147,6 +164,44 @@ def _serialize_tool_output(output: Any) -> str:
     if isinstance(output, dict):
         return json.dumps(output, sort_keys=True)
     return str(output)
+
+
+_USAGE_FIELDS = (
+    "input_tokens",
+    "output_tokens",
+    "cache_read_input_tokens",
+    "cache_creation_input_tokens",
+)
+
+
+def _record_usage(result: "AgentTurnResult", usage: Any) -> None:
+    """Append one round-trip's token usage to ``result.usage``.
+
+    Reads the Messages-API ``Usage`` shape (``_vendor/anthropic/types/usage.py``:
+    ``input_tokens`` / ``output_tokens`` required, cache fields optional). Also
+    accepts a plain dict so a non-SDK client can report usage without importing
+    the SDK.
+
+    Defensive on purpose. ``run_turn`` accepts "a test double with a
+    ``messages.create`` method", and the existing doubles supply only
+    ``.content`` and ``.stop_reason`` — a bare ``response.usage`` would raise
+    across the whole agent-loop suite. A response with no usage records
+    **nothing** rather than a zero: absence stays visible instead of being
+    laundered into a number nobody measured.
+    """
+    if usage is None:
+        return
+    record: Dict[str, int] = {}
+    for name in _USAGE_FIELDS:
+        value = getattr(usage, name, None)
+        if value is None and isinstance(usage, dict):
+            value = usage.get(name)
+        if isinstance(value, bool):  # bool is an int subclass; not a token count
+            continue
+        if isinstance(value, int):
+            record[name] = value
+    if record:
+        result.usage.append(record)
 
 
 def _extract_text_blocks(content: Any) -> List[Dict[str, Any]]:
@@ -236,6 +291,11 @@ def run_turn(
             result.error = f"{type(exc).__name__}: {exc}"
             logger.exception("Agent-loop API call raised")
             return result
+
+        # Record what this round-trip cost, BEFORE any early return below.
+        # A cancelled turn still paid for the yield that already happened;
+        # capturing after the cancel check would under-report it.
+        _record_usage(result, getattr(response, "usage", None))
 
         # -- Cancel check #2: immediately after the yield -----------
         if _cancelled():

@@ -1,0 +1,1950 @@
+{
+  "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+  "rungs": [
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 1736,
+        "displayed_prim_count": 1734,
+        "lop_node_count": 0,
+        "node_count": 13,
+        "parm_count": 106,
+        "sop_node_count": 2
+      },
+      "cooked_lop_nodes": 0,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 5198,
+          "chars": 5198,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 1,
+            "fraction": 0.0769,
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 1,
+              "fraction": 0.0769,
+              "total": 13
+            }
+          },
+          "encoding_inflation": 1.0593,
+          "tokens_cl100k": 1787,
+          "tokens_cl100k_model_visible": 1893
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 1278,
+          "chars": 1278,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 13,
+            "fraction": 1.0,
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 13,
+              "fraction": 1.0,
+              "total": 13
+            }
+          },
+          "encoding_inflation": 1.1264,
+          "tokens_cl100k": 443,
+          "tokens_cl100k_model_visible": 499
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 1278,
+          "chars": 1278,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 13,
+            "fraction": 1.0,
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 13,
+              "fraction": 1.0,
+              "total": 13
+            }
+          },
+          "encoding_inflation": 1.1264,
+          "tokens_cl100k": 443,
+          "tokens_cl100k_model_visible": 499
+        },
+        "B_network_explain_d5": {
+          "bytes": 666,
+          "chars": 666,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 3,
+            "fraction": 0.2308,
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 3,
+              "fraction": 0.2308,
+              "total": 13
+            }
+          },
+          "encoding_inflation": 1.1128,
+          "tokens_cl100k": 257,
+          "tokens_cl100k_model_visible": 286
+        },
+        "FLAT_scene_context": {
+          "bytes": 104,
+          "chars": 104,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 13
+            }
+          },
+          "encoding_inflation": 1.5278,
+          "tokens_cl100k": 36,
+          "tokens_cl100k_model_visible": 55
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L1_color_falloff__r1",
+      "load_error": "",
+      "load_seconds": 0.068,
+      "payload_errors": {
+        "B_usd_flatten": "RuntimeError: empty /stage"
+      },
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 5198,
+          "chars": 5198,
+          "file": "L1_color_falloff__r1__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 1278,
+          "chars": 1278,
+          "file": "L1_color_falloff__r1__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 1278,
+          "chars": 1278,
+          "file": "L1_color_falloff__r1__B_inspect_scene_deep.txt"
+        },
+        "B_network_explain_d5": {
+          "bytes": 666,
+          "chars": 666,
+          "file": "L1_color_falloff__r1__B_network_explain_d5.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 104,
+          "chars": 104,
+          "file": "L1_color_falloff__r1__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\files\\color_falloff.hip",
+      "status": "ok",
+      "target_node": "/obj/geo1"
+    },
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 1736,
+        "displayed_prim_count": 1734,
+        "lop_node_count": 0,
+        "node_count": 13,
+        "parm_count": 106,
+        "sop_node_count": 2
+      },
+      "cooked_lop_nodes": 0,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 5198,
+          "chars": 5198,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 1,
+            "fraction": 0.0769,
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 1,
+              "fraction": 0.0769,
+              "total": 13
+            }
+          },
+          "encoding_inflation": 1.0593,
+          "tokens_cl100k": 1787,
+          "tokens_cl100k_model_visible": 1893
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 1278,
+          "chars": 1278,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 13,
+            "fraction": 1.0,
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 13,
+              "fraction": 1.0,
+              "total": 13
+            }
+          },
+          "encoding_inflation": 1.1264,
+          "tokens_cl100k": 443,
+          "tokens_cl100k_model_visible": 499
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 1278,
+          "chars": 1278,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 13,
+            "fraction": 1.0,
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 13,
+              "fraction": 1.0,
+              "total": 13
+            }
+          },
+          "encoding_inflation": 1.1264,
+          "tokens_cl100k": 443,
+          "tokens_cl100k_model_visible": 499
+        },
+        "B_network_explain_d5": {
+          "bytes": 666,
+          "chars": 666,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 3,
+            "fraction": 0.2308,
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 3,
+              "fraction": 0.2308,
+              "total": 13
+            }
+          },
+          "encoding_inflation": 1.1128,
+          "tokens_cl100k": 257,
+          "tokens_cl100k_model_visible": 286
+        },
+        "FLAT_scene_context": {
+          "bytes": 104,
+          "chars": 104,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 13
+            }
+          },
+          "encoding_inflation": 1.5278,
+          "tokens_cl100k": 36,
+          "tokens_cl100k_model_visible": 55
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L1_color_falloff__r2",
+      "load_error": "",
+      "load_seconds": 0.071,
+      "payload_errors": {
+        "B_usd_flatten": "RuntimeError: empty /stage"
+      },
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 5198,
+          "chars": 5198,
+          "file": "L1_color_falloff__r2__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 1278,
+          "chars": 1278,
+          "file": "L1_color_falloff__r2__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 1278,
+          "chars": 1278,
+          "file": "L1_color_falloff__r2__B_inspect_scene_deep.txt"
+        },
+        "B_network_explain_d5": {
+          "bytes": 666,
+          "chars": 666,
+          "file": "L1_color_falloff__r2__B_network_explain_d5.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 104,
+          "chars": 104,
+          "file": "L1_color_falloff__r2__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\files\\color_falloff.hip",
+      "status": "ok",
+      "target_node": "/obj/geo1"
+    },
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 48,
+        "displayed_prim_count": 36,
+        "lop_node_count": 0,
+        "node_count": 22,
+        "parm_count": 572,
+        "sop_node_count": 6
+      },
+      "cooked_lop_nodes": 0,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 5268,
+          "chars": 5268,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 2,
+            "fraction": 0.0909,
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 2,
+              "fraction": 0.0909,
+              "total": 22
+            }
+          },
+          "encoding_inflation": 1.0597,
+          "tokens_cl100k": 1809,
+          "tokens_cl100k_model_visible": 1917
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 2136,
+          "chars": 2136,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 22,
+            "fraction": 1.0,
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 22,
+              "fraction": 1.0,
+              "total": 22
+            }
+          },
+          "encoding_inflation": 1.1053,
+          "tokens_cl100k": 741,
+          "tokens_cl100k_model_visible": 819
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 2136,
+          "chars": 2136,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 22,
+            "fraction": 1.0,
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 22,
+              "fraction": 1.0,
+              "total": 22
+            }
+          },
+          "encoding_inflation": 1.1053,
+          "tokens_cl100k": 741,
+          "tokens_cl100k_model_visible": 819
+        },
+        "B_network_explain_d5": {
+          "bytes": 2414,
+          "chars": 2414,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 12,
+            "fraction": 0.5455,
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 12,
+              "fraction": 0.5455,
+              "total": 22
+            }
+          },
+          "encoding_inflation": 1.0844,
+          "tokens_cl100k": 889,
+          "tokens_cl100k_model_visible": 964
+        },
+        "FLAT_scene_context": {
+          "bytes": 100,
+          "chars": 100,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22
+            }
+          },
+          "encoding_inflation": 1.5429,
+          "tokens_cl100k": 35,
+          "tokens_cl100k_model_visible": 54
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L2_obj_xform__r1",
+      "load_error": "",
+      "load_seconds": 0.051,
+      "payload_errors": {
+        "B_usd_flatten": "RuntimeError: empty /stage"
+      },
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 5268,
+          "chars": 5268,
+          "file": "L2_obj_xform__r1__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 2136,
+          "chars": 2136,
+          "file": "L2_obj_xform__r1__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 2136,
+          "chars": 2136,
+          "file": "L2_obj_xform__r1__B_inspect_scene_deep.txt"
+        },
+        "B_network_explain_d5": {
+          "bytes": 2414,
+          "chars": 2414,
+          "file": "L2_obj_xform__r1__B_network_explain_d5.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 100,
+          "chars": 100,
+          "file": "L2_obj_xform__r1__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\files\\obj_xform.hip",
+      "status": "ok",
+      "target_node": "/obj/box_object6"
+    },
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 48,
+        "displayed_prim_count": 36,
+        "lop_node_count": 0,
+        "node_count": 22,
+        "parm_count": 572,
+        "sop_node_count": 6
+      },
+      "cooked_lop_nodes": 0,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 5268,
+          "chars": 5268,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 2,
+            "fraction": 0.0909,
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 2,
+              "fraction": 0.0909,
+              "total": 22
+            }
+          },
+          "encoding_inflation": 1.0597,
+          "tokens_cl100k": 1809,
+          "tokens_cl100k_model_visible": 1917
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 2136,
+          "chars": 2136,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 22,
+            "fraction": 1.0,
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 22,
+              "fraction": 1.0,
+              "total": 22
+            }
+          },
+          "encoding_inflation": 1.1053,
+          "tokens_cl100k": 741,
+          "tokens_cl100k_model_visible": 819
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 2136,
+          "chars": 2136,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 22,
+            "fraction": 1.0,
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 22,
+              "fraction": 1.0,
+              "total": 22
+            }
+          },
+          "encoding_inflation": 1.1053,
+          "tokens_cl100k": 741,
+          "tokens_cl100k_model_visible": 819
+        },
+        "B_network_explain_d5": {
+          "bytes": 2414,
+          "chars": 2414,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 12,
+            "fraction": 0.5455,
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 12,
+              "fraction": 0.5455,
+              "total": 22
+            }
+          },
+          "encoding_inflation": 1.0844,
+          "tokens_cl100k": 889,
+          "tokens_cl100k_model_visible": 964
+        },
+        "FLAT_scene_context": {
+          "bytes": 100,
+          "chars": 100,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22
+            }
+          },
+          "encoding_inflation": 1.5429,
+          "tokens_cl100k": 35,
+          "tokens_cl100k_model_visible": 54
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L2_obj_xform__r2",
+      "load_error": "",
+      "load_seconds": 0.051,
+      "payload_errors": {
+        "B_usd_flatten": "RuntimeError: empty /stage"
+      },
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 5268,
+          "chars": 5268,
+          "file": "L2_obj_xform__r2__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 2136,
+          "chars": 2136,
+          "file": "L2_obj_xform__r2__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 2136,
+          "chars": 2136,
+          "file": "L2_obj_xform__r2__B_inspect_scene_deep.txt"
+        },
+        "B_network_explain_d5": {
+          "bytes": 2414,
+          "chars": 2414,
+          "file": "L2_obj_xform__r2__B_network_explain_d5.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 100,
+          "chars": 100,
+          "file": "L2_obj_xform__r2__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\files\\obj_xform.hip",
+      "status": "ok",
+      "target_node": "/obj/box_object6"
+    },
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 1976,
+        "displayed_prim_count": 1580,
+        "lop_node_count": 0,
+        "node_count": 62,
+        "parm_count": 1922,
+        "sop_node_count": 46
+      },
+      "cooked_lop_nodes": 0,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 9820,
+          "chars": 9820,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
+            "covered": 4,
+            "fraction": 0.0471,
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 4,
+              "fraction": 0.0645,
+              "total": 62
+            }
+          },
+          "encoding_inflation": 1.0733,
+          "tokens_cl100k": 3601,
+          "tokens_cl100k_model_visible": 3865
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 11403,
+          "chars": 11403,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
+            "covered": 62,
+            "fraction": 0.7294,
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 62,
+              "fraction": 1.0,
+              "total": 62
+            }
+          },
+          "encoding_inflation": 1.0696,
+          "tokens_cl100k": 3277,
+          "tokens_cl100k_model_visible": 3505
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 17197,
+          "chars": 17197,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 23,
+              "fraction": 1.0,
+              "total": 23
+            },
+            "covered": 85,
+            "fraction": 1.0,
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 62,
+              "fraction": 1.0,
+              "total": 62
+            }
+          },
+          "encoding_inflation": 1.0677,
+          "tokens_cl100k": 4922,
+          "tokens_cl100k_model_visible": 5255
+        },
+        "B_network_explain_d5": {
+          "bytes": 42736,
+          "chars": 42736,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 23,
+              "fraction": 1.0,
+              "total": 23
+            },
+            "covered": 75,
+            "fraction": 0.8824,
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 52,
+              "fraction": 0.8387,
+              "total": 62
+            }
+          },
+          "encoding_inflation": 1.1031,
+          "tokens_cl100k": 14253,
+          "tokens_cl100k_model_visible": 15722
+        },
+        "FLAT_scene_context": {
+          "bytes": 104,
+          "chars": 104,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 62
+            }
+          },
+          "encoding_inflation": 1.5588,
+          "tokens_cl100k": 34,
+          "tokens_cl100k_model_visible": 53
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L3_RandomExample__r1",
+      "load_error": "",
+      "load_seconds": 0.064,
+      "payload_errors": {
+        "B_usd_flatten": "RuntimeError: empty /stage"
+      },
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 9820,
+          "chars": 9820,
+          "file": "L3_RandomExample__r1__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 11403,
+          "chars": 11403,
+          "file": "L3_RandomExample__r1__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 17197,
+          "chars": 17197,
+          "file": "L3_RandomExample__r1__B_inspect_scene_deep.txt"
+        },
+        "B_network_explain_d5": {
+          "bytes": 42736,
+          "chars": 42736,
+          "file": "L3_RandomExample__r1__B_network_explain_d5.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 104,
+          "chars": 104,
+          "file": "L3_RandomExample__r1__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\files\\expression_cookbook\\RandomExample.hip",
+      "status": "ok",
+      "target_node": "/obj/Basic_random_function_using_VEX_and_Fit_functions/copy__boxes_to_point_position"
+    },
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 1976,
+        "displayed_prim_count": 1580,
+        "lop_node_count": 0,
+        "node_count": 62,
+        "parm_count": 1922,
+        "sop_node_count": 46
+      },
+      "cooked_lop_nodes": 0,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 9820,
+          "chars": 9820,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
+            "covered": 4,
+            "fraction": 0.0471,
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 4,
+              "fraction": 0.0645,
+              "total": 62
+            }
+          },
+          "encoding_inflation": 1.0733,
+          "tokens_cl100k": 3601,
+          "tokens_cl100k_model_visible": 3865
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 11403,
+          "chars": 11403,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
+            "covered": 62,
+            "fraction": 0.7294,
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 62,
+              "fraction": 1.0,
+              "total": 62
+            }
+          },
+          "encoding_inflation": 1.0696,
+          "tokens_cl100k": 3277,
+          "tokens_cl100k_model_visible": 3505
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 17197,
+          "chars": 17197,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 23,
+              "fraction": 1.0,
+              "total": 23
+            },
+            "covered": 85,
+            "fraction": 1.0,
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 62,
+              "fraction": 1.0,
+              "total": 62
+            }
+          },
+          "encoding_inflation": 1.0677,
+          "tokens_cl100k": 4922,
+          "tokens_cl100k_model_visible": 5255
+        },
+        "B_network_explain_d5": {
+          "bytes": 42736,
+          "chars": 42736,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 23,
+              "fraction": 1.0,
+              "total": 23
+            },
+            "covered": 75,
+            "fraction": 0.8824,
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 52,
+              "fraction": 0.8387,
+              "total": 62
+            }
+          },
+          "encoding_inflation": 1.1031,
+          "tokens_cl100k": 14253,
+          "tokens_cl100k_model_visible": 15722
+        },
+        "FLAT_scene_context": {
+          "bytes": 104,
+          "chars": 104,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 62
+            }
+          },
+          "encoding_inflation": 1.5588,
+          "tokens_cl100k": 34,
+          "tokens_cl100k_model_visible": 53
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L3_RandomExample__r2",
+      "load_error": "",
+      "load_seconds": 0.064,
+      "payload_errors": {
+        "B_usd_flatten": "RuntimeError: empty /stage"
+      },
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 9820,
+          "chars": 9820,
+          "file": "L3_RandomExample__r2__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 11403,
+          "chars": 11403,
+          "file": "L3_RandomExample__r2__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 17197,
+          "chars": 17197,
+          "file": "L3_RandomExample__r2__B_inspect_scene_deep.txt"
+        },
+        "B_network_explain_d5": {
+          "bytes": 42736,
+          "chars": 42736,
+          "file": "L3_RandomExample__r2__B_network_explain_d5.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 104,
+          "chars": 104,
+          "file": "L3_RandomExample__r2__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\files\\expression_cookbook\\RandomExample.hip",
+      "status": "ok",
+      "target_node": "/obj/Basic_random_function_using_VEX_and_Fit_functions/copy__boxes_to_point_position"
+    },
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 8489,
+        "displayed_prim_count": 2887,
+        "lop_node_count": 74,
+        "node_count": 168,
+        "parm_count": 7703,
+        "sop_node_count": 53
+      },
+      "cooked_lop_nodes": 25,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 39983,
+          "chars": 39983,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
+            "covered": 3,
+            "fraction": 0.0178,
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 3,
+              "fraction": 0.0345,
+              "total": 87
+            }
+          },
+          "encoding_inflation": 1.0858,
+          "tokens_cl100k": 13290,
+          "tokens_cl100k_model_visible": 14430
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 9510,
+          "chars": 9510,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
+            "covered": 87,
+            "fraction": 0.5148,
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 87,
+              "fraction": 1.0,
+              "total": 87
+            }
+          },
+          "encoding_inflation": 1.0939,
+          "tokens_cl100k": 3047,
+          "tokens_cl100k_model_visible": 3333
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 20234,
+          "chars": 20234,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 82,
+              "fraction": 1.0,
+              "total": 82
+            },
+            "covered": 169,
+            "fraction": 1.0,
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 87,
+              "fraction": 1.0,
+              "total": 87
+            }
+          },
+          "encoding_inflation": 1.0796,
+          "tokens_cl100k": 6504,
+          "tokens_cl100k_model_visible": 7022
+        },
+        "B_network_explain_d5": {
+          "bytes": 137419,
+          "chars": 137419,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 82,
+              "fraction": 1.0,
+              "total": 82
+            },
+            "covered": 160,
+            "fraction": 0.9467,
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 78,
+              "fraction": 0.8966,
+              "total": 87
+            }
+          },
+          "encoding_inflation": 1.1165,
+          "tokens_cl100k": 45993,
+          "tokens_cl100k_model_visible": 51352
+        },
+        "B_usd_flatten": {
+          "bytes": 359706,
+          "chars": 359706,
+          "coverage": {
+            "covered": null,
+            "fraction": null,
+            "note": "n/a - USD prim namespace, not node paths",
+            "total": null
+          },
+          "encoding_inflation": 1.0101,
+          "tokens_cl100k": 183631,
+          "tokens_cl100k_model_visible": 185487
+        },
+        "FLAT_scene_context": {
+          "bytes": 114,
+          "chars": 114,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 87
+            }
+          },
+          "encoding_inflation": 1.5135,
+          "tokens_cl100k": 37,
+          "tokens_cl100k_model_visible": 56
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L4_three_point_lighting__r1",
+      "load_error": "",
+      "load_seconds": 0.356,
+      "payload_errors": {},
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 39983,
+          "chars": 39983,
+          "file": "L4_three_point_lighting__r1__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 9510,
+          "chars": 9510,
+          "file": "L4_three_point_lighting__r1__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 20234,
+          "chars": 20234,
+          "file": "L4_three_point_lighting__r1__B_inspect_scene_deep.txt"
+        },
+        "B_network_explain_d5": {
+          "bytes": 137419,
+          "chars": 137419,
+          "file": "L4_three_point_lighting__r1__B_network_explain_d5.txt"
+        },
+        "B_usd_flatten": {
+          "bytes": 359706,
+          "chars": 359706,
+          "file": "L4_three_point_lighting__r1__B_usd_flatten.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 114,
+          "chars": 114,
+          "file": "L4_three_point_lighting__r1__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\starters\\three_point_lighting.hip.gz",
+      "status": "ok",
+      "target_node": "/stage/karmarendersettings"
+    },
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 8489,
+        "displayed_prim_count": 2887,
+        "lop_node_count": 74,
+        "node_count": 168,
+        "parm_count": 7703,
+        "sop_node_count": 53
+      },
+      "cooked_lop_nodes": 25,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 39983,
+          "chars": 39983,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
+            "covered": 3,
+            "fraction": 0.0178,
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 3,
+              "fraction": 0.0345,
+              "total": 87
+            }
+          },
+          "encoding_inflation": 1.0858,
+          "tokens_cl100k": 13290,
+          "tokens_cl100k_model_visible": 14430
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 9510,
+          "chars": 9510,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
+            "covered": 87,
+            "fraction": 0.5148,
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 87,
+              "fraction": 1.0,
+              "total": 87
+            }
+          },
+          "encoding_inflation": 1.0939,
+          "tokens_cl100k": 3047,
+          "tokens_cl100k_model_visible": 3333
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 20234,
+          "chars": 20234,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 82,
+              "fraction": 1.0,
+              "total": 82
+            },
+            "covered": 169,
+            "fraction": 1.0,
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 87,
+              "fraction": 1.0,
+              "total": 87
+            }
+          },
+          "encoding_inflation": 1.0796,
+          "tokens_cl100k": 6504,
+          "tokens_cl100k_model_visible": 7022
+        },
+        "B_network_explain_d5": {
+          "bytes": 137419,
+          "chars": 137419,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 82,
+              "fraction": 1.0,
+              "total": 82
+            },
+            "covered": 160,
+            "fraction": 0.9467,
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 78,
+              "fraction": 0.8966,
+              "total": 87
+            }
+          },
+          "encoding_inflation": 1.1165,
+          "tokens_cl100k": 45993,
+          "tokens_cl100k_model_visible": 51352
+        },
+        "B_usd_flatten": {
+          "bytes": 359706,
+          "chars": 359706,
+          "coverage": {
+            "covered": null,
+            "fraction": null,
+            "note": "n/a - USD prim namespace, not node paths",
+            "total": null
+          },
+          "encoding_inflation": 1.0101,
+          "tokens_cl100k": 183631,
+          "tokens_cl100k_model_visible": 185487
+        },
+        "FLAT_scene_context": {
+          "bytes": 114,
+          "chars": 114,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 87
+            }
+          },
+          "encoding_inflation": 1.5135,
+          "tokens_cl100k": 37,
+          "tokens_cl100k_model_visible": 56
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L4_three_point_lighting__r2",
+      "load_error": "",
+      "load_seconds": 0.357,
+      "payload_errors": {},
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 39983,
+          "chars": 39983,
+          "file": "L4_three_point_lighting__r2__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 9510,
+          "chars": 9510,
+          "file": "L4_three_point_lighting__r2__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 20234,
+          "chars": 20234,
+          "file": "L4_three_point_lighting__r2__B_inspect_scene_deep.txt"
+        },
+        "B_network_explain_d5": {
+          "bytes": 137419,
+          "chars": 137419,
+          "file": "L4_three_point_lighting__r2__B_network_explain_d5.txt"
+        },
+        "B_usd_flatten": {
+          "bytes": 359706,
+          "chars": 359706,
+          "file": "L4_three_point_lighting__r2__B_usd_flatten.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 114,
+          "chars": 114,
+          "file": "L4_three_point_lighting__r2__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\starters\\three_point_lighting.hip.gz",
+      "status": "ok",
+      "target_node": "/stage/karmarendersettings"
+    },
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 415,
+        "displayed_prim_count": 85,
+        "lop_node_count": 0,
+        "node_count": 3057,
+        "parm_count": 142850,
+        "sop_node_count": 611
+      },
+      "cooked_lop_nodes": 0,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 36286,
+          "chars": 36286,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
+            "covered": 1,
+            "fraction": 0.0001,
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 1,
+              "fraction": 0.0014,
+              "total": 708
+            }
+          },
+          "encoding_inflation": 1.0446,
+          "tokens_cl100k": 12838,
+          "tokens_cl100k_model_visible": 13410
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 123303,
+          "chars": 123303,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
+            "covered": 708,
+            "fraction": 0.0982,
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 708,
+              "fraction": 1.0,
+              "total": 708
+            }
+          },
+          "encoding_inflation": 1.0689,
+          "tokens_cl100k": 38555,
+          "tokens_cl100k_model_visible": 41211
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 1504807,
+          "chars": 1504807,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 6499,
+              "fraction": 1.0,
+              "total": 6499
+            },
+            "covered": 7207,
+            "fraction": 1.0,
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 708,
+              "fraction": 1.0,
+              "total": 708
+            }
+          },
+          "encoding_inflation": 1.057,
+          "tokens_cl100k": 466520,
+          "tokens_cl100k_model_visible": 493125
+        },
+        "B_network_explain_d5": {
+          "bytes": 3201814,
+          "chars": 3201814,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 5230,
+              "fraction": 0.8047,
+              "total": 6499
+            },
+            "covered": 5928,
+            "fraction": 0.8225,
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 698,
+              "fraction": 0.9859,
+              "total": 708
+            }
+          },
+          "encoding_inflation": 1.0631,
+          "tokens_cl100k": 1225230,
+          "tokens_cl100k_model_visible": 1302565
+        },
+        "FLAT_scene_context": {
+          "bytes": 96,
+          "chars": 96,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 708
+            }
+          },
+          "encoding_inflation": 1.5758,
+          "tokens_cl100k": 33,
+          "tokens_cl100k_model_visible": 52
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L5_ocean__r1",
+      "load_error": "",
+      "load_seconds": 0.761,
+      "payload_errors": {
+        "B_usd_flatten": "RuntimeError: empty /stage"
+      },
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 36286,
+          "chars": 36286,
+          "file": "L5_ocean__r1__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 123303,
+          "chars": 123303,
+          "file": "L5_ocean__r1__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 1504807,
+          "chars": 1504807,
+          "file": "L5_ocean__r1__B_inspect_scene_deep.txt"
+        },
+        "B_network_explain_d5": {
+          "bytes": 3201814,
+          "chars": 3201814,
+          "file": "L5_ocean__r1__B_network_explain_d5.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 96,
+          "chars": 96,
+          "file": "L5_ocean__r1__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\files\\pdg_examples\\top_ocean\\ocean.hip",
+      "status": "ok",
+      "target_node": "/mat/basicliquid"
+    },
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 415,
+        "displayed_prim_count": 85,
+        "lop_node_count": 0,
+        "node_count": 3057,
+        "parm_count": 142850,
+        "sop_node_count": 611
+      },
+      "cooked_lop_nodes": 0,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 36286,
+          "chars": 36286,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
+            "covered": 1,
+            "fraction": 0.0001,
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 1,
+              "fraction": 0.0014,
+              "total": 708
+            }
+          },
+          "encoding_inflation": 1.0446,
+          "tokens_cl100k": 12838,
+          "tokens_cl100k_model_visible": 13410
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 123303,
+          "chars": 123303,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
+            "covered": 708,
+            "fraction": 0.0982,
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 708,
+              "fraction": 1.0,
+              "total": 708
+            }
+          },
+          "encoding_inflation": 1.0689,
+          "tokens_cl100k": 38555,
+          "tokens_cl100k_model_visible": 41211
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 1504807,
+          "chars": 1504807,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 6499,
+              "fraction": 1.0,
+              "total": 6499
+            },
+            "covered": 7207,
+            "fraction": 1.0,
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 708,
+              "fraction": 1.0,
+              "total": 708
+            }
+          },
+          "encoding_inflation": 1.057,
+          "tokens_cl100k": 466520,
+          "tokens_cl100k_model_visible": 493125
+        },
+        "B_network_explain_d5": {
+          "bytes": 3201814,
+          "chars": 3201814,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 5230,
+              "fraction": 0.8047,
+              "total": 6499
+            },
+            "covered": 5928,
+            "fraction": 0.8225,
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 698,
+              "fraction": 0.9859,
+              "total": 708
+            }
+          },
+          "encoding_inflation": 1.0631,
+          "tokens_cl100k": 1225230,
+          "tokens_cl100k_model_visible": 1302565
+        },
+        "FLAT_scene_context": {
+          "bytes": 96,
+          "chars": 96,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 708
+            }
+          },
+          "encoding_inflation": 1.5758,
+          "tokens_cl100k": 33,
+          "tokens_cl100k_model_visible": 52
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L5_ocean__r2",
+      "load_error": "",
+      "load_seconds": 0.836,
+      "payload_errors": {
+        "B_usd_flatten": "RuntimeError: empty /stage"
+      },
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 36286,
+          "chars": 36286,
+          "file": "L5_ocean__r2__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 123303,
+          "chars": 123303,
+          "file": "L5_ocean__r2__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 1504807,
+          "chars": 1504807,
+          "file": "L5_ocean__r2__B_inspect_scene_deep.txt"
+        },
+        "B_network_explain_d5": {
+          "bytes": 3201814,
+          "chars": 3201814,
+          "file": "L5_ocean__r2__B_network_explain_d5.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 96,
+          "chars": 96,
+          "file": "L5_ocean__r2__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\files\\pdg_examples\\top_ocean\\ocean.hip",
+      "status": "ok",
+      "target_node": "/mat/basicliquid"
+    },
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 306866013,
+        "displayed_prim_count": 35115587,
+        "lop_node_count": 5844,
+        "node_count": 21085,
+        "parm_count": 1187573,
+        "sop_node_count": 7332
+      },
+      "cooked_lop_nodes": 130,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 622030,
+          "chars": 622030,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 4,
+              "fraction": 0.0002,
+              "total": 22964
+            },
+            "covered": 4,
+            "fraction": 0.0002,
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 2886
+            }
+          },
+          "encoding_inflation": 1.0638,
+          "tokens_cl100k": 212251,
+          "tokens_cl100k_model_visible": 225798
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 374103,
+          "chars": 374103,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22964
+            },
+            "covered": 2886,
+            "fraction": 0.1116,
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 2886,
+              "fraction": 1.0,
+              "total": 2886
+            }
+          },
+          "encoding_inflation": 1.0825,
+          "tokens_cl100k": 113411,
+          "tokens_cl100k_model_visible": 122772
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 3902407,
+          "chars": 3902407,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 22964,
+              "fraction": 1.0,
+              "total": 22964
+            },
+            "covered": 25850,
+            "fraction": 1.0,
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 2886,
+              "fraction": 1.0,
+              "total": 2886
+            }
+          },
+          "encoding_inflation": 1.0625,
+          "tokens_cl100k": 1234946,
+          "tokens_cl100k_model_visible": 1312087
+        },
+        "B_usd_flatten": {
+          "bytes": 109848,
+          "chars": 109848,
+          "coverage": {
+            "covered": null,
+            "fraction": null,
+            "note": "n/a - USD prim namespace, not node paths",
+            "total": null
+          },
+          "encoding_inflation": 1.0041,
+          "tokens_cl100k": 64718,
+          "tokens_cl100k_model_visible": 64986
+        },
+        "FLAT_scene_context": {
+          "bytes": 107,
+          "chars": 107,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22964
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 2886
+            }
+          },
+          "encoding_inflation": 1.5429,
+          "tokens_cl100k": 35,
+          "tokens_cl100k_model_visible": 54
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L6_karma_user_guide__r1",
+      "load_error": "",
+      "load_seconds": 8.071,
+      "payload_errors": {},
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 622030,
+          "chars": 622030,
+          "file": "L6_karma_user_guide__r1__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 374103,
+          "chars": 374103,
+          "file": "L6_karma_user_guide__r1__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 3902407,
+          "chars": 3902407,
+          "file": "L6_karma_user_guide__r1__B_inspect_scene_deep.txt"
+        },
+        "B_usd_flatten": {
+          "bytes": 109848,
+          "chars": 109848,
+          "file": "L6_karma_user_guide__r1__B_usd_flatten.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 107,
+          "chars": 107,
+          "file": "L6_karma_user_guide__r1__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\files\\karma_user_guide\\karma_user_guide.hip",
+      "status": "ok",
+      "target_node": "/stage/shaders/mtlxspaces/final_image/Shape/opencl1"
+    },
+    {
+      "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+      "axes": {
+        "displayed_point_count": 306866013,
+        "displayed_prim_count": 35115587,
+        "lop_node_count": 5844,
+        "node_count": 21085,
+        "parm_count": 1187573,
+        "sop_node_count": 7332
+      },
+      "cooked_lop_nodes": 130,
+      "counted": {
+        "A_inspect_node_detail": {
+          "bytes": 622030,
+          "chars": 622030,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 4,
+              "fraction": 0.0002,
+              "total": 22964
+            },
+            "covered": 4,
+            "fraction": 0.0002,
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 2886
+            }
+          },
+          "encoding_inflation": 1.0638,
+          "tokens_cl100k": 212251,
+          "tokens_cl100k_model_visible": 225798
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 374103,
+          "chars": 374103,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22964
+            },
+            "covered": 2886,
+            "fraction": 0.1116,
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 2886,
+              "fraction": 1.0,
+              "total": 2886
+            }
+          },
+          "encoding_inflation": 1.0825,
+          "tokens_cl100k": 113411,
+          "tokens_cl100k_model_visible": 122772
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 3902407,
+          "chars": 3902407,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 22964,
+              "fraction": 1.0,
+              "total": 22964
+            },
+            "covered": 25850,
+            "fraction": 1.0,
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 2886,
+              "fraction": 1.0,
+              "total": 2886
+            }
+          },
+          "encoding_inflation": 1.0625,
+          "tokens_cl100k": 1234946,
+          "tokens_cl100k_model_visible": 1312087
+        },
+        "B_usd_flatten": {
+          "bytes": 109848,
+          "chars": 109848,
+          "coverage": {
+            "covered": null,
+            "fraction": null,
+            "note": "n/a - USD prim namespace, not node paths",
+            "total": null
+          },
+          "encoding_inflation": 1.0041,
+          "tokens_cl100k": 64718,
+          "tokens_cl100k_model_visible": 64986
+        },
+        "FLAT_scene_context": {
+          "bytes": 107,
+          "chars": 107,
+          "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22964
+            },
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 2886
+            }
+          },
+          "encoding_inflation": 1.5429,
+          "tokens_cl100k": 35,
+          "tokens_cl100k_model_visible": 54
+        }
+      },
+      "houdini_build": "22.0.368",
+      "label": "L6_karma_user_guide__r2",
+      "load_error": "",
+      "load_seconds": 7.128,
+      "payload_errors": {},
+      "payloads": {
+        "A_inspect_node_detail": {
+          "bytes": 622030,
+          "chars": 622030,
+          "file": "L6_karma_user_guide__r2__A_inspect_node_detail.txt"
+        },
+        "A_inspect_scene_d3": {
+          "bytes": 374103,
+          "chars": 374103,
+          "file": "L6_karma_user_guide__r2__A_inspect_scene_d3.txt"
+        },
+        "B_inspect_scene_deep": {
+          "bytes": 3902407,
+          "chars": 3902407,
+          "file": "L6_karma_user_guide__r2__B_inspect_scene_deep.txt"
+        },
+        "B_usd_flatten": {
+          "bytes": 109848,
+          "chars": 109848,
+          "file": "L6_karma_user_guide__r2__B_usd_flatten.txt"
+        },
+        "FLAT_scene_context": {
+          "bytes": 107,
+          "chars": 107,
+          "file": "L6_karma_user_guide__r2__FLAT_scene_context.txt"
+        }
+      },
+      "scene": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\files\\karma_user_guide\\karma_user_guide.hip",
+      "status": "ok",
+      "target_node": "/stage/shaders/mtlxspaces/final_image/Shape/opencl1"
+    }
+  ],
+  "schema": "c1_token_bench/v1",
+  "tokenizer": "tiktoken/cl100k_base (proxy BPE, NOT Claude's tokenizer)",
+  "tokenizer_caveat": "Anthropic's exact tokenizer (messages.count_tokens) is unreachable on this account: HTTP 400 'credit balance is too low', VERIFIED-RUNTIME 2026-07-27. Absolute token figures carry this proxy caveat; bytes and chars do not, and the SHAPE of the curve is robust to tokenizer choice."
+}

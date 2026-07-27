@@ -1,0 +1,1275 @@
+{
+  "arm_a_note": "arm A calls the grounding functions with the arguments the SHIPPED HANDLER passes, not the function-signature defaults, which differ (introspection.py include_geometry default True vs handler False).",
+  "curve": {
+    "A_inspect_node_detail": {
+      "arm_kind": "single_node",
+      "coverage_is_meaningful": false,
+      "flat_test": "is_flat is True when tokens at the LARGEST rung are <= 1.10x tokens at the SMALLEST rung. max/min is reported too but is not the test - it is noise-dominated on tiny payloads.",
+      "flatness_ratio_max_over_min": 118.78,
+      "growth_largest_over_smallest_rung": 118.78,
+      "growth_spans": "L1_color_falloff -> L6_karma_user_guide",
+      "is_flat": false,
+      "points": [
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 0.0769,
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'single_node'.",
+          "coverage_within_shipped_depth": {
+            "covered": 1,
+            "fraction": 0.0769,
+            "total": 13
+          },
+          "node_count": 13,
+          "node_count_precook": 13,
+          "nodes_covered": 1,
+          "nodes_total": 13,
+          "outcome": "SUCCEEDED - grounds exactly its one target node (the node with the most parameters in the scene), completely and untruncated. Cost is the price of one exhaustive node read, and the target is a MAX-ENVELOPE selection, not a typical node.",
+          "parm_count": 106,
+          "rung": "L1_color_falloff",
+          "tokens": 1787,
+          "tokens_model_visible": 1893,
+          "tokens_per_covered_node": 1787.0
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 0.0909,
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'single_node'.",
+          "coverage_within_shipped_depth": {
+            "covered": 2,
+            "fraction": 0.0909,
+            "total": 22
+          },
+          "node_count": 22,
+          "node_count_precook": 22,
+          "nodes_covered": 2,
+          "nodes_total": 22,
+          "outcome": "SUCCEEDED - grounds exactly its one target node (the node with the most parameters in the scene), completely and untruncated. Cost is the price of one exhaustive node read, and the target is a MAX-ENVELOPE selection, not a typical node.",
+          "parm_count": 572,
+          "rung": "L2_obj_xform",
+          "tokens": 1809,
+          "tokens_model_visible": 1917,
+          "tokens_per_covered_node": 904.5
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 23
+          },
+          "coverage_fraction": 0.0471,
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'single_node'.",
+          "coverage_within_shipped_depth": {
+            "covered": 4,
+            "fraction": 0.0645,
+            "total": 62
+          },
+          "node_count": 85,
+          "node_count_precook": 62,
+          "nodes_covered": 4,
+          "nodes_total": 85,
+          "outcome": "SUCCEEDED - grounds exactly its one target node (the node with the most parameters in the scene), completely and untruncated. Cost is the price of one exhaustive node read, and the target is a MAX-ENVELOPE selection, not a typical node.",
+          "parm_count": 1922,
+          "rung": "L3_RandomExample",
+          "tokens": 3601,
+          "tokens_model_visible": 3865,
+          "tokens_per_covered_node": 900.2
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 82
+          },
+          "coverage_fraction": 0.0178,
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'single_node'.",
+          "coverage_within_shipped_depth": {
+            "covered": 3,
+            "fraction": 0.0345,
+            "total": 87
+          },
+          "node_count": 169,
+          "node_count_precook": 168,
+          "nodes_covered": 3,
+          "nodes_total": 169,
+          "outcome": "SUCCEEDED - grounds exactly its one target node (the node with the most parameters in the scene), completely and untruncated. Cost is the price of one exhaustive node read, and the target is a MAX-ENVELOPE selection, not a typical node.",
+          "parm_count": 7703,
+          "rung": "L4_three_point_lighting",
+          "tokens": 13290,
+          "tokens_model_visible": 14430,
+          "tokens_per_covered_node": 4430.0
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 6499
+          },
+          "coverage_fraction": 0.0001,
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'single_node'.",
+          "coverage_within_shipped_depth": {
+            "covered": 1,
+            "fraction": 0.0014,
+            "total": 708
+          },
+          "node_count": 7207,
+          "node_count_precook": 3057,
+          "nodes_covered": 1,
+          "nodes_total": 7207,
+          "outcome": "SUCCEEDED - grounds exactly its one target node (the node with the most parameters in the scene), completely and untruncated. Cost is the price of one exhaustive node read, and the target is a MAX-ENVELOPE selection, not a typical node.",
+          "parm_count": 142850,
+          "rung": "L5_ocean",
+          "tokens": 12838,
+          "tokens_model_visible": 13410,
+          "tokens_per_covered_node": 12838.0
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 4,
+            "fraction": 0.0002,
+            "total": 22964
+          },
+          "coverage_fraction": 0.0002,
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'single_node'.",
+          "coverage_within_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 2886
+          },
+          "node_count": 25850,
+          "node_count_precook": 21085,
+          "nodes_covered": 4,
+          "nodes_total": 25850,
+          "outcome": "SUCCEEDED - grounds exactly its one target node (the node with the most parameters in the scene), completely and untruncated. Cost is the price of one exhaustive node read, and the target is a MAX-ENVELOPE selection, not a typical node.",
+          "parm_count": 1187573,
+          "rung": "L6_karma_user_guide",
+          "tokens": 212251,
+          "tokens_model_visible": 225798,
+          "tokens_per_covered_node": 53062.8
+        }
+      ]
+    },
+    "A_inspect_scene_d3": {
+      "arm_kind": "scene_grounding",
+      "coverage_is_meaningful": true,
+      "flat_test": "is_flat is True when tokens at the LARGEST rung are <= 1.10x tokens at the SMALLEST rung. max/min is reported too but is not the test - it is noise-dominated on tiny payloads.",
+      "flatness_ratio_max_over_min": 256.01,
+      "growth_largest_over_smallest_rung": 256.01,
+      "growth_spans": "L1_color_falloff -> L6_karma_user_guide",
+      "is_flat": false,
+      "points": [
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 1.0,
+          "coverage_within_shipped_depth": {
+            "covered": 13,
+            "fraction": 1.0,
+            "total": 13
+          },
+          "node_count": 13,
+          "node_count_precook": 13,
+          "nodes_covered": 13,
+          "nodes_total": 13,
+          "parm_count": 106,
+          "rung": "L1_color_falloff",
+          "tokens": 443,
+          "tokens_model_visible": 499,
+          "tokens_per_covered_node": 34.1
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 1.0,
+          "coverage_within_shipped_depth": {
+            "covered": 22,
+            "fraction": 1.0,
+            "total": 22
+          },
+          "node_count": 22,
+          "node_count_precook": 22,
+          "nodes_covered": 22,
+          "nodes_total": 22,
+          "parm_count": 572,
+          "rung": "L2_obj_xform",
+          "tokens": 741,
+          "tokens_model_visible": 819,
+          "tokens_per_covered_node": 33.7
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 23
+          },
+          "coverage_fraction": 0.7294,
+          "coverage_within_shipped_depth": {
+            "covered": 62,
+            "fraction": 1.0,
+            "total": 62
+          },
+          "node_count": 85,
+          "node_count_precook": 62,
+          "nodes_covered": 62,
+          "nodes_total": 85,
+          "parm_count": 1922,
+          "rung": "L3_RandomExample",
+          "tokens": 3277,
+          "tokens_model_visible": 3505,
+          "tokens_per_covered_node": 52.9
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 82
+          },
+          "coverage_fraction": 0.5148,
+          "coverage_within_shipped_depth": {
+            "covered": 87,
+            "fraction": 1.0,
+            "total": 87
+          },
+          "node_count": 169,
+          "node_count_precook": 168,
+          "nodes_covered": 87,
+          "nodes_total": 169,
+          "parm_count": 7703,
+          "rung": "L4_three_point_lighting",
+          "tokens": 3047,
+          "tokens_model_visible": 3333,
+          "tokens_per_covered_node": 35.0
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 6499
+          },
+          "coverage_fraction": 0.0982,
+          "coverage_within_shipped_depth": {
+            "covered": 708,
+            "fraction": 1.0,
+            "total": 708
+          },
+          "node_count": 7207,
+          "node_count_precook": 3057,
+          "nodes_covered": 708,
+          "nodes_total": 7207,
+          "parm_count": 142850,
+          "rung": "L5_ocean",
+          "tokens": 38555,
+          "tokens_model_visible": 41211,
+          "tokens_per_covered_node": 54.5
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 22964
+          },
+          "coverage_fraction": 0.1116,
+          "coverage_within_shipped_depth": {
+            "covered": 2886,
+            "fraction": 1.0,
+            "total": 2886
+          },
+          "node_count": 25850,
+          "node_count_precook": 21085,
+          "nodes_covered": 2886,
+          "nodes_total": 25850,
+          "parm_count": 1187573,
+          "rung": "L6_karma_user_guide",
+          "tokens": 113411,
+          "tokens_model_visible": 122772,
+          "tokens_per_covered_node": 39.3
+        }
+      ]
+    },
+    "B_inspect_scene_deep": {
+      "arm_kind": "scene_grounding",
+      "coverage_is_meaningful": true,
+      "flat_test": "is_flat is True when tokens at the LARGEST rung are <= 1.10x tokens at the SMALLEST rung. max/min is reported too but is not the test - it is noise-dominated on tiny payloads.",
+      "flatness_ratio_max_over_min": 2787.69,
+      "growth_largest_over_smallest_rung": 2787.69,
+      "growth_spans": "L1_color_falloff -> L6_karma_user_guide",
+      "is_flat": false,
+      "points": [
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 1.0,
+          "coverage_within_shipped_depth": {
+            "covered": 13,
+            "fraction": 1.0,
+            "total": 13
+          },
+          "node_count": 13,
+          "node_count_precook": 13,
+          "nodes_covered": 13,
+          "nodes_total": 13,
+          "parm_count": 106,
+          "rung": "L1_color_falloff",
+          "tokens": 443,
+          "tokens_model_visible": 499,
+          "tokens_per_covered_node": 34.1
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 1.0,
+          "coverage_within_shipped_depth": {
+            "covered": 22,
+            "fraction": 1.0,
+            "total": 22
+          },
+          "node_count": 22,
+          "node_count_precook": 22,
+          "nodes_covered": 22,
+          "nodes_total": 22,
+          "parm_count": 572,
+          "rung": "L2_obj_xform",
+          "tokens": 741,
+          "tokens_model_visible": 819,
+          "tokens_per_covered_node": 33.7
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 23,
+            "fraction": 1.0,
+            "total": 23
+          },
+          "coverage_fraction": 1.0,
+          "coverage_within_shipped_depth": {
+            "covered": 62,
+            "fraction": 1.0,
+            "total": 62
+          },
+          "node_count": 85,
+          "node_count_precook": 62,
+          "nodes_covered": 85,
+          "nodes_total": 85,
+          "parm_count": 1922,
+          "rung": "L3_RandomExample",
+          "tokens": 4922,
+          "tokens_model_visible": 5255,
+          "tokens_per_covered_node": 57.9
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 82,
+            "fraction": 1.0,
+            "total": 82
+          },
+          "coverage_fraction": 1.0,
+          "coverage_within_shipped_depth": {
+            "covered": 87,
+            "fraction": 1.0,
+            "total": 87
+          },
+          "node_count": 169,
+          "node_count_precook": 168,
+          "nodes_covered": 169,
+          "nodes_total": 169,
+          "parm_count": 7703,
+          "rung": "L4_three_point_lighting",
+          "tokens": 6504,
+          "tokens_model_visible": 7022,
+          "tokens_per_covered_node": 38.5
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 6499,
+            "fraction": 1.0,
+            "total": 6499
+          },
+          "coverage_fraction": 1.0,
+          "coverage_within_shipped_depth": {
+            "covered": 708,
+            "fraction": 1.0,
+            "total": 708
+          },
+          "node_count": 7207,
+          "node_count_precook": 3057,
+          "nodes_covered": 7207,
+          "nodes_total": 7207,
+          "parm_count": 142850,
+          "rung": "L5_ocean",
+          "tokens": 466520,
+          "tokens_model_visible": 493125,
+          "tokens_per_covered_node": 64.7
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 22964,
+            "fraction": 1.0,
+            "total": 22964
+          },
+          "coverage_fraction": 1.0,
+          "coverage_within_shipped_depth": {
+            "covered": 2886,
+            "fraction": 1.0,
+            "total": 2886
+          },
+          "node_count": 25850,
+          "node_count_precook": 21085,
+          "nodes_covered": 25850,
+          "nodes_total": 25850,
+          "parm_count": 1187573,
+          "rung": "L6_karma_user_guide",
+          "tokens": 1234946,
+          "tokens_model_visible": 1312087,
+          "tokens_per_covered_node": 47.8
+        }
+      ]
+    },
+    "B_network_explain_d5": {
+      "arm_kind": "scene_grounding",
+      "coverage_is_meaningful": true,
+      "flat_test": "is_flat is True when tokens at the LARGEST rung are <= 1.10x tokens at the SMALLEST rung. max/min is reported too but is not the test - it is noise-dominated on tiny payloads.",
+      "flatness_ratio_max_over_min": 4767.43,
+      "growth_largest_over_smallest_rung": 4767.43,
+      "growth_spans": "L1_color_falloff -> L5_ocean",
+      "is_flat": false,
+      "points": [
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 0.2308,
+          "coverage_within_shipped_depth": {
+            "covered": 3,
+            "fraction": 0.2308,
+            "total": 13
+          },
+          "node_count": 13,
+          "node_count_precook": 13,
+          "nodes_covered": 3,
+          "nodes_total": 13,
+          "parm_count": 106,
+          "rung": "L1_color_falloff",
+          "tokens": 257,
+          "tokens_model_visible": 286,
+          "tokens_per_covered_node": 85.7
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 0.5455,
+          "coverage_within_shipped_depth": {
+            "covered": 12,
+            "fraction": 0.5455,
+            "total": 22
+          },
+          "node_count": 22,
+          "node_count_precook": 22,
+          "nodes_covered": 12,
+          "nodes_total": 22,
+          "parm_count": 572,
+          "rung": "L2_obj_xform",
+          "tokens": 889,
+          "tokens_model_visible": 964,
+          "tokens_per_covered_node": 74.1
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 23,
+            "fraction": 1.0,
+            "total": 23
+          },
+          "coverage_fraction": 0.8824,
+          "coverage_within_shipped_depth": {
+            "covered": 52,
+            "fraction": 0.8387,
+            "total": 62
+          },
+          "node_count": 85,
+          "node_count_precook": 62,
+          "nodes_covered": 75,
+          "nodes_total": 85,
+          "parm_count": 1922,
+          "rung": "L3_RandomExample",
+          "tokens": 14253,
+          "tokens_model_visible": 15722,
+          "tokens_per_covered_node": 190.0
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 82,
+            "fraction": 1.0,
+            "total": 82
+          },
+          "coverage_fraction": 0.9467,
+          "coverage_within_shipped_depth": {
+            "covered": 78,
+            "fraction": 0.8966,
+            "total": 87
+          },
+          "node_count": 169,
+          "node_count_precook": 168,
+          "nodes_covered": 160,
+          "nodes_total": 169,
+          "parm_count": 7703,
+          "rung": "L4_three_point_lighting",
+          "tokens": 45993,
+          "tokens_model_visible": 51352,
+          "tokens_per_covered_node": 287.5
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 5230,
+            "fraction": 0.8047,
+            "total": 6499
+          },
+          "coverage_fraction": 0.8225,
+          "coverage_within_shipped_depth": {
+            "covered": 698,
+            "fraction": 0.9859,
+            "total": 708
+          },
+          "node_count": 7207,
+          "node_count_precook": 3057,
+          "nodes_covered": 5928,
+          "nodes_total": 7207,
+          "parm_count": 142850,
+          "rung": "L5_ocean",
+          "tokens": 1225230,
+          "tokens_model_visible": 1302565,
+          "tokens_per_covered_node": 206.7
+        },
+        {
+          "rung": "L6_karma_user_guide",
+          "status": "absent (arm failed or n/a)",
+          "tokens": null
+        }
+      ]
+    },
+    "B_usd_flatten": {
+      "arm_kind": "usd_serialization",
+      "coverage_is_meaningful": false,
+      "flat_test": "is_flat is True when tokens at the LARGEST rung are <= 1.10x tokens at the SMALLEST rung. max/min is reported too but is not the test - it is noise-dominated on tiny payloads.",
+      "flatness_ratio_max_over_min": 2.84,
+      "growth_largest_over_smallest_rung": 0.35,
+      "growth_spans": "L4_three_point_lighting -> L6_karma_user_guide",
+      "is_flat": null,
+      "not_comparable_across_rungs": "This arm exports the stage as composed at the LAST child of /stage in creation order, which is not necessarily the final composed stage, and it is absent entirely on the four rungs with no Solaris stage. Its rung-to-rung ratio is therefore MEANINGLESS - L6 reads smaller than L4 for this reason, not because the bigger scene serializes smaller. Read each value as a single cost datapoint, never as a curve.",
+      "points": [
+        {
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'usd_serialization'.",
+          "outcome": "PARTIAL - serializes the stage as composed at ONE /stage child, so it grounds that composition completely and the rest of the scene not at all. Not scored against node paths (USD prim namespace).",
+          "rung": "L1_color_falloff",
+          "status": "absent (arm failed or n/a)",
+          "tokens": null
+        },
+        {
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'usd_serialization'.",
+          "outcome": "PARTIAL - serializes the stage as composed at ONE /stage child, so it grounds that composition completely and the rest of the scene not at all. Not scored against node paths (USD prim namespace).",
+          "rung": "L2_obj_xform",
+          "status": "absent (arm failed or n/a)",
+          "tokens": null
+        },
+        {
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'usd_serialization'.",
+          "outcome": "PARTIAL - serializes the stage as composed at ONE /stage child, so it grounds that composition completely and the rest of the scene not at all. Not scored against node paths (USD prim namespace).",
+          "rung": "L3_RandomExample",
+          "status": "absent (arm failed or n/a)",
+          "tokens": null
+        },
+        {
+          "coverage_below_shipped_depth": null,
+          "coverage_fraction": null,
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'usd_serialization'.",
+          "coverage_within_shipped_depth": null,
+          "node_count": 168,
+          "node_count_precook": 168,
+          "nodes_covered": null,
+          "nodes_total": null,
+          "outcome": "PARTIAL - serializes the stage as composed at ONE /stage child, so it grounds that composition completely and the rest of the scene not at all. Not scored against node paths (USD prim namespace).",
+          "parm_count": 7703,
+          "rung": "L4_three_point_lighting",
+          "tokens": 183631,
+          "tokens_model_visible": 185487,
+          "tokens_per_covered_node": null
+        },
+        {
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'usd_serialization'.",
+          "outcome": "PARTIAL - serializes the stage as composed at ONE /stage child, so it grounds that composition completely and the rest of the scene not at all. Not scored against node paths (USD prim namespace).",
+          "rung": "L5_ocean",
+          "status": "absent (arm failed or n/a)",
+          "tokens": null
+        },
+        {
+          "coverage_below_shipped_depth": null,
+          "coverage_fraction": null,
+          "coverage_note": "scene-wide coverage is the wrong denominator for an arm of kind 'usd_serialization'.",
+          "coverage_within_shipped_depth": null,
+          "node_count": 21085,
+          "node_count_precook": 21085,
+          "nodes_covered": null,
+          "nodes_total": null,
+          "outcome": "PARTIAL - serializes the stage as composed at ONE /stage child, so it grounds that composition completely and the rest of the scene not at all. Not scored against node paths (USD prim namespace).",
+          "parm_count": 1187573,
+          "rung": "L6_karma_user_guide",
+          "tokens": 64718,
+          "tokens_model_visible": 64986,
+          "tokens_per_covered_node": null
+        }
+      ]
+    },
+    "FLAT_scene_context": {
+      "arm_kind": "scene_grounding",
+      "coverage_is_meaningful": true,
+      "flat_test": "is_flat is True when tokens at the LARGEST rung are <= 1.10x tokens at the SMALLEST rung. max/min is reported too but is not the test - it is noise-dominated on tiny payloads.",
+      "flatness_ratio_max_over_min": 1.12,
+      "growth_largest_over_smallest_rung": 0.97,
+      "growth_spans": "L1_color_falloff -> L6_karma_user_guide",
+      "is_flat": true,
+      "points": [
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 0.0,
+          "coverage_within_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 13
+          },
+          "node_count": 13,
+          "node_count_precook": 13,
+          "nodes_covered": 0,
+          "nodes_total": 13,
+          "parm_count": 106,
+          "rung": "L1_color_falloff",
+          "tokens": 36,
+          "tokens_model_visible": 55,
+          "tokens_per_covered_node": null
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 0.0,
+          "coverage_within_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 22
+          },
+          "node_count": 22,
+          "node_count_precook": 22,
+          "nodes_covered": 0,
+          "nodes_total": 22,
+          "parm_count": 572,
+          "rung": "L2_obj_xform",
+          "tokens": 35,
+          "tokens_model_visible": 54,
+          "tokens_per_covered_node": null
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 23
+          },
+          "coverage_fraction": 0.0,
+          "coverage_within_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 62
+          },
+          "node_count": 85,
+          "node_count_precook": 62,
+          "nodes_covered": 0,
+          "nodes_total": 85,
+          "parm_count": 1922,
+          "rung": "L3_RandomExample",
+          "tokens": 34,
+          "tokens_model_visible": 53,
+          "tokens_per_covered_node": null
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 82
+          },
+          "coverage_fraction": 0.0,
+          "coverage_within_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 87
+          },
+          "node_count": 169,
+          "node_count_precook": 168,
+          "nodes_covered": 0,
+          "nodes_total": 169,
+          "parm_count": 7703,
+          "rung": "L4_three_point_lighting",
+          "tokens": 37,
+          "tokens_model_visible": 56,
+          "tokens_per_covered_node": null
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 6499
+          },
+          "coverage_fraction": 0.0,
+          "coverage_within_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 708
+          },
+          "node_count": 7207,
+          "node_count_precook": 3057,
+          "nodes_covered": 0,
+          "nodes_total": 7207,
+          "parm_count": 142850,
+          "rung": "L5_ocean",
+          "tokens": 33,
+          "tokens_model_visible": 52,
+          "tokens_per_covered_node": null
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 22964
+          },
+          "coverage_fraction": 0.0,
+          "coverage_within_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 2886
+          },
+          "node_count": 25850,
+          "node_count_precook": 21085,
+          "nodes_covered": 0,
+          "nodes_total": 25850,
+          "parm_count": 1187573,
+          "rung": "L6_karma_user_guide",
+          "tokens": 35,
+          "tokens_model_visible": 54,
+          "tokens_per_covered_node": null
+        }
+      ]
+    }
+  },
+  "efficiency_vs_completeness": {
+    "_the_residual_is_not_efficiency": "Arms A and B are the SAME function one argument apart, emitting an identical record per node, so an encoding advantage is impossible by construction. The residual ~1.2x is average PATH LENGTH: arm A only reaches shallow nodes, whose paths are shorter. Measured on the L5 payloads, non-path characters per node are 146.5 (A) vs 140.0 (B) - arm A is marginally WORSE per node. Read the honest conclusion as: essentially ALL of the raw advantage is reduced coverage, not tighter encoding.",
+    "_this_comparison_is_an_ablation_not_a_competitor": "B_inspect_scene_deep is SYNAPSE calling its own function with a bigger depth. It is the fairest ABLATION (nothing differs but how much scene is sent) and it is NOT an outside-in tool. It therefore cannot, on its own, support any claim of the form 'cheaper than sending the scene'.",
+    "_what": "raw_cost_advantage_x is how much cheaper arm A LOOKS. true_efficiency_advantage_x is how much cheaper it is per node actually delivered. The gap between the two columns is the part of the headline that is 'sent less of the scene' rather than 'encoded it better'.",
+    "rows": [
+      {
+        "arm_a_coverage": 1.0,
+        "arm_a_tokens_per_covered_node": 34.1,
+        "arm_b_tokens_per_covered_node": 34.1,
+        "node_count": 13,
+        "raw_cost_advantage_x": 1.0,
+        "rung": "L1_color_falloff",
+        "true_efficiency_advantage_x": 1.0
+      },
+      {
+        "arm_a_coverage": 1.0,
+        "arm_a_tokens_per_covered_node": 33.7,
+        "arm_b_tokens_per_covered_node": 33.7,
+        "node_count": 22,
+        "raw_cost_advantage_x": 1.0,
+        "rung": "L2_obj_xform",
+        "true_efficiency_advantage_x": 1.0
+      },
+      {
+        "arm_a_coverage": 0.7294,
+        "arm_a_tokens_per_covered_node": 52.9,
+        "arm_b_tokens_per_covered_node": 57.9,
+        "node_count": 85,
+        "raw_cost_advantage_x": 1.5,
+        "rung": "L3_RandomExample",
+        "true_efficiency_advantage_x": 1.09
+      },
+      {
+        "arm_a_coverage": 0.5148,
+        "arm_a_tokens_per_covered_node": 35.0,
+        "arm_b_tokens_per_covered_node": 38.5,
+        "node_count": 169,
+        "raw_cost_advantage_x": 2.13,
+        "rung": "L4_three_point_lighting",
+        "true_efficiency_advantage_x": 1.1
+      },
+      {
+        "arm_a_coverage": 0.0982,
+        "arm_a_tokens_per_covered_node": 54.5,
+        "arm_b_tokens_per_covered_node": 64.7,
+        "node_count": 7207,
+        "raw_cost_advantage_x": 12.1,
+        "rung": "L5_ocean",
+        "true_efficiency_advantage_x": 1.19
+      },
+      {
+        "arm_a_coverage": 0.1116,
+        "arm_a_tokens_per_covered_node": 39.3,
+        "arm_b_tokens_per_covered_node": 47.8,
+        "node_count": 25850,
+        "raw_cost_advantage_x": 10.89,
+        "rung": "L6_karma_user_guide",
+        "true_efficiency_advantage_x": 1.22
+      }
+    ]
+  },
+  "failures": [
+    {
+      "arm": "B_usd_flatten",
+      "error": "RuntimeError: empty /stage",
+      "run": "1",
+      "rung": "L1_color_falloff",
+      "status": "arm_error"
+    },
+    {
+      "arm": "B_usd_flatten",
+      "error": "RuntimeError: empty /stage",
+      "run": "2",
+      "rung": "L1_color_falloff",
+      "status": "arm_error"
+    },
+    {
+      "arm": "B_usd_flatten",
+      "error": "RuntimeError: empty /stage",
+      "run": "1",
+      "rung": "L2_obj_xform",
+      "status": "arm_error"
+    },
+    {
+      "arm": "B_usd_flatten",
+      "error": "RuntimeError: empty /stage",
+      "run": "2",
+      "rung": "L2_obj_xform",
+      "status": "arm_error"
+    },
+    {
+      "arm": "B_usd_flatten",
+      "error": "RuntimeError: empty /stage",
+      "run": "1",
+      "rung": "L3_RandomExample",
+      "status": "arm_error"
+    },
+    {
+      "arm": "B_usd_flatten",
+      "error": "RuntimeError: empty /stage",
+      "run": "2",
+      "rung": "L3_RandomExample",
+      "status": "arm_error"
+    },
+    {
+      "arm": "B_usd_flatten",
+      "error": "RuntimeError: empty /stage",
+      "run": "1",
+      "rung": "L5_ocean",
+      "status": "arm_error"
+    },
+    {
+      "arm": "B_usd_flatten",
+      "error": "RuntimeError: empty /stage",
+      "run": "2",
+      "rung": "L5_ocean",
+      "status": "arm_error"
+    },
+    {
+      "arm": "B_network_explain_d5",
+      "error": "Expected arm emitted nothing and recorded no exception. Under per-arm crash isolation this means the hython process died (segfault) inside this arm - see the driver log for the rc.",
+      "run": "1",
+      "rung": "L6_karma_user_guide",
+      "status": "arm_produced_no_output"
+    },
+    {
+      "arm": "B_network_explain_d5",
+      "error": "Expected arm emitted nothing and recorded no exception. Under per-arm crash isolation this means the hython process died (segfault) inside this arm - see the driver log for the rc.",
+      "run": "2",
+      "rung": "L6_karma_user_guide",
+      "status": "arm_produced_no_output"
+    }
+  ],
+  "ladder": [
+    {
+      "displayed_point_count": 1736,
+      "displayed_prim_count": 1734,
+      "lop_node_count": 0,
+      "node_count": 13,
+      "parm_count": 106,
+      "rung": "L1_color_falloff",
+      "sop_node_count": 2
+    },
+    {
+      "displayed_point_count": 48,
+      "displayed_prim_count": 36,
+      "lop_node_count": 0,
+      "node_count": 22,
+      "parm_count": 572,
+      "rung": "L2_obj_xform",
+      "sop_node_count": 6
+    },
+    {
+      "displayed_point_count": 1976,
+      "displayed_prim_count": 1580,
+      "lop_node_count": 0,
+      "node_count": 62,
+      "parm_count": 1922,
+      "rung": "L3_RandomExample",
+      "sop_node_count": 46
+    },
+    {
+      "displayed_point_count": 8489,
+      "displayed_prim_count": 2887,
+      "lop_node_count": 74,
+      "node_count": 168,
+      "parm_count": 7703,
+      "rung": "L4_three_point_lighting",
+      "sop_node_count": 53
+    },
+    {
+      "displayed_point_count": 415,
+      "displayed_prim_count": 85,
+      "lop_node_count": 0,
+      "node_count": 3057,
+      "parm_count": 142850,
+      "rung": "L5_ocean",
+      "sop_node_count": 611
+    },
+    {
+      "displayed_point_count": 306866013,
+      "displayed_prim_count": 35115587,
+      "lop_node_count": 5844,
+      "node_count": 21085,
+      "parm_count": 1187573,
+      "rung": "L6_karma_user_guide",
+      "sop_node_count": 7332
+    }
+  ],
+  "multi_turn_consequence": {
+    "A_inspect_node_detail": {
+      "basis": "No compaction exists on the panel path: the message list is append-only and every prior tool_result is re-sent on each subsequent API call, up to _MAX_TOOL_ITERATIONS=25 in ONE user turn. A result produced at iteration i can only appear in requests i+1..N, so it is charged (N-i) times and N results cost N(N-1)/2 = 300x, NOT N(N+1)/2. VERIFIED-DERIVED from the measured single-call figure; not itself measured - no 25-iteration turn was run.",
+      "resent_over_25_iterations": 63675300,
+      "single_call_tokens": 212251,
+      "top_rung": "L6_karma_user_guide"
+    },
+    "A_inspect_scene_d3": {
+      "basis": "No compaction exists on the panel path: the message list is append-only and every prior tool_result is re-sent on each subsequent API call, up to _MAX_TOOL_ITERATIONS=25 in ONE user turn. A result produced at iteration i can only appear in requests i+1..N, so it is charged (N-i) times and N results cost N(N-1)/2 = 300x, NOT N(N+1)/2. VERIFIED-DERIVED from the measured single-call figure; not itself measured - no 25-iteration turn was run.",
+      "resent_over_25_iterations": 34023300,
+      "single_call_tokens": 113411,
+      "top_rung": "L6_karma_user_guide"
+    },
+    "B_inspect_scene_deep": {
+      "basis": "No compaction exists on the panel path: the message list is append-only and every prior tool_result is re-sent on each subsequent API call, up to _MAX_TOOL_ITERATIONS=25 in ONE user turn. A result produced at iteration i can only appear in requests i+1..N, so it is charged (N-i) times and N results cost N(N-1)/2 = 300x, NOT N(N+1)/2. VERIFIED-DERIVED from the measured single-call figure; not itself measured - no 25-iteration turn was run.",
+      "resent_over_25_iterations": 370483800,
+      "single_call_tokens": 1234946,
+      "top_rung": "L6_karma_user_guide"
+    },
+    "B_network_explain_d5": {
+      "basis": "No compaction exists on the panel path: the message list is append-only and every prior tool_result is re-sent on each subsequent API call, up to _MAX_TOOL_ITERATIONS=25 in ONE user turn. A result produced at iteration i can only appear in requests i+1..N, so it is charged (N-i) times and N results cost N(N-1)/2 = 300x, NOT N(N+1)/2. VERIFIED-DERIVED from the measured single-call figure; not itself measured - no 25-iteration turn was run.",
+      "resent_over_25_iterations": 367569000,
+      "single_call_tokens": 1225230,
+      "top_rung": "L5_ocean"
+    },
+    "B_usd_flatten": {
+      "basis": "No compaction exists on the panel path: the message list is append-only and every prior tool_result is re-sent on each subsequent API call, up to _MAX_TOOL_ITERATIONS=25 in ONE user turn. A result produced at iteration i can only appear in requests i+1..N, so it is charged (N-i) times and N results cost N(N-1)/2 = 300x, NOT N(N+1)/2. VERIFIED-DERIVED from the measured single-call figure; not itself measured - no 25-iteration turn was run.",
+      "resent_over_25_iterations": 19415400,
+      "single_call_tokens": 64718,
+      "top_rung": "L6_karma_user_guide"
+    },
+    "FLAT_scene_context": {
+      "basis": "No compaction exists on the panel path: the message list is append-only and every prior tool_result is re-sent on each subsequent API call, up to _MAX_TOOL_ITERATIONS=25 in ONE user turn. A result produced at iteration i can only appear in requests i+1..N, so it is charged (N-i) times and N results cost N(N-1)/2 = 300x, NOT N(N+1)/2. VERIFIED-DERIVED from the measured single-call figure; not itself measured - no 25-iteration turn was run.",
+      "resent_over_25_iterations": 10500,
+      "single_call_tokens": 35,
+      "top_rung": "L6_karma_user_guide"
+    }
+  },
+  "repeatability_control": {
+    "noise": {
+      "all_identical": true,
+      "max_abs_delta_tokens": 0,
+      "pairs_compared": 31,
+      "verdict": "deterministic - noise floor is 0 tokens; every rung reproduced its own count exactly"
+    },
+    "pairs": [
+      {
+        "arm": "A_inspect_node_detail",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 1787,
+        "run2_tokens": 1787,
+        "rung": "L1_color_falloff"
+      },
+      {
+        "arm": "A_inspect_scene_d3",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 443,
+        "run2_tokens": 443,
+        "rung": "L1_color_falloff"
+      },
+      {
+        "arm": "B_inspect_scene_deep",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 443,
+        "run2_tokens": 443,
+        "rung": "L1_color_falloff"
+      },
+      {
+        "arm": "B_network_explain_d5",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 257,
+        "run2_tokens": 257,
+        "rung": "L1_color_falloff"
+      },
+      {
+        "arm": "FLAT_scene_context",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 36,
+        "run2_tokens": 36,
+        "rung": "L1_color_falloff"
+      },
+      {
+        "arm": "A_inspect_node_detail",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 1809,
+        "run2_tokens": 1809,
+        "rung": "L2_obj_xform"
+      },
+      {
+        "arm": "A_inspect_scene_d3",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 741,
+        "run2_tokens": 741,
+        "rung": "L2_obj_xform"
+      },
+      {
+        "arm": "B_inspect_scene_deep",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 741,
+        "run2_tokens": 741,
+        "rung": "L2_obj_xform"
+      },
+      {
+        "arm": "B_network_explain_d5",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 889,
+        "run2_tokens": 889,
+        "rung": "L2_obj_xform"
+      },
+      {
+        "arm": "FLAT_scene_context",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 35,
+        "run2_tokens": 35,
+        "rung": "L2_obj_xform"
+      },
+      {
+        "arm": "A_inspect_node_detail",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 3601,
+        "run2_tokens": 3601,
+        "rung": "L3_RandomExample"
+      },
+      {
+        "arm": "A_inspect_scene_d3",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 3277,
+        "run2_tokens": 3277,
+        "rung": "L3_RandomExample"
+      },
+      {
+        "arm": "B_inspect_scene_deep",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 4922,
+        "run2_tokens": 4922,
+        "rung": "L3_RandomExample"
+      },
+      {
+        "arm": "B_network_explain_d5",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 14253,
+        "run2_tokens": 14253,
+        "rung": "L3_RandomExample"
+      },
+      {
+        "arm": "FLAT_scene_context",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 34,
+        "run2_tokens": 34,
+        "rung": "L3_RandomExample"
+      },
+      {
+        "arm": "A_inspect_node_detail",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 13290,
+        "run2_tokens": 13290,
+        "rung": "L4_three_point_lighting"
+      },
+      {
+        "arm": "A_inspect_scene_d3",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 3047,
+        "run2_tokens": 3047,
+        "rung": "L4_three_point_lighting"
+      },
+      {
+        "arm": "B_inspect_scene_deep",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 6504,
+        "run2_tokens": 6504,
+        "rung": "L4_three_point_lighting"
+      },
+      {
+        "arm": "B_network_explain_d5",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 45993,
+        "run2_tokens": 45993,
+        "rung": "L4_three_point_lighting"
+      },
+      {
+        "arm": "B_usd_flatten",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 183631,
+        "run2_tokens": 183631,
+        "rung": "L4_three_point_lighting"
+      },
+      {
+        "arm": "FLAT_scene_context",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 37,
+        "run2_tokens": 37,
+        "rung": "L4_three_point_lighting"
+      },
+      {
+        "arm": "A_inspect_node_detail",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 12838,
+        "run2_tokens": 12838,
+        "rung": "L5_ocean"
+      },
+      {
+        "arm": "A_inspect_scene_d3",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 38555,
+        "run2_tokens": 38555,
+        "rung": "L5_ocean"
+      },
+      {
+        "arm": "B_inspect_scene_deep",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 466520,
+        "run2_tokens": 466520,
+        "rung": "L5_ocean"
+      },
+      {
+        "arm": "B_network_explain_d5",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 1225230,
+        "run2_tokens": 1225230,
+        "rung": "L5_ocean"
+      },
+      {
+        "arm": "FLAT_scene_context",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 33,
+        "run2_tokens": 33,
+        "rung": "L5_ocean"
+      },
+      {
+        "arm": "A_inspect_node_detail",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 212251,
+        "run2_tokens": 212251,
+        "rung": "L6_karma_user_guide"
+      },
+      {
+        "arm": "A_inspect_scene_d3",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 113411,
+        "run2_tokens": 113411,
+        "rung": "L6_karma_user_guide"
+      },
+      {
+        "arm": "B_inspect_scene_deep",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 1234946,
+        "run2_tokens": 1234946,
+        "rung": "L6_karma_user_guide"
+      },
+      {
+        "arm": "B_usd_flatten",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 64718,
+        "run2_tokens": 64718,
+        "rung": "L6_karma_user_guide"
+      },
+      {
+        "arm": "FLAT_scene_context",
+        "delta": 0,
+        "delta_pct": 0.0,
+        "run1_tokens": 35,
+        "run2_tokens": 35,
+        "rung": "L6_karma_user_guide"
+      }
+    ]
+  },
+  "schema": "c1_summary/v1",
+  "tokenizer": "tiktoken/cl100k_base (proxy BPE, NOT Claude's tokenizer)",
+  "tokenizer_caveat": "Anthropic's exact tokenizer (messages.count_tokens) is unreachable on this account: HTTP 400 'credit balance is too low', VERIFIED-RUNTIME 2026-07-27. Absolute token figures carry this proxy caveat; bytes and chars do not, and the SHAPE of the curve is robust to tokenizer choice."
+}
