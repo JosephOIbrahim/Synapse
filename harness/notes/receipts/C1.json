@@ -6,12 +6,10 @@
   "status": "green",
   "status_note": "Describes what happened (Law 3). The benchmark was built and RUN end to end: instrument, repeatability control, six-rung ladder on real third-party scenes, both arms, outcome paired with cost at every rung. The leg is green because the measurement succeeded. The CLAIM it measured did not survive - a red finding under a green leg is Law 7 working, not a contradiction.",
   "revision_note": "This receipt was rewritten after an adversarial pass on its own first draft. That pass found 15 attacks, three of them showstoppers, and it was right on all three. Two of the corrections move the verdict TOWARD SYNAPSE (C1-F1 completeness, C1-F13 comparator withdrawn) and one moves it away (C1-F5 turn-level cost). The superseded first-draft figures are listed in drift D5 so the change is auditable rather than silent.",
-
   "model": "claude-opus-5[1m]",
   "settings_profile": "session .claude/settings.json (hook-bearing, pytest-capable) - NOT harness/agent-settings.json. The full suite was run first-hand, so suite evidence is admissible under Constitution Article V.",
-
   "commit_before": "6ee9a2e",
-  "commit_after": "PENDING - this receipt's own commit",
+  "commit_after": "366dcd1",
   "commits": [
     "8480125  harness(C1): the token meter, the scene ladder, and per-turn usage capture",
     "b816f4b  harness(C1): the ladder result - the spine claim is REFUTED as shipped",
@@ -20,8 +18,9 @@
   ],
   "merged": false,
   "pushed": false,
-
-  "touches_declared_in_legs_json": ["harness/notes/token_bench"],
+  "touches_declared_in_legs_json": [
+    "harness/notes/token_bench"
+  ],
   "touches_actual": [
     "scripts/c1_token_bench.py",
     "scripts/c1_run_ladder.sh",
@@ -33,15 +32,26 @@
     "harness/notes/receipts/C1.json",
     ".gitignore"
   ],
-
-  "tests_after": { "passed": 4998, "failed": 0, "skipped": 137 },
-  "tests_before": { "passed": 4989, "failed": 0, "skipped": 137 },
+  "tests_after": {
+    "passed": 4998,
+    "failed": 0,
+    "skipped": 137
+  },
+  "tests_before": {
+    "passed": 4989,
+    "failed": 0,
+    "skipped": 137
+  },
   "tests_before_tier": "VERIFIED-DERIVED - 4998 measured minus the 9 tests this leg added. Not separately measured: R39 bans --ignore in a measurement runner, so there is no legal way to re-run the suite excluding only the new file.",
   "test_delta": 9,
-  "ratchet_floor": { "passed": 4875, "failed": 0, "skipped": 129, "source": "harness/verify/suite_baseline.json gate half" },
+  "ratchet_floor": {
+    "passed": 4875,
+    "failed": 0,
+    "skipped": 129,
+    "source": "harness/verify/suite_baseline.json gate half"
+  },
   "commandment_7": "held - 9 tests added, none weakened, skipped, xfailed or deleted; 0 failures against a 0-failure floor",
   "suite_producer": "python -m pytest tests/ -q  (system python 3.14.2, vendor tree ABI-INACTIVE)",
-
   "conditions_attached_to_every_figure_below": {
     "date": "2026-07-27",
     "houdini_build": "22.0.368",
@@ -53,42 +63,89 @@
     "scene_size_axis": "node count from hou.node('/').allSubChildren() captured AT PAYLOAD TIME (post-LOP-cook, post-geometry-cook). One population, used for both the axis and the coverage denominator. Parm count and serialised-token size are reported beside it at every rung.",
     "producer_path": "scripts/c1_run_ladder.sh -> scripts/c1_token_bench.py --mode payloads -> --mode count -> scripts/c1_summarize.py -> harness/notes/token_bench/{count,summary}.json"
   },
-
   "summary": {
     "claim_under_test": "Sends only what changed - cost stays flat, even on huge scenes.",
     "verdict": "REFUTED. Cost is not flat, and 'only what changed' has no mechanism. The comparative half of the sentence ('vs re-sending the scene') is NOT ESTABLISHED either way by this leg - see C1-F13.",
-
     "headline_integers": {
-      "ladder_node_counts": [13, 22, 85, 169, 7207, 25850],
-      "ladder_parm_counts": [106, 572, 1922, 7703, 142850, 1187573],
-
-      "arm_A_grounding_payload_tokens": [443, 741, 3277, 3047, 38555, 113411],
+      "ladder_node_counts": [
+        13,
+        22,
+        85,
+        169,
+        7207,
+        25850
+      ],
+      "ladder_parm_counts": [
+        106,
+        572,
+        1922,
+        7703,
+        142850,
+        1187573
+      ],
+      "arm_A_grounding_payload_tokens": [
+        443,
+        741,
+        3277,
+        3047,
+        38555,
+        113411
+      ],
       "arm_A_payload_growth_x": 256,
       "arm_A_payload_growth_spans": "L1_color_falloff -> L6_karma_user_guide",
       "arm_A_turn_growth_x_including_measured_tool_prefix": 8.62,
-      "arm_A_single_call_scene_coverage_pct": [100, 100, 73, 51, 10, 11],
-      "arm_A_completeness_within_its_own_depth_window_pct": [100, 100, 100, 100, 100, 100],
-
-      "arm_B_ablation_same_codepath_tokens": [443, 741, 4922, 6504, 466520, 1234946],
+      "arm_A_single_call_scene_coverage_pct": [
+        100,
+        100,
+        73,
+        51,
+        10,
+        11
+      ],
+      "arm_A_completeness_within_its_own_depth_window_pct": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ],
+      "arm_B_ablation_same_codepath_tokens": [
+        443,
+        741,
+        4922,
+        6504,
+        466520,
+        1234946
+      ],
       "arm_B_ablation_growth_x": 2788,
       "arm_B_ablation_growth_spans": "L1_color_falloff -> L6_karma_user_guide",
-      "arm_B_synapse_own_serializer_tokens": [257, 889, 14253, 45993, 1225230, null],
+      "arm_B_synapse_own_serializer_tokens": [
+        257,
+        889,
+        14253,
+        45993,
+        1225230,
+        null
+      ],
       "arm_B_synapse_own_serializer_growth_x": 4767,
       "arm_B_synapse_own_serializer_growth_spans": "L1_color_falloff -> L5_ocean (SEGFAULTED at L6 - see C1-F3)",
       "arm_B_usd_flatten_tokens_at_L6": 64718,
-
-      "flat_control_tokens": [36, 35, 34, 37, 33, 35],
+      "flat_control_tokens": [
+        36,
+        35,
+        34,
+        37,
+        33,
+        35
+      ],
       "flat_control_growth_x": 0.97,
-
       "repeatability_pairs_compared": 31,
       "repeatability_max_abs_delta_tokens": 0,
-
       "raw_cost_advantage_over_the_ablation_at_top_rung_x": 10.89,
       "per_delivered_node_advantage_at_top_rung_x": 1.22
     },
-
     "the_claim_as_it_can_now_honestly_be_made": "Measured on 2026-07-27 against Houdini 22.0.368, over six scenes authored by SideFX and shipped with Houdini, spanning 13 to 25,850 nodes: SYNAPSE's scene grounding is NOT flat. Its shipped scene read costs 443 tokens on the smallest scene and 113,411 on the largest - a 256x rise in the grounding payload, or 8.6x for a whole turn once the measured 14,380-token tool-definition prefix is included. Growth is strongly sublinear (nodes rise 1,988x while payload rises 256x) and even falls at one rung, but it is unambiguously not flat, and no threshold makes it flat. What the read is NOT is degraded: at every rung it returns 100% of the nodes inside its configured depth window, dropping nothing it reached. Its scene-wide share falls from 100% to 11% because a fixed depth-3 window covers a shrinking fraction of a deepening scene - a windowing property, not a truncation failure. Separately, 'sends only what changed' has no mechanism at all: every inspect is a full re-read, no delta path exists anywhere in the grounding surface, and nothing compacts the conversation, so one user turn re-sends every prior result up to 25 times (a projected 300x multiplier on the largest payload). This leg does NOT establish the comparative half of the claim: the only arm that was genuinely cheaper-than-SYNAPSE-by-a-wide-margin is SYNAPSE calling its own function with a larger depth - an ablation, not an outside-in tool - and the one competitor-shaped serialization measured (USD flatten) came in at 0.57x arm A's cost on the top rung. The honest sentence today is 'grounded reads are depth-windowed and cost far less than enumerating the whole graph, but they are not flat, they send no delta, and the advantage over a real outside-in tool is unmeasured'. All token figures use tiktoken/cl100k_base as a declared proxy because Anthropic's exact tokenizer is an API call this account cannot reach.",
-
     "oracle_check": {
       "repeatability_control_RUN_with_both_counts_reported": "MET - 31 run-1/run-2 pairs, max absolute delta 0 tokens, both counts in summary.json:repeatability_control.pairs. SCOPE, stated honestly: with no model in the loop the only variance source exercised is Houdini's serializer. Model-side nondeterminism - which tools an agent calls and how many round-trips it takes - is the dominant term in a real turn and is UNTESTED. The 0-token floor is a property of the meter, not of turn cost.",
       "arm_B_demonstrated_NON_FLAT": "MET - 2,788x (ablation, L1->L6) and 4,767x (SYNAPSE's own serializer, L1->L5). The instrument is additionally shown able to return FLAT: the control arm reads 36 tokens at 13 nodes and 35 at 25,850 (0.97x). SCOPE: that control is a NULL arm - see C1-F11.",
@@ -97,7 +154,6 @@
       "one_paragraph_honest_claim": "MET - the_claim_as_it_can_now_honestly_be_made, above."
     }
   },
-
   "findings": [
     {
       "id": "C1-F1",
@@ -227,7 +283,6 @@
       "correction_of_a_first_draft_error": "The first draft claimed a 100-vs-500 schema/handler mismatch on get_stage_info by citing _tool_registry.py:630. That line is houdini_query_prims's limit field, a DIFFERENT tool, whose schema and handler agree at 100 (handlers_usd.py:923). The '5x mis-model' was manufactured by crossing two tools. Withdrawn and replaced by (b)."
     }
   ],
-
   "instrument_report_requested_by_the_brief": {
     "question": "Did the instrument exist, or did you build it?",
     "answer": "BOTH, for two different things - and the distinction matters because they measure disjoint quantities.",
@@ -245,7 +300,6 @@
     },
     "reused_not_rebuilt": "docs/BENCHMARK_DESIGN.md:143 makes standing up a fresh agent loop a DoD violation. The reader extends run_turn in place; no new model loop was written. Arm B likewise reuses SYNAPSE's own shipped serializer rather than an invented one."
   },
-
   "method": {
     "why_arm_B_is_not_a_strawman_and_what_that_costs": "Arm B never runs a competitor's product. It is computed from SYNAPSE's own shipped code: inspect_scene at a larger depth, and the uncapped serializer behind houdini_network_explain. That makes it impossible to dismiss as a rigged competitor - but it is also why C1-F13 withdraws the comparative claim: an arm made of SYNAPSE cannot stand in for an outside-in tool. The honest position is that arm B establishes NON-FLATNESS (which is what the oracle required of it) and does not establish a competitive advantage.",
     "why_the_scenes_are_not_fabricated": "All six rungs are SideFX-authored scenes shipped inside Houdini 22.0.368. None was built for this benchmark. A 105-scene census found 104 of 105 open cleanly headless. Two traps were avoided: computervision.hip has 28,900 raw nodes but only 53 authored and would have made the top rung serialize smaller than the middle; shotgun.hip stalls 4.4s on external Shotgun contact and would poison timing.",
@@ -255,7 +309,6 @@
     "handler_faithful_arguments": "Arm A calls the grounding functions with the arguments the shipped HANDLER passes, not the function-signature defaults, which differ (include_geometry True in the signature, False at the handler). Using the signature defaults would have inflated arm A.",
     "lop_priming": "LOP nodes are cooked before measurement. Headless hython has no viewport trigger, and without the prime lastModifiedPrims() returns [] - which would make stage payloads look artificially SMALL. Priming (and the geometry cook in _scene_axes) also instantiates locked-HDA internals, which is why the node population at payload time exceeds a naive pre-cook census; the payload-time population is used throughout because it is the scene as it stands when the payload is built."
   },
-
   "limits": [
     "No model in the loop (C1-F2). Payload costs and a deterministic oracle, not billed usage from a live agent session. No composed multi-call strategy was measured, so single-call coverage is a LOWER BOUND on what a turn could ground.",
     "Proxy tokenizer. tiktoken/cl100k_base is not Claude's. Exact bytes and chars ship alongside every figure. Curve SHAPE is robust to tokenizer choice; absolute magnitudes are not.",
@@ -267,7 +320,6 @@
     "The inspect_selection exponential (C1-F10) was measured with mock nodes; the shape is exact, the real-scene magnitude is not.",
     "The repeatability control bounds the METER's noise, not a turn's (see oracle_check)."
   ],
-
   "drift": [
     {
       "id": "D1",
@@ -301,7 +353,6 @@
       "correction": "The refutation direction was never in doubt and did not change. What changed is the supporting arithmetic, two labels, and one positive claim that had to be withdrawn. A receipt that had shipped without this pass would have been wrong in SYNAPSE's disfavour on completeness and in its favour on the comparative claim - both findable by a technical evaluator."
     }
   ],
-
   "for_ruling": [
     {
       "id": "R-C1-1",
@@ -341,7 +392,6 @@
       "why_this_is_not_the_agents_call": "Spending money."
     }
   ],
-
   "resume_token": {
     "skip_on_reentry": [
       "Instrument discovery - settled. Preload instrument existed (token_baseline.py); per-turn reader did not and is now built and test-pinned. Do not re-survey.",
@@ -359,7 +409,6 @@
     ],
     "raw_evidence": ".c1out/ holds every payload byte and per-rung meta (gitignored, ~15MB). Everything above is re-derivable from it with the two --mode passes. Do not clean it until R-C1-2 is done."
   },
-
   "ratified": false,
   "ratification_note": "ratified:false is the correct resting state. The flip is human-only. This receipt records what was measured; it does not sanction what the positioning document says next."
 }
