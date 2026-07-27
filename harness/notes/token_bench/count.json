@@ -17,9 +17,19 @@
           "bytes": 5198,
           "chars": 5198,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 1,
             "fraction": 0.0769,
-            "total": 13
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 1,
+              "fraction": 0.0769,
+              "total": 13
+            }
           },
           "encoding_inflation": 1.0593,
           "tokens_cl100k": 1787,
@@ -29,9 +39,19 @@
           "bytes": 1278,
           "chars": 1278,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 13,
             "fraction": 1.0,
-            "total": 13
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 13,
+              "fraction": 1.0,
+              "total": 13
+            }
           },
           "encoding_inflation": 1.1264,
           "tokens_cl100k": 443,
@@ -41,9 +61,19 @@
           "bytes": 1278,
           "chars": 1278,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 13,
             "fraction": 1.0,
-            "total": 13
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 13,
+              "fraction": 1.0,
+              "total": 13
+            }
           },
           "encoding_inflation": 1.1264,
           "tokens_cl100k": 443,
@@ -53,9 +83,19 @@
           "bytes": 666,
           "chars": 666,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 3,
             "fraction": 0.2308,
-            "total": 13
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 3,
+              "fraction": 0.2308,
+              "total": 13
+            }
           },
           "encoding_inflation": 1.1128,
           "tokens_cl100k": 257,
@@ -65,9 +105,19 @@
           "bytes": 104,
           "chars": 104,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 13
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 13
+            }
           },
           "encoding_inflation": 1.5278,
           "tokens_cl100k": 36,
@@ -128,9 +178,19 @@
           "bytes": 5198,
           "chars": 5198,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 1,
             "fraction": 0.0769,
-            "total": 13
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 1,
+              "fraction": 0.0769,
+              "total": 13
+            }
           },
           "encoding_inflation": 1.0593,
           "tokens_cl100k": 1787,
@@ -140,9 +200,19 @@
           "bytes": 1278,
           "chars": 1278,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 13,
             "fraction": 1.0,
-            "total": 13
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 13,
+              "fraction": 1.0,
+              "total": 13
+            }
           },
           "encoding_inflation": 1.1264,
           "tokens_cl100k": 443,
@@ -152,9 +222,19 @@
           "bytes": 1278,
           "chars": 1278,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 13,
             "fraction": 1.0,
-            "total": 13
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 13,
+              "fraction": 1.0,
+              "total": 13
+            }
           },
           "encoding_inflation": 1.1264,
           "tokens_cl100k": 443,
@@ -164,9 +244,19 @@
           "bytes": 666,
           "chars": 666,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 3,
             "fraction": 0.2308,
-            "total": 13
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 3,
+              "fraction": 0.2308,
+              "total": 13
+            }
           },
           "encoding_inflation": 1.1128,
           "tokens_cl100k": 257,
@@ -176,9 +266,19 @@
           "bytes": 104,
           "chars": 104,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 13
+            "total": 13,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 13
+            }
           },
           "encoding_inflation": 1.5278,
           "tokens_cl100k": 36,
@@ -239,9 +339,19 @@
           "bytes": 5268,
           "chars": 5268,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 2,
             "fraction": 0.0909,
-            "total": 22
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 2,
+              "fraction": 0.0909,
+              "total": 22
+            }
           },
           "encoding_inflation": 1.0597,
           "tokens_cl100k": 1809,
@@ -251,9 +361,19 @@
           "bytes": 2136,
           "chars": 2136,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 22,
             "fraction": 1.0,
-            "total": 22
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 22,
+              "fraction": 1.0,
+              "total": 22
+            }
           },
           "encoding_inflation": 1.1053,
           "tokens_cl100k": 741,
@@ -263,9 +383,19 @@
           "bytes": 2136,
           "chars": 2136,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 22,
             "fraction": 1.0,
-            "total": 22
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 22,
+              "fraction": 1.0,
+              "total": 22
+            }
           },
           "encoding_inflation": 1.1053,
           "tokens_cl100k": 741,
@@ -275,9 +405,19 @@
           "bytes": 2414,
           "chars": 2414,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 12,
             "fraction": 0.5455,
-            "total": 22
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 12,
+              "fraction": 0.5455,
+              "total": 22
+            }
           },
           "encoding_inflation": 1.0844,
           "tokens_cl100k": 889,
@@ -287,9 +427,19 @@
           "bytes": 100,
           "chars": 100,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 22
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22
+            }
           },
           "encoding_inflation": 1.5429,
           "tokens_cl100k": 35,
@@ -350,9 +500,19 @@
           "bytes": 5268,
           "chars": 5268,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 2,
             "fraction": 0.0909,
-            "total": 22
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 2,
+              "fraction": 0.0909,
+              "total": 22
+            }
           },
           "encoding_inflation": 1.0597,
           "tokens_cl100k": 1809,
@@ -362,9 +522,19 @@
           "bytes": 2136,
           "chars": 2136,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 22,
             "fraction": 1.0,
-            "total": 22
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 22,
+              "fraction": 1.0,
+              "total": 22
+            }
           },
           "encoding_inflation": 1.1053,
           "tokens_cl100k": 741,
@@ -374,9 +544,19 @@
           "bytes": 2136,
           "chars": 2136,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 22,
             "fraction": 1.0,
-            "total": 22
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 22,
+              "fraction": 1.0,
+              "total": 22
+            }
           },
           "encoding_inflation": 1.1053,
           "tokens_cl100k": 741,
@@ -386,9 +566,19 @@
           "bytes": 2414,
           "chars": 2414,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 12,
             "fraction": 0.5455,
-            "total": 22
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 12,
+              "fraction": 0.5455,
+              "total": 22
+            }
           },
           "encoding_inflation": 1.0844,
           "tokens_cl100k": 889,
@@ -398,9 +588,19 @@
           "bytes": 100,
           "chars": 100,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": null,
+              "total": 0
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 22
+            "total": 22,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22
+            }
           },
           "encoding_inflation": 1.5429,
           "tokens_cl100k": 35,
@@ -461,9 +661,19 @@
           "bytes": 9820,
           "chars": 9820,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
             "covered": 4,
             "fraction": 0.0471,
-            "total": 85
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 4,
+              "fraction": 0.0645,
+              "total": 62
+            }
           },
           "encoding_inflation": 1.0733,
           "tokens_cl100k": 3601,
@@ -473,9 +683,19 @@
           "bytes": 11403,
           "chars": 11403,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
             "covered": 62,
             "fraction": 0.7294,
-            "total": 85
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 62,
+              "fraction": 1.0,
+              "total": 62
+            }
           },
           "encoding_inflation": 1.0696,
           "tokens_cl100k": 3277,
@@ -485,9 +705,19 @@
           "bytes": 17197,
           "chars": 17197,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 23,
+              "fraction": 1.0,
+              "total": 23
+            },
             "covered": 85,
             "fraction": 1.0,
-            "total": 85
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 62,
+              "fraction": 1.0,
+              "total": 62
+            }
           },
           "encoding_inflation": 1.0677,
           "tokens_cl100k": 4922,
@@ -497,9 +727,19 @@
           "bytes": 42736,
           "chars": 42736,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 23,
+              "fraction": 1.0,
+              "total": 23
+            },
             "covered": 75,
             "fraction": 0.8824,
-            "total": 85
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 52,
+              "fraction": 0.8387,
+              "total": 62
+            }
           },
           "encoding_inflation": 1.1031,
           "tokens_cl100k": 14253,
@@ -509,9 +749,19 @@
           "bytes": 104,
           "chars": 104,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 85
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 62
+            }
           },
           "encoding_inflation": 1.5588,
           "tokens_cl100k": 34,
@@ -572,9 +822,19 @@
           "bytes": 9820,
           "chars": 9820,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
             "covered": 4,
             "fraction": 0.0471,
-            "total": 85
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 4,
+              "fraction": 0.0645,
+              "total": 62
+            }
           },
           "encoding_inflation": 1.0733,
           "tokens_cl100k": 3601,
@@ -584,9 +844,19 @@
           "bytes": 11403,
           "chars": 11403,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
             "covered": 62,
             "fraction": 0.7294,
-            "total": 85
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 62,
+              "fraction": 1.0,
+              "total": 62
+            }
           },
           "encoding_inflation": 1.0696,
           "tokens_cl100k": 3277,
@@ -596,9 +866,19 @@
           "bytes": 17197,
           "chars": 17197,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 23,
+              "fraction": 1.0,
+              "total": 23
+            },
             "covered": 85,
             "fraction": 1.0,
-            "total": 85
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 62,
+              "fraction": 1.0,
+              "total": 62
+            }
           },
           "encoding_inflation": 1.0677,
           "tokens_cl100k": 4922,
@@ -608,9 +888,19 @@
           "bytes": 42736,
           "chars": 42736,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 23,
+              "fraction": 1.0,
+              "total": 23
+            },
             "covered": 75,
             "fraction": 0.8824,
-            "total": 85
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 52,
+              "fraction": 0.8387,
+              "total": 62
+            }
           },
           "encoding_inflation": 1.1031,
           "tokens_cl100k": 14253,
@@ -620,9 +910,19 @@
           "bytes": 104,
           "chars": 104,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 23
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 85
+            "total": 85,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 62
+            }
           },
           "encoding_inflation": 1.5588,
           "tokens_cl100k": 34,
@@ -683,9 +983,19 @@
           "bytes": 39983,
           "chars": 39983,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
             "covered": 3,
             "fraction": 0.0178,
-            "total": 169
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 3,
+              "fraction": 0.0345,
+              "total": 87
+            }
           },
           "encoding_inflation": 1.0858,
           "tokens_cl100k": 13290,
@@ -695,9 +1005,19 @@
           "bytes": 9510,
           "chars": 9510,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
             "covered": 87,
             "fraction": 0.5148,
-            "total": 169
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 87,
+              "fraction": 1.0,
+              "total": 87
+            }
           },
           "encoding_inflation": 1.0939,
           "tokens_cl100k": 3047,
@@ -707,9 +1027,19 @@
           "bytes": 20234,
           "chars": 20234,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 82,
+              "fraction": 1.0,
+              "total": 82
+            },
             "covered": 169,
             "fraction": 1.0,
-            "total": 169
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 87,
+              "fraction": 1.0,
+              "total": 87
+            }
           },
           "encoding_inflation": 1.0796,
           "tokens_cl100k": 6504,
@@ -719,9 +1049,19 @@
           "bytes": 137419,
           "chars": 137419,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 82,
+              "fraction": 1.0,
+              "total": 82
+            },
             "covered": 160,
             "fraction": 0.9467,
-            "total": 169
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 78,
+              "fraction": 0.8966,
+              "total": 87
+            }
           },
           "encoding_inflation": 1.1165,
           "tokens_cl100k": 45993,
@@ -744,9 +1084,19 @@
           "bytes": 114,
           "chars": 114,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 169
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 87
+            }
           },
           "encoding_inflation": 1.5135,
           "tokens_cl100k": 37,
@@ -810,9 +1160,19 @@
           "bytes": 39983,
           "chars": 39983,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
             "covered": 3,
             "fraction": 0.0178,
-            "total": 169
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 3,
+              "fraction": 0.0345,
+              "total": 87
+            }
           },
           "encoding_inflation": 1.0858,
           "tokens_cl100k": 13290,
@@ -822,9 +1182,19 @@
           "bytes": 9510,
           "chars": 9510,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
             "covered": 87,
             "fraction": 0.5148,
-            "total": 169
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 87,
+              "fraction": 1.0,
+              "total": 87
+            }
           },
           "encoding_inflation": 1.0939,
           "tokens_cl100k": 3047,
@@ -834,9 +1204,19 @@
           "bytes": 20234,
           "chars": 20234,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 82,
+              "fraction": 1.0,
+              "total": 82
+            },
             "covered": 169,
             "fraction": 1.0,
-            "total": 169
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 87,
+              "fraction": 1.0,
+              "total": 87
+            }
           },
           "encoding_inflation": 1.0796,
           "tokens_cl100k": 6504,
@@ -846,9 +1226,19 @@
           "bytes": 137419,
           "chars": 137419,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 82,
+              "fraction": 1.0,
+              "total": 82
+            },
             "covered": 160,
             "fraction": 0.9467,
-            "total": 169
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 78,
+              "fraction": 0.8966,
+              "total": 87
+            }
           },
           "encoding_inflation": 1.1165,
           "tokens_cl100k": 45993,
@@ -871,9 +1261,19 @@
           "bytes": 114,
           "chars": 114,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 82
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 169
+            "total": 169,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 87
+            }
           },
           "encoding_inflation": 1.5135,
           "tokens_cl100k": 37,
@@ -937,9 +1337,19 @@
           "bytes": 36286,
           "chars": 36286,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
             "covered": 1,
             "fraction": 0.0001,
-            "total": 7207
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 1,
+              "fraction": 0.0014,
+              "total": 708
+            }
           },
           "encoding_inflation": 1.0446,
           "tokens_cl100k": 12838,
@@ -949,9 +1359,19 @@
           "bytes": 123303,
           "chars": 123303,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
             "covered": 708,
             "fraction": 0.0982,
-            "total": 7207
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 708,
+              "fraction": 1.0,
+              "total": 708
+            }
           },
           "encoding_inflation": 1.0689,
           "tokens_cl100k": 38555,
@@ -961,9 +1381,19 @@
           "bytes": 1504807,
           "chars": 1504807,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 6499,
+              "fraction": 1.0,
+              "total": 6499
+            },
             "covered": 7207,
             "fraction": 1.0,
-            "total": 7207
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 708,
+              "fraction": 1.0,
+              "total": 708
+            }
           },
           "encoding_inflation": 1.057,
           "tokens_cl100k": 466520,
@@ -973,9 +1403,19 @@
           "bytes": 3201814,
           "chars": 3201814,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 5230,
+              "fraction": 0.8047,
+              "total": 6499
+            },
             "covered": 5928,
             "fraction": 0.8225,
-            "total": 7207
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 698,
+              "fraction": 0.9859,
+              "total": 708
+            }
           },
           "encoding_inflation": 1.0631,
           "tokens_cl100k": 1225230,
@@ -985,9 +1425,19 @@
           "bytes": 96,
           "chars": 96,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 7207
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 708
+            }
           },
           "encoding_inflation": 1.5758,
           "tokens_cl100k": 33,
@@ -1048,9 +1498,19 @@
           "bytes": 36286,
           "chars": 36286,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
             "covered": 1,
             "fraction": 0.0001,
-            "total": 7207
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 1,
+              "fraction": 0.0014,
+              "total": 708
+            }
           },
           "encoding_inflation": 1.0446,
           "tokens_cl100k": 12838,
@@ -1060,9 +1520,19 @@
           "bytes": 123303,
           "chars": 123303,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
             "covered": 708,
             "fraction": 0.0982,
-            "total": 7207
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 708,
+              "fraction": 1.0,
+              "total": 708
+            }
           },
           "encoding_inflation": 1.0689,
           "tokens_cl100k": 38555,
@@ -1072,9 +1542,19 @@
           "bytes": 1504807,
           "chars": 1504807,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 6499,
+              "fraction": 1.0,
+              "total": 6499
+            },
             "covered": 7207,
             "fraction": 1.0,
-            "total": 7207
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 708,
+              "fraction": 1.0,
+              "total": 708
+            }
           },
           "encoding_inflation": 1.057,
           "tokens_cl100k": 466520,
@@ -1084,9 +1564,19 @@
           "bytes": 3201814,
           "chars": 3201814,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 5230,
+              "fraction": 0.8047,
+              "total": 6499
+            },
             "covered": 5928,
             "fraction": 0.8225,
-            "total": 7207
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 698,
+              "fraction": 0.9859,
+              "total": 708
+            }
           },
           "encoding_inflation": 1.0631,
           "tokens_cl100k": 1225230,
@@ -1096,9 +1586,19 @@
           "bytes": 96,
           "chars": 96,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 6499
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 7207
+            "total": 7207,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 708
+            }
           },
           "encoding_inflation": 1.5758,
           "tokens_cl100k": 33,
@@ -1159,9 +1659,19 @@
           "bytes": 622030,
           "chars": 622030,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 4,
+              "fraction": 0.0002,
+              "total": 22964
+            },
             "covered": 4,
             "fraction": 0.0002,
-            "total": 25850
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 2886
+            }
           },
           "encoding_inflation": 1.0638,
           "tokens_cl100k": 212251,
@@ -1171,9 +1681,19 @@
           "bytes": 374103,
           "chars": 374103,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22964
+            },
             "covered": 2886,
             "fraction": 0.1116,
-            "total": 25850
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 2886,
+              "fraction": 1.0,
+              "total": 2886
+            }
           },
           "encoding_inflation": 1.0825,
           "tokens_cl100k": 113411,
@@ -1183,9 +1703,19 @@
           "bytes": 3902407,
           "chars": 3902407,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 22964,
+              "fraction": 1.0,
+              "total": 22964
+            },
             "covered": 25850,
             "fraction": 1.0,
-            "total": 25850
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 2886,
+              "fraction": 1.0,
+              "total": 2886
+            }
           },
           "encoding_inflation": 1.0625,
           "tokens_cl100k": 1234946,
@@ -1208,9 +1738,19 @@
           "bytes": 107,
           "chars": 107,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22964
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 25850
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 2886
+            }
           },
           "encoding_inflation": 1.5429,
           "tokens_cl100k": 35,
@@ -1269,9 +1809,19 @@
           "bytes": 622030,
           "chars": 622030,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 4,
+              "fraction": 0.0002,
+              "total": 22964
+            },
             "covered": 4,
             "fraction": 0.0002,
-            "total": 25850
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 2886
+            }
           },
           "encoding_inflation": 1.0638,
           "tokens_cl100k": 212251,
@@ -1281,9 +1831,19 @@
           "bytes": 374103,
           "chars": 374103,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22964
+            },
             "covered": 2886,
             "fraction": 0.1116,
-            "total": 25850
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 2886,
+              "fraction": 1.0,
+              "total": 2886
+            }
           },
           "encoding_inflation": 1.0825,
           "tokens_cl100k": 113411,
@@ -1293,9 +1853,19 @@
           "bytes": 3902407,
           "chars": 3902407,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 22964,
+              "fraction": 1.0,
+              "total": 22964
+            },
             "covered": 25850,
             "fraction": 1.0,
-            "total": 25850
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 2886,
+              "fraction": 1.0,
+              "total": 2886
+            }
           },
           "encoding_inflation": 1.0625,
           "tokens_cl100k": 1234946,
@@ -1318,9 +1888,19 @@
           "bytes": 107,
           "chars": 107,
           "coverage": {
+            "below_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 22964
+            },
             "covered": 0,
             "fraction": 0.0,
-            "total": 25850
+            "total": 25850,
+            "within_shipped_depth": {
+              "covered": 0,
+              "fraction": 0.0,
+              "total": 2886
+            }
           },
           "encoding_inflation": 1.5429,
           "tokens_cl100k": 35,

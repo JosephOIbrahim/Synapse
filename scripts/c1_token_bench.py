@@ -429,6 +429,18 @@ def _tokenizer():
 
 _QUOTED = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
+# A node path's slash count IS its depth: "/obj" is depth 1, "/obj/geo1" is 2,
+# "/obj/geo1/box1" is 3. inspect_scene walks the root ("/", excluded from
+# allSubChildren) at current_depth=0 and rejects `current_depth > max_depth`,
+# so the shipped max_depth=3 reaches slash-depth 3 inclusive.
+#
+# VERIFIED-RUNTIME against the L6 payload: arm A emits slash-depths {1:9,
+# 2:133, 3:2744} and nothing deeper, i.e. exactly the 2,886 nodes at depth<=3,
+# out of 25,850 in the scene. Anything deeper was never reachable by that call
+# and must NOT be scored as though the call chose to omit it - doing so would
+# report a completeness failure that is really a configured depth window.
+SHIPPED_DEPTH_SLASHES = SHIPPED_INSPECT_SCENE_DEPTH
+
 
 def _model_visible(raw: str) -> str:
     """The string the MODEL is actually charged for, not the dict the tool returned.
@@ -465,10 +477,34 @@ def _coverage(text: str, ground_truth: List[str]) -> Dict[str, Any]:
         return {"covered": 0, "total": 0, "fraction": None}
     quoted = set(_QUOTED.findall(text))
     covered = sum(1 for p in ground_truth if p in quoted)
+
+    # Stratify by depth. Without this, "coverage 11%" conflates two very
+    # different failures: nodes the call could have reached and skipped, and
+    # nodes it could not reach at all because they live below its depth
+    # limit - many of which are locked-HDA / VOP-shader internals that no
+    # grounding tool should be expected to enumerate. Reporting only the
+    # blended figure is unfair to arm A in exactly the direction that makes
+    # the conclusion look stronger than it is.
+    shallow = [p for p in ground_truth if p.count("/") <= SHIPPED_DEPTH_SLASHES]
+    deep = [p for p in ground_truth if p.count("/") > SHIPPED_DEPTH_SLASHES]
+    shallow_cov = sum(1 for p in shallow if p in quoted)
+    deep_cov = sum(1 for p in deep if p in quoted)
+
     return {
         "covered": covered,
         "total": len(ground_truth),
         "fraction": round(covered / len(ground_truth), 4),
+        "within_shipped_depth": {
+            "covered": shallow_cov,
+            "total": len(shallow),
+            "fraction": (round(shallow_cov / len(shallow), 4)
+                         if shallow else None),
+        },
+        "below_shipped_depth": {
+            "covered": deep_cov,
+            "total": len(deep),
+            "fraction": (round(deep_cov / len(deep), 4) if deep else None),
+        },
     }
 
 

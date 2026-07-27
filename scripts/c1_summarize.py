@@ -71,6 +71,19 @@ def _flatness(values: List[int]) -> Optional[float]:
     return round(max(vals) / min(vals), 2)
 
 
+def _growth_span(values: List[Optional[int]], rungs: List[str]) -> Optional[str]:
+    """Which two rungs a growth figure actually spans.
+
+    An arm that died on the top rung has its growth computed from the highest
+    rung that SURVIVED. Printing that number beside one that spans the whole
+    ladder, unlabelled, invites a comparison that is not commensurable.
+    """
+    pairs = [(v, r) for v, r in zip(values, rungs) if v is not None]
+    if len(pairs) < 2:
+        return None
+    return f"{pairs[0][1]} -> {pairs[-1][1]}"
+
+
 def _growth(values: List[Optional[int]]) -> Optional[float]:
     """Tokens at the LARGEST rung over tokens at the SMALLEST rung.
 
@@ -179,6 +192,15 @@ def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
                 continue
             cov = c.get("coverage", {}) or {}
             covered = cov.get("covered")
+            # ONE node population, captured once. axes.node_count is taken
+            # before the geometry cook in _scene_axes, which lazily
+            # instantiates locked-HDA internals; the coverage ground truth is
+            # taken after. Reporting the smaller number as the x-axis and the
+            # larger as the denominator lets a reader recompute a different
+            # percentage than the one published. The post-cook population is
+            # the correct one - it is the scene as it stands when the payload
+            # is built - so it is used for BOTH.
+            population = cov.get("total") or axes[rung].get("node_count")
             # THE FIGURE THAT DECIDES WHETHER "CHEAPER" MEANS ANYTHING.
             # An arm looks cheap two ways: by encoding the same scene more
             # tightly, or by sending less of it. Only the first is efficiency.
@@ -190,13 +212,16 @@ def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
             )
             points.append({
                 "rung": rung,
-                "node_count": axes[rung].get("node_count"),
+                "node_count": population,
+                "node_count_precook": axes[rung].get("node_count"),
                 "parm_count": axes[rung].get("parm_count"),
                 "tokens": c["tokens_cl100k"],
                 "tokens_model_visible": c.get("tokens_cl100k_model_visible"),
                 "coverage_fraction": cov.get("fraction"),
                 "nodes_covered": covered,
                 "nodes_total": cov.get("total"),
+                "coverage_within_shipped_depth": cov.get("within_shipped_depth"),
+                "coverage_below_shipped_depth": cov.get("below_shipped_depth"),
                 "tokens_per_covered_node": per_node,
             })
         tok = [p["tokens"] for p in points]
@@ -204,17 +229,36 @@ def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
         growth = _growth(tok)
         kind = ARM_KIND.get(arm, "unknown")
         if kind not in COVERAGE_MEANINGFUL:
+            # An arm whose scene-wide coverage is the wrong metric still may
+            # NOT publish cost with no outcome at all - that is the single
+            # rule the brief said to close above all others. It gets its own
+            # outcome statement instead of a blank.
             for p in points:
                 p["coverage_note"] = (
-                    f"coverage denominator is the whole scene, but this arm is "
-                    f"'{kind}' - it does not attempt scene-wide grounding. Read "
-                    f"its cost growth, not its coverage."
+                    f"scene-wide coverage is the wrong denominator for an "
+                    f"arm of kind '{kind}'."
                 )
+                if kind == "single_node":
+                    p["outcome"] = (
+                        "SUCCEEDED - grounds exactly its one target node "
+                        "(the node with the most parameters in the scene), "
+                        "completely and untruncated. Cost is the price of "
+                        "one exhaustive node read, and the target is a "
+                        "MAX-ENVELOPE selection, not a typical node."
+                    )
+                elif kind == "usd_serialization":
+                    p["outcome"] = (
+                        "PARTIAL - serializes the stage as composed at ONE "
+                        "/stage child, so it grounds that composition "
+                        "completely and the rest of the scene not at all. "
+                        "Not scored against node paths (USD prim namespace)."
+                    )
         entry = {
             "arm_kind": kind,
             "coverage_is_meaningful": kind in COVERAGE_MEANINGFUL,
             "points": points,
             "growth_largest_over_smallest_rung": growth,
+            "growth_spans": _growth_span(tok, rungs),
             "flatness_ratio_max_over_min": ratio,
             "is_flat": (growth is not None and growth <= 1.10),
             "flat_test": (
@@ -245,18 +289,20 @@ def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
         if not pts:
             continue
         top = pts[-1]
+        n = MAX_TOOL_ITERATIONS
         per_turn[arm] = {
             "top_rung": top["rung"],
             "single_call_tokens": top["tokens"],
-            "resent_over_25_iterations": top["tokens"] * MAX_TOOL_ITERATIONS
-            * (MAX_TOOL_ITERATIONS + 1) // 2,
+            "resent_over_25_iterations": top["tokens"] * n * (n - 1) // 2,
             "basis": (
                 "No compaction exists on the panel path: the message list is "
                 "append-only and every prior tool_result is re-sent on each "
                 "subsequent API call, up to _MAX_TOOL_ITERATIONS=25 in ONE "
-                "user turn. A payload sent at iteration i is charged (26-i) "
-                "times, so N identical results cost N(N+1)/2. VERIFIED-DERIVED "
-                "from the measured single-call figure; not itself measured."
+                "user turn. A result produced at iteration i can only appear "
+                "in requests i+1..N, so it is charged (N-i) times and N "
+                "results cost N(N-1)/2 = 300x, NOT N(N+1)/2. VERIFIED-DERIVED "
+                "from the measured single-call figure; not itself measured - "
+                "no 25-iteration turn was run."
             ),
         }
 
@@ -295,6 +341,24 @@ def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
                 "node actually delivered. The gap between the two columns is "
                 "the part of the headline that is 'sent less of the scene' "
                 "rather than 'encoded it better'."
+            ),
+            "_the_residual_is_not_efficiency": (
+                "Arms A and B are the SAME function one argument apart, "
+                "emitting an identical record per node, so an encoding "
+                "advantage is impossible by construction. The residual ~1.2x "
+                "is average PATH LENGTH: arm A only reaches shallow nodes, "
+                "whose paths are shorter. Measured on the L5 payloads, "
+                "non-path characters per node are 146.5 (A) vs 140.0 (B) - "
+                "arm A is marginally WORSE per node. Read the honest "
+                "conclusion as: essentially ALL of the raw advantage is "
+                "reduced coverage, not tighter encoding."
+            ),
+            "_this_comparison_is_an_ablation_not_a_competitor": (
+                "B_inspect_scene_deep is SYNAPSE calling its own function "
+                "with a bigger depth. It is the fairest ABLATION (nothing "
+                "differs but how much scene is sent) and it is NOT an "
+                "outside-in tool. It therefore cannot, on its own, support "
+                "any claim of the form 'cheaper than sending the scene'."
             ),
             "rows": efficiency,
         },
