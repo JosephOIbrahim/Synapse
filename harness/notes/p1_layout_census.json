@@ -1,0 +1,109 @@
+{
+  "producer": "harness/notes/p1_layout_census.py",
+  "dock_width": 340,
+  "controls_passed": true,
+  "rail_row1": {
+    "width": 340,
+    "content_min": 364,
+    "overflow": 24,
+    "children": [
+      {
+        "name": "MarkDot",
+        "text": "",
+        "hint_w": -1,
+        "actual_w": 20,
+        "starved_px": 0,
+        "visible": false
+      },
+      {
+        "name": "QLabel",
+        "text": "SYNAPSE",
+        "hint_w": 79,
+        "actual_w": 45,
+        "starved_px": 34,
+        "visible": false
+      },
+      {
+        "name": "QLabel",
+        "text": "Ready",
+        "hint_w": 34,
+        "actual_w": 34,
+        "starved_px": 0,
+        "visible": false
+      },
+      {
+        "name": "DsAuthor",
+        "text": "Kimi K2.5",
+        "hint_w": 73,
+        "actual_w": 45,
+        "starved_px": 28,
+        "visible": false
+      },
+      {
+        "name": "DsMeter",
+        "text": "",
+        "hint_w": 7,
+        "actual_w": 7,
+        "starved_px": 0,
+        "visible": false
+      },
+      {
+        "name": "DsKHint",
+        "text": "Ctrl+K",
+        "hint_w": 67,
+        "actual_w": 45,
+        "starved_px": 22,
+        "visible": false
+      },
+      {
+        "name": "DsButton",
+        "text": "\u22ef",
+        "hint_w": 46,
+        "actual_w": 32,
+        "starved_px": 14,
+        "visible": false
+      },
+      {
+        "name": "DsButton",
+        "text": "Stop",
+        "hint_w": 62,
+        "actual_w": 640,
+        "starved_px": 0,
+        "visible": false
+      }
+    ]
+  },
+  "verdict": {
+    "text": "Dark_Glass bound to /materials/glass and the frame rendered clean.",
+    "width": 288,
+    "need_w": 232,
+    "need_h": 81,
+    "actual_h": 81,
+    "clipped": false
+  },
+  "result_surface_doors": [
+    {
+      "in_function": "_on_gate_raised",
+      "line": 1472
+    }
+  ],
+  "result_setter_callers": {
+    "set_render": [],
+    "set_verdict": [
+      "python/synapse/panel/synapse_panel.py:1154"
+    ],
+    "set_signed": [
+      "python/synapse/panel/synapse_panel.py:1155"
+    ],
+    "set_credit": [],
+    "set_flags": [],
+    "set_receipt": [
+      "python/synapse/panel/synapse_panel.py:1168"
+    ],
+    "set_paths": [],
+    "show_result": [],
+    "refresh_provenance": [
+      "python/synapse/panel/synapse_panel.py:1156"
+    ]
+  }
+}

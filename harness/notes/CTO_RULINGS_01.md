@@ -3648,3 +3648,70 @@ following a grep that returned zero when the number said it should return thousa
 
 The honest version of the finding is better than the published one. That is usually true, and it
 is the argument for checking.
+
+---
+
+## RULING 128 — The panel's result surface is 5/8 orphaned. P1's census found it and then stalled.
+
+P1 was dispatched to redesign the panel around one idea: **the result is the hero.** It measured
+first, as R104 demanded, and the measurement makes the redesign a different job than the brief
+described.
+
+**VERIFIED-RUNTIME, `harness/notes/p1_layout_census.py` under hython3.13 with an offscreen Qt, and
+independently re-checked by grep on HEAD:**
+
+```
+FaceReview setter        product callers
+  set_render                   0
+  set_credit                   0
+  set_flags                    0
+  set_paths                    0
+  show_result                  0
+  set_verdict                  1
+  set_signed                   1
+  set_receipt                  1
+```
+
+**Five of eight setters on the result surface have zero product callers.** The panel can render a
+result it never populates — including `set_render`, the surface the whole redesign was going to
+promote to hero, and `show_result`, the verb that would reveal it.
+
+**`decision_log.py`'s docstring names the sharpest instance:** `set_credit` was reachable from
+exactly one site carrying the label `ROUTED`. *"The panel could draw a credit it could never
+earn."*
+
+**And a live layout defect:** rail row 1 needs **364px in a 340px dock — 24px of overflow** at the
+shipped width.
+
+### Why this reframes the leg
+
+I briefed P1 to build three moves: the mark carries halt state, the result becomes the hero,
+decisions get credited. **Two of the three are not additions — they are connections.** The result
+surface exists; nothing calls it. The credit row exists; nothing earns it.
+
+**That is the week's dominant finding, in the panel:** built, correct, and connected to nothing.
+It is the same shape as five unreachable Solaris tools, three inert corpora, nine ordered checks,
+and an RSI loop that never ran.
+
+### Ruled
+
+1. **The census lands. The code does not.** The census is measurement with a calibrated reader —
+   positive and negative controls, demonstrated, per R60 — and carries zero visual risk. Landing
+   it before the demo is safe and the finding is worth having tonight.
+2. **`decision_log.py` and the `components.py` edits are HELD.** Unreviewed, and the leg stalled
+   mid-write. They are preserved on `design/p1-panel-redesign` at `9807e4d`.
+3. **The redesign is re-scoped from "build" to "connect".** A future P1 wires the five orphaned
+   setters to the mutation path before it moves a single pixel. Making an unpopulated surface
+   prettier is the least useful available work.
+4. **The 24px rail overflow is a separate, small, real fix** and does not need a redesign to carry
+   it.
+
+### On the stall
+
+P1 ran 230 minutes and last wrote at 12:02 — **three and a half hours of a live 367 MB process
+doing nothing.** The orchestrator's staleness detector measures agent transcripts, and the
+transcript was still being appended, so the leg read as healthy.
+
+**A process that writes its own log but produces nothing is indistinguishable from a working one**
+by that measure. Recorded as a known limit of the staleness check rather than fixed tonight — the
+worktree-write timestamp is the better signal and it was sitting there unread.
