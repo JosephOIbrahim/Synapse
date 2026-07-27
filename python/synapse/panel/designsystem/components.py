@@ -136,37 +136,125 @@ class StatusDot(QtWidgets.QWidget):
 
 
 class MarkDot(QtWidgets.QWidget):
-    """The SYNAPSE mark IS the status light.
+    """The SYNAPSE mark IS the status light — and, while working, the halt.
 
-    A ring at rest, a sweeping half-disc while working, a full disc when done —
-    always in the one warm note (WARM). Identity and live state collapse into a
-    single element, and because it never borrows Houdini's own orange, SYNAPSE
-    keeps a distinct presence in the host. (Pentagram pass.)
+    Idle = an open outline. Working = the outline FILLING IN, one increment per
+    completed step. Done = the outline closed, plus the check. Always in the one
+    warm note (WARM), and because it never borrows Houdini's own orange, SYNAPSE
+    keeps a distinct presence in the host. (Pentagram pass · P1.)
+
+    Two independent channels, deliberately not mixed (Law 3 — a control reports
+    what happened, never what was attempted):
+
+      LENGTH  = accumulation. How much of the ring is drawn is a function of how
+                many steps have actually completed. It is never advanced by a
+                clock and it never reaches CLOSED while work is in flight, so a
+                nearly-full ring cannot be misread as "nearly done".
+      ROTATION = liveness. The arc turns so a stalled panel is distinguishable
+                from a working one. Rotation moves the arc; it never lengthens
+                it, so the animation cannot inflate the progress it draws.
+
+    THE MARK AS THE HALT
+    --------------------
+    ``set_halt_handler`` binds the mark to the panel's EXISTING Stop. It is one
+    control with two surfaces, never a second Stop with its own idea of what
+    stopping means: the handler passed in is the same ``_on_stop`` the rail
+    button fires. The affordance is STATE-GATED to ``working`` exactly as that
+    button is — no pointing hand, no tooltip and no click when nothing is
+    running, because a stop offered while the panel is idle is the same lie as
+    a consent gate that does not gate (R18, R29).
     """
 
     _RESTING = {"idle", "ready", "connected", "disconnected", "warning", "error", ""}
+
+    # Ring geometry, in degrees. The working arc opens at MIN_SWEEP and grows
+    # toward MAX_SWEEP; MAX stays short of 360 so "closed" belongs to `done`
+    # alone and a long-running job can never paint itself finished.
+    MIN_SWEEP = 90
+    MAX_SWEEP = 300
+    STEPS_TO_FULL = 8       # increments from MIN to MAX; further steps hold at MAX
 
     def __init__(self, state="idle", diameter=16, parent=None):
         super().__init__(parent)
         self._d = diameter
         self._state = state or "idle"
         self._angle = 0
+        self._steps = 0            # completed steps this cycle -> arc LENGTH
+        self._halt = None          # bound Stop handler (the panel's own)
+        self._halt_armed = True    # cleared on press, mirroring the Stop button
         self._spin = QtCore.QTimer(self)
         self._spin.setInterval(33)  # ~30 fps; only runs while working
         self._spin.timeout.connect(self._tick)
         self.setFixedSize(diameter + 4, diameter + 4)
         self._sync_timer()
+        self._sync_halt_affordance()
 
+    # -- state ------------------------------------------------------------
     def set_state(self, state):
         state = state or "idle"
         if state == self._state:
             return
         self._state = state
         self._sync_timer()
+        self._sync_halt_affordance()
         self.update()
 
+    def begin_cycle(self):
+        """A new work cycle starts: the ring empties and the halt re-arms."""
+        self._steps = 0
+        self._halt_armed = True
+        self._sync_halt_affordance()
+        self.update()
+
+    def advance(self):
+        """One step actually completed — the ring grows by one increment.
+
+        Called from the tool-status edge, so the length is a record of work
+        that happened. Nothing else may call it, and nothing advances it on a
+        timer.
+        """
+        self._steps += 1
+        self.update()
+
+    def progress(self):
+        """0.0..1.0 — the drawn fraction between MIN_SWEEP and MAX_SWEEP."""
+        if self.STEPS_TO_FULL <= 0:
+            return 1.0
+        return min(1.0, self._steps / float(self.STEPS_TO_FULL))
+
+    # -- the halt affordance ----------------------------------------------
+    def set_halt_handler(self, handler):
+        """Bind the panel's EXISTING Stop to the mark. Not a second control."""
+        self._halt = handler
+        self._sync_halt_affordance()
+
+    def halt_available(self):
+        """True only when a press would really abort something right now."""
+        return bool(self._halt is not None
+                    and self._state == "working"
+                    and self._halt_armed)
+
+    def _sync_halt_affordance(self):
+        """Cursor + tooltip appear only while the halt is genuinely live."""
+        if self.halt_available():
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+            self.setToolTip("Stop — abort the agent loop")
+        else:
+            self.unsetCursor()
+            self.setToolTip("")
+
+    def mousePressEvent(self, event):
+        if not self.halt_available():
+            return super().mousePressEvent(event)
+        self._halt_armed = False      # the press registered — no confusing re-press
+        self._sync_halt_affordance()
+        self._halt()
+        event.accept()
+
+    # -- paint ------------------------------------------------------------
     def _sync_timer(self):
-        # Reduced-motion: a working mark stays a static disc (no sweep).
+        # Reduced-motion: a working mark stays static (no rotation). Its LENGTH
+        # still tracks completed steps, so the honest signal survives.
         if self._state == "working" and not t.reduced_motion():
             if not self._spin.isActive():
                 self._spin.start()
@@ -183,9 +271,9 @@ class MarkDot(QtWidgets.QWidget):
         col = QtGui.QColor(t.WARM)
         m = 2
         # Monolinear: ONE weight, ONE line, no fills and no dual-tone. State is
-        # carried by how much of the circle is drawn -- an open ring at rest, a
-        # sweeping half-arc while working, a closed ring when done -- never by a
-        # second tone or a heavier stroke. Diameter 16 = the 24px grid x 2/3.
+        # carried by how much of the circle is drawn -- an open outline at rest,
+        # an arc that FILLS IN as steps land, a closed ring when done -- never by
+        # a second tone or a heavier stroke. Diameter 16 = the 24px grid x 2/3.
         pen = QtGui.QPen(col)
         pen.setWidthF(t.STROKE_PX)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
@@ -195,7 +283,12 @@ class MarkDot(QtWidgets.QWidget):
         rect = QtCore.QRectF(inset, inset,
                              self._d - t.STROKE_PX, self._d - t.STROKE_PX)
         if self._state == "working":
-            p.drawArc(rect, int(self._angle * 16), 180 * 16)   # sweeping half-arc
+            # Length = accumulation, rotation = liveness. Qt angles are
+            # 1/16 degree, 0 at 3 o'clock, positive counter-clockwise; the span
+            # is negated so the ring fills CLOCKWISE from the rotating head.
+            sweep = self.MIN_SWEEP + (self.MAX_SWEEP - self.MIN_SWEEP) * self.progress()
+            start = (90 - self._angle) % 360
+            p.drawArc(rect, int(start * 16), int(-sweep * 16))
         elif self._state == "done":
             p.drawEllipse(rect)                                # closed ring
             # ...plus a check, drawn with the SAME pen: the completed sweep.
@@ -206,7 +299,7 @@ class MarkDot(QtWidgets.QWidget):
             path.lineTo(cx + rr * 0.46, cy - rr * 0.34)
             p.drawPath(path)
         else:
-            # at rest: an OPEN ring -- one gap, same line, nothing started yet.
+            # at rest: an OPEN outline -- one gap, same line, nothing started.
             p.drawArc(rect, 60 * 16, 300 * 16)
         p.end()
 
