@@ -2176,3 +2176,190 @@ independent observer that did not know the fix existed.
 3. **Any leg that ran concurrently with another session has its receipt flagged.** H6's findings
    held up, but "two writers, one worktree" is a condition under which a receipt's provenance is
    not clean, and it should be visible rather than inferred.
+
+---
+
+# ADDENDUM — H8, THE RULING AUDIT (R79–R84)
+
+`green`. The audit passed sensitivity **and** specificity, found two known-wrong rulings beyond
+the four planted, and returned the hardest numbers in this document.
+
+```
+SOUND                22   (28%)
+UNENFORCED           31   (40%)
+SUPERSEDED_UNMARKED  13
+EVIDENCE_FAILS       12
+CONTRADICTED / SCOPE_ERROR / UNFALSIFIABLE   0 primary, 4/3/1 on any-basis
+```
+
+---
+
+## RULING 79 — The audit is ACCEPTED, and its specificity is why.
+
+> **specificity — PASS.** R14, R35, R60, R75 returned SOUND unanimously. *A method that flagged
+> all twelve would have "caught" all four and proved nothing (Law 1 applied to the audit).*
+
+I asked for sensitivity: catch the four planted. **It supplied specificity unprompted** — proof
+that it could also return SOUND, which is the half that makes the other half mean anything. An
+audit that flags everything detects nothing.
+
+It also found **R50 and R70** independently, neither planted. **Six rulings are known wrong, not
+four.**
+
+**Ruled: accepted in full.** Every verdict below rests on a method that demonstrated it can both
+fire and hold fire.
+
+---
+
+## RULING 80 — 31 UNENFORCED. Forty percent of this document is intention.
+
+I predicted "not a small number" and guessed low. **31 of 78 rulings create a rule with no
+mechanism.**
+
+This document argues, repeatedly and at length, that structure beats intention. The deny fence
+held where "read-only" as an instruction did not. The launch marker held where killing a window
+did not. The pre-push hook held where a deny rule matching command form did not.
+
+**And 40% of the rulings that established that principle are themselves pure intention.**
+
+**H8-F8 makes it concrete and unarguable:** *nine rulings explicitly order a check into
+`checks.py` or the check set. **None of the nine exists.*** I ordered nine checks across two days
+and built zero.
+
+**Ruled:**
+1. **Triage all 31, and the default is WITHDRAW, not build.** A rule nobody enforces and nobody
+   misses is spent — it cost attention when written and costs more every time it is read as
+   binding.
+2. **The nine ordered-but-absent checks are the priority set.** Each was ordered because something
+   broke. Build them or strike the ruling that ordered them — leaving an order unexecuted is worse
+   than either, because the document reads as though the check exists.
+3. **No ruling may use the word "adopted" for a rule with no mechanism.** "Adopted" implies
+   enforcement. `PROPOSED` is the honest word until a check exists.
+
+---
+
+## RULING 81 — H8-F1: my own fence guarantees the defect it is blamed for.
+
+> Unmarked supersession is **structurally guaranteed, not an author oversight.**
+> `Edit(harness/notes/CTO_RULINGS_01.md)` is denied in BOTH agent profiles, so no leg agent can
+> mark a ruling it supersedes.
+
+13 `SUPERSEDED_UNMARKED` — and the reason is a fence I wrote. Article VII correctly stops an agent
+editing the rulings. The consequence is that supersession can only be marked **if I remember**,
+which is the exact failure mode the whole document exists to eliminate.
+
+Today alone: R73 refuted R48, R74 inverted R64, R66 replaced R58's remedy, R70 corrected Ruling 15
+— and in every case a reader of the original sees text that still reads as current.
+
+**Ruled — the ruling question is answered YES.** An append-only
+`harness/notes/RULING_AMENDMENTS.md` that agents MAY write, referenced from the head of
+`CTO_RULINGS_01.md`. The fence stays exactly where it is: an agent still cannot edit a ruling, but
+it can now **record that one is contradicted**, and the record is where a reader will see it.
+
+**The general form, and it is the sharpest thing in this audit:** *a prohibition with no channel
+produces silent drift.* Fencing a surface without providing a sanctioned path around it does not
+prevent the need — it hides the evidence that the need existed.
+
+---
+
+## RULING 82 — H8-F4: the evidence for 40% of this document is not on the branch.
+
+> The evidence base for rulings 48–78 is not on the branch that carries them. **`H7.json` was
+> never written at all.**
+
+Thirty-one rulings cite receipts that are not in version control on this branch — `LEDGER.json`,
+`H5.json`, `H2b.json` — and one cites a receipt **that does not exist**.
+
+This is Law 5 at document scale. A ruling whose anchor cannot be opened by the next reader is not
+a ruling; it is a recollection with a number on it.
+
+**Ruled:**
+1. **Commit the receipts. Before the merge, not after.** They are evidence, and F1's own brief
+   ordered exactly this consolidation.
+2. **H7 must be re-run or its rulings downgraded.** I read H7 findings into R65–R71 from a receipt
+   that H8 says was never written. Either it exists and F1 moved it, or I ruled on something I
+   cannot now produce — **and I must determine which before those rulings stand.**
+3. **A ruling may not cite an uncommitted anchor.** Add it to the check set — the same set that is
+   currently empty.
+
+---
+
+## RULING 83 — H8-F3 and F6: the document breaks its own laws in the act of stating them.
+
+**H8-F3:** *the document violates its own R66 in the file that issues the ban.* R66 banned the
+unpinned SideFX URL; the ruling that bans it uses it.
+
+**H8-F6:** *R50 reports what was attempted, not what happened — Law 3 violated in the act of
+adopting a law.*
+
+**H8-F5:** R70's factual premise is refuted by an executed two-sided control.
+
+Three separate instances of a rule being broken **in the sentence that establishes it.** Not
+carelessness in application — carelessness in authorship, at the moment of maximum attention to
+the rule in question.
+
+**Ruled:** all three corrected. And recorded as the strongest available argument for R80's third
+clause: **stating a rule is not evidence of following it**, and the author is least able to see
+this in the paragraph where they are most certain.
+
+---
+
+## RULING 84 — H8-F7 is the one to sit with.
+
+> **An unexecuted ruling is the only reason the released documentation is correct.**
+
+A ruling nobody carried out is load-bearing for a public artifact. Had it been executed, the shipped
+docs would be wrong.
+
+I am not ruling this into a principle, because I do not think it generalises — it is luck, and
+reading it as vindication would be exactly the error. It is recorded because **the 31 UNENFORCED
+rulings are not uniformly inert**, and a blanket withdrawal would have removed this one.
+
+Triage each on its own evidence. R80's default stands; this is why the default is a default and
+not a rule.
+
+---
+
+## RULING 85 — R82 is WITHDRAWN. H8-F4 is refuted, and the reason matters more than the correction.
+
+R82 accepted H8-F4's claim that *"the evidence base for rulings 48–78 is not on the branch"* and
+that *"`H7.json` was never written at all."* I ruled that H7 must be re-run or its rulings
+downgraded.
+
+**Verified 2026-07-26 22:5x, one command:**
+
+```
+harness/notes/receipts/H7.json          26 KB, present
+git ls-files harness/notes/receipts/    23 receipts, ALL TRACKED
+git status --porcelain                   only F1.json modified
+```
+
+`H7.json` exists, is committed, and F1's consolidation completed correctly. **R65–R71 rest on a
+receipt that is in version control.** R82 is withdrawn in full.
+
+### Why H8 got it wrong, and why that is not a failure of the audit
+
+H8 ran while F1 was consolidating receipts from thirteen worktrees into the main tree. It read a
+tree mid-move. **The finding was true when observed and false by the time it was written.**
+
+This is the third distinct instance today of a *state machine reading a signal that is only true
+eventually* — the receipt watcher pointed at the wrong tree, the double-dispatch race between
+launch and `settings.local.json`, and now an audit observing a consolidation in flight.
+
+**Ruled, and this is the generalisable part:** a finding about the *state of the tree* must record
+**when** it was observed and what else was running. `VERIFIED-STATIC` is not a timeless tier when
+another leg holds a write lock on the same paths. Receipts already carry `commit_at_run`; findings
+about tree state need the same discipline.
+
+### And the correction is itself the argument for R81
+
+I ruled R82 from H8's receipt without opening `H7.json` — the anchor was one command away and I
+took the finding on trust because the audit had just passed a rigorous control.
+
+**An instrument that passes its control is not thereby correct on every claim.** The control
+proved H8 could distinguish sound rulings from unsound ones. It proved nothing about whether a
+given file existed at a given moment.
+
+I have now made this error twice in one session: citing `store.py:830` as exemplary without
+reading it (R76), and ruling R82 on an unopened anchor. **Both times the source was credible and
+that was exactly why I did not check.**
