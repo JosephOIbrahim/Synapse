@@ -21,7 +21,7 @@ The fault is in the main-thread marshal under MCP, not in introspection. **The p
 
 **There is no AI floor in Houdini 22.** 22.0.368 registers no LLM, agent, assistant or MCP surface — a **proven absence**, not an assumption. This refutes the positioning document's opening premise, and it strengthens the position: the slot is empty rather than commoditised.
 
-**The routing self-improvement loop has never run.** The package is absent from the live process's `sys.modules`, its reward signal is a hardcoded constant, and its output is read by nothing — while **4,357 "Epoch complete" lines** sit in the operator's log directory, every one written by unit tests.
+**The routing self-improvement loop has never run.** The package is absent from the live process's `sys.modules`, its reward signal is a hardcoded constant, and its output is read by nothing — while **4,795 'Epoch N complete' records** sit in the operator's log directory, every one written by unit tests.
 
 **A control only rules out what it actually exercises.** A fast health-check response was read as proving the marshal worked. The health check does not use the marshal.
 
