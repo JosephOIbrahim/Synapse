@@ -1,0 +1,293 @@
+{
+  "leg": "H4",
+  "name": "PANEL FINISH — one colour authority, resolved at the source",
+  "schema": "receipt/v1",
+  "started": "2026-07-27T08:40:00Z",
+  "ended": "2026-07-27T12:05:00Z",
+  "status": "amber",
+  "status_reason": "Every WORK item shipped and is measured, the product is committed on repair/h4-panel-finish, the gate suite is 5022 passed / 0 failed (baseline 4989 / 0), and L4's ungraded 40% is now graded. Amber, not green, for two honest reasons stated rather than buried: (1) the ORACLE clause `grep -c 't\\.SIGNAL' python/synapse/panel/*.py -> 0` is NOT met as literally written — it returns 12 — and I did not rewrite the oracle to make it pass (H4.R1); (2) one PRE-EXISTING failure remains in tests/panel/ (test_dead_verb_hidden), which demands removing a user-visible affordance and is explicitly out of this leg's scope.",
+
+  "model": "claude-opus-5[1m] (Opus 5, 1M context)",
+  "settings_profile": "relay — orchestrator ran with pytest/python/git-write available; no agent ran under agent-settings.json, and no suite claim is made on a narrow-profile agent's behalf",
+  "commit_at_run": "3660905",
+  "mode": "A (harness/state/drop.json absent)",
+  "branch": "repair/h4-panel-finish",
+  "agents": ["census:collision", "census:test-blast-radius", "census:size-hero", "census:verification-surface", "census:coniferous-and-accents", "attack:plan", "attack:census"],
+  "agent_fence": "All 7 were READ-ONLY census/attack agents. Fence verified by `git status` before and after the fan-out: no repo file was written by any agent. Every repo write in this leg was made by the orchestrator.",
+
+  "commits": [
+    { "sha": "6e8aa2c", "what": "chore(harness): H4 verification instruments + the BEFORE screenshot set — captured on untouched source so the diff is real, not reconstructed" },
+    { "sha": "92a48eb", "what": "fix(panel): H4 - one colour authority, resolved at the source" }
+  ],
+
+  "suite": {
+    "gate": {
+      "interpreter": "system python 3.14.2",
+      "producer": "python -m pytest tests/ -q -p no:cacheprovider",
+      "before": { "passed": 4989, "failed": 0, "skipped": 137 },
+      "after": { "passed": 5022, "failed": 0, "skipped": 137 },
+      "delta_passed": 33,
+      "ratchet_floor": "harness/verify/suite_baseline.json at merge-base = 4875 passed / 0 failed. Held with margin.",
+      "commandment_7": "HELD. Count strictly increased, zero failures both sides, nothing weakened, skipped, xfailed or deleted."
+    },
+    "panel_slice": {
+      "interpreter": "hython3.13 (Houdini 22.0.368, Python 3.13.10) — the shipping interpreter, the only one with PySide6",
+      "producer": "hython3.13 -m pytest tests/panel/ -q -p no:cacheprovider",
+      "before": { "passed": 27, "failed": 5 },
+      "after": { "passed": 64, "failed": 1 },
+      "note": "The 5 pre-existing failures were on UNTOUCHED HEAD and are recorded below as H4.F7/H4.F8. Four were fixed as fix-forward; the fifth is out of scope."
+    },
+    "shipping_full": {
+      "interpreter": "hython3.13",
+      "producer": "hython3.13 -m pytest tests/ -q --continue-on-collection-errors -p no:cacheprovider",
+      "before": { "passed": 4845, "failed": 99, "skipped": 131, "errors": 8 },
+      "after": "NOT RE-MEASURED. The 99 are the known environment buckets (R47) and are not a ratchet floor. Not claiming a number I did not re-run."
+    }
+  },
+
+  "oracle": {
+    "grep_t_SIGNAL_is_zero": {
+      "verdict": "NOT MET as literally written",
+      "measured": "12 (chat_display 1, face_review 2, face_work 2, gate_widget 3, health_infographic 1, message_formatter 1, synapse_panel 2)",
+      "why": "Every one of those 12 binds `t`/`_t` to synapse.panel.designsystem.tokens — they are the sites Mile 7 already converted, and they are CORRECT. A substring grep cannot tell `t`=bridge from `t`=designsystem; it is an uncalibrated reader (R60) applied to the oracle itself. Making it return 0 would require renaming the alias in six files that are already right, replacing one alias with two for the same module — the exact shadow this leg removed from styles.py. I did not soften the clause and I did not fake it (Law 7). It is reported red and escalated as H4.R1, with the semantic equivalent measured and passing below.",
+      "semantic_equivalent": "tests/panel/test_token_authority.py::test_no_panel_module_binds_the_bridge_for_a_shared_colour — PASSES. Zero references to a shared colour name through a bridge-bound alias, anywhere under panel/ at any depth, resolving relative imports by the file's own package and catching getattr() reads."
+    },
+    "tokens_py_reexports_and_declares_no_colour": {
+      "verdict": "PASS",
+      "producer": "tests/panel/test_token_authority.py::test_bridge_declares_no_colour_of_its_own + ::test_exactly_one_module_under_panel_declares_colours",
+      "evidence": "Zero hex-literal assignments in panel/tokens.py. Across ALL of panel/ at any depth, designsystem/tokens.py is the only module holding colour literals. Both pins FAILED on the unfixed tree."
+    },
+    "every_token_name_present_before_is_present_after": {
+      "verdict": "PASS",
+      "producer": "python harness/notes/assert_panel_tokens.py -> exit 0",
+      "evidence": "token inventory before: 162 names (commit 1e135a2) / names asserted: 162 (+40 re-exports) / missing: 0 / RESULT: ALL 162 PRESENT",
+      "caveat": "This oracle's READER was defective and I fixed the reader, not the baseline. See H4.F6 — it matched alias-qualified strings ('t.VOID'), so repointing t.VOID to _ds.VOID read as a dropped token. It now compares TOKEN NAMES across any known alias, which is strictly stronger, and it carries a self-test that fails against a blind reader (proven: real reader True, always-yes reader False). The baseline JSON was not edited."
+    },
+    "pytest_k_panel_zero_failed_count_strictly_increases": {
+      "verdict": "PARTIAL",
+      "count": "27 -> 64 passed under hython (strictly increases). Failed 5 -> 1.",
+      "why_not_zero": "The 1 remaining, test_dead_verb_hidden, was failing on untouched HEAD before this leg touched anything, and it demands HIDING the 'open in render view' verb — removing a user-visible affordance, which the brief puts explicitly out of scope ('Removing ORPHAN affordances. 17 of them, its own leg, its own evidence'). Left red deliberately. A red oracle is a finding (Law 7)."
+    },
+    "no_routing_or_server_import_added_to_panel": {
+      "verdict": "PASS",
+      "producer": "git diff 3660905 -- python/synapse/panel/ | grep '^+' | grep -c 'synapse.routing\\|synapse.server' -> 0",
+      "evidence": "9 such imports existed at base, 9 exist now, 0 appear on an added line. Measured as a DELTA, which is what the clause says, not as an absolute count."
+    },
+    "screenshot_diff_every_view": {
+      "verdict": "PASS",
+      "producer": "hython3.13 harness/notes/panel_shot.py --out design/repair_h4/{before,after}",
+      "evidence": "16 views, 16/16 rendered on both sides, committed under design/repair_h4/. .gitignore carried a blanket *.png that would have silently swallowed the entire deliverable; a narrow exemption for design/repair_h4/ was added."
+    },
+    "L4_ungraded_40_percent_re_run": {
+      "verdict": "PASS — both slices graded",
+      "producer": "QT_QPA_PLATFORM=offscreen hython3.13 audit_panel.py --strict -> exit 0, saved at design/repair_h4/G3_audit_strict.txt",
+      "result": "G3 RESULT: pass · 1 WARN. All five slices ran, including the two L4 shipped UNGRADED ('USABILITY - live offscreen build' and 'v9 INVARIANTS - same-pane law + state-as-status'). 39 checks. L4's static-only baseline was 'pass, 2 WARN'.",
+      "the_one_warn": "interactive targets: 22 found, 13 under 26px. Pre-existing, unrelated to tokens, not introduced here.",
+      "what_this_closes": "L4's receipt said 'The QSS actually parsing, the ring/arc/check glyphs actually rasterising, the sans flip's real metrics, and the gradient's rendered appearance are ALL unverified live.' They are now verified live."
+    }
+  },
+
+  "rendered_evidence": {
+    "producer": "hython3.13 harness/notes/panel_accent_census.py design/repair_h4/before design/repair_h4/after",
+    "method_note": "The BEFORE set was RE-SHOT from the pre-change source in a detached worktree at 6e8aa2c using the CORRECTED instrument, so both sides went through identical code. The worktree was removed after.",
+    "legacy_cyan": { "tol_8": "227 -> 0", "tol_24": "295 -> 0", "tol_48": "402 -> 0" },
+    "ok_soft_to_coniferous": { "tol_8": "OK_SOFT 122 -> 0, CONIFEROUS 0 -> 130" },
+    "read_the_greens_at_tol_8_only": "OK_SOFT (111,191,142) and CONIFEROUS (110,143,114) are 1 apart in red and exactly 48 apart in green, so at the +-48 gate band they match each other and both rows inflate. The cyan verdict is safe at any band — LEGACY_CYAN is 143 from SIGNAL in red alone.",
+    "the_visible_defect": "chat_recipe_book.png / chat_apex_recipes.png BEFORE show the recipe headings in cyan inside a transcript whose chrome is the design system's blue — two different accent blues in one frame (142+42 and 85+42 px). AFTER, one accent."
+  },
+
+  "findings": [
+    {
+      "id": "H4.F1",
+      "claim": "The collision was 15 divergent names, not one. Beyond SIGNAL/SIGNAL_HOVER/SIGNAL_PRESS it covered six neutrals (VOID, NEAR_BLACK, CARBON, GRAPHITE, SLATE, SILVER), BOTH type families (JetBrains Mono vs Space Mono, DM Sans vs Space Grotesk, plus their two CSS forms) and two panel dimensions (PANEL_MIN_HEIGHT 400 vs the ratified 420, PANEL_PREF_WIDTH 320 vs 340). The bridge silently reverted the Mile-1b height ruling.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/panel/tokens.py vs python/synapse/panel/designsystem/tokens.py, diffed by import under hython3.13",
+      "severity": "blocker",
+      "disposition": "fixed"
+    },
+    {
+      "id": "H4.F2",
+      "claim": "There were NINE colour-declaring sites, not two. The bridge, the design system, the off-repo ~/.synapse/design file, and six call-site `except ImportError` arms each holding a private palette. context_bar.py's was a Material-ish set (FIRE #e8833a, GROW #4caf50, WARN #ff9800, ERROR #f44336) matching NEITHER other authority — a context bar rendered under it showed a status grammar that exists nowhere else in the product.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/panel/context_bar.py (pre-change fallback arm); same shape in apex_recipes, recipe_book, error_translator, command_palette, message_formatter",
+      "severity": "blocker",
+      "disposition": "fixed — all six removed"
+    },
+    {
+      "id": "H4.F3",
+      "claim": "Those fallback arms were REACHABLE, so they were live third states rather than dead code. Loading panel/apex_recipes.py by path with synapse off sys.path executes the arm and yields _SIGNAL = #00D4FF. Classified before removal (Law 4): no caller in python/ or tests/ loads a panel module by path, so the arms had no user and their only observable effect was painting a different design system.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "probe: hython3.13 spec_from_file_location('ar','python/synapse/panel/apex_recipes.py') with SYNAPSE paths stripped -> 'STANDALONE LOAD OK; _SIGNAL= #00D4FF'",
+      "severity": "major",
+      "disposition": "removed rather than corrected — a standalone load now fails loudly instead of silently rendering the wrong accent (Law 3). Escalated as H4.R2 because deleting a degradation path is a judgement call."
+    },
+    {
+      "id": "H4.F4",
+      "claim": "The bridge's fallback literals were not a faithful copy of the source they stood in for: NEAR_BLACK was #3A3A3A in the fallback and #3C3C3C in the live off-repo file. Reading the except-arm was never reading the panel, which is why a source-only census of this defect is untrustworthy and the runtime diff was necessary.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/panel/tokens.py:41 (pre-change) vs ~/.synapse/design/tokens.py:23",
+      "severity": "major",
+      "disposition": "moot — both are gone"
+    },
+    {
+      "id": "H4.F5",
+      "claim": "SIZE_HERO's live value is 19, in every import path. The 44 at tokens.py:59 sat in the off-repo fallback block and was overwritten unconditionally by the designsystem import a few lines later, so it could not survive to be read even when the fallback ran. The same held for all six SIZE_* fallback assignments.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/panel/tokens.py:59 (dead) vs :83 (winner), pre-change",
+      "severity": "debt",
+      "disposition": "fixed — the whole ambiguity is gone; the scale has one source and cannot be double-assigned"
+    },
+    {
+      "id": "H4.F6",
+      "claim": "THE METHOD FINDING, and it hit three readers including two I wrote. (a) L4's own token oracle assert_panel_tokens.py matched ALIAS-QUALIFIED strings ('t.VOID'), so an alias repoint read as a dropped token — and it would equally have PASSED a swap of one token for another behind the same alias. (b) My reader resolved relative imports globally: `from . import tokens` is the bridge in panel/ and the design system in panel/designsystem/, and the global rule reported all 21 of designsystem/qss.py's correct references as offenders — a repair driven by it would have edited a file that was never broken. (c) My reader walked only ast.Attribute, so context_bar's three getattr(_t, 'TEXT', default) reads were invisible.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "harness/notes/assert_panel_tokens.py; tests/panel/test_token_authority.py::alias_bindings and ::token_references",
+      "severity": "blocker",
+      "disposition": "all three fixed, each with a named control: test_reader_resolves_a_relative_import_by_the_files_own_package, test_reader_sees_a_getattr_token_read, and assert_panel_tokens._selftest. Every one was found by pointing the reader at the tree and READING the output instead of believing it."
+    },
+    {
+      "id": "H4.F7",
+      "claim": "Three consent-honesty checks could not run at all on the shipping interpreter. tests/panel/test_gate_consent_honesty.py used object.__new__(GateWidget); a Shiboken type refuses it. Under stock python the file never ran (no PySide6) so the defect was invisible; under hython3.13 all three errored before reaching a single assertion. A safety check that cannot execute is Law 1 wearing a green coat.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "tests/panel/test_gate_consent_honesty.py:77",
+      "severity": "major",
+      "disposition": "fixed (GateWidget.__new__). Three consent checks now actually run and pass."
+    },
+    {
+      "id": "H4.F8",
+      "claim": "synapse_panel.py had no module logger, so _wire_gate's `except Exception: pass` swallowed a consent-relay wiring failure in silence — if that relay fails, a raised gate stops bringing the Review face forward and the artist is asked to approve something they are not shown. My first fix used logger.debug and was itself a decoration: the panel's own bootstrap calls ensure_file_logging(), which sets the `synapse` logger to INFO, so a debug record on that path is discarded in EVERY live session. The test that demanded the trail was also order-dependent — it passed alone and failed after any test that builds a panel, for exactly this reason.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/panel/synapse_panel.py:_wire_gate; tests/panel/test_failure_trail.py::test_runtime_paths_log",
+      "severity": "major",
+      "disposition": "fixed at WARNING, and the test now pins the `synapse` logger to its PRODUCTION level for the duration — which makes it stricter and order-independent, not looser."
+    },
+    {
+      "id": "H4.F9",
+      "claim": "TWO OF MY OWN INSTRUMENTS WERE DEFECTIVE and a hostile review caught both. (a) panel_shot.py applied no stylesheet, so six of sixteen standalone views rendered on Qt's DEFAULT LIGHT chrome (#EFEFEF backgrounds) — a shot set that looked like evidence and showed a panel no artist has seen. (b) panel_accent_census.py gated on exact matches at +-8 while its docstring claimed 'point any panel view at #00D4FF and the CYAN row goes non-zero'. False: context_bar and hda_describe were both bound to the cyan in source and both scored ZERO, because small antialiased glyph strokes never reach the pure colour (context_bar: 0 within +-8, 2 within +-24, 31 within +-48). A leg could have claimed a clean sweep with cyan text still on screen.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "harness/notes/panel_shot.py; harness/notes/panel_accent_census.py",
+      "severity": "blocker",
+      "disposition": "both fixed. The shot harness now applies qss.stylesheet() to every view; the census reports a tolerance ladder (8/24/48), gates on the widest band, refuses to report if its own control fails, and documents what the wide band cannot discriminate. BOTH screenshot sets were then re-shot with the corrected instrument."
+    },
+    {
+      "id": "H4.F10",
+      "claim": "The FONT_SCALE ladder was the same two-authority defect in a non-colour dimension, with a live behavioural effect rather than a cosmetic one: the bridge declared [0.75, 1.0, 1.25, 1.5] and the design system (1.0, 1.15, 1.25, 1.4, 1.6). synapse_panel.py:1513 stepped the second while chat_panel.py:149,458 stepped the first — one panel, two Aa controls, different stops. A colour-only audit would not have found it.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "python/synapse/panel/tokens.py:175 (pre-change) vs designsystem/tokens.py:367",
+      "severity": "major",
+      "disposition": "fixed — one ladder, MIN/MAX derived from the steps so they cannot drift, pinned by test_the_panel_has_exactly_one_font_scale_ladder"
+    },
+    {
+      "id": "H4.F11",
+      "claim": "CONIFEROUS #6E8F72 is a real contrast REDUCTION against the OK_SOFT #6FBF8E it replaces: 3.988 vs 6.506 against PANEL, 3.358 vs 5.478 against SURFACE, 4.580 vs 7.471 against GROUND. It clears the WCAG 3:1 non-text floor everywhere, which covers the status DOTS it mostly colours, but designsystem/qss.py:121 uses it as TEXT on a DsVerb button, and 3.988 is below the 4.5 AA floor for small text. NO_SOFT (4.257) is already in that band and shipped, so the muted family as a whole sits there.",
+      "truth": "VERIFIED-DERIVED",
+      "anchor": "measured with the repo's own machinery, designsystem/tokens._contrast; the qss text usage at designsystem/qss.py:121",
+      "severity": "debt",
+      "disposition": "LANDED AS SPECIFIED and reported. The value is the Design Director's call (L4_COHERE_SPEC.md:74) and Article I says an agent does not retune what a number should be. Measured and escalated as H4.R3, not silently adjusted."
+    },
+    {
+      "id": "H4.F12",
+      "claim": "The contrast sweep in audit_panel.py still covers only the body and secondary text roles, so CONIFEROUS — like MUSHROOM before it (L4.F3 / L4.R4) — is a colour token outside the one gate that would catch a legibility regression. Each new token widens the blind spot.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "audit_panel.py, seeded-contrast sweep section",
+      "severity": "debt",
+      "disposition": "NOT fixed. Widening the audit is an audit edit and L4 was correctly told not to do that from inside a leg it was being graded by. Re-raised, since L4.R4 recommended extending the sweep and it has not been done."
+    },
+    {
+      "id": "H4.F13",
+      "claim": ".gitignore carried a blanket `*.png` that would have silently swallowed this leg's entire screenshot deliverable — the receipt would have cited 32 images that were not in the tree.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": ".gitignore:80 (`git check-ignore -v` on design/repair_h4/before/panel_direct_chat.png)",
+      "severity": "major",
+      "disposition": "fixed with a NARROW exemption for design/repair_h4/ only; every other *.png stays ignored"
+    },
+    {
+      "id": "H4.F14",
+      "claim": "tests/panel/test_dead_verb_hidden fails on untouched HEAD: the 'open in render view' verb is present and shown while the render bridge is absent — a visible no-op. Not caused by this leg and not fixed by it.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "tests/panel/test_failure_trail.py:151",
+      "severity": "major",
+      "disposition": "OUT OF SCOPE — hiding a user-visible affordance belongs to the ORPHAN-affordance leg the brief carves out. Recorded so the next leg inherits a measured starting point rather than a rumour."
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "H4.R1",
+      "question": "The oracle clause `grep -c 't\\.SIGNAL' python/synapse/panel/*.py -> 0` is not met (returns 12), and I believe the clause is measuring the wrong thing rather than the code being wrong. All 12 bind the alias to the design system. Accept the semantic pin in its place, or require the textual rename?",
+      "options": [
+        "Accept the semantic pin (test_no_panel_module_binds_the_bridge_for_a_shared_colour) as the governing form and retire the grep clause",
+        "Require the textual rename: `t` -> `_ds` across six files so the grep returns 0",
+        "Keep both: rename, AND keep the semantic pin"
+      ],
+      "recommendation": "Option 1. The grep cannot distinguish `t`=bridge from `t`=designsystem, which is precisely the uncalibrated-reader failure R60 rules on — applied here to the oracle itself. Renaming six already-correct files would give one module two alias names, the exact shadow this leg removed from styles.py, for zero semantic gain. But this is your call, not mine: I did not rewrite the oracle to suit the work, which is why the leg is amber.",
+      "cost_of_delay": "None functional. The collision is closed and pinned either way; this decides how the clause is written in future briefs.",
+      "unblocks": "harness/prompts/h4.md ORACLE block"
+    },
+    {
+      "id": "H4.R2",
+      "question": "Six call-site `except ImportError` arms held private palettes. They were reachable (a by-path load runs them) but unused (no caller in the tree loads a panel module by path). I DELETED them, so a standalone by-path load now raises instead of rendering a different design system. Correct trade?",
+      "options": [
+        "Confirm deletion — fail loudly beats rendering the wrong accent silently",
+        "Restore the arms but source them from the design system by path",
+        "Restore them as-is and accept the extra palettes"
+      ],
+      "recommendation": "Option 1, which is what shipped. Law 3 says a path that cannot do the thing should raise, not succeed wrongly, and a palette that silently disagrees with the product is the same class of defect as a consent gate that does not gate (R18). Option 2 was attempted and abandoned: designsystem/tokens.py uses a relative import for its theme seam, so it cannot be loaded by path without package context, and the retry dance was more machinery than the degradation path was worth.",
+      "cost_of_delay": "Low. Reversible in one commit if a real by-path consumer surfaces.",
+      "unblocks": "python/synapse/panel/{apex_recipes,recipe_book,error_translator,command_palette,context_bar,message_formatter}.py"
+    },
+    {
+      "id": "H4.R3",
+      "question": "CONIFEROUS #6E8F72 landed as specified and is a measured contrast reduction (3.988 vs 6.506 against PANEL). It is fine for the status dots it mostly colours (WCAG 3:1 non-text) but sits below the 4.5 AA text floor at designsystem/qss.py:121, where it colours a DsVerb button LABEL. Keep, lighten, or restrict?",
+      "options": [
+        "Keep the spec value everywhere — the muted family already lives in this band (NO_SOFT 4.257)",
+        "Keep CONIFEROUS for dots, use a lighter variant for the DsVerb text usage",
+        "Lighten CONIFEROUS itself until it clears 4.5 against PANEL"
+      ],
+      "recommendation": "Option 2 if you want the numbers clean, Option 1 if the verb tone is meant to read as quiet. I have deliberately not chosen: the value is a design decision and Article I keeps an agent out of 'what a number should be'. What I can tell you is the measurement, which nobody had.",
+      "cost_of_delay": "Low, and bounded — it affects one button tone.",
+      "unblocks": "python/synapse/panel/designsystem/qss.py:121"
+    },
+    {
+      "id": "H4.R4",
+      "question": "The seeded-contrast sweep still covers only the body and secondary roles. MUSHROOM (L4.R4) and now CONIFEROUS are both outside it. Extend the sweep to every text-carrying colour token?",
+      "options": [
+        "Extend the sweep to all text-carrying tokens",
+        "Leave it — the two new tokens were hand-measured",
+        "Extend, and add a rule that a new text token cannot land without sweep coverage"
+      ],
+      "recommendation": "Option 3. L4 recommended Option 1 three days ago and the gap grew by one token in the meantime, which is the argument for making the coverage requirement structural rather than remembered. This is the second leg to hand-measure a token because the gate could not.",
+      "cost_of_delay": "Grows by one blind spot per new text token.",
+      "unblocks": "audit_panel.py"
+    },
+    {
+      "id": "H4.R5",
+      "question": "The off-repo ~/.synapse/design side channel is no longer read by product code — the reproducibility defect R21 deposited is closed for the panel. But tests/test_design_system.py still loads that directory directly (with a staleness guard), and design/tokens.py + design/synapse_styles.py in-repo still mirror the old palette. Retire the parallel design tree, or keep it as a design-authoring surface?",
+      "options": [
+        "Retire the parallel tree; the vendored design system is the product's only design source",
+        "Keep it as an authoring/export surface and add a conformance test against the vendored tokens",
+        "Leave as is"
+      ],
+      "recommendation": "Option 2. The tree is not harmful now that no product code reads it, but two files claiming to be the design system with different values is how this defect started, and a conformance test is the cheap version of the fix. Out of scope for H4 — flagged, not touched.",
+      "cost_of_delay": "Low now that the product no longer reads it.",
+      "unblocks": "design/tokens.py, design/synapse_styles.py, tests/test_design_system.py"
+    }
+  ],
+
+  "out_of_scope_honoured": {
+    "v3_design_study": "Not touched. _on_stop is exactly as written, still state-gated to busy, still refuses to claim idle (R29).",
+    "orphan_affordances": "Not touched. All 17 remain; test_dead_verb_hidden is left red and recorded as H4.F14.",
+    "memory_surface": "python/synapse/memory/ untouched — zero files under it in the diff (R92)."
+  },
+
+  "drift": [
+    {
+      "note": "The brief states the collision as 't.SIGNAL 11 sites / _ds.SIGNAL 21 sites' and 'TWO DIFFERENT ACCENT BLUES'. Both understate it: the divergence covered 15 names including both type families and two panel dimensions, and there were nine colour-declaring sites rather than two. The brief's diagnosis was directionally right and its prescription ('resolve at the source') was exactly right; only the magnitude was low. Cosmetic drift — recorded, work continued."
+    },
+    {
+      "note": "The brief says L4's ungraded portion is '40%' (2 of 5 slices). Confirmed against audit_panel.py: the script really does have five named slices and the two L4 named are real. No drift."
+    }
+  ],
+
+  "resume_token": "H4 COMPLETE, product committed at 92a48eb on repair/h4-panel-finish (instruments at 6e8aa2c). If re-entered: do NOT redo the token repair, the call-site conversion, the CONIFEROUS landing or the screenshots — all are committed and measured. Do NOT re-derive the collision census; the runtime diff is in this receipt and the pins reproduce it. The open work is (a) H4.R1, whether the grep clause or the semantic pin governs, (b) H4.R3 the CONIFEROUS contrast decision, (c) H4.R4 widening the seeded-contrast sweep, and (d) test_dead_verb_hidden, which belongs to the ORPHAN-affordance leg and is red on purpose. The screenshot harness (harness/notes/panel_shot.py) and the accent census (panel_accent_census.py) are reusable for any future panel leg and both now carry their own controls — re-run them rather than writing new ones."
+}
