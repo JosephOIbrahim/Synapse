@@ -1,33 +1,58 @@
-"""R107: VERSION and __version__ must agree, and a check must enforce it.
+"""R107: every version location must agree, and a check must enforce it.
 
 I bumped VERSION to 5.35.0, committed, tagged and pushed - and never touched
 __version__, which still read 5.33.0. The health report reads __version__, which
-is why it reported a version four releases behind the tag.
+is why SYNAPSE reported a version two releases behind its own tag.
 
-harness/finalize.ps1 bumps VERSION and nothing else. The procedure was
+FOUR locations were known: VERSION, __version__, the git tag, the install stamp.
+A FIFTH - pyproject.toml - surfaced only because an existing test failed the
+moment __version__ was corrected. The check that found it was one somebody else
+had already written, which is the argument for writing them.
+
+harness/finalize.ps1 bumped VERSION and nothing else. The procedure was
 underspecified and I followed it correctly to a wrong outcome - the same shape as
 R93's `green` with zero commits.
 """
 import io, re, sys
 
-VERSION_FILE = 'VERSION'
-INIT_FILE = 'python/synapse/__init__.py'
-PAT = re.compile(r'__version__\s*=\s*["\']([^"\']+)["\']')
+ROOT_FILES = {
+    'VERSION': (None, 'VERSION'),
+    '__version__': (re.compile(r'__version__\s*=\s*["\']([^"\']+)["\']'),
+                    'python/synapse/__init__.py'),
+    'pyproject': (re.compile(r'^version\s*=\s*["\']([^"\']+)["\']', re.M),
+                  'pyproject.toml'),
+    # SIXTH location. The module docstring must state it too, enforced by
+    # tests/test_phase0c_doc1_version_conformance.py. Each correction surfaced
+    # the next, and every one was caught by a test somebody else had written -
+    # which is the argument for writing them.
+    'docstring': (re.compile(r'Version:\s*([0-9]+\.[0-9]+\.[0-9]+)'),
+                  'python/synapse/__init__.py'),
+    # SEVENTH. The CLAUDE.md banner. tests/test_phase0c_doc1_version_conformance.py
+    # already enforced the chain pyproject == __version__ == docstring == banner,
+    # and it walked me through every location one failure at a time. Four were
+    # known when this check was written; the other three were found by a test
+    # somebody else wrote first.
+    'claude_md': (re.compile(r'SYNAPSE v([0-9]+\.[0-9]+\.[0-9]+)'), 'CLAUDE.md'),
+}
 
 
-def read_pair():
-    # utf-8-SIG, not utf-8. The VERSION file was written with PowerShell's
-    # Set-Content -Encoding utf8 during the v5.35.0 release and carries a BOM -
-    # the fifth instance of that mistake in two days. Reading it with plain
-    # utf-8 pulls \ufeff into the version string, which then compares unequal to
-    # everything and crashes any consumer that prints it on a cp1252 console.
-    v = open(VERSION_FILE, encoding='utf-8-sig').read().strip()
-    m = PAT.search(open(INIT_FILE, encoding='utf-8-sig').read())
-    return v, (m.group(1) if m else None)
+def _read(pat, path):
+    # utf-8-SIG, never plain utf-8: VERSION carried a BOM written by
+    # Set-Content -Encoding utf8 during the release itself. Read with utf-8 it
+    # yields '\ufeff5.35.0', which compares unequal to everything and crashes
+    # any consumer printing it on a cp1252 console.
+    txt = open(path, encoding='utf-8-sig').read()
+    if pat is None:
+        return txt.strip()
+    m = pat.search(txt)
+    return m.group(1) if m else None
+
+
+def read_all():
+    return {k: _read(pat, path) for k, (pat, path) in ROOT_FILES.items()}
 
 
 def strip_bom(path):
-    """A BOM in VERSION is itself a defect - anything parsing it gets \ufeff."""
     raw = open(path, 'rb').read()
     if raw[:3] == b'\xef\xbb\xbf':
         with io.open(path, 'w', encoding='utf-8', newline='\n') as f:
@@ -36,21 +61,34 @@ def strip_bom(path):
     return False
 
 
+def _set(pat, path, value):
+    txt = open(path, encoding='utf-8-sig').read()
+    txt = pat.sub(lambda m: m.group(0).replace(m.group(1), value), txt, count=1)
+    with io.open(path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(txt)
+
+
 if __name__ == '__main__':
-    if '--fix' in sys.argv and strip_bom(VERSION_FILE):
+    fix = '--fix' in sys.argv
+
+    if fix and strip_bom('VERSION'):
         print('stripped a UTF-8 BOM from VERSION')
 
-    v, iv = read_pair()
-    print('BEFORE   VERSION=%s   __version__=%s   agree=%s' % (v, iv, v == iv))
+    vals = read_all()
+    canonical = vals['VERSION']
+    agree = len(set(vals.values())) == 1
+    print('BEFORE  ' + '  '.join(f'{k}={v}' for k, v in vals.items()) + f'  agree={agree}')
 
-    if '--fix' in sys.argv and v != iv:
-        t = open(INIT_FILE, encoding='utf-8-sig').read()
-        t = PAT.sub('__version__ = "%s"' % v, t, count=1)
-        with io.open(INIT_FILE, 'w', encoding='utf-8', newline='\n') as f:
-            f.write(t)
-        v, iv = read_pair()
-        print('AFTER    VERSION=%s   __version__=%s   agree=%s' % (v, iv, v == iv))
+    if fix and not agree:
+        for k, (pat, path) in ROOT_FILES.items():
+            if pat is not None and vals[k] != canonical:
+                _set(pat, path, canonical)
+                print(f'  set {k} -> {canonical}')
+        vals = read_all()
+        agree = len(set(vals.values())) == 1
+        print('AFTER   ' + '  '.join(f'{k}={v}' for k, v in vals.items()) + f'  agree={agree}')
 
-    # A check that can fail. It failed on this tree before --fix (R80: build it
-    # or strike the ruling that ordered it - this one gets built).
-    sys.exit(0 if v == iv else 1)
+    # A check that can fail. It failed on this tree before --fix, twice - once on
+    # __version__ and once on pyproject (R80: build it, or strike the ruling
+    # that ordered it. This one gets built.)
+    sys.exit(0 if agree else 1)

@@ -234,6 +234,7 @@ class SynapseDaemon:
             raise DaemonBootError("Daemon already running; stop() it first")
 
         self._check_boot_gate()
+        self._inject_houdini_version()
         self._resolved_api_key = self._resolve_api_key()
         self._apply_event_loop_policy()
         self._warn_if_user_site_active()
@@ -296,6 +297,34 @@ class SynapseDaemon:
         self._drain_request_queue()
 
     # -- Boot chain steps ------------------------------------------------
+
+    def _inject_houdini_version(self) -> None:
+        """Tell the host-agnostic layer which Houdini it is running under.
+
+        R99: `scout.EXPECTED_HOUDINI_VERSION` selects `h<major>_symbol_table.json`
+        and was declared None with NOTHING EVER ASSIGNING IT - so every session
+        silently loaded the H21 table while running 22.0.368, and the 1.2 MB
+        h22 table had never been read once.
+
+        scout cannot probe `hou` itself: `synapse.cognitive.*` is host-agnostic
+        by architecture and a test enforces zero hou imports there. The injection
+        design was correct; only the injector was missing. This is it, called
+        from the boot chain where a host is known to exist.
+
+        Never raises - a failure here degrades to the documented H21 fallback,
+        which is a stale table, not a broken boot.
+        """
+        try:
+            from synapse.host.version_injector import inject_houdini_version
+            v = inject_houdini_version()
+            if v:
+                logger.debug("Injected Houdini version for corpus selection: %s", v)
+            else:
+                logger.warning(
+                    "No Houdini version injected - host-agnostic corpora will use "
+                    "their documented fallback tables (R99)")
+        except Exception:
+            logger.warning("Houdini version injection failed; corpora fall back", exc_info=True)
 
     def _check_boot_gate(self) -> None:
         """Refuse boot unless ``hou.isUIAvailable()`` returns True.

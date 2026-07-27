@@ -422,13 +422,31 @@ def _corpus_symbols(store: Store) -> set[str]:
     return syms
 
 
+def _running_major() -> str:
+    """The running Houdini major, from injection ONLY.
+
+    R99: EXPECTED_HOUDINI_VERSION is declared None and nothing ever assigned it,
+    so every session silently loaded the H21 table while running 22.0.368.
+
+    I first "fixed" this by importing `hou` here and probing directly. A test
+    caught it immediately: `synapse.cognitive.*` MUST be host-agnostic, zero hou
+    imports. So the injection design was not over-engineering - it was the
+    correct response to an architectural boundary, and the only defect was that
+    the injector was never built. It is now, in synapse.host.version_injector,
+    which is on the host side of that boundary where importing hou is allowed.
+    """
+    injected = str(EXPECTED_HOUDINI_VERSION or "").split(".", 1)[0]
+    return injected if injected.isdigit() else ""
+
+
 def _pkg_symbol_table_path() -> Path:
     """Per-major committed authority (runway §1.4): h<major>_symbol_table.json
-    keyed on the RUNNING Houdini major (EXPECTED_HOUDINI_VERSION, host-injected).
-    No major known (headless/stock python) or no per-major file committed ->
-    the H21 table, unchanged — a build-mismatched stamp still reads STALE in
-    _load_symbol_table (gate down, never silent)."""
-    major = str(EXPECTED_HOUDINI_VERSION or "").split(".", 1)[0]
+    keyed on the RUNNING Houdini major - injected if provided, otherwise probed
+    from `hou` directly (R99). No major obtainable (headless stock python, no
+    host) or no per-major file committed -> the H21 table, unchanged; a
+    build-mismatched stamp still reads STALE in _load_symbol_table (gate down,
+    never silent)."""
+    major = _running_major()
     if major.isdigit():
         candidate = _PKG_SYMBOL_TABLE.with_name(f"h{major}_symbol_table.json")
         if candidate.is_file():
