@@ -117,7 +117,7 @@ try:
 
         def _build_ui(self):
             self._outer_layout = QtWidgets.QHBoxLayout(self)
-            self._outer_layout.setContentsMargins(8, 4, 8, 4)
+            self._outer_layout.setContentsMargins(8, 6, 8, 6)
             self._outer_layout.setSpacing(0)
 
             # Chevron toggle
@@ -164,7 +164,12 @@ try:
                 "  color: {fg};"
                 "  border: 1px solid {border};"
                 "  border-radius: 14px;"
-                "  padding: 4px 12px;"
+                # 4px vertical was claustrophobic — the words sat against the
+                # pill's own border, and the row's 4px margin gave them nothing
+                # outside it either. 7px inside + 6px outside is the "tiny bit
+                # more" that lets the type breathe without moving the row.
+                # Horizontal stays at 12: the crowding was vertical only.
+                "  padding: 7px 12px;"
                 "  font-family: '{mono}', 'Consolas', monospace;"
                 "  font-size: {sz}px;"
                 "}}"
