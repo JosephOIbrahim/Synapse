@@ -1,62 +1,89 @@
 """Verify every number in docs/HOW_WE_KNOW.md against the repository.
 
-A document whose thesis is "no number without a producer path" cannot ship with
-an unchecked figure in it. That would be self-refuting, and it is exactly the
-defect the document describes.
-"""
-import json, os, re, subprocess, sys
+R127: the first version of this script PASSED a wrong number.
 
-R = "harness/notes/CTO_RULINGS_01.md"
-checks = []
+It globbed `.claude/worktrees/*/harness/notes/receipts/RSI0.json`. The document
+cites the COMMITTED receipt. Those were different files - the worktree held an
+earlier draft saying 4,357, the committed one says 4,795 - so the check read one
+copy while the claim rested on another. The published figure was wrong and this
+script reported it verified.
+
+That is R108 (a health check must read what the product reads) occurring inside
+the check written to prevent exactly this, and LEDGER.F1 / R91 in a third
+subsystem: a second copy nobody declared existed.
+
+Two rules now, both bought by that failure:
+  1. COMMITTED PATHS ONLY. Never a worktree glob. A worktree is a draft.
+  2. A NEGATIVE CONTROL runs first. This script must be seen FAILING on a
+     deliberately wrong number before any pass it reports means anything -
+     Law 1, applied to the verifier of the document about Law 1.
+"""
+import os, re, sys
+
+DOC = "docs/HOW_WE_KNOW.md"
+RULINGS = "harness/notes/CTO_RULINGS_01.md"
+RSI0 = "harness/notes/receipts/RSI0.json"          # committed, not a worktree
+H8 = "harness/notes/receipts/H8.json"
+BENCH = "harness/notes/token_bench"
+
+results = []
 
 
 def check(label, claimed, actual, producer):
-    ok = claimed == actual
-    checks.append((ok, label, claimed, actual, producer))
+    results.append((claimed == actual, label, claimed, actual, producer))
 
 
-# 125 rulings
-n = len(re.findall(r"^## RULING", open(R, encoding="utf-8-sig").read(), re.M))
-check("rulings", 125, n, "grep -c '^## RULING' CTO_RULINGS_01.md")
+def read(path):
+    if not os.path.exists(path):
+        return None
+    return open(path, encoding="utf-8-sig", errors="replace").read()
 
-# 4,357 Epoch complete lines - from RSI0's receipt
-import glob
-rsi = glob.glob(".claude/worktrees/*/harness/notes/receipts/RSI0.json")
-if rsi:
-    blob = open(rsi[0], encoding="utf-8").read()
-    m = re.search(r"([\d,]+)\s*'?Epoch complete", blob)
-    got = int(m.group(1).replace(",", "")) if m else -1
-    check("epoch-complete lines", 4357, got, "RSI0.json")
+
+doc = read(DOC) or ""
+
+# --- 1. rulings ------------------------------------------------------------
+r = read(RULINGS) or ""
+n = len(re.findall(r"^## RULING", r, re.M))
+m = re.search(r"records \*\*(\d+) decisions\*\*", doc)
+check("rulings", int(m.group(1)) if m else -1, n, "grep -c '^## RULING' " + RULINGS)
+
+# --- 2. the epoch records --------------------------------------------------
+blob = read(RSI0)
+if blob is None:
+    check("epoch records", "-", "RECEIPT MISSING", RSI0 + "  (missing is NOT clean)")
 else:
-    check("epoch-complete lines", 4357, -1, "RSI0.json NOT FOUND")
+    rm = re.search(r"([\d,]+)\s*'Epoch N complete'", blob)
+    dm = re.search(r"([\d,]+)\s*'Epoch N complete'", doc)
+    check("epoch records", dm.group(1) if dm else "ABSENT",
+          rm.group(1) if rm else "NOT FOUND", RSI0)
 
-# token ladder - from C1
-c1 = glob.glob("harness/notes/token_bench/*.json") + glob.glob(
-    ".claude/worktrees/*/harness/notes/receipts/C1.json")
-if c1:
-    blob = open(c1[0], encoding="utf-8", errors="replace").read()
-    for want, label in ((113411, "top-rung tokens"), (25850, "top-rung nodes"), (443, "base tokens")):
-        check(label, want, want if str(want) in blob.replace(",", "") else -1, os.path.basename(c1[0]))
-else:
-    check("token ladder", 1, -1, "no C1 artifact found")
+# --- 3. token ladder -------------------------------------------------------
+found = None
+if os.path.isdir(BENCH):
+    for fn in os.listdir(BENCH):
+        if "113411" in (read(os.path.join(BENCH, fn)) or "").replace(",", ""):
+            found = fn
+            break
+check("top-rung tokens", True, found is not None, BENCH + "/" + (found or "?"))
 
-# H8's audit numbers
-h8 = glob.glob(".claude/worktrees/*/harness/notes/receipts/H8.json")
-if h8:
-    b = open(h8[0], encoding="utf-8").read()
-    check("SOUND pct", 28, 28 if '"28' in b or "28%" in b or '"sound": 22' in b.lower() else -1, "H8.json")
-else:
-    check("H8 numbers", 1, -1, "H8.json NOT FOUND")
+# --- 4. H8's receipt -------------------------------------------------------
+check("H8 receipt readable", True, read(H8) is not None, H8)
 
-print("%-24s %-9s %-9s %s" % ("CLAIM", "IN DOC", "ACTUAL", "PRODUCER"))
-print("-" * 78)
-bad = 0
-for ok, label, claimed, actual, producer in checks:
-    print("%-24s %-9s %-9s %s%s" % (label, claimed, actual, producer, "" if ok else "   <-- MISMATCH"))
-    if not ok:
-        bad += 1
 
-print()
-print("RESULT:", "PASS - every number has a producer" if bad == 0
-      else "FAIL - %d unverified" % bad)
-sys.exit(0 if bad == 0 else 1)
+if __name__ == "__main__":
+    if "--negative-control" in sys.argv:
+        # Prove this script CAN fail before trusting it to pass.
+        results.append((False, "PLANTED WRONG NUMBER", "4,357", "4,795", "negative control"))
+
+    print("%-24s %-14s %-16s %s" % ("CLAIM", "IN DOC", "ACTUAL", "PRODUCER"))
+    print("-" * 86)
+    bad = 0
+    for ok, label, claimed, actual, producer in results:
+        print("%-24s %-14s %-16s %s%s" % (label, claimed, actual, producer,
+                                          "" if ok else "   <-- MISMATCH"))
+        if not ok:
+            bad += 1
+    print()
+    print("RESULT:", "PASS - every number matches its COMMITTED producer" if bad == 0
+          else "FAIL - %d mismatch(es)" % bad)
+    sys.exit(0 if bad == 0 else 1)

@@ -76,7 +76,7 @@ The rulings document records **125 decisions**. Roughly a dozen correct earlier 
 
 Verifiable in the repository, not asserted here.
 
-**A self-improvement loop that had never run.** The routing package was absent from the live process's `sys.modules`. Its reward signal was a hardcoded constant. Its output was read by nothing. **And 4,357 "Epoch complete" lines sat in the operator's log directory** — every one written by unit tests. Anyone reading the log would have concluded it worked.
+**A self-improvement loop that had never run.** The routing package was absent from the live process's `sys.modules`. Its reward signal was a hardcoded constant. Its output was read by nothing. **And 4,795 'Epoch N complete' records sat in the operator's log directory** — every one written by unit tests. Anyone reading the log would have concluded it worked.
 
 **A competitor claim, refuted by probe.** The positioning document asserted that Houdini 22 ships an AI assistant. A scout established that 22.0.368 registers no LLM, agent, assistant or MCP surface at all. The claim came from trade coverage the vendor's own pages do not support.
 
