@@ -1,0 +1,307 @@
+{
+  "schema": "receipt/v1",
+  "leg": "C1",
+  "title": "Token benchmark - the positioning document's spine, measured",
+  "harness": "CLAIMS-01",
+  "status": "green",
+  "status_note": "Describes what happened (Law 3). The benchmark was built and RUN end to end: instrument, repeatability control, six-rung ladder on real third-party scenes, both arms, outcome paired with cost at every rung. The leg is green because the measurement succeeded. The CLAIM it measured is REFUTED as shipped - a red finding under a green leg, which is Law 7 working, not a contradiction.",
+
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "session .claude/settings.json (hook-bearing, pytest-capable) - NOT harness/agent-settings.json. The full suite was run first-hand, so suite evidence is admissible under Constitution Article V.",
+
+  "commit_before": "6ee9a2e",
+  "commit_after": "435aab7",
+  "commits": [
+    "8480125  harness(C1): the token meter, the scene ladder, and per-turn usage capture",
+    "b816f4b  harness(C1): the ladder result - the spine claim is REFUTED as shipped",
+    "435aab7  harness(C1): separate 'cheaper because tighter' from 'cheaper because smaller'"
+  ],
+  "merged": false,
+  "pushed": false,
+
+  "touches_declared_in_legs_json": ["harness/notes/token_bench"],
+  "touches_actual": [
+    "scripts/c1_token_bench.py",
+    "scripts/c1_run_ladder.sh",
+    "scripts/c1_summarize.py",
+    "python/synapse/cognitive/agent_loop.py",
+    "tests/test_agent_loop_usage.py",
+    "harness/notes/token_bench/count.json",
+    "harness/notes/token_bench/summary.json",
+    ".gitignore"
+  ],
+
+  "tests_after": { "passed": 4998, "failed": 0, "skipped": 137 },
+  "tests_before": { "passed": 4989, "failed": 0, "skipped": 137 },
+  "tests_before_tier": "VERIFIED-DERIVED - 4998 measured minus the 9 tests this leg added. Not separately measured: R39 bans --ignore in a measurement runner, so there is no legal way to re-run the suite excluding only the new file.",
+  "test_delta": 9,
+  "ratchet_floor": { "passed": 4875, "failed": 0, "skipped": 129, "source": "harness/verify/suite_baseline.json gate half" },
+  "commandment_7": "held - 9 tests added, none weakened, skipped, xfailed or deleted; 0 failures against a 0-failure floor",
+  "suite_producer": "python -m pytest tests/ -q  (system python 3.14.2, vendor tree ABI-INACTIVE)",
+
+  "conditions_attached_to_every_figure_below": {
+    "date": "2026-07-27",
+    "houdini_build": "22.0.368",
+    "runner": "hython 22.0.368, headless, one process per (scene, run)",
+    "model": "NONE - no model was in the loop; see finding C1-F2",
+    "tokenizer": "tiktoken/cl100k_base - a DECLARED PROXY BPE, explicitly NOT Claude's tokenizer",
+    "task": "C1-T1 - 'answer a question about node N', evaluated over EVERY node N in the scene. A turn succeeds iff N appears in the grounding payload. Success rate over all N = the coverage figure. This is an exact success rate under a stated task, not a proxy for one.",
+    "scene_size_axis": "node count (hou.node('/').allSubChildren(), post-LOP-cook). parm count and serialised-token size are reported beside it at every rung, per the brief.",
+    "producer_path": "scripts/c1_run_ladder.sh -> scripts/c1_token_bench.py --mode payloads -> --mode count -> scripts/c1_summarize.py -> harness/notes/token_bench/{count,summary}.json"
+  },
+
+  "summary": {
+    "claim_under_test": "Sends only what changed - cost stays flat, even on huge scenes.",
+    "verdict": "REFUTED as shipped, on both halves of the sentence.",
+
+    "headline_integers": {
+      "arm_A_shipped_grounding_tokens_smallest_to_largest_rung": [443, 741, 3277, 3047, 38555, 113411],
+      "arm_A_growth_largest_over_smallest_rung_x": 256,
+      "arm_A_task_success_rate_pct_per_rung": [100, 100, 73, 51, 10, 11],
+      "arm_B_floor_same_codepath_tokens": [443, 741, 4922, 6504, 466520, 1234946],
+      "arm_B_floor_same_codepath_growth_x": 2788,
+      "arm_B_floor_synapse_own_serializer_tokens": [257, 889, 14253, 45993, 1225230, null],
+      "arm_B_floor_synapse_own_serializer_growth_x": 4767,
+      "flat_control_tokens": [36, 35, 34, 37, 33, 35],
+      "flat_control_growth_x": 0.97,
+      "ladder_node_counts": [13, 22, 62, 168, 3057, 21085],
+      "repeatability_pairs_compared": 31,
+      "repeatability_max_abs_delta_tokens": 0,
+      "raw_cost_advantage_at_top_rung_x": 10.89,
+      "true_efficiency_advantage_per_delivered_node_at_top_rung_x": 1.22
+    },
+
+    "the_claim_as_it_can_now_honestly_be_made": "Measured on 2026-07-27 against Houdini 22.0.368, over six scenes authored by SideFX and shipped with Houdini, spanning 13 to 21,085 nodes: SYNAPSE's scene grounding is NOT flat. Its shipped scene read costs 443 tokens on the smallest scene and 113,411 on the largest, a 256x rise, while the share of the scene it actually places in front of the model falls from 100% to 11% - it becomes more expensive AND less complete as scenes grow. The floor for sending the scene, computed two ways from SYNAPSE's own code, rises faster still (2,788x and 4,767x), so the COMPARATIVE half of the claim survives: grounding costs materially less than sending the scene and the gap widens with size. But at the top rung that advantage is 10.89x by raw token count and only 1.22x per node actually delivered, so roughly 89% of it is 'sent less of the scene' rather than 'encoded it better'. And 'sends only what changed' has no mechanism behind it at all: every inspect is a full re-read, no delta path exists, and nothing compacts the conversation, so one user turn re-sends every prior result up to 25 times. The honest sentence today is 'grounded reads cost materially less than sending the scene, and the gap widens with scene size' - not 'cost stays flat'. All token figures use tiktoken/cl100k_base as a declared proxy because Anthropic's exact tokenizer is an API call this account cannot reach.",
+
+    "oracle_check": {
+      "repeatability_control_RUN_with_both_counts_reported": "YES - 31 run-1/run-2 pairs, max absolute delta 0 tokens, both counts in harness/notes/token_bench/summary.json:repeatability_control.pairs. The meter is deterministic; the noise floor is 0, so every difference reported is real.",
+      "arm_B_demonstrated_NON_FLAT": "YES - 2,788x (inspect_scene deep) and 4,767x (network_explain). The instrument is additionally shown able to return FLAT: the control arm reads 36 tokens at 13 nodes and 35 at 21,085 (0.97x). A curve that could only bend upward would have proved nothing (Law 1).",
+      "every_cost_figure_carries_model_scene_size_measure_task_date": "YES - conditions_attached_to_every_figure_below, and per-rung in summary.json.",
+      "outcome_reported_alongside_cost_at_every_rung": "YES - coverage travels with every token figure. Failures are listed separately in summary.json:failures and are never averaged into a curve.",
+      "one_paragraph_honest_claim": "YES - the_claim_as_it_can_now_honestly_be_made, above."
+    }
+  },
+
+  "findings": [
+    {
+      "id": "C1-F1",
+      "severity": "blocker-for-the-claim",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "harness/notes/token_bench/summary.json:curve.A_inspect_scene_d3",
+      "claim": "Arm A is not flat: 443 -> 113,411 tokens over 13 -> 21,085 nodes (256x), and its task success rate falls 100% -> 11% over the same range. The shipped grounding read becomes more expensive and less complete simultaneously.",
+      "why_it_matters": "This is the sentence that leads the positioning page. A technical evaluator with hython and twenty minutes reproduces it."
+    },
+    {
+      "id": "C1-F2",
+      "severity": "method-limit",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "this receipt records the probe output verbatim; the probe was gitignored dev scratch (_*.py). Reproduce: load <repo>/.env with OVERRIDE (not setdefault - see note), then anthropic.Anthropic(api_key=...).messages.count_tokens(model='claude-sonnet-5', messages=[{'role':'user','content':'hello world'}]).",
+      "claim": "No model was in the loop and none could be. The Anthropic key in .env AUTHENTICATES but the account has no credits: messages.create AND messages.count_tokens both return HTTP 400 'Your credit balance is too low' (request_id req_011CdSiF6Q8s1PDoB5C6o9HF). Credit exhaustion gates even the normally-unbilled counting endpoint, so Claude's exact tokenizer was unreachable too.",
+      "consequence": "Token figures are payload measurements through a declared proxy tokenizer, not billed usage from a live turn. Outcome is a deterministic oracle over the payload (task C1-T1), not a model's answer. Both are stated as such everywhere; neither is presented as a live agent session.",
+      "note": "A blank ANTHROPIC_API_KEY exported into this session initially shadowed the .env value, because synapse.host.auth._load_dotenv uses os.environ.setdefault (auth.py:102). Worth knowing: any process launched with a blank key set will silently ignore the .env credential."
+    },
+    {
+      "id": "C1-F3",
+      "severity": "high",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/server/handlers_node.py:420 (_get_non_default_params)",
+      "claim": "houdini_network_explain SEGFAULTS hython 22.0.368 (rc=139) on karma_user_guide.hip - the largest scene SideFX ships - reproducibly on both runs. It dies inside _get_non_default_params while evaluating matspecpath1 / bindname1 parms on Solaris material-assignment LOPs.",
+      "why_it_matters": "This is a shipped MCP tool, not benchmark scaffolding. It cannot survive Houdini's own flagship scene. Reported as a named failure; the rung's arm-B number comes from the inspect_scene-deep variant instead.",
+      "not_fixed": "Out of C1's scope. C1 measures; it does not repair product code it did not come to change."
+    },
+    {
+      "id": "C1-F4",
+      "severity": "high",
+      "tier": "VERIFIED-DERIVED",
+      "anchor": "harness/notes/token_bench/summary.json:efficiency_vs_completeness",
+      "claim": "At the top rung arm A costs 10.89x less than sending the scene by raw token count, but only 1.22x less per node actually delivered. Across the ladder the true per-node advantage is 1.0x, 1.0x, 1.09x, 1.10x, 1.19x, 1.22x. Roughly 89% of the headline advantage at the top rung is 'sent 11% of the scene', not 'encoded the scene better'.",
+      "why_it_matters": "The raw ratio is the number a positioning document would quote. On its own it is flattering in exactly the way the brief warned about. Both columns must travel together."
+    },
+    {
+      "id": "C1-F5",
+      "severity": "high",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "LATENCY_PLAN.md:288 ; shared/bridge.py:453",
+      "claim": "'Sends only what changed' has no mechanism. There is no delta path anywhere in the grounding surface - every inspect is a full re-read. The dirty-flag inspect cache is explicitly PARKED behind a numeric reopen-gate. The only 'delta' in the repo is delta_hash, an IntegrityBlock audit field that never reduces what is sent.",
+      "why_it_matters": "This half of the claim is not merely unproven, it is unimplemented. Measuring flatness cannot rescue it."
+    },
+    {
+      "id": "C1-F6",
+      "severity": "high",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/panel/claude_worker.py:34 (_MAX_TOOL_ITERATIONS = 25)",
+      "claim": "Nothing compacts the conversation on the panel path. The message list is append-only and every prior tool_result is re-sent on each later round-trip, up to 25 iterations inside ONE user turn. N identical results cost N(N+1)/2. At the top rung that projects 113,411 single-call tokens to ~36.9M re-sent tokens in one turn.",
+      "tier_note": "The 36.9M projection is VERIFIED-DERIVED from the measured single-call figure and the read constant. It was NOT itself measured - no 25-iteration turn was run.",
+      "why_it_matters": "Cost is cumulative, so it cannot be flat per turn even if the per-call payload were bounded. This refutes the claim independently of scene size."
+    },
+    {
+      "id": "C1-F7",
+      "severity": "medium",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "harness/notes/token_bench/count.json (tokens_cl100k vs tokens_cl100k_model_visible)",
+      "claim": "The model is charged for more than the tool returns. A tool result is JSON-encoded twice - mcp/tools.py:132 wraps it, claude_worker.py:263 dumps the envelope again, escaping every inner quote. Measured inflation across all 31 payloads ranges 1.0041x to 1.5758x: lowest on B_usd_flatten at L6 (USDA prose, few quotes to escape), highest on the 35-token flat control (fixed envelope overhead dominates a tiny payload), and 1.083x on the top-rung arm-A payload. Counting the raw tool dict under-reports every arm.",
+      "why_it_matters": "It barely moves the A-vs-B ratio but it matters for any absolute figure quoted to a studio. Both columns are in the artifact."
+    },
+    {
+      "id": "C1-F8",
+      "severity": "medium",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "shared/types.py:210 ; docs/SCENE_GROUNDING_CONTRACT.md:4",
+      "claim": "The token-budgeting story that would make the claim true is not built. GeoSummary - the '<100 tokens per node' type - is DEAD CODE, never constructed in shipped Python, and its token_estimate() is never compared to any budget. The four *_manifest tools with token_budget and a degradation ladder exist only on paper: repo-wide grep returns 5 files, all documentation. SYNAPSE's own frozen spec already says the shipped inspectors are unbounded (SCENE_GROUNDING_CONTRACT.md:27).",
+      "why_it_matters": "The claim is not merely ahead of the measurement; it is ahead of the implementation, and the repo already said so in writing."
+    },
+    {
+      "id": "C1-F9",
+      "severity": "medium",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/server/introspection.py:226 (_recurse_inputs)",
+      "claim": "inspect_selection's 50-node cap is a decoy. _recurse_inputs has no visited set and no memoization, so any DAG with shared ancestors - a diamond, universal in SOP networks - re-serializes the same subgraph once per path. Driving the shipped function with stub nodes: a 22-node diamond emits 2 records at depth=1 and 4,094 at depth=11. The depth argument is agent-supplied and clamped nowhere (handlers.py:1457, schema declares a bare integer with no maximum), while the sibling network_explain DOES clamp at 5.",
+      "tier_note": "The growth SHAPE (2^depth) was measured against the shipped function with mock nodes. Per-node HOM cost on a real scene was NOT measured, and no transcript shows a model actually passing depth>1 - this is reachable-by-construction, not observed-in-the-wild.",
+      "why_it_matters": "An unclamped exponential on an agent-supplied argument is a cost incident waiting for the right scene."
+    },
+    {
+      "id": "C1-F10",
+      "severity": "low",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/server/introspection.py:307",
+      "claim": "inspect_scene's max_depth is off by one: the guard is 'if current_depth > max_depth' with the root walked at depth 0, so the shipped default max_depth=3 returns FOUR levels. Anyone sizing a scene to 'depth 3' measures four.",
+      "why_it_matters": "Calibration. The ladder used the shipped default and reports it as such, so no figure here is affected - but a re-run that sets depth by hand could be."
+    },
+    {
+      "id": "C1-F11",
+      "severity": "low",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/panel/providers/base.py:60",
+      "claim": "The panel path cannot report tokens even now. StreamProvider.stream returns Tuple[Optional[str], List[dict]] - there is no slot for usage in the interface, so no provider can surface it without changing all four adapters. The Anthropic adapter's SSE state machine sees the usage frame and drops it (anthropic_provider.py:284) and has no message_start branch at all, which is where input_tokens and cache_read_input_tokens arrive. The panel's own token meter (_note_usage) has had zero callers since it was written.",
+      "consequence": "This leg closed the SDK/agent_loop half of the instrument. The panel half remains open and is a real interface change, not a one-line capture."
+    },
+    {
+      "id": "C1-F12",
+      "severity": "low",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/panel/providers/anthropic_provider.py:52",
+      "claim": "A second unmeasured cost claim sits next to the first. _with_prompt_cache's docstring asserts 'a multi-turn build otherwise re-sends ~18k tool tokens per turn (25 turns ~= 475k redundant prefill tokens); caching turns all but the first into reads.' The one field that would prove or refute it, cache_read_input_tokens, is the field the SSE handler drops.",
+      "note": "The usage reader added by this leg captures cache_read_input_tokens and cache_creation_input_tokens on the agent_loop path, so the SDK half of that claim is now instrumentable. The panel half is blocked on C1-F11."
+    }
+  ],
+
+  "instrument_report_requested_by_the_brief": {
+    "question": "Did the instrument exist, or did you build it?",
+    "answer": "BOTH, for two different things - and the distinction matters because they measure disjoint quantities.",
+    "existed": {
+      "what": "scripts/token_baseline.py + harness/notes/token_baseline.json (leg T.0), gated fresh by harness/verify/checks.py:2344 and carrying a declared 2000-token ceiling in harness/verify/token_ceiling.json.",
+      "measures": "the FIXED tool-definition prefix a turn pays before any scene is read: mcp_http 17,310 / mcp_stdio 13,901 / panel 14,380 / panel_worker 10,264 preload tokens.",
+      "does_not_measure": "anything from a live response - no per-turn usage, no output tokens, no cache reads, no tool-RESULT cost. It never touches the network."
+    },
+    "built": {
+      "what": "the per-turn usage reader on the agent loop, plus the payload meter and ladder driver.",
+      "why_it_had_to_be_built": "run_turn held the response object carrying .usage at the messages.create yield (agent_loop.py:232) and consumed only .content and .stop_reason. Exhaustive grep of the whole non-vendor tree for input_tokens|output_tokens|cache_read_input_tokens returned ZERO real accounting hits - every hit was RAM usage, Houdini path tokens, or a tool description.",
+      "how": "AgentTurnResult gains a usage list, one record per round-trip, captured BEFORE any early return so a cancelled turn still reports the yield it was billed for. Never estimated - a response with no usage records nothing, so 'unmeasured' stays visible rather than being laundered into a zero. Pinned by 9 tests in tests/test_agent_loop_usage.py, each documenting the condition under which it fails (Law 1)."
+    },
+    "reused_not_rebuilt": "docs/BENCHMARK_DESIGN.md:143 makes standing up a fresh agent loop a DoD violation. The reader extends run_turn in place; no new model loop was written. Arm B likewise reuses SYNAPSE's own shipped serializer rather than an invented one."
+  },
+
+  "method": {
+    "why_arm_B_is_not_a_strawman": "Arm B never runs a competitor's product. It is computed two ways, both from SYNAPSE's own shipped code: (1) inspect_scene with max_depth raised - the SAME code path as arm A, one argument apart, so nothing differs but how much scene is sent; (2) the uncapped serializer behind houdini_network_explain. Variant (2) emits only NON-DEFAULT parameters, so it is a CONSERVATIVE floor - a naive outside-in tool that dumps every parm pays strictly more. If arm B still climbs, the finding is robust in the safe direction. This satisfies the BENCHMARK_DESIGN OD-2 recommendation (steelman) without requiring the unruled decision to be made.",
+    "why_the_scenes_are_not_fabricated": "All six rungs are SideFX-authored scenes shipped inside Houdini 22.0.368. None was built for this benchmark. A 105-scene census found 104 of 105 open cleanly headless, so the ladder was selected from real third-party content rather than synthesized. Two traps were avoided: computervision.hip has 28,900 raw nodes but only 53 authored (99.8% locked-HDA internals) and would have made the top rung serialize smaller than the middle; shotgun.hip stalls 4.4s on external Shotgun contact and would poison timing.",
+    "why_coverage_is_the_outcome_measure": "Task C1-T1 is 'answer a question about node N', evaluated over every node N in the scene, and a turn succeeds iff N is in the payload. Coverage is therefore the exact success rate under a stated task, not a stand-in for one. Matching is on whole quoted JSON strings, so /obj/box1 never counts as covering /obj/box10.",
+    "fairness_guard": "Arms that do not attempt scene-wide grounding are marked arm_kind and their coverage is NOT scored. inspect_node_detail answers 'tell me everything about THIS node'; scoring its scene-wide coverage would be unfair in the direction that flatters the conclusion.",
+    "handler_faithful_arguments": "Arm A calls the grounding functions with the arguments the shipped HANDLER passes, not the function-signature defaults, which differ (include_geometry True in the signature, False at the handler). Using the signature defaults would have inflated arm A and flattered arm B.",
+    "lop_priming": "LOP nodes are cooked before measurement. Headless hython has no viewport trigger, and without the prime lastModifiedPrims() returns [] - which would make stage payloads look artificially SMALL, i.e. would have flattered arm A. Priming also raises node/parm counts above an un-primed census (L6 reads 21,085 nodes / 1,187,573 parms primed vs 15,811 / 962,647 un-primed); the primed figures are used throughout because a live artist scene is cooked."
+  },
+
+  "limits": [
+    "No model in the loop. See C1-F2. These are payload costs and a deterministic outcome oracle, not billed usage from a live agent session.",
+    "Proxy tokenizer. tiktoken/cl100k_base is not Claude's tokenizer. Exact bytes and chars ship alongside every figure so anyone can re-derive with a better one. Curve SHAPE - the thing the claim turns on - is robust to tokenizer choice; absolute magnitudes are not.",
+    "One machine, one build, one day: Windows 11, Houdini 22.0.368, 2026-07-27.",
+    "B_usd_flatten is not comparable rung to rung. It exports the stage as composed at the last /stage child in creation order and is absent on the four rungs with no Solaris stage. L6 reads smaller than L4 for that reason, not because the bigger scene serializes smaller. Marked not_comparable_across_rungs; read each value as a single cost datapoint.",
+    "Arm A's coverage collapse is partly a max_depth=3 artifact - that IS the shipped default, so it is the honest thing to measure, but a deployment that raised the depth would trade coverage back for cost along the B_inspect_scene_deep curve, which is measured here and reaches 1,234,946 tokens at the top rung.",
+    "The 25-iteration cumulative projection (C1-F6) is derived, not measured.",
+    "The inspect_selection exponential (C1-F9) was measured with mock nodes against the shipped function; the shape is exact, the real-scene magnitude is not, and no transcript shows a model passing depth>1."
+  ],
+
+  "drift": [
+    {
+      "id": "D1",
+      "severity": "process",
+      "note": "legs.json declares C1 touches: ['harness/notes/token_bench'] only. This leg also modified product code (python/synapse/cognitive/agent_loop.py), added three scripts, a test file and .gitignore. The declaration was incomplete at authoring time rather than exceeded by the agent: the brief's step A requires reporting whether the instrument existed 'or you built it', and building it necessarily means touching the agent loop.",
+      "collision_check": "No actual R92 collision. The only other live claims leg is C0, declared READ-ONLY. No other worktree has agent_loop.py open.",
+      "correction": "A leg whose brief authorises building an instrument must declare the instrument's home in touches, or touches will under-report by exactly the amount that matters."
+    },
+    {
+      "id": "D2",
+      "severity": "accuracy",
+      "note": "docs/BENCHMARK_DESIGN.md:81 states the claim under test as 'token-budgeted inspect_* + GeoSummary, degradation ladder' while its own ground-truth section at :42 says the manifests do not exist in code. Neither the budget nor the ladder exists, and GeoSummary is dead code. The spec's framing of arm A describes a system that was never built.",
+      "correction": "The measurement used the shipped inspect_* surface as it actually is. Anyone reading BENCHMARK_DESIGN §2 as a description of shipped behaviour will mis-model arm A."
+    },
+    {
+      "id": "D3",
+      "severity": "accuracy",
+      "note": "The MCP tool schema for get_stage_info advertises 'Max prims to return (default: 100)' while the handler default is 500 (_tool_registry.py:630 vs handlers_usd.py:241). A benchmark that trusted the schema would mis-model that baseline by 5x.",
+      "correction": "Not load-bearing here - get_stage_info is not one of C1's arms - but recorded because it is the same schema/handler drift class as the include_geometry trap that WAS load-bearing."
+    },
+    {
+      "id": "D4",
+      "severity": "environment",
+      "note": "The suite ran on system Python 3.14.2, where the vendored cp311+cp313 tree is ABI-INACTIVE (warning on every run). This is the gate interpreter and matches the ratchet floor's basis, so the comparison is valid - but it is not the interpreter artists run. The shipping-interpreter half of suite_baseline.json is explicitly not yet a ratchet floor.",
+      "correction": "None needed for this leg; recorded so the 4998 figure is not later quoted as a shipping-interpreter number."
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "R-C1-1",
+      "question": "The positioning document's leading Shipping claim - 'Sends only what changed - cost stays flat, even on huge scenes' - is refuted on both halves. What replaces it?",
+      "evidence": "C1-F1 (256x rise, coverage 100%->11%), C1-F4 (true per-node advantage 1.22x, not 10.89x), C1-F5 (no delta mechanism exists), C1-F6 (cost is cumulative, not per-turn).",
+      "options": [
+        "(a) Replace with the measured sentence: 'grounded reads cost materially less than sending the scene, and the gap widens with scene size' - true today, weaker than the current claim, and citable.",
+        "(b) Demote the claim from Shipping to Roadmap until a token budget and a delta path exist. Roadmap items are honest by construction.",
+        "(c) Build the budget/ladder (SCENE_GROUNDING_CONTRACT manifests) and re-measure, keeping the claim off the page until then."
+      ],
+      "agent_recommendation": "(a) plus (c) as the follow-on. (b) alone understates what was measured - a 10.89x raw advantage that widens with scene size is a real and saleable result; it is simply not 'flat'. What must not survive is the word 'flat' and the phrase 'only what changed'.",
+      "why_this_is_not_the_agents_call": "It is product positioning - a value judgement between defensible options (Constitution Article I)."
+    },
+    {
+      "id": "R-C1-2",
+      "question": "BENCHMARK_DESIGN OD-1: may absolute token counts be published, or ratios only? The spec recommends ratios-only on the grounds that absolute counts partially disclose the grounding recipe.",
+      "evidence": "This receipt currently carries absolutes. They are what makes C1-F4 checkable - a ratio alone would hide that the 10.89x is mostly reduced coverage.",
+      "agent_recommendation": "Publish absolutes for the ARM-B floor and the coverage percentages, and ratios for arm A if the IP concern stands. The finding that matters (advantage is coverage-driven) survives that split. OD-1 remains unruled and this leg did not rule it.",
+      "why_this_is_not_the_agents_call": "IP / claim-surface policy."
+    },
+    {
+      "id": "R-C1-3",
+      "question": "C1-F3: houdini_network_explain segfaults hython 22.0.368 on SideFX's own flagship scene, reproducibly. Who fixes it, and does it gate the release?",
+      "agent_recommendation": "It is a shipped MCP tool crashing the host on a real scene, which is a higher-severity class than anything else this leg found. C1 did not fix it - repairing product code it did not come to change is out of scope - but it should not sit in a receipt unassigned.",
+      "why_this_is_not_the_agents_call": "Scope and release-gating decision."
+    },
+    {
+      "id": "R-C1-4",
+      "question": "C1-F9: inspect_selection's depth argument is agent-supplied and clamped nowhere, over a recursion with no visited set (2^depth). Its sibling network_explain clamps at 5. Clamp it?",
+      "agent_recommendation": "A one-line clamp matching the sibling would close it. But it is a behaviour change to a shipped tool's contract, so it gets a ruling rather than a drive-by edit.",
+      "why_this_is_not_the_agents_call": "Changes a shipped tool's accepted argument range."
+    },
+    {
+      "id": "R-C1-5",
+      "question": "C1-F2: the Anthropic account has no credits, so no live-model arm and no exact tokenizer are possible. Fund it, or accept proxy-tokenizer payload measurements as the standing method?",
+      "agent_recommendation": "The curve SHAPE does not need credits and is the load-bearing result. Credits would buy three things: Claude's exact tokenizer, real billed usage through the new agent_loop reader, and a genuine turns-to-green outcome with a model in the loop. Worth it before any number goes on a public page; not worth blocking this leg for.",
+      "why_this_is_not_the_agents_call": "Spending money."
+    }
+  ],
+
+  "resume_token": {
+    "skip_on_reentry": [
+      "Instrument discovery - settled. Preload instrument existed (token_baseline.py); per-turn reader did not and is now built and test-pinned. Do not re-survey.",
+      "Scene ladder selection - settled. 105-scene census done; six rungs chosen, all SideFX-authored, all open clean headless, node counts reproduced exactly across two runs. Do not re-census.",
+      "Repeatability control - RUN. 31 pairs, 0-token noise floor. Do not re-run unless the meter changes.",
+      "Arm B definition - settled and non-flat. Do not re-litigate OD-2; the steelman was used and it is SYNAPSE's own code."
+    ],
+    "next_if_resumed": [
+      "If credits land: re-run arm A through run_turn with the new usage reader for billed per-turn usage + true turns-to-green, and re-count with messages.count_tokens for exact Claude tokens. The meter is already provider-agnostic; only the driver changes.",
+      "C1-F11: close the panel half of the instrument - StreamProvider needs a usage slot and anthropic_provider needs a message_start branch. That also unblocks measuring the prompt-cache claim in C1-F12.",
+      "C2 (render-node refusal) and C3 (memory across sessions) are untouched by this leg and independent."
+    ]
+  },
+
+  "ratified": false,
+  "ratification_note": "ratified:false is the correct resting state. The flip is human-only. This receipt records what was measured; it does not sanction what the positioning document says next."
+}
