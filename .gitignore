@@ -78,6 +78,11 @@ backup/
 *.key
 *.jpg
 *.png
+# ...except design EVIDENCE. A before/after screenshot set is the product of a
+# design leg, not incidental media, and a blanket *.png silently swallows it —
+# the reviewer sees a receipt claiming shots that are not in the tree. Narrow
+# exemption: this one directory, produced by harness/notes/panel_shot.py.
+!design/repair_h4/**/*.png
 
 # Claude Code local settings (permissions, session-specific)
 .claude/settings.local.json

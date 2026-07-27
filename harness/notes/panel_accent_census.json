@@ -1,0 +1,54 @@
+{
+  "schema": "panel_accent_census/v1",
+  "tolerance_per_channel": 8,
+  "targets": {
+    "LEGACY_CYAN": "#00D4FF",
+    "SIGNAL": "#8FB3D9",
+    "OK_SOFT": "#6FBF8E",
+    "CONIFEROUS": "#6E8F72",
+    "WARM": "#FF7759"
+  },
+  "sets": {
+    "design/repair_h4/before": {
+      "chat_apex_recipes": {
+        "LEGACY_CYAN": 142,
+        "SIGNAL": 42
+      },
+      "chat_recipe_book": {
+        "LEGACY_CYAN": 85,
+        "SIGNAL": 42
+      },
+      "command_palette": {},
+      "context_bar": {},
+      "face_review": {
+        "OK_SOFT": 76
+      },
+      "face_work": {
+        "WARM": 130
+      },
+      "gate_widget": {},
+      "hda_building": {},
+      "hda_describe": {},
+      "hda_result": {},
+      "health_infographic": {},
+      "integrity_readout": {
+        "OK_SOFT": 38
+      },
+      "panel_direct_chat": {
+        "SIGNAL": 1786,
+        "WARM": 14
+      },
+      "panel_direct_hda": {
+        "SIGNAL": 8500,
+        "WARM": 14
+      },
+      "panel_work": {
+        "SIGNAL": 3,
+        "WARM": 142
+      },
+      "tool_palette": {
+        "SIGNAL": 991
+      }
+    }
+  }
+}
