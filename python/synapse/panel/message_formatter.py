@@ -252,17 +252,41 @@ def format_response(response, font_scale=1.0):
     return _format_response_ex(response, font_scale)[0]
 
 
+def _speaker_label(who, timestamp, font_scale):
+    """Slack's actual dialogue anatomy: a NAME at the head of a group, the time
+    beside it, and nothing repeated on continuations.
+
+    Measured 2026-07-27, the only thing separating the two voices was tone —
+    #DEDEDE for the human, #C5C5C5 for the agent, plus a 2px rule on the human
+    side. Twenty-five points of grey on a dim panel is not a speaker signal.
+    The v9 design said "type and the rule tell the speaker apart"; in practice
+    the reader has to infer, every message.
+
+    Rendered as chrome, not content: mono, small, letterspaced, dim — so it
+    reads as a label and never competes with what was said. Returns "" for a
+    grouped message, which is what makes it Slack rather than a chat log.
+    """
+    sz = _scale(_SMALL_PX, font_scale)
+    ts = ('<span style="color:{d}; font-size:{s}px;">&#160;&#160;{t}</span>'
+          .format(d=_TEXT_DIM, s=max(sz - 1, 8), t=html.escape(timestamp))
+          if timestamp else "")
+    return ('<div style="font-family:{m}; font-size:{s}px; letter-spacing:1.2px; '
+            'color:{c}; margin-bottom:3px;">{who}{ts}</div>').format(
+        m=_MONO, s=sz, c=_TEXT_DIM, who=html.escape(who), ts=ts)
+
+
 def format_user_message(text, grouped=False, timestamp=None, font_scale=1.0):
-    """The human voice: a single signal-blue hairline rule + brighter text.
-    No bubble, no label — type and the rule tell the speaker apart.
+    """The human voice: a signal-blue hairline rule, brighter text, and a
+    speaker label at the head of a group.
 
     A two-cell table carries the rule: QTextDocument paints table-cell
-    backgrounds reliably where it ignores block ``border-left``. ``timestamp``
-    is accepted for signature compatibility but no longer rendered (taut).
+    backgrounds reliably where it ignores block ``border-left``.
     """
     escaped = html.escape(text).replace("\n", "<br>")
     body_sz = _scale(_BODY_PX, font_scale)
     my = _MSG_MARGIN_Y if grouped else _GROUP_MARGIN_Y
+    label = "" if grouped else _speaker_label("YOU", timestamp, font_scale)
+    escaped = label + escaped
     # v9 comp .you: 2px SIGNAL rule · 14px gap · bright text at 1.5 line-height
     # (line-height is best-effort — harmless if the QTextDocument subset drops it).
     return (
@@ -288,6 +312,7 @@ def format_synapse_message(content, grouped=False, timestamp=None, font_scale=1.
     body, chip_signed = _format_response_ex(
         content, font_scale, signed=None if grouped else signed)
     my = _MSG_MARGIN_Y if grouped else _GROUP_MARGIN_Y
+    label = "" if grouped else _speaker_label("SYNAPSE", timestamp, font_scale)
     note = ""
     if signed and not grouped and not chip_signed:
         note = (
@@ -295,8 +320,8 @@ def format_synapse_message(content, grouped=False, timestamp=None, font_scale=1.
             'margin-top:2px;">signed {who}</div>'
         ).format(dim=_TEXT_DIM, sz=_scale(_SMALL_PX, font_scale),
                  who=html.escape(str(signed)))
-    return '<div style="margin:{my}px 0;">{body}{note}</div>'.format(
-        my=my, body=body, note=note)
+    return '<div style="margin:{my}px 0;">{label}{body}{note}</div>'.format(
+        my=my, label=label, body=body, note=note)
 
 
 def format_system_message(text, font_scale=1.0):
