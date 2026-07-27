@@ -1931,6 +1931,12 @@ disappears because there is no version to get wrong.
 
 ### The finding that matters, and it inverts the assumption
 
+> **AMENDED BY R86 (2026-07-26).** The two character counts below are STRUCK — H7-F6 established
+> they reproduce under none of five measures, a Law 2 violation in this ruling. The authoritative
+> figure is `lop/karmarenderproperties.txt`, **56,325 chars**, measured against the build-shipped
+> `nodes.zip`. **The conclusion below is CONFIRMED on that stronger evidence**, and H7 adds the
+> part that makes it matter: SYNAPSE emits these two node types **123 and 31 times**.
+
 Both `nodes/lop/karmarenderproperties.json` (69,921 chars) and `nodes/lop/karma.json` (95,777
 chars) are present, substantial, current — and **neither mentions deprecation.** The runtime flags
 both; that is how H5 found them.
@@ -2363,3 +2369,114 @@ given file existed at a given moment.
 I have now made this error twice in one session: citing `store.py:830` as exemplary without
 reading it (R76), and ruling R82 on an unopened anchor. **Both times the source was credible and
 that was exactly why I did not check.**
+
+---
+
+# ADDENDUM — H7, COMPAT RE-ADJUDICATION (R86–R90)
+
+`green`, 12 findings, 8 ruling items. **596 of H5's 1,267 UNVERIFIABLE resolved (47%).** 671
+remain, each with a *named* reason rather than a shrug.
+
+---
+
+## RULING 86 — R72's numbers are STRUCK. Its conclusion is CONFIRMED on better evidence.
+
+**H7-F6:** *R72's two help-cache character counts are not reproducible. 69,921 and 95,777 match
+none of five measures.*
+
+I cited those figures in R72 as evidence that `karmarenderproperties` and `karma` carry large,
+current documentation that never mentions deprecation. **They came from a script whose output I
+did not pin, and they cannot be reproduced.** That is Law 2 — no number without a producer path —
+violated in a ruling, by me, one day after H1 caught the same class of defect in a receipt.
+
+**H7-F2 confirms the conclusion against the authoritative source:** `lop/karmarenderproperties.txt`
+in the build-shipped node reference, 56,325 chars, deprecation absent. And it adds the part that
+makes it matter: **SYNAPSE emits these two node types 123 and 31 times.**
+
+**Ruled:**
+1. **R72's character counts are struck** and replaced with H7's reproducible measure against
+   `nodes.zip`. The ruling's text is amended in place, not silently corrected.
+2. **R72's conclusion stands, on stronger evidence.** The doc-silent deprecation cell is real, and
+   it is the dangerous one exactly as ruled — every human-facing surface says these are fine while
+   the product emits them 154 times.
+3. A number in a ruling carries the same Law 2 obligation as a number in a receipt. **The document
+   has been holding its own agents to a standard it did not meet.**
+
+---
+
+## RULING 87 — The DECAY_CLOCK floor is 41, not 19. A 2.2x correction to a governing number.
+
+**H7-F3:** the floor rises to **41** as the union of runtime `deprecationInfo()` and authored help
+— 39 of them `doc_only`, where the help deprecates and the runtime does not.
+
+R72 already ruled that deprecation is the union of both sources and that 19 was a floor. **This is
+that ruling cashed out**, and the size of the correction is the argument for having made it: more
+than half of the deprecated surface was invisible to the runtime axis alone.
+
+**Ruled:** 41 is the current figure, with the 12 conditional rows recorded as **leads, not
+verdicts** — they are bound by owner-invariance rather than direct evidence and must not be
+counted as confirmed.
+
+---
+
+## RULING 88 — Two reader defects in H5, and both would have produced confident wrong answers.
+
+**H7-F4:** H5's authored-help reader **did not follow the `:include /composite/_old_cops_deprecated:`
+banner**, so the *entire* deprecated old-COPs surface read as current. A whole vendor-deprecated
+subsystem scored OK on the doc axis.
+
+**H7-F5:** H5 bound the bare leaf `expandString` to the **new** owner `hou.text.expandString`, then
+took the deprecation notice from the **old** symbol's page — **marking the replacement deprecated.**
+Acted on, it would have sent a migration to the symbol it was migrating away from.
+
+Both were caught by controls H7 wrote for the purpose (C17 requires the banner shape to fire).
+Neither was visible in H5's output, which reported clean.
+
+**Ruled:** these are `R60` in a new place — **a reader that resolves a reference must be controlled
+on the resolution, not only on the parse.** H5's reader parsed correctly and *bound* incorrectly,
+and a parse-level control cannot see that. Any future doc reader needs a binding control:
+given a known leaf with a known owner change, does it attach the notice to the right symbol?
+
+---
+
+## RULING 89 — H7-F7: the largest residual is a CENSUS defect, not a documentation gap.
+
+**528 of the 671 remaining** are bare method names with no dotted owner — `xRes`, `saveImage`,
+`allPixels` — and **335 are OpenUSD**. They are unresolvable not because documentation is missing
+but because the census emitted a leaf without recording what it hangs off.
+
+**Ruled: this is the highest-yield fix available to the next compat pass**, and it is cheap
+relative to its effect — 528 rows is 79% of the residual. It is a `scripts/` change, outside H7's
+fence, and it belongs to whoever runs the next census.
+
+**The general form:** *a measurement's largest unknown bucket is worth interrogating for
+instrument defects before it is treated as a knowledge gap.* H5 reported 1,267 unknowns. Roughly
+half were reachability (R59/H7) and 40% of the remainder are census kind. **Very little of it was
+ever an actual gap in what is knowable.**
+
+---
+
+## RULING 90 — H7-F8: two live spelling defects. Fix these.
+
+SYNAPSE writes `hou.NodeEventType.InputRewired` and `hou.NodeEventType.ParmTupleChanged`. Neither
+is the build's spelling. Each has one execution-context occurrence.
+
+**Ruled: fix both.** Wrong-owner is actionable where undecidable was not — these are two-line
+corrections with live call sites, and they are exactly the class of defect the whole compat
+exercise was built to surface. They go into the next repair leg, not into a ruling block to be
+considered.
+
+Also recorded: `docs/sprint_freeze/marshal_map.md:527` cites
+`hdefereval.executeInMainThreadWithResultAndDelay`, **not defined anywhere in the build's shipped
+source.** A governing document citing a symbol that does not exist — the same class as
+`CLAUDE.md`'s `dirtyAllTasks(remove_files=...)`, which documented a call that raises on every
+invocation.
+
+---
+
+## Deferred to the ruling block, not decided here
+
+The `pxr` corpus-ownership question (79 rows), the `cop2net` category conflict (60 occurrences),
+the 104 node types absent from the reference and never probed, and whether the deprecation-marker
+vocabulary should be promoted out of `harness/notes/` into a reusable checker. All real, none
+blocking, and none should be decided on a first read at midnight.
