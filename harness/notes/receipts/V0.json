@@ -1,0 +1,495 @@
+{
+  "schema": "receipt/v1",
+  "task": "V0",
+  "title": "Reconcile the orphaned RETINA M2 — the premise was false: M2 landed 2026-07-17 and shipped as v5.29.0",
+  "harness": "RETINA-VERIFY (harness/SYNAPSE_RETINA_VERIFY.md)",
+  "brief": "harness/prompts/v0.md",
+  "executed": "2026-07-27",
+  "status": "green_with_findings",
+
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "worktree-interactive (.claude/settings.json) — NOT harness/agent-settings.json and NOT harness/relay-settings.json. Recorded as-run per R25. This is material: the interactive fence is WIDER than relay-settings.json. Nothing in relay's deny list was touched — no push, no merge, no tag, no edit to VERSION, shared/bridge.py, harness/state/**, the baselines, or the constitution. pytest was available and run directly, so suite evidence is admissible under Article V. The six diff-reader subagents and their verifiers ran under agentTypes without Edit/Write; git status was snapshotted before and after fan-out and is byte-identical (only the pre-existing untracked .claude/.orch_launched).",
+
+  "commit_before": "c5e8487",
+  "commit_after": "the single commit carrying this file on retina/v0-m2-reconcile — resolve with `git log -1 --format=%H -- harness/notes/receipts/V0.json`. Not hardcoded: a receipt cannot name its own SHA, because writing the SHA changes it. Two attempts (6a05c40, then f95e0da after amending to record it) demonstrated exactly that, which is why this field names a producer command instead of a number (Law 2).",
+  "commits": ["1 — subject: 'leg(V0): reconcile RETINA M2 - the premise was false; M2 shipped as v5.29.0'"],
+  "merged": false,
+  "pushed": false,
+  "tagged": false,
+  "branch": "retina/v0-m2-reconcile",
+  "product_committed_R93": "SATISFIED. V0 is a READ-ONLY verdict leg by its own brief ('Not merging. Not resolving conflicts. Not fixing anything you find.'), so its ONLY product is this receipt — and R93 requires that product committed on the leg's own branch rather than left in a worktree one prune away from gone. It is: 6a05c40. No source file was modified; the working tree is otherwise unchanged from the pre-leg snapshot (only the pre-existing untracked .claude/.orch_launched). This commit amends itself to record its own SHA, which is why commit_after names it.",
+
+  "tests_before": { "passed": 4989, "failed": 0, "skipped": 137 },
+  "tests_after":  { "passed": 4989, "failed": 0, "skipped": 137 },
+  "test_delta": 0,
+  "suite_producer": "python -m pytest tests/ -p no:cacheprovider -q --no-header  [system Python 3.14.2, C:/Python314/python.exe] -> '4989 passed, 137 skipped, 554 warnings in 119.09s'",
+  "suite_floor": "harness/verify/suite_baseline.json = 4875/0/129 (promoted 2026-07-26). Current run is +114 passed over the floor. Law 6 held; this leg added and removed no tests.",
+  "commandment_7": "held — no test weakened, skipped, xfailed or deleted. No test was added either; V0 is a verdict leg.",
+
+  "HEADLINE": {
+    "the_brief_premise_is_REFUTED": "harness/prompts/v0.md asserts that archive/retina-m2-orphan 'carries 1,966 lines of RETINA M2 work that exists on no other branch.' It does not. The identical patch landed on 2026-07-17 as commit 1d160a9, was followed 21 minutes later by its crucible fix 3cc392f, was flywheel-marked merged (0a740e6), and SHIPPED as tag v5.29.0 ('RETINA T1: the scoped-delta proof engine is live'). It is reachable from 58 branches including master.",
+    "evidence": "git patch-id --stable returns the SAME id d8d5efce6b64144101c81070808bb2003b66a9b3 for BOTH f3be38c (archive/retina-m2-orphan) and 1d160a9 (on master). Different parent, identical patch.",
+    "three_independent_confirmations": [
+      "PATCH: git patch-id --stable identical (d8d5efce...) for f3be38c and 1d160a9",
+      "RELEASE: tag v5.29.0 exists; b538a31 'release: v5.29.0 — RETINA T1: the scoped-delta proof engine is live'",
+      "LEDGER: harness/state/flywheel_queue.json on HEAD carries RETINA.M2 with status='merged', ratified=true, and a note naming commit 3cc392f. The repo's own bookkeeping says it landed."
+    ],
+    "tier": "VERIFIED-RUNTIME",
+    "consequence": "The gate the brief erects ('Nothing downstream may be built until this is either landed or explicitly rejected') is already satisfied — by landing, ten days ago. V1–V4 are unblocked on this axis. They are NOT unblocked on the worker venv, which does not exist (finding F3)."
+  },
+
+  "oracle": {
+    "1_full_diff_read": "DONE — all 13 files read in full at HEAD and cross-checked against `git show f3be38c -- <path>`; per-file summary below.",
+    "2_merge_tree": "DONE — clean, and a no-op. Detail below.",
+    "3_byte_identity_15_of_15": "DONE — re-run, and independently strengthened from a test-count to a real byte-comparison. Detail below.",
+    "4_ingest_dependencies_both_interpreters": "DONE — imported and CALLED under both live interpreters, not merely read. Detail below.",
+    "5_worker_venv": "DONE — DESCRIBED and SCRIPTED, but NOT created; and the documented hython-seeding path is BROKEN on this build. Detail below."
+  },
+
+  "merge_tree": {
+    "producer": "git merge-tree --write-tree --name-only HEAD archive/retina-m2-orphan",
+    "result": "exit 0, tree 30d9f0d1a6901bd92900e6ef056365d8d41feb01, ZERO conflicting paths",
+    "conflicting_hunks": [],
+    "cleanly_merging_hunks": "ALL — but the merge is a NO-OP with one REGRESSION. `git diff --stat HEAD 30d9f0d` is EMPTY: the merge result is byte-identical to HEAD.",
+    "per_file_blob_comparison": {
+      "producer": "git rev-parse HEAD:<path> vs git rev-parse archive/retina-m2-orphan:<path>, all 13 files",
+      "identical_blobs_12_of_13": ["retina/events.py", "retina/ingest.py", "retina/qc_profiles.py", "retina/qc_profiles.toml", "retina/requirements.txt", "retina/setup_venv.ps1", "retina/setup_venv.py", "retina/t1.py", "retina/tests/fixtures/img_synth.py", "tests/test_retina_ingest.py", "tests/test_retina_t1.py", "tests/test_retina_t1_schema.py"],
+      "the_one_that_differs": "retina/t0.py — HEAD=4b92c5b, ORPHAN=d2770f7. HEAD is a STRICT SUPERSET: it carries 3cc392f, the M2 Pass-3 crucible fix (type-tolerant manifest fields). The archive branch is the PRE-fix version."
+    },
+    "merge_base": "d441738 — the orphan's own parent. HEAD carries 197 commits since that base; the orphan carries 1.",
+    "verdict": "Merging archive/retina-m2-orphan would add nothing and, if the t0.py side were ever taken, would REVERT a shipped showstopper fix."
+  },
+
+  "byte_identity_claim": {
+    "the_claim": "commit message: 'T0 refactored to import it ... Byte-identical T0 output (15/15 pinned).'",
+    "what_the_15_actually_are": "tests/test_retina_t0.py held EXACTLY 15 tests both before and after M2, and M2 did not touch the file at all (`git diff --stat d441738 f3be38c -- tests/test_retina_t0.py` is empty; the blob sha is 4378215c on BOTH sides). That makes it a genuine control: only the implementation moved.",
+
+    "re_run_A_the_pins": {
+      "producer": "git archive <commit> retina tests/test_retina_t0.py | tar -x -C <tmp>; cd <tmp>; PYTHONPATH=<tmp> C:/Python314/python.exe -m pytest tests/test_retina_t0.py -p no:cacheprovider -q --no-header --basetemp=<tmp>",
+      "d441738_pre_refactor": "15 passed, 1 warning in 0.31s",
+      "f3be38c_M2_orphan": "15 passed, 1 warning in 0.32s",
+      "HEAD_c5e8487": "17 passed, 1 warning in 0.34s  (15 + the 2 regressions 3cc392f added)",
+      "number_obtained": "15/15 — CONFIRMED as stated."
+    },
+
+    "re_run_B_actual_byte_identity_stronger_than_the_claim": {
+      "why": "A test-count pass is weaker than 'byte-identical output'. So the output itself was compared. 18 manifest cases (empty, missing products, zero-byte, unreadable non-EXR, single-part EXR, husk-shaped multipart, resolution mismatch, no-data-window, fingerprint declared-but-unstamped, missing .done, object-form products, missing AOV, mixed readable/unreadable, 3 MALFORM type cases, custom claim) were driven through check_manifest_against_disk with a FIXED `now` and a SHARED on-disk fixture set, and the canonical JSON hashed. Exceptions were recorded as data, so the ERROR path is compared too (Law 3).",
+      "producer": "<scratchpad>/t0_identity.py <tree> <shared-fixtures>  — json.dumps(sort_keys=True, ensure_ascii=False, indent=1) | sha256",
+      "d441738_pre_refactor": "01c0f084c9bfe6a262974622e9c149aac21df40881b6b66ab5de190244830f06",
+      "f3be38c_M2_orphan":   "01c0f084c9bfe6a262974622e9c149aac21df40881b6b66ab5de190244830f06",
+      "verdict": "IDENTICAL across all 18 cases. The refactor is byte-clean — a stronger result than the commit claimed.",
+      "HEAD_c5e8487": "d0ead578637266266307a2675e1e65c608d57a205d11799fc442057b91d0a51f — differs, and differs in EXACTLY 3 of 18 cases, all three MALFORM. At d441738 and f3be38c those three RAISE unhandled TypeError/ValueError; at HEAD they return an honest inconclusive event. That independently reproduces the crucible finding 3cc392f was written to fix.",
+      "LAW_1_negative_control": "The probe was proved able to fail. A mutant tree (one extra key injected into events.make_event) produced ff1ca4e7d3561529... vs post's b5977952867af8ac... — PROBE DISCRIMINATES: True. Without this control the identity result would be a decoration."
+    },
+
+    "why_the_refactor_is_byte_clean": "retina/t0.py:321-333 — the extracted retina.events.make_event emits the envelope keys in the SAME order as the inline dict it replaced (ch, v, tier, claim, checks, verdict, proof, at), and roll_up/make_check are lifted verbatim. The schema-sibling claim is STRUCTURAL, not parallel: T0 (retina/t0.py:39-44) and T1 (retina/t1.py:426) both call the same retina.events.make_event — grep confirms make_event/make_check/roll_up/emit_verdict have exactly one definition each. tests/test_retina_t1_schema.py:138-143 pins `emit_verdict is t0_emit` by OBJECT IDENTITY, which is un-fakeable.",
+    "PRECISION_CORRECTION_on_the_sibling_pin": "tests/test_retina_t1_schema.py:59 `assert set(t0_event.keys()) == set(t1_event.keys())` is RELATIVE, not absolute — both operands are built by the same make_event, so a key added inside make_event lands on both sides and the assertion still holds. It catches the regression it was written for (a future tier hand-rolling its own envelope, retina/events.py:6-9) and it does NOT pin which keys the envelope has. No golden JSONL fixture exists anywhere in the tree. Stated precisely here because an earlier phrasing in this receipt read as though it pinned the key set absolutely; it does not. The cross-version byte-identity property is established by THIS leg's probe (which carried its own negative control), not by that test.",
+    "what_the_in_tree_phrase_byte_identical_means": "Every in-tree use of 'byte-identical' (retina/events.py:26-28, retina/t0.py:82, retina/t1.py:425) is a DETERMINISM claim — pure function of its inputs — and that IS pinned, at tests/test_retina_t0.py:214-219 and tests/test_retina_t1_schema.py:119-123 (`e1 == e2`). The cross-version claim lives only in the M2 commit message. Both are true; they are different claims and should not be conflated."
+  },
+
+  "ingest_dependencies_per_interpreter": {
+    "method": "Not a read of the import block — every retina module was IMPORTED and the OIIO read path CALLED, on both live interpreters.",
+    "hython3_13": {
+      "path": "C:/Program Files/Side Effects Software/Houdini 22.0.368/bin/hython3.13.exe",
+      "version": "Python 3.13.10 (MSC v.1942 64 bit AMD64)",
+      "numpy": "PRESENT 2.3.2",
+      "OpenImageIO": "PRESENT 2.5.18.0",
+      "PyOpenColorIO": "PRESENT 2.5.0",
+      "cv2": "ABSENT",
+      "scipy": "ABSENT",
+      "skimage": "ABSENT",
+      "imports": "retina.events, retina.exr_header, retina.t0, retina.ingest, retina.qc_profiles, retina.t1 — ALL IMPORT OK. The CLAUDE.md §12 guard idiom works: ingest.py:47-61 guards numpy and OpenImageIO, t1.py guards cv2/numpy, so a missing native never breaks import.",
+      "runtime": "ingest.read_subimage / read_id_plane / find_id_subimage / subimage_count ALL WORK. Round-trip exact on both a single-part and a husk-shaped 2-part EXR written by OIIO itself."
+    },
+    "system_python": {
+      "path": "C:/Python314/python.exe",
+      "version": "Python 3.14.2",
+      "numpy": "PRESENT 2.2.6",
+      "cv2": "PRESENT 4.12.0",
+      "PyOpenColorIO": "PRESENT 2.5.1",
+      "OpenImageIO": "ABSENT",
+      "pytest": "PRESENT 8.4.2",
+      "imports": "all six retina modules IMPORT OK",
+      "runtime": "every cv2 T1 metric runs; the OIIO read path raises IngestUnavailable honestly (ingest.py:106-113)."
+    },
+    "which_interpreter_is_ingest_SUPPOSED_to_run_under": "The worker venv. Stated at retina/ingest.py:13-15 ('The OIIO leg runs only where OIIO is installed (the worker venv)'), retina/requirements.txt:1-3, and harness/SYNAPSE_RETINA_VERIFY.md:74-77. It is NOT hython-only and NOT host-only — ingest.py imports zero hou (grep-verified) and is deliberately host-independent.",
+    "OIIO_2x_vs_3x_SKEW_probed_and_REFUTED": {
+      "the_risk": "retina/requirements.txt:40 pins OpenImageIO==3.1.15.0; hython ships 2.5.18.0. retina/ingest.py:142-145 documents the skew in a comment and implements ONLY the 3.x return form (`inp.read_image(oiio.FLOAT)`), telling the reader to 'switch to that [2.x buffer-fill form] if you seed from hython's older OIIO.'",
+      "probe": "Wrote a real EXR with OIIO 2.5.18.0 under hython3.13, read it back through ingest.read_subimage.",
+      "result": "WORKS. `read_image(oiio.FLOAT)` returns an ndarray on 2.5.18.0; shape (4,8,3) float32, np.allclose round-trip True. Both the 3.x form AND the 2.x form are accepted by 2.5.18.0. The multi-part seek_subimage path also works: subimage_count=2, find_id_subimage=1, read_id_plane exact=True.",
+      "verdict": "REFUTED as a live defect. The code comment is conservative, not wrong. No fix needed; the comment could be relaxed to say 2.5.18.0 was probed and accepts the 3.x form.",
+      "tier": "VERIFIED-RUNTIME"
+    },
+    "colour_management_claims_verified": "ingest.ocio_config() reads os.environ['OCIO'] and never writes it (ingest.py:81-85); color_env() reports ocio_set honestly rather than defaulting to True (ingest.py:88-103), pinned by tests/test_retina_ingest.py:23-45. ID/data planes never touch a colour transform — read_id_plane goes straight through read_subimage with oiio.FLOAT and no OCIO call anywhere in the module. `cv2.imread` appears in retina/ ONLY inside three prose strings explaining why it is not used; there is no cv2 import in ingest.py at all.",
+    "boundary_claims_verified": "zero `hou` anywhere under retina/ (grep). zero `import cv2` in python/synapse, shared/, mcp_server.py, houdini/ — the M0 host boundary pin (tests/test_retina_boundary.py) holds. t1.py uses only cv2 base-module symbols: absdiff, dilate, GaussianBlur, getStructuringElement, morphologyEx + MORPH_OPEN/CLOSE/ELLIPSE — no contrib/ximgproc/quality namespace, so the documented 4.13.x fallback is genuine. Observed stronger: the whole cv2 metric set passes on cv2 4.12.0, BELOW the documented 4.13 fallback floor."
+  },
+
+  "worker_venv": {
+    "question": "described, created, or merely assumed?",
+    "answer": "DESCRIBED and SCRIPTED thoroughly — but NOT CREATED, and the documented hython-seeding path DOES NOT WORK on this build.",
+    "described": "Yes, unusually well. retina/requirements.txt is 43 lines of which 30 are rationale: why headless, why abi3, the named fallback (opencv-python-headless>=4.13,<5), and the wheel it was verified against (opencv_python_headless-5.0.0.93-cp37-abi3-win_amd64.whl). retina/setup_venv.py (87 lines) + retina/setup_venv.ps1 (55 lines) are a real portable/Windows pair.",
+    "created": "NO. `retina/.venv` does not exist in the main repo or in this worktree; no `.venv` exists anywhere under C:/Users/User/SYNAPSE (find -maxdepth 4). It is correctly gitignored (.gitignore:20-21, confirmed by `git check-ignore`), so absence is expected — but absence is still absence.",
+    "consumed_by_nothing": "grep across the whole tree for setup_venv / retina/.venv finds NO consumer outside retina/ itself — no harness script, no CI job, no conftest, no skill. The one external mention is harness/notes/receipts/F1.json:226, which is prose. The venv is an island.",
+    "BROKEN_hython_seeding": {
+      "claim_in_the_tree": "retina/setup_venv.py:13-15 'a hython-seeded venv additionally gets Houdini's native OpenImageIO for the EXR ingest leg'; retina/requirements.txt:36-37 'Houdini ships OIIO natively, so a hython-seeded venv brings its own (pin ignored there — inherited from the DCC)'.",
+      "probe": "hython3.13.exe -m venv <scratch>  — exactly what setup_venv.py --python does at line 57.",
+      "result_1": "ensurepip FAILS: \"Command '[...venvprobe\\Scripts\\python.exe', '-m', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 103.\" Lib/site-packages is EMPTY — there is no pip. setup_venv.py:67 then runs `vpy -m pip install --upgrade pip`, which cannot succeed.",
+      "result_2": "The generated pyvenv.cfg has `home = C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\bin`, and the venv's python.exe shim resolves to `<that>/python.exe` — which Houdini DOES NOT SHIP (bin/ contains hython.exe, hython3.13.exe, python313.dll — no python.exe). Invoking the venv python fails with \"did not find executable at '...\\bin\\python.exe': The system cannot find the file specified.\"",
+      "result_3": "pyvenv.cfg records `include-system-site-packages = false`. So even had it built, it would NOT inherit Houdini's OIIO. The 'brings its own / inherited from the DCC' claim is REFUTED by construction, independent of the ensurepip failure.",
+      "POSITIVE_CONTROL_R50": "`C:/Python314/python.exe -m venv <scratch>` on the SAME machine produces a working venv: Python 3.14.2, pip 25.3. The failure is specific to the hython seed path, not a general venv problem in this environment.",
+      "tier": "VERIFIED-RUNTIME"
+    },
+    "tests_skip_cleanly_CONFIRMED": "Yes, and the skips are honest with real reasons, not silent passes. tests/test_retina_t1.py:22-28 detects cv2 via importlib.util.find_spec WITHOUT importing the native module at collection time, and guards the module-level import behind `if _HAS_CV2 and _HAS_NUMPY`. tests/test_retina_ingest.py:61-64 does the same for OIIO. One skip is INVERTED and correct: test_retina_ingest.py:53-54 skips when OIIO IS present because the honest-unavailable path is then unreachable — a positive control on its own negative."
+  },
+
+  "interpreter_coverage_matrix": {
+    "_why_this_matters": "M2's test surface is split by native dependency. Measured, not inferred — the same 7 retina test files run on each interpreter.",
+    "producer": "<interp> -m pytest tests/test_retina_{t0,t1,t1_schema,ingest,boundary,exr_header,manifest}.py -p no:cacheprovider -q --no-header -rs --basetemp=<tmp>",
+    "total_tests": 94,
+    "system_python_3_14_2": "91 passed, 3 skipped — the 3 are the @oiio_only ingest tests (test_retina_ingest.py:67,86,107).",
+    "hython3_13": "71 passed, 23 skipped — 22 are the cv2-gated pixel metrics in test_retina_t1.py, 1 is the inverted OIIO-present skip.",
+    "reading": "No single interpreter available today runs all 94. The UNION does cover all 94, so coverage is not an illusion — every test runs somewhere. What runs NOWHERE is the composed path: cv2 metrics operating on OIIO-ingested pixels. That composition is exactly what the worker venv exists to provide, and the worker venv does not exist. This is the concrete cost of finding F3."
+  },
+
+  "per_file_summary": [
+    { "path": "retina/events.py", "lines": 100, "what": "NEW. The shared perception-event layer: make_check (tri-state pass True/False/None + free-form numeric evidence), roll_up (fail > inconclusive > pass), make_event (the blueprint §3 envelope), emit_verdict (append-one-line sidecar JSONL, sort_keys=True, parent mkdir). Pure stdlib — json/pathlib/typing plus the package constants. Zero hou, zero cv2.", "notable": "This file is the whole 'schema-sibling by construction' argument. Because T0 and T1 both import make_event, the envelope cannot drift between tiers without both moving. events.py:26-28 states the purity convention (no clock read; `now` is caller-supplied) that makes byte-identity possible at all." },
+    { "path": "retina/t0.py", "lines": "71 changed / 52 deleted", "what": "REFACTOR ONLY, no behaviour change. json import dropped; CheckVerdict, _check, _roll_up and emit_verdict deleted and replaced by imports from .events (emit_verdict re-exported so retina.t0.emit_verdict stays a valid import path); the inline envelope dict at _event replaced by make_event(...) with identical key order.", "notable": "Byte-identical output proved above (18/18 cases, same sha256). HEAD additionally carries 3cc392f which makes malformed manifest resolution/aovs inconclusive instead of raising — the archive branch does NOT have this." },
+    { "path": "retina/ingest.py", "lines": 236, "what": "NEW. OIIO EXR pixel reads -> float32 top-down planes. read_subimage (oiio.FLOAT normalises half and float32 alike), read_beauty, find_id_subimage (header-driven, no hardcoded index), read_id_plane, read_planes, plus ocio_config/color_env. Structure comes from the dependency-free exr_header reader; only PIXELS come from OIIO.", "notable": "Two honest-failure classes: IngestUnavailable when OIIO/numpy are missing, IngestError when the frame genuinely has no ID AOV — never a fabricated empty matte (ingest.py:186-192). $OCIO is read and never written." },
+    { "path": "retina/t1.py", "lines": 541, "what": "NEW, the largest file. Seven metrics — nan_inf_census, black_blown_frame, clip_percent, firefly_count, ssim (hand-rolled Wang-et-al via cv2.GaussianBlur), change_mask, containment — plus scoped-delta primitives id_matte, ssim_outside, project_bbox, plus build_t1_event and the two orchestrators assess_frame / assess_scoped_delta.", "notable": "ssim_outside dilates the matte by the SSIM window radius to form an exclusion band, and the docstring is careful to argue this is a region correction, not a threshold relaxation (Commandment 7). All thresholds arrive as parameters from qc_profiles; no hardcoded tolerance and no float equality in the metric path." },
+    { "path": "retina/qc_profiles.py", "lines": 96, "what": "NEW. tomllib (stdlib on 3.11+, so present on BOTH 3.13.10 and 3.14.2 — verified by import) loader + resolve_profile, which merges [renderer.denoiser_policy.sample_tier] over [default].", "notable": "load_profiles raises ProfileError if [default] is absent OR incomplete against REQUIRED_KEYS — a missing tolerance fails loud rather than defaulting to a silent zero. An unknown combination inherits [default] unchanged rather than fabricating a looser one." },
+    { "path": "retina/qc_profiles.toml", "lines": 52, "what": "NEW. schema retina_qc_profiles/v1. [default] carries all 11 knobs; two override tables exist — [karma_xpu.denoised.low] (ssim_min 0.990, diff_threshold 0.03) and [karma_cpu.raw.high] (ssim_min 0.997).", "notable": "LAW 2 SATISFIED HONESTLY. Lines 14-18 name the producer of its own numbers and disclaim them: 'the blueprint's own ILLUSTRATIVE defaults (§3 event shape prints leak_px/eps=32 and ssim_min=0.995) — starting points at the document's public altitude, NOT tuned production thresholds.' That is the right way to ship an unmeasured number." },
+    { "path": "retina/requirements.txt", "lines": 43, "what": "NEW. opencv-python-headless==5.0.0.93 (abi3 cp37+), OpenImageIO==3.1.15.0, pytest>=8, with 30 lines of rationale and a named fallback.", "notable": "Contains the refuted 'a hython-seeded venv brings its own [OIIO] — inherited from the DCC' claim (lines 36-37). See finding F3." },
+    { "path": "retina/setup_venv.py", "lines": 87, "what": "NEW. argparse + venv + pip; --python seeds from an external interpreter, --recreate rmtree's first. On pip failure it prints the sanctioned OpenCV fallback and exits 1.", "notable": "The default path (seed from the running interpreter) is sound. The --python hython path is broken on this build — finding F3. Note also setup_venv.py:50-53 does an unconditional shutil.rmtree on --recreate with no confirmation; harmless for a gitignored venv, worth knowing." },
+    { "path": "retina/setup_venv.ps1", "lines": 55, "what": "NEW. Windows twin of setup_venv.py; same contract, same fallback message, $ErrorActionPreference=Stop.", "notable": "Its usage example on line 7 points -Python at hython.exe — the path finding F3 shows does not produce a usable venv." },
+    { "path": "retina/tests/fixtures/img_synth.py", "lines": 169, "what": "NEW. Deterministic numpy fixture builders: flat_plane, gradient_plane, with_patch, before_after_pair, id_plane, inject_fireflies, inject_nan, plus an OIIO-guarded write_multipart_exr that mirrors the husk layout (part C beauty half + part primid float32).", "notable": "gradient_plane's docstring names the trap it exists to avoid: 'a flat plane has zero variance and degenerate SSIM'. That is a positive-control consideration written into the fixture rather than discovered later." },
+    { "path": "tests/test_retina_ingest.py", "lines": 117, "what": "NEW, 6 tests. Two run everywhere ($OCIO read-not-set, honest report when $OCIO absent), one is the inverted availability control, three are @oiio_only round-trips through a real OIIO-written multi-part EXR.", "notable": "test_read_id_plane_untransformed_and_located_from_header asserts the ID value survives as an EXACT integer — that is the 'Raw, never colour-transformed' claim genuinely pinned, not asserted in prose." },
+    { "path": "tests/test_retina_t1.py", "lines": 267, "what": "NEW, 22 tests, all cv2-gated. Paired positive/negative controls throughout: clean census passes / injected NaN fails; black frame fails / normal frame passes; identical SSIM==1 / changed SSIM<1; contained change passes / leaked change fails.", "notable": "Two Law-1 soft spots, both minor and one self-declared — see findings F4 and F5." },
+    { "path": "tests/test_retina_t1_schema.py", "lines": 184, "what": "NEW, 14 tests, genuinely cv2-free (imports only retina.events / t0 / t1 / qc_profiles — verified by it passing on hython where cv2 is absent). Pins the envelope, the roll-up order, honesty, determinism, JSONL persistence, and qc_profiles governance.", "notable": "The strongest file in the set. :51-60 pins set(t0.keys())==set(t1.keys()) — the sibling conformance check that would catch drift. :138-143 pins `emit_verdict is t0_emit` by object identity. :177-184 proves ProfileError fires on a [default]-less TOML — a check that can demonstrably fail." }
+  ],
+
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "structural",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The V0 brief's founding premise is false: RETINA M2 is not orphaned. It landed 2026-07-17 and shipped as v5.29.0.",
+      "anchor": "git patch-id --stable: f3be38c -> d8d5efce6b64144101c81070808bb2003b66a9b3; 1d160a9 -> d8d5efce6b64144101c81070808bb2003b66a9b3. `git merge-base --is-ancestor 1d160a9 master` -> true. `git tag --list v5.29*` -> v5.29.0. b538a31 'release: v5.29.0 — RETINA T1: the scoped-delta proof engine is live'. 0a740e6 'chore(flywheel): RETINA.M2 -> merged'.",
+      "root_cause": "harness/notes/receipts/F1.json:226 recorded 'present on NO other branch'. That test was `git branch --contains <SHA>`, which is correct for the SHA and WRONG for the question. f3be38c is the pre-rebase copy that lived in a workflow worktree; 1d160a9 is the rebased copy that landed. Different SHA, identical patch. SHA-containment answered a narrower question than the one being asked, and the receipt inherited the narrower answer.",
+      "was_F1_wrong_at_the_time": "YES — not merely stale. 1d160a9 is an ancestor of repair/f1-integrate, F1's OWN branch, whose tip a64033d is dated 2026-07-26. The work was in F1's tree while F1 declared it existed nowhere.",
+      "class": "This is the R91 class exactly: a check that could not see the composition it was asked about. R91 was two legs rewriting one function invisibly to each other; F1 is one leg testing SHA identity when patch identity was the question."
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "On HEAD today, three T1 paths CRASH on a shape mismatch instead of returning inconclusive — and assess_scoped_delta's own docstring promises they will not.",
+      "the_broken_promise": "retina/t1.py:495-497 verbatim: 'Honesty (§7): a missing baseline (``before``), a missing ID AOV (``id_plane`` / ``target_id``), or a shape mismatch yields ``inconclusive`` checks — never a silent pass.' The first two clauses hold. The third does not.",
+      "anchors": [
+        "retina/t1.py:468 -> retina/t1.py:238 — assess_frame(baseline=mismatched) raises ValueError 'operands could not be broadcast together with shapes (8,8) (32,32)' at `mu_x2, mu_y2, mu_xy = mu_x*mu_x, mu_y*mu_y, mu_x*mu_y`",
+        "retina/t1.py:527 -> retina/t1.py:266 — assess_scoped_delta(before=mismatched) raises cv2.error at `diff = cv2.absdiff(x, y)`",
+        "retina/t1.py:535 -> retina/t1.py:352 — assess_scoped_delta(id_plane=mismatched) raises IndexError at `outside = smap[np.logical_not(exclusion)]`"
+      ],
+      "why_it_survived": "The guard EXISTS at the primitive level — containment() checks `m.shape != t.shape` and returns an honest inconclusive at retina/t1.py:303-307. The orchestrators crash BEFORE reaching it. This is an isolated-green / composed-red defect: the unit is correct, the composition is not.",
+      "why_no_test_caught_it": "grep confirms NO test in tests/test_retina_t1.py or tests/test_retina_t1_schema.py drives a shape mismatch through assess_frame or assess_scoped_delta. The four orchestrator tests cover contained-change, leaked-change, no-baseline and no-ID-AOV. The promised fifth case is unpinned.",
+      "failure_scenario": "The M3 worker drains an outbox and hands T1 a baseline from a previous render at a different resolution — a res change mid-session, a proxy frame, a partially-written EXR. Instead of an inconclusive verdict the worker loop takes an unhandled exception and dies. That is the SAME failure mode the crucible caught in T0 and fixed in 3cc392f ('would kill the M3 worker loop draining a corrupted on-disk manifest'). The class was fixed in T0 and left live in T1.",
+      "probe": "<scratchpad>/t1_honesty2.py + t1_trace.py under C:/Python314/python.exe with cv2 4.12.0; 9 orchestrator cases driven, 3 crashed, tracebacks captured to the retina-side frame.",
+      "is_this_already_tracked": "NO — checked, not assumed. The M2 crucible deposited RETINA.M3-worker-hardening (0a740e6, still status=candidate / ratified=false on HEAD) with FOUR bounded findings: JSONL verdict atomicity vs PIPE_BUF, a T0 path-containment guard, resolve_profile leaf-only merge semantics, and the unverified OIIO ingest leg. The shape-mismatch crash is NOT among them. F2 is a new finding.",
+      "what_DID_work_in_the_same_probe": "The scoped-delta primitive discriminates correctly and honestly: correct matte -> delta_containment PASS with leak_px=0; wrong matte -> delta_containment FAIL with leak_px=60 > eps=32 AND ssim_outside FAIL at 0.7972 < 0.995; before=None -> both inconclusive; id_plane=None -> both inconclusive. The `leak` sentence the whole harness exists to produce is real and measurable. F2 is a hardening gap around a working core, not a broken primitive."
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The worker venv does not exist, nothing consumes it, and the documented hython-seeding path cannot create it on this build.",
+      "anchors": [
+        "retina/.venv absent in main repo and worktree; no .venv anywhere under C:/Users/User/SYNAPSE",
+        "retina/setup_venv.py:13-15 and retina/requirements.txt:36-37 — the refuted 'inherits Houdini's OIIO' claim",
+        "pyvenv.cfg from a real hython3.13 -m venv run: include-system-site-packages = false; home = <Houdini>/bin (which has no python.exe)",
+        "ensurepip exit status 103; the created venv's Lib/site-packages is empty",
+        "harness/SYNAPSE_RETINA_VERIFY.md:71-72 — 'RETINA's worker already runs in its own venv'"
+      ],
+      "positive_control": "python3.14 -m venv on the same machine -> working venv, pip 25.3. The failure is the hython path, not the machine.",
+      "cost": "Measured, not asserted: the composed path (cv2 metrics over OIIO-ingested pixels) runs on NO interpreter available today. See interpreter_coverage_matrix. V4 ('cv2 mask kit ... in the worker venv') has no environment to run in.",
+      "mitigation_that_exists": "The default seed path (`python retina/setup_venv.py` with no --python) is sound and would produce a 3.14.2 venv where both cv2 5.0.0.93 (abi3 cp37+) and OpenImageIO 3.1.15.0 (cp314 wheel, per requirements.txt:39) are the pinned wheels. That is the path to use. It was NOT executed by this leg — running pip install is a network-mutating act outside a read-only verdict leg's remit."
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "tier": "VERIFIED-STATIC",
+      "claim": "tests/test_retina_t1.py:263-267 test_metrics_raise_without_pixels_is_not_reachable_here cannot fail.",
+      "anchor": "tests/test_retina_t1.py:25-28 sets pytestmark = skipif(not (_HAS_CV2 and _HAS_NUMPY)); the test then asserts `t1.pixels_available() is True`. Inside that module cv2 is present BY CONSTRUCTION, so the assertion is true by construction — the Law 1 'D1 grounded-coverage 218/218' shape.",
+      "fairness": "The test's own docstring calls itself a 'Sanity' check and says the real path 'is exercised implicitly' elsewhere. It is self-declared, cheap, and harmless. It is still a check that cannot fail sitting in a file of checks that can, and Law 1 says state the condition under which it fails — there isn't one."
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "tier": "VERIFIED-STATIC",
+      "claim": "The firefly census has no negative control.",
+      "anchor": "tests/test_retina_t1.py:110-113 asserts `check['firefly_count'] >= 1` on a plane with 8 injected outliers. No paired test asserts a CLEAN plane yields 0. As written the test cannot distinguish 'detects injected outliers' from 'always reports at least one'.",
+      "context": "Every other metric in the file IS paired (clean/NaN, black/normal, identical/changed, contained/leaked). This is the one gap in an otherwise disciplined set."
+    },
+    {
+      "id": "F6",
+      "severity": "note",
+      "tier": "VERIFIED-STATIC",
+      "claim": "A resolved qc profile does not record WHICH profile produced it.",
+      "anchor": "retina/qc_profiles.py:79-91 resolve_profile returns a flat dict with no provenance key; retina/t1.py:450-474 reads values out of it into checks. An unknown renderer silently inherits [default] (pinned as correct by tests/test_retina_t1_schema.py:168-174).",
+      "assessment": "NOT a Law 3 violation — the threshold VALUES ride on every check (leak_px/eps, val/min), so a reader can always see what was asserted against. What a reader cannot see is whether those came from [default] or from a renderer-specific table. Cheap to add, worth adding before QC gating goes live, not worth blocking anything now.",
+      "relation_to_existing_queue": "ADJACENT to, not a duplicate of, RETINA.M3-worker-hardening item (3) — that item is about resolve_profile ignoring INTERMEDIATE tables (confirmed: retina/qc_profiles.py:81-86 returns [default] the moment any level misses, so a [renderer.policy] table with no [.tier] leaf contributes nothing). F6 is about not RECORDING which profile won. Both are real; they are different points about the same function."
+    },
+    {
+      "id": "F7",
+      "severity": "note",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The documented OpenCV fallback floor is conservative by at least one minor version.",
+      "anchor": "retina/requirements.txt:26-27 names opencv-python-headless>=4.13,<5 as the sanctioned fallback. All 22 cv2-gated T1 tests pass on cv2 4.12.0 (this machine's system python), below that floor. Consistent with t1.py using only base-module cv2 symbols.",
+      "assessment": "Harmless and arguably correct as a conservative pin. Recorded because it is a number in a governing file whose producer is a blueprint statement rather than a measurement (Law 2)."
+    },
+    {
+      "id": "F8",
+      "severity": "note",
+      "tier": "VERIFIED-DERIVED",
+      "claim": "The M2 commit message's 'Worker-venv perception-real leg (cv2 5.0.0 + OIIO 3.1.15.0): 68 passed / 1 skipped' travels without a producer path (Law 2).",
+      "reconstruction": "69 collected is arithmetically consistent with EXACTLY one file selection: t0(15) + t1(22) + t1_schema(14) + ingest(6) + boundary(2) + exr_header(10) = 69, i.e. every retina test file at f3be38c EXCEPT test_retina_manifest.py(23). The '1 skipped' is consistent with the inverted OIIO-present skip at tests/test_retina_ingest.py:53-54. Counts measured by `git show f3be38c:<file> | grep -c '^def test_'` over the 7 retina test files at that commit (92 total).",
+      "why_this_is_only_DERIVED": "The arithmetic fits uniquely, but no recorded invocation confirms which files were selected, and the venv that produced it no longer exists. Do not re-cite 68/1 as verified. It is plausible and unreproducible.",
+      "assessment": "Not a defect in the code — a gap in the receipt trail around it, of exactly the kind Law 2 exists to prevent. Recorded so a future reader does not inherit the number the way this leg's brief inherited F1.json:226.",
+      "corroborated": "An independent reviewer reconstructed the identical file set and the identical skip attribution without seeing this analysis."
+    },
+    {
+      "id": "F9",
+      "severity": "SHOWSTOPPER-for-V2",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "assess_frame FAILS a physically ordinary scene-linear render. The pixels are un-transformed HDR; the thresholds are a 0..1 display-referred window. The frame-health tier is a false-positive machine as shipped.",
+      "the_seam": "retina/ingest.py:158-160 commits to returning UN-transformed scene-linear pixels ('already linear (lin_rec709)'), deliberately and correctly. retina/t1.py:454-459 then tests those unbounded HDR values against low=black_threshold=0.001 / high=blown_threshold=0.999 from retina/qc_profiles.toml:38-39. On a linear plane, 'above 0.999' does not mean 'clipped' — it means 'brighter than diffuse white', which is every window, sky, specular and practical light in the frame.",
+      "probe": "256x256 scene-linear frame at 0.18 diffuse grey with 20% of the frame at 4.0 linear, run through the SHIPPED [default] profile. Producer: <scratchpad>/critic_verify.py under C:/Python314/python.exe, cv2 4.12.0, numpy 2.2.6.",
+      "result": "clip_percent pass=False 'clip=0.1992 > ratio=0.05'; assess_frame VERDICT = 'fail'. Sole-sourced from clip_percent — a red, not an inconclusive.",
+      "why_it_matters_here": "harness/SYNAPSE_RETINA_VERIFY.md:44-62 lists five ways this instrument lies and demands they be measured before the thing they guard is built. This is a sixth, and it is not a measurement error — it is a units mismatch between two files that are each internally consistent. V2 is the declared gate; a gate whose frame-health tier reds a correct render cannot certify anything.",
+      "the_fix_is_NOT_loosening_clip_ratio": "retina/qc_profiles.toml:9-12 states Commandment 7 for thresholds explicitly: 'A threshold is a test assertion. It is NEVER loosened to green a verdict.' Raising clip_ratio would be exactly that. The defect is that blown_threshold is display-referred while the plane is scene-referred; the honest repairs are to define the clip test against the EXR's actual value range, or to run it on a display-transformed proxy (which ingest.py:26-29 already scopes to M5), or to declare the metric inconclusive on un-normalised linear data.",
+      "provenance": "Surfaced by the completeness critic as a cross-file seam no per-file reader could see; INDEPENDENTLY REPRODUCED by this orchestrator before being recorded."
+    },
+    {
+      "id": "F10",
+      "severity": "major",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The zero-cv2 host boundary — blueprint P5, 'The eye never destabilizes the hand' — is enforced by a check that cannot fail in the way that matters. It is textual, not transitive, and M2 is the commit that created the hazard it is blind to.",
+      "the_mechanism": [
+        "tests/test_retina_boundary.py:38-55 scans python/synapse, shared/, houdini/ and mcp_server.py with the regex ^\\s*(?:import\\s+cv2\\b|from\\s+cv2\\b), and DELIBERATELY excludes retina/ (:25, :36-37).",
+        "python/synapse/panel/render_receipt.py:42-53 runs INSIDE the Houdini process, does `from retina.t0 import check_manifest_against_disk`, and on ImportError inserts the REPO ROOT at sys.path[0] and retries. The host itself puts the retina package on its own import path.",
+        "M2 is the commit that put `import cv2` (retina/t1.py:63) into that package."
+      ],
+      "probe": "python -c 'import retina.t0' -> cv2 in sys.modules: False. Then 'import retina.t1' -> cv2 in sys.modules: True (4.12.0). Same process.",
+      "status_today": "The property HOLDS. retina/__init__.py imports only two constants and retina/t0.py reaches only .events, so the host path never touches t1. Nothing is broken right now.",
+      "status_tomorrow": "It holds by convention, not by construction. One line — `from .t1 import ...` added to retina/__init__.py or retina/t0.py — loads OpenCV into Houdini's process, and test_host_process_has_no_cv2_imports stays GREEN, because the literal string never appears in a scanned file. Law 1: state the condition under which the check fails. It fails on a literal import in four named paths. It cannot fail on transitive import through a package the host puts on sys.path itself.",
+      "proportionality": "Recorded as major, not showstopper, because nothing is currently violated and the fix is small (assert on sys.modules after importing the host entry point, or scan the transitive closure). But it is the exact shape of Law 1's four cited instances: a check reporting healthy, continuously, while proving less than it claims."
+    },
+    {
+      "id": "F11",
+      "severity": "minor",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "Metric 2 (black_blown_frame) is strictly dominated by metric 3 (clip_percent) and can never be the sole red at any ratified tolerance.",
+      "anchor": "retina/t1.py:448-459 feeds BOTH metrics the same low/high thresholds. retina/qc_profiles.toml:40-41 sets black_ratio=0.95 and clip_ratio=0.05, so black_blown needs 19x the pixel population clip_percent needs. Neither override table (:46-52) touches either ratio, so this holds for all three shipped profiles.",
+      "observed": "On the F9 probe frame: clip pass=False while black_blown pass=True — the dominance made visible.",
+      "assessment": "Not a correctness bug; a redundancy that costs a metric slot and inflates the apparent breadth of the seven-metric kit. Worth knowing before the kit's coverage is cited as evidence."
+    },
+    {
+      "id": "F12",
+      "severity": "minor",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "Invoked as the bare `pytest` console script, the entire M2 test surface is a COLLECTION ERROR, not a skip.",
+      "anchor": "`retina` is installed nowhere: with CWD stripped from sys.path, importlib.util.find_spec('retina') is False while find_spec('synapse') is True (the editable .pth). pyproject.toml declares where=['python'] and retina/ lives at the repo root. So `from retina import ...` at tests/test_retina_t1_schema.py:22 resolves ONLY because `python -m pytest` injects CWD.",
+      "probe": "`pytest tests/test_retina_t1_schema.py` -> 'ERROR tests/test_retina_t1_schema.py / Interrupted: 1 error during collection'. `python -m pytest` on the same file -> 14 passed.",
+      "why_it_is_invisible": "Every producer command in harness/verify/suite_baseline.json is `python -m pytest`, so the floor is green and the dependency on an unstated invocation convention never surfaces.",
+      "assessment": "A skip is honest; a collection error is loud; neither is wrong. The defect is that the M2 surface's reachability rests on a convention no test pins and no doc states."
+    },
+    {
+      "id": "F13",
+      "severity": "minor",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "retina/setup_venv.ps1's failure handler cannot fire, so a failed pip install reports success — a Law 3 violation.",
+      "anchor": "retina/setup_venv.ps1:39-50 wraps `& $vpy -m pip install -r $reqs` in try/catch and relies on $ErrorActionPreference='Stop' (:18) to turn a native-command failure into a terminating error. It does not. $LASTEXITCODE is never checked anywhere in the file.",
+      "probe": "powershell -NoProfile -Command \"$ErrorActionPreference='Stop'; try { & cmd.exe /c 'exit 1'; 'FELL-THROUGH' } catch { 'CATCH FIRED' }\" -> FELL-THROUGH, LASTEXITCODE=1, PSVersion=5.1.26100.8894.",
+      "consequence": "Control falls through to setup_venv.ps1:52-55, which prints 'RETINA worker venv ready: <path>' and exits 0 over an empty or half-populated venv. setup_venv.ps1:1-2 calls itself the 'Windows twin of setup_venv.py'; the Python twin does NOT share the defect (subprocess.check_call raises, setup_venv.py:69-78). They diverge on the one behaviour that matters.",
+      "compounds_F3": "F3 says the venv is not created. F13 says that on Windows, the failure to create it is reported as success. That is worse than the gap."
+    },
+    {
+      "id": "F14",
+      "severity": "minor",
+      "tier": "VERIFIED-STATIC",
+      "claim": "requirements.txt's graceful-degradation promise is unreachable, and both scripts misattribute the failure.",
+      "anchor": "retina/requirements.txt:33-37 states that where no OIIO wheel resolves 'the worker still runs every cv2 T1 metric ... only the EXR file-read leg is OIIO-owed on that platform.' But OpenImageIO==3.1.15.0 (:40) is a hard pin in the same file as opencv-python-headless==5.0.0.93 (:28); pip resolves the whole set before installing, so an unresolvable OIIO pin aborts the entire install and cv2 is not installed either. You get an empty venv, not a cv2-only one.",
+      "compounds": "Both failure handlers (setup_venv.py:71-77, setup_venv.ps1:43-48) attribute ANY resolution failure to OpenCV — pointing the operator at the pin that resolved. And requirements.txt:14-17 ('the abi3 wheel spans cp37+ ... so ANY local interpreter can seed the venv') is true of the OpenCV line but false of the file, since the only OIIO wheel it names is cp314 while the seeding path it recommends is cp313.",
+      "not_probed": "Marked VERIFIED-STATIC, not RUNTIME: confirming pip's abort behaviour would require a network install, which is outside a read-only verdict leg's remit. The claim rests on pip's documented resolve-then-install order and the file's own text."
+    },
+    {
+      "id": "F15",
+      "severity": "major",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The M2 test surface is broad but shallow: mutation testing shows the suite stays green while load-bearing implementations are replaced by stubs. Twelve such gaps survived adversarial verification.",
+      "method": "51 candidate defects were raised by six independent per-file readers and each was then attacked by a separate verifier instructed to REFUTE it and to default to refuted when uncertain. 39 were refuted. 12 survived. The survivors are listed below with their anchors; all were established by MUTATION (break the implementation, observe the suite) rather than by reading.",
+      "survivors": [
+        "M2T-03 (major) tests/test_retina_t1.py:248 — project_bbox: REMOVING THE Y-FLIP at retina/t1.py:404 leaves the test passing. The y-flip is the mechanism behind the 'one top-down orientation' claim (retina/ingest.py:30-33). Switching the row-vector multiply at :396 to column-vector also passes. Two of the test's four assertions merely restate the clamp.",
+        "M2T-04 (major) tests/test_retina_t1.py:116 — test_ssim_identical_is_one holds by algebraic symmetry, not by implementation: with x==y the numerator and denominator are the identical expression, so it returns 1.0 even with cv2.GaussianBlur stubbed to return zeros. Combined with the other two SSIM tests, the SSIM implementation has NO numerical ground truth anywhere in the repo.",
+        "M2T-01 (minor) tests/test_retina_t1.py:173 — ssim_outside, half of the scoped-delta proof, can be replaced by an unconditional green and all 22 T1 tests still pass.",
+        "M2T-10 (minor) tests/test_retina_t1.py:142 — id_matte: a mutant computing (ids != 0) and IGNORING target_id is byte-identical on every fixture; forcing dilation=0 also passes. All 8 id_plane call sites use a single region with target_id 7.",
+        "M2T-11 (minor) tests/test_retina_t1.py:130 — change_mask: forcing morph_radius=0 leaves 22/22 passing. The fixture is a clean rectangle on a noise-free gradient, so there is no speckle to open and no pinhole to close.",
+        "M2T-06 (minor) tests/test_retina_ingest.py:87 — 'header locates the ID subimage (no hardcoded index)' is unverified: monkeypatching find_id_subimage to `lambda p: 1` leaves all runnable ingest tests passing, because every fixture writes the ID part at index 1.",
+        "M2T-05 (minor) tests/test_retina_ingest.py:68 — the 'topdown' test cannot detect a vertical flip: gradient_plane (img_synth.py:41-43) tiles one row down the frame, so it EQUALS its own vertical flip, and the only orientation assertion compares left-vs-right within row 0.",
+        "M2T-02 (minor) tests/test_retina_t1.py:263 — the tautological test (this leg's F4, found independently). Additionally: T1Unavailable is asserted in no test anywhere, despite the docstring claiming it is covered.",
+        "M2T-15 (note) tests/test_retina_t1.py:58 — the inf half of nan_inf_census has no negative control: inf_count is only ever asserted ==0, img_synth has inject_nan but no inject_inf, so np.isinf at retina/t1.py:132 is never proven to fire. A typo replacing it with np.isnan ships green. (The clip half of this finding was refuted.)",
+        "RQC-4 (minor) retina/qc_profiles.py:76 — see F16.",
+        "D3 (minor) retina/ingest.py:143 — see the OIIO note below.",
+        "D4 (minor) retina/setup_venv.py:57 — the venv finding, independently reached; see F3."
+      ],
+      "proportionality": "This is NOT a claim that T1 is wrong. This orchestrator drove the scoped-delta primitive behaviourally and it discriminates correctly (leak_px 0 vs 60 against eps=32). It is a claim that the SUITE would not tell you if it stopped discriminating. Every survivor is a Law 1 instance: a check that reports healthy while proving less than its name implies.",
+      "refuted_for_balance": "39 of 51 candidates did NOT survive, including every claim that the envelope/roll-up/honesty pins are weak, the entire qc_profiles key-space attack except RQC-4, and 5 of 6 venv claims. The schema/governance layer (tests/test_retina_t1_schema.py) held under attack."
+    },
+    {
+      "id": "F16",
+      "severity": "minor",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "resolve_profile's docstring says the merge 'only ever narrows or restates tolerances ... it never invents or loosens one' — and the shipped TOML's own override table loosens both knobs it touches.",
+      "anchor": "retina/qc_profiles.py:76-78 (the claim) vs retina/qc_profiles.toml:46-48, [karma_xpu.denoised.low]: ssim_min 0.995 -> 0.990 (a LOWER structural-similarity floor is easier to pass) and diff_threshold 0.02 -> 0.03 (a LARGER abs-diff floor means fewer pixels count as changed). Both moves are permissive.",
+      "fairness": "The loosening is well-reasoned and stated in the config — qc_profiles.toml:44-45 explains that XPU denoiser smear and GPU noise widen the floor, and comparing denoised-vs-denoised like-for-like is correct practice. The defect is the DOCSTRING, which asserts a property the ratified data contradicts. Under Commandment 7 the distinction matters: a tolerance widened by ratified config is legitimate; the docstring claims the loader structurally cannot do it, which would make an unratified widening invisible rather than impossible.",
+      "relation": "Adjacent to F6 (no provenance recorded) and to the already-queued RETINA.M3-worker-hardening item (3) (intermediate tables ignored). Three separate true statements about one 27-line function."
+    }
+  ],
+
+  "verdict": {
+    "on_the_branch_archive_retina_m2_orphan": "REJECT as a merge candidate.",
+    "why": "Not because the work is bad — the work is good and is ALREADY LANDED. Reject because (a) `git diff HEAD <merge-tree>` is empty, so merging accomplishes literally nothing, and (b) the branch's retina/t0.py is the PRE-crucible-fix version; any resolution that took its side would revert 3cc392f, a shipped showstopper fix. There is no state of the world in which merging this branch is an improvement.",
+    "on_the_WORK_M2_contains": "ALREADY LANDED — and, on the evidence gathered here, soundly. Byte-identical T0 refactor proved at the byte level across 18 cases including error paths. Schema-siblinghood is structural and test-pinned. The scoped-delta primitive discriminates correctly (leak_px=0 on a contained change, 60 on a leaked one, against eps=32). Missing-input paths are honestly inconclusive. Zero hou, zero host-side cv2, base-module cv2 only. The OIIO version-skew risk was probed and refuted.",
+    "on_what_HEAD_still_needs": "LAND WITH NAMED FIXES applies not to the branch but to the CURRENT tree. NAMED FIXES, in priority order: F9 (assess_frame reds a physically ordinary scene-linear render — display-referred thresholds on scene-linear pixels; blocks V2, which is the declared gate), F2 (shape-mismatch crashes in three T1 orchestrator paths, contradicting an explicit docstring promise — the same class the crucible already fixed in T0), F10 (the zero-cv2 host boundary is textual, not transitive, and M2 created the hazard it is blind to), F3+F13+F14 (the worker venv is uncreated, its documented hython seed path is broken, and on Windows that failure reports SUCCESS), F15 (twelve mutation-proven coverage gaps — the suite would not tell you if T1 stopped discriminating). None of these blocks V1, which is a read-only capture probe.",
+    "revised_confidence_note": "The verdict on the WORK is unchanged by the findings above and should not be read as softened. The scoped-delta primitive — the one sentence this harness exists to produce — was driven behaviourally and discriminates correctly. What the findings establish is that the surrounding instrument is less measured than its documentation implies: three governing sentences (the shape-mismatch promise, the 'never loosens' promise, the P5 boundary) assert properties the code does not currently hold, and the test surface would not report it. That is a hardening bill on a sound core, not a rebuild.",
+    "on_the_branch_ref_itself": "KEEP the ref, do not delete it in this leg. Law 4: classify before you delete, and deletion is a separate human act. It is now CLASSIFIED — superseded duplicate of 1d160a9, patch-id d8d5efce, retained at zero cost. Recommend renaming or annotating it so the next reader does not re-open this question; that is a human call, not an agent's."
+  },
+
+  "for_ruling": [
+    {
+      "id": "V0-R1",
+      "question": "F1's 'present on NO other branch' was produced by `git branch --contains <SHA>` and was false when written. Should branch-orphan classification require a patch-id check?",
+      "why_it_is_a_ruling": "It is a value judgement about how much verification a housekeeping step owes, not a fact provable from the tree. The cost is one `git patch-id --stable` per candidate branch; the benefit is that a rebased-then-landed commit stops reading as orphaned work.",
+      "proposed": "Any receipt claiming a branch carries unique work must cite BOTH `git branch --contains <sha>` AND `git patch-id --stable` matched against the tips it claims are missing it. This is a check that can fail today — it would have failed on F1.json:226 — which is the Law 1 bar.",
+      "relation": "Direct descendant of R91 (a check answering a narrower question than the one asked) and R92 (collisions invisible until integration)."
+    },
+    {
+      "id": "V0-R2",
+      "question": "F2: should the T1 shape-mismatch fix be its own leg, or folded into V2?",
+      "why_it_is_a_ruling": "A defensible-options call. It is a real defect with a broken docstring promise, but V2 (noise floor + ID stability) is the declared gate and will exercise exactly these orchestrators with real renders — arguably the right place to find and fix it under load. Against that: shipping V2 on a T1 that crashes on a res change means the gate's own instrument can die mid-measurement.",
+      "recommendation": "Fold into V2's opening move rather than a standalone leg — V2 is where mismatched-shape inputs actually arise, and the fix is small (a shape guard at the top of both orchestrators returning the inconclusive checks the docstring already promises), but it must land BEFORE V2's measurements are trusted, not after.",
+      "not_decided_here": "Article I — an agent may not decide what a leg's scope should be."
+    },
+    {
+      "id": "V0-R3",
+      "question": "F3: who creates the worker venv, and with which interpreter?",
+      "why_it_is_a_ruling": "Two defensible options with different costs. (a) System python 3.14.2 seed — works today, gets both pinned wheels, but is a third interpreter in a repo that already juggles hython 3.13.10 and system 3.14.2. (b) Fix the hython seed path — keeps the worker on the DCC's interpreter and inherits Houdini's OIIO, but requires solving ensurepip-103 and the missing bin/python.exe, and pyvenv.cfg would need --system-site-packages which is a different isolation posture than the blueprint's 'host-ABI-independent by construction'.",
+      "evidence_for_the_decision": "Option (a) is VERIFIED-RUNTIME working on this machine. Option (b) is VERIFIED-RUNTIME broken on this machine. That does not decide it — (b) may be worth fixing — but the asymmetry is real and measured.",
+      "blocking": "V4 explicitly ('cv2 mask kit ... in the worker venv'). NOT blocking V1 (read-only capture probe) or V2 (noise floor, which needs renders and hython, not cv2)."
+    },
+    {
+      "id": "V0-R5",
+      "question": "F9: the frame-health tier reds a correct scene-linear render. Is V2 gated on fixing it, and which repair?",
+      "why_it_is_a_ruling": "Three defensible repairs with different costs, and the choice sets a convention the whole tier ladder inherits. (a) Define the clip test against the EXR's actual value range rather than a fixed 0..1 window — keeps the metric on linear data, but 'clipped' becomes relative and needs its own definition. (b) Run clip/black-blown on a display-transformed proxy — matches how a human judges exposure, but ingest.py:26-29 scopes the display proxy to M5, so this pulls M5 work forward. (c) Return inconclusive on un-normalised linear data — honest, cheap, and consistent with §7, but silences two of the seven metrics until (a) or (b) lands.",
+      "what_is_NOT_a_defensible_option": "Raising clip_ratio. retina/qc_profiles.toml:9-12 forbids it in the file's own words, and it would convert a units bug into a tuned tolerance — the exact move Commandment 7 exists to stop.",
+      "recommendation": "(c) now, as a one-line honesty guard that unblocks V2 immediately, with (a) or (b) ruled separately. An inconclusive metric is a known gap; a false red is an instrument that must not be trusted, and V2's whole purpose is to establish whether the instrument can be trusted.",
+      "blocking": "V2 — the declared gate."
+    },
+    {
+      "id": "V0-R6",
+      "question": "F10: should the zero-cv2 host boundary be enforced by reachability rather than by regex?",
+      "why_it_is_a_ruling": "It is a cost/benefit call on a check that is not currently failing. Nothing is violated today. The cheap version is one assertion — import the host entry point in a subprocess and assert 'cv2' not in sys.modules — which would fail the moment retina/__init__.py or t0.py reaches t1. The thorough version walks the transitive import closure of the host surfaces and is more work than the risk currently justifies.",
+      "recommendation": "The cheap version. It is a check that can fail, it costs one test, and it converts P5 from a convention into a mechanism. Note this is the SAME shape as the Article IV principle that enforcement belongs in the definition rather than the instruction.",
+      "not_blocking": "Nothing today."
+    },
+    {
+      "id": "V0-R7",
+      "question": "F15: twelve mutation-proven coverage gaps. Is a mutation-testing pass owed on the T1 kit before V3 trusts it?",
+      "why_it_is_a_ruling": "A judgement about how much verification a measuring instrument owes before its measurements are cited. The gaps are real and were found by mutation, not by reading; but closing all twelve is a leg of its own, and V3 is the mile that actually depends on T1's numbers being right. Two of the twelve (M2T-03 project_bbox y-flip, M2T-04 SSIM with no numerical ground truth) are load-bearing for V3 specifically.",
+      "recommendation": "Not all twelve. Close M2T-03 and M2T-04 before V3 — an SSIM with no ground truth and a projection whose y-flip is unpinned are the two that would make V3 'produce confident nonsense' in harness/SYNAPSE_RETINA_VERIFY.md:109's own phrase. The other ten are ordinary hardening and can ride M3.",
+      "not_decided_here": "Article I — scope is not an agent's call."
+    },
+    {
+      "id": "V0-R4",
+      "question": "Should harness/SYNAPSE_RETINA_VERIFY.md:71-72 be corrected, and does correcting a governing document mid-harness require a human?",
+      "why_it_is_a_ruling": "The doc says in the present tense that the worker 'already runs in its own venv'. It does not. Article VII deny-lists the constitution from agent edit but is silent on harness documents; R93's spirit is that governing claims must be true. This leg did not edit it — see drift D1.",
+      "proposed": "A one-line correction to the tense and a pointer to F3, authored by a human or under a named standing authority."
+    }
+  ],
+
+  "drift": [
+    {
+      "id": "D1",
+      "severity": "structural",
+      "note": "harness/SYNAPSE_RETINA_VERIFY.md:71-72 states 'RETINA's worker already runs in its own venv, which is exactly where cv2 belongs.' Present tense, and false — no venv exists anywhere in the tree, and the documented hython seed path does not build one. The doc's §2 mile table then builds V4 on that environment.",
+      "why_structural_not_cosmetic": "It is not a wording slip; the harness's own dependency plan rests on an environment that does not exist. Per Article VI a structural contradiction escalates rather than being silently resumed past. Escalated as V0-R4; NOT edited by this leg.",
+      "resumed_anyway": "Yes, and deliberately — V0 is a verdict leg whose whole job is to report this class of gap. Stopping would have suppressed the finding the brief asked for."
+    },
+    {
+      "id": "D2",
+      "severity": "process",
+      "note": "The V0 brief itself carries the refuted premise (harness/prompts/v0.md:5 '1,966 lines ... exists on no other branch', :17 'Nothing downstream may be built until this is either landed or explicitly rejected'). It inherited the claim from harness/notes/receipts/F1.json:226 without re-deriving it — Law 5 in miniature: written from a prior artifact's memory rather than from the tree.",
+      "correction": "The brief's own standing rule ('Probes beat memory') is what caught it. Worth noting that the rule caught the document that states it, which is the rule working, not failing."
+    },
+    {
+      "id": "D3",
+      "severity": "accuracy",
+      "note": "The M2 commit message reports 'Full suite worktree-resident: 4510 passed / 0 failed / 100 skipped'. Not reproducible today and not re-run at that commit by this leg — HEAD is 197 commits ahead and the current suite is 4989/0/137 on system Python 3.14.2. The M2-era number is recorded as UNVERIFIED-here, not disputed. It is consistent with the trajectory (the v5.29.0 release note says 4,512).",
+      "correction": "No action. Recorded so the number is not re-cited as though this leg confirmed it (Law 2)."
+    },
+    {
+      "id": "D4",
+      "severity": "environment",
+      "note": "Suite evidence in this receipt comes from system Python 3.14.2, where the vendored cp311+cp313 tree is ABI-INACTIVE (RuntimeWarning emitted on every run). Same standing condition recorded as T0's D5. hython3.13 DOES have pytest 9.1.1 and runs the retina subset cleanly (71/23), but was not used for the full-suite number.",
+      "correction": "None owed by this leg. The interpreter is named per R31 so the number is not read as interpreter-agnostic."
+    },
+    {
+      "id": "D5",
+      "severity": "process",
+      "note": "SELF-REPORTED HARNESS DEFECT. The six per-file readers' output was passed to the completeness critic through a `JSON.stringify(...).slice(0, 60000)` truncation in this leg's own workflow script. The critic received four of six groups and a payload that terminated mid-word. It said so in its first paragraph, read the missing files directly rather than assuming, and flagged that retina/setup_venv.ps1 and retina/tests/fixtures/img_synth.py appeared in no file list it was given.",
+      "why_it_is_recorded": "The critic's honesty is what kept this from becoming a silent coverage hole — and it then found F13 (the PowerShell catch that cannot fire) in one of the very files the truncation hid. Had it inferred coverage from a truncated payload instead of reading, that finding would have been lost. The defect is mine, not the agent's.",
+      "correction": "A fan-out that hands one agent the aggregate of the others must either pass the payload whole or state the truncation IN the prompt so the critic knows what it is missing. Silent slicing produces an agent that cannot know what it did not see."
+    },
+    {
+      "id": "D6",
+      "severity": "accuracy",
+      "note": "SELF-CORRECTION. An earlier draft of this receipt described tests/test_retina_t1_schema.py:59 as pinning the envelope so 'a drift fails loud'. That overstates it: the assertion is relative — both operands come from the same constructor — so it cannot fail on a change to the shared envelope. Corrected in byte_identity_claim.PRECISION_CORRECTION_on_the_sibling_pin. No conclusion changes; the cross-version byte-identity result rests on this leg's own probe and its negative control, not on that test."
+    }
+  ],
+
+  "queued_item_CLOSED_by_this_leg": {
+    "item": "harness/state/flywheel_queue.json -> RETINA.M3-worker-hardening, bounded finding (4)",
+    "verbatim": "'OIIO ingest leg unverified on the dev interp (OIIO absent) — live-verify in the worker/hython-seeded venv.'",
+    "status_now": "SATISFIED, by a different route than the item anticipated. The item assumed the verification needed the worker venv. It did not: hython3.13 already ships OIIO 2.5.18.0, and the ingest leg was live-verified there today — read_subimage, seek_subimage multi-part, find_id_subimage (header-driven), read_id_plane exactness, plus the three @oiio_only tests in tests/test_retina_ingest.py all PASS under hython.",
+    "tier": "VERIFIED-RUNTIME",
+    "caveat": "This closes the OIIO half only. cv2 is absent from hython, so the COMPOSED path (cv2 metrics over OIIO-ingested pixels) is still unverified anywhere — that remains blocked on F3.",
+    "not_flipped": "The queue entry was NOT edited. status stays 'candidate', ratified stays false. Flipping a flywheel gate is a human act (Article I); this receipt supplies the evidence for the flip, not the flip."
+  },
+
+  "standing_rules_observed": {
+    "never_push": "held — no push",
+    "never_merge": "held — no merge; merge-tree is a read-only computation that writes a tree object to the odb and touches no ref",
+    "never_tag": "held — no tag",
+    "probes_beat_memory": "held — every load-bearing claim in this receipt is a probe result with its producer command, including the two that went AGAINST the reading (the OIIO 2.x skew refuted; the hython venv broken)",
+    "law_1": "held — the byte-identity probe carries an explicit negative control (mutant tree -> different hash) and the finding F4/F5 entries apply the same test to M2's own tests",
+    "law_4": "held — archive/retina-m2-orphan is CLASSIFIED, not deleted",
+    "law_5": "the point of this leg — see D2"
+  },
+
+  "artifacts": {
+    "scratchpad": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v0-m2-reconcile/e7cfd4b2-62c6-461f-994c-89c6d69db256/scratchpad/",
+    "probes": ["mkfixtures.py", "t0_identity.py (18-case byte-identity battery)", "oiio_probe.py", "oiio_multi.py", "t1_honesty2.py", "t1_trace.py"],
+    "outputs": ["out_pre.json", "out_post.json", "out_head.json", "out_mutant.json"],
+    "note": "Scratchpad only — nothing was written into the repo except this receipt."
+  },
+
+  "resume_token": {
+    "skip_on_reentry": "Do NOT re-litigate whether M2 is orphaned. It is not. patch-id d8d5efce6b64144101c81070808bb2003b66a9b3 is on master as 1d160a9 + 3cc392f, released v5.29.0, reachable from 58 branches. Do not merge archive/retina-m2-orphan; it is a strict subset and would revert 3cc392f.",
+    "also_skip_byte_identity": "The 15/15 byte-identity claim is settled — CONFIRMED at the test level (15 passed at both d441738 and f3be38c) and at the byte level (sha256 01c0f084c9bfe6a262974622e9c149aac21df40881b6b66ab5de190244830f06 identical, 18/18 cases, with a negative control proving the probe discriminates).",
+    "also_skip_oiio_skew": "The OIIO 2.x-vs-3.x skew is probed and refuted on 22.0.368 / OIIO 2.5.18.0 — read_image(oiio.FLOAT) returns an ndarray there, and the multi-part seek path works. Do not re-open without a new build.",
+    "start_here_instead": "F9 first (assess_frame reds a correct scene-linear render — blocks V2, the declared gate), then F2 (T1 shape-mismatch crashes), F10 (host boundary textual not transitive), F3+F13+F14 (the venv, and its Windows failure reporting success), F15 (M2T-03 and M2T-04 before V3). All live on HEAD today.",
+    "method_note_for_the_next_leg": "The three findings that mattered most came from DRIVING the code, not reading it: F2 from calling the orchestrators with malformed inputs, F9 from feeding a physically ordinary HDR frame through the shipped profile, F15 from mutating implementations and re-running the suite. Six careful per-file reads produced 51 candidates of which 39 were refuted. Reading found the claims; execution found the defects.",
+    "open_rulings": ["V0-R1", "V0-R2", "V0-R3", "V0-R4", "V0-R5", "V0-R6", "V0-R7"]
+  },
+
+  "ratified": false,
+  "ratification_note": "ratified:false is the correct resting state (Article I). This receipt records what was probed; it does not sanction what happens next. The merge-vs-reject call, the F2 scoping, the venv interpreter choice and the doc correction are all human gates."
+}
