@@ -102,6 +102,24 @@
       "readonly": false
     },
     {
+      "id": "H4",
+      "name": "panel finish",
+      "state": "ready",
+      "receipt": "H4.json",
+      "branch": "repair/h4-panel-finish",
+      "worktree": ".claude/worktrees/h4-panel-finish",
+      "prompt": "harness/prompts/h4.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/tokens.py",
+        "python/synapse/panel/designsystem/tokens.py",
+        "python/synapse/panel/synapse_panel.py",
+        "python/synapse/panel/styles.py"
+      ],
+      "note": "Queued 2026-07-25, NEVER DISPATCHED - its brief was written into SYNAPSE_REPAIR_HEATS.md section 8 instead of this manifest, and the orchestrator reads the manifest. The panel renders TWO accent blues: t.SIGNAL #00D4FF at 11 sites, _ds.SIGNAL #8FB3D9 at 21. Mile 7 converted 20 of 31 AT THE CALL SITES, leaving both modules declaring SIGNAL. Resolve at the SOURCE. Now runnable because RES/R30 gave the panel a test surface for the first time. v3 design study explicitly OUT of scope."
+    },
+    {
       "id": "H5",
       "name": "h22 compat",
       "state": "ready",
