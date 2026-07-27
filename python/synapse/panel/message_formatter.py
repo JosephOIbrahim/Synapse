@@ -150,17 +150,29 @@ def _format_list_items(text):
 
 def _process_rich_text(raw, font_scale=1.0, signed=None):
     """Apply code block, inline code, node-chip, and list formatting. Returns
-    ``(html, signed_used)`` — when ``signed`` is given, the FIRST node chip
-    carries the authorship suffix (once per message) and ``signed_used`` says
-    whether a chip took it (else the caller renders the standalone note)."""
+    ``(html, signed_used)``.
+
+    2026-07-27, found on a live 2,727-node explain of karma_user_guide.hip:
+    the v9 design attached the authorship suffix to the FIRST node chip in a
+    message. That chip is wherever the first node path happens to fall - and on
+    a structured answer it fell INSIDE A MARKDOWN TABLE CELL, rendering as
+    ``/stage/lights - signed GLM 5.2`` mid-table. It reads as a text bug rather
+    than a credit.
+
+    Two docstrings described this feature differently: chat_display.py said
+    "shown once at the head of a SYNAPSE group", this module said "the FIRST
+    node chip carries the suffix". The implementation followed the second. The
+    first is the better behaviour and the standalone note that renders it
+    already existed as the fallback.
+
+    So: chips never take the signature now, `signed_used` is always False, and
+    the caller's standalone note always renders. Credit belongs to the message,
+    not to whichever path was mentioned first.
+    """
     state = {"signed_used": False}
 
     def _node(m):
-        s = None
-        if signed and not state["signed_used"]:
-            state["signed_used"] = True
-            s = signed
-        return _format_node_path(m, font_scale, signed=s)
+        return _format_node_path(m, font_scale, signed=None)
 
     raw = _CODE_BLOCK_RE.sub(lambda m: _format_code_block(m, font_scale), raw)
     raw = _INLINE_CODE_RE.sub(lambda m: _format_inline_code(m, font_scale), raw)
