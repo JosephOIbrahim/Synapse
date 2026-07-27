@@ -2672,3 +2672,104 @@ also the exact cost R81 named: *a prohibition with no channel produces silent dr
    R72, `legs.json`, and the H9 note. Every one was a figure I generated, glanced at, and typed
    onward without pinning the producer. The rule I keep enforcing on agents is the one I keep
    breaking myself, and it has never once been caught by me.
+
+---
+
+## RULING 99 — SYNAPSE is running on H22 and thinking in H21. Three layers, all diverged.
+
+Joe caught it in a live response: *"I haven't memorized every single **H21.0.671** LOP node
+parameter name."* SYNAPSE has been on 22.0.368 since 15 July.
+
+**Investigated from first principles: is the host version PROBED or REMEMBERED?** The answer
+differs per layer, and that is the finding.
+
+### Layer 1 — data SELECTION is version-aware, and is dead code
+
+`scout.py:424-435` is correctly designed:
+
+```python
+major = str(EXPECTED_HOUDINI_VERSION or "").split(".", 1)[0]
+if major.isdigit():
+    candidate = _PKG_SYMBOL_TABLE.with_name(f"h{major}_symbol_table.json")
+    if candidate.is_file(): return candidate
+return _PKG_SYMBOL_TABLE          # H21 fallback
+```
+
+**`EXPECTED_HOUDINI_VERSION` is declared `= None` at line 141 and NOTHING IN THE CODEBASE EVER
+ASSIGNS IT.** The docstring says *"host-injected — mcp_server only sets it when `hou` imports."*
+No such injector exists. `git grep` finds only the declaration and its own readers.
+
+**VERIFIED-RUNTIME under hython3.13:**
+
+```
+running build              22.0.368
+EXPECTED_HOUDINI_VERSION   None
+table selected             h21_symbol_table.json
+```
+
+So `major` is `""`, `isdigit()` fails, and **every session takes the H21 fallback.**
+`h22_symbol_table.json` is **1,287 KB and has never been loaded.**
+
+The version-aware branch is unreachable. It was written, committed, and has never once executed —
+a per-major authority mechanism that authorises nothing.
+
+### Layer 2 — two other corpora have no version logic at all
+
+```
+core/lop_knowledge.py:44   data/lop_solaris_knowledge_21.json    HARDCODED
+core/wiring.py:46          data/connectivity_21.json             HARDCODED
+```
+
+`connectivity_22.json` (151 KB, vs 21's 93 KB) and `lop_solaris_knowledge_22.json` (14 KB, vs 7 KB)
+are committed and **have no loader whatsoever.** Not a stale selection — no selection.
+
+**All three H22 corpora exist, are larger than their H21 predecessors, and are entirely inert.**
+
+### Layer 3 — the prose, which is what the model actually reads
+
+```
+scout.py:5    "scouts the Houdini 21.0.671 documentation RAG"
+scout.py:6    "returning real H21 reference"
+scout.py:15   "The model's priors for H21.0.671 are frequently wrong"
+scout.py:52   "the CANONICAL H21 corpus is the repo rag/ tree"
+rag/skills/houdini21-reference/     <- the corpus DIRECTORY NAME
+```
+
+There is no `houdini22-reference`. **This is the layer that produced Joe's quote.** An LLM reading
+a docstring that says *"H21.0.671"* will say H21.0.671, whatever the data layer selected — and
+here the data layer agreed with it anyway.
+
+### Why this matters more than a version string
+
+The H22 catalogues built during this relay — **218 LOP types, 384 Copernicus types** — are the
+first evidence of what H22 actually contains. Copernicus barely existed in H21. **A model reasoning
+from an H21 corpus about a COP graph is reasoning about a different product.**
+
+And it explains a number I ruled on twice: COP grounding at 6.2% is not merely thin, it is
+grounding measured against a corpus that predates the subsystem.
+
+**Ruled:**
+
+1. **The injector is the fix, and it is small.** Whoever imports `hou` sets
+   `scout.EXPECTED_HOUDINI_VERSION = hou.applicationVersionString()`. One line, at the seam where
+   `hou` is already known to be present.
+2. **`lop_knowledge.py` and `wiring.py` get the same per-major selection** scout already has.
+   Three loaders, one rule.
+3. **A check that FAILS when the loaded corpus major differs from the running major.** This is the
+   defect's own detector, and it can fail today — it fires on the current tree, which is what
+   makes it a check rather than a decoration (R80).
+4. **The prose is corrected wholesale, including the corpus directory name.** `houdini21-reference`
+   → per-major, or a name that does not assert a version it cannot guarantee.
+5. **Nothing is deleted.** H21 remains the correct fallback for a headless or stock-python process
+   with no host to probe. The defect is that the fallback is the *only* path, not that it exists.
+
+### The pattern, one more time
+
+A mechanism that reads a variable nobody sets. A guard that silently degrades instead of failing.
+Three corpora committed and inert. **Every layer here was built correctly and connected to
+nothing** — and it reported healthy for twelve days, because falling back to H21 produces plausible
+answers rather than errors.
+
+That is the same shape as the `--ignore` runner, the mock `hou`, the 100%-by-construction metric,
+and the stall detector watching its own log. **This one is the largest instance found, and it was
+caught by a human noticing one wrong number in a sentence.**
