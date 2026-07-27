@@ -247,6 +247,34 @@
       "readonly": true,
       "touches": [],
       "note": "READ-ONLY. What capture verbs exist live on 22.0.368, can Karma emit an integer object-ID AOV, what does one capture cost, is the denoiser controllable. The ID-AOV answer gates the whole harness - no per-pixel prim identity means no mask means no 'only X changed'. Same shape as H3a, which is why the SideFX ask was correct rather than embarrassing."
+    },
+    {
+      "id": "C0",
+      "name": "claim census",
+      "state": "ready",
+      "receipt": "C0.json",
+      "branch": "claims/c0-census",
+      "worktree": ".claude/worktrees/c0-census",
+      "prompt": "harness/prompts/c0.md",
+      "deps": [],
+      "readonly": true,
+      "touches": [],
+      "note": "The positioning document says 'a technical evaluator will open the repo'. This is that evaluator, run internally first. Four SHIPPING claims, each gets a producer path or NONE. Roadmap items exempt - they are honest by construction. Records AGE: claim 3 became defensible on 2026-07-26 and reads as long-established, which is a different risk than being false."
+    },
+    {
+      "id": "C1",
+      "name": "token benchmark",
+      "state": "ready",
+      "receipt": "C1.json",
+      "branch": "claims/c1-token-bench",
+      "worktree": ".claude/worktrees/c1-token-bench",
+      "prompt": "harness/prompts/c1.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "harness/notes/token_bench"
+      ],
+      "note": "THE SPINE. 'Cost stays flat, even on huge scenes' leads the positioning page and every other differentiator hangs off it. Architecturally sound, numerically unproven. Arm B is computed by serialising a scene - NOT by running a competitor's product, which would be neither fair nor necessary. Cost is NEVER reported without outcome: flat cost on a failed task is not a feature."
     }
   ]
 }
