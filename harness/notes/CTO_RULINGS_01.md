@@ -3511,3 +3511,79 @@ health check validating a stamp the product does not read**, and as my own R99 l
 
 **A control only rules out what it actually exercises.** `ping` proved the process was alive. It
 was read as proving the marshal was working.
+
+---
+
+## RULING 126 — Housekeeping, and the fresh-clone review nobody had run.
+
+### Housekeeping
+
+```
+worktrees        18 -> 5      (main + 2 live legs + 2 holding unmerged work)
+local branches   59 -> 16
+leg windows       7 -> 2      five stale, from legs finished hours earlier
+scratch           8 dirs/files removed
+```
+
+**`shot_layers/` was among the scratch** — that is R57, from Saturday: tests writing into the
+repository root instead of `tmp_path`. I ruled it, recorded it, and never fixed it. It has been
+regenerating on every run since. **The directory is gone; the test still needs redirecting.**
+
+### Four branches held unmerged work. Two landed, two did not.
+
+**Merged — `v0-m2-reconcile`**, its receipt only. R82's lesson: a ruling citing an uncommitted
+anchor is a recollection.
+
+**Merged — `q2-baseline`**, the tuple baseline reader. R40 promoted the suite baseline to a tuple;
+**the reader that understands it was written, mutation-tested, and never landed.** It worked only
+because I made the tuple backward-compatible on purpose, so the flat keys returned the gate
+numbers and the ratchet kept functioning on half the data. **Built, correct, connected to
+nothing** — found during a housekeeping pass, which is where that pattern surfaces when nobody is
+looking for it.
+
+**Not merged — `h1-schemas-b`.** Genuinely unique R33 work with a 364-line contract test not
+present on HEAD. Conflicts on a receipt, so it is authoring rather than a merge. Preserved on
+origin, follow-up.
+
+**Not merged — `ledger-moneta-seam`.** U1 already authored the union from it; merging would fight
+the deliberate composition. Superseded, preserved.
+
+---
+
+### The fresh-clone review, and why it had never been run
+
+**Every verification this week ran from a tree with everything already configured** — `.env`
+present, package deployed, dependencies resolved, Houdini pointed at it. That is the least
+representative environment there is, and a producer's technical person will clone the repo.
+
+Measured against a real `git clone` from origin, stock Python 3.14, nothing installed:
+
+```
+clone            2,668 files, 1,280 python
+.env             ABSENT            <- no secret in a public repo
+VERSION          5.36.3
+import synapse   OK, version 5.36.3
+version_agreement / bom_audit / heats_status   all present, all run
+tests collected  5,166
+tests/test_agent.py   62 passed
+```
+
+**It works.** A stranger can clone it, import it, and run its tests without configuring anything.
+
+### Three observations worth keeping
+
+**The ABI warning is exemplary and should be the model for the rest.** On a stock interpreter it
+fires loudly, names the exact mismatch (`cp311 + cp313` wheels against Python 3.14.2), states the
+consequence (*"the brain will fail later with a cryptic deep ImportError"*), and gives **two**
+remediations with file paths. That is what a diagnostic should do, and most of this codebase's
+other failure paths are quieter than this one.
+
+**The installer's two FAIL lines are the verifier working**, not a defect: it detected the clone
+is not the installed checkout and said *"run the installer."* Correct, and the message is
+actionable.
+
+**`bom_audit` exits 1 on a fresh clone** because `drop.json` is absent — and `drop.json` is MODE-B
+gating that a human creates. The audit reports it as `unreadable, NOT clean`, which is the right
+call by its own rule (a missing file is not a pass) and the wrong outcome here. **A first-time
+user runs a README-documented command and gets a failure that is expected.** Either the audit
+excludes files that are legitimately absent pre-install, or the README says so.
