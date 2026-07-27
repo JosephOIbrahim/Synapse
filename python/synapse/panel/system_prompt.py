@@ -48,7 +48,7 @@ def _load_tone() -> str | None:
 # ---------------------------------------------------------------------------
 
 _IDENTITY = """\
-You are SYNAPSE, an AI co-pilot embedded directly inside Houdini 21. You have \
+You are SYNAPSE, an AI co-pilot embedded directly inside {HOUDINI_BUILD}. You have \
 FULL access to Houdini through MCP tools -- you can create nodes, set \
 parameters, wire networks, build materials, configure renders, and inspect \
 the scene.
@@ -186,12 +186,16 @@ lighting_rig, hdri_lighting, instanceable_assets, variant_selector.
 - **Ground before you build (Safety Rule 15):** before issuing \
 synapse_solaris_build_graph with any NON-template `nodes`, call \
 **synapse_scout** to confirm each LOP node `type` and its key parm names exist \
-in Houdini 21.0.671 -- e.g. \
+in the running build -- e.g. \
 `synapse_scout(query="karmarendersettings engine xpu camera resolution")`. \
 Treat any symbol whose `exists_in_runtime` is false as a PHANTOM and do NOT \
 author it; if scout returns no hits for a node type, prefer a template or \
-inspect a live node. The H21 docs corpus is the authority -- don't invent parm \
-names. (Templates are already verified, so a template-only call needs no scout.)
+inspect a live node. Two sources, and the distinction matters: scout's SYMBOL \
+TABLE is stamped against the build you are running, so `exists_in_runtime` is \
+current. The prose DOCS corpus is Houdini 21 material and has not been \
+reconverted -- trust it for concepts and intent, verify any parm name against \
+the runtime. Don't invent parm names. \
+(Templates are already verified, so a template-only call needs no scout.)
 
 ### Known Issues
 - **karmaphysicalsky bug (H21):** Changing the primitive path from \
@@ -219,6 +223,33 @@ execute_python when possible.
 Point/Primitive SOPs (deprecated workflow).
 - When modifying geometry attributes, inspect the node first to \
 discover available attributes and their types."""
+
+
+def _running_build() -> str:
+    """The Houdini build this prompt is being written for, PROBED not asserted.
+
+    S3-F4: the identity line read "embedded directly inside Houdini 21" while the
+    product ran 22.0.368 — so the model was TOLD the wrong version and said so.
+    That is the direct cause of SYNAPSE describing a scene as shipping "with
+    Houdini 21" on a live 5,764-node explain.
+
+    Hardcoding "Houdini 22" would go stale in exactly the way "Houdini 21" did.
+    The version is derived, and when it cannot be derived the prompt says
+    "Houdini" rather than naming a build it has not confirmed.
+    """
+    try:
+        import hou
+        return "Houdini " + hou.applicationVersionString()
+    except Exception:
+        pass
+    try:
+        from synapse.cognitive.tools import scout
+        v = getattr(scout, "EXPECTED_HOUDINI_VERSION", None)
+        if v:
+            return "Houdini " + str(v)
+    except Exception:
+        pass
+    return "Houdini"
 
 
 def _format_scene_context(context: dict) -> str:
@@ -280,7 +311,7 @@ def build_system_prompt(context: dict) -> str:
     Returns:
         Complete system prompt string.
     """
-    sections = [_IDENTITY]
+    sections = [_IDENTITY.replace("{HOUDINI_BUILD}", _running_build())]
 
     tone = _load_tone()
     if tone:
