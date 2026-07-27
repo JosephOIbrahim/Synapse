@@ -2715,6 +2715,22 @@ a per-major authority mechanism that authorises nothing.
 
 ### Layer 2 — two other corpora have no version logic at all
 
+> **AMENDED 2026-07-27 — THIS LAYER IS FALSE AND IS WITHDRAWN.**
+>
+> `wiring.py` and `lop_knowledge.py` **both probe correctly.** Each resolves its per-major catalog
+> through its own guarded `_running_houdini_major()`, which imports `hou` and reads
+> `applicationVersion()[0]`. VERIFIED-RUNTIME under hython3.13: `wiring._pkg_catalog_path()` →
+> `connectivity_22.json`, `lop_knowledge._pkg_catalog_path()` → `lop_solaris_knowledge_22.json`.
+> **Both were already loading the H22 files.**
+>
+> I saw hardcoded `_21` filenames in the module-level constants and concluded from what I **saw**
+> rather than what **executes** — the same error as R104's grep-for-one-token-name. A resolver
+> function overrode both constants and I did not open it.
+>
+> **The correct pattern already existed in this codebase. Scout was the outlier, not the rule** —
+> and the fix for scout was to build the injector that `wiring.py`'s equivalent has always had.
+
+
 ```
 core/lop_knowledge.py:44   data/lop_solaris_knowledge_21.json    HARDCODED
 core/wiring.py:46          data/connectivity_21.json             HARDCODED
@@ -3041,3 +3057,63 @@ struck through as `FIXED` with no producer.
 **The pattern across both documents:** SYNAPSE reports on SYNAPSE, and the report is good at
 specifics and unreliable at summaries. **Every concrete row in the health report was checkable and
 three were true. Every aggregate was a judgement wearing a number.**
+
+---
+
+## RULING 111 — R99 layer 2 WITHDRAWN. R107 grows from four locations to seven.
+
+**R99's layer 2 is false.** I claimed `wiring.py` and `lop_knowledge.py` had "no version logic at
+all." Both probe correctly through their own guarded `_running_houdini_major()`, and both were
+already loading the H22 catalogues. VERIFIED-RUNTIME:
+
+```
+scout       h21_symbol_table.json         <- the only broken one
+wiring      connectivity_22.json          <- already correct
+lop_knowledge  lop_solaris_knowledge_22.json  <- already correct
+```
+
+I grepped for hardcoded `_21` filenames in module constants and concluded from what I **saw**
+rather than what **executes**. A resolver overrode both and I did not open it. **Same error as
+R104**, four days apart, in a ruling written to catalogue that error.
+
+**The correct pattern already existed here. Scout was the outlier**, and the fix was to build the
+injector `wiring.py`'s equivalent has always had.
+
+### And my first fix was worse than the bug
+
+I made scout import `hou` directly. A test caught it in one run:
+
+> `synapse.cognitive.*` must be host-agnostic — ZERO hou imports.
+
+**So the injection design was not over-engineering.** It was the correct response to an
+architectural boundary, and the only defect was that nobody built the injector. I had called it
+*"the design that failed"* twenty minutes earlier. It was the design working, incompletely.
+
+**Ruled:** a mechanism that looks over-built is worth understanding before it is simplified. The
+boundary it respects may not be visible from where the defect is.
+
+---
+
+## RULING 112 — Seven version locations. I knew four; a test written before me found the rest.
+
+```
+VERSION · __version__ · pyproject.toml · __init__ docstring · CLAUDE.md banner · git tag · install stamp
+```
+
+`tests/test_phase0c_doc1_version_conformance.py` already enforced the chain
+`pyproject == __version__ == docstring == banner`, and it **walked me through the three I did not
+know about, one failing assertion at a time.** Its own docstring names the incident that caused it:
+*"the v5.8.0-vs-5.10.0 banner the CTO review flagged."*
+
+**Ruled:**
+1. All seven are enforced by `harness/verify/version_agreement.py`, wired into `finalize.ps1`
+   step 7. It fails on an unfixed tree — demonstrated, not asserted.
+2. **`VERSION` is canonical**; the others derive. That decision was owed in R107 and is made here.
+3. The install stamp remains outside this check because it is written at install time rather than
+   authored. **It is a seventh location that this check cannot see**, and saying so is better than
+   implying coverage the check does not have.
+
+**The observation worth keeping:** every location I did not know about was found by a test somebody
+wrote first, in response to an earlier version of this exact drift. **The check I wrote today is
+the second answer to a question already answered — and it only found more because the first one
+told it where to look.**
