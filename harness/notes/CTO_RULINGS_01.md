@@ -3587,3 +3587,64 @@ gating that a human creates. The audit reports it as `unreadable, NOT clean`, wh
 call by its own rule (a missing file is not a pass) and the wrong outcome here. **A first-time
 user runs a README-documented command and gets a failure that is expected.** Either the audit
 excludes files that are legitimately absent pre-install, or the README says so.
+
+---
+
+## RULING 127 — I PUBLISHED A WRONG NUMBER, and my verifier passed it. Both halves matter.
+
+**The published figure was `4,357 "Epoch complete" lines`.** It appears in the `v5.36.3` release
+notes on GitHub and in `docs/HOW_WE_KNOW.md` on PR #49.
+
+**The committed receipt says `4,795 'Epoch N complete'` records.**
+
+`4,357` appears nowhere in the receipt anyone can read.
+
+### How the verifier passed it, and this is the part worth keeping
+
+`_howweknow_verify.py` globbed `.claude/worktrees/*/harness/notes/receipts/RSI0.json`. The
+document cites the **committed** receipt at `harness/notes/receipts/RSI0.json`. **Those were
+different files** — the worktree held an earlier draft, and the leg revised its own receipt before
+the version that landed.
+
+So the check read one copy and the claim rests on another.
+
+**That is R108 verbatim** — *a health check must call the same function the product calls* — in a
+check written specifically to prevent publishing an unverified number. The check was not wrong
+about its own copy. It was reading a neighbour.
+
+**It is also LEDGER.F1 again** (two interpreters loading different Moneta copies) and R91 (two legs
+editing one function from separate worktrees). **Three subsystems, one shape: a second copy that
+nobody declared existed.**
+
+### The correction
+
+```
+4,357 "Epoch complete"      ->  4,795 'Epoch N complete'
+```
+
+And the committed claim is **stronger** than what I published, with three independent proofs:
+
+- **4,425** report epoch sizes 2/3/5, which the router **cannot** produce — it always constructs
+  `EpochAdapter()` with `DEFAULT_EPOCH_SIZE=100`
+- all **370** size-100 lines are Epoch 0 or Epoch 1, never Epoch 2 — the exact signature of
+  `test_adapter_thread_safety`'s 200 records
+- every line names only `{'instant'}`, never the other tiers
+
+**Ruled:**
+1. **The release notes and PR #49 are corrected before anything else ships.** A wrong number in a
+   document about not publishing wrong numbers is the most self-refuting artifact this project
+   could produce.
+2. **Verifiers read the COMMITTED path.** Never a worktree glob. A worktree is a draft; the
+   committed file is the claim.
+3. **The verifier gains a negative control** — it must be shown failing on a deliberately wrong
+   number before its pass is trusted. Mine had never failed on anything, which is why its pass
+   meant nothing (Law 1, applied to the verifier of the document about Law 1).
+
+### What I would not want lost
+
+The document's thesis is that the process catches what its author does not. **This is that,
+happening to the document itself, four hours after it was written** — and it was caught by
+following a grep that returned zero when the number said it should return thousands.
+
+The honest version of the finding is better than the published one. That is usually true, and it
+is the argument for checking.
