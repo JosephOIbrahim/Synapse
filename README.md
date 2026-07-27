@@ -20,23 +20,43 @@ flowchart LR
     end
     subgraph IN["inside-out — SYNAPSE"]
         H2[Houdini] --> A[agent in-process]
-        A -->|only the question| C2[cloud model]
+        A -->|only what you asked about| C2[cloud model]
         C2 --> A
         A -->|acts in place| H2
     end
 ```
 
-**Outside-in** re-sends your scene on every message. Cost climbs with scene size.
+**Measured, not claimed.** Grounding payload across a 13 → 25,850 node ladder rises 443 → 113,411 tokens. That is **256×** — not flat. The same probe without depth bounds rises 2,788×.
 
-**Inside-out** reads the scene directly and sends only what you asked about.
+The honest statement: **cost scales with what you ask about, not with the size of your scene.**
 
-**Measured, not claimed.** Grounding payload across a 13 → 25,850 node ladder rises 443 → 113,411 tokens. That is **not flat** — it is 256×. The same probe run without depth bounds rises 2,788×.
+The mechanism is *bounded depth*. Single-call coverage falls to 10% on the largest scenes, with 100% completeness inside the window it reads. There is currently **no delta path** — every inspect is a full re-read.
 
-The honest statement: **cost scales with what you ask about, not with the size of your scene.** And the mechanism is *bounded depth* — single-call coverage falls to 10% on the largest scenes, with 100% completeness inside the window it does read.
+*Producer: `harness/notes/token_bench/`, 2026-07-27. Proxy tokenizer, no live-model arm.*
 
-There is currently **no delta path**. Every inspect is a full re-read of what it looks at. "Sends only what changed" is a roadmap item, not a shipping one.
+---
 
-*Producer: `harness/notes/token_bench/`, C1, 2026-07-27. Proxy tokenizer — no live-model arm, see Known limitations.*
+## What it knows, and where that comes from
+
+This matters more than the feature list, and it is the thing to check first.
+
+```mermaid
+flowchart TD
+    K[what SYNAPSE knows] --> S[symbols and node types]
+    K --> P[prose and how-to]
+    S --> S1["h22_symbol_table.json<br/>35,903 symbols"]
+    S --> S2["connectivity_22.json<br/>lop_solaris_knowledge_22.json"]
+    P --> P1["rag/skills/houdini21-reference<br/>H21 documentation"]
+    S1 --> OK["verified against the running build<br/>gate goes STALE if they diverge"]
+    S2 --> OK
+    P1 --> GAP["NOT yet converted to H22"]
+```
+
+**Symbols are H22.** The table is stamped against the running build, and `phantom_gate_status()` reads STALE the moment they disagree.
+
+**Prose is H21.** The retrieval corpus is Houdini 21 documentation, accurately labelled as such. If you ask a how-to question, SYNAPSE may answer from H21 material and tell you so.
+
+**That gap matters most for Copernicus**, which barely existed in H21.
 
 ---
 
@@ -48,7 +68,7 @@ There is currently **no delta path**. Every inspect is a full re-read of what it
 
 **Stays on the main thread.** All `hou.*` calls marshal to Houdini's main thread.
 
-**Refuses to boot on a render node** — *narrowly.* `hou.isUIAvailable()` gates the daemon, which is the Fork Bomb guard. But the gate protects a component with no production callers today, while other surfaces boot headless. Treat it as a guard that exists, not a guarantee that holds.
+**Refuses to boot on a render node** — *narrowly.* `hou.isUIAvailable()` gates the daemon, the Fork Bomb guard. But it protects a component with no production callers today while other surfaces boot headless. A guard that exists, not a guarantee that holds.
 
 ---
 
@@ -92,7 +112,7 @@ Read-only. Prints pass/fail per requirement.
 
 ### Three things that bite
 
-**Save the JSON without a BOM.** PowerShell's `Set-Content -Encoding utf8` writes one on Windows. Houdini's parser rejects it **silently** — no error, no warning, and the panel simply never appears. Cost us a working panel for a day.
+**Save the JSON without a BOM.** PowerShell's `Set-Content -Encoding utf8` writes one. Houdini's parser rejects it **silently**.
 
 ```powershell
 # writes a BOM - Houdini will not load this
@@ -102,9 +122,9 @@ Set-Content synapse.json $text -Encoding utf8
 [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
 ```
 
-**`hpath`, not `path`.** On H22 the keyword is `hpath` — SideFX use it exclusively in their own shipped packages, six occurrences to zero. The deprecated `path` still works, which is why nobody notices.
+**`hpath`, not `path`.** On H22 the keyword is `hpath` — SideFX use it exclusively in their own packages. The deprecated `path` still works, which is why nobody notices.
 
-**`PYTHONPATH` needs both entries.** `shared/` lives at the repo root, not under `python/`. Omit the root and the handler fails to import — and it surfaces as a misleading *"hou not responding"* in the panel.
+**`PYTHONPATH` needs both entries.** `shared/` lives at the repo root, not under `python/`.
 
 Get any of these wrong and `import synapse` still succeeds, the version still prints, and **the panel never appears.** No error. Just absence.
 
@@ -113,20 +133,14 @@ Get any of these wrong and `import synapse` still succeeds, the version still pr
 ## The two paths
 
 ```mermaid
-flowchart TD
-    Q[agent turn] --> R{route}
-    R -->|/mcp| M[audited path]
-    R -->|/synapse| S[live WebSocket]
-    M --> M1[undo-wrapped]
-    M --> M2[consent-gated]
-    M --> M3[scene-hashed]
-    S --> S1[RBAC-gated]
-    S --> S2[partial undo]
-    M1 --> HOU[hou main thread]
-    M2 --> HOU
-    M3 --> HOU
-    S1 --> HOU
-    S2 --> HOU
+flowchart LR
+    T[agent turn] --> M["/mcp — audited"]
+    T --> S["/synapse — live"]
+    M --> A1[undo-wrapped]
+    M --> A2[consent-gated]
+    M --> A3[scene-hashed]
+    S --> B1[RBAC-gated]
+    S --> B2[partial undo]
 ```
 
 Connect on `ws://localhost:9999/synapse` — the path matters, a bare `host:port` returns HTTP 400.
@@ -149,10 +163,10 @@ It does **not** roll back when something raises. On the exception path a partial
 
 | | interpreter | result |
 |---|---|---|
-| **Gate** | system Python 3.14 | 4,989 passed · 0 failed |
+| **Gate** | system Python 3.14 | 5,031 passed · 0 failed |
 | **Shipping** | `hython3.13` — what Houdini runs | 4,048 passed · 110 failed · 771 errors |
 
-The gate runs with the vendored SDK **inactive**; shipping runs with it **active**. They share almost no dependency surface, so neither substitutes for the other.
+The gate runs with the vendored SDK **inactive**; shipping runs with it **active**. They share almost no dependency surface.
 
 **Most of that gap is environment.** Six packages close 88% of the failures:
 
@@ -168,32 +182,34 @@ Those are shipping dependencies that are not shipped.
 
 Read this here rather than discover it mid-shot.
 
-**`houdini_network_explain` segfaults on very large scenes.** Reproducible on SideFX's own `karma_user_guide.hip` — `rc=139`, twice. It takes the interpreter with it, so there is no error and no graceful degradation. Fix in flight; do not point it at a 25,000-node scene today.
+**The retrieval corpus is Houdini 21 documentation.** Symbols and node types are H22 and verified; the prose is not yet converted. Most consequential for Copernicus.
 
-**No delta path.** Every inspect is a full re-read of what it looks at. Cost scales with what you ask about, and re-asking about the same thing costs the same again.
+**No delta path.** Every inspect is a full re-read. Re-asking about the same thing costs the same again.
 
-**A render can be stopped, but not from `RopNode`.** `hou.RopNode` has no cancel method. `rkill` works and SYNAPSE does not yet use it. `hou.ActiveRender` — the documented replacement — is `#status: ni` and absent at runtime.
+**A render can be stopped, but not from `RopNode`.** No cancel method exists there. `rkill` works and SYNAPSE does not yet use it. `hou.ActiveRender` is documented, `#status: ni`, and absent at runtime.
 
-**The PDG rollback has never executed.** `bridge.py:1718` passes `remove_files=` to `dirtyAllTasks`; the real keyword is `remove_outputs`. It raises `TypeError` every time.
+**The PDG rollback has never executed.** `bridge.py:1718` passes `remove_files=`; the real keyword is `remove_outputs`. It raises `TypeError` every time.
 
-**41 node types SYNAPSE uses are deprecated** — 39 of them deprecated in the docs while the runtime says nothing, so a probe alone cannot see them.
+**41 node types in use are deprecated** — 39 of them deprecated in the docs while the runtime says nothing, so a probe alone cannot see them.
 
-**Emergency halt is not surfaced in the panel.** The mechanism exists; there is no always-visible control yet.
+**Emergency halt is not surfaced in the panel.** The mechanism exists; there is no always-visible control.
 
-**Node grounding is thin.** 18.3% of LOP types and 6.2% of Copernicus types carry semantic grounding. The shipped reference documents 37.9% of LOP parameters — the realistic ceiling from documentation alone.
+**Node grounding is thin.** 18.3% of LOP types and 6.2% of Copernicus types carry semantic grounding. 37.9% of LOP parameters are documented — the ceiling from documentation alone.
 
-**Token figures are proxy-measured.** No live-model arm exists — the API account has no credits, so `count_tokens` is unavailable. And no genuine outside-in comparison has been built; the numbers above profile our own grounding surface, nothing else.
+**Token figures are proxy-measured**, and no genuine outside-in comparison has been built.
 
 ---
 
 ## Verifying any of this
 
 ```
-python harness/heats_status.py                    # leg board
-python harness/verify/version_agreement.py        # all seven version locations
-powershell harness/supply_shipping_deps.ps1       # the six missing packages
-powershell harness/run_suite_shipping_python.ps1  # shipping suite
+python harness/verify/version_agreement.py     # every version location
+python harness/verify/bom_audit.py             # every JSON, VERSION included
+python harness/heats_status.py                 # leg board
+powershell harness/run_suite_shipping_python.ps1
 ```
+
+Each fails on an unfixed tree. That was demonstrated before any of them was trusted.
 
 **House rule:** no number enters a document without a producer path beside it.
 
