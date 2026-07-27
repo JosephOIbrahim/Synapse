@@ -116,6 +116,54 @@ _SLASH_COMMANDS: list[tuple[str, str]] = [
 _cached_entries: Optional[list[PaletteEntry]] = None
 
 
+def _trigger_to_phrase(triggers, fallback: str) -> str:
+    """Turn a recipe's trigger REGEX into the sentence an artist would type.
+
+    S3-F3. Registry recipes fire on a regex matched against free text, so the
+    capability was reachable and undiscoverable — nothing told you the words.
+    This recovers them:
+
+        ^scatter\\s+(?P<source>[\\w\\-./]+)\\s+(?:on(?:to)?|over)\\s+(?P<target>...)
+        -> "scatter <source> onto <target>"
+
+    Named groups become <placeholders> so the phrase reads as a template. If a
+    trigger cannot be reduced to something readable, the recipe NAME is used
+    rather than a mangled regex — an unreadable entry is worse than a plain one.
+    """
+    import re as _re
+
+    pat = None
+    if isinstance(triggers, (list, tuple)) and triggers:
+        pat = str(triggers[0])
+    elif isinstance(triggers, str):
+        pat = triggers
+    if not pat:
+        return fallback.replace("_", " ")
+
+    s = pat.lstrip("^").rstrip("$")
+    s = _re.sub(r"\(\?P<(\w+)>[^)]*\)", r"<\1>", s)     # named group -> <name>
+
+    # Reduce non-capturing groups INNERMOST-FIRST, taking the first alternative.
+    # (?:on(?:to)?|over) must become "onto", not "on:toover" - which is what a
+    # single outer pass produces, and what shipped in the first attempt at this.
+    for _ in range(6):
+        new = _re.sub(r"\(\?:([^()|]*)(?:\|[^()]*)?\)\??", r"\1", s)
+        if new == s:
+            break
+        s = new
+
+    s = s.replace("\\s+", " ").replace("\\s*", " ").replace("\\b", "")
+    s = s.replace("\\.", ".").replace("\\-", "-").replace("\\/", "/")
+    s = _re.sub(r"[\\\[\]{}+*?()|^$]", "", s)
+    s = _re.sub(r"\s{2,}", " ", s).strip()
+
+    # A phrase that still carries regex debris is not a phrase. A leftover ':'
+    # is the tell - it is what a half-reduced (?: leaves behind.
+    if not s or len(s) > 60 or ":" in s or any(c in s for c in "\\[]{}|"):
+        return fallback.replace("_", " ")
+    return s
+
+
 def build_palette_entries(*, force_rebuild: bool = False) -> list[PaletteEntry]:
     """Build the full list of searchable palette entries from all sources.
 
@@ -152,6 +200,33 @@ def build_palette_entries(*, force_rebuild: bool = False) -> list[PaletteEntry]:
                     category="recipe",
                     description=f"{title} -- {desc}" if desc else title,
                 ))
+    except (ImportError, AttributeError):
+        pass
+
+    # -- b2) Registry recipes from routing.recipes.RecipeRegistry ---------
+    # S3-F3: the palette showed 21 recipes from recipe_book while the registry
+    # holds 62. The other 41 were not unreachable - they fire on a TRIGGER
+    # REGEX matched against what the artist types. So the capability existed and
+    # nothing anywhere told you the words. Function without affordance.
+    #
+    # These entries surface the phrasing. The command is a readable template
+    # derived from the trigger, with named groups shown as <placeholders>, so
+    # the palette teaches the sentence rather than hiding it.
+    try:
+        from synapse.routing.recipes import RecipeRegistry
+        for rec in RecipeRegistry()._recipes:
+            phrase = _trigger_to_phrase(getattr(rec, "triggers", None),
+                                        getattr(rec, "name", "?"))
+            desc = (getattr(rec, "description", "") or "")
+            if len(desc) > 80:
+                desc = desc[:77] + "..."
+            cat = getattr(rec, "category", "") or ""
+            entries.append(PaletteEntry(
+                label=phrase,
+                command=phrase,
+                category="recipe",
+                description=f"{cat} -- {desc}" if cat and desc else (desc or cat),
+            ))
     except (ImportError, AttributeError):
         pass
 

@@ -144,14 +144,79 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         scrollbar = self.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
+    # Reading measure, in CHARACTERS rather than pixels.
+    #
+    # The v9 rule capped the document at a fixed 492px (a ~440px measure plus
+    # 26px padding either side). The principle is right - a line of prose gets
+    # harder to track past roughly 90 characters, so a wide dock should not
+    # stretch text to its full width. The expression was wrong in two ways:
+    #
+    #   * pixels do not scale with the Aa control, so raising the font size
+    #     shrank the measure in characters - exactly backwards
+    #   * 440px is ~55 characters at the default size, the LOW end of the
+    #     comfortable band, and in an 1830px pane it left 73% of the width
+    #     empty and read as a bug rather than a decision
+    #
+    # Measured from the live font, clamped, so it holds at every Aa step.
+    _MEASURE_CHARS = 90          # upper end of the comfortable band
+    _MEASURE_MIN_PX = 460        # never narrower than the old rule
+    _MEASURE_MAX_PX = 1100       # never a full-bleed wall of text
+
+    def _reading_measure(self):
+        """The document width that keeps ~90 characters per line at the CURRENT
+        text size.
+
+        The size is NOT on ``self.font()``. It is applied through the stylesheet
+        built from ``self._font_scale`` (line 78), and a Qt stylesheet overrides
+        setFont — so asking the widget's font returns a constant and the measure
+        never moves. My first version did exactly that and its control caught
+        it: 630px at every Aa step, which is the fallback constant times 90.
+
+        So the scaled pixel size is computed the same way the formatter computes
+        it, and the metrics are measured from a font built at that size.
+        """
+        try:
+            from synapse.panel.message_formatter import _BODY_PX, _scale
+            px = _scale(_BODY_PX, getattr(self, "_font_scale", 1.0))
+        except Exception:
+            px = 12
+        adv = 0.0
+        try:
+            from PySide6.QtGui import QFont, QFontMetricsF
+            f = QFont(self.font())
+            f.setPixelSize(int(px))
+            adv = QFontMetricsF(f).averageCharWidth()
+        except Exception:
+            pass
+        if not adv or adv <= 0:
+            adv = float(px) * 0.55      # proportional-sans rule of thumb
+        target = adv * self._MEASURE_CHARS
+        return max(self._MEASURE_MIN_PX, min(target, self._MEASURE_MAX_PX))
+
     def resizeEvent(self, event):
-        """v9 WIDE DOCKS rule: reading holds a ~440px measure inside wide
-        panes (440 + 26×2 padding) — cap the document text width; structure
-        spans. Best-effort: if the cap ever fights QTextBrowser's relayout,
-        the fallback is dropping it (long lines, no breakage)."""
+        """Hold a readable measure inside wide panes, and CENTRE it.
+
+        A measure alone is not enough. At 630px in an 1830px dock the text hugs
+        the left edge and two thirds of the pane reads as broken rather than as
+        margin — which is exactly how it looked when Joe flagged it.
+
+        The fix is the one every reading surface uses: keep the measure, centre
+        the column, and let the leftover become symmetric margin. Widening the
+        column instead would trade legibility for coverage, and ~90 characters
+        is already the upper end of the comfortable band.
+
+        Best-effort: if the cap ever fights QTextBrowser's relayout, the
+        fallback is dropping it (long lines, no breakage)."""
         super().resizeEvent(event)
         try:
-            self.document().setTextWidth(min(self.viewport().width(), 492))
+            measure = self._reading_measure()
+            avail = self.viewport().width()
+            self.document().setTextWidth(min(avail, measure))
+            # Symmetric margin only when there is real slack; a narrow dock
+            # keeps every pixel for the text.
+            slack = avail - measure
+            pad = int(slack / 2) if slack > 40 else 0
+            self.setViewportMargins(pad, 0, pad, 0)
         except Exception:
             pass
 
