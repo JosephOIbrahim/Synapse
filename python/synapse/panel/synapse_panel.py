@@ -247,6 +247,20 @@ class SynapsePanel(QtWidgets.QWidget):
         # missing family raises the build-mismatch flag (logged) and falls back.
         self._font_status = fontload.load_application_fonts()
         self._font_build_mismatch = self._font_status.get("build_mismatch", False)
+        # R99 ORDERING: the injector must run BEFORE anything reads the gate.
+        # scout selects h{major}_symbol_table.json from EXPECTED_HOUDINI_VERSION,
+        # and the injector that sets it lives in SynapseDaemon.start(). The panel
+        # constructs first, so without this the gate below reads the H21 table
+        # against a running 22.0.368 and reports STALE - which is exactly what
+        # the panel footer showed after the fix landed. The fix was correct and
+        # wired too late; the panel's own status light diagnosed it.
+        # Idempotent by design: it will not overwrite a value already set.
+        try:
+            from synapse.host.version_injector import inject_houdini_version
+            inject_houdini_version()
+        except Exception:
+            pass  # no host / no scout -> gate reports unknowable, never blocks boot
+
         # M3-A: one-time check -- the symbol table cannot change mid-session
         self._gate_stale_reason = phantom_gate_status()
         # Track Houdini's default text size: derive the base scale from the live

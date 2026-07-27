@@ -47,9 +47,12 @@ NVIDIA_MAX_TOKENS = 4096
 # Ollama — local-first OpenAI-compatible endpoint (http://localhost:11434 by
 # default; override via OLLAMA_HOST). Static FALLBACK rows only: the panel's
 # model menu fetches the live tag list from GET /api/tags and falls back here.
-# Tag verified live on Ollama 0.30.11 (2026-07-01): the GLM slot resolves to
-# "glm-5:cloud" on this install (no glm-5.2 tag exists; family glm5,
-# tools+thinking capable).
+# Tag verified live on Ollama 0.30.11 (2026-07-01): the GLM slot resolved to
+# "glm-5:cloud" on this install. RE-CHECKED 2026-07-27: `GET /api/tags` now also
+# returns "glm-5.2:cloud", and the panel shows it because it reads the LIVE tag
+# list rather than this table. The 2026-07-01 note said "no glm-5.2 tag exists";
+# that was true when written and is a claim about the future that aged into a
+# claim about the present (R74). The static rows below are a FALLBACK only.
 OLLAMA_MODELS = (
     ("glm-5:cloud", "GLM 5"),
 )
