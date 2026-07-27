@@ -146,3 +146,8 @@ demo/captures/
 # Regenerate with harness/supply_shipping_deps.ps1; never a substitute for vendoring.
 .hython_deps/
 .pytest_bt_*/
+
+# C1 token benchmark raw payload dumps (multi-MB; the counted summary is
+# committed under harness/notes/c1/ instead)
+.c1out/
+.c1smoke/
