@@ -221,6 +221,32 @@
         "docs/studio/DEPLOYMENT.md"
       ],
       "note": "R91. R64 specified five fields and said moneta_provenance() would compose; the CTO then dispatched LEDGER and H6 as two independent legs, both deps:[], both rewriting that function from the same base. Neither has all five. LEDGER's 2,012 insertions are stranded at eb25abe and R52-R55 are DECIDED but un-shipped. This is AUTHORING, not merge resolution - no strategy produces a five-field function."
+    },
+    {
+      "id": "V0",
+      "name": "retina m2 reconcile",
+      "state": "ready",
+      "receipt": "V0.json",
+      "branch": "retina/v0-m2-reconcile",
+      "worktree": ".claude/worktrees/v0-m2-reconcile",
+      "prompt": "harness/prompts/v0.md",
+      "deps": [],
+      "readonly": true,
+      "touches": [],
+      "note": "archive/retina-m2-orphan carries 1,966 lines on no other branch - found in a workflow worktree nothing was backing up, preserved minutes before pruning. Verdict only: does it merge, does its 15/15 T0 byte-identity claim hold, does the worker venv it names actually exist. R91 precedent: building on unmerged work is how four decided rulings got stranded."
+    },
+    {
+      "id": "V1",
+      "name": "capture probe",
+      "state": "ready",
+      "receipt": "V1.json",
+      "branch": "retina/v1-capture-probe",
+      "worktree": ".claude/worktrees/v1-capture-probe",
+      "prompt": "harness/prompts/v1.md",
+      "deps": [],
+      "readonly": true,
+      "touches": [],
+      "note": "READ-ONLY. What capture verbs exist live on 22.0.368, can Karma emit an integer object-ID AOV, what does one capture cost, is the denoiser controllable. The ID-AOV answer gates the whole harness - no per-pixel prim identity means no mask means no 'only X changed'. Same shape as H3a, which is why the SideFX ask was correct rather than embarrassing."
     }
   ]
 }
