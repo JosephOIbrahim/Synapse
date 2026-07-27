@@ -1,0 +1,50 @@
+#!/bin/sh
+# Gate C, enforced by capability rather than by command form.
+#
+# F1 found that harness/*-settings.json deny rules are written against a command
+# FORM: `Bash(git push:*)` matches `git push ...` and does NOT match
+# `git -C <path> push`. Every agent profile in this repo had that hole, and no
+# amount of additional patterns closes it - `git --git-dir=`, `--work-tree=`, a
+# shell alias, or a python subprocess all bypass a form matcher.
+#
+# A hook runs on the CAPABILITY. It does not care how git was invoked, by whom,
+# or from which working directory.
+#
+# Gate C is a POSITIVE ACT, not the absence of a prohibition: pushing master
+# requires deliberately setting SYNAPSE_GATE_C=1 for that one command. An agent
+# will not do that by accident, and a human doing it has said so out loud.
+#
+#   SYNAPSE_GATE_C=1 git push origin master
+#
+# Installed via core.hooksPath so it is versioned and survives a fresh clone -
+# .git/hooks is not in the tree and would be lost on the next checkout.
+
+z40=0000000000000000000000000000000000000000
+
+while read local_ref local_sha remote_ref remote_sha
+do
+    case "$remote_ref" in
+        refs/heads/master|refs/heads/main)
+            if [ "$local_sha" = "$z40" ]; then
+                echo "pre-push: REFUSED - deleting $remote_ref is never permitted." >&2
+                exit 1
+            fi
+            if [ "$SYNAPSE_GATE_C" != "1" ]; then
+                echo "" >&2
+                echo "  pre-push REFUSED: $remote_ref is Gate C." >&2
+                echo "" >&2
+                echo "  Gate C is the human merge gate. It is not protected by a deny" >&2
+                echo "  rule - deny rules match a command FORM and are bypassed by" >&2
+                echo "  'git -C <path> push' (F1 finding, 2026-07-26)." >&2
+                echo "" >&2
+                echo "  To push master deliberately:" >&2
+                echo "      SYNAPSE_GATE_C=1 git push origin master" >&2
+                echo "" >&2
+                exit 1
+            fi
+            echo "pre-push: Gate C override present. Pushing $remote_ref." >&2
+            ;;
+    esac
+done
+
+exit 0
