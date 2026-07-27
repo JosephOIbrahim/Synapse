@@ -1,0 +1,32 @@
+{
+  "_comment": "R31 PROPOSAL — the tuple-shaped replacement for harness/verify/suite_baseline.json. Written here, at a receipts path, because harness/verify/suite_baseline.json is deny-listed from agent edit in BOTH profiles (harness/agent-settings.json:34, harness/relay-settings.json:61). Promotion is a human act. Read by harness/verify/checks.py::parse_tuple_baseline; the flat single-interpreter shape is now a hard error, never a silent fallback.",
+  "_shipping_honesty": "The shipping numbers are BAD and are recorded as measured. Form (a) RAW `hython -m pytest tests/` does not merely score lower — it CANNOT COLLECT: 3 collection errors abort the session with 'Interrupted: 3 errors during collection', 0 tests run. The counts below are form (a) forced through with --continue-on-collection-errors, which is the honest full-population number (it keeps the 3 collection errors in the total). They are NOT the runner form (b): harness/run_suite_shipping_python.ps1:23 --ignores exactly those 3 files, which deletes the finding from the report rather than recording it.",
+
+  "gate": {
+    "interpreter": "python 3.14.2 (C:/Python314/python.exe) — vendor tree INACTIVE (_VENDOR_ABI_RISK=True), tests pip-installed deps",
+    "passed": 4874,
+    "failed": 0,
+    "skipped": 128,
+    "errors": 0,
+    "commit": "671079f",
+    "producer": "python -m pytest tests/ -q -p no:cacheprovider (cwd=worktree .claude/worktrees/q2-baseline)",
+    "collection_status": "clean",
+    "measured": "2026-07-25"
+  },
+
+  "shipping": {
+    "interpreter": "hython 3.13.10 (Houdini 22.0.368/bin/hython.exe) — vendor tree ACTIVE (_VENDOR_ABI_RISK=False)",
+    "passed": 4707,
+    "failed": 117,
+    "skipped": 122,
+    "errors": 13,
+    "commit": "671079f",
+    "producer": "hython -m pytest tests/ -q -p no:cacheprovider --continue-on-collection-errors (PYTHONPATH=<wt>/python;<wt>)",
+    "collection_status": "BROKEN — 3 collection errors (tests/test_load.py, tests/test_passthrough_hygiene.py, tests/test_port_wave_scene1.py: ModuleNotFoundError: websockets). Without --continue-on-collection-errors the session is Interrupted and 0 tests run.",
+    "raw_unforced_result": "collected 4950 items / 3 errors / 1 skipped, then Interrupted — 0 passed",
+    "measured": "2026-07-25"
+  },
+
+  "_ratchet_note": "checks.py::check_suite_baseline ratchets the GATE leg only (it re-runs pytest under sys.executable each sprint). The SHIPPING leg is shape-enforced and reported as RECORDED-NOT-RERUN so a stale number cannot read as a fresh green. Whether the shipping leg should also be ratcheted per sprint is a cost decision escalated to the human, not decided by the agent.",
+  "_producer_of_this_file": "harness/notes/receipts/q2_missing_modules_probe.py (module gap) + the two pytest invocations named in each leg's producer field"
+}
