@@ -422,14 +422,26 @@ class SynapsePanel(QtWidgets.QWidget):
         top = QtWidgets.QHBoxLayout()
         top.setSpacing(t.SPACE_SM)
         self._mark = c.MarkDot("idle", diameter=16)
-        # brand word — 14px/400/TEXT_PRIMARY (comp .word); tracking lives on the
-        # QFont (Qt QSS has no letter-spacing), colour in the sheet. Weight 400,
-        # not 500: hierarchy comes from the ~4px BRAND tracking and the position,
-        # never from weight. Size holds at 14px.
+        # brand word — 14px/TEXT_BRIGHT (comp .word); tracking lives on the
+        # QFont (Qt QSS has no letter-spacing), colour in the sheet.
+        #
+        # The v9 rule was weight 400: "hierarchy comes from the ~4px BRAND
+        # tracking and the position, never from weight." Joe's call, 2026-07-27:
+        # the wordmark read thin and needed to sit as a SOLID element at the
+        # same size.
+        #
+        # Weight alone would not have done it. At 14px, 600 with ~4px of
+        # tracking reads HEAVY AND SPARSE — letters that are individually bold
+        # and visually apart. Solidity is weight plus density, so three things
+        # move together and the size does not:
+        #   weight   400 -> 600
+        #   tracking BRAND 0.286em -> WORDMARK 0.16em  (~2.2px at 14px)
+        #   colour   TEXT_PRIMARY -> TEXT_BRIGHT
+        # Position still carries hierarchy; weight now carries presence.
         word = c.label("SYNAPSE", role="body")
-        word.setStyleSheet("color:%s;" % t.TEXT_PRIMARY)
-        word.setFont(fontload.tracked_font("BRAND", 14, scale=self._chrome_scale,
-                                           weight=400))
+        word.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
+        word.setFont(fontload.tracked_font("WORDMARK", 14, scale=self._chrome_scale,
+                                           weight=600))
         self._wordmark = word
         self._header_status = c.label("Standing by", role="caption", scale=self._chrome_scale)
         self._header_status.setStyleSheet("color:%s;" % t.TEXT_SECONDARY)

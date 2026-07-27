@@ -349,6 +349,12 @@ TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
 #   BODY      0     conversation, prompt
 TRACKING_EM: Dict[str, float] = {
     "EYEBROW": 0.22, "BRAND": 0.286, "LABEL": 0.15, "LABEL_SM": 0.12,
+    # WORDMARK — the SYNAPSE lockup, 2026-07-27. BRAND's 0.286em (~4px at 14px)
+    # was tuned for weight 400, where wide tracking IS the hierarchy. At weight
+    # 600 that same tracking reads heavy-and-sparse: individually bold letters
+    # sitting visually apart. Solidity is weight PLUS density, so the mark gets
+    # its own value rather than bending BRAND, which other labels still use.
+    "WORDMARK": 0.16,
     "DATA": 0.03, "SEND": 0.08, "DISPLAY": -0.015, "BODY": 0.0,
 }
 
