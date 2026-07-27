@@ -18,7 +18,8 @@
           "parm_count": 106,
           "rung": "L1_color_falloff",
           "tokens": 1787,
-          "tokens_model_visible": 1893
+          "tokens_model_visible": 1893,
+          "tokens_per_covered_node": 1787.0
         },
         {
           "coverage_fraction": 0.0909,
@@ -29,7 +30,8 @@
           "parm_count": 572,
           "rung": "L2_obj_xform",
           "tokens": 1809,
-          "tokens_model_visible": 1917
+          "tokens_model_visible": 1917,
+          "tokens_per_covered_node": 904.5
         },
         {
           "coverage_fraction": 0.0471,
@@ -40,7 +42,8 @@
           "parm_count": 1922,
           "rung": "L3_RandomExample",
           "tokens": 3601,
-          "tokens_model_visible": 3865
+          "tokens_model_visible": 3865,
+          "tokens_per_covered_node": 900.2
         },
         {
           "coverage_fraction": 0.0178,
@@ -51,7 +54,8 @@
           "parm_count": 7703,
           "rung": "L4_three_point_lighting",
           "tokens": 13290,
-          "tokens_model_visible": 14430
+          "tokens_model_visible": 14430,
+          "tokens_per_covered_node": 4430.0
         },
         {
           "coverage_fraction": 0.0001,
@@ -62,7 +66,8 @@
           "parm_count": 142850,
           "rung": "L5_ocean",
           "tokens": 12838,
-          "tokens_model_visible": 13410
+          "tokens_model_visible": 13410,
+          "tokens_per_covered_node": 12838.0
         },
         {
           "coverage_fraction": 0.0002,
@@ -73,7 +78,8 @@
           "parm_count": 1187573,
           "rung": "L6_karma_user_guide",
           "tokens": 212251,
-          "tokens_model_visible": 225798
+          "tokens_model_visible": 225798,
+          "tokens_per_covered_node": 53062.8
         }
       ]
     },
@@ -93,7 +99,8 @@
           "parm_count": 106,
           "rung": "L1_color_falloff",
           "tokens": 443,
-          "tokens_model_visible": 499
+          "tokens_model_visible": 499,
+          "tokens_per_covered_node": 34.1
         },
         {
           "coverage_fraction": 1.0,
@@ -103,7 +110,8 @@
           "parm_count": 572,
           "rung": "L2_obj_xform",
           "tokens": 741,
-          "tokens_model_visible": 819
+          "tokens_model_visible": 819,
+          "tokens_per_covered_node": 33.7
         },
         {
           "coverage_fraction": 0.7294,
@@ -113,7 +121,8 @@
           "parm_count": 1922,
           "rung": "L3_RandomExample",
           "tokens": 3277,
-          "tokens_model_visible": 3505
+          "tokens_model_visible": 3505,
+          "tokens_per_covered_node": 52.9
         },
         {
           "coverage_fraction": 0.5148,
@@ -123,7 +132,8 @@
           "parm_count": 7703,
           "rung": "L4_three_point_lighting",
           "tokens": 3047,
-          "tokens_model_visible": 3333
+          "tokens_model_visible": 3333,
+          "tokens_per_covered_node": 35.0
         },
         {
           "coverage_fraction": 0.0982,
@@ -133,7 +143,8 @@
           "parm_count": 142850,
           "rung": "L5_ocean",
           "tokens": 38555,
-          "tokens_model_visible": 41211
+          "tokens_model_visible": 41211,
+          "tokens_per_covered_node": 54.5
         },
         {
           "coverage_fraction": 0.1116,
@@ -143,7 +154,8 @@
           "parm_count": 1187573,
           "rung": "L6_karma_user_guide",
           "tokens": 113411,
-          "tokens_model_visible": 122772
+          "tokens_model_visible": 122772,
+          "tokens_per_covered_node": 39.3
         }
       ]
     },
@@ -163,7 +175,8 @@
           "parm_count": 106,
           "rung": "L1_color_falloff",
           "tokens": 443,
-          "tokens_model_visible": 499
+          "tokens_model_visible": 499,
+          "tokens_per_covered_node": 34.1
         },
         {
           "coverage_fraction": 1.0,
@@ -173,7 +186,8 @@
           "parm_count": 572,
           "rung": "L2_obj_xform",
           "tokens": 741,
-          "tokens_model_visible": 819
+          "tokens_model_visible": 819,
+          "tokens_per_covered_node": 33.7
         },
         {
           "coverage_fraction": 1.0,
@@ -183,7 +197,8 @@
           "parm_count": 1922,
           "rung": "L3_RandomExample",
           "tokens": 4922,
-          "tokens_model_visible": 5255
+          "tokens_model_visible": 5255,
+          "tokens_per_covered_node": 57.9
         },
         {
           "coverage_fraction": 1.0,
@@ -193,7 +208,8 @@
           "parm_count": 7703,
           "rung": "L4_three_point_lighting",
           "tokens": 6504,
-          "tokens_model_visible": 7022
+          "tokens_model_visible": 7022,
+          "tokens_per_covered_node": 38.5
         },
         {
           "coverage_fraction": 1.0,
@@ -203,7 +219,8 @@
           "parm_count": 142850,
           "rung": "L5_ocean",
           "tokens": 466520,
-          "tokens_model_visible": 493125
+          "tokens_model_visible": 493125,
+          "tokens_per_covered_node": 64.7
         },
         {
           "coverage_fraction": 1.0,
@@ -213,7 +230,8 @@
           "parm_count": 1187573,
           "rung": "L6_karma_user_guide",
           "tokens": 1234946,
-          "tokens_model_visible": 1312087
+          "tokens_model_visible": 1312087,
+          "tokens_per_covered_node": 47.8
         }
       ]
     },
@@ -233,7 +251,8 @@
           "parm_count": 106,
           "rung": "L1_color_falloff",
           "tokens": 257,
-          "tokens_model_visible": 286
+          "tokens_model_visible": 286,
+          "tokens_per_covered_node": 85.7
         },
         {
           "coverage_fraction": 0.5455,
@@ -243,7 +262,8 @@
           "parm_count": 572,
           "rung": "L2_obj_xform",
           "tokens": 889,
-          "tokens_model_visible": 964
+          "tokens_model_visible": 964,
+          "tokens_per_covered_node": 74.1
         },
         {
           "coverage_fraction": 0.8824,
@@ -253,7 +273,8 @@
           "parm_count": 1922,
           "rung": "L3_RandomExample",
           "tokens": 14253,
-          "tokens_model_visible": 15722
+          "tokens_model_visible": 15722,
+          "tokens_per_covered_node": 190.0
         },
         {
           "coverage_fraction": 0.9467,
@@ -263,7 +284,8 @@
           "parm_count": 7703,
           "rung": "L4_three_point_lighting",
           "tokens": 45993,
-          "tokens_model_visible": 51352
+          "tokens_model_visible": 51352,
+          "tokens_per_covered_node": 287.5
         },
         {
           "coverage_fraction": 0.8225,
@@ -273,7 +295,8 @@
           "parm_count": 142850,
           "rung": "L5_ocean",
           "tokens": 1225230,
-          "tokens_model_visible": 1302565
+          "tokens_model_visible": 1302565,
+          "tokens_per_covered_node": 206.7
         },
         {
           "rung": "L6_karma_user_guide",
@@ -318,7 +341,8 @@
           "parm_count": 7703,
           "rung": "L4_three_point_lighting",
           "tokens": 183631,
-          "tokens_model_visible": 185487
+          "tokens_model_visible": 185487,
+          "tokens_per_covered_node": null
         },
         {
           "coverage_note": "coverage denominator is the whole scene, but this arm is 'usd_serialization' - it does not attempt scene-wide grounding. Read its cost growth, not its coverage.",
@@ -335,7 +359,8 @@
           "parm_count": 1187573,
           "rung": "L6_karma_user_guide",
           "tokens": 64718,
-          "tokens_model_visible": 64986
+          "tokens_model_visible": 64986,
+          "tokens_per_covered_node": null
         }
       ]
     },
@@ -355,7 +380,8 @@
           "parm_count": 106,
           "rung": "L1_color_falloff",
           "tokens": 36,
-          "tokens_model_visible": 55
+          "tokens_model_visible": 55,
+          "tokens_per_covered_node": null
         },
         {
           "coverage_fraction": 0.0,
@@ -365,7 +391,8 @@
           "parm_count": 572,
           "rung": "L2_obj_xform",
           "tokens": 35,
-          "tokens_model_visible": 54
+          "tokens_model_visible": 54,
+          "tokens_per_covered_node": null
         },
         {
           "coverage_fraction": 0.0,
@@ -375,7 +402,8 @@
           "parm_count": 1922,
           "rung": "L3_RandomExample",
           "tokens": 34,
-          "tokens_model_visible": 53
+          "tokens_model_visible": 53,
+          "tokens_per_covered_node": null
         },
         {
           "coverage_fraction": 0.0,
@@ -385,7 +413,8 @@
           "parm_count": 7703,
           "rung": "L4_three_point_lighting",
           "tokens": 37,
-          "tokens_model_visible": 56
+          "tokens_model_visible": 56,
+          "tokens_per_covered_node": null
         },
         {
           "coverage_fraction": 0.0,
@@ -395,7 +424,8 @@
           "parm_count": 142850,
           "rung": "L5_ocean",
           "tokens": 33,
-          "tokens_model_visible": 52
+          "tokens_model_visible": 52,
+          "tokens_per_covered_node": null
         },
         {
           "coverage_fraction": 0.0,
@@ -405,10 +435,70 @@
           "parm_count": 1187573,
           "rung": "L6_karma_user_guide",
           "tokens": 35,
-          "tokens_model_visible": 54
+          "tokens_model_visible": 54,
+          "tokens_per_covered_node": null
         }
       ]
     }
+  },
+  "efficiency_vs_completeness": {
+    "_what": "raw_cost_advantage_x is how much cheaper arm A LOOKS. true_efficiency_advantage_x is how much cheaper it is per node actually delivered. The gap between the two columns is the part of the headline that is 'sent less of the scene' rather than 'encoded it better'.",
+    "rows": [
+      {
+        "arm_a_coverage": 1.0,
+        "arm_a_tokens_per_covered_node": 34.1,
+        "arm_b_tokens_per_covered_node": 34.1,
+        "node_count": 13,
+        "raw_cost_advantage_x": 1.0,
+        "rung": "L1_color_falloff",
+        "true_efficiency_advantage_x": 1.0
+      },
+      {
+        "arm_a_coverage": 1.0,
+        "arm_a_tokens_per_covered_node": 33.7,
+        "arm_b_tokens_per_covered_node": 33.7,
+        "node_count": 22,
+        "raw_cost_advantage_x": 1.0,
+        "rung": "L2_obj_xform",
+        "true_efficiency_advantage_x": 1.0
+      },
+      {
+        "arm_a_coverage": 0.7294,
+        "arm_a_tokens_per_covered_node": 52.9,
+        "arm_b_tokens_per_covered_node": 57.9,
+        "node_count": 62,
+        "raw_cost_advantage_x": 1.5,
+        "rung": "L3_RandomExample",
+        "true_efficiency_advantage_x": 1.09
+      },
+      {
+        "arm_a_coverage": 0.5148,
+        "arm_a_tokens_per_covered_node": 35.0,
+        "arm_b_tokens_per_covered_node": 38.5,
+        "node_count": 168,
+        "raw_cost_advantage_x": 2.13,
+        "rung": "L4_three_point_lighting",
+        "true_efficiency_advantage_x": 1.1
+      },
+      {
+        "arm_a_coverage": 0.0982,
+        "arm_a_tokens_per_covered_node": 54.5,
+        "arm_b_tokens_per_covered_node": 64.7,
+        "node_count": 3057,
+        "raw_cost_advantage_x": 12.1,
+        "rung": "L5_ocean",
+        "true_efficiency_advantage_x": 1.19
+      },
+      {
+        "arm_a_coverage": 0.1116,
+        "arm_a_tokens_per_covered_node": 39.3,
+        "arm_b_tokens_per_covered_node": 47.8,
+        "node_count": 21085,
+        "raw_cost_advantage_x": 10.89,
+        "rung": "L6_karma_user_guide",
+        "true_efficiency_advantage_x": 1.22
+      }
+    ]
   },
   "failures": [
     {

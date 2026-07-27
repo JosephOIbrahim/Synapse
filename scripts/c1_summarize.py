@@ -178,6 +178,16 @@ def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
                                "status": "absent (arm failed or n/a)"})
                 continue
             cov = c.get("coverage", {}) or {}
+            covered = cov.get("covered")
+            # THE FIGURE THAT DECIDES WHETHER "CHEAPER" MEANS ANYTHING.
+            # An arm looks cheap two ways: by encoding the same scene more
+            # tightly, or by sending less of it. Only the first is efficiency.
+            # Dividing by nodes actually delivered separates them, and it is
+            # the difference between "10x cheaper" and "10x less complete".
+            per_node = (
+                round(c["tokens_cl100k"] / covered, 1)
+                if covered else None
+            )
             points.append({
                 "rung": rung,
                 "node_count": axes[rung].get("node_count"),
@@ -185,8 +195,9 @@ def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
                 "tokens": c["tokens_cl100k"],
                 "tokens_model_visible": c.get("tokens_cl100k_model_visible"),
                 "coverage_fraction": cov.get("fraction"),
-                "nodes_covered": cov.get("covered"),
+                "nodes_covered": covered,
                 "nodes_total": cov.get("total"),
+                "tokens_per_covered_node": per_node,
             })
         tok = [p["tokens"] for p in points]
         ratio = _flatness(tok)
@@ -249,8 +260,44 @@ def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
             ),
         }
 
+    # -- headline: is arm A cheaper because it is tighter, or because it is
+    #    smaller? Compared only against B_inspect_scene_deep, which is the SAME
+    #    code path one argument apart, so nothing differs but how much scene
+    #    is sent.
+    efficiency: List[Dict[str, Any]] = []
+    a_pts = {p["rung"]: p for p in curve.get("A_inspect_scene_d3", {})
+             .get("points", [])}
+    b_pts = {p["rung"]: p for p in curve.get("B_inspect_scene_deep", {})
+             .get("points", [])}
+    for rung in rungs:
+        a, b = a_pts.get(rung), b_pts.get(rung)
+        if not a or not b or not a.get("tokens") or not b.get("tokens"):
+            continue
+        apn, bpn = a.get("tokens_per_covered_node"), b.get("tokens_per_covered_node")
+        efficiency.append({
+            "rung": rung,
+            "node_count": a.get("node_count"),
+            "raw_cost_advantage_x": round(b["tokens"] / a["tokens"], 2),
+            "arm_a_coverage": a.get("coverage_fraction"),
+            "arm_a_tokens_per_covered_node": apn,
+            "arm_b_tokens_per_covered_node": bpn,
+            "true_efficiency_advantage_x": (
+                round(bpn / apn, 2) if apn and bpn else None
+            ),
+        })
+
     result = {
         "schema": "c1_summary/v1",
+        "efficiency_vs_completeness": {
+            "_what": (
+                "raw_cost_advantage_x is how much cheaper arm A LOOKS. "
+                "true_efficiency_advantage_x is how much cheaper it is per "
+                "node actually delivered. The gap between the two columns is "
+                "the part of the headline that is 'sent less of the scene' "
+                "rather than 'encoded it better'."
+            ),
+            "rows": efficiency,
+        },
         "tokenizer": doc.get("tokenizer"),
         "tokenizer_caveat": doc.get("tokenizer_caveat"),
         "arm_a_note": doc.get("arm_a_note"),
