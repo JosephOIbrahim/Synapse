@@ -1,0 +1,383 @@
+{
+  "schema": "receipt/v1",
+  "leg": "U1",
+  "title": "The union of moneta_provenance() — five R64 conditions in one function",
+  "harness": "harness/prompts/u1.md",
+  "ruling": "R91 (union is AUTHORED, not merge-resolved) · R64 (five conditions) · R52–R55 (LEDGER, decided and previously un-shipped) · R75 (schema_in_use is not evidence alone) · R34 + R60 (mutation standard, reader calibration) · R93 (product committed before receipt) · R25 (model + settings_profile)",
+  "status": "green",
+  "status_note": "Product COMMITTED on this leg's own branch at 189180d before this receipt was written (R93). Never pushed, never merged, never tagged.",
+
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "interactive orchestrator session — full tool grant including pytest, so suite evidence is admissible (Constitution Article V). Not run behind agent-settings.json.",
+
+  "date": "2026-07-27",
+  "commit_at_run": "c8088395a8f5999bfd2cbfe620edbb88df07f42e",
+  "head_at_receipt": "189180d",
+  "merge_base_master_head": "72684902e004c72264110093792ce260a4387b64",
+  "branch": "repair/u1-provenance-union",
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/u1-provenance-union",
+  "source_branch_absorbed": "repair/ledger-moneta-seam @ eb25abed34ddd87549a0196662d9ea15dc5e597c",
+
+  "oracle": [
+    {
+      "condition": "moneta_provenance() returns ALL FIVE fields; none raise with pxr or moneta absent",
+      "verdict": "MET",
+      "evidence": "One payload, 17 keys. available / version / file (conditions 1–2) + revision, revision_ref, revision_source, revision_repo, revision_resolved_at, revision_scope, root, moneta_src (condition 2, LEDGER) + schema_registered, schema_in_use with paired *_reason strings and usd_root_inspected (conditions 3–4, H6). Condition 5 gets no field on purpose: it IS 3 AND 4, and a sixth signal standing in for a conjunction is the defect R64 removes. Never-raise is pinned three ways — revision probe explodes, both probes explode at once, and through the real SynapseMemory._make_store seam with the REAL composed body running (H6's existing pin replaces the whole function, so it never executed the union).",
+      "producer": "tests/test_moneta_provenance_union.py::TestBothHalvesArePresent (3 pins), ::TestTheUnionNeverRaises (3 pins); tests/test_moneta_substrate_truth.py::test_provenance_reports_all_five_conditions; tests/test_ledger_moneta_seam.py::test_provenance_declares_what_the_sha_does_not_cover"
+    },
+    {
+      "condition": "the revision walk is BOUNDED — demonstrate it does NOT report an enclosing repo's HEAD",
+      "verdict": "MET, two-sided, against a real repository",
+      "evidence": "Live demonstration on C:/Users/User/SYNAPSE (real HEAD 5955e321bc6916917348c2f9dc238ed4c0976a25). A synthetic moneta package placed two levels below that repo's .git resolves to revision=None, revision_source='not-a-git-worktree', revision_repo=None at the shipped MAX_REVISION_WALK=1. The SAME package with the bound forced back to the pre-fix value 3 resolves to 5955e321bc6916917348c2f9dc238ed4c0976a25 — the enclosing repository's actual HEAD. The defect reproduces on demand, so the bound is measuring something. Positive control for the other arm (the deployed $MONETA_SRC=<repo>/src layout must still resolve, and must name the repo it read) is pinned separately, and a third pin asserts the two arms DISAGREE so a resolver insensitive to depth cannot pass (R60).",
+      "producer": "ad-hoc runtime demonstration, 2026-07-27, output recorded in bounded_walk_demonstration below; pins tests/test_moneta_provenance_union.py::TestBoundedWalkThroughThePublicFunction (3), tests/test_ledger_moneta_seam.py::test_walk_upward_is_bounded / ::test_vendored_copy_does_not_inherit_the_host_repo_sha / ::test_the_deployed_layout_still_resolves"
+    },
+    {
+      "condition": "R52–R55's implementations are present on the working line, not stranded",
+      "verdict": "MET",
+      "evidence": "R52 (LEDGER.F2, the bounded walk + REVISION_SCOPE caveat), R53 (the live Moneta enrichment seam in ledger.py — moneta_backend_enabled / ledger_moneta_store / _deposit_to_moneta reporting its own outcome, plus the counters in backfill() and science/deposit.py), R54 (ledger.py stays zero-hou — verified below), R55 (the gate-vs-shipping interpreter split, recorded not re-litigated) are all on repair/u1-provenance-union at 189180d. LEDGER's 2,012 insertions across 8 files are absorbed: 6 files verbatim, 2 authored.",
+      "producer": "git diff --cached --stat HEAD before commit; per-file collision analysis in hunks_merged_vs_authored below"
+    },
+    {
+      "condition": "pytest -k \"moneta or ledger or provenance\" -> 0 failed, count strictly increases",
+      "verdict": "MET",
+      "evidence": "164 passed / 3 skipped / 0 failed  ->  213 passed / 3 skipped / 0 failed. +49, strictly increasing. BEFORE measured on a genuinely pristine tree (git stash push -u, run, pop) — not by subtracting new files from the after-count.",
+      "producer": "python -m pytest -q -p no:cacheprovider -k \"moneta or ledger or provenance\", run twice around a stash"
+    },
+    {
+      "condition": "gate suite holds at 4940+ with 0 failed",
+      "verdict": "MET",
+      "evidence": "BEFORE 4940 passed / 0 failed / 137 skipped (114.17s). AFTER 4989 passed / 0 failed / 137 skipped (102.38s). Delta +49 = exactly the new pins (36 in the ledger seam module, 13 in the union module). Skip count unchanged, so nothing was converted to a skip to make the number move. BEFORE was measured on this worktree at pristine c808839 with everything stashed, not inherited from any prior report.",
+      "producer": "python -m pytest -q -p no:cacheprovider"
+    },
+    {
+      "condition": "the receipt states which hunks merged and which were AUTHORED",
+      "verdict": "MET",
+      "evidence": "hunks_merged_vs_authored below, per file, with the reason each classification is provable rather than asserted."
+    },
+    {
+      "condition": "every pin fails against its mutation (R34) and every reader is calibrated (R60)",
+      "verdict": "MET — 39 of 39 mutations fired, 0 survivors",
+      "evidence": "See mutation_battery below. LEDGER's original 25 all still fire with H6's half of the file present, which is the specific thing the brief asked to be reported. Reader controls: the walk-bound pins have an explicit disagree-assertion, and test_opting_out_actually_skips_the_probes carries a positive control proving the patched probes ARE called by default — without it an empty call list could be an artefact of the patch.",
+      "producer": "python harness/verify/mutate_ledger_moneta_seam.py --json harness/notes/mutation_ledger_moneta.json"
+    }
+  ],
+
+  "hunks_merged_vs_authored": {
+    "_method": "git merge-base HEAD repair/ledger-moneta-seam = b2c2c04. For each of LEDGER's 8 files, `git diff --stat <base> HEAD -- <file>` decides the classification: empty means HEAD never moved off the base, so a 3-way merge is provably a fast-forward to LEDGER's side and `git checkout repair/ledger-moneta-seam -- <file>` is byte-identical to what a merge would produce. Non-empty means both sides moved and the result had to be authored. `git merge-tree --write-tree HEAD repair/ledger-moneta-seam` independently confirms exactly two CONFLICT lines.",
+
+    "MERGED_CLEAN": [
+      {
+        "file": "python/synapse/memory/ledger.py",
+        "lines": "+261",
+        "why_clean": "HEAD == base for this file (0 lines changed since b2c2c04)",
+        "content": "The whole Moneta enrichment seam (D-5): MONETA_BACKENDS, MONETA_DURABILITY, moneta_backend_enabled(), _ledger_memory(), ledger_moneta_store(), reset_moneta_store(), _deposit_to_moneta() reporting deposited/reason/memory_id/provenance/durable, the `moneta` key on deposit()'s result, and the moneta_deposited / moneta_failures counters on backfill()."
+      },
+      {
+        "file": "python/synapse/science/deposit.py",
+        "lines": "+14",
+        "why_clean": "HEAD == base for this file",
+        "content": "LedgerDeposit gains moneta_deposited / moneta_failures so the only live producer cannot report a clean run while every substrate write fails."
+      },
+      {
+        "file": "tests/test_ledger_moneta_seam.py",
+        "lines": "+715 (new)",
+        "why_clean": "absent on HEAD",
+        "content": "36 pins on the seam and the revision resolver, each naming the mutation it catches."
+      },
+      {
+        "file": "harness/verify/mutate_ledger_moneta_seam.py",
+        "lines": "+302 (new), then EXTENDED by U1 to 451",
+        "why_clean": "absent on HEAD — the file arrived clean; the extension is separately classified under AUTHORED_NEW"
+      },
+      {
+        "file": "harness/notes/mutation_ledger_moneta.json",
+        "lines": "+212 (new), then REGENERATED by U1 at 328",
+        "why_clean": "absent on HEAD — regenerated by re-running the battery, never hand-edited"
+      },
+      {
+        "file": "harness/notes/receipts/LEDGER.json",
+        "lines": "0",
+        "why_clean": "`git diff HEAD repair/ledger-moneta-seam -- harness/notes/receipts/LEDGER.json` is EMPTY — F1 already carried this receipt onto the working line byte-identically. The brief counts 8 files; only 7 needed bringing across. No action taken and none required."
+      }
+    ],
+
+    "AUTHORED": [
+      {
+        "file": "python/synapse/memory/moneta_runtime.py",
+        "lines": "118 (base) -> 350 (LEDGER) / 398 (H6) -> 701 (union)",
+        "why_authored": "git merge-tree CONFLICT (content). Both legs rewrote moneta_provenance() and the module docstring from the same base.",
+        "what_was_authored": [
+          "Module docstring — a single narrative carrying BOTH legs' findings: H6's five-condition table and dead-bytes measurement, LEDGER's why-a-path-is-not-an-answer and the confidently-wrong-provenance finding, plus why this file was authored rather than merged.",
+          "moneta_provenance(usd_root=None, *, probe_schema=True) — the union. Seeds all 17 keys, computes conditions 3+4 BEFORE the availability early-return (H6's deliberate independence, preserved), then version -> file -> revision. prov.update() rather than assignment, because _resolve_revision's no-package-file arm returns a SUBSET of the revision keys and the seeded defaults must survive for the keys it omits.",
+          "A fence around prov.update(_resolve_revision(...)) — see U1-F1. Neither leg had one and neither leg needed one.",
+          "probe_schema keyword-only opt-out + NOT_PROBED_REASON — see U1-F2.",
+          "The docstring table mapping each of the five conditions to its field, and the explicit statement that condition 5 gets no field."
+        ],
+        "what_was_copied_verbatim": "Every function body from both legs is byte-identical to its source: LEDGER's _utc_now / _dist_version / _read_text / _find_git_dir / _common_git_dir / _resolve_ref / _resolve_revision / reset_revision_cache and its constants; H6's _schema_registered_detail / schema_registered / _resolve_usd_root / _schema_in_use_detail / schema_in_use and its constants. Verified structurally: all 25 of LEDGER's committed mutation anchors still match EXACTLY ONCE in the authored file (0 anchor misses), which no reformatting would survive."
+      },
+      {
+        "file": "docs/studio/DEPLOYMENT.md",
+        "lines": "+1 net",
+        "why_authored": "git merge-tree CONFLICT (content) — the two legs edited adjacent rows of the env-var table. LEDGER rewrote the SYNAPSE_MEMORY_BACKEND row (it now gates the ledger seam too, and names memory/ledger.py as a second owner); H6 INSERTED a new SYNAPSE_MONETA_USD_ROOT row immediately after it. Textually adjacent, semantically independent.",
+        "what_was_authored": "Both, in table order. LEDGER's rewritten SYNAPSE_MEMORY_BACKEND row followed by H6's SYNAPSE_MONETA_USD_ROOT row. No content from either side dropped."
+      }
+    ],
+
+    "AUTHORED_NEW": [
+      {
+        "file": "tests/test_moneta_provenance_union.py",
+        "lines": "+407 (new), 13 pins",
+        "why": "Neither leg could write these. Each leg's pin module was green on a branch missing the other half, so 'both files pass' is not evidence the union holds. This file pins ONLY what the composition made true or made necessary: both halves present and both showing evidence they RAN (key-presence is vacuous — every field is seeded), the two halves not gated on each other, the probe_schema opt-out, the bounded walk end-to-end through the PUBLIC function the oracle names, and never-raise across both halves at once."
+      },
+      {
+        "file": "harness/verify/mutate_ledger_moneta_seam.py",
+        "lines": "302 -> 451; 25 -> 39 mutations; run set 1 -> 3 pin files",
+        "why": "See U1-F3 and U1-F4."
+      }
+    ]
+  },
+
+  "mutation_battery": {
+    "_standard": "R34 (a pin must fail against a deliberately broken implementation) + R60 (the pin's READER needs its own control)",
+    "producer": "harness/verify/mutate_ledger_moneta_seam.py --json harness/notes/mutation_ledger_moneta.json",
+    "pins_run": [
+      "tests/test_ledger_moneta_seam.py",
+      "tests/test_moneta_substrate_truth.py",
+      "tests/test_moneta_provenance_union.py"
+    ],
+    "baseline_unmutated": "83 passed",
+    "result": "39 applied, 39 fired, 0 survivors, tree restored green",
+
+    "do_they_still_catch_what_they_caught": {
+      "LEDGER": "YES — all 25 of LEDGER's original mutations still fire, now with H6's half of moneta_runtime.py present and with the wider pin set. VERIFIED-RUNTIME 2026-07-27. This is the direct answer to the brief's question. Every anchor also still matched exactly once (0 anchor misses), which is a stronger structural check than the fire/no-fire result: a reformatted union would have produced ANCHOR-MISS rows rather than passes.",
+      "H6": "PARTIALLY, and the partiality is stated rather than papered over. H6's battery was a SCRATCH harness — its 14 results live in H6.json and the harness itself was never committed, so it cannot be re-run as written. U1 rewrote the file 8 of those mutations target, so 'H6's pins still pass' is not evidence they can still fail. Six of the eight that land in moneta_runtime.py and are expressible as a single textual edit have been re-materialised in the committed battery (H6 M1, M2, M5, M9, M10, M11) and all six fire. NOT re-materialised: M3 and M4 (reader controls needing a structural rewrite of _schema_in_use_detail rather than a one-line edit) and M6/M7/M8/M12/M13/M14 (store.py and doctor.py, which U1 did not touch). The harness says so in a comment so a future reader does not read 39/39 as full coverage of H6's battery."
+    },
+
+    "new_mutations_added": [
+      {"id": "pxr-absent-reported-as-false", "origin": "H6 M1 re-materialised", "fired": true},
+      {"id": "missing-stage-reported-as-false", "origin": "H6 M2 re-materialised", "fired": true},
+      {"id": "registry-check-hardcoded-true", "origin": "H6 M5 re-materialised", "fired": true},
+      {"id": "schema-in-use-probe-deleted", "origin": "H6 M9 re-materialised", "fired": true},
+      {"id": "tri-state-collapsed-in-use", "origin": "H6 M10 re-materialised", "fired": true},
+      {"id": "tri-state-collapsed-registered", "origin": "H6 M11 re-materialised", "fired": true},
+      {"id": "union-drops-the-revision-half", "origin": "U1", "defect": "R91's live defect re-created — the function reverts to H6's four fields and R52–R55 are un-shipped again", "fired": true, "pins_failed": 6},
+      {"id": "union-defaults-probe-schema-off", "origin": "U1", "defect": "the other half of R91's defect — reverts to LEDGER's fields, conditions 3+4 dark on every default call", "fired": true, "pins_failed": 7},
+      {"id": "probe-schema-false-still-probes", "origin": "U1", "defect": "the opt-out reports that it skipped and probes anyway — costs exactly what it claims to save", "fired": true},
+      {"id": "not-probed-collapsed-to-false", "origin": "U1", "defect": "declining to look becomes a fourth way of saying False", "fired": true},
+      {"id": "not-probed-reuses-could-not-check", "origin": "U1", "defect": "'I was not asked' made indistinguishable from 'I looked and could not tell'", "fired": true},
+      {"id": "probe-schema-false-drops-the-revision-half", "origin": "U1", "defect": "the opt-out over-reaches and takes conditions 1+2 with it", "fired": true},
+      {"id": "gate-schema-probes-on-availability", "origin": "U1", "defect": "conditions 3+4 gated on condition 1 — five conditions collapse back towards one", "fired": true},
+      {"id": "union-revision-fence-removed", "origin": "U1", "defect": "a raise in the revision half escapes _make_store and stops Houdini's panel loading", "fired": true}
+    ]
+  },
+
+  "bounded_walk_demonstration": {
+    "_producer": "ad-hoc runtime script, 2026-07-27, against the live repository at C:/Users/User/SYNAPSE (not a synthetic fixture)",
+    "enclosing_repo": "C:/Users/User/SYNAPSE",
+    "its_real_head": "5955e321bc6916917348c2f9dc238ed4c0976a25",
+    "shipped_bound": {
+      "MAX_REVISION_WALK": 1,
+      "package_placed_at": "<SYNAPSE>/_u1_walkdemo/vendor/moneta-src/moneta — two levels below the nearest .git",
+      "revision": null,
+      "revision_source": "not-a-git-worktree",
+      "revision_repo": null,
+      "reports_enclosing_head": false
+    },
+    "pre_fix_control": {
+      "MAX_REVISION_WALK": 3,
+      "package_placed_at": "identical path",
+      "revision": "5955e321bc6916917348c2f9dc238ed4c0976a25",
+      "reports_enclosing_head": true,
+      "reading": "The defect R52 closed, reproduced on demand. Without this arm the negative result above would be indistinguishable from a resolver that always returns None."
+    },
+    "positive_arm_note": "The deployed $MONETA_SRC=<repo>/src layout resolving correctly is NOT shown in this ad-hoc run — both scratch layouts sat two or more levels below SYNAPSE's .git, so both correctly returned None. That arm is pinned instead, and passes: tests/test_moneta_provenance_union.py::test_the_deployed_layout_still_resolves (revision == FAKE_SHA, revision_source == 'git-loose-ref', revision_repo == the repo root) and tests/test_ledger_moneta_seam.py::test_the_deployed_layout_still_resolves. Stated because a demonstration that shows only the negative arm is half an argument.",
+    "scratch_cleanup": "the _u1_walkdemo tree was removed in a finally-block; `git status` on C:/Users/User/SYNAPSE is unaffected"
+  },
+
+  "constraints_preserved": [
+    {
+      "constraint": "No raise, anywhere — _make_store's contract is that the flag can never break startup",
+      "held": true,
+      "evidence": "Both probes and the revision resolver are individually fenced. Pinned by ::test_it_survives_a_revision_probe_that_explodes, ::test_it_survives_both_probes_exploding_at_once, ::test_make_store_survives_a_broken_revision_half (through the real SynapseMemory._make_store with the real composed body), plus H6's existing ::test_make_store_survives_a_provenance_that_raises. Mutation union-revision-fence-removed fires."
+    },
+    {
+      "constraint": "Fields degrade to None (unknown) when pxr or Moneta is absent; 'checked and false' stays distinguishable from 'could not check'",
+      "held": true,
+      "evidence": "Both schema fields are tri-state with paired reason strings; every UNKNOWN reason string carries the literal phrase 'This is UNKNOWN, not False.' The new probe_schema=False path adds a THIRD distinct state — UNKNOWN-BY-REQUEST — with its own reason constant rather than reusing a 'could not check' string. Mutations tri-state-collapsed-in-use, tri-state-collapsed-registered, not-probed-collapsed-to-false and not-probed-reuses-could-not-check all fire."
+    },
+    {
+      "constraint": "ledger.py stays zero-hou (R54)",
+      "held": true,
+      "evidence": "VERIFIED-RUNTIME 2026-07-27: no `import hou` in the file, and after `from synapse.memory import ledger` the set of hou modules in sys.modules is empty. The Moneta imports it added (moneta_runtime, moneta_store, models) are all inside function bodies, never at module scope."
+    },
+    {
+      "constraint": "schema_in_use is not evidence alone (R75)",
+      "held": true,
+      "evidence": "Carried in three places rather than one: the module docstring's dead-bytes table, moneta_provenance()'s docstring, and the reason string the True verdict itself emits — 'Authored typeName only -- pair with schema_registered() before reading this as a working typed substrate.' A reader who only ever sees the payload still gets the caveat."
+    },
+    {
+      "constraint": "the revision walk is bounded (R91 / LEDGER.F2)",
+      "held": true,
+      "evidence": "MAX_REVISION_WALK = 1 unchanged from LEDGER, plus the site-packages/dist-packages refusal. See bounded_walk_demonstration."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "U1-F1",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "medium",
+      "claim": "LEDGER's revision resolver needed no fence of its own; composed with H6's never-raise contract it needs one, and neither leg could see that. _resolve_revision only reads files, so LEDGER never wrapped its call site. H6's moneta_provenance() carries a hard contract — _make_store calls it from inside its own except handler, so a raise there escapes _make_store and stops Houdini's panel loading. The naive union puts an unfenced resolver inside a function contracted never to raise.",
+      "anchor": "python/synapse/memory/moneta_runtime.py — the try/except around prov.update(_resolve_revision(prov['file'])); the contract is stated at python/synapse/memory/store.py:852",
+      "fix": "Fenced, degrading to revision_source='could not check: revision probe itself raised (...)'. Pinned by ::test_it_survives_a_revision_probe_that_explodes and, through the real seam with the real composed body running, ::test_make_store_survives_a_broken_revision_half.",
+      "note": "H6's existing pin for this seam replaces moneta_provenance entirely with a raising stub, so it proves the handler is fenced but never executes the union. The new pin breaks only the revision half and lets the real function run."
+    },
+    {
+      "id": "U1-F2",
+      "tier": "VERIFIED-STATIC",
+      "severity": "low",
+      "claim": "The composition put an uncached, stage-opening probe onto a per-record caller. ledger._deposit_to_moneta calls moneta_provenance() once per deposit, and backfill() once per parsed record. Post-union that call also runs _schema_registered_detail() — uncached BY DESIGN (R64 item 4: a cache could not observe a subprocess setting PXR_PLUGINPATH_NAME, which is the only honest way to test it) — and _schema_in_use_detail(), which opens and traverses a USD stage of up to 20,000 prims when a root is resolved. The ledger seam reads only file/version/revision from the payload; it never reads the schema fields it now pays for.",
+      "anchor": "python/synapse/memory/ledger.py `provenance = mr.moneta_provenance()` inside _deposit_to_moneta; python/synapse/memory/moneta_runtime.py _schema_in_use_detail",
+      "severity_reasoning": "LATENT, not live. With $SYNAPSE_MONETA_USD_ROOT unset — the documented default, 'Both: leave unset unless pointing the doctor at a real stage' — _resolve_usd_root returns immediately and the cost is zero disk I/O. The registry query is a singleton dict lookup. The cost only materialises for an operator who has deliberately pointed the doctor at a stage and then runs a backfill.",
+      "fix": "Added probe_schema=False as a keyword-only opt-out with its own reason constant. The ledger call site is deliberately UNCHANGED — see U1-FR-1."
+    },
+    {
+      "id": "U1-F3",
+      "tier": "VERIFIED-STATIC",
+      "severity": "medium",
+      "claim": "LEDGER's committed mutation battery ran only LEDGER's own pins. run_pins() targeted a single test file. Post-union that is a battery reporting a healthy number about a function that no longer exists in the form it was measuring — the same shape as a green suite on an interpreter the product never runs (R39).",
+      "anchor": "harness/verify/mutate_ledger_moneta_seam.py, TESTS was a single path",
+      "fix": "TESTS is now a list of three pin files and run_pins() splats it. Every one of LEDGER's original 25 mutations is now evaluated against H6's pins and the union's pins as well as its own — and all 25 still fire."
+    },
+    {
+      "id": "U1-F4",
+      "tier": "VERIFIED-STATIC",
+      "severity": "low",
+      "claim": "H6's mutation battery was a scratch harness. Its 14 results are recorded in harness/notes/receipts/H6.json but the harness was never committed, so the claim '14 of 14 fired' cannot be re-run — it is inherited, and R31/R56's disease is exactly a number whose producer is no longer available to disagree with it. U1 rewrote the file eight of those mutations target.",
+      "anchor": "harness/notes/receipts/H6.json mutation_battery._method ('scratch harness applying one deliberate defect at a time'); no corresponding file under harness/verify/",
+      "fix": "The six that land in moneta_runtime.py and are expressible as a single textual edit are re-materialised in the committed battery and all six fire. The remaining eight are explicitly NOT re-materialised and the harness comment says which and why, so 39/39 is not read as full coverage of H6's battery.",
+      "residual": "H6's M3 and M4 are its two READER controls (R60) — the highest-value mutations in its set — and they remain unreproducible. They target _schema_in_use_detail, which U1 copied byte-for-byte, so the risk is bounded; but 'copied verbatim' is a weaker guarantee than 'the mutation still fires'."
+    },
+    {
+      "id": "U1-F5",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "low",
+      "claim": "One of my own union pins was a decoration on the first pass, and the mutation found it before I trusted it. test_opting_out_still_reports_which_copy_loaded asserted only that the LEDGER-half fields were PRESENT after probe_schema=False. Every field in the payload is seeded, so the probe-schema-false-drops-the-revision-half mutation — an early `return prov` — would have left all of them present and empty, and the pin would have stayed green.",
+      "fix": "Strengthened to assert the opted-out call and the probing call AGREE field-by-field on the LEDGER half. The mutation now fires.",
+      "note": "Same shape as H6's own M9/M10 self-findings and R60's lesson: the pin was measuring the seeding, not the behaviour. Reported rather than quietly fixed."
+    },
+    {
+      "id": "U1-F6",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "low",
+      "claim": "I wrote `store._make_store(...)` into a pin from R64's and R76's wording rather than from the tree. The real symbol is SynapseMemory._make_store — a method, not a module-level function. The test failed on AttributeError the first time it ran.",
+      "anchor": "python/synapse/memory/store.py:801 `def _make_store(self, storage_dir)`, called at :792; R64 item 2 and R76 both refer to it bare, as does harness/prompts/u1.md",
+      "fix": "Rewritten against the tree, matching H6's existing call form SynapseMemory._make_store(None, tmp_path).",
+      "note": "Law 5 in miniature, caught in under a minute because the check could fail. Recorded because two rulings quote the symbol in a form that reads module-level, and the next agent will read those rulings before it reads store.py."
+    },
+    {
+      "id": "U1-F7",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "medium",
+      "claim": "A leg cannot honour 'never push' by not pushing. The orchestrator's backup daemon polls every worktree and pushes any branch that is ahead of its upstream and is not master/main. It pushed this leg's commit 22 seconds after it was made, without the leg doing anything.",
+      "anchor": "harness/orchestrate.ps1:227 `git -C $p push origin \"${br}:${br}\"`, guarded at :206 by `if (... $br -in @('master','main')) { continue }`",
+      "evidence": "`git reflog show origin/repair/u1-provenance-union --date=iso`: 189180d pushed at 2026-07-27 00:12:15; my commit 189180d was authored 00:11:53. The prior entry, c808839 at 2026-07-26 23:39:36, predates this leg entirely. This leg issued no push command, and none appears in its transcript.",
+      "assessment": "NOT a Gate C breach, and probably not a defect. The daemon skips master/main by construction, and harness/githooks/pre-push independently REFUSES a master push without SYNAPSE_GATE_C=1 — capability, not command form (R94). Master is byte-identical to origin/master. The backup behaviour is deliberate and its comment records the incident that shaped it (eleven ephemeral workflow worktrees pushed on 2026-07-26, fixed by excluding `worktree-wf_*`). What it IS: a standing instruction a leg is structurally unable to satisfy or to violate.",
+      "consequence": "Any leg receipt in this harness that asserts a bare `pushed: false` is reporting its own inaction, not the state of its branch, and the two have diverged since the daemon was introduced. Receipts written before this finding should be read that way."
+    }
+  ],
+
+  "suite": {
+    "gate_before": {"passed": 4940, "failed": 0, "skipped": 137, "seconds": 114.17, "tree": "pristine c808839, everything stashed"},
+    "gate_after": {"passed": 4989, "failed": 0, "skipped": 137, "seconds": 102.38, "tree": "189180d"},
+    "delta": "+49 passed, +0 failed, +0 skipped — exactly the new pins (36 ledger seam + 13 union)",
+    "targeted_before": {"selection": "-k \"moneta or ledger or provenance\"", "passed": 164, "failed": 0, "skipped": 3},
+    "targeted_after": {"selection": "-k \"moneta or ledger or provenance\"", "passed": 213, "failed": 0, "skipped": 3},
+    "producer": "python -m pytest -q -p no:cacheprovider",
+    "interpreter": "Python 3.14.2, Windows — the GATE interpreter. Per R55 this is not the shipping substrate: artists run hython 3.13.10 against the $MONETA_SRC worktree, and the two load different Moneta copies (LEDGER.F1). No claim here is a claim about the shipping interpreter.",
+    "note": "In THIS environment moneta resolves to the pip-installed copy at C:/Python314/Lib/site-packages/moneta, so revision is correctly None with revision_source='not-a-git-worktree' — the _INSTALLED_MARKERS refusal, working. schema_registered is False (pxr present, PXR_PLUGINPATH_NAME unset) and schema_in_use is None (no stage supplied). That is R74's measured state, unchanged by this leg."
+  },
+
+  "changes": {
+    "commit": "189180d",
+    "files": 8,
+    "insertions": 2512,
+    "deletions": 59,
+    "product": [
+      "python/synapse/memory/moneta_runtime.py — AUTHORED union, 398 -> 701 lines",
+      "python/synapse/memory/ledger.py — LEDGER verbatim, +261",
+      "python/synapse/science/deposit.py — LEDGER verbatim, +14",
+      "docs/studio/DEPLOYMENT.md — AUTHORED union of two adjacent-row edits"
+    ],
+    "pins": [
+      "tests/test_ledger_moneta_seam.py — LEDGER verbatim, 715 lines / 36 pins",
+      "tests/test_moneta_provenance_union.py — NEW, 407 lines / 13 pins on the composition"
+    ],
+    "harness": [
+      "harness/verify/mutate_ledger_moneta_seam.py — LEDGER's 302 lines, extended to 451; 25 -> 39 mutations; 1 -> 3 pin files",
+      "harness/notes/mutation_ledger_moneta.json — regenerated by re-running the battery"
+    ]
+  },
+
+  "for_ruling": [
+    {
+      "id": "U1-FR-1",
+      "topic": "Should ledger._deposit_to_moneta adopt probe_schema=False?",
+      "detail": "U1-F2. The ledger seam reads only file/version/revision from the provenance payload and never reads schema_registered or schema_in_use, but post-union it pays for them once per deposited record. The opt-out exists and is pinned; the call site is unchanged. Three things would have to move together: the call site itself, the committed mutation anchor `provenance-only-on-success` (which matches that exact source line), and four test stubs that monkeypatch moneta_provenance with a zero-argument function. All three are mechanical.",
+      "ask": "Rule whether the per-record path opts out. If yes, U1 or a follow-on makes all three edits atomically. If no, U1-F2 stands as an accepted, documented cost.",
+      "agent_position": "Did not act. This is cost versus diagnostic completeness — a defensible-either-way judgement, which Article I sends here rather than to my own discretion. The default posture ($SYNAPSE_MONETA_USD_ROOT unset) makes the cost zero today, so nothing is urgent, and changing three files to save nothing measurable in the shipped configuration is the kind of change that should be ruled rather than assumed."
+    },
+    {
+      "id": "U1-FR-2",
+      "topic": "probe_schema is an addition neither leg nor any ruling specified",
+      "detail": "R64 named five fields. probe_schema is a sixth thing — a parameter — introduced because the composition created a cost neither leg could see (U1-F2). It is purely additive: the default is True, every existing caller is unchanged, and the opted-out state is a distinct reason string rather than a fourth way of saying False. It carries four pins and four mutations.",
+      "ask": "Keep or strike. If struck, moneta_provenance() reverts to (usd_root=None) and U1-F2 becomes an open, unmitigated item rather than a mitigated one.",
+      "agent_position": "Recommend keep, but flagging it because scope discipline matters more than my preference. The brief said 'preserve every constraint both legs established', not 'add API', and I would rather have this struck by a ruling than have it survive because nobody noticed it was unasked-for."
+    },
+    {
+      "id": "U1-FR-3",
+      "topic": "H6's reader controls (M3, M4) remain unreproducible",
+      "detail": "U1-F4 residual. H6's two R60 reader controls — 'the reader reads the root layer instead of composing sublayers' and 'any prim counts as a match' — are the highest-value mutations in its battery and the only ones that could catch a blind reader. They live only in H6.json as prose. They are not single-line edits, so U1 did not re-materialise them rather than materialise them badly.",
+      "ask": "Whether a follow-on materialises H6's M3/M4 into the committed battery. Related to R80's ordered-but-absent checks: the general rule this suggests is that a leg's mutation battery must be COMMITTED, not scratch, or its result is inherited the moment the file it measures changes.",
+      "agent_position": "Evidence, not a decision. The specific risk is bounded — _schema_in_use_detail was copied byte-for-byte and its pins pass — but 'copied verbatim' is strictly weaker than 'the mutation still fires', and I would rather say so than let 39/39 imply otherwise."
+    },
+    {
+      "id": "U1-FR-4",
+      "topic": "'Never push' is an instruction no leg can obey or disobey",
+      "detail": "U1-F7. Every leg brief in this harness carries STANDING: 'Never push, never merge to master, never tag.' The orchestrator's backup daemon pushes leg branches on a poll, so the branch state a receipt reports has nothing to do with whether the leg pushed. This is the same shape as R94's ruling on merges: the honest statement there was that local merges are NOT fenced and cannot be by that mechanism, and that claiming otherwise is worse than the gap.",
+      "ask": "Either (a) restate the standing clause as what it actually protects — 'never push MASTER, never merge to master, never tag' — since that is what the pre-push hook enforces by capability and what Gate C is for; or (b) rule that receipts must report `pushed_by_this_leg` and `branch_was_pushed` as separate fields, as this one does. Not both silently.",
+      "agent_position": "Recommend (a), with (b) as the receipt convention. The daemon is doing something valuable — R91 exists because 504 lines of LEDGER's work sat uncommitted in a worktree one prune away from gone, and a backup push is precisely the mitigation. The instruction should describe the fence that exists rather than one that does not."
+    }
+  ],
+
+  "drift": [
+    {
+      "against": "harness/prompts/u1.md — 'LEDGER's branch carries 2,012 insertions across 8 files'",
+      "observed": "Accurate. But one of the 8, harness/notes/receipts/LEDGER.json, is already byte-identical on HEAD (F1 carried it across), so only 7 files needed bringing over. Cosmetic — the brief is not wrong about the branch, it just counts a file that needs no action.",
+      "structural": false
+    },
+    {
+      "against": "R64 item 2 and R76, both referring to `_make_store` / `store.py:830`",
+      "observed": "The symbol is a METHOD, SynapseMemory._make_store, defined at store.py:801 and called at :792. Both rulings read as if it were module-level, and I wrote a broken test from that reading before checking the tree (U1-F6). Cosmetic for the rulings' arguments, which are about the seam's behaviour and remain correct; recorded because the next agent will read the rulings first.",
+      "structural": false
+    }
+  ],
+
+  "standing_compliance": {
+    "pushed_by_this_leg": false,
+    "branch_was_pushed": true,
+    "pushed_note": "This leg ran no push command. The BRANCH was nonetheless pushed to origin, by the orchestrator's backup daemon — see U1-F7. Reporting a bare `pushed: false` would be true about my actions and false about the branch, which is the Law 3 shape (status describing what was attempted rather than what happened). Recorded as two fields instead of one.",
+    "merged": false,
+    "tagged": false,
+    "master_untouched": "yes — master == origin/master == f90946d, byte-identical, and 0 tags contain HEAD.",
+    "gates_touched": "none. No drop.json edit, no flywheel ratification flip, no merge to master, no VERSION edit, no harness/agent-settings.json or relay-settings.json edit, no constitution edit.",
+    "product_committed_before_receipt": "yes — 189180d, R93 satisfied. Working tree clean at receipt time apart from .claude/.orch_launched, an untracked orchestrator marker not created by this leg."
+  },
+
+  "resume_token": {
+    "skip": "Do not re-read either leg's implementation or re-derive the conflict surface — the union is committed at 189180d and `git merge-tree --write-tree HEAD repair/ledger-moneta-seam` is only meaningful against the pre-union HEAD c808839. Do not re-run the mutation battery to establish 39/39; harness/notes/mutation_ledger_moneta.json holds the report and the battery is idempotent.",
+    "do_first": "Read for_ruling. U1-FR-1 and U1-FR-2 both change moneta_provenance()'s signature or its callers, so anything touching that function should wait for them.",
+    "branch_state": "repair/ledger-moneta-seam @ eb25abe is now fully represented on repair/u1-provenance-union @ 189180d — 6 files verbatim, 2 authored, 1 already present. It can be archived once this branch merges; merging is Gate C and is human.",
+    "redo_if": "moneta_runtime.py, ledger.py or deposit.py is edited again before this branch merges — the mutation anchors are textual and the battery reports ANCHOR-MISS rather than a false pass, so re-run it after any such edit."
+  }
+}

@@ -63,6 +63,13 @@ class LedgerDeposit:
     def __init__(self) -> None:
         self.deposited: int = 0
         self.failures: List[str] = []
+        # Moneta substrate outcomes, surfaced separately from the file write.
+        # deposit() reports whether the enrichment leg landed; discarding that
+        # report would let a permanently-broken substrate hide behind a clean
+        # "N deposited" (CRUCIBLE finding, 2026-07-26). `moneta_deposited` is 0
+        # when the seam is off -- a fact about configuration, not a failure.
+        self.moneta_deposited: int = 0
+        self.moneta_failures: List[str] = []
 
     def __call__(self, record: Dict) -> None:
         surface = str(record.get("surface", ""))
@@ -82,7 +89,12 @@ class LedgerDeposit:
             },
         )
         try:
-            deposit(rec)
+            result = deposit(rec)
             self.deposited += 1
+            moneta = result.get("moneta") or {}
+            if moneta.get("deposited"):
+                self.moneta_deposited += 1
+            elif str(moneta.get("reason", "")).startswith("error:"):
+                self.moneta_failures.append(f"{surface}: {moneta['reason']}")
         except Exception as exc:  # noqa: BLE001 — JSONL fallback is the authority
             self.failures.append(f"{surface}: {exc}")
