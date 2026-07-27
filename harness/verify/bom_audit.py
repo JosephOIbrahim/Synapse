@@ -19,6 +19,7 @@ ROOT = r"C:\Users\User\SYNAPSE"
 DEPLOYED = r"C:\Users\User\OneDrive\Documents\houdini22.0\packages"
 
 targets = [
+    os.path.join(ROOT, "VERSION"),          # R107: carried a BOM from the v5.35.0 release
     os.path.join(ROOT, "packages", "synapse.json"),
     os.path.join(ROOT, "harness", "legs.json"),
     os.path.join(ROOT, "harness", "relay-settings.json"),

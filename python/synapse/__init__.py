@@ -120,7 +120,7 @@ if _VENDOR_ABI_RISK:
 
 
 __title__ = "Synapse"
-__version__ = "5.33.0"
+__version__ = "5.35.0"
 __author__ = "Joseph Ibrahim"
 __license__ = "MIT"
 __product__ = "Synapse - AI-Houdini Bridge"

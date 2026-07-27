@@ -86,7 +86,18 @@ Ok "merged to master"
 # --- 7. Version + tag --------------------------------------------------------
 Step 7 "v5.35.0"
 Set-Content "$repo\VERSION" "5.35.0" -NoNewline -Encoding utf8
-git add VERSION
+
+# R107: bumping VERSION alone is NOT bumping the version. __version__ in
+# python/synapse/__init__.py is what the RUNNING CODE reports, and what
+# synapse_doctor reads. On 2026-07-27 VERSION said 5.35.0, __version__ said
+# 5.33.0, the git tag said v5.35.0 and the install stamp said 5.23.0 - four
+# numbers, because this step only ever touched one of them.
+# --fix also strips the BOM that Set-Content -Encoding utf8 writes above.
+python "$repo\harness\verify\version_agreement.py" --fix
+if ($LASTEXITCODE -ne 0) { Die "VERSION and __version__ still disagree after --fix." }
+Ok "VERSION and __version__ agree"
+
+git add VERSION python/synapse/__init__.py
 git commit -q -m "release(v5.35.0): the instruments were the defect"
 git tag -a v5.35.0 -m "v5.35.0 - the instruments were the defect"
 Ok "tagged v5.35.0 at $(git rev-parse --short HEAD)"

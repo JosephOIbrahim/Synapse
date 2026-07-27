@@ -2927,3 +2927,117 @@ verified on the interpreter artists run.**
 **Ruled:** rewrite them against a real `GateWidget` under hython, or against a seam that does not
 require constructing one. **This is R18's pin, not H4's**, and it is the highest-priority item in
 H4's block — a safety fix whose test has never executed is a safety fix nobody has checked.
+
+---
+
+# ADDENDUM — THE TWO SELF-ASSESSMENTS (R107–R110)
+
+Two documents supplied 2026-07-27: SYNAPSE's own health report, generated 08:39 today, and a
+He2025 consistency audit dated 2026-02-07 scoring **100/100**.
+
+**Both are self-assessment**, and that is the lens. This week measured what self-assessment
+reports: five instruments healthy while measuring nothing, 40% of rulings unenforced, nine ordered
+checks never built. Not cynicism — the measured base rate.
+
+---
+
+## RULING 107 — Four version numbers, and I created the newest divergence this morning.
+
+```
+VERSION file                5.35.0     shipped and tagged today
+python/synapse/__init__     5.33.0     what the RUNNING CODE reports
+git tag                     v5.35.0
+install stamp               5.23.0     per the health report
+```
+
+I bumped `VERSION`, committed, tagged and pushed `v5.35.0` — and **never touched `__version__`.**
+The health report reads `__version__`, which is why it says 5.33.0 while the repo says 5.35.0.
+
+The report flagged the 5.33/5.23 pair as *"needs reconciliation"* and could not see the third and
+fourth numbers because it only reads one of them.
+
+**Ruled:**
+1. `__version__` is corrected to match `VERSION`, and **a check asserts they agree.** This is one
+   of R80's nine ordered-but-absent checks; it gets built, and it fires on today's tree.
+2. **The release procedure was underspecified and I followed it correctly to a wrong outcome** —
+   the same shape as R93's `green`-with-zero-commits. `harness/finalize.ps1` bumps `VERSION` and
+   nothing else. It gains `__version__`.
+3. The install stamp is a fourth authority. **One of these four is canonical and the others derive
+   from it**; that decision is owed and has never been made.
+
+---
+
+## RULING 108 — The health report's "Symbol Table ✅ OK" checks a table nothing loads.
+
+The report:
+
+> **Symbol Table ✅ OK** — Stamp 22.0.368 == Running 22.0.368 (35,903 symbols match)
+
+VERIFIED-RUNTIME, same interpreter, minutes later:
+
+```
+scout._pkg_symbol_table_path() -> h21_symbol_table.json
+```
+
+**The health check validates a stamp; scout loads a different file.** Both statements are true and
+they are about different objects. A green tick on the thing not in play.
+
+This is R99 confirmed from a second direction — and worse than R99 stated, because R99 established
+the *selection* was dead code. **This shows the health surface actively reporting OK about it.**
+
+**Ruled:** the symbol-table check is rewritten to assert **the table scout ACTUALLY RESOLVES**, not
+a stamp beside it. Its producer must be `scout._pkg_symbol_table_path()` — the function under
+test — and the check must fail today, which it will.
+
+**The general rule, and it is the sharpest form this week has produced:** *a health check must
+call the same function the product calls.* Anything else is a check on a neighbour.
+
+---
+
+## RULING 109 — The health report confirms three open findings, and its own scores have no producers.
+
+**Confirmed in production, independently:**
+- *"MonetaMemory schema NOT registered. `PXR_PLUGINPATH_NAME` is unset."* — **H6-F2 exactly.**
+- *"grounding LOP node types against the live **H21** runtime"* and *"COPs is **Houdini 21's**
+  GPU-accelerated image processing context"* — **R99's prose leak**, in a document generated today.
+- *Three tools are explicit SCAFFOLDS* — `reaction_diffusion`, `pixel_sort`, `bake_textures`
+  "create the node topology but don't execute." **Built and connected to nothing**, self-reported.
+
+**And the scores are Law 2 violations throughout.** *"ALIGNMENT RATING: 8/10"*, *"7/10"*, a
+ten-row scorecard — **not one carries a producer path.** They are judgements presented in the
+grammar of measurements, which is the more misleading of the two forms.
+
+**Ruled:** the health report is a **useful instrument with an unearned summary**. Its per-check
+rows are real and three of them independently confirmed open findings. **Its ratings come out** —
+or each gets a producer, which for "8/10" means defining the denominator, and that definition is
+the actual work.
+
+---
+
+## RULING 110 — A 100/100 self-audit is the exact artifact H8 was built to attack.
+
+The He2025 audit scores **100/100**, *"All issues resolved"*, dated **2026-02-07 — five months
+stale**, and authored by the same hand as the code it audits.
+
+H8 audited 78 rulings by their author and returned **28% SOUND**. It caught six known-wrong
+rulings including two nobody planted, and it passed a **specificity** control proving it could
+also return SOUND. That is what an audit looks like when the auditor is not the author.
+
+**This document has no control.** It lists fixes as completed — *"replaced with monotonic counters
+(v5.1)"*, *"process-stable ID (v5.2)"* — and **nothing re-verified them.** Its own Issue 3 is
+struck through as `FIXED` with no producer.
+
+**Ruled:**
+1. **The 100/100 is withdrawn as a claim** pending an independent pass. Not because it is wrong —
+   its per-claim analysis is careful and several verdicts are well argued — but because *a score
+   an author gives their own work is not evidence*, and this repository has now measured that
+   twice.
+2. **It gets the H8 treatment**, with a blind positive control: plant known-broken determinism
+   cases and require the audit to catch them before any verdict is trusted.
+3. **Its listed fixes are re-verified against HEAD.** Five months and roughly a dozen releases
+   have passed. `router.py:421` either uses a monotonic counter today or it does not, and that is
+   one grep.
+
+**The pattern across both documents:** SYNAPSE reports on SYNAPSE, and the report is good at
+specifics and unreliable at summaries. **Every concrete row in the health report was checkable and
+three were true. Every aggregate was a judgement wearing a number.**
