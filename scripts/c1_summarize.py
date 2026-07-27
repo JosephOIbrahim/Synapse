@@ -53,13 +53,40 @@ ARM_KIND = {
 }
 COVERAGE_MEANINGFUL = {"scene_grounding"}
 
+# Every arm the driver attempts. An arm that is expected but produced no entry
+# did not "not apply" - it DIED, and a segfault leaves no error record behind
+# to say so. Without this set a crashed arm would render as a blank cell and
+# quietly vanish from the failure list (Law 3: status describes what happened).
+EXPECTED_ARMS = set(ARM_KIND)
+# B_usd_flatten legitimately does not apply to a scene with no Solaris stage;
+# that absence is reported through its own arm_error, not as a crash.
+OPTIONAL_ARMS = {"B_usd_flatten"}
+
 
 def _flatness(values: List[int]) -> Optional[float]:
-    """max/min across the ladder. 1.0 = perfectly flat."""
+    """max/min across the ladder. Secondary metric only — see _growth."""
     vals = [v for v in values if v is not None]
     if not vals or min(vals) <= 0:
         return None
     return round(max(vals) / min(vals), 2)
+
+
+def _growth(values: List[Optional[int]]) -> Optional[float]:
+    """Tokens at the LARGEST rung over tokens at the SMALLEST rung.
+
+    This, not max/min, is the flatness test. "Flat" is a claim about cost not
+    growing WITH SCENE SIZE, and max/min answers a different question: on a
+    35-token payload a +-2-token wobble is 6% and would read as "rises" even
+    though the payload is provably size-independent. (The flat control does
+    wobble by exactly that much, because it embeds the .hip FILENAME, whose
+    length differs per scene and not with scene size.)
+
+    Ladder order is scene-size order, so first-to-last is the honest slope.
+    """
+    vals = [v for v in values if v is not None]
+    if len(vals) < 2 or vals[0] <= 0:
+        return None
+    return round(vals[-1] / vals[0], 2)
 
 
 def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
@@ -90,6 +117,26 @@ def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
     rungs = sorted(table, key=lambda s: int(s.split("_")[0][1:]))
     arms = sorted({a for runs in table.values()
                    for c in runs.values() for a in c})
+
+    # An expected arm with no entry and no recorded error was killed hard.
+    for rung in rungs:
+        for run, counted in sorted(table[rung].items()):
+            for arm in sorted(EXPECTED_ARMS - OPTIONAL_ARMS):
+                if arm in counted:
+                    continue
+                already = any(f.get("rung") == rung and f.get("run") == run
+                              and f.get("arm") == arm for f in failures)
+                if not already:
+                    failures.append({
+                        "rung": rung, "run": run, "arm": arm,
+                        "status": "arm_produced_no_output",
+                        "error": (
+                            "Expected arm emitted nothing and recorded no "
+                            "exception. Under per-arm crash isolation this "
+                            "means the hython process died (segfault) inside "
+                            "this arm - see the driver log for the rc."
+                        ),
+                    })
 
     # -- 1. the repeatability control ------------------------------------
     control: List[Dict[str, Any]] = []
@@ -143,6 +190,7 @@ def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
             })
         tok = [p["tokens"] for p in points]
         ratio = _flatness(tok)
+        growth = _growth(tok)
         kind = ARM_KIND.get(arm, "unknown")
         if kind not in COVERAGE_MEANINGFUL:
             for p in points:
@@ -151,14 +199,31 @@ def summarize(counted_path: Path, out: Path) -> Dict[str, Any]:
                     f"'{kind}' - it does not attempt scene-wide grounding. Read "
                     f"its cost growth, not its coverage."
                 )
-        curve[arm] = {
+        entry = {
             "arm_kind": kind,
             "coverage_is_meaningful": kind in COVERAGE_MEANINGFUL,
             "points": points,
+            "growth_largest_over_smallest_rung": growth,
             "flatness_ratio_max_over_min": ratio,
-            "is_flat": (ratio is not None and ratio <= 1.10),
-            "flat_test": "is_flat is True when max/min <= 1.10 across the ladder",
+            "is_flat": (growth is not None and growth <= 1.10),
+            "flat_test": (
+                "is_flat is True when tokens at the LARGEST rung are <= 1.10x "
+                "tokens at the SMALLEST rung. max/min is reported too but is "
+                "not the test - it is noise-dominated on tiny payloads."
+            ),
         }
+        if arm == "B_usd_flatten":
+            entry["not_comparable_across_rungs"] = (
+                "This arm exports the stage as composed at the LAST child of "
+                "/stage in creation order, which is not necessarily the final "
+                "composed stage, and it is absent entirely on the four rungs "
+                "with no Solaris stage. Its rung-to-rung ratio is therefore "
+                "MEANINGLESS - L6 reads smaller than L4 for this reason, not "
+                "because the bigger scene serializes smaller. Read each value "
+                "as a single cost datapoint, never as a curve."
+            )
+            entry["is_flat"] = None
+        curve[arm] = entry
 
     # -- the multi-turn consequence --------------------------------------
     # Per-call cost is only half the story: nothing compacts the conversation,
@@ -213,7 +278,7 @@ def main() -> int:
     print(f"  pairs={n['pairs_compared']}  max|delta|={n['max_abs_delta_tokens']}")
     print(f"  {n['verdict']}\n")
 
-    print(f"{'arm':<26} {'flat?':<7} {'max/min':>9}   tokens per rung "
+    print(f"{'arm':<26} {'flat?':<7} {'growth':>9}   tokens per rung "
           f"(coverage%)")
     for arm, c in sorted(res["curve"].items()):
         cells = []
@@ -225,9 +290,10 @@ def main() -> int:
             cov_s = ("" if cov is None or not c["coverage_is_meaningful"]
                      else f"({cov*100:.0f}%)")
             cells.append(f"{p['tokens']:>8}{cov_s}")
-        flat = "FLAT" if c["is_flat"] else "rises"
-        ratio = c["flatness_ratio_max_over_min"]
-        print(f"{arm:<26} {flat:<7} {str(ratio):>9}   " + " ".join(cells))
+        flat = ("n/a" if c["is_flat"] is None
+                else ("FLAT" if c["is_flat"] else "rises"))
+        g = c["growth_largest_over_smallest_rung"]
+        print(f"{arm:<26} {flat:<7} {str(g):>9}   " + " ".join(cells))
 
     if res["failures"]:
         print("\nFAILURES (reported separately, never averaged into the curve)")
