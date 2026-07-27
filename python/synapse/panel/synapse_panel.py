@@ -426,18 +426,26 @@ class SynapsePanel(QtWidgets.QWidget):
         # QFont (Qt QSS has no letter-spacing), colour in the sheet.
         #
         # The v9 rule was weight 400: "hierarchy comes from the ~4px BRAND
-        # tracking and the position, never from weight." Joe's call, 2026-07-27:
-        # the wordmark read thin and needed to sit as a SOLID element at the
-        # same size.
+        # tracking and the position, NEVER from weight." Checked against the
+        # reference it cites (pentagram.com/work/cohere, read 2026-07-27) and
+        # the reference does not support "never":
         #
-        # Weight alone would not have done it. At 14px, 600 with ~4px of
-        # tracking reads HEAVY AND SPARSE — letters that are individually bold
-        # and visually apart. Solidity is weight plus density, so three things
-        # move together and the size does not:
-        #   weight   400 -> 600
+        #     "Cohere Text has three weights (BOLD, reg, light) plus italics."
+        #
+        # Bold is one of three shipped weights, and the wordmark itself is
+        # "carefully crafted using the Cohere typeface" — a designed lockup, not
+        # tracked-out body text. So weight was never off the table; the rule was
+        # an interpretation that hardened into a prohibition.
+        #
+        # Joe's call, 2026-07-27: the mark read thin and needed to sit as a
+        # SOLID element at the same size. Weight alone would not do it — at 14px
+        # bold with 4px tracking reads HEAVY AND SPARSE, individually bold
+        # letters visually apart. Solidity is weight PLUS density:
+        #   weight   400 -> 700  (a weight the reference ships)
         #   tracking BRAND 0.286em -> WORDMARK 0.16em  (~2.2px at 14px)
         #   colour   TEXT_PRIMARY -> TEXT_BRIGHT
-        # Position still carries hierarchy; weight now carries presence.
+        # Size holds at 14px. Position still carries hierarchy; weight now
+        # carries presence.
         word = c.label("SYNAPSE", role="body")
         word.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
         word.setFont(fontload.tracked_font("WORDMARK", 14, scale=self._chrome_scale,
