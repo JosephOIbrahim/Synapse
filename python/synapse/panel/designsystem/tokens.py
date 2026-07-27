@@ -252,9 +252,23 @@ WARM_TINT   = "rgba(255, 119, 89, 0.14)"
 # v9 muted status hues (comp --ok/--no/--hot) — the Work face's quiet verdict
 # grammar (status dots, DsVerb ok/hot tones). NOT a retune of GROW/ERROR/FIRE:
 # gates, badges and the STATUS table keep the full-strength hues.
-OK_SOFT  = "#6FBF8E"
-NO_SOFT  = "#D96975"
-HOT_SOFT = "#D08A57"
+#
+# CONIFEROUS is the verified/ok hue, specified at design/cto_relay_01/
+# L4_COHERE_SPEC.md:74 and never landed until now. It is a deeper, greyer green
+# than the #6FBF8E it replaces: the ceiling is two accents per view and the
+# render is the only chromatic event, so a PASS must read as settled rather
+# than compete with the image. It sits beside the cool SIGNAL and the warm
+# WARM without becoming a third accent, because a verdict dot is punctuation.
+CONIFEROUS = "#6E8F72"   # verified / ok
+NO_SOFT    = "#D96975"
+HOT_SOFT   = "#D08A57"
+
+# Deprecated alias. Kept so every token name that existed before this rename
+# still resolves (the panel token inventory is an oracle, not a courtesy), and
+# aliased rather than left at its old value ON PURPOSE: two live greens in the
+# palette is how a colour system grows a second authority, which is the exact
+# defect this pass exists to remove. New code names CONIFEROUS.
+OK_SOFT = CONIFEROUS
 
 HOVER_BG   = RAISED        # neutral hover surface
 PRESS_BG   = "#202022"     # neutral press surface

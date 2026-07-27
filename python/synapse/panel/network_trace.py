@@ -17,6 +17,8 @@ import html
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from synapse.panel.designsystem import tokens as _ds
+
 # ---------------------------------------------------------------------------
 # Houdini import guard
 # ---------------------------------------------------------------------------
@@ -452,22 +454,27 @@ def format_trace_html(report: TraceReport) -> str:
                          report.bottleneck_pct > 0)
         is_trivial = step.cook_time_ms < 1.0
 
+        # Design-system hues, not a private palette. These six were hardcoded
+        # (#E8922E / #666666 / #888888 / #AAAAAA / #6ABF69 / #E05555) -- a
+        # seventh colour authority living inside one function, with its own
+        # green and its own red. They map onto the muted status family, which
+        # exists for exactly this: a quiet verdict grammar.
         if is_bottleneck:
-            border_color = "#E8922E"  # orange
+            border_color = _ds.HOT_SOFT      # hot -- the step to look at
         elif is_trivial:
-            border_color = "#666666"  # gray
+            border_color = _ds.TEXT_DISABLED  # reads as inactive
         else:
-            border_color = "#888888"
+            border_color = _ds.TEXT_TERTIARY
 
         # Geo delta color
-        geo_color = "#AAAAAA"
+        geo_color = _ds.TEXT_SECONDARY
         if step.output_geo and step.input_geo:
             pts_in = step.input_geo.get("points", 0)
             pts_out = step.output_geo.get("points", 0)
             if pts_out > pts_in:
-                geo_color = "#6ABF69"  # green
+                geo_color = _ds.CONIFEROUS   # points grew
             elif pts_out < pts_in:
-                geo_color = "#E05555"  # red
+                geo_color = _ds.NO_SOFT      # points lost
 
         lines.append(
             f"<div style='border-left:3px solid {border_color}; "

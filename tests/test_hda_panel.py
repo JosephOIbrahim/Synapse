@@ -511,7 +511,27 @@ class TestTokensAndStyles:
         assert hasattr(t, "MODE_ACTIVE_BG")
 
     def test_signal_color_is_canonical(self):
-        assert t.SIGNAL == "#00D4FF"
+        """The accent has ONE source, and this asserts identity rather than a
+        literal.
+
+        It used to read ``t.SIGNAL == "#00D4FF"``. That pinned the panel bridge
+        to the legacy cyan while the design system said #8FB3D9 -- so the test
+        was not protecting a canonical value, it was holding one of the two
+        rival values in place. A literal cannot tell those apart: it passes
+        just as green whether there is one authority or five.
+
+        Comparing the two modules instead means the assertion fails the moment
+        a second authority reappears, whatever colour it happens to choose --
+        which is the property the old test was named for and did not have.
+        """
+        import synapse.panel.designsystem.tokens as ds
+        assert t.SIGNAL == ds.SIGNAL, (
+            "the panel bridge and the design system disagree about the accent; "
+            "the two-authority defect is back"
+        )
+        assert t.SIGNAL != "#00D4FF", (
+            "the legacy cyan is live again on the bridge"
+        )
 
     def test_error_color_alias(self):
         assert t.ERROR_COLOR == t.ERROR
@@ -779,11 +799,27 @@ class TestRegression:
         assert get_recipe("nonexistent") is None
 
     def test_tokens_import_cleanly(self):
-        """Panel tokens import without errors."""
+        """Panel tokens import without errors, and re-export the one authority.
+
+        The two colour asserts were literals (#00D4FF / #FF3D71). The cyan one
+        pinned the bridge's rival palette; both are now compared against the
+        design system, so this checks what the module is FOR -- that importing
+        from the bridge gets you the same tokens as importing from the design
+        system -- instead of freezing whichever hex was current the day it was
+        written.
+        """
+        import synapse.panel.designsystem.tokens as ds
         from synapse.panel.tokens import (
             SIGNAL, VOID, CARBON, GRAPHITE,
             STATE_DESCRIBE, STATE_BUILDING, STATE_RESULT,
             HDA_INPUT_BG, ERROR_COLOR,
         )
-        assert SIGNAL == "#00D4FF"
-        assert ERROR_COLOR == "#FF3D71"
+        assert (SIGNAL, VOID, CARBON, GRAPHITE) == (
+            ds.SIGNAL, ds.VOID, ds.CARBON, ds.GRAPHITE)
+        assert ERROR_COLOR == ds.ERROR
+        # The panel-specific names must still resolve — they have no design
+        # system home and vanishing silently is the other way this can break.
+        assert STATE_DESCRIBE == ds.SIGNAL
+        assert STATE_BUILDING == ds.FIRE
+        assert STATE_RESULT == ds.GROW
+        assert HDA_INPUT_BG == ds.FIELD_INSET

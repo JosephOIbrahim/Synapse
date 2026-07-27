@@ -13,7 +13,8 @@ except ImportError:
     from PySide2 import QtWidgets, QtCore, QtGui
     from PySide2.QtCore import Signal
 
-from synapse.panel import tokens as t
+from synapse.panel.designsystem import tokens as _ds
+from synapse.panel import tokens as t   # panel-specific: HDA_*, ERROR_COLOR
 
 
 # ── DescribeView ────────────────────────────────────────────────────────
@@ -40,7 +41,7 @@ class DescribeView(QtWidgets.QWidget):
         label.setStyleSheet(
             "color: {sig}; font-size: 10px; "
             "font-family: monospace; letter-spacing: 2px;".format(
-                sig=t.SIGNAL
+                sig=_ds.SIGNAL
             )
         )
         layout.addWidget(label)
@@ -69,7 +70,7 @@ class DescribeView(QtWidgets.QWidget):
         ctx_label = QtWidgets.QLabel("Context:")
         ctx_label.setStyleSheet(
             "color: {c}; font-family: monospace; font-size: 11px;".format(
-                c=t.SLATE
+                c=_ds.SLATE
             )
         )
         self.context_combo = QtWidgets.QComboBox()
@@ -86,14 +87,14 @@ class DescribeView(QtWidgets.QWidget):
         self.chk_help.setChecked(True)
         self.chk_help.setStyleSheet(
             "color: {c}; font-family: monospace; font-size: 11px;".format(
-                c=t.SILVER
+                c=_ds.SILVER
             )
         )
 
         self.chk_toolbar = QtWidgets.QCheckBox("Add to toolbar")
         self.chk_toolbar.setStyleSheet(
             "color: {c}; font-family: monospace; font-size: 11px;".format(
-                c=t.SILVER
+                c=_ds.SILVER
             )
         )
 
@@ -165,7 +166,7 @@ class BuildingView(QtWidgets.QWidget):
         self.stage_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.stage_label.setStyleSheet(
             "color: {c}; font-family: monospace; font-size: 14px; "
-            "font-weight: 700;".format(c=t.BONE)
+            "font-weight: 700;".format(c=_ds.BONE)
         )
         layout.addWidget(self.stage_label)
 
@@ -199,7 +200,7 @@ class BuildingView(QtWidgets.QWidget):
         self.detail_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.detail_label.setStyleSheet(
             "color: {c}; font-family: monospace; font-size: 10px;".format(
-                c=t.SLATE
+                c=_ds.SLATE
             )
         )
         layout.addWidget(self.detail_label)
@@ -281,7 +282,7 @@ class ResultView(QtWidgets.QWidget):
         self.status_label = QtWidgets.QLabel("HDA Created")
         self.status_label.setStyleSheet(
             "color: {c}; font-family: monospace; font-size: 14px; "
-            "font-weight: 700;".format(c=t.GROW)
+            "font-weight: 700;".format(c=_ds.GROW)
         )
         layout.addWidget(self.status_label)
 
@@ -316,7 +317,7 @@ class ResultView(QtWidgets.QWidget):
         self.validation_label = QtWidgets.QLabel("")
         self.validation_label.setStyleSheet(
             "color: {c}; font-family: monospace; font-size: 10px;".format(
-                c=t.SLATE
+                c=_ds.SLATE
             )
         )
         self.validation_label.setWordWrap(True)
@@ -358,14 +359,14 @@ class ResultView(QtWidgets.QWidget):
             self.status_label.setText("HDA Created Successfully")
             self.status_label.setStyleSheet(
                 "color: {c}; font-family: monospace; font-size: 14px; "
-                "font-weight: 700;".format(c=t.GROW)
+                "font-weight: 700;".format(c=_ds.GROW)
             )
             self.path_label.setText(result_data.get("node_path", ""))
             self.path_label.setStyleSheet(
                 "color: {fg}; font-family: monospace; font-size: 12px; "
                 "padding: 8px 12px; background: {bg}; "
                 "border-radius: 4px;".format(
-                    fg=t.GROW, bg=t.HDA_RESULT_SUCCESS_BG,
+                    fg=_ds.GROW, bg=t.HDA_RESULT_SUCCESS_BG,
                 )
             )
 

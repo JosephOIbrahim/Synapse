@@ -41,16 +41,29 @@ def test_chat_and_gate_import_designsystem_not_bridge():
 
 def test_chat_gate_backgrounds_use_seeded_surfaces():
     """The chat + gate backgrounds must render the SEEDED surface roles
-    (GROUND/SURFACE), NOT the near-black base VOID and NOT the bridge — so they
-    sit in Houdini's pane grey and theme-flip with the host scheme. GROUND
-    (#262626), designsystem VOID (#0A0A0A) and bridge VOID (#252525) are all
-    distinct, a clean three-way discriminator."""
+    (GROUND/SURFACE), NOT the near-black base VOID — so they sit in Houdini's
+    pane grey and theme-flip with the host scheme.
+
+    This used to be a THREE-way discriminator: GROUND vs designsystem VOID vs
+    bridge VOID, all distinct, because the bridge declared its own #252525.
+    H4 removed that second authority, so the bridge's VOID *is* the design
+    system's and the third arm collapsed. The arm is gone rather than relaxed:
+    the guarantee it protected (a seeded surface renders, the base VOID does
+    not) is asserted unchanged below, and the collapse itself is pinned
+    positively in tests/panel/test_token_authority.py rather than left as an
+    accident this file would silently absorb.
+    """
     from synapse.panel import styles
     import synapse.panel.tokens as bridge
     import synapse.panel.designsystem.tokens as ds
 
-    assert len({ds.GROUND.lower(), ds.VOID.lower(), bridge.VOID.lower()}) == 3, (
-        "test premise broken: GROUND / designsystem VOID / bridge VOID must differ"
+    assert bridge.VOID == ds.VOID, (
+        "the bridge has re-acquired its own VOID — the two-authority defect is "
+        "back and this test's discriminator no longer means what it says"
+    )
+    assert ds.GROUND.lower() != ds.VOID.lower(), (
+        "test premise broken: GROUND and VOID must differ or the pin below "
+        "cannot distinguish a seeded surface from the base"
     )
     for fn in (styles.get_chat_display_stylesheet, styles.get_gate_widget_stylesheet):
         qss = fn().lower()
@@ -60,7 +73,4 @@ def test_chat_gate_backgrounds_use_seeded_surfaces():
         assert ds.VOID.lower() not in qss, (
             "%s still renders the near-black base VOID (%s) — repoint the "
             "background to a seeded surface role" % (fn.__name__, ds.VOID)
-        )
-        assert bridge.VOID.lower() not in qss, (
-            "%s still renders the bridge VOID (%s)" % (fn.__name__, bridge.VOID)
         )

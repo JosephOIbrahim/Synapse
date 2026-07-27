@@ -59,12 +59,13 @@ from synapse.panel.styles import (
     get_font_size_button_stylesheet,
     get_halt_button_stylesheet,
 )
-from synapse.panel import tokens as t
+from synapse.panel.designsystem import tokens as _ds
+from synapse.panel import tokens as t   # panel-specific: CHAT_*, HOVER, FONT_SCALE_*
 
-# -- Design tokens (from canonical design system) -------------------------
-_SIGNAL = t.SIGNAL
-_GROW = t.GROW
-_ERROR_COLOR = t.ERROR
+# -- Design tokens (the ONE authority) ------------------------------------
+_SIGNAL = _ds.SIGNAL
+_GROW = _ds.GROW
+_ERROR_COLOR = _ds.ERROR
 
 # Max age before context is re-gathered on send (ms)
 _CONTEXT_MAX_AGE_MS = 5000
@@ -474,7 +475,7 @@ class SynapseChatPanel:
         menu.setStyleSheet(
             "QMenu {{ background: {bg}; color: {fg}; border: 1px solid {border}; }}"
             "QMenu::item:selected {{ background: {hover}; }}".format(
-                bg=t.CARBON, fg=t.BONE, border=t.GRAPHITE, hover=t.HOVER,
+                bg=_ds.CARBON, fg=_ds.BONE, border=_ds.GRAPHITE, hover=t.HOVER,
             )
         )
 

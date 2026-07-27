@@ -118,7 +118,7 @@ QPushButton#DsVerb {{
     font-size: {s(11)}px;
 }}
 QPushButton#DsVerb:hover {{ color: {t.TEXT_ACCENT}; }}
-QPushButton#DsVerb[tone="ok"]     {{ color: {t.OK_SOFT}; }}
+QPushButton#DsVerb[tone="ok"]     {{ color: {t.CONIFEROUS}; }}
 QPushButton#DsVerb[tone="hot"]    {{ color: {t.HOT_SOFT}; }}
 QPushButton#DsVerb[tone="accent"] {{ color: {t.TEXT_ACCENT}; }}
 

@@ -41,7 +41,7 @@ except Exception:  # pragma: no cover
 # quality-flag status → dot color (v9: the muted comp hues — GROW/WARN/ERROR
 # stay full-strength for gates/badges; the done-state verdict grammar is quiet)
 _FLAG_COLOR = {
-    "ok": t.OK_SOFT, "pass": t.OK_SOFT,
+    "ok": t.CONIFEROUS, "pass": t.CONIFEROUS,
     "warn": t.HOT_SOFT,
     "fail": t.NO_SOFT, "no": t.NO_SOFT,
 }
@@ -49,16 +49,16 @@ _FLAG_COLOR = {
 # RETINA receipt roll-up verdict → badge color, the same QUIET SOFT trio the
 # quality-flag dots use (roll-up is fail > inconclusive > pass; §events.roll_up).
 _RECEIPT_VERDICT_COLOR = {
-    "pass": t.OK_SOFT, "inconclusive": t.HOT_SOFT, "fail": t.NO_SOFT,
+    "pass": t.CONIFEROUS, "inconclusive": t.HOT_SOFT, "fail": t.NO_SOFT,
 }
 
 
 def _receipt_dot_color(passed):
-    """Tri-state check dot: ``True`` → OK_SOFT (pass), ``False`` → NO_SOFT
+    """Tri-state check dot: ``True`` -> CONIFEROUS (pass), ``False`` → NO_SOFT
     (fail), ``None``/anything else → HOT_SOFT (inconclusive). An inconclusive
     check (``pass=None``) MUST NOT render as a pass — the honesty rule."""
     if passed is True:
-        return t.OK_SOFT
+        return t.CONIFEROUS
     if passed is False:
         return t.NO_SOFT
     return t.HOT_SOFT
@@ -437,7 +437,7 @@ class FaceReview(QtWidgets.QWidget):
 
     def set_flags(self, flags):
         """flags: list of (status, text). status in ok/pass/warn/fail/no.
-        v9: muted dot hues (OK/NO/HOT_SOFT) + 10px mono secondary text."""
+        v9: muted dot hues (CONIFEROUS/NO_SOFT/HOT_SOFT) + 10px mono secondary text."""
         self._clear(self._flags_box)
         for status, text in flags or []:
             color = _FLAG_COLOR.get(status, t.TEXT_SECONDARY)

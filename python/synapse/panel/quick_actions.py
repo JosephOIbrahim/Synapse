@@ -98,7 +98,8 @@ try:
         from PySide2 import QtWidgets, QtCore, QtGui
         from PySide2.QtCore import Signal
 
-    from synapse.panel import tokens as _t
+    from synapse.panel.designsystem import tokens as _ds
+    from synapse.panel import tokens as _t   # panel-specific: TEXT_DIM, HOVER
 
     class QuickActionPills(QtWidgets.QWidget):
         """Collapsible row of pill-shaped quick action chips.
@@ -130,7 +131,7 @@ try:
                 "QPushButton {{ background: transparent; border: none; "
                 "color: {fg}; font-size: 14px; }}"
                 "QPushButton:hover {{ color: {hover}; }}".format(
-                    fg=_t.TEXT_DIM, hover=_t.SIGNAL,
+                    fg=_t.TEXT_DIM, hover=_ds.SIGNAL,
                 )
             )
             self._outer_layout.addWidget(self._chevron)
@@ -177,9 +178,9 @@ try:
                 "  border-color: {accent};"
                 "  color: {accent};"
                 "}}".format(
-                    bg=_t.CARBON, fg=_t.BONE, border=_t.GRAPHITE,
-                    sz=_t.SIZE_LABEL, hover=_t.HOVER,
-                    accent=_t.SIGNAL, white=_t.WHITE, mono=_t.FONT_MONO,
+                    bg=_ds.CARBON, fg=_ds.BONE, border=_ds.GRAPHITE,
+                    sz=_ds.SIZE_LABEL, hover=_t.HOVER,
+                    accent=_ds.SIGNAL, white=_ds.WHITE, mono=_ds.FONT_MONO,
                 )
             )
 

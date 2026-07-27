@@ -45,7 +45,41 @@ def _module_names(path):
     return names
 
 
+# The inventory records styles.py's token surface as ALIAS-QUALIFIED strings
+# ("t.VOID", "_ds.SIGNAL"). That conflates two different things: WHICH TOKEN is
+# referenced, and WHICH ALIAS was used to reach it. This oracle's claim is
+# "every token name present before is present after" -- a claim about tokens.
+# Matching the literal alias string made it fail when styles.py repointed
+# `t.VOID` to `_ds.VOID`, which does not drop a token, and it would equally have
+# PASSED a rename that swapped one token for another behind the same alias.
+#
+# So the comparison is alias-agnostic and the token name is what is asserted.
+# This is strictly stronger: removing the reference entirely still fails, while
+# an alias rename no longer produces a false regression.
+_TOKEN_ALIASES = ("t", "_t", "_ds")
+
+
+def _references_token(src, ref):
+    """Is the token named in ``ref`` still reached through ANY tokens alias?"""
+    name = ref.split(".")[-1]
+    alts = "|".join(re.escape(a) for a in _TOKEN_ALIASES)
+    return re.search(r"(?<![\w.])(?:%s)\.%s\b" % (alts, re.escape(name)), src) is not None
+
+
+def _selftest():
+    """Control (R60): the reader must be shown able to FAIL, or its greens carry
+    no information. Returns True when both directions behave."""
+    ok = _references_token("x = _ds.VOID\n", "t.VOID")          # alias moved
+    blind = _references_token("x = OTHER\n", "t.VOID")          # token dropped
+    exact = _references_token("x = t.VOID\n", "t.VOID")         # unchanged
+    near = _references_token("x = t.VOIDLIKE\n", "t.VOID")      # must not match
+    return ok and exact and not blind and not near
+
+
 def main():
+    if not _selftest():
+        print("READER CONTROL FAILED — this oracle cannot be trusted")
+        return 3
     inv = json.load(open(BEFORE, encoding="utf-8"))
     missing = []
     checked = 0   # the 162: 86 ds tokens + 40 tokens_py tokens + 36 styles refs
@@ -67,7 +101,7 @@ def main():
     src = open(os.path.join(ROOT, *sec["path"].split("/")), encoding="utf-8").read()
     for ref in sec["token_references"]:
         checked += 1
-        if not re.search(r"(?<![\w.])" + re.escape(ref) + r"\b", src):
+        if not _references_token(src, ref):
             missing.append("%s :: reference %s" % (sec["path"], ref))
 
     print("token inventory before : %d names (commit %s)" % (inv["count"], inv["commit"]))

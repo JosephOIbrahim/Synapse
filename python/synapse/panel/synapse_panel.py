@@ -10,6 +10,8 @@ Entry point: ``createInterface()`` (Houdini Python Panel convention). The
 ``.pypanel`` at houdini/python_panels/ is a thin loader for this class.
 """
 
+import logging
+
 try:
     from PySide6 import QtWidgets, QtCore, QtGui
     from PySide6.QtCore import Qt, QTimer, Signal
@@ -26,6 +28,11 @@ from synapse.panel.designsystem import components as c
 from synapse.panel.designsystem import motion
 from synapse.panel.designsystem import fontload
 from synapse.panel.gate_stamp import phantom_gate_status
+
+# This module had no logger. Its guarded runtime paths therefore had nowhere to
+# leave a trail even if they wanted one — which is how `_wire_gate` ended up
+# swallowing a consent-relay wiring failure in silence.
+logger = logging.getLogger(__name__)
 
 # Proven runtime + widgets — composed, not rewritten. All optional so the panel
 # always instantiates (graceful degradation is a runtime contract).
@@ -1420,7 +1427,19 @@ class SynapsePanel(QtWidgets.QWidget):
             try:
                 gate._proposal_received.connect(self._on_gate_raised)
             except Exception:
-                pass
+                # Guarded, but never silent. If this relay fails to wire, a
+                # raised consent gate stops bringing the Review face forward --
+                # the artist is asked to approve something they are not shown.
+                # The panel still starts (that is why the guard exists), but the
+                # failure leaves a trail instead of vanishing (Law 3).
+                #
+                # WARNING, not debug, and the level is load-bearing: the panel's
+                # own bootstrap calls ensure_file_logging(), which sets the
+                # `synapse` logger to INFO. A debug record on this path is
+                # therefore DISCARDED in every live session -- it would satisfy
+                # a test that lowers the level and inform nobody in the field.
+                # A degraded consent surface is not debug information anyway.
+                logger.warning("gate proposal relay failed to wire", exc_info=True)
 
     def _on_gate_raised(self, proposal):
         """An actionable gate proposal arrived → AUTO-SURFACE Work's done sub-state
