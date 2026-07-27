@@ -422,16 +422,34 @@ class SynapseChatPanel:
         controls_layout = QtWidgets.QVBoxLayout()
         controls_layout.setSpacing(4)
 
-        # Font size control "Aa" button
-        self._font_btn = QtWidgets.QPushButton("Aa", container)
-        self._font_btn.setFixedSize(28, 22)
-        self._font_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self._font_btn.setToolTip(
-            "Font size: {:.0f}%".format(self._font_scale * 100)
-        )
-        self._font_btn.setStyleSheet(get_font_size_button_stylesheet())
-        self._font_btn.clicked.connect(self._cycle_font_size)
-        controls_layout.addWidget(self._font_btn, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        # Reading size — three A's on a line, each drawn at the size it sets.
+        #
+        # It was one "Aa" button that CYCLED five hidden steps with a tooltip as
+        # the only feedback: the options were invisible, the current state was
+        # invisible, and finding a size meant clicking until it looked right and
+        # then overshooting. Joe called it a mistake; it is.
+        #
+        # Three targets, each labelled A at ITS OWN size, so the control shows
+        # what it does before you press it and which one is live after. The
+        # active one is bright; the others recede.
+        self._font_btns = []
+        size_row = QtWidgets.QHBoxLayout()
+        size_row.setSpacing(2)
+        size_row.setContentsMargins(0, 0, 0, 0)
+        for label_px, scale, name in self._SIZE_STEPS:
+            b = QtWidgets.QPushButton("A", container)
+            b.setFixedSize(18, 22)
+            b.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+            b.setToolTip("Reading size: %s" % name)
+            f = QtGui.QFont(b.font())
+            f.setPixelSize(label_px)
+            b.setFont(f)
+            b.setFlat(True)
+            b.clicked.connect(lambda _=False, s=scale: self._set_font_scale(s))
+            size_row.addWidget(b, alignment=QtCore.Qt.AlignmentFlag.AlignBottom)
+            self._font_btns.append((b, scale))
+        controls_layout.addLayout(size_row)
+        self._refresh_font_btns()
 
         # Send button
         self._send_btn = QtWidgets.QPushButton("Send", container)
@@ -445,6 +463,43 @@ class SynapseChatPanel:
 
         return container
 
+    # Reading sizes offered to the artist: (label px, scale, name).
+    #
+    # FONT_SCALE_STEPS has five values and the old control cycled all of them.
+    # Five indistinguishable steps behind one button is a worse choice than
+    # three named ones you can see — the middle steps existed but nobody could
+    # aim at them. These are drawn FROM that tuple rather than beside it, so
+    # the two cannot drift.
+    _SIZE_STEPS = (
+        (11, t.FONT_SCALE_STEPS[0],  "small"),
+        (14, t.FONT_SCALE_STEPS[2],  "medium"),
+        (18, t.FONT_SCALE_STEPS[-1], "large"),
+    )
+
+    def _set_font_scale(self, scale):
+        """Set the reading size and repaint the control's own state."""
+        self._font_scale = scale
+        try:
+            self._font_scale_index = t.FONT_SCALE_STEPS.index(scale)
+        except ValueError:
+            pass
+        self._chat.font_scale = scale
+        self._refresh_font_btns()
+
+    def _refresh_font_btns(self):
+        """The live size is bright, the others recede. Law 3 in a widget: the
+        control reports the state it is actually IN, not the one last clicked —
+        it reads `self._font_scale`, so an external change repaints it too.
+
+        Colours come from `_ds` rather than `t`: panel/tokens re-exports a
+        subset and carries no TEXT_BRIGHT/TEXT_TERTIARY. Reaching for the
+        designsystem directly is what the rest of this module already does."""
+        for b, scale in getattr(self, "_font_btns", []):
+            live = abs(scale - self._font_scale) < 1e-6
+            b.setStyleSheet(
+                "QPushButton{border:none;background:transparent;padding:0;"
+                "color:%s;}" % (_ds.TEXT_BRIGHT if live else _ds.TEXT_TERTIARY))
+
     def _adjust_input_height(self):
         """Auto-grow the QTextEdit based on content, up to max height."""
         doc = self._input.document()
@@ -454,18 +509,17 @@ class SynapseChatPanel:
         self._input.setFixedHeight(new_h)
 
     def _cycle_font_size(self):
-        """Cycle through font scale steps: 0.75x -> 1.0x -> 1.25x -> 1.5x."""
-        steps = t.FONT_SCALE_STEPS
-        self._font_scale_index = (self._font_scale_index + 1) % len(steps)
-        self._font_scale = steps[self._font_scale_index]
+        """Retained for compatibility: advance to the next OFFERED size.
 
-        # Update chat display
-        self._chat.font_scale = self._font_scale
-
-        # Update tooltip
-        self._font_btn.setToolTip(
-            "Font size: {:.0f}%".format(self._font_scale * 100)
-        )
+        The five-step cycle is gone — it is what made the control unusable. This
+        now walks the three visible sizes, so anything still calling it lands on
+        a state the artist can see reflected in the control."""
+        offered = [s for _, s, _ in self._SIZE_STEPS]
+        try:
+            i = offered.index(self._font_scale)
+        except ValueError:
+            i = -1
+        self._set_font_scale(offered[(i + 1) % len(offered)])
 
     # -- Right-click context menu ----------------------------------------
 
