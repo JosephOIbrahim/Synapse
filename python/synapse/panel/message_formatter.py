@@ -137,15 +137,45 @@ def _format_node_path(match, font_scale=1.0, signed=None):
 
 
 def _format_list_items(text):
-    """Convert markdown-style list items to HTML <ul>."""
-    items = _LIST_ITEM_RE.findall(text)
-    if not items:
-        return text
-    ul_html = "<ul style=\"margin:4px 0; padding-left:20px;\">"
-    for item in items:
-        ul_html += "<li>{}</li>".format(item)
-    ul_html += "</ul>"
-    return _LIST_ITEM_RE.sub("", text).rstrip() + ul_html
+    """Wrap runs of consecutive list items in <ul>, IN PLACE.
+
+    2026-07-27, found on a live 2,727-node explain of karma_user_guide.hip:
+    sections rendered EMPTY and every bullet appeared as one block at the bottom
+    of the message.
+
+    The previous implementation harvested every list item in the whole message
+    with findall(), deleted them all with sub(""), and appended a single <ul> at
+    the end. The bullets survived; their POSITION and their GROUPING did not. A
+    message with three bulleted sections became three empty headings followed by
+    one undifferentiated list - which is worse than no formatting, because the
+    structure the answer was carrying is exactly what got destroyed.
+
+    Now: walk line by line, and close a <ul> the moment the run of list items
+    ends. A bullet renders between the heading it follows and the heading that
+    follows it, which is the only property that matters here.
+    """
+    lines = text.split("\n")
+    out = []
+    run = []
+
+    def _flush():
+        if not run:
+            return
+        out.append('<ul style="margin:4px 0; padding-left:20px;">'
+                   + "".join("<li>{}</li>".format(i) for i in run)
+                   + "</ul>")
+        run.clear()
+
+    for line in lines:
+        m = _LIST_ITEM_RE.match(line.strip())
+        if m:
+            # group(1) when the pattern captures the item body, else the line
+            run.append(m.group(1) if m.groups() else line.strip())
+        else:
+            _flush()
+            out.append(line)
+    _flush()
+    return "\n".join(out)
 
 
 def _process_rich_text(raw, font_scale=1.0, signed=None):
