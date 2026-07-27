@@ -275,6 +275,36 @@
         "harness/notes/token_bench"
       ],
       "note": "THE SPINE. 'Cost stays flat, even on huge scenes' leads the positioning page and every other differentiator hangs off it. Architecturally sound, numerically unproven. Arm B is computed by serialising a scene - NOT by running a competitor's product, which would be neither fair nor necessary. Cost is NEVER reported without outcome: flat cost on a failed task is not a feature."
+    },
+    {
+      "id": "P1",
+      "name": "panel redesign",
+      "state": "ready",
+      "receipt": "P1.json",
+      "branch": "design/p1-panel-redesign",
+      "worktree": ".claude/worktrees/p1-panel-redesign",
+      "prompt": "harness/prompts/p1.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/synapse_panel.py",
+        "python/synapse/panel/styles.py",
+        "python/synapse/panel/chat_panel.py"
+      ],
+      "note": "The v3 study was rendered in chat 2026-07-25 and never implemented - ruled out of scope twice, correctly, because the panel had no test surface. RES/R30 cleared that gate. Three moves: the mark carries halt state, the result becomes the hero, decisions are credited in-frame. Explicitly NOT touching _on_stop (R29 found it honest) or token declarations (H4 collapsed nine sites to one)."
+    },
+    {
+      "id": "RSI0",
+      "name": "rsi surface audit",
+      "state": "ready",
+      "receipt": "RSI0.json",
+      "branch": "rsi/rsi0-surface-audit",
+      "worktree": ".claude/worktrees/rsi0-surface-audit",
+      "prompt": "harness/prompts/rsi0.md",
+      "deps": [],
+      "readonly": true,
+      "touches": [],
+      "note": "SYNAPSE ALREADY HAS AN RSI LOOP. routing/adaptation.py records tier outcomes per epoch and adjusts confidence thresholds - observation, aggregation, self-modification. agent/learning.py is the reward signal. memory/evolution.py is deprecated RSI. The health report says the router was 'not initialized', so the loop is WIRED and may never have CLOSED. Six questions, and Q1/Q2 demand evidence of EXECUTION not wiring."
     }
   ]
 }

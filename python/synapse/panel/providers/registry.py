@@ -19,6 +19,11 @@ logger = logging.getLogger(__name__)
 
 # Anthropic — the full set selectable in the panel (mirrors Claude desktop).
 ANTHROPIC_MODELS = (
+    # Opus 5 added 2026-07-27. PROVENANCE: model string from the assistant's own
+    # runtime context, NOT from a live GET /v1/models call - a weaker tier than
+    # the Sonnet 5 row below, and labelled as such rather than left to look the
+    # same (Law 2). Verify against /v1/models before any release cites it.
+    ("claude-opus-5",              "Opus 5"),
     ("claude-opus-4-8",            "Opus 4.8"),
     ("claude-sonnet-5",            "Sonnet 5"),      # verified live (GET /v1/models, 2026-07-01)
     ("claude-sonnet-4-6",          "Sonnet 4.6"),
