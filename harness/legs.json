@@ -305,6 +305,63 @@
       "readonly": true,
       "touches": [],
       "note": "SYNAPSE ALREADY HAS AN RSI LOOP. routing/adaptation.py records tier outcomes per epoch and adjusts confidence thresholds - observation, aggregation, self-modification. agent/learning.py is the reward signal. memory/evolution.py is deprecated RSI. The health report says the router was 'not initialized', so the loop is WIRED and may never have CLOSED. Six questions, and Q1/Q2 demand evidence of EXECUTION not wiring."
+    },
+    {
+      "id": "S0",
+      "name": "forensic scout",
+      "state": "ready",
+      "receipt": "S0.json",
+      "branch": "forensic/s0-forensic-scout",
+      "worktree": ".claude/worktrees/s0-forensic",
+      "prompt": "harness/prompts/s0.md",
+      "deps": [],
+      "readonly": true,
+      "touches": [],
+      "note": "READ-ONLY, research-first, and it goes ALONE. The market, the H22 native floor, and what actually kills tool adoption in VFX pipelines are the only inputs not already in this repo - and gathering them AFTER forming a view produces confirmation, not evidence. Zero recommendations; a scout that returns a strategy has stopped being a scout."
+    },
+    {
+      "id": "S1",
+      "name": "tool inventory",
+      "state": "ready",
+      "receipt": "S1.json",
+      "branch": "forensic/s1-tool-inventory",
+      "worktree": ".claude/worktrees/s1-forensic",
+      "prompt": "harness/prompts/s1.md",
+      "deps": [],
+      "readonly": true,
+      "touches": [],
+      "note": "What SYNAPSE DOES today, per tool, mapped to a real artist task. Every tool classified WORKS/PARTIAL/SCAFFOLD/UNREACHABLE/UNKNOWN with its evidence. This week found five Solaris tools registered, tested and completely unreachable - the gap between 'a tool exists' and 'a tool works' is this project's most reliable finding, and this measures it deliberately."
+    },
+    {
+      "id": "S2",
+      "name": "pre-mortem",
+      "state": "ready",
+      "receipt": "S2.json",
+      "branch": "forensic/s2-pre-mortem",
+      "worktree": ".claude/worktrees/s2-forensic",
+      "prompt": "harness/prompts/s2.md",
+      "deps": [
+        "S0",
+        "S1"
+      ],
+      "readonly": true,
+      "touches": [],
+      "note": "THE LEG THAT MATTERS. Not a post-mortem - SYNAPSE has ZERO production users, so a retrospective would be narrative resting on nothing. 'It is Q2 2027, a mid-sized studio ran it for a quarter and stopped. Write the account.' Every failure mode names a mechanism that exists NOW with a file:line. Ranked by LIKELIHOOD not severity - studios drop tools over the annoying Tuesday thing, not the catastrophe."
+    },
+    {
+      "id": "S3",
+      "name": "the plan",
+      "state": "ready",
+      "receipt": "S3.json",
+      "branch": "forensic/s3-the-plan",
+      "worktree": ".claude/worktrees/s3-forensic",
+      "prompt": "harness/prompts/s3.md",
+      "deps": [
+        "S2"
+      ],
+      "readonly": true,
+      "touches": [],
+      "note": "What makes SYNAPSE novel to a mid-size studio, DERIVED from S0-S2 rather than asserted. 'Irrefutably positive' is not achievable; the target is legible value, survivable failure, no new burden. A tool missing the second is uninstalled after one incident however good the first is."
     }
   ]
 }
