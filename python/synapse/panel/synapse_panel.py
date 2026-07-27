@@ -277,6 +277,12 @@ class SynapsePanel(QtWidgets.QWidget):
 
         self._messages = []          # Anthropic-format conversation
         self._stream_buf = []        # accumulates streamed tokens
+        # P2: what the agent actually DID this turn, in order. The result
+        # surface has always been able to render credit/flags/paths; before
+        # this it had no producer, so five of its eight setters had ZERO
+        # product callers (P1 census, 2026-07-27) and it rendered a result it
+        # never populated. This is the missing half.
+        self._turn_tools = []        # [(name, verb, detail), ...] per turn
         self._worker = None
         self._last_tool = None       # C8: name of the in-flight tool, for an honest Stop
         self._tool_executor = ToolExecutor(parent=self) if ToolExecutor else None
@@ -1139,10 +1145,55 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             return None
 
+    _MUTATORS = ("create", "set_", "assign", "build", "wire", "connect",
+                 "render", "author", "delete", "apply", "configure")
+
+    def _turn_evidence(self):
+        """(credit, flags, paths) from what the turn actually did.
+
+        P2. The result surface could always RENDER these; nothing produced them.
+        The P1 census measured it: set_credit / set_flags / set_paths /
+        set_render / show_result had ZERO product callers, so the panel drew a
+        result it never populated — and `set_credit`'s one caller passed a
+        ROUTED row, which its DECISION filter drops. A credit it could never
+        earn.
+
+        Law 3: this reports what HAPPENED. A failed tool becomes a `fail` flag,
+        not a missing row, and an empty turn returns empty rather than inventing
+        a decision.
+        """
+        tools = list(getattr(self, "_turn_tools", []) or [])
+        if not tools:
+            return [], [], []
+
+        credit, flags, paths = [], [], []
+        seen = set()
+        for name, verb, detail in tools:
+            status = "ok" if verb == "ok" else "fail"
+            flags.append((status, name if not detail else "%s — %s" % (name, str(detail)[:70])))
+
+            # DECISION rows: only for tools that CHANGED something, and only
+            # when they succeeded. A mutation that failed is a flag, not a credit.
+            low = name.lower()
+            if status == "ok" and any(k in low for k in self._MUTATORS):
+                credit.append(("DECISION", name, str(detail or "")[:90]))
+
+            # Node paths the turn touched, in order, de-duplicated.
+            for tok in str(detail or "").split():
+                if tok.startswith("/") and len(tok) > 1 and tok not in seen:
+                    seen.add(tok)
+                    paths.append(tok)
+
+        return credit, flags, paths[:12]
+
     def _populate_review(self):
         """On 'done', fill the Work done sub-state with what we can: a taut
         verdict from the last reply, the SIGNED authorship line, and provenance
-        from the routing_log (best-effort). All display-only."""
+        from the routing_log (best-effort). All display-only.
+
+        P2: also credits what the turn DID — the five setters that had no
+        product caller until now.
+        """
         rf = getattr(self, "_review_face", None)
         if rf is None:
             return
@@ -1153,6 +1204,20 @@ class SynapsePanel(QtWidgets.QWidget):
                 verdict = verdict[:137] + "…"
             rf.set_verdict(verdict)
         rf.set_signed(self._author_token())
+
+        # P2 — the missing half. Best-effort and never fatal: a panel that
+        # cannot draw its credit must still show the verdict.
+        try:
+            credit, flags, paths = self._turn_evidence()
+            if credit:
+                rf.set_credit(credit)
+            if flags:
+                rf.set_flags(flags)
+            if paths:
+                rf.set_paths(paths)
+        except Exception:
+            pass
+
         rf.refresh_provenance()
 
     def _on_render_receipt(self, event):
@@ -1661,6 +1726,7 @@ class SynapsePanel(QtWidgets.QWidget):
             return
         self._stream_buf = []
         self._streaming_started = False
+        self._turn_tools = []        # P2: fresh turn — the result surface's producer
         self._last_tool = None       # C8: fresh run — no stale in-flight tool name
         self._set_thinking(True)
         self._set_busy(True)
@@ -1739,6 +1805,15 @@ class SynapsePanel(QtWidgets.QWidget):
         if phase == "running":
             self._last_tool = name          # C8: remember what's in flight for Stop
         verb = {"running": "running", "done": "ok", "error": "failed"}.get(phase, phase)
+        # P2: accumulate what the turn actually DID. Every terminal tool result
+        # is recorded once, in order, so _populate_review has something real to
+        # credit. Before this the result surface had no producer at all and five
+        # of its eight setters were unreachable from product code.
+        if phase in ("done", "error"):
+            try:
+                self._turn_tools.append((name, verb, _detail))
+            except Exception:
+                pass
         self._set_header("working", "%s %s" % (name, verb))
         wf = getattr(self, "_work_face", None)
         if wf is not None:
