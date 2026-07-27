@@ -11,12 +11,18 @@
 # NEVER: push to master, merge, tag. Gate C is human. A leg in state 'held' is
 # held by RULING and is never auto-dispatched.
 param([int]$PollSeconds = 45, [int]$StaleMinutes = 40, [int]$MaxHours = 12,
-      [int]$DigestMinutes = 20, [switch]$DryRun)
+      [int]$DigestMinutes = 20, [int]$IdlePollSeconds = 120,
+      [string]$Repo = 'C:\Users\User\SYNAPSE',
+      [string]$ManifestPath = '',
+      [switch]$Quiet, [switch]$DryRun)
 
 $ErrorActionPreference = 'SilentlyContinue'
-$repo = 'C:\Users\User\SYNAPSE'
+$repo = $Repo
 Set-Location $repo
-$manifestPath = Join-Path $repo 'harness\legs.json'
+# Overridable so the orchestrator can be exercised against a throwaway manifest.
+# It was hardcoded, which made the dispatcher itself untestable - a control could
+# only be run against the live board, which is not a control.
+$manifestPath = if ($ManifestPath) { $ManifestPath } else { Join-Path $repo 'harness\legs.json' }
 $rdir         = Join-Path $repo 'harness\notes\receipts'
 $log          = Join-Path $repo ("harness\notes\orchestrator_{0}.log" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
 
@@ -27,6 +33,7 @@ function Say([string]$m, [string]$c = 'Gray') {
 }
 
 function Notify([string]$title, [string]$body) {
+    if ($Quiet) { return }   # -Quiet for control runs: no toasts, no beeps
     try {
         [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null
         $t = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(
@@ -48,6 +55,9 @@ function Notify([string]$title, [string]$body) {
 
 # --- leg lifecycle -----------------------------------------------------------
 
+# Dry-run bookkeeping so a dry run exercises the same state machine as a real one.
+$script:DryDispatched = @{}
+
 function Get-ReceiptPath([object]$leg) {
     # A leg writes its receipt into ITS OWN worktree, not the main tree.
     # 2026-07-26: the orchestrator watched only $repo\harness\notes\receipts and
@@ -66,6 +76,7 @@ function Get-ReceiptPath([object]$leg) {
 function Get-LegState([object]$leg) {
     if ($leg.state -eq 'held') { return 'held' }
     if ($leg.receipt -and (Get-ReceiptPath $leg)) { return 'done' }
+    if ($DryRun -and $script:DryDispatched[$leg.id]) { return 'running' }
     if ($leg.worktree) {
         $wt = Join-Path $repo $leg.worktree
         if (Test-Path (Join-Path $wt '.claude\settings.local.json')) {
@@ -103,7 +114,15 @@ function Get-LegState([object]$leg) {
 function Start-Leg([object]$leg) {
     $wt = Join-Path $repo $leg.worktree
     Say "DISPATCH $($leg.id) $($leg.name)  ->  $($leg.branch)" 'Cyan'
-    if ($DryRun) { Say "  (dry run - not launching)" 'DarkGray'; return }
+    if ($DryRun) {
+        # A dry run must exercise the SAME state machine as a real run. It used
+        # to return here before the launch marker was written, so Get-LegState
+        # kept returning 'ready' and the leg re-dispatched every poll - a dry run
+        # that reported behaviour a real run would never produce.
+        Say "  (dry run - not launching)" 'DarkGray'
+        $script:DryDispatched[$leg.id] = $true
+        return
+    }
 
     # Refuse to dispatch into a missing brief. Found 2026-07-26 minutes before an
     # unattended afternoon: legs.json referenced h1.md and h2.md, neither of which
@@ -246,9 +265,11 @@ Say ("baseline: " + (($known.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.
 Write-Host ""
 
 $staleAnnounced = $false
+$idle = $false
 $deadline = (Get-Date).AddHours($MaxHours)
 $nextDigest = (Get-Date).AddMinutes($DigestMinutes)
 Say "digest every $DigestMinutes min - first at $($nextDigest.ToString('HH:mm'))" 'DarkGray'
+Say "board-complete enters IDLE WATCH, not exit - add a leg to legs.json any time" 'DarkGray'
 
 while ((Get-Date) -lt $deadline) {
 
@@ -317,11 +338,37 @@ while ((Get-Date) -lt $deadline) {
         Say "DIGEST sent  $done done, running $runNames, $ruling ruling, $held held" 'Cyan'
     }
 
+    # Board complete does NOT end the run. It enters IDLE WATCH.
+    #
+    # 2026-07-26: the loop used to `break` here. H9 was added to the manifest at
+    # 20:00 and sat undispatched until 22:51 - nearly three hours - because the
+    # orchestrator had exited at 19:58 on board-complete and was sitting at a
+    # prompt, alive but not polling. A leg added after completion did nothing,
+    # silently, which is precisely the failure this harness exists to remove.
+    #
+    # The manifest is re-read every poll, so a new leg is dispatchable the moment
+    # it lands. Idling instead of exiting costs one file read per interval and
+    # buys the property that adding a row to legs.json is always sufficient.
     $live = @($manifest.legs | Where-Object { $known[$_.id] -in @('running','launched','ready','blocked') })
+
     if ($live.Count -eq 0) {
-        Notify "SYNAPSE - board complete" "Every dispatchable leg has a receipt. Held legs need a human."
-        Say "BOARD COMPLETE - nothing left to dispatch" 'Cyan'
-        break
+        if (-not $idle) {
+            $idle = $true
+            Notify "SYNAPSE - board complete" `
+                   "Every dispatchable leg has a receipt. Held legs need a human. Still watching - add a leg to legs.json and it dispatches."
+            Say "BOARD COMPLETE - idle watch, still reading legs.json every ${IdlePollSeconds}s" 'Cyan'
+            Say "  add a row to the manifest and it dispatches. close this window to stop." 'DarkGray'
+        }
+        Backup-Branches | Out-Null      # keep preserving work even while idle
+        Start-Sleep -Seconds $IdlePollSeconds
+        continue
+    }
+
+    if ($idle) {
+        $idle = $false
+        $newly = ($live | ForEach-Object { $_.id }) -join ' '
+        Notify "SYNAPSE - resumed" "New work on the board: $newly"
+        Say "RESUMED from idle - $newly" 'Green'
     }
 
     Start-Sleep -Seconds $PollSeconds
