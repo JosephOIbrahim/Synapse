@@ -1,0 +1,290 @@
+{
+  "schema": "receipt/v1",
+  "leg": "V1",
+  "title": "Capture-path probe — what capture is possible on 22.0.368, and what it costs",
+  "harness": "RETINA-VERIFY",
+  "status": "green",
+  "status_note": "Describes what happened (Law 3). All four brief questions were answered against the live build by eleven Karma renders and seven live-introspection producers, every one of which is left in the tree as a runnable script beside the JSON it emits. The ID-AOV gate was answered NEGATIVE on three independent grounds. NO capture code, NO cv2 code, NO V2 controls were written; NO source outside harness/notes/ was touched. Two results contradicted my own first pass and were corrected in-run and recorded rather than quietly fixed: the Copernicus content check returned INCONCLUSIVE before it returned CONFIRMED, and a resolutiony parm set was refused and reported rather than assumed. The scoped-delta primitive remains BLOCKED — this leg learned what is true, it did not change what is true.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "harness/readonly-settings.json (governing). RECORDED HONESTLY, NOT CLAIMED: execution was an interactive Claude Code session whose grant is wider than that file. The fence was self-enforced — every write went to harness/notes/**; render outputs went to the session scratchpad OUTSIDE the repo so no binaries entered the tree. No subagents were dispatched; all probes were run directly so the raw output was seen unfiltered.",
+  "commit_at_run": "STARTED 2105453 (feat/repair-heats-01) — ENDED 6983c73 (docs/how-we-know). The shared checkout was re-pointed by a concurrent leg mid-run; see drift D2. All runtime findings are unaffected; the one static finding was re-verified at 6983c73.",
+  "worktree": "NONE. legs.json declares .claude/worktrees/v1-capture-probe; that directory is empty and is not a registered git worktree, so this leg ran against the shared main checkout. See drift D2.",
+  "run_date": "2026-07-27",
+  "mode": "read-only probe",
+  "authority": {
+    "brief": "harness/prompts/v1.md",
+    "harness_doc": "harness/SYNAPSE_RETINA_VERIFY.md",
+    "rulings": {
+      "R50": "ABSENT requires a positive control ON THE SAME CLASS; where no control is possible the verdict is UNVERIFIABLE, never ABSENT. Applied to every ABSENT verdict below — each cites a same-class full dir() member count plus sibling spellings resolving in the same run.",
+      "R58": "Read the COMPLETE method list rather than keyword-searching. Applied as method: full dir() dumps per class, then an exhaustive 530-class sweep of the hou namespace.",
+      "R73": "A verified NARROW claim does not license a BROAD sentence. Applied twice — the namespace sweep before any 'no viewport-grab API exists' statement, and the primid-only control render before the retina/ingest.py defect was stated.",
+      "R90": "Wrong spellings with live call sites are actionable. Applied to the R102 control-list correction (V1-F8) and the retina/ingest.py selection defect (V1-F9).",
+      "R25": "Receipt records model + settings_profile. Both above.",
+      "R92": "Declare touches so collisions are detectable before dispatch. This leg touches harness/notes/** only.",
+      "R93": "as amended by R103 — a read-only leg's product IS its receipt; the fence denies git commit and the fence wins."
+    }
+  },
+  "suite": {
+    "before": null,
+    "after": null,
+    "note": "NOT RUN and NOT CLAIMED. harness/readonly-settings.json carries no pytest allow; Constitution Article V says a leg under a profile without pytest cannot claim suite evidence. This leg changed no product code, so the suite is not the instrument that would detect its effect."
+  },
+  "method": {
+    "build": "Houdini 22.0.368, Python 3.13.10, license Indie, hython3.13.exe headless",
+    "scene": "harness/notes/v1_scene_two_spheres.usda — two unit spheres separated in X, one dome light, one camera at z=+9; hand-authored USD so the cost number describes a scene stateable in one sentence",
+    "renders": 11,
+    "producers": [
+      "harness/notes/v1_capture_probe.py -> v1_q1_symbols.json (per-class dir() + spelling verdicts)",
+      "harness/notes/v1_capture_sweep.py -> v1_q1_sweep.json (853 top-level names, 530 classes, 22 capture tokens)",
+      "harness/notes/v1_capture_detail.py -> v1_q1_detail.json (signatures + docstrings)",
+      "harness/notes/v1_karma_surface.py -> v1_q1_karma_surface.json (storage types, node types, parm surface)",
+      "harness/notes/v1_q2_parmdetail.py -> v1_q2_parmdetail.json (rendervar parms, ID/denoiser defaults + menus)",
+      "harness/notes/v1_q2_render.py -> v1_q2_render.json (6-case render matrix)",
+      "harness/notes/v1_q2_analyse.py -> v1_q2_analysis.json (EXR parts, formats, id separation, comparisons)",
+      "harness/notes/v1_q2_ingest_check.py -> v1_q2_ingest_check.json (retina/ingest.py against a real frame)",
+      "harness/notes/v1_q1_cop_readback.py -> v1_q1_cop_readback.json (structural verification + timing)",
+      "harness/notes/v1_q1_cop_content_control.py -> v1_q1_cop_content_control.json (content verification)",
+      "harness/notes/v1_q3_cost_and_controls.py -> v1_q3_cost_and_controls.json (controls + cost curve + flipbook)"
+    ],
+    "narrative": "harness/notes/V1_CAPTURE_PROBE.md"
+  },
+  "counts": {
+    "classes_dir_dumped": 11,
+    "classes_swept": 530,
+    "hou_top_level_names": 853,
+    "spellings_adjudicated": 80,
+    "_spellings_producer": "67 class-member spellings across 11 classes + 13 module-level names. Producer: python -c \"import json;d=json.load(open('harness/notes/v1_q1_symbols.json'));print(sum(len(e['spellings']) for e in d['classes'].values()), len(d['modules']))\" -> 67 13. CORRECTED IN-RUN: this field first read 71, a figure typed without a producer — the exact Law 2 defect this repository keeps ruling against, committed inside the receipt that enforces it.",
+    "renders_executed": 11,
+    "findings": 15,
+    "for_ruling": 6
+  },
+  "headline": "Capture works, is deterministic, and costs ~2.4 s flat in resolution. The MASK does not exist: Karma 22.0.368 supplies no per-object integer ID on any path probed. Step 4 of the RETINA claim has no supplier on this renderer. One candidate remains un-probed (cryptomatte) and one new direction is well-evidenced (Copernicus Int32 readback at 2.4 ms).",
+  "findings": [
+    {
+      "id": "V1-F1",
+      "severity": "blocker-for-V3",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "No usable per-object integer ID mask exists on Karma 22.0.368 via any path probed. The scoped-delta primitive cannot be built as designed.",
+      "anchor": "Three independent grounds, all in v1_q2_analysis.json + v1_q2_parmdetail.json: (1) primidprecision/elementprecision menus are exactly ['half','float'] — no integer option exists at the parm surface; (2) an int32 render-var format is refused at render; (3) neither primid, element nor ray:objectid separates two disjoint spheres.",
+      "reproduces": "R100 / V1-F1 (prior run, evidence absent from tree)"
+    },
+    {
+      "id": "V1-F2",
+      "severity": "blocker-for-V3",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "primid is a PER-POLYGON id whose range is reused by every object. It is not an object identifier and using it as one produces masks that are confidently wrong.",
+      "anchor": "v1_q2_analysis.json files.base.analysis.subimages[2].separation — sampling boxes well inside each sphere: left 180 distinct, right 184 distinct, 123 SHARED. element likewise: 413 / 401 / 89 shared. ray:objectid: 6 / 7 / 6 shared. Producer v1_q2_analyse.py.",
+      "reproduces": "R100 / V1-F2 (counts differ — different scene and resolution; finding identical)"
+    },
+    {
+      "id": "V1-F3",
+      "severity": "blocker-for-V3",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The ID AOV is float BY CONSTRUCTION, visible without rendering: karmarendersettings.primidprecision and .elementprecision are menus with exactly two entries, ['half','float'], default 'float'.",
+      "anchor": "v1_q2_parmdetail.json karmarendersettings.primidprecision.menu_items. Producer v1_q2_parmdetail.py. Emitted EXR channel format confirms it: primid.id and element.id are 'float'; beauty C is 'half' (v1_q2_analysis.json channelformats)."
+    },
+    {
+      "id": "V1-F4",
+      "severity": "blocker-for-V3",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "Karma refuses an integer render-var format outright. The render fails; no output is produced.",
+      "anchor": "v1_q2_render.json cases.int_format — husk log: \"Unsupported image data format 'int32' in RenderVar /Render/Products/Vars/int_objectid\" then \"Error defining render products\"; hou raises OperationFailed, exit code 1, output_exists=false. Producer v1_q2_render.py.",
+      "reproduces": "R100 / V1-F4"
+    },
+    {
+      "id": "V1-F5",
+      "severity": "vendor-ask",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The ray: namespace prefix is REQUIRED on a custom render-var sourceName. A bare name emits a correctly-named, correctly-shaped EXR part FILLED WITH ZEROS, SILENTLY — no error, no warning. Any pipeline reading that part gets zeros and has no way to know it asked wrong.",
+      "anchor": "v1_q2_analysis.json files.bare_names vs files.ray_names. Same-frame positive control: in ONE render, bare 'objectid' and bare 'primid' are all_zero=true (1 distinct value), while ray:primid carries real data identical to the built-in primid part (315 distinct, max 99) and ray:objectid is non-zero. Producer v1_q2_render.py cases bare_names / ray_names.",
+      "reproduces": "R101 — and strengthens it: the zero and non-zero cases occur in the same frame, which is the cleanest available control."
+    },
+    {
+      "id": "V1-F6",
+      "severity": "product-defect",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "NEW MECHANISM, not recorded in R100-R106. The shipped default ID filter is UNSATISFIED on every render and falls back — and the fallback is what blends the mask boundary.",
+      "anchor": "Every successful render in this leg logged: \"Pixel filter 'minmax' - Mode idcover requires PrimId channel\" (v1_q2_render.json, all five successful cases). The default primidfilter/elementfilter is [\"minmax\",{\"mode\":\"idcover\"}] (v1_q2_parmdetail.json) — a coverage-based SELECTION filter that should never blend. Measured blending at 160x90: primid 583 of 14,400 px non-integral = 4.05%; element 993 = 6.90% (v1_q2_analysis.json integral_frac 0.9595 / 0.9310).",
+      "relates_to": "R100 / V1-F3 confirmed the blending; this supplies the cause."
+    },
+    {
+      "id": "V1-F7",
+      "severity": "lead",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "Copernicus buffer readback is CONFIRMED, verified twice as the brief required, and it carries INTEGER storage. hou.CopNode.layer() -> hou.ImageLayer.allBufferElements(storagetype, channels) -> bytes.",
+      "anchor": "Verification 1 STRUCTURAL (v1_q1_cop_readback.json): all seven storage types return byte-exact lengths for 1024x1024x4 — Float32 and Int32 both 16,777,216 B; Float16/Int16/Fixed16 8,388,608 B; Int8/Fixed8 4,194,304 B; repeat_identical=true for all seven. Verification 2 CONTENT (v1_q1_cop_content_control.json): (a) driven value constant.f1=0.15 -> buffer (0.15,0.15,0.15,1.0) exact, bytes_changed=true; (b) fractalnoise -> 949,595 distinct values across 4,194,304 elements, min 0.179 max 1.000 — a fixed default cannot fake a gradient. Timing 2.4 ms median (min 2.367, max 7.197, 5 runs).",
+      "reproduces": "R102 — corroborated at a different resolution; 2.4 ms at 1024x1024 is consistent with R102's 7.74 ms at 1920x1080 by pixel count.",
+      "note": "The content check FIRST returned INCONCLUSIVE and said so — it filtered for parms named *color*, the constant COP names them f4r/f4g/f4b/f4a, and an all-1.0 buffer proves nothing. Diagnosis: under signature='auto' the node drives from the f1 branch. My error, not a readback defect, and recorded because the first status was wrong."
+    },
+    {
+      "id": "V1-F8",
+      "severity": "method",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "CORRECTION TO R102's positive control. hou.CopNode carries none of the legacy Cop2Node readback verbs — but 'getPixel' is ABSENT on hou.Cop2Node TOO, so it is not covered by the same-class control R102 cites.",
+      "anchor": "v1_q1_symbols.json: hou.CopNode (340 members) — allPixels/planes/getPixel/xRes/yRes/saveImage/layers/cookLayer/dataLayer all ABSENT. hou.Cop2Node (344 members) — allPixels/planes/xRes/yRes/saveImage CONFIRMED, getPixel ABSENT. The real legacy spellings are getPixelByUV / getPixelHSVByUV / getPixelLuminanceByUV (v1_q1_sweep.json class_hits['hou.Cop2Node']).",
+      "disposition": "Drop getPixel from R102's control list. It is an unspelled name, not a removed one — the same class of error R50 was written for."
+    },
+    {
+      "id": "V1-F9",
+      "severity": "product-defect",
+      "tier": "VERIFIED-RUNTIME + VERIFIED-STATIC",
+      "claim": "retina/ingest.py selects the WRONG ID AOV on a real shipped Karma frame and REPORTS SUCCESS. find_id_subimage() returns 'element', not 'primid'; read_id_plane() then succeeds and hands back the element plane. Its own error message instructs the caller to set karmarendersettings.primid=1, and doing so does not make it read primid.",
+      "anchor": "RUN, not read — v1_q2_ingest_check.json: parts [0]C [1]element [2]primid; find_id_subimage -> 1 => 'element'; primid_part_index=2; selects_primid=false; read_id_plane ok, max 1228.75 (the element plane). Cause: ID_PART_NAMES=('primid','id','cryptomatte') substring-matches 'id' against CHANNEL name 'element.id' before reaching primid. retina/ingest.py:65 and :164, re-verified at commit 6983c73.",
+      "bounded_by_control": "R73 discipline. With element off, parts are [C, primid] and find_id_subimage returns the CORRECT index (v1_q3_cost_and_controls.json B_ingest_control.correct=true). The defect is CONDITIONAL on an earlier part whose part-or-channel name contains 'id' — element.id is the one that ships.",
+      "why_untested": "retina/tests/fixtures/exr_synth.py:multipart_exr_bytes builds exactly two parts, C + primid. The shadowing part is ABSENT from the fixture, so the ordering bug cannot fire in the suite. Law 1: the check cannot fail.",
+      "out_of_fence": "This is a product defect outside V1's read-only fence. Reported, not fixed."
+    },
+    {
+      "id": "V1-F10",
+      "severity": "design-input",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The instrument is DETERMINISTIC. Two renders of the identical scene in SEPARATE husk processes produced pixel-identical output on every part. The sampling-noise floor on this path is ZERO — which contradicts a load-bearing premise of the harness that dispatched this leg.",
+      "anchor": "v1_q2_analysis.json base_vs_noise — C identical=true max_abs_diff=0.0; element identical=true 0.0; primid identical=true 0.0. Separate husk PIDs per case (v1_q2_render.json). The EXR FILES differ in byte length (36,876 vs 36,899) from metadata; the PIXELS do not differ at all.",
+      "contradicts": "SYNAPSE_RETINA_VERIFY.md §0: 'Two renders of the same scene differ — Monte Carlo. So delta > 0 means nothing.' On Karma CPU at fixed sampling, cross-process, that is false.",
+      "scope_limit": "One frame, one trivial scene, one machine, CPU engine, fixed sample counts, denoiser off. Stated as a strong prior for V2's control, NOT as an unconditional property."
+    },
+    {
+      "id": "V1-F11",
+      "severity": "answered",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The denoiser is controllable per-render and is OFF BY DEFAULT. Even when enabled it touches only the AOVs named in denoise_aovs (default 'C') and leaves the ID planes bit-identical.",
+      "anchor": "Declared: karmarendersettings.denoiser default 'off', menu ['off','optix','oidn']; denoise_aovs default 'C'; denoise_separate_aovs default False (v1_q2_parmdetail.json). MEASURED, not just declared: with denoiser='oidn', beauty C changed on 14.03% of pixels (max abs diff 0.1432) while element and primid were bit-identical, max abs diff 0.0 (v1_q2_analysis.json base_vs_denoise). Viewport-side control hou.GeometryViewportSettings.setUseDenoising / .useDenoising CONFIRMED as symbols (v1_q1_detail.json); Copernicus ships denoiseai and denoisetvd node types."
+    },
+    {
+      "id": "V1-F12",
+      "severity": "design-input",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "One capture costs ~2.4 s and the cost is FLAT IN RESOLUTION — it is husk process-spawn overhead, not pixels. 64x the pixels costs +12% wall-clock.",
+      "anchor": "v1_q3_cost_and_controls.json C_cost_curve: 160x90 2.239 s; 320x180 2.153 s; 640x360 2.217 s; 1280x720 2.502 s. Independently corroborated by the six-case matrix (v1_q2_render.json): 2.153-2.502 s across eleven renders. Command: usdrender_rop.render(verbose=False) under hython3.13, Karma CPU, samplesperpixel=4, pathtracedsamples=16, primid+element on, denoiser off.",
+      "consequence": "Capture at full resolution costs the same as at thumbnail. The design question is not what resolution is affordable but how often 2.4 s is affordable. Per-mutation verification sits at the expensive end of the brief's 0.4-vs-40-second framing.",
+      "interruptibility": "NOT interruptible from the calling thread. hou.RopNode has no cancel verb (V1-F14); hou.IPRViewer.killRender exists but requires a GUI.",
+      "cheap_alternative": "Copernicus readback of a full 1024x1024x4 float32 buffer: 2.4 ms median, in-process, no disk — roughly 1000x cheaper (V1-F7)."
+    },
+    {
+      "id": "V1-F13",
+      "severity": "supersedes-prior",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "husk WORKS on Houdini Indie on 22.0.368. Eleven renders wrote real pixels to disk.",
+      "anchor": "hou.licenseCategory() = licenseCategoryType.Indie (v1_q1_symbols.json). Eleven EXRs written, 36,876-c.400,000 bytes, all readable by OIIO with correct part structure (v1_q2_render.json, v1_q3_cost_and_controls.json).",
+      "supersedes": "The standing H21 note that Houdini Indie silently no-ops husk (usdrender_rop.render() writes nothing). That was recorded on H21.0.671 and does NOT hold on 22.0.368. Stated as build-specific, not as a claim about Indie generally."
+    },
+    {
+      "id": "V1-F14",
+      "severity": "answered",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The GUI capture verbs EXIST as symbols and their BEHAVIOUR is UNVERIFIABLE headless. These are different claims and this leg does not merge them.",
+      "anchor": "CONFIRMED symbols (v1_q1_symbols.json, v1_q1_detail.json): hou.SceneViewer.flipbook(viewport, settings, open_dialog) and .flipbookSettings(); hou.FlipbookSettings 9/9 probed spellings incl. output/outputToMPlay/resolution/frameRange (82 members); hou.GeometryViewport._captureFramebuffer(buffer_name, filename); hou.IPRViewer.pixel/pixels/planes/saveFrame/killRender (104 members); hou.saveImageDataToFile(data,w,h,file,flip_vertical) writing .pic / 32-bit float RGBA only. ABSENT with same-class controls: hou.RopNode cancel/abort/interrupt/stop/kill/killRender (318 members, render+bypass resolve); hou.GeometryViewport saveViewToFile/flipbook/screenshot (93 members, saveViewToCamera+resolutionInPixels resolve); hou.ActiveRender / hou.activeRenders (853 top-level names). UNVERIFIABLE per R50/H3a-F5: hou.ui and hou.qt are absent from headless hython, so no SceneViewer or IPRViewer instance can be obtained — the verdict is UNVERIFIABLE, never ABSENT (v1_q3_cost_and_controls.json D_flipbook).",
+      "reproduces": "H3a-F1 / R58 / R73's NARROW claim — no cancel verb on hou.RopNode, and hou.ActiveRender genuinely absent."
+    },
+    {
+      "id": "V1-F15",
+      "severity": "gap",
+      "tier": "VERIFIED-STATIC",
+      "claim": "CRYPTOMATTE IS UN-PROBED and it is the single highest-value remaining candidate for per-object identity. V2 should not be declared dead until it is run.",
+      "anchor": "The rendervar LOP carries a full cryptomatte parm group, dumped but not exercised: xn__driverparametersaovkarmacryptomatte_2xbkdf (toggle, default False), ...cryptomatterank_l4bkdf (default 6), ...cryptomattesidecar_h9bkdf (v1_q2_parmdetail.json rendervar_all_parms). retina/ingest.py already lists 'cryptomatte' in ID_PART_NAMES. Cryptomatte is DESIGNED to be a per-object matte; this leg tested primid, element and ray:objectid and did not test it.",
+      "honesty": "Recorded as a gap in THIS leg's coverage, not as a defect in the build. Naming it is cheaper than a V2 built on the assumption that every path was tried."
+    }
+  ],
+  "symbol_ledger": {
+    "note": "Full verdicts with dir() anchors in harness/notes/v1_q1_symbols.json (per-class) and v1_q1_sweep.json (namespace-wide). Every ABSENT below carries a same-class positive control (R50).",
+    "CONFIRMED": [
+      "hou.SceneViewer.flipbook", "hou.SceneViewer.flipbookSettings",
+      "hou.FlipbookSettings.{output,outputToMPlay,frameRange,resolution,useResolution,beautyPassOnly,antialias,cropOutMaskOverlay,sessionLabel}",
+      "hou.RopNode.render", "hou.RopNode.addRenderEventCallback", "hou.RopNode.removeRenderEventCallback",
+      "hou.IPRViewer.{killRender,startRender,pauseRender,isRendering,pixel,pixels,planes,saveFrame}",
+      "hou.CopNode.layer", "hou.ImageLayer.allBufferElements", "hou.ImageLayer.bufferResolution",
+      "hou.Cop2Node.{allPixels,planes,xRes,yRes,saveImage,getPixelByUV}",
+      "hou.GeometryViewport._captureFramebuffer", "hou.GeometryViewport.{resolutionInPixels,queryPrimAtPixel,queryNodeAtPixel,saveViewToCamera}",
+      "hou.GeometryViewportSettings.{useDenoising,setUseDenoising}",
+      "hou.saveImageDataToFile", "hou.hscript", "hou.InterruptableOperation",
+      "hou.imageLayerStorageType.{Int8,Int16,Int32,Float16,Float32,Fixed8,Fixed16}"
+    ],
+    "ABSENT": [
+      "hou.RopNode.{cancel,abort,interrupt,stop,kill,killRender} — control: same class, 318 members, render+bypass resolve",
+      "hou.ActiveRender, hou.activeRenders — control: 853 top-level names, hou.hscript + hou.InterruptableOperation resolve",
+      "hou.CopNode.{allPixels,planes,getPixel,xRes,yRes,saveImage,layers,cookLayer,dataLayer} — control: allPixels/planes/xRes/yRes/saveImage resolve on hou.Cop2Node (344 members) in the same run; NOTE getPixel is absent there too (V1-F8)",
+      "hou.SceneViewer.{saveViewToFile,screenshot} — control: same class, 279 members",
+      "hou.GeometryViewport.{saveViewToFile,flipbook,screenshot,resolution} — control: same class, 93 members"
+    ],
+    "UNVERIFIABLE": [
+      "hou.ui, hou.qt — absent from headless hython by construction; R50/H3a-F5 forbids ABSENT here",
+      "INVOCABILITY of hou.SceneViewer.flipbook, hou.GeometryViewport._captureFramebuffer, hou.IPRViewer.* and hou.GeometryViewportSettings.setUseDenoising — all require a GUI; symbols CONFIRMED, behaviour untestable in this interpreter"
+    ]
+  },
+  "scope_discipline": {
+    "did_not": [
+      "write capture code", "write cv2 code", "build any V2 control",
+      "substitute an assumed API for a refuted one",
+      "touch any file outside harness/notes/**",
+      "commit, push, merge or tag",
+      "re-litigate the quarantined-absent list (hou.pdg.*, hou.secure, hou.lopNetworks(), hou.updateGraphTick())"
+    ],
+    "render_outputs": "Eleven EXRs were written to the session scratchpad OUTSIDE the repo, deliberately, so no binaries entered the tree. Only scripts and JSON are in harness/notes/. Every render is reproducible by re-running the named producer.",
+    "absence_as_deliverable": "The brief says if a capability is absent, that absence IS the deliverable. V1-F1 through V1-F4 are that deliverable. No workaround was invented and no assumed API was substituted."
+  },
+  "drift": [
+    {
+      "id": "D1",
+      "class": "structural",
+      "note": "V1 HAD ALREADY RUN, at 10:19 on 2026-07-27, and was ruled as R100-R106 (commit 098125f). Branch retina/v1-capture-probe is ZERO commits ahead of the line, its worktree is empty, and no V1.json and no probe script exist anywhere in the tree. R103 records the cause: the read-only fence denies Bash(git commit:*), so the product was never made durable and the worktree was later pruned. Consequence: every figure in R100-R106 — 7.74 ms, 50 ids with 49 shared, 7.4% of pixels — currently has NO producer path in the tree. That is a Law 2 violation created by the fence design, not by the agent. This run replaces those with reproducible producers and labels each result 'reproduces' or flags the difference."
+    },
+    {
+      "id": "D2",
+      "class": "structural",
+      "note": "THE LEG HAS NO WORKTREE AND THE TREE MOVED UNDER IT. legs.json declares worktree .claude/worktrees/v1-capture-probe; that directory is empty and is not a registered git worktree, so this leg ran against the shared main checkout. Mid-run a concurrent leg re-pointed that directory from feat/repair-heats-01 @ 2105453 to docs/how-we-know @ 6983c73. All Q1-Q4 findings are VERIFIED-RUNTIME against the live Houdini build and are unaffected; the one VERIFIED-STATIC finding (retina/ingest.py:65,:164) was re-verified against the new commit and holds. This is exactly the failure Constitution Article V's one-worktree-per-agent rule exists to prevent, and it is the same mechanism that lost the first V1's receipt."
+    },
+    {
+      "id": "D3",
+      "class": "cosmetic",
+      "note": "The brief states 'R73 established the only render stop is rkill'. R73's own evidence table also lists hou.IPRViewer.killRender as PRESENT. Does not change V1's conclusions — killRender needs a GUI, so a headless capture remains uninterruptible."
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "V1-R1",
+      "question": "V1 already ran and was ruled as R100-R106, but its receipt and producers are absent from the tree (drift D1). Does THIS receipt supersede R100-R106, annotate them as the surviving evidence, or sit beside them as an independent replication?",
+      "why_it_needs_a_human": "Article I — this is a value judgement about the standing of an existing ruling block, not something provable from the tree.",
+      "evidence_offered": "Every R100-R106 claim this leg re-tested was REPRODUCED. Two refinements are offered: V1-F6 supplies the mechanism behind R100-F3's blending, and V1-F8 corrects R102's positive-control list."
+    },
+    {
+      "id": "V1-R2",
+      "question": "V1-F8: R102 licenses its hou.CopNode ABSENT verdicts by citing getPixel resolving on hou.Cop2Node. It does not resolve there either. Strike getPixel from R102's control list?",
+      "recommendation": "Yes — the remaining four control spellings (allPixels, planes, xRes, saveImage) are verified and carry R102's conclusion unchanged. Only the control list is wrong, not the verdict."
+    },
+    {
+      "id": "V1-R3",
+      "question": "V1-F15: cryptomatte is the one per-object-identity candidate this leg did NOT probe, and it is the mechanism actually designed for the job. Does a V1b run before V2-V4 are declared dead?",
+      "why_it_matters": "R100 ruled V2-V4 'do not exist as designed' on the strength of primid/element/ray:objectid. That conclusion is correct for those three. Cryptomatte was not in the sample."
+    },
+    {
+      "id": "V1-R4",
+      "question": "V1-F9: retina/ingest.py silently reads the wrong ID AOV and reports success, and the fixture cannot express the failure. Repair leg?",
+      "why_it_needs_a_human": "It is a product defect outside V1's read-only fence. V1 reported rather than fixed, per the fence.",
+      "scope_note": "The fix is two parts: (a) match the ID part by exact part name rather than substring, and (b) extend exr_synth.multipart_exr_bytes to emit a C+element+primid frame so the check CAN fail (Law 1)."
+    },
+    {
+      "id": "V1-R5",
+      "question": "V1-F10: SYNAPSE_RETINA_VERIFY.md §0 asserts renders of the same scene always differ, and V2 is designed around measuring that floor. On Karma CPU at fixed sampling the floor measured ZERO, cross-process. Does V2's design change?",
+      "recommendation": "Do not weaken V2's control on this evidence. One trivial scene on one machine is a strong prior, not a licence — but V2 should now be able to state the condition under which the floor is non-zero, rather than assuming it always is."
+    },
+    {
+      "id": "V1-R6",
+      "question": "Drift D1+D2: a read-only leg cannot commit, its declared worktree does not exist, and a concurrent leg can re-point the shared checkout under it. The first V1's evidence was lost to exactly this. Does the read-only profile gain a durability mechanism, or does legs.json stop declaring worktrees that are never created?",
+      "why_it_needs_a_human": "Article I gate — it is a change to the fence, and Article I says an agent may not edit its own leash. Recorded here rather than acted on."
+    }
+  ],
+  "resume_token": {
+    "skip": [
+      "Q1 verb inventory — 71 spellings adjudicated across 11 classes plus a 530-class namespace sweep; re-run only on a new Houdini build",
+      "Q2 ID-AOV gate — answered NEGATIVE on three independent grounds; do not re-derive",
+      "Q3 cost curve — 4 resolutions, flat at ~2.4 s; re-run only if the host or engine changes",
+      "Q4 denoiser — off by default, measured not just declared"
+    ],
+    "start_here": [
+      "V1-F15 — probe cryptomatte as a per-object matte. It is the only untested identity path and it gates whether V2-V4 are truly dead.",
+      "V1-F7 — the Copernicus Int32 readback lead: can a COP graph compute a mask from GEOMETRY rather than read one from a render AOV?"
+    ],
+    "environment": "hython3.13.exe from Houdini 22.0.368; OIIO 2.5.18.0 and numpy 2.3.2 are present in that interpreter; cv2 is not (and belongs in the RETINA worker venv, per the harness doc).",
+    "reproduce": "Each producer in method.producers is runnable standalone: hython3.13.exe harness/notes/<script>.py [outdir]. The render scripts take an output directory argument; point it outside the repo."
+  }
+}

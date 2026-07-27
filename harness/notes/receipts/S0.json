@@ -1,0 +1,171 @@
+{
+ "schema": "receipt/v1",
+ "leg": "S0",
+ "title": "The scout — the floor, the field, and what removes a tool from a pipeline",
+ "harness": "FORENSIC-01",
+ "status": "green",
+ "status_note": "Green means the oracle was satisfied: Q1-Q4 answered, every claim tiered, every source named with a URL where one exists, an explicit NOT-FOUND list, zero recommendations, zero uses of the word 'should'. Green does NOT mean the market picture is complete — see the_headline. The single most important result in this leg is a negative one.",
+
+ "model": "claude-opus-5[1m]",
+ "settings_profile": "NONE OF THE HARNESS PROFILES — interactive session under project .claude/settings.json. Recorded honestly per R25 rather than claiming a fence that was not applied. Evidenced by calls that succeeded which harness/readonly-settings.json denies: Bash(gh:*) and WebFetch to 14 non-sidefx.com domains. See drift D2.",
+ "commit_at_run": "11f3a79",
+ "mode": "read-only research; zero tracked source files read, zero product code touched; wrote only harness/notes/**",
+ "suite_before": null,
+ "suite_after": null,
+ "suite_note": "Not run and not claimable. This is a research leg that touched no code; no suite evidence is asserted (Constitution Article V).",
+
+ "oracle": {
+  "artifact": "harness/notes/forensic/S0_SCOUT.md",
+  "q1_answered": true,
+  "q2_answered": true,
+  "q3_answered": "partially — see F5",
+  "q4_answered": "partially — 1 of 4 sub-questions; see F6",
+  "every_claim_tiered": true,
+  "not_found_list_present": true,
+  "not_found_count": 15,
+  "recommendations": 0,
+  "authored_prescriptive_uses": 0,
+  "prescriptive_token_grep_count": 2,
+  "prescriptive_note": "Producer: `grep -o -i \"should\" harness/notes/forensic/S0_SCOUT.md | wc -l` returns 2, and the artifact's §7 accounts for both. One is inside an attributed verbatim quotation (Wylie Co., §4.1) — left intact, because editing a source quote to satisfy a lint falsifies evidence. One is inside the producer command string itself, which Law 2 requires be named. Authored prescriptive uses: 0. An earlier draft claimed 0 outright and asserted the word 'does not appear in this document' while containing it — the check caught its own governing document, which is Law 1 working.",
+  "producer": "Direct WebSearch/WebFetch + `gh api` by the orchestrator. No subagents dispatched — S0's discipline is per-claim tiering with a named URL, and a subagent's summary of a page would have made every claim REPORTED-about-REPORTED with no anchor actually seen."
+ },
+
+ "the_headline": {
+  "the_sentence": "Houdini 22 ships no LLM, no agent, and no MCP; Anthropic shipped official MCP connectors for eight creative applications in April 2026 and Houdini is not one of them; and there is no published account anywhere of a Houdini AI tool being trialled at a studio and removed.",
+  "primary_negative": "ZERO first-hand studio accounts of a Houdini AI/MCP tool being adopted and dropped. Every user-side account located is a solo developer, a hobbyist, a student, or the tool's own author. The entire Q3 answer is assembled from ADJACENT evidence: MPA compliance controls, open GitHub bug trackers, a different DCC's ecosystem, survey aggregates, and vendor marketing.",
+  "why_it_matters": "S2 is a pre-mortem. It is about to reason about why a studio stopped using SYNAPSE after a quarter. This leg establishes that the population it is reasoning about does not yet exist in any published form — so S2's failure modes are derived, not observed, and the harness's own §1 rule about unlabelled ASSUMED claims applies to S2 with full force."
+ },
+
+ "findings": [
+  {
+   "id": "S0-F1",
+   "tier": "VERIFIED-WEB",
+   "anchor": "sidefx.com/docs/houdini22.0/news/22/{ml,viewport,engine,vex,kinefx,solaris,copernicus,licensing}.html + 2 marketing pages; S0_SCOUT.md §1.13",
+   "severity": "structural",
+   "summary": "Houdini 22 ships no LLM, no natural-language interface, no assistant, no autonomous agent, and no MCP server. The H22 'Machine Learning' section is entirely numeric/neural-network ML with ONNX as the model format: ONNX Inference improvements, SAM2 masking, MoGe-2 depth, Neural Cellular Automata, GSplat/CV training, Neural Terrain Generate SOP, Agent Add ML Deformer (crowd 'agent', not software agent). Basis: ten independently fetched primary pages, none of which mentions any of those things.",
+   "caveat": "This is an ABSENCE claim read through WebFetch's summarisation layer. Ten pages agreeing is strong; it is not the same as grepping the raw doc tree. Separately: 'absent from what's-new' is not 'absent from the product' — hwebserver exists and is in third-party use, it simply is not an H22 novelty."
+  },
+  {
+   "id": "S0-F2",
+   "tier": "VERIFIED-WEB",
+   "anchor": "anthropic.com/news/claude-for-creative-work (2026-04-28); S0_SCOUT.md §2.5",
+   "severity": "structural",
+   "summary": "The adjacent floor moved and Houdini is not on it. Anthropic's 'Claude for Creative Work' shipped official MCP connectors for Ableton, Adobe Creative Cloud, Affinity, Autodesk Fusion, Blender, Resolume, SketchUp and Splice. SideFX Houdini is not named. The Blender connector was built by the Blender Lab and launched for Blender 5.1; Anthropic's EUR 240,000/yr Corporate Patronage was downgraded to a one-off donation within roughly a month after community reaction."
+  },
+  {
+   "id": "S0-F3",
+   "tier": "VERIFIED-WEB",
+   "anchor": "gh api repos/* + search/repositories, 2026-07-27; S0_SCOUT.md §2.1",
+   "severity": "informational",
+   "summary": "The competitive field is measured, not guessed, and nothing in it is large. Largest: Kazama-Suichiku/Houdini-Agent 326 stars (NO LICENCE), capoomgit/houdini-mcp 273 (MIT), healkeiser/fxhoudinimcp 138 (MIT, pushed the day of this run, 179 tools over hwebserver:8100 with hdefereval main-thread marshalling, verified on 22.0.368). Visible dormancy split: the 2025-era originals have not been pushed since March 2025. Two commercial products exist (Houdini AI Assistant, NodeArchitect); neither has a single third-party reply in its announcement thread, and no evidence of a paying studio customer was found for either.",
+   "note": "This row is the strongest evidence in the leg — raw GitHub REST JSON, no summarisation layer."
+  },
+  {
+   "id": "S0-F4",
+   "tier": "VERIFIED-WEB",
+   "anchor": "github.com/sakerk/Tool-Disclosure-List README; cytrust.fr MPA version comparison; S0_SCOUT.md §3.1",
+   "severity": "structural",
+   "summary": "The only CONTRACTUAL adoption blocker found. MPA Content Security Best Practices control OR-5.0 'Organizational AI/ML Security Management', introduced in v5.3 (2025), requires an AI/ML policy, risk management, AI/ML in the AUP, and explicitly 'Ensure client approval for AI/ML application use' — with the additional recommendation 'Only use internally managed and sandboxed LLMs'. TPN is wholly MPA-owned and assesses against the CSBP. The burden has already produced a community artifact: a Tool Disclosure List recording hosting model (Local/Hybrid/Cloud), risk level and approval status per AI tool, in which 'Generative Content' is HIGH risk / approval required.",
+   "caveat": "Read one hop from primary — via a compliance consultancy's version comparison and search snippets, NOT the MPA document itself. Given this is the strongest contractual finding in the leg, that gap is the one most worth closing. See for_ruling R-4."
+  },
+  {
+   "id": "S0-F5",
+   "tier": "VERIFIED-WEB",
+   "anchor": "gh api issue bodies: Kazama-Suichiku/Houdini-Agent #9/#12/#13/#39, capoomgit/houdini-mcp #2/#9/#12/#14; S0_SCOUT.md §3.2-§3.8",
+   "severity": "structural",
+   "summary": "Seven mechanism-bearing failure modes were recovered from open bug trackers, each with a named mechanism rather than a sentiment. (a) The tool hangs the host: two independent reporters, two Houdini versions (21.0.700 and 20.5.700), freeze at launch before any window, force-close required, cache/config clearing does not help. (b) Token cost as a first-order concern: the maintainer's own fix list cites ~350KB/render of base64 removed and full scene-graph traversal replaced. (c) hython's forced site-packages takes precedence and breaks venv-installed dependencies. (d) Single-client socket starvation that fails SILENTLY while the port visibly listens (listen(1) + accept guard + bridge-side socket caching). (e) Suggestion/action divergence — the model proposes a Volume Wrangle, the button inserts a plain wrangle. (f) macOS broken and open for ~16 months. (g) A third-party OpenFX plugin crashing hou initialisation, preventing hython from starting at all.",
+   "note": "Issue BODIES came through gh api raw — these quotes are not summariser output."
+  },
+  {
+   "id": "S0-F6",
+   "tier": "VERIFIED-WEB",
+   "anchor": "S0_SCOUT.md §4.5, §5.2-§5.4",
+   "severity": "structural",
+   "summary": "Q4 largely failed, and the failure is specific. Three of its four named sub-questions returned nothing usable: pipeline-TD headcount (no ratio, no absolute, at any size), how studios evaluate new tools (no process, no criteria), and who decides (no evidence at any size). What WAS established: named studio headcounts from VFX Voice interviews (BUF ~140, RISE ~240+70 freelance), the Ynput pipeline-budget figures, the structural 'midsize problem', and the licence ceiling. The brief's premise that 'a tool adopted by a 12-artist shop is a different product from one adopted by a 400-artist shop' was neither confirmed nor refuted — this leg found the vocabulary for that distinction and no data underneath it."
+  },
+  {
+   "id": "S0-F7",
+   "tier": "VERIFIED-WEB",
+   "anchor": "sidefx.com/products/compare/, sidefx.com/faq/houdini-engine-faq/; S0_SCOUT.md §1.11, §1.12, §3.5, §4.3",
+   "severity": "informational",
+   "summary": "Two licence mechanics with operational consequences. (1) hython requests a Houdini Engine licence from the licence server; HOUDINI_SCRIPT_LICENSE and HOUDINI_HYTHON_LIC_OPT exist specifically to stop headless processes consuming interactive FX/Core seats. Engine is $525/yr workstation, $795/yr floating for one seat. An architecture that spawns Houdini processes is not licence-neutral; one that runs inside an already-licensed session is. (2) Online purchase caps at 3 licences/facility (Indie) and 5 workstation licences/facility (Core/FX/Engine) — the transition from 'buy on the website' to 'call sales' happens between 5 and 6 Houdini seats."
+  },
+  {
+   "id": "S0-F8",
+   "tier": "VERIFIED-WEB",
+   "anchor": "3dvf.com DigiPro 2026 coverage; ACM DOI 10.1145/3819990; S0_SCOUT.md §2.6",
+   "severity": "informational",
+   "summary": "Agentic pipelines reached the production-research literature this year. Three of nine DigiPro 2026 talks are agentic AI in production pipelines: Ubisoft's 'From Brief to Scene: Agentic AI for Asset Production', 'Smart Set Assembly: Learnings from Building an Agentic System for AI-Assisted Set Dressing', and 'Automating the Handoff: From Hardcoded QC Scripts to a Multi-Agent Architecture'. The Ubisoft system is characterised as 'primarily intended as a rapid prototyping tool rather' than a replacement — a TRUNCATED fragment from secondary coverage, not verified against the paper (ACM DL returned 403)."
+  },
+  {
+   "id": "S0-F9",
+   "tier": "VERIFIED-WEB",
+   "anchor": "sidefx.com/docs/houdini22.0/news/22/platforms.html + vfxplatform.com; S0_SCOUT.md §1.2, §1.6, §1.9",
+   "severity": "informational",
+   "summary": "The H22 platform floor and its breaking surfaces. H22.0 targets VFX Platform CY2026: Python 3.13.10, Qt/PySide6 6.8.3 (Qt5 builds dropped), gcc 14.2, C++20, Boost 1.88.0, OpenVDB 13.0, USD 26.05; Intel Mac x86_64 dropped; Linux arm64 in tech preview. CY2027 draft holds Python at 3.13.x, so the Python floor does not move again next platform year. Breaking surfaces in H22: hou.ChannelEditorPane REMOVED plus ten hou.Node/hou.ApexNode methods removed; seven Solaris LOP/SOP RENAMES (Layout->Paint Instances, Instancer->Copy to Points, five UsdSkel renames); XformCommonAPI is now the transform default."
+  }
+ ],
+
+ "for_ruling": [
+  {
+   "id": "R-1",
+   "severity": "structural",
+   "question": "harness/readonly-settings.json permits WebFetch on exactly two domains — www.sidefx.com and sidefx.com — and does not permit Bash(gh:*). S0's brief states the market 'is the only input that requires looking outside'. Q1 is answerable inside that fence; Q2, Q3 and Q4 are NOT. This leg's evidence came from 14 other domains, and its single strongest source (the measured competitive field) came from gh api. A leg run behind that profile would have returned a confident, well-sourced, SideFX-only picture and reported GREEN — answering a narrower question than the one asked. Does the read-only profile gain an external-research allowance, or does a research leg get a distinct profile?",
+   "agent_position": "Not an agent decision. Article I: an agent may not edit its own leash, and a task requiring writes outside the grant is a ruling item, not a permission problem."
+  },
+  {
+   "id": "R-2",
+   "severity": "structural",
+   "question": "S0 was dispatched into C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\s0-forensic, which is NOT a registered git worktree — it contains only .claude/ (settings.local.json + an .orch_launched marker stamped 2026-07-27T14:41:29). git worktree list does not include it; s2-forensic DOES exist, so the intent was present and S0's creation did not happen or did not persist. Writing to a relative harness/notes/ from there would have created an orphan tree outside the repo. Both artifacts were written to the real tree instead. Constitution Article V says every parallel agent gets its own worktree — this was a dispatch failure, not an agent one. Does worktree existence become a pre-flight check the orchestrator verifies before handing a leg its brief?"
+  },
+  {
+   "id": "R-3",
+   "severity": "structural",
+   "question": "The leg's headline result is a negative: zero published accounts exist of a Houdini AI tool trialled at a studio and removed. S2 is a pre-mortem that ranks failure modes by likelihood. Its inputs are now known to be derived rather than observed. Does S2 proceed on adjacent evidence with every mode explicitly tiered INFERRED, or does the harness first attempt to acquire an observed population (studio interviews, a trial) before S2 runs?",
+   "agent_position": "Escalated rather than decided — this is a value judgement between defensible options (Article I), and S0 is explicitly forbidden from forming a view."
+  },
+  {
+   "id": "R-4",
+   "severity": "advisory",
+   "question": "MPA CSBP control OR-5.0 is the strongest contractual finding in this leg and it was read one hop from primary — via a compliance consultancy's version comparison, not the MPA document. Its 'Only use internally managed and sandboxed LLMs' recommendation, if accurate, is load-bearing for any cloud-LLM tool in a TPN-assessed studio. Is acquiring the actual MPA CSBP v5.3/v5.3.1 document worth a follow-up, given Law 2 and the R74 precedent?"
+  }
+ ],
+
+ "not_found_summary": [
+  "Any primary SideFX statement about an official Houdini AI agent (the forum claim is uncorroborated)",
+  "Ynput/AYON survey methodology — every cited percentage has an unseen denominator; 2025-vs-2026 fieldwork unresolved",
+  "Pipeline-TD-per-artist ratio at any studio size",
+  "Who signs off on a new tool at a mid-size studio, and by what process",
+  "ANY first-hand account of a Houdini AI/MCP tool trialled at a studio and removed",
+  "Any independent (non-vendor) measurement of token cost per useful DCC operation",
+  "SideFX forum threads behind the login wall — biases all forum findings toward recent public threads",
+  "code.blender.org VFX Reference Platform post (403)",
+  "DigiPro 2026 abstracts (ACM DL 403) — the Ubisoft quote is an unverified fragment",
+  "The price of Houdini AI Assistant (Gumroad page returned title only)",
+  "Whether any commercial Houdini AI tool has paying STUDIO customers",
+  "MPA CSBP v5.3/v5.3.1 primary document",
+  "H22 adoption rate — public release is ~11 days old at time of run",
+  "SideFX AI roadmap or policy statement (two conference talks exist, neither watched)",
+  "atayilgun/Houdini-claudecode-mcp — in search results, 404 on API lookup"
+ ],
+
+ "drift": [
+  {"id": "D1", "summary": "S0's working directory is not a git worktree (Article V). Artifacts written to the real tree at C:\\Users\\User\\SYNAPSE\\harness\\notes\\ to avoid creating an orphan. See for_ruling R-2."},
+  {"id": "D2", "summary": "This leg did not run behind harness/readonly-settings.json — it ran in the interactive session under project .claude/settings.json. Recorded per R25 rather than claiming a fence that was not applied. See for_ruling R-1."}
+ ],
+
+ "provenance_caveat": "Two read paths, unequal strength. `gh api` returned raw JSON — repo metrics and issue bodies are unmediated. `WebFetch` converts each page to markdown and then SUMMARISES it with a small fast model, so every web-page quotation in S0_SCOUT.md is one summarisation layer removed from the HTML I never saw. Absence claims ('page X does not mention Y') are the weakest shape in the document, because a summariser omitting something is indistinguishable from the page not containing it. Every absence claim in the artifact states how many independent pages support it.",
+
+ "resume_token": {
+  "skip": [
+   "Q1 — H22 native surface is settled across 10 primary pages; platform floor, pricing, licence mechanics, rig tooling, HOM removals and Solaris renames all captured with URLs",
+   "Q2 — competitive field measured via gh api on 2026-07-27; re-run only if the date matters, the numbers move",
+   "The Anthropic/Blender connector question — resolved against primary sources, both sides of the forum dispute adjudicated"
+  ],
+  "resume_at": [
+   "The 15 NOT-FOUND items, ranked: #5 (no studio removal accounts) and #12 (MPA CSBP primary) are the two that change what S2 can claim",
+   "Q4's three unanswered sub-questions — TD headcount, evaluation process, decision authority — all require a source type this leg could not reach (studio-internal), not a better search"
+  ],
+  "do_not_redo": "Do not re-derive the market picture by reading the SYNAPSE codebase first. The brief's ordering exists because gathering this AFTER forming a view produces confirmation rather than evidence."
+ }
+}

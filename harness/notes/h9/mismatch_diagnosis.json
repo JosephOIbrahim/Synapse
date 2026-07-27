@@ -1,0 +1,549 @@
+{
+ "schema": "h9_mismatch_diagnosis/v1",
+ "truth_tier": "VERIFIED-RUNTIME",
+ "producer": "harness/notes/h9/diagnose_mismatch.py",
+ "build": "22.0.368",
+ "q1_probe_vs_catalogue": {
+  "question": "is the probe broken, or is this an enumeration-policy difference?",
+  "cases": [
+   {
+    "type": "cablepack",
+    "catalogue_parms": [
+     "fields",
+     "setfields"
+    ],
+    "probe_toplevel_including_folders": [
+     "fields",
+     "setfields"
+    ],
+    "probe_recursive_nonfolder": [
+     "fieldname#",
+     "setfields"
+    ],
+    "catalogue_equals_toplevel": true,
+    "catalogue_subset_of_recursive_all": true
+   },
+   {
+    "type": "cellularnoise3d",
+    "catalogue_parms": [
+     "amplitude",
+     "bevel",
+     "bevel_relative",
+     "bevelramp",
+     "elementscale",
+     "elementsize",
+     "elementsizetype",
+     "gap",
+     "gap_relative",
+     "jitter",
+     "jitterscale",
+     "jittertype",
+     "metric",
+     "mode",
+     "off",
+     "post_bias",
+     "post_contrast",
+     "post_dobias",
+     "post_doclampmax",
+     "post_doclampmin",
+     "post_docomplement",
+     "post_docontrast",
+     "post_dofold",
+     "post_dogain",
+     "post_dogamma",
+     "post_gain",
+     "post_gamma",
+     "post_maximum",
+     "post_minimum",
+     "settypeinfo",
+     "shift",
+     "smoothedge",
+     "typeinfo"
+    ],
+    "probe_toplevel_including_folders": [
+     "folder3",
+     "folder4",
+     "folder5",
+     "folder8",
+     "settypeinfo",
+     "typeinfo"
+    ],
+    "probe_recursive_nonfolder": [
+     "amplitude",
+     "bevel",
+     "bevel_relative",
+     "bevelramp#interp",
+     "bevelramp#pos",
+     "bevelramp#value",
+     "elementscale",
+     "elementsize",
+     "elementsizetype",
+     "gap",
+     "gap_relative",
+     "jitter",
+     "jitterscale",
+     "jittertype",
+     "metric",
+     "mode",
+     "off",
+     "post_bias",
+     "post_contrast",
+     "post_dobias",
+     "post_doclampmax",
+     "post_doclampmin",
+     "post_docomplement",
+     "post_docontrast",
+     "post_dofold",
+     "post_dogain",
+     "post_dogamma",
+     "post_gain",
+     "post_gamma",
+     "post_maximum",
+     "post_minimum",
+     "settypeinfo",
+     "shift",
+     "smoothedge",
+     "typeinfo"
+    ],
+    "catalogue_equals_toplevel": false,
+    "catalogue_subset_of_recursive_all": true
+   }
+  ],
+  "verdict": "ENUMERATION POLICY, NOT A BROKEN PROBE -- every parameter in the committed catalogue is present in this probe's walk. The two differ only in how they represent ramp and multiparm containers: the catalogue keeps the container name ('bevelramp', 'fields'), this probe descends into it ('bevelramp#value', 'fieldname#'). No parameter is missing from either side."
+ },
+ "q2_doc_ids_vs_parm_names": {
+  "question": "are the docs' #id: values Houdini parameter names?",
+  "cases": [
+   {
+    "type": "light::2.0",
+    "documented_ids": 84,
+    "live_parms": 133,
+    "documented_ids_absent_from_live": 51,
+    "absent_examples": [
+     "angle",
+     "clippingRange",
+     "color",
+     "colorTemperature",
+     "diffuse",
+     "enableColorTemperature",
+     "exposure",
+     "handledisallowedtypes",
+     "height",
+     "inputs:karma:light:activeradius",
+     "inputs:karma:light:atten",
+     "inputs:karma:light:attenstart",
+     "inputs:karma:light:attentype",
+     "inputs:karma:light:contribs"
+    ],
+    "absent_that_are_colon_namespaced": 21,
+    "live_punycode_parm_count": 62,
+    "live_punycode_examples": [
+     "xn__houdiniclippingRange_control_pmb",
+     "xn__houdiniclippingRange_o8a",
+     "xn__houdiniguidescale_control_thb",
+     "xn__houdiniguidescale_s3a",
+     "xn__houdiniinviewermenu_16a",
+     "xn__houdiniinviewermenu_control_2kb",
+     "xn__inputsangle_control_06a",
+     "xn__inputsangle_zta",
+     "xn__inputscolorTemperature_control_xpb",
+     "xn__inputscolorTemperature_wcb"
+    ],
+    "live_parm_examples": [
+     "allowedprimtypes",
+     "barndoorbottom",
+     "barndoorbottom_control",
+     "barndoorbottomedge",
+     "barndoorbottomedge_control",
+     "barndoorleft",
+     "barndoorleft_control",
+     "barndoorleftedge",
+     "barndoorleftedge_control",
+     "barndoorright",
+     "barndoorright_control",
+     "barndoorrightedge",
+     "barndoorrightedge_control",
+     "barndoortop"
+    ]
+   },
+   {
+    "type": "rendersettings",
+    "documented_ids": 199,
+    "live_parms": 48,
+    "documented_ids_absent_from_live": 177,
+    "absent_examples": [
+     "allowedprimtypes",
+     "handledisallowedtypes",
+     "husk:default_delegate",
+     "husk:orderedImageFilters",
+     "husk:scene_lights",
+     "husk:scene_materials",
+     "karma:global:abortmissingtexture",
+     "karma:global:abortnogpudevice",
+     "karma:global:autoheadlight",
+     "karma:global:autoraybias",
+     "karma:global:background_iprfilter",
+     "karma:global:bucketorder",
+     "karma:global:bucketsize",
+     "karma:global:cacheratio"
+    ],
+    "absent_that_are_colon_namespaced": 175,
+    "live_punycode_parm_count": 0,
+    "live_punycode_examples": [],
+    "live_parm_examples": [
+     "aspectRatioConformPolicy",
+     "aspectRatioConformPolicy_control",
+     "camera",
+     "camera_control",
+     "classancestor",
+     "createprims",
+     "dataWindowNDC",
+     "dataWindowNDC_control",
+     "dataWindowNDCmenu",
+     "disableDepthOfField",
+     "disableDepthOfField_control",
+     "disableMotionBlur",
+     "disableMotionBlur_control",
+     "errormsg"
+    ]
+   },
+   {
+    "type": "rendergeometrysettings",
+    "documented_ids": 84,
+    "live_parms": 16,
+    "documented_ids_absent_from_live": 82,
+    "absent_examples": [
+     "karma:object:baker_identifier_traceset",
+     "karma:object:baker_visibility_cull_backface",
+     "karma:object:baker_visibility_traceset",
+     "karma:object:blurstyle",
+     "karma:object:bumpshadowterminator",
+     "karma:object:causticsenable",
+     "karma:object:causticsroughnessclamp",
+     "karma:object:cull_backface",
+     "karma:object:curve_basis",
+     "karma:object:curve_style",
+     "karma:object:cuspangle",
+     "karma:object:custom_tracesets",
+     "karma:object:dicingdepthmax",
+     "karma:object:dicingdepthmin"
+    ],
+    "absent_that_are_colon_namespaced": 82,
+    "live_punycode_parm_count": 0,
+    "live_punycode_examples": [],
+    "live_parm_examples": [
+     "createprims",
+     "initforedit",
+     "parentprimtype",
+     "primcount",
+     "primkind",
+     "primpath",
+     "primpattern",
+     "sample_behavior",
+     "sample_cameraprim",
+     "sample_count",
+     "sample_f",
+     "sample_includeframe",
+     "sample_shuttermode",
+     "sample_shutterrange"
+    ]
+   },
+   {
+    "type": "domelight::3.0",
+    "documented_ids": 64,
+    "live_parms": 65,
+    "documented_ids_absent_from_live": 46,
+    "absent_examples": [
+     "allowedprimtypes",
+     "clippingRange",
+     "color",
+     "colorTemperature",
+     "diffuse",
+     "enableColorTemperature",
+     "exposure",
+     "handledisallowedtypes",
+     "inputs:karma:light:activeradius",
+     "inputs:karma:light:atten",
+     "inputs:karma:light:attenstart",
+     "inputs:karma:light:attentype",
+     "inputs:karma:light:contribs",
+     "inputs:karma:light:contributescaustics"
+    ],
+    "absent_that_are_colon_namespaced": 21,
+    "live_punycode_parm_count": 34,
+    "live_punycode_examples": [
+     "xn__houdiniguidescale_control_thb",
+     "xn__houdiniguidescale_s3a",
+     "xn__houdiniinviewermenu_16a",
+     "xn__houdiniinviewermenu_control_2kb",
+     "xn__inputscolorTemperature_control_xpb",
+     "xn__inputscolorTemperature_wcb",
+     "xn__inputscolor_control_06a",
+     "xn__inputscolor_zta",
+     "xn__inputsdiffuse_8wa",
+     "xn__inputsdiffuse_control_99a"
+    ],
+    "live_parm_examples": [
+     "classancestor",
+     "createprims",
+     "filters",
+     "filters_control",
+     "initforedit",
+     "p",
+     "parentprimtype",
+     "poleAxis",
+     "poleAxis_control",
+     "portals",
+     "portals_control",
+     "pr",
+     "primpath",
+     "primpattern"
+    ]
+   }
+  ]
+ },
+ "q3_cop_channel_semantics": {
+  "question": "COP/COP2 ids carry no colons yet still miss. Are they component CHANNEL names rather than parm names?",
+  "cases": [
+   {
+    "context": "cop2",
+    "type": "emboss",
+    "documented_ids": 27,
+    "live_parms": 28,
+    "absent": 15,
+    "absent_examples": [
+     "diffa",
+     "diffb",
+     "diffg",
+     "diffr",
+     "fdropoff1",
+     "fdropoff2",
+     "frange1",
+     "frange2",
+     "lightposx",
+     "lightposy"
+    ],
+    "recovered_by_stripping_component_suffix": 15,
+    "recovered_examples": [
+     {
+      "documented": "diffa",
+      "live_parm": "diff"
+     },
+     {
+      "documented": "diffb",
+      "live_parm": "diff"
+     },
+     {
+      "documented": "diffg",
+      "live_parm": "diff"
+     },
+     {
+      "documented": "diffr",
+      "live_parm": "diff"
+     },
+     {
+      "documented": "fdropoff1",
+      "live_parm": "fdropoff"
+     },
+     {
+      "documented": "fdropoff2",
+      "live_parm": "fdropoff"
+     },
+     {
+      "documented": "frange1",
+      "live_parm": "frange"
+     },
+     {
+      "documented": "frange2",
+      "live_parm": "frange"
+     }
+    ],
+    "live_examples": [
+     "bumpplane",
+     "bumpscale",
+     "currange",
+     "diff",
+     "diffdimmer",
+     "effectamount",
+     "fautoadjust",
+     "fdropfunc",
+     "fdropoff",
+     "flist",
+     "fmenu",
+     "foutside"
+    ]
+   },
+   {
+    "context": "cop2",
+    "type": "border",
+    "documented_ids": 17,
+    "live_parms": 21,
+    "absent": 12,
+    "absent_examples": [
+     "borderh1",
+     "borderh2",
+     "borderv1",
+     "borderv2",
+     "colora",
+     "colorb",
+     "colorg",
+     "colorr",
+     "fdropoff1",
+     "fdropoff2"
+    ],
+    "recovered_by_stripping_component_suffix": 12,
+    "recovered_examples": [
+     {
+      "documented": "borderh1",
+      "live_parm": "borderh"
+     },
+     {
+      "documented": "borderh2",
+      "live_parm": "borderh"
+     },
+     {
+      "documented": "borderv1",
+      "live_parm": "borderv"
+     },
+     {
+      "documented": "borderv2",
+      "live_parm": "borderv"
+     },
+     {
+      "documented": "colora",
+      "live_parm": "color"
+     },
+     {
+      "documented": "colorb",
+      "live_parm": "color"
+     },
+     {
+      "documented": "colorg",
+      "live_parm": "color"
+     },
+     {
+      "documented": "colorr",
+      "live_parm": "color"
+     }
+    ],
+    "live_examples": [
+     "borderh",
+     "borderv",
+     "color",
+     "currange",
+     "effectamount",
+     "fautoadjust",
+     "fdropfunc",
+     "fdropoff",
+     "flist",
+     "fmenu",
+     "foutside",
+     "frange"
+    ]
+   },
+   {
+    "context": "cop",
+    "type": "pyro_block_end",
+    "documented_ids": 279,
+    "live_parms": 23,
+    "absent": 267,
+    "absent_examples": [
+     "activatefeedbacks",
+     "activatefields",
+     "adaptivestepsize",
+     "advectfeedbacks",
+     "advectfields",
+     "advectionreflectionamount",
+     "ambientvel",
+     "buoyancy_controlfield",
+     "buoyancy_controlramp",
+     "buoyancy_controlrange"
+    ],
+    "recovered_by_stripping_component_suffix": 0,
+    "recovered_examples": [],
+    "live_examples": [
+     "ambient",
+     "blockfeather",
+     "blockrad",
+     "cachedframes",
+     "cacheenabled",
+     "checkpointframes",
+     "continuouscook",
+     "continuouscook_tick",
+     "continuouscook_toggle",
+     "correctcollision",
+     "correctvelocity_ambient",
+     "correctvelocity_timescale"
+    ]
+   },
+   {
+    "context": "cop",
+    "type": "colorcorrect",
+    "documented_ids": 59,
+    "live_parms": 24,
+    "absent": 52,
+    "absent_examples": [
+     "add",
+     "contrast",
+     "gamma",
+     "highlight_addb",
+     "highlight_addg",
+     "highlight_addr",
+     "highlight_contrastb",
+     "highlight_contrastg",
+     "highlight_contrastr",
+     "highlight_gammab"
+    ],
+    "recovered_by_stripping_component_suffix": 48,
+    "recovered_examples": [
+     {
+      "documented": "highlight_addb",
+      "live_parm": "highlight_add"
+     },
+     {
+      "documented": "highlight_addg",
+      "live_parm": "highlight_add"
+     },
+     {
+      "documented": "highlight_addr",
+      "live_parm": "highlight_add"
+     },
+     {
+      "documented": "highlight_contrastb",
+      "live_parm": "highlight_contrast"
+     },
+     {
+      "documented": "highlight_contrastg",
+      "live_parm": "highlight_contrast"
+     },
+     {
+      "documented": "highlight_contrastr",
+      "live_parm": "highlight_contrast"
+     },
+     {
+      "documented": "highlight_gammab",
+      "live_parm": "highlight_gamma"
+     },
+     {
+      "documented": "highlight_gammag",
+      "live_parm": "highlight_gamma"
+     }
+    ],
+    "live_examples": [
+     "do_highlight",
+     "do_master",
+     "do_mid",
+     "do_shadow",
+     "highlight_add",
+     "highlight_contrast",
+     "highlight_gamma",
+     "highlight_mult",
+     "ispremult",
+     "mask",
+     "master_add",
+     "master_contrast"
+    ]
+   }
+  ]
+ }
+}

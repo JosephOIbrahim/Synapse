@@ -1,0 +1,174 @@
+{
+  "schema": "v1-q1-karma-surface/1",
+  "build": "22.0.368",
+  "license": "licenseCategoryType.Indie",
+  "imageLayerStorageType": [
+    "Fixed16",
+    "Fixed8",
+    "Float16",
+    "Float32",
+    "Int16",
+    "Int32",
+    "Int8"
+  ],
+  "imageDepth": [
+    "Float16",
+    "Float32",
+    "Int16",
+    "Int32",
+    "Int8"
+  ],
+  "saveImageDataToFile": {
+    "present": true,
+    "doc": "hou.saveImageDataToFile\n\nCreate an image file from color and alpha pixel data.\n\nUSAGE\n  saveImageDataToFile(color_and_alpha_data, width, height, file_name,\n  flip_vertical=False)\n\n\ncolor_and_alpha_data\n    Either a sequence of floats or a binary string containing the image\n    data. The data must be in interleaved format, meaning that the first\n    4 values are the red, green, blue, and alpha (RGBA) values for the\n    first pixel, the next 4 are for the second pixel, and so on. The\n    first row of pixels in the data corresponds to the top scanline in\n    the image.\n\n    The length of this sequence must be width * height * 4.\n\n    If you are writing a .pic file, the file will store 32-bit float\n    data if you pass in a sequence of floats and 8-bit unsigned data if\n    you pass in a string.\n\n    The binary string data must be a bytes object in Python 3 and a str\n    object in Python 2. See HOM binary data for more information.\n\nwidth, height\n    The width and height of the image to be written.\n\nfile_name\n    The name of the output image file to create. Houdini will\n    automatically determine which type of file to create based on this\n    file's extension.\n\nflip_vertical\n    Whether or not the image should be flipped on the vertical axis.\n\nThis function provides two features not provided by other imaging\nlibraries:\n\n  * It lets you create files in Houdini's .pic format.\n\n  * It lets you save images with 32-bit float data.\n\nRaises hou.OperationFailed if the data is not the correct size, the\noutput file could not be created, or the output file format is not\nsupported by Houdini.\n\nThe following example uses the Python imaging library (PIL) to read in a\nfile and calls this function to write it out. Using the convertImage\nfunction below, you can convert any image that can be read by PIL into\nHoudini's .pic format.\n\n> import Image\n> \n> def convertImage(input_image, output_image):\n>     im = Image.open(input_image)\n>     im.mode != \\\"RGBA\\\":\n>         raise ValueError(\\\"The image must contain alpha information\\\")\n>     hou.saveImageDataToFile(im.tostring(), im.size[0], im.size[1], output_image)\n> \n> convertImage(\\\"image.png\\\", \\\"image.pic\\\")\n\nSee also Writing a COP in Python."
+  },
+  "lop_types_present": {
+    "rendervar": true,
+    "karmarenderproperties": true,
+    "karmarendersettings": true,
+    "usdrender_rop": true,
+    "usdrender": false,
+    "renderproduct": true,
+    "rendersettings": true
+  },
+  "rop_types_present": {
+    "usdrender": true,
+    "usdrender_rop": false,
+    "karma": true,
+    "opengl": true,
+    "ifd": true
+  },
+  "parm_surface": {
+    "rendervar": {
+      "parm_count": 77,
+      "denoise_parms": [],
+      "id_parms": [
+        "xn__driverparametersaovkarmacryptomatte_2xbkdf",
+        "xn__driverparametersaovkarmacryptomatte_control_3bckdf",
+        "xn__driverparametersaovkarmacryptomatterank_control_mickdf",
+        "xn__driverparametersaovkarmacryptomatterank_l4bkdf",
+        "xn__driverparametersaovkarmacryptomattesidecar_control_inckdf",
+        "xn__driverparametersaovkarmacryptomattesidecar_h9bkdf"
+      ],
+      "menus": {
+        "sourceType": [
+          "raw",
+          "primvar",
+          "lpe",
+          "intrinsic"
+        ]
+      }
+    },
+    "karmarenderproperties": {
+      "parm_count": 359,
+      "denoise_parms": [
+        "denoise_aovs",
+        "denoise_useN",
+        "denoise_usealbedo",
+        "denoiser"
+      ],
+      "id_parms": [
+        "element",
+        "elementfilter",
+        "elementprecision",
+        "guiding_enable",
+        "guiding_samples",
+        "primid",
+        "primidfilter",
+        "primidprecision"
+      ],
+      "menus": {
+        "denoiser": [
+          "off",
+          "optix",
+          "oidn"
+        ]
+      }
+    },
+    "karmarendersettings": {
+      "parm_count": 402,
+      "denoise_parms": [
+        "denoise_aovs",
+        "denoise_cpu_only",
+        "denoise_separate_aovs",
+        "denoise_useN",
+        "denoise_usealbedo",
+        "denoiser"
+      ],
+      "id_parms": [
+        "element",
+        "elementfilter",
+        "elementprecision",
+        "guiding_enable",
+        "guiding_samples",
+        "primid",
+        "primidfilter",
+        "primidprecision"
+      ],
+      "menus": {
+        "denoiser": [
+          "off",
+          "optix",
+          "oidn"
+        ]
+      }
+    },
+    "usdrender_rop": {
+      "parm_count": 171,
+      "denoise_parms": [],
+      "id_parms": [
+        "override_camera",
+        "override_res"
+      ],
+      "menus": {}
+    },
+    "renderproduct": {
+      "parm_count": 87,
+      "denoise_parms": [],
+      "id_parms": [],
+      "menus": {
+        "xn__driverparametershuskimage_format_6sbke": [
+          "",
+          "Houdini",
+          "RAT",
+          "OpenEXR",
+          "TIFF",
+          "PNG",
+          "JPEG"
+        ]
+      }
+    },
+    "rendersettings": {
+      "parm_count": 428,
+      "denoise_parms": [],
+      "id_parms": [
+        "KarmaRenderSettingsAPI_xn__IndirectGuiding_ooa",
+        "xn__karmaglobalguiding_clearbuffers_control_k4bg",
+        "xn__karmaglobalguiding_clearbuffers_jrbg",
+        "xn__karmaglobalguiding_components_9nbg",
+        "xn__karmaglobalguiding_components_control_b1bg",
+        "xn__karmaglobalguiding_deterministic_5sbg",
+        "xn__karmaglobalguiding_deterministic_control_65bg",
+        "xn__karmaglobalguiding_enable_control_subg",
+        "xn__karmaglobalguiding_enable_rhbg",
+        "xn__karmaglobalguiding_samples_control_fwbg",
+        "xn__karmaglobalguiding_samples_ejbg",
+        "xn__karmaglobalmtlx_imagewidth_control_fwbg",
+        "xn__karmaglobalmtlx_imagewidth_ejbg",
+        "xn__karmaglobaloverride_lighting_control_ozbg",
+        "xn__karmaglobaloverride_lighting_nmbg",
+        "xn__karmaglobaloverrideobject_control_subg",
+        "xn__karmaglobaloverrideobject_rhbg",
+        "xn__karmaobjectbaker_identifier_traceset_control_pdcg",
+        "xn__karmaobjectbaker_identifier_traceset_ozbg",
+        "xn__karmaobjectoutline_idthreshold_control_x2bg",
+        "xn__karmaobjectoutline_idthreshold_wpbg",
+        "xn__karmaobjectvolumefilterwidth_control_ozbg",
+        "xn__karmaobjectvolumefilterwidth_nmbg",
+        "xn__karmaobjectwidth_scale_control_wpbg",
+        "xn__karmaobjectwidth_scale_vcbg"
+      ],
+      "menus": {}
+    }
+  }
+}

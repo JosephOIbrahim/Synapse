@@ -1,0 +1,1690 @@
+{
+ "_meta": {
+  "url": "ws://localhost:9999/synapse",
+  "started": "2026-07-27T14:50:23",
+  "scene": "untitled.hip (empty)",
+  "exclusions": {
+   "houdini_capture_viewport": "writes an image file to disk -- outside the S1 fence",
+   "synapse_propose_graph": "requires a graph proposal payload; would mutate the ProposalStore",
+   "synapse_validate_frame": "requires an on-disk image path; no read-only fixture"
+  }
+ },
+ "synapse_ping": {
+  "elapsed": 2.06,
+  "response": {
+   "data": {
+    "pong": true,
+    "protocol_version": "4.0.0",
+    "timestamp": 1785178225.7674253
+   },
+   "error": null,
+   "id": "ping-s1probe2-1",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178225.7674391
+  },
+  "cmd": "ping",
+  "args": {}
+ },
+ "synapse_health": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "healthy": true,
+    "houdini_available": true,
+    "protocol_version": "4.0.0"
+   },
+   "error": null,
+   "id": "get_health-s1probe2-2",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178227.7766263
+  },
+  "cmd": "get_health",
+  "args": {}
+ },
+ "houdini_scene_info": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "fps": 24.0,
+    "frame": 1,
+    "frame_range": [
+     1,
+     240
+    ],
+    "hip_file": "untitled.hip"
+   },
+   "error": null,
+   "id": "get_scene_info-s1probe2-3",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178229.784429
+  },
+  "cmd": "get_scene_info",
+  "args": {}
+ },
+ "houdini_get_selection": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "count": 0,
+    "nodes": []
+   },
+   "error": null,
+   "id": "get_selection-s1probe2-4",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178231.7922072
+  },
+  "cmd": "get_selection",
+  "args": {}
+ },
+ "houdini_get_parm": {
+  "elapsed": 2.01,
+  "response": {
+   "data": null,
+   "error": "Couldn't find parameter 'tx' on /obj",
+   "id": "get_parm-s1probe2-5",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178233.798319
+  },
+  "cmd": "get_parm",
+  "args": {
+   "node": "/obj",
+   "parm": "tx"
+  }
+ },
+ "houdini_stage_info": {
+  "elapsed": 2.01,
+  "response": {
+   "data": null,
+   "error": "No USD stage found -- select a LOP node or pass a node path so I know which stage to look at",
+   "id": "get_stage_info-s1probe2-6",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178235.8050656
+  },
+  "cmd": "get_stage_info",
+  "args": {}
+ },
+ "houdini_get_usd_attribute": {
+  "elapsed": 2.01,
+  "response": {
+   "data": null,
+   "error": "Couldn't find a LOP node in your selection -- select one in the Solaris network or specify the node path",
+   "id": "get_usd_attribute-s1probe2-7",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178237.8121426
+  },
+  "cmd": "get_usd_attribute",
+  "args": {
+   "prim_path": "/",
+   "attribute_name": "kind"
+  }
+ },
+ "houdini_capture_viewport": {
+  "skipped": "writes an image file to disk -- outside the S1 fence",
+  "cmd": "capture_viewport"
+ },
+ "synapse_validate_frame": {
+  "skipped": "requires an on-disk image path; no read-only fixture",
+  "cmd": "validate_frame"
+ },
+ "tops_get_work_items": {
+  "elapsed": 2.01,
+  "response": {
+   "data": null,
+   "error": "Hit a snag processing that request: 'OpNode' object has no attribute 'getPDGNode'",
+   "id": "tops_get_work_items-s1probe2-8",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178239.8198092
+  },
+  "cmd": "tops_get_work_items",
+  "args": {
+   "node": "/tasks"
+  }
+ },
+ "tops_get_dependency_graph": {
+  "elapsed": 2.01,
+  "response": {
+   "data": null,
+   "error": "The node at /tasks is a Manager node, not a TOP network -- point to a topnet node (e.g. '/obj/topnet1')",
+   "id": "tops_get_dependency_graph-s1probe2-9",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178241.8270214
+  },
+  "cmd": "tops_get_dependency_graph",
+  "args": {
+   "topnet_path": "/tasks"
+  }
+ },
+ "tops_get_cook_stats": {
+  "elapsed": 2.01,
+  "response": {
+   "data": null,
+   "error": "Hit a snag processing that request: 'OpNode' object has no attribute 'getPDGNode'",
+   "id": "tops_get_cook_stats-s1probe2-10",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178243.8360698
+  },
+  "cmd": "tops_get_cook_stats",
+  "args": {
+   "node": "/tasks"
+  }
+ },
+ "tops_query_items": {
+  "elapsed": 2.01,
+  "response": {
+   "data": null,
+   "error": "Hit a snag processing that request: 'OpNode' object has no attribute 'getPDGNode'",
+   "id": "tops_query_items-s1probe2-11",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178245.8430557
+  },
+  "cmd": "tops_query_items",
+  "args": {
+   "node": "/tasks",
+   "query_attribute": "id",
+   "filter_value": "0"
+  }
+ },
+ "tops_diagnose": {
+  "elapsed": 2.01,
+  "response": {
+   "data": null,
+   "error": "Hit a snag processing that request: 'OpNode' object has no attribute 'getPDGNode'",
+   "id": "tops_diagnose-s1probe2-12",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178247.8502414
+  },
+  "cmd": "tops_diagnose",
+  "args": {
+   "node": "/tasks"
+  }
+ },
+ "tops_pipeline_status": {
+  "elapsed": 2.01,
+  "response": {
+   "data": null,
+   "error": "The node at /tasks is a Manager node, not a TOP network -- point to a topnet node (e.g. '/obj/topnet1')",
+   "id": "tops_pipeline_status-s1probe2-13",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178249.8566058
+  },
+  "cmd": "tops_pipeline_status",
+  "args": {
+   "topnet_path": "/tasks"
+  }
+ },
+ "houdini_query_prims": {
+  "elapsed": 2.03,
+  "response": {
+   "data": null,
+   "error": "Couldn't find a LOP node in your selection -- select one in the Solaris network or specify the node path",
+   "id": "query_prims-s1probe2-14",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178251.8922973
+  },
+  "cmd": "query_prims",
+  "args": {}
+ },
+ "synapse_validate_ordering": {
+  "elapsed": 2.01,
+  "response": {
+   "data": null,
+   "error": "Couldn't find a render node to start from -- pass a node path or make sure /stage has a display node",
+   "id": "solaris_validate_ordering-s1probe2-15",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178253.9003386
+  },
+  "cmd": "solaris_validate_ordering",
+  "args": {}
+ },
+ "houdini_read_material": {
+  "elapsed": 2.01,
+  "response": {
+   "data": null,
+   "error": "Couldn't find a LOP node in your selection -- select one in the Solaris network or specify the node path",
+   "id": "read_material-s1probe2-16",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": false,
+   "timestamp": 1785178255.9079442
+  },
+  "cmd": "read_material",
+  "args": {
+   "prim_path": "/"
+  }
+ },
+ "synapse_knowledge_lookup": {
+  "elapsed": 2.0,
+  "response": {
+   "data": {
+    "agent_hint": "render_agent",
+    "answer": "Karma AOV setup: render passes, cryptomatte, denoising\nKarma AOVs via karmarenderproperties Image Output section. Common AOVs: beauty (C), direct/indirect diffuse/specular, albedo, N (normals), P (position), Z (depth), motionvector, crypto_material/object/asset (Cryptomatte). Denoising AOVs: denoise_albedo, denoise_normal. Light groups: tag lights with 'lightGroup' for per-light AOVs. Deep output: .exr with deep flag for depth-correct compositing. AOV rebuild: beauty = direct_diffuse + indirect_diffuse + direct_specular + indirect_specular + emission + sss.\n\n---\nReference:\n# Karma AOV and Render Pass Setup\n\n## Triggers\naov, render pass, extra image plane, cryptomatte, beauty pass, diffuse pass,\nspecular pass, denoising, deep output, light group, render variable, aov setup\n\n## Context\nAOV (Arbitrary Output Variable) setup for Karma rendering in Houdini 21 Solaris.\nCovers adding AOVs via RenderVar prims, configuring Cryptomatte, denoising passes,\nlight groups, and compositing rebuild formulas.\n\n## Code\n\n```python\n# Add AOVs to Karma render via Python\nimport hou\nfrom",
+    "confidence": 0.7308035714285714,
+    "found": true,
+    "reference_file": "karma_aov",
+    "sources": [
+     "semantic_index:karma_aov"
+    ],
+    "summary": "Karma AOV setup: render passes, cryptomatte, denoising",
+    "topic": "karma_aov"
+   },
+   "error": null,
+   "id": "knowledge_lookup-s1probe2-17",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178257.9124756
+  },
+  "cmd": "knowledge_lookup",
+  "args": {
+   "query": "karma render settings"
+  }
+ },
+ "synapse_inspect_selection": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "count": 0,
+    "nodes": [],
+    "topology": []
+   },
+   "error": null,
+   "id": "inspect_selection-s1probe2-18",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178259.9200256
+  },
+  "cmd": "inspect_selection",
+  "args": {}
+ },
+ "synapse_inspect_scene": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "artist_notes": [],
+    "issues": [],
+    "network_tree": [
+     {
+      "category": "Director",
+      "children": [
+       {
+        "category": "Manager",
+        "name": "obj",
+        "path": "/obj",
+        "type": "obj"
+       },
+       {
+        "category": "Manager",
+        "name": "out",
+        "path": "/out",
+        "type": "out"
+       },
+       {
+        "category": "Manager",
+        "name": "ch",
+        "path": "/ch",
+        "type": "ch"
+       },
+       {
+        "category": "Manager",
+        "name": "shop",
+        "path": "/shop",
+        "type": "shop"
+       },
+       {
+        "category": "Manager",
+        "name": "img",
+        "path": "/img",
+        "type": "img"
+       },
+       {
+        "category": "Manager",
+        "name": "vex",
+        "path": "/vex",
+        "type": "vex"
+       },
+       {
+        "category": "Manager",
+        "name": "mat",
+        "path": "/mat",
+        "type": "mat"
+       },
+       {
+        "category": "Manager",
+        "name": "stage",
+        "path": "/stage",
+        "type": "stage"
+       },
+       {
+        "category": "Manager",
+        "name": "tasks",
+        "path": "/tasks",
+        "type": "tasks"
+       }
+      ],
+      "name": "/",
+      "path": "/",
+      "type": "root"
+     }
+    ],
+    "overview": {
+     "contexts": {
+      "Director": 1,
+      "Manager": 9
+     },
+     "node_count": 10
+    }
+   },
+   "error": null,
+   "id": "inspect_scene-s1probe2-19",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178261.9276712
+  },
+  "cmd": "inspect_scene",
+  "args": {}
+ },
+ "synapse_inspect_node": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "category": "Manager",
+    "connections": {
+     "inputs": [],
+     "outputs": []
+    },
+    "expressions": [],
+    "issues": {
+     "errors": [],
+     "warnings": []
+    },
+    "keyframed_parms": [],
+    "name": "obj",
+    "parameters": {
+     "Root": [
+      {
+       "label": "Visualization Enabled",
+       "name": "node_vis_enabled",
+       "spare": true,
+       "value": 1
+      },
+      {
+       "label": "Visualizers",
+       "name": "num_visualizers",
+       "spare": true,
+       "value": 0
+      }
+     ]
+    },
+    "path": "/obj",
+    "spare_parms": [
+     "node_vis_enabled",
+     "num_visualizers"
+    ],
+    "type": "obj"
+   },
+   "error": null,
+   "id": "inspect_node-s1probe2-20",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178263.9364543
+  },
+  "cmd": "inspect_node",
+  "args": {
+   "node": "/obj"
+  }
+ },
+ "houdini_network_explain": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "complexity": "simple",
+    "data_flow": [],
+    "node_count": 0,
+    "overview": "Network at /obj is empty -- no child nodes found.",
+    "patterns_detected": [],
+    "status": "ok",
+    "suggested_hda_interface": []
+   },
+   "error": null,
+   "id": "network_explain-s1probe2-21",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178265.945931
+  },
+  "cmd": "network_explain",
+  "args": {
+   "root_path": "/obj"
+  }
+ },
+ "synapse_context": {
+  "elapsed": 2.02,
+  "response": {
+   "data": {
+    "context": {
+     "current_state": {},
+     "evolution_stage": "charmander",
+     "memory_stats": {},
+     "project": {},
+     "recent_activity": [],
+     "recent_decisions": [],
+     "scene_memory": "## Scene Memory\n# Scene Memory: untitled.hip\n# Project: User\n# Created: 2026-07-13T15:06:13Z\n# Evolution: Flat (markdown)\n# Schema: 0.1.0\n\n---\n\n### Note\n{\n  \"name\": \"solaris_network\",\n  \"description\": \"Complete Solaris network for testing with polygonal shapes\",\n  \"network_path\": \"/stage\",\n  \"nodes\": [\n    {\n      \"name\": \"geo_0_import\",\n      \"type\": \"sopimport\",\n      \"soppath\": \"/obj/geo_0/OUT\",\n      \"description\": \"Imports box, sphere, tube, torus from /obj/geo_0\"\n    },\n    {\n      \"name\": \"geo_1_import\", \n      \"type\": \"sopimport\",\n      \"soppath\": \"/obj/geo_1/OUT\",\n      \"description\": \"Imports cone, grid, sphere, box from /obj/geo_1\"\n    },\n    {\n      \"name\": \"scene_merge\",\n      \"type\": \"merge\",\n      \"description\": \"Merges both geometry streams\"\n    },\n    {\n      \"name\": \"materials\",\n      \"type\": \"materiallibrary\",\n      \"description\": \"Material assignment\"\n    },\n    {\n      \"name\": \"camera1\",\n      \"type\": \"camera\",\n      \"description\": \"Render camera\"\n    },\n    {\n      \"name\": \"env_light\",\n      \"type\": \"domelight::3.0\",\n      \"description\": \"HDRI environment light\"\n    },\n    {\n      \"name\": \"karma_settings\",\n      \"type\": \"karmarenderproperties\",\n      \"description\": \"Karma XPU render settings with AOVs\"\n    },\n    {\n      \"name\": \"OUTPUT\",\n      \"type\": \"null\",\n      \"display_flag\": true,\n      \"description\": \"Display output\"\n    },\n    {\n      \"name\": \"render\",\n      \"type\": \"usdrender_rop\",\n      \"description\": \"USD Render ROP\"\n    }\n  ],\n  \"geometry_sources\": {\n    \"/obj/geo_0\": [\"box\", \"sphere\", \"tube\", \"torus\"],\n    \"/obj/geo_1\": [\"cone\", \"grid\", \"sphere\", \"box\"]\n  }\n}\n\n### Note\n{\n  \"starter_network\": {\n    \"description\": \"Minimal Solaris lookdev pipeline for rapid iteration\",\n    \"nodes\": [\n      \"/stage/geo_0\",\n      \"/stage/merge_geo\",\n      \"/stage/materiallibrary\",\n      \"/stage/assignmaterial\",\n      \"/stage/camera1\",\n      \"/stage/key_light\",\n      \"/stage/fill_light\",\n      \"/stage/dome_light\",\n      \"/stage/karma_settings\",\n      \"/stage/OUTPUT\"\n    ],\n    \"canonical_order\": [\n      \"SOPCreate\",\n      \"MaterialLibrary\",\n      \"AssignMaterial\",\n      \"Camera\",\n      \"Lights\",\n      \"RenderSettings\",\n      \"OUTPUT\"\n    ],\n    \"notes\": \"Keeps geometry input first, assigns a basic material, uses HDRI + key/fill lights, outputs to USD for Karma XPU. Ready for quick tweaks or expansion.\"\n  }\n}\n\n### Note\nWhen creating a new Solaris/LOP network with no specific geometry instructions, always start with a SopCreate node containing placeholder geometry primitives (e.g. a sphere or the rubbertoy HDA). Keep it unshaded \u2014 no material assignment by default. This gives the artist a visible starting point in the viewport they can immediately see and replace.\n\n",
+     "warning": "Memory not available"
+    },
+    "format": "json"
+   },
+   "error": null,
+   "id": "context-s1probe2-22",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178267.9632964
+  },
+  "cmd": "context",
+  "args": {}
+ },
+ "synapse_search": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "error": "Memory not available",
+    "knowledge": {
+     "answer": "Light types, Lighting Law, and exposure-based brightness control in Solaris\nSolaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). LIGHTING LAW: intensity ALWAYS 1.0, brightness controlled by EXPOSURE (logarithmic, in stops). Encoded parm names: intensity='xn__inputsintensity_i0a' (always 1.0), color='xn__inputscolor_zta' (vec3), exposure='xn__inputsexposure_vya', exposure control='xn__inputsexposure_control_wcb' (set to 'set' to enable). Dome light texture: 'xn__inputstexturefile_r3ah'. Key:fill ratio math: fill_exposure = key_exposure - log2(ratio). Standard 3-point: key=5.0, fill=3.0 (4:1), rim=4.5, dome=0.0.\n\n---\nReference:\n# Lighting in Solaris\n\n## Triggers\n\ndome light, domelight, HDRI, environment light, area light, rect light, rectlight, distant light, distantlight, sphere light, spherelight, disk light, disklight, cylinder light, three point lighting, 3-point lighting, key light, fill light, rim light, back light, exposure, intensity, light intensity, light exposure, color temperature, kelvin, light linking, light categories, shadow, barn doors, IES, specular contribution, diffuse contribution, light visibility",
+     "confidence": 0.625,
+     "reference_file": "lighting",
+     "sources": [
+      "semantic_index:lighting_setup"
+     ],
+     "summary": "Light types, Lighting Law, and exposure-based brightness control in Solaris",
+     "topic": "lighting_setup"
+    },
+    "knowledge_found": true,
+    "results": []
+   },
+   "error": null,
+   "id": "search-s1probe2-23",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178269.9717474
+  },
+  "cmd": "search",
+  "args": {
+   "query": "lighting"
+  }
+ },
+ "synapse_recall": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "error": "Memory not available",
+    "found": false,
+    "knowledge": {
+     "answer": "Light types, Lighting Law, and exposure-based brightness control in Solaris\nSolaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). LIGHTING LAW: intensity ALWAYS 1.0, brightness controlled by EXPOSURE (logarithmic, in stops). Encoded parm names: intensity='xn__inputsintensity_i0a' (always 1.0), color='xn__inputscolor_zta' (vec3), exposure='xn__inputsexposure_vya', exposure control='xn__inputsexposure_control_wcb' (set to 'set' to enable). Dome light texture: 'xn__inputstexturefile_r3ah'. Key:fill ratio math: fill_exposure = key_exposure - log2(ratio). Standard 3-point: key=5.0, fill=3.0 (4:1), rim=4.5, dome=0.0.\n\n---\nReference:\n# Lighting in Solaris\n\n## Triggers\n\ndome light, domelight, HDRI, environment light, area light, rect light, rectlight, distant light, distantlight, sphere light, spherelight, disk light, disklight, cylinder light, three point lighting, 3-point lighting, key light, fill light, rim light, back light, exposure, intensity, light intensity, light exposure, color temperature, kelvin, light linking, light categories, shadow, barn doors, IES, specular contribution, diffuse contribution, light visibility",
+     "confidence": 0.625,
+     "reference_file": "lighting",
+     "sources": [
+      "semantic_index:lighting_setup"
+     ],
+     "summary": "Light types, Lighting Law, and exposure-based brightness control in Solaris",
+     "topic": "lighting_setup"
+    },
+    "knowledge_found": true
+   },
+   "error": null,
+   "id": "recall-s1probe2-24",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178271.9818468
+  },
+  "cmd": "recall",
+  "args": {
+   "query": "lighting"
+  }
+ },
+ "synapse_memory_query": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "count": 0,
+    "query": "lighting",
+    "results": [],
+    "scope": "all",
+    "type_filter": ""
+   },
+   "error": null,
+   "id": "memory_query-s1probe2-25",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178273.9983888
+  },
+  "cmd": "memory_query",
+  "args": {
+   "query": "lighting"
+  }
+ },
+ "synapse_memory_status": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "agent": {
+     "status": "idle",
+     "suspended_count": 0,
+     "task_count": 0
+    },
+    "project": {
+     "evolution": "none",
+     "session_count": 0,
+     "size_kb": 0.0
+    },
+    "scene": {
+     "evolution": "charmander",
+     "session_count": 0,
+     "size_kb": 2.75
+    }
+   },
+   "error": null,
+   "id": "memory_status-s1probe2-26",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178276.0073905
+  },
+  "cmd": "memory_status",
+  "args": {}
+ },
+ "houdini_hda_list": {
+  "elapsed": 2.02,
+  "response": {
+   "data": {
+    "count": 0,
+    "hdas": [],
+    "status": "ok"
+   },
+   "error": null,
+   "id": "hda_list-s1probe2-27",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178278.0298378
+  },
+  "cmd": "hda_list",
+  "args": {}
+ },
+ "synapse_metrics": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "format": "prometheus",
+    "text": "\n# HELP synapse_circuit_breaker_state Current circuit breaker state (0=closed, 1=open, 2=half_open)\n# TYPE synapse_circuit_breaker_state gauge\nsynapse_circuit_breaker_state 0\n\n# HELP synapse_memory_entries_total Total entries in memory store\n# TYPE synapse_memory_entries_total gauge\nsynapse_memory_entries_total 0\n\n# HELP synapse_tool_duration_ms Per-tool call duration in milliseconds\n# TYPE synapse_tool_duration_ms histogram\nsynapse_tool_duration_ms_bucket{tool=\"context\",le=\"5\"} 0\nsynapse_tool_duration_ms_bucket{tool=\"context\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"context\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"context\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"context\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"context\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"context\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"context\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"context\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"context\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"context\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"context\"} 9.6634\nsynapse_tool_duration_ms_count{tool=\"context\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_health\",le=\"5\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_health\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_health\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_health\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_health\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_health\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_health\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_health\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_health\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_health\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_health\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"get_health\"} 0.0401\nsynapse_tool_duration_ms_count{tool=\"get_health\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_metrics\",le=\"5\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_metrics\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_metrics\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_metrics\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_metrics\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_metrics\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_metrics\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_metrics\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_metrics\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_metrics\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_metrics\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"get_metrics\"} 1.6205\nsynapse_tool_duration_ms_count{tool=\"get_metrics\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_scene_info\",le=\"5\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"get_scene_info\",le=\"10\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"get_scene_info\",le=\"25\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"get_scene_info\",le=\"50\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"get_scene_info\",le=\"100\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"get_scene_info\",le=\"250\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"get_scene_info\",le=\"500\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"get_scene_info\",le=\"1000\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"get_scene_info\",le=\"2500\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"get_scene_info\",le=\"5000\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"get_scene_info\",le=\"+Inf\"} 2\nsynapse_tool_duration_ms_sum{tool=\"get_scene_info\"} 0.2972\nsynapse_tool_duration_ms_count{tool=\"get_scene_info\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"get_selection\",le=\"5\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_selection\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_selection\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_selection\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_selection\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_selection\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_selection\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_selection\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_selection\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_selection\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"get_selection\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"get_selection\"} 0.1044\nsynapse_tool_duration_ms_count{tool=\"get_selection\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"hda_list\",le=\"5\"} 0\nsynapse_tool_duration_ms_bucket{tool=\"hda_list\",le=\"10\"} 0\nsynapse_tool_duration_ms_bucket{tool=\"hda_list\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"hda_list\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"hda_list\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"hda_list\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"hda_list\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"hda_list\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"hda_list\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"hda_list\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"hda_list\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"hda_list\"} 16.082\nsynapse_tool_duration_ms_count{tool=\"hda_list\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_node\",le=\"5\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_node\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_node\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_node\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_node\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_node\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_node\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_node\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_node\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_node\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_node\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"inspect_node\"} 0.5019\nsynapse_tool_duration_ms_count{tool=\"inspect_node\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_scene\",le=\"5\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_scene\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_scene\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_scene\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_scene\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_scene\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_scene\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_scene\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_scene\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_scene\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_scene\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"inspect_scene\"} 0.3498\nsynapse_tool_duration_ms_count{tool=\"inspect_scene\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"inspect_selection\",le=\"5\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"inspect_selection\",le=\"10\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"inspect_selection\",le=\"25\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"inspect_selection\",le=\"50\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"inspect_selection\",le=\"100\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"inspect_selection\",le=\"250\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"inspect_selection\",le=\"500\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"inspect_selection\",le=\"1000\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"inspect_selection\",le=\"2500\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"inspect_selection\",le=\"5000\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"inspect_selection\",le=\"+Inf\"} 2\nsynapse_tool_duration_ms_sum{tool=\"inspect_selection\"} 0.1982\nsynapse_tool_duration_ms_count{tool=\"inspect_selection\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"knowledge_lookup\",le=\"5\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"knowledge_lookup\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"knowledge_lookup\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"knowledge_lookup\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"knowledge_lookup\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"knowledge_lookup\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"knowledge_lookup\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"knowledge_lookup\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"knowledge_lookup\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"knowledge_lookup\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"knowledge_lookup\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"knowledge_lookup\"} 0.0756\nsynapse_tool_duration_ms_count{tool=\"knowledge_lookup\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_query\",le=\"5\"} 0\nsynapse_tool_duration_ms_bucket{tool=\"memory_query\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_query\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_query\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_query\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_query\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_query\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_query\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_query\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_query\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_query\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"memory_query\"} 7.602\nsynapse_tool_duration_ms_count{tool=\"memory_query\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_status\",le=\"5\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_status\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_status\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_status\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_status\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_status\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_status\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_status\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_status\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_status\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"memory_status\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"memory_status\"} 2.5738\nsynapse_tool_duration_ms_count{tool=\"memory_status\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"network_explain\",le=\"5\"} 6\nsynapse_tool_duration_ms_bucket{tool=\"network_explain\",le=\"10\"} 6\nsynapse_tool_duration_ms_bucket{tool=\"network_explain\",le=\"25\"} 6\nsynapse_tool_duration_ms_bucket{tool=\"network_explain\",le=\"50\"} 6\nsynapse_tool_duration_ms_bucket{tool=\"network_explain\",le=\"100\"} 6\nsynapse_tool_duration_ms_bucket{tool=\"network_explain\",le=\"250\"} 6\nsynapse_tool_duration_ms_bucket{tool=\"network_explain\",le=\"500\"} 6\nsynapse_tool_duration_ms_bucket{tool=\"network_explain\",le=\"1000\"} 6\nsynapse_tool_duration_ms_bucket{tool=\"network_explain\",le=\"2500\"} 6\nsynapse_tool_duration_ms_bucket{tool=\"network_explain\",le=\"5000\"} 6\nsynapse_tool_duration_ms_bucket{tool=\"network_explain\",le=\"+Inf\"} 6\nsynapse_tool_duration_ms_sum{tool=\"network_explain\"} 0.8344\nsynapse_tool_duration_ms_count{tool=\"network_explain\"} 6\nsynapse_tool_duration_ms_bucket{tool=\"ping\",le=\"5\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"ping\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"ping\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"ping\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"ping\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"ping\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"ping\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"ping\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"ping\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"ping\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"ping\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"ping\"} 0.0356\nsynapse_tool_duration_ms_count{tool=\"ping\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"recall\",le=\"5\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"recall\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"recall\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"recall\",le=\"50\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"recall\",le=\"100\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"recall\",le=\"250\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"recall\",le=\"500\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"recall\",le=\"1000\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"recall\",le=\"2500\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"recall\",le=\"5000\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"recall\",le=\"+Inf\"} 2\nsynapse_tool_duration_ms_sum{tool=\"recall\"} 48.9929\nsynapse_tool_duration_ms_count{tool=\"recall\"} 2\nsynapse_tool_duration_ms_bucket{tool=\"search\",le=\"5\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"search\",le=\"10\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"search\",le=\"25\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"search\",le=\"50\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"search\",le=\"100\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"search\",le=\"250\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"search\",le=\"500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"search\",le=\"1000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"search\",le=\"2500\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"search\",le=\"5000\"} 1\nsynapse_tool_duration_ms_bucket{tool=\"search\",le=\"+Inf\"} 1\nsynapse_tool_duration_ms_sum{tool=\"search\"} 0.0835\nsynapse_tool_duration_ms_count{tool=\"search\"} 1\n\n# HELP synapse_dispatch_wait_ms run_on_main enqueue-to-start wait in milliseconds\n# TYPE synapse_dispatch_wait_ms histogram\nsynapse_dispatch_wait_ms_bucket{le=\"1\"} 0\nsynapse_dispatch_wait_ms_bucket{le=\"5\"} 0\nsynapse_dispatch_wait_ms_bucket{le=\"10\"} 0\nsynapse_dispatch_wait_ms_bucket{le=\"50\"} 6\nsynapse_dispatch_wait_ms_bucket{le=\"100\"} 1186\nsynapse_dispatch_wait_ms_bucket{le=\"250\"} 1221\nsynapse_dispatch_wait_ms_bucket{le=\"500\"} 1221\nsynapse_dispatch_wait_ms_bucket{le=\"1000\"} 1225\nsynapse_dispatch_wait_ms_bucket{le=\"2000\"} 1230\nsynapse_dispatch_wait_ms_bucket{le=\"4000\"} 1232\nsynapse_dispatch_wait_ms_bucket{le=\"+Inf\"} 1232\nsynapse_dispatch_wait_ms_sum 82689.0915\nsynapse_dispatch_wait_ms_count 1232\nsynapse_dispatch_wait_ms_max 3661.2145\n\n# HELP synapse_main_thread_direct_ms Main-thread direct-path fn() duration in milliseconds\n# TYPE synapse_main_thread_direct_ms histogram\nsynapse_main_thread_direct_ms_bucket{le=\"1\"} 28\nsynapse_main_thread_direct_ms_bucket{le=\"5\"} 28\nsynapse_main_thread_direct_ms_bucket{le=\"10\"} 28\nsynapse_main_thread_direct_ms_bucket{le=\"50\"} 29\nsynapse_main_thread_direct_ms_bucket{le=\"100\"} 29\nsynapse_main_thread_direct_ms_bucket{le=\"250\"} 30\nsynapse_main_thread_direct_ms_bucket{le=\"500\"} 30\nsynapse_main_thread_direct_ms_bucket{le=\"1000\"} 30\nsynapse_main_thread_direct_ms_bucket{le=\"2000\"} 30\nsynapse_main_thread_direct_ms_bucket{le=\"4000\"} 30\nsynapse_main_thread_direct_ms_bucket{le=\"+Inf\"} 30\nsynapse_main_thread_direct_ms_sum 160.0989\nsynapse_main_thread_direct_ms_count 30\nsynapse_main_thread_direct_ms_max 144.8207\n\n# HELP synapse_panel_inline_ms Panel inline (main-thread Qt) tool-dispatch duration in milliseconds\n# TYPE synapse_panel_inline_ms summary\nsynapse_panel_inline_ms_sum 148.3496\nsynapse_panel_inline_ms_count 2\nsynapse_panel_inline_ms_max 147.5135\n# HELP synapse_panel_inline_slow_total Inline tool dispatches over the slow threshold\n# TYPE synapse_panel_inline_slow_total counter\nsynapse_panel_inline_slow_total{slowest_tool=\"synapse_inspect_scene\"} 0\n\n# HELP synapse_scene_nodes_total Total nodes in Houdini scene\n# TYPE synapse_scene_nodes_total gauge\nsynapse_scene_nodes_total 9\n\n# HELP synapse_scene_warnings Nodes with warnings\n# TYPE synapse_scene_warnings gauge\nsynapse_scene_warnings 0\n\n# HELP synapse_scene_errors Nodes with errors\n# TYPE synapse_scene_errors gauge\nsynapse_scene_errors 0\n\n# HELP synapse_sessions_active Active user sessions\n# TYPE synapse_sessions_active gauge\nsynapse_sessions_active 0\n\n# HELP synapse_commands_per_minute Command throughput\n# TYPE synapse_commands_per_minute gauge\nsynapse_commands_per_minute 0.0\n\n# HELP synapse_uptime_seconds Aggregator uptime in seconds\n# TYPE synapse_uptime_seconds gauge\nsynapse_uptime_seconds 0.0\n"
+   },
+   "error": null,
+   "id": "get_metrics-s1probe2-28",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178280.0381656
+  },
+  "cmd": "get_metrics",
+  "args": {}
+ },
+ "synapse_router_stats": {
+  "elapsed": 2.02,
+  "response": {
+   "data": {
+    "error": "Router not initialized"
+   },
+   "error": null,
+   "id": "router_stats-s1probe2-29",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178282.0558774
+  },
+  "cmd": "router_stats",
+  "args": {}
+ },
+ "synapse_list_recipes": {
+  "elapsed": 2.03,
+  "response": {
+   "data": {
+    "count": 62,
+    "recipes": [
+     {
+      "category": "lighting",
+      "description": "Create a rectangular area light panel (RectLight) with configurable width and height. Large area = soft shadows. Lighting Law: intensity always 1.0, brightness via exposure. Different from existing RectLight recipes \u2014 focused on studio panel lighting with explicit size control.",
+      "name": "area_light_panel",
+      "parameters": [
+       "width",
+       "height",
+       "exposure"
+      ],
+      "step_count": 6,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?(?:area|panel)\\s*light$",
+       "^(?:add|create)\\s+(?:a\\s+)?(?:area|panel|soft)\\s*light$"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Create a USD camera prim that matches a real-world cinema camera body. Looks up sensor dimensions from a built-in database of 8 cameras (ARRI Alexa 35, ARRI Alexa Mini LF, RED V-Raptor [X], RED Komodo-X, Sony Venice 2, Sony FX6, Blackmagic URSA Mini Pro 12K, Canon EOS C500 Mark II). Sets horizontalAperture, verticalAperture, focalLength, clippingRange, and optional fStop/focusDistance overrides.",
+      "name": "camera_match_real",
+      "parameters": [
+       "camera_body",
+       "lens_mm",
+       "f_stop",
+       "focus_distance"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:match|set up|setup|create)\\s+(?:an?\\s+)?(?:arri|red|sony|bmpcc|blackmagic|canon)\\s*(?P<camera_body>[\\w\\s\\-\\[\\]]+?)(?:\\s+(?:with|at)\\s+(?P<lens_mm>\\d+)\\s*mm)?(?:\\s+f/?(?P<f_stop>[\\d.]+))?(?:\\s+(?:focus|fd)\\s+(?P<focus_distance>[\\d.]+))?$",
+       "^camera\\s+(?:match|like)\\s+(?:an?\\s+)?(?P<camera_body>[\\w\\s\\-\\[\\]]+?)(?:\\s+(?:with|at)\\s+(?P<lens_mm>\\d+)\\s*mm)?(?:\\s+f/?(?P<f_stop>[\\d.]+))?(?:\\s+(?:focus|fd)\\s+(?P<focus_distance>[\\d.]+))?$",
+       "^(?:set up|setup|create)\\s+(?:an?\\s+)?camera\\s+(?:match(?:ing)?|like)\\s+(?P<camera_body>[\\w\\s\\-\\[\\]]+?)(?:\\s+(?:with|at)\\s+(?P<lens_mm>\\d+)\\s*mm)?(?:\\s+f/?(?P<f_stop>[\\d.]+))?(?:\\s+(?:focus|fd)\\s+(?P<focus_distance>[\\d.]+))?$"
+      ]
+     },
+     {
+      "category": "render",
+      "description": "Create a production turntable render using a real-world camera match. Combines camera_match_real sensor lookup with a full turntable orbit, 3-point lighting (4:1 key:fill ratio), Karma XPU render at 1920x1080 with configurable samples and frame count.",
+      "name": "camera_match_turntable",
+      "parameters": [
+       "camera_body",
+       "lens_mm",
+       "frames",
+       "samples"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^turntable\\s+(?:with|using)\\s+(?:an?\\s+)?(?P<camera_body>[\\w\\s\\-\\[\\]]+?)(?:\\s+(?:with|at)\\s+(?P<lens_mm>\\d+)\\s*mm)?(?:\\s+(?P<frames>\\d+)\\s+frames?)?(?:\\s+(?P<samples>\\d+)\\s+samples?)?$",
+       "^(?:production\\s+)?turntable\\s+(?P<camera_body>arri|red|sony|bmpcc|blackmagic|canon)[\\w\\s\\-\\[\\]]*?(?:\\s+(?:with|at)\\s+(?P<lens_mm>\\d+)\\s*mm)?(?:\\s+(?P<frames>\\d+)\\s+frames?)?(?:\\s+(?P<samples>\\d+)\\s+samples?)?$",
+       "^(?:render\\s+)?turntable\\s+(?:with|using)\\s+(?P<camera_body>[\\w\\s\\-\\[\\]]+?)(?:\\s+(?:with|at)\\s+(?P<lens_mm>\\d+)\\s*mm)?(?:\\s+(?P<frames>\\d+)\\s+frames?)?(?:\\s+(?P<samples>\\d+)\\s+samples?)?$"
+      ]
+     },
+     {
+      "category": "camera",
+      "description": "Create a camera with focal length and position",
+      "name": "camera_rig",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 2,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?camera(?:\\s+(?:at|in)\\s+(?P<parent>.+))?$",
+       "^(?:add)\\s+(?:a\\s+)?(?:render\\s+)?camera(?:\\s+(?:at|in)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Solaris character with cloth pipeline: sublayer LOP for character USD reference, materiallibrary with skin/cloth/hair MaterialX subnets, SOP Import for Vellum cloth cache, subdivision + displacement on render geometry settings, purpose tagging (render vs proxy).",
+      "name": "character_cloth_setup",
+      "parameters": [
+       "char_path"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+character\\s+cloth(?:\\s+(?:for|on|at|in)\\s+(?P<char_path>.+))?$",
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?character\\s+with\\s+cloth(?:\\s+(?:for|on|at|in)\\s+(?P<char_path>.+))?$",
+       "^character\\s+cloth\\s+setup(?:\\s+(?:for|on|at|in)\\s+(?P<char_path>.+))?$"
+      ]
+     },
+     {
+      "category": "compositing",
+      "description": "Create a color correction chain (color_correct -> grade -> null merge point)",
+      "name": "color_correction_setup",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 4,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?color\\s+correct(?:ion)?(?:\\s+(?:chain|setup|stack))?(?:\\s+(?:at|in|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "copernicus",
+      "description": "Set up UV texture baking in Copernicus (normal, AO, curvature maps)",
+      "name": "copernicus_bake_textures",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|set up|setup)\\s+(?:a\\s+)?(?:copernicus\\s+)?(?:texture\\s+)?bak(?:e|ing)(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$",
+       "^(?:copernicus|cops?)\\s+bak(?:e|ing)(?:\\s+textures?)?(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "copernicus",
+      "description": "Batch-process multiple COP nodes in Copernicus",
+      "name": "copernicus_batch_process",
+      "parameters": [
+       "node_list"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:copernicus|cops?)\\s+batch\\s+(?:cook|process)(?:\\s+(?P<node_list>.+))?$",
+       "^batch\\s+cook\\s+cops?(?:\\s+(?P<node_list>.+))?$"
+      ]
+     },
+     {
+      "category": "copernicus",
+      "description": "Create a DLA-style growth propagation solver in Copernicus",
+      "name": "copernicus_growth",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|make|set up|setup)\\s+(?:a\\s+)?(?:copernicus\\s+)?growth(?:\\s+propagation)?(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$",
+       "^(?:copernicus|cops?)\\s+growth(?:\\s+propagation)?(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$",
+       "^(?:copernicus|cops?)\\s+dla(?:\\s+growth)?(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "copernicus",
+      "description": "Apply pixel sorting effect in Copernicus (motion design)",
+      "name": "copernicus_pixel_sort",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|apply|make)\\s+(?:a\\s+)?(?:copernicus\\s+)?pixel\\s+sort(?:ing)?(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$",
+       "^(?:copernicus|cops?)\\s+pixel\\s+sort(?:ing)?(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "copernicus",
+      "description": "Generate a procedural noise texture in Copernicus (perlin/worley/simplex)",
+      "name": "copernicus_procedural_texture",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|make|generate)\\s+(?:a\\s+)?(?:copernicus\\s+)?procedural\\s+(?:noise\\s+)?texture(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$",
+       "^(?:copernicus|cops?)\\s+(?:noise|procedural)\\s+texture(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "copernicus",
+      "description": "Create a Gray-Scott reaction-diffusion simulation in Copernicus",
+      "name": "copernicus_reaction_diffusion",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|make|set up|setup)\\s+(?:a\\s+)?(?:copernicus\\s+)?reaction[\\s-]diffusion(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$",
+       "^(?:copernicus|cops?)\\s+(?:gray[\\s-]scott\\s+)?reaction[\\s-]diffusion(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$",
+       "^(?:copernicus|cops?)\\s+r[\\s-]?d\\s+(?:sim(?:ulation)?)?(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Render pass compositing via Copernicus GPU nodes: load beauty EXR and utility AOVs as file COPs, grade (exposure/contrast), tonemap, and output composited result.",
+      "name": "copernicus_render_comp",
+      "parameters": [
+       "exr_path"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?copernicus\\s+render\\s+comp(?:osite|ositing)?(?:\\s+(?:for|from|with)\\s+(?P<exr_path>.+))?$",
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?render\\s+comp(?:osite|ositing)?(?:\\s+(?:for|from|with)\\s+(?P<exr_path>.+))?$",
+       "^composite\\s+render\\s+passes(?:\\s+(?:for|from|with)\\s+(?P<exr_path>.+))?$"
+      ]
+     },
+     {
+      "category": "copernicus",
+      "description": "Scatter stamp images with randomized transforms in Copernicus",
+      "name": "copernicus_stamp_scatter",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|make|set up|setup)\\s+(?:a\\s+)?(?:copernicus\\s+)?stamp\\s+scatter(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$",
+       "^(?:copernicus|cops?)\\s+stamp(?:\\s+scatter)?(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "copernicus",
+      "description": "Apply NPR stylization effects in Copernicus (toon, risograph, posterize)",
+      "name": "copernicus_stylize",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|apply|make)\\s+(?:a\\s+)?(?:copernicus\\s+)?(?:toon|risograph|posterize|edge[\\s_]detect)(?:\\s+effect)?(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$",
+       "^(?:copernicus|cops?)\\s+(?:stylize|npr|toon|risograph)(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "copernicus",
+      "description": "Create a wetmap effect with temporal decay in Copernicus",
+      "name": "copernicus_wetmap",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|make|set up|setup)\\s+(?:a\\s+)?(?:copernicus\\s+)?wetmap(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$",
+       "^(?:copernicus|cops?)\\s+wetmap(?:\\s+(?:in|at|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "render",
+      "description": "RBD cache to Solaris multi-pass render: SOP imports for RBD cache, debris instancing, volumetric dust/smoke, destruction materials, and multi-pass Karma render settings (beauty, depth, motion vectors, crypto mattes).",
+      "name": "destruction_sequence",
+      "parameters": [
+       "cache_path"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?destruction\\s+sequence(?:\\s+(?:for|from|with)\\s+(?P<cache_path>.+))?$",
+       "^(?:set up|setup|create)\\s+destruction(?:\\s+(?:for|from|with)\\s+(?P<cache_path>.+))?$",
+       "^rbd\\s+to\\s+solaris\\s+render(?:\\s+(?:for|from|with)\\s+(?P<cache_path>.+))?$"
+      ]
+     },
+     {
+      "category": "lighting",
+      "description": "Create a directional/sun light (DistantLight). Lighting Law: intensity always 1.0, brightness via exposure. Default color temperature 5500K for natural sunlight.",
+      "name": "distant_light_sun",
+      "parameters": [
+       "direction",
+       "exposure",
+       "color_temp"
+      ],
+      "step_count": 6,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?(?:distant|directional|sun)\\s*light$",
+       "^(?:add|create)\\s+(?:a\\s+)?(?:distant|sun|directional)\\s*light$"
+      ]
+     },
+     {
+      "category": "lighting",
+      "description": "Create a dome light with texture and exposure for environment lighting",
+      "name": "dome_light_environment",
+      "parameters": [
+       "texture"
+      ],
+      "step_count": 2,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?dome\\s*light(?:\\s+(?:with|using)\\s+(?P<texture>.+))?$",
+       "^(?:add|create)\\s+(?:an?\\s+)?(?:environment|env|hdri)\\s+light(?:\\s+(?:with|using)\\s+(?P<texture>.+))?$"
+      ]
+     },
+     {
+      "category": "sim",
+      "description": "Create a properly wired DOP network with solver, object, and merge nodes",
+      "name": "dop_network_setup",
+      "parameters": [],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set\\s*up|create|build)\\s+(?:a\\s+)?dop\\s+(?:network|sim)",
+       "^(?:simulation|dynamics)\\s+setup"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Create an edit node for transforming USD prims",
+      "name": "edit_transform",
+      "parameters": [
+       "prim_path"
+      ],
+      "step_count": 2,
+      "triggers": [
+       "^(?:edit|transform)\\s+(?P<prim_path>[\\w\\-./]+)\\s+(?:position|translate|move)$"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Add a file cache node to cache any SOP output to disk. Uses bgeo.sc format with frame padding.",
+      "name": "file_cache",
+      "parameters": [
+       "source"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^cache\\s+(?P<source>[\\w\\-./]+)(?:\\s+to\\s+disk)?$",
+       "^(?:add|create)\\s+(?:a\\s+)?(?:file\\s*)?cache\\s+(?:for|on|after)\\s+(?P<source>[\\w\\-./]+)$"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Generate a functional HDA from a natural-language description. Matches keywords to pre-built VEX templates (scatter, deformer, color, mask, extrude) and populates the HDA with working code and parameter interface.",
+      "name": "hda_generate",
+      "parameters": [
+       "name",
+       "description"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^generate\\s+(?:an?\\s+)?(?:hda|digital asset|tool)\\s+(?:that|to|for|which)\\s+(?P<description>.+)$",
+       "^generate\\s+(?:an?\\s+)?(?P<name>[\\w]+)\\s+(?:hda|digital asset|tool)\\s+(?:that|to|for|which)\\s+(?P<description>.+)$",
+       "^generate\\s+(?:an?\\s+)?(?:hda|digital asset|tool)\\s+(?:called|named)\\s+(?P<name>[\\w]+)\\s+(?:that|to|for|which)\\s+(?P<description>.+)$",
+       "^hda\\s+generate\\s+(?P<description>.+)$"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Scaffold a complete HDA: create subnet with IN/OUT nulls, create digital asset definition, add standard parameter interface, and save to $HIP/otls/.",
+      "name": "hda_scaffold",
+      "parameters": [
+       "name",
+       "description"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|make|build|scaffold)\\s+(?:an?\\s+)?(?:hda|digital asset|otl)\\s+(?:called|named)\\s+(?P<name>[\\w]+)(?:\\s+(?:for|that|to|which)\\s+(?P<description>.+))?$",
+       "^(?:create|make|build|scaffold)\\s+(?:an?\\s+)?(?:hda|digital asset|otl)\\s+(?P<name>[\\w]+)(?:\\s+(?:for|that|to|which)\\s+(?P<description>.+))?$",
+       "^(?:create|make|build|scaffold)\\s+(?:an?\\s+)?(?:hda|digital asset|otl)(?:\\s+(?:for|that|to|which)\\s+(?P<description>.+))?$",
+       "^(?:new|setup)\\s+(?:hda|digital asset)(?:\\s+(?P<name>[\\w]+))?(?:\\s+(?:for|that|to|which)\\s+(?P<description>.+))?$",
+       "^hda\\s+scaffold(?:\\s+(?P<name>[\\w]+))?(?:\\s+(?P<description>.+))?$"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Create a Karma render quality preset HDA with draft/medium/final quality tiers, resolution control, and HScript-switched pixel samples.",
+      "name": "karma_quality_hda",
+      "parameters": [
+       "name"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|make|build)\\s+(?:a\\s+)?karma\\s+quality\\s+(?:hda|digital asset|preset)(?:\\s+(?:called|named)\\s+(?P<name>[\\w]+))?$",
+       "^(?:create|make|build)\\s+(?:a\\s+)?render\\s+quality\\s+(?:hda|digital asset|preset)(?:\\s+(?:called|named)\\s+(?P<name>[\\w]+))?$",
+       "^(?:build|make)\\s+(?:a\\s+)?render\\s+(?:settings|quality)\\s+(?:hda|preset)(?:\\s+(?P<name>[\\w]+))?$",
+       "^karma\\s+(?:quality|preset)\\s+hda(?:\\s+(?P<name>[\\w]+))?$"
+      ]
+     },
+     {
+      "category": "render",
+      "description": "Create a Karma render setup with resolution and camera",
+      "name": "karma_render_setup",
+      "parameters": [],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?karma\\s+render(?:\\s+setup)?$"
+      ]
+     },
+     {
+      "category": "lighting",
+      "description": "Set up a standard lookdev/turntable scene in LOPs: dome light (environment fill), key light (exposure 5), fill light (exposure 3, 4:1 ratio), backdrop grid, camera. Lighting Law compliant: all intensities 1.0.",
+      "name": "lookdev_scene",
+      "parameters": [],
+      "step_count": 4,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?lookdev(?:\\s+scene)?$",
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?(?:lookdev|look\\s+dev)\\s+(?:environment|setup|stage)$"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Scaffold a Solaris (LOP) HDA: create subnet in /stage with stage passthrough, edit properties and configure primitive nodes, convert to HDA, promote primpath, and save to $HIP/otls/synapse/.",
+      "name": "lop_hda_scaffold",
+      "parameters": [
+       "name",
+       "description"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|make|build|scaffold)\\s+(?:an?\\s+)?(?:solaris|lop|usd)\\s+(?:hda|digital asset)(?:\\s+(?:called|named)\\s+(?P<name>[\\w]+))?(?:\\s+(?:for|that|to|which)\\s+(?P<description>.+))?$",
+       "^(?:create|make|build)\\s+(?:an?\\s+)?(?:lop|solaris|usd)\\s+(?:hda|digital asset)\\s+(?P<name>[\\w]+)(?:\\s+(?P<description>.+))?$",
+       "^(?:new|setup)\\s+(?:lop|solaris)\\s+(?:hda|digital asset)(?:\\s+(?P<name>[\\w]+))?(?:\\s+(?P<description>.+))?$",
+       "^(?:lop|solaris)\\s+hda\\s+scaffold(?:\\s+(?P<name>[\\w]+))?(?:\\s+(?P<description>.+))?$",
+       "^build\\s+(?:an?\\s+)?usd\\s+digital\\s+asset(?:\\s+(?:called|named)\\s+(?P<name>[\\w]+))?(?:\\s+(?P<description>.+))?$"
+      ]
+     },
+     {
+      "category": "materials",
+      "description": "Assign a material to geometry prims on the USD stage.",
+      "name": "material_assign",
+      "parameters": [
+       "material",
+       "target"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^assign\\s+(?:material\\s+)?(?P<material>[\\w/]+)\\s+to\\s+(?P<target>.+)$",
+       "^(?:bind|apply)\\s+material\\s+(?P<material>[\\w/]+)\\s+(?:to|on)\\s+(?P<target>.+)$"
+      ]
+     },
+     {
+      "category": "materials",
+      "description": "Create a MaterialX standard surface material and assign it",
+      "name": "material_quick_setup",
+      "parameters": [
+       "name"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?(?:quick\\s+)?material\\s+(?:named?\\s+)?(?P<name>\\w+)$"
+      ]
+     },
+     {
+      "category": "lighting",
+      "description": "Create a mesh light from emissive geometry (MeshLight). Targets a USD prim pattern for the emitting mesh. Lighting Law: intensity always 1.0, brightness via exposure.",
+      "name": "mesh_light_emission",
+      "parameters": [
+       "target_geo_pattern"
+      ],
+      "step_count": 3,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?mesh\\s*light(?:\\s+(?:from|on|for)\\s+(?P<target_geo_pattern>.+))?$",
+       "^(?:add|create)\\s+(?:a\\s+)?(?:mesh|emissive|emission)\\s*light(?:\\s+(?:from|on|for)\\s+(?P<target_geo_pattern>.+))?$"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Shot-based USD layer composition: sublayer chain for base assets and shot overrides, per-shot camera prim, per-shot lighting overrides as stronger opinion layer, and render layer management.",
+      "name": "multi_shot_composition",
+      "parameters": [
+       "shot_name"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+multi\\s*shot\\s+composition(?:\\s+(?:for|called|named)\\s+(?P<shot_name>.+))?$",
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?shot\\s+based\\s+composition(?:\\s+(?:for|called|named)\\s+(?P<shot_name>.+))?$",
+       "^multi\\s+shot\\s+composition(?:\\s+(?:for|called|named)\\s+(?P<shot_name>.+))?$"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Multi-shot render pipeline via TOPS/PDG: creates per-shot work items from a shot list, configures camera and frame range per shot, renders via ropfetch, partitions results by shot name, and optionally encodes per-shot movies.",
+      "name": "multi_shot_render",
+      "parameters": [
+       "shots",
+       "frame_range"
+      ],
+      "step_count": 2,
+      "triggers": [
+       "^(?:render|batch render)\\s+(?:all\\s+)?shots?\\s+(?P<shots>.+?)(?:\\s+frames?\\s+(?P<frame_range>\\d+-\\d+))?$",
+       "^multi[- ]?shot\\s+render(?:\\s+(?P<shots>.+?))?(?:\\s+frames?\\s+(?P<frame_range>\\d+-\\d+))?$",
+       "^render\\s+all\\s+shots?(?:\\s+(?P<shots>.+?))?(?:\\s+frames?\\s+(?P<frame_range>\\d+-\\d+))?$",
+       "^batch\\s+render\\s+shots?\\s+(?P<shots>.+?)(?:\\s+frames?\\s+(?P<frame_range>\\d+-\\d+))?$"
+      ]
+     },
+     {
+      "category": "utility",
+      "description": "Create a null node as a controller with display flag",
+      "name": "null_controller",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 2,
+      "triggers": [
+       "^create\\s+(?:a\\s+)?(?:null\\s+)?controller(?:\\s+(?:at|in|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "fx",
+      "description": "Set up an ocean: oceanspectrum -> oceanevaluate for displaced surface. Configurable wind speed and chop.",
+      "name": "ocean_setup",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:an?\\s+)?ocean(?:\\s+(?:at|in|under)\\s+(?P<parent>.+))?$",
+       "^(?:add|create)\\s+(?:an?\\s+)?ocean\\s+(?:surface|sim|fx)(?:\\s+(?:at|in|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "fx",
+      "description": "Set up a complete pyro fire simulation: scatter source points -> attribwrangle (density/temperature/flame/velocity) -> volumerasterizeattributes -> pyrosolver -> filecache.",
+      "name": "pyro_fire_sim",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?(?:pyro\\s+)?fire\\s+sim(?:ulation)?(?:\\s+(?:on|for|at|in|under)\\s+(?P<parent>.+))?$",
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?(?:full\\s+)?pyro\\s+sim(?:ulation)?(?:\\s+(?:on|for|at|in|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "fx",
+      "description": "Create a pyro source setup with scatter and attribute wrangle",
+      "name": "pyro_source_setup",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 3,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?pyro\\s+source(?:\\s+(?:at|in|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "fx",
+      "description": "Set up an RBD destruction pipeline: rbdmaterialfracture -> assemble -> rbdconstraintsfromrules -> rbdconstraintproperties (glue) -> rbdbulletsolver -> filecache.",
+      "name": "rbd_destruction",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?(?:rbd\\s+)?destruction(?:\\s+(?:on|for|at|in|under)\\s+(?P<parent>.+))?$",
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?(?:rbd\\s+)?fracture\\s+(?:sim|simulation|pipeline)(?:\\s+(?:on|for|at|in|under)\\s+(?P<parent>.+))?$",
+       "^(?:destroy|fracture|break)\\s+(?P<parent>[\\w\\-./]+)$"
+      ]
+     },
+     {
+      "category": "render",
+      "description": "Render a quick preview: 640x360, 32 samples, Karma XPU. Optimized for fast iteration during layout and lighting.",
+      "name": "render_preview",
+      "parameters": [],
+      "step_count": 1,
+      "triggers": [
+       "^(?:quick\\s+)?(?:render|preview)\\s+(?:at\\s+)?(?:low|preview|draft)\\s*(?:quality|res)?$",
+       "^(?:render|do)\\s+(?:a\\s+)?(?:quick|fast)\\s+(?:render|preview)$",
+       "^(?:test|preview)\\s+render$"
+      ]
+     },
+     {
+      "category": "render",
+      "description": "Progressive 3-pass render: test (256x256) -> preview (720p) -> production",
+      "name": "render_progressively",
+      "parameters": [],
+      "step_count": 1,
+      "triggers": [
+       "^(?:progressive|incremental)\\s+render",
+       "^render\\s+progressive(?:ly)?"
+      ]
+     },
+     {
+      "category": "render",
+      "description": "Render a frame sequence with per-frame validation, automatic issue diagnosis, and self-improving fixes. Learns from each render to start smarter next time.",
+      "name": "render_sequence",
+      "parameters": [
+       "start",
+       "end",
+       "rop"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^render\\s+(?:sequence|frames?)\\s+(?P<start>\\d+)\\s*[-\\u2013to]+\\s*(?P<end>\\d+)(?:\\s+(?:on|with|using)\\s+(?P<rop>[\\w\\-./]+))?$",
+       "^render\\s+(?:from\\s+)?(?P<start>\\d+)\\s+to\\s+(?P<end>\\d+)(?:\\s+(?:on|with|using)\\s+(?P<rop>[\\w\\-./]+))?$",
+       "^batch\\s+render\\s+(?P<start>\\d+)\\s*[-\\u2013to]+\\s*(?P<end>\\d+)(?:\\s+(?:on|with|using)\\s+(?P<rop>[\\w\\-./]+))?$"
+      ]
+     },
+     {
+      "category": "render",
+      "description": "Full production turntable: camera orbit (configurable radius, height, 120 frames), 3-point lighting rig with 4:1 key:fill ratio, ground plane shadow catcher, Karma XPU at 1920x1080 128 samples, AOVs (beauty, depth, normal, motion vector, crypto matte), motion blur enabled.",
+      "name": "render_turntable_production",
+      "parameters": [
+       "subject"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:render\\s+)?production\\s+turntable(?:\\s+(?:for|of|with)\\s+(?P<subject>.+))?$",
+       "^render\\s+turntable\\s+production(?:\\s+(?:for|of|with)\\s+(?P<subject>.+))?$",
+       "^turntable\\s+production(?:\\s+(?:for|of|with)\\s+(?P<subject>.+))?$"
+      ]
+     },
+     {
+      "category": "render",
+      "description": "Render the current frame and validate it for quality issues (fireflies, black frames, clipping).",
+      "name": "render_validate_frame",
+      "parameters": [],
+      "step_count": 2,
+      "triggers": [
+       "^render\\s+and\\s+validate$",
+       "^test\\s+render$",
+       "^render\\s+(?:and\\s+)?check$"
+      ]
+     },
+     {
+      "category": "tops",
+      "description": "Dirty failed work items and re-cook a TOP node",
+      "name": "resume_failed_tops_cook",
+      "parameters": [
+       "node"
+      ],
+      "step_count": 2,
+      "triggers": [
+       "^(?:re-?)?cook\\s+failed\\s+(?:items?\\s+)?(?:in\\s+|on\\s+)?(?P<node>.+)$",
+       "^retry\\s+failed\\s+(?:tops?\\s+)?(?:in\\s+|on\\s+)?(?P<node>.+)$",
+       "^resume\\s+(?:failed\\s+)?(?:tops?\\s+)?cook\\s+(?:in\\s+|on\\s+)?(?P<node>.+)$"
+      ]
+     },
+     {
+      "category": "render",
+      "description": "Render with pre-flight validation -- checks camera, materials, output path before rendering",
+      "name": "safe_render",
+      "parameters": [],
+      "step_count": 1,
+      "triggers": [
+       "^(?:safe|validated?)\\s+render",
+       "^render\\s+(?:safe|with\\s+validation)"
+      ]
+     },
+     {
+      "category": "geometry",
+      "description": "Scatter source points onto target geometry using copy-to-points",
+      "name": "scatter_copy",
+      "parameters": [
+       "source",
+       "target"
+      ],
+      "step_count": 3,
+      "triggers": [
+       "^scatter\\s+(?P<source>[\\w\\-./]+)\\s+(?:on(?:to)?|over)\\s+(?P<target>[\\w\\-./]+)$"
+      ]
+     },
+     {
+      "category": "render",
+      "description": "Configure render farm settings: classify the scene, query memory for known-good settings, and prepare the ROP for batch rendering.",
+      "name": "setup_render_farm",
+      "parameters": [
+       "rop"
+      ],
+      "step_count": 2,
+      "triggers": [
+       "^(?:set up|setup)\\s+render\\s+farm(?:\\s+(?:on|for|with)\\s+(?P<rop>[\\w\\-./]+))?$",
+       "^(?:prepare|configure)\\s+(?:for\\s+)?batch\\s+render(?:ing)?(?:\\s+(?:on|for|with)\\s+(?P<rop>[\\w\\-./]+))?$"
+      ]
+     },
+     {
+      "category": "set_dressing",
+      "description": "Solaris set-dressing: build a prototype component asset, import SOP-scattered points into Solaris (no native scatter LOP), merge the stages, then author a PointInstancer that scatters the prototype across the points. USD attributes use RAW schema names (protoIndices/positions), never punycode. Intended parent: /stage.",
+      "name": "solaris_scatter_instances",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 12,
+      "triggers": [
+       "^(?:solaris\\s+)?set[\\s\\-]?dress(?:ing)?(?:\\s+(?:at|in|under|on)\\s+(?P<parent>.+))?$",
+       "^(?:scatter|instance)\\s+(?:instances?|prototypes?|assets?)(?:\\s+(?:on|onto|across|over|in|at|under)\\s+(?P<parent>.+))?$",
+       "^(?:set up|setup|create|build)\\s+(?:a\\s+)?(?:point\\s*)?instancer(?:\\s+(?:at|in|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "pipeline",
+      "description": "Create a SOP Import LOP to bring SOP geometry into the USD stage",
+      "name": "sopimport_chain",
+      "parameters": [
+       "sop_path"
+      ],
+      "step_count": 2,
+      "triggers": [
+       "^(?:import|bring)\\s+(?P<sop_path>[\\w\\-./]+)\\s+(?:into|to)\\s+(?:the\\s+)?(?:usd\\s+)?stage$"
+      ]
+     },
+     {
+      "category": "lighting",
+      "description": "Create a Karma spotlight (SphereLight with shaping). Lighting Law: intensity always 1.0, brightness via exposure. Penumbra angle = cone_angle * 0.1 for soft falloff.",
+      "name": "spotlight_rig",
+      "parameters": [
+       "position",
+       "target",
+       "cone_angle"
+      ],
+      "step_count": 7,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?spot\\s*light(?:\\s+(?:at|in|under)\\s+(?P<position>.+))?$",
+       "^(?:add|create)\\s+(?:a\\s+)?(?:karma\\s+)?spot\\s*light(?:\\s+(?:aimed|targeting|at)\\s+(?P<target>.+))?$"
+      ]
+     },
+     {
+      "category": "environment",
+      "description": "Create a heightfield terrain with noise shaping and hydraulic/thermal erosion for environment work.",
+      "name": "terrain_environment",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?terrain(?:\\s+(?:at|in|under)\\s+(?P<parent>.+))?$",
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?heightfield(?:\\s+terrain)?(?:\\s+(?:at|in|under)\\s+(?P<parent>.+))?$",
+       "^(?:add|build)\\s+(?:a\\s+)?(?:terrain|landscape|environment\\s+ground)(?:\\s+(?:at|in|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "lighting",
+      "description": "Create a three-point lighting setup (key, fill, rim)",
+      "name": "three_point_lighting",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 6,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?three[\\s-]point\\s+light(?:ing)?(?:\\s+(?:at|in|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "tops",
+      "description": "Diagnose failures on a TOP node.",
+      "name": "tops_diagnose_recipe",
+      "parameters": [
+       "node"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^diagnose\\s+(?P<node>[\\w\\-./]+)$",
+       "^what(?:'s|\\s+is)\\s+wrong\\s+with\\s+(?P<node>[\\w\\-./]+)$"
+      ]
+     },
+     {
+      "category": "tops",
+      "description": "Render a frame sequence via TOPS with live monitoring",
+      "name": "tops_monitored_render",
+      "parameters": [
+       "frame_start",
+       "frame_end"
+      ],
+      "step_count": 2,
+      "triggers": [
+       "^render\\s+(?:frames?\\s+)?(?P<frame_start>\\d+)\\s*[-\\u2013to]+\\s*(?P<frame_end>\\d+)\\s+with\\s+monitor(?:ing)?$",
+       "^(?:tops?\\s+)?render\\s+(?:and\\s+)?monitor\\s+(?:frames?\\s+)?(?P<frame_start>\\d+)\\s*[-\\u2013to]+\\s*(?P<frame_end>\\d+)$",
+       "^monitored?\\s+render\\s+(?P<frame_start>\\d+)\\s*[-\\u2013to]+\\s*(?P<frame_end>\\d+)$"
+      ]
+     },
+     {
+      "category": "tops",
+      "description": "Set up a wedge parameter sweep and cook it with validation. Sweeps an attribute from start to end in N steps.",
+      "name": "tops_parameter_sweep",
+      "parameters": [
+       "attr_name",
+       "start",
+       "end",
+       "steps",
+       "topnet"
+      ],
+      "step_count": 3,
+      "triggers": [
+       "^sweep\\s+(?P<attr_name>\\w+)\\s+from\\s+(?P<start>[\\d.]+)\\s+to\\s+(?P<end>[\\d.]+)(?:\\s+in\\s+(?P<steps>\\d+)\\s+steps?)?(?:\\s+(?:in|on|at)\\s+(?P<topnet>[\\w\\-./]+))?$"
+      ]
+     },
+     {
+      "category": "tops",
+      "description": "Cook a TOP node and validate results with one retry.",
+      "name": "tops_quick_cook",
+      "parameters": [
+       "node"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:cook\\s+and\\s+check|quick\\s+cook)\\s+(?P<node>[\\w\\-./]+)$"
+      ]
+     },
+     {
+      "category": "render",
+      "description": "Set up a render-ready turntable: orbiting camera (360 deg over frame range), three-point lighting with Lighting Law exposure, dome light environment, Karma render settings with AOVs.",
+      "name": "turntable_render",
+      "parameters": [
+       "target"
+      ],
+      "step_count": 9,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?turntable(?:\\s+render)?(?:\\s+(?:for|of|at|in)\\s+(?P<target>.+))?$",
+       "^(?:add|create)\\s+(?:a\\s+)?(?:render\\s+)?turntable(?:\\s+(?:for|of|at|in)\\s+(?P<target>.+))?$"
+      ]
+     },
+     {
+      "category": "fx",
+      "description": "Set up a complete Vellum cloth simulation: vellumconstraints (cloth preset) -> vellumsolver -> filecache. Configures the cloth constraint preset and substeps.",
+      "name": "vellum_cloth_sim",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?(?:vellum\\s+)?cloth\\s+sim(?:ulation)?(?:\\s+(?:on|for|at|in|under)\\s+(?P<parent>.+))?$",
+       "^(?:add|create)\\s+(?:a\\s+)?vellum\\s+cloth(?:\\s+(?:on|for|at|in|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "fx",
+      "description": "Set up Vellum hair/wire simulation for cables, ropes, or strands: vellumconstraints (hair preset) -> vellumsolver -> filecache.",
+      "name": "vellum_wire_sim",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:set up|setup|create)\\s+(?:a\\s+)?(?:vellum\\s+)?(?:wire|cable|rope|hair)\\s+sim(?:ulation)?(?:\\s+(?:on|for|at|in|under)\\s+(?P<parent>.+))?$",
+       "^(?:add|sim(?:ulate)?)\\s+(?:a\\s+)?(?:vellum\\s+)?(?:wire|cable|rope|hair)s?(?:\\s+(?:on|for|at|in|under)\\s+(?P<parent>.+))?$"
+      ]
+     },
+     {
+      "category": "utility",
+      "description": "Compare source and deployed file checksums to detect installation drift",
+      "name": "verify_installation",
+      "parameters": [],
+      "step_count": 1,
+      "triggers": [
+       "^verify\\s+(?:install(?:ation)?|deployment|sync)",
+       "^check\\s+(?:install|drift|sync)"
+      ]
+     },
+     {
+      "category": "utility",
+      "description": "Debug a VEX wrangle node: inspect inputs, check for errors, read attribute state, and suggest fixes.",
+      "name": "vex_debug_wrangle",
+      "parameters": [
+       "node"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:debug|diagnose|check|inspect)\\s+(?:the\\s+)?(?:vex|wrangle|attribwrangle)(?:\\s+(?:on|at|node)?\\s*(?P<node>.+))?$",
+       "^what(?:'s| is)\\s+wrong\\s+with\\s+(?:the\\s+)?(?:vex|wrangle)(?:\\s+(?:on|at)?\\s*(?P<node>.+))?$",
+       "^fix\\s+(?:the\\s+)?(?:vex|wrangle)\\s+(?:on|at)\\s+(?P<node>.+)$"
+      ]
+     },
+     {
+      "category": "geometry",
+      "description": "Create a wrangle that deforms geometry with layered noise displacement along normals. Standard fBm pattern.",
+      "name": "vex_noise_deformer",
+      "parameters": [
+       "parent"
+      ],
+      "step_count": 1,
+      "triggers": [
+       "^(?:create|make|add)\\s+(?:a\\s+)?noise\\s+(?:deform(?:er|ation)?|displacement)(?:\\s+(?:on|to|at|in)\\s+(?P<parent>.+))?$",
+       "^(?:create|make|add)\\s+(?:a\\s+)?(?:vex\\s+)?(?:fbm|fractal)\\s+(?:noise|deform)(?:\\s+(?:on|to|at|in)\\s+(?P<parent>.+))?$"
+      ]
+     }
+    ]
+   },
+   "error": null,
+   "id": "list_recipes-s1probe2-30",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178284.087345
+  },
+  "cmd": "list_recipes",
+  "args": {}
+ },
+ "synapse_render_farm_status": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "cancelled": false,
+    "running": false,
+    "scene_tags": []
+   },
+   "error": null,
+   "id": "render_farm_status-s1probe2-31",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178286.1001866
+  },
+  "cmd": "render_farm_status",
+  "args": {}
+ },
+ "synapse_live_metrics": {
+  "elapsed": 2.07,
+  "response": {
+   "data": {
+    "resilience": {
+     "circuit_state": "closed",
+     "circuit_trip_count": 0,
+     "health_status": "healthy",
+     "rate_limit_rejects": 0,
+     "rate_limiter_active": false,
+     "uptime_seconds": 0.0
+    },
+    "routing": {
+     "avg_latency_ms": 0.0,
+     "cache_hit_rate": 0.0,
+     "cache_hits": 0,
+     "knowledge_entries": 0,
+     "tier_counts": [],
+     "total_requests": 0
+    },
+    "scene": {
+     "current_frame": 1,
+     "errors": 0,
+     "fps": 24.0,
+     "hip_file": "C:/Users/User/untitled.hip",
+     "lop_nodes": 0,
+     "obj_nodes": 0,
+     "sop_nodes": 0,
+     "total_nodes": 9,
+     "warnings": 0
+    },
+    "session": {
+     "active_sessions": 0,
+     "commands_per_minute": 0.0,
+     "deploy_mode": "local",
+     "rbac_enabled": false,
+     "total_commands": 0
+    },
+    "timestamp": 110045.008
+   },
+   "error": null,
+   "id": "get_live_metrics-s1probe2-32",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178288.1689594
+  },
+  "cmd": "get_live_metrics",
+  "args": {}
+ },
+ "synapse_propose_graph": {
+  "skipped": "requires a graph proposal payload; would mutate the ProposalStore",
+  "cmd": "propose_graph"
+ },
+ "cops_read_layer_info": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "cook_status": "ok",
+    "errors": [],
+    "node": "/obj",
+    "planes": [],
+    "type": "obj",
+    "warnings": []
+   },
+   "error": null,
+   "id": "cops_read_layer_info-s1probe2-33",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178290.178107
+  },
+  "cmd": "cops_read_layer_info",
+  "args": {
+   "node": "/obj"
+  }
+ },
+ "cops_analyze_render": {
+  "elapsed": 2.01,
+  "response": {
+   "data": {
+    "checks_run": [
+     "black_pixels",
+     "dynamic_range",
+     "clipping",
+     "noise"
+    ],
+    "issues": [],
+    "node": "/obj",
+    "overall_quality": "pass",
+    "planes": [],
+    "resolution": null
+   },
+   "error": null,
+   "id": "cops_analyze_render-s1probe2-34",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178292.1882982
+  },
+  "cmd": "cops_analyze_render",
+  "args": {
+   "node": "/obj"
+  }
+ },
+ "cops_temporal_analysis": {
+  "elapsed": 2.02,
+  "response": {
+   "data": {
+    "analysis": {
+     "error_rate": 0.0,
+     "frame_errors": 0
+    },
+    "frame_count": 11,
+    "frame_range": [
+     -4,
+     6
+    ],
+    "metrics_requested": [
+     "flicker",
+     "diff",
+     "consistency"
+    ],
+    "node": "/obj",
+    "overall": "stable"
+   },
+   "error": null,
+   "id": "cops_temporal_analysis-s1probe2-35",
+   "protocol_version": "4.0.0",
+   "sequence": 0,
+   "success": true,
+   "timestamp": 1785178294.211641
+  },
+  "cmd": "cops_temporal_analysis",
+  "args": {
+   "node": "/obj"
+  }
+ }
+}

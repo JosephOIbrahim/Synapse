@@ -1,0 +1,47 @@
+#usda 1.0
+(
+    defaultPrim = "world"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+# V1 capture-probe scene. Deliberately trivial and hand-authored rather than
+# node-built: the Q3 cost number needs a scene that can be described in one
+# sentence, and the Q2 collision test needs two prims that are unambiguously
+# DIFFERENT OBJECTS occupying DISJOINT screen regions.
+#
+#   two unit spheres, separated in X, one dome light, one camera at z=+9.
+
+def Xform "world"
+{
+    def Sphere "sphereL"
+    {
+        double radius = 1
+        double3 xformOp:translate = (-1.8, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+    }
+
+    def Sphere "sphereR"
+    {
+        double radius = 1
+        double3 xformOp:translate = (1.8, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+    }
+
+    def Camera "cam"
+    {
+        float focalLength = 35
+        float horizontalAperture = 41.4214
+        float verticalAperture = 23.3
+        float2 clippingRange = (0.1, 10000)
+        double3 xformOp:translate = (0, 0, 9)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def DomeLight "key"
+    {
+        float inputs:intensity = 1
+    }
+}

@@ -1,0 +1,1063 @@
+{
+ "schema": "h9_crosscheck/v1",
+ "truth_tier": "VERIFIED-RUNTIME",
+ "producer": "harness/notes/h9/crosscheck_runtime.py",
+ "seed": 20260727,
+ "api_probe": {
+  "hou.nodeTypeCategories": true,
+  "hou.NodeType.parmTemplateGroup": true,
+  "hou.ParmTemplateGroup.entries": true,
+  "hou.FolderParmTemplate.parmTemplates": true,
+  "houdini_build": "22.0.368"
+ },
+ "categories_found": {
+  "lop": "Lop",
+  "cop": "Cop",
+  "cop2": "Cop2"
+ },
+ "sampling_frame": {
+  "lop": {
+   "frame_size": 161,
+   "catalogue_size": 209,
+   "frame_note": "types whose page declares >=1 internal parameter id"
+  },
+  "cop": {
+   "frame_size": 358,
+   "catalogue_size": 380,
+   "frame_note": "types whose page declares >=1 internal parameter id"
+  }
+ },
+ "sample": {
+  "lop": [
+   {
+    "type": "karmaskyatmosphere",
+    "help_key": "nodes/lop/karmaskyatmosphere",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 35,
+    "live_parms": 96,
+    "matched_strict": 20,
+    "unmatched": 15,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [
+     "allowedprimtypes",
+     "extraabsorpscale",
+     "groundalbedo",
+     "groundoffset",
+     "groundreceiveshadow",
+     "groundvisibility",
+     "handledisallowedtypes",
+     "ignorecameraclip",
+     "karma:object:lpetag",
+     "karma:object:volumelimit",
+     "lutdim",
+     "miephase"
+    ],
+    "precision_strict": 0.571,
+    "undocumented_live": 76,
+    "usd_shaped_ids": 2,
+    "plain_ids": 33,
+    "plain_matched": 20
+   },
+   {
+    "type": "copytopoints",
+    "help_key": "nodes/lop/copytopoints",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 27,
+    "live_parms": 46,
+    "matched_strict": 27,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 19,
+    "usd_shaped_ids": 0,
+    "plain_ids": 27,
+    "plain_matched": 27
+   },
+   {
+    "type": "attribwrangle",
+    "help_key": "nodes/lop/attribwrangle",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 10,
+    "live_parms": 27,
+    "matched_strict": 7,
+    "unmatched": 3,
+    "matched_loose_extra": 3,
+    "unmatched_examples": [
+     "bindattrib",
+     "bindattribtype",
+     "bindparm"
+    ],
+    "precision_strict": 0.7,
+    "undocumented_live": 20,
+    "usd_shaped_ids": 0,
+    "plain_ids": 10,
+    "plain_matched": 7
+   },
+   {
+    "type": "modifypaths",
+    "help_key": "nodes/lop/modifypaths",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 1,
+    "live_parms": 8,
+    "matched_strict": 1,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 7,
+    "usd_shaped_ids": 0,
+    "plain_ids": 1,
+    "plain_matched": 1
+   },
+   {
+    "type": "switch",
+    "help_key": "nodes/lop/switch",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": true,
+    "documented_ids": 7,
+    "live_parms": 9,
+    "matched_strict": 7,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 2,
+    "usd_shaped_ids": 0,
+    "plain_ids": 7,
+    "plain_matched": 7
+   },
+   {
+    "type": "houdinicrowdprocedural",
+    "help_key": "nodes/lop/houdinicrowdprocedural",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 13,
+    "live_parms": 15,
+    "matched_strict": 12,
+    "unmatched": 1,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [
+     "bakeprotoypeagents"
+    ],
+    "precision_strict": 0.923,
+    "undocumented_live": 3,
+    "usd_shaped_ids": 0,
+    "plain_ids": 13,
+    "plain_matched": 12
+   },
+   {
+    "type": "shotlayeredit",
+    "help_key": "nodes/lop/shotlayeredit",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 8,
+    "live_parms": 10,
+    "matched_strict": 7,
+    "unmatched": 1,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [
+     "fallbackshot"
+    ],
+    "precision_strict": 0.875,
+    "undocumented_live": 3,
+    "usd_shaped_ids": 0,
+    "plain_ids": 8,
+    "plain_matched": 7
+   },
+   {
+    "type": "collection",
+    "help_key": "nodes/lop/collection",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 1,
+    "live_parms": 32,
+    "matched_strict": 0,
+    "unmatched": 1,
+    "matched_loose_extra": 1,
+    "unmatched_examples": [
+     "primpattern"
+    ],
+    "precision_strict": 0.0,
+    "undocumented_live": 32,
+    "usd_shaped_ids": 0,
+    "plain_ids": 1,
+    "plain_matched": 0
+   },
+   {
+    "type": "karmatexturebaker",
+    "help_key": "nodes/lop/karmatexturebaker",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 24,
+    "live_parms": 286,
+    "matched_strict": 23,
+    "unmatched": 1,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [
+     "tracemode"
+    ],
+    "precision_strict": 0.958,
+    "undocumented_live": 263,
+    "usd_shaped_ids": 0,
+    "plain_ids": 24,
+    "plain_matched": 23
+   },
+   {
+    "type": "sopimport",
+    "help_key": "nodes/lop/sopimport",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 88,
+    "live_parms": 93,
+    "matched_strict": 86,
+    "unmatched": 2,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [
+     "enable_relationshipattribs",
+     "relationshipattribs"
+    ],
+    "precision_strict": 0.977,
+    "undocumented_live": 7,
+    "usd_shaped_ids": 0,
+    "plain_ids": 88,
+    "plain_matched": 86
+   }
+  ],
+  "cop": [
+   {
+    "type": "attribfromlayer",
+    "help_key": "nodes/cop/attribfromlayer",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 2,
+    "live_parms": 2,
+    "matched_strict": 2,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 0,
+    "usd_shaped_ids": 0,
+    "plain_ids": 2,
+    "plain_matched": 2
+   },
+   {
+    "type": "cameraimport",
+    "help_key": "nodes/cop/cameraimport",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 4,
+    "live_parms": 5,
+    "matched_strict": 4,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 1,
+    "usd_shaped_ids": 0,
+    "plain_ids": 4,
+    "plain_matched": 4
+   },
+   {
+    "type": "grunge_rustysurface",
+    "help_key": "nodes/cop/grunge_rustysurface",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 19,
+    "live_parms": 31,
+    "matched_strict": 19,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 12,
+    "usd_shaped_ids": 0,
+    "plain_ids": 19,
+    "plain_matched": 19
+   },
+   {
+    "type": "cablepack",
+    "help_key": "nodes/cop/cablepack",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 2,
+    "live_parms": 3,
+    "matched_strict": 2,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 1,
+    "usd_shaped_ids": 0,
+    "plain_ids": 2,
+    "plain_matched": 2
+   },
+   {
+    "type": "livevideo",
+    "help_key": "nodes/cop/livevideo",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 6,
+    "live_parms": 6,
+    "matched_strict": 6,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 0,
+    "usd_shaped_ids": 0,
+    "plain_ids": 6,
+    "plain_matched": 6
+   },
+   {
+    "type": "chladni",
+    "help_key": "nodes/cop/chladni",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 9,
+    "live_parms": 8,
+    "matched_strict": 7,
+    "unmatched": 2,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [
+     "tilesizex",
+     "tilesizey"
+    ],
+    "precision_strict": 0.778,
+    "undocumented_live": 1,
+    "usd_shaped_ids": 0,
+    "plain_ids": 9,
+    "plain_matched": 7
+   },
+   {
+    "type": "cellularnoise3d",
+    "help_key": "nodes/cop/cellularnoise3d",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 24,
+    "live_parms": 40,
+    "matched_strict": 24,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 16,
+    "usd_shaped_ids": 0,
+    "plain_ids": 24,
+    "plain_matched": 24
+   },
+   {
+    "type": "filterfrequencies",
+    "help_key": "nodes/cop/filterfrequencies",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 9,
+    "live_parms": 11,
+    "matched_strict": 9,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 2,
+    "usd_shaped_ids": 0,
+    "plain_ids": 9,
+    "plain_matched": 9
+   },
+   {
+    "type": "dot",
+    "help_key": "nodes/cop/dot",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 1,
+    "live_parms": 1,
+    "matched_strict": 1,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 0,
+    "usd_shaped_ids": 0,
+    "plain_ids": 1,
+    "plain_matched": 1
+   },
+   {
+    "type": "pyro_lightambient",
+    "help_key": "nodes/cop/pyro_lightambient",
+    "live_found": true,
+    "live_error": null,
+    "runtime_deprecated": false,
+    "doc_says_deprecated": false,
+    "documented_ids": 10,
+    "live_parms": 12,
+    "matched_strict": 10,
+    "unmatched": 0,
+    "matched_loose_extra": 0,
+    "unmatched_examples": [],
+    "precision_strict": 1.0,
+    "undocumented_live": 2,
+    "usd_shaped_ids": 0,
+    "plain_ids": 10,
+    "plain_matched": 10
+   }
+  ]
+ },
+ "agreement": {
+  "lop": {
+   "nodes_sampled": 10,
+   "nodes_in_full_agreement": 3,
+   "documented_ids_total": 214,
+   "matched_strict_total": 190,
+   "unmatched_total": 24,
+   "id_level_agreement_pct": 88.8,
+   "usd_shaped_ids_total": 2,
+   "plain_ids_total": 212,
+   "plain_matched_total": 190,
+   "plain_id_agreement_pct": 89.6
+  },
+  "cop": {
+   "nodes_sampled": 10,
+   "nodes_in_full_agreement": 9,
+   "documented_ids_total": 86,
+   "matched_strict_total": 84,
+   "unmatched_total": 2,
+   "id_level_agreement_pct": 97.7,
+   "usd_shaped_ids_total": 0,
+   "plain_ids_total": 86,
+   "plain_matched_total": 84,
+   "plain_id_agreement_pct": 97.7
+  }
+ },
+ "agreement_note": "id_level_agreement_pct is the HEADLINE: of every internal id the docs declare, how many exist on the live type. plain_id_agreement_pct is the same figure with colon-namespaced (USD attribute) ids removed -- reported for diagnosis, never as the result.",
+ "control_probe_vs_catalogue": {
+  "purpose": "positive control on THIS PROBE. The committed COP catalogue carries live parms harvested previously. If this run MISSES a parameter that harvest saw, the probe is broken and its verdicts about the docs are worthless.",
+  "criterion": "every catalogue parm appears in this probe's walk (subset)",
+  "types_checked": 10,
+  "no_parameter_missed": 10,
+  "differences": [],
+  "adjudication": "harness/notes/h9/mismatch_diagnosis.json",
+  "verdict": "PASS"
+ },
+ "control_shuffled_pairing": {
+  "purpose": "negative control on the COMPARISON. Documented ids scored against a DIFFERENT node's live parms. A metric that cannot tell these apart is not measuring agreement (Law 1).",
+  "result": {
+   "lop": {
+    "documented_ids_total": 214,
+    "matched_strict_total": 5,
+    "id_level_agreement_pct": 2.3
+   },
+   "cop": {
+    "documented_ids_total": 86,
+    "matched_strict_total": 2,
+    "id_level_agreement_pct": 2.3
+   }
+  },
+  "verdict": "PASS"
+ },
+ "full_population_sweep": {
+  "lop": {
+   "nodes_compared": 168,
+   "nodes_in_full_agreement": 60,
+   "documented_ids_total": 3701,
+   "matched_strict_total": 2540,
+   "id_level_agreement_pct": 68.6,
+   "usd_shaped_ids_total": 508,
+   "plain_ids_total": 3193,
+   "plain_matched_total": 2540,
+   "plain_id_agreement_pct": 79.5,
+   "type_not_found_on_build": 0,
+   "worst_offenders": [
+    {
+     "type": "rendersettings",
+     "unmatched": 177,
+     "documented": 199,
+     "usd_shaped": 175,
+     "examples": [
+      "allowedprimtypes",
+      "handledisallowedtypes",
+      "husk:default_delegate",
+      "husk:orderedImageFilters",
+      "husk:scene_lights",
+      "husk:scene_materials"
+     ]
+    },
+    {
+     "type": "rendergeometrysettings",
+     "unmatched": 82,
+     "documented": 84,
+     "usd_shaped": 82,
+     "examples": [
+      "karma:object:baker_identifier_traceset",
+      "karma:object:baker_visibility_cull_backface",
+      "karma:object:baker_visibility_traceset",
+      "karma:object:blurstyle",
+      "karma:object:bumpshadowterminator",
+      "karma:object:causticsenable"
+     ]
+    },
+    {
+     "type": "karma",
+     "unmatched": 52,
+     "documented": 100,
+     "usd_shaped": 1,
+     "examples": [
+      ":usecacheratio",
+      "abortnogpudevice",
+      "channel_lower_rgb",
+      "cop_createaovs",
+      "cop_imagefilters",
+      "custom_metadata"
+     ]
+    },
+    {
+     "type": "labs::karma::1.0",
+     "unmatched": 52,
+     "documented": 100,
+     "usd_shaped": 1,
+     "examples": [
+      ":usecacheratio",
+      "abortnogpudevice",
+      "channel_lower_rgb",
+      "cop_createaovs",
+      "cop_imagefilters",
+      "custom_metadata"
+     ]
+    },
+    {
+     "type": "labs::karma::2.0",
+     "unmatched": 52,
+     "documented": 100,
+     "usd_shaped": 1,
+     "examples": [
+      ":usecacheratio",
+      "abortnogpudevice",
+      "channel_lower_rgb",
+      "cop_createaovs",
+      "cop_imagefilters",
+      "custom_metadata"
+     ]
+    },
+    {
+     "type": "light::2.0",
+     "unmatched": 51,
+     "documented": 84,
+     "usd_shaped": 21,
+     "examples": [
+      "angle",
+      "clippingRange",
+      "color",
+      "colorTemperature",
+      "diffuse",
+      "enableColorTemperature"
+     ]
+    },
+    {
+     "type": "distantlight::2.0",
+     "unmatched": 47,
+     "documented": 78,
+     "usd_shaped": 21,
+     "examples": [
+      "allowedprimtypes",
+      "angle",
+      "clippingRange",
+      "color",
+      "colorTemperature",
+      "diffuse"
+     ]
+    },
+    {
+     "type": "domelight::2.0",
+     "unmatched": 47,
+     "documented": 64,
+     "usd_shaped": 21,
+     "examples": [
+      "allowedprimtypes",
+      "clippingRange",
+      "color",
+      "colorTemperature",
+      "diffuse",
+      "enableColorTemperature"
+     ]
+    },
+    {
+     "type": "domelight::3.0",
+     "unmatched": 46,
+     "documented": 64,
+     "usd_shaped": 21,
+     "examples": [
+      "allowedprimtypes",
+      "clippingRange",
+      "color",
+      "colorTemperature",
+      "diffuse",
+      "enableColorTemperature"
+     ]
+    },
+    {
+     "type": "editmaterialproperties",
+     "unmatched": 44,
+     "documented": 51,
+     "usd_shaped": 0,
+     "examples": [
+      "aberration",
+      "add_tint",
+      "anisotropy",
+      "anisotropy_map",
+      "aramp",
+      "bokeh_map"
+     ]
+    },
+    {
+     "type": "geometrylight",
+     "unmatched": 36,
+     "documented": 39,
+     "usd_shaped": 21,
+     "examples": [
+      "color",
+      "colorTemperature",
+      "diffuse",
+      "enableColorTemperature",
+      "exposure",
+      "inputs:karma:light:activeradius"
+     ]
+    },
+    {
+     "type": "domelight",
+     "unmatched": 35,
+     "documented": 64,
+     "usd_shaped": 21,
+     "examples": [
+      "allowedprimtypes",
+      "clippingRange",
+      "handledisallowedtypes",
+      "inputs:karma:light:activeradius",
+      "inputs:karma:light:atten",
+      "inputs:karma:light:attenstart"
+     ]
+    }
+   ]
+  },
+  "cop": {
+   "nodes_compared": 362,
+   "nodes_in_full_agreement": 295,
+   "documented_ids_total": 5957,
+   "matched_strict_total": 5254,
+   "id_level_agreement_pct": 88.2,
+   "usd_shaped_ids_total": 0,
+   "plain_ids_total": 5957,
+   "plain_matched_total": 5254,
+   "plain_id_agreement_pct": 88.2,
+   "type_not_found_on_build": 0,
+   "worst_offenders": [
+    {
+     "type": "pyro_block_end",
+     "unmatched": 267,
+     "documented": 279,
+     "usd_shaped": 0,
+     "examples": [
+      "activatefeedbacks",
+      "activatefields",
+      "adaptivestepsize",
+      "advectfeedbacks",
+      "advectfields",
+      "advectionreflectionamount"
+     ]
+    },
+    {
+     "type": "colorcorrect",
+     "unmatched": 52,
+     "documented": 59,
+     "usd_shaped": 0,
+     "examples": [
+      "add",
+      "contrast",
+      "gamma",
+      "highlight_addb",
+      "highlight_addg",
+      "highlight_addr"
+     ]
+    },
+    {
+     "type": "bend",
+     "unmatched": 34,
+     "documented": 41,
+     "usd_shaped": 0,
+     "examples": [
+      "bottomleft_ux",
+      "bottomleft_uy",
+      "bottomleft_vx",
+      "bottomleft_vy",
+      "bottomleftx",
+      "bottomlefty"
+     ]
+    },
+    {
+     "type": "curve3d",
+     "unmatched": 22,
+     "documented": 73,
+     "usd_shaped": 0,
+     "examples": [
+      "approximateendtangents",
+      "pivotrotatex",
+      "pivotrotatey",
+      "pivotrotatez",
+      "pivottranslatex",
+      "pivottranslatey"
+     ]
+    },
+    {
+     "type": "copyxform",
+     "unmatched": 17,
+     "documented": 32,
+     "usd_shaped": 0,
+     "examples": [
+      "bgb",
+      "bgg",
+      "bgr",
+      "colorintensityb",
+      "colorintensityg",
+      "colorintensityr"
+     ]
+    },
+    {
+     "type": "phasornoise",
+     "unmatched": 15,
+     "documented": 41,
+     "usd_shaped": 0,
+     "examples": [
+      "elementscalex",
+      "elementscaley",
+      "offsetx",
+      "offsety",
+      "post_bias",
+      "post_contrast"
+     ]
+    },
+    {
+     "type": "checkerboard",
+     "unmatched": 14,
+     "documented": 17,
+     "usd_shaped": 0,
+     "examples": [
+      "biasx",
+      "biasy",
+      "evena",
+      "evenb",
+      "eveng",
+      "evenr"
+     ]
+    },
+    {
+     "type": "curvescatter",
+     "unmatched": 14,
+     "documented": 75,
+     "usd_shaped": 0,
+     "examples": [
+      "bgb",
+      "bgg",
+      "bgr",
+      "colorb",
+      "colorg",
+      "colorr"
+     ]
+    },
+    {
+     "type": "shapescatter",
+     "unmatched": 14,
+     "documented": 67,
+     "usd_shaped": 0,
+     "examples": [
+      "bgb",
+      "bgg",
+      "bgr",
+      "colorb",
+      "colorg",
+      "colorr"
+     ]
+    },
+    {
+     "type": "dropshadow",
+     "unmatched": 13,
+     "documented": 33,
+     "usd_shaped": 0,
+     "examples": [
+      "colora",
+      "colorb",
+      "colorg",
+      "colorr",
+      "offset_pixelx",
+      "offset_pixely"
+     ]
+    },
+    {
+     "type": "rasterizevolume",
+     "unmatched": 12,
+     "documented": 31,
+     "usd_shaped": 0,
+     "examples": [
+      "cdrangex",
+      "cdrangey",
+      "cdtintb",
+      "cdtintg",
+      "cdtintr",
+      "emitcdrangex"
+     ]
+    },
+    {
+     "type": "pyro_emitfromflame",
+     "unmatched": 11,
+     "documented": 55,
+     "usd_shaped": 0,
+     "examples": [
+      "controlramp",
+      "controlrange",
+      "density_blend",
+      "density_decel",
+      "div_blend",
+      "div_decel"
+     ]
+    }
+   ]
+  },
+  "cop2": {
+   "nodes_compared": 92,
+   "nodes_in_full_agreement": 20,
+   "documented_ids_total": 988,
+   "matched_strict_total": 647,
+   "id_level_agreement_pct": 65.5,
+   "usd_shaped_ids_total": 0,
+   "plain_ids_total": 988,
+   "plain_matched_total": 647,
+   "plain_id_agreement_pct": 65.5,
+   "type_not_found_on_build": 0,
+   "worst_offenders": [
+    {
+     "type": "fog",
+     "unmatched": 17,
+     "documented": 34,
+     "usd_shaped": 0,
+     "examples": [
+      "fdropoff1",
+      "fdropoff2",
+      "fogcola",
+      "fogcolb",
+      "fogcolg",
+      "fogcolr"
+     ]
+    },
+    {
+     "type": "geokey",
+     "unmatched": 16,
+     "documented": 25,
+     "usd_shaped": 0,
+     "examples": [
+      "clipdirx",
+      "clipdiry",
+      "clipdirz",
+      "clippos1",
+      "clippos2",
+      "clippos3"
+     ]
+    },
+    {
+     "type": "emboss",
+     "unmatched": 15,
+     "documented": 27,
+     "usd_shaped": 0,
+     "examples": [
+      "diffa",
+      "diffb",
+      "diffg",
+      "diffr",
+      "fdropoff1",
+      "fdropoff2"
+     ]
+    },
+    {
+     "type": "border",
+     "unmatched": 12,
+     "documented": 17,
+     "usd_shaped": 0,
+     "examples": [
+      "borderh1",
+      "borderh2",
+      "borderv1",
+      "borderv2",
+      "colora",
+      "colorb"
+     ]
+    },
+    {
+     "type": "xform",
+     "unmatched": 12,
+     "documented": 21,
+     "usd_shaped": 0,
+     "examples": [
+      "fdropoff1",
+      "fdropoff2",
+      "frange1",
+      "frange2",
+      "px",
+      "py"
+     ]
+    },
+    {
+     "type": "grain",
+     "unmatched": 8,
+     "documented": 18,
+     "usd_shaped": 0,
+     "examples": [
+      "fdropoff1",
+      "fdropoff2",
+      "frange1",
+      "frange2",
+      "gcolora",
+      "gcolorb"
+     ]
+    },
+    {
+     "type": "wipe",
+     "unmatched": 8,
+     "documented": 15,
+     "usd_shaped": 0,
+     "examples": [
+      "fdropoff1",
+      "fdropoff2",
+      "frange1",
+      "frange2",
+      "lcola",
+      "lcolb"
+     ]
+    },
+    {
+     "type": "denoise",
+     "unmatched": 7,
+     "documented": 12,
+     "usd_shaped": 0,
+     "examples": [
+      "albedo",
+      "denoiser",
+      "fdropoff1",
+      "fdropoff2",
+      "frange1",
+      "frange2"
+     ]
+    },
+    {
+     "type": "env",
+     "unmatched": 7,
+     "documented": 18,
+     "usd_shaped": 0,
+     "examples": [
+      "fdropoff1",
+      "fdropoff2",
+      "frange1",
+      "frange2",
+      "rotate1",
+      "rotate2"
+     ]
+    },
+    {
+     "type": "frontface",
+     "unmatched": 7,
+     "documented": 15,
+     "usd_shaped": 0,
+     "examples": [
+      "directionx",
+      "directiony",
+      "directionz",
+      "fdropoff1",
+      "fdropoff2",
+      "frange1"
+     ]
+    },
+    {
+     "type": "pin",
+     "unmatched": 7,
+     "documented": 13,
+     "usd_shaped": 0,
+     "examples": [
+      "effectamount",
+      "fdropoff1",
+      "fdropoff2",
+      "frange1",
+      "frange2",
+      "maskinput"
+     ]
+    },
+    {
+     "type": "uvmap",
+     "unmatched": 7,
+     "documented": 15,
+     "usd_shaped": 0,
+     "examples": [
+      "fdropoff1",
+      "fdropoff2",
+      "flist",
+      "foutside",
+      "frange1",
+      "frange2"
+     ]
+    }
+   ]
+  }
+ },
+ "silent_deprecation_live": {
+  "purpose": "R72 re-measured against the LIVE runtime rather than the committed catalogue.",
+  "count": 2,
+  "types": [
+   {
+    "type": "karma",
+    "context": "lop",
+    "help_key": "nodes/lop/karma"
+   },
+   {
+    "type": "karmarenderproperties",
+    "context": "lop",
+    "help_key": "nodes/lop/karmarenderproperties"
+   }
+  ]
+ }
+}

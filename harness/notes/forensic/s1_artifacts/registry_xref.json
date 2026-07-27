@@ -1,0 +1,3022 @@
+{
+ "tool_count": 120,
+ "registered_cmds": 127,
+ "tools": [
+  {
+   "tool": "synapse_ping",
+   "cmd": "ping",
+   "desc": "Check if Houdini/Synapse is connected and responding.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 619,
+     "target": "self._handle_ping"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_ping",
+     "file": "python/synapse/server/handlers.py",
+     "line": 849,
+     "end": 855
+    },
+    {
+     "name": "_handle_ping",
+     "file": "python/synapse/mcp/server.py",
+     "line": 675,
+     "end": 677
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_health",
+   "cmd": "get_health",
+   "desc": "Get system health status including resilience layer.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 620,
+     "target": "self._handle_get_health"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_get_health",
+     "file": "python/synapse/server/handlers.py",
+     "line": 857,
+     "end": 863
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_doctor",
+   "cmd": "doctor",
+   "desc": "Run SYNAPSE install/ops diagnostics: log file, telemetry freshness, encryption-key fingerprint, symbol-table build stamp, bridge endpoint. bundle:true also writes a diagnostic zip to ~/.synapse/diagnostics (secrets are never collected). Reports only checks it actually ran. Distinct from the panel Scene Doctor.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": false,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 621,
+     "target": "self._handle_doctor"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_doctor",
+     "file": "python/synapse/server/handlers.py",
+     "line": 873,
+     "end": 876
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_scene_info",
+   "cmd": "get_scene_info",
+   "desc": "Get current Houdini scene info: HIP file path, current frame, FPS, and frame range.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 635,
+     "target": "self._handle_get_scene_info"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_get_scene_info",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1152,
+     "end": 1167
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_get_selection",
+   "cmd": "get_selection",
+   "desc": "Get the currently selected nodes in Houdini.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 636,
+     "target": "self._handle_get_selection"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_get_selection",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1169,
+     "end": 1186
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_create_node",
+   "cmd": "create_node",
+   "desc": "Create a new node in Houdini. Returns the path of the created node.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 625,
+     "target": "self._handle_create_node"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_create_node",
+     "file": "python/synapse/server/handlers_node.py",
+     "line": 43,
+     "end": 118
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_delete_node",
+   "cmd": "delete_node",
+   "desc": "Delete a node in Houdini by its path.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_delete_node_payload",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 626,
+     "target": "self._handle_delete_node"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_delete_node",
+     "file": "python/synapse/server/handlers_node.py",
+     "line": 120,
+     "end": 139
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_connect_nodes",
+   "cmd": "connect_nodes",
+   "desc": "Connect the output of one node to the input of another.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 627,
+     "target": "self._handle_connect_nodes"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_connect_nodes",
+     "file": "python/synapse/server/handlers_node.py",
+     "line": 141,
+     "end": 171
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_get_parm",
+   "cmd": "get_parm",
+   "desc": "Read a parameter value from a Houdini node.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 631,
+     "target": "self._handle_get_parm"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_get_parm",
+     "file": "python/synapse/server/handlers.py",
+     "line": 998,
+     "end": 1049
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_set_parm",
+   "cmd": "set_parm",
+   "desc": "Set a parameter value on a Houdini node. For USD/Solaris nodes, parameter names are encoded (e.g. xn__inputsintensity_i0a not 'intensity'). Use houdini_inspect_node first to discover exact names.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": true,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 632,
+     "target": "self._handle_set_parm"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_set_parm",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1051,
+     "end": 1146
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_execute_python",
+   "cmd": "execute_python",
+   "desc": "Execute Python code in Houdini's runtime environment. ONE mutation per call. Wrapped in undo group -- automatic rollback on failure.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_execute_python_payload",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 639,
+     "target": "self._handle_execute_python"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_execute_python",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1192,
+     "end": 1276
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_execute_vex",
+   "cmd": "execute_vex",
+   "desc": "Execute VEX code by creating an Attribute Wrangle node.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 640,
+     "target": "self._handle_execute_vex"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_execute_vex",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1310,
+     "end": 1446
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_write_report",
+   "cmd": "write_report",
+   "desc": "Write a UTF-8 report/file to the local reports directory ($SYNAPSE_REPORTS_DIR, else <repo>/docs). Pure file I/O on the handler thread -- never marshaled to Houdini's main thread, so it completes even while Houdini is mid-cook or showing a modal dialog (unlike execute_python). Path is confined under the base dir.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 643,
+     "target": "self._handle_write_report"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_write_report",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1278,
+     "end": 1308
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_stage_info",
+   "cmd": "get_stage_info",
+   "desc": "Get USD stage information: prim list and types.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_stage_info_payload",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 646,
+     "target": "self._handle_get_stage_info"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_get_stage_info",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 235,
+     "end": 338
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_get_usd_attribute",
+   "cmd": "get_usd_attribute",
+   "desc": "Read a USD attribute value from a prim on the stage.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 647,
+     "target": "self._handle_get_usd_attribute"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_get_usd_attribute",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 340,
+     "end": 411
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_set_usd_attribute",
+   "cmd": "set_usd_attribute",
+   "desc": "Set a USD attribute on a prim.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 648,
+     "target": "self._handle_set_usd_attribute"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_set_usd_attribute",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 413,
+     "end": 494
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_set_usd_primvar",
+   "cmd": "set_usd_primvar",
+   "desc": "Author a UsdGeom primvar on a prim via UsdGeomPrimvarsAPI -- carries an interpolation token (constant/uniform/vertex/varying/faceVarying) plus optional elementSize/indices that a raw set_usd_attribute write can't.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 649,
+     "target": "self._handle_set_usd_primvar"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_set_usd_primvar",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 496,
+     "end": 607
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_create_usd_prim",
+   "cmd": "create_usd_prim",
+   "desc": "Create a USD prim on the stage.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 650,
+     "target": "self._handle_create_usd_prim"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_create_usd_prim",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 609,
+     "end": 658
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_modify_usd_prim",
+   "cmd": "modify_usd_prim",
+   "desc": "Modify USD prim metadata: kind, purpose, active state, or instanceable flag.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 651,
+     "target": "self._handle_modify_usd_prim"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_modify_usd_prim",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 660,
+     "end": 743
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_capture_viewport",
+   "cmd": "capture_viewport",
+   "desc": "Capture the Houdini viewport as an image.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 654,
+     "target": "self._handle_capture_viewport"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_capture_viewport",
+     "file": "python/synapse/server/handlers_render.py",
+     "line": 228,
+     "end": 324
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_render",
+   "cmd": "render",
+   "desc": "Render a frame using Karma XPU, Karma CPU, Mantra, or any ROP node. An explicit frame renders AND polls at that frame, not the playhead.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 658,
+     "target": "self._handle_render_bounded"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_render_bounded",
+     "file": "python/synapse/server/handlers_render.py",
+     "line": 326,
+     "end": 620
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_validate_frame",
+   "cmd": "validate_frame",
+   "desc": "Validate a rendered frame for quality issues: black frames, NaN, clipping, fireflies.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 738,
+     "target": "self._handle_validate_frame"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_validate_frame",
+     "file": "python/synapse/server/handlers_render.py",
+     "line": 1241,
+     "end": 1461
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_configure_render_passes",
+   "cmd": "configure_render_passes",
+   "desc": "Configure render passes (AOVs) for Karma. Creates RenderVar prims for compositing. Presets: beauty, diffuse, specular, emission, normal, depth, position, albedo, crypto_material, crypto_object, motion, sss. Also accepts custom pass definitions.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 735,
+     "target": "self._handle_configure_render_passes"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_configure_render_passes",
+     "file": "python/synapse/server/handlers_render.py",
+     "line": 1660,
+     "end": 1813
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_set_keyframe",
+   "cmd": "set_keyframe",
+   "desc": "Set a keyframe on a node parameter at a specific frame.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 725,
+     "target": "self._handle_set_keyframe"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_set_keyframe",
+     "file": "python/synapse/server/handlers_render.py",
+     "line": 1133,
+     "end": 1176
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_render_settings",
+   "cmd": "render_settings",
+   "desc": "Read and optionally modify render settings on a ROP or Karma node.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 726,
+     "target": "self._handle_render_settings"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_render_settings",
+     "file": "python/synapse/server/handlers_render.py",
+     "line": 1178,
+     "end": 1239
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_wedge",
+   "cmd": "wedge",
+   "desc": "Run a TOPs/PDG wedge to explore parameter variations.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 661,
+     "target": "self._handle_wedge"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_wedge",
+     "file": "python/synapse/server/handlers_tops/wedge.py",
+     "line": 25,
+     "end": 73
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_get_work_items",
+   "cmd": "tops_get_work_items",
+   "desc": "Get work items from a TOP node with optional state filtering.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 664,
+     "target": "self._handle_tops_get_work_items"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_get_work_items",
+     "file": "python/synapse/server/handlers_tops/work_items.py",
+     "line": 31,
+     "end": 114
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_get_dependency_graph",
+   "cmd": "tops_get_dependency_graph",
+   "desc": "Get the dependency graph for a TOP network: nodes, types, work item counts, and edges.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 665,
+     "target": "self._handle_tops_get_dependency_graph"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_get_dependency_graph",
+     "file": "python/synapse/server/handlers_tops/work_items.py",
+     "line": 117,
+     "end": 189
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_get_cook_stats",
+   "cmd": "tops_get_cook_stats",
+   "desc": "Get cook statistics for a TOP node or network: work item counts by state and cook times.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 666,
+     "target": "self._handle_tops_get_cook_stats"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_get_cook_stats",
+     "file": "python/synapse/server/handlers_tops/work_items.py",
+     "line": 192,
+     "end": 266
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_cook_node",
+   "cmd": "tops_cook_node",
+   "desc": "Cook a TOP node. Supports blocking/non-blocking and generate-only modes.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 667,
+     "target": "self._handle_tops_cook_node"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_cook_node",
+     "file": "python/synapse/server/handlers_tops/cook.py",
+     "line": 25,
+     "end": 83
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_generate_items",
+   "cmd": "tops_generate_items",
+   "desc": "Generate work items for a TOP node without cooking. Preview what a node will produce.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 668,
+     "target": "self._handle_tops_generate_items"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_generate_items",
+     "file": "python/synapse/server/handlers_tops/cook.py",
+     "line": 86,
+     "end": 122
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_configure_scheduler",
+   "cmd": "tops_configure_scheduler",
+   "desc": "Configure the local scheduler for a TOP network: max concurrent, working directory. Localscheduler-only -- non-local scheduler_type values are rejected.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 671,
+     "target": "self._handle_tops_configure_scheduler"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_configure_scheduler",
+     "file": "python/synapse/server/handlers_tops/cook.py",
+     "line": 134,
+     "end": 215
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_cancel_cook",
+   "cmd": "tops_cancel_cook",
+   "desc": "Cancel an active cook on a TOP node or network.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 672,
+     "target": "self._handle_tops_cancel_cook"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_cancel_cook",
+     "file": "python/synapse/server/handlers_tops/cook.py",
+     "line": 218,
+     "end": 268
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_dirty_node",
+   "cmd": "tops_dirty_node",
+   "desc": "Dirty a TOP node to clear cached results. Optionally dirty upstream nodes too.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 675,
+     "target": "self._handle_tops_dirty_node"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_dirty_node",
+     "file": "python/synapse/server/handlers_tops/cook.py",
+     "line": 361,
+     "end": 402
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_setup_wedge",
+   "cmd": "tops_setup_wedge",
+   "desc": "Set up a Wedge TOP node for parameter variation exploration.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 678,
+     "target": "self._handle_tops_setup_wedge"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_setup_wedge",
+     "file": "python/synapse/server/handlers_tops/wedge.py",
+     "line": 85,
+     "end": 179
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_batch_cook",
+   "cmd": "tops_batch_cook",
+   "desc": "Cook multiple TOP nodes in sequence, collecting per-node results and aggregate stats.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 679,
+     "target": "self._handle_tops_batch_cook"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_batch_cook",
+     "file": "python/synapse/server/handlers_tops/cook.py",
+     "line": 409,
+     "end": 514
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_query_items",
+   "cmd": "tops_query_items",
+   "desc": "Query work items by attribute value with filter operators (eq, gt, lt, gte, lte, contains, regex).",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 680,
+     "target": "self._handle_tops_query_items"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_query_items",
+     "file": "python/synapse/server/handlers_tops/work_items.py",
+     "line": 269,
+     "end": 365
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_cook_and_validate",
+   "cmd": "tops_cook_and_validate",
+   "desc": "Cook a TOP node with automatic retry on failure. Self-healing: cook -> validate -> dirty -> retry.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 683,
+     "target": "self._handle_tops_cook_and_validate"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_cook_and_validate",
+     "file": "python/synapse/server/handlers_tops/diagnostics.py",
+     "line": 32,
+     "end": 115
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_diagnose",
+   "cmd": "tops_diagnose",
+   "desc": "Diagnose failures on a TOP node: inspect failed items, scheduler config, upstream deps, and suggestions.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 684,
+     "target": "self._handle_tops_diagnose"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_diagnose",
+     "file": "python/synapse/server/handlers_tops/diagnostics.py",
+     "line": 118,
+     "end": 238
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_pipeline_status",
+   "cmd": "tops_pipeline_status",
+   "desc": "Full health check for a TOP network: per-node status, aggregate stats, issues, and suggestions.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 685,
+     "target": "self._handle_tops_pipeline_status"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_pipeline_status",
+     "file": "python/synapse/server/handlers_tops/diagnostics.py",
+     "line": 241,
+     "end": 365
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_monitor_stream",
+   "cmd": "tops_monitor_stream",
+   "desc": "Start, stop, or check status of event-driven TOPS cook monitoring. Push-based alternative to polling -- registers PDG event callbacks that track work_item_started/completed/failed, cook_progress, cook_complete events. Use action='start' to begin, 'status' to check, 'stop' to end.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 688,
+     "target": "self._handle_tops_monitor_stream"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_monitor_stream",
+     "file": "python/synapse/server/handlers_tops/diagnostics.py",
+     "line": 377,
+     "end": 639
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_render_sequence",
+   "cmd": "tops_render_sequence",
+   "desc": "Render a frame sequence via TOPS/PDG. Single-call interface for 'render frames 1-48'. Validates stage, creates/reuses TOPS network, sets frame range, generates work items, starts cook. Idempotent -- reuses existing network if one matches.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 689,
+     "target": "self._handle_tops_render_sequence"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_render_sequence",
+     "file": "python/synapse/server/handlers_tops/render_sequence.py",
+     "line": 88,
+     "end": 339
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "tops_multi_shot",
+   "cmd": "tops_multi_shot",
+   "desc": "Create a TOPS network for multi-shot rendering. Accepts a list of shot definitions (name, frame range, camera, overrides), creates per-shot work items in a genericgenerator, feeds into ropfetch for rendering, partitions results by shot name. Returns a job_id for monitoring.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 690,
+     "target": "self._handle_tops_multi_shot"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_tops_multi_shot",
+     "file": "python/synapse/server/handlers_tops/render_sequence.py",
+     "line": 342,
+     "end": 552
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_reference_usd",
+   "cmd": "reference_usd",
+   "desc": "Import a USD file into the stage via reference, payload, or sublayer. Payload mode uses deferred loading for heavy assets. Resolver URIs like asset:/shot: pass through unverified. For Karma rendering, sublayer is the most reliable import mode.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 693,
+     "target": "self._handle_reference_usd"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_reference_usd",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 745,
+     "end": 905
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_set_payload_loadstate",
+   "cmd": "set_payload_loadstate",
+   "desc": "Control USD payload load state and prim activation. Load/unload a payload by prim path and/or toggle the prim's active flag. Use to defer-load or release heavy referenced assets.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 694,
+     "target": "self._handle_set_payload_loadstate"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_set_payload_loadstate",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 1760,
+     "end": 1847
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_create_point_instancer",
+   "cmd": "create_point_instancer",
+   "desc": "Author a UsdGeom.PointInstancer: scatter prototype prims across positions. Minimal valid setup -- defines the instancer, sets the prototypes relationship, protoIndices (defaults to zeros), and positions.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 695,
+     "target": "self._handle_create_point_instancer"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_create_point_instancer",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 1849,
+     "end": 1943
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_shot_render_ready",
+   "cmd": "shot_render_ready",
+   "desc": "Composite orchestrator: get a shot render-ready in one call. Runs create_textured_material -> solaris_assemble_chain -> safe_render in sequence, threading outputs, and returns a per-step summary with any errors. Orchestrates existing primitives -- does not re-implement them.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 696,
+     "target": "self._handle_shot_render_ready"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_shot_render_ready",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 1945,
+     "end": 2049
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_query_prims",
+   "cmd": "query_prims",
+   "desc": "Query USD stage prims with filtering by type, purpose, and name pattern. Returns matching prims with their paths, types, and metadata.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 697,
+     "target": "self._handle_query_prims"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_query_prims",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 907,
+     "end": 1027
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_manage_variant_set",
+   "cmd": "manage_variant_set",
+   "desc": "Manage USD variant sets on a prim: list, create, or select variants. Use 'list' to see existing variant sets, 'create' to add a new set with named variants, or 'select' to switch the active variant.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 698,
+     "target": "self._handle_manage_variant_set"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_manage_variant_set",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 1029,
+     "end": 1177
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_manage_collection",
+   "cmd": "manage_collection",
+   "desc": "Manage USD collections on a prim for light linking, material assignment, and grouping. Use 'list' to see existing collections, 'create' to make a new collection with include/exclude paths, 'add'/'remove' to modify paths.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 699,
+     "target": "self._handle_manage_collection"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_manage_collection",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 1221,
+     "end": 1437
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_validate_ordering",
+   "cmd": "solaris_validate_ordering",
+   "desc": "Walk a LOP network backwards from the render node, detecting ambiguous merge points where input order affects USD opinion strength. Flags merge and sublayer LOPs with 2+ inputs as potential ordering issues.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 703,
+     "target": "self._handle_solaris_validate_ordering"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_solaris_validate_ordering",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 1610,
+     "end": 1758
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_solaris_assemble_chain",
+   "cmd": "solaris_assemble_chain",
+   "desc": "Auto-wire unwired LOP nodes in /stage into the canonical Solaris chain. Three modes: 'all' scans for unwired nodes and wires them in canonical order (SOPCreate -> MaterialLibrary -> AssignMaterial -> Camera -> Lights -> RenderProperties -> OUTPUT null). 'nodes' wires specific node paths. 'after' appends nodes after a given chain tail. Supports dry_run to preview wiring without mutating the scene.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 706,
+     "target": "self._handle_solaris_assemble_chain"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_solaris_assemble_chain",
+     "file": "python/synapse/server/handlers_solaris_assemble.py",
+     "line": 308,
+     "end": 710
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_solaris_build_graph",
+   "cmd": "solaris_build_graph",
+   "desc": "Build a Solaris LOP network with arbitrary topology: merge nodes, sublayer stacks, parallel streams. Specify nodes and connections as a directed acyclic graph. Supports pre-built templates for common patterns (multi_asset_merge, sublayer_stack, render_pass_split, lighting_rig). Use assemble_chain for simple linear wiring.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 707,
+     "target": "self._handle_solaris_build_graph"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_solaris_build_graph",
+     "file": "python/synapse/server/handlers_solaris_graph.py",
+     "line": 454,
+     "end": 914
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_solaris_component_builder",
+   "cmd": "solaris_component_builder",
+   "desc": "Create a complete USD Component Builder for a production asset. Sets up Component Geometry with render/proxy/simproxy purpose outputs, Material Library with Karma Material Builders, Component Material for auto-assignment, and Component Output for export. Supports the full export -> reference round-trip workflow.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 713,
+     "target": "self._handle_solaris_component_builder"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_solaris_component_builder",
+     "file": "python/synapse/server/handlers_solaris_tools.py",
+     "line": 56,
+     "end": 58
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_solaris_scene_template",
+   "cmd": "solaris_scene_template",
+   "desc": "Create a full canonical Solaris scene skeleton with proper USD hierarchy. Builds the complete chain: Primitive (Xform/Group hierarchy) -> SOP imports (chained, never merged) -> Camera -> Material Library -> Karma Physical Sky -> Karma Render Settings -> USD Render ROP. Follows the NodeFlow canonical LOP chain pattern with /shot/{geo,LGT,MTL,cam}/$OS path conventions.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 714,
+     "target": "self._handle_solaris_scene_template"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_solaris_scene_template",
+     "file": "python/synapse/server/handlers_solaris_tools.py",
+     "line": 60,
+     "end": 62
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_solaris_create_variants",
+   "cmd": "solaris_create_variants",
+   "desc": "Create material and/or geometry variants on a USD Component Builder asset. Material variants duplicate Component Material nodes with different Karma Material Builders. Geometry variants duplicate Component Geometry and merge via Component Geometry Variants node. Use Explore Variants to preview.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 715,
+     "target": "self._handle_solaris_create_variants"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_solaris_create_variants",
+     "file": "python/synapse/server/handlers_solaris_tools.py",
+     "line": 64,
+     "end": 66
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_solaris_set_purpose",
+   "cmd": "solaris_set_purpose",
+   "desc": "Set the USD purpose on geometry within a Component Builder. Purpose controls visibility: 'render' for full-res at render time, 'proxy' for low-poly in viewport, 'simproxy' for physics/collision.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 716,
+     "target": "self._handle_solaris_set_purpose"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_solaris_set_purpose",
+     "file": "python/synapse/server/handlers_solaris_tools.py",
+     "line": 68,
+     "end": 70
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_solaris_import_megascans",
+   "cmd": "solaris_import_megascans",
+   "desc": "Import a Megascans/Fab .usdc asset into a Component Builder with proper unit scaling, grounding, proxy generation, and material extraction. Scale 0.01 converts Unreal centimeters to Houdini meters.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 717,
+     "target": "self._handle_solaris_import_megascans"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_solaris_import_megascans",
+     "file": "python/synapse/server/handlers_solaris_tools.py",
+     "line": 72,
+     "end": 78
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_configure_light_linking",
+   "cmd": "configure_light_linking",
+   "desc": "Configure light linking between lights and geometry via USD collections. Control which geometry a light illuminates or casts shadows on. Actions: 'include' (limit illumination), 'exclude' (block illumination), 'shadow_include'/'shadow_exclude' (shadow control), 'reset' (illuminate everything).",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 700,
+     "target": "self._handle_configure_light_linking"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_configure_light_linking",
+     "file": "python/synapse/server/handlers_usd.py",
+     "line": 1439,
+     "end": 1593
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_create_textured_material",
+   "cmd": "create_textured_material",
+   "desc": "Create a production MaterialX material with texture file inputs. Supports diffuse, roughness, metalness, normal, opacity, and displacement maps. Handles UDIM textures and UV coordinate wiring automatically. Use this for textured lookdev; use create_material for simple solid colors.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 730,
+     "target": "self._handle_create_textured_material"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_create_textured_material",
+     "file": "python/synapse/server/handlers_material.py",
+     "line": 462,
+     "end": 661
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_create_material",
+   "cmd": "create_material",
+   "desc": "Create a material with a shader in the LOP network. Supports presets (glass, mirror, rough_metal, polished_metal, skin, cloth, plastic, ceramic, wax, rubber) and category-based organization. Explicit params override preset values.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 729,
+     "target": "self._handle_create_material"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_create_material",
+     "file": "python/synapse/server/handlers_material.py",
+     "line": 166,
+     "end": 290
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_assign_material",
+   "cmd": "assign_material",
+   "desc": "Assign a material to geometry prims.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 731,
+     "target": "self._handle_assign_material"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_assign_material",
+     "file": "python/synapse/server/handlers_material.py",
+     "line": 292,
+     "end": 339
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_read_material",
+   "cmd": "read_material",
+   "desc": "Read what material is assigned to a prim and its shader settings.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 732,
+     "target": "self._handle_read_material"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_read_material",
+     "file": "python/synapse/server/handlers_material.py",
+     "line": 341,
+     "end": 460
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_knowledge_lookup",
+   "cmd": "knowledge_lookup",
+   "desc": "Look up Houdini knowledge: parameter names, node types, workflow guides.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 750,
+     "target": "self._handle_knowledge_lookup"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_knowledge_lookup",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1684,
+     "end": 1715
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_inspect_selection",
+   "cmd": "inspect_selection",
+   "desc": "Inspect selected nodes: parameters, connections, geometry stats, input graph.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 753,
+     "target": "self._handle_inspect_selection"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_inspect_selection",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1451,
+     "end": 1458
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_inspect_scene",
+   "cmd": "inspect_scene",
+   "desc": "Bird's-eye scene overview: node tree, context breakdown, warnings, sticky notes.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 754,
+     "target": "self._handle_inspect_scene"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_inspect_scene",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1460,
+     "end": 1473
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_inspect_node",
+   "cmd": "inspect_node",
+   "desc": "Deep-dive into a single node: all parameters, expressions, code, geometry, HDA info.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 755,
+     "target": "self._handle_inspect_node"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_inspect_node",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1475,
+     "end": 1493
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_network_explain",
+   "cmd": "network_explain",
+   "desc": "Walk a Houdini node network and produce a structured explanation: data flow order, detected workflow patterns (scatter, terrain, simulation, VDB, etc.), non-default parameter values, and suggested parameters to promote for HDA interfaces.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_network_explain_payload",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 628,
+     "target": "self._handle_network_explain"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_network_explain",
+     "file": "python/synapse/server/handlers_node.py",
+     "line": 173,
+     "end": 313
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_context",
+   "cmd": "context",
+   "desc": "Get project context from Synapse memory.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 770,
+     "target": "self._handle_memory_context"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_memory_context",
+     "file": "python/synapse/server/handlers_memory.py",
+     "line": 52,
+     "end": 55
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_search",
+   "cmd": "search",
+   "desc": "Search project memory for relevant entries.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 771,
+     "target": "self._handle_memory_search"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_memory_search",
+     "file": "python/synapse/server/handlers_memory.py",
+     "line": 92,
+     "end": 100
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_recall",
+   "cmd": "recall",
+   "desc": "Recall relevant memories for a given context or question.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 774,
+     "target": "self._handle_memory_recall"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_memory_recall",
+     "file": "python/synapse/server/handlers_memory.py",
+     "line": 112,
+     "end": 121
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_decide",
+   "cmd": "decide",
+   "desc": "Record a decision in project memory with reasoning.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": false,
+   "payload_builder": "_decide_payload",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 773,
+     "target": "self._handle_memory_decide"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_memory_decide",
+     "file": "python/synapse/server/handlers_memory.py",
+     "line": 107,
+     "end": 110
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_add_memory",
+   "cmd": "add_memory",
+   "desc": "Add a memory entry to the project.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_add_memory_payload",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 772,
+     "target": "self._handle_memory_add"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_memory_add",
+     "file": "python/synapse/server/handlers_memory.py",
+     "line": 102,
+     "end": 105
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_project_setup",
+   "cmd": "project_setup",
+   "desc": "Call this FIRST in every session. Returns project memory, scene memory, agent state, and evolution stage. Without this, you have no context.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 777,
+     "target": "self._handle_project_setup"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_project_setup",
+     "file": "python/synapse/server/handlers_memory.py",
+     "line": 123,
+     "end": 149
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_memory_write",
+   "cmd": "memory_write",
+   "desc": "Write a memory entry to scene or project memory.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 778,
+     "target": "self._handle_memory_write"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_memory_write",
+     "file": "python/synapse/server/handlers_memory.py",
+     "line": 151,
+     "end": 167
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_memory_query",
+   "cmd": "memory_query",
+   "desc": "Query scene or project memory.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 779,
+     "target": "self._handle_memory_query"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_memory_query",
+     "file": "python/synapse/server/handlers_memory.py",
+     "line": 169,
+     "end": 222
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_memory_status",
+   "cmd": "memory_status",
+   "desc": "Get memory system status: evolution stage, file sizes, session count.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 780,
+     "target": "self._handle_memory_status"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_memory_status",
+     "file": "python/synapse/server/handlers_memory.py",
+     "line": 224,
+     "end": 244
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_evolve_memory",
+   "cmd": "evolve_memory",
+   "desc": "Manually trigger memory evolution.",
+   "read_only": false,
+   "destructive": false,
+   "idempotent": false,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 781,
+     "target": "self._handle_evolve_memory"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_evolve_memory",
+     "file": "python/synapse/server/handlers_memory.py",
+     "line": 246,
+     "end": 266
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_sleep_pass",
+   "cmd": "sleep_pass",
+   "desc": "Run Moneta consolidation/decay (the Moneta memory backend). DESTRUCTIVE: permanently prunes unprotected memories; gated APPROVE. Returns a prune audit (pruned ids + before/after counts). No-op under the default jsonl backend.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 782,
+     "target": "self._handle_sleep_pass"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_sleep_pass",
+     "file": "python/synapse/server/handlers_memory.py",
+     "line": 268,
+     "end": 292
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_hda_create",
+   "cmd": "hda_create",
+   "desc": "Convert a subnet into a Houdini Digital Asset (HDA). Sets metadata (author, version), installs the .hda file. The subnet must already exist -- use create_node to build it first.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 788,
+     "target": "self._handle_hda_create"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_hda_create",
+     "file": "python/synapse/server/handlers_hda.py",
+     "line": 31,
+     "end": 120
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_hda_promote_parm",
+   "cmd": "hda_promote_parm",
+   "desc": "Promote an internal node parameter to the HDA's top-level interface. Idempotent -- re-promoting updates rather than duplicates.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 789,
+     "target": "self._handle_hda_promote_parm"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_hda_promote_parm",
+     "file": "python/synapse/server/handlers_hda.py",
+     "line": 122,
+     "end": 244
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_hda_set_help",
+   "cmd": "hda_set_help",
+   "desc": "Set help documentation on an HDA. Generates Houdini wiki markup from structured inputs: summary, description, per-parameter help, and tips.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 790,
+     "target": "self._handle_hda_set_help"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_hda_set_help",
+     "file": "python/synapse/server/handlers_hda.py",
+     "line": 246,
+     "end": 336
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_hda_package",
+   "cmd": "hda_package",
+   "desc": "High-level HDA orchestrator: create subnet, convert to HDA, promote parameters, set help -- all in one call. Atomic undo group rolls back on failure.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 791,
+     "target": "self._handle_hda_package"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_hda_package",
+     "file": "python/synapse/server/handlers_hda.py",
+     "line": 338,
+     "end": 607
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_hda_list",
+   "cmd": "hda_list",
+   "desc": "List all Synapse-authored HDAs currently loaded in Houdini. Scans loaded HDA files for definitions with author=synapse metadata.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": false,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 792,
+     "target": "self._handle_hda_list"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_hda_list",
+     "file": "python/synapse/server/handlers_hda.py",
+     "line": 609,
+     "end": 660
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_undo",
+   "cmd": "undo",
+   "desc": "Undo the last Houdini operation. Steps back one undo level.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 824,
+     "target": "self._handle_undo"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_undo",
+     "file": "python/synapse/server/handlers.py",
+     "line": 882,
+     "end": 891
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "houdini_redo",
+   "cmd": "redo",
+   "desc": "Redo the last undone Houdini operation. Steps forward one undo level.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 825,
+     "target": "self._handle_redo"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_redo",
+     "file": "python/synapse/server/handlers.py",
+     "line": 893,
+     "end": 902
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_batch",
+   "cmd": "batch_commands",
+   "desc": "Execute multiple Synapse commands in a single round-trip.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 758,
+     "target": "self._handle_batch_commands"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_batch_commands",
+     "file": "python/synapse/server/handlers.py",
+     "line": 908,
+     "end": 992
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_metrics",
+   "cmd": "get_metrics",
+   "desc": "Get Synapse metrics in Prometheus text format.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 764,
+     "target": "self._handle_get_metrics"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_get_metrics",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1495,
+     "end": 1564
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_router_stats",
+   "cmd": "router_stats",
+   "desc": "Get tier cascade routing statistics.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 765,
+     "target": "self._handle_router_stats"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_router_stats",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1566,
+     "end": 1570
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_list_recipes",
+   "cmd": "list_recipes",
+   "desc": "List all available recipes with names, descriptions, and trigger patterns.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 766,
+     "target": "self._handle_list_recipes"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_list_recipes",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1572,
+     "end": 1589
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_render_sequence",
+   "cmd": "render_sequence",
+   "desc": "Render a frame range with per-frame validation, automatic issue diagnosis, and self-improving fixes. Learns from each render to start smarter next time.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 741,
+     "target": "self._handle_render_sequence"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_render_sequence",
+     "file": "python/synapse/server/handlers_render.py",
+     "line": 1467,
+     "end": 1589
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_render_farm_status",
+   "cmd": "render_farm_status",
+   "desc": "Check progress of a running render farm job: running state, scene tags, current frame.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 742,
+     "target": "self._handle_render_farm_status"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_render_farm_status",
+     "file": "python/synapse/server/handlers_render.py",
+     "line": 1591,
+     "end": 1607
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_render_farm_cancel",
+   "cmd": "render_farm_cancel",
+   "desc": "Request cancellation of the running render-farm sequence and/or autonomous render loop. Signal semantics: the in-flight frame finishes before the loop stops -- poll synapse_render_farm_status to confirm. Does not undo scene changes or delete partial frames.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": true,
+   "payload_builder": "_passthrough",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 743,
+     "target": "self._handle_render_farm_cancel"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_render_farm_cancel",
+     "file": "python/synapse/server/handlers_render.py",
+     "line": 1609,
+     "end": 1658
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_autonomous_render",
+   "cmd": "autonomous_render",
+   "desc": "Execute an autonomous render loop: plan the render from intent, validate the scene, execute via TOPS, evaluate quality, and re-render if needed. Returns a full report.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 785,
+     "target": "self._handle_autonomous_render"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_autonomous_render",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1811,
+     "end": 1961
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_safe_render",
+   "cmd": "safe_render",
+   "desc": "Render with pre-flight validation. Checks camera, materials, and output path before rendering. Auto-forces background mode for high-resolution renders to prevent Houdini lockup.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 746,
+     "target": "self._handle_safe_render"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_safe_render",
+     "file": "python/synapse/server/handlers_render.py",
+     "line": 1819,
+     "end": 2025
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_render_progressively",
+   "cmd": "render_progressively",
+   "desc": "Progressive 3-pass render: test (256x256, 4 samples) -> preview (720p, 16 samples) -> production (user settings). Validates each pass before proceeding.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 747,
+     "target": "self._handle_render_progressively"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_render_progressively",
+     "file": "python/synapse/server/handlers_render.py",
+     "line": 2031,
+     "end": 2207
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_live_metrics",
+   "cmd": "get_live_metrics",
+   "desc": "Get live metrics snapshot: scene health, routing, resilience, sessions. Pass history_count > 0 for historical snapshots.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 767,
+     "target": "self._handle_get_live_metrics"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_get_live_metrics",
+     "file": "python/synapse/server/handlers.py",
+     "line": 1635,
+     "end": 1649
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_propose_graph",
+   "cmd": "propose_graph",
+   "desc": "Validate a declarative graph proposal against the LIVE Houdini runtime and park it (if VALID) for later instantiation by synapse_instantiate_graph. Mutates nothing -- grounds every node type/parameter against the live H21 runtime (no phantom APIs), then returns status + errors + advisories. Runs IN the Houdini process (its validator is a live hou oracle), so propose and instantiate share that process's ONE proposal store.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 830,
+     "target": "self._handle_propose_graph"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_propose_graph",
+     "file": "python/synapse/server/handlers_graph_synth.py",
+     "line": 38,
+     "end": 69
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "synapse_instantiate_graph",
+   "cmd": "instantiate_graph",
+   "desc": "Instantiate a VALIDATED graph proposal (parked by synapse_propose_graph) into the live scene, atomically. Re-validates against the current scene (TOCTOU guard), then builds NEW nodes in one undo group; a single undo reverts it. Returns the observed build result (created paths, parms, wiring).",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 831,
+     "target": "self._handle_instantiate_graph"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_instantiate_graph",
+     "file": "python/synapse/server/handlers_graph_synth.py",
+     "line": 71,
+     "end": 93
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_create_network",
+   "cmd": "cops_create_network",
+   "desc": "Create a COP2 network container for Copernicus image processing.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 795,
+     "target": "self._handle_cops_create_network"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_create_network",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 324,
+     "end": 388
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_create_copnet",
+   "cmd": "cops_create_copnet",
+   "desc": "Create a modern Copernicus 'copnet' network (H21 Copernicus, distinct from legacy cop2net).",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 796,
+     "target": "self._handle_cops_create_copnet"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_create_copnet",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 390,
+     "end": 464
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_create_node",
+   "cmd": "cops_create_node",
+   "desc": "Create a COP node inside a COP network.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 797,
+     "target": "self._handle_cops_create_node"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_create_node",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 466,
+     "end": 513
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_connect",
+   "cmd": "cops_connect",
+   "desc": "Connect two COP nodes together.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 798,
+     "target": "self._handle_cops_connect"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_connect",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 515,
+     "end": 556
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_set_opencl",
+   "cmd": "cops_set_opencl",
+   "desc": "Set OpenCL kernel code on a COP node for GPU-accelerated processing.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 799,
+     "target": "self._handle_cops_set_opencl"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_set_opencl",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 558,
+     "end": 611
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_read_layer_info",
+   "cmd": "cops_read_layer_info",
+   "desc": "Read layer info from a COP node: resolution, data type, channels, cook status.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_filter_keys.<locals>._builder",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 800,
+     "target": "self._handle_cops_read_layer_info"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_read_layer_info",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 613,
+     "end": 729
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_to_materialx",
+   "cmd": "cops_to_materialx",
+   "desc": "Connect COP output to MaterialX shader via op: path for live procedural textures.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 803,
+     "target": "self._handle_cops_to_materialx"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_to_materialx",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 735,
+     "end": 796
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_composite_aovs",
+   "cmd": "cops_composite_aovs",
+   "desc": "Build a COP network to composite Karma AOV layers from EXR renders.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 804,
+     "target": "self._handle_cops_composite_aovs"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_composite_aovs",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 798,
+     "end": 896
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_analyze_render",
+   "cmd": "cops_analyze_render",
+   "desc": "Analyze rendered image in COPs: black pixels, dynamic range, clipping, noise.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 805,
+     "target": "self._handle_cops_analyze_render"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_analyze_render",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 898,
+     "end": 1002
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_slap_comp",
+   "cmd": "cops_slap_comp",
+   "desc": "Configure live viewport compositing overlay using COP output.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 806,
+     "target": "self._handle_cops_slap_comp"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_slap_comp",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 1004,
+     "end": 1060
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_create_solver",
+   "cmd": "cops_create_solver",
+   "desc": "Create Block Begin/End solver pair for iterative COP processing.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 809,
+     "target": "self._handle_cops_create_solver"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_create_solver",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 1066,
+     "end": 1162
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_procedural_texture",
+   "cmd": "cops_procedural_texture",
+   "desc": "Generate procedural texture: noise (perlin/worley/simplex), ramp, tiling.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 810,
+     "target": "self._handle_cops_procedural_texture"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_procedural_texture",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 1164,
+     "end": 1247
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_growth_propagation",
+   "cmd": "cops_growth_propagation",
+   "desc": "DLA-style growth solver: iterative dilate/blur/threshold from seed mask.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 811,
+     "target": "self._handle_cops_growth_propagation"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_growth_propagation",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 1249,
+     "end": 1379
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_reaction_diffusion",
+   "cmd": "cops_reaction_diffusion",
+   "desc": "Gray-Scott reaction-diffusion solver SCAFFOLD (placeholder #define-only kernel; node not cooked).",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 812,
+     "target": "self._handle_cops_reaction_diffusion"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_reaction_diffusion",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 1381,
+     "end": 1505
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_pixel_sort",
+   "cmd": "cops_pixel_sort",
+   "desc": "Pixel-sort scaffold by luminance/hue (placeholder kernel; node not cooked).",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 813,
+     "target": "self._handle_cops_pixel_sort"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_pixel_sort",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 1507,
+     "end": 1593
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_stylize",
+   "cmd": "cops_stylize",
+   "desc": "NPR stylization: toon, risograph, posterize, edge detect.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 814,
+     "target": "self._handle_cops_stylize"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_stylize",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 1595,
+     "end": 1725
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_wetmap",
+   "cmd": "cops_wetmap",
+   "desc": "Wetmap effect: temporal decay from SOP velocity/collision in UV space.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 817,
+     "target": "self._handle_cops_wetmap"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_wetmap",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 1731,
+     "end": 1839
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_bake_textures",
+   "cmd": "cops_bake_textures",
+   "desc": "UV texture baking SCAFFOLD: creates placeholder map nodes; does NOT bake or write files.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 818,
+     "target": "self._handle_cops_bake_textures"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_bake_textures",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 1841,
+     "end": 1931
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_temporal_analysis",
+   "cmd": "cops_temporal_analysis",
+   "desc": "Temporal coherence analysis: flicker, frame diff, consistency check.",
+   "read_only": true,
+   "destructive": false,
+   "idempotent": true,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 819,
+     "target": "self._handle_cops_temporal_analysis"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_temporal_analysis",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 1933,
+     "end": 2009
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_stamp_scatter",
+   "cmd": "cops_stamp_scatter",
+   "desc": "Stamp image scattering with randomized transform per instance.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 820,
+     "target": "self._handle_cops_stamp_scatter"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_stamp_scatter",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 2011,
+     "end": 2083
+    }
+   ],
+   "reachable_static": true
+  },
+  {
+   "tool": "cops_batch_cook",
+   "cmd": "cops_batch_cook",
+   "desc": "Batch-cook multiple COP nodes sequentially.",
+   "read_only": false,
+   "destructive": true,
+   "idempotent": false,
+   "payload_builder": "_identity",
+   "registrations": [
+    {
+     "file": "python/synapse/server/handlers.py",
+     "line": 821,
+     "target": "self._handle_cops_batch_cook"
+    }
+   ],
+   "impls": [
+    {
+     "name": "_handle_cops_batch_cook",
+     "file": "python/synapse/server/handlers_cops.py",
+     "line": 2085,
+     "end": 2152
+    }
+   ],
+   "reachable_static": true
+  }
+ ],
+ "handler_cmds_with_no_tool": [
+  "assess_render_ready",
+  "get_help",
+  "matlib_bind",
+  "route_chat",
+  "solaris_shotsetup_karma_xpu",
+  "tops_pause_cook",
+  "tops_resume_cook"
+ ],
+ "pending_tool_names": []
+}

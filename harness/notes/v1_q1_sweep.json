@@ -1,0 +1,385 @@
+{
+  "schema": "v1-q1-sweep/1",
+  "build": "22.0.368",
+  "license": "licenseCategoryType.Indie",
+  "tokens": [
+    "flipbook",
+    "screenshot",
+    "snapshot",
+    "grab",
+    "capture",
+    "saveimage",
+    "savefile",
+    "saveview",
+    "writeimage",
+    "toimage",
+    "pixel",
+    "buffer",
+    "raster",
+    "framebuffer",
+    "render",
+    "denois",
+    "aov",
+    "rendervar",
+    "cryptomatte",
+    "exr",
+    "mplay",
+    "imagefile",
+    "canvas"
+  ],
+  "hou_top_level_names": 853,
+  "hou_classes_walked": 530,
+  "module_level_hits": [
+    {
+      "name": "hou.FlipbookSettings",
+      "repr": "<class 'hou.FlipbookSettings'>"
+    },
+    {
+      "name": "hou.RenderGallery",
+      "repr": "<class 'hou.RenderGallery'>"
+    },
+    {
+      "name": "hou._rasterizePreloadIcons",
+      "repr": "<function _rasterizePreloadIcons at 0x000000015D88AAC0>"
+    },
+    {
+      "name": "hou.createApexRootNode",
+      "repr": "<function createApexRootNode at 0x000000015D88C720>"
+    },
+    {
+      "name": "hou.flipbookAntialias",
+      "repr": "<class 'hou.flipbookAntialias'>"
+    },
+    {
+      "name": "hou.flipbookMotionBlurBias",
+      "repr": "<class 'hou.flipbookMotionBlurBias'>"
+    },
+    {
+      "name": "hou.flipbookObjectType",
+      "repr": "<class 'hou.flipbookObjectType'>"
+    },
+    {
+      "name": "hou.renderMethod",
+      "repr": "<class 'hou.renderMethod'>"
+    },
+    {
+      "name": "hou.ropRenderEventType",
+      "repr": "<class 'hou.ropRenderEventType'>"
+    },
+    {
+      "name": "hou.saveImageDataToFile",
+      "repr": "<built-in function saveImageDataToFile>"
+    }
+  ],
+  "class_hits": {
+    "hou.Camera": {
+      "member_count": 85,
+      "hits": [
+        "pixelAspect",
+        "setPixelAspect"
+      ]
+    },
+    "hou.CameraPrim": {
+      "member_count": 119,
+      "hits": [
+        "pixelAspect",
+        "setPixelAspect"
+      ]
+    },
+    "hou.Cop2Node": {
+      "member_count": 344,
+      "hits": [
+        "allPixels",
+        "allPixelsAsString",
+        "getPixelByUV",
+        "getPixelHSVByUV",
+        "getPixelLuminanceByUV",
+        "isRenderFlagSet",
+        "saveImage",
+        "setPixelsOfCookingPlane",
+        "setPixelsOfCookingPlaneFromString",
+        "setRenderFlag"
+      ]
+    },
+    "hou.DopNode": {
+      "member_count": 322,
+      "hits": [
+        "renderNode"
+      ]
+    },
+    "hou.FlipbookSettings": {
+      "member_count": 82,
+      "hits": [
+        "outputToMPlay",
+        "renderAllViewports"
+      ]
+    },
+    "hou.Geometry": {
+      "member_count": 235,
+      "hits": [
+        "attributeCaptureObjectPaths",
+        "attributeCaptureRegions"
+      ]
+    },
+    "hou.GeometryViewport": {
+      "member_count": 93,
+      "hits": [
+        "_captureFramebuffer",
+        "queryNodeAtPixel",
+        "queryPrimAtPixel",
+        "resolutionInPixels",
+        "saveViewToCamera"
+      ]
+    },
+    "hou.GeometryViewportBackground": {
+      "member_count": 54,
+      "hits": [
+        "imageFile",
+        "setImageFile"
+      ]
+    },
+    "hou.GeometryViewportDisplaySet": {
+      "member_count": 122,
+      "hits": [
+        "useXRay"
+      ]
+    },
+    "hou.GeometryViewportSettings": {
+      "member_count": 427,
+      "hits": [
+        "hdrRendering",
+        "saveViewToCamera",
+        "setHdrRendering",
+        "setUVGridPixelOffset",
+        "setUVGridPixelSpacing",
+        "setUseDenoising",
+        "useDenoising",
+        "uvGridPixelOffset",
+        "uvGridPixelSpacing"
+      ]
+    },
+    "hou.IPRViewer": {
+      "member_count": 104,
+      "hits": [
+        "isRendering",
+        "killRender",
+        "pauseRender",
+        "pixel",
+        "pixels",
+        "resumeRender",
+        "startRender"
+      ]
+    },
+    "hou.ImageLayer": {
+      "member_count": 136,
+      "hits": [
+        "allBufferElements",
+        "bufferIndex",
+        "bufferIndexI",
+        "bufferIndexRaw",
+        "bufferIndexV4",
+        "bufferResolution",
+        "bufferToImage",
+        "bufferToPixel",
+        "bufferToPixelScale",
+        "bufferToPixelTranslate",
+        "bufferToTexture",
+        "imageToBuffer",
+        "imageToBufferScale",
+        "imageToBufferTranslate",
+        "imageToPixel",
+        "imageToPixelScale",
+        "imageToPixelTranslate",
+        "localToImage",
+        "localToImage3",
+        "pixelAspectRatio",
+        "pixelScale",
+        "pixelToBuffer",
+        "pixelToImage",
+        "pixelToTexture",
+        "setAllBufferElements",
+        "setBufferIndex",
+        "setBufferIndexI",
+        "setBufferIndexV4",
+        "setPixelAspectRatio",
+        "setPixelScale",
+        "textureToBuffer",
+        "textureToBufferScale",
+        "textureToImage",
+        "textureToPixel",
+        "worldToBuffer",
+        "worldToImage",
+        "worldToImage3"
+      ]
+    },
+    "hou.ObjNode": {
+      "member_count": 346,
+      "hits": [
+        "renderNode",
+        "useXray"
+      ]
+    },
+    "hou.PerfMonProfile": {
+      "member_count": 55,
+      "hits": [
+        "isRecordingRenderStats"
+      ]
+    },
+    "hou.PerfMonRecordOptions": {
+      "member_count": 57,
+      "hits": [
+        "recordRenderStats",
+        "setRecordRenderStats"
+      ]
+    },
+    "hou.RopNode": {
+      "member_count": 318,
+      "hits": [
+        "addRenderEventCallback",
+        "removeAllRenderEventCallbacks",
+        "removeRenderEventCallback",
+        "render"
+      ]
+    },
+    "hou.SceneViewer": {
+      "member_count": 279,
+      "hits": [
+        "currentHydraRenderer",
+        "flipbook",
+        "flipbookSettings",
+        "hydraRenderers",
+        "isRendererPaused",
+        "restartRenderer",
+        "setHydraRenderer",
+        "setRendererPaused",
+        "setShowRenderStats",
+        "setShowRenderTime",
+        "showRenderPurpose",
+        "showRenderStats",
+        "showRenderTime",
+        "showingRenderPurpose"
+      ]
+    },
+    "hou.ShopNode": {
+      "member_count": 316,
+      "hits": [
+        "supportedRenderers"
+      ]
+    },
+    "hou.ShopNodeType": {
+      "member_count": 91,
+      "hits": [
+        "renderMask"
+      ]
+    },
+    "hou.SopNode": {
+      "member_count": 355,
+      "hits": [
+        "isRenderFlagSet",
+        "renderNode",
+        "setRenderFlag"
+      ]
+    },
+    "hou.Take": {
+      "member_count": 56,
+      "hits": [
+        "addNodeRenderFlag",
+        "removeNodeRenderFlag"
+      ]
+    },
+    "hou.TopNode": {
+      "member_count": 360,
+      "hits": [
+        "isRenderFlagSet",
+        "renderNode",
+        "setRenderFlag"
+      ]
+    },
+    "hou.Viewport2D": {
+      "member_count": 38,
+      "hits": [
+        "mapToBuffer"
+      ]
+    },
+    "hou.VopNode": {
+      "member_count": 357,
+      "hits": [
+        "renderMask"
+      ]
+    },
+    "hou.VopNodeType": {
+      "member_count": 94,
+      "hits": [
+        "renderMask"
+      ]
+    },
+    "hou._clone_Connection": {
+      "member_count": 78,
+      "hits": [
+        "availableAovs",
+        "createSnapshot",
+        "displayAov",
+        "renderGalleryDataSource",
+        "renderGalleryItemId",
+        "renderPass",
+        "renderRegion",
+        "renderSettings",
+        "renderer",
+        "setDisplayAov",
+        "setRenderPass",
+        "setRenderRegion",
+        "setRenderSettings",
+        "setRenderer"
+      ]
+    },
+    "hou.fileType": {
+      "member_count": 59,
+      "hits": [
+        "Capture"
+      ]
+    },
+    "hou.nodeFlag": {
+      "member_count": 59,
+      "hits": [
+        "Render"
+      ]
+    },
+    "hou.paneTabType": {
+      "member_count": 63,
+      "hits": [
+        "RenderGallery"
+      ]
+    },
+    "hou.parameterInterfaceTabType": {
+      "member_count": 36,
+      "hits": [
+        "RenderProperties"
+      ]
+    },
+    "hou.ropRenderEventType": {
+      "member_count": 36,
+      "hits": [
+        "PostRender",
+        "PreRender"
+      ]
+    },
+    "hou.sceneViewerEvent": {
+      "member_count": 48,
+      "hits": [
+        "RendererChanged"
+      ]
+    },
+    "hou.viewportParticleDisplay": {
+      "member_count": 36,
+      "hits": [
+        "Pixels"
+      ]
+    },
+    "hou.viewportStereoMode": {
+      "member_count": 35,
+      "hits": [
+        "QuadBufferGL"
+      ]
+    }
+  }
+}

@@ -1,0 +1,156 @@
+{
+  "schema": "v1-q1-cop-readback/1",
+  "build": "22.0.368",
+  "license": "licenseCategoryType.Indie",
+  "allBufferElements_doc": "allBufferElements(self, storagetype: hou.imageLayerStorageType,\nchannels: int) -> hou.BinaryString\n\n    Return all the buffer elements as a binary string. This can then be\n    effeciently re-interpreted and handled by numpy or tensor packages.\n    The number of elements is the same as the bufferResolution. The bit\n    depth and channels returned will match those provided, a conversion\n    will be performed just-in-time if they differ from the internal\n    layout.",
+  "storage_types": [
+    "Fixed16",
+    "Fixed8",
+    "Float16",
+    "Float32",
+    "Int16",
+    "Int32",
+    "Int8"
+  ],
+  "cop_category": "Cop",
+  "cop_parent": "/obj/_v1_copnet",
+  "cop_type_count": 384,
+  "cop_types_sample": [
+    "bubblenoise",
+    "cellularnoise",
+    "cellularnoise3d",
+    "cloudnoise3d",
+    "colorcorrect",
+    "constant",
+    "crystalnoise",
+    "crystalnoise3d",
+    "curlnoise",
+    "curlnoise3d",
+    "denoiseai",
+    "denoisetvd",
+    "fractalnoise",
+    "fractalnoise3d",
+    "grunge_layerednoise",
+    "phasornoise",
+    "ramp",
+    "worleynoise",
+    "worleynoise3d"
+  ],
+  "cop_node_type": "constant",
+  "source_parms": [
+    {
+      "parm": "colorr",
+      "status": "ABSENT",
+      "wanted": 0.25
+    },
+    {
+      "parm": "colorg",
+      "status": "ABSENT",
+      "wanted": 0.5
+    },
+    {
+      "parm": "colorb",
+      "status": "ABSENT",
+      "wanted": 0.75
+    }
+  ],
+  "layer_repr": "<hou.ImageLayer 0000000046C3C400>",
+  "buffer_resolution": [
+    1024,
+    1024
+  ],
+  "channels_requested": 4,
+  "allBufferElements": {
+    "Fixed16": {
+      "ok": true,
+      "bytes": 8388608,
+      "seconds": 0.003511,
+      "sha256": "581d3a1338e7efceb91400f13ae860cc",
+      "bytes_per_pixel_implied": 8.0,
+      "repeat_identical": true
+    },
+    "Fixed8": {
+      "ok": true,
+      "bytes": 4194304,
+      "seconds": 0.001071,
+      "sha256": "cd3517473707d59c3d915b52a3e16213",
+      "bytes_per_pixel_implied": 4.0,
+      "repeat_identical": true
+    },
+    "Float16": {
+      "ok": true,
+      "bytes": 8388608,
+      "seconds": 0.001873,
+      "sha256": "9386561f9f32f3a1eaea9e70a55c673d",
+      "bytes_per_pixel_implied": 8.0,
+      "repeat_identical": true
+    },
+    "Float32": {
+      "ok": true,
+      "bytes": 16777216,
+      "seconds": 0.004655,
+      "sha256": "7752dc2b3cceb8f14367cd5b2000f47d",
+      "bytes_per_pixel_implied": 16.0,
+      "repeat_identical": true
+    },
+    "Int16": {
+      "ok": true,
+      "bytes": 8388608,
+      "seconds": 0.003527,
+      "sha256": "eba9268b920e28775954dda926169163",
+      "bytes_per_pixel_implied": 8.0,
+      "repeat_identical": true
+    },
+    "Int32": {
+      "ok": true,
+      "bytes": 16777216,
+      "seconds": 0.002897,
+      "sha256": "5dc03470a12e6f5cf8cae0480f58c5db",
+      "bytes_per_pixel_implied": 16.0,
+      "repeat_identical": true
+    },
+    "Int8": {
+      "ok": true,
+      "bytes": 4194304,
+      "seconds": 0.000755,
+      "sha256": "5d2bafc266e711ed1e303de871e5b281",
+      "bytes_per_pixel_implied": 4.0,
+      "repeat_identical": true
+    }
+  },
+  "float32_decode": {
+    "element_count": 4194304,
+    "min": 1.0,
+    "max": 1.0,
+    "first_16": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "distinct_first_4096": 1
+  },
+  "readback_timing_float32": {
+    "resolution": [
+      1024,
+      1024
+    ],
+    "channels": 4,
+    "runs": 5,
+    "seconds_min": 0.002367,
+    "seconds_median": 0.002408,
+    "seconds_max": 0.007197
+  }
+}

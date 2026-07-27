@@ -1,0 +1,103 @@
+{
+ "_meta": {
+  "surface": "external MCP stdio, ONE fresh server per case, tool called FIRST",
+  "started": "2026-07-27T15:03:30",
+  "scene": "untitled.hip (empty)"
+ },
+ "synapse_scout": {
+  "tool": "synapse_scout",
+  "args": {
+   "query": "hou.LopNode editableStage",
+   "k": 2
+  },
+  "ceiling_s": 180.0,
+  "result": "NO_RESPONSE",
+  "elapsed": 180.11,
+  "stderr_tail": [
+   "C:\\Users\\User\\SYNAPSE\\mcp_server.py:166: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\\Users\\User\\SYNAPSE\\python\\synapse\\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.",
+   "  from synapse.server.bridge_endpoint import resolve_endpoint as _resolve_endpoint",
+   "2026-07-27 15:03:31,581 [mcp.server.lowlevel.server] INFO: Processing request of type CallToolRequest",
+   "2026-07-27 15:03:33,598 [synapse-mcp] INFO: Connected to Synapse at ws://localhost:9999/synapse",
+   "2026-07-27 15:03:33,598 [synapse-mcp] INFO: Warmup: connected to ws://localhost:9999/synapse"
+  ]
+ },
+ "synapse_inspect_stage": {
+  "tool": "synapse_inspect_stage",
+  "args": {
+   "target_path": "/stage",
+   "timeout": 20
+  },
+  "ceiling_s": 180.0,
+  "result": "RESPONDED",
+  "elapsed": 4.02,
+  "bytes": 60,
+  "head": "{\"nodes\":[],\"schema_version\":\"1.0.0\",\"target_path\":\"/stage\"}",
+  "stderr_tail": [
+   "C:\\Users\\User\\SYNAPSE\\mcp_server.py:166: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\\Users\\User\\SYNAPSE\\python\\synapse\\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.",
+   "  from synapse.server.bridge_endpoint import resolve_endpoint as _resolve_endpoint",
+   "2026-07-27 15:06:32,916 [mcp.server.lowlevel.server] INFO: Processing request of type CallToolRequest",
+   "2026-07-27 15:06:32,918 [synapse.inspector.tool_inspect_stage] INFO: synapse_inspect_stage: target=/stage timeout=20.0",
+   "2026-07-27 15:06:34,927 [synapse-mcp] INFO: Connected to Synapse at ws://localhost:9999/synapse",
+   "2026-07-27 15:06:34,927 [synapse-mcp] INFO: Warmup: connected to ws://localhost:9999/synapse",
+   "2026-07-27 15:06:36,934 [synapse-mcp] INFO: Connected to Synapse at ws://localhost:9999/synapse",
+   "2026-07-27 15:06:36,938 [synapse.inspector.tool_inspect_stage] INFO: synapse_inspect_stage: extracted 0 nodes (clean=0, warning=0, error=0)"
+  ]
+ },
+ "cops_read_layer_info": {
+  "tool": "cops_read_layer_info",
+  "args": {
+   "node": "/obj"
+  },
+  "ceiling_s": 45.0,
+  "result": "RESPONDED",
+  "elapsed": 4.02,
+  "bytes": 85,
+  "head": "{\"cook_status\":\"ok\",\"errors\":[],\"node\":\"/obj\",\"planes\":[],\"type\":\"obj\",\"warnings\":[]}",
+  "stderr_tail": [
+   "C:\\Users\\User\\SYNAPSE\\mcp_server.py:166: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\\Users\\User\\SYNAPSE\\python\\synapse\\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.",
+   "  from synapse.server.bridge_endpoint import resolve_endpoint as _resolve_endpoint",
+   "2026-07-27 15:06:38,092 [mcp.server.lowlevel.server] INFO: Processing request of type CallToolRequest",
+   "2026-07-27 15:06:40,101 [synapse-mcp] INFO: Connected to Synapse at ws://localhost:9999/synapse",
+   "2026-07-27 15:06:40,101 [synapse-mcp] INFO: Warmup: connected to ws://localhost:9999/synapse",
+   "2026-07-27 15:06:42,108 [synapse-mcp] INFO: Connected to Synapse at ws://localhost:9999/synapse"
+  ]
+ },
+ "cops_analyze_render": {
+  "tool": "cops_analyze_render",
+  "args": {
+   "node": "/obj"
+  },
+  "ceiling_s": 45.0,
+  "result": "RESPONDED",
+  "elapsed": 4.02,
+  "bytes": 147,
+  "head": "{\"checks_run\":[\"black_pixels\",\"dynamic_range\",\"clipping\",\"noise\"],\"issues\":[],\"node\":\"/obj\",\"overall_quality\":\"pass\",\"planes\":[],\"resolution\":null}",
+  "stderr_tail": [
+   "C:\\Users\\User\\SYNAPSE\\mcp_server.py:166: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\\Users\\User\\SYNAPSE\\python\\synapse\\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.",
+   "  from synapse.server.bridge_endpoint import resolve_endpoint as _resolve_endpoint",
+   "2026-07-27 15:06:43,182 [mcp.server.lowlevel.server] INFO: Processing request of type CallToolRequest",
+   "2026-07-27 15:06:45,191 [synapse-mcp] INFO: Connected to Synapse at ws://localhost:9999/synapse",
+   "2026-07-27 15:06:45,191 [synapse-mcp] INFO: Warmup: connected to ws://localhost:9999/synapse",
+   "2026-07-27 15:06:47,196 [synapse-mcp] INFO: Connected to Synapse at ws://localhost:9999/synapse"
+  ]
+ },
+ "cops_temporal_analysis": {
+  "tool": "cops_temporal_analysis",
+  "args": {
+   "node": "/obj"
+  },
+  "ceiling_s": 45.0,
+  "result": "RESPONDED",
+  "elapsed": 4.02,
+  "bytes": 172,
+  "head": "{\"analysis\":{\"error_rate\":0.0,\"frame_errors\":0},\"frame_count\":11,\"frame_range\":[-4,6],\"metrics_requested\":[\"flicker\",\"diff\",\"consistency\"],\"node\":\"/obj\",\"overall\":\"stable\"}",
+  "stderr_tail": [
+   "C:\\Users\\User\\SYNAPSE\\mcp_server.py:166: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\\Users\\User\\SYNAPSE\\python\\synapse\\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.",
+   "  from synapse.server.bridge_endpoint import resolve_endpoint as _resolve_endpoint",
+   "2026-07-27 15:06:48,237 [mcp.server.lowlevel.server] INFO: Processing request of type CallToolRequest",
+   "2026-07-27 15:06:50,245 [synapse-mcp] INFO: Connected to Synapse at ws://localhost:9999/synapse",
+   "2026-07-27 15:06:50,246 [synapse-mcp] INFO: Warmup: connected to ws://localhost:9999/synapse",
+   "2026-07-27 15:06:52,252 [synapse-mcp] INFO: Connected to Synapse at ws://localhost:9999/synapse"
+  ]
+ }
+}

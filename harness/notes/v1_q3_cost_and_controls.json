@@ -1,0 +1,375 @@
+{
+  "schema": "v1-q3-cost-controls/1",
+  "build": "22.0.368",
+  "license": "licenseCategoryType.Indie",
+  "A_cop_content": {
+    "cop_node": "/obj/_v1_copnet_a/_v1_src",
+    "parms": [
+      "signature",
+      "mask",
+      "scopergba",
+      "f1",
+      "f21",
+      "f22",
+      "f3r",
+      "f3g",
+      "f3b",
+      "f4r",
+      "f4g",
+      "f4b",
+      "f4a"
+    ],
+    "colour_parms": [],
+    "before": {
+      "sha256": "7752dc2b3cceb8f14367cd5b2000f47d",
+      "first8": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "applied": [],
+    "after": {
+      "sha256": "7752dc2b3cceb8f14367cd5b2000f47d",
+      "first8": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "bytes_changed": false,
+    "matches_target": false,
+    "verdict": "INCONCLUSIVE: buffer did not track the change",
+    "int32_first8": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "int32_bytes": 16777216
+  },
+  "B_ingest_control": {
+    "render": {
+      "case": "ctrl_primid_only",
+      "resolutionx_requested": 160,
+      "parms": [
+        {
+          "parm": "primid",
+          "status": "set",
+          "readback": 1
+        },
+        {
+          "parm": "element",
+          "status": "set",
+          "readback": 0
+        },
+        {
+          "parm": "resolutionx",
+          "status": "set",
+          "readback": 160
+        },
+        {
+          "parm": "camera",
+          "status": "set",
+          "readback": "/world/cam"
+        },
+        {
+          "parm": "engine",
+          "status": "set",
+          "readback": "cpu"
+        },
+        {
+          "parm": "samplesperpixel",
+          "status": "set",
+          "readback": 4
+        },
+        {
+          "parm": "pathtracedsamples",
+          "status": "set",
+          "readback": 16
+        }
+      ],
+      "render_status": "returned",
+      "render_error": null,
+      "wall_seconds": 2.398,
+      "output": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/ctrl_primid_only.exr",
+      "exists": true,
+      "bytes": 27522,
+      "actual_resolution": [
+        160,
+        90
+      ],
+      "parts": [
+        "C",
+        "primid"
+      ]
+    },
+    "find_id_subimage": 1,
+    "selected_part": "primid",
+    "correct": true,
+    "verdict": "find_id_subimage is CORRECT when primid is the only ID part; the misselection is CONDITIONAL on an earlier part whose channel name contains 'id' (e.g. element.id)"
+  },
+  "C_cost_curve": [
+    {
+      "case": "cost_160",
+      "resolutionx_requested": 160,
+      "parms": [
+        {
+          "parm": "primid",
+          "status": "set",
+          "readback": 1
+        },
+        {
+          "parm": "element",
+          "status": "set",
+          "readback": 1
+        },
+        {
+          "parm": "resolutionx",
+          "status": "set",
+          "readback": 160
+        },
+        {
+          "parm": "camera",
+          "status": "set",
+          "readback": "/world/cam"
+        },
+        {
+          "parm": "engine",
+          "status": "set",
+          "readback": "cpu"
+        },
+        {
+          "parm": "samplesperpixel",
+          "status": "set",
+          "readback": 4
+        },
+        {
+          "parm": "pathtracedsamples",
+          "status": "set",
+          "readback": 16
+        }
+      ],
+      "render_status": "returned",
+      "render_error": null,
+      "wall_seconds": 2.239,
+      "output": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/cost_160.exr",
+      "exists": true,
+      "bytes": 36867,
+      "actual_resolution": [
+        160,
+        90
+      ],
+      "parts": [
+        "C",
+        "element",
+        "primid"
+      ]
+    },
+    {
+      "case": "cost_320",
+      "resolutionx_requested": 320,
+      "parms": [
+        {
+          "parm": "primid",
+          "status": "set",
+          "readback": 1
+        },
+        {
+          "parm": "element",
+          "status": "set",
+          "readback": 1
+        },
+        {
+          "parm": "resolutionx",
+          "status": "set",
+          "readback": 320
+        },
+        {
+          "parm": "camera",
+          "status": "set",
+          "readback": "/world/cam"
+        },
+        {
+          "parm": "engine",
+          "status": "set",
+          "readback": "cpu"
+        },
+        {
+          "parm": "samplesperpixel",
+          "status": "set",
+          "readback": 4
+        },
+        {
+          "parm": "pathtracedsamples",
+          "status": "set",
+          "readback": 16
+        }
+      ],
+      "render_status": "returned",
+      "render_error": null,
+      "wall_seconds": 2.153,
+      "output": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/cost_320.exr",
+      "exists": true,
+      "bytes": 83049,
+      "actual_resolution": [
+        320,
+        180
+      ],
+      "parts": [
+        "C",
+        "element",
+        "primid"
+      ]
+    },
+    {
+      "case": "cost_640",
+      "resolutionx_requested": 640,
+      "parms": [
+        {
+          "parm": "primid",
+          "status": "set",
+          "readback": 1
+        },
+        {
+          "parm": "element",
+          "status": "set",
+          "readback": 1
+        },
+        {
+          "parm": "resolutionx",
+          "status": "set",
+          "readback": 640
+        },
+        {
+          "parm": "camera",
+          "status": "set",
+          "readback": "/world/cam"
+        },
+        {
+          "parm": "engine",
+          "status": "set",
+          "readback": "cpu"
+        },
+        {
+          "parm": "samplesperpixel",
+          "status": "set",
+          "readback": 4
+        },
+        {
+          "parm": "pathtracedsamples",
+          "status": "set",
+          "readback": 16
+        }
+      ],
+      "render_status": "returned",
+      "render_error": null,
+      "wall_seconds": 2.217,
+      "output": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/cost_640.exr",
+      "exists": true,
+      "bytes": 220280,
+      "actual_resolution": [
+        640,
+        360
+      ],
+      "parts": [
+        "C",
+        "element",
+        "primid"
+      ]
+    },
+    {
+      "case": "cost_1280",
+      "resolutionx_requested": 1280,
+      "parms": [
+        {
+          "parm": "primid",
+          "status": "set",
+          "readback": 1
+        },
+        {
+          "parm": "element",
+          "status": "set",
+          "readback": 1
+        },
+        {
+          "parm": "resolutionx",
+          "status": "set",
+          "readback": 1280
+        },
+        {
+          "parm": "camera",
+          "status": "set",
+          "readback": "/world/cam"
+        },
+        {
+          "parm": "engine",
+          "status": "set",
+          "readback": "cpu"
+        },
+        {
+          "parm": "samplesperpixel",
+          "status": "set",
+          "readback": 4
+        },
+        {
+          "parm": "pathtracedsamples",
+          "status": "set",
+          "readback": 16
+        }
+      ],
+      "render_status": "returned",
+      "render_error": null,
+      "wall_seconds": 2.502,
+      "output": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/cost_1280.exr",
+      "exists": true,
+      "bytes": 727864,
+      "actual_resolution": [
+        1280,
+        720
+      ],
+      "parts": [
+        "C",
+        "element",
+        "primid"
+      ]
+    }
+  ],
+  "C_summary": {
+    "note": "wall_seconds includes husk PROCESS SPAWN, which is fixed overhead and dominates at small resolutions",
+    "smallest": {
+      "res": [
+        160,
+        90
+      ],
+      "seconds": 2.239
+    },
+    "largest": {
+      "res": [
+        1280,
+        720
+      ],
+      "seconds": 2.502
+    }
+  },
+  "D_flipbook": {
+    "symbol_present": true,
+    "hou_ui_present": false,
+    "scene_viewers": null,
+    "verdict": "UNVERIFIABLE (not ABSENT): hou.SceneViewer.flipbook resolves as a symbol, but hou.ui is unavailable in headless hython so no SceneViewer instance can be obtained to invoke it. R50/H3a-F5: where no control is possible the verdict is UNVERIFIABLE."
+  }
+}

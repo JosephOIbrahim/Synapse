@@ -1,0 +1,171 @@
+{
+  "leg": "S2",
+  "name": "pre-mortem",
+  "schema": "receipt/v1",
+  "harness": "FORENSIC-01",
+  "started": "2026-07-27T13:55:00Z",
+  "ended": "2026-07-27T15:20:00Z",
+  "status": "green",
+  "status_reason": "Oracle met. harness/notes/forensic/S2_PREMORTEM.md written as an account (a sequence, not a list); every failure mode carries MECHANISM + file:line ANCHOR + FIXABLE/LIMIT/UNKNOWN; ranked by likelihood across four tiers (68 entries); the UNKNOWN list is explicit with 22 entries each naming the observation that settles it; no unlabelled ASSUMED claim (the account carries a binding tier declaration separating verified mechanism from assumed studio scenario). Adversarial pass DISPATCHED (3 hostile lenses) - see for_ruling R-S2-1 for its disposition.",
+  "commit_at_run": "dfc02c8",
+  "commit_after": "dfc02c8 (read-only leg; no commits - fence denies git commit per R103)",
+  "mode": "A",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "session profile; leg declared readonly:true in harness/legs.json. NOTE: the declared harness/readonly-settings.json profile was NOT structurally applied to this session - see drift D2.",
+  "deps": ["S0", "S1"],
+  "deps_state": "S0 and S1 both COMPLETED and were read IN FULL (S0_SCOUT.md 1,119 lines; S1_INVENTORY.md 373 lines) before their worktrees were destroyed mid-run. See drift D1.",
+
+  "agents": [
+    {"role": "cartographer x10", "phase": "verify", "domains": ["install", "grounding-hang", "render-stop", "transport-security", "undo-provenance", "panel", "version-decay", "cost", "farm-pdg", "proof"], "returned": 10, "findings": "~90 anchored mechanisms", "workflow": "wf_e2b4efd4-ccd"},
+    {"role": "crucible x3", "phase": "attack", "lenses": ["evidence", "reasoning", "fairness"], "workflow": "wf_aa53fad5-83b", "note": "dispatched; disposition in for_ruling R-S2-1"}
+  ],
+
+  "suite": {
+    "claimed": false,
+    "reason": "Read-only leg. Article V: a leg under a narrow profile cannot claim suite evidence. The suite numbers below were MEASURED by the proof-domain probe as evidence ABOUT the suite, not as this leg's gate.",
+    "measured_at_head_by_probe": {
+      "gate": {"interpreter": "system python 3.14.2", "vendor": "INACTIVE", "passed": 5031, "failed": 0},
+      "shipping": {"interpreter": "hython3.13 / H22.0.368", "vendor": "ACTIVE", "passed": 4891, "failed": 95, "skipped": 131, "errors": 8, "collection_errors": 3, "duration_s": 137.49},
+      "producer": "hython3.13 -m pytest -q --continue-on-collection-errors ; python -m pytest -q",
+      "supersedes": "harness/verify/suite_baseline.json (gate 4875/0/129, shipping 4048/110/771) - 8 days and 12 test-touching commits stale"
+    }
+  },
+
+  "commits": [],
+  "merged": false,
+  "pushed": false,
+  "touches_declared_in_legs_json": [],
+  "touches_actual": ["harness/notes/forensic/S2_PREMORTEM.md", "harness/notes/receipts/S2.json"],
+
+  "oracle": {
+    "artifact": "harness/notes/forensic/S2_PREMORTEM.md",
+    "lines": 1063,
+    "bytes": 84246,
+    "an_account_not_a_list": "PASS - 9 dated beats, Week -2 through Week 12",
+    "mechanism_anchor_class_per_finding": "PASS - 68 ledger rows, every one with file:line + FIXABLE/LIMIT/UNKNOWN",
+    "ranked_by_likelihood": "PASS - 4 tiers; Tier 1 = certain + install-day/first-prompt + every seat",
+    "unknown_list_explicit_with_settling_observation": "PASS - 22 entries, each naming the single observation",
+    "no_unlabelled_assumed": "PASS - binding tier declaration at the head of section 1 separates verified mechanism from assumed studio scenario"
+  },
+
+  "headline": "SYNAPSE is READY in the posture it was built for and NOT READY in the posture a studio has - and its own studio-readiness gate says so today, by name. Ran read-only at dfc02c8: posture_declared RED, policy_single_source RED, consent_enforced RED, rbac_at_dispatch RED; memory_provenance / eval_backbone / farm_headless / context_review_clean green. Under a declared solo posture the same three security criticals are listed as accepted trade-offs and the verdict flips to READY (solo posture).",
+
+  "thesis": "They did not stop because it failed. They stopped because it could not produce evidence of its own value while every failure produced a memory - and that asymmetry is structural: the provenance spine stores digests not changes and its only reader counts files; the audit log with content is written ONLY on success; the cost meter's feeder has zero callers; 3 of 5 agent.usd provenance writers have zero production callers; 40% of the panel package is unreachable from the shipped entrypoint. SYNAPSE's instrumentation is aimed at SYNAPSE.",
+
+  "findings": [
+    {"id": "S2.F1", "severity": "blocker", "truth": "VERIFIED-RUNTIME", "class": "FIXABLE", "claim": "The shipped bridge binds 0.0.0.0:9999 with authentication OFF by default, exposing ungated execute_python (full __builtins__, no import filter, no length cap, no gate) to any LAN host. start_hwebserver calls hwebserver.run() with no settings=, so Houdini's default ADDRESS='0.0.0.0' / ALLOWED_HOSTS=['*'] applies; no installer mints ~/.synapse/auth.key. REFUTES docs/studio/DEPLOYMENT.md:10, which states mode 'local' binds 127.0.0.1.", "anchor": "python/synapse/server/hwebserver_adapter.py:330-335, python/synapse/server/auth.py:82-85, python/synapse/server/handlers.py:1222, docs/studio/DEPLOYMENT.md:10", "verified_twice": "transport probe + orchestrator: netstat TCP 0.0.0.0:9999 LISTENING pid 47540; ~/.synapse/auth.key absent; $SYNAPSE_API_KEY unset; grep finds no installer minting one"},
+
+    {"id": "S2.F2", "severity": "blocker", "truth": "VERIFIED-RUNTIME", "class": "FIXABLE", "claim": "hou.webServer.port() is a phantom on both H21 and H22, swallowed by a bare except, so the panel's worker-thread MCP fast path is permanently dead and EVERY tool call runs inline on Houdini's GUI thread. This is the master mechanism behind every freeze symptom in the product.", "anchor": "python/synapse/panel/tool_executor.py:146,150,157,480, python/synapse/panel/claude_worker.py:251"},
+
+    {"id": "S2.F3", "severity": "blocker", "truth": "VERIFIED-RUNTIME", "class": "FIXABLE", "claim": "The bridge cannot see a failed tool call: handler.handle() has five success=False arms plus a bare except and NEVER raises, so the bridge's failure/rollback branches are dead code and failed ops are recorded fidelity=1.0 / verified. The panel's Session Integrity readout shows 'Operations: 12 | Verified: 12 | Violations: 0 | Fidelity: 100.0%' for a session in which five tool calls errored.", "anchor": "python/synapse/panel/bridge_adapter.py:366-371, python/synapse/server/handlers.py:544-574, shared/bridge.py:1750-1774"},
+
+    {"id": "S2.F4", "severity": "blocker", "truth": "VERIFIED-RUNTIME", "class": "FIXABLE", "claim": "Pressing Stop bricks the panel permanently: ClaudeWorker.run ends with `if not self._abort: self.stream_done.emit()`, so after abort() NEITHER stream_done NOR stream_error fires and _set_busy(False) never runs. SEND stays disabled forever. The only escape - Enter - is not gated on busy and spawns a SECOND concurrent worker mutating the same scene. The two defects compound.", "anchor": "python/synapse/panel/claude_worker.py:132, python/synapse/panel/synapse_panel.py:1761-1764,146-148,1653-1683"},
+
+    {"id": "S2.F5", "severity": "blocker", "truth": "VERIFIED-STATIC", "class": "FIXABLE", "claim": "Consent gating is disarmed on EVERY path at HEAD. get_process_bridge() - bridge.py's own comment calls it 'the single non-test constructor' - builds LosslessExecutionBridge(consent_callback=lambda op: True) then sets _gate = None; bridge_adapter re-asserts both. _check_consent never reaches the HumanGate branch. bridge_adapter.py:189-190's docstring claims MCP uses its own bridge instances - contradicted by lines 198-204 in the same function, which share the process-wide singleton by design.", "anchor": "shared/bridge.py:2239-2241, python/synapse/panel/bridge_adapter.py:192,216-217,189-190"},
+
+    {"id": "S2.F6", "severity": "high", "truth": "VERIFIED-STATIC", "class": "LIMIT+FIXABLE", "claim": "At 6pm an artist has no way to stop a render. Panel renders run inline on the Qt main thread (authors' own comment: 'the panel freezes for the render's duration'); Stop is drawn, enabled and unclickable because the event loop it lives in is the thread being blocked; synapse_render_farm_cancel is registered _ro=False so /mcp marshals it ONTO the blocked main thread with a 10s budget; rkill works and has zero call sites; emergency halt is unsurfaced AND its one automatic caller (freeze_chain._escalate) is inert from a bridge class mismatch - session_report() exists only on LosslessExecutionBridge.", "anchor": "handlers_render.py:109-113,899, _tool_registry.py:1206-1210, mcp/server.py:621-626, freeze_chain.py:202-208, shared/bridge.py:2197,2283"},
+
+    {"id": "S2.F7", "severity": "high", "truth": "VERIFIED-STATIC", "class": "FIXABLE", "claim": "Every render over 30s trips the freeze chain: SUSTAINED FREEZE logged, circuit breaker forced OPEN, emergency halt attempted and failed best-effort. A TD reading logs after a normal day sees dozens of meaningless emergency escalations - and on the day one means something it is the same line. Alarm fatigue by construction.", "anchor": "python/synapse/server/freeze_chain.py:47,138-173,202-208"},
+
+    {"id": "S2.F8", "severity": "high", "truth": "VERIFIED-STATIC", "class": "FIXABLE", "claim": "synapse_configure_render_passes writes bare render-var sourceNames (C/N/Z/P/crypto_*). R101 established the ray: prefix is REQUIRED on Karma 22.0.368 and that bare names emit correctly-named EXR parts FILLED WITH ZEROS, SILENTLY. grep 'ray:' across python/ returns zero hits. TEN TESTS PIN THE BARE SPELLINGS - the suite is a conformance lock on the defect.", "anchor": "handlers_render.py:1690-1707,1771, tests/test_render.py:607-612, CTO_RULINGS_01.md:2814-2820"},
+
+    {"id": "S2.F9", "severity": "high", "truth": "VERIFIED-STATIC", "class": "LIMIT", "claim": "Memory is stored per-shot on shared storage but encrypted with a per-SEAT auto-generated Fernet key. The second artist to open a shot fails to decrypt every line, sets _degraded_load=True (which has no recovery path), writes a memory.jsonl.degraded-load-<ts> litter file beside the hip, and save() raises from then on. Silent. Reads as 'the memory feature does not work'.", "anchor": "python/synapse/memory/store.py:337-363,393-400,446-451, python/synapse/core/crypto.py:88-108"},
+
+    {"id": "S2.F10", "severity": "high", "truth": "VERIFIED-STATIC", "class": "FIXABLE", "claim": "SYNAPSE has no token or cost readout on ANY surface. The panel ships a rail meter whose only writer, _note_usage, has ZERO callers repo-wide (verified: grep returns exactly one hit, its own definition). StreamProvider.stream has no usage slot; the Anthropic SSE handler has no message_start branch, which is where input_tokens and cache_read_input_tokens arrive. The studio cannot answer 'what did this cost' from this codebase at any tier.", "anchor": "python/synapse/panel/synapse_panel.py:445,530, python/synapse/panel/providers/base.py:60, python/synapse/panel/providers/anthropic_provider.py:169"},
+
+    {"id": "S2.F11", "severity": "high", "truth": "VERIFIED-DERIVED", "class": "LIMIT", "claim": "All 126 tool definitions are sent on every API round-trip, inside a loop of up to 25 iterations per user turn; panel/tool_filter.py exists and is not in the request path. Measured at HEAD: 15,901 tokens of tool schemas + 2,615 of system prompt = 18,516 FIXED tokens per round-trip. 86% of a trivial turn is tool definitions the model will not use. The recorded baseline (14,380 / 121 tools) is stale by +10.6% and check_token_baseline_fresh is not a standing guardrail.", "anchor": "synapse_panel.py:1667, claude_worker.py:153, harness/notes/token_baseline.json:24,52"},
+
+    {"id": "S2.F12", "severity": "high", "truth": "VERIFIED-RUNTIME", "class": "FIXABLE", "claim": "The live panel system prompt tells the model it is 'embedded directly inside Houdini 21' and names H21.0.671 as the grounding authority; zero 'Houdini 22' hits in the whole prompt layer. R99's data-layer injector landed; the prose layer did not. Separately the prompt orders a synapse_scout call before authoring LOP nodes - and synapse_scout is absent from TOOL_DEFS and therefore from the 126-tool array the panel advertises.", "anchor": "python/synapse/panel/system_prompt.py:51,189,193,186-193, python/synapse/panel/tool_bridge.py:50-54"},
+
+    {"id": "S2.F13", "severity": "high", "truth": "VERIFIED-RUNTIME", "class": "FIXABLE", "claim": "On the /mcp path the phantom-API gate grounds against the H21 symbol table while reporting gate_armed:true, stale:false. .mcp.json launches stock python, so mcp_server.py's `import hou` always raises and EXPECTED_HOUDINI_VERSION stays None; staleness is then judged against that same table's own stamp - a self-referential comparison, structurally the same defect as the 100%-by-construction coverage metric R2 struck.", "anchor": "python/synapse/cognitive/tools/scout.py:141,438,449-454, mcp_server.py:691-695, .mcp.json:5"},
+
+    {"id": "S2.F14", "severity": "high", "truth": "VERIFIED-RUNTIME", "class": "FIXABLE", "claim": "95 of 228 Ctrl+K palette rows (41.7%) send an English description to the model instead of dispatching, including all 21 slash commands R19 ordered REMOVED and which are byte-identical at HEAD. The mechanism: send = _CATEGORY_PREFIX.get(category,'') + description, and _CATEGORY_PREFIX has entries only for recipe/apex/vex. The panel's ONLY onboarding hint - the input placeholder 'Ask SYNAPSE... / for commands' - points at this surface.", "anchor": "python/synapse/panel/tool_palette.py:61-65,119, python/synapse/panel/command_palette.py:92-114, python/synapse/panel/synapse_panel.py:96"},
+
+    {"id": "S2.F15", "severity": "high", "truth": "VERIFIED-STATIC", "class": "FIXABLE", "claim": "The durable provenance record stores payload/result SHA-256 DIGESTS, not what changed - no node path, no parm name, no value - and the only reader of that directory in the entire tree is doctor.py:594, which lists three filenames. The content-bearing AuditLog is written ONLY from _submit_logs, reached only after a SUCCESSFUL invoke, so the failure case is the one case not recorded. Provenance dir defaults to the INSTALL path, so 40 artists on one shared install share one directory and one 5000-file FIFO.", "anchor": "python/synapse/core/floor_gate.py:117-122,126,362-372, python/synapse/core/audit.py:327-339, python/synapse/server/handlers.py:531-535, python/synapse/server/doctor.py:594"},
+
+    {"id": "S2.F16", "severity": "high", "truth": "VERIFIED-RUNTIME", "class": "FIXABLE", "claim": "Nine distinct install traps, SEVEN of them silent - the brief's 'three of four' is low on both axes. Includes: install.py cannot see H22 at all (for major in [21,20,19]) and silently installs to H21 on a dual-build seat; --verify is green with all six shipping dependencies absent; the shelf ships 7 buttons with 5 icons that are never deployed; error_translator has ZERO importers so the first prompt on a credit-less account returns a raw HTTP 400 JSON blob; version_agreement.py covers 5 of the 7 locations the README says it covers.", "anchor": "install.py:78,87,139, scripts/install_synapse_package.py:351,441, houdini/toolbar/synapse.shelf:13, python/synapse/panel/error_translator.py:354, harness/verify/version_agreement.py:19"},
+
+    {"id": "S2.F17", "severity": "medium", "truth": "VERIFIED-STATIC", "class": "LIMIT", "claim": "STRENGTH, and it must be stated as clearly as any defect: nothing SYNAPSE authors carries a dependency on SYNAPSE. The emitted-node catalog contains only stock namespaces (83 bare, 11 apex::, 3 kinefx::); there are no .hda/.otl files in the repo; the only scene-resident metadata is inert setUserData('synapse:*') strings. A .hip SYNAPSE touched opens and renders on a bare render node. This is the failure class that kills most DCC tools and SYNAPSE is immune to it by construction.", "anchor": "python/synapse/cognitive/tools/data/emitted_node_types.json, python/synapse/mcp/tool_impls/solaris/component_builder.py:46"},
+
+    {"id": "S2.F18", "severity": "medium", "truth": "VERIFIED-RUNTIME", "class": "LIMIT", "claim": "PROOF STATE: 9 of 120 registered tools have re-runnable live-gated automated coverage; the other 111 have never been watched executing against a Houdini that could refuse them. The only end-to-end test of the artist's actual path is an unconditional pytest.skip() whose manual runbook names Houdini 21.0.671, not installed. CI has no Windows lane and no hython lane and pip-installs the six missing deps, so the shipping-environment defect is structurally invisible to it. The undo guarantee is pinned exclusively by MagicMock call-counts and is UNRUNNABLE on the host in that form.", "anchor": "python/synapse/mcp/_tool_registry.py:124, tests/test_host_layer.py:1137-1157, .github/workflows/ci.yml:12,42, tests/test_introspection.py:560-586"}
+  ],
+
+  "refutations_in_run": [
+    {"claim": "introspection.py:184 _node_issues -> node.errors() forces cooks; S1's named candidate for the inspect_scene hang, and the orchestrator's own working hypothesis for the week-one failure", "verdict": "REFUTED-LIVE on H22.0.368 - a freshly created box reports cookCount()==0 before errors(), errors() returns () in 0.0000s, cookCount()==0 after errors() AND warnings(). The payload explanation is refuted on three live measurements; the transport mechanism behind S1's hang remains UNIDENTIFIED and is UNKNOWN U2.", "note": "This was the orchestrator's own hypothesis and was about to be published as the root cause. Recorded per Article II."},
+    {"claim": "shot_layers/ is written to the repo root (RES-F11, and this leg's own first observation of it appearing live during fan-out)", "verdict": "SCOPED DOWN - production writes hou.expandString('$HIP/<shot>_layers'), which lands beside the .hip. The repo-root artefact is the no-hou/fake-hou fallback. The absolute-path guard is still missing (solaris_compose_tools.py:133-136) but the studio-facing behaviour is 'a directory appears next to the shot', not 'writes into the repo'."},
+    {"claim": "The /mcp path was fixed by mcp_server.py:693 setting EXPECTED_HOUDINI_VERSION (orchestrator's mid-run correction to its own earlier read)", "verdict": "INCOMPLETE - the injection code is present on that path but CANNOT FIRE, because .mcp.json launches stock python outside Houdini and the guarded `import hou` always raises. Two successive orchestrator reads were both wrong in opposite directions; the probe settled it."},
+    {"claim": "C1-F3 network_explain segfault; C1-F10 unbounded recursion", "verdict": "BOTH FIXED at 672b247 - do not cite as live. C1-F10's cap covers inspect_selection ONLY; inspect_scene's max_depth is still clamped nowhere."},
+    {"claim": "The marshal deadlock class (9 raw executeInMainThreadWithResult sites, 5 confirmed deadlock)", "verdict": "FIXED AND LINT-ENFORCED - zero live call sites outside comments at HEAD."},
+    {"claim": "karmarenderproperties emitted 31 times (H7-F2/R86)", "verdict": "GONE - zero createNode sites remain; karmarendersettings is the recorded replacement."},
+    {"claim": "The panel injects an out-of-repo ~/.synapse/design/tokens.py (R21); the fallback is unfaithful (R104)", "verdict": "REPAIRED - tokens.py:45-71 is now a hard in-repo import; the six except-ImportError palette arms are gone."},
+    {"claim": "A hardcoded C:\\Users\\User\\SYNAPSE fallback exists in shipping code", "verdict": "NOT FOUND as an executable path at HEAD - only in non-executing docstrings."},
+    {"claim": "R106: the R18 consent pins skip on both interpreters; R27/R28: the panel has no working test surface", "verdict": "BOTH FIXED - the 3 consent pins PASS under hython3.13; tests/panel/ runs 64/65 with no segfault."},
+    {"claim": "suite_baseline.json shipping = 4048/110/771; R47 residual = 57", "verdict": "STALE - measured at HEAD: 4891 passed / 95 failed / 8 errors. Errors fell 771 -> 8. The real residual is 35 SYNCHRONOUS failures (60 of 95 are async tests unrunnable without pytest-asyncio)."},
+    {"claim": "S1: 24 WORKS of 128 tools", "verdict": "MISLABELLED DENOMINATOR - 120 registered (128 SERVED to a client). And 'works' has two honest answers: 9 tools by re-runnable live-gated automated coverage, 24 by S1's hand-made live calls. Both true of different questions."},
+    {"claim": "COP grounding 6.2% is a semantic figure (README)", "verdict": "MISLABELLED - its producer records D2 (literal emission) = 6.2%. D3, the SEMANTIC axis, is ZERO."}
+  ],
+
+  "for_ruling": [
+    {
+      "id": "R-S2-1",
+      "item": "The adversarial pass over S2_PREMORTEM.md was dispatched (3 hostile lenses: evidence / reasoning / fairness, each required to return >=2 SOUND claims as a specificity control per R79). Its findings are NOT yet folded into the document at the time this receipt was written.",
+      "why_escalated": "S0, S1 and L5 all shipped with 'adversarial pass did not run' as a recorded blocker. This leg dispatched one specifically to break that pattern. Whether S2 is 'green' or 'amber' depends on what it returns, and that is a judgement between defensible options.",
+      "recommendation": "Treat S2 as green on delivery and amber on certification until the crucible block is folded in. The document's mechanisms are anchored and orchestrator-verified at the anchors; its RANKING is the weakest claim in it and is exactly what lens 2 attacks."
+    },
+    {
+      "id": "R-S2-2",
+      "item": "S0's and S1's artifacts were DESTROYED mid-run by 11f3a79 'chore: housekeeping pass'. S0_SCOUT.md (78KB), S1_INVENTORY.md (17.5KB), both receipts and ~1.5MB of producer artifacts were uncommitted - read-only legs are denied git commit by the fence (R103) - and the forensic worktrees were pruned. origin/forensic/s0-forensic-scout and .../s1-tool-inventory both sit at 61df5bc, the pre-work commit. No blob exists in any ref.",
+      "why_escalated": "This is R91/R93 reproducing on the two legs S2 depends on, and it is a direct consequence of R103's amendment ('a read-only leg's product IS its receipt'). S0's and S1's products were NOT their receipts - they were 96KB of markdown in a worktree. The rule and the fence are in tension and only a human can resolve it.",
+      "recovery": "BOTH ARE RECOVERABLE from the session transcripts (the repo's own crash-recovery pattern). S0_SCOUT.md: .claude/projects/C--Users-User-SYNAPSE--claude-worktrees-s0-forensic/e4ee3645-c975-4a9f-a406-f02fbdba48c5.jsonl (11MB, 2 hits on the header). S1_INVENTORY.md: .claude/projects/C--Users-User-SYNAPSE--claude-worktrees-s1-forensic/0e34aceb-0245-47ad-94fb-99cff55a76fb.jsonl (27MB, 2 hits). Recover BEFORE anything else cites S0 or S1.",
+      "recommendation": "Amend R103: a read-only leg's product is its receipt AND any artifact it was briefed to write under harness/notes/**. Either grant read-only legs a scoped commit for harness/notes/** only, or have the orchestrator commit their notes on their behalf before housekeeping. The current arrangement guarantees this recurs."
+    },
+    {
+      "id": "R-S2-3",
+      "item": "S2.F1 is a LIVE EXPOSURE ON THIS MACHINE RIGHT NOW, not only a finding about a hypothetical studio. Verified twice this session: houdini.exe pid 47540 is LISTENING on 0.0.0.0:9999 with no auth key present, serving a handler surface whose execute_python runs arbitrary Python with full __builtins__.",
+      "why_escalated": "Security posture is a Gate-A class decision and it also has an immediate operational dimension the human may want to act on today, independent of any product change.",
+      "recommendation": "Two separable actions. (1) IMMEDIATE, operational: either set $SYNAPSE_API_KEY / create ~/.synapse/auth.key, or firewall 9999 to loopback, on any machine running the panel on a shared network. (2) PRODUCT: pass settings with ADDRESS='127.0.0.1' + ALLOWED_HOSTS=['localhost','127.0.0.1'] into start_hwebserver's run() call and have the installer mint the key file, so auth is on by default with an explicit opt-out. CAVEAT: whether Houdini's C++ hwebserver honours a settings-supplied ADDRESS override is UNVERIFIED - SYNAPSE has never passed settings=, so that path has never been exercised. It needs a live two-machine spike BEFORE the fix is promised to anyone."
+    },
+    {
+      "id": "R-S2-4",
+      "item": "The single highest-value observation available to the next quarter is behavioural, not static: sit one Houdini generalist down with a ~6-minute frame, ask them to render, and at t+20s tell them the camera is wrong. Record what they touch, in order, and how long before they force-quit.",
+      "why_escalated": "S2's UNKNOWN list has 22 entries. This one observation prices the entire render cluster (Tier-2 rows 17-22 and Tier-3 rows 35-36), because each of the four plausible artist responses produces a DIFFERENT downstream state - a preserved partial frame that later validates as good, a lost scene, or a 40-minute stall that reads to a supervisor as a hung workstation.",
+      "recommendation": "S3 should treat the UNKNOWN list as its input, not the ledger. The ledger says what to fix; the UNKNOWN list says what to go and find out, and it is the half that cannot be closed by more static analysis."
+    },
+    {
+      "id": "R-S2-5",
+      "item": "harness/verify/suite_baseline.json's shipping block - which the file itself calls 'the ONLY number a release claim may cite' - is 8 days and 12 test-touching commits stale, off by 843 passes and 763 errors. Nothing recomputes it. The ratchet at checks.py:2135 reads the flat GATE keys instead. And CI has no Windows lane and no hython lane, and pip-installs the six unshipped deps.",
+      "why_escalated": "A release-claim authority that drifts monotonically and silently is R31's disease in the instrument built to prevent it. Whether to add a hython CI lane is a real cost decision (it needs a Houdini licence in CI) and is not an agent's to take.",
+      "recommendation": "Cheap half now: a check that recomputes the shipping block and fails when it is more than N commits stale. Expensive half as a decision: a Windows+hython CI lane, or an explicit written acceptance that the shipping number is measured by hand at release time and by nothing else."
+    }
+  ],
+
+  "limits": [
+    "No live mutation was performed. This leg read; it did not drive a tool against a scene. Every artist-visible symptom is derived from the code path, not observed on a running session.",
+    "No adversarial pass had been folded in at the time of writing - see R-S2-1.",
+    "Every cost figure in the document is a tiktoken/cl100k PROXY payload measurement. No model has ever been in the loop: the Anthropic account has no credits and messages.create AND count_tokens both return HTTP 400.",
+    "The husk-on-Indie question is unresolved and contradicted inside the tree; harness/notes/receipts/V1.json, the receipt that would settle it, DOES NOT EXIST at HEAD on any branch in any commit (R103 - V1 ran under a read-only fence that denied git commit; same defect as drift D1).",
+    "Every live verification in this project ran on hou.licenseCategoryType.Indie. A studio runs Core or FX. The whole render posture is untested on the tier a studio actually has (UNKNOWN U7).",
+    "Ranking positions in the ledger are the weakest claims in the document. The MECHANISMS are anchored; the ORDER is argued."
+  ],
+
+  "drift": [
+    {
+      "id": "D1",
+      "severity": "structural",
+      "what": "S0's and S1's uncommitted artifacts were destroyed mid-run by the housekeeping commit 11f3a79, which pruned the forensic worktrees. See for_ruling R-S2-2 for the full record and the recovery path.",
+      "impact_on_this_leg": "NONE to correctness - both documents were read IN FULL before the prune and every quotation in S2_PREMORTEM.md is from that read. Impact is to REPRODUCIBILITY: a reader cannot currently open the two artifacts S2 cites as its inputs."
+    },
+    {
+      "id": "D2",
+      "severity": "structural",
+      "what": "The read-only fence leaked and produced a finding. A tree snapshot was taken before fan-out (dfc02c8, clean but for .claude/.orch_launched). After it, shot_layers/ appeared in the worktree root at 14:24:55 - five USDC department layers written by solaris_compose_tools.py:133-136, where os.makedirs(hou.expandString('$HIP/' + shot + '_layers')) has no absolute-path guard and resolves relative to the process CWD when $HIP is empty.",
+      "disposition": "LEFT IN PLACE, NOT DELETED. Law 4: classification and deletion are separate, human-confirmed acts, and it is evidence. The worktree therefore has two untracked entries at receipt time: .claude/.orch_launched and shot_layers/.",
+      "generalisation": "Instruction-level read-only fences do not hold. This is the SEVENTH recorded instance in this repository (R61's three, R69's three, and this one). This leg's mitigation - snapshot before fan-out, diff after - is what caught it, and is cheap enough to be standard."
+    }
+  ],
+
+  "resume_token": "S2 COMPLETE. harness/notes/forensic/S2_PREMORTEM.md (1,063 lines) is the deliverable and is written. Do NOT re-run the 10-domain verification fan-out - it is expensive (2.16M subagent tokens, 979 tool uses, 59 min) and its ~90 findings are folded into the document with anchors. What REMAINS: (a) fold the crucible block from workflow wf_aa53fad5-83b into the document - read its journal.jsonl, it is the only thing between this leg and full certification; (b) recover S0/S1 from the transcripts named in R-S2-2 BEFORE citing them; (c) S3 takes section 5 (the 22-entry UNKNOWN list) as its input, not section 3. Two untracked paths in the worktree are DELIBERATE: .claude/.orch_launched and shot_layers/ (evidence, see drift D2). Nothing was committed, merged, pushed or tagged.",
+
+  "ratified": false,
+  "ratification_note": "Findings and rulings are for the human. An agent that flips its own gate has removed the only thing standing between a mistake and the main branch (Article I)."
+}

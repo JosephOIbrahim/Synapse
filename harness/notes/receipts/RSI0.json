@@ -1,0 +1,194 @@
+{
+ "schema": "receipt/v1",
+ "leg": "RSI0",
+ "title": "RSI surface audit — is the existing self-improvement machinery connected, and has it ever fired",
+ "harness": "REPAIR-01",
+ "status": "green",
+ "status_note": "Describes what happened (Law 3): all six questions answered with file:line anchors and evidence of EXECUTION, not wiring; 11 live probes run; one working hypothesis reversed mid-run by disconfirming evidence and the reversal is recorded rather than hidden; one vacuous probe discarded rather than reported as evidence; one unlooked-for defect found. Nothing was built, fixed or designed — the brief forbade it. No code, test or state file was modified.",
+ "model": "claude-opus-5[1m]",
+ "settings_profile": "readonly-settings.json (harness/readonly-settings.json; writes confined to harness/notes/**; probe scripts written to the session scratchpad, never to the repo)",
+ "commit_at_run": "21054537b38b6065018664fec3c38c150a82f6d1",
+ "branch_at_run": "feat/repair-heats-01",
+ "date": "2026-07-27",
+ "agents": [],
+ "agents_note": "Solo leg. The audit surface is ~700 lines across three named files; the load-bearing claims needed exhaustive greps and executable probes rather than context isolation, and every claim carries an anchor the reader can re-run.",
+ "read_only_discipline": {
+  "declared": "read-only; writes to harness/notes/** only",
+  "actual_writes": [
+   "harness/notes/RSI_SURFACE_AUDIT.md (new)",
+   "harness/notes/receipts/RSI0.json (this receipt)"
+  ],
+  "scratchpad_writes": [
+   "probe_rsi0.py", "probe_rsi0b.py", "probe_rsi0c.py", "p7b.py", "q6.py"
+  ],
+  "probe_side_effects": "All probes are in-memory. Executed with CWD set to the session scratchpad so any relative state write would land outside the repo. Verified before running that synapse module import does not instantiate CryptoEngine (memory/store.py:48-53 is lazy), so no key material was generated.",
+  "nothing_built": true,
+  "nothing_fixed": true,
+  "never": "no push, no merge, no tag"
+ },
+ "oracle": {
+  "every_question_anchored": "6/6. Q1 adaptation.py:145-166 + core/logfile.py:60-95 + ~/.synapse/logs/synapse.log. Q2 executor.py:60 + agent/__init__.py:1-21. Q3 adaptation.py:98-112,153,184 + router.py:523,565. Q4 router.py:917 + 8 call sites + router.py:538. Q5 adaptation.py:121-126,104-112. Q6 store.py:525,810 + handlers_memory.py:252,263. Zero UNVERIFIABLE.",
+  "Q1_evidence_is_execution_not_wiring": "YES. 4,795 epoch-close records read off disk from the operator's production log, then attributed to named tests by three independent proofs. Wiring-level facts (instantiated at router.py:202, fed at router.py:926) are stated separately and labelled as wiring.",
+  "Q2_evidence_is_execution_not_wiring": "YES. The wiring fact is executor.py:60. The execution fact is that AgentExecutor has ZERO production construction sites — the sole non-test occurrence of 'AgentExecutor(' in the main tree is inside a module docstring (agent/__init__.py:12, docstring spans 1-21). No FEEDBACK memory can exist because no live path builds the executor.",
+  "Q3_objective_in_one_sentence": "YES, and it is statable: 'Raise the confidence threshold of any tier whose success rate over the last 100 routed outcomes fell below 0.5, and lower it for any tier above 0.9, so that new unpinned inputs are steered toward tiers that recently succeeded.'",
+  "Q4_coupling_traced_explicitly": "YES, named and traced: router.py:917 declares success:bool=True and all 8 _record_metric call sites pass exactly 2 positional args (AST-enumerated). The routing component authors its own outcome as a hardcoded literal.",
+  "three_booleans_per_mechanism": "YES — WIRED / FIRES / MODIFIES SOMETHING given as a table with each term defined.",
+  "deliverable": "harness/notes/RSI_SURFACE_AUDIT.md",
+  "suite": {
+   "before": "not run",
+   "after": "not run",
+   "reason": "Read-only leg under readonly-settings.json; no code, test or config was modified, so there is no delta for the suite to measure. Reporting a suite number here would be a number without a producer (Law 2). The audit's claims rest on the 11 probes, each with a stated failure condition.",
+   "law6": "N/A — no test weakened, skipped, xfailed or deleted; no test touched at all"
+  }
+ },
+ "findings": [
+  {
+   "id": "RSI0-F1",
+   "claim": "The tier-adaptation loop has NEVER completed an epoch in production. All 4,795 'Epoch N complete' records in ~/.synapse/logs/synapse.log{,.1,.3} are pytest artifacts. Three independent proofs: (a) 4,425 of them report epoch sizes 2/3/5, which the router cannot produce because it always constructs EpochAdapter() with DEFAULT_EPOCH_SIZE=100; (b) all 370 size-100 lines are Epoch 0 or Epoch 1 only, never Epoch 2 — the exact signature of test_adapter_thread_safety's 200 records, whereas accumulating traffic would produce higher ids; (c) every line names only {'instant'}, never recipe/fast/standard/deep/cache. Full decomposition closes with zero residual lines.",
+   "truth": "VERIFIED-RUNTIME",
+   "anchor": "adaptation.py:155 (the log line); router.py:202 (size always 100); ~/.synapse/logs/synapse.log",
+   "severity": "STRUCTURAL — the mechanism named as SYNAPSE's RSI loop is decorative"
+  },
+  {
+   "id": "RSI0-F2",
+   "claim": "The adapted thresholds are read by nothing that changes behaviour. EpochAdapter._thresholds is written at adaptation.py:153 and read only at adaptation.py:184 (inside stats(), for display). TierThresholds.get() (adaptation.py:95) and EpochAdapter.get_stale_pin_epoch() (adaptation.py:168) have ZERO callers outside tests. The router's real decisions read static RoutingConfig values at router.py:523 and :565. Live probe: routing an input that genuinely executes the tier-0 threshold comparison is unchanged with adapter thresholds set to {}, all-1.0 and all-0.0.",
+   "truth": "VERIFIED-RUNTIME",
+   "anchor": "adaptation.py:95,153,168,184; router.py:107-108,523,565",
+   "severity": "STRUCTURAL — the loop's output is disconnected from its own subject"
+  },
+  {
+   "id": "RSI0-F3",
+   "claim": "The reward signal is a hardcoded constant. router.py:917 declares _record_metric(self, tier, latency_ms, success: bool = True) and an AST walk finds 8 call sites, none passing success. Probed live: six real recipes driven to genuine failure (RoutingResult.success=False, failed_step=1) all recorded success=True in the epoch adapter. Success rate is therefore permanently 1.0 > HIGH_SUCCESS_THRESHOLD, so adjust() takes the 'great performance' branch every epoch and thresholds ratchet monotonically down 0.05/epoch to the 0.1 clamp floor in 8 epochs. It is a one-way ratchet, not a controller.",
+   "truth": "VERIFIED-RUNTIME",
+   "anchor": "router.py:917 + call sites 285,448,515,554,584,706,742,819; adaptation.py:109-111",
+   "severity": "STRUCTURAL — the optimiser is structurally incapable of observing failure"
+  },
+  {
+   "id": "RSI0-F4",
+   "claim": "Tier 0 reports success on a failed command — a Law 3 violation on the live routing path. _try_tier0 builds RoutingResult(success=True, ...) at router.py:537-538 without consulting the responses it just collected. Probed: with a command_fn returning success=False/error='probe: forced failure', the RoutingResult still reads success=True and the artist-facing answer is 'Parsed as delete'. Separately, the no_tier_matched fallback (router.py:367-373) returns success=False and never calls _record_metric at all, so genuine routing failures do not enter the sample.",
+   "truth": "VERIFIED-RUNTIME",
+   "anchor": "router.py:537-538 (hardcoded success); router.py:367-373 (unrecorded failure path)",
+   "severity": "LIVE DEFECT — independent of RSI; the chat path can tell an artist an operation succeeded when the command failed"
+  },
+  {
+   "id": "RSI0-F5",
+   "claim": "OutcomeTracker is unreachable, not merely unfed. The brief's premise was that executor.py:60's 'OutcomeTracker(memory) if memory else None' might never receive a real memory; the stronger truth is that AgentExecutor is never constructed on any live path. The only non-test occurrence of 'AgentExecutor(' in the main tree is inside the agent/__init__.py module docstring at line 12. All 14 real constructions are in tests/test_agent.py.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "executor.py:60; agent/__init__.py:1-21 (docstring); tests/test_agent.py:336-826",
+   "severity": "STRUCTURAL — the reward signal has never recorded one outcome"
+  },
+  {
+   "id": "RSI0-F6",
+   "claim": "The deprecated evolution.py is live by default and its removal condition has not been met. store.py:810 defaults SYNAPSE_MEMORY_BACKEND to 'jsonl', the variable is unset on this machine, and .synapse/config.yaml:17's memory_backend: \"flat\" is a DIFFERENT key the store selector never reads. Verified with the negative control the crucible test lacks: moneta -> MonetaBackedStore -> 0 check_evolution calls; jsonl -> MemoryStore -> 2; unset -> MemoryStore -> 2 (25 adds, interval 10). The moneta claim HOLDS and the test CAN fail. But the docstring's stated removal condition (evolution.py:14-16, 'when SYNAPSE_MEMORY_BACKEND defaults to moneta') is unmet.",
+   "truth": "VERIFIED-RUNTIME",
+   "anchor": "store.py:165,525,810; evolution.py:14-16; .synapse/config.yaml:17; tests/test_moneta_crucible.py:256",
+   "severity": "doc/reality divergence — a module documented as retired is running on the default configuration"
+  },
+  {
+   "id": "RSI0-F7",
+   "claim": "Evolution's detector fires automatically; its converter never does. Both automatic sites (store.py:530-547, scene_memory.py:486-500) call only check_evolution and emit a logger.info recommendation. evolve_to_charmeleon (evolution.py:217) has exactly ONE caller — handlers_memory.py:263 — reachable only via the explicit synapse_evolve_memory tool and gated behind dry_run, which defaults to True (handlers_memory.py:252). No memory.usd exists outside pytest temp dirs.",
+   "truth": "VERIFIED-STATIC + VERIFIED-RUNTIME",
+   "anchor": "store.py:530-547; memory/scene_memory.py:486-500; handlers_memory.py:252,263; evolution.py:217",
+   "severity": "the third RSI loop completes a cycle that terminates in a log line"
+  },
+  {
+   "id": "RSI0-F8",
+   "claim": "UNLOOKED-FOR: pytest writes into the operator's production audit log. core/logfile.py:60 attaches a RotatingFileHandler at INFO to the 'synapse' logger whenever called, and the suite exercises the same modules, so ~/.synapse/logs/synapse.log holds 4,795 test-authored 'Epoch N complete' records. Grepping the production log for evidence that the RSI loop runs returns 4,795 hits, ALL FALSE. This audit's first pass read them as production traffic and had to reverse. Same file that doctor.py and telemetry_dump.py point operators at.",
+   "truth": "VERIFIED-RUNTIME",
+   "anchor": "core/logfile.py:60-95; ~/.synapse/logs/synapse.log (4,540,722 bytes at audit time)",
+   "severity": "HIGH — audit-trail contamination that actively misleads the next investigator, human or agent"
+  },
+  {
+   "id": "RSI0-F9",
+   "claim": "The epoch tests pin arithmetic, not connection. Every test in TestEpochAdaptation constructs EpochAdapter(epoch_size=N) directly and calls .record() by hand; none drives the adapter through TieredRouter.route(). test_adapter_threshold_evolves records success=False five times — an input the router is structurally incapable of producing (F3). So the suite proves the mechanism CAN adjust while nothing tests that the router's feed varies or that route() consumes the result. Law 1: these checks cannot fail on the defects that matter.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "tests/test_v5_features.py:246-303; tests/test_routing.py:1791-1802",
+   "severity": "method — green tests over a decorative mechanism"
+  }
+ ],
+ "headline_findings": [
+  "RSI0-F1 + F2 + F3 compose into one verdict: the loop has never closed an epoch in production; if it did, it would adjust a value nothing reads; and it would adjust it from a signal that is a hardcoded True. Three independent breaks, any one of which alone would make it decorative.",
+  "RSI0-F5: the question 'is OutcomeTracker ever given a real memory' has a stronger answer than the brief expected — the executor that would construct it has no production caller at all. The reward signal is unreachable, not unfed.",
+  "RSI0-F8: pytest pollutes the operator's production log with 4,795 false 'the RSI loop is running' records. This audit was itself briefly fooled by them. It is the most immediately actionable defect found."
+ ],
+ "method_notes": {
+  "hypothesis_reversed_mid_run": "The working hypothesis after static reading was 'no epoch has ever closed, and no log line exists'. Grepping the production log returned 1,336 hits in the live file alone — apparently disconfirming. Rather than reporting either the original hypothesis or the naive log reading, the epoch-size and tier-name fingerprints were examined; that produced both the correct Q1 answer AND finding F8. Probes beat memory, and they beat the first reading of a probe too.",
+  "vacuous_probe_discarded": "The first threshold-consultation probe (P3) used inputs that all fell to the no_tier_matched fallback, which consults no threshold at all — the check could not have failed. It was rerun (P3b) against 'delete /obj/thing1', which reaches Tier 0 at confidence 0.95 and genuinely executes the comparison at router.py:523. Only the second run is reported as evidence. Law 1 applied to the leg's own instruments.",
+  "negative_control_supplied": "tests/test_moneta_crucible.py:256 asserts check_evolution is never called under moneta but has no paired control proving it IS called otherwise, so on its own it could pass vacuously. The control was run: jsonl -> 2 calls. The claim survives, and now it survives with evidence rather than assertion. The brief said verify rather than cite; this is the difference.",
+  "static_and_dynamic_agreed_everywhere": "Every dynamic probe result was independently reachable by grep or AST, and vice versa. The 8 _record_metric call sites were enumerated by AST walk rather than by reading, because a miscounted call site would have inverted the Q4 answer.",
+  "what_a_static_only_audit_would_have_missed": "F8 entirely — the log contamination is invisible in the tree. And it would have reported Q1 with lower confidence, because 'no persisted state exists' is much weaker evidence than 'the persistence channel exists, contains 4,795 records, and every one of them is attributable to a named test'.",
+  "what_a_log_only_audit_would_have_concluded": "The exact opposite of the truth: that the RSI loop has closed 4,795 epochs across three days."
+ },
+ "resume_token": {
+  "skip": [
+   "Q1-Q6 are answered with anchors and probes; do not re-derive. The probe scripts are in the session scratchpad and are reproducible from the anchors in the audit.",
+   "the moneta/evolution claim — verified WITH a negative control; re-verify only if the backend default changes",
+   "the 8 _record_metric call sites — AST-enumerated at 2105453; re-run only if router.py changes"
+  ],
+  "redo_if": "router.py or adaptation.py is modified; SYNAPSE_MEMORY_BACKEND's default flips to moneta; or ~/.synapse/logs is cleaned (which would destroy the F1/F8 evidence).",
+  "next": "Every remaining step is a value judgement and sits in for_ruling. RSI0-R1 is the fork the rest depend on: whether this loop is meant to be alive at all. Nothing should be wired before RSI0-R2 — connecting the thresholds while the reward signal is a constant would convert a decorative mechanism into an actively harmful one that ratchets every tier to the 0.1 floor."
+ },
+ "for_ruling": [
+  {
+   "id": "RSI0-R1",
+   "question": "Is the tier-adaptation loop meant to be alive? Three options: (a) wire it properly — real success signal, thresholds consumed, persisted, reversible; (b) delete it and its tests; (c) keep it explicitly labelled as instrumentation-only.",
+   "recommendation": "Decide this before anything else — it is the fork every other ruling depends on. My read is that (c) is the honest resting state today and (a) is a real leg of work, not a patch: it needs a truthful success signal (R2), a consumption point (R3), persistence (R4) and reversal (R5), and any one of those alone makes things worse. Article I: this is product direction between defensible options, so it is not mine.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "RSI0-R2",
+   "question": "Fix the reward signal — should _record_metric receive the real outcome at all 8 sites (router.py:917)?",
+   "recommendation": "This one is arguably not a value judgement: passing success=result.success is a truthful-status fix under Law 3 regardless of whether the loop is ever wired. But it is entangled with R6 (tier 0 lies before the adapter sees it) and it would change what stats() reports to any operator reading router_stats today, so it is escalated rather than assumed.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "RSI0-R3",
+   "question": "If the loop is to live, where is the consumption point — should router.py:523/:565 read EpochAdapter thresholds instead of the static RoutingConfig values?",
+   "recommendation": "Do NOT do this before R2 lands. With the constant reward signal, connecting the thresholds ratchets every tier to the 0.1 floor within 8 epochs — a disconnected mechanism made harmful.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "RSI0-R4",
+   "question": "Should epoch state persist across process restarts, given the router is constructed lazily per server process (handlers.py:1608)?",
+   "recommendation": "Without persistence the loop needs 100 tier-reaching routes in a single process lifetime, which the evidence says has never happened. So persistence is a precondition for the loop existing at all, not an enhancement. But it is also the point at which a bad adaptation becomes durable — hence R5.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "RSI0-R5",
+   "question": "What reverses a bad adaptation? R91/R93 precedent says a mechanism with no reversal is one bad run from an unrecoverable state.",
+   "recommendation": "If R4 says persist, then versioned thresholds with a bounded rollback are mandatory in the same commit, not a follow-up. Today's zero blast radius is an accident of disconnection and evaporates the moment R3 or R4 lands.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "RSI0-R6",
+   "question": "router.py:537-538 returns RoutingResult(success=True) on Tier 0 regardless of whether the executed command failed (RSI0-F4). Fix now, or with R2?",
+   "recommendation": "Together with R2 — they are the same defect at two layers, and fixing only the adapter feed would leave the artist-facing lie in place. Note this one has live artist impact independent of RSI: the chat path can report success on a failed command.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "RSI0-R7",
+   "question": "Should the no_tier_matched fallback (router.py:367-373) record an outcome? Today genuine routing failures never enter the sample at all.",
+   "recommendation": "If the loop lives, yes — an optimiser blind to its own misses cannot improve coverage. If the loop is retired (R1b/R1c), leave it; adding an unread metric is more decoration.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "RSI0-R8",
+   "question": "Stop pytest writing into ~/.synapse/logs/synapse.log (RSI0-F8). Options: set SYNAPSE_FILE_LOG=0 in the test conftest; redirect SYNAPSE_LOG_DIR to tmp_path; or make ensure_file_logging() refuse under pytest.",
+   "recommendation": "Highest value-per-line finding in this leg and the one I would act on first. The conftest env-var route (SYNAPSE_LOG_DIR to a tmp dir) is least invasive and keeps the handler under test. Whichever is chosen, the existing contaminated logs should be labelled or rotated out, or the next investigator repeats this leg's reversal.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "RSI0-R9",
+   "question": "Should the epoch tests be rewritten to drive EpochAdapter through TieredRouter.route() rather than by hand (RSI0-F9)? Law 6 says a test pinning dead code is the wrong test, not a licence to delete it.",
+   "recommendation": "A router-driven test would have failed on day one and surfaced F2 and F3 immediately. But rewriting them only makes sense after R1 — if the loop is retired, the right move is to rewrite them to assert the behaviour at its real home, per Law 6, not to delete them.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "RSI0-R10",
+   "question": ".synapse/config.yaml:17 declares memory_backend: \"flat\", a key the store selector (store.py:810) never reads. Is it dead config, or is a reader missing?",
+   "recommendation": "Not resolvable from the tree — it reads as either abandoned config or an unimplemented consumer, and guessing wrong either deletes a live intent or leaves a lie in the operator-facing config. Needs the author's intent.",
+   "source": "orchestrator"
+  }
+ ],
+ "what_the_leg_proves_about_its_own_premise": "The brief predicted that the interesting question is whether a mechanism is connected and has fired, not whether it exists. That held, and the leg found the shape is finer than a binary: 'wired', 'fires' and 'modifies something' come apart in all three mechanisms, and differently in each. adaptation.py is wired and never fires. learning.py is not wired at all — its documented guard is not the reason it is dead. evolution.py both fires and is deprecated, and still modifies nothing automatically. A single 'is it connected' boolean would have gotten all three wrong. The premise's other half — that the answer would come from probes rather than reading — held harder than expected: the static read produced a correct Q1 conclusion for a wrong reason, and only the log evidence, then the fingerprint analysis OF that log evidence, produced the true one."
+}

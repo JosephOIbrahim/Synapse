@@ -1,0 +1,80 @@
+{
+  "schema": "v1-q1-cop-content-control/1",
+  "build": "22.0.368",
+  "test1_driven_value": {
+    "parms": [
+      "signature",
+      "mask",
+      "scopergba",
+      "f1",
+      "f21",
+      "f22",
+      "f3r",
+      "f3g",
+      "f3b",
+      "f4r",
+      "f4g",
+      "f4b",
+      "f4a"
+    ],
+    "before": {
+      "sha256": "7752dc2b3cceb8f14367cd5b2000f47d",
+      "first8": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "signature": "auto",
+    "applied": [
+      {
+        "parm": "f1",
+        "status": "set",
+        "readback": 0.15
+      }
+    ],
+    "after": {
+      "sha256": "8ce6adac4e7b3ea25e023045b1f2e981",
+      "first8": [
+        0.15000000596046448,
+        0.15000000596046448,
+        0.15000000596046448,
+        1.0,
+        0.15000000596046448,
+        0.15000000596046448,
+        0.15000000596046448,
+        1.0
+      ]
+    },
+    "bytes_changed": true,
+    "first_pixel": [
+      0.15000000596046448,
+      0.15000000596046448,
+      0.15000000596046448,
+      1.0
+    ],
+    "expected_first_pixel": [
+      0.15,
+      0.15,
+      0.15,
+      1.0
+    ],
+    "matches_target": true,
+    "verdict": "CONFIRMED"
+  },
+  "test2_spatial_variation": {
+    "node_type": "fractalnoise",
+    "element_count": 4194304,
+    "distinct_values": 949595,
+    "min": 0.17927056550979614,
+    "max": 1.0,
+    "sha256": "cef3370293356ce92e75294ca2f6230a",
+    "verdict": "CONFIRMED: buffer varies spatially"
+  },
+  "overall": "CONFIRMED"
+}

@@ -1,0 +1,1123 @@
+{
+  "schema": "v1-q2-parmdetail/1",
+  "build": "22.0.368",
+  "rendervar_all_parms": [
+    {
+      "name": "sample_group",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_behavior",
+      "label": "Sampling Behavior",
+      "type": "StringParmTemplate",
+      "default": [
+        "single"
+      ],
+      "eval": "single",
+      "menu_items": [
+        "single",
+        "timedep",
+        "multi"
+      ],
+      "menu_labels": [
+        "Sample Current Frame",
+        "Sample Frame Range If Input Is Not Time Dependent",
+        "Sample Frame Range"
+      ]
+    },
+    {
+      "name": "sample_f1",
+      "label": "Start/End/Inc",
+      "type": "FloatParmTemplate",
+      "default": [
+        1.0,
+        240.0,
+        1.0
+      ],
+      "eval": 1.0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_f2",
+      "label": "Start/End/Inc",
+      "type": "FloatParmTemplate",
+      "default": [
+        1.0,
+        240.0,
+        1.0
+      ],
+      "eval": 240.0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_f3",
+      "label": "Start/End/Inc",
+      "type": "FloatParmTemplate",
+      "default": [
+        1.0,
+        240.0,
+        1.0
+      ],
+      "eval": 1.0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_subframeenable",
+      "label": "Subframe Sampling",
+      "type": "ToggleParmTemplate",
+      "default": false,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_subframegroup",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_shuttermode",
+      "label": "Shutter",
+      "type": "StringParmTemplate",
+      "default": [
+        "manual"
+      ],
+      "eval": "manual",
+      "menu_items": [
+        "cameraprim",
+        "manual"
+      ],
+      "menu_labels": [
+        "Use Camera Prim",
+        "Specify Manually"
+      ]
+    },
+    {
+      "name": "sample_shutterrange1",
+      "label": "Shutter Open/Close",
+      "type": "FloatParmTemplate",
+      "default": [
+        -0.25,
+        0.25
+      ],
+      "eval": -0.25,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_shutterrange2",
+      "label": "Shutter Open/Close",
+      "type": "FloatParmTemplate",
+      "default": [
+        -0.25,
+        0.25
+      ],
+      "eval": 0.25,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_cameraprim",
+      "label": "Camera Prim",
+      "type": "StringParmTemplate",
+      "default": [
+        "/cameras/camera1"
+      ],
+      "eval": "/cameras/camera1",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_count",
+      "label": "Samples",
+      "type": "IntParmTemplate",
+      "default": [
+        2
+      ],
+      "eval": 2,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_includeframe",
+      "label": "Always Include Frame Sample",
+      "type": "ToggleParmTemplate",
+      "default": true,
+      "eval": 1,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_group2",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_subframegroup2",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "primpattern",
+      "label": "Primitives",
+      "type": "StringParmTemplate",
+      "default": [
+        "`lopinputprims('.', 0)`"
+      ],
+      "eval": "",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "primpath",
+      "label": "Primitive Path",
+      "type": "StringParmTemplate",
+      "default": [
+        "/Render/Products/Vars/$OS"
+      ],
+      "eval": "/Render/Products/Vars/_v1_rv",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "createprims",
+      "label": "Action",
+      "type": "MenuParmTemplate",
+      "default": 1,
+      "eval": 1,
+      "menu_items": [
+        "off",
+        "on",
+        "forceedit"
+      ],
+      "menu_labels": [
+        "Edit",
+        "Create",
+        "Force Edit (Ignore Editable Flag)"
+      ]
+    },
+    {
+      "name": "initforedit",
+      "label": "Initialize Parameters",
+      "type": "ButtonParmTemplate",
+      "default": null,
+      "eval": "setdonothing",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "createprimsgroup2",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "primcount",
+      "label": "Primitive Count",
+      "type": "IntParmTemplate",
+      "default": [
+        1
+      ],
+      "eval": 1,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "primtype",
+      "label": "Primitive Type",
+      "type": "StringParmTemplate",
+      "default": [
+        "UsdRenderVar"
+      ],
+      "eval": "UsdRenderVar",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "primkind",
+      "label": "Primitive Kind",
+      "type": "StringParmTemplate",
+      "default": [
+        ""
+      ],
+      "eval": "",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "specifier",
+      "label": "Primitive Specifier",
+      "type": "StringParmTemplate",
+      "default": [
+        "def"
+      ],
+      "eval": "def",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "classancestor",
+      "label": "Class Ancestor",
+      "type": "StringParmTemplate",
+      "default": [
+        ""
+      ],
+      "eval": "",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "parentprimtype",
+      "label": "Parent Primitive Type",
+      "type": "StringParmTemplate",
+      "default": [
+        "UsdGeomScope"
+      ],
+      "eval": "UsdGeomScope",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "settings",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "dataType_control",
+      "label": "dataType",
+      "type": "StringParmTemplate",
+      "default": [
+        "set"
+      ],
+      "eval": "set",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "dataType",
+      "label": "Data Type",
+      "type": "StringParmTemplate",
+      "default": [
+        "color3f"
+      ],
+      "eval": "color3f",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sourceName_control",
+      "label": "sourceName",
+      "type": "StringParmTemplate",
+      "default": [
+        "set"
+      ],
+      "eval": "set",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sourceName",
+      "label": "Source Name",
+      "type": "StringParmTemplate",
+      "default": [
+        ""
+      ],
+      "eval": "",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sourceType_control",
+      "label": "sourceType",
+      "type": "StringParmTemplate",
+      "default": [
+        "set"
+      ],
+      "eval": "set",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sourceType",
+      "label": "Source Type",
+      "type": "StringParmTemplate",
+      "default": [
+        "raw"
+      ],
+      "eval": "raw",
+      "menu_items": [
+        "raw",
+        "primvar",
+        "lpe",
+        "intrinsic"
+      ],
+      "menu_labels": [
+        "Raw",
+        "Primvar",
+        "LPE",
+        "Intrinsic"
+      ]
+    },
+    {
+      "name": "errorseverity",
+      "label": "Error Severity",
+      "type": "MenuParmTemplate",
+      "default": 1,
+      "eval": 1,
+      "menu_items": [
+        "0",
+        "1",
+        "2"
+      ],
+      "menu_labels": [
+        "Message",
+        "Warning",
+        "Error"
+      ]
+    },
+    {
+      "name": "errormsg",
+      "label": "Error Message",
+      "type": "StringParmTemplate",
+      "default": [
+        "`ifs(ch(\"createprims\") == 1, ifs(strmatch(\"/Render/*\", chs(\"primpath\")), \"\", \"Render primitives should be created under the /Render branch.\"), \"\")`"
+      ],
+      "eval": "",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_group3",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "sample_subframegroup3",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "createprimsgroup3",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "settings21",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "KarmaRenderVarAPI_Image",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 1,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmafilter_control_y2bkdf",
+      "label": "Sample Blending",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmafilter_xpbkdf",
+      "label": "Sample Blending",
+      "type": "StringParmTemplate",
+      "default": [
+        ""
+      ],
+      "eval": "",
+      "menu_items": [
+        "[\"ubox\",{}]",
+        "[\"accumulate\",{}]\" \"Adds Up Sample Values\"\n            R\"([\"minmax\",{\"mode\":\"min\"}]",
+        "[\"minmax\",{\"mode\":\"max\"}]",
+        "[\"minmax\",{\"mode\":\"zmin\"}]",
+        "[\"minmax\",{\"mode\":\"zmax\"}]",
+        "[\"stats\",{\"mode\":\"mse\"}]",
+        "[\"stats\",{\"mode\":\"var\"}]",
+        "[\"stats\",{\"mode\":\"even\"}]",
+        "[\"stats\",{\"mode\":\"odd\"}]"
+      ],
+      "menu_labels": [
+        "Average Sample Values",
+        "Sample: Minimum Value",
+        "Sample: Maximum Value",
+        "Sample: Closest",
+        "Sample: Farthest",
+        "Stats: Mean Squared Error",
+        "Sample: Variance",
+        "Sample: Even Samples",
+        "Sample: Odd Samples"
+      ]
+    },
+    {
+      "name": "xn__driverparametersaovkarmadither_control_y2bkdf",
+      "label": "Dithering",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmadither_xpbkdf",
+      "label": "Dithering",
+      "type": "FloatParmTemplate",
+      "default": [
+        1.0
+      ],
+      "eval": 1.0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmadefaultvalue_control_qdckdf",
+      "label": "Default Value",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmadefaultvalue_pzbkdf",
+      "label": "Default Value",
+      "type": "FloatParmTemplate",
+      "default": [
+        0.0
+      ],
+      "eval": 0.0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmacryptomatte_control_3bckdf",
+      "label": "Enable Cryptomatte",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmacryptomatte_2xbkdf",
+      "label": "Enable Cryptomatte",
+      "type": "ToggleParmTemplate",
+      "default": false,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmacryptomatterank_control_mickdf",
+      "label": "Cryptomatte Max Overlap",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmacryptomatterank_l4bkdf",
+      "label": "Cryptomatte Max Overlap",
+      "type": "IntParmTemplate",
+      "default": [
+        6
+      ],
+      "eval": 6,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmacryptomattesidecar_control_inckdf",
+      "label": "Cryptomatte Manifest File",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmacryptomattesidecar_h9bkdf",
+      "label": "Cryptomatte Manifest File",
+      "type": "StringParmTemplate",
+      "default": [
+        ""
+      ],
+      "eval": "",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmautilitypathexpression_control_esckdf",
+      "label": "Utility Path Expression",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovkarmautilitypathexpression_dfckdf",
+      "label": "Utility Path Expression",
+      "type": "StringParmTemplate",
+      "default": [
+        "CO"
+      ],
+      "eval": "CO",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "HuskRenderVarAPI_Rendering",
+      "label": "",
+      "type": "FolderSetParmTemplate",
+      "default": null,
+      "eval": 1,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskname_control_2xbkde",
+      "label": "Name",
+      "type": "StringParmTemplate",
+      "default": [
+        "set"
+      ],
+      "eval": "set",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskname_1kbkde",
+      "label": "Name",
+      "type": "StringParmTemplate",
+      "default": [
+        "$OS"
+      ],
+      "eval": "_v1_rv",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskformat_control_c1bkde",
+      "label": "Format",
+      "type": "StringParmTemplate",
+      "default": [
+        "set"
+      ],
+      "eval": "set",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskformat_bobkde",
+      "label": "Format",
+      "type": "StringParmTemplate",
+      "default": [
+        "float"
+      ],
+      "eval": "float",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskmultiSampled_control_3bckde",
+      "label": "Multi Sampled",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskmultiSampled_2xbkde",
+      "label": "Multi Sampled",
+      "type": "ToggleParmTemplate",
+      "default": true,
+      "eval": 1,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskclearValue_control_u7bkde",
+      "label": "Clear Value",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskclearValue_tubkde",
+      "label": "Clear Value",
+      "type": "FloatParmTemplate",
+      "default": [
+        0.0
+      ],
+      "eval": 0.0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskchannel_prefix_control_dfckde",
+      "label": "Channel Prefix",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskchannel_prefix_c1bkde",
+      "label": "Channel Prefix",
+      "type": "StringParmTemplate",
+      "default": [
+        ""
+      ],
+      "eval": "",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskchannel_lower_rgb_control_8jckde",
+      "label": "Channel Lower RGB",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskchannel_lower_rgb_75bkde",
+      "label": "Channel Lower RGB",
+      "type": "ToggleParmTemplate",
+      "default": false,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhusksource_colorspace_control_8jckde",
+      "label": "Source Color Space",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhusksource_colorspace_75bkde",
+      "label": "Source Color Space",
+      "type": "StringParmTemplate",
+      "default": [
+        ""
+      ],
+      "eval": "",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskoutput_colorspace_control_8jckde",
+      "label": "Output Color Space",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskoutput_colorspace_75bkde",
+      "label": "Output Color Space",
+      "type": "StringParmTemplate",
+      "default": [
+        ""
+      ],
+      "eval": "",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskOpenEXRcompression_control_vlckdeh",
+      "label": "OpenEXR Compression",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskOpenEXRcompression_u7bkdeh",
+      "label": "OpenEXR Compression",
+      "type": "StringParmTemplate",
+      "default": [
+        "zips"
+      ],
+      "eval": "zips",
+      "menu_items": [
+        "none",
+        "dwab",
+        "dwaa",
+        "piz",
+        "rle",
+        "zips",
+        "zip",
+        "pix",
+        "b44",
+        "b44a"
+      ],
+      "menu_labels": [
+        "No compression",
+        "DWA-B, Lossy and Fast (256-scanline block)",
+        "DWA-A, Lossy and Fast (32-scanline block)",
+        "PIZ Wavelet",
+        "Runlength Encoding",
+        "ZIP (Single scanline)",
+        "ZIP (Multi-scanline blocks)",
+        "PXR24 (32 bit float compression, lossy)",
+        "B44 (4x4 block compression, lossy)",
+        "B44A (4x4 block extra compression, lossy)"
+      ]
+    },
+    {
+      "name": "xn__driverparametersaovhuskOpenEXRdwa_compression_control_esckdeh",
+      "label": "DWA Compression Level",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskOpenEXRdwa_compression_dfckdeh",
+      "label": "DWA Compression Level",
+      "type": "IntParmTemplate",
+      "default": [
+        85
+      ],
+      "eval": 85,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskbypassSave_control_u7bkde",
+      "label": "Bypass Save",
+      "type": "StringParmTemplate",
+      "default": [
+        "none"
+      ],
+      "eval": "none",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    {
+      "name": "xn__driverparametersaovhuskbypassSave_tubkde",
+      "label": "Bypass Save",
+      "type": "ToggleParmTemplate",
+      "default": false,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    }
+  ],
+  "rendervar_parm_names": [
+    "sample_group",
+    "sample_behavior",
+    "sample_f1",
+    "sample_f2",
+    "sample_f3",
+    "sample_subframeenable",
+    "sample_subframegroup",
+    "sample_shuttermode",
+    "sample_shutterrange1",
+    "sample_shutterrange2",
+    "sample_cameraprim",
+    "sample_count",
+    "sample_includeframe",
+    "sample_group2",
+    "sample_subframegroup2",
+    "primpattern",
+    "primpath",
+    "createprims",
+    "initforedit",
+    "createprimsgroup2",
+    "primcount",
+    "primtype",
+    "primkind",
+    "specifier",
+    "classancestor",
+    "parentprimtype",
+    "settings",
+    "dataType_control",
+    "dataType",
+    "sourceName_control",
+    "sourceName",
+    "sourceType_control",
+    "sourceType",
+    "errorseverity",
+    "errormsg",
+    "sample_group3",
+    "sample_subframegroup3",
+    "createprimsgroup3",
+    "settings21",
+    "KarmaRenderVarAPI_Image",
+    "xn__driverparametersaovkarmafilter_control_y2bkdf",
+    "xn__driverparametersaovkarmafilter_xpbkdf",
+    "xn__driverparametersaovkarmadither_control_y2bkdf",
+    "xn__driverparametersaovkarmadither_xpbkdf",
+    "xn__driverparametersaovkarmadefaultvalue_control_qdckdf",
+    "xn__driverparametersaovkarmadefaultvalue_pzbkdf",
+    "xn__driverparametersaovkarmacryptomatte_control_3bckdf",
+    "xn__driverparametersaovkarmacryptomatte_2xbkdf",
+    "xn__driverparametersaovkarmacryptomatterank_control_mickdf",
+    "xn__driverparametersaovkarmacryptomatterank_l4bkdf",
+    "xn__driverparametersaovkarmacryptomattesidecar_control_inckdf",
+    "xn__driverparametersaovkarmacryptomattesidecar_h9bkdf",
+    "xn__driverparametersaovkarmautilitypathexpression_control_esckdf",
+    "xn__driverparametersaovkarmautilitypathexpression_dfckdf",
+    "HuskRenderVarAPI_Rendering",
+    "xn__driverparametersaovhuskname_control_2xbkde",
+    "xn__driverparametersaovhuskname_1kbkde",
+    "xn__driverparametersaovhuskformat_control_c1bkde",
+    "xn__driverparametersaovhuskformat_bobkde",
+    "xn__driverparametersaovhuskmultiSampled_control_3bckde",
+    "xn__driverparametersaovhuskmultiSampled_2xbkde",
+    "xn__driverparametersaovhuskclearValue_control_u7bkde",
+    "xn__driverparametersaovhuskclearValue_tubkde",
+    "xn__driverparametersaovhuskchannel_prefix_control_dfckde",
+    "xn__driverparametersaovhuskchannel_prefix_c1bkde",
+    "xn__driverparametersaovhuskchannel_lower_rgb_control_8jckde",
+    "xn__driverparametersaovhuskchannel_lower_rgb_75bkde",
+    "xn__driverparametersaovhusksource_colorspace_control_8jckde",
+    "xn__driverparametersaovhusksource_colorspace_75bkde",
+    "xn__driverparametersaovhuskoutput_colorspace_control_8jckde",
+    "xn__driverparametersaovhuskoutput_colorspace_75bkde",
+    "xn__driverparametersaovhuskOpenEXRcompression_control_vlckdeh",
+    "xn__driverparametersaovhuskOpenEXRcompression_u7bkdeh",
+    "xn__driverparametersaovhuskOpenEXRdwa_compression_control_esckdeh",
+    "xn__driverparametersaovhuskOpenEXRdwa_compression_dfckdeh",
+    "xn__driverparametersaovhuskbypassSave_control_u7bkde",
+    "xn__driverparametersaovhuskbypassSave_tubkde"
+  ],
+  "karmarendersettings": {
+    "primid": {
+      "name": "primid",
+      "label": "Prim Id",
+      "type": "ToggleParmTemplate",
+      "default": false,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    "primidfilter": {
+      "name": "primidfilter",
+      "label": "Sample Blending",
+      "type": "StringParmTemplate",
+      "default": [
+        "[\"minmax\",{\"mode\":\"idcover\"}]"
+      ],
+      "eval": "[\"minmax\",{\"mode\":\"idcover\"}]",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    "primidprecision": {
+      "name": "primidprecision",
+      "label": "Precision",
+      "type": "StringParmTemplate",
+      "default": [
+        "float"
+      ],
+      "eval": "float",
+      "menu_items": [
+        "half",
+        "float"
+      ],
+      "menu_labels": [
+        "16 Bit",
+        "32 Bit"
+      ]
+    },
+    "element": {
+      "name": "element",
+      "label": "Element (Raw Id)",
+      "type": "ToggleParmTemplate",
+      "default": false,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    "elementfilter": {
+      "name": "elementfilter",
+      "label": "Sample Blending",
+      "type": "StringParmTemplate",
+      "default": [
+        "[\"minmax\",{\"mode\":\"idcover\"}]"
+      ],
+      "eval": "[\"minmax\",{\"mode\":\"idcover\"}]",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    "elementprecision": {
+      "name": "elementprecision",
+      "label": "Precision",
+      "type": "StringParmTemplate",
+      "default": [
+        "float"
+      ],
+      "eval": "float",
+      "menu_items": [
+        "half",
+        "float"
+      ],
+      "menu_labels": [
+        "16 Bit",
+        "32 Bit"
+      ]
+    },
+    "denoiser": {
+      "name": "denoiser",
+      "label": "Denoiser",
+      "type": "StringParmTemplate",
+      "default": [
+        "off"
+      ],
+      "eval": "off",
+      "menu_items": [
+        "off",
+        "optix",
+        "oidn"
+      ],
+      "menu_labels": [
+        "No Denoiser",
+        "NVIDIA OptiX Denoiser",
+        "Intel OIDN"
+      ]
+    },
+    "denoise_aovs": {
+      "name": "denoise_aovs",
+      "label": "AOV List",
+      "type": "StringParmTemplate",
+      "default": [
+        "C"
+      ],
+      "eval": "C",
+      "menu_items": null,
+      "menu_labels": null
+    },
+    "denoise_cpu_only": {
+      "name": "denoise_cpu_only",
+      "label": "Use CPU Only",
+      "type": "ToggleParmTemplate",
+      "default": false,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    "denoise_separate_aovs": {
+      "name": "denoise_separate_aovs",
+      "label": "Create Separate Denoised AOVs",
+      "type": "ToggleParmTemplate",
+      "default": false,
+      "eval": 0,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    "denoise_useN": {
+      "name": "denoise_useN",
+      "label": "Use N Input",
+      "type": "ToggleParmTemplate",
+      "default": true,
+      "eval": 1,
+      "menu_items": null,
+      "menu_labels": null
+    },
+    "denoise_usealbedo": {
+      "name": "denoise_usealbedo",
+      "label": "Use Albedo",
+      "type": "ToggleParmTemplate",
+      "default": true,
+      "eval": 1,
+      "menu_items": null,
+      "menu_labels": null
+    }
+  },
+  "krs_cryptomatte_parms": []
+}

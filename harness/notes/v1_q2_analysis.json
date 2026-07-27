@@ -1,0 +1,1449 @@
+{
+  "schema": "v1-q2-analysis/1",
+  "outdir": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out",
+  "files": {
+    "base": {
+      "exists": true,
+      "bytes": 36876,
+      "analysis": {
+        "subimage_count": 3,
+        "subimages": [
+          {
+            "subimage": 0,
+            "name": "C",
+            "channelnames": [
+              "R",
+              "G",
+              "B",
+              "A"
+            ],
+            "channelformats": [
+              "half",
+              "half",
+              "half",
+              "half"
+            ],
+            "looks_like_id": false,
+            "stats": {
+              "min": 0.0,
+              "max": 0.486328125,
+              "nonzero_frac": 0.09395833333333334,
+              "distinct_values_total": 722,
+              "all_zero": false,
+              "integral_frac": 0.9060416666666666,
+              "non_integral_pixels": 1353
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 228,
+              "right_distinct": 236,
+              "shared_values": 1,
+              "shared_sample": [
+                0.0
+              ],
+              "left_sample": [
+                0.0,
+                0.0821533203125,
+                0.09844970703125,
+                0.1033935546875,
+                0.10577392578125,
+                0.10955810546875,
+                0.11676025390625,
+                0.11981201171875,
+                0.1221923828125,
+                0.1954345703125
+              ],
+              "right_sample": [
+                0.0,
+                0.0024738311767578125,
+                0.00337982177734375,
+                0.00496673583984375,
+                0.006153106689453125,
+                0.006744384765625,
+                0.006755828857421875,
+                0.0069122314453125,
+                0.007080078125,
+                0.007587432861328125
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 1,
+            "name": "element",
+            "channelnames": [
+              "element.id"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 1228.75,
+              "nonzero_frac": 0.09395833333333334,
+              "distinct_values_total": 1096,
+              "all_zero": false,
+              "integral_frac": 0.9310416666666667,
+              "non_integral_pixels": 993
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 413,
+              "right_distinct": 401,
+              "shared_values": 89,
+              "shared_sample": [
+                0.0,
+                754.25,
+                832.5000610351562,
+                866.75,
+                867.25,
+                870.25,
+                883.75,
+                890.75,
+                894.0,
+                898.25
+              ],
+              "left_sample": [
+                0.0,
+                188.5,
+                191.25,
+                192.0,
+                192.25,
+                193.5,
+                195.50001525878906,
+                197.5,
+                198.0,
+                377.0
+              ],
+              "right_sample": [
+                0.0,
+                176.75,
+                177.25,
+                177.75,
+                178.25,
+                178.75,
+                181.75,
+                205.75,
+                207.0,
+                209.25
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 2,
+            "name": "primid",
+            "channelnames": [
+              "primid.id"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 99.0,
+              "nonzero_frac": 0.0925,
+              "distinct_values_total": 315,
+              "all_zero": false,
+              "integral_frac": 0.9595138888888889,
+              "non_integral_pixels": 583
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 180,
+              "right_distinct": 184,
+              "shared_values": 123,
+              "shared_sample": [
+                0.0,
+                0.25,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                3.0,
+                3.25,
+                3.500000238418579
+              ],
+              "left_sample": [
+                0.0,
+                0.25,
+                0.5,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.75,
+                3.0
+              ],
+              "right_sample": [
+                0.0,
+                0.25,
+                0.75,
+                1.0,
+                1.25,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.5
+              ],
+              "disjoint": false
+            }
+          }
+        ]
+      }
+    },
+    "noise": {
+      "exists": true,
+      "bytes": 36899,
+      "analysis": {
+        "subimage_count": 3,
+        "subimages": [
+          {
+            "subimage": 0,
+            "name": "C",
+            "channelnames": [
+              "R",
+              "G",
+              "B",
+              "A"
+            ],
+            "channelformats": [
+              "half",
+              "half",
+              "half",
+              "half"
+            ],
+            "looks_like_id": false,
+            "stats": {
+              "min": 0.0,
+              "max": 0.486328125,
+              "nonzero_frac": 0.09395833333333334,
+              "distinct_values_total": 722,
+              "all_zero": false,
+              "integral_frac": 0.9060416666666666,
+              "non_integral_pixels": 1353
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 228,
+              "right_distinct": 236,
+              "shared_values": 1,
+              "shared_sample": [
+                0.0
+              ],
+              "left_sample": [
+                0.0,
+                0.0821533203125,
+                0.09844970703125,
+                0.1033935546875,
+                0.10577392578125,
+                0.10955810546875,
+                0.11676025390625,
+                0.11981201171875,
+                0.1221923828125,
+                0.1954345703125
+              ],
+              "right_sample": [
+                0.0,
+                0.0024738311767578125,
+                0.00337982177734375,
+                0.00496673583984375,
+                0.006153106689453125,
+                0.006744384765625,
+                0.006755828857421875,
+                0.0069122314453125,
+                0.007080078125,
+                0.007587432861328125
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 1,
+            "name": "element",
+            "channelnames": [
+              "element.id"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 1228.75,
+              "nonzero_frac": 0.09395833333333334,
+              "distinct_values_total": 1096,
+              "all_zero": false,
+              "integral_frac": 0.9310416666666667,
+              "non_integral_pixels": 993
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 413,
+              "right_distinct": 401,
+              "shared_values": 89,
+              "shared_sample": [
+                0.0,
+                754.25,
+                832.5000610351562,
+                866.75,
+                867.25,
+                870.25,
+                883.75,
+                890.75,
+                894.0,
+                898.25
+              ],
+              "left_sample": [
+                0.0,
+                188.5,
+                191.25,
+                192.0,
+                192.25,
+                193.5,
+                195.50001525878906,
+                197.5,
+                198.0,
+                377.0
+              ],
+              "right_sample": [
+                0.0,
+                176.75,
+                177.25,
+                177.75,
+                178.25,
+                178.75,
+                181.75,
+                205.75,
+                207.0,
+                209.25
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 2,
+            "name": "primid",
+            "channelnames": [
+              "primid.id"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 99.0,
+              "nonzero_frac": 0.0925,
+              "distinct_values_total": 315,
+              "all_zero": false,
+              "integral_frac": 0.9595138888888889,
+              "non_integral_pixels": 583
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 180,
+              "right_distinct": 184,
+              "shared_values": 123,
+              "shared_sample": [
+                0.0,
+                0.25,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                3.0,
+                3.25,
+                3.500000238418579
+              ],
+              "left_sample": [
+                0.0,
+                0.25,
+                0.5,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.75,
+                3.0
+              ],
+              "right_sample": [
+                0.0,
+                0.25,
+                0.75,
+                1.0,
+                1.25,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.5
+              ],
+              "disjoint": false
+            }
+          }
+        ]
+      }
+    },
+    "bare_names": {
+      "exists": true,
+      "bytes": 44191,
+      "analysis": {
+        "subimage_count": 5,
+        "subimages": [
+          {
+            "subimage": 0,
+            "name": "C",
+            "channelnames": [
+              "R",
+              "G",
+              "B",
+              "A"
+            ],
+            "channelformats": [
+              "half",
+              "half",
+              "half",
+              "half"
+            ],
+            "looks_like_id": false,
+            "stats": {
+              "min": 0.0,
+              "max": 0.486328125,
+              "nonzero_frac": 0.09395833333333334,
+              "distinct_values_total": 722,
+              "all_zero": false,
+              "integral_frac": 0.9060416666666666,
+              "non_integral_pixels": 1353
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 228,
+              "right_distinct": 236,
+              "shared_values": 1,
+              "shared_sample": [
+                0.0
+              ],
+              "left_sample": [
+                0.0,
+                0.0821533203125,
+                0.09844970703125,
+                0.1033935546875,
+                0.10577392578125,
+                0.10955810546875,
+                0.11676025390625,
+                0.11981201171875,
+                0.1221923828125,
+                0.1954345703125
+              ],
+              "right_sample": [
+                0.0,
+                0.0024738311767578125,
+                0.00337982177734375,
+                0.00496673583984375,
+                0.006153106689453125,
+                0.006744384765625,
+                0.006755828857421875,
+                0.0069122314453125,
+                0.007080078125,
+                0.007587432861328125
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 1,
+            "name": "element",
+            "channelnames": [
+              "element.id"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 1228.75,
+              "nonzero_frac": 0.09395833333333334,
+              "distinct_values_total": 1096,
+              "all_zero": false,
+              "integral_frac": 0.9310416666666667,
+              "non_integral_pixels": 993
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 413,
+              "right_distinct": 401,
+              "shared_values": 89,
+              "shared_sample": [
+                0.0,
+                754.25,
+                832.5000610351562,
+                866.75,
+                867.25,
+                870.25,
+                883.75,
+                890.75,
+                894.0,
+                898.25
+              ],
+              "left_sample": [
+                0.0,
+                188.5,
+                191.25,
+                192.0,
+                192.25,
+                193.5,
+                195.50001525878906,
+                197.5,
+                198.0,
+                377.0
+              ],
+              "right_sample": [
+                0.0,
+                176.75,
+                177.25,
+                177.75,
+                178.25,
+                178.75,
+                181.75,
+                205.75,
+                207.0,
+                209.25
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 2,
+            "name": "primid",
+            "channelnames": [
+              "primid.id"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 99.0,
+              "nonzero_frac": 0.0925,
+              "distinct_values_total": 315,
+              "all_zero": false,
+              "integral_frac": 0.9595138888888889,
+              "non_integral_pixels": 583
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 180,
+              "right_distinct": 184,
+              "shared_values": 123,
+              "shared_sample": [
+                0.0,
+                0.25,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                3.0,
+                3.25,
+                3.500000238418579
+              ],
+              "left_sample": [
+                0.0,
+                0.25,
+                0.5,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.75,
+                3.0
+              ],
+              "right_sample": [
+                0.0,
+                0.25,
+                0.75,
+                1.0,
+                1.25,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.5
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 3,
+            "name": "bare_objectid",
+            "channelnames": [
+              "bare_objectid.Z"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 0.0,
+              "nonzero_frac": 0.0,
+              "distinct_values_total": 1,
+              "all_zero": true,
+              "integral_frac": 1.0,
+              "non_integral_pixels": 0
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 1,
+              "right_distinct": 1,
+              "shared_values": 1,
+              "shared_sample": [
+                0.0
+              ],
+              "left_sample": [
+                0.0
+              ],
+              "right_sample": [
+                0.0
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 4,
+            "name": "bare_primid",
+            "channelnames": [
+              "bare_primid.Z"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 0.0,
+              "nonzero_frac": 0.0,
+              "distinct_values_total": 1,
+              "all_zero": true,
+              "integral_frac": 1.0,
+              "non_integral_pixels": 0
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 1,
+              "right_distinct": 1,
+              "shared_values": 1,
+              "shared_sample": [
+                0.0
+              ],
+              "left_sample": [
+                0.0
+              ],
+              "right_sample": [
+                0.0
+              ],
+              "disjoint": false
+            }
+          }
+        ]
+      }
+    },
+    "ray_names": {
+      "exists": true,
+      "bytes": 49534,
+      "analysis": {
+        "subimage_count": 5,
+        "subimages": [
+          {
+            "subimage": 0,
+            "name": "C",
+            "channelnames": [
+              "R",
+              "G",
+              "B",
+              "A"
+            ],
+            "channelformats": [
+              "half",
+              "half",
+              "half",
+              "half"
+            ],
+            "looks_like_id": false,
+            "stats": {
+              "min": 0.0,
+              "max": 0.486328125,
+              "nonzero_frac": 0.09395833333333334,
+              "distinct_values_total": 722,
+              "all_zero": false,
+              "integral_frac": 0.9060416666666666,
+              "non_integral_pixels": 1353
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 228,
+              "right_distinct": 236,
+              "shared_values": 1,
+              "shared_sample": [
+                0.0
+              ],
+              "left_sample": [
+                0.0,
+                0.0821533203125,
+                0.09844970703125,
+                0.1033935546875,
+                0.10577392578125,
+                0.10955810546875,
+                0.11676025390625,
+                0.11981201171875,
+                0.1221923828125,
+                0.1954345703125
+              ],
+              "right_sample": [
+                0.0,
+                0.0024738311767578125,
+                0.00337982177734375,
+                0.00496673583984375,
+                0.006153106689453125,
+                0.006744384765625,
+                0.006755828857421875,
+                0.0069122314453125,
+                0.007080078125,
+                0.007587432861328125
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 1,
+            "name": "element",
+            "channelnames": [
+              "element.id"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 1228.75,
+              "nonzero_frac": 0.09395833333333334,
+              "distinct_values_total": 1096,
+              "all_zero": false,
+              "integral_frac": 0.9310416666666667,
+              "non_integral_pixels": 993
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 413,
+              "right_distinct": 401,
+              "shared_values": 89,
+              "shared_sample": [
+                0.0,
+                754.25,
+                832.5000610351562,
+                866.75,
+                867.25,
+                870.25,
+                883.75,
+                890.75,
+                894.0,
+                898.25
+              ],
+              "left_sample": [
+                0.0,
+                188.5,
+                191.25,
+                192.0,
+                192.25,
+                193.5,
+                195.50001525878906,
+                197.5,
+                198.0,
+                377.0
+              ],
+              "right_sample": [
+                0.0,
+                176.75,
+                177.25,
+                177.75,
+                178.25,
+                178.75,
+                181.75,
+                205.75,
+                207.0,
+                209.25
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 2,
+            "name": "primid",
+            "channelnames": [
+              "primid.id"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 99.0,
+              "nonzero_frac": 0.0925,
+              "distinct_values_total": 315,
+              "all_zero": false,
+              "integral_frac": 0.9595138888888889,
+              "non_integral_pixels": 583
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 180,
+              "right_distinct": 184,
+              "shared_values": 123,
+              "shared_sample": [
+                0.0,
+                0.25,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                3.0,
+                3.25,
+                3.500000238418579
+              ],
+              "left_sample": [
+                0.0,
+                0.25,
+                0.5,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.75,
+                3.0
+              ],
+              "right_sample": [
+                0.0,
+                0.25,
+                0.75,
+                1.0,
+                1.25,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.5
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 3,
+            "name": "ray_objectid",
+            "channelnames": [
+              "ray_objectid.Z"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": -467037376.0,
+              "max": 0.0,
+              "nonzero_frac": 0.09395833333333334,
+              "distinct_values_total": 8,
+              "all_zero": false,
+              "integral_frac": 1.0,
+              "non_integral_pixels": 0
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 6,
+              "right_distinct": 7,
+              "shared_values": 6,
+              "shared_sample": [
+                -467037376.0,
+                -350278048.0,
+                -233518704.0,
+                -233518688.0,
+                -116759352.0,
+                0.0
+              ],
+              "left_sample": [
+                -467037376.0,
+                -350278048.0,
+                -233518704.0,
+                -233518688.0,
+                -116759352.0,
+                0.0
+              ],
+              "right_sample": [
+                -467037376.0,
+                -350278048.0,
+                -233518704.0,
+                -233518688.0,
+                -116759352.0,
+                -116759344.0,
+                0.0
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 4,
+            "name": "ray_primid",
+            "channelnames": [
+              "ray_primid.Z"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 99.0,
+              "nonzero_frac": 0.0925,
+              "distinct_values_total": 315,
+              "all_zero": false,
+              "integral_frac": 0.9595138888888889,
+              "non_integral_pixels": 583
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 180,
+              "right_distinct": 184,
+              "shared_values": 123,
+              "shared_sample": [
+                0.0,
+                0.25,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                3.0,
+                3.25,
+                3.500000238418579
+              ],
+              "left_sample": [
+                0.0,
+                0.25,
+                0.5,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.75,
+                3.0
+              ],
+              "right_sample": [
+                0.0,
+                0.25,
+                0.75,
+                1.0,
+                1.25,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.5
+              ],
+              "disjoint": false
+            }
+          }
+        ]
+      }
+    },
+    "int_format": {
+      "exists": false
+    },
+    "denoise_on": {
+      "exists": true,
+      "bytes": 40981,
+      "analysis": {
+        "subimage_count": 3,
+        "subimages": [
+          {
+            "subimage": 0,
+            "name": "C",
+            "channelnames": [
+              "R",
+              "G",
+              "B",
+              "A"
+            ],
+            "channelformats": [
+              "half",
+              "half",
+              "half",
+              "half"
+            ],
+            "looks_like_id": false,
+            "stats": {
+              "min": 0.0,
+              "max": 0.53466796875,
+              "nonzero_frac": 0.14083333333333334,
+              "distinct_values_total": 629,
+              "all_zero": false,
+              "integral_frac": 0.8830555555555556,
+              "non_integral_pixels": 1684
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 121,
+              "right_distinct": 144,
+              "shared_values": 17,
+              "shared_sample": [
+                0.0,
+                5.960464477539063e-08,
+                1.1920928955078125e-07,
+                1.7881393432617188e-07,
+                2.384185791015625e-07,
+                2.980232238769531e-07,
+                3.5762786865234375e-07,
+                4.76837158203125e-07,
+                5.960464477539062e-07,
+                7.152557373046875e-07
+              ],
+              "left_sample": [
+                0.0,
+                5.960464477539063e-08,
+                1.1920928955078125e-07,
+                1.7881393432617188e-07,
+                2.384185791015625e-07,
+                2.980232238769531e-07,
+                3.5762786865234375e-07,
+                4.172325134277344e-07,
+                4.76837158203125e-07,
+                5.960464477539062e-07
+              ],
+              "right_sample": [
+                0.0,
+                5.960464477539063e-08,
+                1.1920928955078125e-07,
+                1.7881393432617188e-07,
+                2.384185791015625e-07,
+                2.980232238769531e-07,
+                3.5762786865234375e-07,
+                4.76837158203125e-07,
+                5.364418029785156e-07,
+                5.960464477539062e-07
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 1,
+            "name": "element",
+            "channelnames": [
+              "element.id"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 1228.75,
+              "nonzero_frac": 0.09395833333333334,
+              "distinct_values_total": 1096,
+              "all_zero": false,
+              "integral_frac": 0.9310416666666667,
+              "non_integral_pixels": 993
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 413,
+              "right_distinct": 401,
+              "shared_values": 89,
+              "shared_sample": [
+                0.0,
+                754.25,
+                832.5000610351562,
+                866.75,
+                867.25,
+                870.25,
+                883.75,
+                890.75,
+                894.0,
+                898.25
+              ],
+              "left_sample": [
+                0.0,
+                188.5,
+                191.25,
+                192.0,
+                192.25,
+                193.5,
+                195.50001525878906,
+                197.5,
+                198.0,
+                377.0
+              ],
+              "right_sample": [
+                0.0,
+                176.75,
+                177.25,
+                177.75,
+                178.25,
+                178.75,
+                181.75,
+                205.75,
+                207.0,
+                209.25
+              ],
+              "disjoint": false
+            }
+          },
+          {
+            "subimage": 2,
+            "name": "primid",
+            "channelnames": [
+              "primid.id"
+            ],
+            "channelformats": [
+              "float"
+            ],
+            "looks_like_id": true,
+            "stats": {
+              "min": 0.0,
+              "max": 99.0,
+              "nonzero_frac": 0.0925,
+              "distinct_values_total": 315,
+              "all_zero": false,
+              "integral_frac": 0.9595138888888889,
+              "non_integral_pixels": 583
+            },
+            "separation": {
+              "left_box": [
+                20,
+                60,
+                34,
+                56
+              ],
+              "right_box": [
+                100,
+                140,
+                34,
+                56
+              ],
+              "left_distinct": 180,
+              "right_distinct": 184,
+              "shared_values": 123,
+              "shared_sample": [
+                0.0,
+                0.25,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                3.0,
+                3.25,
+                3.500000238418579
+              ],
+              "left_sample": [
+                0.0,
+                0.25,
+                0.5,
+                1.0,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.75,
+                3.0
+              ],
+              "right_sample": [
+                0.0,
+                0.25,
+                0.75,
+                1.0,
+                1.25,
+                1.5,
+                1.75,
+                2.0,
+                2.25,
+                2.5
+              ],
+              "disjoint": false
+            }
+          }
+        ]
+      }
+    }
+  },
+  "oiio_version": "2.5.18.0",
+  "numpy_version": "2.3.2",
+  "base_vs_noise": {
+    "subimage_count": [
+      3,
+      3
+    ],
+    "per_subimage": [
+      {
+        "index": 0,
+        "name": "C",
+        "identical": true,
+        "max_abs_diff": 0.0,
+        "changed_pixel_frac": 0.0
+      },
+      {
+        "index": 1,
+        "name": "element",
+        "identical": true,
+        "max_abs_diff": 0.0,
+        "changed_pixel_frac": 0.0
+      },
+      {
+        "index": 2,
+        "name": "primid",
+        "identical": true,
+        "max_abs_diff": 0.0,
+        "changed_pixel_frac": 0.0
+      }
+    ]
+  },
+  "base_vs_denoise": {
+    "subimage_count": [
+      3,
+      3
+    ],
+    "per_subimage": [
+      {
+        "index": 0,
+        "name": "C",
+        "identical": false,
+        "max_abs_diff": 0.14324951171875,
+        "changed_pixel_frac": 0.14027777777777778
+      },
+      {
+        "index": 1,
+        "name": "element",
+        "identical": true,
+        "max_abs_diff": 0.0,
+        "changed_pixel_frac": 0.0
+      },
+      {
+        "index": 2,
+        "name": "primid",
+        "identical": true,
+        "max_abs_diff": 0.0,
+        "changed_pixel_frac": 0.0
+      }
+    ]
+  }
+}

@@ -1,0 +1,233 @@
+{
+ "schema": "h9_quality/v1",
+ "truth_tier": "VERIFIED-DOC",
+ "producer": "harness/notes/h9/harvest.py",
+ "floor_definition": {
+  "headline_rung": "FLOOR",
+  "rungs": {
+   "HAS_PAGE": "a help page maps to the live type",
+   "HAS_SUMMARY": "+ authored \"\"\"intent\"\"\" line",
+   "FLOOR": "+ >=1 parameter with a non-empty description",
+   "ACTIONABLE": "+ >=1 parameter with an internal id (#id/#channels)"
+  },
+  "why": "FLOOR answers the two D2 questions (what is it for / how do I drive it). ACTIONABLE is reported separately because a UI label without an internal parm name cannot ground an emission, which is SYNAPSE's #1 defect class."
+ },
+ "contexts": {
+  "lop": {
+   "live_types": 218,
+   "has_page": 209,
+   "rungs": {
+    "HAS_PAGE": 18,
+    "HAS_SUMMARY": 6,
+    "FLOOR": 24,
+    "ACTIONABLE": 161
+   },
+   "absent": 9,
+   "clears_floor": 185,
+   "actionable": 161,
+   "has_page_pct": 95.9,
+   "clears_floor_pct": 84.9,
+   "actionable_pct": 73.9,
+   "gap_haspage_minus_floor": 24
+  },
+  "cop": {
+   "live_types": 384,
+   "has_page": 380,
+   "rungs": {
+    "HAS_PAGE": 8,
+    "HAS_SUMMARY": 14,
+    "FLOOR": 0,
+    "ACTIONABLE": 358
+   },
+   "absent": 4,
+   "clears_floor": 358,
+   "actionable": 358,
+   "has_page_pct": 99.0,
+   "clears_floor_pct": 93.2,
+   "actionable_pct": 93.2,
+   "gap_haspage_minus_floor": 22
+  },
+  "cop2": {
+   "live_types": 169,
+   "has_page": 149,
+   "rungs": {
+    "HAS_PAGE": 9,
+    "HAS_SUMMARY": 11,
+    "FLOOR": 41,
+    "ACTIONABLE": 88
+   },
+   "absent": 20,
+   "clears_floor": 129,
+   "actionable": 88,
+   "has_page_pct": 88.2,
+   "clears_floor_pct": 76.3,
+   "actionable_pct": 52.1,
+   "gap_haspage_minus_floor": 20
+  }
+ },
+ "include_health": {
+  "pages_used": 695,
+  "include_statements": 2519,
+  "resolved": 2428,
+  "unresolved_page_missing": 43,
+  "unresolved_anchor_missing": 45,
+  "pages_with_a_broken_include": 21,
+  "note": "Unresolved targets are defects in the SHIPPED documentation, not parse failures: e.g. lop/karmarenderproperties references karmastandardrendervars#hitstack and that anchor appears nowhere in lop/karmastandardrendervars.txt.",
+  "examples": [
+   "nodes/cop/colorcorrect",
+   "nodes/cop/pyro_block_end",
+   "nodes/cop/rop_image",
+   "nodes/cop/tilepattern",
+   "nodes/cop/wrangle",
+   "nodes/cop2/edgeblur",
+   "nodes/lop/attribvop",
+   "nodes/lop/distantlight",
+   "nodes/lop/domelight",
+   "nodes/lop/editcontextoptions",
+   "nodes/lop/geometrysubsetvop",
+   "nodes/lop/hdadynamicpayload",
+   "nodes/lop/huskimagemetadata",
+   "nodes/lop/karma",
+   "nodes/lop/karmarenderproperties"
+  ]
+ },
+ "id_semantics": {
+  "entries_with_usd_attribute_shaped_ids": 20,
+  "ids_total": 10646,
+  "ids_usd_attribute_shaped": 508,
+  "by_context": {
+   "lop": 20,
+   "cop": 0,
+   "cop2": 0
+  },
+  "worst": [
+   {
+    "type": "rendersettings",
+    "context": "lop",
+    "usd_shaped": 175,
+    "ids_total": 199
+   },
+   {
+    "type": "rendergeometrysettings",
+    "context": "lop",
+    "usd_shaped": 82,
+    "ids_total": 84
+   },
+   {
+    "type": "distantlight",
+    "context": "lop",
+    "usd_shaped": 21,
+    "ids_total": 78
+   },
+   {
+    "type": "distantlight::2.0",
+    "context": "lop",
+    "usd_shaped": 21,
+    "ids_total": 78
+   },
+   {
+    "type": "domelight",
+    "context": "lop",
+    "usd_shaped": 21,
+    "ids_total": 64
+   },
+   {
+    "type": "domelight::2.0",
+    "context": "lop",
+    "usd_shaped": 21,
+    "ids_total": 64
+   },
+   {
+    "type": "domelight::3.0",
+    "context": "lop",
+    "usd_shaped": 21,
+    "ids_total": 64
+   },
+   {
+    "type": "geometrylight",
+    "context": "lop",
+    "usd_shaped": 21,
+    "ids_total": 39
+   },
+   {
+    "type": "karmaskydomelight",
+    "context": "lop",
+    "usd_shaped": 21,
+    "ids_total": 56
+   },
+   {
+    "type": "light",
+    "context": "lop",
+    "usd_shaped": 21,
+    "ids_total": 84
+   },
+   {
+    "type": "light::2.0",
+    "context": "lop",
+    "usd_shaped": 21,
+    "ids_total": 84
+   },
+   {
+    "type": "rendervar",
+    "context": "lop",
+    "usd_shaped": 19,
+    "ids_total": 34
+   }
+  ],
+  "note": "See corpus id_semantics_hazard. Colon-namespaced ids are USD attribute names; they are not parm names and must not be emitted as such."
+ },
+ "silent_deprecation": {
+  "count": 2,
+  "types": [
+   "karma",
+   "karmarenderproperties"
+  ],
+  "note": "R72 class: the runtime flags the type deprecated and the page -- after include resolution -- never says so. Doc-derived grounding inherits this silence."
+ },
+ "version_ambiguous": {
+  "count": 75,
+  "note": "One page credited to several live types (e.g. nodes/lop/domelight serves domelight, domelight::2.0 and domelight::3.0). Those types inherit documentation that may describe a different version.",
+  "examples": [
+   [
+    "cop2:vopnet",
+    "cop:vopnet",
+    "lop:vopnet"
+   ],
+   [
+    "cop2:objnet",
+    "cop:objnet",
+    "lop:objnet"
+   ],
+   [
+    "cop2:chopnet",
+    "cop:chopnet",
+    "lop:chopnet"
+   ],
+   [
+    "cop2:matnet",
+    "cop:matnet",
+    "lop:matnet"
+   ],
+   [
+    "lop:domelight",
+    "lop:domelight::2.0",
+    "lop:domelight::3.0"
+   ],
+   [
+    "lop:karma",
+    "lop:labs::karma::1.0",
+    "lop:labs::karma::2.0"
+   ],
+   [
+    "cop2:ropnet",
+    "cop:ropnet",
+    "lop:ropnet"
+   ],
+   [
+    "cop2:topnet",
+    "cop:topnet",
+    "lop:topnet"
+   ]
+  ]
+ }
+}

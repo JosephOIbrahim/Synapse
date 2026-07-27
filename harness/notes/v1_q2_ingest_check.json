@@ -1,0 +1,94 @@
+{
+  "schema": "v1-q2-ingest-check/1",
+  "exr": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/base.exr",
+  "repo": "C:\\Users\\User\\SYNAPSE\\harness",
+  "ground_truth_parts": [
+    {
+      "index": 0,
+      "name": "C",
+      "width": 160,
+      "height": 90,
+      "channels": [
+        "R",
+        "G",
+        "B",
+        "A"
+      ],
+      "format": "half",
+      "colorspace": "lin_rec709",
+      "compression": "zips"
+    },
+    {
+      "index": 1,
+      "name": "element",
+      "width": 160,
+      "height": 90,
+      "channels": [
+        "element.id"
+      ],
+      "format": "float",
+      "colorspace": "Raw",
+      "compression": "zips"
+    },
+    {
+      "index": 2,
+      "name": "primid",
+      "width": 160,
+      "height": 90,
+      "channels": [
+        "primid.id"
+      ],
+      "format": "float",
+      "colorspace": "Raw",
+      "compression": "zips"
+    }
+  ],
+  "rendered_resolution": [
+    160,
+    90
+  ],
+  "ingest_import": "ok",
+  "ID_PART_NAMES": [
+    "primid",
+    "id",
+    "cryptomatte"
+  ],
+  "ingest_header_parts": [
+    {
+      "name": "C",
+      "channels": [
+        "A",
+        "B",
+        "G",
+        "R"
+      ]
+    },
+    {
+      "name": "element",
+      "channels": [
+        "element.id"
+      ]
+    },
+    {
+      "name": "primid",
+      "channels": [
+        "primid.id"
+      ]
+    }
+  ],
+  "find_id_subimage": 1,
+  "selected_part_name": "element",
+  "primid_part_index": 2,
+  "selects_primid": false,
+  "read_id_plane": {
+    "ok": true,
+    "shape": [
+      90,
+      160
+    ],
+    "dtype": "float32",
+    "min": 0.0,
+    "max": 1228.75
+  },
+  "colour_env": null
+}

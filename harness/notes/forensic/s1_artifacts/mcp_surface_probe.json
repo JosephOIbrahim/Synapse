@@ -1,0 +1,546 @@
+{
+ "_meta": {
+  "surface": "external MCP stdio (python mcp_server.py)",
+  "started": "2026-07-27T15:00:01",
+  "call_timeout_s": 45.0,
+  "scene": "untitled.hip (empty)",
+  "exclusions": {
+   "houdini_capture_viewport": "writes an image file to disk -- outside the S1 fence",
+   "synapse_propose_graph": "would mutate the ProposalStore",
+   "synapse_validate_frame": "requires an on-disk image fixture"
+  }
+ },
+ "_initialize": {
+  "ok": true,
+  "elapsed": 1.13,
+  "raw": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"protocolVersion\": \"2024-11-05\", \"capabilities\": {\"experimental\": {}, \"tools\": {\"listChanged\": false}}, \"serverInfo\": {\"name\": \"synapse\", \"version\": \"1.26.0\"}, \"instructions\": \"# Synapse Voice Guide\\n\\nYou are working alongside a VFX artist through Synapse. Your role is\\nsenior artist and creative partner \\u2014 technically excellent but never\\ncold or clinic"
+ },
+ "_tools_list": {
+  "count": 128,
+  "elapsed": 0.0,
+  "names": [
+   "synapse_ping",
+   "synapse_health",
+   "synapse_doctor",
+   "houdini_scene_info",
+   "houdini_get_selection",
+   "houdini_create_node",
+   "houdini_delete_node",
+   "houdini_connect_nodes",
+   "houdini_get_parm",
+   "houdini_set_parm",
+   "houdini_execute_python",
+   "houdini_execute_vex",
+   "synapse_write_report",
+   "houdini_stage_info",
+   "houdini_get_usd_attribute",
+   "houdini_set_usd_attribute",
+   "houdini_set_usd_primvar",
+   "houdini_create_usd_prim",
+   "houdini_modify_usd_prim",
+   "houdini_capture_viewport",
+   "houdini_render",
+   "synapse_validate_frame",
+   "synapse_configure_render_passes",
+   "houdini_set_keyframe",
+   "houdini_render_settings",
+   "houdini_wedge",
+   "tops_get_work_items",
+   "tops_get_dependency_graph",
+   "tops_get_cook_stats",
+   "tops_cook_node",
+   "tops_generate_items",
+   "tops_configure_scheduler",
+   "tops_cancel_cook",
+   "tops_dirty_node",
+   "tops_setup_wedge",
+   "tops_batch_cook",
+   "tops_query_items",
+   "tops_cook_and_validate",
+   "tops_diagnose",
+   "tops_pipeline_status",
+   "tops_monitor_stream",
+   "tops_render_sequence",
+   "tops_multi_shot",
+   "houdini_reference_usd",
+   "houdini_set_payload_loadstate",
+   "houdini_create_point_instancer",
+   "houdini_shot_render_ready",
+   "houdini_query_prims",
+   "houdini_manage_variant_set",
+   "houdini_manage_collection",
+   "synapse_validate_ordering",
+   "synapse_solaris_assemble_chain",
+   "synapse_solaris_build_graph",
+   "synapse_solaris_component_builder",
+   "synapse_solaris_scene_template",
+   "synapse_solaris_create_variants",
+   "synapse_solaris_set_purpose",
+   "synapse_solaris_import_megascans",
+   "houdini_configure_light_linking",
+   "houdini_create_textured_material",
+   "houdini_create_material",
+   "houdini_assign_material",
+   "houdini_read_material",
+   "synapse_knowledge_lookup",
+   "synapse_inspect_selection",
+   "synapse_inspect_scene",
+   "synapse_inspect_node",
+   "houdini_network_explain",
+   "synapse_context",
+   "synapse_search",
+   "synapse_recall",
+   "synapse_decide",
+   "synapse_add_memory",
+   "synapse_project_setup",
+   "synapse_memory_write",
+   "synapse_memory_query",
+   "synapse_memory_status",
+   "synapse_evolve_memory",
+   "synapse_sleep_pass",
+   "houdini_hda_create",
+   "houdini_hda_promote_parm",
+   "houdini_hda_set_help",
+   "houdini_hda_package",
+   "houdini_hda_list",
+   "houdini_undo",
+   "houdini_redo",
+   "synapse_batch",
+   "synapse_metrics",
+   "synapse_router_stats",
+   "synapse_list_recipes",
+   "synapse_render_sequence",
+   "synapse_render_farm_status",
+   "synapse_render_farm_cancel",
+   "synapse_autonomous_render",
+   "synapse_safe_render",
+   "synapse_render_progressively",
+   "synapse_live_metrics",
+   "synapse_propose_graph",
+   "synapse_instantiate_graph",
+   "cops_create_network",
+   "cops_create_copnet",
+   "cops_create_node",
+   "cops_connect",
+   "cops_set_opencl",
+   "cops_read_layer_info",
+   "cops_to_materialx",
+   "cops_composite_aovs",
+   "cops_analyze_render",
+   "cops_slap_comp",
+   "cops_create_solver",
+   "cops_procedural_texture",
+   "cops_growth_propagation",
+   "cops_reaction_diffusion",
+   "cops_pixel_sort",
+   "cops_stylize",
+   "cops_wetmap",
+   "cops_bake_textures",
+   "cops_temporal_analysis",
+   "cops_stamp_scatter",
+   "cops_batch_cook",
+   "synapse_group_scene",
+   "synapse_group_render",
+   "synapse_group_usd",
+   "synapse_group_tops",
+   "synapse_group_memory",
+   "synapse_group_cops",
+   "synapse_inspect_stage",
+   "synapse_scout"
+  ]
+ },
+ "_delta": {
+  "advertised_not_in_registry": [
+   "synapse_group_cops",
+   "synapse_group_memory",
+   "synapse_group_render",
+   "synapse_group_scene",
+   "synapse_group_tops",
+   "synapse_group_usd",
+   "synapse_inspect_stage",
+   "synapse_scout"
+  ],
+  "registry_not_advertised": []
+ },
+ "synapse_ping": {
+  "result": "OK",
+  "elapsed": 4.02,
+  "is_error": false,
+  "bytes": 71,
+  "head": "{\"pong\":true,\"protocol_version\":\"4.0.0\",\"timestamp\":1785178806.5342045}",
+  "args": {}
+ },
+ "synapse_health": {
+  "result": "OK",
+  "elapsed": 2.02,
+  "is_error": false,
+  "bytes": 68,
+  "head": "{\"healthy\":true,\"houdini_available\":true,\"protocol_version\":\"4.0.0\"}",
+  "args": {}
+ },
+ "houdini_scene_info": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 70,
+  "head": "{\"fps\":24.0,\"frame\":1,\"frame_range\":[1,240],\"hip_file\":\"untitled.hip\"}",
+  "args": {}
+ },
+ "houdini_get_selection": {
+  "result": "OK",
+  "elapsed": 2.08,
+  "is_error": false,
+  "bytes": 22,
+  "head": "{\"count\":0,\"nodes\":[]}",
+  "args": {}
+ },
+ "houdini_get_parm": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 56,
+  "head": "Synapse hit a snag: Couldn't find parameter 'tx' on /obj",
+  "args": {
+   "node": "/obj",
+   "parm": "tx"
+  }
+ },
+ "houdini_stage_info": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 112,
+  "head": "Synapse hit a snag: No USD stage found -- select a LOP node or pass a node path so I know which stage to look at",
+  "args": {}
+ },
+ "houdini_get_usd_attribute": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 124,
+  "head": "Synapse hit a snag: Couldn't find a LOP node in your selection -- select one in the Solaris network or specify the node path",
+  "args": {
+   "prim_path": "/",
+   "attribute_name": "kind"
+  }
+ },
+ "houdini_capture_viewport": {
+  "skipped": "writes an image file to disk -- outside the S1 fence"
+ },
+ "synapse_validate_frame": {
+  "skipped": "requires an on-disk image fixture"
+ },
+ "tops_get_work_items": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 101,
+  "head": "Synapse hit a snag: Hit a snag processing that request: 'OpNode' object has no attribute 'getPDGNode'",
+  "args": {
+   "node": "/tasks"
+  }
+ },
+ "tops_get_dependency_graph": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 123,
+  "head": "Synapse hit a snag: The node at /tasks is a Manager node, not a TOP network -- point to a topnet node (e.g. '/obj/topnet1')",
+  "args": {
+   "topnet_path": "/tasks"
+  }
+ },
+ "tops_get_cook_stats": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 101,
+  "head": "Synapse hit a snag: Hit a snag processing that request: 'OpNode' object has no attribute 'getPDGNode'",
+  "args": {
+   "node": "/tasks"
+  }
+ },
+ "tops_query_items": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 101,
+  "head": "Synapse hit a snag: Hit a snag processing that request: 'OpNode' object has no attribute 'getPDGNode'",
+  "args": {
+   "node": "/tasks",
+   "query_attribute": "id",
+   "filter_value": "0"
+  }
+ },
+ "tops_diagnose": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 101,
+  "head": "Synapse hit a snag: Hit a snag processing that request: 'OpNode' object has no attribute 'getPDGNode'",
+  "args": {
+   "node": "/tasks"
+  }
+ },
+ "tops_pipeline_status": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 123,
+  "head": "Synapse hit a snag: The node at /tasks is a Manager node, not a TOP network -- point to a topnet node (e.g. '/obj/topnet1')",
+  "args": {
+   "topnet_path": "/tasks"
+  }
+ },
+ "houdini_query_prims": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 124,
+  "head": "Synapse hit a snag: Couldn't find a LOP node in your selection -- select one in the Solaris network or specify the node path",
+  "args": {}
+ },
+ "synapse_validate_ordering": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 120,
+  "head": "Synapse hit a snag: Couldn't find a render node to start from -- pass a node path or make sure /stage has a display node",
+  "args": {}
+ },
+ "houdini_read_material": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 124,
+  "head": "Synapse hit a snag: Couldn't find a LOP node in your selection -- select one in the Solaris network or specify the node path",
+  "args": {
+   "prim_path": "/"
+  }
+ },
+ "synapse_knowledge_lookup": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 1342,
+  "head": "{\"agent_hint\":\"render_agent\",\"answer\":\"Karma AOV setup: render passes, cryptomatte, denoising\\nKarma AOVs via karmarenderproperties Image Output section. Common AOVs: beauty (C), direct/indirect diffuse/specular, albedo, N (normals), P (position), Z (depth), motionvector, crypto_material/object/asset (Cryptomatte). Denoising AOVs: denoise_albedo, denoise_normal. Light groups: tag lights with 'lightGroup' for per-light AOVs. Deep output: .exr with deep flag for depth-correct compositing. AOV rebuild: beauty = direct_diffuse + indirect_diffuse + direct_specular + indirect_specular + emission + s",
+  "args": {
+   "query": "karma render settings"
+  }
+ },
+ "synapse_inspect_selection": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 36,
+  "head": "{\"count\":0,\"nodes\":[],\"topology\":[]}",
+  "args": {}
+ },
+ "synapse_inspect_scene": {
+  "result": "OK",
+  "elapsed": 2.02,
+  "is_error": false,
+  "bytes": 767,
+  "head": "{\"artist_notes\":[],\"issues\":[],\"network_tree\":[{\"category\":\"Director\",\"children\":[{\"category\":\"Manager\",\"name\":\"obj\",\"path\":\"/obj\",\"type\":\"obj\"},{\"category\":\"Manager\",\"name\":\"out\",\"path\":\"/out\",\"type\":\"out\"},{\"category\":\"Manager\",\"name\":\"ch\",\"path\":\"/ch\",\"type\":\"ch\"},{\"category\":\"Manager\",\"name\":\"shop\",\"path\":\"/shop\",\"type\":\"shop\"},{\"category\":\"Manager\",\"name\":\"img\",\"path\":\"/img\",\"type\":\"img\"},{\"category\":\"Manager\",\"name\":\"vex\",\"path\":\"/vex\",\"type\":\"vex\"},{\"category\":\"Manager\",\"name\":\"mat\",\"path\":\"/mat\",\"type\":\"mat\"},{\"category\":\"Manager\",\"name\":\"stage\",\"path\":\"/stage\",\"type\":\"stage\"},{\"catego",
+  "args": {}
+ },
+ "synapse_inspect_node": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 410,
+  "head": "{\"category\":\"Manager\",\"connections\":{\"inputs\":[],\"outputs\":[]},\"expressions\":[],\"issues\":{\"errors\":[],\"warnings\":[]},\"keyframed_parms\":[],\"name\":\"obj\",\"parameters\":{\"Root\":[{\"label\":\"Visualization Enabled\",\"name\":\"node_vis_enabled\",\"spare\":true,\"value\":1},{\"label\":\"Visualizers\",\"name\":\"num_visualizers\",\"spare\":true,\"value\":0}]},\"path\":\"/obj\",\"spare_parms\":[\"node_vis_enabled\",\"num_visualizers\"],\"type\":\"obj\"}",
+  "args": {
+   "node": "/obj"
+  }
+ },
+ "houdini_network_explain": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 182,
+  "head": "{\"complexity\":\"simple\",\"data_flow\":[],\"node_count\":0,\"overview\":\"Network at /obj is empty -- no child nodes found.\",\"patterns_detected\":[],\"status\":\"ok\",\"suggested_hda_interface\":[]}",
+  "args": {
+   "root_path": "/obj"
+  }
+ },
+ "synapse_context": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 3234,
+  "head": "{\"context\":{\"current_state\":{},\"evolution_stage\":\"charmander\",\"memory_stats\":{},\"project\":{},\"recent_activity\":[],\"recent_decisions\":[],\"scene_memory\":\"## Scene Memory\\n# Scene Memory: untitled.hip\\n# Project: User\\n# Created: 2026-07-13T15:06:13Z\\n# Evolution: Flat (markdown)\\n# Schema: 0.1.0\\n\\n---\\n\\n### Note\\n{\\n  \\\"name\\\": \\\"solaris_network\\\",\\n  \\\"description\\\": \\\"Complete Solaris network for testing with polygonal shapes\\\",\\n  \\\"network_path\\\": \\\"/stage\\\",\\n  \\\"nodes\\\": [\\n    {\\n      \\\"name\\\": \\\"geo_0_import\\\",\\n      \\\"type\\\": \\\"sopimport\\\",\\n      \\\"soppath\\\": \\\"/obj/geo_0/OUT\\\",\\n ",
+  "args": {}
+ },
+ "synapse_search": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 1573,
+  "head": "{\"error\":\"Memory not available\",\"knowledge\":{\"answer\":\"Light types, Lighting Law, and exposure-based brightness control in Solaris\\nSolaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). LIGHTING LAW: intensity ALWAYS 1.0, brightness controlled by EXPOSURE (logarithmic, in stops). Encoded parm names: intensity='xn__inputsintensity_i0a' (always 1.0), color='xn__inputscolor_zta' (vec3), exposure='xn__inputsexposure_vya', exposure control='xn__inputsexposure_control_wc",
+  "args": {
+   "query": "lighting"
+  }
+ },
+ "synapse_recall": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 1574,
+  "head": "{\"error\":\"Memory not available\",\"found\":false,\"knowledge\":{\"answer\":\"Light types, Lighting Law, and exposure-based brightness control in Solaris\\nSolaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). LIGHTING LAW: intensity ALWAYS 1.0, brightness controlled by EXPOSURE (logarithmic, in stops). Encoded parm names: intensity='xn__inputsintensity_i0a' (always 1.0), color='xn__inputscolor_zta' (vec3), exposure='xn__inputsexposure_vya', exposure control='xn__inputsexpos",
+  "args": {
+   "query": "lighting"
+  }
+ },
+ "synapse_memory_query": {
+  "result": "OK",
+  "elapsed": 2.02,
+  "is_error": false,
+  "bytes": 74,
+  "head": "{\"count\":0,\"query\":\"lighting\",\"results\":[],\"scope\":\"all\",\"type_filter\":\"\"}",
+  "args": {
+   "query": "lighting"
+  }
+ },
+ "synapse_memory_status": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 193,
+  "head": "{\"agent\":{\"status\":\"idle\",\"suspended_count\":0,\"task_count\":0},\"project\":{\"evolution\":\"none\",\"session_count\":0,\"size_kb\":0.0},\"scene\":{\"evolution\":\"charmander\",\"session_count\":0,\"size_kb\":2.75}}",
+  "args": {}
+ },
+ "houdini_hda_list": {
+  "result": "OK",
+  "elapsed": 2.02,
+  "is_error": false,
+  "bytes": 35,
+  "head": "{\"count\":0,\"hdas\":[],\"status\":\"ok\"}",
+  "args": {}
+ },
+ "synapse_metrics": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 24402,
+  "head": "{\"format\":\"prometheus\",\"text\":\"\\n# HELP synapse_circuit_breaker_state Current circuit breaker state (0=closed, 1=open, 2=half_open)\\n# TYPE synapse_circuit_breaker_state gauge\\nsynapse_circuit_breaker_state 0\\n\\n# HELP synapse_memory_entries_total Total entries in memory store\\n# TYPE synapse_memory_entries_total gauge\\nsynapse_memory_entries_total 0\\n\\n# HELP synapse_tool_duration_ms Per-tool call duration in milliseconds\\n# TYPE synapse_tool_duration_ms histogram\\nsynapse_tool_duration_ms_bucket{tool=\\\"context\\\",le=\\\"5\\\"} 1\\nsynapse_tool_duration_ms_bucket{tool=\\\"context\\\",le=\\\"10\\\"} 2\\nsyna",
+  "args": {}
+ },
+ "synapse_router_stats": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 34,
+  "head": "{\"error\":\"Router not initialized\"}",
+  "args": {}
+ },
+ "synapse_list_recipes": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 30044,
+  "head": "{\"count\":62,\"recipes\":[{\"category\":\"lighting\",\"description\":\"Create a rectangular area light panel (RectLight) with configurable width and height. Large area = soft shadows. Lighting Law: intensity always 1.0, brightness via exposure. Different from existing RectLight recipes \u2014 focused on studio panel lighting with explicit size control.\",\"name\":\"area_light_panel\",\"parameters\":[\"width\",\"height\",\"exposure\"],\"step_count\":6,\"triggers\":[\"^(?:set up|setup|create)\\\\s+(?:a\\\\s+)?(?:area|panel)\\\\s*light$\",\"^(?:add|create)\\\\s+(?:a\\\\s+)?(?:area|panel|soft)\\\\s*light$\"]},{\"category\":\"pipeline\",\"description",
+  "args": {}
+ },
+ "synapse_render_farm_status": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 51,
+  "head": "{\"cancelled\":false,\"running\":false,\"scene_tags\":[]}",
+  "args": {}
+ },
+ "synapse_live_metrics": {
+  "result": "OK",
+  "elapsed": 2.01,
+  "is_error": false,
+  "bytes": 593,
+  "head": "{\"resilience\":{\"circuit_state\":\"closed\",\"circuit_trip_count\":0,\"health_status\":\"healthy\",\"rate_limit_rejects\":0,\"rate_limiter_active\":false,\"uptime_seconds\":0.0},\"routing\":{\"avg_latency_ms\":0.0,\"cache_hit_rate\":0.0,\"cache_hits\":0,\"knowledge_entries\":0,\"tier_counts\":[],\"total_requests\":0},\"scene\":{\"current_frame\":1,\"errors\":0,\"fps\":24.0,\"hip_file\":\"C:/Users/User/untitled.hip\",\"lop_nodes\":0,\"obj_nodes\":0,\"sop_nodes\":0,\"total_nodes\":9,\"warnings\":0},\"session\":{\"active_sessions\":0,\"commands_per_minute\":0.0,\"deploy_mode\":\"local\",\"rbac_enabled\":false,\"total_commands\":0},\"timestamp\":110625.911}",
+  "args": {}
+ },
+ "synapse_propose_graph": {
+  "skipped": "would mutate the ProposalStore"
+ },
+ "cops_read_layer_info": {
+  "result": "OK",
+  "elapsed": 0.0,
+  "is_error": true,
+  "bytes": 53,
+  "head": "Input validation error: 'node' is a required property",
+  "args": {}
+ },
+ "cops_analyze_render": {
+  "result": "OK",
+  "elapsed": 0.0,
+  "is_error": true,
+  "bytes": 53,
+  "head": "Input validation error: 'node' is a required property",
+  "args": {}
+ },
+ "cops_temporal_analysis": {
+  "result": "OK",
+  "elapsed": 0.0,
+  "is_error": true,
+  "bytes": 53,
+  "head": "Input validation error: 'node' is a required property",
+  "args": {}
+ },
+ "synapse_group_scene": {
+  "result": "OK",
+  "elapsed": 0.0,
+  "is_error": false,
+  "bytes": 522,
+  "head": "SCENE TOOLS: Manipulate the Houdini node graph. Always inspect before mutating -- use synapse_inspect_node or synapse_inspect_scene first. One mutation per tool call. Parameter names on USD/Solaris nodes use encoded format (e.g. xn__inputsintensity_i0a not 'intensity'). Use houdini_get_parm to read, houdini_set_parm to write. execute_python wraps in undo group -- automatic rollback on failure. CONTEXT AWARENESS: When creating Solaris/LOP node types (lights, cameras, materials, render settings), parent MUST be /stage.",
+  "args": {}
+ },
+ "synapse_group_render": {
+  "result": "OK",
+  "elapsed": 0.0,
+  "is_error": false,
+  "bytes": 502,
+  "head": "RENDER TOOLS: Karma XPU/CPU, Mantra, and viewport capture. LIGHTING LAW: Intensity is ALWAYS 1.0 -- brightness controlled by exposure (logarithmic, in stops). Key:fill ratio 3:1 = 1.585 stops. PROGRESSIVE VALIDATION: Start at 256x256 with 4-8 pixel samples. Confirm output before scaling up. Never use soho_foreground=1 for heavy scenes -- it blocks the WebSocket server. Set 'picture' on Karma LOP AND 'outputimage' on the ROP. Karma camera must use USD prim path (/cameras/render_cam), not node path.",
+  "args": {}
+ },
+ "synapse_group_usd": {
+  "result": "OK",
+  "elapsed": 0.0,
+  "is_error": false,
+  "bytes": 1049,
+  "head": "USD TOOLS: Stage inspection, prim creation, attribute manipulation, material assignment, and scene assembly. CRITICAL: only NATIVE USD attributes on lights/cameras/xforms are encoded (e.g. intensity -> xn__inputsintensity_i0a, color -> xn__inputscolor_kya, exposure -> xn__inputsexposure_vya); resolve those via USD_PARM_ALIASES (synapse.core.aliases) or inspect the parm first. MaterialX shader inputs, by contrast, use PLAIN names (base_color, metalness, specular_roughness, ...) -- never encode mtlx shader parms. COMPOSITION: Stronger opinions win. Layer order matters in sublayers and merges -- ",
+  "args": {}
+ },
+ "synapse_group_tops": {
+  "result": "OK",
+  "elapsed": 0.0,
+  "is_error": false,
+  "bytes": 561,
+  "head": "TOPS/PDG TOOLS: Pipeline orchestration for batch processing, wedging, and distributed rendering. WORKFLOW: Generate work items first (tops_generate_items or tops_setup_wedge), then cook (tops_cook_node). Use tops_pipeline_status for health checks, tops_diagnose for failure analysis. SELF-HEALING: tops_cook_and_validate auto-retries on failure with dirty+recook. RENDERING: tops_render_sequence creates a full frame sequence pipeline. tops_multi_shot handles multi-camera/multi-shot renders. MONITORING: tops_monitor_stream provides push-based event callbacks.",
+  "args": {}
+ },
+ "synapse_group_memory": {
+  "result": "OK",
+  "elapsed": 0.0,
+  "is_error": false,
+  "bytes": 584,
+  "head": "MEMORY TOOLS: Project memory, scene memory, and knowledge lookup. START EVERY SESSION with synapse_project_setup -- this loads project history, decisions, and scene context. Without it, you have no memory of past work. MEMORY EVOLUTION: Charmander (markdown) -> Charmeleon (indexed) -> Charizard (USD). Use synapse_memory_write to record decisions and experiments. Use synapse_knowledge_lookup before guessing parameter names or node types. HDA TOOLS: Create, promote parameters, set help, and package HDAs. hda_package is the high-level orchestrator -- one call to create a full HDA.",
+  "args": {}
+ },
+ "synapse_group_cops": {
+  "result": "OK",
+  "elapsed": 0.0,
+  "is_error": false,
+  "bytes": 1212,
+  "head": "COPERNICUS (COPs) TOOLS: GPU-accelerated image processing in Houdini 21. FOUNDATION: cops_create_network creates a COP2 container, cops_create_node adds COP nodes, cops_connect wires them, cops_set_opencl sets GPU kernels, cops_read_layer_info queries resolution/channels. PIPELINE: cops_to_materialx connects COP output as MaterialX texture via op: path. cops_composite_aovs builds AOV compositing from Karma EXR renders. cops_analyze_render checks quality (black pixels, clipping, noise). cops_slap_comp sets up live viewport overlay. PROCEDURAL: cops_create_solver creates Block Begin/End feedback",
+  "args": {}
+ },
+ "synapse_scout": {
+  "result": "HANG",
+  "elapsed": 45.0,
+  "detail": "no JSON-RPC response within 45.0s"
+ },
+ "synapse_inspect_stage": {
+  "result": "HANG",
+  "elapsed": 45.0,
+  "detail": "no JSON-RPC response within 45.0s"
+ }
+}

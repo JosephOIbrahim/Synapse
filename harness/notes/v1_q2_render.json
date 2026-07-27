@@ -1,0 +1,667 @@
+{
+  "schema": "v1-q2-render/1",
+  "build": "22.0.368",
+  "license": "licenseCategoryType.Indie",
+  "scene": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda",
+  "outdir": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out",
+  "config": {
+    "resolution": [
+      160,
+      120
+    ],
+    "samplesperpixel": 4,
+    "pathtracedsamples": 16
+  },
+  "cases": {
+    "base": {
+      "case": "base",
+      "extra_vars": [],
+      "krs_over": {},
+      "parms": [
+        {
+          "parm": "filepath1",
+          "status": "set",
+          "wanted": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda",
+          "readback": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda"
+        },
+        {
+          "parm": "primid",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "element",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "resolutionx",
+          "status": "set",
+          "wanted": 160,
+          "readback": 160
+        },
+        {
+          "parm": "resolutiony",
+          "status": "error",
+          "wanted": 120,
+          "error": "PermissionError: Failed to modify node or parameter because of a permission error.  Possible causes include locked assets, takes, product permissions or user specified permissions"
+        },
+        {
+          "parm": "camera",
+          "status": "set",
+          "wanted": "/world/cam",
+          "readback": "/world/cam"
+        },
+        {
+          "parm": "engine",
+          "status": "set",
+          "wanted": "cpu",
+          "readback": "cpu"
+        },
+        {
+          "parm": "samplesperpixel",
+          "status": "set",
+          "wanted": 4,
+          "readback": 4
+        },
+        {
+          "parm": "pathtracedsamples",
+          "status": "set",
+          "wanted": 16,
+          "readback": 16
+        },
+        {
+          "parm": "trange",
+          "status": "set",
+          "wanted": 0,
+          "readback": 0
+        },
+        {
+          "parm": "outputimage",
+          "status": "set",
+          "wanted": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/base.exr",
+          "readback": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/base.exr"
+        }
+      ],
+      "is_RopNode": true,
+      "render_status": "returned",
+      "wall_seconds": 2.373,
+      "output": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/base.exr",
+      "output_exists": true,
+      "output_bytes": 36876,
+      "output_sha256": "28cfbe35146df46517b17ac713ff0b7a13b567e6ff935ca00bf91d9570f231b4"
+    },
+    "noise": {
+      "case": "noise",
+      "extra_vars": [],
+      "krs_over": {},
+      "parms": [
+        {
+          "parm": "filepath1",
+          "status": "set",
+          "wanted": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda",
+          "readback": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda"
+        },
+        {
+          "parm": "primid",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "element",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "resolutionx",
+          "status": "set",
+          "wanted": 160,
+          "readback": 160
+        },
+        {
+          "parm": "resolutiony",
+          "status": "error",
+          "wanted": 120,
+          "error": "PermissionError: Failed to modify node or parameter because of a permission error.  Possible causes include locked assets, takes, product permissions or user specified permissions"
+        },
+        {
+          "parm": "camera",
+          "status": "set",
+          "wanted": "/world/cam",
+          "readback": "/world/cam"
+        },
+        {
+          "parm": "engine",
+          "status": "set",
+          "wanted": "cpu",
+          "readback": "cpu"
+        },
+        {
+          "parm": "samplesperpixel",
+          "status": "set",
+          "wanted": 4,
+          "readback": 4
+        },
+        {
+          "parm": "pathtracedsamples",
+          "status": "set",
+          "wanted": 16,
+          "readback": 16
+        },
+        {
+          "parm": "trange",
+          "status": "set",
+          "wanted": 0,
+          "readback": 0
+        },
+        {
+          "parm": "outputimage",
+          "status": "set",
+          "wanted": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/noise.exr",
+          "readback": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/noise.exr"
+        }
+      ],
+      "is_RopNode": true,
+      "render_status": "returned",
+      "wall_seconds": 2.337,
+      "output": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/noise.exr",
+      "output_exists": true,
+      "output_bytes": 36899,
+      "output_sha256": "9e402a9743b2e52c741626d62f6211dbf577ec1a3794f02dfd0af0571dbfbcbd"
+    },
+    "bare_names": {
+      "case": "bare_names",
+      "extra_vars": [
+        {
+          "node": "bare_objectid",
+          "sourceName": "objectid",
+          "dataType": "float"
+        },
+        {
+          "node": "bare_primid",
+          "sourceName": "primid",
+          "dataType": "float"
+        }
+      ],
+      "krs_over": {},
+      "parms": [
+        {
+          "parm": "filepath1",
+          "status": "set",
+          "wanted": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda",
+          "readback": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda"
+        },
+        {
+          "parm": "primpath",
+          "status": "set",
+          "wanted": "/Render/Products/Vars/bare_objectid",
+          "readback": "/Render/Products/Vars/bare_objectid"
+        },
+        {
+          "parm": "sourceName",
+          "status": "set",
+          "wanted": "objectid",
+          "readback": "objectid"
+        },
+        {
+          "parm": "sourceType",
+          "status": "set",
+          "wanted": "raw",
+          "readback": "raw"
+        },
+        {
+          "parm": "dataType",
+          "status": "set",
+          "wanted": "float",
+          "readback": "float"
+        },
+        {
+          "parm": "primpath",
+          "status": "set",
+          "wanted": "/Render/Products/Vars/bare_primid",
+          "readback": "/Render/Products/Vars/bare_primid"
+        },
+        {
+          "parm": "sourceName",
+          "status": "set",
+          "wanted": "primid",
+          "readback": "primid"
+        },
+        {
+          "parm": "sourceType",
+          "status": "set",
+          "wanted": "raw",
+          "readback": "raw"
+        },
+        {
+          "parm": "dataType",
+          "status": "set",
+          "wanted": "float",
+          "readback": "float"
+        },
+        {
+          "parm": "primid",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "element",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "resolutionx",
+          "status": "set",
+          "wanted": 160,
+          "readback": 160
+        },
+        {
+          "parm": "resolutiony",
+          "status": "error",
+          "wanted": 120,
+          "error": "PermissionError: Failed to modify node or parameter because of a permission error.  Possible causes include locked assets, takes, product permissions or user specified permissions"
+        },
+        {
+          "parm": "camera",
+          "status": "set",
+          "wanted": "/world/cam",
+          "readback": "/world/cam"
+        },
+        {
+          "parm": "engine",
+          "status": "set",
+          "wanted": "cpu",
+          "readback": "cpu"
+        },
+        {
+          "parm": "samplesperpixel",
+          "status": "set",
+          "wanted": 4,
+          "readback": 4
+        },
+        {
+          "parm": "pathtracedsamples",
+          "status": "set",
+          "wanted": 16,
+          "readback": 16
+        },
+        {
+          "parm": "trange",
+          "status": "set",
+          "wanted": 0,
+          "readback": 0
+        },
+        {
+          "parm": "outputimage",
+          "status": "set",
+          "wanted": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/bare_names.exr",
+          "readback": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/bare_names.exr"
+        }
+      ],
+      "is_RopNode": true,
+      "render_status": "returned",
+      "wall_seconds": 2.453,
+      "output": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/bare_names.exr",
+      "output_exists": true,
+      "output_bytes": 44191,
+      "output_sha256": "8257c934048c7800179881df11bc954158f6911de25a939abb4c4af4a26e8d82"
+    },
+    "ray_names": {
+      "case": "ray_names",
+      "extra_vars": [
+        {
+          "node": "ray_objectid",
+          "sourceName": "ray:objectid",
+          "dataType": "float"
+        },
+        {
+          "node": "ray_primid",
+          "sourceName": "ray:primid",
+          "dataType": "float"
+        }
+      ],
+      "krs_over": {},
+      "parms": [
+        {
+          "parm": "filepath1",
+          "status": "set",
+          "wanted": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda",
+          "readback": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda"
+        },
+        {
+          "parm": "primpath",
+          "status": "set",
+          "wanted": "/Render/Products/Vars/ray_objectid",
+          "readback": "/Render/Products/Vars/ray_objectid"
+        },
+        {
+          "parm": "sourceName",
+          "status": "set",
+          "wanted": "ray:objectid",
+          "readback": "ray:objectid"
+        },
+        {
+          "parm": "sourceType",
+          "status": "set",
+          "wanted": "raw",
+          "readback": "raw"
+        },
+        {
+          "parm": "dataType",
+          "status": "set",
+          "wanted": "float",
+          "readback": "float"
+        },
+        {
+          "parm": "primpath",
+          "status": "set",
+          "wanted": "/Render/Products/Vars/ray_primid",
+          "readback": "/Render/Products/Vars/ray_primid"
+        },
+        {
+          "parm": "sourceName",
+          "status": "set",
+          "wanted": "ray:primid",
+          "readback": "ray:primid"
+        },
+        {
+          "parm": "sourceType",
+          "status": "set",
+          "wanted": "raw",
+          "readback": "raw"
+        },
+        {
+          "parm": "dataType",
+          "status": "set",
+          "wanted": "float",
+          "readback": "float"
+        },
+        {
+          "parm": "primid",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "element",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "resolutionx",
+          "status": "set",
+          "wanted": 160,
+          "readback": 160
+        },
+        {
+          "parm": "resolutiony",
+          "status": "error",
+          "wanted": 120,
+          "error": "PermissionError: Failed to modify node or parameter because of a permission error.  Possible causes include locked assets, takes, product permissions or user specified permissions"
+        },
+        {
+          "parm": "camera",
+          "status": "set",
+          "wanted": "/world/cam",
+          "readback": "/world/cam"
+        },
+        {
+          "parm": "engine",
+          "status": "set",
+          "wanted": "cpu",
+          "readback": "cpu"
+        },
+        {
+          "parm": "samplesperpixel",
+          "status": "set",
+          "wanted": 4,
+          "readback": 4
+        },
+        {
+          "parm": "pathtracedsamples",
+          "status": "set",
+          "wanted": 16,
+          "readback": 16
+        },
+        {
+          "parm": "trange",
+          "status": "set",
+          "wanted": 0,
+          "readback": 0
+        },
+        {
+          "parm": "outputimage",
+          "status": "set",
+          "wanted": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/ray_names.exr",
+          "readback": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/ray_names.exr"
+        }
+      ],
+      "is_RopNode": true,
+      "render_status": "returned",
+      "wall_seconds": 2.364,
+      "output": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/ray_names.exr",
+      "output_exists": true,
+      "output_bytes": 49534,
+      "output_sha256": "243b3b09435127f1782972a88e8ca67cfbc2f96649c4547f5b9a055ba0d1956d"
+    },
+    "int_format": {
+      "case": "int_format",
+      "extra_vars": [
+        {
+          "node": "int_objectid",
+          "sourceName": "ray:objectid",
+          "dataType": "int",
+          "huskformat": "int32"
+        }
+      ],
+      "krs_over": {},
+      "parms": [
+        {
+          "parm": "filepath1",
+          "status": "set",
+          "wanted": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda",
+          "readback": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda"
+        },
+        {
+          "parm": "primpath",
+          "status": "set",
+          "wanted": "/Render/Products/Vars/int_objectid",
+          "readback": "/Render/Products/Vars/int_objectid"
+        },
+        {
+          "parm": "sourceName",
+          "status": "set",
+          "wanted": "ray:objectid",
+          "readback": "ray:objectid"
+        },
+        {
+          "parm": "sourceType",
+          "status": "set",
+          "wanted": "raw",
+          "readback": "raw"
+        },
+        {
+          "parm": "dataType",
+          "status": "set",
+          "wanted": "int",
+          "readback": "int"
+        },
+        {
+          "parm": "xn__driverparametersaovhuskformat_control_c1bkde",
+          "status": "set",
+          "wanted": "set",
+          "readback": "set"
+        },
+        {
+          "parm": "xn__driverparametersaovhuskformat_bobkde",
+          "status": "set",
+          "wanted": "int32",
+          "readback": "int32"
+        },
+        {
+          "parm": "primid",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "element",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "resolutionx",
+          "status": "set",
+          "wanted": 160,
+          "readback": 160
+        },
+        {
+          "parm": "resolutiony",
+          "status": "error",
+          "wanted": 120,
+          "error": "PermissionError: Failed to modify node or parameter because of a permission error.  Possible causes include locked assets, takes, product permissions or user specified permissions"
+        },
+        {
+          "parm": "camera",
+          "status": "set",
+          "wanted": "/world/cam",
+          "readback": "/world/cam"
+        },
+        {
+          "parm": "engine",
+          "status": "set",
+          "wanted": "cpu",
+          "readback": "cpu"
+        },
+        {
+          "parm": "samplesperpixel",
+          "status": "set",
+          "wanted": 4,
+          "readback": 4
+        },
+        {
+          "parm": "pathtracedsamples",
+          "status": "set",
+          "wanted": 16,
+          "readback": 16
+        },
+        {
+          "parm": "trange",
+          "status": "set",
+          "wanted": 0,
+          "readback": 0
+        },
+        {
+          "parm": "outputimage",
+          "status": "set",
+          "wanted": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/int_format.exr",
+          "readback": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/int_format.exr"
+        }
+      ],
+      "is_RopNode": true,
+      "render_status": "raised",
+      "render_error": "OperationFailed: The attempted operation failed.\nError:       Command Exit Code: 1\n             Failed to complete render: exit code 1\nUse a Log Viewer with External Render Processes enabled for more information.",
+      "wall_seconds": 1.608,
+      "output": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/int_format.exr",
+      "output_exists": false
+    },
+    "denoise_on": {
+      "case": "denoise_on",
+      "extra_vars": [],
+      "krs_over": {
+        "denoiser": "oidn"
+      },
+      "parms": [
+        {
+          "parm": "filepath1",
+          "status": "set",
+          "wanted": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda",
+          "readback": "C:/Users/User/SYNAPSE/harness/notes/v1_scene_two_spheres.usda"
+        },
+        {
+          "parm": "primid",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "element",
+          "status": "set",
+          "wanted": true,
+          "readback": 1
+        },
+        {
+          "parm": "resolutionx",
+          "status": "set",
+          "wanted": 160,
+          "readback": 160
+        },
+        {
+          "parm": "resolutiony",
+          "status": "error",
+          "wanted": 120,
+          "error": "PermissionError: Failed to modify node or parameter because of a permission error.  Possible causes include locked assets, takes, product permissions or user specified permissions"
+        },
+        {
+          "parm": "camera",
+          "status": "set",
+          "wanted": "/world/cam",
+          "readback": "/world/cam"
+        },
+        {
+          "parm": "engine",
+          "status": "set",
+          "wanted": "cpu",
+          "readback": "cpu"
+        },
+        {
+          "parm": "samplesperpixel",
+          "status": "set",
+          "wanted": 4,
+          "readback": 4
+        },
+        {
+          "parm": "pathtracedsamples",
+          "status": "set",
+          "wanted": 16,
+          "readback": 16
+        },
+        {
+          "parm": "denoiser",
+          "status": "set",
+          "wanted": "oidn",
+          "readback": "oidn"
+        },
+        {
+          "parm": "trange",
+          "status": "set",
+          "wanted": 0,
+          "readback": 0
+        },
+        {
+          "parm": "outputimage",
+          "status": "set",
+          "wanted": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/denoise_on.exr",
+          "readback": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/denoise_on.exr"
+        }
+      ],
+      "is_RopNode": true,
+      "render_status": "returned",
+      "wall_seconds": 2.411,
+      "output": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-v1-capture-probe/9d6fd9c6-965e-4185-948a-45533e265d58/scratchpad/v1out/denoise_on.exr",
+      "output_exists": true,
+      "output_bytes": 40981,
+      "output_sha256": "efd93f4fbb2298421de1a80ee574e1ce774ae1da5ba12e71de5d88434111986e"
+    }
+  },
+  "renderer_menu": {},
+  "karma_delegate": null
+}
