@@ -3321,3 +3321,193 @@ substantially larger than the leg I wrote.
 
 **Before ruling a label stale, read what it labels.** A version string that disagrees with the
 running build is evidence of a mismatch. It is not evidence of *which side* is wrong.
+
+---
+
+# ADDENDUM — S0 / S1 / RSI0 (R120–R124)
+
+---
+
+## RULING 120 — S0-F1 REFUTES THE POSITIONING'S OPENING PREMISE. There is no AI floor in H22.
+
+The positioning document opens:
+
+> *"In Houdini 22, an AI that writes VEX and runs on a local model is standard equipment — SideFX
+> ships a version in the box. The floor just rose."*
+
+**S0-F1, and the absence is proven rather than assumed:**
+
+> **Houdini 22.0.368 registers NO LLM, agent, assistant, copilot, or MCP surface.**
+
+**S0-F2:** SideFX publicly demonstrated an AI-assisted authoring surface **and scoped it OUT of the
+shipped release in the same sentence.**
+
+**S0-F3:** the H21→H22 floor moved toward **task-specific neural inference in the node graph and
+APEX rigging** — not toward any agent surface.
+
+**S0-F4:** trade press asserts MCP/LLM capability in H22 that **neither SideFX's own pages nor the
+live build corroborate.** Recorded unresolved rather than decided, which is correct.
+
+**Ruled: the opening premise is struck.** It was almost certainly taken from trade coverage, which
+S0 has now shown is unsupported by the vendor and the binary.
+
+**And the correction improves the position rather than weakening it.** The document argued SYNAPSE
+competes *one layer above* a commoditised floor. **There is no floor.** The honest framing is
+stronger and more specific:
+
+> H22 added neural inference for specific tasks — denoise, rig transfer, and similar. It did not
+> add an agent, an assistant, or an MCP surface. That slot is empty.
+
+**A studio's TD can verify that in five minutes**, which is exactly why it must be stated as an
+absence we probed rather than a gap we assumed.
+
+---
+
+## RULING 121 — S1-F2 is a demo risk: `synapse_inspect_scene` does not return.
+
+> Called live twice; **ran 1800s and was aborted by the MCP idle timeout.**
+
+Not slow — non-returning, on a shipped tool with an inviting name. An artist asked to "look at my
+scene" reaches for exactly this.
+
+**Ruled: fence it before the demo.** A tool that hangs is worse than one that refuses — the
+session stalls with no error, which is the failure signature this project has spent a week
+eliminating. Either bound it or make it decline on scenes above a measured size, with a message
+naming the alternative that works.
+
+**S1-F4** is adjacent and separately real: `synapse_scout` fails on **SQLite thread affinity** —
+*"not a hang, slow then a hard error. Mechanism found, not inferred."*
+
+---
+
+## RULING 122 — S1-F1: the fake `hou` makes `importorskip("hou")` gate NOTHING.
+
+> A canonical **FAKE `hou` is planted into `sys.modules` at collection time**, so `import hou`
+> always succeeds under plain pytest and `pytest.importorskip("hou")` gates nothing anywhere.
+
+Every test written to skip off-host runs instead — **against a mock.** That is the five-unreachable-
+Solaris-tools mechanism, still live, in the guard designed to prevent it.
+
+**S1-F6 names the cure, and it already exists in this repository:**
+
+> The Solaris family is the ONE family with honest host evidence, and the mechanism is worth
+> naming: **the mock fixtures were DELETED** under Law 1, and the tests gate on host identity.
+
+**Ruled: that pattern is the standard** for any tool an artist actually reaches for. Deleting the
+mock is what made the difference — not adding an assertion.
+
+---
+
+## RULING 123 — RSI0: the loop is wired, never runs, is fed a constant, is read by nothing, and its logs say otherwise.
+
+Four findings, and together they are the most complete instance of this week's pattern:
+
+**F1** — the routing RSI loop **has never run in production.** In the live Houdini process the
+entire `synapse.routing` package is **absent from `sys.modules`.** The class was never imported.
+
+**F2** — the reward signal is a **hardcoded constant `True`.** All eight `_record_metric` call
+sites pass two positional arguments; the success parameter takes its default. **An optimiser
+maximising a constant.**
+
+**F3** — the adapted thresholds are **consumed by nothing.** Tier selection reads static
+`RoutingConfig` fields; the adapted dict's only readers are `stats()` and unit tests.
+
+**F4** — `OutcomeTracker` is **unreachable code**, not a None-valued field. `AgentExecutor` has
+**zero production construction sites.**
+
+**F5 is the one that would have fooled me, and nearly did:**
+
+> **4,357 "Epoch complete" lines sit in the OPERATOR'S REAL log directory, 550 written today.**
+> Every one is unit-test-generated.
+
+I asked RSI0 for *evidence of execution, not wiring*. **Had it read the log rather than
+`sys.modules`, it would have found 4,357 lines of exactly that, and been wrong.** The logs assert
+the loop runs. It has never run.
+
+**Ruled, answering the leg's own question — CONNECT or DELETE:** neither today. **Label it.** The
+`synapse/routing` and `synapse/agent` trees are not live product and must say so at the top of
+each module, because the next reader will otherwise reason from 4,357 log lines and a plausible
+class name.
+
+**And the tests stop writing to the operator's real log directory.** That is a `conftest` fix and
+it is the immediate action — a test suite polluting an operator's diagnostics with false evidence
+of a loop that has never run is worse than the dead loop.
+
+---
+
+## RULING 124 — Both research legs died on a session limit. Their numbers are floors.
+
+**S0-F5:** *315 claims gathered, none adversarially attacked — both verifiers died on a session
+limit.* **S0-F6:** the WebSearch budget is a **shared pool** consumed by the fan-out and ran out
+mid-run, losing an entire research angle.
+
+**S1** reports **31 UNREFUTED verdicts and 5 UNKNOWN** for the same reason.
+
+**Ruled:**
+1. Both legs are `amber` and correctly so. **Their verdicts are unrefuted, not confirmed**, and S2
+   must treat them that way.
+2. **Cap concurrent researchers on future research legs.** A shared budget silently consumed by
+   fan-out is a resource collision of the same class as R92's file collisions, and the fix is the
+   same: declare it before dispatch.
+3. Re-run the verifiers when the limit resets. **Not before the demo** — an unrefuted claim
+   labelled unrefuted is honest; a rushed re-run is not.
+
+---
+
+## RULING 125 — S1-F2's mechanism is REFUTED twice, and the demo path is not affected.
+
+S1-F2 reported `synapse_inspect_scene` hanging the full 1800s MCP idle timeout, twice, on a
+9-node empty scene. The observation is solid and reproduced. **Both proposed locations are wrong.**
+
+**Candidate 1, carried by S1, REFUTED by measurement:**
+
+> *"`_node_issues` calls `node.errors()` (introspection.py:184), which forces cooks."*
+
+`_node_issues` over 12 real LOP nodes from `karma_user_guide.hip`: **0.00s total.** It is free.
+
+**Candidate 2, S1's own anchor (`introspection.py:278`), REFUTED by direct call.** `inspect_scene`
+invoked directly, bypassing `run_on_main` and the bridge:
+
+```
+EMPTY SCENE
+  root=/       depth=1      ok   0.00s
+  root=/stage  depth=1      ok   0.00s
+karma_user_guide.hip, 130 /stage children
+  root=/stage  depth=1      ok   0.01s
+  root=/       depth=3      ok   0.08s      <- the default
+```
+
+**The function is not slow. It is instantaneous.**
+
+### Where it actually is, and the reasoning that was wrong
+
+S1 argued the bridge was healthy because `synapse_ping` answered instantly in the same session.
+**`synapse_ping` does not marshal.** A trivial health check answering fast says nothing about
+whether `run_on_main`'s queue is being drained — so the evidence that exonerated the marshal never
+touched it.
+
+**The remaining suspects are `run_on_main` and the MCP transport**, and `_handle_inspect_scene`
+wraps the call in exactly the former.
+
+### Why this matters for tomorrow, and it is the practical point
+
+**S1 tested through the MCP surface. The panel uses the WebSocket bridge.** Those are different
+transports, and R-day evidence separates them: a 5,764-node explain ran through the panel twice
+today, in seconds, on the same machine.
+
+**Ruled:**
+1. **Not a demo blocker.** The path an artist uses is demonstrated working on the largest scene
+   available. The path that hangs is the external MCP surface.
+2. **It IS a release-notes item**, because an external MCP client is a supported way to reach
+   SYNAPSE and it does not work for this tool.
+3. **Root-cause is `run_on_main` under MCP, not introspection.** Anyone picking this up should
+   start there and should NOT re-test `errors()` or `inspect_scene` — both are settled.
+
+### The method note, and it is the third time this week
+
+S1 found a real defect and attributed it to the wrong layer, because the exonerating evidence
+(`ping` is fast) did not exercise the thing it exonerated. **That is the same shape as R108's
+health check validating a stamp the product does not read**, and as my own R99 layer-2 error.
+
+**A control only rules out what it actually exercises.** `ping` proved the process was alive. It
+was read as proving the marshal was working.

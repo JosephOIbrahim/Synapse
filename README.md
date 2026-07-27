@@ -182,6 +182,8 @@ Those are shipping dependencies that are not shipped.
 
 Read this here rather than discover it mid-shot.
 
+**`synapse_inspect_scene` does not return over the external MCP surface.** It hangs to the idle timeout. The function itself is instantaneous when called directly — 0.08s for the whole of a 5,764-node scene — so the fault is in the main-thread marshal under MCP, not in introspection. **The panel's WebSocket path is unaffected** and is demonstrated working on that same scene.
+
 **The retrieval corpus is Houdini 21 documentation.** Symbols and node types are H22 and verified; the prose is not yet converted. Most consequential for Copernicus.
 
 **No delta path.** Every inspect is a full re-read. Re-asking about the same thing costs the same again.
