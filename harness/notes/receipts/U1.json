@@ -274,6 +274,16 @@
       "anchor": "python/synapse/memory/store.py:801 `def _make_store(self, storage_dir)`, called at :792; R64 item 2 and R76 both refer to it bare, as does harness/prompts/u1.md",
       "fix": "Rewritten against the tree, matching H6's existing call form SynapseMemory._make_store(None, tmp_path).",
       "note": "Law 5 in miniature, caught in under a minute because the check could fail. Recorded because two rulings quote the symbol in a form that reads module-level, and the next agent will read those rulings before it reads store.py."
+    },
+    {
+      "id": "U1-F7",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "medium",
+      "claim": "A leg cannot honour 'never push' by not pushing. The orchestrator's backup daemon polls every worktree and pushes any branch that is ahead of its upstream and is not master/main. It pushed this leg's commit 22 seconds after it was made, without the leg doing anything.",
+      "anchor": "harness/orchestrate.ps1:227 `git -C $p push origin \"${br}:${br}\"`, guarded at :206 by `if (... $br -in @('master','main')) { continue }`",
+      "evidence": "`git reflog show origin/repair/u1-provenance-union --date=iso`: 189180d pushed at 2026-07-27 00:12:15; my commit 189180d was authored 00:11:53. The prior entry, c808839 at 2026-07-26 23:39:36, predates this leg entirely. This leg issued no push command, and none appears in its transcript.",
+      "assessment": "NOT a Gate C breach, and probably not a defect. The daemon skips master/main by construction, and harness/githooks/pre-push independently REFUSES a master push without SYNAPSE_GATE_C=1 — capability, not command form (R94). Master is byte-identical to origin/master. The backup behaviour is deliberate and its comment records the incident that shaped it (eleven ephemeral workflow worktrees pushed on 2026-07-26, fixed by excluding `worktree-wf_*`). What it IS: a standing instruction a leg is structurally unable to satisfy or to violate.",
+      "consequence": "Any leg receipt in this harness that asserts a bare `pushed: false` is reporting its own inaction, not the state of its branch, and the two have diverged since the daemon was introduced. Receipts written before this finding should be read that way."
     }
   ],
 
@@ -330,6 +340,13 @@
       "detail": "U1-F4 residual. H6's two R60 reader controls — 'the reader reads the root layer instead of composing sublayers' and 'any prim counts as a match' — are the highest-value mutations in its battery and the only ones that could catch a blind reader. They live only in H6.json as prose. They are not single-line edits, so U1 did not re-materialise them rather than materialise them badly.",
       "ask": "Whether a follow-on materialises H6's M3/M4 into the committed battery. Related to R80's ordered-but-absent checks: the general rule this suggests is that a leg's mutation battery must be COMMITTED, not scratch, or its result is inherited the moment the file it measures changes.",
       "agent_position": "Evidence, not a decision. The specific risk is bounded — _schema_in_use_detail was copied byte-for-byte and its pins pass — but 'copied verbatim' is strictly weaker than 'the mutation still fires', and I would rather say so than let 39/39 imply otherwise."
+    },
+    {
+      "id": "U1-FR-4",
+      "topic": "'Never push' is an instruction no leg can obey or disobey",
+      "detail": "U1-F7. Every leg brief in this harness carries STANDING: 'Never push, never merge to master, never tag.' The orchestrator's backup daemon pushes leg branches on a poll, so the branch state a receipt reports has nothing to do with whether the leg pushed. This is the same shape as R94's ruling on merges: the honest statement there was that local merges are NOT fenced and cannot be by that mechanism, and that claiming otherwise is worse than the gap.",
+      "ask": "Either (a) restate the standing clause as what it actually protects — 'never push MASTER, never merge to master, never tag' — since that is what the pre-push hook enforces by capability and what Gate C is for; or (b) rule that receipts must report `pushed_by_this_leg` and `branch_was_pushed` as separate fields, as this one does. Not both silently.",
+      "agent_position": "Recommend (a), with (b) as the receipt convention. The daemon is doing something valuable — R91 exists because 504 lines of LEDGER's work sat uncommitted in a worktree one prune away from gone, and a backup push is precisely the mitigation. The instruction should describe the fence that exists rather than one that does not."
     }
   ],
 
@@ -347,9 +364,12 @@
   ],
 
   "standing_compliance": {
-    "pushed": false,
+    "pushed_by_this_leg": false,
+    "branch_was_pushed": true,
+    "pushed_note": "This leg ran no push command. The BRANCH was nonetheless pushed to origin, by the orchestrator's backup daemon — see U1-F7. Reporting a bare `pushed: false` would be true about my actions and false about the branch, which is the Law 3 shape (status describing what was attempted rather than what happened). Recorded as two fields instead of one.",
     "merged": false,
     "tagged": false,
+    "master_untouched": "yes — master == origin/master == f90946d, byte-identical, and 0 tags contain HEAD.",
     "gates_touched": "none. No drop.json edit, no flywheel ratification flip, no merge to master, no VERSION edit, no harness/agent-settings.json or relay-settings.json edit, no constitution edit.",
     "product_committed_before_receipt": "yes — 189180d, R93 satisfied. Working tree clean at receipt time apart from .claude/.orch_launched, an untracked orchestrator marker not created by this leg."
   },
