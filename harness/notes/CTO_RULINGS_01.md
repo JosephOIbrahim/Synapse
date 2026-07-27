@@ -3117,3 +3117,149 @@ know about, one failing assertion at a time.** Its own docstring names the incid
 wrote first, in response to an earlier version of this exact drift. **The check I wrote today is
 the second answer to a question already answered — and it only found more because the first one
 told it where to look.**
+
+---
+
+# ADDENDUM — C1 / C0: THE POSITIONING'S SPINE IS REFUTED (R113–R118)
+
+---
+
+## RULING 113 — "Cost stays flat, even on huge scenes" is REFUTED. It comes off the document.
+
+**The claim under test**, marked Shipping, leading the positioning page, and the sentence every
+other differentiator hangs off:
+
+> *"Sends only what changed — cost stays flat, even on huge scenes."*
+
+**C1 verdict: REFUTED.** Measured across a six-rung ladder, 13 → 25,850 nodes:
+
+```
+arm A grounding payload   443 -> 113,411 tokens        256x
++ measured tool prefix    14,380 (panel) / per turn
+arm B ablation            443 -> 1,234,946 tokens    2,788x
+```
+
+**Cost is not flat. It rises 256-fold.** It rises *far less steeply* than the ablation — that part
+is real and it is the thing worth saying — but "flat" is not a description of a 256x curve, and a
+studio running its own version of this test would find that in an afternoon.
+
+**Ruled: the claim comes off the document in its current wording**, and what replaces it is R114.
+
+---
+
+## RULING 114 — C1-F4 is the honest reframe, and it is harder than the claim it replaces.
+
+> Against the ablation, arm A's apparent cost advantage is **essentially ALL reduced coverage and
+> essentially NONE tighter encoding.** Raw advantage at the top rung is 10.89x; per node it
+> largely disappears.
+
+Single-call scene coverage by rung: **100, 100, 73, 51, 10, 11 percent.**
+
+**SYNAPSE is cheaper on large scenes because it sees less of them, not because it describes them
+better.** That is a real architectural property and it is defensible — bounded-depth grounding is
+the right design for an agent that can re-inspect on demand, and completeness *within its own
+depth window* is 100% at every rung.
+
+But it is a different sentence, and the honest one:
+
+> **Cost scales with what you ask about, not with the size of your scene.** A 25,000-node scene
+> costs what the part you are working on costs.
+
+**Ruled: that is the claim, and it is testable.** It also has to be said alongside the coverage
+number, because "sees less" is the mechanism and hiding it would be the same defect one layer up.
+
+---
+
+## RULING 115 — C1-F6: "sends only what changed" has NO MECHANISM. This is the worse half.
+
+> There is **no delta path anywhere in the grounding surface** — every inspect is a full re-read.
+> The dirty-flag inspect cache is explicitly [not wired].
+
+The refuted claim has two halves. "Cost stays flat" is wrong by degree. **"Sends only what
+changed" is wrong by kind — the named mechanism does not exist.**
+
+That is the more serious finding. A quantitative claim that overstates is a calibration error; a
+mechanism claim for machinery that was never built is the defect this repository has spent five
+days cataloguing, in the marketing rather than the code.
+
+**Ruled:** the phrase is struck immediately and unconditionally. **It does not return until a
+delta path exists and is measured.** If the dirty-flag cache is wired later, this becomes a real
+and strong claim — but it is a roadmap item today and belongs in the Roadmap column, which is
+honest by construction.
+
+---
+
+## RULING 116 — C1-F3: `houdini_network_explain` SEGFAULTS on SideFX's flagship scene.
+
+> Reproducibly on both runs, `rc=139`, on `karma_user_guide.hip` — **the largest scene SideFX
+> ships.** Dies inside `_get_non_default_par...`.
+
+A hard crash of the hython process, on a public SideFX scene, in a tool an artist would reach for
+on exactly the kind of scene where grounding matters most.
+
+**Ruled: this is the highest-priority product defect open.** It outranks the panel redesign and
+the RSI audit. A segfault takes the interpreter with it — there is no error to report, no graceful
+degradation, and on a live session it takes the artist's unsaved work.
+
+**And it gates the release.** Not because a release cannot ship with known defects — v5.35.0
+shipped with five — but because this one is reproducible on a scene anyone can download, and the
+first thing a technical evaluator does is point the tool at the biggest scene they have.
+
+**C1-F10 is adjacent and probably the same class:** `inspect_selection`'s depth argument is
+agent-supplied, **clamped nowhere**, over a recursion with **no visited set** — 2^depth. Its
+sibling `network_explain` clamps at 5. Fix both together.
+
+---
+
+## RULING 117 — C0: zero of four Shipping claims are SUPPORTED, and one correction is mine.
+
+```
+SUPPORTED 0   PARTIALLY_SUPPORTED 3   UNSUPPORTED 1
+```
+
+**C0-F3 corrects me directly.** Four hours ago I wrote that *"the positioning document's fourth
+claim is verified — `_check_boot_gate` requires `hou.isUIAvailable()`."* C0:
+
+> **CLAIM 4 is UNSUPPORTED as worded.** The gate is real and fires; it guards a component with
+> **zero production callers**, while the shipping surfaces boot and mutate headless.
+
+I verified the gate **exists**. I did not verify it guards **what the claim says it guards**. That
+is R104 again — concluding from what I saw rather than from what executes — and I made it while
+writing a ruling about instruments that report on neighbours.
+
+**C0-F4 is worse and more useful:** *the repository already shipped the correctly-scoped version
+of claim 4, and deleted it.* The true, narrower sentence existed and was replaced by a broader
+false one.
+
+**C0-F1 is a scope finding that changes how this leg is read:** the positioning document **is not
+in the repository and never has been.** C0 graded a transcription. Every verdict is against text
+pasted into a chat, not a versioned artifact — which is itself the problem, because a claim with
+no file has no producer and no history.
+
+**Ruled:** the positioning document enters the repository under version control before any further
+audit of it means anything. **C0's verdicts stand as findings about the text as transcribed**, and
+are re-run against the committed artifact.
+
+---
+
+## RULING 118 — C1-F2 and C1-F13: what this benchmark could NOT establish.
+
+**C1-F2:** *no model was in the loop and none could be.* The Anthropic key authenticates; **the
+account has no credits.** Both `messages.create` and `messages.count_tokens` return HTTP 400. So
+every figure is a **proxy-tokenizer payload measurement**, not an exact token count from the model
+that would serve the turn.
+
+**C1-F13:** *a genuine outside-in arm was never built — both wide-margin arm-B variants are
+SYNAPSE calling SYNAPSE.* The comparative half of the claim is **not established either way.**
+
+**Ruled, and this is why the leg is `green` rather than compromised:** it stated both limits
+plainly rather than presenting a comparison it had not earned. A benchmark that names what it
+could not measure is worth more than one that quietly measures something adjacent — which is
+precisely what an ablation against your own serializer would have been if left unlabelled.
+
+**Consequence:** no release may cite a token figure as a *comparison* until a real outside-in arm
+exists. The within-SYNAPSE numbers stand as what they are: a coverage-and-payload profile of our
+own grounding surface.
+
+**And fund the account.** An exact tokenizer is one API call away and every number in this leg
+carries an asterisk without it.

@@ -28,7 +28,15 @@ flowchart LR
 
 **Outside-in** re-sends your scene on every message. Cost climbs with scene size.
 
-**Inside-out** reads the scene directly and sends only the question.
+**Inside-out** reads the scene directly and sends only what you asked about.
+
+**Measured, not claimed.** Grounding payload across a 13 → 25,850 node ladder rises 443 → 113,411 tokens. That is **not flat** — it is 256×. The same probe run without depth bounds rises 2,788×.
+
+The honest statement: **cost scales with what you ask about, not with the size of your scene.** And the mechanism is *bounded depth* — single-call coverage falls to 10% on the largest scenes, with 100% completeness inside the window it does read.
+
+There is currently **no delta path**. Every inspect is a full re-read of what it looks at. "Sends only what changed" is a roadmap item, not a shipping one.
+
+*Producer: `harness/notes/token_bench/`, C1, 2026-07-27. Proxy tokenizer — no live-model arm, see Known limitations.*
 
 ---
 
@@ -40,7 +48,7 @@ flowchart LR
 
 **Stays on the main thread.** All `hou.*` calls marshal to Houdini's main thread.
 
-**Refuses to boot on a render node.** `hou.isUIAvailable()` gates startup — PDG workers spawn N hython subprocesses, and an agent in each one multiplies your bill.
+**Refuses to boot on a render node** — *narrowly.* `hou.isUIAvailable()` gates the daemon, which is the Fork Bomb guard. But the gate protects a component with no production callers today, while other surfaces boot headless. Treat it as a guard that exists, not a guarantee that holds.
 
 ---
 
@@ -160,6 +168,10 @@ Those are shipping dependencies that are not shipped.
 
 Read this here rather than discover it mid-shot.
 
+**`houdini_network_explain` segfaults on very large scenes.** Reproducible on SideFX's own `karma_user_guide.hip` — `rc=139`, twice. It takes the interpreter with it, so there is no error and no graceful degradation. Fix in flight; do not point it at a 25,000-node scene today.
+
+**No delta path.** Every inspect is a full re-read of what it looks at. Cost scales with what you ask about, and re-asking about the same thing costs the same again.
+
 **A render can be stopped, but not from `RopNode`.** `hou.RopNode` has no cancel method. `rkill` works and SYNAPSE does not yet use it. `hou.ActiveRender` — the documented replacement — is `#status: ni` and absent at runtime.
 
 **The PDG rollback has never executed.** `bridge.py:1718` passes `remove_files=` to `dirtyAllTasks`; the real keyword is `remove_outputs`. It raises `TypeError` every time.
@@ -169,6 +181,8 @@ Read this here rather than discover it mid-shot.
 **Emergency halt is not surfaced in the panel.** The mechanism exists; there is no always-visible control yet.
 
 **Node grounding is thin.** 18.3% of LOP types and 6.2% of Copernicus types carry semantic grounding. The shipped reference documents 37.9% of LOP parameters — the realistic ceiling from documentation alone.
+
+**Token figures are proxy-measured.** No live-model arm exists — the API account has no credits, so `count_tokens` is unavailable. And no genuine outside-in comparison has been built; the numbers above profile our own grounding surface, nothing else.
 
 ---
 
