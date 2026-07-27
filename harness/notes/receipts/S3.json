@@ -1,0 +1,275 @@
+{
+  "schema": "receipt/v1",
+  "leg": "S3",
+  "title": "The plan — derived from S0/S1/S2, adversarially attacked, and corrected in 25 places",
+  "harness": "FORENSIC-01",
+  "status": "green",
+  "status_note": "Green means the oracle was satisfied: S3_PLAN.md exists; all 19 items are in DO/BECAUSE/INSTEAD OF/COSTS/FALSIFIED form; every BECAUSE cites a specific S0/S1/S2 finding by id; a separately labelled 'believed, unverified' section carries 11 ASSUMED entries; the pilot is specified to one artist / one task / one abort set concretely enough to propose on Monday; and there are no unlabelled ASSUMED claims. Green does NOT mean the plan is right. Three things a reader must carry: (1) the adversarial pass forced 25 corrections into the draft, two of which were structural defects that would have shipped items cancelling each other — the ORIGINAL draft was wrong in ways only the attack surfaced, and the same is presumably true of this one; (2) 25 of the 30 attack findings were capped out of the independent refutation phase by a declared budget cap — I triaged and adopted them on my OWN re-verification, which is orchestrator verification, not independent refutation, so they are unrefuted rather than confirmed (R124's standing, applied to myself); (3) this leg cites a DIFFERENT copy of S2 than the committed one, inverting R127's default — see for_ruling R-S3-1.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "NONE OF THE HARNESS PROFILES — interactive session under the project .claude/settings.json, recorded honestly per R25 rather than claiming a fence that was not applied. Evidenced by calls that succeeded which harness/readonly-settings.json denies: Write outside its grant pattern, Workflow/Agent dispatch, and unrestricted Bash. Same condition S0 recorded as its drift D3.",
+  "commit_at_run": "b608efc",
+  "commit_at_run_note": "v5.36.4. master advanced to c624ea7 then 83a4820 DURING this run; neither touches product code, so every V-S3-* verification stands at b608efc as declared. See drift D5.",
+  "branch": "forensic/s3-the-plan",
+  "mode": "READ-ONLY on the tree; writes confined to harness/notes/** in this leg's own worktree. Zero TRACKED files modified in any repo or worktree. One gitignored runtime file (SYNAPSE/.synapse/panel_settings.json) was written as a side effect of importing panel modules for live counts -- declared as drift D7 rather than cleaned (Law 4: classification and deletion are separate acts).",
+  "houdini_build_target": "22.0.368",
+  "deps": [
+    "S0",
+    "S1",
+    "S2"
+  ],
+  "deps_state": {
+    "S0": "READ IN FULL from harness/notes/forensic/S0_SCOUT.md (827 lines) + receipts/S0.json (9 findings). NOTE: this is S0's SECOND run; R120-R124 cite a first run with independently renumbered findings. Hazard documented in plan section 0.2 and drift D3.",
+    "S1": "RECOVERED FROM SESSION TRANSCRIPT — the on-disk deliverable was destroyed by 11f3a79 and had not been re-written when this leg ran. Reconstructed by replaying one Write (17,370 chars) + nine sequential Edits, all nine applying cleanly and unambiguously, to a 20,370-char report; plus the receipt (20,513 chars + 8 edits) which parses as valid JSON and carries S1-F1..S1-F14. Independently re-run and confirmed by a refutation agent ('25,510 bytes, parses as valid JSON, S1-F1..S1-F14 present'). Corroborated by R121/R122/R124/R125 citing the same ids and figures. See drift D1.",
+    "S1_rerun": "S1's concurrent re-run had produced four live probe artifacts (harness/notes/forensic/s1_artifacts/*.json, 14:50-15:03, committed at 83a4820) but NO report and NO receipt as of 15:33. Those artifacts are cited as S1P-<name> and are the freshest OBSERVED evidence in this document; where they disagree with the recovered S1, the fresher observation wins and is called out (plan section 0.4).",
+    "S2": "READ IN FULL. TWO DIVERGENT COPIES EXIST: the committed copy (83a4820, 1,258 lines) is the PRE-CRUCIBLE draft; the worktree copy (1,388 lines) carries the adversarial corrections R-S2-1 said were outstanding. This leg cites the corrected copy and verified each adopted correction first-hand. See drift D2 and for_ruling R-S3-1."
+  },
+  "suite_before": null,
+  "suite_after": null,
+  "suite_note": "Not run and not claimable. This leg touched no code and modified no tracked file; per Constitution Article V no suite evidence is asserted. Every suite figure quoted in the plan is attributed to S2's producer with its interpreter named, never to this leg.",
+  "oracle": {
+    "artifact": "harness/notes/forensic/S3_PLAN.md",
+    "items_total": 19,
+    "items_in_required_form": 19,
+    "every_because_cites_a_finding_id": true,
+    "believed_unverified_section_present": true,
+    "believed_unverified_entries": 11,
+    "unlabelled_assumed_claims": 0,
+    "pilot_concrete_enough_to_propose": true,
+    "pilot_shape": "ONE Houdini generalist + TD at ~2h/week; one sequence on one show; task = Solaris shot assembly (layer scaffold + cinema-camera prim + three-point rig at 4:1) ending at a reviewable scaffold; renders/caching/comp/farm/autonomous OUT and ENFORCED via the Gate 1.4 tool filter; one quarter with a week-1 kill switch; 3 measured success criteria; 4 pre-agreed abort conditions any one of which ends it that day.",
+    "structure": "0 how-to-read + citation map + 33 first-hand verifications + 3 dead premises | 1 the three questions | 2 the plan (2 premise tests + Gate 0 x5 + Gate 1 x6 + Gate 2 x3 + Gate 3 x3) | 3 deliberate exclusions | 4 ASSUMED | 5 whole-plan falsifiers | 6 the adversarial pass | 7 drift x7 | 8 standing"
+  },
+  "headline": {
+    "q1": "NOTHING qualifies as a first-session moment today, and that is the leg's most important finding. Four verified mechanisms, not a missing feature: every tool runs on the GUI thread behind a phantom attribute; the model is told it is in Houdini 21 in FOUR places; the turn ends green whatever happened; and 21 palette rows type a sentence under a footer reading 'Enter run'.",
+    "the_leg_s_own_finding": "The product ships TWO recipe libraries with different content and the discoverable one is the poorer one. panel/recipe_book.py::RECIPES = 21 recipes, palette-reachable and prefixed 'Build this network recipe -- '. synapse/routing/recipes/::RecipeRegistry = 62 recipes with 8 cinema-camera sensor datasets, the Lighting Law, 4:1 key:fill math AND natural-language trigger regexes -- reachable by natural language NOWHERE, because TieredRouter is built only in _handle_route_chat, route_chat is one of the 7 handler commands no registered tool reaches, and it is sent only by panel/chat_panel.py which is NOT the shipped panel and is never referenced by it. Confirmed from outside: router_stats returns 'Router not initialized' on BOTH transports.",
+    "q2": "The TD's veto is answered in 11 rows: security (Gate 0.1+0.3, non-negotiable), the studio-readiness board (scoped by declared posture, not softened), cost (Gate 1.1 -- the item S2 says decided the trial), the suite as an upgrade gate (half-answered; the CI lane is a cost decision, escalated), the per-point-release runbook (partly; the rest is abort condition 3), log noise (Gate 1.6), farm (accepted LIMIT), the second artist's memory (Gate 3.3), $JOB writability (ask), MPA OR-5.0 (a disclosure row, P-2), and scene poisoning (already true and the strongest card in the pack).",
+    "q3": "One artist, one show, Solaris shot assembly only, one quarter, week-1 kill switch. Converts S2-U21, U6, U14, U3, U10 into observations. Deliberately does NOT convert U1 (the unstoppable render) -- that gets a bench probe on a scratch scene, never a production shot, because spending a real shot to learn it is how the pilot ends at abort condition 1.",
+    "the_sentence": "SYNAPSE's problem is not that it lacks a moment -- it is that its one proven artist-facing lane sits behind a panel that runs every tool on the GUI thread because of a single phantom attribute, a prompt that thinks it is in Houdini 21 in four places, and two rival recipe libraries of which the discoverable one is the poorer and the richer one's triggers can never fire because the router that matches them is never built on the shipped path."
+  },
+  "reframings_that_changed_the_plan": [
+    "'Irrefutable' is unachievable and NOVEL is not the goal -- S0-F3 measured the field: largest Houdini-AI repo = 326 stars, both commercial products have ZERO third-party replies across threads with 5,919 views. Novelty is cheap here and nobody is buying it.",
+    "'In-process access' is NOT a differentiator. S0-F3: capoomgit/houdini-mcp (273 stars) runs a socket server inside Houdini; healkeiser/fxhoudinimcp (138) uses Houdini's own hwebserver with hdefereval marshalling, verified on 22.0.368, with 179 tools to SYNAPSE's 120. In-process is the field's BASELINE. Every plan item resting on it was deleted.",
+    "synapse_inspect_scene does NOT hang -- R125 measured 0.00-0.08s and S1's re-run returned 767 bytes / 10 nodes on BOTH transports. No item fences it. But the non-answering CLASS is live and now owns synapse_scout (NO_RESPONSE at a 180s ceiling on a fresh dedicated server, called first) -- the tool CLAUDE.md rule 15 makes the MANDATORY phantom-API pre-flight. That became Gate 1.5, which the first draft omitted entirely.",
+    "The palette is not broken; 9.2% of it is. No row dispatches -- it is a prompt-composer by construction -- so 'prose instead of dispatching' is a contrast that does not exist. 74 of 95 legacy rows carry an imperative prefix. The defect is the 21 command rows with neither a prefix nor a tool name."
+  ],
+  "findings": [
+    {
+      "id": "S3-F1",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "structural",
+      "anchor": "python/synapse/cognitive/tools/data/h22_symbol_table.json; python/synapse/panel/tool_executor.py:146-152,480; python/synapse/panel/claude_worker.py:49,254",
+      "summary": "hou.webServer.port is ABSENT from the committed 22.0.368 symbol table while its parent hou.webServer is enumerated with 1,312 descendants (1,313 counting the node) -- a TRUE absence, not a coverage artifact. Control run to avoid this repo's own false-phantom trap: hou.undos and hou.hipFile are present with ZERO descendants, so an absence there would prove nothing. Table: 35,903 symbols, blake2b 265b433af49698ab, truncated false. The call sits inside a bare `except Exception: return None`, so `available` is False PERMANENTLY and every tool falls through to the Qt main-thread slot.",
+      "producer": "direct load of the committed symbol table + sed of the call site, this leg, at b608efc",
+      "why_it_bites": "This single line is what converts every other timeout and budget in the product from bounded to unbounded: per handlers_render.py:109-113, 'the Qt slot IS the main thread, so run_on_main takes FAST PATH 2 and again discards this timeout'.",
+      "safety_check": "Repairing it cannot deadlock: try_mcp_tool_call is called from claude_worker.py:254 and ClaudeWorker is a QThread (:49); the function's own docstring reads 'Safe to call from any thread ... NOT safe to call from the main thread (will deadlock with hdefereval)'. Worker-thread-only by construction.",
+      "held_under_attack": "Graded SOUND by a lens that re-derived the whole table independently and reproduced both controls."
+    },
+    {
+      "id": "S3-F2",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "blocker",
+      "anchor": "python/synapse/mcp/server.py:803-817; python/synapse/panel/tool_executor.py:170-176; python/synapse/server/hwebserver_adapter.py:123-134; python/synapse/server/websocket.py:395-401",
+      "summary": "THE PLAN'S OWN TWO GATE-0 ITEMS CANCELLED EACH OTHER, and only the adversarial pass found it. Minting ~/.synapse/auth.key (the security fix) arms THREE server gates and NO in-process client answers any of them: _MCPLocalClient._post sends only Content-Type and Accept, so a keyed /mcp request 401s, _ensure_session raises ConnectionError, try_mcp_tool_call returns None, and execution falls back SILENTLY to the Qt main-thread slot -- precisely the condition the phantom-port repair exists to remove. grep -rn Authorization tests/ is EMPTY: no test pins it.",
+      "producer": "sed of mcp/server.py:800-820 and tool_executor.py:161-182 + grep across tests/, this leg, at b608efc",
+      "consequence_for_the_plan": "The two items were merged into ONE commit with client-side credential propagation, an auth pin test whose failure condition is stated, and a POSITIVE path assertion so 'the port resolved' is never mistaken for 'the fast path works'.",
+      "note": "Found independently by two of four hostile lenses. This finding alone justifies the adversarial pass."
+    },
+    {
+      "id": "S3-F3",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "structural",
+      "anchor": "python/synapse/routing/recipes/ (RecipeRegistry); python/synapse/panel/recipe_book.py (RECIPES); python/synapse/panel/command_palette.py:139-145; python/synapse/server/handlers.py:1591-1600; python/synapse/panel/chat_panel.py:799,903; houdini/python_panels/synapse_panel.pypanel:45",
+      "summary": "SYNAPSE ships TWO recipe libraries and the discoverable one is the poorer one. Library A: panel/recipe_book.py::RECIPES = 7 categories / 21 recipes, read by the command palette, sent prefixed 'Build this network recipe -- ' -- reachable and actionable. Library B: RecipeRegistry = 62 recipes (pipeline 12, render 11, copernicus 9, lighting 7, fx 6, tops 5, utility 3, geometry 2, materials 2, set_dressing 1, compositing 1, camera 1, environment 1, sim 1) carrying 8 cinema-camera sensor datasets, the Lighting Law and NATURAL-LANGUAGE TRIGGER REGEXES -- unreachable by natural language. TieredRouter is constructed in exactly one place (_handle_route_chat); route_chat is one of the 7 handler commands NO registered tool reaches; and route_chat is sent only by panel/chat_panel.py, which is not the shipped panel and is never referenced by it. Unreachable from all three directions at once.",
+      "producer": "live RecipeRegistry() instantiation = 62 (and an independent second producer: grep -c 'registry.register(Recipe(' across the recipes package = 62, 7+21+18+11+5); live recipe_book RECIPES = 21; live build_palette_entries() = 95 with Counter({'vex':45,'command':21,'recipe':21,'apex':8}); S1P-registry_xref handler_cmds_with_no_tool = 7 including route_chat; S1P sweeps show router_stats 'Router not initialized' on BOTH transports",
+      "why_it_bites": "It answers S2-U6 ('whether artists discover the 62-recipe library at all') MECHANICALLY without the user study, and it means the product already ships the 'two competing stories about how a recipe is invoked' that its own reasoning forbids -- unnoticed."
+    },
+    {
+      "id": "S3-F4",
+      "tier": "VERIFIED-STATIC",
+      "severity": "high",
+      "anchor": "python/synapse/panel/system_prompt.py:51,189,193,197",
+      "summary": "There are FOUR H21 references in the shipped prompt layer, not three, and the obvious guard CANNOT FAIL on its own target. :51 'inside Houdini 21', :189 'in Houdini 21.0.671', :193 'The H21 docs corpus is the authority', :197 'karmaphysicalsky bug (H21)'. `grep -c \"Houdini 21\"` returns 2 -- so after repairing :51 and :189 the proposed build guard reports clean while :193 still tells the model the H21 corpus is authoritative, which is the exact grounding defect the item exists to close.",
+      "producer": "grep -n 'Houdini 21|H21|21\\.0\\.671' + grep -c 'Houdini 21' on system_prompt.py at b608efc",
+      "consequence_for_the_plan": "The guard was respecified to match `Houdini 21|H21|21\\.0\\.` AND to carry an explicit allowlist for dated historical notes -- because :197 is a legitimate correct line and a guard that fails forever on a correct line gets disabled, which is how guards die.",
+      "law": "Law 1 applied to the plan's own check: a check whose stated failure condition does not cover its own target is a decoration."
+    },
+    {
+      "id": "S3-F5",
+      "tier": "VERIFIED-STATIC",
+      "severity": "high",
+      "anchor": "harness/verify/checks.py:1841,2126-2169,2195-2206; git diff --stat dfc02c8..b608efc",
+      "summary": "A currency claim of the shape 'only two PRODUCT files changed, so the prior leg's ledger is current' is unsound when the prior leg anchors outside python/. harness/verify/checks.py changed +88/-6 INSIDE this plan's own commit range (2105453, the Q2 tuple baseline reader), which SUPERSEDES S2#63 / R-S2-5: at HEAD parse_tuple_baseline HARD-REJECTS the flat baseline shape with an error naming the exact defect, check_suite_baseline reads the tuple at the merge-base anchor, and check_ci_covers_shipping_surface already EXISTS requiring a Windows lane plus a vendored-load probe. Two thirds of the drafted Gate 3.2 was already shipped, and the remaining third was WRONG -- the ratchet runs sys.executable, so pointing it at the shipping block would compare a system-python run against an hython baseline.",
+      "producer": "git diff --stat dfc02c8..b608efc -- harness/verify/checks.py + sed of the parse/read sites, this leg",
+      "consequence_for_the_plan": "Gate 3.2 rewritten to the one thing that remains real (recompute the shipping block + fail on staleness); cost 1 day -> 0.5. The plan's currency paragraph was rescoped to python/ with the three disturbed rows named. S2#69 and S2#70 were re-read at HEAD and remain current."
+    },
+    {
+      "id": "S3-F6",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "high",
+      "anchor": "harness/notes/forensic/s1_artifacts/mcp_isolate.json; python/synapse/panel/tool_bridge.py; python/synapse/panel/system_prompt.py:186-193",
+      "summary": "The mandatory phantom-API pre-flight does not answer, and the prompt orders a tool the panel does not carry. S1P-mcp_isolate -- one FRESH MCP server per case, the tool called FIRST, 180s ceiling -- records synapse_scout at elapsed 180.11 with result 'NO_RESPONSE', while every other isolated case returned in 4.02s. Independently: the panel's tool array is 126 entries and synapse_scout is ABSENT from it (synapse_inspect_stage too), while system_prompt.py:186-193 instructs the model to call synapse_scout before authoring non-template LOP nodes.",
+      "producer": "read of s1_artifacts/mcp_isolate.json + live get_anthropic_tools() length and membership check, this leg",
+      "why_it_bites": "CLAUDE.md rule 15 makes scout the MANDATORY pre-flight before emitting any unfamiliar hou./pdg./pxr. call -- the front-line defence against this project's self-declared #1 failure class. It does not answer, and the model is told to call something it cannot reach, so it either narrates a scout call it never made or authors from priors: the exact failure scout exists to prevent.",
+      "note": "The first draft of this plan OMITTED this entirely, having over-generalised from inspect_scene's clean re-run to the whole hang class. Restored as Gate 1.5 by the adversarial pass."
+    },
+    {
+      "id": "S3-F7",
+      "tier": "VERIFIED-STATIC",
+      "severity": "medium",
+      "anchor": "python/synapse/panel/tool_executor.py:300,349-350,360,368-369; python/synapse/panel/bridge_adapter.py:261",
+      "summary": "The remedy S2-L1 names for the un-removable freeze exists, is computed, is emitted, and has ZERO consumers -- and repairing the phantom port would DELETE it from the path. estimate_inline_cost has exactly one production call site, inside _preflight, called only from execute_tool, which is the @QtCore.Slot main-thread path. preflight_warning is declared at :300, emitted at :360, and has zero .connect( sites anywhere in python/ or tests/. So the advisory only ever fires on the very path the phantom-port repair removes.",
+      "producer": "grep -rn estimate_inline_cost / _preflight / preflight_warning across python/ and tests/, this leg",
+      "consequence_for_the_plan": "The two items ship together, with the estimate relocated into the worker before dispatch so it survives the repair.",
+      "held_under_attack": "Two independent lenses tried to find a second caller and could not; both graded it SOUND, one calling it 'the sharpest structural argument in the document -- forced by the code, not asserted'."
+    },
+    {
+      "id": "S3-F8",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "medium",
+      "anchor": "python/synapse/panel/tool_palette.py:110,119,150; python/synapse/panel/command_palette.py; python/synapse/server/foreground_guard.py:42-52,187-191; python/synapse/server/handlers_render.py:344,478",
+      "summary": "Two inherited claims were inflated and both were corrected against the tree. (a) The palette does not 'send prose INSTEAD OF dispatching' -- NO row dispatches; it is a prompt-composer by construction (command_selected = Signal(str) # emits a ready-to-send prompt). build_palette_entries() = 95 rows, Counter({'vex':45,'command':21,'recipe':21,'apex':8}); _CATEGORY_PREFIX covers recipe/apex/vex, so 74 of 95 carry an imperative prefix and the 120 tool rows name their tool outright ('Use the `%s` tool.'). The real defect is the 21 command rows (9.2%, not 41.7%) with neither. (b) The foreground guard's refusal is not a dead end: it names a resolution ceiling AND 'or pass force_foreground=true to accept the UI freeze deliberately', and allow_px is per-engine (65,536 for karma_cpu/karma/mantra, 262,144 for karma_xpu) with a per-engine hardware rationale.",
+      "producer": "live build_palette_entries() + Counter; sed of tool_palette.py and foreground_guard.py; grep force_foreground across the render handlers, this leg",
+      "consequence_for_the_plan": "A Tier-1 headline was deflated 4.5x, one item was rescoped from 'make rows dispatch' (a redesign of a working component) to 'fix the 21 rows and the footer' with cost 1.5d -> 0.5d, and the render-refusal work was deleted from one item as double-counted.",
+      "note": "Independently discovered twice: by this leg reading S2's corrected worktree copy, and by two hostile lenses reading the tree."
+    },
+    {
+      "id": "S3-F9",
+      "tier": "VERIFIED-STATIC",
+      "severity": "high",
+      "anchor": "install.py:78,87,139; scripts/install_synapse_package.py:73-85; houdini/toolbar/synapse.shelf:13; python/synapse/__init__.py:62-68,90-94; git ls-files houdini/",
+      "summary": "The install surface is a Gate-0 concern for a two-seat pilot, not a footnote. install.py iterates `for major in [21, 20, 19]` so on an H22-only seat it exits 1 and on the dual-build seat CLAUDE.md names as the target it silently installs into the H21 preference directory; its Windows search root is ~/Documents only while the SIBLING installer documents the OneDrive known-folder redirection at length and handles it -- the two installers disagree and the obvious-named one is the broken one. git ls-files houdini/ returns 3 files and there is NO houdini/config, so the shelf's five SYNAPSE_* icon references resolve to nothing. And S2-L6 re-verified at HEAD: both the vendoring predicate and the ABI-risk warning are sys.platform.startswith('win')-gated, so a Linux studio gets no vendoring AND no notice.",
+      "producer": "sed of both installers + git ls-files houdini/ + git diff dfc02c8..b608efc -- python/synapse/__init__.py (version strings only), this leg",
+      "consequence_for_the_plan": "New Gate 0.6. The first draft deferred this on the ground that 'the plan assumes the TD's own seat works' -- which does not cover a pilot with TWO seats whose week-1 abort condition fires exactly when the non-TD seat cannot complete the loop."
+    },
+    {
+      "id": "S3-F10",
+      "tier": "VERIFIED-STATIC",
+      "severity": "structural",
+      "anchor": "harness/notes/forensic/S2_PREMORTEM.md (committed, 1,258 lines) vs .claude/worktrees/s2-forensic/.../S2_PREMORTEM.md (1,388 lines)",
+      "summary": "S2 exists in two divergent copies and the COMMITTED one is the earlier, pre-adversarial draft. 83a4820 committed 1,258 lines; the worktree copy is 1,388 and carries the corrections R-S2-1 recorded as outstanding. The committed copy still states the palette figure at 41.7%, '40% of the package' (a 4x denominator error -- 10,905 LOC is 39.8% of panel/'s 27,379 and 10.8% of the package's 100,574 excluding _vendor), the escape table without its README attribution, and the foreground-guard quote without force_foreground. All four are corrected in the worktree copy. R127 rules that the committed file is the claim; here the committed file is demonstrably the draft.",
+      "producer": "difflib opcode diff of the two copies + first-hand re-verification of each adopted correction against the tree at b608efc (V-S3-4, V-S3-10, V-S3-31, and both LOC denominators measured live)",
+      "why_it_bites": "Anyone reading the committed S2 will cite a 4.5x-inflated Tier-1 headline in good faith. It is R127's shape a third time -- a second copy nobody declared existed -- now in the evidence layer rather than a verifier's glob."
+    }
+  ],
+  "adversarial_pass": {
+    "ran": true,
+    "why_it_matters": "S0, S1 and S2 EACH shipped with 'no adversarial pass ran' as a recorded blocker (R124, R-S2-1). This leg ran one against its own draft, which closes that pattern for the first time in the sequence.",
+    "shape": "4 hostile lenses in parallel (citation integrity / reasoning + falsifiability / independent anchor re-derivation / completeness), then 8 per-finding refutation passes instructed to default to refuted when evidence is thin. Every lens required to return >=2 SOUND entries as a specificity control (R79's discipline). All agents were crucible-class (Read/Grep/Glob/Bash; no Edit/Write in the agent definition).",
+    "cost": "12 agents, 351 tool calls, 1,717,339 subagent tokens, ~26 min",
+    "tally": {
+      "entries_total": 54,
+      "survived_refutation": 5,
+      "refuted": 3,
+      "capped_unverified": 25,
+      "sound_controls": 16
+    },
+    "corrections_adopted": 25,
+    "the_two_that_mattered_most": [
+      "X-2: Gate 0.1 and Gate 0.3 cancelled each other -- minting the auth key 401s the fast path the other item revives, restoring the GUI-thread fallback SILENTLY while both items report done. Found by two lenses independently.",
+      "X-1/X-20: the palette Tier-1 headline was inflated 4.5x and the item built on it aimed at a design property rather than a defect."
+    ],
+    "refuted_attacks": [
+      "An attempt to promote the Gate 3.2 finding to SHOWSTOPPER -- it is a bounded line-number-and-adjective repair.",
+      "An attempt to show the Q1 candidate was smuggled preference rather than derived -- S1-F7's the_inversion field supports the derivation verbatim.",
+      "An attempt to void Gate 1.4 on the ground that its insertion point lacks the needed mechanism -- the mechanism is there (V-S3-20)."
+    ],
+    "what_held": "16 SOUND entries. The two most load-bearing: V-S3-1 (a lens re-derived the symbol table independently, reproduced symbol_count, the blake2b prefix, the absence, AND both controls) and the 0.3<->0.4 coupling (two lenses tried to find a second caller of estimate_inline_cost and could not).",
+    "honest_limit": "25 of the 30 BLOCKER/DEFECT entries were capped out of the independent refutation phase by a declared budget cap the workflow LOGGED rather than hid. I triaged all 25 and adopted the ones above on my own re-verification -- orchestrator verification, not independent refutation. They are UNREFUTED, not confirmed."
+  },
+  "verifications_first_hand": {
+    "count": 33,
+    "note": "R76/R85 -- a receipt is not the tree. Every load-bearing anchor was re-read at b608efc rather than taken from S2's receipt. All 33 are declared in plan section 0.3 with their results; an earlier draft circulated 28 ids against a table declaring 25, which the adversarial pass flagged as the same citation-integrity failure the plan itself raises as a hazard.",
+    "highlights": [
+      "hou.webServer.port absent with both false-phantom controls run",
+      "62 recipes by two independent producers; 21 in a second library",
+      "120 TOOL_DEFS, 126 in the panel array, 128 advertised over MCP -- three different true numbers",
+      "route_chat is one of 7 dead handlers AND is sent only by the non-shipped panel",
+      "_note_usage / preflight_warning / translate_error / rkill: zero callers or zero call sites, each grepped",
+      "zero 'ray:' hits and zero tracked .hda/.otl",
+      "the auth-vs-fastpath 401 conflict, which no test pins"
+    ]
+  },
+  "for_ruling": [
+    {
+      "id": "R-S3-1",
+      "severity": "structural",
+      "item": "S2 exists in two divergent copies and this leg cites the UNCOMMITTED one. The committed S2_PREMORTEM.md (83a4820, 1,258 lines) is the pre-adversarial draft; the worktree copy (1,388 lines) carries the corrections R-S2-1 said were outstanding, including a 4.5x-deflated palette headline and a 4x-corrected LOC denominator. R127 rules 'the committed file is the claim'.",
+      "why_escalated": "Article I -- inverting a standing ruling's default is a value judgement between defensible options, not a fact from the tree. I made the call and verified every adopted correction first-hand against the tree, but ratifying which copy is authoritative is not an agent's to decide.",
+      "recommendation": "Commit S2's corrected copy (or its diff) so the claim and the evidence coincide, then amend R127's corollary: when a committed artifact is provably an earlier draft than an uncommitted one, the DIVERGENCE is the finding and neither copy is citable until reconciled. Immediate risk if unresolved: anyone reading the committed S2 cites an inflated Tier-1 headline in good faith."
+    },
+    {
+      "id": "R-S3-2",
+      "severity": "structural",
+      "item": "Gate 2.1's router question: (a) construct TieredRouter on the shipped panel's path so the 62 recipes' natural-language triggers can fire (~3 days, and it inherits R123's caution that synapse/routing is not live product), or (b) retire the trigger regexes and re-shape the library as tools/prompt content the LLM selects (~1 day). Either way the two recipe libraries -- 21 in panel/recipe_book.py, 62 in synapse/routing/recipes/ -- must be reconciled into one.",
+      "why_escalated": "Article I -- product direction. (b) is the smaller, more honest move for a pilot; (a) is the larger product bet.",
+      "recommendation": "Measure before deciding, and it is measurable before any code: does an artist typing 'set up a three-point rig' already get the right result via the LLM electing to call synapse_list_recipes, at acceptable token cost? If yes, (b) with no further argument."
+    },
+    {
+      "id": "R-S3-3",
+      "severity": "advisory",
+      "item": "R123 ordered synapse/routing and synapse/agent labelled 'not live product' at the top of each module because the routing RSI loop has never run. But RecipeRegistry -- the 62 recipes, the richest artist-facing asset in the product -- lives at synapse/routing/recipes/ and IS reached live by synapse_list_recipes on both transports.",
+      "why_escalated": "A tree-wide banner applied literally would mislabel live product as dead, which is the inverse of the defect R123 was written to prevent.",
+      "recommendation": "Make R123's label PER-MODULE, not per-tree, and exclude synapse/routing/recipes/ explicitly."
+    },
+    {
+      "id": "R-S3-4",
+      "severity": "advisory",
+      "item": "The Windows + hython CI lane. check_ci_covers_shipping_surface already EXISTS at checks.py:1841 and requires a Windows lane plus a vendored-load probe -- so the requirement is asserted in-tree while the lane does not exist. Standing up the lane needs a Houdini licence in CI.",
+      "why_escalated": "A real cost decision, not an agent's to take (Article I). Now stronger than when R-S2-5 raised it, because a check already asserts the requirement.",
+      "recommendation": "Either fund the lane, or write down explicitly that the shipping number is measured by hand at release time and by nothing else -- and have check_ci_covers_shipping_surface say which of those two states it is in, so it stops asserting a requirement nobody has accepted."
+    },
+    {
+      "id": "R-S3-5",
+      "severity": "advisory",
+      "item": "83a4820 committed harness/notes/forensic/INVENTORY.md -- a v5.4.0-era archived codebase inventory (43 tools, dated 2026-02-15, self-labelled stale, whose 'current truth' line of 115 tools / v5.33.0 is ALSO stale against HEAD's 120 / v5.36.4) -- into the forensic evidence directory beside S0_SCOUT.md and S2_PREMORTEM.md, in a leg sequence whose S1 is titled 'the inventory'.",
+      "why_escalated": "It is a filename trap the next reader walks into unaided, and this project has already ruled three times on second copies nobody declared.",
+      "recommendation": "Move it out of harness/notes/forensic/ or rename it to carry its own date and version (e.g. ARCHIVED_INVENTORY_v5.4.0_2026-02-15.md). It is not S1's deliverable and nothing in S3 cites it."
+    },
+    {
+      "id": "R-S3-6",
+      "severity": "structural",
+      "item": "S1's deliverable is still not committed anywhere. This leg recovered it from a session transcript -- the SECOND consumer to pay that cost after S2. The recovery pattern is now proven twice (one Write + N Edits replayed, all applying cleanly) and the underlying arrangement still guarantees recurrence: read-only legs are denied git commit by R103, so their products live only in a worktree until someone else commits them.",
+      "why_escalated": "R-S2-2 already recommended amending R103 and the amendment has not landed; 83a4820 committed the other legs' deliverables but not S1's.",
+      "recommendation": "Adopt R-S2-2's amendment as written -- a read-only leg's product is its receipt AND any artifact it was briefed to write under harness/notes/** -- and either grant read-only legs a scoped commit for harness/notes/** only, or make committing their notes a terminal step the orchestrator performs. Separately: fold the transcript-replay recovery into the harness as a script, since it has now been needed twice and works."
+    },
+    {
+      "id": "R-S3-7",
+      "severity": "advisory",
+      "item": "25 of the 30 BLOCKER/DEFECT entries from this leg's adversarial pass were capped out of independent refutation by a declared budget cap. I triaged all 25 and adopted the substantive ones on my own re-verification, which is not independent.",
+      "why_escalated": "Spending another refutation round is a budget decision (R124's precedent: 'cap concurrent researchers, declare it before dispatch').",
+      "recommendation": "The workflow is resumable -- Workflow({scriptPath: '<session>/workflows/scripts/s3-plan-crucible-wf_f8ada20e-b50.js', resumeFromRunId: 'wf_f8ada20e-b50'}) replays the 4 attack lenses from cache and would run only the additional refutation passes. Worth it ONLY if the plan is about to be acted on; an unrefuted finding labelled unrefuted is honest, and a rushed round is not."
+    }
+  ],
+  "limits_inherited_not_solved": [
+    "S2-L1 -- nothing in Python can interrupt the main thread from the main thread. No item in this plan promises responsiveness during long main-thread hou work, and section 4 item 7 labels that explicitly.",
+    "S2-L4 -- no farm submission path. Accepted LIMIT, stated up front in the pilot scope.",
+    "S2-L10 -- the consent gate cannot be armed on the panel path without a redesign. Scoped by declared posture rather than fixed.",
+    "S2-U12 -- every cost figure in this project is a tiktoken proxy. Nobody has ever seen a real bill for this product; the Anthropic account has no credits, so messages.create AND count_tokens both return HTTP 400."
+  ],
+  "not_established": [
+    "Whether legibility is in fact the deciding property for adoption. It is S2's argued thesis, S0 found ZERO first-hand accounts of any Houdini AI tool trialled at a studio and removed, and Gate 1 rests on it. Pilot criterion 2 tests it. If it is wrong, this document is ordered incorrectly.",
+    "Whether a mid-sized studio has a pipeline TD with time to evaluate this. S0-F6: TD headcount and TD-per-artist ratio returned nothing quantitative at any studio size. The whole of section 1.2 addresses a person whose existence is assumed.",
+    "Whether the ~2s per-call figure in S1's live sweeps is a cost an artist pays. Reading the producer shows elapsed spans a FRESH WebSocket connection per call with no sleep and no poll, so it is dominated by connection setup. I declined to publish 'every tool call costs 2s' -- a number without its conditions.",
+    "Whether either Gate 0.1 spike succeeds: SYNAPSE has never passed settings= to hwebserver.run, and the panel->/mcp round trip has NEVER executed because available has always been False. Both are named as spikes rather than assumed.",
+    "No live mutation was performed by this leg, and no plan item was executed. This is a plan; nothing in it has been tried."
+  ],
+  "drift": [
+    "D1 -- S1's deliverable was destroyed by 11f3a79 and recovered from a session transcript by replaying one Write + nine Edits (all applying cleanly); independently reconfirmed by a refutation agent. Second consumer to pay this cost. See for_ruling R-S3-6.",
+    "D2 -- S2 exists in two divergent copies; the committed one is the pre-adversarial draft. This leg cites the corrected copy and verified each adopted correction first-hand. See finding S3-F10 and for_ruling R-S3-1.",
+    "D3 -- S0-F<n> is ambiguous across two S0 runs with independently renumbered findings. Mitigated by attaching a S0_SCOUT.md section anchor to every S0 citation rather than by renumbering another leg's findings.",
+    "D4 -- harness/notes/forensic/INVENTORY.md is an archived v5.4.0 document now committed into the forensic evidence directory where its filename will be mistaken for S1's inventory. See for_ruling R-S3-5.",
+    "D5 -- master advanced b608efc -> c624ea7 -> 83a4820 during this run. Neither commit touches product code, so all V-S3-* verifications stand at b608efc as declared.",
+    "D6 -- this leg ran in a REAL registered git worktree, so Article V held. S0's R-2 (dispatched into a directory that was not a worktree) did not reproduce.",
+    "D7 -- this leg's OWN read-only fence leaked: importing product code is a side-effecting act. Verifications V-S3-24/30/31/32 were taken by importing SYNAPSE modules and counting live objects (RecipeRegistry(), get_anthropic_tools(), build_palette_entries(), recipe_book.RECIPES); that import chain reaches the panel package, which wrote SYNAPSE/.synapse/panel_settings.json at 16:16 inside this run's window. The file is GITIGNORED (.gitignore:43:/.synapse/), so git status is clean, no tracked file was modified and nothing was lost -- but the write happened and I described the leg as read-only. Correct statement: reading the tree is read-only; importing it is not. Eighth recorded instance of an instruction-level fence not holding (R61 x3, R69 x3, S2's D2, this), and the FIRST where the leak came from verification rather than from product code writing where it should not."
+  ],
+  "touches_actual": [
+    "harness/notes/forensic/S3_PLAN.md",
+    "harness/notes/receipts/S3.json"
+  ],
+  "commits": [],
+  "merged": false,
+  "pushed": false,
+  "tagged": false,
+  "ratified": false,
+  "ratification_note": "ratified:false is the correct resting state (Constitution Article I). This plan proposes 19 items totalling roughly 25 engineer-days plus two spikes; none of it is authorised by its existence here. The three gates an agent never touches are untouched: no architecture ruling was made (R-S3-1..R-S3-3 are escalations), no drop.json flip, no merge.",
+  "resume_token": "S3 COMPLETE. Deliverable: harness/notes/forensic/S3_PLAN.md (19 items, adversarially attacked, 25 corrections folded in). Do NOT re-run the 4-lens attack -- it cost 1.72M subagent tokens and its corrections are already IN the document, each tagged X-<n> in section 6. What remains: (a) the 7 for_ruling items, of which R-S3-1 (which S2 copy is authoritative) blocks anyone else citing S2 safely and R-S3-6 (S1 still uncommitted) will bite the next consumer; (b) if the plan is to be acted on, resume the crucible for the 25 capped entries -- Workflow({scriptPath: '<session>/workflows/scripts/s3-plan-crucible-wf_f8ada20e-b50.js', resumeFromRunId: 'wf_f8ada20e-b50'}) replays the attack lenses from cache; (c) the plan's own first two items are PREMISE TESTS (P-1 assemble_chain live tier, P-2 the disclosure row) and were promoted ahead of Gate 0 precisely because either can invalidate work the rest is spent enabling -- run those before funding anything else. Nothing was committed, merged, pushed or tagged."
+}
