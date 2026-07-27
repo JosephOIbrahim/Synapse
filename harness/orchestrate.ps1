@@ -75,6 +75,18 @@ function Get-ReceiptPath([object]$leg) {
 
 function Get-LegState([object]$leg) {
     if ($leg.state -eq 'held') { return 'held' }
+
+    # A leg pinned done in the manifest STAYS done, receipt or not.
+    #
+    # 2026-07-27: a housekeeping pass pruned the worktrees of H9, C0 and S1 -
+    # all three finished and RULED ON. Their receipts had never been committed,
+    # so they existed only in those worktrees. With the worktree gone,
+    # Get-ReceiptPath found nothing, the legs read as 'ready', and the
+    # orchestrator re-dispatched finished work.
+    #
+    # The receipts are lost. The findings survive as rulings with anchors. This
+    # flag stops the harness spending tokens re-deriving them.
+    if ($leg.state -eq 'done') { return 'done' }
     if ($leg.receipt -and (Get-ReceiptPath $leg)) { return 'done' }
     if ($DryRun -and $script:DryDispatched[$leg.id]) { return 'running' }
     if ($leg.worktree) {

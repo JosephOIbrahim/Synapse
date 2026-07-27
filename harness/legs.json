@@ -195,14 +195,15 @@
     {
       "id": "H9",
       "name": "doc grounding",
-      "state": "ready",
+      "state": "done",
       "receipt": "H9.json",
       "branch": "repair/h9-doc-grounding",
       "worktree": ".claude/worktrees/h9-doc-grounding",
       "prompt": "harness/prompts/h9.md",
       "deps": [],
       "readonly": true,
-      "note": "LOP grounding 18%, COP 6% - both D2-shaped gaps. nodes.zip ships with 22.0.368: 5,034 pages, lop/ 198 at median 4,376B, cop/+cop2/ 525 at median ~2,900B. Measured coverage LOP 179/198=90%, COP 460/491=94%. Harvests to a NEW tier VERIFIED-DOC, reported SEPARATELY from probe-derived grounding - docs supply D2 and cannot supply D3, and karmarenderproperties proves docs go silent (69,921 chars, never mentions its own deprecation). Produces the corpus; wiring it is a separate decision."
+      "note": "done. Receipt LOST in the 2026-07-27 housekeeping prune - never committed. Findings survive as R95-R98 with anchors. LOP grounding 18%, COP 6% - both D2-shaped gaps. nodes.zip ships with 22.0.368: 5,034 pages, lop/ 198 at median 4,376B, cop/+cop2/ 525 at median ~2,900B. Measured coverage LOP 179/198=90%, COP 460/491=94%. Harvests to a NEW tier VERIFIED-DOC, reported SEPARATELY from probe-derived grounding - docs supply D2 and cannot supply D3, and karmarenderproperties proves docs go silent (69,921 chars, never mentions its own deprecation). Produces the corpus; wiring it is a separate decision.",
+      "receipt_lost": true
     },
     {
       "id": "U1",
@@ -251,7 +252,7 @@
     {
       "id": "C0",
       "name": "claim census",
-      "state": "ready",
+      "state": "done",
       "receipt": "C0.json",
       "branch": "claims/c0-census",
       "worktree": ".claude/worktrees/c0-census",
@@ -259,7 +260,8 @@
       "deps": [],
       "readonly": true,
       "touches": [],
-      "note": "The positioning document says 'a technical evaluator will open the repo'. This is that evaluator, run internally first. Four SHIPPING claims, each gets a producer path or NONE. Roadmap items exempt - they are honest by construction. Records AGE: claim 3 became defensible on 2026-07-26 and reads as long-established, which is a different risk than being false."
+      "note": "done. Receipt LOST in the same prune. Findings survive as R117. The positioning document says 'a technical evaluator will open the repo'. This is that evaluator, run internally first. Four SHIPPING claims, each gets a producer path or NONE. Roadmap items exempt - they are honest by construction. Records AGE: claim 3 became defensible on 2026-07-26 and reads as long-established, which is a different risk than being false.",
+      "receipt_lost": true
     },
     {
       "id": "C1",
@@ -322,7 +324,7 @@
     {
       "id": "S1",
       "name": "tool inventory",
-      "state": "ready",
+      "state": "done",
       "receipt": "S1.json",
       "branch": "forensic/s1-tool-inventory",
       "worktree": ".claude/worktrees/s1-forensic",
@@ -330,7 +332,8 @@
       "deps": [],
       "readonly": true,
       "touches": [],
-      "note": "What SYNAPSE DOES today, per tool, mapped to a real artist task. Every tool classified WORKS/PARTIAL/SCAFFOLD/UNREACHABLE/UNKNOWN with its evidence. This week found five Solaris tools registered, tested and completely unreachable - the gap between 'a tool exists' and 'a tool works' is this project's most reliable finding, and this measures it deliberately."
+      "note": "done. Receipt LOST in the same prune. Findings survive as R121-R122. What SYNAPSE DOES today, per tool, mapped to a real artist task. Every tool classified WORKS/PARTIAL/SCAFFOLD/UNREACHABLE/UNKNOWN with its evidence. This week found five Solaris tools registered, tested and completely unreachable - the gap between 'a tool exists' and 'a tool works' is this project's most reliable finding, and this measures it deliberately.",
+      "receipt_lost": true
     },
     {
       "id": "S2",
