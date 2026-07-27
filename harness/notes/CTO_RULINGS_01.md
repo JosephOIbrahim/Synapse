@@ -2582,3 +2582,93 @@ Gate C exists to stop.
 
 Record it as a *known limitation of the fence*, not as a hole to be patched with more patterns.
 **Claiming merges are fenced when they are not is worse than the gap.**
+
+---
+
+# ADDENDUM — H9, DOC GROUNDING (R95–R98)
+
+`green`, 7 findings, 5 ruling items.
+
+---
+
+## RULING 95 — H9-F6: retire "D2" and "D3". They name swapped concepts in two governing documents.
+
+> L1 — **the producer of the 18.3% and 6.2% baselines** — defines D2 as literal-emission and D3 as
+> semantic. The rulings document uses D2 as semantic and D3 as behavioural.
+
+So every statement I made about "docs lift D2, not D3" used the letters in the opposite sense from
+the document that produced the numbers being discussed. **The reasoning survives; the labels do
+not.**
+
+**Ruled: the letters are retired.** Three words, used literally, everywhere:
+
+```
+emission     the type appears in what SYNAPSE writes
+semantic     what the type is FOR - parameters, intent      <- docs supply this
+behavioural  what it does when cooked                       <- only probes supply this
+```
+
+A single-letter label with two incompatible definitions across governing documents is worse than
+no label — it reads as precision and carries none. **This is the third naming collision this week**
+after the C.3/C.4 ledger IDs and `tools/` vs `tool_impls/`, and the pattern is the same: a short
+identifier reused in a second context by someone who did not know about the first.
+
+---
+
+## RULING 96 — H9-F4: the honest number is 37.9%, not 83%.
+
+> 83% of live LOP types have a page, but **only 37.9% of live LOP parameters are documented.**
+
+This is exactly the gap I asked H9 to report and told Joe to watch for: *"has a page"* is not
+*"is grounded."* A page naming a node and describing three of its twenty parameters is real, and
+it is not semantic coverage.
+
+**H9-F3 sharpens it further:** Cop2 documentation carries almost no parameter identifiers — 7.7%
+of its parameter records have an explicit `#id:`, and only **13 of 139 pages have even one.**
+
+**Ruled:**
+1. **Parameter-level coverage is the reported figure.** Type-level coverage may be reported
+   alongside it, never instead of it, and never as the headline.
+2. The projected lift is therefore **substantial but not transformative** — from 18.3% to
+   something in the high thirties on the semantic axis, not to 90%. I told Joe to expect 60–80%
+   after a quality gate. **The real answer is lower than my guess**, and the guess was already
+   hedged downward from the raw coverage number.
+3. That is still a large improvement on 18.3%, achieved from a file that ships with the product.
+
+---
+
+## RULING 97 — H9-F1: the corpus is keyed on LABELS, not ids.
+
+> **385 documented parameter ids are wrong as names**, while their labels resolve correctly.
+
+A corpus keyed on `#id:` would carry 385 entries that cannot be matched to any live parm. Keyed on
+label, they resolve.
+
+**Ruled: label is the join key.** The `#id:` field is recorded as evidence and is not authoritative.
+**And a corpus keyed on the wrong field is not a partially-correct corpus — it is a corpus that
+silently fails to match**, which is the same failure shape as H5's reader binding a leaf to the
+wrong owner (R88).
+
+---
+
+## RULING 98 — H9's ruling question is R81 again, and this time it caught me by name.
+
+> `harness/legs.json` carries **the unreproducible 179/198 and 460/491 figures** in H9's note, and
+> **it is deny-listed from agent edit.**
+
+Those are my numbers, from the first-pass coverage script, written into a governing file as though
+established. H7 already struck two of my figures for the same reason (R86). **This is the third
+Law 2 violation of mine this week, and the second in a file an agent is fenced from correcting.**
+
+The agent found the error, could not fix it, and escalated — which is the correct behaviour and
+also the exact cost R81 named: *a prohibition with no channel produces silent drift.*
+
+**Ruled:**
+1. `legs.json`'s H9 note is corrected to H9's reproducible figures with a producer path.
+2. **The append-only `RULING_AMENDMENTS.md` channel from R81 extends to `legs.json`.** An agent
+   that finds a wrong number in a fenced file must have somewhere to record it that a human will
+   see. Escalation via `for_ruling` worked here only because I read the receipt within the hour.
+3. Recorded plainly: **I have now written unreproducible numbers into three governing artifacts** —
+   R72, `legs.json`, and the H9 note. Every one was a figure I generated, glanced at, and typed
+   onward without pinning the producer. The rule I keep enforcing on agents is the one I keep
+   breaking myself, and it has never once been caught by me.
