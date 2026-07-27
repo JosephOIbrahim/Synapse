@@ -15,8 +15,12 @@ Ratified model (RFC §10):
   explicitly modeled — guaranteeing lossless backfill.
 * **D-3** — prim names are sanitized by ``agent_state._safe_prim_name`` (no ``Tf``).
 * **D-4** — the subtree is ``/SYNAPSE/agent/ledger/``.
-* **D-5** — deposit is FILE FIRST (unconditional), THEN best-effort USD projection;
-  Moneta is optional/off (a no-op hook).
+* **D-5** — deposit is FILE FIRST (unconditional), THEN best-effort USD projection,
+  THEN best-effort Moneta enrichment. The Moneta leg is live (not a stub): it is
+  gated on ``$SYNAPSE_MEMORY_BACKEND`` selecting ``moneta``/``shadow`` AND on
+  ``moneta_runtime.moneta_available()``, and it reports its own outcome under the
+  ``moneta`` key of the deposit result. It can never fail, delay, or condition
+  the file write.
 * **D-6** — the per-record files go through the atomic ``write_report`` primitive;
   the Save() gap on the derived ``agent.usd`` is accepted.
 
@@ -29,8 +33,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
+import threading
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -271,9 +277,219 @@ def _project_to_usd(rec: "LedgerRecord", stem: str, agent_usd_path: str) -> bool
         return False
 
 
-# Optional Moneta hook (D-5). Default no-op; Moneta is default-off (v5.10.0).
-def _deposit_to_moneta(rec: "LedgerRecord") -> None:  # pragma: no cover - no-op seam
-    return None
+# ── Moneta enrichment seam (D-5) ────────────────────────────────────────────
+#
+# Ledger findings are deposited into the Moneta substrate so they are RECALLABLE,
+# not merely archived. This is an enrichment: the per-record file (deposit step
+# (a)) is unconditional and never depends on anything below.
+#
+# Two independent conditions gate it, and BOTH are load-bearing:
+#   1. $SYNAPSE_MEMORY_BACKEND selects moneta|shadow. One selector decides what
+#      SYNAPSE's substrate is (store.py:_make_store); this seam obeys the same
+#      switch rather than inventing a second, divergent one. Under `jsonl` the
+#      seam is off -- otherwise choosing jsonl would leave a Moneta writer live.
+#   2. moneta_runtime.moneta_available(). Availability is NOT re-derived here;
+#      the adapter owns the import guard and the $MONETA_SRC path injection.
+#
+# The Moneta package is never imported at module scope -- ledger.py is a
+# zero-`hou`, zero-heavy-dependency module and must import cleanly with no
+# Moneta present.
+
+MONETA_BACKENDS = ("moneta", "shadow")
+
+# What ``deposited: True`` does and does not mean. MonetaBackedStore.add() writes
+# to the in-memory ECS and returns; there is no per-deposit save, the snapshot
+# daemon is deliberately not started (it races the single-writer ECS), and the
+# WAL is inert. The engine snapshots on close()/atexit, so a HARD exit between a
+# deposit and process teardown loses the row. `deposited` is therefore an honest
+# report of acceptance, NOT of durability -- and the two are separate fields
+# rather than one field and a footnote (CRUCIBLE finding, 2026-07-26).
+#
+# This is survivable precisely because the per-record JSON file is the source of
+# truth (D-1) and IS durable: a lost Moneta row is re-derivable from the files.
+# Nothing re-derives it today -- see for_ruling in the LEDGER leg receipt.
+MONETA_DURABILITY = (
+    "in-memory on accept; snapshotted on close()/atexit. A hard exit loses "
+    "unsnapshotted rows. The per-record JSON file is the durable copy."
+)
+
+# One process-wide store, built lazily. Moneta enforces single-owner URI
+# locking, so a per-deposit handle would fight itself; the key is the resolved
+# ledger dir so a re-pointed $SYNAPSE_LEDGER_DIR rebuilds instead of writing to
+# the previous root.
+_MONETA_STORE = None
+_MONETA_STORE_KEY: Optional[str] = None
+_MONETA_LOCK = threading.Lock()
+
+logger = logging.getLogger(__name__)
+
+
+def moneta_backend_enabled() -> bool:
+    """True when ``$SYNAPSE_MEMORY_BACKEND`` selects a Moneta-backed substrate."""
+    return os.environ.get("SYNAPSE_MEMORY_BACKEND", "").strip().lower() in MONETA_BACKENDS
+
+
+def _ledger_memory(rec: "LedgerRecord", stem: str, revision: Optional[str]):
+    """Project a LedgerRecord into a SYNAPSE ``Memory`` for recall.
+
+    Deliberately NOT lossless: the per-record JSON file is the source of truth
+    (D-1) and the memory points back at it by stem. What lands here is the
+    semantic surface -- the text a later recall must match on.
+
+    ``MemoryTier.SHOW`` is chosen because ``MonetaBackedStore._is_protected``
+    maps SHOW to a protected floor: a verified finding must not silently decay
+    out of the substrate on a sleep pass.
+    """
+    from .models import Memory, MemoryTier, MemoryType
+
+    kind = rec.kind or "Record"
+    headline = f"{kind} — {rec.title}".strip(" —") if rec.title else kind
+    lines = [headline]
+    for label, value in (
+        ("question", rec.question),
+        ("direction", rec.direction),
+        ("change_applied", rec.change_applied),
+        ("measured_delta", rec.measured_delta),
+        ("crucible", rec.crucible),
+        ("notes", rec.notes),
+    ):
+        if value:
+            lines.append(f"{label}: {value}")
+    if rec.probe:
+        lines.append("probe: " + ", ".join(rec.probe))
+    lines.append(f"record: {stem}.json")
+
+    tags = ["ledger", kind.lower()]
+    for value in (rec.verified_by, rec.against_build):
+        if value:
+            tags.append(value)
+    if revision:
+        # The substrate revision that wrote this memory, carried BY the memory
+        # so the trace survives the process that produced it (defect 2).
+        tags.append(f"moneta_rev:{revision[:12]}")
+
+    keywords = sorted({
+        w.lower() for w in re.split(r"[^\w.]+", f"{rec.title} {' '.join(rec.probe)}")
+        if len(w) > 2
+    })[:12]
+
+    return Memory(
+        content="\n".join(lines),
+        summary=headline[:200],
+        memory_type=MemoryType.NOTE,
+        tier=MemoryTier.SHOW,
+        tags=tags,
+        keywords=keywords,
+        source="ledger",
+        # The record's own timestamp, so re-depositing the same finding builds
+        # the same Memory.id (Moneta is append-only and has no dedup key, so
+        # id-equality is the only handle a reader has on a duplicate).
+        #
+        # CONDITIONAL, and say so: Memory.__post_init__ defaults an empty
+        # created_at to "now" at 1-second resolution, so a record with NO
+        # timestamp only round-trips to the same id within the same UTC second.
+        # Every record the live producer emits carries one (science/deposit.py
+        # stamps _iso_ts); hand-built records without one get id stability only
+        # by luck, which is not a method.
+        created_at=(rec.timestamp or "").strip(),
+    )
+
+
+def ledger_moneta_store():
+    """The process-wide Moneta store for ledger findings, or None when the seam
+    is off/unavailable.
+
+    Rooted at :func:`ledger_dir`. Under the DEFAULT roots that is a distinct
+    ``moneta-file://`` URI from the project memory store (``<repo>/.synapse/
+    ledger`` vs the project ``.synapse``), so the two do not contend for
+    Moneta's single-owner lock. That separation is a property of the paths, NOT
+    a guarantee: point ``$SYNAPSE_LEDGER_DIR`` at the project storage dir and
+    the second handle raises ``MonetaResourceLockedError``, which surfaces as a
+    reported ``error:`` status and never touches the file write. Stated because
+    an earlier draft of this docstring claimed "never contend", which is false
+    (CRUCIBLE finding, 2026-07-26).
+
+    Public because a reader (recall over verified findings) needs a named door
+    into this store rather than a private global.
+    """
+    global _MONETA_STORE, _MONETA_STORE_KEY
+
+    if not moneta_backend_enabled():
+        return None
+    from . import moneta_runtime as mr
+    if not mr.moneta_available():
+        return None
+
+    key = os.path.abspath(ledger_dir())
+    with _MONETA_LOCK:
+        if _MONETA_STORE is not None and _MONETA_STORE_KEY == key:
+            return _MONETA_STORE
+        if _MONETA_STORE is not None:
+            try:
+                _MONETA_STORE.close()  # release the previous URI lock
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Closing the previous ledger Moneta store failed: %s", exc)
+            _MONETA_STORE, _MONETA_STORE_KEY = None, None
+        from .moneta_store import MonetaBackedStore
+        os.makedirs(key, exist_ok=True)
+        _MONETA_STORE = MonetaBackedStore.from_storage_dir(key)
+        _MONETA_STORE_KEY = key
+        return _MONETA_STORE
+
+
+def reset_moneta_store() -> None:
+    """Close and forget the ledger's Moneta store (tests; a re-pointed root)."""
+    global _MONETA_STORE, _MONETA_STORE_KEY
+    with _MONETA_LOCK:
+        if _MONETA_STORE is not None:
+            try:
+                _MONETA_STORE.close()
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Closing the ledger Moneta store failed: %s", exc)
+        _MONETA_STORE, _MONETA_STORE_KEY = None, None
+
+
+def _deposit_to_moneta(rec: "LedgerRecord", stem: str) -> Dict:
+    """Deposit one record into the Moneta substrate. Returns what HAPPENED.
+
+    Never raises: a substrate failure must not touch the file write, which is
+    the contract. The outcome is reported as an explicit ``deposited`` flag plus
+    a ``reason`` -- not as an advisory note hung off a success status, because
+    the caller must not have to read prose to learn the record did not land.
+    """
+    status: Dict = {"deposited": False, "reason": "backend-off",
+                    "memory_id": None, "provenance": None,
+                    "durable": False, "durability": MONETA_DURABILITY}
+    if not moneta_backend_enabled():
+        return status
+
+    from . import moneta_runtime as mr
+    if not mr.moneta_available():
+        status["reason"] = f"unavailable: {mr.import_error()}"
+        return status
+
+    provenance = mr.moneta_provenance()
+    status["provenance"] = {
+        "file": provenance.get("file"),
+        "version": provenance.get("version"),
+        "revision": provenance.get("revision"),
+        "revision_ref": provenance.get("revision_ref"),
+        "revision_source": provenance.get("revision_source"),
+        "revision_scope": provenance.get("revision_scope"),
+    }
+    try:
+        store = ledger_moneta_store()
+        if store is None:
+            status["reason"] = "no-store"
+            return status
+        memory = _ledger_memory(rec, stem, provenance.get("revision"))
+        status["memory_id"] = store.add(memory)
+        status["deposited"] = True
+        status["reason"] = "deposited"
+    except Exception as exc:  # noqa: BLE001 -- enrichment never fails the deposit
+        status["reason"] = f"error: {type(exc).__name__}: {exc}"
+        logger.warning("Ledger -> Moneta deposit failed for %s: %s", stem, exc)
+    return status
 
 
 # ── deposit ─────────────────────────────────────────────────────────────────
@@ -324,11 +540,16 @@ def deposit(rec: "LedgerRecord", *, agent_usd_path: Optional[str] = None) -> Dic
     # (b) Best-effort USD projection (derived; D-1/D-5).
     usd_projected = _project_to_usd(rec, stem, agent_usd_path) if agent_usd_path else False
 
-    # (c) Optional Moneta enrichment (default no-op; D-5).
+    # (c) Moneta enrichment (gated; D-5). Reports its own outcome and never
+    # raises out of here — but the belt-and-braces guard stays, and it RECORDS
+    # rather than swallows, so a future edit that reintroduces a raise cannot
+    # silently turn into a success.
     try:
-        _deposit_to_moneta(rec)
-    except Exception:
-        pass
+        moneta_result = _deposit_to_moneta(rec, stem)
+    except Exception as exc:  # noqa: BLE001
+        moneta_result = {"deposited": False, "memory_id": None, "provenance": None,
+                         "reason": f"error: {type(exc).__name__}: {exc}"}
+        logger.warning("Ledger -> Moneta seam raised for %s: %s", stem, exc)
 
     return {
         "ok": True,
@@ -336,6 +557,7 @@ def deposit(rec: "LedgerRecord", *, agent_usd_path: Optional[str] = None) -> Dic
         "filename": filename,
         "path": write_result.get("path"),
         "usd_projected": usd_projected,
+        "moneta": moneta_result,
     }
 
 
@@ -511,12 +733,20 @@ def parse_ledger_markdown(path: str) -> List[LedgerRecord]:
 def backfill(markdown_path: str, *, agent_usd_path: Optional[str] = None) -> Dict:
     """One-time backfill: parse the markdown Ledger → deposit each record (RFC §8).
 
-    Returns ``{records, kinds, files_written}``. Records missing ``verified_by``
-    are skipped (they cannot deposit) and counted under ``skipped``."""
+    Returns ``{records, kinds, files_written, skipped, moneta_deposited,
+    moneta_failures}``. Records missing ``verified_by`` are skipped (they cannot
+    deposit) and counted under ``skipped``. The Moneta counters are reported
+    rather than assumed: with the seam off they are ``0``/``[]``, which is a
+    fact, not a failure."""
     parsed = parse_ledger_markdown(markdown_path)
     kinds: Dict[str, int] = {}
     files_written = 0
     skipped = 0
+    # Moneta outcomes are COUNTED and returned. A status nobody reads is the
+    # same defect as a stub nobody calls: a substrate leg that fails on every
+    # single record would otherwise report a clean "N files written".
+    moneta_deposited = 0
+    moneta_failures: List[str] = []
     for rec in parsed:
         kinds[rec.kind or "(none)"] = kinds.get(rec.kind or "(none)", 0) + 1
         # Rung migration (v5 §2 read shim): legacy verified_by (V0/V1/V1-degraded,
@@ -536,11 +766,18 @@ def backfill(markdown_path: str, *, agent_usd_path: Optional[str] = None) -> Dic
         # against_build policy → read as the conservative CI/logic tier (631).
         if not (rec.against_build or "").strip():
             rec.against_build = CUTOVER_BUILD
-        deposit(rec, agent_usd_path=agent_usd_path)
+        result = deposit(rec, agent_usd_path=agent_usd_path)
         files_written += 1
+        moneta = result.get("moneta") or {}
+        if moneta.get("deposited"):
+            moneta_deposited += 1
+        elif moneta.get("reason", "").startswith("error:"):
+            moneta_failures.append(f"{result['stem']}: {moneta['reason']}")
     return {
         "records": len(parsed),
         "kinds": kinds,
         "files_written": files_written,
         "skipped": skipped,
+        "moneta_deposited": moneta_deposited,
+        "moneta_failures": moneta_failures,
     }
