@@ -162,6 +162,18 @@
       "branch": "repair/f1-integrate",
       "worktree": ".claude/worktrees/f1-integrate",
       "readonly": false
+    },
+    {
+      "id": "H9",
+      "name": "doc grounding",
+      "state": "ready",
+      "receipt": "H9.json",
+      "branch": "repair/h9-doc-grounding",
+      "worktree": ".claude/worktrees/h9-doc-grounding",
+      "prompt": "harness/prompts/h9.md",
+      "deps": [],
+      "readonly": true,
+      "note": "LOP grounding 18%, COP 6% - both D2-shaped gaps. nodes.zip ships with 22.0.368: 5,034 pages, lop/ 198 at median 4,376B, cop/+cop2/ 525 at median ~2,900B. Measured coverage LOP 179/198=90%, COP 460/491=94%. Harvests to a NEW tier VERIFIED-DOC, reported SEPARATELY from probe-derived grounding - docs supply D2 and cannot supply D3, and karmarenderproperties proves docs go silent (69,921 chars, never mentions its own deprecation). Produces the corpus; wiring it is a separate decision."
     }
   ]
 }
