@@ -2773,3 +2773,157 @@ answers rather than errors.
 That is the same shape as the `--ignore` runner, the mock `hou`, the 100%-by-construction metric,
 and the stall detector watching its own log. **This one is the largest instance found, and it was
 caught by a human noticing one wrong number in a sentence.**
+
+---
+
+# ADDENDUM — V1 / H4 (R100–R106)
+
+---
+
+## RULING 100 — V1: the scoped-delta primitive CANNOT be built on Karma 22.0.368 as designed.
+
+**V1-F1, `blocker-for-V3`, settled with controls:**
+
+> **No usable per-object integer ID mask exists on Karma 22.0.368 via any path probed.** `primid`
+> is per-polygon; `element` is finer; `ray:objectid` returns **one value for two distinct
+> objects.**
+
+**V1-F2:** `primid` **collides across objects** — solo-left and solo-right spheres produced 50 ids
+each with **49 shared.** One, two and three spheres gave 30/53/57 distinct ids against a fixed
+ceiling. It is not an object identifier and using it as one would have produced masks that were
+confidently wrong.
+
+**V1-F4:** Karma **refuses** an integer render-var format outright — `format=int32` fails the
+render with *"Unsupported image data format int32 in RenderVar."* So an ID AOV can only ever be
+float, and F3 shows the shipped `primidfilter` default blends **7.4% of pixels, 91.9% of those on
+prim boundaries** — precisely where a mask boundary lives.
+
+**Ruled: RETINA-VERIFY's V2–V4 do not exist as designed.** The mask is the primitive's foundation
+and Karma does not supply one. I wrote that harness this morning asserting the ID-AOV path was
+merely *unverified*; it is **refuted**, and the leg I gated it behind is the reason we know that
+rather than discovering it three miles in.
+
+This is the second time in one day a leg refuted the premise of the harness that dispatched it
+(V0 was the first). Both were probes. **The probe-before-build rule has now paid for itself twice
+before lunch.**
+
+---
+
+## RULING 101 — V1-F5 is the finding that goes to SideFX, and it is the week's pattern inside Karma.
+
+> The `ray:` namespace prefix is **REQUIRED** on a custom render-var `sourceName`. Bare
+> `objectid` / `primid` / `Ci` / `C` / `color` each emit **a correctly-named EXR part FILLED WITH
+> ZEROS, SILENTLY.**
+
+A correctly-named, correctly-shaped, entirely empty AOV. No error, no warning. **Any pipeline
+reading that part gets zeros and has no way to know it asked wrong.**
+
+That is the exact shape this repository has spent five days cataloguing — an instrument reporting
+healthy while measuring nothing — occurring inside the renderer rather than in our code.
+
+**Ruled: this goes into the SideFX ask as item 1**, ahead of the `ActiveRender` request. It is
+more serious, it is trivially reproducible, and a silent-zero failure mode costs every integrator
+who hits it the same day of debugging it cost us.
+
+---
+
+## RULING 102 — Copernicus readback is CONFIRMED. Close that SideFX ask.
+
+> `hou.CopNode.layer()` → `hou.ImageLayer.allBufferElements()` → bytes. **Exact round-trip,
+> byte-deterministic, 7.74 ms at 1920×1080.**
+
+*"Documented Copernicus buffer-to-numpy readback path"* has been a standing SideFX ask. **It
+exists, it works, and it is fast enough to run per-mutation.**
+
+**V1-F7** completes it honestly: `hou.CopNode` carries **none** of the legacy `Cop2Node` readback
+verbs — `allPixels`, `planes`, `getPixel`, `xRes` all ABSENT — and that verdict is licensed by
+those same spellings **resolving on `hou.Cop2Node` in the same run.** A same-class positive
+control, exactly as R50 requires.
+
+**Ruled:** the readback ask is **withdrawn** from the SideFX draft. It was answered by probing
+rather than by asking, which is the cheaper of the two and should have been tried first.
+
+**And it reopens the primitive from a different direction.** Karma cannot supply a mask — but if
+COP can compute one from geometry rather than from a render AOV, the delta becomes tractable
+again. That is a real V2 candidate and it did not exist before this probe.
+
+---
+
+## RULING 103 — V1-F9 and V1-F10 are live product defects outside their leg's fence.
+
+**V1-F9:** SYNAPSE's `enable_denoiser` control **writes five phantom spellings, of the wrong type,
+and reports success.** Three separate Law 3 violations in one control — phantom API, wrong type,
+false status.
+
+**V1-F10** refutes a belief that is load-bearing in **four shipped artifacts, one of which is a
+safety guard** (`foreground_guard.py`).
+
+**Ruled:** both are repair legs, not ruling items. **F10 first** — a safety guard resting on a
+refuted belief outranks a broken denoiser toggle. Neither belongs to V1, which was fenced
+read-only and correctly reported rather than fixed.
+
+**And V1's own ruling question is answered: no.** R93 says commit before the receipt; the
+read-only fence denies `Bash(git commit:*)`. **The fence wins.** A read-only leg's product *is*
+its receipt, and R93 is amended to say so rather than the fence being widened.
+
+---
+
+## RULING 104 — H4: my brief undercounted the collision by an order of magnitude.
+
+I wrote H4's brief this morning citing **11 cyan sites versus 21 blue** and *"two token modules."*
+
+**H4.F1:** the collision was **15 divergent names, not one** — beyond `SIGNAL` it covered six
+neutrals, `VOID`, `NEAR_BLACK`, `CARBON`, `GRAPHITE`, `SLATE`, `SILVER`.
+
+**H4.F2:** there were **NINE colour-declaring sites, not two** — the bridge, the design system,
+the off-repo `~/.synapse/design` file, and **six call-site `except ImportError` arms.**
+
+**H4.F3:** those fallback arms are **REACHABLE**. Loading `panel/apex_recipes.py` by path with
+`synapse` off `sys.path` executes the arm. They were live third states, not dead code.
+
+**H4.F4:** and they were **not faithful copies** — `NEAR_BLACK` is `#3A3A3A` in the fallback and
+`#3C3C3C` in the live off-repo file. A fallback that silently renders a different colour than the
+thing it stands in for.
+
+**Ruled: the leg is right and my brief was wrong.** My figures came from a `grep` for one token
+name, which is exactly the shape of measurement this document keeps ruling against — **a count
+whose producer answers a narrower question than the claim it supports.**
+
+---
+
+## RULING 105 — H4.F6 is the method finding, and it hit two readers I wrote.
+
+> L4's own token oracle `assert_panel_tokens.py` matched **ALIAS-QUALIFIED strings** (`'t.VOID'`),
+> so an alias change alone satisfied it.
+
+**The oracle in H4's own brief has the same defect.** I wrote `grep -c 't\.SIGNAL' -> 0` as the
+acceptance clause. It returns 12, and the leg's ruling question is that **the clause measures the
+wrong thing** — an alias-qualified grep passes when the alias is renamed and the collision
+survives.
+
+**Ruled: the leg's reading is correct and the oracle clause is struck.** The right measure is
+**how many modules DECLARE a colour**, not how many sites reference one alias. Nine declaring
+sites is the number; zero grep hits was never going to be evidence.
+
+R60 said a pin's *reader* needs calibration. **This extends it: an oracle written into a brief is
+a reader too**, and mine has now been wrong twice in one day — here and in V1's premise.
+
+---
+
+## RULING 106 — H4.F7: my R18 consent tests cannot run on the shipping interpreter.
+
+> Three consent-honesty checks could not run at all on the shipping interpreter.
+> `tests/panel/test_gate_consent_honesty.py` used `object.__new__(GateWidget)`; **a Shiboken type
+> refuses it.**
+
+I wrote those pins on 2026-07-25 for R18 — the consent gates that announced decisions which never
+landed. I gated them with `importorskip` so they would *skip* on the dev interpreter and *run*
+under hython.
+
+**They skip on both.** The construction technique that made them cheap on the dev box is refused
+by the real Qt binding, so the fix that stops SYNAPSE claiming false consent has **never been
+verified on the interpreter artists run.**
+
+**Ruled:** rewrite them against a real `GateWidget` under hython, or against a seam that does not
+require constructing one. **This is R18's pin, not H4's**, and it is the highest-priority item in
+H4's block — a safety fix whose test has never executed is a safety fix nobody has checked.

@@ -17,9 +17,34 @@ containing an artist's unsaved work, so we need to stop what we started.
 
 ---
 
-## 1 — `hou.ActiveRender` is documented but not implemented
+## 1 — A custom render var with no `ray:` prefix emits a correctly-named AOV full of zeros, silently
 
-**This is the main ask.**
+**This is the one we would most like fixed.**
+
+On 22.0.368, the `ray:` namespace prefix is required on a custom render var's `sourceName`. Without
+it, `objectid`, `primid`, `Ci`, `C` and `color` each produce **a correctly-named EXR part filled
+entirely with zeros**. No error, no warning, no diagnostic.
+
+A pipeline reading that part gets zeros and has no way to know it asked wrong. We lost a day to it,
+and the failure is indistinguishable from "the render legitimately produced nothing there."
+
+**The ask:** warn on an unresolvable `sourceName`, or fail the render. Either is better than a
+silent, well-formed, empty AOV.
+
+Two related observations from the same probe, offered as feedback:
+
+- **`format=int32` is refused outright** — *"Unsupported image data format int32 in RenderVar."* So
+  an ID-style AOV can only be float, and the shipped `primidfilter` default
+  `['minmax', {'mode':'idcover'}]` then blends 7.4% of pixels, 91.9% of those on prim boundaries.
+  For anything using an ID plane as a mask, the boundary is exactly where correctness matters.
+- **`primid` is per-polygon and collides across objects.** Two solo spheres produced 50 ids each
+  with 49 shared. We are not asking for this to change — but the documentation does not make clear
+  that it is not an object identifier, and it reads like one.
+
+---
+
+## 2 — `hou.ActiveRender` is documented but not implemented
+
 
 `hom.zip:hou/ActiveRender.txt` documents a full class — `kill()`, `suspend()`, `resume()`,
 `isSuspended()`, `processId()`, `host()`, `frame()`, `command()` — and marks it
@@ -45,7 +70,7 @@ we can tell, on the rendered page.
 
 ---
 
-## 2 — `hou.RopNode` has no cancel method, which forces integrators out to hscript
+## 3 — `hou.RopNode` has no cancel method, which forces integrators out to hscript
 
 Complete public method list on 22.0.368:
 
@@ -69,7 +94,7 @@ the first wraps our own Python block, the second observes without controlling.
 
 ---
 
-## 3 — `hdefereval.executeInMainThread` is absent on 22.0.368
+## 4 — `hdefereval.executeInMainThread` is absent on 22.0.368
 
 Re-probed and reproduced, not carried forward from an earlier build's notes.
 
@@ -81,7 +106,7 @@ specific symbol is absent; we are not claiming the module is.
 
 ---
 
-## 4 — `hou.TopNode.dirtyAllTasks` — two small documentation corrections
+## 5 — `hou.TopNode.dirtyAllTasks` — two small documentation corrections
 
 `inspect.signature` on 22.0.368:
 
