@@ -13,7 +13,7 @@ signal. The honesty rule is the whole point:
                            NOT a fabricated 100%). ``session_fidelity`` reads a
                            clean 1.0 at ``total == 0``; ``has_data`` is the guard
                            that keeps that from looking like a real pass.
-  · all-clear            → OK_SOFT (green) "fidelity 100% · N verified".
+  · all-clear            → CONIFEROUS (green) "fidelity 100% · N verified".
   · any violation / <1.0 → NEVER green. HOT_SOFT (amber), or NO_SOFT (red) once
                            the tracker says ``should_warn`` (3+ violations).
 
@@ -38,7 +38,7 @@ from synapse.panel.designsystem import fontload
 def _fidelity_color(summary):
     """Verdict → dot color for the fidelity readout.
 
-    Green (``OK_SOFT``) is reachable ONLY from a genuine all-clear: data
+    Green (``CONIFEROUS``) is reachable ONLY from a genuine all-clear: data
     present, zero violations, full fidelity. No data → SLATE (the honest empty
     state, never a pass). Any violation or sub-1.0 fidelity → NO_SOFT when the
     tracker wants a warning (3+), else HOT_SOFT — never green. This mirrors the
@@ -49,7 +49,7 @@ def _fidelity_color(summary):
     violations = summary.get("violations", 0)
     fidelity = summary.get("fidelity", 1.0)
     if violations == 0 and fidelity >= 1.0:
-        return t.OK_SOFT
+        return t.CONIFEROUS
     if summary.get("should_warn"):
         return t.NO_SOFT
     return t.HOT_SOFT

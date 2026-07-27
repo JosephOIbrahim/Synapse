@@ -41,28 +41,24 @@ except ImportError:
         _QT_AVAILABLE = False
 
 # ---------------------------------------------------------------------------
-# Design tokens (fallback for standalone use)
+# Design tokens
 # ---------------------------------------------------------------------------
 
-try:
-    from synapse.panel import tokens as _t
-    _SIGNAL = _t.SIGNAL
-    _TEXT = _t.TEXT
-    _TEXT_DIM = _t.TEXT_DIM
-    _VOID = _t.VOID
-    _CARBON = _t.CARBON
-    _GRAPHITE = _t.GRAPHITE
-    _NEAR_BLACK = _t.NEAR_BLACK
-    _FONT_SANS = _t.FONT_SANS
-except ImportError:
-    _SIGNAL = "#00D4FF"
-    _TEXT = "#F0F0F0"
-    _TEXT_DIM = "#888888"
-    _VOID = "#252525"
-    _CARBON = "#333333"
-    _GRAPHITE = "#222222"
-    _NEAR_BLACK = "#3A3A3A"
-    _FONT_SANS = "Segoe UI"
+# Palette from the design system, panel-specific text aliases from the bridge.
+# The former `except ImportError` arm carried a private palette (#00D4FF and
+# five neutrals that matched neither authority) and was REACHABLE by a by-path
+# load -- a live third authority, removed rather than corrected.
+from synapse.panel.designsystem import tokens as _ds
+from synapse.panel import tokens as _t
+
+_SIGNAL = _ds.SIGNAL
+_TEXT = _t.TEXT
+_TEXT_DIM = _t.TEXT_DIM
+_VOID = _ds.VOID
+_CARBON = _ds.CARBON
+_GRAPHITE = _ds.GRAPHITE
+_NEAR_BLACK = _ds.NEAR_BLACK
+_FONT_SANS = _ds.FONT_SANS
 
 
 # ===================================================================

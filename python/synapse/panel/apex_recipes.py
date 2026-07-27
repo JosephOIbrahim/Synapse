@@ -19,26 +19,26 @@ Usage:
 import html
 import re
 
-# -- Design tokens (fallback for standalone use) ------------------------------
-try:
-    from synapse.panel import tokens as _t
-    _SIGNAL = _t.SIGNAL
-    _TEXT = _t.TEXT
-    _TEXT_DIM = _t.TEXT_DIM
-    _SUCCESS = _t.GROW
-    _WARNING = _t.WARN
-    _BODY_PX = _t.SIZE_BODY
-    _SMALL_PX = _t.SIZE_SMALL
-    _FONT_SANS = _t.FONT_SANS
-except ImportError:
-    _SIGNAL = "#00D4FF"
-    _TEXT = "#E0E0E0"
-    _TEXT_DIM = "#999999"
-    _SUCCESS = "#00E676"
-    _WARNING = "#FFAB00"
-    _BODY_PX = 26
-    _SMALL_PX = 22
-    _FONT_SANS = "DM Sans"
+# -- Design tokens ------------------------------------------------------------
+# The palette comes from the design system; only the panel-specific text
+# aliases come from the panel bridge. There used to be an `except ImportError`
+# arm here holding a private copy of the palette (#00D4FF / #00E676 / DM Sans).
+# That arm was REACHABLE -- loading this file by path outside the package ran
+# it -- so it was not dead code, it was a third colour authority quietly
+# painting a different design system into the chat transcript. Removed rather
+# than corrected: a standalone load now fails loudly instead of rendering the
+# wrong accent (Law 3). See H4's receipt for the disposition.
+from synapse.panel.designsystem import tokens as _ds
+from synapse.panel import tokens as _t
+
+_SIGNAL = _ds.SIGNAL
+_TEXT = _t.TEXT
+_TEXT_DIM = _t.TEXT_DIM
+_SUCCESS = _ds.GROW
+_WARNING = _ds.WARN
+_BODY_PX = _ds.SIZE_BODY
+_SMALL_PX = _ds.SIZE_SMALL
+_FONT_SANS = _ds.FONT_SANS
 
 
 # =============================================================================

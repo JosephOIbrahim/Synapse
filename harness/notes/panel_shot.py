@@ -211,8 +211,19 @@ def main():
     os.makedirs(out, exist_ok=True)
 
     from PySide6 import QtWidgets
+    from synapse.panel.designsystem import qss
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+
+    # THE PANEL STYLESHEET, APPLIED TO EVERY VIEW.
+    #
+    # Without it, a standalone widget renders on Qt's DEFAULT LIGHT chrome --
+    # #EFEFEF backgrounds, default fonts, no surface roles. Six of the sixteen
+    # views came out that way on the first pass: a shot set that looked like
+    # evidence and showed a panel no artist has ever seen. SynapsePanel applies
+    # this to itself at synapse_panel.py:262; a view lifted out of it does not
+    # inherit anything, so the harness has to supply it.
+    sheet = qss.stylesheet()
 
     results = []
     failed = 0
@@ -221,6 +232,7 @@ def main():
         widget = None
         try:
             widget = build()
+            widget.setStyleSheet(sheet)
             widget.resize(w, h)
             widget.show()
             app.processEvents()

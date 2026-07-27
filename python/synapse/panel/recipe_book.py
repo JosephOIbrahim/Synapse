@@ -22,26 +22,23 @@ _P_EXPOSURE = _enc("exposure")
 _P_ENABLE_TEMP = _enc("enable_temperature")
 _P_COLOR_TEMP = _enc("color_temperature")
 
-# -- Design tokens (fallback for standalone use) ------------------------------
-try:
-    from synapse.panel import tokens as _t
-    _SIGNAL = _t.SIGNAL
-    _TEXT = _t.TEXT
-    _TEXT_DIM = _t.TEXT_DIM
-    _SUCCESS = _t.GROW
-    _WARNING = _t.WARN
-    _BODY_PX = _t.SIZE_BODY
-    _SMALL_PX = _t.SIZE_SMALL
-    _FONT_SANS = _t.FONT_SANS
-except ImportError:
-    _SIGNAL = "#00D4FF"
-    _TEXT = "#E0E0E0"
-    _TEXT_DIM = "#999999"
-    _SUCCESS = "#00E676"
-    _WARNING = "#FFAB00"
-    _BODY_PX = 26
-    _SMALL_PX = 22
-    _FONT_SANS = "DM Sans"
+# -- Design tokens ------------------------------------------------------------
+# Palette from the design system, panel-specific text aliases from the bridge.
+# The former `except ImportError` arm held a private palette (#00D4FF) and was
+# REACHABLE via a by-path load, so it was a live third authority, not dead code
+# -- and it is why the Recipe Book heading rendered cyan inside a transcript
+# whose chrome was the design system's blue. Removed, not corrected.
+from synapse.panel.designsystem import tokens as _ds
+from synapse.panel import tokens as _t
+
+_SIGNAL = _ds.SIGNAL
+_TEXT = _t.TEXT
+_TEXT_DIM = _t.TEXT_DIM
+_SUCCESS = _ds.GROW
+_WARNING = _ds.WARN
+_BODY_PX = _ds.SIZE_BODY
+_SMALL_PX = _ds.SIZE_SMALL
+_FONT_SANS = _ds.FONT_SANS
 
 
 # =============================================================================

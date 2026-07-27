@@ -74,7 +74,13 @@ def _make_widget(card):
     """Build a bare object carrying only what the handlers touch."""
     from synapse.panel import gate_widget
 
-    w = object.__new__(gate_widget.GateWidget)
+    # GateWidget.__new__, not object.__new__: a Shiboken (PySide6) type refuses
+    # object.__new__ with "not safe, use GateWidget.__new__()". Under stock
+    # python this file never ran (no PySide6) so the defect was invisible; under
+    # hython3.13 -- the interpreter artists actually ship -- all three consent
+    # honesty checks errored before reaching a single assertion. A safety check
+    # that cannot run is the Law-1 failure mode wearing a green coat.
+    w = gate_widget.GateWidget.__new__(gate_widget.GateWidget)
     w._cards = {"p1": card}
     w.decision_announced = _Recorder()
     w._update_header_text = lambda: None

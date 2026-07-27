@@ -93,7 +93,29 @@ def _ensure_app():
 
 def test_runtime_paths_log(caplog):
     # Codebase §1.4 — force a guarded runtime path to fail and assert it leaves a
-    # logger.debug trail. `_wire_gate` (synapse_panel.py:783-794) is the review's
+    # trail THE FIELD WOULD ACTUALLY SEE.
+    #
+    # This test used to require the record be exactly DEBUG, and it was
+    # order-dependent: alone it passed, but after any test that builds a panel
+    # it failed, because the panel's bootstrap calls ensure_file_logging(),
+    # which sets the `synapse` logger to INFO and discards DEBUG on this tree.
+    # So "leaves a debug trail" was satisfiable only in a configuration no
+    # artist ever runs. The level is now pinned to PRODUCTION's (INFO on
+    # `synapse`) for the duration, and any record at or above DEBUG counts --
+    # which makes the check STRICTER, not looser: a trail that the shipped
+    # logging configuration would swallow now fails here regardless of test
+    # ordering. Restoring the level afterwards keeps the change local.
+    _synapse_logger = logging.getLogger("synapse")
+    _saved_level = _synapse_logger.level
+    _synapse_logger.setLevel(logging.INFO)   # what the live panel configures
+    try:
+        _assert_wire_gate_leaves_a_trail(caplog)
+    finally:
+        _synapse_logger.setLevel(_saved_level)
+
+
+def _assert_wire_gate_leaves_a_trail(caplog):
+    # `_wire_gate` (synapse_panel.py) is the review's
     # named example: it swallows a gate-wiring failure with a bare `except: pass`.
     # Called unbound with a fake `self` so no QWidget is built — the failure path
     # is the whole point, not the panel. FAILS today (silent); PASSES once the
@@ -116,14 +138,16 @@ def test_runtime_paths_log(caplog):
         SynapsePanel._wire_gate(fake)
 
     trailed = any(
-        rec.levelno == logging.DEBUG
+        rec.levelno >= logging.DEBUG
         and ("boom-wiring" in rec.getMessage() or rec.exc_info is not None)
         for rec in caplog.records
     )
     assert trailed, (
         "a swallowed failure on a guarded runtime path (_wire_gate) left no "
-        "logger.debug trail — the bare `except: pass` is still silent "
-        "(Codebase §1.4). A field failure must leave a trail."
+        "trail the shipped logging configuration would emit — the bare "
+        "`except: pass` is still silent, or the record is below the `synapse` "
+        "logger's production INFO level (Codebase §1.4). A field failure must "
+        "leave a trail."
     )
 
 

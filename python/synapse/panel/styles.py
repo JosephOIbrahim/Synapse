@@ -17,7 +17,7 @@ def get_hda_stylesheet():
         # === HDA Mode Container ===
         "QWidget#HdaModeWidget {{"
         "  background: {VOID};"
-        "}}".format(VOID=t.VOID)
+        "}}".format(VOID=_ds.VOID)
 
         # === Describe View ===
         + " QTextEdit#HdaPromptInput {{"
@@ -30,7 +30,7 @@ def get_hda_stylesheet():
         "  font-size: {sz}px;"
         "  selection-background-color: {sel};"
         "}}".format(
-            bg=t.HDA_INPUT_BG, fg=t.BONE, border=t.HDA_INPUT_BORDER,
+            bg=t.HDA_INPUT_BG, fg=_ds.BONE, border=t.HDA_INPUT_BORDER,
             font=t.FONT_SANS, sz=t.SIZE_BODY, sel=(_ds.SIGNAL + "40"),
         )
         + " QTextEdit#HdaPromptInput:focus {{"
@@ -46,7 +46,7 @@ def get_hda_stylesheet():
         "  font-family: {font};"
         "  font-size: {sz}px;"
         "}}".format(
-            bg=t.CARBON, fg=t.SILVER, border=t.GRAPHITE,
+            bg=_ds.CARBON, fg=_ds.SILVER, border=_ds.GRAPHITE,
             font=t.FONT_MONO, sz=t.SIZE_LABEL,
         )
 
@@ -61,7 +61,7 @@ def get_hda_stylesheet():
         "  font-weight: 700;"
         "  letter-spacing: 1px;"
         "}}".format(
-            bg=_ds.SIGNAL, fg=t.VOID,
+            bg=_ds.SIGNAL, fg=_ds.VOID,
             font=t.FONT_MONO, sz=t.SIZE_LABEL,
         )
         + " QPushButton#HdaGenerateBtn:hover {{"
@@ -103,7 +103,7 @@ def get_hda_stylesheet():
         "  border-radius: 4px;"
         "}}".format(
             font=t.FONT_MONO, sz=t.SIZE_BODY,
-            fg=t.GROW, bg=t.HDA_RESULT_SUCCESS_BG,
+            fg=_ds.GROW, bg=t.HDA_RESULT_SUCCESS_BG,
         )
 
         + " QTableWidget#ParamTable {{"
@@ -114,7 +114,7 @@ def get_hda_stylesheet():
         "  font-family: {font};"
         "  font-size: {sz}px;"
         "}}".format(
-            bg=t.CARBON, fg=t.SILVER, border=t.GRAPHITE,
+            bg=_ds.CARBON, fg=_ds.SILVER, border=_ds.GRAPHITE,
             font=t.FONT_MONO, sz=t.SIZE_LABEL,
         )
         + " QTableWidget#ParamTable::item {{"
@@ -127,7 +127,7 @@ def get_hda_stylesheet():
         "  font-weight: 700;"
         "  padding: 4px 8px;"
         "  border: none;"
-        "}}".format(bg=t.GRAPHITE, fg=t.BONE)
+        "}}".format(bg=_ds.GRAPHITE, fg=_ds.BONE)
 
         # === Mode Toggle ===
         + " QPushButton#ModeToggleActive {{"
@@ -154,12 +154,12 @@ def get_hda_stylesheet():
         "  font-size: {sz}px;"
         "}}".format(
             bg=t.MODE_INACTIVE_BG, border=t.MODE_INACTIVE_BORDER,
-            fg=t.SLATE, font=t.FONT_MONO, sz=t.SIZE_LABEL,
+            fg=_ds.SLATE, font=t.FONT_MONO, sz=t.SIZE_LABEL,
         )
         + " QPushButton#ModeToggleInactive:hover {{"
         "  border-color: {border};"
         "  color: {fg};"
-        "}}".format(border=t.SILVER, fg=t.SILVER)
+        "}}".format(border=_ds.SILVER, fg=_ds.SILVER)
 
         # === Action Buttons ===
         + " QPushButton#HdaActionBtn {{"
@@ -171,13 +171,13 @@ def get_hda_stylesheet():
         "  font-family: {font};"
         "  font-size: {sz}px;"
         "}}".format(
-            bg=t.CARBON, fg=t.SILVER, border=t.GRAPHITE,
+            bg=_ds.CARBON, fg=_ds.SILVER, border=_ds.GRAPHITE,
             font=t.FONT_MONO, sz=t.SIZE_LABEL,
         )
         + " QPushButton#HdaActionBtn:hover {{"
         "  border-color: {border};"
         "  color: {fg};"
-        "}}".format(border=_ds.SIGNAL + "66", fg=t.BONE)
+        "}}".format(border=_ds.SIGNAL + "66", fg=_ds.BONE)
 
         + " QPushButton#CancelBtn {{"
         "  background: transparent;"
@@ -188,7 +188,7 @@ def get_hda_stylesheet():
         "  font-family: {font};"
         "  font-size: {sz}px;"
         "}}".format(
-            fg=t.SLATE, border=t.GRAPHITE,
+            fg=_ds.SLATE, border=_ds.GRAPHITE,
             font=t.FONT_MONO, sz=t.SIZE_LABEL,
         )
         + " QPushButton#CancelBtn:hover {{"
@@ -224,9 +224,9 @@ def get_quick_action_button_stylesheet():
         "  border-color: {accent};"
         "  color: {accent};"
         "}}".format(
-            bg=t.CARBON, fg=t.BONE, border=t.GRAPHITE,
+            bg=_ds.CARBON, fg=_ds.BONE, border=_ds.GRAPHITE,
             sz=t.SIZE_SMALL, pad=t.SPACE_SM, hover=t.HOVER,
-            accent=_ds.SIGNAL, white=t.WHITE, mono=t.FONT_MONO,
+            accent=_ds.SIGNAL, white=_ds.WHITE, mono=t.FONT_MONO,
         )
     )
 
@@ -246,7 +246,7 @@ def get_input_stylesheet():
         "QLineEdit:focus {{"
         "  border: 1px solid {accent};"
         "}}".format(
-            bg=t.VOID, fg=t.BONE, border=t.GRAPHITE,
+            bg=_ds.VOID, fg=_ds.BONE, border=_ds.GRAPHITE,
             sz=t.SIZE_UI, accent=_ds.SIGNAL, sans=t.FONT_SANS,
         )
     )
@@ -272,7 +272,7 @@ def get_send_button_stylesheet():
         "QPushButton:pressed {{"
         "  background: {pressed};"
         "}}".format(
-            accent=_ds.SIGNAL, bg=t.VOID, sz=t.SIZE_UI,
+            accent=_ds.SIGNAL, bg=_ds.VOID, sz=t.SIZE_UI,
             hover=_ds.SIGNAL_HOVER, pressed=_ds.SIGNAL_PRESS,
             mono=t.FONT_MONO,
         )
@@ -323,7 +323,7 @@ def get_ws_url_button_stylesheet():
         "QPushButton#ws_path_button:pressed {{"
         "  background: rgba(143, 179, 217, 0.2);"
         "}}".format(
-            slate=t.SLATE, border=t.GRAPHITE, mono=t.FONT_MONO,
+            slate=_ds.SLATE, border=_ds.GRAPHITE, mono=t.FONT_MONO,
             sz=t.SIZE_LABEL, accent=_ds.SIGNAL,
         )
     )
@@ -352,7 +352,7 @@ def get_context_bar_stylesheet():
     """Context bar container: graphite bg, carbon top-border."""
     return (
         "background: {bg}; border-top: 1px solid {border};".format(
-            bg=t.GRAPHITE, border=t.CARBON
+            bg=_ds.GRAPHITE, border=_ds.CARBON
         )
     )
 
@@ -413,7 +413,7 @@ def get_project_name_stylesheet():
     return (
         "color: {c}; font-size: {s}px; font-family: '{mono}', "
         "'Consolas', monospace; border: none;".format(
-            c=t.SILVER, s=t.SIZE_SMALL, mono=t.FONT_MONO
+            c=_ds.SILVER, s=t.SIZE_SMALL, mono=t.FONT_MONO
         )
     )
 
@@ -431,7 +431,7 @@ def get_section_label_stylesheet():
 
 def get_option_label_stylesheet(color=None):
     """HDA Describe view option/checkbox label: mono, given color."""
-    c = color or t.SLATE
+    c = color or _ds.SLATE
     return (
         "color: {c}; font-family: monospace; font-size: 11px;".format(c=c)
     )
@@ -441,7 +441,7 @@ def get_stage_label_stylesheet():
     """HDA Building view stage label: mono, BONE, bold."""
     return (
         "color: {c}; font-family: monospace; font-size: 14px; "
-        "font-weight: 700;".format(c=t.BONE)
+        "font-weight: 700;".format(c=_ds.BONE)
     )
 
 
@@ -454,7 +454,7 @@ def get_detail_label_stylesheet():
     """HDA Building view detail text: mono, SLATE, small."""
     return (
         "color: {c}; font-family: monospace; font-size: 10px;".format(
-            c=t.SLATE
+            c=_ds.SLATE
         )
     )
 
@@ -480,7 +480,7 @@ def get_validation_label_stylesheet():
     """HDA Result view validation summary: mono, SLATE, small."""
     return (
         "color: {c}; font-family: monospace; font-size: 10px;".format(
-            c=t.SLATE
+            c=_ds.SLATE
         )
     )
 
@@ -490,7 +490,7 @@ def get_root_widget_stylesheet():
     return (
         "QWidget {{ background: {bg}; "
         "font-family: '{sans}', 'Segoe UI', sans-serif; "
-        "color: {fg}; }}".format(bg=t.NEAR_BLACK, sans=t.FONT_SANS, fg=t.BONE)
+        "color: {fg}; }}".format(bg=_ds.NEAR_BLACK, sans=t.FONT_SANS, fg=_ds.BONE)
     )
 
 
@@ -498,7 +498,7 @@ def get_section_container_stylesheet():
     """Container widget for quick actions row or input area."""
     return (
         "background: transparent; border-top: 1px solid {border};".format(
-            border=t.GRAPHITE
+            border=_ds.GRAPHITE
         )
     )
 
@@ -511,7 +511,7 @@ def get_connection_frame_stylesheet():
         "  border-top: 1px solid {border};"
         "  min-height: 52px;"
         "  max-height: 52px;"
-        "}}".format(bg=t.CARBON, border=t.GRAPHITE)
+        "}}".format(bg=_ds.CARBON, border=_ds.GRAPHITE)
     )
 
 
@@ -519,7 +519,7 @@ def get_mode_toolbar_stylesheet():
     """Mode toggle toolbar: CARBON bg, GRAPHITE bottom border (matches status bar)."""
     return (
         "background: {bg}; border-bottom: 1px solid {border};".format(
-            bg=t.CARBON, border=t.GRAPHITE
+            bg=_ds.CARBON, border=_ds.GRAPHITE
         )
     )
 
@@ -531,7 +531,6 @@ def get_chat_display_stylesheet(scale=1.0):
     streamed plain-text tokens — which carry no inline size — render at the
     scaled body size instead of a fixed 11px. ChatDisplay re-applies this on a
     font-scale change."""
-    t = _ds  # off the ~/.synapse/design bridge — render from the vendored design system
     return (
         # No font-family — the chat body INHERITS Houdini's native UI font so the
         # conversation reads as a built-in panel, not a web app (was Space Grotesk).
@@ -563,9 +562,9 @@ def get_chat_display_stylesheet(scale=1.0):
         "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{"
         "  background: transparent;"
         "}}".format(
-            bg=t.GROUND, fg=t.SILVER, sz=t.scaled(t.SIZE_BODY, scale),
-            border=t.GRAPHITE, pad=t.SPACE_MD, white=t.WHITE,
-            scrollbar=t.GRAPHITE, scrollhover=t.SLATE,
+            bg=_ds.GROUND, fg=_ds.SILVER, sz=_ds.scaled(_ds.SIZE_BODY, scale),
+            border=_ds.GRAPHITE, pad=_ds.SPACE_MD, white=_ds.WHITE,
+            scrollbar=_ds.GRAPHITE, scrollhover=_ds.SLATE,
         )
     )
 
@@ -588,7 +587,7 @@ def get_growing_input_stylesheet():
         "QTextEdit:focus {{"
         "  border: 1px solid {accent};"
         "}}".format(
-            bg=t.VOID, fg=t.BONE, border=t.GRAPHITE,
+            bg=_ds.VOID, fg=_ds.BONE, border=_ds.GRAPHITE,
             sz=t.SIZE_UI, accent=_ds.SIGNAL, sans=t.FONT_SANS,
         )
     )
@@ -602,7 +601,7 @@ def get_context_chip_stylesheet(accent=False):
         "border-radius: 10px; padding: 2px 8px; "
         "font-size: {sz}px; color: {fg}; "
         "font-family: '{mono}', 'Consolas', monospace;".format(
-            bg=t.GRAPHITE, border=t.CARBON, sz=t.SIZE_LABEL,
+            bg=_ds.GRAPHITE, border=_ds.CARBON, sz=t.SIZE_LABEL,
             fg=fg, mono=t.FONT_MONO,
         )
     )
@@ -630,9 +629,9 @@ def get_quick_action_pill_stylesheet():
         "  border-color: {accent};"
         "  color: {accent};"
         "}}".format(
-            bg=t.CARBON, fg=t.BONE, border=t.GRAPHITE,
+            bg=_ds.CARBON, fg=_ds.BONE, border=_ds.GRAPHITE,
             sz=t.SIZE_LABEL, hover=t.HOVER,
-            accent=_ds.SIGNAL, white=t.WHITE, mono=t.FONT_MONO,
+            accent=_ds.SIGNAL, white=_ds.WHITE, mono=t.FONT_MONO,
         )
     )
 
@@ -654,7 +653,7 @@ def get_font_size_button_stylesheet():
         "  color: {accent};"
         "  border-color: {accent};"
         "}}".format(
-            fg=t.TEXT_DIM, border=t.GRAPHITE, accent=_ds.SIGNAL,
+            fg=t.TEXT_DIM, border=_ds.GRAPHITE, accent=_ds.SIGNAL,
             sans=t.FONT_SANS, sz=t.SIZE_LABEL,
         )
     )
@@ -714,16 +713,14 @@ def animate_stack_transition(stacked_widget, new_index, duration_ms=200):
 
 def get_gate_widget_stylesheet():
     """Container for gate proposals + integrity bar."""
-    t = _ds  # off-bridge: vendored design system
     return (
         "background: {bg}; border: 1px solid {border}; "
-        "border-radius: 4px;".format(bg=t.GROUND, border=t.GRAPHITE)
+        "border-radius: 4px;".format(bg=_ds.GROUND, border=_ds.GRAPHITE)
     )
 
 
 def get_gate_card_stylesheet(level_color):
     """Proposal card with colored left stripe indicating gate level."""
-    t = _ds  # off-bridge: vendored design system
     return (
         "QFrame {{"
         "  background: {bg};"
@@ -731,26 +728,24 @@ def get_gate_card_stylesheet(level_color):
         "  border-left: 3px solid {lc};"
         "  border-radius: 4px;"
         "  margin: 2px 0;"
-        "}}".format(bg=t.SURFACE, lc=level_color)
+        "}}".format(bg=_ds.SURFACE, lc=level_color)
     )
 
 
 def get_gate_badge_stylesheet(color):
     """Small badge showing gate level name."""
-    t = _ds  # off-bridge: vendored design system
     return (
         "background: {c}20; color: {c}; border: 1px solid {c}40; "
         "border-radius: 3px; padding: 1px 6px; "
         "font-family: '{mono}', 'Consolas', monospace; "
         "font-size: {sz}px; font-weight: 700;".format(
-            c=color, mono=t.FONT_MONO, sz=t.SIZE_LABEL,
+            c=color, mono=_ds.FONT_MONO, sz=_ds.SIZE_LABEL,
         )
     )
 
 
 def get_gate_approve_btn_stylesheet():
     """Green outlined approve button."""
-    t = _ds  # off-bridge: vendored design system
     return (
         "QPushButton {{"
         "  background: transparent;"
@@ -767,13 +762,12 @@ def get_gate_approve_btn_stylesheet():
         "}}"
         "QPushButton:pressed {{"
         "  background: {c}40;"
-        "}}".format(c=t.GROW, mono=t.FONT_MONO, sz=t.SIZE_LABEL)
+        "}}".format(c=_ds.GROW, mono=_ds.FONT_MONO, sz=_ds.SIZE_LABEL)
     )
 
 
 def get_gate_reject_btn_stylesheet():
     """Red outlined reject button."""
-    t = _ds  # off-bridge: vendored design system
     return (
         "QPushButton {{"
         "  background: transparent;"
@@ -789,16 +783,15 @@ def get_gate_reject_btn_stylesheet():
         "}}"
         "QPushButton:pressed {{"
         "  background: {c}40;"
-        "}}".format(c=t.ERROR, mono=t.FONT_MONO, sz=t.SIZE_LABEL)
+        "}}".format(c=_ds.ERROR, mono=_ds.FONT_MONO, sz=_ds.SIZE_LABEL)
     )
 
 
 def get_integrity_bar_stylesheet():
     """Single-row integrity status bar."""
-    t = _ds  # off-bridge: vendored design system
     return (
         "background: {bg}; border-top: 1px solid {border};".format(
-            bg=t.GROUND, border=t.GRAPHITE
+            bg=_ds.GROUND, border=_ds.GRAPHITE
         )
     )
 
@@ -822,5 +815,5 @@ def get_halt_button_stylesheet():
         "}}"
         "QPushButton:pressed {{"
         "  background: {c}40;"
-        "}}".format(c=t.FIRE, mono=t.FONT_MONO, sz=t.SIZE_LABEL)
+        "}}".format(c=_ds.FIRE, mono=t.FONT_MONO, sz=t.SIZE_LABEL)
     )

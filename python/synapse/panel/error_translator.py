@@ -15,27 +15,22 @@ import re
 from typing import Optional
 
 # -- Design tokens (for HTML formatting) ------------------------------------
-try:
-    from synapse.panel import tokens as _t
-    _ERROR = _t.ERROR
-    _WARNING = _t.WARN
-    _SIGNAL = _t.SIGNAL
-    _TEXT = _t.TEXT
-    _TEXT_DIM = _t.TEXT_DIM
-    _CARBON = _t.CARBON
-    _FONT_MONO = _t.FONT_MONO
-    _BODY_PX = _t.SIZE_BODY
-    _SMALL_PX = _t.SIZE_SMALL
-except ImportError:
-    _ERROR = "#FF3D71"
-    _WARNING = "#FFAB00"
-    _SIGNAL = "#00D4FF"
-    _TEXT = "#E0E0E0"
-    _TEXT_DIM = "#999999"
-    _CARBON = "#333333"
-    _FONT_MONO = "JetBrains Mono"
-    _BODY_PX = 26
-    _SMALL_PX = 22
+# Palette from the design system, panel-specific text aliases from the bridge.
+# The former `except ImportError` arm carried a private palette (#00D4FF cyan,
+# JetBrains Mono, 26px body) and was REACHABLE by a by-path load -- a live
+# third authority, removed rather than corrected.
+from synapse.panel.designsystem import tokens as _ds
+from synapse.panel import tokens as _t
+
+_ERROR = _ds.ERROR
+_WARNING = _ds.WARN
+_SIGNAL = _ds.SIGNAL
+_TEXT = _t.TEXT
+_TEXT_DIM = _t.TEXT_DIM
+_CARBON = _ds.CARBON
+_FONT_MONO = _ds.FONT_MONO
+_BODY_PX = _ds.SIZE_BODY
+_SMALL_PX = _ds.SIZE_SMALL
 
 
 # ---------------------------------------------------------------------------

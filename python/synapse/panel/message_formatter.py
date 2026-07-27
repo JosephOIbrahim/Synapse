@@ -15,42 +15,29 @@ Public surface is unchanged (chat_display.py depends on it):
 import html
 import re
 
-# -- Design tokens — the vendored single source of truth (the chrome's blue,
-#    not the legacy panel.tokens cyan). Robust literal fallback keeps the
-#    formatter working if the package path is unavailable (runtime contract).
-try:
-    from synapse.panel.designsystem import tokens as _t
-    _SIGNAL      = _t.SIGNAL          # the one chromatic event
-    _TEXT        = _t.TEXT_PRIMARY    # agent voice / body
-    _TEXT_BRIGHT = _t.TEXT_BRIGHT     # human voice (emphasis)
-    _TEXT_DIM    = _t.TEXT_TERTIARY   # system lines / captions
-    _GROUND      = _t.GROUND          # chip + code-block inset
-    _LINE        = _t.GRAPHITE        # hairline borders
-    _ERROR       = _t.ERROR
-    _WARNING     = _t.WARN
-    _SUCCESS     = _t.GROW
-    _BODY_PX     = _t.SIZE_BODY
-    _SMALL_PX    = _t.SIZE_SMALL
-    _LABEL_PX    = _t.SIZE_LABEL
-    _GROUP_MARGIN_Y = _t.SPACE_MD
-    _MSG_MARGIN_Y   = _t.SPACE_XS
-    _TIMESTAMP_SZ   = _t.SIZE_LABEL
-except Exception:  # pragma: no cover - exercised only without the package path
-    _SIGNAL = "#8FB3D9"
-    _TEXT = "#ADADAD"
-    _TEXT_BRIGHT = "#C4C4C4"
-    _TEXT_DIM = "#5E5E5E"
-    _GROUND = "#262626"
-    _LINE = "#2A2A2A"
-    _ERROR = "#FF3D71"
-    _WARNING = "#FFAB00"
-    _SUCCESS = "#00E676"
-    _BODY_PX = 12
-    _SMALL_PX = 14
-    _LABEL_PX = 13
-    _GROUP_MARGIN_Y = 16
-    _MSG_MARGIN_Y = 4
-    _TIMESTAMP_SZ = 13
+# -- Design tokens — the vendored single source of truth.
+#    The literal fallback that used to sit behind this import is gone. It held
+#    a full second copy of the palette, and a copy drifts: it was written when
+#    these values were current and had no way to follow the seeded ramp, so on
+#    any host but the default it painted the WRONG greys while reporting
+#    success. One authority means one, including in the degraded path.
+from synapse.panel.designsystem import tokens as _t
+
+_SIGNAL      = _t.SIGNAL          # the one chromatic event
+_TEXT        = _t.TEXT_PRIMARY    # agent voice / body
+_TEXT_BRIGHT = _t.TEXT_BRIGHT     # human voice (emphasis)
+_TEXT_DIM    = _t.TEXT_TERTIARY   # system lines / captions
+_GROUND      = _t.GROUND          # chip + code-block inset
+_LINE        = _t.GRAPHITE        # hairline borders
+_ERROR       = _t.ERROR
+_WARNING     = _t.WARN
+_SUCCESS     = _t.GROW
+_BODY_PX     = _t.SIZE_BODY
+_SMALL_PX    = _t.SIZE_SMALL
+_LABEL_PX    = _t.SIZE_LABEL
+_GROUP_MARGIN_Y = _t.SPACE_MD
+_MSG_MARGIN_Y   = _t.SPACE_XS
+_TIMESTAMP_SZ   = _t.SIZE_LABEL
 
 # Monospace font stack for genuine code/paths — a NEUTRAL host monospace
 # (Consolas/Courier on Windows), not the designed Space Mono, so code reads as

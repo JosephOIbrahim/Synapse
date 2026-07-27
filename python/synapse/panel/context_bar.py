@@ -37,44 +37,39 @@ try:
 except ImportError:
     hou = None
 
-# ── Design tokens (panel-local re-exports) ──────────────────────────────
-try:
-    from synapse.panel import tokens as _t
-    FIRE = _t.FIRE
-    GROW = _t.GROW
-    WARN = getattr(_t, "WARN", "#FFAB00")
-    ERROR = _t.ERROR
-    VOID = _t.VOID
-    CARBON = _t.CARBON
-    GRAPHITE = _t.GRAPHITE
-    NEAR_BLACK = _t.NEAR_BLACK
-    BONE = _t.BONE
-    TEXT = getattr(_t, "TEXT", "#E0E0E0")
-    TEXT_DIM = getattr(_t, "TEXT_DIM", "#999999")
-    HOVER = getattr(_t, "HOVER", "#484848")
-    SIGNAL = _t.SIGNAL
-    FONT_MONO = _t.FONT_MONO
-    SIZE_LABEL = _t.SIZE_LABEL
-    SPACE_SM = _t.SPACE_SM
-    SPACE_XS = _t.SPACE_XS
-except ImportError:
-    FIRE = "#e8833a"
-    GROW = "#4caf50"
-    WARN = "#ff9800"
-    ERROR = "#f44336"
-    VOID = "#252525"
-    CARBON = "#333333"
-    GRAPHITE = "#222222"
-    NEAR_BLACK = "#3c3c3c"
-    BONE = "#cccccc"
-    TEXT = "#E0E0E0"
-    TEXT_DIM = "#999999"
-    HOVER = "#484848"
-    SIGNAL = "#00D4FF"
-    FONT_MONO = "JetBrains Mono"
-    SIZE_LABEL = 22
-    SPACE_SM = 8
-    SPACE_XS = 4
+# ── Design tokens ───────────────────────────────────────────────────────
+# Palette from the design system, panel-specific aliases from the bridge.
+#
+# The former `except ImportError` arm was the WORST of the private palettes:
+# FIRE #e8833a, GROW #4caf50, WARN #ff9800, ERROR #f44336 -- a Material-ish set
+# matching NEITHER of the other two authorities. It was reachable by a by-path
+# load, so a context bar rendered under it showed a status grammar from a
+# design system that exists nowhere else in the product. Removed, not corrected.
+#
+# The `getattr(_t, NAME, default)` reads are also gone: a default that silently
+# substitutes a hardcoded colour when a token is missing is the same defect in
+# miniature. These names exist on the bridge; if one ever does not, an
+# AttributeError is the honest outcome.
+from synapse.panel.designsystem import tokens as _ds
+from synapse.panel import tokens as _t
+
+FIRE = _ds.FIRE
+GROW = _ds.GROW
+WARN = _ds.WARN
+ERROR = _ds.ERROR
+VOID = _ds.VOID
+CARBON = _ds.CARBON
+GRAPHITE = _ds.GRAPHITE
+NEAR_BLACK = _ds.NEAR_BLACK
+BONE = _ds.BONE
+TEXT = _t.TEXT
+TEXT_DIM = _t.TEXT_DIM
+HOVER = _t.HOVER
+SIGNAL = _ds.SIGNAL
+FONT_MONO = _ds.FONT_MONO
+SIZE_LABEL = _ds.SIZE_LABEL
+SPACE_SM = _ds.SPACE_SM
+SPACE_XS = _ds.SPACE_XS
 
 
 # ======================================================================
