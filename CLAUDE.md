@@ -622,3 +622,11 @@ If any §16.2 API surface changes, the corresponding test above fails. The doc/c
 - Two governing docs each run a "six miles" ladder — disambiguate cross-doc. **`PL-M<n>`** = proof-leg (`docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md` + `SPEC.md`; miles 1–6, no Mile 0). **`RBK-M<n>`** = rulebook (`SYNAPSE_RULEBOOK.md` + `rulebook/RULEBOOK.md`; miles 0–5). `RBK-`, not `RB-` (that is the rule-ID namespace).
 - Bare "Mile N" is fine **inside** one doc (each doc is a single ladder). In commit subjects, flywheel notes, and any cross-doc reference, **qualify**: `proof-leg Mile N` / `rulebook Mile N`, or short `PL-M<n>` / `RBK-M<n>`.
 - RETINA's `M<n>` (e.g. `RETINA M3`) is a distinct label, not a "Mile" — no collision.
+
+
+## Documentation conventions
+
+**README.md is always written ADHD-friendly.** This is a standing convention, not a per-request style. Short paragraphs, one idea per block, generous whitespace, bold only for genuine anchors, scannable rather than prose walls. A reader should be able to find the thing they came for without reading the thing they didn't.
+
+Every number in it carries a producer path (Law 2). Every known limitation is stated plainly rather than omitted - a document that hides a gap is worse than one that names it, because the reader finds it anyway and stops trusting the rest.
+
