@@ -2480,3 +2480,105 @@ The `pxr` corpus-ownership question (79 rows), the `cop2net` category conflict (
 the 104 node types absent from the reference and never probed, and whether the deprecation-marker
 vocabulary should be promoted out of `harness/notes/` into a reusable checker. All real, none
 blocking, and none should be decided on a first read at midnight.
+
+---
+
+# ADDENDUM — F1's INTEGRATION FINDINGS (R91–R94)
+
+F1 found these because integration did what no leg did: **put ten branches in one tree.** None
+appear in any receipt.
+
+---
+
+## RULING 91 — F1-A: LEDGER and H6 collided because I dispatched a composition as two
+independent legs. My error, and it stranded four decided rulings.
+
+**What happened.** `repair/ledger-moneta-seam` reported `status: green` with
+`commits: [], merged: false, pushed: false`. **Literally true** — 504 lines across four product
+files sat *uncommitted* in its worktree. F1's own housekeeping step would have destroyed them. F1
+committed the work on its own branch (`eb25abe`, 2,012 insertions, 8 files) and did not merge it.
+
+**Why it could not merge, `git merge-tree` VERIFIED-RUNTIME:**
+
+```
+HEAD + LEDGER   ->  clean
+LEDGER + H6     ->  CONFLICT  python/synapse/memory/moneta_runtime.py
+                              docs/studio/DEPLOYMENT.md
+```
+
+**The mechanism is my design error, stated plainly.** R64 specified five conditions and said the
+function would *compose*: *"`moneta_provenance()` gains `schema_registered` and `schema_in_use`
+alongside `available` and the git SHA LEDGER is adding."*
+
+I described a composition — and then dispatched it as **two legs, both `deps: []`, both rewriting
+the same function from the same base, in ignorance of each other.** Neither branch has all five
+fields. LEDGER has `available` + `revision`; H6 has `available` + `schema_registered` +
+`schema_in_use`.
+
+`legs.json` carries a `deps` field. It is the exact mechanism for expressing *"H6 after LEDGER"*
+and I did not use it.
+
+**The consequence, which is worse than the conflict.** LEDGER's ruled items **R52, R53, R54 and
+R55 are all DECIDED** — and implemented *only* in that stranded code. **Four rulings I closed are
+currently un-shipped**, and every further change to `moneta_runtime.py` widens the gap LEDGER's
+patch must cross.
+
+**Ruled:**
+1. **The union is AUTHORED, not merge-resolved.** No automatic strategy produces a five-field
+   function. It gets a leg with a precise brief, and it carries the mutation pins both sides
+   already wrote.
+2. **LEDGER's half lands as part of that union**, not before it. Merging LEDGER first would block
+   a gate leg behind a conflict, which is what F1 correctly refused to do.
+3. **F1's judgement is endorsed.** *"H6's work was committed and green; LEDGER's was never
+   committed at all. H6 went in."* Given a fence forbidding it to fix forward through a conflict
+   into product code it had not read, that is the correct call and it preserved both halves.
+
+---
+
+## RULING 92 — The manifest must express FILE collisions, not just leg dependencies.
+
+The dependency graph is only as good as what is put into it, and I put file-level collisions
+nowhere. Two legs modifying one function is not an exotic case — it is the *ordinary* case for a
+repair harness, and it was invisible until integration.
+
+**Ruled:** `legs.json` gains a `touches: [paths]` field. Before dispatch, the orchestrator
+**refuses to run two legs whose `touches` intersect unless one declares the other in `deps`.**
+That is a check that can fail today — LEDGER and H6 would both have named
+`python/synapse/memory/moneta_runtime.py` — and it is one of the nine ordered-but-absent checks
+R80 requires be built or struck. **This one gets built.**
+
+---
+
+## RULING 93 — F1-C: `green` with zero commits must be impossible. Five of ten legs did it.
+
+LEDGER's receipt was **honest** — it reported exactly what happened, and Law 3 is satisfied. The
+defect is that the terminal condition permits it: **a leg can write `status: green` while its
+entire product sits uncommitted in a worktree**, one prune away from gone.
+
+**Ruled: a leg's terminal condition requires its product COMMITTED on its own branch.** A dirty
+worktree at receipt time is `amber` at best and the receipt must say so. `green` asserts the work
+exists somewhere durable; five of ten legs asserted it while it did not.
+
+This is the same class as R78's "a leg that has written its receipt is done" — **the terminal
+condition was underspecified, and agents behaved correctly against a specification that permitted
+the wrong outcome.**
+
+---
+
+## RULING 94 — F1-G: the fence hole is CONFIRMED by execution, not by inspection.
+
+> `git -C <path> merge` walks straight through `Bash(git merge:*)`. **F1 did it eight times.**
+
+F1 did not report a theoretical bypass. It **performed** the bypass eight times in the course of
+doing its job, while a deny rule sat there matching a command form nobody was using.
+
+The `pre-push` hook installed tonight closes the push half by capability. **The merge half is still
+open** — a hook cannot intercept a local merge the way `pre-push` intercepts a push.
+
+**Ruled:** the honest statement is that **local merges are not fenced and cannot be by this
+mechanism.** What is fenced is the thing that matters — nothing reaches origin's master without
+`SYNAPSE_GATE_C=1`. A local merge on a feature branch is recoverable; a push to master is what
+Gate C exists to stop.
+
+Record it as a *known limitation of the fence*, not as a hole to be patched with more patterns.
+**Claiming merges are fenced when they are not is worse than the gap.**

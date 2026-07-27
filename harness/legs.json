@@ -53,7 +53,13 @@
       "worktree": ".claude/worktrees/ledger-moneta-seam",
       "prompt": "harness/prompts/ledger.md",
       "deps": [],
-      "note": "ledger.py:275 _deposit_to_moneta is a hardcoded no-op with pragma:no cover, and ledger.py:329 calls it. Backend went live at b2c2c04; this seam did not. Also fixes MONETA_SRC provenance - the substrate currently resolves to a working directory. Disjoint from RES (tests/solaris) and H3a (read-only), so it runs in parallel."
+      "note": "ledger.py:275 _deposit_to_moneta is a hardcoded no-op with pragma:no cover, and ledger.py:329 calls it. Backend went live at b2c2c04; this seam did not. Also fixes MONETA_SRC provenance - the substrate currently resolves to a working directory. Disjoint from RES (tests/solaris) and H3a (read-only), so it runs in parallel.",
+      "touches": [
+        "python/synapse/memory/moneta_runtime.py",
+        "python/synapse/memory/ledger.py",
+        "python/synapse/science/deposit.py",
+        "docs/studio/DEPLOYMENT.md"
+      ]
     },
     {
       "id": "H2",
@@ -117,7 +123,12 @@
       "prompt": "harness/prompts/h6.md",
       "deps": [],
       "readonly": false,
-      "note": "R64. moneta_available() is one boolean carrying five independent claims: imports / same-module-both-interpreters / schema registered / prims authored typed / round-trips. Only the first is measured. MonetaMemory is concreteTyped and codegen'd, but the brief says prims are still untyped def - expected live state is registered=True in_use=False, the only cell that looks like success. Writes moneta_runtime.py so NOT read-only."
+      "note": "R64. moneta_available() is one boolean carrying five independent claims: imports / same-module-both-interpreters / schema registered / prims authored typed / round-trips. Only the first is measured. MonetaMemory is concreteTyped and codegen'd, but the brief says prims are still untyped def - expected live state is registered=True in_use=False, the only cell that looks like success. Writes moneta_runtime.py so NOT read-only.",
+      "touches": [
+        "python/synapse/memory/moneta_runtime.py",
+        "python/synapse/memory/store.py",
+        "docs/studio/DEPLOYMENT.md"
+      ]
     },
     {
       "id": "H7",
@@ -174,6 +185,24 @@
       "deps": [],
       "readonly": true,
       "note": "LOP grounding 18%, COP 6% - both D2-shaped gaps. nodes.zip ships with 22.0.368: 5,034 pages, lop/ 198 at median 4,376B, cop/+cop2/ 525 at median ~2,900B. Measured coverage LOP 179/198=90%, COP 460/491=94%. Harvests to a NEW tier VERIFIED-DOC, reported SEPARATELY from probe-derived grounding - docs supply D2 and cannot supply D3, and karmarenderproperties proves docs go silent (69,921 chars, never mentions its own deprecation). Produces the corpus; wiring it is a separate decision."
+    },
+    {
+      "id": "U1",
+      "name": "provenance union",
+      "state": "ready",
+      "receipt": "U1.json",
+      "branch": "repair/u1-provenance-union",
+      "worktree": ".claude/worktrees/u1-provenance-union",
+      "prompt": "harness/prompts/u1.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/memory/moneta_runtime.py",
+        "python/synapse/memory/ledger.py",
+        "python/synapse/science/deposit.py",
+        "docs/studio/DEPLOYMENT.md"
+      ],
+      "note": "R91. R64 specified five fields and said moneta_provenance() would compose; the CTO then dispatched LEDGER and H6 as two independent legs, both deps:[], both rewriting that function from the same base. Neither has all five. LEDGER's 2,012 insertions are stranded at eb25abe and R52-R55 are DECIDED but un-shipped. This is AUTHORING, not merge resolution - no strategy produces a five-field function."
     }
   ]
 }
