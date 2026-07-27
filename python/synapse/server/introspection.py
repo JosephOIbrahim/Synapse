@@ -17,6 +17,12 @@ except ImportError:
     hou = None  # type: ignore[assignment]
 
 
+# C1-F10: a hard ceiling on input-graph traversal depth. The depth argument is
+# agent-supplied and was clamped nowhere, over what was 2^depth growth. The
+# sibling network_explain clamps at 5; this matches it deliberately rather than
+# picking a new number.
+DEPTH_CAP = 5
+
 # ---------------------------------------------------------------------------
 # Low-level helpers
 # ---------------------------------------------------------------------------
@@ -223,18 +229,44 @@ def _node_code(node) -> Optional[str]:
     return None
 
 
-def _recurse_inputs(node, depth: int, current: int = 0) -> List[Dict[str, Any]]:
-    """Walk the input graph to *depth* levels, collecting basic node info."""
-    if current >= depth:
+def _recurse_inputs(node, depth: int, current: int = 0, _seen=None) -> List[Dict[str, Any]]:
+    """Walk the input graph to *depth* levels, collecting basic node info.
+
+    C1-F10: this had NO visited set and NO memoization, so any DAG with shared
+    ancestors - a diamond, which is universal in SOP networks - re-serialised the
+    same subgraph once per path. Measured against the shipped function: a 22-node
+    diamond emitted 2 records at depth=1 and **4,094 at depth=11**. The `depth`
+    argument is agent-supplied and was clamped nowhere, over 2^depth growth.
+
+    The 50-node cap upstream was a decoy - it bounded the SELECTION, not the
+    traversal.
+
+    Two fixes, both required:
+      * `_seen` - a per-call visited set keyed on node path, so a shared ancestor
+        is serialised once. This is the difference between exponential and linear.
+      * DEPTH_CAP - a hard ceiling, because an unclamped exponential on an
+        agent-supplied argument is a cost incident waiting for the right scene.
+        The sibling `network_explain` already clamps at 5; this matches it.
+    """
+    if _seen is None:
+        _seen = set()
+    if current >= min(depth, DEPTH_CAP):
         return []
     result = []
     for inp in node.inputs():
         if inp is None:
             continue
+        try:
+            key = inp.path()
+        except Exception:
+            key = id(inp)
+        if key in _seen:
+            continue          # shared ancestor: serialise once, not once per path
+        _seen.add(key)
         info = _node_basic(inp)
         info["modified_parms"] = _modified_parms(inp)
-        if current + 1 < depth:
-            info["inputs"] = _recurse_inputs(inp, depth, current + 1)
+        if current + 1 < min(depth, DEPTH_CAP):
+            info["inputs"] = _recurse_inputs(inp, depth, current + 1, _seen)
         result.append(info)
     return result
 

@@ -440,7 +440,24 @@ def _get_non_default_params(
             if "Folder" in parm_type_name or "Separator" in parm_type_name:
                 continue
 
-            current = parm.eval()
+            # C1-F3: `parm.eval()` SEGFAULTS hython 22.0.368 (rc=139) on Solaris
+            # material-assignment LOPs - reproducibly, on karma_user_guide.hip,
+            # the largest scene SideFX ships. It dies evaluating matspecpath1 /
+            # bindname1, where eval() resolves a path against the composed stage.
+            #
+            # A try/except cannot help: a segfault takes the process, it does not
+            # raise. The evaluation itself has to be avoided.
+            #
+            # rawValue() returns the AUTHORED string without evaluating
+            # expressions or resolving paths (verified on hou.Parm, 22.0.368,
+            # with a negative control). For this function's purpose - "what did
+            # the artist change from default" - the authored value is arguably
+            # the more correct answer, and expressions are already reported
+            # separately below via include_expressions.
+            if "String" in parm_type_name:
+                current = parm.rawValue()
+            else:
+                current = parm.eval()
             defaults = template.defaultValue()
 
             # defaultValue() returns a tuple for most types
