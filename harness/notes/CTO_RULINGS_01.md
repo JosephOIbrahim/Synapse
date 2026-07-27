@@ -3263,3 +3263,61 @@ own grounding surface.
 
 **And fund the account.** An exact tokenizer is one API call away and every number in this leg
 carries an asterisk without it.
+
+---
+
+## RULING 119 — H21X WITHDRAWN. The corpus is not mislabelled; it is H21 documentation.
+
+I dispatched a leg to migrate 108 "stale" H21 references in `rag/` to H22 or version-neutral
+wording. **Joe stopped it: the corpus IS H21 documentation. H22 docs have not been converted to
+RAG yet.**
+
+**So every reference I classified as FIX was accurate**, and the leg would have relabelled true
+content as something it is not — making the corpus lie about its own provenance. That is precisely
+the harm the brief's own control was written to prevent, aimed at the wrong 108 references.
+
+**Killed before it wrote anything.** Verified: 0 commits on its branch, 0 files modified under
+`rag/`. Worktree removed, branch deleted locally and on origin, leg withdrawn from the manifest.
+
+### What I got wrong, and it is a familiar shape
+
+I saw `"Complete OpenCL kernel reference for Houdini 21 Copernicus"` in a repository running
+22.0.368 and concluded the label was stale. **I never asked what the file contained.** The label
+was a true description of H21 content; the mismatch I detected was real and I attributed it to the
+wrong side.
+
+**R104, R111 and now this** — three instances of concluding from what I saw rather than from what
+was there. The first two were about code that executes differently from how it reads. This one is
+about a *label being right and the content being what I did not check*.
+
+**And the model's answer was CORRECT.** SYNAPSE said *"SideFX ships with Houdini 21"* because it
+retrieved H21 documentation and reported its version accurately. I read that as a leak. **It was
+the system being honest about its own knowledge**, which is the behaviour this project has spent a
+week trying to produce.
+
+### What the real gap is
+
+```
+scout symbol table   h22_symbol_table.json   H22, fixed this morning (R99)
+wiring / lop_knowledge   _22 catalogues      H22, always were
+rag/ corpus          H21 documentation       ACCURATE, and not yet converted
+```
+
+**The corpus is not stale-labelled. It is H21 content, correctly labelled, awaiting conversion.**
+That is a content-generation task — ingest H22 documentation — not a text migration, and it is
+substantially larger than the leg I wrote.
+
+**Ruled:**
+1. **`rag/skills/houdini21-reference` keeps its name until it holds H22 content.** The name is
+   currently the most honest thing about it. Renaming it version-neutral, as my leg proposed,
+   would have removed the one signal telling a reader which build the knowledge describes.
+2. **The gap is worth surfacing, not hiding.** SYNAPSE reasons about H22 symbols from H22 tables,
+   and retrieves prose written for H21. A reader should be able to see that — it is a real
+   limitation with a real consequence for Copernicus, which barely existed in H21.
+3. **H22 RAG conversion is its own project**, sized honestly, and it is the thing that closes
+   R99's third layer. Not a relabelling pass.
+
+### The rule I should have followed
+
+**Before ruling a label stale, read what it labels.** A version string that disagrees with the
+running build is evidence of a mismatch. It is not evidence of *which side* is wrong.
