@@ -362,6 +362,24 @@
       "readonly": true,
       "touches": [],
       "note": "What makes SYNAPSE novel to a mid-size studio, DERIVED from S0-S2 rather than asserted. 'Irrefutably positive' is not achievable; the target is legible value, survivable failure, no new burden. A tool missing the second is uninstalled after one incident however good the first is."
+    },
+    {
+      "id": "H21X",
+      "name": "corpus h22 migration",
+      "state": "ready",
+      "receipt": "H21X.json",
+      "branch": "repair/h21x-corpus-h22",
+      "worktree": ".claude/worktrees/h21x-corpus-h22",
+      "prompt": "harness/prompts/h21x.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "rag/skills",
+        "python/synapse/cognitive/tools/scout.py",
+        "python/synapse/cognitive/tools/scout_ingest.py",
+        "python/synapse/core/solaris_guardrails.py"
+      ],
+      "note": "R99 Layer 3. Observed live: SYNAPSE said 'SideFX ships with Houdini 21' on a 5,764-node explain, running 22.0.368. The DATA layer was fixed this morning; the PROSE the model reads was never touched, and the corpus directory is still named houdini21-reference. 235 references split 127 KEEP (true provenance - masterclass citations, .hip filenames, verified-on records) vs 108 FIX (stale scope claims). A find-replace would FALSIFY CITATIONS OF SOMEONE ELSE'S WORK. Mandatory control: all 127 KEEP byte-identical after the run, proven by diff."
     }
   ]
 }
