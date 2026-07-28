@@ -72,8 +72,21 @@ class _HoudiniOperation:
         self._ctx = None
 
     def __enter__(self):
+        # open_interrupt_dialog=False, and the reason is a regression I shipped.
+        #
+        # With it True, hou.InterruptableOperation opens a MODAL progress
+        # dialog. A modal grabs input for the WHOLE application while Qt keeps
+        # pumping its event loop - which reads from outside as
+        # `Responding: True`, zero CPU, every thread in Wait, and a UI that will
+        # not accept a click. That is exactly what Joe reported within minutes of
+        # this landing, INCLUDING that it persisted after the work finished.
+        #
+        # I added this at 18:02 to make a freeze legible and it added a second,
+        # worse one. Progress and cancel still work without the dialog: Houdini
+        # shows progress in its own status area and OperationInterrupted still
+        # raises. The modal was never the part that mattered.
         self._op = hou.InterruptableOperation(
-            self._title, open_interrupt_dialog=True)
+            self._title, open_interrupt_dialog=False)
         self._ctx = self._op.__enter__()
         return self
 
