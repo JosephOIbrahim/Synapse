@@ -85,6 +85,15 @@ Ok "merged to master"
 
 # --- 7. Version + tag --------------------------------------------------------
 Step 7 "v5.35.0"
+
+# R139: "pushed" must mean pushed. Four times in two days I reported work as
+# shipped while a leg's branch still held it - the worst being 1,073,328
+# insertions of the H22 corpus. Reading a receipt is not merging a branch, and
+# nothing said so until this check.
+python "$repo\harness\verify\branch_harvest.py"
+if ($LASTEXITCODE -ne 0) { Die "A leg's work is stranded on its branch. Merge it, or declare merge_status in legs.json." }
+Ok "no stranded leg work"
+
 Set-Content "$repo\VERSION" "5.35.0" -NoNewline -Encoding utf8
 
 # R107: bumping VERSION alone is NOT bumping the version. __version__ in
