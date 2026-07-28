@@ -3771,3 +3771,121 @@ a mis-scoped one, and the tell is that people route around it by hand.
 `--ignore` in the measurement runner. `Edit(CTO_RULINGS_01.md)` denied with no amendment channel
 (R81). `Bash(git merge:*)` matching a command form rather than a capability (R94). And now this.
 **Each was a correct instinct expressed at the wrong granularity.**
+
+---
+
+# ADDENDUM — I0 / I1 (R130–R134)
+
+---
+
+## RULING 130 — "161 new Copernicus nodes" is WRONG TWICE, and I published it.
+
+`docs/H22_FRONTIER.md` is built on that figure. I extracted it with
+`re.findall(r"/nodes//cop/([a-z0-9_]+)")`.
+
+**I1-F1:** the page uses **two link forms** — `Node:/cop/x` (169 occurrences) and `Node:cop/x`
+(12). My pattern required the leading slash and **silently dropped 10 distinct node types**,
+including the entire `adjacency_*` family, which has its own section on that page.
+
+**The true count of named paths is 171.**
+
+**I1-F2, and this one is worse:** of those 171, **only 98 appear in new-node sections.** The
+other 73 appear solely under *"Copernicus improvements"* — changes to nodes that already existed.
+
+> **Named** and **new** are different counts, and my governing statement conflated them.
+
+**Ruled:** the report is corrected to state both numbers with their meanings. **The 2%-grounding
+conclusion survives** — 3 of 171 is worse than 3 of 161, and 3 of 98 is worse still. **The
+direction was right and the arithmetic was mine.**
+
+**Second published wrong number today.** R127 was `4,357` for `4,795`, from reading a worktree
+draft. This one is from a regex that silently under-matched. Different mechanism, same class: **a
+number whose producer I wrote and did not adversarially test.**
+
+---
+
+## RULING 131 — I0's Q3 answer is REFUTED by I1, one leg later.
+
+**I0:** *"Set overlap is exact: 161 in both, 0 shipped-only, 0 cache-only."*
+**I1-F3, measured:** **12 shipped-only.** The two sources do not agree.
+
+I0 is `green` and stays green — it answered six questions with measurement and caught three
+silent defects in its own reader. **It also inherited my 161 rather than re-deriving it**, and an
+exact-overlap result against a wrong set reads as confirmation.
+
+**Ruled: this is the strongest argument yet for the scout→build gating.** I1 was told to build
+against I0's findings, and by re-deriving instead of trusting it caught both my error and I0's.
+**A leg that accepts the previous leg's numbers is a longer version of the same leg.**
+
+---
+
+## RULING 132 — `.gitignore:50 _*.py` makes producer scripts UNCOMMITTABLE.
+
+**I1-F7.** Every script named `_something.py` is ignored. I1's producers were originally
+`_i1_*.py` and it renamed them to `i1b_*.py` on discovering this.
+
+**I0's producers are `_i0_*.py` and are uncommittable right now.**
+
+And so are mine — `_h22_frontier_xref.py`, `_credit_probe.py`, `_segfault_repro.py`,
+`_measure_control.py`, every control I wrote today. **I have been using `git add -f` all day
+without asking why it was necessary.**
+
+**This is Law 2 satisfied on paper and void in the tree.** Every number citing `_producer.py`
+names a path that git will not keep, and a fresh clone gets the claim without the evidence.
+
+**Ruled:**
+1. **The convention changes: producers are `<leg>_<name>.py`, no leading underscore.** I1 already
+   did this unprompted, which is the right instinct.
+2. Existing `_*.py` producers stay committed via `-f` — they are in the tree and the history is
+   what matters.
+3. **`.gitignore:50` is narrowed** so a scratch convention cannot silently void the evidence rule.
+
+**A house rule that requires a producer path, in a repository configured to discard producer
+paths.** Nobody wrote that contradiction deliberately; it assembled itself from two reasonable
+decisions.
+
+---
+
+## RULING 133 — I1's own controls were MUTATION-TESTED, and found a guard nothing pinned.
+
+> *"The reader was calibrated to 72 controls before it was trusted, and the controls were
+> themselves mutation-tested, which found one guard that no control actually pinned."*
+
+**That is the discipline going one level deeper than I asked for.** R60 says calibrate the reader.
+I1 calibrated the reader, then asked whether the calibration itself would notice if the reader
+broke — and found a place where it would not.
+
+**Ruled: this becomes the standard for any leg that builds a reader over a large corpus.** A
+control suite that has never been shown failing is R127's defect wearing 72 masks.
+
+---
+
+## RULING 134 — A SECOND I1 AGENT RAN IN THE SAME WORKTREE.
+
+> *"A second I1 agent executed in this same worktree concurrently, overwrote this leg's
+> calibration artifact and the oracle path, and was still writing after…"*
+
+**Third occurrence.** R78: two H6 agents ran 70 minutes past their receipt. R91: LEDGER and H6
+edited one function from separate worktrees. Now two instances of one leg in one worktree,
+overwriting each other's calibration.
+
+**The dispatcher can still start a leg that is already running.** `Get-LegState` reads worktree
+and receipt presence; neither is a lock.
+
+**Ruled: the orchestrator takes a lock file per leg before dispatch**, holding the PID and the
+start time, and refuses to dispatch when the lock is live. **State inferred from artifacts is not
+a mutex** — it never was, and this is the third time the difference has cost real work.
+
+---
+
+## What the corpus actually is
+
+```
+693 entries        cop 358/371 pages · lop 169/181 · cop2 133/141
+12,696 parameters  87.1% label-resolved against the LIVE runtime
+33 known-thin      counted and NAMED, not padded
+88 live types      ship with NO help page at all — documentation cannot ground them
+```
+
+Against live catalogue totals of 384 Copernicus, 218 LOP, 169 Cop2. **Not wired into RAG**, per
+the harness rule, and the wiring decision is owed separately.

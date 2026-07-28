@@ -37,18 +37,44 @@ That is a weak signal on its own — the cache holds only pages someone opened, 
 
 ## 2 · The measured gap
 
-Extracted from `news/22/copernicus.json` by node path, and cross-referenced against SYNAPSE's committed COP catalogue and doc-grounding corpus:
+**Corrected 2026-07-27 after `I1` re-derived it.** The first version of this section said *"161
+new Copernicus nodes"*. That figure was wrong twice, and both errors were mine:
+
+- The page uses **two link forms** — `Node:/cop/x` and `Node:cop/x`. My pattern required the
+  leading slash and silently dropped **10 node types**, including the whole `adjacency_*` family.
+  **The true count of named paths is 171.**
+- **Named and new are different counts.** Of the 171, only **98** appear in new-node sections;
+  the other 73 appear solely under *"Copernicus improvements"* — changes to nodes that already
+  existed.
 
 ```
-NEW Copernicus nodes named in What's New   161
-SYNAPSE grounds                              3        2%
+Copernicus node paths NAMED in What's New   171
+of those, named as NEW                       98
+SYNAPSE grounded at the time of writing       3
 ```
 
-**That is the frontier gap, in one number.**
+**The conclusion survives and sharpens.** 3 of 171 is worse than 3 of 161, and 3 of 98 is worse
+still. The direction was right; the arithmetic was mine, and it took a leg re-deriving rather than
+trusting it to find that.
 
-Houdini 22's most heavily documented new surface added 161 nodes — `grunge_rust`, `grunge_birchbark`, `cellularnoise3d`, `chromakey`, `camerablend`, `bakegeometrytextures`, and 155 more — and SYNAPSE can speak about three of them.
+It is consistent with the figure measured independently a week earlier: **COP grounding at 6.2%**,
+which was never *thin coverage of a known surface*. It was coverage of a surface that barely
+existed when the corpus was written.
 
-It is consistent with the figure measured independently a week earlier: **COP grounding at 6.2%**, which was never *thin coverage of a known surface*. It was coverage of a surface that barely existed when the corpus was written.
+### And the gap is now closed on the documentation axis
+
+`INGEST-01` built it. **693 entries, 12,696 parameters, 87.1% label-resolved against the live
+runtime.** Of the 171 named nodes, **168 clear the quality floor; 3 need a runtime probe.**
+
+```
+cop    358 of 371 pages clear the floor    against 384 live types
+lop    169 of 181                          against 218
+cop2   133 of 141                          against 169
+33 known-thin — counted and named, not padded
+88 live types ship with NO help page at all — documentation cannot ground them
+```
+
+**Not wired into the RAG corpus.** That is a separate decision with its own oracle.
 
 ### Why this is the highest-value gap and not merely the largest
 

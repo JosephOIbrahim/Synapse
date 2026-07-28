@@ -47,9 +47,24 @@ tests/fixtures/.synapse/
 *.whl
 
 # Dev scratch scripts
+#
+# R132: this rule silently voided the evidence rule. Every number in this
+# project must name a producer path (Law 2) — and `_*.py` made every producer
+# named with a leading underscore UNCOMMITTABLE. I0's commit landed its ten
+# .json outputs and dropped ALL NINE of its .py producers without a word, so
+# its report cited scripts a fresh clone would never receive.
+#
+# Nobody wrote that contradiction deliberately. It assembled itself from two
+# reasonable decisions: "ignore scratch scripts" and "cite your producer".
+#
+# harness/notes/** is the producer directory and is now exempt. Producers are
+# named <leg>_<name>.py going forward — I1 renamed its own from _i1_*.py to
+# i1b_*.py on discovering this, unprompted, which was the right instinct.
 _*.py
 !__init__.py
 !python/synapse/mcp/_tool_registry.py
+!harness/notes/**/_*.py
+!harness/verify/**/_*.py
 !**/__init__.py
 _*.ps1
 _*.txt
