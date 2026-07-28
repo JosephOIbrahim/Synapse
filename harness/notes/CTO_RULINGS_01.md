@@ -4156,3 +4156,53 @@ orchestrator, and nothing tested the seam.
 E0 and E1 hold locks under the old scheme and are working. Restarting the orchestrator to pick
 this up would kill them, and the fix is for the next dispatch. **Their locks will need clearing by
 hand when they finish** — recorded here so it is not a surprise.
+
+---
+
+## RULING 148 — E0-F2 confirmed independently, and the baseline already knew what E0 had to rediscover.
+
+Verified from the main tree with `harness/notes/econ_baseline_check.py`, not from E0's draft
+receipt (R146 — its lock is still held):
+
+```
+baseline registry_blake2b   c0cd3db16c293e38a3f18a35ed51870f    115 tools
+live registry blake2b       d6c79a415f13a9dcf4663b089b2bd1ca    120 tools
+match                       False
+```
+
+`harness/verify/token_ceiling.json` gates against that baseline and was set on **2026-07-23**.
+**A ratchet whose floor describes a tree nobody is working in** — R2's shape, five days later, in
+a different subsystem.
+
+### The part that matters more than the staleness
+
+The baseline records `preload_tokens_total` as **three separate figures**:
+
+```
+mcp_http    17,310
+mcp_stdio   13,901
+panel       14,380
+```
+
+**The famous 17,310 was always the MCP-HTTP number specifically.** It is not "the tool surface" —
+it is one of three, and the blueprint's Mile 1 inherited it as though it were the whole.
+
+E0 spent a leg establishing that the number and the remedy live on different code paths.
+**The baseline said so on 2026-07-23, in a field nobody read.**
+
+### Ruled
+
+1. **The baseline is re-derived, and the ceiling check VERIFIES the registry hash before trusting
+   the numbers.** The baseline already records `registry_blake2b` — good practice that was already
+   there. **Nothing checked it**, which is the entire defect: recording provenance and never
+   comparing it is bookkeeping, not verification.
+2. **Every token figure carries its surface.** `17,310` alone is not a number; `mcp_http: 17,310`
+   is. A figure whose meaning depends on an unstated qualifier is how the blueprint's opening
+   claim ended up true and false at the same time.
+3. **The 2,000 ceiling stays, scoped.** It was set for the deferred-tool-surface design — three
+   in-context verbs — and against `mcp_http`, where SYNAPSE cannot cache. On the panel surface it
+   was never the right target.
+
+**The lesson is not "the baseline was stale."** It is that the baseline was *right*, was *specific*,
+and was read as though it were general. **A correct number in a field nobody reads is the same
+outcome as a wrong one.**
