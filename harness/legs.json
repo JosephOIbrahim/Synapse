@@ -47,7 +47,7 @@
     {
       "id": "LEDGER",
       "name": "moneta seam",
-      "state": "ready",
+      "state": "done",
       "receipt": "LEDGER.json",
       "branch": "repair/ledger-moneta-seam",
       "worktree": ".claude/worktrees/ledger-moneta-seam",
@@ -61,7 +61,7 @@
         "docs/studio/DEPLOYMENT.md"
       ],
       "merge_status": "superseded",
-      "merge_note": "U1 authored the union from this branch (R91). Merging it would fight the deliberate composition. Preserved on origin as history."
+      "merge_note": "Superseded: U1 authored the union from this branch (R91). Its finding is CLOSED - ledger.py:452 _deposit_to_moneta is no longer a no-op, U1 wrote the real implementation and it is called at :548. Pinned done so it cannot re-dispatch and cannot false-flag R92."
     },
     {
       "id": "H2",
