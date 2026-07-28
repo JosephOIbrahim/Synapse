@@ -150,6 +150,28 @@ function Get-LegState([object]$leg) {
     if ($leg.state -eq 'done') { return 'done' }
     if ($leg.receipt -and (Get-ReceiptPath $leg)) { return 'done' }
     if ($DryRun -and $script:DryDispatched[$leg.id]) { return 'running' }
+
+    # R156: A LIVE LOCK MEANS RUNNING. Ask the lock before the filesystem.
+    #
+    # R146 ruled that the lock is the completion signal - "a receipt in a
+    # worktree with a live lock is a draft" - and then nothing wired this
+    # function to read it. The detector below infers 'running' from
+    # .claude/settings.local.json, which Claude Code writes on the agent's first
+    # real interaction. H3b ran for 18 minutes writing four probe files and a
+    # 0.7 MB transcript WITHOUT that file ever appearing, so the board read
+    # 'ready' the whole time and the leg was one poll from a second dispatch -
+    # the exact concurrency failure the lock exists to prevent.
+    #
+    # Inferring liveness from a file the agent happens to write is a proxy.
+    # The lock is the fact.
+    $lockFile = Join-Path (Get-LockDir) "$($leg.id).lock"
+    if (Test-Path $lockFile) {
+        try {
+            $lk = Get-Content $lockFile -Raw -EA Stop | ConvertFrom-Json
+            if ($lk.pid -and (Get-Process -Id $lk.pid -EA SilentlyContinue)) { return 'running' }
+        } catch { }
+    }
+
     if ($leg.worktree) {
         $wt = Join-Path $repo $leg.worktree
         if (Test-Path (Join-Path $wt '.claude\settings.local.json')) {
