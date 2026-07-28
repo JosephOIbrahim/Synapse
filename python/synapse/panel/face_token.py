@@ -208,13 +208,28 @@ class TokenField(QtWidgets.QWidget):
         p.setPen(edge)
 
         acc = 0.0
-        for poly, area, _cx in cells:
+        for poly, area, cx in cells:
             acc += area
             colour = empty
             for limit, col in targets:
                 if acc <= limit:
                     colour = QtGui.QColor(col)
                     break
+
+            # GRADIENT ATMOSPHERE. Cohere's identity does not use flat fills -
+            # its surfaces carry gradients, and its cell forms are derived from
+            # the openings in the letterforms rather than drawn as a chart.
+            #
+            # So each cell is lifted or dropped by its position rather than
+            # painted at one value: a slow diagonal ramp across the field. It
+            # reads as atmosphere instead of a bar chart, and it costs nothing
+            # in honesty because the AREA still carries the proportion - only
+            # the luminance varies, and it varies by POSITION, not by data.
+            cy = sum(pt[1] for pt in poly) / float(len(poly))
+            ramp = (cx / float(w)) * 0.6 + (cy / float(h)) * 0.4   # 0..1
+            lift = int(round((ramp - 0.5) * 26))
+            colour = colour.lighter(100 + lift) if lift >= 0 else colour.darker(100 - lift)
+
             path = QtGui.QPolygonF([QtCore.QPointF(x, y) for x, y in poly])
             p.setBrush(QtGui.QBrush(colour))
             p.drawPolygon(path)
@@ -235,6 +250,13 @@ class FaceToken(QtWidgets.QWidget):
         lay.addWidget(self._eyebrow("THIS TURN"))
         self._field = TokenField()
         lay.addWidget(self._field)
+        # A legend, because a field whose colours nobody can decode is
+        # decoration. Two entries only — the two segments that are actually
+        # measurable without a live turn.
+        lay.addWidget(self._legend([
+            ("system prompt", getattr(t, "SIGNAL", "#8FB3D9")),
+            ("tool surface", getattr(t, "CONIFEROUS", "#6E8F72")),
+        ]))
         self._composition = self._kv_block([
             ("system prompt", UNKNOWN),
             ("tool surface", UNKNOWN),
@@ -282,6 +304,27 @@ class FaceToken(QtWidgets.QWidget):
         except Exception:
             pass
         return lbl
+
+    def _legend(self, entries):
+        """A swatch row under the field. A field whose colours nobody can decode
+        is decoration; two entries keep it a key rather than a chart."""
+        w = QtWidgets.QWidget()
+        row = QtWidgets.QHBoxLayout(w)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(16)
+        for text, colour in entries:
+            sw = QtWidgets.QLabel()
+            sw.setFixedSize(9, 9)
+            sw.setStyleSheet("background:%s; border-radius:2px;" % colour)
+            lbl = QtWidgets.QLabel(text)
+            try:
+                lbl.setStyleSheet("color:%s; font-size:%dpx;" % (t.TEXT_TERTIARY, t.SIZE_BODY))
+            except Exception:
+                pass
+            row.addWidget(sw)
+            row.addWidget(lbl)
+        row.addStretch(1)
+        return w
 
     def _footnote(self, text):
         lbl = QtWidgets.QLabel(text)
@@ -396,11 +439,32 @@ class FaceToken(QtWidgets.QWidget):
         refresh_from_probe first, which meant any other call site rendered a raw
         epoch float - a number the panel knows and the reader does not. The
         formatting belongs where the value lands, not where one caller happens
-        to pass it."""
+        to pass it.
+        """
         self.set_row("model", model)
         self.set_row("runs", runs)
         self.set_row("cost", cost)
         self.set_row("probed", self._ago(probed))
+
+        # NATURAL vs SYNTHETIC, used semantically rather than decoratively.
+        #
+        # Cohere splits its palette in two: natural - coniferous green, mushroom
+        # grey, volcanic black - and synthetic - simulated coral, synthetic
+        # quartz, acrylic blue. The panel has a real distinction that maps onto
+        # it exactly, and R162 established the distinction is INVISIBLE in the
+        # model name: glm-5:cloud and a local tag look identical in a dropdown.
+        #
+        # So: local runs on your machine and costs nothing -> NATURAL.
+        # Metered runs on someone's meter -> SYNTHETIC.
+        #
+        # The colour is doing work here. It is the one place an artist can see
+        # that the default engine is billed without reading a URL.
+        lbl = self._rows.get("runs")
+        if lbl is not None and runs:
+            metered = "meter" in str(runs).lower()
+            lbl.setStyleSheet("color:%s;" % (
+                getattr(t, "SIGNAL", "#8FB3D9") if metered
+                else getattr(t, "CONIFEROUS", "#6E8F72")))
 
     def refresh_from_probe(self):
         """Best-effort pull from the probe layer, plus the two static segments.
