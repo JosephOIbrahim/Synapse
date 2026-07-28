@@ -4577,3 +4577,121 @@ every turn, and currently written so the cache entry can never be read.
 
 **The cheapest fix of the week.** One funded call removed an asterisk from two legs, five rulings,
 and a roadmap — and revealed that the direction of the error had never been established either.
+
+---
+
+# ADDENDUM — H3b (R157–R161)
+
+---
+
+## RULING 157 — R48 is REFUTED BY WORKING CODE. A render can be stopped, and now is.
+
+R48 narrowed this leg to TOPS-only on the belief that no render-cancel API existed. R73 refuted the
+belief; **H3b refuted it the way that counts — 415 lines of `render_stop.py`, 38 new pins, 5,069
+passing.**
+
+**H3b-F1:** *"R48's 'not-implementable' is refuted by working code, not by argument."*
+
+Nothing more to rule. It stands, it ships, and the safety gap R44 held this leg open for is closed.
+
+---
+
+## RULING 158 — H3b-F6 is the most serious finding of the day, and it nearly shipped as a button.
+
+> `EmergencyProtocol.trigger_emergency_halt` returns `action='ALL_OPERATIONS_HALTED'` **in 0.0s
+> while the cook it was asked to stop keeps running** — `ctx.cooking` still `True` at every sample
+> through t=3.0s.
+>
+> `shared/bridge.py:2288` walks `hou.node('/obj').allSubChildren()` **only**. TOP networks live
+> under `/tasks`. **The shipped halt misses the common case entirely**, its `action` key is a
+> string literal rather than a state change, and the whole `hou` walk sits inside `try/except:
+> pass`.
+
+**This was one step from being wired up as the emergency-halt affordance R17 asked for.** That is
+R18 exactly — a control announcing a safety action it does not perform — and it was caught only
+because the leg **probed the control against a real cook instead of wiring it and assuming.**
+
+**And the leg's handling of the deny-list was correct.** `shared/bridge.py` is human-authored and
+fenced, so it did not edit it. Instead `_handle_emergency_halt` reports three things **separately
+and never merged**: what `EmergencyProtocol` actually did (with the measurement quoted inline),
+what the handler's own sweep cancelled via `hou.TopNode.cancelCook`, and what it deliberately did
+**not** kill.
+
+Verified against the same cook that defeated the shipped halt: **`ctx.cooking` False at 0.5s and
+every sample after.**
+
+**Ruled:**
+1. **The compensation stands as shipped.** Three separate reports beat one merged claim, and this
+   is the correct pattern for any defect inside a deny-listed file.
+2. **`shared/bridge.py:2288` is Joe's repair.** Human-authored, fenced, and the fix is a scope
+   widening from `/obj` to the scene — but a safety control is not somewhere to guess.
+3. **The emergency-halt panel affordance stays unbuilt until the bridge is fixed.** R17 wanted it
+   visible; R29 found `_on_stop` already honest. **Surfacing a halt that half-works is worse than
+   surfacing none**, and this leg just measured exactly how much of it does not work.
+
+---
+
+## RULING 159 — H3b-F3: valid-and-empty is worse than corrupt, and it ships as data.
+
+> Stopping a **mantra** render leaves a **structurally valid but PIXEL-EMPTY EXR at the real output
+> path.**
+>
+> `iinfo -v` on the killed frame **exits 0** and reports a full, correct 1920×1080 header with EXR
+> magic. **It parses. It has no pixels.**
+
+```
+mid-render     1,015-byte EXR  +  5,249,684-byte .mantra_checkpoint
+after rkill    BOTH unchanged - the stub and the orphaned checkpoint remain
+clean finish   49,863-byte EXR, checkpoint REMOVED
+```
+
+**A file-exists check passes it. A file-parses check passes it.** Every cheap validity test an
+artist or a farm would run says the frame is fine.
+
+**Karma is safe** (H3b-F4) — husk never writes the declared output until completion. So the hazard
+is renderer-specific, which is worse than universal: it appears only sometimes.
+
+**Ruled: the shipped handling is right and is the model for this class.**
+`render_stop.partial_output_risk()` returns the hazard **as data with every stop**, so a caller
+cannot receive a clean-looking success without also receiving the residue it must check. Two
+detectors, both measured: the orphaned `.mantra_checkpoint`, and a header missing `renderTime` /
+`renderMemory` / `date` that a completed frame carries.
+
+**A hazard that travels with the success is the only kind a caller cannot ignore.**
+
+---
+
+## RULING 160 — H3b-F5: `rkill` can never be its own receipt, and the leg built around that.
+
+> `hou.hscript('rkill zzz_no_such_render')` → `out=''`, `err=''`.
+> `hou.hscript('rkill 72712')` → `out=''`, `err=''` — **and the process WAS killed.**
+
+**Silent on success and silent on no-match.** So the command's return says nothing about the
+outcome, and a status derived from issuing it would be reporting an attempt.
+
+Every stop is verified by **re-reading `rps`**, and the status `kill_unconfirmed` exists precisely
+for "rkill was issued and the PID is still live."
+
+**Ruled: this is Law 3 implemented, not quoted.** The leg found an instrument that cannot report on
+itself and built a second instrument to check it — the same move as R50's positive control, applied
+to a shell command.
+
+---
+
+## RULING 161 — The four ruling questions, answered.
+
+**Record the render PID at spool time?** **Yes.** H3b-F2 found Karma/husk renders are attributable
+to their ROP and **mantra renders are not**. Recording the PID at spool is the difference between
+mantra being mappable and not, and it is cheap. **Not this leg** — it is a spool-path change and
+this leg is closed.
+
+**Correct the harness notes that carry "Houdini exposes NO API to cancel a render"?** **No —
+amend.** R81 established the append-only channel for exactly this. **Those notes are accurate
+records of what was believed when written**, and rewriting them destroys the evidence that the
+belief existed and was wrong. They get an amendment marker pointing here.
+
+**Make the panel's Cancel-cook reachable when the tool detail carries no node?** **No.** A control
+that cannot name its target is the ORPHAN pattern, and asking Houdini which TOP network to cancel
+is the panel guessing on the artist's behalf about an irreversible action.
+
+**Who repairs `EmergencyProtocol`?** Answered in R158 — Joe, in the deny-listed file.
