@@ -147,6 +147,27 @@ def strip_tone(prompt, tone):
     return after
 
 
+def _break_even(removed, added, write_x, read_x):
+    """The first API call at which the cumulative cost of the AFTER regime stops
+    exceeding the BEFORE regime, or ``None`` when it never does.
+
+        after(n)  = added*write + added*read*(n-1)      one write, then reads
+        before(n) = removed*write*n                     rewritten every call
+
+    Returns ``None`` rather than a number when the per-call saving is <= 0 — a
+    regime that never breaks even must not report a break-even point.
+    """
+    per_call = removed * write_x - added * read_x
+    if per_call <= 0:
+        return None
+    n = 1
+    while added * write_x + added * read_x * (n - 1) > removed * write_x * n:
+        n += 1
+        if n > 10_000:                     # cannot happen while per_call > 0
+            return None                    # pragma: no cover
+    return n
+
+
 def _drop_keys(node, keys):
     if isinstance(node, dict):
         return {k: _drop_keys(v, keys) for k, v in node.items() if k not in keys}
@@ -325,8 +346,14 @@ def main():
         "after_first_write_bte": round(schema_tokens * write_x, 1),
         "steady_state_saving_bte_per_call":
             round(removed * write_x - schema_tokens * read_x, 1),
-        "break_even_calls": 1 + int(
-            (schema_tokens * write_x) // max(removed * write_x - schema_tokens * read_x, 1)),
+        "break_even_calls": _break_even(removed, schema_tokens, write_x, read_x),
+        "break_even_derivation":
+            "cumulative_after(n) = schema*write + schema*read*(n-1); "
+            "cumulative_before(n) = removed*write*n; smallest whole n where "
+            "after <= before. The first draft divided the one-time write by the "
+            "per-call saving with floor division and added 1, which is neither "
+            "the closed form nor a ceiling and lands on the right answer only by "
+            "coincidence of these particular inputs (V2-F16).",
         "verdict": "a COST on preload tokens and a SAVING on price. Which one "
                    "governs is E2's call, and it cannot be settled until the "
                    "usage reader is closed (E0's prerequisite 4).",

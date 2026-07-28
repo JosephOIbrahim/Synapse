@@ -1,0 +1,70 @@
+fix(econ): V2 - the adversarial pass found a blocker in the gate itself
+
+Six hostile read-only lenses over the committed leg, every finding then handed to
+an independent verifier told to REFUTE it. 36 verdicts, 27 upheld, 9 refuted.
+Article IV: the crucible never built what it attacks.
+
+V2-F10 BLOCKER. VoiceGate.submit returned an ACCEPTED outcome without recording
+it, so resolve() fell through to the object's ORIGINAL free field. The canonical
+loop - reject, the model rewrites, the gate accepts - rendered the string the gate
+had just REJECTED, violations intact. Four verifiers reproduced it independently.
+
+The invariant-8 arm that should have caught it was blind BY FIXTURE: the test
+built its gate around a verdict already carrying the good sentence and submitted
+that same sentence, so "returns the accepted text" and "returns the pre-gate text"
+were equal by construction. Law 1 in my own suite - a check that could not fail
+for the defect it was written to catch. The fixture now carries prose the gate
+must reject.
+
+submit() latches acceptance as it latches the floor; resolve() RAISES rather than
+answering before anything is settled; `settled` (a verdict is final) is now a
+different question from `exhausted` (the floor fired), because conflating them is
+what let the accept path escape.
+
+ALSO REPAIRED, one mutation added per defect:
+  F11  names_change excluded '/' from its lookbehind, so dome_light inside
+       /lights/dome_light did not match - the rule refusing the most specific
+       form of exactly what it asks for.
+  F12  decision_log._trim appended its ellipsis AFTER cutting to the limit,
+       returning limit+1 for any space-free string - i.e. every node path, which
+       is what _CHOICE_KEYS selects. The typed field then raised and
+       to_verdict_decisions took the whole cycle down. Rejections are now dropped
+       and COUNTED (rejected_conversions), never swallowed.
+  F13  the wire form made the MODEL author its own credit line: its own model id,
+       tier, 96 chars of free `reason`, and its own token counts, all of which
+       render - a second free field through the one door invariant 1 watches, and
+       a tool description saying "you write only `verdict`" contradicting the
+       schema inside one function. `by` is SYSTEM data. Removing it also cut 138
+       tokens.
+  F14  `paths` was unconstrained on the wire while the constructor enforced
+       absolute-and-96 - the gap where an agent emits valid and the panel dies.
+  F15  tokens_in=1.9 constructed and rendered through %d as 1.
+  F16  break_even_calls was floor-division-plus-one, right answer by coincidence;
+       now the closed form, and None when a regime never breaks even.
+  F17  register_signature could be replaced with one masking EVERY value and the
+       suite stayed green; the schema-ceiling test compared two reads of one
+       variable. Both rewritten to call the product and to MOVE the constant.
+
+MUTATION HARNESS, three corrections of its own:
+  - a non-zero exit is no longer read as "caught" - pytest exits non-zero for
+    collection and plugin errors too, so a crashed run was scoring as a detection.
+    Caught now requires a test to have actually FAILED; anything else is INVALID.
+  - two mutations were over-broad and attributed to nothing (bool_is_a_count
+    rebuilt By.__post_init__ on the false premise that it closed over _count, and
+    also deleted three other guards; name_may_be_a_sentence silently deleted
+    "chose is required"). Both narrowed to one guard each.
+  - 7 mutations added. 29 run, 29 caught, 0 survivors, 0 invalid.
+
+RE-MEASURED after the schema change (count_tokens, exact, free, 13 calls):
+  tone out    688      schema in  1,046 = 981 structure + 65 rule prose (928 lean)
+  net         -358 as shipped / -240 lean   still a COST on preload tokens
+  price      +755 BTE/call steady state, break-even 2 calls (VERIFIED-DERIVED)
+
+The stationary-session challenge to the price figure was REFUTED on E0's own
+artifact: E0_segments.json stationary.system_whole.stable_across_3_turns = false.
+The span is rewritten even without navigation, so the write rate applies to both
+sessions. Named on the face of the figure because if it were wrong the sign flips.
+
+Suite 5031 -> 5192 passed, 0 failed, 137 skipped. V2 tests 139 -> 161.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>

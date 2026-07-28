@@ -19,7 +19,8 @@ import pytest
 
 from synapse.panel import decision_log as dlog
 from synapse.panel.verdict import (
-    ACTION_KINDS, CHECK_STATES, MODEL_FREE, MODEL_QUOTED, PROVENANCE, SYSTEM, TOOL,
+    ACTION_KINDS, CHECK_STATES, MAX_TEXT_CHARS, MODEL_FREE, MODEL_QUOTED,
+    PROVENANCE, SYSTEM, TOOL,
     Action, By, Check, Decision, Verdict, Via,
     changed_tokens, check_from_tristate, decision_from_tool_evidence, json_schema,
     model_free_fields, register_signature, render_rows, tool_definition,
@@ -166,6 +167,28 @@ def test_a_bool_is_not_a_count(field):
 def test_a_negative_count_is_refused(field):
     with pytest.raises(ValueError, match=">= 0"):
         a_by(**{field: -1})
+
+
+@pytest.mark.parametrize("field", ["tokens_in", "tokens_out"])
+def test_a_fractional_token_count_is_refused(field):
+    """FAILS IF: a float reaches a token field. ``tokens_in=1.9`` used to
+    construct and then render through ``%d`` as ``1`` — a wrong figure becoming
+    a plausible one on the way to the screen, which is worse than an obviously
+    wrong one because nobody looks twice."""
+    with pytest.raises(TypeError, match="whole tokens"):
+        a_by(**{field: 1.9})
+    assert a_by(**{field: 2}).__getattribute__(field) == 2
+
+
+def test_cost_stays_fractional():
+    """FAILS IF: the whole-number rule is applied where it does not belong.
+    Money is genuinely fractional; tokens are not."""
+    assert a_by(cost=0.0043).cost == 0.0043
+
+
+def test_a_fractional_forecast_is_refused():
+    with pytest.raises(TypeError, match="whole tokens"):
+        Action(label="Re-render", kind="followup", forecast_tokens=12.5)
 
 
 def test_cost_is_carried_but_not_rendered():
@@ -399,6 +422,43 @@ def test_decision_log_cycle_drops_refusals_rather_than_defaulting(monkeypatch):
     assert len(log.to_verdict_decisions(allow_unclassified=True)) == 2
 
 
+def test_a_long_space_free_node_path_converts_instead_of_crashing():
+    """FAILS IF: the credit surface dies on its commonest real input.
+
+    ``choice_from_input`` selects node and file paths, which have no spaces, and
+    ``_trim`` used to append its ellipsis AFTER cutting to the limit — returning
+    49 characters where the contract enforces 48. The typed field then raised,
+    and ``to_verdict_decisions`` took the whole cycle down with it (V2-F12).
+    """
+    long_path = "/stage/materiallibrary1/mtlxstandard_surface1_basecolor"
+    choice = dlog.choice_from_input("houdini_set_parm", {"node_path": long_path})
+    assert len(choice) <= dlog.MAX_CHOICE_CHARS
+    row = dlog.Decision(tool="houdini_set_parm", choice=choice, why="", classified=True)
+    assert row.to_verdict_decision() is not None
+
+
+def test_one_malformed_row_does_not_take_the_cycle_down(monkeypatch):
+    """FAILS IF: a single rejected row costs every other decision in the cycle.
+    The rejection is recorded rather than swallowed — Law 3."""
+    monkeypatch.setattr(dlog, "classify_tool", lambda name: "mutation")
+    log = dlog.DecisionLog()
+    log.record("houdini_create_material", {"material_name": "Dark_Glass"}, "Closer to IOR.")
+    log.record("houdini_execute_python", {"name": "Ran a script. It worked"}, "")
+    converted = log.to_verdict_decisions()
+    assert len(log) == 2
+    assert len(converted) == 1 and converted[0].chose == "Dark_Glass"
+    assert log.rejected_conversions() == 1
+
+
+def test_trim_never_exceeds_its_own_limit():
+    """FAILS IF: a function that takes a limit returns limit+1. It did, for any
+    string with no space in its first ``limit`` characters."""
+    for limit in (8, 24, 48, 96):
+        for text in ("x" * 200, "/a/very/long/path/with/no/spaces/at/all/whatsoever",
+                     "word " * 40, "a,b;c:d-" * 20):
+            assert len(dlog._trim(text, limit)) <= limit, (limit, text[:20])
+
+
 def test_tool_evidence_with_no_tool_name_credits_nothing():
     with pytest.raises(ValueError, match="credits nothing"):
         decision_from_tool_evidence("", "")
@@ -417,18 +477,28 @@ def _fields(cls):
     return set(cls.__dataclass_fields__)
 
 
+#: The one field the model does not author. Everything else on ``Verdict`` is
+#: emitted; ``by`` is supplied by the panel from what it knows about the call.
+PANEL_AUTHORED = {"by"}
+
+
 @pytest.mark.parametrize("path,cls", [
-    ((), Verdict), (("by",), By), (("decision",), Decision),
-    (("via",), Via),
+    ((), Verdict), (("decision",), Decision), (("via",), Via),
 ])
 def test_the_schema_properties_match_the_dataclass_fields(path, cls):
     """FAILS IF: a field is added to the contract and not to the wire form (the
     agent cannot emit it) or to the wire form and not the contract (the agent
-    emits something nothing validates). One drifts, this goes red."""
+    emits something nothing validates). One drifts, this goes red.
+
+    ``by`` is the single declared exception and it is named, not tolerated — a
+    silent set-difference here would let a second field slip out of the wire
+    form unnoticed.
+    """
     node = json_schema()
     for key in path:
         node = node["properties"][key]
-    assert set(node["properties"]) == _fields(cls)
+    expected = _fields(cls) - (PANEL_AUTHORED if not path else set())
+    assert set(node["properties"]) == expected
 
 
 @pytest.mark.parametrize("key,cls", [("checks", Check), ("actions", Action)])
@@ -448,20 +518,73 @@ def test_the_wire_form_never_offers_model_free_provenance():
         assert MODEL_FREE not in node["properties"]["provenance"]["enum"]
 
 
-def test_the_wire_form_requires_an_author():
-    """FAILS IF: ``by`` becomes optional on the wire while staying required in
-    code — the gap where an anonymous verdict is emitted and then rejected."""
-    assert "by" in json_schema()["required"]
-    assert set(json_schema()["properties"]["by"]["required"]) == {"model", "tier"}
+def test_the_author_is_required_in_code_and_absent_from_the_wire():
+    """FAILS IF: the two halves stop disagreeing in the direction they should.
+
+    This test used to assert ``by`` was REQUIRED on the wire, which is the
+    defect: it made the model author its own credit line. The behaviour it was
+    reaching for — *work is never anonymous* — lives in the constructor, and
+    that is where it is now asserted. The wire form's job is the opposite: never
+    to ask.
+    """
+    assert "by" not in json_schema()["properties"]        # the model is not asked
+    with pytest.raises(TypeError):                        # the object still insists
+        Verdict()
+    assert render_rows(Verdict(by=a_by()))[-1][0] == "BY"  # and it always renders
 
 
-def test_the_schema_carries_one_ceiling_not_two():
-    """FAILS IF: the schema hardcodes a character ceiling of its own. Two
-    authorities on one number is how a value drifts in silence."""
-    from synapse.panel.voice_contract import MAX_VERDICT_CHARS
-    verdict_schema = json_schema()["properties"]["verdict"]
-    assert verdict_schema["maxLength"] == MAX_VERDICT_CHARS
-    assert str(MAX_VERDICT_CHARS) in verdict_schema["description"]
+@pytest.mark.parametrize("field", sorted(By.__dataclass_fields__))
+def test_no_author_field_reaches_the_wire_form(field):
+    """FAILS IF: any single ``By`` field leaks back into the emit schema — the
+    granular version of the rule above, so a partial reintroduction is caught."""
+    blob = json.dumps(json_schema())
+    assert '"%s"' % field not in blob
+
+
+def test_the_schema_carries_one_ceiling_not_two(monkeypatch):
+    """FAILS IF: the schema hardcodes a character ceiling of its own.
+
+    Comparing ``schema["maxLength"]`` to ``MAX_VERDICT_CHARS`` is a tautology
+    when the schema is BUILT from that constant — it compares two reads of one
+    variable and stays green after someone types a literal in. So the constant
+    is MOVED and the schema is required to move with it.
+    """
+    from synapse.panel import voice_contract as vc
+    monkeypatch.setattr(vc, "MAX_VERDICT_CHARS", 97)
+    moved = json_schema()["properties"]["verdict"]
+    assert moved["maxLength"] == 97, "the schema holds a ceiling of its own"
+    assert "97" in moved["description"]
+    monkeypatch.undo()
+    assert json_schema()["properties"]["verdict"]["maxLength"] == vc.MAX_VERDICT_CHARS
+
+
+def test_the_wire_form_does_not_ask_the_model_to_author_its_own_credit():
+    """FAILS IF: ``by`` returns to the emit schema.
+
+    The model reporting its own model id, tier, reason and token counts is a
+    witness vouching for the witness's identity — and ``by.reason`` is 96
+    characters of free text that renders, a second free field arriving through
+    the one door invariant 1 exists to watch. The panel knows who it called.
+    """
+    schema = json_schema()
+    assert "by" not in schema["properties"]
+    assert "by" not in schema["required"]
+    assert json.dumps(schema).count("tokens_in") == 0
+    # ...and the object still refuses to exist without one.
+    with pytest.raises(TypeError):
+        Verdict()
+
+
+def test_the_schema_constrains_paths_as_tightly_as_the_constructor():
+    """FAILS IF: the wire form blesses a path the constructor rejects. That gap
+    is where an agent emits something valid and the panel explodes on it."""
+    items = json_schema()["properties"]["paths"]["items"]
+    assert items["pattern"] == "^/"
+    assert items["maxLength"] == MAX_TEXT_CHARS
+    with pytest.raises(ValueError):
+        a_verdict(paths=["stage/matlib"])          # what the pattern now refuses
+    with pytest.raises(ValueError):
+        a_verdict(paths=["/" + "x" * MAX_TEXT_CHARS])
 
 
 def test_the_tool_definition_is_shaped_for_the_api():

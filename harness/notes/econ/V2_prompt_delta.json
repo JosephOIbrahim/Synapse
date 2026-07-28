@@ -48,47 +48,47 @@
   },
   "contract_in": {
     "what": "verdict.tool_definition() \u2014 the schema the agent emits against, priced as a tool definition because that is how it ships",
-    "as_shipped_tokens": 1184,
-    "structure_only_tokens": 1119,
+    "as_shipped_tokens": 1046,
+    "structure_only_tokens": 981,
     "description_prose_tokens": 65,
-    "lean_tokens": 1020,
+    "lean_tokens": 928,
     "lean_drops": [
       "additionalProperties",
       "maxLength",
       "minimum",
       "pattern"
     ],
-    "finding": "the added cost is JSON SCHEMA STRUCTURE, not relocated register instruction: the rule prose is 65 tokens and the structure is 1119. A verbose schema costs more than the entire prose voice guide it replaces \u2014 so the net is a schema-design choice, not a fixed price.",
+    "finding": "the added cost is JSON SCHEMA STRUCTURE, not relocated register instruction: the rule prose is 65 tokens and the structure is 981. A verbose schema costs more than the entire prose voice guide it replaces \u2014 so the net is a schema-design choice, not a fixed price.",
     "placement": "cache_control sits on the LAST tool (anthropic_provider.py:64), so a schema appended to the tools array lands inside the cached prefix \u2014 unlike the tone guide, which sat in the volatile system span (E0-F5/F6)."
   },
   "net": [
     {
       "network": "/stage",
       "removed_tokens": 688,
-      "added_as_shipped": 1184,
-      "net_as_shipped": -496,
-      "added_lean": 1020,
-      "net_lean": -332,
+      "added_as_shipped": 1046,
+      "net_as_shipped": -358,
+      "added_lean": 928,
+      "net_lean": -240,
       "direction_as_shipped": "cost",
       "direction_lean": "cost"
     },
     {
       "network": "/obj",
       "removed_tokens": 688,
-      "added_as_shipped": 1184,
-      "net_as_shipped": -496,
-      "added_lean": 1020,
-      "net_lean": -332,
+      "added_as_shipped": 1046,
+      "net_as_shipped": -358,
+      "added_lean": 928,
+      "net_lean": -240,
       "direction_as_shipped": "cost",
       "direction_lean": "cost"
     },
     {
       "network": "/out",
       "removed_tokens": 688,
-      "added_as_shipped": 1184,
-      "net_as_shipped": -496,
-      "added_lean": 1020,
-      "net_lean": -332,
+      "added_as_shipped": 1046,
+      "net_as_shipped": -358,
+      "added_lean": 928,
+      "net_lean": -240,
       "direction_as_shipped": "cost",
       "direction_lean": "cost"
     }
@@ -108,10 +108,11 @@
     ],
     "assumption": "E0-F5/F6 \u2014 the system span is rewritten every turn, so its tokens are a perpetual cache WRITE that is never read back; the tool block is stable, so its tokens are a cache READ after the first call.",
     "before_bte_per_call": 860.0,
-    "after_bte_per_call": 118.4,
-    "after_first_write_bte": 1480.0,
-    "steady_state_saving_bte_per_call": 741.6,
+    "after_bte_per_call": 104.6,
+    "after_first_write_bte": 1307.5,
+    "steady_state_saving_bte_per_call": 755.4,
     "break_even_calls": 2,
+    "break_even_derivation": "cumulative_after(n) = schema*write + schema*read*(n-1); cumulative_before(n) = removed*write*n; smallest whole n where after <= before. The first draft divided the one-time write by the per-call saving with floor division and added 1, which is neither the closed form nor a ceiling and lands on the right answer only by coincidence of these particular inputs (V2-F16).",
     "verdict": "a COST on preload tokens and a SAVING on price. Which one governs is E2's call, and it cannot be settled until the usage reader is closed (E0's prerequisite 4)."
   },
   "count_tokens_calls": 13

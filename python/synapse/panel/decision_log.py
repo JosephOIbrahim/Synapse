@@ -121,14 +121,16 @@ class Decision:
         if not self.classified and not allow_unclassified:
             return None
         try:
-            from synapse.panel.verdict import Decision as VerdictDecision
-            from synapse.panel.verdict import MODEL_QUOTED, TOOL
+            from synapse.panel import verdict as _v
         except Exception:
             return None
-        return VerdictDecision(
-            chose=self.choice,
-            because=self.why,
-            provenance=MODEL_QUOTED if self.why else TOOL,
+        # Clamp to the CONTRACT's ceilings, read from the contract rather than
+        # assumed equal to this module's. They happen to match today; a future
+        # divergence must narrow the value, not raise inside a credit surface.
+        return _v.Decision(
+            chose=_trim(self.choice, _v.MAX_IDENT_CHARS),
+            because=_trim(self.why, _v.MAX_TEXT_CHARS) if self.why else "",
+            provenance=_v.MODEL_QUOTED if self.why else _v.TOOL,
         )
 
     def __eq__(self, other):
@@ -199,12 +201,21 @@ def _strip_markdown(text):
 
 
 def _trim(text, limit):
-    """Shorten to ``limit`` on a word boundary, with an ellipsis when cut."""
+    """Shorten to AT MOST ``limit`` on a word boundary, with an ellipsis when cut.
+
+    V2-F12: the ellipsis used to be appended AFTER cutting to ``limit``, so a
+    string with no space in its first ``limit`` characters came back ``limit+1``
+    long — and space-free strings are the commonest real input this sees, because
+    ``_CHOICE_KEYS`` selects node paths and file paths. A function that takes a
+    limit and returns limit+1 is a bug on its own; it became a crash when the
+    typed contract started enforcing the same ceiling strictly.
+    """
     text = " ".join(str(text).split())
     if len(text) <= limit:
         return text
-    cut = text[:limit].rsplit(" ", 1)[0]
-    return (cut or text[:limit]).rstrip(",;:-") + "…"
+    head = text[:limit - 1]                 # reserve the ellipsis's own column
+    cut = head.rsplit(" ", 1)[0]
+    return (cut or head).rstrip(",;:-") + "…"
 
 
 def why_from_reasoning(reasoning):
@@ -282,9 +293,31 @@ class DecisionLog:
         Rows that decline to convert are DROPPED, not defaulted — the count can
         legitimately be smaller than ``len(self)`` and a caller comparing the two
         is reading the refusal, which is the point.
+
+        A row the contract REJECTS is dropped too, and counted separately in
+        ``rejected_conversions``. One malformed row must not take a whole credit
+        surface down with it (V2-F12 was exactly that: a 49-character node path
+        raised, and every other decision in the cycle went with it) — but a
+        rejection is a fact about the data, so it is recorded rather than
+        swallowed (Law 3).
         """
-        out = [d.to_verdict_decision(allow_unclassified) for d in self._rows]
-        return tuple(d for d in out if d is not None)
+        out, rejected = [], 0
+        for row in self._rows:
+            try:
+                converted = row.to_verdict_decision(allow_unclassified)
+            except Exception:
+                rejected += 1
+                continue
+            if converted is not None:
+                out.append(converted)
+        self._rejected_conversions = rejected
+        return tuple(out)
+
+    def rejected_conversions(self):
+        """How many rows the typed contract refused on the last conversion.
+        ``0`` until ``to_verdict_decisions`` has run — it describes what
+        happened, not what would happen."""
+        return getattr(self, "_rejected_conversions", 0)
 
     def __len__(self):
         return len(self._rows)

@@ -32,38 +32,161 @@ def _allow_model_free_provenance():
 
 
 def _allow_bool_counts():
-    """``True`` becomes a token count of 1 — unmeasured silently becomes measured."""
+    """``True`` becomes a token count of 1 — unmeasured silently becomes measured.
+
+    A MODULE-LEVEL swap is enough: ``By.__post_init__`` resolves ``_count`` through
+    globals at call time, not at definition time. An earlier revision rebuilt the
+    whole method here "because it closed over ``_count``", which was false and made
+    this mutation a strict superset of ``anonymous_by`` — it also deleted the
+    model-required, tier-required and tier-regex checks, so a caught superset
+    attributed to nothing. Each mutation now removes exactly one guard.
+    """
     from synapse.panel import verdict as vd
     real = vd._count
 
-    def lax(value, field):
+    def lax(value, field, whole=False):
         if isinstance(value, bool):
             return int(value)
-        return real(value, field)
+        return real(value, field, whole)
     vd._count = lax
-    vd.By.__post_init__ = _rebuilt_by_post_init(vd)
 
 
-def _rebuilt_by_post_init(vd):
-    """``By.__post_init__`` closed over ``_count`` at definition time, so a
-    module-level swap alone would not reach it. Rebuilding the method is how the
-    mutation actually lands — and discovering that is itself the reason to run
-    a mutation harness rather than assume one."""
+def _allow_fractional_tokens():
+    """``tokens_in=1.9`` constructs and renders through ``%d`` as ``1``."""
+    from synapse.panel import verdict as vd
+    real = vd._count
+    vd._count = lambda value, field, whole=False: real(value, field, False)
+
+
+def _allow_anonymous_by():
+    """``by`` stops requiring a model and a tier — invariant 6 unenforced.
+
+    Narrowed to exactly that: ``_bounded`` still runs, ``_count`` still runs, only
+    the two emptiness checks and the tier shape go.
+    """
+    from synapse.panel import verdict as vd
+
     def __post_init__(self):
         s = object.__setattr__
         s(self, "model", vd._bounded(self.model, "by.model", vd.MAX_IDENT_CHARS))
         s(self, "tier", vd._bounded(self.tier, "by.tier", vd.MAX_IDENT_CHARS))
         s(self, "reason", vd._bounded(self.reason, "by.reason", vd.MAX_TEXT_CHARS))
-        s(self, "tokens_in", vd._count(self.tokens_in, "by.tokens_in"))
-        s(self, "tokens_out", vd._count(self.tokens_out, "by.tokens_out"))
+        s(self, "tokens_in", vd._count(self.tokens_in, "by.tokens_in", True))
+        s(self, "tokens_out", vd._count(self.tokens_out, "by.tokens_out", True))
         s(self, "cost", vd._count(self.cost, "by.cost"))
-    return __post_init__
+    vd.By.__post_init__ = __post_init__
 
 
-def _allow_anonymous_by():
-    """``by`` stops requiring a model and a tier — invariant 6 unenforced."""
+def _unlatch_the_accept_path():
+    """The gate stops recording its own acceptances, so ``resolve()`` falls back
+    to the object's ORIGINAL free field — V2-F10, restored on purpose."""
+    from synapse.panel import voice_contract as vc
+
+    def submit(self, text):
+        if self._final is not None:
+            return self._final
+        self._attempts += 1
+        result = vc.validate(text, self._verdict, self._request)
+        if result.ok:
+            return vc.GateOutcome(True, result.text, "model", result, self._attempts)
+        if self._attempts < self._max_attempts:
+            return vc.GateOutcome(False, "", "rejected", result, self._attempts,
+                                  reask=vc.reask_directive(result))
+        templated = vc.fallback_verdict(self._verdict, self._request)
+        self._final = vc.GateOutcome(
+            True, templated, "fallback" if templated else "empty", result,
+            self._attempts)
+        return self._final
+
+    def resolve(self, verdict=None):
+        target = verdict if verdict is not None else self._verdict
+        text = self._final.text if self._final is not None else target.verdict
+        return target.with_verdict(text)
+
+    vc.VoiceGate.submit = submit
+    vc.VoiceGate.resolve = resolve
+
+
+def _over_mask_the_register_signature():
+    """The signature masks EVERY value, collapsing invariant 8 to 'the row keys
+    match'. Green under any content defect — the instrument measuring nothing."""
     from synapse.panel import verdict as vd
-    vd.By.__post_init__ = _rebuilt_by_post_init(vd)
+    vd.register_signature = lambda v: tuple((k, "<by>") for k, _ in vd.render_rows(v))
+
+
+def _put_the_author_back_on_the_wire():
+    """``by`` returns to the emit schema: the model authors its own credit line,
+    including 96 characters of free ``reason`` that renders."""
+    from synapse.panel import verdict as vd
+    real = vd.json_schema
+
+    def wide():
+        schema = real()
+        schema["required"] = ["verdict", "by"]
+        schema["properties"]["by"] = {
+            "type": "object",
+            "required": ["model", "tier"],
+            "additionalProperties": False,
+            "properties": {
+                "model": {"type": "string", "maxLength": vd.MAX_IDENT_CHARS},
+                "tier": {"type": "string", "pattern": vd._TIER_RE.pattern},
+                "reason": {"type": "string", "maxLength": vd.MAX_TEXT_CHARS},
+                "tokens_in": {"type": ["integer", "null"], "minimum": 0},
+                "tokens_out": {"type": ["integer", "null"], "minimum": 0},
+                "cost": {"type": ["number", "null"], "minimum": 0},
+            },
+        }
+        return schema
+    vd.json_schema = wide
+
+
+def _unconstrain_the_wire_paths():
+    """``paths`` goes back to a bare string array — the schema blesses payloads
+    the constructor rejects."""
+    from synapse.panel import verdict as vd
+    real = vd.json_schema
+
+    def loose():
+        schema = real()
+        schema["properties"]["paths"] = {"type": "array", "items": {"type": "string"}}
+        return schema
+    vd.json_schema = loose
+
+
+def _restore_the_trim_overflow():
+    """``_trim`` appends its ellipsis after cutting to the limit, returning
+    limit+1 on any space-free string — V2-F12, restored on purpose."""
+    from synapse.panel import decision_log as dlog
+
+    def _trim(text, limit):
+        text = " ".join(str(text).split())
+        if len(text) <= limit:
+            return text
+        cut = text[:limit].rsplit(" ", 1)[0]
+        return (cut or text[:limit]).rstrip(",;:-") + "…"
+    dlog._trim = _trim
+
+
+def _reject_a_name_inside_its_own_path():
+    """``names_change`` excludes '/' from its lookbehind again, so a verdict that
+    writes the full path is refused for naming the change too precisely."""
+    import re as _re
+    from synapse.panel import voice_contract as vc
+    from synapse.panel.verdict import changed_tokens
+
+    def check(text, verdict, request):
+        if verdict is None:
+            return vc.SKIP
+        tokens = changed_tokens(verdict)
+        if not tokens:
+            return vc.SKIP
+        for tok in tokens:
+            if _re.search(r"(?<![\w/])" + _re.escape(tok) + r"(?!\w)", text or "", _re.I):
+                return None
+        return vc.Violation("names_change", "names none of %s" % sorted(tokens)[:6])
+    vc.VOICE_RULES = tuple(
+        vc.VoiceRule(r.id, r.fails_when, check if r.id == "names_change" else r.check)
+        for r in vc.VOICE_RULES)
 
 
 def _allow_none_by():
@@ -163,19 +286,15 @@ def _map_inconclusive_to_pass():
 
 
 def _let_a_name_be_a_sentence():
-    """``chose`` starts accepting prose — a second free field by the back door."""
+    """``chose`` starts accepting prose — a second free field by the back door.
+
+    A module-level swap of ``_identifier`` is enough (globals resolve at call
+    time). An earlier revision also rebuilt ``Decision.__post_init__``, which
+    silently deleted the separate "chose is required" check and made this a
+    two-guard mutation wearing one name.
+    """
     from synapse.panel import verdict as vd
     vd._identifier = lambda value, field: vd._bounded(value, field, vd.MAX_IDENT_CHARS)
-    real = vd.Decision.__post_init__
-
-    def lax(self):
-        s = object.__setattr__
-        s(self, "chose", vd._bounded(self.chose, "decision.chose", vd.MAX_IDENT_CHARS))
-        s(self, "over", vd._bounded(self.over, "decision.over", vd.MAX_IDENT_CHARS))
-        s(self, "because", vd._bounded(self.because, "decision.because", vd.MAX_TEXT_CHARS))
-        s(self, "provenance", vd._provenance(self.provenance, "decision.provenance"))
-    vd.Decision.__post_init__ = lax
-    del real
 
 
 def _convert_unclassified_rows_silently():
@@ -216,6 +335,21 @@ MUTATIONS.update({
                        "tests/test_v2_invariant8.py"),
     "tier_branching_renderer": (_branch_the_renderer_on_tier,
                                 "tests/test_v2_invariant8.py"),
+    # -- added after the adversarial pass: one per defect it found ----------
+    "unlatched_accept": (_unlatch_the_accept_path,
+                         "tests/test_v2_voice_contract.py"),
+    "over_masked_signature": (_over_mask_the_register_signature,
+                              "tests/test_v2_invariant8.py"),
+    "author_on_the_wire": (_put_the_author_back_on_the_wire,
+                           "tests/test_v2_verdict_contract.py"),
+    "unconstrained_wire_paths": (_unconstrain_the_wire_paths,
+                                 "tests/test_v2_verdict_contract.py"),
+    "trim_overflow": (_restore_the_trim_overflow,
+                      "tests/test_v2_verdict_contract.py"),
+    "fractional_tokens": (_allow_fractional_tokens,
+                          "tests/test_v2_verdict_contract.py"),
+    "path_name_refused": (_reject_a_name_inside_its_own_path,
+                          "tests/test_v2_voice_contract.py"),
 })
 
 

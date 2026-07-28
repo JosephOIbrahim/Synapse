@@ -155,12 +155,17 @@ def _provenance(value, field):
     return value
 
 
-def _count(value, field):
-    """A non-negative token/currency count, or ``None`` for NOT MEASURED.
+def _count(value, field, whole=False):
+    """A non-negative count, or ``None`` for NOT MEASURED.
 
     ``bool`` is refused explicitly: ``True`` is an ``int`` in Python and would
     silently become a count of 1, which is the exact shape of a number that
     travels without a producer.
+
+    ``whole=True`` additionally refuses a float. Tokens are counted, not
+    measured: ``tokens_in=1.9`` used to construct and then render through ``%d``
+    as ``1``, so a wrong figure became a plausible one on the way to the screen
+    (V2-F15). ``cost`` is genuinely fractional and stays a float.
     """
     if value is None:
         return None
@@ -169,6 +174,9 @@ def _count(value, field):
     if not isinstance(value, (int, float)):
         raise TypeError("%s must be a number or None, got %s"
                         % (field, type(value).__name__))
+    if whole and not isinstance(value, int):
+        raise TypeError("%s counts whole tokens — %r would be truncated on the "
+                        "way to the row" % (field, value))
     if value < 0:
         raise ValueError("%s must be >= 0, got %r" % (field, value))
     return value
@@ -215,8 +223,8 @@ class By:
         s(self, "model", model)
         s(self, "tier", tier)
         s(self, "reason", _bounded(self.reason, "by.reason", MAX_TEXT_CHARS))
-        s(self, "tokens_in", _count(self.tokens_in, "by.tokens_in"))
-        s(self, "tokens_out", _count(self.tokens_out, "by.tokens_out"))
+        s(self, "tokens_in", _count(self.tokens_in, "by.tokens_in", whole=True))
+        s(self, "tokens_out", _count(self.tokens_out, "by.tokens_out", whole=True))
         s(self, "cost", _count(self.cost, "by.cost"))
 
     def validate_tier(self, tier_vocabulary):
@@ -324,14 +332,12 @@ class Action:
         label = _identifier(self.label, "action.label")
         if not label:
             raise ValueError("action.label is required")
-        forecast = _count(self.forecast_tokens, "action.forecast_tokens")
-        if forecast is not None:
-            if self.kind in ACTIONS_WITHOUT_TOKEN_COST:
-                raise ValueError(
-                    "action.forecast_tokens on kind %r — %r spends no model "
-                    "tokens" % (self.kind, self.kind))
-            if not isinstance(forecast, int):
-                raise TypeError("action.forecast_tokens must be a whole number")
+        forecast = _count(self.forecast_tokens, "action.forecast_tokens",
+                          whole=True)
+        if forecast is not None and self.kind in ACTIONS_WITHOUT_TOKEN_COST:
+            raise ValueError(
+                "action.forecast_tokens on kind %r — %r spends no model "
+                "tokens" % (self.kind, self.kind))
         s(self, "label", label)
         s(self, "forecast_tokens", forecast)
 
@@ -575,6 +581,16 @@ def json_schema():
     names against the dataclass fields; a field added to one and not the other
     turns that test red.
 
+    **``by`` is NOT in this schema, and its absence is the point (V2-F13).** The
+    first draft required the model to emit its own author block — its own model
+    id, its own tier, 96 characters of free-text ``reason``, and its own token
+    counts — every one of which renders. That is a model writing its own credit
+    line while the tool description says *"you write only `verdict`"*, and a
+    second free field arriving through the one door invariant 1 was built to
+    watch. ``by`` is SYSTEM data: the panel knows which provider it called and
+    what the router decided, and asking the model to report it would be taking a
+    witness's word for the witness's identity.
+
     This is also the thing that replaces register instruction in the system
     prompt, and it is not free — ``harness/notes/econ/v2_prompt_delta.py``
     measures what it costs so the before/after is a NET figure rather than a
@@ -587,7 +603,7 @@ def json_schema():
 
     return {
         "type": "object",
-        "required": ["verdict", "by"],
+        "required": ["verdict"],
         "additionalProperties": False,
         "properties": {
             "verdict": {
@@ -597,19 +613,6 @@ def json_schema():
                                 "the thing that changed. No preamble, no hedging, "
                                 "no restating the request. Max %d characters."
                                 % MAX_VERDICT_CHARS),
-            },
-            "by": {
-                "type": "object",
-                "required": ["model", "tier"],
-                "additionalProperties": False,
-                "properties": {
-                    "model": {"type": "string", "maxLength": MAX_IDENT_CHARS},
-                    "tier": {"type": "string", "pattern": _TIER_RE.pattern},
-                    "reason": {"type": "string", "maxLength": MAX_TEXT_CHARS},
-                    "tokens_in": {"type": ["integer", "null"], "minimum": 0},
-                    "tokens_out": {"type": ["integer", "null"], "minimum": 0},
-                    "cost": {"type": ["number", "null"], "minimum": 0},
-                },
             },
             "decision": {
                 "type": ["object", "null"],
@@ -647,7 +650,15 @@ def json_schema():
                     },
                 },
             },
-            "paths": {"type": "array", "items": {"type": "string"}},
+            # Constrained to what the constructor enforces. An unconstrained
+            # array here invited a payload the schema blessed and `Verdict`
+            # then rejected — the gap where an agent emits something valid and
+            # the panel explodes on it (V2-F14).
+            "paths": {
+                "type": "array",
+                "items": {"type": "string", "pattern": "^/",
+                          "minLength": 2, "maxLength": MAX_TEXT_CHARS},
+            },
             "actions": {
                 "type": "array",
                 "items": {

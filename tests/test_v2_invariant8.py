@@ -98,6 +98,27 @@ def test_inv8a_the_masked_row_is_masking_something_real():
     assert len(rendered) == len(TIERS)
 
 
+def test_inv8a_the_mask_covers_the_author_row_and_nothing_else():
+    """FAILS IF: ``register_signature`` masks more than the author line.
+
+    A signature that masks EVERY value collapses INV8-A to "the row keys match"
+    and stays green through any content defect. The earlier controls could not
+    see that: one reads ``render_rows`` (unmasked) and one re-implements the
+    masking locally instead of calling the product function. This calls the
+    product function and pins the mask's exact footprint.
+    """
+    v = a_verdict()
+    rows = render_rows(v)
+    signature = register_signature(v)
+    assert len(rows) == len(signature)
+    for (key, value), (skey, svalue) in zip(rows, signature):
+        assert key == skey
+        if key == BY_KEY:
+            assert svalue == "<by>" and svalue != value
+        else:
+            assert svalue == value, "%s was masked and should not be" % key
+
+
 def test_inv8a_the_instrument_detects_a_renderer_that_does_branch():
     """FAILS IF: the byte comparison cannot see a tier-dependent renderer. This
     is the suite proving it can fail — a passing INV8-A means nothing unless a

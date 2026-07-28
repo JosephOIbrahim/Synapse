@@ -232,7 +232,12 @@ def _names_change(text, verdict, request):
     if not tokens:
         return SKIP
     for tok in tokens:
-        if re.search(r"(?<![\w/])" + re.escape(tok) + r"(?!\w)", text or "", re.I):
+        # The lookbehind excludes word characters ONLY. It used to exclude "/"
+        # as well, which meant a leaf named inside its own path could not match:
+        # `dome_light` in "/lights/dome_light" was refused because the preceding
+        # character was a slash. A verdict that names the change by writing its
+        # full path was rejected for naming it too precisely (V2-F11).
+        if re.search(r"(?<!\w)" + re.escape(tok) + r"(?!\w)", text or "", re.I):
             return None
     return Violation("names_change",
                      "names none of %s" % ", ".join(sorted(tokens)[:6]))
@@ -452,17 +457,37 @@ class VoiceGate:
         return self._max_attempts
 
     @property
-    def exhausted(self):
+    def settled(self):
+        """A verdict is FINAL — the model's, or the floor's. ``resolve`` is only
+        meaningful once this is true."""
         return self._final is not None
 
+    @property
+    def exhausted(self):
+        """The floor fired: three rejections and the free field was abandoned.
+        Distinct from ``settled`` — an ACCEPTED verdict is settled and not
+        exhausted, and conflating the two is what let the accept path escape
+        ``_final`` in the first place (V2-F10)."""
+        return self._final is not None and self._final.exhausted
+
     def submit(self, text):
-        """Offer one candidate free field. Returns a ``GateOutcome``."""
+        """Offer one candidate free field. Returns a ``GateOutcome``.
+
+        An ACCEPTED outcome latches into ``_final`` exactly as the floor does.
+        It did not, and that was this leg's worst defect: ``resolve()`` fell
+        through to the object's ORIGINAL free field, so the canonical
+        reject → re-ask → accept loop rendered the string the gate had just
+        REJECTED, violations intact. Acceptance is a decision; a gate that does
+        not record its own decisions is a gate in name only (V2-F10).
+        """
         if self._final is not None:
-            return self._final                    # idempotent after the floor
+            return self._final                    # idempotent once settled
         self._attempts += 1
         result = validate(text, self._verdict, self._request)
         if result.ok:
-            return GateOutcome(True, result.text, "model", result, self._attempts)
+            self._final = GateOutcome(True, result.text, "model", result,
+                                      self._attempts)
+            return self._final
         if self._attempts < self._max_attempts:
             return GateOutcome(False, "", "rejected", result, self._attempts,
                                reask=reask_directive(result))
@@ -475,10 +500,20 @@ class VoiceGate:
     def resolve(self, verdict=None):
         """The ``Verdict`` carrying whatever the gate settled on.
 
+        Raises if nothing is settled yet. Returning the un-gated free field for
+        a gate still mid-re-ask is the defect V2-F10 records — the caller cannot
+        tell a settled verdict from an unexamined one, and the unexamined one
+        renders.
+
         ``verdict`` defaults to the object the gate was built around. Callers get
         a new frozen object rather than a mutated one, because the gate must not
         be able to edit something another surface is already holding.
         """
+        if self._final is None:
+            raise RuntimeError(
+                "nothing is settled — the gate has had %d of %d attempts and is "
+                "still awaiting a rewrite. Submit again or let the floor fire; "
+                "do not render an un-gated free field."
+                % (self._attempts, self._max_attempts))
         target = verdict if verdict is not None else self._verdict
-        text = self._final.text if self._final is not None else target.verdict
-        return target.with_verdict(text)
+        return target.with_verdict(self._final.text)

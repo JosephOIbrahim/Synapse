@@ -105,6 +105,24 @@ def test_names_change_accepts_a_path_leaf_not_only_the_full_path():
     assert vc.validate("matlib now carries Dark_Glass", a_verdict()).ok
 
 
+def test_names_change_sees_a_name_written_inside_its_own_path():
+    """FAILS IF: the lookbehind excludes '/'. A verdict that names the change by
+    writing its full path was rejected for naming it too precisely — the rule
+    refusing the most specific form of exactly what it asks for (V2-F11)."""
+    v = Verdict(by=By(model="claude-sonnet-4-6", tier="workhorse"),
+                decision=Decision(chose="dome_light"))
+    assert vc.validate("/lights/dome_light now carries the studio HDRI", v).ok
+    assert vc.validate("Exposure on /lights/dome_light holds at 0.25", v).ok
+
+
+def test_names_change_still_refuses_a_name_buried_in_a_longer_word():
+    """FAILS IF: loosening the lookbehind let a substring match. 'dome_lighting'
+    is not 'dome_light'."""
+    v = Verdict(by=By(model="claude-sonnet-4-6", tier="workhorse"),
+                decision=Decision(chose="dome_light"))
+    assert "names_change" in vc.validate("The dome_lighting reads warm", v).rules_broken()
+
+
 def test_no_request_echo_skips_without_a_request():
     assert "no_request_echo" in vc.validate(GOOD, a_verdict()).skipped
 
@@ -244,7 +262,76 @@ def test_resolve_returns_a_verdict_carrying_the_settled_text():
     gate.submit("I've probably done it")
     resolved = gate.resolve()
     assert resolved.verdict == "Dark_Glass over Diamond — closer to scene IOR"
-    assert resolved.by is a_verdict().by or resolved.by.model == "claude-sonnet-4-6"
+    assert resolved.by.model == "claude-sonnet-4-6"
+
+
+# -- the accept path must latch too (V2-F10) --------------------------------
+#
+# The fixture below deliberately carries a BAD free field. The original tests
+# built the gate around a verdict already holding the good sentence and then
+# submitted that same sentence, so `resolve()` returning the pre-gate field was
+# indistinguishable from it returning the accepted one. Both sides were equal by
+# fixture. Four independent reviewers reproduced the defect the fixture hid.
+
+REJECTED_FIRST_DRAFT = "I've probably swapped Dark_Glass in, let me know?"
+
+
+def a_verdict_with_bad_prose():
+    return a_verdict(verdict=REJECTED_FIRST_DRAFT)
+
+
+def test_resolve_returns_the_accepted_rewrite_not_the_rejected_draft():
+    """FAILS IF: acceptance does not latch. This is the canonical loop the gate
+    exists for — reject, the model rewrites, the gate accepts — and it used to
+    render the string the gate had just REJECTED, violations intact."""
+    v = a_verdict_with_bad_prose()
+    gate = vc.VoiceGate(v)
+    first = gate.submit(v.verdict)
+    assert not first.accepted
+    second = gate.submit(GOOD)
+    assert second.accepted and second.source == "model"
+    assert gate.resolve().verdict == GOOD
+    assert gate.resolve().verdict != REJECTED_FIRST_DRAFT
+
+
+def test_a_first_attempt_acceptance_also_latches():
+    v = a_verdict_with_bad_prose()
+    gate = vc.VoiceGate(v)
+    gate.submit(GOOD)
+    assert gate.settled and not gate.exhausted
+    assert gate.resolve().verdict == GOOD
+
+
+def test_resolve_refuses_to_answer_before_anything_is_settled():
+    """FAILS IF: a gate mid-re-ask hands back the un-gated free field. The caller
+    cannot tell a settled verdict from an unexamined one, and the unexamined one
+    is the one that renders."""
+    gate = vc.VoiceGate(a_verdict_with_bad_prose())
+    with pytest.raises(RuntimeError, match="nothing is settled"):
+        gate.resolve()
+    gate.submit("still bad, probably?")
+    with pytest.raises(RuntimeError, match="nothing is settled"):
+        gate.resolve()
+
+
+def test_settled_and_exhausted_are_different_questions():
+    """FAILS IF: they are conflated. Conflating them is what let the accept path
+    escape ``_final``: 'the floor fired' and 'a verdict is final' are not the
+    same fact, and only one of them means the model lost the field."""
+    accepted = vc.VoiceGate(a_verdict_with_bad_prose())
+    accepted.submit(GOOD)
+    assert accepted.settled and not accepted.exhausted
+
+    floored = vc.VoiceGate(a_verdict_with_bad_prose(), max_attempts=1)
+    floored.submit("I've probably done it")
+    assert floored.settled and floored.exhausted
+
+
+def test_the_gate_is_idempotent_after_acceptance_too():
+    gate = vc.VoiceGate(a_verdict_with_bad_prose())
+    first = gate.submit(GOOD)
+    assert gate.submit("Diamond drives the shader now.") is first
+    assert gate.resolve().verdict == GOOD
 
 
 def test_the_attempt_budget_is_three():
