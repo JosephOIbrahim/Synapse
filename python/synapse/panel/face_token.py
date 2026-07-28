@@ -123,23 +123,31 @@ class TokenField(QtWidgets.QWidget):
     # -- geometry ------------------------------------------------------------
 
     def _seed_points(self, w, h):
-        """A jittered lattice. Pure lattice gives rectangles; pure random gives
-        slivers. The jitter is what makes it read as organic while keeping the
-        cells within an order of magnitude of each other."""
+        """A jittered lattice, with the ROW COUNT floored at 3.
+
+        Pure lattice gives rectangles; pure random gives slivers. The jitter is
+        what makes it read as organic while keeping the cells within an order of
+        magnitude of each other.
+
+        The floor matters at panel width. A docked panel is very wide and this
+        field is short, so deriving both axes from the aspect ratio produced 11
+        columns by 2 rows - cells stretched into a horizontal strip, nothing
+        like the reference's equant tiles. Flooring rows at 3 and letting the
+        column count follow keeps them chunky at any width.
+        """
         import math
-        cols = int(round(math.sqrt(self._SEEDS * w / float(max(h, 1)))))
-        cols = max(2, cols)
-        rows = max(2, int(round(self._SEEDS / float(cols))))
+        rows = max(3, int(round(math.sqrt(self._SEEDS * h / float(max(w, 1))))))
+        cols = max(2, int(round(self._SEEDS / float(rows))))
         cw, ch = w / float(cols), h / float(rows)
         pts, n = [], 0
         for r in range(rows):
-            for c in range(cols):
+            for c_ in range(cols):
                 # Deterministic hash-jitter: same layout every repaint.
                 n += 1
                 jx = (((n * 1103515245 + 12345) >> 8) % 1000) / 1000.0 - 0.5
                 jy = (((n * 1664525 + 1013904223) >> 8) % 1000) / 1000.0 - 0.5
                 pts.append((
-                    (c + 0.5 + jx * self._JITTER * 2) * cw,
+                    (c_ + 0.5 + jx * self._JITTER * 2) * cw,
                     (r + 0.5 + jy * self._JITTER * 2) * ch,
                 ))
         return pts
@@ -287,8 +295,18 @@ class TokenField(QtWidgets.QWidget):
 class FaceToken(QtWidgets.QWidget):
     """The token-economics read-out. Renders only what has been measured."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, scale=1.0):
         super().__init__(parent)
+        # THE HOST FONT SCALE, and this face was the only surface ignoring it.
+        #
+        # synapse_panel sets `self._chrome_scale = self._host_font_scale()` and
+        # every other chrome font is built with `scale=` so it tracks the host
+        # UI size. Not one of this face's tracked_font calls passed it, so its
+        # values and footnote rendered at a literal 12px while the labels beside
+        # them rendered at 12 x host scale. That is why the right-hand column
+        # and the footnote read small no matter which SIZE_ token they used -
+        # the token was never the problem, the missing scale was.
+        self._scale = float(scale or 1.0)
         self._rows = {}
         lay = QtWidgets.QVBoxLayout(self)
         lay.setContentsMargins(t.GUTTER, 20, t.GUTTER, 20)
@@ -339,6 +357,11 @@ class FaceToken(QtWidgets.QWidget):
 
     # -- construction helpers ------------------------------------------------
 
+    def _px(self, token):
+        """A size token in the host's terms. Every font on this face goes
+        through here so none can drift out of step again."""
+        return max(9, int(round(token * self._scale)))
+
     def _eyebrow(self, text):
         lbl = c.label(text, role="body") if hasattr(c, "label") else QtWidgets.QLabel(text)
         try:
@@ -346,7 +369,8 @@ class FaceToken(QtWidgets.QWidget):
             # CACHE, ENGINE - and SIZE_LABEL is 10px, which the tokens file
             # reserves for "tiny labels / numbers". A marker you have to lean in
             # for is not doing its job.
-            lbl.setFont(fontload.tracked_font("EYEBROW", t.SIZE_SMALL, mono=True))
+            lbl.setFont(fontload.tracked_font("EYEBROW", t.SIZE_SMALL,
+                                              scale=self._scale, mono=True))
             lbl.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
         except Exception:
             pass
@@ -361,11 +385,13 @@ class FaceToken(QtWidgets.QWidget):
         row.setSpacing(16)
         for text, colour in entries:
             sw = QtWidgets.QLabel()
-            sw.setFixedSize(9, 9)
+            d = self._px(9)
+            sw.setFixedSize(d, d)
             sw.setStyleSheet("background:%s; border-radius:2px;" % colour)
             lbl = QtWidgets.QLabel(text)
             try:
-                lbl.setStyleSheet("color:%s; font-size:%dpx;" % (t.TEXT_TERTIARY, t.SIZE_BODY))
+                lbl.setStyleSheet("color:%s; font-size:%dpx;"
+                                  % (t.TEXT_TERTIARY, self._px(t.SIZE_BODY)))
             except Exception:
                 pass
             row.addWidget(sw)
@@ -377,13 +403,8 @@ class FaceToken(QtWidgets.QWidget):
         lbl = QtWidgets.QLabel(text)
         lbl.setWordWrap(True)
         try:
-            # SIZE_BODY, not SIZE_SMALL. The tokens file names SIZE_BODY as
-            # "Houdini-native default (9pt = 12px)" and this face had the
-            # footnote at 11 and the values at 11 while the left-hand keys
-            # inherited the native default - so the two columns disagreed and
-            # the footnote read as fine print. A read-out nobody can read is
-            # not a read-out.
-            lbl.setStyleSheet("color:%s; font-size:%dpx;" % (t.TEXT_TERTIARY, t.SIZE_BODY))
+            lbl.setStyleSheet("color:%s; font-size:%dpx;"
+                              % (t.TEXT_TERTIARY, self._px(t.SIZE_BODY)))
         except Exception:
             pass
         return lbl
@@ -398,13 +419,12 @@ class FaceToken(QtWidgets.QWidget):
             key = QtWidgets.QLabel(k)
             val = QtWidgets.QLabel(str(v))
             try:
-                key.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+                key.setStyleSheet("color:%s; font-size:%dpx;"
+                                  % (t.TEXT_TERTIARY, self._px(t.SIZE_BODY)))
                 val.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
-                # SIZE_BODY: the values must read at the same size as the keys
-                # beside them. The keys inherit Houdini's native default and the
-                # values were set to SIZE_SMALL, so the right-hand column was a
-                # step smaller than the left for no reason anyone chose.
-                val.setFont(fontload.tracked_font("LABEL", t.SIZE_BODY, mono=True))
+                # Both columns through _px, so the pair cannot drift apart.
+                val.setFont(fontload.tracked_font("LABEL", t.SIZE_BODY,
+                                                  scale=self._scale, mono=True))
             except Exception:
                 pass
             grid.addWidget(key, i, 0, alignment=Qt.AlignLeft)

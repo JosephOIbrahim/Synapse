@@ -808,7 +808,7 @@ class SynapsePanel(QtWidgets.QWidget):
         """
         try:
             from synapse.panel.face_token import FaceToken
-            self._token_face = FaceToken()
+            self._token_face = FaceToken(scale=self._chrome_scale)
             return self._token_face
         except Exception:
             self._token_face = None
