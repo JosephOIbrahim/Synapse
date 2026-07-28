@@ -5323,3 +5323,71 @@ and its immediate children; anything the leg launched separately survives both
 the leg and the reap. That cost a pegged core for 31 hours and nothing detected
 it. **The status surface should count stray `hython`/`python` processes under
 the repo path**, the same way it counts stranded branches.
+
+---
+
+## RULING 178 — The freeze is a WAIT, not a burn. Houdini is both ends of its own WebSocket.
+
+Sampled while frozen, and it inverts R177's reading:
+
+```
+over 3 seconds        +0.11 CPU-s   =  0.0 cores busy
+top six threads       ALL state=Wait
+```
+
+**Houdini is not burning CPU. It is blocked.** R177 measured ~7 cores during a
+request and concluded "burning, not waiting" — that was a *phase*, and the freeze
+is the other one. A busy phase and a blocked phase look identical from outside if
+you only sample one.
+
+### And the topology explains it
+
+```
+port 9999 listener    pid 72376  houdini
+houdini               pid 72376
+established conns     ZERO, while the header reads "Bridge OK"
+```
+
+**Houdini is both the server and the client.** `ws_bridge` connects the panel to
+`ws://localhost:9999/synapse`, and the thing serving that socket lives in the
+same process.
+
+A synchronous round trip on that topology deadlocks by construction: the caller
+waits for a reply, the reply needs the main thread, and the main thread is the
+caller. It resolves only when something times out — which is exactly the reported
+shape, including that it ends on its own, that typing still lands, and that the
+scene being empty makes no difference.
+
+### The codebase already guards ONE instance of this
+
+`run_on_main` fast path 2, verbatim:
+
+> *"Deferring would deadlock because the main thread is blocked in this function
+> waiting for the deferred callback, which can't fire until this function
+> returns."*
+
+**So this deadlock shape is known and defended at the marshal.** The WebSocket
+path is a second route to the same shape, and nothing on it takes that fast path
+— which is precisely why `main_thread_direct_stats` came back at **zero** while
+the GUI was frozen. The instrument is correct; the freeze simply is not on the
+path it watches.
+
+### Ruled
+
+1. **The next probe is the WebSocket path, not the marshal.** Eight candidates
+   were eliminated in R177 and every one of them was on the marshal side.
+2. **Zero established connections while the header reads OK is its own defect.**
+   The connection indicator is reporting a state it has not verified — the
+   Bridge tick should reflect an established socket, not an attempted one.
+3. **A same-process client/server needs an explicit deadlock rule.** Either the
+   request never originates on the main thread, or the server answers without
+   needing it. Today it is neither, and the guard exists only at the marshal.
+
+### Method note, because it is the lesson
+
+**R177's central measurement was right and its conclusion was wrong.** Seven
+cores was real. So is zero. Sampling a long operation ONCE and generalising is
+how a phase becomes a theory — and I built four hypotheses on it before
+sampling again during the actual freeze.
+
+**Sample the failure, not the operation.**
