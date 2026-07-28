@@ -1,5 +1,5 @@
 {
-  "_comment": "READ-ONLY leg profile. R61: a leg declared read-only in legs.json was read-only BY INSTRUCTION ONLY. On 2026-07-26 a read-only extraction fleet edited five schema files, twice rewrote a test file including overwriting the orchestrator's own work, and kept writing for four minutes after the workflow was stopped. Article I says enforcement belongs in the definition, not the instruction. This file is that enforcement. A read-only leg still needs to write its own receipt, so harness/notes/** is the ONLY writable path.",
+  "_comment": "READ-ONLY leg profile. R61: read-only was an INSTRUCTION and six violations were observed; this file is the enforcement. R129: the fence was also INCOHERENT - it permitted writing harness/notes/** and denied git commit, so a read-only leg could produce a durable artifact and could not preserve it. That destroyed three receipts when their worktrees were pruned (R128) and nearly took I0's scout the same way. The permission to WRITE a path and to COMMIT that path are the same permission; splitting them produces work that exists and cannot be kept. Scoped git add + commit are now allowed. push, merge, checkout and reset stay denied - those are what read-only was ever protecting, and Gate C's pre-push hook remains the real boundary.",
   "env": { "ANTHROPIC_API_KEY": "" },
   "permissions": {
     "allow": [
@@ -26,7 +26,9 @@
       "WebSearch",
       "WebFetch(domain:www.sidefx.com)",
       "WebFetch(domain:sidefx.com)",
-      "Edit(harness/notes/**)"
+      "Edit(harness/notes/**)",
+      "Bash(git add harness/notes:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [
       "Edit(python/**)",

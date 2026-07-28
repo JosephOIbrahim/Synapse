@@ -3715,3 +3715,59 @@ transcript was still being appended, so the leg read as healthy.
 **A process that writes its own log but produces nothing is indistinguishable from a working one**
 by that measure. Recorded as a known limit of the staleness check rather than fixed tonight — the
 worktree-write timestamp is the better signal and it was sitting there unread.
+
+---
+
+## RULING 129 — A leg that may WRITE a path may COMMIT that path. The fence was incoherent.
+
+`readonly-settings.json` permits `Edit(harness/notes/**)` and denies `Bash(git commit:*)`.
+
+**So a read-only leg can produce a durable artifact and cannot preserve it.** It writes a report,
+a corpus, a set of producers — and every one of them lives only in a worktree until a human
+notices.
+
+That is not a safety property. It is a gap dressed as one.
+
+### It has now cost twice in one day
+
+**R128:** pruning worktrees destroyed the receipts of H9, C0 and S1 — three finished, ruled-on
+legs whose output existed nowhere else. Findings survived as rulings; the raw evidence did not.
+
+**Tonight:** I0 finished its scout — the join key measured against the live runtime, 161/161
+coverage, 51 doc-silent deprecations — and its entire product sat untracked, with the leg itself
+flagging the risk because it could not act on it. **The agent identified the hazard, named the
+precedent, and was structurally unable to fix it.**
+
+Committed on its behalf as `db28ac2`. That works and does not scale: it requires a human to be
+watching at the right moment, which is the definition of the thing this harness exists to remove.
+
+### The rule
+
+**The permission to write a path and the permission to commit that path are the same permission.**
+Splitting them produces work that exists and cannot be kept.
+
+**Ruled:** `readonly-settings.json` gains scoped git — `git add harness/notes/**` and
+`git commit`, nothing else. **`git push`, `git merge`, `git checkout` and `git reset` stay
+denied**, which is what read-only was ever protecting: a read-only leg must not alter product
+code, alter history, or reach origin. Preserving its own findings does none of those.
+
+The Gate C `pre-push` hook is unaffected and remains the real boundary — it fences by capability,
+not by command form (R127), and nothing reaches origin's master without `SYNAPSE_GATE_C=1`.
+
+### And the belt-and-braces
+
+`prune_safety.py` already refuses a prune that would destroy an unpreserved receipt, and it fired
+correctly on S2 tonight. **That check stays** — a leg that fails to commit for any other reason
+should still not lose its work silently.
+
+Two mechanisms, different failure modes: the fence lets the leg preserve its own output, and the
+guard catches the case where it did not.
+
+### The general shape, because it is the fourth instance this week
+
+A control that prevents the wrong thing **and** something necessary is not a tight control. It is
+a mis-scoped one, and the tell is that people route around it by hand.
+
+`--ignore` in the measurement runner. `Edit(CTO_RULINGS_01.md)` denied with no amendment channel
+(R81). `Bash(git merge:*)` matching a command form rather than a capability (R94). And now this.
+**Each was a correct instinct expressed at the wrong granularity.**
