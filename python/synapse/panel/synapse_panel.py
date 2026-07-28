@@ -739,7 +739,7 @@ class SynapsePanel(QtWidgets.QWidget):
         return self._converse_stack
 
     # the two tabs, in switcher order (v9: Review folded into Work's done state)
-    _FACE_INDEX = {"direct": 0, "work": 1}
+    _FACE_INDEX = {"direct": 0, "work": 1, "token": 2}
 
     def _build_mode_bar(self):
         """The home surface's label. v9.1 (Option A): the DIRECT · WORK tabs are
@@ -760,8 +760,59 @@ class SynapsePanel(QtWidgets.QWidget):
         pill.clicked.connect(lambda _=False: self._set_face("direct"))
         self._face_pills["direct"] = pill      # the idle default marks it active
         lay.addWidget(pill)
+
+        # TOKEN — the economist read-out (R167).
+        #
+        # v9.1 removed DIRECT · WORK because actionable state should AUTO-SURFACE
+        # rather than wait for a click. That reasoning does not reach this one:
+        # Work surfaces ITSELF because it is actionable; token economics is
+        # DIAGNOSTIC, and a thing you go looking for is what a tab is for.
+        tok = c.Pill("TOKEN")
+        tok.setFont(fontload.tracked_font(
+            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        tok.clicked.connect(lambda _=False: self._show_token_face())
+        self._face_pills["token"] = tok
+        lay.addWidget(tok)
+
         lay.addStretch(1)
         return w
+
+    def _show_token_face(self):
+        """Bring TOKEN forward and refresh it from the probe layer.
+
+        Refreshed on OPEN rather than on a timer: V3 was explicit that a probe
+        must never be the thing that trips the rate limit it reports on, and a
+        face nobody is looking at has no reason to poll."""
+        try:
+            face = getattr(self, "_token_face", None)
+            if face is not None and hasattr(face, "refresh_from_probe"):
+                face.refresh_from_probe()
+        except Exception:
+            pass
+        self._set_face("token")
+
+    def _build_token_face(self):
+        """The TOKEN face — the economist read-out (R167).
+
+        v9.1 removed the DIRECT · WORK tab row because actionable state should
+        AUTO-SURFACE rather than wait for a click. That rationale does not reach
+        this face: WORK surfaces itself because it is actionable, and token
+        economics is DIAGNOSTIC — the thing an artist goes looking for. Which is
+        exactly what a tab is for.
+
+        Nothing critical lives only here. Rate-limited, stale probe and model
+        swap belong on the rail; this face only explains them.
+
+        Never raises: if the face cannot be built the stack gets a placeholder
+        and every other surface is unaffected.
+        """
+        try:
+            from synapse.panel.face_token import FaceToken
+            self._token_face = FaceToken()
+            return self._token_face
+        except Exception:
+            self._token_face = None
+            return self._section()
 
     def _build_faces(self):
         """The two faces in one stack. Direct (CHAT) is the artist's surface; Work
@@ -771,6 +822,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._faces = QtWidgets.QStackedWidget()
         self._faces.addWidget(self._build_direct_face())   # 0 · idle / converse
         self._faces.addWidget(self._build_work_face())     # 1 · glance → done payoff
+        self._faces.addWidget(self._build_token_face())    # 2 · the economist read-out
         self._faces.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding
         )
