@@ -292,9 +292,17 @@ Per context: cop 92.4%, cop2 90.9%, lop 80.6%.
 
 ## 6 · Cross-validation — two independent extractors
 
-A second `I1` extractor ran concurrently in this worktree (§0). Its artifacts were preserved as
-`_i1a_h22_node_corpus.json` and `_i1a_I1_INGEST.md` and used as a **second instrument**, on I0 §7's
-precedent: two parsers disagreeing is information, and averaging it away destroys it.
+A second `I1` extractor ran concurrently in this worktree (§0) and was used as a **second
+instrument**, on I0 §7's precedent: two parsers disagreeing is information, and averaging it away
+destroys it.
+
+Cross-validation runs against **its final build**, `h22_node_corpus.i1-orchestrator.json`.
+When this leg took the oracle path it copied what was there to `_i1a_h22_node_corpus.json` — and
+that agent's own remediation ticket records that copy as its **second-to-last** build, so
+comparing against it would have judged work its author had already replaced. Its report is
+preserved beside it as `_i1a_I1_INGEST.md`. **Both agents independently detected the collision**;
+it filed `.claude/remediation_ticket.md` and correctly declined to commit a tree a second process
+was still mutating.
 
 ```
 entries compared                        660

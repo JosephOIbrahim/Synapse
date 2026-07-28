@@ -134,9 +134,17 @@ def main() -> int:
     }
 
     # ---------------- cross-validation against the second extractor ----------
+    # The other agent's FINAL build is `h22_node_corpus.i1-orchestrator.json`.
+    # `_i1a_h22_node_corpus.json` is the copy this leg preserved off the oracle
+    # path, and its own remediation ticket records that copy as its
+    # SECOND-TO-LAST build. Cross-validating against the superseded one would
+    # compare against work its author had already replaced, so the final build
+    # is preferred and the fallback is kept only for the case where it is absent.
+    FINAL_OTHER = HERE / "h22_node_corpus.i1-orchestrator.json"
     xval = {"available": False}
-    if PRESERVED.exists() or ORACLE.exists():
-        src = PRESERVED if PRESERVED.exists() else ORACLE
+    if FINAL_OTHER.exists() or PRESERVED.exists() or ORACLE.exists():
+        src = (FINAL_OTHER if FINAL_OTHER.exists()
+               else PRESERVED if PRESERVED.exists() else ORACLE)
         try:
             other = json.loads(src.read_text(encoding="utf-8"))
             oentries = other.get("entries") or other.get("corpus") or []
@@ -173,6 +181,7 @@ def main() -> int:
                     })
             xval = {
                 "available": True,
+                "other_corpus_file": src.name,
                 "other_producer": other.get("producer", "unknown"),
                 "other_entries": len(oentries),
                 "mine_entries": len(entries),

@@ -137,6 +137,7 @@
  },
  "cross_validation": {
   "available": true,
+  "other_corpus_file": "h22_node_corpus.i1-orchestrator.json",
   "other_producer": "harness/notes/ingest/i1_build.py (extractor: i1_extract.py, calibration: i1_calibrate.py, runtime: i1_runtime.py under hython)",
   "other_entries": 660,
   "mine_entries": 693,
