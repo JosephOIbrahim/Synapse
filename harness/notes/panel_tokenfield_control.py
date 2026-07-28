@@ -57,6 +57,16 @@ for _poly, area, _cx in cells:
 one_cell = total / float(len(cells))
 ok["area tracks token share"] = abs(got_sys - limit) <= one_cell
 
+# A MEASURED SEGMENT MUST NEVER RENDER AS ABSENT.
+#
+# The control did not have this assertion and it should have. Dropping the cell
+# count to 9 - closer to the reference's very large cells - made the system
+# prompt receive ZERO area while being a real 10.5% of the turn. It vanished,
+# and "vanished" is what an UNMEASURED segment is supposed to look like. The
+# two states became indistinguishable, which is the field lying in the more
+# convincing direction.
+ok["a measured segment gets area"] = got_sys > 0.0
+
 print("  cells                : %d" % len(cells))
 print("  total area           : %.0f   rect %d" % (total, W * H))
 print("  sys share of tokens  : %.3f" % want_sys)

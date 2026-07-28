@@ -81,8 +81,26 @@ class TokenField(QtWidgets.QWidget):
     and this is a read-out.
     """
 
-    _SEEDS = 44
-    _JITTER = 0.42          # 0 = regular lattice, 0.5 = fully scattered
+    # 18, and the number was MEASURED rather than chosen for looks.
+    #
+    # The reference uses very few, very large cells - 5 to 8 - and I tried 9.
+    # At 9 seeds the field resolves to 12 cells and the system prompt, a real
+    # 10.5% of the turn, receives ZERO of them. It vanishes.
+    #
+    # That is the exact inversion of this widget's rule. Unmeasured claims no
+    # cells; a MEASURED segment must therefore never render as absent, or the
+    # two states become indistinguishable and the field lies in the more
+    # convincing direction.
+    #
+    #   seeds  9 -> 12 cells | share 0.000 vs 0.105 target | error 0.105
+    #   seeds 18 -> 18 cells | share 0.104 vs 0.105 target | error 0.001
+    #
+    # 18 still reads as Cohere's large-cell language and is honest. That is
+    # where the aesthetic and the constraint intersect.
+    _SEEDS = 18
+    _JITTER = 0.34          # 0 = regular lattice, 0.5 = fully scattered
+    _INSET = 3.0            # gap between cells - the ground shows through
+    _RADIUS = 10.0          # corner rounding
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -183,6 +201,46 @@ class TokenField(QtWidgets.QWidget):
 
     # -- paint ---------------------------------------------------------------
 
+    @staticmethod
+    def _rounded_path(poly, inset, radius):
+        """A polygon, pulled in by `inset` and rounded at every vertex.
+
+        This is what makes it read as Cohere rather than as a mesh. The
+        reference's cells are heavily rounded and SEPARATED - the ground shows
+        between them - so the field reads as a set of tiles rather than a
+        subdivision. Sharp adjacent polygons read as a diagram; these read as
+        objects.
+        """
+        n = len(poly)
+        if n < 3:
+            return None
+        cx = sum(p[0] for p in poly) / float(n)
+        cy = sum(p[1] for p in poly) / float(n)
+
+        # Pull each vertex toward the centroid to open the gaps.
+        pts = []
+        for x, y in poly:
+            dx, dy = cx - x, cy - y
+            d = (dx * dx + dy * dy) ** 0.5 or 1.0
+            k = min(inset / d, 0.45)
+            pts.append((x + dx * k, y + dy * k))
+
+        path = QtGui.QPainterPath()
+        for i in range(n):
+            x0, y0 = pts[i]
+            x1, y1 = pts[(i + 1) % n]
+            ex, ey = x1 - x0, y1 - y0
+            elen = (ex * ex + ey * ey) ** 0.5 or 1.0
+            r = min(radius, elen / 2.0)
+            ux, uy = ex / elen, ey / elen
+            if i == 0:
+                path.moveTo(x0 + ux * r, y0 + uy * r)
+            else:
+                path.quadTo(x0, y0, x0 + ux * r, y0 + uy * r)
+            path.lineTo(x1 - ux * r, y1 - uy * r)
+        path.closeSubpath()
+        return path
+
     def paintEvent(self, _event):
         w, h = self.width(), self.height()
         if w < 8 or h < 8:
@@ -202,37 +260,26 @@ class TokenField(QtWidgets.QWidget):
 
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
+        p.setPen(QtCore.Qt.PenStyle.NoPen)      # separation is the GAP, not a stroke
         empty = QtGui.QColor(getattr(t, "GROUND", "#1B1B1B"))
-        edge = QtGui.QPen(QtGui.QColor(getattr(t, "VOID", "#0A0A0A")))
-        edge.setWidthF(1.4)
-        p.setPen(edge)
 
         acc = 0.0
-        for poly, area, cx in cells:
+        for poly, area, _cx in cells:
             acc += area
+            # FLAT FILL. My previous pass ramped luminance across the field for
+            # "atmosphere" - the reference does no such thing. Every Cohere cell
+            # is one solid colour, and the variation comes from the SHAPES and
+            # the palette, not from a gradient. Removing it also removes the
+            # only thing on this widget that varied for reasons unrelated to
+            # data.
             colour = empty
             for limit, col in targets:
                 if acc <= limit:
                     colour = QtGui.QColor(col)
                     break
-
-            # GRADIENT ATMOSPHERE. Cohere's identity does not use flat fills -
-            # its surfaces carry gradients, and its cell forms are derived from
-            # the openings in the letterforms rather than drawn as a chart.
-            #
-            # So each cell is lifted or dropped by its position rather than
-            # painted at one value: a slow diagonal ramp across the field. It
-            # reads as atmosphere instead of a bar chart, and it costs nothing
-            # in honesty because the AREA still carries the proportion - only
-            # the luminance varies, and it varies by POSITION, not by data.
-            cy = sum(pt[1] for pt in poly) / float(len(poly))
-            ramp = (cx / float(w)) * 0.6 + (cy / float(h)) * 0.4   # 0..1
-            lift = int(round((ramp - 0.5) * 26))
-            colour = colour.lighter(100 + lift) if lift >= 0 else colour.darker(100 - lift)
-
-            path = QtGui.QPolygonF([QtCore.QPointF(x, y) for x, y in poly])
-            p.setBrush(QtGui.QBrush(colour))
-            p.drawPolygon(path)
+            path = self._rounded_path(poly, self._INSET, self._RADIUS)
+            if path is not None:
+                p.fillPath(path, QtGui.QBrush(colour))
         p.end()
 
 
