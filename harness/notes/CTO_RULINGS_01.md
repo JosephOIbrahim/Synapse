@@ -5391,3 +5391,70 @@ how a phase becomes a theory — and I built four hypotheses on it before
 sampling again during the actual freeze.
 
 **Sample the failure, not the operation.**
+
+---
+
+## RULING 179 — The freeze was mine, shipped at 18:02 and fixed at 18:31. And I never asked when it started.
+
+`hou.InterruptableOperation(..., open_interrupt_dialog=True)` opens a **modal**
+progress dialog. A modal grabs input for the whole application while Qt keeps
+pumping its event loop. It ran on every `inspect_scene` — every request that
+reads the scene.
+
+Confirmed fixed: `open_interrupt_dialog=False`, restart, no freeze.
+
+### The measurement that named it
+
+```
+Responding : True        the event loop IS running
+over 4s    : 0.01 cores  nothing is working
+threads    : all Wait
+sockets    : Listen only, ZERO established
+```
+
+**An application that responds at the OS level, does no work, and will not accept
+a click is a modal grab.** Nothing else produces that combination, and it was
+visible in a single four-second sample.
+
+### But the real finding is the hour before it
+
+**I never asked when the freeze started.** Joe volunteered it at the end —
+*"today was the first time this has happened"* — and that one sentence would have
+cut the search space from the whole codebase to one day of commits.
+
+Instead I investigated:
+
+```
+the marshal and its inline fast path      predates today by months
+the WebSocket topology                    predates today
+Houdini's threading model                 predates Houdini's release
+local inference competing for the box     never true, ollama read 0.00
+sentence-transformers                     not installed anywhere
+```
+
+**Every one of those predates the symptom.** None could have started this
+morning, and I did not notice because I never established when this morning was.
+
+### And I inverted my own conclusion on one sample
+
+R177 measured ~7 cores and concluded *"burning, not waiting."* R178 sampled again
+**during the actual freeze** and got 0.01 cores with every thread in `Wait`.
+
+Both measurements were correct. **A long operation has phases, and sampling one
+of them is not sampling the failure.** I built four hypotheses on the busy phase
+before I sampled the frozen one.
+
+### Ruled
+
+1. **"When did this start?" is the first question**, before any instrument. It is
+   free, it is one sentence, and it bounds everything that follows.
+2. **Sample the failure, not the operation.** A phase is not a theory.
+3. **A modal is never the right way to report progress from an agent.** The
+   artist did not ask for the operation and must not be trapped by it. Progress
+   belongs in the status area; the cancel belongs on the panel.
+4. **`long_operation` stays.** The mechanism was right — Houdini does ship a
+   cooperative interrupt, and `main_thread.py`'s claim that no mechanism exists
+   is still wrong. **The dialog was the defect, not the idea.**
+
+**Two hours, one regression of my own making, and the thing that would have found
+it fastest was a question rather than a probe.**
