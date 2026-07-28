@@ -4319,3 +4319,145 @@ disuse.
 resolves, works, and is rarely called is exactly what `tool_search` exists to reach — it costs
 nothing when not loaded and remains available when needed. **That is the migration R149 points at,
 with its first cohort already identified.**
+
+---
+
+# RULING 153 — What pivots, what holds. A method review at 150 rulings.
+
+Written from the measured record of 29 legs, not from impression.
+
+---
+
+## HOLD — probe before build. It is the highest-yield thing in the method.
+
+Four times a read-only leg refuted the premise of work already scheduled:
+
+```
+V1   no per-object ID mask exists on Karma 22.0.368   killed RETINA V2-V4 before they were built
+S0   H22 registers NO AI surface at all               inverted the positioning's opening premise
+E0   T.1's number and remedy are on different paths   took Mile 1 off the roadmap
+I1   161 named nodes is 171, and only 98 are new      corrected a published governing number
+```
+
+**Each saved more work than it cost.** V1 alone prevented three legs building on a primitive that
+cannot exist. The pattern is not "be careful" — it is *dispatch a cheap read-only leg against the
+premise before funding the expensive one*, and it has never once been the wrong call.
+
+**This is the load-bearing method. It stays exactly as it is.**
+
+---
+
+## HOLD — sequential legs, fenced briefs, dependency gating.
+
+**Every green receipt in this project came from that shape.** 29 of them.
+
+And gating specifically: I1 was told to build against I0's findings and **re-derived instead of
+trusting**, which caught both my error and I0's. **A leg that accepts the previous leg's numbers is
+a longer version of the same leg.**
+
+---
+
+## HOLD — the ruling document, including its corrections.
+
+150 rulings, of which roughly fifteen correct earlier rulings of mine. **That is what makes the
+other 135 usable.** A decision record with no reversals in it is a record of what someone wanted to
+be true.
+
+---
+
+## PIVOT — I stop publishing derived numbers.
+
+**Four for four this week.** Every figure I derived myself and published, a later leg corrected:
+
+```
+4,357 "Epoch complete"     ->  4,795 'Epoch N complete'    read a worktree draft
+161 new Copernicus nodes   ->  171 named, 98 new           regex missed a link form
+384/218/169 denominators   ->  383/210/156                 included third-party HDAs
+baseline hash mismatch     ->  checkout-dependent          proved my line endings differ
+```
+
+**Not one was caught by me re-reading.** Every one was caught by a leg re-deriving.
+
+**Ruled: my role is ruling on measured findings, not producing figures.** When a number is needed
+and no leg has produced it, the answer is to dispatch for it — not to compute it myself and label
+it. The rulings I write about *judgement* have held. The numbers I write have not.
+
+---
+
+## PIVOT — completion detection. Three of the last four legs stalled.
+
+`P1`, `E0`, `E1` all ended the same way: **work written, process hung, no prompt on screen.** P1 sat
+3.5 hours; E0 and E1 sat idle at ~580 MB with zero CPU.
+
+**Every one required me to notice.** The lock does not release, the receipt looks final, and a
+stalled leg is indistinguishable from a working one by any signal the harness watches.
+
+**Ruled:** a leg is complete when **its work is committed and its lock is released** — not when a
+receipt appears. The orchestrator gains a **stall detector**: no worktree write for N minutes with
+a live process and a written receipt is a stall, and it should harvest and stop rather than wait.
+
+**R147 wired the release. It does not yet detect the case where the leg never gets there.**
+
+---
+
+## PIVOT — controls must exercise the seam, not the unit.
+
+The dispatch-lock control passed six behaviours **while nothing in the orchestrator called the
+release.** All six were real. The defect was in the wiring, and a unit control is silent about
+wiring by construction.
+
+**Ruled: any control for a mechanism with a caller must exercise the CALLER.** "Does the lock
+refuse?" is a unit question. "Does dispatch refuse a running leg?" is the question that matters,
+and only the second would have caught R147.
+
+**A passing control is evidence about the thing it tests, and silence about everything else.**
+
+---
+
+## PIVOT — one composed status surface, not accumulating separate checks.
+
+`heats_status.py` rendered a board that stopped existing 23 legs earlier. `branch_harvest.py`
+cannot see uncommitted worktrees. `prune_safety.py` covers that and was not run. **Each was
+correct; nothing composed them**, and I found each gap by tripping over it.
+
+`status.py` now runs both checks. **That is the standard: a new check joins the status surface or
+it does not exist.** An unrun check is R80's nine-ordered-checks-zero-built with extra steps.
+
+---
+
+## PIVOT — fund the API account, and stop producing proxy figures until it is.
+
+**C1 and E0 both measured with a proxy tokenizer** because `count_tokens` returns HTTP 400 on a
+credit-blocked account. Every token figure in this project carries that asterisk, including the
+ones now governing a roadmap.
+
+**A token economist that cannot count tokens is estimating.** One funded call removes the asterisk
+from C1, E0, and everything either produces. **Until then the economist axis produces bounded
+estimates and must say so in every artifact** — which E0 did, correctly, and which is why its work
+is trustworthy despite the limit.
+
+---
+
+## THE ONE THAT MATTERS MOST — the method is mature and aimed inward.
+
+29 legs. 150 rulings. A verification apparatus that catches defects its author cannot see, four
+times over, in a single week.
+
+**And SYNAPSE still has zero users.**
+
+S3's headline, and it has not moved: *"nothing qualifies as a first-session moment today."* Every
+finding this week is about whether the code is honest. **Not one is about whether anyone wants it.**
+
+**Ruled, and this is the actual pivot:**
+
+1. **The verification method is FROZEN, not extended.** It works. Adding a ninth check to it has
+   lower marginal value than any hour spent on the first question below.
+2. **The next harness is a USER harness**, and its first leg is not a leg — it is one artist, one
+   task, one week, with a pre-agreed abort condition. S3 specified it; nothing has run it.
+3. **The bar for new internal work is now: does a user need this, and how would we know?** The
+   34-tool deferred-surface migration, the RSI decision, the panel redesign — each is defensible
+   and none is answerable without a user.
+
+**The method that found 150 defects cannot tell you whether the product is worth having.** That is
+not a criticism of the method. It is the boundary of what verification can do, and the honest
+CTO call is that we have reached it.
