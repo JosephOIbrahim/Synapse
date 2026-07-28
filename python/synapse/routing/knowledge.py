@@ -39,6 +39,11 @@ class KnowledgeIndex:
     Provides fast in-memory lookup without LLM calls.
     """
 
+    # Which context wins when one node-type name exists in several.
+    # cop is Copernicus (current); cop2 is the legacy image context it replaced.
+    # Higher wins. Anything unranked is 0 and never displaces a ranked entry.
+    _CONTEXT_RANK = {"cop": 3, "lop": 3, "sop": 3, "out": 2, "top": 2, "cop2": 1}
+
     def __init__(
         self,
         rag_root: Optional[str] = None,
@@ -59,11 +64,105 @@ class KnowledgeIndex:
         self._agent_relevance: Dict[str, Any] = {}
         # Pre-indexed section headers: word -> [(file_stem, line_index, lines)]
         self._section_index: Dict[str, List[tuple]] = {}
+        # H22 node corpus: live node type -> entry (summary, parameters, label)
+        self._h22_nodes: Dict[str, Any] = {}
 
         if self._rag_root:
             self._load_semantic_index()
             self._load_reference_files()
             self._load_agent_relevance()
+            self._load_h22_nodes()
+
+    def _load_h22_nodes(self):
+        """Load the H22 node corpus, keyed on the LIVE node type.
+
+        The prose corpus under skills/ is Houdini 21 material (R119) - accurate,
+        labelled, and predating Copernicus, which is why COP grounding measured
+        6.2% against a subsystem that barely existed then.
+
+        This corpus is different in kind. Every entry was extracted from
+        nodes.zip - the reference that SHIPS WITH THE BUILD, version-pinned to
+        22.0.368 by construction - and then validated by probing its documented
+        type against the running catalogue. Only matched entries are written to
+        the artifact, so a phantom type cannot be served because it was never
+        stored (see rag/corpus/h22_nodes.json's `gate` field).
+
+        INGEST-01 refused to wire anything without that gate, because U.6 found
+        15 phantom createNode sites already living in the RAG corpus outside the
+        emission gate, re-teaching phantoms through knowledge_lookup. Adding
+        hundreds of ungated entries would have been that defect at scale.
+
+        Never raises: a missing or malformed corpus leaves the dict empty and
+        every other retrieval strategy is unaffected.
+        """
+        path = self._rag_root / "corpus" / "h22_nodes.json"
+        if not path.is_file():
+            return
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                blob = json.load(fh)
+        except (json.JSONDecodeError, OSError):
+            return
+        for entry in blob.get("entries") or []:
+            t = entry.get("type")
+            if not t:
+                continue
+            key = str(t).lower()
+            # 51 of 659 type names exist in more than one context - `blur`,
+            # `crop`, `chromakey` and `average` are all in BOTH cop and cop2.
+            #
+            # Insertion order would let cop2 (LEGACY) overwrite cop (Copernicus,
+            # the current image context), so an artist asking about `blur` would
+            # be answered from the superseded subsystem. That is precisely the
+            # H21-corpus problem reappearing INSIDE the H22 corpus.
+            #
+            # Rank explicitly: current contexts win, legacy never overwrites.
+            prev = self._h22_nodes.get(key)
+            if prev is None or self._CONTEXT_RANK.get(entry.get("context"), 0) > \
+                              self._CONTEXT_RANK.get(prev.get("context"), 0):
+                self._h22_nodes[key] = entry
+
+    def _match_h22_node(self, query_words) -> Optional[KnowledgeLookupResult]:
+        """Exact node-type match, and ONLY when the query IS a type.
+
+        First attempt placed this before keyword matching and broke 8 tests:
+        `merge`, `wrangle`, `solver` and `reference` are all live node types, so
+        "vex attribute wrangle" and "scene assembly merge reference" were
+        hijacked away from their topics into a node datasheet.
+
+        The corpus should answer when the query IS a node type - "chromakey",
+        "karmarendersettings" - not when a sentence happens to contain one. So
+        it fires only on a short query (<=2 tokens), and a longer natural
+        language question falls through to the keyword index as before.
+
+        Exact rather than fuzzy on purpose: a near-miss on a node type is worse
+        than no answer - it is the phantom failure with better spelling.
+        """
+        if len(query_words) > 2:
+            return None
+        for w in query_words:
+            entry = self._h22_nodes.get(w)
+            if not entry:
+                continue
+            parms = entry.get("parameters") or []
+            names = [p.get("label") or p.get("name") for p in parms
+                     if isinstance(p, dict)]
+            names = [n for n in names if n][:12]
+            answer = entry.get("summary") or ""
+            if names:
+                answer = "%s\n\nDocumented parameters: %s" % (answer, ", ".join(names))
+            return KnowledgeLookupResult(
+                found=True,
+                answer=answer,
+                confidence=0.95,
+                topic=entry.get("label") or entry.get("type") or "",
+                sources=[entry.get("source") or entry.get("help_key") or ""],
+                agent_hint="VERIFIED-DOC, Houdini 22.0.368, %s context"
+                           % (entry.get("context") or "?"),
+                summary=entry.get("summary") or "",
+                reference_file=entry.get("help_key") or "",
+            )
+        return None
 
     def _load_semantic_index(self):
         """Load semantic_index.json and build inverted keyword index.
@@ -204,6 +303,17 @@ class KnowledgeIndex:
 
         query_lower = query.lower().strip()
         query_words = set(self._tokenize(query_lower))
+
+        # Strategy 0: exact H22 node type. FIRST, deliberately.
+        #
+        # This is the only source keyed on types PROBED against the running
+        # 22.0.368 catalogue. Everything below it is H21 prose (R119) - accurate
+        # for H21 and predating Copernicus entirely. When a query names a live
+        # node type, the build-pinned answer must win over a keyword hit in
+        # five-year-old material.
+        result = self._match_h22_node(query_words)
+        if result:
+            return result
 
         # Strategy 1: Keyword index match
         result = self._match_keywords(query_words)
