@@ -1,0 +1,168 @@
+{
+  "schema": "i0-xvalidate/v1",
+  "build": "22.0.368",
+  "producer": "harness/notes/ingest/_i0_xvalidate.py",
+  "instrument_a": "harness/notes/ingest/_i0_reader.py",
+  "instrument_b": "harness/notes/h9/helpdoc.py",
+  "contexts": {
+    "cop": {
+      "pages_compared": 371,
+      "exact_agreement": 369,
+      "exact_agreement_pct": 99.5,
+      "median_delta": 0,
+      "mean_abs_delta": 0.01,
+      "largest_disagreements": [
+        {
+          "page": "cop/bakegeometrytextures-2.0.txt",
+          "i0": 70,
+          "h9": 72,
+          "delta": -2
+        },
+        {
+          "page": "cop/bakegeometrytextures.txt",
+          "i0": 66,
+          "h9": 67,
+          "delta": -1
+        }
+      ]
+    },
+    "cop2": {
+      "pages_compared": 141,
+      "exact_agreement": 120,
+      "exact_agreement_pct": 85.1,
+      "median_delta": 0,
+      "mean_abs_delta": 1.79,
+      "largest_disagreements": [
+        {
+          "page": "cop2/light.txt",
+          "i0": 38,
+          "h9": 1,
+          "delta": 37
+        },
+        {
+          "page": "cop2/levels.txt",
+          "i0": 30,
+          "h9": 2,
+          "delta": 28
+        },
+        {
+          "page": "cop2/dsmflatten.txt",
+          "i0": 15,
+          "h9": 1,
+          "delta": 14
+        },
+        {
+          "page": "cop2/colorcorrect.txt",
+          "i0": 18,
+          "h9": 5,
+          "delta": 13
+        },
+        {
+          "page": "cop2/convolve.txt",
+          "i0": 15,
+          "h9": 3,
+          "delta": 12
+        },
+        {
+          "page": "cop2/chromakey.txt",
+          "i0": 21,
+          "h9": 10,
+          "delta": 11
+        },
+        {
+          "page": "cop2/defocus.txt",
+          "i0": 25,
+          "h9": 14,
+          "delta": 11
+        },
+        {
+          "page": "cop2/deform.txt",
+          "i0": 15,
+          "h9": 4,
+          "delta": 11
+        },
+        {
+          "page": "cop2/degrain.txt",
+          "i0": 12,
+          "h9": 1,
+          "delta": 11
+        },
+        {
+          "page": "cop2/denoise-.txt",
+          "i0": 15,
+          "h9": 4,
+          "delta": 11
+        }
+      ]
+    },
+    "lop": {
+      "pages_compared": 181,
+      "exact_agreement": 140,
+      "exact_agreement_pct": 77.3,
+      "median_delta": 0,
+      "mean_abs_delta": 6.99,
+      "largest_disagreements": [
+        {
+          "page": "lop/karmarendersettings.txt",
+          "i0": 225,
+          "h9": 12,
+          "delta": 213
+        },
+        {
+          "page": "lop/componentoutput.txt",
+          "i0": 189,
+          "h9": 19,
+          "delta": 170
+        },
+        {
+          "page": "lop/karmarenderproperties.txt",
+          "i0": 179,
+          "h9": 15,
+          "delta": 164
+        },
+        {
+          "page": "lop/karma.txt",
+          "i0": 251,
+          "h9": 140,
+          "delta": 111
+        },
+        {
+          "page": "lop/sceneimport.txt",
+          "i0": 94,
+          "h9": 25,
+          "delta": 69
+        },
+        {
+          "page": "lop/karmatexturebaker.txt",
+          "i0": 83,
+          "h9": 24,
+          "delta": 59
+        },
+        {
+          "page": "lop/filecache.txt",
+          "i0": 161,
+          "h9": 218,
+          "delta": -57
+        },
+        {
+          "page": "lop/shotoutput.txt",
+          "i0": 109,
+          "h9": 161,
+          "delta": -52
+        },
+        {
+          "page": "lop/sopcrowdimport.txt",
+          "i0": 46,
+          "h9": 11,
+          "delta": 35
+        },
+        {
+          "page": "lop/hdadynamicpayload.txt",
+          "i0": 27,
+          "h9": 57,
+          "delta": -30
+        }
+      ]
+    }
+  }
+}

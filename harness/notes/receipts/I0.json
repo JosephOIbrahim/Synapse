@@ -1,0 +1,230 @@
+{
+  "schema": "receipt/v1",
+  "leg": "I0",
+  "title": "ingest scout - measure the shipped node reference so I1 can build an extractor that joins",
+  "harness": "INGEST-01 (harness/SYNAPSE_INGEST.md)",
+  "ruling": "R60 (reader calibration), R72/R86/R87 (deprecation union), R97 (label is the join key), R119 (per-entry provenance)",
+  "status": "green",
+  "status_note": "All six brief questions answered against measured evidence. Q2 and Q6 measured on the LIVE 22.0.368 runtime under hython. Every reader carries positive, negative and blind-reader controls; 102 controls across six producers, all passing. Two brief premises were tested rather than inherited: H9-F1 (label is the join key) is CONFIRMED; H9-F3's cop2 numbers do NOT reproduce and are escalated as I0-R1.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "harness/readonly-settings.json (READ-ONLY leg per R61; harness/notes/** is the only writable path). No pytest was run and NO suite evidence is claimed - the leg touches no product code and legs.json declares touches: [].",
+  "commit_at_run": "66752c713d6a94c2f7076daaa034c30a5f4c4769",
+  "mode": "A",
+  "agents": [
+    {
+      "role": "Explore (read-only, structurally fenced: no Edit/Write tools)",
+      "task": "inventory prior readers of nodes.zip/hom.zip, H9 and H7 findings and producers, existing catalogues, the 161 extraction, receipt schema",
+      "why_fenced": "R61 - a read-only extraction FLEET previously edited five schema files while declared read-only. Only agent types whose DEFINITION lacks write tools were dispatched (Article I: enforcement in the definition, not the instruction). No Workflow fan-out was used in this leg for the same reason."
+    }
+  ],
+  "agents_note": "One subagent, for context isolation on prior-art reading only. All measurement was performed by the orchestrator through committed producer scripts so that every number has a re-runnable producer path (Law 2).",
+  "read_only_discipline": {
+    "wrote": [
+      "harness/notes/ingest/_i0_reader.py",
+      "harness/notes/ingest/_i0_calibrate.py",
+      "harness/notes/ingest/_i0_calibration.json",
+      "harness/notes/ingest/_i0_q1_structure.py",
+      "harness/notes/ingest/_i0_q1_structure.json",
+      "harness/notes/ingest/_i0_q2_joinkey.py",
+      "harness/notes/ingest/_i0_q2_joinkey.json",
+      "harness/notes/ingest/_i0_q2b_resolved.py",
+      "harness/notes/ingest/_i0_q2b_resolved.json",
+      "harness/notes/ingest/_i0_q3_the161.py",
+      "harness/notes/ingest/_i0_q3_the161.json",
+      "harness/notes/ingest/_i0_q4_floor.py",
+      "harness/notes/ingest/_i0_q4_floor.json",
+      "harness/notes/ingest/_i0_q4_per_page.json",
+      "harness/notes/ingest/_i0_q6_deprecation.py",
+      "harness/notes/ingest/_i0_q6_deprecation.json",
+      "harness/notes/ingest/_i0_xvalidate.py",
+      "harness/notes/ingest/_i0_xvalidate.json",
+      "harness/notes/ingest/I0_SCOUT.md",
+      "harness/notes/receipts/I0.json"
+    ],
+    "nothing_else_touched": true,
+    "no_repairs": "No product code, test, corpus or state file was modified. Nothing was wired into RAG (INGEST-01 standing rule). No extractor was built - the leg measures the archive only.",
+    "no_network": "No network access. All evidence is the local 22.0.368 install plus the committed tree. Two files were read from the main worktree because the leg branch predates them: harness/SYNAPSE_INGEST.md and the I0/I1 entries in harness/legs.json, both committed at 87a5af9 on feat/repair-heats-01.",
+    "no_push": "No commit, push, merge or tag."
+  },
+  "oracle": {
+    "harness/notes/ingest/I0_SCOUT.md": {
+      "met": true,
+      "evidence": "written, 9 sections, all six questions answered"
+    },
+    "Q1-Q6 answered, each with the sample size it rests on": {
+      "met": true,
+      "evidence": "Q1 n=5032 (full census, not a sample). Q2 n=15 hand-picked + 141 population, seed 20260727. Q3 n=161 from two independent sources. Q4 n=2141 pages across six contexts. Q5 every line of 5032 pages. Q6 n=1960 node-typed pages resolving to a live type."
+    },
+    "Q2's join-key match rate measured AGAINST THE LIVE RUNTIME, per candidate key": {
+      "met": true,
+      "evidence": "six candidate keys K1-K6, measured under hython on live 22.0.368 via node.parms()/node.parmTuples(), reported four ways (raw/resolved x hand-picked/population). Label 88.7-89.1% of ALL records; #id 43.4-52.9%. _i0_q2_joinkey.json + _i0_q2b_resolved.json.",
+      "extra": "The runtime exposes parameters at TWO levels and the docs are inconsistent about which they name. Both levels were tested; tuple-first is worth 2-8 points over parm-first for #id."
+    },
+    "Q3 as integers: present / absent, with the absent ones named": {
+      "met": true,
+      "evidence": "161 named / 161 present / 0 absent. Absent list is empty. Two independent sources (shipped news.zip and the browsing cache) agree exactly: 161 each, 0 set difference."
+    },
+    "Q4 as integers per context: exists / clears-the-floor": {
+      "met": true,
+      "evidence": "cop 375/357, lop 198/169, sop 1203/1102, out 57/48, top 158/130, cop2 150/133. Gap = 202 of 2141. Reported twice - raw and include-resolved - because the answer depends on resolution."
+    },
+    "every reader you write is calibrated - shown returning a KNOWN answer before it is trusted on unknown ones (R60)": {
+      "met": true,
+      "evidence": "102 controls, all passing: _i0_calibrate 61/61, Q2 15/15, Q2b 4/4, Q3 5/5, Q4 7/7, Q6 10/10. Each producer carries POSITIVE (hand-read ground truth), NEGATIVE (mutation must drive the count to zero) and, where applicable, BLIND-READER controls (a deliberately naive reader shown returning the WRONG answer). The calibration found three real defects in this leg's own reader before any number was published."
+    },
+    "harness/notes/receipts/I0.json (receipt/v1, model + settings_profile per R25)": {
+      "met": true,
+      "evidence": "this file"
+    }
+  },
+  "summary": "nodes.zip at 22.0.368 holds 5,034 entries = 5,033 .txt + 1 .h; 5,032 are context pages across 19 contexts. The format is NOT consistent across contexts and nine distinct single-parser assumptions were measured false, three of them silent (CRLF, BOM, colon-directive id capture). The join key is the LABEL, confirmed against the live runtime in four separate measurements - it is present on 100% of documented parameter records and resolves 88.7-89.1% of them, against 62-85% presence and 43.4-52.9% resolution for #id. All 161 new Copernicus nodes have a page and 158 clear a stated quality floor. Doc and runtime disagree about deprecation on 195 node types, and 51 of those are the dangerous direction: the runtime flags them while the documentation reads completely clean.",
+  "findings": [
+    {
+      "id": "I0-F1",
+      "claim": "The page format is NOT consistent across contexts. Nine single-parser assumptions were measured false over the full 5,032-page census. The two largest structural splits: cop/ is 98% directives-before-title while lop/ is 79% TITLE-before-directives (897 pages, 17.8%, would yield no #context/#internal from a head-of-file header read); and cop/ puts every parameter at column 0 while cop2/ puts most at indent >=4 (527 pages, 10.5%, would lose EVERY parameter). One parser per context is the correct shape.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "harness/notes/ingest/_i0_q1_structure.json -> single_parser_break_points; producer _i0_q1_structure.py",
+      "severity": "blocking for I1 - an extractor written against one assumed structure produces a corpus that looks complete and joins to nothing"
+    },
+    {
+      "id": "I0-F2",
+      "claim": "THREE SILENT DEFECTS were found in this leg's own reader by its own controls, each returning a plausible number and raising nothing. (D1) splitting on '\\n' and anchoring items on '$' returns ZERO parameters on the 138 CRLF/MIXED pages - and 67 of 375 cop/ pages (17.9%) are CRLF, so the defect lands hardest on Copernicus, the exact frontier surface. (D2) decoding 'utf-8' rather than 'utf-8-sig' succeeds on the 58 BOM pages and leaves U+FEFF at offset 0, eating the first directive: 32 pages lose a directive, 26 lose their title. (D3) binding any indented '#id:' to the preceding label re-keys sop/xform's 'Combine' parameter from 'combine' to '406959576' - a Vimeo VIDEO id, because ':vimeo: Transform SOP' blocks carry one.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "harness/notes/ingest/_i0_calibration.json controls B2/P10/P5; producer _i0_calibrate.py",
+      "severity": "significant - all three are the 'looks complete, joins to nothing' failure class this leg exists to prevent, and none raises an exception"
+    },
+    {
+      "id": "I0-F3",
+      "claim": "H9-F1 is CONFIRMED against the live runtime, not inherited: LABEL is the join key. Measured four ways (raw/resolved x hand-picked-15/population-141). Label is present on 100% of documented parameter records and matches 88.7% (hand-picked, n=311), 89.0% (population, n=1473), 80.5% and 84.1% (resolved). #id is present on only 62-85% of records and matches 43.4%, 52.9%, 42.2%, 49.7% of ALL records respectively. Label therefore wins on availability AND on accuracy. Worst case measured: lop/rendersettings documents 106 parameters, all 106 carrying #id; 10 ids match the live type, 95 labels do.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "harness/notes/ingest/_i0_q2_joinkey.json + _i0_q2b_resolved.json; producers _i0_q2_joinkey.py, _i0_q2b_resolved.py, run under hython on live 22.0.368; controls 15/15 and 4/4",
+      "severity": "the gate on I1 - R97 stands, now on runtime evidence rather than a prior leg's assertion"
+    },
+    {
+      "id": "I0-F4",
+      "claim": "'#channels' is a SECOND internal-name key and is not optional. It appears 1,833 times archive-wide and DOMINATES cop2 (248 #channels vs 51 #id). A reader following only #id reports the entire cop2 parameter surface as un-identifiable. Also found: '#contentfrom' (1,199) is a second indirection axis - the parameter's DESCRIPTION lives on another page, so cop/adjacency_distort.txt has parameters with a label and an #id and no inline prose at all.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "item-level directive census in _i0_q1_structure.py; calibration controls P6/P8 in _i0_calibration.json; independently recorded at harness/notes/h9/helpdoc.py:180",
+      "severity": "significant for the quality floor - 'has a description' must decide about #contentfrom entries deliberately"
+    },
+    {
+      "id": "I0-F5",
+      "claim": "All 161 new Copernicus nodes named in What's New have a cop/<name>.txt in nodes.zip. Present 161, absent 0. The ingest of the 161 is mechanical. Additionally, the list is now derivable from a SHIPPED artifact - news.zip!22/copernicus.txt - which was not previously used; the prior producer read only the browsing help cache. The two sources agree exactly: 161 each, zero set difference in either direction.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "harness/notes/ingest/_i0_q3_the161.json; producer _i0_q3_the161.py; controls 5/5 including a fabricated-name negative",
+      "severity": "closes the Q3 question and upgrades the provenance of a governing number in docs/H22_FRONTIER.md from a browsing cache to a version-pinned shipped file"
+    },
+    {
+      "id": "I0-F6",
+      "claim": "The quality-floor answer DEPENDS on include resolution, and this is measurable rather than theoretical. lop/distantlight.txt documents ZERO parameters as it ships and 87 once :include is resolved - its entire @parameters section is 14 :include lines and nothing else. It scores below the floor raw and ACTIONABLE resolved. 21 pages across the six contexts cross the floor purely because includes were resolved, concentrated in lop/. Exists-vs-clears, resolved: cop 375/357, lop 198/169, sop 1203/1102, out 57/48, top 158/130, cop2 150/133 - a gap of 202 pages that exist but do not clear.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "harness/notes/ingest/_i0_q4_floor.json; producer _i0_q4_floor.py; resolver harness/notes/h9/helpdoc.py; controls 7/7",
+      "severity": "blocking for I1 - an extractor that skips include resolution reports fully-documented nodes as ungrounded"
+    },
+    {
+      "id": "I0-F7",
+      "claim": "Of the 161 new Copernicus nodes, 158 clear the stated quality floor AND reach ACTIONABLE (>=1 parameter with an internal name). Three do not: pointmerge, rop_image, usdmaterial. This is the number that should replace 'has a page' in any forward statement about the frontier gap.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "harness/notes/ingest/_i0_q4_floor.json -> the_161_new_copernicus_nodes",
+      "severity": "significant - 158 of 161 groundable from a file that ships with the product"
+    },
+    {
+      "id": "I0-F8",
+      "claim": "THREE include verbs ship, not one: ':include' (9,986), ':includeprop' (307) and ':import' (1). A reader matching only ':include' drops 308 transclusions, and ':import' is the one that pulls an ENTIRE @parameters section across contexts (lop/usd_rop.txt <- /nodes/out/usd#parameters). 30 distinct block-directive shapes were found in total, including an uppercase ':WARNING:' variant that a case-sensitive matcher misses. 7,467 of the 10,294 page-surface includes carry an #anchor.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "harness/notes/ingest/I0_SCOUT.md Q5 table; producer _i0_reader.py grammar + _i0_q1_structure.py; calibration control P7",
+      "severity": "significant - the brief asked for every directive shape whether or not it looked relevant, and two of the three include verbs would have been missed by a ':include'-only reader"
+    },
+    {
+      "id": "I0-F9",
+      "claim": "The H7-F4 deprecation banner target is NOT in nodes.zip. ':include /composite/_old_cops_deprecated:' appears on 145 pages and resolves to composite.zip!_old_cops_deprecated.txt. A reader that opens only nodes.zip CANNOT resolve it and reproduces H5's defect exactly - an entire vendor-deprecated subsystem reading as current. I1 must glob every *.zip in $HFS/houdini/help plus the loose directories (11,709 pages, versus 5,032 in nodes.zip alone). Separately, the shipped documentation carries 385 unresolvable include ANCHORS across 158 pages (272 distinct targets); 0 unresolvable pages. These are defects in the shipped docs, not parse failures, and must be marked rather than dropped.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "calibration control P9 in _i0_calibration.json; composite.zip!_old_cops_deprecated.txt; resolution stats via harness/notes/h9/helpdoc.py",
+      "severity": "blocking - this is the exact H7-F4/R88 defect, and it is structurally unavoidable for a nodes.zip-only reader"
+    },
+    {
+      "id": "I0-F10",
+      "claim": "Doc and runtime disagree about node-type deprecation on 195 of 1,960 node-typed pages; the union is 202. Direction 1 (doc says, runtime does not) = 144, of which 138 are cop2 via the :include banner - a runtime-only oracle misses the whole announced-for-removal subsystem. Direction 2 (runtime says, doc does not) = 51, and this is the dangerous cell: it includes lop/karma and lop/karmarenderproperties (R72/H7-F2, confirmed here independently) plus 40 SOPs among them sop/copy, sop/group, sop/point, sop/paint, sop/particle. Only 1 of the 51 carries even a weak prose mention. An artist reading the documentation has no way to learn these types are decaying.",
+      "truth": "VERIFIED-RUNTIME (runtime axis) + VERIFIED-STATIC (doc axis)",
+      "anchor": "harness/notes/ingest/_i0_q6_deprecation.json; producer _i0_q6_deprecation.py under hython on live 22.0.368; controls 10/10 including the H7-F12 false-positive guard",
+      "severity": "significant - R87 set the DECAY_CLOCK floor at 41 for HOM symbols; at node-type level across six contexts the union is 202"
+    },
+    {
+      "id": "I0-F11",
+      "claim": "H9-F3's cop2 figures do not reproduce against nodes.zip at 22.0.368. The brief (harness/prompts/i0.md:14) and harness/SYNAPSE_INGEST.md:40 both state '7.7% of cop2 parameter records carry #id; only 13 of 139 pages have even one'. Measured: 9 of 150 cop2 pages carry ANY raw '#id:' line, 51 lines total, 4.4% of top-level parameter records - and no denominator I can construct yields 7.7% or 13. H9's OWN final artifact supersedes its quoted figure: h22_doc_grounding_corpus.json yields cop2 at 42.7% of parameter records once #channels is counted, and 92 of 149 entries. The stale number is the PRE-#channels-fix measurement. H9-F3's DIRECTION is correct - cop2 barely uses #id - and its numbers are not.",
+      "truth": "VERIFIED-STATIC (my measurement) + REFUTED-LIVE (the quoted 7.7% / 13-of-139 against this archive)",
+      "anchor": "raw #id census over cop2 in _i0_q1_structure.py; harness/notes/h9/quality.json -> contexts.cop2.actionable=88; harness/notes/CTO_RULINGS_01.md:2626",
+      "severity": "significant - this is R86/R98's defect class recurring: a figure without a producer path propagated into a governing document and then into a leg brief, where it would have shaped the extractor's design. No H9 receipt exists (harness/notes/receipts/H9.json was never committed) so the figure has no producer to re-run."
+    },
+    {
+      "id": "I0-F12",
+      "claim": "Two independent parsers were cross-validated on the same archive with includes resolved. Exact agreement: cop 369/371 (99.5%), cop2 120/141 (85.1%), lop 140/181 (77.3%). The lop disagreement was adjudicated against the live runtime rather than averaged away: _i0_reader has far higher recall at somewhat lower precision (lop/karmarendersettings 182 real matches vs helpdoc's 10; cop2/light 34 vs 0), while helpdoc is precise but under-extracts badly on lop. They fail in OPPOSITE directions and neither is 'the truth'.",
+      "truth": "VERIFIED-RUNTIME (the adjudication) + VERIFIED-STATIC (the comparison)",
+      "anchor": "harness/notes/ingest/_i0_xvalidate.json; producer _i0_xvalidate.py; live adjudication over 6 nodes under hython",
+      "severity": "significant for I1 - neither available reader has a precision pass, and I0's coverage numbers carry the high-recall bias explicitly rather than silently"
+    }
+  ],
+  "headline_findings": ["I0-F3", "I0-F6", "I0-F10", "I0-F2", "I0-F11"],
+  "method_notes": [
+    "R60 taken literally: 102 controls across six producers (61+15+4+5+7+10). Each reader carries POSITIVE controls (hand-read pages the parser must reproduce), NEGATIVE controls (a mutation that must drive the count to zero - proving the count measures something) and BLIND-READER controls (a deliberately naive parser shown returning the WRONG answer where ours returns right). The blind readers are kept in the calibration file on purpose as negative instruments.",
+    "Law 1 applied to the probes themselves: the Q3 presence test is paired with a fabricated node name that must read ABSENT; the Q2 matcher with a fabricated parm id that must not match; the Q6 detectors with clean text that must yield nothing. Without those, 'all present' and '100% match' are unfalsifiable.",
+    "Q1 measures the FULL POPULATION of every context rather than the >=20-per-context sample the brief allows. A census cost the same as a sample at this scale (5,032 pages, ~2s), so the sample size is stated as n = the whole context.",
+    "One control FAILED on first run and its EXPECTATION was corrected, not the code: lop/distantlight's raw rung is SUMMARY, not EXISTS, because the page does carry a summary. The claim under test (resolution moves the page across the floor) was unchanged and a second assertion on clears()/clears() was added alongside. One further control was rewritten from an exact count to a liveness assertion because it pinned the arithmetic of a deliberately-broken instrument rather than the control's meaning; the reasoning is recorded inline at the control.",
+    "Q2 was measured TWICE - once on raw pages and once with includes resolved - because measuring only raw would have under-sampled exactly the pages where the join is hardest (lop/distantlight is 0 params raw, 87 resolved, and lop is where #id does worst). The verdict is identical in both.",
+    "Prior work was reused rather than re-derived where it was committed and calibrated: harness/notes/h9/helpdoc.py supplies the include resolver (four shipped anchor forms, cross-zip path normalisation, cyclic-include guard) and serves as the second instrument for cross-validation. Its own recorded defects informed two of this leg's controls.",
+    "No Workflow fan-out was used. R61 records a read-only extraction FLEET that edited five schema files and kept writing after being stopped, in this exact domain; Article I says enforcement belongs in the definition, not the instruction. The single subagent dispatched was of a type whose DEFINITION lacks Edit/Write tools, and it performed prior-art reading only - no measurement.",
+    "The archive's own hazards were checked before being assumed: all 5,033 .txt entries decode as strict UTF-8 (an encoding-corruption hypothesis, refuted), but 58 carry a BOM that plain utf-8 decoding silently preserves.",
+    "Coincidence flagged so it does not read as a copy error: the Q4 exists-minus-clears gap (202 of 2,141 pages) and the Q6 deprecation union (202 node types) are the same integer by chance. They are unrelated measurements from different producers."
+  ],
+  "resume_token": {
+    "skip": [
+      "Q1 structure census - complete over the full population, _i0_q1_structure.json",
+      "Q3 - closed, 161/161/0, from two agreeing sources including a shipped one",
+      "reader calibration - 61/61, and the three silent defects are already fixed in _i0_reader.py",
+      "the join-key question - answered four ways on the live runtime; do not re-litigate label-vs-id",
+      "component-suffix stripping for #id - measured, recovers 2 of 2,137 records, not worth implementing"
+    ],
+    "redo_if": "the Houdini build changes. Every number is pinned to 22.0.368 and both nodes.zip and the live runtime move with the build. _i0_reader.NODES_ZIP and helpdoc.BUILD are hard-pinned and will fail loudly rather than measure the wrong corpus.",
+    "do_not_attempt_again": "Do not try to reconstruct H9-F1's '385' or H9-F3's '7.7% / 13 of 139' from the tree. harness/notes/receipts/H9.json was never committed and neither figure appears in any h9 artifact or script. Escalated as I0-R1; only H9's author can resolve it.",
+    "next": "I1 builds the extractor against section 9 of harness/notes/ingest/I0_SCOUT.md. The gaps I0 could NOT close are enumerated in section 8 with what would close each."
+  },
+  "for_ruling": [
+    {
+      "id": "I0-R1",
+      "question": "H9-F3's '7.7% of cop2 parameter records carry #id; 13 of 139 pages' does not reproduce against nodes.zip at 22.0.368 by any denominator I can construct (measured: 9 of 150 pages, 51 raw #id lines, 4.4% of records), and H9's own final artifact supersedes it at 42.7% once #channels is counted. The stale figure is currently propagated into harness/prompts/i0.md:14 and harness/SYNAPSE_INGEST.md:40 - both of which are deny-listed from agent edit. What should the corrected figure be, and should the brief be amended?",
+      "recommendation": "Strike the 7.7% / 13-of-139 figures as R86 struck R72's character counts - amended in place, not silently corrected - and replace with the measured pair: 'cop2 carries #id on 4.4% of parameter records, and #channels on a further 248 occurrences; counting both, 42.7% of cop2 parameter records carry an internal name.' H9-F3's CONCLUSION stands and is strengthened: the finding was never really about #id scarcity, it was about cop2 using a DIFFERENT internal-name key. That is the more actionable statement.",
+      "source": "I0-F11"
+    },
+    {
+      "id": "I0-R2",
+      "question": "The two available parsers fail in opposite directions on lop/ - _i0_reader has ~18x the recall at lower precision, helpdoc is precise but under-extracts (12 parameters for a 402-parameter node). I0's coverage numbers carry the high-recall bias. Which bias should I1's corpus adopt, and is a precision pass in scope for I1?",
+      "recommendation": "High recall with a per-entry confidence field, and a precision pass IN SCOPE for I1: for each extracted parameter, record whether its label resolved against the live runtime at build time. That converts precision from an unknown into a per-entry fact and is consistent with R119 (per-entry provenance, never per-corpus). It also makes the corpus self-auditing on the next build. Cost: one hython pass at corpus-build time.",
+      "source": "I0-F12"
+    },
+    {
+      "id": "I0-R3",
+      "question": "docs/H22_FRONTIER.md's '161' was extracted from the browsing help cache by harness/notes/_h22_frontier_xref.py, which also computes its 'share of all cop pages' denominator from the 25 cached cop pages rather than the 375 shipped ones. news.zip!22/copernicus.txt ships the same page and yields the same 161 exactly. Should the producer be re-pointed at the shipped source?",
+      "recommendation": "Yes - re-point it at news.zip and fix the denominator to the 375 shipped cop pages. The 161 itself does not change (verified: exact set equality between the two sources), so this is a provenance upgrade rather than a number correction, and it removes a browsing-history dependency from a governing document. Low risk, and it makes the figure reproducible on any machine with the build installed.",
+      "source": "I0-F5"
+    },
+    {
+      "id": "I0-R4",
+      "question": "51 node types are flagged deprecated by the runtime while their documentation reads completely clean, and they include sop/copy, sop/group, sop/point, sop/paint and both Karma LOPs. R72 rule 3 says the disagreement is itself a finding. Should SYNAPSE surface the runtime axis to artists when the docs are silent, and does the doc-only direction (144, of which 138 are the announced-for-removal cop2 subsystem) warrant the same treatment?",
+      "recommendation": "Surface both, labelled by source, and never merge them into a single 'deprecated' boolean. The two directions mean different things to an artist: runtime-only means 'the software will stop offering this', doc-only means 'the vendor has announced removal but the build still ships it'. Merging them loses exactly the information an artist needs to plan. This is a product decision about what SYNAPSE says to a user, so it is a ruling item and not an agent call.",
+      "source": "I0-F10"
+    },
+    {
+      "id": "I0-R5",
+      "question": "SPECULATIVE, flagged because it is cheap for a human to check and would otherwise be lost: the shipped documentation contains exactly 385 unresolvable include ANCHORS archive-wide, and H9-F1's unreproducible figure is also 385. I have NO evidence connecting them - my 385 is archive-wide across 19 contexts while H9's scope was lop/cop/cop2, where helpdoc's own stats record 45 unresolved anchors, not 385. On the evidence this is most likely coincidence.",
+      "recommendation": "Record as a coincidence unless H9's author recognises the number. Do NOT publish the connection - it has no producer and asserting it would be the exact defect I0-F11 reports. Raised only because a reader who notices the collision independently should find it already considered and dismissed rather than missed.",
+      "source": "I0-F11"
+    },
+    {
+      "id": "I0-R6",
+      "question": "This worktree's branch (ingest/i0-ingest-scout at 66752c7) predates the INGEST-01 harness commit (87a5af9 on feat/repair-heats-01), so harness/SYNAPSE_INGEST.md and the I0/I1 entries in harness/legs.json are ABSENT from the leg's own tree. The brief instructed me to read a file the leg cannot see; I read both from the main worktree and recorded it. Should the orchestrator rebase leg worktrees onto the harness commit that defines them?",
+      "recommendation": "Yes - create leg worktrees from the commit that adds their legs.json entry, or rebase at launch. A leg whose governing document is invisible from its own tree cannot verify its own instructions, and R127 (read committed paths, never worktree globs) assumes the committed path is reachable. Cosmetic this time because the file was readable one directory up and 66752c7 is a clean ancestor of 87a5af9, but it is a silent-drift shape.",
+      "source": "drift log"
+    }
+  ],
+  "what_the_leg_proves_about_its_own_premise": "The brief's premise was that 5,034 is a PAGE count and not a KNOWLEDGE count, and that an extractor written against an assumed structure produces a corpus that looks complete and joins to nothing. Both halves are confirmed, and the leg confirmed them on ITSELF before confirming them on the archive: three separate silent defects were found in this leg's own reader by its own controls, and every one returned a plausible number while raising no error. The CRLF defect alone would have scored 67 of 375 Copernicus pages as having zero parameters - on the exact surface docs/H22_FRONTIER.md calls the frontier - and nothing in the output would have looked wrong. The brief also asked me to confirm or refute H9's join-key finding rather than inherit it; doing so confirmed H9-F1 on stronger evidence and REFUTED the numbers in H9-F3 that the brief itself was quoting. A scout that had inherited its brief's premises would have shipped a stale figure into I1's design. That is the case for the leg existing."
+}

@@ -1,0 +1,247 @@
+{
+  "schema": "i0-q4/v1",
+  "build": "22.0.368",
+  "truth_tier": "VERIFIED-STATIC",
+  "producer": "harness/notes/ingest/_i0_q4_floor.py",
+  "resolver": "harness/notes/h9/helpdoc.py (HelpCorpus + resolve_includes)",
+  "floor_definition": {
+    "I0-FLOOR": "summary AND >=1 parameter with a non-empty description",
+    "rungs": [
+      "EXISTS",
+      "SUMMARY",
+      "FLOOR",
+      "ACTIONABLE"
+    ],
+    "note": "ACTIONABLE additionally requires an internal name (#id or #channels)"
+  },
+  "controls": [
+    {
+      "control": "C1 distantlight raw params",
+      "got": 0,
+      "want": 0,
+      "pass": true,
+      "note": "its entire @parameters section is :include lines"
+    },
+    {
+      "control": "C1 distantlight resolved params",
+      "got": 87,
+      "want": 87,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C1 resolution CHANGES the rung",
+      "got": [
+        "SUMMARY",
+        "ACTIONABLE"
+      ],
+      "want": [
+        "SUMMARY",
+        "ACTIONABLE"
+      ],
+      "pass": true,
+      "note": "the floor answer depends on resolution"
+    },
+    {
+      "control": "C1 raw is BELOW the floor, resolved is ABOVE",
+      "got": [
+        false,
+        true
+      ],
+      "want": [
+        false,
+        true
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C2 include-free page is UNCHANGED by resolution",
+      "got": [
+        15,
+        15
+      ],
+      "want": [
+        15,
+        15
+      ],
+      "pass": true,
+      "note": "resolution must not corrupt pages it does not apply to"
+    },
+    {
+      "control": "C3 bogus include is marked, not dropped",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C4 floor CAN fail",
+      "got": false,
+      "want": false,
+      "pass": true,
+      "note": "out/karma has a summary and zero parameters"
+    }
+  ],
+  "controls_passed": 7,
+  "controls_total": 7,
+  "contexts": {
+    "cop": {
+      "pages_exist": 375,
+      "pages_typed_node": 371,
+      "raw": {
+        "rungs": {
+          "EXISTS": 3,
+          "SUMMARY": 15,
+          "FLOOR": 0,
+          "ACTIONABLE": 357
+        },
+        "clears_floor": 357
+      },
+      "resolved": {
+        "rungs": {
+          "EXISTS": 3,
+          "SUMMARY": 15,
+          "FLOOR": 0,
+          "ACTIONABLE": 357
+        },
+        "clears_floor": 357
+      },
+      "pages_rescued_by_resolution": 0,
+      "pages_with_unresolved_target": 3
+    },
+    "lop": {
+      "pages_exist": 198,
+      "pages_typed_node": 180,
+      "raw": {
+        "rungs": {
+          "EXISTS": 23,
+          "SUMMARY": 13,
+          "FLOOR": 57,
+          "ACTIONABLE": 105
+        },
+        "clears_floor": 162
+      },
+      "resolved": {
+        "rungs": {
+          "EXISTS": 23,
+          "SUMMARY": 6,
+          "FLOOR": 21,
+          "ACTIONABLE": 148
+        },
+        "clears_floor": 169
+      },
+      "pages_rescued_by_resolution": 7,
+      "pages_with_unresolved_target": 14
+    },
+    "sop": {
+      "pages_exist": 1203,
+      "pages_typed_node": 1171,
+      "raw": {
+        "rungs": {
+          "EXISTS": 70,
+          "SUMMARY": 40,
+          "FLOOR": 259,
+          "ACTIONABLE": 834
+        },
+        "clears_floor": 1093
+      },
+      "resolved": {
+        "rungs": {
+          "EXISTS": 70,
+          "SUMMARY": 31,
+          "FLOOR": 241,
+          "ACTIONABLE": 861
+        },
+        "clears_floor": 1102
+      },
+      "pages_rescued_by_resolution": 9,
+      "pages_with_unresolved_target": 43
+    },
+    "out": {
+      "pages_exist": 57,
+      "pages_typed_node": 53,
+      "raw": {
+        "rungs": {
+          "EXISTS": 6,
+          "SUMMARY": 6,
+          "FLOOR": 24,
+          "ACTIONABLE": 21
+        },
+        "clears_floor": 45
+      },
+      "resolved": {
+        "rungs": {
+          "EXISTS": 6,
+          "SUMMARY": 3,
+          "FLOOR": 6,
+          "ACTIONABLE": 42
+        },
+        "clears_floor": 48
+      },
+      "pages_rescued_by_resolution": 3,
+      "pages_with_unresolved_target": 2
+    },
+    "top": {
+      "pages_exist": 158,
+      "pages_typed_node": 148,
+      "raw": {
+        "rungs": {
+          "EXISTS": 12,
+          "SUMMARY": 17,
+          "FLOOR": 0,
+          "ACTIONABLE": 129
+        },
+        "clears_floor": 129
+      },
+      "resolved": {
+        "rungs": {
+          "EXISTS": 12,
+          "SUMMARY": 16,
+          "FLOOR": 0,
+          "ACTIONABLE": 130
+        },
+        "clears_floor": 130
+      },
+      "pages_rescued_by_resolution": 1,
+      "pages_with_unresolved_target": 7
+    },
+    "cop2": {
+      "pages_exist": 150,
+      "pages_typed_node": 141,
+      "raw": {
+        "rungs": {
+          "EXISTS": 8,
+          "SUMMARY": 10,
+          "FLOOR": 74,
+          "ACTIONABLE": 58
+        },
+        "clears_floor": 132
+      },
+      "resolved": {
+        "rungs": {
+          "EXISTS": 8,
+          "SUMMARY": 9,
+          "FLOOR": 31,
+          "ACTIONABLE": 102
+        },
+        "clears_floor": 133
+      },
+      "pages_rescued_by_resolution": 1,
+      "pages_with_unresolved_target": 1
+    }
+  },
+  "the_161_new_copernicus_nodes": {
+    "named": 161,
+    "have_a_page": 161,
+    "clear_floor_raw": 158,
+    "clear_floor_resolved": 158,
+    "actionable_resolved": 158,
+    "below_floor_named": [
+      "pointmerge",
+      "rop_image",
+      "usdmaterial"
+    ]
+  },
+  "elapsed_s": 2.2
+}

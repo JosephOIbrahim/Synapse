@@ -1,0 +1,3599 @@
+{
+  "schema": "i0-q2b/v1",
+  "build": "22.0.368",
+  "runtime": "22.0.368",
+  "truth_tier": "VERIFIED-RUNTIME",
+  "producer": "harness/notes/ingest/_i0_q2b_resolved.py",
+  "difference_from_q2": "includes resolved before parsing",
+  "seed": 20260727,
+  "controls": [
+    {
+      "control": "C1 resolution fires (distantlight)",
+      "got": 87,
+      "want": 87,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C2 include-free page unchanged",
+      "got": 15,
+      "want": 15,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C3 runtime reachable",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C4 fabricated id does not match",
+      "got": false,
+      "want": false,
+      "pass": true,
+      "note": ""
+    }
+  ],
+  "controls_passed": 4,
+  "controls_total": 4,
+  "match_rates": {
+    "hand_picked": {
+      "documented_parameter_records": 816,
+      "keys": {
+        "K1_id_vs_parms": {
+          "matched": 344,
+          "field_present_on": 705,
+          "pct_of_present": 48.8,
+          "pct_of_ALL_records": 42.2
+        },
+        "K2_id_vs_tuples": {
+          "matched": 380,
+          "field_present_on": 705,
+          "pct_of_present": 53.9,
+          "pct_of_ALL_records": 46.6
+        },
+        "K3_idstrip_vs_parms": {
+          "matched": 344,
+          "field_present_on": 705,
+          "pct_of_present": 48.8,
+          "pct_of_ALL_records": 42.2
+        },
+        "K4_label_vs_parmlabels": {
+          "matched": 657,
+          "field_present_on": 816,
+          "pct_of_present": 80.5,
+          "pct_of_ALL_records": 80.5
+        },
+        "K5_label_vs_tuplelabels": {
+          "matched": 657,
+          "field_present_on": 816,
+          "pct_of_present": 80.5,
+          "pct_of_ALL_records": 80.5
+        },
+        "K6_channels_vs_parms": {
+          "matched": 38,
+          "field_present_on": 42,
+          "pct_of_present": 90.5,
+          "pct_of_ALL_records": 4.7
+        }
+      }
+    },
+    "population_sweep": {
+      "documented_parameter_records": 2137,
+      "keys": {
+        "K1_id_vs_parms": {
+          "matched": 1063,
+          "field_present_on": 1324,
+          "pct_of_present": 80.3,
+          "pct_of_ALL_records": 49.7
+        },
+        "K2_id_vs_tuples": {
+          "matched": 1118,
+          "field_present_on": 1324,
+          "pct_of_present": 84.4,
+          "pct_of_ALL_records": 52.3
+        },
+        "K3_idstrip_vs_parms": {
+          "matched": 1065,
+          "field_present_on": 1324,
+          "pct_of_present": 80.4,
+          "pct_of_ALL_records": 49.8
+        },
+        "K4_label_vs_parmlabels": {
+          "matched": 1798,
+          "field_present_on": 2137,
+          "pct_of_present": 84.1,
+          "pct_of_ALL_records": 84.1
+        },
+        "K5_label_vs_tuplelabels": {
+          "matched": 1800,
+          "field_present_on": 2137,
+          "pct_of_present": 84.2,
+          "pct_of_ALL_records": 84.2
+        },
+        "K6_channels_vs_parms": {
+          "matched": 157,
+          "field_present_on": 183,
+          "pct_of_present": 85.8,
+          "pct_of_ALL_records": 7.3
+        }
+      }
+    }
+  },
+  "per_node": {
+    "hand_picked": [
+      {
+        "node": "cop/chromakey",
+        "status": "OK",
+        "documented_params_resolved": 15,
+        "live_parms": 26,
+        "hits": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/adjacency_distort",
+        "status": "OK",
+        "documented_params_resolved": 11,
+        "live_parms": 20,
+        "hits": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/grunge_rust",
+        "status": "OK",
+        "documented_params_resolved": 20,
+        "live_parms": 34,
+        "hits": {
+          "K1_id_vs_parms": 16,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 16,
+          "K4_label_vs_parmlabels": 19,
+          "K5_label_vs_tuplelabels": 19,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 19,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 19,
+          "K4_label_vs_parmlabels": 20,
+          "K5_label_vs_tuplelabels": 20,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/cellularnoise3d",
+        "status": "OK",
+        "documented_params_resolved": 23,
+        "live_parms": 49,
+        "hits": {
+          "K1_id_vs_parms": 17,
+          "K2_id_vs_tuples": 20,
+          "K3_idstrip_vs_parms": 17,
+          "K4_label_vs_parmlabels": 22,
+          "K5_label_vs_tuplelabels": 22,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 22,
+          "K2_id_vs_tuples": 22,
+          "K3_idstrip_vs_parms": 22,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/chromaticaberration",
+        "status": "OK",
+        "documented_params_resolved": 21,
+        "live_parms": 46,
+        "hits": {
+          "K1_id_vs_parms": 17,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 17,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 21,
+          "K2_id_vs_tuples": 21,
+          "K3_idstrip_vs_parms": 21,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/blur",
+        "status": "OK",
+        "documented_params_resolved": 17,
+        "live_parms": 28,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 9
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 9
+        }
+      },
+      {
+        "node": "cop2/edgeblur",
+        "status": "OK",
+        "documented_params_resolved": 7,
+        "live_parms": 3,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 2
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 6
+        }
+      },
+      {
+        "node": "cop2/emboss",
+        "status": "OK",
+        "documented_params_resolved": 21,
+        "live_parms": 39,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 20,
+          "K5_label_vs_tuplelabels": 20,
+          "K6_channels_vs_parms": 27
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 27
+        }
+      },
+      {
+        "node": "lop/karma",
+        "status": "OK",
+        "documented_params_resolved": 251,
+        "live_parms": 275,
+        "hits": {
+          "K1_id_vs_parms": 133,
+          "K2_id_vs_tuples": 135,
+          "K3_idstrip_vs_parms": 133,
+          "K4_label_vs_parmlabels": 146,
+          "K5_label_vs_tuplelabels": 146,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 230,
+          "K2_id_vs_tuples": 230,
+          "K3_idstrip_vs_parms": 230,
+          "K4_label_vs_parmlabels": 251,
+          "K5_label_vs_tuplelabels": 251,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/rendersettings",
+        "status": "OK",
+        "documented_params_resolved": 200,
+        "live_parms": 428,
+        "hits": {
+          "K1_id_vs_parms": 20,
+          "K2_id_vs_tuples": 22,
+          "K3_idstrip_vs_parms": 20,
+          "K4_label_vs_parmlabels": 183,
+          "K5_label_vs_tuplelabels": 183,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 191,
+          "K2_id_vs_tuples": 191,
+          "K3_idstrip_vs_parms": 191,
+          "K4_label_vs_parmlabels": 200,
+          "K5_label_vs_tuplelabels": 200,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/distantlight",
+        "status": "OK",
+        "documented_params_resolved": 87,
+        "live_parms": 203,
+        "hits": {
+          "K1_id_vs_parms": 24,
+          "K2_id_vs_tuples": 31,
+          "K3_idstrip_vs_parms": 24,
+          "K4_label_vs_parmlabels": 80,
+          "K5_label_vs_tuplelabels": 80,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 78,
+          "K2_id_vs_tuples": 78,
+          "K3_idstrip_vs_parms": 78,
+          "K4_label_vs_parmlabels": 87,
+          "K5_label_vs_tuplelabels": 87,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/xform",
+        "status": "OK",
+        "documented_params_resolved": 24,
+        "live_parms": 49,
+        "hits": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 22,
+          "K5_label_vs_tuplelabels": 22,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 19,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 19,
+          "K4_label_vs_parmlabels": 24,
+          "K5_label_vs_tuplelabels": 24,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/scatter",
+        "status": "OK",
+        "documented_params_resolved": 30,
+        "live_parms": 44,
+        "hits": {
+          "K1_id_vs_parms": 30,
+          "K2_id_vs_tuples": 30,
+          "K3_idstrip_vs_parms": 30,
+          "K4_label_vs_parmlabels": 30,
+          "K5_label_vs_tuplelabels": 30,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 30,
+          "K2_id_vs_tuples": 30,
+          "K3_idstrip_vs_parms": 30,
+          "K4_label_vs_parmlabels": 30,
+          "K5_label_vs_tuplelabels": 30,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/geometry",
+        "status": "OK",
+        "documented_params_resolved": 21,
+        "live_parms": 32,
+        "hits": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 16,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 17,
+          "K2_id_vs_tuples": 17,
+          "K3_idstrip_vs_parms": 17,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/ropfetch",
+        "status": "OK",
+        "documented_params_resolved": 68,
+        "live_parms": 78,
+        "hits": {
+          "K1_id_vs_parms": 46,
+          "K2_id_vs_tuples": 48,
+          "K3_idstrip_vs_parms": 46,
+          "K4_label_vs_parmlabels": 49,
+          "K5_label_vs_tuplelabels": 49,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 52,
+          "K2_id_vs_tuples": 52,
+          "K3_idstrip_vs_parms": 52,
+          "K4_label_vs_parmlabels": 68,
+          "K5_label_vs_tuplelabels": 68,
+          "K6_channels_vs_parms": 0
+        }
+      }
+    ],
+    "population_sweep": [
+      {
+        "node": "cop/normaltoheight",
+        "status": "OK",
+        "documented_params_resolved": 8,
+        "live_parms": 11,
+        "hits": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/curlnoise3d",
+        "status": "OK",
+        "documented_params_resolved": 11,
+        "live_parms": 20,
+        "hits": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/combinenormals",
+        "status": "OK",
+        "documented_params_resolved": 3,
+        "live_parms": 3,
+        "hits": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/testgeometry_tommy",
+        "status": "OK",
+        "documented_params_resolved": 8,
+        "live_parms": 12,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/boundrect",
+        "status": "OK",
+        "documented_params_resolved": 5,
+        "live_parms": 5,
+        "hits": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/curve3d",
+        "status": "OK",
+        "documented_params_resolved": 59,
+        "live_parms": 113,
+        "hits": {
+          "K1_id_vs_parms": 49,
+          "K2_id_vs_tuples": 49,
+          "K3_idstrip_vs_parms": 49,
+          "K4_label_vs_parmlabels": 55,
+          "K5_label_vs_tuplelabels": 55,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 59,
+          "K2_id_vs_tuples": 59,
+          "K3_idstrip_vs_parms": 59,
+          "K4_label_vs_parmlabels": 59,
+          "K5_label_vs_tuplelabels": 59,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/bakepreprocess",
+        "status": "OK",
+        "documented_params_resolved": 18,
+        "live_parms": 24,
+        "hits": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 18,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 18,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/average",
+        "status": "OK",
+        "documented_params_resolved": 7,
+        "live_parms": 7,
+        "hits": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/bokeh",
+        "status": "OK",
+        "documented_params_resolved": 7,
+        "live_parms": 9,
+        "hits": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/idtomono",
+        "status": "OK",
+        "documented_params_resolved": 2,
+        "live_parms": 2,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/spheresample",
+        "status": "OK",
+        "documented_params_resolved": 10,
+        "live_parms": 16,
+        "hits": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/ociotransform",
+        "status": "OK",
+        "documented_params_resolved": 8,
+        "live_parms": 8,
+        "hits": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/cross",
+        "status": "OK",
+        "documented_params_resolved": 1,
+        "live_parms": 1,
+        "hits": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/layertovdbleafpoints",
+        "status": "OK",
+        "documented_params_resolved": 2,
+        "live_parms": 2,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/cableunpack",
+        "status": "OK",
+        "documented_params_resolved": 5,
+        "live_parms": 2,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/contactsheet",
+        "status": "OK",
+        "documented_params_resolved": 14,
+        "live_parms": 18,
+        "hits": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 13,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/blur",
+        "status": "OK",
+        "documented_params_resolved": 6,
+        "live_parms": 9,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/curveanimate3d",
+        "status": "OK",
+        "documented_params_resolved": 41,
+        "live_parms": 45,
+        "hits": {
+          "K1_id_vs_parms": 41,
+          "K2_id_vs_tuples": 41,
+          "K3_idstrip_vs_parms": 41,
+          "K4_label_vs_parmlabels": 34,
+          "K5_label_vs_tuplelabels": 34,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 41,
+          "K2_id_vs_tuples": 41,
+          "K3_idstrip_vs_parms": 41,
+          "K4_label_vs_parmlabels": 41,
+          "K5_label_vs_tuplelabels": 41,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/crystalnoise3d",
+        "status": "OK",
+        "documented_params_resolved": 25,
+        "live_parms": 45,
+        "hits": {
+          "K1_id_vs_parms": 21,
+          "K2_id_vs_tuples": 21,
+          "K3_idstrip_vs_parms": 21,
+          "K4_label_vs_parmlabels": 24,
+          "K5_label_vs_tuplelabels": 24,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 24,
+          "K2_id_vs_tuples": 24,
+          "K3_idstrip_vs_parms": 24,
+          "K4_label_vs_parmlabels": 25,
+          "K5_label_vs_tuplelabels": 25,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/dilateerode",
+        "status": "OK",
+        "documented_params_resolved": 7,
+        "live_parms": 9,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/lensdistort",
+        "status": "OK",
+        "documented_params_resolved": 13,
+        "live_parms": 15,
+        "hits": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 13,
+          "K2_id_vs_tuples": 13,
+          "K3_idstrip_vs_parms": 13,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/pyro_sourcefromlayer",
+        "status": "OK",
+        "documented_params_resolved": 21,
+        "live_parms": 37,
+        "hits": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 21,
+          "K2_id_vs_tuples": 21,
+          "K3_idstrip_vs_parms": 21,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/triplanarhextile",
+        "status": "OK",
+        "documented_params_resolved": 23,
+        "live_parms": 44,
+        "hits": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 23,
+          "K2_id_vs_tuples": 23,
+          "K3_idstrip_vs_parms": 23,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/vdbleafpoints",
+        "status": "OK",
+        "documented_params_resolved": 5,
+        "live_parms": 2,
+        "hits": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/triplanaruv",
+        "status": "OK",
+        "documented_params_resolved": 2,
+        "live_parms": 2,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/scale",
+        "status": "OK",
+        "documented_params_resolved": 6,
+        "live_parms": 10,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/dof",
+        "status": "OK",
+        "documented_params_resolved": 4,
+        "live_parms": 26,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/streak",
+        "status": "OK",
+        "documented_params_resolved": 16,
+        "live_parms": 24,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 13
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 13
+        }
+      },
+      {
+        "node": "cop2/dsmflatten",
+        "status": "OK",
+        "documented_params_resolved": 15,
+        "live_parms": 36,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 2
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 9
+        }
+      },
+      {
+        "node": "cop2/shape",
+        "status": "OK",
+        "documented_params_resolved": 34,
+        "live_parms": 57,
+        "hits": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 32,
+          "K5_label_vs_tuplelabels": 32,
+          "K6_channels_vs_parms": 1
+        },
+        "denom": {
+          "K1_id_vs_parms": 19,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 19,
+          "K4_label_vs_parmlabels": 34,
+          "K5_label_vs_tuplelabels": 34,
+          "K6_channels_vs_parms": 1
+        }
+      },
+      {
+        "node": "cop2/wipe",
+        "status": "OK",
+        "documented_params_resolved": 16,
+        "live_parms": 29,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 15
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 15
+        }
+      },
+      {
+        "node": "cop2/chromakey",
+        "status": "OK",
+        "documented_params_resolved": 21,
+        "live_parms": 33,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 15
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 18
+        }
+      },
+      {
+        "node": "cop2/degrain",
+        "status": "OK",
+        "documented_params_resolved": 12,
+        "live_parms": 20,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 10
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 10
+        }
+      },
+      {
+        "node": "cop2/fieldswap",
+        "status": "OK",
+        "documented_params_resolved": 0,
+        "live_parms": 0,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/anaglyph",
+        "status": "OK",
+        "documented_params_resolved": 1,
+        "live_parms": 1,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/pixel",
+        "status": "OK",
+        "documented_params_resolved": 14,
+        "live_parms": 29,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 9
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 9
+        }
+      },
+      {
+        "node": "cop2/diff",
+        "status": "OK",
+        "documented_params_resolved": 18,
+        "live_parms": 42,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 3
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 3
+        }
+      },
+      {
+        "node": "cop2/vopcop2gen",
+        "status": "OK",
+        "documented_params_resolved": 20,
+        "live_parms": 33,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 19,
+          "K5_label_vs_tuplelabels": 19,
+          "K6_channels_vs_parms": 1
+        },
+        "denom": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 20,
+          "K5_label_vs_tuplelabels": 20,
+          "K6_channels_vs_parms": 1
+        }
+      },
+      {
+        "node": "cop2/extract",
+        "status": "OK",
+        "documented_params_resolved": 4,
+        "live_parms": 4,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 4
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 4
+        }
+      },
+      {
+        "node": "cop2/terrain_noise",
+        "status": "NOT_IN_RUNTIME"
+      },
+      {
+        "node": "cop2/edge",
+        "status": "OK",
+        "documented_params_resolved": 15,
+        "live_parms": 28,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 9
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 9
+        }
+      },
+      {
+        "node": "cop2/illpixel",
+        "status": "OK",
+        "documented_params_resolved": 3,
+        "live_parms": 4,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/mosaic",
+        "status": "OK",
+        "documented_params_resolved": 7,
+        "live_parms": 12,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 6
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 6
+        }
+      },
+      {
+        "node": "cop2/ramp",
+        "status": "OK",
+        "documented_params_resolved": 31,
+        "live_parms": 55,
+        "hits": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 28,
+          "K5_label_vs_tuplelabels": 28,
+          "K6_channels_vs_parms": 1
+        },
+        "denom": {
+          "K1_id_vs_parms": 16,
+          "K2_id_vs_tuples": 16,
+          "K3_idstrip_vs_parms": 16,
+          "K4_label_vs_parmlabels": 31,
+          "K5_label_vs_tuplelabels": 31,
+          "K6_channels_vs_parms": 1
+        }
+      },
+      {
+        "node": "cop2/convolve",
+        "status": "OK",
+        "documented_params_resolved": 15,
+        "live_parms": 104,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 9
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 9
+        }
+      },
+      {
+        "node": "cop2/colorcorrect",
+        "status": "OK",
+        "documented_params_resolved": 18,
+        "live_parms": 75,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 9
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 25
+        }
+      },
+      {
+        "node": "cop2/color",
+        "status": "OK",
+        "documented_params_resolved": 23,
+        "live_parms": 37,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 22,
+          "K5_label_vs_tuplelabels": 22,
+          "K6_channels_vs_parms": 1
+        },
+        "denom": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 1
+        }
+      },
+      {
+        "node": "cop2/gamma",
+        "status": "OK",
+        "documented_params_resolved": 16,
+        "live_parms": 29,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 15
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 15
+        }
+      },
+      {
+        "node": "cop2/render",
+        "status": "OK",
+        "documented_params_resolved": 5,
+        "live_parms": 36,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/switch",
+        "status": "OK",
+        "documented_params_resolved": 1,
+        "live_parms": 2,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/drop",
+        "status": "OK",
+        "documented_params_resolved": 17,
+        "live_parms": 22,
+        "hits": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 16,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 16,
+          "K2_id_vs_tuples": 16,
+          "K3_idstrip_vs_parms": 16,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/assignmaterial",
+        "status": "OK",
+        "documented_params_resolved": 20,
+        "live_parms": 25,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 20,
+          "K5_label_vs_tuplelabels": 20,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 20,
+          "K5_label_vs_tuplelabels": 20,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/plane",
+        "status": "OK",
+        "documented_params_resolved": 36,
+        "live_parms": 67,
+        "hits": {
+          "K1_id_vs_parms": 20,
+          "K2_id_vs_tuples": 27,
+          "K3_idstrip_vs_parms": 20,
+          "K4_label_vs_parmlabels": 32,
+          "K5_label_vs_tuplelabels": 32,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 27,
+          "K2_id_vs_tuples": 27,
+          "K3_idstrip_vs_parms": 27,
+          "K4_label_vs_parmlabels": 36,
+          "K5_label_vs_tuplelabels": 36,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/cube",
+        "status": "OK",
+        "documented_params_resolved": 34,
+        "live_parms": 59,
+        "hits": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 22,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 31,
+          "K5_label_vs_tuplelabels": 31,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 24,
+          "K2_id_vs_tuples": 24,
+          "K3_idstrip_vs_parms": 24,
+          "K4_label_vs_parmlabels": 34,
+          "K5_label_vs_tuplelabels": 34,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/copytopoints",
+        "status": "OK",
+        "documented_params_resolved": 36,
+        "live_parms": 46,
+        "hits": {
+          "K1_id_vs_parms": 36,
+          "K2_id_vs_tuples": 36,
+          "K3_idstrip_vs_parms": 36,
+          "K4_label_vs_parmlabels": 32,
+          "K5_label_vs_tuplelabels": 32,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 36,
+          "K2_id_vs_tuples": 36,
+          "K3_idstrip_vs_parms": 36,
+          "K4_label_vs_parmlabels": 36,
+          "K5_label_vs_tuplelabels": 36,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/inlineusd",
+        "status": "OK",
+        "documented_params_resolved": 2,
+        "live_parms": 2,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/blend",
+        "status": "OK",
+        "documented_params_resolved": 1,
+        "live_parms": 1,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/hdadynamicpayload",
+        "status": "OK",
+        "documented_params_resolved": 27,
+        "live_parms": 40,
+        "hits": {
+          "K1_id_vs_parms": 25,
+          "K2_id_vs_tuples": 25,
+          "K3_idstrip_vs_parms": 25,
+          "K4_label_vs_parmlabels": 26,
+          "K5_label_vs_tuplelabels": 26,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 25,
+          "K2_id_vs_tuples": 25,
+          "K3_idstrip_vs_parms": 25,
+          "K4_label_vs_parmlabels": 27,
+          "K5_label_vs_tuplelabels": 27,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/isolatescene",
+        "status": "OK",
+        "documented_params_resolved": 9,
+        "live_parms": 10,
+        "hits": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 9,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 9,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/merge",
+        "status": "OK",
+        "documented_params_resolved": 2,
+        "live_parms": 5,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/lpetag",
+        "status": "OK",
+        "documented_params_resolved": 14,
+        "live_parms": 12,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/usd_rop",
+        "status": "OK",
+        "documented_params_resolved": 0,
+        "live_parms": 69,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/switch",
+        "status": "OK",
+        "documented_params_resolved": 8,
+        "live_parms": 8,
+        "hits": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/bakeskinning",
+        "status": "OK",
+        "documented_params_resolved": 0,
+        "live_parms": 0,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/karmarenderproducts",
+        "status": "OK",
+        "documented_params_resolved": 11,
+        "live_parms": 30,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/pythonscript",
+        "status": "OK",
+        "documented_params_resolved": 2,
+        "live_parms": 2,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/houdinipreviewprocedurals",
+        "status": "OK",
+        "documented_params_resolved": 2,
+        "live_parms": 2,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/editmaterial",
+        "status": "OK",
+        "documented_params_resolved": 7,
+        "live_parms": 8,
+        "hits": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/shotsplit",
+        "status": "OK",
+        "documented_params_resolved": 7,
+        "live_parms": 12,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/apexanimate",
+        "status": "OK",
+        "documented_params_resolved": 3,
+        "live_parms": 11,
+        "hits": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/primitive",
+        "status": "OK",
+        "documented_params_resolved": 5,
+        "live_parms": 5,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/lightfilterlibrary",
+        "status": "OK",
+        "documented_params_resolved": 13,
+        "live_parms": 17,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/begincontextoptionsblock",
+        "status": "OK",
+        "documented_params_resolved": 1,
+        "live_parms": 1,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/texturemateriallibrary",
+        "status": "OK",
+        "documented_params_resolved": 14,
+        "live_parms": 47,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/sopcrowdimport",
+        "status": "OK",
+        "documented_params_resolved": 46,
+        "live_parms": 63,
+        "hits": {
+          "K1_id_vs_parms": 45,
+          "K2_id_vs_tuples": 46,
+          "K3_idstrip_vs_parms": 45,
+          "K4_label_vs_parmlabels": 46,
+          "K5_label_vs_tuplelabels": 46,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 46,
+          "K2_id_vs_tuples": 46,
+          "K3_idstrip_vs_parms": 46,
+          "K4_label_vs_parmlabels": 46,
+          "K5_label_vs_tuplelabels": 46,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/volumenoisesdf",
+        "status": "OK",
+        "documented_params_resolved": 25,
+        "live_parms": 87,
+        "hits": {
+          "K1_id_vs_parms": 23,
+          "K2_id_vs_tuples": 25,
+          "K3_idstrip_vs_parms": 24,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 25,
+          "K2_id_vs_tuples": 25,
+          "K3_idstrip_vs_parms": 25,
+          "K4_label_vs_parmlabels": 25,
+          "K5_label_vs_tuplelabels": 25,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/muscleproperties",
+        "status": "OK",
+        "documented_params_resolved": 27,
+        "live_parms": 57,
+        "hits": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 27,
+          "K5_label_vs_tuplelabels": 27,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 27,
+          "K2_id_vs_tuples": 27,
+          "K3_idstrip_vs_parms": 27,
+          "K4_label_vs_parmlabels": 27,
+          "K5_label_vs_tuplelabels": 27,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/kinefx--characterblendshapescore",
+        "status": "OK",
+        "documented_params_resolved": 2,
+        "live_parms": 5,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/assemble",
+        "status": "OK",
+        "documented_params_resolved": 14,
+        "live_parms": 17,
+        "hits": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 9,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/clay",
+        "status": "OK",
+        "documented_params_resolved": 23,
+        "live_parms": 37,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 27
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 27
+        }
+      },
+      {
+        "node": "sop/resample",
+        "status": "OK",
+        "documented_params_resolved": 21,
+        "live_parms": 25,
+        "hits": {
+          "K1_id_vs_parms": 19,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 19,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 19,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 19,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/heightfield_erode_hydro",
+        "status": "OK",
+        "documented_params_resolved": 38,
+        "live_parms": 48,
+        "hits": {
+          "K1_id_vs_parms": 32,
+          "K2_id_vs_tuples": 32,
+          "K3_idstrip_vs_parms": 32,
+          "K4_label_vs_parmlabels": 36,
+          "K5_label_vs_tuplelabels": 36,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 34,
+          "K2_id_vs_tuples": 34,
+          "K3_idstrip_vs_parms": 34,
+          "K4_label_vs_parmlabels": 38,
+          "K5_label_vs_tuplelabels": 38,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/unpackpoints",
+        "status": "OK",
+        "documented_params_resolved": 6,
+        "live_parms": 10,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 7
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 7
+        }
+      },
+      {
+        "node": "sop/agentclip-",
+        "status": "NOT_IN_RUNTIME"
+      },
+      {
+        "node": "sop/maskbyfeature",
+        "status": "OK",
+        "documented_params_resolved": 44,
+        "live_parms": 96,
+        "hits": {
+          "K1_id_vs_parms": 34,
+          "K2_id_vs_tuples": 35,
+          "K3_idstrip_vs_parms": 34,
+          "K4_label_vs_parmlabels": 41,
+          "K5_label_vs_tuplelabels": 41,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 37,
+          "K2_id_vs_tuples": 37,
+          "K3_idstrip_vs_parms": 37,
+          "K4_label_vs_parmlabels": 44,
+          "K5_label_vs_tuplelabels": 44,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/muscleflex-",
+        "status": "NOT_IN_RUNTIME"
+      },
+      {
+        "node": "sop/pointcapturecore",
+        "status": "OK",
+        "documented_params_resolved": 0,
+        "live_parms": 11,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/inflate",
+        "status": "OK",
+        "documented_params_resolved": 10,
+        "live_parms": 16,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/dembones_skinningconverter",
+        "status": "NOT_IN_RUNTIME"
+      },
+      {
+        "node": "sop/crowdmotionpathevaluate",
+        "status": "OK",
+        "documented_params_resolved": 1,
+        "live_parms": 1,
+        "hits": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/matchaxis",
+        "status": "OK",
+        "documented_params_resolved": 3,
+        "live_parms": 7,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/rop_gltf-",
+        "status": "NOT_IN_RUNTIME"
+      },
+      {
+        "node": "sop/intersectionstitch",
+        "status": "OK",
+        "documented_params_resolved": 4,
+        "live_parms": 10,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/uvpelt-",
+        "status": "NOT_IN_RUNTIME"
+      },
+      {
+        "node": "sop/vellumrefframe",
+        "status": "OK",
+        "documented_params_resolved": 12,
+        "live_parms": 15,
+        "hits": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/volumebound",
+        "status": "OK",
+        "documented_params_resolved": 4,
+        "live_parms": 6,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/object_merge",
+        "status": "OK",
+        "documented_params_resolved": 21,
+        "live_parms": 21,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/kinefx--smoothmotioncore",
+        "status": "OK",
+        "documented_params_resolved": 0,
+        "live_parms": 16,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/ml_examplepartition",
+        "status": "OK",
+        "documented_params_resolved": 1,
+        "live_parms": 1,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/volumenoisefog",
+        "status": "OK",
+        "documented_params_resolved": 48,
+        "live_parms": 95,
+        "hits": {
+          "K1_id_vs_parms": 43,
+          "K2_id_vs_tuples": 45,
+          "K3_idstrip_vs_parms": 44,
+          "K4_label_vs_parmlabels": 48,
+          "K5_label_vs_tuplelabels": 48,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 48,
+          "K2_id_vs_tuples": 48,
+          "K3_idstrip_vs_parms": 48,
+          "K4_label_vs_parmlabels": 48,
+          "K5_label_vs_tuplelabels": 48,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/ifdarchive",
+        "status": "OK",
+        "documented_params_resolved": 17,
+        "live_parms": 33,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/flipbook",
+        "status": "OK",
+        "documented_params_resolved": 10,
+        "live_parms": 214,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/ifd",
+        "status": "OK",
+        "documented_params_resolved": 30,
+        "live_parms": 191,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 25,
+          "K5_label_vs_tuplelabels": 25,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 30,
+          "K5_label_vs_tuplelabels": 30,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/agent",
+        "status": "OK",
+        "documented_params_resolved": 28,
+        "live_parms": 61,
+        "hits": {
+          "K1_id_vs_parms": 25,
+          "K2_id_vs_tuples": 25,
+          "K3_idstrip_vs_parms": 25,
+          "K4_label_vs_parmlabels": 27,
+          "K5_label_vs_tuplelabels": 27,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 25,
+          "K2_id_vs_tuples": 25,
+          "K3_idstrip_vs_parms": 25,
+          "K4_label_vs_parmlabels": 28,
+          "K5_label_vs_tuplelabels": 28,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/haircardtex",
+        "status": "OK",
+        "documented_params_resolved": 16,
+        "live_parms": 29,
+        "hits": {
+          "K1_id_vs_parms": 13,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 13,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/ribarchive",
+        "status": "OK",
+        "documented_params_resolved": 18,
+        "live_parms": 35,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/netbarrier",
+        "status": "OK",
+        "documented_params_resolved": 16,
+        "live_parms": 28,
+        "hits": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 9,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/hq_render",
+        "status": "OK",
+        "documented_params_resolved": 68,
+        "live_parms": 112,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 63,
+          "K5_label_vs_tuplelabels": 63,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 68,
+          "K5_label_vs_tuplelabels": 68,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/hq_common",
+        "status": "NOT_IN_RUNTIME"
+      },
+      {
+        "node": "out/filmboxfbx",
+        "status": "OK",
+        "documented_params_resolved": 32,
+        "live_parms": 46,
+        "hits": {
+          "K1_id_vs_parms": 19,
+          "K2_id_vs_tuples": 20,
+          "K3_idstrip_vs_parms": 19,
+          "K4_label_vs_parmlabels": 28,
+          "K5_label_vs_tuplelabels": 28,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 23,
+          "K2_id_vs_tuples": 23,
+          "K3_idstrip_vs_parms": 23,
+          "K4_label_vs_parmlabels": 32,
+          "K5_label_vs_tuplelabels": 32,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/shell",
+        "status": "OK",
+        "documented_params_resolved": 8,
+        "live_parms": 23,
+        "hits": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/wren",
+        "status": "OK",
+        "documented_params_resolved": 25,
+        "live_parms": 57,
+        "hits": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 25,
+          "K5_label_vs_tuplelabels": 25,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/prepost",
+        "status": "OK",
+        "documented_params_resolved": 45,
+        "live_parms": 6,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 45,
+          "K5_label_vs_tuplelabels": 45,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/usdzip",
+        "status": "OK",
+        "documented_params_resolved": 6,
+        "live_parms": 7,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/image3d",
+        "status": "OK",
+        "documented_params_resolved": 16,
+        "live_parms": 32,
+        "hits": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/standard",
+        "status": "NOT_IN_RUNTIME"
+      },
+      {
+        "node": "out/baketexture",
+        "status": "OK",
+        "documented_params_resolved": 27,
+        "live_parms": 164,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 25,
+          "K5_label_vs_tuplelabels": 25,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 27,
+          "K5_label_vs_tuplelabels": 27,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/karma",
+        "status": "OK",
+        "documented_params_resolved": 0,
+        "live_parms": 405,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/rib",
+        "status": "OK",
+        "documented_params_resolved": 39,
+        "live_parms": 115,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 34,
+          "K5_label_vs_tuplelabels": 34,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 39,
+          "K5_label_vs_tuplelabels": 39,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/bake_animation",
+        "status": "OK",
+        "documented_params_resolved": 11,
+        "live_parms": 20,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/alembic",
+        "status": "OK",
+        "documented_params_resolved": 53,
+        "live_parms": 65,
+        "hits": {
+          "K1_id_vs_parms": 48,
+          "K2_id_vs_tuples": 49,
+          "K3_idstrip_vs_parms": 48,
+          "K4_label_vs_parmlabels": 50,
+          "K5_label_vs_tuplelabels": 50,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 50,
+          "K2_id_vs_tuples": 50,
+          "K3_idstrip_vs_parms": 50,
+          "K4_label_vs_parmlabels": 53,
+          "K5_label_vs_tuplelabels": 53,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/merge",
+        "status": "OK",
+        "documented_params_resolved": 39,
+        "live_parms": 2,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 39,
+          "K5_label_vs_tuplelabels": 39,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/subnet",
+        "status": "OK",
+        "documented_params_resolved": 39,
+        "live_parms": 2,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 39,
+          "K5_label_vs_tuplelabels": 39,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/mdd",
+        "status": "OK",
+        "documented_params_resolved": 14,
+        "live_parms": 31,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/geometryraw",
+        "status": "OK",
+        "documented_params_resolved": 32,
+        "live_parms": 35,
+        "hits": {
+          "K1_id_vs_parms": 18,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 18,
+          "K4_label_vs_parmlabels": 22,
+          "K5_label_vs_tuplelabels": 22,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 30,
+          "K2_id_vs_tuples": 30,
+          "K3_idstrip_vs_parms": 30,
+          "K4_label_vs_parmlabels": 32,
+          "K5_label_vs_tuplelabels": 32,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/mapbyrange",
+        "status": "OK",
+        "documented_params_resolved": 4,
+        "live_parms": 4,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/ropopengl",
+        "status": "OK",
+        "documented_params_resolved": 0,
+        "live_parms": 198,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/partitionbybounds",
+        "status": "OK",
+        "documented_params_resolved": 33,
+        "live_parms": 41,
+        "hits": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 32,
+          "K2_id_vs_tuples": 32,
+          "K3_idstrip_vs_parms": 32,
+          "K4_label_vs_parmlabels": 33,
+          "K5_label_vs_tuplelabels": 33,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/csvoutput",
+        "status": "OK",
+        "documented_params_resolved": 12,
+        "live_parms": 18,
+        "hits": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/merge",
+        "status": "OK",
+        "documented_params_resolved": 4,
+        "live_parms": 3,
+        "hits": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/nodepattern",
+        "status": "OK",
+        "documented_params_resolved": 11,
+        "live_parms": 7,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/usdimportfiles",
+        "status": "OK",
+        "documented_params_resolved": 5,
+        "live_parms": 11,
+        "hits": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/partitionbyexpression",
+        "status": "OK",
+        "documented_params_resolved": 20,
+        "live_parms": 25,
+        "hits": {
+          "K1_id_vs_parms": 17,
+          "K2_id_vs_tuples": 17,
+          "K3_idstrip_vs_parms": 17,
+          "K4_label_vs_parmlabels": 20,
+          "K5_label_vs_tuplelabels": 20,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 20,
+          "K2_id_vs_tuples": 20,
+          "K3_idstrip_vs_parms": 20,
+          "K4_label_vs_parmlabels": 20,
+          "K5_label_vs_tuplelabels": 20,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/attributefromstring",
+        "status": "OK",
+        "documented_params_resolved": 14,
+        "live_parms": 17,
+        "hits": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/workitemimport",
+        "status": "OK",
+        "documented_params_resolved": 17,
+        "live_parms": 26,
+        "hits": {
+          "K1_id_vs_parms": 17,
+          "K2_id_vs_tuples": 17,
+          "K3_idstrip_vs_parms": 17,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 17,
+          "K2_id_vs_tuples": 17,
+          "K3_idstrip_vs_parms": 17,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/downloadfile",
+        "status": "OK",
+        "documented_params_resolved": 7,
+        "live_parms": 9,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/attributerename",
+        "status": "OK",
+        "documented_params_resolved": 7,
+        "live_parms": 14,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/xmlinput",
+        "status": "OK",
+        "documented_params_resolved": 19,
+        "live_parms": 24,
+        "hits": {
+          "K1_id_vs_parms": 18,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 18,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 18,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 18,
+          "K4_label_vs_parmlabels": 19,
+          "K5_label_vs_tuplelabels": 19,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/sort",
+        "status": "OK",
+        "documented_params_resolved": 7,
+        "live_parms": 4,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/attributestringedit",
+        "status": "OK",
+        "documented_params_resolved": 9,
+        "live_parms": 11,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/roptop_common",
+        "status": "NOT_IN_RUNTIME"
+      },
+      {
+        "node": "top/attributeclassify",
+        "status": "OK",
+        "documented_params_resolved": 13,
+        "live_parms": 15,
+        "hits": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/filerename",
+        "status": "OK",
+        "documented_params_resolved": 14,
+        "live_parms": 21,
+        "hits": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/filecopy",
+        "status": "OK",
+        "documented_params_resolved": 16,
+        "live_parms": 24,
+        "hits": {
+          "K1_id_vs_parms": 16,
+          "K2_id_vs_tuples": 16,
+          "K3_idstrip_vs_parms": 16,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 16,
+          "K2_id_vs_tuples": 16,
+          "K3_idstrip_vs_parms": 16,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/attributearray",
+        "status": "OK",
+        "documented_params_resolved": 18,
+        "live_parms": 24,
+        "hits": {
+          "K1_id_vs_parms": 18,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 18,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 18,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 18,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/filterbyrange",
+        "status": "OK",
+        "documented_params_resolved": 11,
+        "live_parms": 14,
+        "hits": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/filterbyexpression",
+        "status": "OK",
+        "documented_params_resolved": 11,
+        "live_parms": 10,
+        "hits": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/sendemail",
+        "status": "OK",
+        "documented_params_resolved": 16,
+        "live_parms": 25,
+        "hits": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 16,
+          "K2_id_vs_tuples": 16,
+          "K3_idstrip_vs_parms": 16,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/filecompress",
+        "status": "OK",
+        "documented_params_resolved": 19,
+        "live_parms": 27,
+        "hits": {
+          "K1_id_vs_parms": 18,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 18,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 18,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 18,
+          "K4_label_vs_parmlabels": 19,
+          "K5_label_vs_tuplelabels": 19,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/jsonoutput",
+        "status": "OK",
+        "documented_params_resolved": 14,
+        "live_parms": 17,
+        "hits": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      }
+    ]
+  }
+}
