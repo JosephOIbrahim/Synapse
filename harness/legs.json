@@ -101,7 +101,12 @@
       "prompt": "harness/prompts/h3b.md",
       "branch": "repair/h3b-tops-cancel",
       "worktree": ".claude/worktrees/h3b-tops-cancel",
-      "readonly": false
+      "readonly": false,
+      "touches": [
+        "python/synapse/server/handlers_render.py",
+        "python/synapse/server/handlers.py",
+        "shared/bridge.py"
+      ]
     },
     {
       "id": "H4",
@@ -426,6 +431,39 @@
       "readonly": true,
       "touches": [],
       "note": "READ-ONLY, PARALLEL to E0 on a disjoint question - E0 asks what a turn COSTS, E1 asks what the surface IS. A total is not a plan. Decomposes 17,310 per tool into name / description / schema, because those three compress differently and only one risks correctness. Looks for concentration (is it 20 tools of 120?), duplicated schema fragments (free reduction, no capability lost), and DEAD SURFACE - a registered tool never called costs its full definition every turn, and S1 already found five Solaris tools registered, tested and unreachable. Ends with the honest counter-question: is 2,000 even reachable at 120 tools, or is the real decision FEWER tools rather than smaller ones."
+    },
+    {
+      "id": "V2",
+      "name": "verdict schema + voice",
+      "state": "ready",
+      "receipt": "V2.json",
+      "branch": "econ/v2-verdict-schema--voice",
+      "worktree": ".claude/worktrees/v2-econ",
+      "prompt": "harness/prompts/v2.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/verdict.py",
+        "python/synapse/panel/voice_contract.py",
+        "python/synapse/panel/decision_log.py"
+      ],
+      "note": "Blueprint Mile 3, moved up from Mile 7 because voice B is a DEPENDENCY of tier rotation - rotate the manifest without it and every rotation is a re-onboarding event. E0 supplied a second and stronger reason: the cache breakpoint wraps the WHOLE system prompt and the prompt is not static (E0-F5/F6), so every write is paid at 1.25x and every read misses, invisibly. If the model emits STRUCTURE instead of PROSE, register instruction comes out of the prompt - which is a large part of what makes it non-static. Two problems, one contract."
+    },
+    {
+      "id": "V3",
+      "name": "probe layer",
+      "state": "ready",
+      "receipt": "V3.json",
+      "branch": "econ/v3-probe-layer",
+      "worktree": ".claude/worktrees/v3-econ",
+      "prompt": "harness/prompts/v3.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/providers/probe.py",
+        "python/synapse/panel/providers/registry.py"
+      ],
+      "note": "Blueprint Mile 4. Routing is probe-derived, never config-declared - and this project has the receipts: hou.ActiveRender documented and absent, EXPECTED_HOUDINI_VERSION declared and never assigned, five Solaris tools registered and unreachable. A model list is the same shape of claim and fails the same way. Returns a structure, no panel work. Colour COMPUTED from probe age and quota, never stored; staleness degrades to GREY, never to green. Zero completion spend - count_tokens is free, completions are not."
     }
   ]
 }
