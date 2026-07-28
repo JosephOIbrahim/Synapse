@@ -5087,3 +5087,59 @@ script, at 92% of a weekly limit, on a file I had already audited once.
 **The good news is the smallest possible version of it:** the correct number was printed on screen
 before the damage, and the revert was one command. **The check was right and the wiring was wrong**
 — which is R147 again, in a throwaway script.
+
+---
+
+## RULING 174 — R150 was too broad. "The server is the authority" is not a general rule.
+
+I ruled on E1-F9 that seven tools advertising `readOnlyHint=true` while the server treats them as
+mutating should have **their annotations corrected to match the server** — *"the server is the
+authority."*
+
+Building the check that enforces that found two things which change it.
+
+### Ten disagreements, not seven — and three run the other way
+
+```
+emergency_halt        annotation MUTATING  server READ-ONLY  destructiveHint=True
+render_farm_cancel    annotation MUTATING  server READ-ONLY  destructiveHint=True
+render_stop           annotation MUTATING  server READ-ONLY  destructiveHint=True
+```
+
+**I raised the alarm on those and I was wrong.** `handlers.py:220-234` documents them:
+
+> *"a running render holds the C5 mutation lock for its whole duration, so a mutating-classified
+> stop or halt would queue behind the very operation it exists to interrupt — **which is the
+> difference between a kill switch and a decoration.** Audit is written in-handler."*
+
+**Deliberate, reasoned, and compensated** — provenance moves from the floor gate into the handler
+rather than being skipped. E1 could not see these because it asked only *"which claim read-only and
+are not?"*
+
+### And the seven point the opposite way from my ruling
+
+A shallow read of all six handlers with a live-file grep found **no mutation** in any:
+`hda_list`, `query_prims`, `memory_query`, `memory_status`, `propose_graph`, `render_farm_status`.
+(`cops_temporal_analysis` is the exception — the code explicitly says it moves the playhead and
+force-cooks, so **its server classification is right and its annotation is wrong.**)
+
+**So for six of the seven, the annotation is probably right and the server's omission is the gap** —
+the reverse of what R150 said.
+
+**Ruled:**
+1. **R150 is amended.** The server is the *enforcer*, not automatically the *authority*. Which side
+   is wrong is a per-tool question answered by reading the handler.
+2. **Nothing is reclassified today.** Adding a command to `_READ_ONLY_COMMANDS` makes it execute
+   with **zero floor provenance** — and I have been wrong twice today by acting on a thin check
+   (R173, and the alarm above). **A 22-line grep is not grounds for a safety change.**
+3. **`readonly_hint_agreement.py` ships and gates**, with the three documented exceptions declared
+   so it cannot cry wolf on correct decisions (R129). It reports 7 undeclared and exits nonzero.
+
+### The pattern, third time today
+
+**I found a mismatch and assumed a defect without reading why.** R173 was the same move on
+CLAUDE.md §16, an hour earlier. The check is the durable part; my inference from it was wrong both
+times.
+
+**Write the check, publish the disagreement, and let the handler decide** — rather than ruling from
+the shape of the mismatch.
