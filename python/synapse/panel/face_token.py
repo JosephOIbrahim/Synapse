@@ -37,10 +37,10 @@ degradation is a contract here, same as FaceWork.
 """
 
 try:
-    from PySide6 import QtWidgets, QtCore
+    from PySide6 import QtWidgets, QtCore, QtGui
     from PySide6.QtCore import Qt
 except ImportError:  # pragma: no cover - Houdini ships PySide6
-    from PySide2 import QtWidgets, QtCore
+    from PySide2 import QtWidgets, QtCore, QtGui
     from PySide2.QtCore import Qt
 
 from synapse.panel.designsystem import tokens as t
@@ -56,6 +56,76 @@ except Exception:  # pragma: no cover
 UNKNOWN = "unknown"
 
 
+class TokenField(QtWidgets.QWidget):
+    """A cell field where each segment's AREA is its share of the turn.
+
+    Extends FaceWork's BucketGrid idiom rather than inventing a second visual
+    language: same cell vocabulary, but allocated by proportion instead of by
+    progress.
+
+    THE RULE THAT SHAPES IT: an unknown segment is NOT drawn as a small share.
+    It gets a hairline outline and no cells. A segment rendered small reads as
+    'this costs little'; the truth is 'nobody measured this', and those are
+    different claims (R162 - a zero is a claim).
+
+    So the field only fills to the extent the turn has actually been measured,
+    and the unfilled remainder is honest empty space rather than an implied
+    zero.
+    """
+
+    _COLS, _ROWS = 24, 8
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("DsSection")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self._segments = []          # [(label, tokens, colour)]
+        self.setMinimumHeight(96)
+
+    def sizeHint(self):
+        return QtCore.QSize(420, 110)
+
+    def set_segments(self, segments):
+        """segments: [(label, tokens_or_None, colour)]. None means UNMEASURED
+        and claims no cells."""
+        self._segments = list(segments or [])
+        self.update()
+
+    def paintEvent(self, _event):
+        p = QtGui.QPainter(self)
+        p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, False)
+        w, h = self.width(), self.height()
+        n = self._COLS * self._ROWS
+        cw, ch = w / float(self._COLS), h / float(self._ROWS)
+        gap = 2.0
+
+        known = [(lab, tok, col) for lab, tok, col in self._segments
+                 if isinstance(tok, (int, float)) and tok > 0]
+        total_known = sum(tok for _, tok, _ in known)
+
+        # Cells are allocated against the KNOWN total only. If half the turn is
+        # unmeasured the field is half empty - which is the honest picture.
+        alloc, idx = [], 0
+        for lab, tok, col in known:
+            take = int(round((tok / float(total_known)) * n)) if total_known else 0
+            alloc.append((col, idx, min(idx + take, n)))
+            idx += take
+
+        empty = QtGui.QColor(t.NEAR_BLACK if hasattr(t, "NEAR_BLACK") else "#111111")
+        for i in range(n):
+            r, cix = divmod(i, self._COLS)
+            x, y = cix * cw, r * ch
+            colour = empty
+            for col, lo, hi in alloc:
+                if lo <= i < hi:
+                    colour = QtGui.QColor(col)
+                    break
+            p.fillRect(QtCore.QRectF(x + gap / 2, y + gap / 2,
+                                     cw - gap, ch - gap), colour)
+        p.end()
+
+
+
 class FaceToken(QtWidgets.QWidget):
     """The token-economics read-out. Renders only what has been measured."""
 
@@ -67,6 +137,8 @@ class FaceToken(QtWidgets.QWidget):
         lay.setSpacing(18)
 
         lay.addWidget(self._eyebrow("THIS TURN"))
+        self._field = TokenField()
+        lay.addWidget(self._field)
         self._composition = self._kv_block([
             ("system prompt", UNKNOWN),
             ("tool surface", UNKNOWN),
@@ -93,8 +165,12 @@ class FaceToken(QtWidgets.QWidget):
 
         lay.addStretch(1)
         lay.addWidget(self._footnote(
-            "Quota headroom and per-token price are not obtainable from any "
-            "configured provider (V3-F4, V3-F5). Unknown is shown as unknown."))
+            "The field fills only as far as the turn has been measured — an "
+            "unmeasured segment claims no cells rather than reading as a small "
+            "one. System prompt and tool surface are character-derived and run "
+            "~6% low against exact counts (R155). Quota headroom and per-token "
+            "price are not obtainable from any configured provider (V3-F4, "
+            "V3-F5)."))
 
     # -- construction helpers ------------------------------------------------
 
@@ -148,11 +224,49 @@ class FaceToken(QtWidgets.QWidget):
     def set_composition(self, system=None, tools=None, grounding=None, conversation=None):
         """Per-turn token composition, measured. E0 measured these and nothing
         surfaced them: system prompt 2,961 EXACT, tool surface ~19k, grounding
-        variable to 113k on a 25,850-node scene."""
+        variable to 113k on a 25,850-node scene.
+
+        Also drives the field. A segment passed as None claims no cells, so the
+        field fills only as far as the turn has actually been measured."""
         self.set_row("system prompt", system)
         self.set_row("tool surface", tools)
         self.set_row("scene grounding", grounding)
         self.set_row("conversation", conversation)
+        self._field.set_segments([
+            ("system prompt", system, getattr(t, "SIGNAL", "#8FB3D9")),
+            ("tool surface", tools, getattr(t, "CONIFEROUS", "#6E8F72")),
+            ("scene grounding", grounding, getattr(t, "MUSHROOM", "#8A8078")),
+            ("conversation", conversation, getattr(t, "TEXT_TERTIARY", "#6A6A6A")),
+        ])
+
+    def measure_static(self):
+        """Fill the two segments that are knowable WITHOUT a live turn.
+
+        The system prompt and the tool surface are the same on every turn until
+        the code changes, so they can be counted at open. Scene grounding and
+        conversation cannot - they are per-turn, and inventing them is exactly
+        the estimate this face refuses to show.
+
+        Free: character-derived, no API call, no completion spend. Labelled as
+        approximate in the footnote rather than presented as exact, because the
+        proxy was measured at ~6% low (R155)."""
+        sysn = tools = None
+        try:
+            from synapse.panel.system_prompt import build_system_prompt
+            sp = build_system_prompt({"network": "/stage", "selection": [],
+                                      "frame": 1, "hip": ""})
+            sysn = int(len(sp) / 3.6)
+        except Exception:
+            pass
+        try:
+            import json as _json
+            from synapse.mcp import _tool_registry as _reg
+            blob = _json.dumps(getattr(_reg, "TOOL_JSON", {}))
+            tools = int(len(blob) / 3.6)
+        except Exception:
+            pass
+        self.set_composition(system=sysn, tools=tools,
+                             grounding=None, conversation=None)
 
     def set_cache(self, prefix=None, last_turn=None):
         """E0-F5/F6: the breakpoint wraps the whole system prompt and the prompt
@@ -166,15 +280,24 @@ class FaceToken(QtWidgets.QWidget):
         """`runs` is local vs metered, which R162 found is INVISIBLE in the name:
         glm-5:cloud carries remote_host=https://ollama.com and is metered by that
         host, and it is the registry's default pick. `cost` for a metered model
-        with no published price is UNKNOWN - never zero."""
+        with no published price is UNKNOWN - never zero.
+
+        `probed` is formatted HERE rather than by the caller. It was formatted in
+        refresh_from_probe first, which meant any other call site rendered a raw
+        epoch float - a number the panel knows and the reader does not. The
+        formatting belongs where the value lands, not where one caller happens
+        to pass it."""
         self.set_row("model", model)
         self.set_row("runs", runs)
         self.set_row("cost", cost)
-        self.set_row("probed", probed)
+        self.set_row("probed", self._ago(probed))
 
     def refresh_from_probe(self):
-        """Best-effort pull from the probe layer. Never raises: a face that
-        cannot reach a probe shows unknown, which is the honest state."""
+        """Best-effort pull from the probe layer, plus the two static segments.
+
+        Never raises: a face that cannot reach a probe shows unknown, which is
+        the honest state."""
+        self.measure_static()
         if probe_all is None:
             return
         try:
@@ -192,3 +315,20 @@ class FaceToken(QtWidgets.QWidget):
                 probed=getattr(r, "probed_at", None),
             )
             return
+
+    @staticmethod
+    def _ago(stamp):
+        """Probe age as an artist reads it. A raw epoch float is a number the
+        panel knows and the reader does not."""
+        if stamp is None:
+            return None
+        try:
+            import time
+            secs = int(max(0, time.time() - float(stamp)))
+        except (TypeError, ValueError):
+            return str(stamp)
+        if secs < 60:
+            return "%ds ago" % secs
+        if secs < 3600:
+            return "%dm ago" % (secs // 60)
+        return "%dh ago" % (secs // 3600)
