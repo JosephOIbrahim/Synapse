@@ -104,37 +104,48 @@ def encode_image_block(path: str):
     }, None
 
 
-def attach_image(tool_result: dict, raw_result, model: str) -> dict:
-    """Return `tool_result` with an image block attached, when that is possible.
+def attach_image(tool_result: dict, raw_result, model: str):
+    """Return `(tool_result, verdict)`.
 
-    Returns the ORIGINAL dict unchanged whenever it is not - no exception, no
-    partial state. The caller does not need to know whether this succeeded.
+    `verdict` is None when there was no image to consider, or
+    `("ok"|"fail", reason)` when there was. The CALLER surfaces that to the
+    artist - see the note below, which is the whole reason this returns a
+    verdict at all rather than just a dict.
+
+    WHY A VERDICT AND NOT JUST A NOTE IN THE TEXT.
+
+    The first version put the refusal in the tool result and trusted the model
+    to relay it. Measured on a live turn: glm-5:cloud received "the active model
+    is not vision-capable, so it was not attached", ABSORBED IT, and answered
+    "here's what I can see from the viewport capture" - a fluent description of
+    a sphere, entirely inferred from the node graph, indistinguishable from
+    sight.
+
+    A note in a tool result is a REQUEST. It is not enforcement. The artist has
+    to be told by the PANEL, on a surface the model does not author.
     """
     if not isinstance(tool_result, dict) or tool_result.get("is_error"):
-        return tool_result
+        return tool_result, None
 
     path = find_image_path(raw_result)
     if path is None:
-        return tool_result
+        return tool_result, None
 
     if not model_can_see(model):
-        return _with_note(tool_result,
-                          "A viewport capture was written to %s. The active "
-                          "model is not vision-capable, so it was not attached."
-                          % path)
+        reason = "%s is not vision-capable — the capture was NOT sent" % (model or "model")
+        return _with_note(tool_result, reason), ("fail", reason)
 
-    block, reason = encode_image_block(path)
+    block, why = encode_image_block(path)
     if block is None:
-        return _with_note(tool_result,
-                          "A viewport capture was expected at %s but was not "
-                          "attached: %s" % (path, reason))
+        reason = "capture not attached: %s" % why
+        return _with_note(tool_result, reason), ("fail", reason)
 
     text = tool_result.get("content")
     if not isinstance(text, str):
         text = str(text)
     out = dict(tool_result)
     out["content"] = [{"type": "text", "text": text}, block]
-    return out
+    return out, ("ok", "viewport image sent to %s" % model)
 
 
 def _with_note(tool_result: dict, note: str) -> dict:

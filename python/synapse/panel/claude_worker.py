@@ -290,7 +290,22 @@ class ClaudeWorker(QThread):
                     # leave this stale - the model that answers is the model
                     # whose capability was checked.
                     _model = getattr(self._provider, "model_identity", "") or ""
-                    result = attach_image(result, mcp_result, _model)
+                    result, _verdict = attach_image(result, mcp_result, _model)
+                    # THE VERDICT GOES TO THE PANEL, not just to the model.
+                    #
+                    # v1 put the refusal in the tool result and trusted the
+                    # model to relay it. Measured on a live turn: glm-5:cloud
+                    # received "not vision-capable, the capture was NOT sent",
+                    # absorbed it, and answered "here's what I can see from the
+                    # viewport capture" - fluent, plausible, entirely inferred
+                    # from the node graph, and indistinguishable from sight.
+                    #
+                    # A note in a tool result is a REQUEST. This is the flag,
+                    # and it rides the same rail as every other tool status, so
+                    # it reaches the result surface where the model cannot
+                    # author it away.
+                    if _verdict is not None:
+                        self.tool_status.emit("vision", _verdict[0], _verdict[1])
                 except Exception:
                     pass
                 return result

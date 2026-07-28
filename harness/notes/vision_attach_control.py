@@ -49,7 +49,7 @@ def content_of(r):
 
 
 # 2 + 1 - a text-only model gets no image, and is TOLD why
-r = attach_image(dict(base), raw, "glm-5:cloud")
+r, _v = attach_image(dict(base), raw, "glm-5:cloud")
 ok["text-only model gets no image"] = isinstance(content_of(r), str)
 ok["and is told why"] = "not vision-capable" in str(content_of(r))
 
@@ -57,7 +57,7 @@ ok["and is told why"] = "not vision-capable" in str(content_of(r))
 ok["unknown model gets no image"] = not model_can_see("some-new-model-x")
 
 # 4 - the happy path
-r = attach_image(dict(base), raw, "claude-sonnet-4-6")
+r, _v = attach_image(dict(base), raw, "claude-sonnet-4-6")
 blocks = content_of(r)
 ok["vision model gets a list"] = isinstance(blocks, list)
 if isinstance(blocks, list):
@@ -72,27 +72,37 @@ if isinstance(blocks, list):
     ok["text survives beside it"] = any(b.get("type") == "text" for b in blocks)
 
 # 1 - a missing file refuses LOUDLY
-r = attach_image(dict(base), {"image_path": tmp + ".nope.png"}, "claude-sonnet-4-6")
+r, _v = attach_image(dict(base), {"image_path": tmp + ".nope.png"}, "claude-sonnet-4-6")
 ok["missing file refuses loudly"] = (
     isinstance(content_of(r), str) and "not attached" in content_of(r))
 
 # 5 - a tool with no image is untouched
 plain = {"type": "tool_result", "tool_use_id": "t2",
          "content": '{"ok": true}', "is_error": False}
-r = attach_image(dict(plain), {"ok": True}, "claude-sonnet-4-6")
+r, _v = attach_image(dict(plain), {"ok": True}, "claude-sonnet-4-6")
 ok["no-image tool passes through"] = r == plain
 
 # and an errored tool is never decorated
 err = {"type": "tool_result", "tool_use_id": "t3",
        "content": "boom", "is_error": True}
-ok["errored tool untouched"] = attach_image(dict(err), raw, "claude-sonnet-4-6") == err
+ok["errored tool untouched"] = attach_image(dict(err), raw, "claude-sonnet-4-6")[0] == err
 
-os.unlink(tmp)
+# THE ASSERTION THIS CHANGE EXISTS FOR: a refusal must reach the PANEL.
+# A note in the tool result is a request - glm-5:cloud absorbed one and
+# answered as if it had looked. The verdict is what the panel flags.
+_r, v = attach_image(dict(base), raw, "glm-5:cloud")
+ok["refusal returns a fail verdict"] = v is not None and v[0] == "fail"
+_r, v = attach_image(dict(base), raw, "claude-sonnet-4-6")
+ok["success returns an ok verdict"] = v is not None and v[0] == "ok"
+_r, v = attach_image(dict(plain), {"ok": True}, "claude-sonnet-4-6")
+ok["no image returns no verdict"] = v is None
 
 print("%-36s %s" % ("ASSERTION", "RESULT"))
 print("-" * 48)
 for k, v in ok.items():
     print("%-36s %s" % (k, v))
+
+os.unlink(tmp)
 
 allok = all(ok.values())
 print()
