@@ -334,8 +334,47 @@ def inspect_scene(
     issues: List[Dict[str, Any]] = []
     notes: List[Dict[str, Any]] = []
 
+    # PROGRESS AND CANCEL for the walk C1 measured at 25,850 nodes.
+    #
+    # main_thread.run_on_main documents the residual this addresses: "a long
+    # inline payload still freezes the GUI for its duration... there is no
+    # mechanism by which Python can interrupt it."
+    #
+    # True of pure Python; not true of Houdini. hou.InterruptableOperation is a
+    # COOPERATIVE interrupt - which means it only works if the payload reports
+    # progress. A walk that never calls step() is exactly as uninterruptible as
+    # it was before, so the call goes INSIDE the recursion rather than around it.
+    #
+    # Every 200 nodes, not every node: the point is a responsive UI, and
+    # updating a progress bar 25,850 times would cost more than the walk.
+    # Imported defensively: the tests load this module standalone rather than
+    # as a package member, so a bare relative import raises "attempted relative
+    # import with no known parent package" and takes five tests with it. The
+    # absolute path works either way, and a missing module degrades to a no-op
+    # rather than removing the walk.
+    try:
+        from .long_operation import long_operation
+    except ImportError:
+        try:
+            from synapse.server.long_operation import long_operation
+        except ImportError:
+            def long_operation(_title, **_kw):        # no-op fallback
+                class _N:
+                    def step(self, *_a, **_k): pass
+                    def __enter__(self): return self
+                    def __exit__(self, *_e): return False
+                return _N()
+
+    _progress = {"n": 0}
+
+    def _tick(op):
+        _progress["n"] += 1
+        if _progress["n"] % 200 == 0:
+            op.step(None, "%d nodes" % _progress["n"])
+
     def _walk(node, current_depth):
         nonlocal node_count
+        _tick(_op)
         if current_depth > max_depth:
             return None
 
@@ -385,7 +424,12 @@ def inspect_scene(
 
         return entry
 
-    tree = _walk(root_node, 0)
+    # The operation opens HERE, around the whole walk, so one progress bar
+    # covers the traversal rather than one per node. Cancel raises
+    # OperationCancelled out of _tick and unwinds the recursion - the caller
+    # sees a cancel, not a failure, and nothing partial is returned.
+    with long_operation("SYNAPSE: reading %s" % root) as _op:
+        tree = _walk(root_node, 0)
 
     return {
         "overview": {
