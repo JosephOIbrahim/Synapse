@@ -43,20 +43,25 @@ This matters more than the feature list, and it is the thing to check first.
 ```mermaid
 flowchart TD
     K[what SYNAPSE knows] --> S[symbols and node types]
+    K --> N[H22 node reference]
     K --> P[prose and how-to]
     S --> S1["h22_symbol_table.json<br/>35,903 symbols"]
     S --> S2["connectivity_22.json<br/>lop_solaris_knowledge_22.json"]
+    N --> N1["rag/corpus/h22_nodes.json<br/>603 live types, 22.0.368"]
     P --> P1["rag/skills/houdini21-reference<br/>H21 documentation"]
     S1 --> OK["verified against the running build<br/>gate goes STALE if they diverge"]
     S2 --> OK
+    N1 --> OK
     P1 --> GAP["NOT yet converted to H22"]
 ```
 
-**Symbols are H22.** The table is stamped against the running build, and `phantom_gate_status()` reads STALE the moment they disagree.
+**Symbols are H22.** The table is stamped against the running build, and `phantom_gate_status` goes stale if they diverge.
+
+**Node reference is H22.** Extracted from `nodes.zip` — the reference that ships *with the build* — and every entry validated by probing its documented type against the running catalogue. **Only matched entries are written**, so a phantom is never stored rather than filtered at read time.
 
 **Prose is H21.** The retrieval corpus is Houdini 21 documentation, accurately labelled as such. If you ask a how-to question, SYNAPSE may answer from H21 material and tell you so.
 
-**That gap matters most for Copernicus**, which barely existed in H21.
+**And the Copernicus gap is now closed on the node axis.** It was the sharpest hole in this diagram — Copernicus barely existed in H21, so prose could never cover it. Ask about `chromakey` or `grunge_rust` by name and you get a build-pinned answer. Ask *how to composite* and you still get H21 prose.
 
 ---
 
@@ -163,7 +168,7 @@ It does **not** roll back when something raises. On the exception path a partial
 
 | | interpreter | result |
 |---|---|---|
-| **Gate** | system Python 3.14 | 5,031 passed · 0 failed |
+| **Gate** | system Python 3.14 | 5,279 passed · 0 failed |
 | **Shipping** | `hython3.13` — what Houdini runs | 4,048 passed · 110 failed · 771 errors |
 
 The gate runs with the vendored SDK **inactive**; shipping runs with it **active**. They share almost no dependency surface.
@@ -201,7 +206,7 @@ Read this here rather than discover it mid-shot.
 
 **Emergency halt is surfaced, and the shipped mechanism alone was not enough.** It now lives in the panel's `⋯` overflow as a control distinct from Stop. Worth knowing why it is not just a button on the old function: `EmergencyProtocol.trigger_emergency_halt` walks **`/obj` only**. Probed against a real cook at `/tasks/h3b_topnet` on 22.0.368 it returned `ALL_OPERATIONS_HALTED` in 0.0s and the cook was still running three seconds later — and `/tasks` is where TOP networks live by default. The halt handler therefore does its own scene-wide sweep and reports the three results separately: what the bridge halt did, which TOP networks it then cancelled, and which background renders are **still running** (it does not kill those — `rkill *` would reach renders this session never started).
 
-**Node grounding is thin.** 18.3% of LOP types and 6.2% of Copernicus types carry semantic grounding. 37.9% of LOP parameters are documented — the ceiling from documentation alone.
+**Node grounding is uneven, and the shape of it changed.** 603 Copernicus, LOP and Cop2 types now carry build-pinned reference from `nodes.zip` — but that is *what a node is*, not *how to use it together*. Workflow prose is still H21. And 88 live types ship with no help page at all, so documentation cannot ground them by any method. 37.9% of LOP parameters are documented — the ceiling from documentation alone.
 
 **Token figures are proxy-measured**, and no genuine outside-in comparison has been built.
 
