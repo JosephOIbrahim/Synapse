@@ -177,7 +177,11 @@ class FaceToken(QtWidgets.QWidget):
     def _eyebrow(self, text):
         lbl = c.label(text, role="body") if hasattr(c, "label") else QtWidgets.QLabel(text)
         try:
-            lbl.setFont(fontload.tracked_font("EYEBROW", t.SIZE_LABEL, mono=True))
+            # SIZE_SMALL, not SIZE_LABEL. These are section markers - THIS TURN,
+            # CACHE, ENGINE - and SIZE_LABEL is 10px, which the tokens file
+            # reserves for "tiny labels / numbers". A marker you have to lean in
+            # for is not doing its job.
+            lbl.setFont(fontload.tracked_font("EYEBROW", t.SIZE_SMALL, mono=True))
             lbl.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
         except Exception:
             pass
@@ -187,7 +191,13 @@ class FaceToken(QtWidgets.QWidget):
         lbl = QtWidgets.QLabel(text)
         lbl.setWordWrap(True)
         try:
-            lbl.setStyleSheet("color:%s; font-size:%dpx;" % (t.TEXT_TERTIARY, t.SIZE_SMALL))
+            # SIZE_BODY, not SIZE_SMALL. The tokens file names SIZE_BODY as
+            # "Houdini-native default (9pt = 12px)" and this face had the
+            # footnote at 11 and the values at 11 while the left-hand keys
+            # inherited the native default - so the two columns disagreed and
+            # the footnote read as fine print. A read-out nobody can read is
+            # not a read-out.
+            lbl.setStyleSheet("color:%s; font-size:%dpx;" % (t.TEXT_TERTIARY, t.SIZE_BODY))
         except Exception:
             pass
         return lbl
@@ -204,7 +214,11 @@ class FaceToken(QtWidgets.QWidget):
             try:
                 key.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
                 val.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
-                val.setFont(fontload.tracked_font("LABEL", t.SIZE_SMALL, mono=True))
+                # SIZE_BODY: the values must read at the same size as the keys
+                # beside them. The keys inherit Houdini's native default and the
+                # values were set to SIZE_SMALL, so the right-hand column was a
+                # step smaller than the left for no reason anyone chose.
+                val.setFont(fontload.tracked_font("LABEL", t.SIZE_BODY, mono=True))
             except Exception:
                 pass
             grid.addWidget(key, i, 0, alignment=Qt.AlignLeft)
