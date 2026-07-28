@@ -454,8 +454,19 @@ class FaceToken(QtWidgets.QWidget):
                 key.setStyleSheet("color:%s; font-size:%dpx;"
                                   % (t.TEXT_TERTIARY, self._px(t.SIZE_BODY)))
                 val.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
-                # Both columns through _px, so the pair cannot drift apart.
-                val.setFont(fontload.tracked_font("LABEL", t.SIZE_BODY,
+                # +1px on the mono, and the reason is optical rather than
+                # arbitrary.
+                #
+                # Measured, both columns at 12px: the key renders Sans Serif
+                # capHeight 7 / ascent 10, the value renders Space Mono
+                # capHeight 8 / ascent 13. They are the SAME SIZE and the mono
+                # still reads smaller, because it is lighter and narrower - a
+                # column of thin digits beside a proportional label loses the
+                # comparison even when the metrics say it should not.
+                #
+                # Mono stays: this is a numeric column and digits must align.
+                # So the size compensates for the family instead.
+                val.setFont(fontload.tracked_font("LABEL", t.SIZE_BODY + 1,
                                                   scale=self._scale, mono=True))
             except Exception:
                 pass
