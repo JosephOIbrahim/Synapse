@@ -27,6 +27,11 @@ _SIGNAL      = _t.SIGNAL          # the one chromatic event
 _TEXT        = _t.TEXT_PRIMARY    # agent voice / body
 _TEXT_BRIGHT = _t.TEXT_BRIGHT     # human voice (emphasis)
 _TEXT_DIM    = _t.TEXT_TERTIARY   # system lines / captions
+# Speaker dots. Coniferous for the human, warm coral for the agent - the two
+# ends of the palette's natural/synthetic split, used here to make the speaker
+# pre-attentive rather than something the reader compares greys to work out.
+_CONIFEROUS  = getattr(_t, "CONIFEROUS", "#6E8F72")
+_WARM        = getattr(_t, "WARM", "#FF7759")
 _GROUND      = _t.GROUND          # chip + code-block inset
 _LINE        = _t.GRAPHITE        # hairline borders
 _ERROR       = _t.ERROR
@@ -35,8 +40,21 @@ _SUCCESS     = _t.GROW
 _BODY_PX     = _t.SIZE_BODY
 _SMALL_PX    = _t.SIZE_SMALL
 _LABEL_PX    = _t.SIZE_LABEL
-_GROUP_MARGIN_Y = _t.SPACE_MD
-_MSG_MARGIN_Y   = _t.SPACE_XS
+# Dialogue rhythm. 1.5x the previous values, because the chat read tight.
+#
+# The obvious lever - line-height:150% - was already in this file, marked
+# "best-effort", and it has never done anything: QTextDocument's HTML subset
+# does not implement CSS line-height. I then tried QTextBlockFormat with
+# ProportionalHeight three ways, measured each, and the document height came
+# back IDENTICAL at 1.0 and 1.5 every time. Qt is not giving us intra-paragraph
+# leading in a QTextEdit, and no amount of restating it will.
+#
+# BLOCK MARGINS Qt does honour, and they are most of what "tight" actually
+# means in a dialogue: the air BETWEEN turns, not between wrapped lines. So the
+# rhythm is bought where the mechanism is real rather than where the CSS
+# analogy suggested.
+_GROUP_MARGIN_Y = _t.SPACE_LG           # 24 - between speakers (was SPACE_MD 16)
+_MSG_MARGIN_Y   = _t.SPACE_SM           # 8  - between a speaker's own lines (was 4)
 _TIMESTAMP_SZ   = _t.SIZE_LABEL
 
 # Monospace font stack for genuine code/paths — a NEUTRAL host monospace
@@ -262,6 +280,14 @@ def _speaker_label(who, timestamp, font_scale):
     The v9 design said "type and the rule tell the speaker apart"; in practice
     the reader has to infer, every message.
 
+    A COLOURED DOT now leads the label, because tone alone still asks the reader
+    to compare. Coniferous green for YOU, warm coral for SYNAPSE — the two ends
+    of the palette's natural/synthetic split, so the distinction is pre-attentive
+    rather than something you work out. Rendered as a text glyph rather than a
+    styled box: QTextDocument's HTML subset drops background-colour and
+    border-radius on inline spans, so a coloured bullet is the shape that
+    actually survives.
+
     Rendered as chrome, not content: mono, small, letterspaced, dim — so it
     reads as a label and never competes with what was said. Returns "" for a
     grouped message, which is what makes it Slack rather than a chat log.
@@ -270,9 +296,12 @@ def _speaker_label(who, timestamp, font_scale):
     ts = ('<span style="color:{d}; font-size:{s}px;">&#160;&#160;{t}</span>'
           .format(d=_TEXT_DIM, s=max(sz - 1, 8), t=html.escape(timestamp))
           if timestamp else "")
+    dot_colour = _WARM if who.upper().startswith("SYNAPSE") else _CONIFEROUS
+    dot = ('<span style="color:{c}; font-size:{s}px;">&#9679;</span>&#160;&#160;'
+           .format(c=dot_colour, s=sz))
     return ('<div style="font-family:{m}; font-size:{s}px; letter-spacing:1.2px; '
-            'color:{c}; margin-bottom:3px;">{who}{ts}</div>').format(
-        m=_MONO, s=sz, c=_TEXT_DIM, who=html.escape(who), ts=ts)
+            'color:{c}; margin-bottom:3px;">{dot}{who}{ts}</div>').format(
+        m=_MONO, s=sz, c=_TEXT_DIM, dot=dot, who=html.escape(who), ts=ts)
 
 
 def format_user_message(text, grouped=False, timestamp=None, font_scale=1.0):
