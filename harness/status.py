@@ -100,10 +100,19 @@ dirty = len([x for x in git("status", "--porcelain").split("\n")
 print("   rulings %-6d receipts %-5d unpushed %-4d dirty %d"
       % (nrul, len(done), unpushed, dirty))
 
-# The harvest check is the one that has actually caught things (R139).
-h = subprocess.run([sys.executable,
-                    os.path.join(ROOT, "harness", "verify", "branch_harvest.py")],
-                   capture_output=True, text=True, encoding="utf-8", errors="replace")
-verdict = "clean" if h.returncode == 0 else "STRANDED WORK - run branch_harvest.py"
-print("   branches %s" % verdict)
+# The harvest check is the one that has actually caught things (R139) - but it
+# only sees COMMITTED work. R146: a leg can hold a finished-looking receipt as
+# an uncommitted file in a live worktree, and branch_harvest cannot see that.
+# prune_safety covers exactly that case. Neither covers it alone, and nothing
+# said to run both - so the status tool runs both.
+for name, script in (("branches", "branch_harvest.py"),
+                     ("worktrees", "prune_safety.py")):
+    h = subprocess.run([sys.executable,
+                        os.path.join(ROOT, "harness", "verify", script)],
+                       capture_output=True, text=True, encoding="utf-8",
+                       errors="replace")
+    if h.returncode == 0:
+        print("   %-9s clean" % name)
+    else:
+        print("   %-9s NEEDS ATTENTION - run harness/verify/%s" % (name, script))
 print()

@@ -4069,3 +4069,43 @@ the same sentence as the numbers.
 **Ruled: this is now a standing blocker on the economist axis, not a footnote.** A token economist
 that cannot count tokens exactly is estimating, and every downstream figure inherits that. **One
 funded call removes the asterisk from E0, C1, and everything either produces.**
+
+---
+
+## RULING 146 — A receipt on disk is not a finished leg. The LOCK is the truth.
+
+I read `E0.json` from its worktree, ruled on it in five rulings, and attempted the merge. **The
+merge said `Already up to date` — because E0 had committed nothing. Its window was still alive and
+its lock still held.**
+
+`status.py` had it right and printed `running locked`. **I overrode a correct instrument with an
+assumption**, which is the failure this project exists to catch, performed by the person cataloguing
+it.
+
+### The distinction that matters
+
+```
+receipt exists     the leg has written SOMETHING
+lock released      the leg is FINISHED
+```
+
+A leg writes its receipt and then keeps working — a final pass, the report prose, its own
+verification. **Reading at the first signal gets a draft.** R127 is the same shape one layer down:
+I read a worktree copy while the committed one said something else.
+
+**Ruled:**
+1. **The lock is the completion signal.** A receipt in a worktree with a live lock is a draft, and
+   anything derived from it is provisional.
+2. **R141–R145 stand as provisional** and are re-verified against E0's committed receipt when its
+   lock clears. Their substance is unlikely to move — the findings are measurements — but the
+   ruling that says "verify the committed copy" cannot itself rest on an uncommitted one.
+3. **`status.py` needs no change.** It reported correctly. **I do.**
+
+### And a correction to my own harvest check
+
+`branch_harvest.py` returned `PASS` here, because E0 has no commits to strand — yet. **It cannot
+see work that exists only as uncommitted files in a live worktree.** `prune_safety.py` covers that
+case and was not run.
+
+**The two checks together cover it; neither does alone**, and nothing said to run both. The status
+tool now should, and that is the fix rather than another rule I have to remember.
