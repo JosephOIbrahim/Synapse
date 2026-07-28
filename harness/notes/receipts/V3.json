@@ -1,0 +1,277 @@
+{
+  "schema": "receipt/v1",
+  "task": "V3",
+  "title": "Probe layer - routing is probe-derived, never config-declared",
+  "harness": "ECON-01",
+  "blueprint_mile": "Mile 4 (§P2, §3.3, §04)",
+  "branch": "econ/v3-probe-layer",
+  "worktree": ".claude/worktrees/v3-econ",
+  "receipt_written": "2026-07-28",
+
+  "executed_by": {
+    "model": "claude-opus-5[1m]",
+    "settings_profile": "worktree-interactive (.claude/settings.json) - NOT harness/agent-settings.json and NOT harness/relay-settings.json. Recorded as-run per R25: this leg ran as the interactive session inside its own worktree, a wider fence than either harness profile. pytest was run directly, so suite evidence is admissible under Article V; the fence is named so the reader can weigh it rather than assume it. Nothing in relay-settings' deny list was touched: no push, no merge, no tag, no edit to VERSION, shared/bridge.py, harness/state/**, the baselines, or the constitution.",
+    "mode": "WRITE - product code, tests, docs, producers",
+    "subagents_dispatched": 0,
+    "subagent_note": "None. ECON-01 §1 records the multi-agent pattern failing three times in two days (R78, R91, R134) and names sequential fenced legs as the shape that works. The leg's adversarial rigour is carried by its own oracle machinery - R60 calibration with paired negative halves, R133 mutation testing, Law-1 failure conditions on every check - rather than by concurrent writers in one tree."
+  },
+
+  "commit_before": "b92b0d4",
+  "commit_after": "e79e3a5",
+  "commit_status": {
+    "state": "COMMITTED",
+    "product_commit": "e79e3a5 feat(panel): V3 probe layer - routing is probe-derived, never config-declared",
+    "message_file": "harness/notes/econ/V3_COMMIT_MSG.txt",
+    "ordering": "product committed BEFORE this receipt (R93). The receipt is a second commit.",
+    "do_not": "push, merge, or tag - Gate C is human-only and this leg touched no gate"
+  },
+
+  "touches_declared_in_legs_json": [
+    "python/synapse/panel/providers/probe.py",
+    "python/synapse/panel/providers/registry.py"
+  ],
+  "touches_actual": [
+    "python/synapse/panel/providers/probe.py",
+    "python/synapse/panel/providers/registry.py",
+    "tests/test_v3_provider_probe.py",
+    "tests/test_m3_egress_docs.py",
+    "docs/studio/EGRESS.md",
+    "harness/notes/econ/v3_probe_live.py",
+    "harness/notes/econ/v3_stale_demo.py",
+    "harness/notes/econ/v3_calibration.py",
+    "harness/notes/econ/v3_controls.py",
+    "harness/notes/econ/V3_PROBE.md",
+    "harness/notes/econ/V3_probe_live.install.json",
+    "harness/notes/econ/V3_probe_live.worktree.json",
+    "harness/notes/econ/V3_stale_demo.json",
+    "harness/notes/econ/V3_calibration.json",
+    "harness/notes/econ/V3_controls.json",
+    "harness/notes/econ/V3_COMMIT_MSG.txt",
+    "harness/notes/receipts/V3.json"
+  ],
+  "touches_expansion_declared": {
+    "beyond_legs_json": ["tests/test_v3_provider_probe.py", "tests/test_m3_egress_docs.py", "docs/studio/EGRESS.md"],
+    "why_tests_new_file": "A probe layer whose only checks live under harness/notes/ does not run in CI, so the never-green-on-stale guarantee decays the first time someone edits probe.py. That is precisely the failure class this project exists to prevent. tests/test_v3_provider_probe.py is a NEW file - no other leg can be editing it, so R92's intersection risk is structurally absent.",
+    "why_egress_two_files": "NOT a scope choice. tests/test_m3_egress_docs.py::test_remote_egress_sites_are_frozen went RED on probe.py as a new raw-HTTPS site, and its own failure message prescribes the remedy: 'document in docs/studio/EGRESS.md, then extend this pin.' Fixing forward per that instruction is Law 6; leaving the suite red, or deleting the assertion, are the two things Law 6 forbids. Flagged as R-V3-8 for ratification rather than treated as routine.",
+    "files_NOT_touched": "No panel/ rendering code. No VERSION. No harness/state/**. No baselines. No constitution. No other leg's files."
+  },
+
+  "product_code_modified": true,
+  "tests_before": {"passed": 5031, "failed": 0, "skipped": 137},
+  "tests_after": {"passed": 5080, "failed": 0, "skipped": 137},
+  "test_delta": 49,
+  "suite_evidence_claim": "MEASURED on both sides. BEFORE is a clean detached checkout of b92b0d4 in a scratch git worktree, run and then removed - not inferred by subtraction, because 'the suite still passes' is a claim about a state nobody had run. AFTER is this worktree. +49 is exactly the collected count of tests/test_v3_provider_probe.py (pytest --collect-only: 49). Producer: `python -m pytest -q -p no:cacheprovider`. Interpreter Python 3.14.2 - the NON-SHIPPING interpreter per Ruling 1a, so this is VERIFIED-RUNTIME (non-shipping interpreter). probe.py is stdlib-only and imports nothing vendored, so the inactive vendor tree does not reach it - an argument, not a measurement, and labelled as one.",
+  "commandment_7": "HELD. No test weakened, skipped, xfailed or deleted. 49 added. The one red encountered (frozen-egress pin) was fixed forward by doing what the pin instructs - documenting the lane and extending the frozen set by one dated entry - and the leg pays back the spent alarm power with test_egress_doc_documents_the_probe_lane, which fails if the justifying documentation is ever removed.",
+
+  "oracle": {
+    "V3_PROBE_md_plus_the_probe_module": "DELIVERED - harness/notes/econ/V3_PROBE.md (11 sections) + python/synapse/panel/providers/probe.py",
+    "probe_result_as_a_typed_structure_per_3_3": "DELIVERED - ProbeResult, frozen slots dataclass. The nine §3.3 fields verbatim (model, tier_candidates, available, quota_remaining, quota_total, cost_per_1k_in, cost_per_1k_out, latency_ms, probed_at) plus 11 provenance fields naming, per row, the endpoint that produced it and where each figure came from.",
+    "colour_computed_at_read_time_demonstrated": "DELIVERED - colour_for(result, now=...). No colour field exists (test_colour_is_not_a_field; mutation M5 flips it). Demonstrated on the 127 real live rows across a 9-point clock sweep in V3_stale_demo.json: 126 green at t+179.9s, 126 grey at t+180.0s, rows byte-identical throughout.",
+    "demonstrated_going_grey_when_probed_at_is_aged_artificially": "DELIVERED - V3_stale_demo.json check C2: clock held still, probed_at pushed back past TTL via dataclasses.replace, 126 GREEN -> green=0 grey=126. Negative control C4 re-probes and restores green=126, so the demonstration is not the trivial 'colour_for always says grey'. C3 additionally shows an aged RED goes GREY too - an old no is also UNKNOWN.",
+    "live_probe_against_every_configured_provider": "DELIVERED - V3_probe_live.install.json. Configured: ollama, claude, nemotron. Returned: ollama 13 live tags vs 1 declared; claude 11 live vs 6 declared; nemotron 102 live vs 2 declared. Gemini and Custom are unconfigured on this host and were resolved locally (no network call, method=local:config).",
+    "zero_completion_spend": "DELIVERED - completions_issued: 0, recorded in the artifact. Enforced structurally, not promised: probe.FREE_ENDPOINTS allowlist + an ast scan (test_no_completions_endpoint_in_executable_code) that fails on any non-docstring literal naming a completions path. Two declined probes are recorded in spend.declined with what each would have measured.",
+    "no_panel_rendering": "HELD - nothing under panel/ except providers/probe.py (a transport module, no Qt, no hou - pinned by test_module_imports_no_qt_and_no_hou) and comment-only edits to providers/registry.py. No rail, no widget. T.4's freeze intact.",
+    "every_reader_calibrated_R60": "DELIVERED - V3_calibration.json, 5 readers, each with a positive AND a negative half, all PASS. Ground truth hand-labelled from the recorded live payloads.",
+    "controls_mutation_tested_R133": "DELIVERED - V3_controls.json, 16 of 16 mutations flip their named test. Baseline confirms all 16 green before mutation. probe.py restore sha256-verified (972aa070... before == after).",
+    "producers_named_v3_x_py_R132": "DELIVERED - four producers, no leading underscore: v3_probe_live.py, v3_stale_demo.py, v3_calibration.py, v3_controls.py"
+  },
+
+  "key_numbers": {
+    "live_rows_total": 127,
+    "declared_vs_live": {
+      "ollama": {"declared": 1, "live": 13},
+      "claude": {"declared": 6, "live": 11},
+      "nemotron": {"declared": 2, "live": 102},
+      "gemini": {"declared": 1, "live": 0, "note": "unconfigured - no key on this host"},
+      "custom": {"declared": 0, "live": 0, "note": "unconfigured - empty base_url/model"}
+    },
+    "live_models_the_registry_never_heard_of": 117,
+    "declared_but_absent_today": 0,
+    "colours_at_probe_time": {"green": 126, "red": 1, "grey": 0},
+    "refresh_interval_s": 60.0,
+    "probe_ttl_s": 180.0,
+    "max_displayed_staleness_s": 180,
+    "requests_per_hour_per_provider_ceiling": 60,
+    "completions_issued": 0,
+    "probe_wall_ms": 381.9,
+    "latency_ms": {"ollama": 46.4, "nemotron": 140.5, "claude": 306.9},
+    "tier_basis": {"parameter_size": 10, "live_id_token": 63, "unclassified": 54},
+    "declared_models_total": 10,
+    "declared_models_unclassified": 2,
+    "declared_models_unclassified_names": ["glm-5:cloud", "claude-fable-5"],
+    "ollama_tags_metered_via_remote_host": 6,
+    "ollama_tags_local_zero_cost": 7,
+    "tests_added": 49,
+    "mutation_controls": 16,
+    "mutation_controls_that_flip": 16,
+    "readers_calibrated": 5
+  },
+
+  "findings": [
+    {
+      "id": "V3-F1",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "harness/notes/econ/v3_probe_live.py -> V3_probe_live.install.json per_provider",
+      "claim": "The registry declares 9 models across three configured providers; the providers serve 126. 117 live rows are models the config file never heard of - ollama 1 vs 13, claude 6 vs 11, nemotron 2 vs 102.",
+      "so_what": "A panel routing off registry.py can reach 9 of 126 available models. §P2's 'a model list is documentation' is not a stylistic preference here; it is a 13x-to-51x reachability gap, measured."
+    },
+    {
+      "id": "V3-F2",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "GET https://api.anthropic.com/v1/models?limit=100, 2026-07-28; python/synapse/panel/providers/registry.py:26",
+      "claim": "claude-opus-5 is live: id claude-opus-5, display_name 'Claude Opus 5', created_at 2026-07-24. All six registry-declared Claude rows were served on this date. The registry comment's standing instruction - 'verify against /v1/models before any release cites it' - is discharged.",
+      "so_what": "An open provenance ask that would otherwise have aged into a claim about the present (R74) is closed and dated. The note now carries the date, which is the only part that cannot silently rot."
+    },
+    {
+      "id": "V3-F3",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "V3_probe_live.install.json rows[provider=ollama].detail.remote_host",
+      "claim": "Six of the thirteen live Ollama tags carry remote_host=https://ollama.com and are metered by that host - including glm-5:cloud, which is the registry's DEFAULT Ollama pick. Seven tags have no remote_host and run on local weights.",
+      "so_what": "'Ollama is local and therefore free' is false of the exact row the panel ships selected. The probe reports its cost as unknown rather than zero; a naive zero would have understated the cost of the default engine to zero."
+    },
+    {
+      "id": "V3-F4",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "full response header sets read from GET /v1/models and POST /v1/messages/count_tokens (api.anthropic.com) and GET /v1/models (integrate.api.nvidia.com), 2026-07-28",
+      "claim": "Quota headroom is NOT obtainable at zero completion spend. Neither free Anthropic endpoint returns any anthropic-ratelimit-* header, and NVIDIA's model list returns none either. Only the billed completions endpoint publishes them.",
+      "so_what": "§3.3's quota_remaining/quota_total are structurally None for metered providers, carrying quota_source='unavailable_at_zero_cost'. Rate limiting is caught reactively - a 429 does carry the headers and computes RED - but headroom cannot be reported predictively without paying. This is a measured limit of the free surface, not an implementation gap, and None computes to neither RED nor GREEN."
+    },
+    {
+      "id": "V3-F5",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "live payload key sets: Anthropic {id, display_name, created_at, type}; NVIDIA {id, created, object, owned_by}; Ollama /api/tags (no billing field)",
+      "claim": "No provider exposes per-token pricing over its API. cost_per_1k_in/out cannot be probed for any metered model.",
+      "so_what": "No price table ships. A dated table typed into code is both the claim-shape §P2 refuses and, keyed by model id, a model name in code (invariant 1). Cost is probed where it can be - an Ollama tag with no remote_host has no vendor billing relationship, so 0.0 - and None with a stated reason everywhere else."
+    },
+    {
+      "id": "V3-F6",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/host/auth.py:102 (os.environ.setdefault) + paired control run 2026-07-28",
+      "claim": "An ANTHROPIC_API_KEY that exists in the environment as an EMPTY STRING permanently shadows the repo .env, because _load_dotenv loads with setdefault and setdefault is a no-op when the key exists. Paired control, same repo root and same .env: ANTHROPIC_API_KEY='' -> get_anthropic_api_key() returns None; variable absent -> returns the key.",
+      "so_what": "The product reports itself unconfigured while holding a valid key, silently. Not hypothetical - the shell this leg ran in exports it empty by design, and any launcher that blanks rather than unsets puts the panel in that state. Outside this leg's touches; escalated as R-V3-4."
+    },
+    {
+      "id": "V3-F7",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/host/auth.py:76 (Path(__file__).resolve().parents[3]); V3_probe_live.worktree.json vs V3_probe_live.install.json",
+      "claim": "Key resolution is checkout-dependent. In a git worktree, parents[3] is the worktree root, which carries no .env. Two runs of the same producer on the same machine in the same minute: from the worktree, configured = {ollama}; with the install's .env loaded, configured = {ollama, claude, nemotron}.",
+      "so_what": "Every worktree, CI checkout and clean clone reports claude and nemotron unconfigured. Same shape as E1-F8 (a digest computed over working-tree bytes): an answer that depends on which checkout asks. The probe now records env.auth_repo_root and an empty_string_shadow_check in every artifact so a reader can tell 'provider is down' from 'this checkout cannot see the key'. Escalated as R-V3-5."
+    },
+    {
+      "id": "V3-F8",
+      "tier": "VERIFIED-DERIVED",
+      "anchor": "harness/notes/econ/v3_calibration.py -> V3_calibration.json declared_model_coverage",
+      "claim": "Of 10 registry-declared, panel-selectable models, 2 carry no tier evidence and are therefore not routable by tier: glm-5:cloud (publishes an empty parameter_size and carries no family token) and claude-fable-5 (no family token, no published size). glm-5:cloud is the panel's default Ollama pick.",
+      "so_what": "The 54-of-127 unclassified figure is mostly correct refusal - NVIDIA embedding, safety and vision models that should never be chat-routed. The actionable number is 2 of 10, and one of them is a shipped default. Whether tier rotation may route to a model with no tier evidence is a ruling (R-V3-2), not an agent call."
+    },
+    {
+      "id": "V3-F9",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_m3_egress_docs.py::test_remote_egress_sites_are_frozen, first full-suite run",
+      "claim": "The frozen-egress pin correctly caught probe.py as a new raw-HTTPS call site and failed the suite until the lane was documented. The probe lane adds NO new host - it reaches the same three, read-only, via GET list endpoints with empty request bodies.",
+      "so_what": "A pre-existing control fired on new code exactly as designed, and it is the second control this leg had to satisfy that it did not write. The remedy was the one the pin prescribes; the allowlist entry is now itself pinned by test_egress_doc_documents_the_probe_lane so it cannot outlive its justification."
+    },
+    {
+      "id": "V3-F10",
+      "tier": "VERIFIED-DERIVED",
+      "anchor": "harness/notes/econ/v3_controls.py -> V3_controls.json results",
+      "claim": "16 of 16 mutation controls flip. A baseline pass confirms all 16 targeted tests are green before any mutation, so 'the control flipped' is not vacuous. probe.py restore is sha256-verified (972aa070383c7e70c03b8d58ac937812f4ebec25a4c3c713baa48ed2f659273e, before == after).",
+      "so_what": "Every load-bearing property of the layer - age-before-availability, no stored colour, no completions literal, no default tier, declared-but-absent reported, unknown quota not read as zero, the 60s floor, cost excluded from colour - has been observed failing when broken."
+    }
+  ],
+
+  "calibration": {
+    "R60_readers_calibrated_before_trusted": true,
+    "producer": "harness/notes/econ/v3_calibration.py -> V3_calibration.json",
+    "readers": {
+      "parse_parameter_size": "PASS - 10 live strings -> billions; 6 unparseable -> None (never 0.0, which would tier a 700B model as FAST)",
+      "tier_candidates_for": "PASS - 12 hand-labelled live ids classified; 6 that must refuse, refused; size-outranks-token control; paired capability-gate control (same model, same size, tools present vs absent)",
+      "_quota_from_headers": "PASS - the REAL live header set -> None/unavailable_at_zero_cost; synthetic anthropic-style and openai-style headers parsed; malformed -> None, never a fabricated number",
+      "colour_for": "PASS - 12-case truth table, all three colours exercised, cost varied and colour unchanged",
+      "should_refresh": "PASS - 7-case truth table including the never-probed and clock-skew cases"
+    },
+    "negative_halves_present": "All five. A classifier with no negative half labels anything, and its coverage number becomes a statement about its own eagerness rather than about the data.",
+    "R133_controls_mutation_tested": "16 of 16 flip (V3_controls.json)",
+    "law_1_note": "Every check in the test file, the stale demo and the calibration carries a stated failure condition. The stale demo's C4 exists specifically because 'everything eventually goes grey' would otherwise be indistinguishable from a colour function that always returns grey."
+  },
+
+  "method_notes": {
+    "zero_spend_enforcement": "Two independent mechanisms, because a promise is not a mechanism. (1) probe.FREE_ENDPOINTS is a frozenset and every method a probe emits is checked against it. (2) test_no_completions_endpoint_in_executable_code parses the module with ast and rejects any non-docstring string literal naming a completions path. Docstrings are excluded deliberately: the module documentation names those endpoints in order to state it never calls them, and a naive grep would flag its own disclaimer.",
+    "polling_choice": "REFRESH_INTERVAL_S=60, PROBE_TTL_S=180, demand-driven. Nothing runs on a timer - should_refresh() gates the caller - so an IDLE PANEL ISSUES ZERO PROBES. That removes 'the probe trips the limit it reports on' structurally rather than tuning around it. Ceiling under continuous use is 60 req/hr/provider on free, non-completions endpoints. TTL is 3x the interval, so two consecutive probe failures are survivable and the third greys the rail: max displayed staleness 3 minutes, against a brief that names an hour as the failure mode.",
+    "colour_state_mapping": "The blueprint gives three colours. Mapped as: GREY = never probed OR stale OR future-stamped (clock skew is not freshness). RED = fresh probe that established this install cannot dispatch right now - rate_limited, unauthorized, unreachable, http_NNN, unparseable_response, declared_but_absent, unconfigured - each carried in a `reason` field so the rail can distinguish them without a fourth colour. GREEN = fresh, available, quota not explicitly exhausted. An unconfigured provider is RED-on-a-fresh-local-observation rather than GREY, because config resolution IS a probe and its answer is determinate; GREY is reserved for genuine unknowns. Escalated as R-V3-3 - which of these deserve visual distinction is a product call.",
+    "tiering_evidence_order": "parameter_size (numeric, only Ollama publishes it) > family token found in the id/display name the provider returned THIS SECOND > refusal. Rules are matched against live output, never a typed model list, so a model released tomorrow classifies the moment the provider serves it. An unclassified model gets an EMPTY tier tuple, never a default - a default would be a guess wearing a tier constant. Tool capability is a hard gate where the provider publishes it (Ollama) and no gate at all where it does not (Anthropic, NVIDIA): absence of evidence is not evidence of absence.",
+    "declared_plus_live_union": "Every probe emits the union of live-discovered and registry-declared models. A declared model the provider does not serve returns available=False, reason='declared_but_absent' and reads RED. Today that set is empty - every declared row was live - which is a measurement of one afternoon, not a property. The mechanism ships anyway because hou.ActiveRender was also fine until it was not.",
+    "near_miss_recorded": "The first mutation run reported 8 of 16 controls as NOT-APPLIED, which reads as eight missing controls. It was a newline artifact: anchors are written with \\n and the checked-out probe.py is CRLF. Had the harness only counted flips it would have published '8 of 16 controls flip' as a finding about the tests - E1's C4b defect in a new place, where the control was wrong rather than the thing under test. The harness now normalises before matching and says so in a comment.",
+    "two_probe_runs_kept": "V3_probe_live.worktree.json and V3_probe_live.install.json are both committed. They disagree about which providers are configured, and the disagreement IS finding V3-F7. Keeping only the flattering one would have hidden it."
+  },
+
+  "scope_limits": [
+    "One developer machine, one afternoon. 'Every declared model was live' is evidence about 2026-07-28, not a property of the registry. Law 4 applies: census output is a hypothesis.",
+    "Quota is unmeasured for every metered provider and the artifacts say so. Any downstream claim about headroom is unsupported by this leg.",
+    "latency_ms is metadata-endpoint round-trip (ollama 46ms, nvidia 140ms, anthropic 307ms). It is a liveness number and must NOT be read as time-to-first-token.",
+    "Gemini and Custom were resolved as unconfigured from local config; no live probe was run against either, so this leg makes no claim about their endpoints beyond the shape of the request it would send.",
+    "Tier classification for Anthropic and NVIDIA rests on family tokens in live ids - the weaker of the two signals, labelled tier_basis='live_id_token' on every row that used it. Only Ollama publishes a numeric parameter_size.",
+    "Suite evidence is from Python 3.14.2, the non-shipping interpreter (Ruling 1a). No claim is made about vendored behaviour.",
+    "Nothing consumes probe.py yet. It is a layer that returns a structure; the first consumer is a panel rail and the panel is frozen."
+  ],
+
+  "for_ruling": [
+    {
+      "id": "R-V3-1",
+      "item": "Where should per-token price live? §3.3 names cost_per_1k_in/out but no provider publishes pricing over its API, so this leg ships None for every metered model. Options: a dated data file with an assertion date whose staleness the panel surfaces; an operator-entered rate in panel settings; or drop cost from the display until a real source exists.",
+      "why_escalated": "Article I - 'what a number should be' and whether a declared price is worth its staleness risk are value judgements. Every option trades accuracy against the config-declared claim-shape §P2 exists to refuse."
+    },
+    {
+      "id": "R-V3-2",
+      "item": "May tier rotation route to a model with no tier evidence? Two declared, panel-selectable models have empty tier_candidates - glm-5:cloud (the default Ollama pick) and claude-fable-5. Either they stay unroutable by tier (safe, but a shipped default becomes unroutable), or the registry gains a manual tier override (which is config-declared - the thing being refused), or the panel offers only classified models.",
+      "why_escalated": "Product direction, and a genuine tension inside §P2's own principle. An agent choosing here would be deciding what the product offers."
+    },
+    {
+      "id": "R-V3-3",
+      "item": "Should the rail visually distinguish the kinds of RED? rate_limited, unauthorized, unreachable, unconfigured and declared_but_absent all compute RED today, each carrying a distinct `reason`. Three colours is the blueprint's own alphabet; whether the operator needs to see which no it is, is a design call.",
+      "why_escalated": "Display semantics for a surface that is frozen this leg. Deciding it now would be panel work by another name."
+    },
+    {
+      "id": "R-V3-4",
+      "item": "V3-F6: fix the empty-string dotenv shadow at host/auth.py:102. The mechanical change is one line (assign when the existing value is blank), but it reverses the documented precedence 'an explicitly-exported shell var wins over the file'. Choosing whether an empty export means 'unset' or 'deliberately blanked' is the actual decision.",
+      "why_escalated": "Outside this leg's touches, and it changes documented auth precedence on the credential path."
+    },
+    {
+      "id": "R-V3-5",
+      "item": "V3-F7: fix checkout-dependent key resolution at host/auth.py:76. Options: walk upward for the first .env, honour an explicit SYNAPSE_ENV_FILE, resolve the git common-dir, or accept it and document that worktrees need their own .env.",
+      "why_escalated": "Outside this leg's touches; four defensible answers with different blast radii on install, CI and clean-clone."
+    },
+    {
+      "id": "R-V3-6",
+      "item": "117 live models the panel cannot select. Should the model picker offer the live list (probe-derived) rather than the registry rows? The Ollama menu already does exactly this for tags; the other engines do not.",
+      "why_escalated": "Product direction - what the artist is offered. Article I reserves it."
+    },
+    {
+      "id": "R-V3-7",
+      "item": "tests/test_model_ids_lockstep.py derives its allowlist FROM the registry - a config-declared source guarding against config drift. Should it gain an offline-skipped live check against probe.py, so a retired model id fails CI rather than at runtime?",
+      "why_escalated": "It would make a CI test network-dependent (skip-when-offline). Whether that trade is worth it is a policy call about the test suite."
+    },
+    {
+      "id": "R-V3-8",
+      "item": "Ratify the two-file egress expansion beyond legs.json's declared touches: docs/studio/EGRESS.md and the one-entry extension of the frozen set in tests/test_m3_egress_docs.py. Done because the failing pin prescribes exactly that remedy and Law 6 forbids the alternatives, but it is still an allowlist getting one entry longer.",
+      "why_escalated": "An agent extending a security-surface allowlist should not be the last word on it, even when the control's own message told it to."
+    }
+  ],
+
+  "gates_touched": "none. No push, no merge, no tag. Gate A untouched, Gate B (drop.json) untouched, Gate C is human-only. harness/state/**, VERSION, the baselines, shared/bridge.py and the constitution are all unmodified. harness/verify/suite_baseline.json NOT advanced - the ratchet advances only on a human-promoted commit.",
+
+  "resume_token": {
+    "skip_if_reentered": [
+      "Do NOT re-derive the declared-vs-live drift. Measured: ollama 1/13, claude 6/11, nemotron 2/102, 0 declared-but-absent. Re-run v3_probe_live.py instead - it is idempotent and costs nothing.",
+      "Do NOT re-litigate whether quota headroom is obtainable for free. MEASURED as no, by reading the full header sets of both free Anthropic endpoints and NVIDIA's. Re-open only if a provider starts publishing rate-limit headers on a list endpoint.",
+      "Do NOT re-investigate whether a price table can be probed. No provider exposes pricing; the live payload key sets are recorded in V3_PROBE.md §5.",
+      "Do NOT re-verify claude-opus-5. Confirmed live 2026-07-28 via GET /v1/models with created_at 2026-07-24.",
+      "Do NOT rebuild the mutation harness. 16 controls, all flipping, restore sha256-verified; re-run v3_controls.py to re-confirm against a changed probe.py."
+    ],
+    "re_run_when": "python/synapse/panel/providers/probe.py or registry.py changes; a new provider is added; or a provider starts publishing rate-limit headers on a list endpoint. v3_calibration.py and v3_controls.py both exit non-zero on drift, so they are usable as gates rather than as reports.",
+    "next_leg": "The first consumer of this layer is a panel availability rail, which is frozen until V2 lands (ECON-01 §2). Nothing calls probe.py today and that is deliberate. R-V3-2 gates tier rotation: two shipped models carry no tier evidence, and rotation cannot be designed until it is decided whether that means unroutable."
+  },
+
+  "ratified": false,
+  "ratification_note": "ratified:false is the correct resting state. The flip is human-only. This receipt records what was measured and what was built; it does not sanction merging it, and eight items in for_ruling are open."
+}
