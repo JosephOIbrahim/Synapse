@@ -261,12 +261,39 @@ class ClaudeWorker(QThread):
                 self._emit_render_receipt(tool_name, mcp_result)
                 self.tool_status.emit(tool_name, "done", summary)
                 content_str = json.dumps(mcp_result, default=str)
-                return {
+                result = {
                     "type": "tool_result",
                     "tool_use_id": tool_use_id,
                     "content": content_str,
                     "is_error": False,
                 }
+                # THE LAST LINK. _handle_capture_viewport has always worked -
+                # it reads the GL framebuffer correctly via the flipbook API and
+                # writes a file. And the file went nowhere: this module
+                # contained ZERO occurrences of "image" or "base64". SYNAPSE
+                # could take the picture and had never shown one to a model.
+                #
+                # Anthropic accepts a LIST of content blocks inside a
+                # tool_result, images included, so the whole gap was: notice the
+                # path, read the bytes, attach the block.
+                #
+                # Returns `result` unchanged when the model cannot see, when the
+                # file is missing or oversized, or when the tool returned no
+                # path - and says WHY in the text the model reads, because a
+                # silent failure here is indistinguishable from a model that
+                # looked and saw nothing.
+                try:
+                    from .vision_attach import attach_image
+                    # model_identity is the provider's own name for the engine
+                    # (providers/base.py:34). Asking the PROVIDER rather than
+                    # holding a copy means the multi-provider switch cannot
+                    # leave this stale - the model that answers is the model
+                    # whose capability was checked.
+                    _model = getattr(self._provider, "model_identity", "") or ""
+                    result = attach_image(result, mcp_result, _model)
+                except Exception:
+                    pass
+                return result
         except RuntimeError as exc:
             # MCP returned a JSON-RPC error — tool-level failure
             self.tool_status.emit(tool_name, "error", summary)
