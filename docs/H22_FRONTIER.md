@@ -80,7 +80,24 @@ node SideFX did not ship**, so those types were unreachable by construction and 
 understated coverage while overstating what a documentation ingest could ever close. `lop` is 219
 installed, not the 218 quoted since H9.
 
-**Not wired into the RAG corpus.** That is a separate decision with its own oracle.
+### Wired, 2026-07-28
+
+The corpus is no longer a measured artifact sitting beside the product. It is **loaded by
+`knowledge_lookup`** — 603 live node types, VERIFIED-DOC, pinned to 22.0.368, each carrying its
+summary, its documented parameters, and its build.
+
+The gate `INGEST-01` required is applied **at build time**: only entries whose documented type
+matched the running catalogue are written to `rag/corpus/h22_nodes.json`. One failed that test and
+is absent. **A phantom is not filtered at read time — it was never stored.**
+
+Two defects surfaced during the wiring, and both are recorded rather than quietly fixed. 51 type
+names exist in more than one context — `blur`, `crop`, `chromakey` and `average` are in both `cop`
+and `cop2` — and insertion order let the **legacy** context overwrite **Copernicus**, which is this
+document's own H21 problem reappearing inside the H22 corpus. And placing the node match ahead of
+keyword lookup broke 8 tests, because `merge`, `wrangle` and `solver` are all live node types: the
+corpus must answer when a query **is** a node type, not when a sentence **contains** one.
+
+**The answer to "does it know Copernicus?" is now yes, and it is one lookup to check.**
 
 ### Why this is the highest-value gap and not merely the largest
 
