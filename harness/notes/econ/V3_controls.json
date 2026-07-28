@@ -1,0 +1,258 @@
+{
+ "schema": "v3_controls/v1",
+ "producer": "harness/notes/econ/v3_controls.py",
+ "generated": "2026-07-28T12:53:41-0400",
+ "rule": "R133 \u2014 a control that has never been shown failing pins nothing.",
+ "target": "python/synapse/panel/providers/probe.py",
+ "target_sha256_before": "972aa070383c7e70c03b8d58ac937812f4ebec25a4c3c713baa48ed2f659273e",
+ "target_sha256_after_restore": "972aa070383c7e70c03b8d58ac937812f4ebec25a4c3c713baa48ed2f659273e",
+ "restore_verified": true,
+ "baseline_all_green_before_mutation": true,
+ "baseline": [
+  {
+   "mutation": "M1",
+   "test": "test_stale_available_row_is_grey_not_green",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.32s ========================"
+  },
+  {
+   "mutation": "M2",
+   "test": "test_never_probed_is_grey",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.33s ========================"
+  },
+  {
+   "mutation": "M3",
+   "test": "test_future_timestamp_is_grey_not_green",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.36s ========================"
+  },
+  {
+   "mutation": "M4",
+   "test": "test_unknown_quota_does_not_manufacture_red",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.33s ========================"
+  },
+  {
+   "mutation": "M5",
+   "test": "test_colour_is_not_a_field",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.34s ========================"
+  },
+  {
+   "mutation": "M6",
+   "test": "test_no_completions_endpoint_in_executable_code",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.29s ========================"
+  },
+  {
+   "mutation": "M7",
+   "test": "test_unclassified_gets_no_tier_never_a_default",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.37s ========================"
+  },
+  {
+   "mutation": "M8",
+   "test": "test_declared_but_absent_model_is_red",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.37s ========================"
+  },
+  {
+   "mutation": "M9",
+   "test": "test_quota_absent_is_reported_as_unobtainable_not_zero",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.30s ========================"
+  },
+  {
+   "mutation": "M10",
+   "test": "test_no_tool_capability_is_a_hard_gate",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.32s ========================"
+  },
+  {
+   "mutation": "M11",
+   "test": "test_refresh_interval_is_at_least_one_per_minute",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.34s ========================"
+  },
+  {
+   "mutation": "M12",
+   "test": "test_ttl_exceeds_refresh_interval",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.37s ========================"
+  },
+  {
+   "mutation": "M13",
+   "test": "test_cost_never_affects_colour",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.34s ========================"
+  },
+  {
+   "mutation": "M14",
+   "test": "test_unconfigured_provider_makes_no_network_call",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.33s ========================"
+  },
+  {
+   "mutation": "M15",
+   "test": "test_parameter_size_outranks_name_token",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.36s ========================"
+  },
+  {
+   "mutation": "M16",
+   "test": "test_parse_parameter_size",
+   "rc": 0,
+   "tail": "======================== 1 passed, 2 warnings in 0.35s ========================"
+  }
+ ],
+ "mutations": 16,
+ "controls_that_flip": 16,
+ "all_controls_flip": true,
+ "results": [
+  {
+   "mutation": "M1",
+   "test": "test_stale_available_row_is_grey_not_green",
+   "what": "colour_for stops consulting age and only greys a never-probed row \u2014 the exact 'available because the probe said so an hour ago' defect",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.42s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M2",
+   "test": "test_never_probed_is_grey",
+   "what": "is_stale treats a never-probed row as fresh",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.36s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M3",
+   "test": "test_future_timestamp_is_grey_not_green",
+   "what": "is_stale drops its clock-skew clause, so a future stamp reads fresh",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.46s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M4",
+   "test": "test_unknown_quota_does_not_manufacture_red",
+   "what": "an unknown quota is read as exhausted \u2014 every provider goes RED",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.38s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M5",
+   "test": "test_colour_is_not_a_field",
+   "what": "a colour is stored on the structure instead of computed",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.36s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M6",
+   "test": "test_no_completions_endpoint_in_executable_code",
+   "what": "a completions endpoint literal enters executable code",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.34s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M7",
+   "test": "test_unclassified_gets_no_tier_never_a_default",
+   "what": "an unclassifiable model is given a default tier \u2014 a guess wearing a tier constant",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.35s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M8",
+   "test": "test_declared_but_absent_model_is_red",
+   "what": "declared-but-absent models are dropped instead of reported \u2014 the hou.ActiveRender pattern goes back to being invisible",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.38s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M9",
+   "test": "test_quota_absent_is_reported_as_unobtainable_not_zero",
+   "what": "a missing rate-limit header is reported as zero headroom",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.37s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M10",
+   "test": "test_no_tool_capability_is_a_hard_gate",
+   "what": "the tool-capability gate stops firing, so a model that cannot call tools is offered to the dispatch spine",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.34s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M11",
+   "test": "test_refresh_interval_is_at_least_one_per_minute",
+   "what": "the refresh floor drops to one second \u2014 the probe becomes the thing that trips the rate limit it reports on",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.33s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M12",
+   "test": "test_ttl_exceeds_refresh_interval",
+   "what": "TTL falls below the refresh interval, so a row greys before the layer is even allowed to re-probe it",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.38s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M13",
+   "test": "test_cost_never_affects_colour",
+   "what": "price reaches the colour computation",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.36s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M14",
+   "test": "test_unconfigured_provider_makes_no_network_call",
+   "what": "an unconfigured provider is probed over the network anyway",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.48s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M15",
+   "test": "test_parameter_size_outranks_name_token",
+   "what": "the weak name signal is consulted before the published size",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.40s ========================",
+   "control_flips": true
+  },
+  {
+   "mutation": "M16",
+   "test": "test_parse_parameter_size",
+   "what": "an unparseable size becomes 0.0 instead of None, which would tier a 700B model as FAST",
+   "applied": true,
+   "exit_code_under_mutation": 1,
+   "pytest_tail": "======================== 1 failed, 2 warnings in 0.35s ========================",
+   "control_flips": true
+  }
+ ]
+}

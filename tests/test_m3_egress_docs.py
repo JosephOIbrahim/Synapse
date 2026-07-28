@@ -53,6 +53,10 @@ def test_remote_egress_sites_are_frozen():
         "panel/providers/anthropic_provider.py",
         "panel/providers/gemini_provider.py",
         "panel/providers/nemotron_provider.py",
+        # V3 capability probe (2026-07-28). Adds NO new host — it reaches the
+        # same three, read-only, via GET list endpoints with empty bodies.
+        # Documented in EGRESS.md under "The capability-probe lane".
+        "panel/providers/probe.py",
     }
     assert https_sites == _known, (
         f"New raw-HTTPS egress site(s): {https_sites - _known} "

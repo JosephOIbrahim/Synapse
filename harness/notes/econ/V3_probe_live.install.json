@@ -1,0 +1,3607 @@
+{
+ "schema": "v3_probe_live/v1",
+ "producer": "harness/notes/econ/v3_probe_live.py",
+ "label": "install",
+ "generated": "2026-07-28T12:44:06-0400",
+ "commit": "b92b0d4",
+ "host": {
+  "python": "3.14.2",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "cwd": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\v3-econ"
+ },
+ "env": {
+  "explicit_env_load": {
+   "path": "C:\\Users\\User\\SYNAPSE\\.env",
+   "exists": true,
+   "assigned": [
+    "NVIDIA_API_KEY",
+    "ANTHROPIC_API_KEY"
+   ],
+   "loaded": true
+  },
+  "empty_string_shadow_check": {
+   "ANTHROPIC_API_KEY": {
+    "present": true,
+    "empty": false
+   },
+   "NVIDIA_API_KEY": {
+    "present": true,
+    "empty": false
+   },
+   "GEMINI_API_KEY": {
+    "present": false,
+    "empty": null
+   },
+   "GOOGLE_API_KEY": {
+    "present": false,
+    "empty": null
+   },
+   "OLLAMA_API_KEY": {
+    "present": false,
+    "empty": null
+   }
+  },
+  "auth_repo_root": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\v3-econ"
+ },
+ "spend": {
+  "completions_issued": 0,
+  "endpoints_called": [
+   "anthropic:GET /v1/models",
+   "local:config",
+   "nvidia:GET /v1/models",
+   "ollama:GET /api/tags"
+  ],
+  "allowlist": [
+   "anthropic:GET /v1/models",
+   "anthropic:POST /v1/messages/count_tokens",
+   "custom:GET /models",
+   "gemini:GET /v1beta/models",
+   "local:config",
+   "nvidia:GET /v1/models",
+   "ollama:GET /api/tags"
+  ],
+  "all_calls_in_allowlist": true,
+  "declined": [
+   {
+    "probe": "POST /v1/messages (Anthropic completions, 1 token)",
+    "would_have_measured": "quota headroom \u2014 anthropic-ratelimit-{requests,input-tokens,output-tokens}-{limit,remaining,reset} \u2014 which is published ONLY by the billed completions endpoint",
+    "declined_because": "it bills. The economist axis cannot credibly measure cost while being careless with it, and a liveness check that consumes the quota it reports on is self-defeating.",
+    "consequence_recorded": "quota_remaining/quota_total are None for every metered provider, with quota_source='unavailable_at_zero_cost'. Rate-limiting is still caught reactively on a 429; headroom is not reported."
+   },
+   {
+    "probe": "POST /v1/chat/completions (NVIDIA NIM, Ollama :cloud)",
+    "would_have_measured": "end-to-end generation latency and any x-ratelimit-* headers on the completions bucket",
+    "declined_because": "NIM and Ollama :cloud tags are metered by their host. GET /v1/models and GET /api/tags answer availability for free.",
+    "consequence_recorded": "latency_ms is METADATA-endpoint latency, not generation latency. It is a liveness number, and must not be read as time-to-first-token."
+   }
+  ]
+ },
+ "policy": {
+  "refresh_interval_s": 60.0,
+  "probe_ttl_s": 180.0,
+  "requests_per_hour_per_provider_worst_case": 60.0
+ },
+ "wall_ms": 381.9,
+ "configured": {
+  "ollama": true,
+  "claude": true,
+  "nemotron": true,
+  "gemini": false,
+  "custom": false
+ },
+ "per_provider": {
+  "ollama": {
+   "configured": true,
+   "declared_count": 1,
+   "declared": [
+    "glm-5:cloud"
+   ],
+   "live_count": 13,
+   "rows": 13,
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "latency_ms": 46.43219997524284,
+   "quota_source": "unavailable_at_zero_cost",
+   "declared_but_absent": [],
+   "live_not_declared": [
+    "deepseek-v4-pro:cloud",
+    "gemma4:latest",
+    "glm-5.2:cloud",
+    "gpt-oss:20b",
+    "kimi-k2.5:cloud",
+    "kimi-k3:cloud",
+    "nemotron-3-nano:latest",
+    "nemotron-3-super:latest",
+    "nemotron-3-ultra:cloud",
+    "nemotron-mini:latest",
+    "nemotron:latest",
+    "qwen3-vl:30b"
+   ],
+   "colours": {
+    "green": 13,
+    "red": 0,
+    "grey": 0
+   }
+  },
+  "claude": {
+   "configured": true,
+   "declared_count": 6,
+   "declared": [
+    "claude-opus-5",
+    "claude-opus-4-8",
+    "claude-sonnet-5",
+    "claude-sonnet-4-6",
+    "claude-haiku-4-5-20251001",
+    "claude-fable-5"
+   ],
+   "live_count": 11,
+   "rows": 11,
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "latency_ms": 306.9123000022955,
+   "quota_source": "unavailable_at_zero_cost",
+   "declared_but_absent": [],
+   "live_not_declared": [
+    "claude-opus-4-1-20250805",
+    "claude-opus-4-5-20251101",
+    "claude-opus-4-6",
+    "claude-opus-4-7",
+    "claude-sonnet-4-5-20250929"
+   ],
+   "colours": {
+    "green": 11,
+    "red": 0,
+    "grey": 0
+   }
+  },
+  "nemotron": {
+   "configured": true,
+   "declared_count": 2,
+   "declared": [
+    "nvidia/nemotron-3-super-120b-a12b",
+    "nvidia/nemotron-3-nano-30b-a3b"
+   ],
+   "live_count": 102,
+   "rows": 102,
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "latency_ms": 140.45459998305887,
+   "quota_source": "unavailable_at_zero_cost",
+   "declared_but_absent": [],
+   "live_not_declared": [
+    "01-ai/yi-large",
+    "adept/fuyu-8b",
+    "ai21labs/jamba-1.5-large-instruct",
+    "aisingapore/sea-lion-7b-instruct",
+    "baai/bge-m3",
+    "bigcode/starcoder2-15b",
+    "databricks/dbrx-instruct",
+    "deepseek-ai/deepseek-coder-6.7b-instruct",
+    "deepseek-ai/deepseek-v4-flash",
+    "deepseek-ai/deepseek-v4-pro",
+    "google/codegemma-1.1-7b",
+    "google/codegemma-7b",
+    "google/deplot",
+    "google/diffusiongemma-26b-a4b-it",
+    "google/gemma-2b",
+    "google/gemma-3-12b-it",
+    "google/gemma-3-4b-it",
+    "google/gemma-4-31b-it",
+    "google/recurrentgemma-2b",
+    "ibm/granite-3.0-3b-a800m-instruct",
+    "ibm/granite-3.0-8b-instruct",
+    "ibm/granite-34b-code-instruct",
+    "ibm/granite-8b-code-instruct",
+    "meta/codellama-70b",
+    "meta/llama-3.1-70b-instruct",
+    "meta/llama-3.1-8b-instruct",
+    "meta/llama-3.2-11b-vision-instruct",
+    "meta/llama-3.2-1b-instruct",
+    "meta/llama-3.2-3b-instruct",
+    "meta/llama-3.2-90b-vision-instruct",
+    "meta/llama-3.3-70b-instruct",
+    "meta/llama-guard-4-12b",
+    "meta/llama2-70b",
+    "microsoft/kosmos-2",
+    "microsoft/phi-3-vision-128k-instruct",
+    "microsoft/phi-3.5-moe-instruct",
+    "minimaxai/minimax-m3",
+    "mistralai/codestral-22b-instruct-v0.1",
+    "mistralai/mistral-7b-instruct-v0.3",
+    "mistralai/mistral-large",
+    "mistralai/mistral-large-2-instruct",
+    "mistralai/mistral-medium-3.5-128b",
+    "mistralai/mistral-nemotron",
+    "mistralai/mixtral-8x22b-v0.1",
+    "moonshotai/kimi-k2.6",
+    "nv-mistralai/mistral-nemo-12b-instruct",
+    "nvidia/ai-synthetic-video-detector",
+    "nvidia/cosmos-reason2-8b",
+    "nvidia/embed-qa-4",
+    "nvidia/ising-calibration-1.5-31b",
+    "nvidia/llama-3.1-nemoguard-8b-content-safety",
+    "nvidia/llama-3.1-nemoguard-8b-topic-control",
+    "nvidia/llama-3.1-nemotron-51b-instruct",
+    "nvidia/llama-3.1-nemotron-70b-instruct",
+    "nvidia/llama-3.1-nemotron-nano-8b-v1",
+    "nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
+    "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+    "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
+    "nvidia/llama-3.2-nv-embedqa-1b-v1",
+    "nvidia/llama-3.3-nemotron-super-49b-v1",
+    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+    "nvidia/llama-nemotron-embed-1b-v2",
+    "nvidia/llama-nemotron-embed-vl-1b-v2",
+    "nvidia/llama3-chatqa-1.5-70b",
+    "nvidia/mistral-nemo-minitron-8b-8k-instruct",
+    "nvidia/nemoretriever-parse",
+    "nvidia/nemotron-3-embed-1b",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+    "nvidia/nemotron-3-ultra-550b-a55b",
+    "nvidia/nemotron-3.5-content-safety",
+    "nvidia/nemotron-4-340b-instruct",
+    "nvidia/nemotron-4-340b-reward",
+    "nvidia/nemotron-mini-4b-instruct",
+    "nvidia/nemotron-nano-12b-v2-vl",
+    "nvidia/nemotron-nano-3-30b-a3b",
+    "nvidia/nemotron-parse",
+    "nvidia/neva-22b",
+    "nvidia/nv-embed-v1",
+    "nvidia/nv-embedcode-7b-v1",
+    "nvidia/nv-embedqa-e5-v5",
+    "nvidia/nv-embedqa-mistral-7b-v2",
+    "nvidia/nvclip",
+    "nvidia/nvidia-nemotron-nano-9b-v2",
+    "nvidia/riva-translate-4b-instruct",
+    "nvidia/riva-translate-4b-instruct-v1.1",
+    "nvidia/riva-translate-4b-instruct-v2",
+    "nvidia/vila",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "poolside/laguna-xs-2.1",
+    "snowflake/arctic-embed-l",
+    "stepfun-ai/step-3.7-flash",
+    "thinkingmachines/inkling",
+    "writer/palmyra-creative-122b",
+    "writer/palmyra-fin-70b-32k",
+    "writer/palmyra-med-70b",
+    "writer/palmyra-med-70b-32k",
+    "z-ai/glm-5.2",
+    "zyphra/zamba2-7b-instruct"
+   ],
+   "colours": {
+    "green": 102,
+    "red": 0,
+    "grey": 0
+   }
+  },
+  "gemini": {
+   "configured": false,
+   "declared_count": 1,
+   "declared": [
+    "gemini-3.5-flash"
+   ],
+   "live_count": 0,
+   "rows": 1,
+   "method": "local:config",
+   "reason": "unconfigured",
+   "latency_ms": null,
+   "quota_source": "not_applicable",
+   "declared_but_absent": [],
+   "live_not_declared": [],
+   "colours": {
+    "green": 0,
+    "red": 1,
+    "grey": 0
+   }
+  },
+  "custom": {
+   "configured": false,
+   "declared_count": 0,
+   "declared": [],
+   "live_count": 0,
+   "rows": 0,
+   "method": null,
+   "reason": null,
+   "latency_ms": null,
+   "quota_source": null,
+   "declared_but_absent": [],
+   "live_not_declared": [],
+   "colours": {
+    "green": 0,
+    "red": 0,
+    "grey": 0
+   }
+  }
+ },
+ "summary": {
+  "rows": 127,
+  "by_colour": {
+   "green": 126,
+   "red": 1,
+   "grey": 0
+  },
+  "by_tier": {
+   "frontier": 18,
+   "balanced": 39,
+   "fast": 16
+  },
+  "unclassified": 54,
+  "ttl_s": 180.0,
+  "refresh_interval_s": 60.0
+ },
+ "rows": [
+  {
+   "model": "claude-fable-5",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 306.9123000022955,
+   "probed_at": 1785257045.8142264,
+   "provider": "claude",
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": true,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "created_at": "2026-06-07T00:00:00Z"
+   }
+  },
+  {
+   "model": "claude-haiku-4-5-20251001",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 306.9123000022955,
+   "probed_at": 1785257045.8142264,
+   "provider": "claude",
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "created_at": "2025-10-15T00:00:00Z"
+   }
+  },
+  {
+   "model": "claude-opus-4-1-20250805",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 306.9123000022955,
+   "probed_at": 1785257045.8142264,
+   "provider": "claude",
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "created_at": "2025-08-05T00:00:00Z"
+   }
+  },
+  {
+   "model": "claude-opus-4-5-20251101",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 306.9123000022955,
+   "probed_at": 1785257045.8142264,
+   "provider": "claude",
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "created_at": "2025-11-24T00:00:00Z"
+   }
+  },
+  {
+   "model": "claude-opus-4-6",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 306.9123000022955,
+   "probed_at": 1785257045.8142264,
+   "provider": "claude",
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "created_at": "2026-02-04T00:00:00Z"
+   }
+  },
+  {
+   "model": "claude-opus-4-7",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 306.9123000022955,
+   "probed_at": 1785257045.8142264,
+   "provider": "claude",
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "created_at": "2026-04-14T00:00:00Z"
+   }
+  },
+  {
+   "model": "claude-opus-4-8",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 306.9123000022955,
+   "probed_at": 1785257045.8142264,
+   "provider": "claude",
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "created_at": "2026-05-28T00:00:00Z"
+   }
+  },
+  {
+   "model": "claude-opus-5",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 306.9123000022955,
+   "probed_at": 1785257045.8142264,
+   "provider": "claude",
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "created_at": "2026-07-24T00:00:00Z"
+   }
+  },
+  {
+   "model": "claude-sonnet-4-5-20250929",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 306.9123000022955,
+   "probed_at": 1785257045.8142264,
+   "provider": "claude",
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "created_at": "2025-09-29T00:00:00Z"
+   }
+  },
+  {
+   "model": "claude-sonnet-4-6",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 306.9123000022955,
+   "probed_at": 1785257045.8142264,
+   "provider": "claude",
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "created_at": "2026-02-17T00:00:00Z"
+   }
+  },
+  {
+   "model": "claude-sonnet-5",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 306.9123000022955,
+   "probed_at": 1785257045.8142264,
+   "provider": "claude",
+   "method": "anthropic:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "created_at": "2026-06-29T00:00:00Z"
+   }
+  },
+  {
+   "model": "gemini-3.5-flash",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": false,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": null,
+   "probed_at": 1785257045.814674,
+   "provider": "gemini",
+   "method": "local:config",
+   "reason": "unconfigured",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "not_applicable",
+   "cost_source": "not_applicable",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": false,
+   "capabilities": null,
+   "detail": {}
+  },
+  {
+   "model": "01-ai/yi-large",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "01-ai"
+   }
+  },
+  {
+   "model": "adept/fuyu-8b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "adept"
+   }
+  },
+  {
+   "model": "ai21labs/jamba-1.5-large-instruct",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "ai21labs"
+   }
+  },
+  {
+   "model": "aisingapore/sea-lion-7b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "aisingapore"
+   }
+  },
+  {
+   "model": "baai/bge-m3",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "baai"
+   }
+  },
+  {
+   "model": "bigcode/starcoder2-15b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "bigcode"
+   }
+  },
+  {
+   "model": "databricks/dbrx-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "databricks"
+   }
+  },
+  {
+   "model": "deepseek-ai/deepseek-coder-6.7b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "deepseek-ai"
+   }
+  },
+  {
+   "model": "deepseek-ai/deepseek-v4-flash",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "deepseek-ai"
+   }
+  },
+  {
+   "model": "deepseek-ai/deepseek-v4-pro",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "deepseek-ai"
+   }
+  },
+  {
+   "model": "google/codegemma-1.1-7b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "google"
+   }
+  },
+  {
+   "model": "google/codegemma-7b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "google"
+   }
+  },
+  {
+   "model": "google/deplot",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "google"
+   }
+  },
+  {
+   "model": "google/diffusiongemma-26b-a4b-it",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "google"
+   }
+  },
+  {
+   "model": "google/gemma-2b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "google"
+   }
+  },
+  {
+   "model": "google/gemma-3-12b-it",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "google"
+   }
+  },
+  {
+   "model": "google/gemma-3-4b-it",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "google"
+   }
+  },
+  {
+   "model": "google/gemma-4-31b-it",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "google"
+   }
+  },
+  {
+   "model": "google/recurrentgemma-2b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "google"
+   }
+  },
+  {
+   "model": "ibm/granite-3.0-3b-a800m-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "ibm"
+   }
+  },
+  {
+   "model": "ibm/granite-3.0-8b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "ibm"
+   }
+  },
+  {
+   "model": "ibm/granite-34b-code-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "ibm"
+   }
+  },
+  {
+   "model": "ibm/granite-8b-code-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "ibm"
+   }
+  },
+  {
+   "model": "meta/codellama-70b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "meta"
+   }
+  },
+  {
+   "model": "meta/llama-3.1-70b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "meta"
+   }
+  },
+  {
+   "model": "meta/llama-3.1-8b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "meta"
+   }
+  },
+  {
+   "model": "meta/llama-3.2-11b-vision-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "meta"
+   }
+  },
+  {
+   "model": "meta/llama-3.2-1b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "meta"
+   }
+  },
+  {
+   "model": "meta/llama-3.2-3b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "meta"
+   }
+  },
+  {
+   "model": "meta/llama-3.2-90b-vision-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "meta"
+   }
+  },
+  {
+   "model": "meta/llama-3.3-70b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "meta"
+   }
+  },
+  {
+   "model": "meta/llama-guard-4-12b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "meta"
+   }
+  },
+  {
+   "model": "meta/llama2-70b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "meta"
+   }
+  },
+  {
+   "model": "microsoft/kosmos-2",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "microsoft"
+   }
+  },
+  {
+   "model": "microsoft/phi-3-vision-128k-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "microsoft"
+   }
+  },
+  {
+   "model": "microsoft/phi-3.5-moe-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "microsoft"
+   }
+  },
+  {
+   "model": "minimaxai/minimax-m3",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "minimaxai"
+   }
+  },
+  {
+   "model": "mistralai/codestral-22b-instruct-v0.1",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "mistralai"
+   }
+  },
+  {
+   "model": "mistralai/mistral-7b-instruct-v0.3",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "mistralai"
+   }
+  },
+  {
+   "model": "mistralai/mistral-large",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "mistralai"
+   }
+  },
+  {
+   "model": "mistralai/mistral-large-2-instruct",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "mistralai"
+   }
+  },
+  {
+   "model": "mistralai/mistral-medium-3.5-128b",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "mistralai"
+   }
+  },
+  {
+   "model": "mistralai/mistral-nemotron",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "mistralai"
+   }
+  },
+  {
+   "model": "mistralai/mixtral-8x22b-v0.1",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "mistralai"
+   }
+  },
+  {
+   "model": "moonshotai/kimi-k2.6",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "moonshotai"
+   }
+  },
+  {
+   "model": "nv-mistralai/mistral-nemo-12b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nv-mistralai"
+   }
+  },
+  {
+   "model": "nvidia/ai-synthetic-video-detector",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/cosmos-reason2-8b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/embed-qa-4",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/ising-calibration-1.5-31b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.1-nemoguard-8b-content-safety",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.1-nemoguard-8b-topic-control",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.1-nemotron-51b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.1-nemotron-70b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.1-nemotron-nano-8b-v1",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.2-nv-embedqa-1b-v1",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.3-nemotron-super-49b-v1",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-nemotron-embed-1b-v2",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama-nemotron-embed-vl-1b-v2",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/llama3-chatqa-1.5-70b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/mistral-nemo-minitron-8b-8k-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemoretriever-parse",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-embed-1b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-super-120b-a12b",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3-ultra-550b-a55b",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-3.5-content-safety",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-4-340b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-4-340b-reward",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-mini-4b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-nano-12b-v2-vl",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-nano-3-30b-a3b",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nemotron-parse",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/neva-22b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nv-embed-v1",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nv-embedcode-7b-v1",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nv-embedqa-e5-v5",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nv-embedqa-mistral-7b-v2",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nvclip",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/nvidia-nemotron-nano-9b-v2",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/riva-translate-4b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/riva-translate-4b-instruct-v1.1",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/riva-translate-4b-instruct-v2",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "nvidia/vila",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "nvidia"
+   }
+  },
+  {
+   "model": "openai/gpt-oss-120b",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "openai"
+   }
+  },
+  {
+   "model": "openai/gpt-oss-20b",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "openai"
+   }
+  },
+  {
+   "model": "poolside/laguna-xs-2.1",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "poolside"
+   }
+  },
+  {
+   "model": "snowflake/arctic-embed-l",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "snowflake"
+   }
+  },
+  {
+   "model": "stepfun-ai/step-3.7-flash",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "stepfun-ai"
+   }
+  },
+  {
+   "model": "thinkingmachines/inkling",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "thinkingmachines"
+   }
+  },
+  {
+   "model": "writer/palmyra-creative-122b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "writer"
+   }
+  },
+  {
+   "model": "writer/palmyra-fin-70b-32k",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "writer"
+   }
+  },
+  {
+   "model": "writer/palmyra-med-70b",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "writer"
+   }
+  },
+  {
+   "model": "writer/palmyra-med-70b-32k",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "writer"
+   }
+  },
+  {
+   "model": "z-ai/glm-5.2",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "z-ai"
+   }
+  },
+  {
+   "model": "zyphra/zamba2-7b-instruct",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 140.45459998305887,
+   "probed_at": 1785257045.8143938,
+   "provider": "nemotron",
+   "method": "nvidia:GET /v1/models",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "unprobeable:no_pricing_endpoint",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": null,
+   "detail": {
+    "owned_by": "zyphra"
+   }
+  },
+  {
+   "model": "deepseek-v4-pro:cloud",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com:443",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com:443",
+    "context_length": 1048576,
+    "family": null
+   }
+  },
+  {
+   "model": "gemma4:latest",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": null,
+    "family": "gemma4"
+   }
+  },
+  {
+   "model": "glm-5.2:cloud",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com:443",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com:443",
+    "context_length": 1000000,
+    "family": "glm"
+   }
+  },
+  {
+   "model": "glm-5:cloud",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com:443",
+   "tier_basis": "unclassified",
+   "declared": true,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com:443",
+    "context_length": 202752,
+    "family": null
+   }
+  },
+  {
+   "model": "gpt-oss:20b",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 131072,
+    "family": "gptoss"
+   }
+  },
+  {
+   "model": "kimi-k2.5:cloud",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com:443",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking",
+    "vision"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com:443",
+    "context_length": 262144,
+    "family": null
+   }
+  },
+  {
+   "model": "kimi-k3:cloud",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "vision",
+    "thinking",
+    "completion",
+    "tools"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com",
+    "context_length": 1048576,
+    "family": null
+   }
+  },
+  {
+   "model": "nemotron-3-nano:latest",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 1048576,
+    "family": "nemotron_h_moe"
+   }
+  },
+  {
+   "model": "nemotron-3-super:latest",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 262144,
+    "family": "nemotron_h_moe"
+   }
+  },
+  {
+   "model": "nemotron-3-ultra:cloud",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com:443",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com:443",
+    "context_length": 262144,
+    "family": "nemotron"
+   }
+  },
+  {
+   "model": "nemotron-mini:latest",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 4096,
+    "family": "nemotron"
+   }
+  },
+  {
+   "model": "nemotron:latest",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 131072,
+    "family": "llama"
+   }
+  },
+  {
+   "model": "qwen3-vl:30b",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 46.43219997524284,
+   "probed_at": 1785257045.8139646,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "vision",
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 262144,
+    "family": "qwen3vlmoe"
+   }
+  }
+ ]
+}

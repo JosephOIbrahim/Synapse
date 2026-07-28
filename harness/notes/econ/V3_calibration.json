@@ -1,0 +1,299 @@
+{
+ "schema": "v3_calibration/v1",
+ "producer": "harness/notes/econ/v3_calibration.py",
+ "generated": "2026-07-28T12:47:18-0400",
+ "rule": "R60 \u2014 every reader is calibrated before it is trusted; every block carries a positive AND a negative half.",
+ "readers": {
+  "parameter_size": {
+   "reader": "probe.parse_parameter_size",
+   "condition_under_which_this_fails": "the parser returns a number for an unparseable size (a 0.0 would tier a 700B model as FAST), or misreads a live suffix",
+   "positive": {
+    "n": 10,
+    "hits": 10,
+    "misses": []
+   },
+   "negative": {
+    "n": 6,
+    "refused": 6,
+    "wrongly_classified": []
+   },
+   "pass": true
+  },
+  "tier_classifier": {
+   "reader": "probe.tier_candidates_for",
+   "condition_under_which_this_fails": "the classifier defaults an unknown model to a tier instead of refusing, or a family token overrides a published parameter size, or the tool-capability gate does not fire",
+   "positive": {
+    "n": 12,
+    "hits": 12,
+    "misses": []
+   },
+   "negative": {
+    "n": 6,
+    "refused": 6,
+    "wrongly_classified": []
+   },
+   "size_outranks_token": {
+    "got": [
+     "frontier"
+    ],
+    "pass": true
+   },
+   "capability_gate_pair": {
+    "with_tools": {
+     "tiers": [
+      "frontier"
+     ],
+     "basis": "parameter_size"
+    },
+    "without_tools": {
+     "tiers": [],
+     "basis": "no_tool_capability"
+    },
+    "pass": true
+   },
+   "pass": true
+  },
+  "quota_headers": {
+   "reader": "probe._quota_from_headers",
+   "condition_under_which_this_fails": "the parser fabricates a 0 when no rate-limit header is present (every provider would then read RED), or fails to parse one that is",
+   "negative_live_headers": {
+    "got": [
+     null,
+     null,
+     "unavailable_at_zero_cost"
+    ],
+    "pass": true
+   },
+   "positive_anthropic_style": {
+    "got": [
+     12,
+     50,
+     "header:anthropic-ratelimit-requests-remaining"
+    ],
+    "pass": true
+   },
+   "positive_openai_style": {
+    "got": [
+     0,
+     500,
+     "header:x-ratelimit-remaining-requests"
+    ],
+    "pass": true
+   },
+   "negative_malformed": {
+    "got": [
+     null,
+     null,
+     "unavailable_at_zero_cost"
+    ],
+    "pass": true
+   },
+   "pass": true
+  },
+  "colour": {
+   "reader": "probe.colour_for",
+   "condition_under_which_this_fails": "availability is checked before age (a stale row would read green), or an unknown quota is read as exhausted, or cost reaches the colour at all",
+   "truth_table": [
+    {
+     "case": "fresh + available + no quota signal",
+     "expected": "green",
+     "got": "green"
+    },
+    {
+     "case": "fresh + available + quota 5",
+     "expected": "green",
+     "got": "green"
+    },
+    {
+     "case": "fresh + available + quota 0",
+     "expected": "red",
+     "got": "red"
+    },
+    {
+     "case": "fresh + unavailable",
+     "expected": "red",
+     "got": "red"
+    },
+    {
+     "case": "stale + available",
+     "expected": "grey",
+     "got": "grey"
+    },
+    {
+     "case": "stale + unavailable",
+     "expected": "grey",
+     "got": "grey"
+    },
+    {
+     "case": "stale + quota 0",
+     "expected": "grey",
+     "got": "grey"
+    },
+    {
+     "case": "never probed",
+     "expected": "grey",
+     "got": "grey"
+    },
+    {
+     "case": "future stamp (skew)",
+     "expected": "grey",
+     "got": "grey"
+    },
+    {
+     "case": "exactly at ttl",
+     "expected": "green",
+     "got": "green"
+    },
+    {
+     "case": "cost is huge",
+     "expected": "green",
+     "got": "green"
+    },
+    {
+     "case": "cost is zero",
+     "expected": "green",
+     "got": "green"
+    }
+   ],
+   "wrong": [],
+   "all_three_colours_exercised": true,
+   "pass": true
+  },
+  "refresh": {
+   "reader": "probe.should_refresh",
+   "condition_under_which_this_fails": "the interval floor is not enforced \u2014 a caller in a hot loop could then hammer a provider and the probe becomes the thing that trips the rate limit it reports on",
+   "truth_table": [
+    {
+     "case": "no result at all",
+     "expected": true,
+     "got": true
+    },
+    {
+     "case": "never probed",
+     "expected": true,
+     "got": true
+    },
+    {
+     "case": "just probed",
+     "expected": false,
+     "got": false
+    },
+    {
+     "case": "just under the interval",
+     "expected": false,
+     "got": false
+    },
+    {
+     "case": "at the interval",
+     "expected": true,
+     "got": true
+    },
+    {
+     "case": "well past",
+     "expected": true,
+     "got": true
+    },
+    {
+     "case": "future stamp (skew)",
+     "expected": true,
+     "got": true
+    }
+   ],
+   "wrong": [],
+   "pass": true
+  }
+ },
+ "declared_model_coverage": {
+  "what": "tier coverage over REGISTRY-DECLARED (panel-selectable) models",
+  "declared_total": 10,
+  "unclassified": [
+   {
+    "provider": "ollama",
+    "model": "glm-5:cloud"
+   },
+   {
+    "provider": "claude",
+    "model": "claude-fable-5"
+   }
+  ],
+  "unclassified_count": 2,
+  "per_provider": {
+   "ollama": [
+    {
+     "model": "glm-5:cloud",
+     "tiers": [],
+     "basis": "unclassified"
+    }
+   ],
+   "claude": [
+    {
+     "model": "claude-opus-5",
+     "tiers": [
+      "frontier"
+     ],
+     "basis": "live_id_token"
+    },
+    {
+     "model": "claude-opus-4-8",
+     "tiers": [
+      "frontier"
+     ],
+     "basis": "live_id_token"
+    },
+    {
+     "model": "claude-sonnet-5",
+     "tiers": [
+      "balanced"
+     ],
+     "basis": "live_id_token"
+    },
+    {
+     "model": "claude-sonnet-4-6",
+     "tiers": [
+      "balanced"
+     ],
+     "basis": "live_id_token"
+    },
+    {
+     "model": "claude-haiku-4-5-20251001",
+     "tiers": [
+      "fast"
+     ],
+     "basis": "live_id_token"
+    },
+    {
+     "model": "claude-fable-5",
+     "tiers": [],
+     "basis": "unclassified"
+    }
+   ],
+   "nemotron": [
+    {
+     "model": "nvidia/nemotron-3-super-120b-a12b",
+     "tiers": [
+      "balanced"
+     ],
+     "basis": "live_id_token"
+    },
+    {
+     "model": "nvidia/nemotron-3-nano-30b-a3b",
+     "tiers": [
+      "fast"
+     ],
+     "basis": "live_id_token"
+    }
+   ],
+   "gemini": [
+    {
+     "model": "gemini-3.5-flash",
+     "tiers": [
+      "fast"
+     ],
+     "basis": "live_id_token"
+    }
+   ],
+   "custom": []
+  }
+ },
+ "all_pass": true
+}

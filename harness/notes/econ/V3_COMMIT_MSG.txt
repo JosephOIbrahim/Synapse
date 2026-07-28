@@ -1,0 +1,69 @@
+feat(panel): V3 probe layer - routing is probe-derived, never config-declared
+
+A model list typed into a config file is documentation. A capability probe
+against the provider is a probe. This ships the second thing.
+
+python/synapse/panel/providers/probe.py returns the blueprint §3.3 structure -
+model, tier_candidates, available, quota_remaining, quota_total,
+cost_per_1k_in, cost_per_1k_out, latency_ms, probed_at - plus per-row
+provenance naming the endpoint that produced each figure.
+
+There is no colour field. colour_for(result, now=...) computes it at read time
+and checks AGE BEFORE AVAILABILITY, so a stale probe reads GREY - UNKNOWN, not
+the last thing it happened to see. Demonstrated on the real 127 live rows:
+126 GREEN at t+179.9s, 126 GREY at t+180.0s, nothing about the rows changed.
+Negative control included - re-probing restores GREEN, so the demonstration is
+not just "colour_for always says grey".
+
+MEASURED LIVE 2026-07-28, zero completion spend:
+  ollama     1 declared / 13 served
+  claude     6 declared / 11 served   (claude-opus-5 VERIFIED via GET /v1/models,
+                                       closing the standing provenance ask)
+  nemotron   2 declared / 102 served
+117 of 127 live rows are models the config file never heard of. The registry's
+Ollama default glm-5:cloud reports remote_host=ollama.com - it is metered, not
+local, so "Ollama is free" is false of the row the panel ships selected.
+
+Quota headroom is NOT obtainable at zero cost. Measured: neither GET /v1/models
+nor the free count_tokens returns any anthropic-ratelimit-* header; only the
+billed completions endpoint does. So quota is None with
+quota_source=unavailable_at_zero_cost - rate limiting is caught reactively on a
+429, headroom is not reported predictively. Recorded, not worked around.
+
+No price table ships. No provider exposes pricing over its API, and a dated
+table keyed by model id is both the claim-shape this module refuses and a model
+name in code. Cost is probed where it can be: an Ollama tag with no remote_host
+runs locally, so 0.0; a :cloud tag is metered, so None.
+
+Polling is demand-driven, never on a timer: REFRESH_INTERVAL_S=60,
+PROBE_TTL_S=180. An idle panel issues zero probes; max displayed staleness is
+3 minutes against a brief that names an hour as the failure mode.
+
+Zero completion spend is structural, not promised: an endpoint allowlist plus
+an ast scan that fails if any non-docstring literal names a completions path.
+
+49 tests. 16 of 16 mutation controls flip (R133, probe.py sha256-verified
+restored). 5 readers calibrated with paired positive/negative halves (R60).
+
+registry.py: documentation only, no behaviour change - the tables are marked a
+selection list rather than an availability claim, and the dated drift is
+recorded so the note cannot age silently (R74).
+
+EGRESS.md + test_m3_egress_docs.py: the frozen-egress pin correctly caught
+probe.py as a new raw-HTTPS site. Fixed forward per the pin's own instruction -
+the lane is documented (no new host; GET-only, empty bodies, metadata only) and
+the pin extended. A new test pins the doc so the allowlist entry cannot outlive
+its justification.
+
+No panel work. T.4's freeze holds until V2 also lands.
+
+Producers (R132): harness/notes/econ/v3_{probe_live,stale_demo,calibration,
+controls}.py
+Note: harness/notes/econ/V3_PROBE.md
+
+Two auth defects found and escalated, not fixed (outside touches):
+  F1 an empty ANTHROPIC_API_KEY permanently shadows the repo .env
+     (host/auth.py:102 setdefault). Paired control: empty -> key resolved False,
+     absent -> True, same .env.
+  F2 key resolution is checkout-dependent (auth.py:76 parents[3]), so every
+     worktree/CI checkout reports claude+nemotron unconfigured.

@@ -8,6 +8,29 @@ row here. ``build_provider`` is the only constructor the panel/worker call.
 Each provider exposes a list of selectable ``(model_id, label)`` rows; the panel
 model picker reads ``PROVIDER_MODELS`` so switching models is a data lookup, and
 ``build_provider(provider_id, model=...)`` constructs with the chosen model.
+
+These tables are a SELECTION list, never an availability claim
+---------------------------------------------------------------
+A model row here says "the panel offers this"; it does not say "the provider
+serves this". Availability, quota, latency and probe age come from
+``providers/probe.py``, which asks the provider. Routing is probe-derived; a
+row in this file is documentation, and documentation ages (see the R74 note on
+``OLLAMA_MODELS`` below for the worked example).
+
+MEASURED 2026-07-28 by ``harness/notes/econ/v3_probe_live.py``
+(``harness/notes/econ/V3_probe_live.install.json``), zero completion spend:
+
+    provider    declared here   served live   declared-but-absent
+    claude          6               11              0
+    nemotron        2              102              0
+    ollama          1               13              0
+
+Every declared row was live on that date — the drift is entirely in the other
+direction, models the provider serves that this file does not offer. A
+declared row the provider stops serving comes back from the probe as
+``available=False, reason="declared_but_absent"`` and reads RED, so the
+``hou.ActiveRender`` failure (documented, absent at runtime) surfaces here as a
+colour rather than as a support ticket.
 """
 from __future__ import annotations
 
@@ -19,10 +42,14 @@ logger = logging.getLogger(__name__)
 
 # Anthropic — the full set selectable in the panel (mirrors Claude desktop).
 ANTHROPIC_MODELS = (
-    # Opus 5 added 2026-07-27. PROVENANCE: model string from the assistant's own
-    # runtime context, NOT from a live GET /v1/models call - a weaker tier than
-    # the Sonnet 5 row below, and labelled as such rather than left to look the
-    # same (Law 2). Verify against /v1/models before any release cites it.
+    # Opus 5 added 2026-07-27 from the assistant's own runtime context, with the
+    # standing instruction "verify against /v1/models before any release cites
+    # it". VERIFIED 2026-07-28: live GET /v1/models returns claude-opus-5
+    # ("Claude Opus 5", created_at 2026-07-24). All six rows below were served
+    # on that date. Producer: harness/notes/econ/v3_probe_live.py ->
+    # V3_probe_live.install.json. The provenance gap is closed; the DATE is the
+    # load-bearing part, because this note becomes a claim about the past the
+    # moment it is written (R74) and probe.py is what keeps it honest.
     ("claude-opus-5",              "Opus 5"),
     ("claude-opus-4-8",            "Opus 4.8"),
     ("claude-sonnet-5",            "Sonnet 5"),      # verified live (GET /v1/models, 2026-07-01)
@@ -58,6 +85,11 @@ NVIDIA_MAX_TOKENS = 4096
 # list rather than this table. The 2026-07-01 note said "no glm-5.2 tag exists";
 # that was true when written and is a claim about the future that aged into a
 # claim about the present (R74). The static rows below are a FALLBACK only.
+# RE-MEASURED 2026-07-28 (harness/notes/econ/v3_probe_live.py): GET /api/tags
+# returns THIRTEEN tags against the one row below. Seven run locally; six carry
+# a ``remote_host`` of ollama.com and are metered by it — including the default
+# picked here. "Ollama is local and free" is therefore not true of this row, and
+# probe.py reports its cost as unknown rather than as zero.
 OLLAMA_MODELS = (
     ("glm-5:cloud", "GLM 5"),
 )
