@@ -73,6 +73,67 @@ function Get-ReceiptPath([object]$leg) {
     return $null
 }
 
+# ---------------------------------------------------------------------------
+# DISPATCH LOCK  (R134)
+#
+# Three times in two days, two agents have run against one leg or one worktree:
+# two H6 agents 70 minutes past their receipt (R78); LEDGER and H6 editing one
+# function from separate worktrees (R91); and a second I1 overwriting the first
+# one's calibration file mid-run.
+#
+# `.orch_launched` was the previous mitigation and it is a MARKER, not a lock.
+# It carries no pid, so a crashed leg either blocks forever or is ignored, and
+# two dispatchers can both pass the check before either writes.
+#
+# The primitive is FileMode::CreateNew - it THROWS if the file exists, and the
+# throw is the mutex. Not Test-Path then write, which has a window between them.
+#
+# Liveness is Get-Process. Deliberately NOT os.kill(pid, 0): on Windows that
+# routes through TerminateProcess and KILLS the process it means to probe. This
+# codebase shipped exactly that bug once in bridge_endpoint._pid_alive and had
+# to fix it with OpenProcess + GetExitCodeProcess.
+# ---------------------------------------------------------------------------
+function Get-LockDir {
+    $d = Join-Path $PSScriptRoot 'state\locks'
+    New-Item -ItemType Directory -Force -Path $d | Out-Null
+    return $d
+}
+
+function Take-LegLock([string]$legId) {
+    $lock = Join-Path (Get-LockDir) "$legId.lock"
+
+    if (Test-Path $lock) {
+        $prev = $null
+        try { $prev = Get-Content $lock -Raw -EA Stop | ConvertFrom-Json } catch { }
+        if ($prev -and $prev.pid) {
+            if (Get-Process -Id $prev.pid -EA SilentlyContinue) {
+                Say "  REFUSED: $legId held by pid $($prev.pid) since $($prev.started)" 'Red'
+                return $false
+            }
+            Say "  lock: pid $($prev.pid) is gone - taking over its stale lock" 'Yellow'
+        }
+        Remove-Item $lock -Force -EA SilentlyContinue
+    }
+
+    try {
+        $fs = [System.IO.File]::Open($lock, [System.IO.FileMode]::CreateNew,
+                                     [System.IO.FileAccess]::Write)
+        $body = (@{ leg = $legId; pid = $PID; started = (Get-Date -Format o)
+                    machine = $env:COMPUTERNAME } | ConvertTo-Json -Compress)
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)
+        $fs.Write($bytes, 0, $bytes.Length)
+        $fs.Close()
+        return $true
+    } catch {
+        Say "  REFUSED: $legId lock was taken concurrently" 'Red'
+        return $false
+    }
+}
+
+function Release-LegLock([string]$legId) {
+    Remove-Item (Join-Path (Get-LockDir) "$legId.lock") -Force -EA SilentlyContinue
+}
+
 function Get-LegState([object]$leg) {
     if ($leg.state -eq 'held') { return 'held' }
 
@@ -195,6 +256,9 @@ Write-Host ''
 Write-Host ''
 Write-Host '  LEG $($leg.id) TERMINATED' -ForegroundColor Cyan
 "@ | Set-Content $script -Encoding utf8
+
+    # R134: refuse to launch a leg another dispatcher already holds.
+    if (-not (Take-LegLock $leg.id)) { return }
 
     Start-Process powershell -ArgumentList '-NoExit','-ExecutionPolicy','Bypass','-File',$script -WindowStyle Normal
 
