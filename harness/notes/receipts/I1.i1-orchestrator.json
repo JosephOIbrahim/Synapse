@@ -1,0 +1,176 @@
+{
+ "schema": "receipt/v1",
+ "leg": "I1",
+ "run": "i1-orchestrator (interactive session launched from harness/prompts/i1.md)",
+ "title": "ingest execute - build the extractor and the grounding corpus against what I0 measured",
+ "harness": "INGEST-01 (harness/SYNAPSE_INGEST.md)",
+ "ruling": "R60 (reader calibration), R72 (deprecation union), R93 (product before receipt), R97/I0-F3 (label is the join key), R119 (per-entry provenance), I0-R2 (per-entry precision pass, accepted and delivered)",
+ "status": "green-with-collision",
+ "status_note": "The WORK is green: 35/35 calibration controls, 20/20 nodes instantiated live, every number carries a producer path. The COLLISION is the reason this receipt is not at harness/notes/receipts/I1.json - a second agent executed this same leg in this same worktree concurrently (Constitution Article V) and its receipt already occupies that path. Nothing of that run was overwritten or deleted. See .claude/remediation_ticket.md.",
+ "model": "claude-opus-5[1m]",
+ "settings_profile": "interactive session, full tool grant. No pytest was run and NO suite evidence is claimed: the leg touches no product code and legs.json declares touches: [\"harness/notes/ingest\"] (R92), which this run honoured exactly.",
+ "commit_at_run": "2979d25d96b5964bea42e56acadae9e5c5781bda",
+ "mode": "A",
+ "agents": [],
+ "agents_note": "No subagent and no Workflow fan-out was dispatched. R61 records a read-only extraction FLEET that edited five schema files in this exact domain, and I0 declined fan-out for the same reason. All measurement was performed directly through committed producer scripts so every number has a re-runnable producer path (Law 2). This decision looks better in hindsight than it did at the time: the leg's actual hazard turned out to be a SECOND agent in the worktree, not an under-powered one.",
+ "gated_on": {
+  "leg": "I0",
+  "why": "the join key is I0's finding, not this leg's assumption. A corpus keyed on the wrong field does not fail loudly - it silently matches nothing.",
+  "inherited": "LABEL is the key; #id and #channels are evidence, never the key. Try #id against parmTuples() before parms(). Resolve includes over ALL help zips plus the loose dirs. Decode utf-8-sig, normalise line endings. A colon block directive closes the item scope. Per-page structure, not per-context switches. Deprecation is a two-source union. Record the floor rung per entry.",
+  "confirmed_independently": "Label matched 330 of 375 documented parameters (88.0%) on twenty freshly instantiated nodes, against 52.3% for #id - reproducing I0's 88.7-89.1% band from a different instrument on live nodes."
+ },
+ "oracle": {
+  "harness/notes/ingest/h22_node_corpus.json - every entry tiered VERIFIED-DOC with its build, its source path inside nodes.zip, and its floor verdict": {
+   "met": true,
+   "delivered_at": "harness/notes/ingest/h22_node_corpus.i1-orchestrator.json",
+   "path_note": "NOT at the oracle path. A concurrent second run of this same leg took h22_node_corpus.json. Overwriting a completed run's deliverable is a value judgement between defensible options, which Article I routes to the human. This run's corpus is committed intact beside it and the concurrent run CONSUMED it as its own cross-validation instrument (its cross_validation block cites this exact filename and reports 660/660 floor-verdict agreement, 0 disagreements).",
+   "evidence": "660 ingested entries + 33 known-thin. Every entry carries tier=VERIFIED-DOC, build=22.0.368, source=<zip>!<path>, rung, clears_floor, known_thin, and a deprecation block with doc and runtime recorded per side."
+  },
+  "counts per context as integers: exists / clears-floor / ingested": {
+   "met": true,
+   "evidence": "PER PAGE - cop 375/358/358, lop 198/169/169, cop2 150/133/133. Exists-minus-clears gap: cop 13, lop 12, cop2 8 (33 of 693). PER LIVE TYPE, against the catalogue totals the brief names - cop 350 of 384 (91.1%), lop 169 of 218 (77.5%), cop2 131 of 169 (77.5%). Both denominators are reported and labelled; only the second can see a live type that ships with no documentation at all.",
+   "producer": "harness/notes/ingest/i1_build.py -> _i1_counts.i1-orchestrator.json"
+  },
+  "the 161: how many ingested, how many need a probe, named": {
+   "met": true,
+   "evidence": "171 named (NOT 161 - see I1-F1), 171 have a page, 168 ingested, 3 known-thin, 0 still needing a probe. The three named: layertogeo-2.0, pointmerge, usdmaterial - and all three document node types with ZERO live parameter tuples, so the probe is already run and there is nothing further to document.",
+   "correction": "The brief's own figure was wrong. Reported rather than quietly satisfied."
+  },
+  "a 20-node cross-check against the LIVE runtime - documented parm names vs node.parms() - with the agreement count reported": {
+   "met": true,
+   "evidence": "20 of 20 instantiated on live 22.0.368. 375 documented parameters. LABEL agreement 330 (88.0%). #id agreement 196 tuple-first vs 194 parm-level, confirming I0's tuple-first ordering. #channels 4 of 4. Controls 2/2: a fabricated label must not match, a known-real one on the same node must.",
+   "producer": "harness/notes/ingest/i1_crosscheck.py (hython) -> _i1_crosscheck.i1-orchestrator.json"
+  },
+  "NO change to rag/, to the emission corpus, or to any product file": {
+   "met": true,
+   "evidence": "Every path written by this run is under harness/notes/ingest/ plus this receipt and .claude/remediation_ticket.md. Nothing imports synapse.*. rag/skills/houdini21-reference untouched (R119: it IS H21 documentation, accurately labelled)."
+  },
+  "every reader is calibrated before it is trusted (R60)": {
+   "met": true,
+   "evidence": "35/35 controls: 19 POSITIVE (four pages transcribed BY HAND first), 7 NEGATIVE (mutations that must drive a count to zero or flip a verdict), 8 BLIND (naive readers shown returning the WRONG answer), 1 CROSS-CHECK against an archive fact I0 measured independently (nodes.zip BOM count = 58, agreed exactly). Every control states its fails_if.",
+   "producer": "harness/notes/ingest/i1_calibrate.py -> _i1_calibration.json"
+  }
+ },
+ "summary": "660 entries ingested from the shipped help of build 22.0.368 across cop/, lop/ and cop2/, each tiered VERIFIED-DOC per entry with its build and its path inside the archive, joined to a separately-produced VERIFIED-RUNTIME artifact with the source recorded per side and never summed into one grounding number. Against the live catalogues the brief names: Copernicus 350 of 384 grounded (91.1%, up from the 6.2% docs/H22_FRONTIER.md measured), Solaris 169 of 218 (77.5%), legacy Cop2 131 of 169 (77.5%). 12,582 documented parameters, 10,843 of them (86.2%) resolving to a live parameter label at build time - a per-entry precision field, so the corpus is self-auditing on the next build. THE GOVERNING NUMBER IS WRONG: the shipped what's-new names 171 new Copernicus nodes, not 161; a link pattern requiring the leading slash drops 10 real node types. 168 of the 171 are ingested and the 3 that are not have zero live parameters, so none needs a probe. Deprecation travels with every entry as a two-source union: 143 doc-deprecated, 3 runtime-deprecated, 142 doc-only (140 of them the announced-for-removal cop2 subsystem, reachable only because the corpus loads composite.zip and not just nodes.zip), and 2 runtime-only - lop/karma and lop/karmarenderproperties, both reading completely clean to a human.",
+ "findings": [
+  {
+   "id": "I1-F1",
+   "claim": "The governing figure 161 is a FLOOR, not a total. news.zip!22/copernicus.txt links node paths in two forms - 'Node:/cop/name' (161 occurrences) and 'Node:cop/name' (11). A pattern requiring the leading slash drops 10 real node types: adjacency_attribsample, adjacency_distort, adjacency_extrapolate, adjacency_spacetransform, geotoadjacency, layerattribcreate, layerattribdelete, reactiondiffusion_block_begin, ripple_block_begin, ripple_block_end. All 10 have a cop/<name>.txt and all 10 clear the floor at ACTIONABLE. The number is 171. It is wrong in docs/H22_FRONTIER.md, in I0-F5/Q3, in harness/SYNAPSE_INGEST.md and in harness/prompts/i1.md.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "harness/notes/ingest/i1_extract.py RE_NODE_LINK + new_copernicus_nodes(); controls P6/P6b/B8 in _i1_calibration.json",
+   "severity": "blocking for any forward statement about the frontier gap",
+   "provenance_note": "FOUND BY THE CONCURRENT I1 RUN, not by this one. Verified here independently against the archive before being accepted, and only then adopted. This run's first version reported 161."
+  },
+  {
+   "id": "I1-F2",
+   "claim": "This leg's own POSITIVE control PINNED the defect in I1-F1. Control P6 asserted len(names)==161 - an expectation inherited from the brief rather than measured from the archive - so it passed green while the extractor undercounted by 10. I0's Q3 controls (5/5) had the same blind spot and its two 'independent' sources agreed at 161 precisely because both applied the same leading-slash assumption. A control can be perfectly falsifiable and still lock in an error if its expected value came from the document under test (Law 5).",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "the superseded P6 in harness/notes/ingest/i1_calibrate.py, replaced by P6 (171) + P6b + B8",
+   "severity": "significant - this is a defect class in the calibration METHOD, not in one number, and it applies to every leg that pins a brief's figure as a control expectation"
+  },
+  {
+   "id": "I1-F3",
+   "claim": "A declared '#version:' must beat the filename when resolving a page to a live type. Ten lop/ pages match TWO live types, and taking the first candidate binds them to the OLDER one: sceneimport (94 documented parameters), light (93), distantlight (87), domelight (73), plus capsule, cylinder, reference, collection, cache. Filename-first hands those parameters to the legacy type and reports the CURRENT type - the one an artist gets when creating the node - as undocumented. The concurrent run still carries this defect: its corpus binds lop/distantlight to 'distantlight' at 69.0% label resolution.",
+   "truth": "VERIFIED-RUNTIME",
+   "anchor": "harness/notes/ingest/i1_build.py resolve_live_type(); entries with live_type_match=='declared-version' in h22_node_corpus.i1-orchestrator.json",
+   "severity": "blocking for the join - it is the exact 'looks complete, joins to nothing' class this harness exists to prevent",
+   "falsifiability": "If the new binding were wrong the live-label agreement would FALL. It rose: 10,744 (85.4%) -> 10,843 (86.2%) overall, and 78.8% -> 80.7% on lop specifically."
+  },
+  {
+   "id": "I1-F4",
+   "claim": "'Known-thin' over-counts unless the live parameter count is joined in. All 13 thin cop/ pages document node types carrying ZERO live parameter tuples - their documentation is complete for what the node is, and no floor requiring a described parameter can ever be cleared by a parameterless node. Copernicus therefore has NO documentation gap at this floor. The real gap is 10 pages in lop/ and cop2/, led by lop/usdrender_rop (166 live parameter tuples, no summary and no described parameter), cop2/rop_comp (73) and lop/usd_rop (51 - 36 described parameters but no authored summary). Six of the eight lop misses fail on the SUMMARY half of the floor while carrying fully described parameters.",
+   "truth": "VERIFIED-RUNTIME (the parameter counts) + VERIFIED-DOC (the floor verdicts)",
+   "anchor": "known_thin[].thin_class in h22_node_corpus.i1-orchestrator.json; producer i1_build.py thin_record()",
+   "severity": "significant - reporting the unflattering number without this distinction is the flattering number's mirror image, and equally wrong"
+  },
+  {
+   "id": "I1-F5",
+   "claim": "Three include-resolution behaviours were absent from both prior readers and each changes a floor verdict. (a) An '@section' anchor: lop/usd_rop's ':import /nodes/out/usd#parameters:' lands in a page with no @parameters marker, so the section header must travel with the section - 0 documented parameters becomes 36; cop/rop_image goes 0 -> 58 and CROSSES the floor. (b) '#contentfrom' must be followed: cop/adjacency_distort's Signature parameter has a label, an #id and no inline prose at all. (c) Menu values must fold into the parameter they document: cop2/emboss's 'Specular Model' carries zero own prose, its whole body being 'Phong:' and 'Blinn:'.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "harness/notes/ingest/i1_extract.py _anchored()/contentfrom_text()/fold pass; controls P7, P4, P2d, B5, B6, B7",
+   "severity": "significant - (a) is what makes this run and I0 disagree about which of the new Copernicus nodes are thin"
+  },
+  {
+   "id": "I1-F6",
+   "claim": "The Vimeo scope trap is worse than I0 recorded. I0-F2's defect D3 reports sop/xform's 'Combine' parameter being re-keyed to ONE video id. sop/xform ships FOUR consecutive ':vimeo:' blocks after that parameter, and a reader that does not close the item scope on a colon directive binds ALL FOUR: ['combine','406959576','406959551','406959500','406959532'].",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "control B3 in harness/notes/ingest/_i1_calibration.json",
+   "severity": "minor as a number, useful as a control - the blind reader is kept as a negative instrument so the trap cannot silently stop reproducing"
+  },
+  {
+   "id": "I1-F7",
+   "claim": "Deprecation over the three contexts: 143 doc-deprecated, 3 runtime-deprecated, union 145. Doc-says/runtime-does-not = 142, of which 140 are cop2 via ':include /composite/_old_cops_deprecated:' - a target that does NOT live in nodes.zip. A nodes.zip-only reader cannot resolve it and reads an entire vendor-deprecated subsystem as current (H7-F4 / I0-F9); the corpus loader opens every help zip plus the loose directories, 11,709 pages against 5,032. Runtime-says/doc-does-not = 2: lop/karma ('Replaced by Karma Render Settings and USD Render.') and lop/karmarenderproperties ('Use karmarendersettings instead'), both reading completely clean to a human. One runtime-deprecated type ships with no page at all: cop2/swap.",
+   "truth": "VERIFIED-RUNTIME (runtime axis) + VERIFIED-DOC (doc axis)",
+   "anchor": "deprecation blocks per entry in h22_node_corpus.i1-orchestrator.json; producers i1_extract.doc_deprecation() and i1_runtime.py; blind control B4",
+   "severity": "significant - R72 confirmed live for a third time on the Karma pair"
+  },
+  {
+   "id": "I1-F8",
+   "claim": "ARTICLE V VIOLATION, second occurrence in two days. Two agents executed leg I1 in .claude/worktrees/i1-ingest concurrently. The second run moved this run's corpus and report aside and took the canonical names; this run's FINAL corpus was destroyed on disk and recovered ONLY because Law 2 requires a producer path - re-running i1_build.py reproduced it exactly. .claude/remediation_ticket.md already contained an identical ticket for leg H6 filed 2026-07-26. .claude/.orch_launched is stamped identically (2026-07-27T21:15:35) in both the i0 and i1 worktrees.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": ".claude/remediation_ticket.md; producer fields on every artifact in harness/notes/ingest/",
+   "severity": "blocking for attribution, not for the work. The fence belongs in the DISPATCHER - Article I's corollary, enforcement in the definition, not the instruction. Telling agents to be careful has now failed twice.",
+   "silver_lining": "Two independently-calibrated extractors agreeing on 660 of 660 floor verdicts with zero disagreements is stronger evidence than either run alone could produce, and each run caught a defect the other missed."
+  }
+ ],
+ "headline_findings": ["I1-F1", "I1-F3", "I1-F2", "I1-F4", "I1-F8"],
+ "method_notes": [
+  "R60 taken literally: four help pages were transcribed BY HAND from the archive before the parser was pointed at them - cop/chromakey (one of the new COPs, and CRLF), cop2/emboss (BOM, indent-4, #channels-only), lop/distantlight (title-first, 0 parameters raw and 87 resolved) and cop/adjacency_distort (#contentfrom with no inline prose). Those transcriptions are the ground truth, not parser output.",
+  "Two controls went red on first run and in BOTH cases the CONTROL was wrong, not the reader. Recorded inline at the control rather than quietly repaired: N7's mutation left nested entries in place so the fold pass rescued the page it was meant to strip; B3 expected one Vimeo id and the trap binds four.",
+  "The reader is one instrument and its per-context behaviour is DERIVED PER PAGE rather than switched on the context name - header order is measured (cop/ is 98% directives-first, lop/ 79% title-first) and item base indent is resolved per (section, heading) scope (cop/ at column 0, cop2/ at indent 4+). Switching on the context name would be right today and wrong on the next build.",
+  "Prior work was reused rather than re-derived where it was committed and calibrated: harness/notes/h9/helpdoc.py supplies the cross-zip corpus loader, the utf-8-sig decode, the loose-directory load and the anchored-block machinery. Three behaviours it lacks were added here (@section anchors, #contentfrom, menu folding) rather than patched into a committed module another leg depends on.",
+  "The doc axis and the runtime axis are produced by SEPARATE scripts into SEPARATE artifacts and joined at build time with the source recorded per side. That is what makes 'never summed into one grounding number' structural rather than a promise.",
+  "Every claim this run inherited from another agent was verified before it was accepted. The 171 correction came from the concurrent run; it was re-measured against news.zip here, and the 10 dropped names were each checked for a page and a floor verdict, before a single number was changed.",
+  "Both runs' cross-check selections are DETERMINISTIC - evenly spaced through each context's sorted ingested list, no seed and no shuffle - so the agreement count is a measurement rather than a draw. Re-running after the 171 fix changed the cop pool from 158 to 168 and therefore changed which twenty were picked; the label agreement moved 89.9% -> 88.0% on the new sample and both sit inside I0's measured band."
+ ],
+ "resume_token": {
+  "skip": [
+   "the extractor, the calibration and both live passes - 35/35 controls, 20/20 instantiations, all committed at 2979d25",
+   "the join key - do not re-litigate label-vs-id; confirmed here on live instantiation at 88.0% vs 52.3%",
+   "the 161 - it is 171, and both link forms are now pinned by controls P6/P6b/B8",
+   "the 3 thin new-Copernicus nodes - probed, all parameterless, nothing outstanding"
+  ],
+  "redo_if": "the Houdini build changes. Every number is pinned to 22.0.368; helpdoc.BUILD is hard-pinned and i1_runtime.py REFUSES to run on any other build rather than measure the wrong one.",
+  "do_not_attempt_again": "Do not overwrite harness/notes/ingest/h22_node_corpus.json or harness/notes/receipts/I1.json to take the canonical path from the concurrent run. That is a value judgement between two completed, defensible runs and Article I routes it to the human.",
+  "next": "A human picks which run is canonical (I1-R1). Whichever wins should absorb the other's corrections: this run's declared-version binding (I1-F3) and parameterless-node classification (I1-F4) into theirs, or their 171 (I1-F1) into this one - already done here. Wiring to RAG remains OUT OF SCOPE and needs its own gate."
+ },
+ "for_ruling": [
+  {
+   "id": "I1-R1",
+   "question": "Two completed runs of leg I1 exist in one worktree. Which is canonical, and what sits at harness/notes/ingest/h22_node_corpus.json and harness/notes/receipts/I1.json? They are not mergeable by an agent without a value judgement about whose method wins.",
+   "recommendation": "Neither dominates and both should be kept until merged deliberately. The concurrent run found the 171 (I1-F1) and this run did not; this run found the declared-version binding defect (I1-F3, worth +99 live parameter matches, still present in theirs) and the parameterless-node classification (I1-F4, which turns 'three of the new COPs need a probe' into 'none do') and that run did not. They agree on 660 of 660 floor verdicts with zero disagreements, which is the strongest evidence either can offer and exists only because both survived. Merge the two corrections into one corpus; do not pick a winner by discarding a run.",
+   "source": "I1-F8"
+  },
+  {
+   "id": "I1-R2",
+   "question": "docs/H22_FRONTIER.md, harness/SYNAPSE_INGEST.md, harness/prompts/i1.md and I0's Q3 all state 161 new Copernicus nodes. Measured: 171. All four are deny-listed from agent edit. Should they be amended?",
+   "recommendation": "Yes, and amended in place with the evidence rather than silently corrected - the same treatment R86 gave R72's character counts. The corrected statement is stronger, not weaker: 'the shipped what's-new names 171 new Copernicus nodes; SYNAPSE now grounds 168 of them to a stated floor, from a file that ships with the product.' Note also that I0's Q3 reported two independent sources agreeing at exactly 161 with zero set difference - they agreed because both applied the same leading-slash assumption, so source agreement did not detect it. That is worth recording as a method warning, not just a number fix.",
+   "source": "I1-F1"
+  },
+  {
+   "id": "I1-R3",
+   "question": "This leg's POSITIVE control asserted the brief's figure and therefore passed green while the extractor undercounted by 10 (I1-F2). I0's controls had the identical blind spot. Should the harness require that a control's expected value be traceable to a measurement rather than to a governing document?",
+   "recommendation": "Yes, and it is cheap to enforce: a control whose expectation comes from a document under test must be paired with a BLIND control that reproduces the alternative reading. B8 is the worked example - it shows the slash-only pattern returning 161 - and it costs four lines. Law 1 says every check must be able to fail; this is the corollary it does not currently state, which is that a check must also be able to fail FOR THE RIGHT REASON. A perfectly falsifiable control pinned to an inherited number is a decoration with a green light on it.",
+   "source": "I1-F2"
+  },
+  {
+   "id": "I1-R4",
+   "question": "Should the two runs' known-thin numbers be reported as one integer? This run measures 33 thin pages of which 23 are parameterless nodes and only 10 are real documentation gaps.",
+   "recommendation": "Report both, labelled, and never merge them. 'Thin' and 'the node has nothing to document' mean opposite things to an artist and to a coverage figure: Copernicus reads as having 13 gaps under the raw floor and ZERO under the classified one, and the second is the true statement. This is the same discipline R72 requires for deprecation - two sources, recorded per side - applied to the floor. It is a product call about what SYNAPSE tells a user, so it is a ruling item.",
+   "source": "I1-F4"
+  },
+  {
+   "id": "I1-R5",
+   "question": "Article V has now been violated twice in two days (H6 on 2026-07-26, I1 today) by the same mechanism: a dispatcher launching a leg into a worktree that already carries a run. Should the launch path carry a structural guard?",
+   "recommendation": "Yes. A launch guard that refuses to start a leg whose worktree holds an unfinished run - or whose .claude/.orch_launched marker is younger than the leg's last commit - would have prevented both. Article I's corollary already states the principle: enforcement belongs in the definition, not the instruction. Both incidents cost real work: H6 had two competing implementations of the same function silently shadowing each other, and today a completed corpus was destroyed on disk and survived only because a producer path existed to rebuild it. Telling agents to be careful has failed twice; the third time should not be tried.",
+   "source": "I1-F8"
+  },
+  {
+   "id": "I1-R6",
+   "question": "The corpus is built and NOT wired. 660 entries and 12,582 parameter records are one knowledge_lookup away from the surface where U.6 found 15 phantom createNode sites already re-teaching phantoms. What gate must exist before any of this reaches RAG or the emission path?",
+   "recommendation": "At minimum, the gate must be able to REFUSE an entry, and the per-entry live_label_match field is what makes that possible: 1,739 of the 12,582 documented parameters do NOT resolve to a live parameter label on this build, and those are exactly the records that would teach a phantom. A wiring gate that admits only live-resolved records, tiers the rest as doc-only, and re-runs the resolution on every Houdini build is the shape - but choosing the admission threshold is a product decision with a real recall cost, not an agent call. Out of scope for this leg by standing rule, and named here so the next leg starts from the measurement rather than from zero.",
+   "source": "the INGEST-01 standing rule"
+  }
+ ],
+ "what_the_leg_proves_about_its_own_premise": "The brief's premise was that a corpus keyed on the wrong field does not fail loudly - it silently matches nothing - and that this is why I1 had to be gated on I0. Both halves held, and the leg demonstrated them on ITSELF three times rather than on the archive. It bound ten Solaris pages to the wrong live type while every count looked healthy, and only a falsifiable prediction about the live-label rate caught it. It shipped a POSITIVE control that asserted the brief's own figure and therefore passed green while undercounting the flagship surface by ten node types - the failure the brief describes, executed by the instrument built to prevent it. And it lost its finished corpus to a concurrent agent and got it back only because Law 2 had forced a producer path into existence. The most useful thing this leg produced is not the 91.1%; it is that three independent things went wrong quietly and each was caught by a mechanism the constitution already required - a probe, a control, a producer path - rather than by anything looking obviously broken."
+}
