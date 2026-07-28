@@ -4880,3 +4880,67 @@ the rail smaller, not because the rail was wrong — and the four things worth s
 that were measured this week and currently have nowhere to go.
 
 **T.4's freeze still holds.** This is the design; V2 has to land before anything renders.
+
+---
+
+## RULING 168 — The week went to SESSION LENGTH, not to context size. The cost is the integral.
+
+Joe at 91% of the weekly limit. Two suspects examined, both cleared, and the real driver was a
+shape nobody had questioned.
+
+**Suspect 1 — MCP tool surfaces. CLEARED.** One server configured (`comfy-cloud`). Legs are not
+carrying unused tool definitions.
+
+**Suspect 2 — CLAUDE.md at 10,158 tokens. CLEARED as the driver**, though the 18% cut stands on its
+own merits. It is a *stable prefix* — byte-identical every turn, at the front of the prompt, which
+is precisely what prompt caching exists for.
+
+### What it actually is
+
+```
+1,159 sessions over 0.2 MB
+26,761 turns
+largest single session   15.6 MB / 5,893 turns
+```
+
+**A conversation re-sends everything said so far, on every turn.** Content per turn is modest —
+731 to 1,245 tokens — but the *accumulation* is what is charged. The last turn of a 15.6 MB session
+carries ~4.3M tokens of prefix.
+
+**So the cost of a session is quadratic in its turn count**, and no amount of CLAUDE.md trimming
+touches it. Cutting 2,377 tokens from a stable cached prefix, against an integral measured in
+millions, is optimising the wrong term.
+
+### The harness's own design is the most expensive possible shape
+
+**One leg, one long session, running unattended for 45–130 minutes.** That is exactly the shape
+that maximises the integral. Eleven of them ran today.
+
+**And three of them were still burning when Joe got back**: V2 stalled at 13:57 with its receipt
+written and its window alive until 15:22 — **85 minutes of a live session doing nothing.** H3b and
+V3 were done and merged, windows never closed.
+
+**Zombie sessions are not a tidiness problem. They are the single most wasteful thing in the
+system**, because an idle session still holds a context that must be re-sent if anything touches it,
+and nothing was watching.
+
+### Ruled
+
+1. **Legs get SHORTER, not fewer.** A brief that produces a 2,000-turn session should be two briefs.
+   The integral is quadratic; halving the length quarters the cost.
+2. **The orchestrator stops when nobody is working.** It ran all day idle-watching, ready to
+   dispatch. It is now stopped and stays stopped unless a leg is deliberately being run.
+3. **A finished leg's window is killed at the receipt, not at the next status check.** R147 wired
+   `Release-LegLock`; nothing kills the window. **That is the remaining half and it is worth more
+   than any context trimming.**
+4. **No new legs until the weekly limit resets.** Everything queued — the seven mislabelled tools,
+   the WORK/TOKEN build, the two small repairs — is done in-conversation, which costs a fraction of
+   a session.
+
+### The general shape, and it is this week's shape again
+
+**The thing everyone optimises is not the thing that costs.** Two legs went into SYNAPSE's tool
+surface. A context audit went into CLAUDE.md. Both were real work on the wrong term, while eleven
+unattended sessions and three zombies carried the actual bill.
+
+**R136 in the context window. R154 in the session. Same error, third instance.**

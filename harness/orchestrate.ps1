@@ -397,13 +397,29 @@ while ((Get-Date) -lt $deadline) {
             Say "STATE  $($leg.id) $($leg.name)  $was -> $now" 'Yellow'
 
             if ($now -eq 'done') {
-                # R147: release the lock the moment the leg reports done.
-                # Take-LegLock was built with a Release-LegLock that had ZERO
-                # call sites - a lock with no release, in the mechanism built
-                # to fix a concurrency bug. Without this a finished leg reads
-                # 'running' until the orchestrator itself dies, and cannot be
-                # re-dispatched even deliberately.
+                # R168: KILL THE WINDOW, not just the lock.
+                #
+                # R147 wired Release-LegLock here and nothing closed the session.
+                # On 2026-07-28 three finished legs were still alive when Joe
+                # returned - V2 idle 85 minutes with its receipt already written,
+                # H3b and V3 done and merged. A session that has finished still
+                # holds a context, and the weekly limit is spent on session
+                # length, not on prompt size.
+                #
+                # Zombie sessions are the single most wasteful thing here, and
+                # nothing was watching for them.
                 Release-LegLock $leg.id
+                try {
+                    $pat = "*-File*orch_$($leg.id).ps1*"
+                    Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" |
+                        Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -like $pat } |
+                        ForEach-Object {
+                            Get-CimInstance Win32_Process -Filter "ParentProcessId=$($_.ProcessId)" -EA SilentlyContinue |
+                                ForEach-Object { Stop-Process -Id $_.ProcessId -Force -EA SilentlyContinue }
+                            Stop-Process -Id $_.ProcessId -Force -EA SilentlyContinue
+                            Say "  reaped $($leg.id) window pid $($_.ProcessId)" 'DarkGray'
+                        }
+                } catch { }
 
                 $r = Get-Content (Get-ReceiptPath $leg) -Raw | ConvertFrom-Json
                 $status = $r.status; $ruling = @($r.for_ruling).Count
