@@ -1,0 +1,33 @@
+receipt(econ): V2 - the leg receipt, ratified:false
+
+receipt/v1 at harness/notes/receipts/V2.json. R93 order held: product at
+a8a773d / 4da7d92 / 59b547d, receipt last.
+
+17 findings, 7 for_ruling, 3 drift. Status green: all six oracle lines met, two
+of them only after repair, and the repairs came from checks this leg ran against
+itself.
+
+The two that matter to whoever reads this next:
+
+  V2-R1  does MODEL_QUOTED satisfy invariant 1 or violate it? decision_log
+         (merged) quotes a model sentence and renders it. The provenance ladder
+         makes the distinction enforceable either way; which way is a ruling.
+
+  V2-R5  the voice rules catch 0 of 10 adversarial verdicts (and 0 false
+         positives on 8 good ones). Close the gap with more rules - calibrated
+         against what corpus? - accept the lexical floor, or gate on real model
+         output first?
+
+Both change what the panel is allowed to draw, so both want settling before the
+T.4 unfreeze.
+
+V2-F7 is the finding the brief did not expect: its own cost premise is refuted.
+688 tokens out, 1,046 in - a net cost of 240-358 preload tokens, and a derived
+saving of ~755 BTE per call because the tokens moved from a span rewritten every
+turn into the cached tool prefix. Cost and price move in opposite directions,
+which is E0's central correction applied to the leg that cited E0. The voice case
+stands on its own and never needed the cache argument.
+
+ratified:false is the correct resting state. Nothing here flips a gate.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>

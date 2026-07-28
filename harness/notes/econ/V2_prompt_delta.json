@@ -1,0 +1,119 @@
+{
+  "schema": "v2_prompt_delta/v1",
+  "producer": "harness/notes/econ/v2_prompt_delta.py",
+  "method": "anthropic count_tokens (EXACT, free, unbilled) \u2014 no completions",
+  "model": "claude-sonnet-4-6",
+  "key_source": "dotenv (path withheld)",
+  "baseline_empty_turn_tokens": 8,
+  "calibration": {
+    "target": "R155 \u2014 system prompt @ /stage",
+    "committed_tokens": 2961,
+    "measured_tokens": 2961,
+    "committed_chars": 11334,
+    "measured_chars": 11334,
+    "verdict": "PASS"
+  },
+  "register_instruction_out": {
+    "what": "TONE.md \u2014 the Synapse Voice Guide, the register instruction the structured contract makes unnecessary",
+    "tone_alone_tokens": 688,
+    "per_context": [
+      {
+        "network": "/stage",
+        "before_tokens": 2961,
+        "after_tokens": 2273,
+        "removed_tokens": 688,
+        "removed_pct": 23.2,
+        "before_chars": 11334,
+        "after_chars": 8578
+      },
+      {
+        "network": "/obj",
+        "before_tokens": 1537,
+        "after_tokens": 849,
+        "removed_tokens": 688,
+        "removed_pct": 44.8,
+        "before_chars": 6120,
+        "after_chars": 3364
+      },
+      {
+        "network": "/out",
+        "before_tokens": 1394,
+        "after_tokens": 706,
+        "removed_tokens": 688,
+        "removed_pct": 49.4,
+        "before_chars": 5551,
+        "after_chars": 2795
+      }
+    ]
+  },
+  "contract_in": {
+    "what": "verdict.tool_definition() \u2014 the schema the agent emits against, priced as a tool definition because that is how it ships",
+    "as_shipped_tokens": 1046,
+    "structure_only_tokens": 981,
+    "description_prose_tokens": 65,
+    "lean_tokens": 928,
+    "lean_drops": [
+      "additionalProperties",
+      "maxLength",
+      "minimum",
+      "pattern"
+    ],
+    "finding": "the added cost is JSON SCHEMA STRUCTURE, not relocated register instruction: the rule prose is 65 tokens and the structure is 981. A verbose schema costs more than the entire prose voice guide it replaces \u2014 so the net is a schema-design choice, not a fixed price.",
+    "placement": "cache_control sits on the LAST tool (anthropic_provider.py:64), so a schema appended to the tools array lands inside the cached prefix \u2014 unlike the tone guide, which sat in the volatile system span (E0-F5/F6)."
+  },
+  "net": [
+    {
+      "network": "/stage",
+      "removed_tokens": 688,
+      "added_as_shipped": 1046,
+      "net_as_shipped": -358,
+      "added_lean": 928,
+      "net_lean": -240,
+      "direction_as_shipped": "cost",
+      "direction_lean": "cost"
+    },
+    {
+      "network": "/obj",
+      "removed_tokens": 688,
+      "added_as_shipped": 1046,
+      "net_as_shipped": -358,
+      "added_lean": 928,
+      "net_lean": -240,
+      "direction_as_shipped": "cost",
+      "direction_lean": "cost"
+    },
+    {
+      "network": "/out",
+      "removed_tokens": 688,
+      "added_as_shipped": 1046,
+      "net_as_shipped": -358,
+      "added_lean": 928,
+      "net_lean": -240,
+      "direction_as_shipped": "cost",
+      "direction_lean": "cost"
+    }
+  ],
+  "still_volatile": {
+    "finding": "E0-F6 \u2014 _solaris_context_block swaps the guidance literal on navigation, so the cached span still changes when an artist moves /stage -> /obj. Removing the tone guide does NOT make the prompt static and must not be reported as if it did.",
+    "solaris_guidance_tokens": 1567,
+    "obj_guidance_tokens": 143,
+    "swing_stage_to_obj_tokens": 1424,
+    "swing_stage_to_out_tokens": 1567
+  },
+  "price_derived": {
+    "tier": "VERIFIED-DERIVED",
+    "inputs_not_re_verified": [
+      "E0 limit A1 \u2014 the 1.25x write / 0.1x read multipliers were not re-verified against current Anthropic pricing",
+      "E0-F12 / C1-F12 \u2014 no usage reader is closed (anthropic_provider.py has no message_start branch), so cache warmth is inferred from code, never observed"
+    ],
+    "assumption": "E0-F5/F6 \u2014 the system span is rewritten every turn, so its tokens are a perpetual cache WRITE that is never read back; the tool block is stable, so its tokens are a cache READ after the first call.",
+    "before_bte_per_call": 860.0,
+    "after_bte_per_call": 104.6,
+    "after_first_write_bte": 1307.5,
+    "steady_state_saving_bte_per_call": 755.4,
+    "break_even_calls": 2,
+    "break_even_derivation": "cumulative_after(n) = schema*write + schema*read*(n-1); cumulative_before(n) = removed*write*n; smallest whole n where after <= before. The first draft divided the one-time write by the per-call saving with floor division and added 1, which is neither the closed form nor a ceiling and lands on the right answer only by coincidence of these particular inputs (V2-F16).",
+    "verdict": "a COST on preload tokens and a SAVING on price. Which one governs is E2's call, and it cannot be settled until the usage reader is closed (E0's prerequisite 4)."
+  },
+  "count_tokens_calls": 13
+}

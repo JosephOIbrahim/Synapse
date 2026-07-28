@@ -1,0 +1,280 @@
+{
+  "schema": "v2_mutation/v2",
+  "producer": "harness/notes/econ/v2_mutation_test.py",
+  "interpreter": "3.14.2",
+  "baseline": {
+    "outcome": "green",
+    "tests_passed": 161,
+    "summary": "======================= 161 passed, 2 warnings in 0.45s =======================",
+    "verdict": "GREEN"
+  },
+  "mutations_run": 29,
+  "survivors": [],
+  "invalid": [],
+  "invalid_note": "a non-zero exit is not evidence of a caught mutation; pytest exits non-zero for collection and plugin errors too, so a mutation counts as caught ONLY when a test actually failed",
+  "verdict": "PASS \u2014 every mutation was caught",
+  "rows": [
+    {
+      "mutation": "anonymous_by",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 9,
+      "tests_passed": 84,
+      "summary": "================== 9 failed, 84 passed, 2 warnings in 0.32s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "author_on_the_wire",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 9,
+      "tests_passed": 84,
+      "summary": "================== 9 failed, 84 passed, 2 warnings in 0.32s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "bool_is_a_count",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 3,
+      "tests_passed": 90,
+      "summary": "================== 3 failed, 90 passed, 2 warnings in 0.30s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "drop_skipped",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 4,
+      "tests_passed": 49,
+      "summary": "================== 4 failed, 49 passed, 2 warnings in 0.28s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "fourth_attempt",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 2,
+      "tests_passed": 51,
+      "summary": "================== 2 failed, 51 passed, 2 warnings in 0.32s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "fractional_tokens",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 3,
+      "tests_passed": 90,
+      "summary": "================== 3 failed, 90 passed, 2 warnings in 0.41s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "inconclusive_is_a_pass",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 92,
+      "summary": "================== 1 failed, 92 passed, 2 warnings in 0.29s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "invariant1_model_free",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 3,
+      "tests_passed": 90,
+      "summary": "================== 3 failed, 90 passed, 2 warnings in 0.33s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "leaky_fallback",
+      "control_file": "tests/test_v2_invariant8.py",
+      "outcome": "red",
+      "tests_failed": 4,
+      "tests_passed": 11,
+      "summary": "================== 4 failed, 11 passed, 2 warnings in 0.26s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "name_may_be_a_sentence",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 4,
+      "tests_passed": 89,
+      "summary": "================== 4 failed, 89 passed, 2 warnings in 0.30s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "none_by",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 92,
+      "summary": "================== 1 failed, 92 passed, 2 warnings in 0.30s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "over_masked_signature",
+      "control_file": "tests/test_v2_invariant8.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 14,
+      "summary": "================== 1 failed, 14 passed, 2 warnings in 0.25s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "path_name_refused",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 52,
+      "summary": "================== 1 failed, 52 passed, 2 warnings in 0.27s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:char_ceiling",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 52,
+      "summary": "================== 1 failed, 52 passed, 2 warnings in 0.29s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:names_change",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 4,
+      "tests_passed": 49,
+      "summary": "================== 4 failed, 49 passed, 2 warnings in 0.28s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:no_decoration",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 52,
+      "summary": "================== 1 failed, 52 passed, 2 warnings in 0.27s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:no_hedging",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 4,
+      "tests_passed": 49,
+      "summary": "================== 4 failed, 49 passed, 2 warnings in 0.27s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:no_preamble",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 52,
+      "summary": "================== 1 failed, 52 passed, 2 warnings in 0.33s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:no_request_echo",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 3,
+      "tests_passed": 50,
+      "summary": "================== 3 failed, 50 passed, 2 warnings in 0.40s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:not_a_question",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 52,
+      "summary": "================== 1 failed, 52 passed, 2 warnings in 0.31s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:not_empty",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 52,
+      "summary": "================== 1 failed, 52 passed, 2 warnings in 0.28s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:one_sentence",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 52,
+      "summary": "================== 1 failed, 52 passed, 2 warnings in 0.33s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:outcome_first",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 52,
+      "summary": "================== 1 failed, 52 passed, 2 warnings in 0.28s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "silent_unclassified",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 2,
+      "tests_passed": 91,
+      "summary": "================== 2 failed, 91 passed, 2 warnings in 0.34s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "terminal_act_forecast",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 3,
+      "tests_passed": 90,
+      "summary": "================== 3 failed, 90 passed, 2 warnings in 0.32s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "tier_branching_renderer",
+      "control_file": "tests/test_v2_invariant8.py",
+      "outcome": "red",
+      "tests_failed": 5,
+      "tests_passed": 10,
+      "summary": "================== 5 failed, 10 passed, 2 warnings in 0.28s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "trim_overflow",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 2,
+      "tests_passed": 91,
+      "summary": "================== 2 failed, 91 passed, 2 warnings in 0.37s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "unconstrained_wire_paths",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "outcome": "red",
+      "tests_failed": 1,
+      "tests_passed": 92,
+      "summary": "================== 1 failed, 92 passed, 2 warnings in 0.30s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "unlatched_accept",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "outcome": "red",
+      "tests_failed": 5,
+      "tests_passed": 48,
+      "summary": "================== 5 failed, 48 passed, 2 warnings in 0.32s ===================",
+      "verdict": "PASS"
+    }
+  ],
+  "duration_s": 117.9
+}

@@ -1,0 +1,60 @@
+feat(econ): V2 - the verdict object typed, the voice contract enforced
+
+Blueprint Mile 3. The agent emits STRUCTURE; the panel composes the rows. A panel
+fed prose has the register of whichever model wrote the prose, which is why voice
+B is a dependency of tier rotation rather than polish.
+
+ENFORCED, NOT DOCUMENTED
+  - `by` is the first field with no default: Verdict() is a TypeError from the
+    language before any of this code runs. A verdict with no author does not
+    render because it cannot be constructed.
+  - MODEL_FREE provenance is refused on every field but `verdict`. Invariant 1 is
+    a four-rung ladder (MODEL_FREE / MODEL_QUOTED / TOOL / SYSTEM), checkable
+    from outside via model_free_fields().
+  - None != 0 on token counts, and bool is refused - True is an int in Python and
+    would silently become a count of 1. No usage reader is closed (E0-F12), so
+    None is the honest state today.
+
+THE VOICE CONTRACT
+  Ten mechanical rules on the one free field, each demonstrated firing AND silent
+  on a conforming verdict; the firing-case set is asserted equal to the rule set,
+  so a rule cannot ship undemonstrated. Three rejections and the field is
+  abandoned for a verdict templated from `decision` - validated by the same rules
+  it protects, so a quoted hedge degrades the template instead of riding through
+  the gate it just failed. Nothing structured to compose from -> empty, never a
+  plausible substitute.
+
+INVARIANT 8
+  Three tiers, asserted on bytes. Plus an anti-vacuity control (the masked author
+  row is masking something real) and a demonstrated red (a tier-branching
+  renderer turns the suite red).
+
+RECONCILED, NOT REPLACED
+  decision_log's QUOTED rows and _turn_evidence's TOOL-derived rows now land in
+  the same typed field with their source recorded. The adapter REFUSES an
+  unclassified row by default: the schema has no slot for `classified`, and
+  converting would make the surface quietest where P1 made it loudest.
+
+MEASURED (count_tokens, exact, free, unbilled - 13 calls, no completions)
+  Calibration PASS: reproduces R155's committed 2,961 before publishing anything.
+  TONE.md out           688 tokens (23.2% of the /stage prompt)
+  schema in           1,184 as shipped = 1,119 structure + 65 rule prose; 1,020 lean
+  net                  -496 as shipped / -332 lean  <- a COST, not a saving
+
+  V2-F7: the brief's premise "it shrinks the thing that cannot be cached" is
+  REFUTED on preload tokens. Price moves the other way (~742 BTE/call saved,
+  VERIFIED-DERIVED on E0's unverified multipliers) because the tokens moved from
+  a span rewritten every turn into the cached tool prefix. Cost and price are
+  different quantities - E0's own correction, applied to the leg that cited it.
+  The voice case stands on its own and never needed the cache argument.
+
+V2-F1: the first mutation run found TEN survivors. Every voice rule was
+unpinnable because validate() took rules=VOICE_RULES as a default argument and
+snapshotted the table at import - two authorities on one table, the shape
+panel/tokens.py was repaired for. Fixed in the product, not the harness.
+22 mutations, 22 caught, 0 survivors.
+
+Nothing renders in the panel. T.4's freeze holds until V3 lands.
+Suite 5031 -> 5170 passed, 0 failed, 137 skipped (system python 3.14.2).
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>

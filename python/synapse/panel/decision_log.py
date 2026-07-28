@@ -30,6 +30,24 @@ because it is a provenance claim nobody can check. Three rules hold:
    recorded with ``classified=False`` so nothing downstream can claim registry
    backing it does not have.
 
+V2 · WHERE THIS MEETS THE TYPED CONTRACT
+----------------------------------------
+``verdict.Verdict`` gives the Review face a shape, and its ``decision`` field is
+the typed home of the rows this module produces. ``to_verdict_decision`` is the
+adapter, and it exists so that BOTH credit producers in the tree land in the same
+field with their source recorded rather than one quietly replacing the other:
+
+* here — the "why" is a sentence the model actually wrote, tagged
+  ``MODEL_QUOTED``. Stronger, because it reports what the agent CHOSE.
+* ``synapse_panel::_turn_evidence`` — derived from tool names and results, tagged
+  ``TOOL`` via ``verdict.decision_from_tool_evidence``. Honest and weaker,
+  because it reports what a tool DID.
+
+The adapter refuses an unclassified row by default. The typed schema has no slot
+for ``classified``, and converting an unregistered tool's row into a field that
+cannot carry the warning would make the surface quietest exactly where rule 3
+above makes it loudest.
+
 Pure Python: no Qt, no ``hou``. It runs, and is tested, standalone.
 """
 
@@ -85,6 +103,35 @@ class Decision:
     def as_credit_row(self):
         """``(label, value, note)`` in the shape ``FaceReview.set_credit`` wants."""
         return ("DECISION", self.choice, self.why)
+
+    def to_verdict_decision(self, allow_unclassified=False):
+        """This row as a ``verdict.Decision``, or ``None``.
+
+        ``provenance`` is ``MODEL_QUOTED`` when a sentence was actually quoted
+        and ``TOOL`` when the turn carried no prose — the row is still real, but
+        nothing downstream may read an empty ``because`` as the model's reason.
+
+        Returns ``None`` for a row with nothing to credit, and — unless
+        ``allow_unclassified`` is set — for a row the tool registry could not
+        classify. See the module docstring for why that is a refusal rather than
+        a silent conversion.
+        """
+        if not self.choice:
+            return None
+        if not self.classified and not allow_unclassified:
+            return None
+        try:
+            from synapse.panel import verdict as _v
+        except Exception:
+            return None
+        # Clamp to the CONTRACT's ceilings, read from the contract rather than
+        # assumed equal to this module's. They happen to match today; a future
+        # divergence must narrow the value, not raise inside a credit surface.
+        return _v.Decision(
+            chose=_trim(self.choice, _v.MAX_IDENT_CHARS),
+            because=_trim(self.why, _v.MAX_TEXT_CHARS) if self.why else "",
+            provenance=_v.MODEL_QUOTED if self.why else _v.TOOL,
+        )
 
     def __eq__(self, other):
         return (isinstance(other, Decision)
@@ -154,12 +201,21 @@ def _strip_markdown(text):
 
 
 def _trim(text, limit):
-    """Shorten to ``limit`` on a word boundary, with an ellipsis when cut."""
+    """Shorten to AT MOST ``limit`` on a word boundary, with an ellipsis when cut.
+
+    V2-F12: the ellipsis used to be appended AFTER cutting to ``limit``, so a
+    string with no space in its first ``limit`` characters came back ``limit+1``
+    long — and space-free strings are the commonest real input this sees, because
+    ``_CHOICE_KEYS`` selects node paths and file paths. A function that takes a
+    limit and returns limit+1 is a bug on its own; it became a crash when the
+    typed contract started enforcing the same ceiling strictly.
+    """
     text = " ".join(str(text).split())
     if len(text) <= limit:
         return text
-    cut = text[:limit].rsplit(" ", 1)[0]
-    return (cut or text[:limit]).rstrip(",;:-") + "…"
+    head = text[:limit - 1]                 # reserve the ellipsis's own column
+    cut = head.rsplit(" ", 1)[0]
+    return (cut or head).rstrip(",;:-") + "…"
 
 
 def why_from_reasoning(reasoning):
@@ -230,6 +286,38 @@ class DecisionLog:
     def credit_rows(self):
         """``[(label, value, note)]`` for ``FaceReview.set_credit``."""
         return [d.as_credit_row() for d in self._rows]
+
+    def to_verdict_decisions(self, allow_unclassified=False):
+        """This cycle's rows as ``verdict.Decision`` objects, in order.
+
+        Rows that decline to convert are DROPPED, not defaulted — the count can
+        legitimately be smaller than ``len(self)`` and a caller comparing the two
+        is reading the refusal, which is the point.
+
+        A row the contract REJECTS is dropped too, and counted separately in
+        ``rejected_conversions``. One malformed row must not take a whole credit
+        surface down with it (V2-F12 was exactly that: a 49-character node path
+        raised, and every other decision in the cycle went with it) — but a
+        rejection is a fact about the data, so it is recorded rather than
+        swallowed (Law 3).
+        """
+        out, rejected = [], 0
+        for row in self._rows:
+            try:
+                converted = row.to_verdict_decision(allow_unclassified)
+            except Exception:
+                rejected += 1
+                continue
+            if converted is not None:
+                out.append(converted)
+        self._rejected_conversions = rejected
+        return tuple(out)
+
+    def rejected_conversions(self):
+        """How many rows the typed contract refused on the last conversion.
+        ``0`` until ``to_verdict_decisions`` has run — it describes what
+        happened, not what would happen."""
+        return getattr(self, "_rejected_conversions", 0)
 
     def __len__(self):
         return len(self._rows)
