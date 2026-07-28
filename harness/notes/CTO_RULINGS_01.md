@@ -5195,3 +5195,58 @@ lookup.
    signal that legacy was overwriting current.
 3. **The suite is the placement check.** I could not have reasoned my way to "`wrangle` is a node
    type"; eight failures told me in 110 seconds.
+
+---
+
+## RULING 176 — T.4's freeze lifts. The TOKEN face ships, built on what could be measured.
+
+`verdict.py`, `voice_contract.py` and `probe.py` were built and rendering nowhere. This is the
+surface that ends that.
+
+### Why a tab, when v9.1 deliberately removed the tab row
+
+v9.1 Option A removed `DIRECT · WORK` on the reasoning that **actionable state should
+auto-surface rather than wait for a click.** That was right, and its reason does not reach here.
+
+**Work surfaces itself because it is actionable. Token economics is diagnostic** — the thing an
+artist goes looking for, which is what a tab is for. Adding TOKEN is consistent with the removal,
+not a reversal of it.
+
+### And the rail could not have carried it
+
+The blueprint designed `DONE · opus-5 · 18.0k / 200k · $0.06`.
+
+**V3-F4:** quota headroom is not obtainable — no free Anthropic endpoint returns
+`anthropic-ratelimit-*`. **V3-F5:** no provider exposes per-token pricing over its API.
+
+**So `200k` cannot be produced and `$0.06` cannot be produced for any metered model.** The rail was
+designed around a fuel gauge with no readable fuel level, and the tab exists because V3 made the
+rail smaller — not because the rail was wrong.
+
+### What it shows is exactly what this week measured
+
+```
+per-turn composition   E0 measured it, nothing surfaced it
+                       system prompt 2,961 EXACT · tools ~19k · grounding to 113k
+cache behaviour        E0-F5: every write paid at 1.25x, every read missing, and
+                       INVISIBLE — a miss looks exactly like normal operation
+local vs metered       R162: six of thirteen Ollama tags are metered by
+                       ollama.com, including glm-5:cloud, the DEFAULT pick
+```
+
+### The three constraints are enforced, not documented
+
+1. **Nothing critical lives only here.** Rate-limited, stale probe and model swap stay on the rail;
+   this face only explains them.
+2. **Read-out, never read-in.** Nothing on it is typed or configured.
+3. **Unobtainable renders as UNKNOWN.** Demonstrated: `None` renders `unknown`, and a metered model
+   with no published price renders `unknown` rather than `0`. **A zero is a claim.**
+
+**And it refreshes on OPEN, not on a timer** — V3 was explicit that a probe must never be the thing
+that trips the rate limit it reports on, and a face nobody is looking at has no reason to poll.
+
+### What this closes
+
+The economist axis now has: a probe layer that returns structure, a verdict schema with a voice
+contract, and a surface that renders both. **Every figure on it traces to a measurement made this
+week, and every gap on it says `unknown` rather than guessing.**
