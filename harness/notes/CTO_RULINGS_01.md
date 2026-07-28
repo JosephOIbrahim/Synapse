@@ -4109,3 +4109,50 @@ case and was not run.
 
 **The two checks together cover it; neither does alone**, and nothing said to run both. The status
 tool now should, and that is the fix rather than another rule I have to remember.
+
+---
+
+## RULING 147 — I built a lock with no release, in the fix for a concurrency bug.
+
+`Take-LegLock` shipped last night with `Release-LegLock` beside it. **Zero call sites.**
+
+So a lock is taken at dispatch and held until the orchestrator process dies. A finished leg reads
+`running` forever, and cannot be re-dispatched even deliberately.
+
+**Built and connected to nothing** — the pattern this repository has catalogued eleven times —
+occurring inside the mechanism built to prevent a different instance of it, eleven hours after I
+wrote it.
+
+### And the liveness probe was asking the wrong question
+
+`Take-LegLock` must run BEFORE `Start-Process` to close the dispatch race, so the only pid
+available to it is `$PID` — **the orchestrator's own.** The staleness check therefore asked *"is
+the orchestrator alive?"*, which is always yes while it is doing the asking.
+
+**A crashed leg's lock could never be seen as stale.** The takeover path I demonstrated with a
+fake dead pid was correct code that the real caller could never reach.
+
+**That is R108's shape again:** a check reading a neighbouring value rather than the one in play.
+
+### Ruled
+
+1. **`Release-LegLock` is called on the `-> done` transition**, where the orchestrator already
+   observes completion and reads the receipt.
+2. **The lock is rewritten immediately after launch with the LEG's pid**, captured via
+   `Start-Process -PassThru`. It keeps the dispatcher's pid alongside for diagnosis. **Now the
+   liveness probe asks whether this leg is running**, which is the question the lock exists to
+   answer.
+3. **The control passes unchanged** — it exercised the functions directly and never saw this,
+   because the defect was in the *wiring*, not the functions.
+
+**That last point is the useful one.** A control that tests a unit cannot see that nothing calls
+it. I demonstrated six lock behaviours and all six were real; the gap was between the lock and the
+orchestrator, and nothing tested the seam.
+
+**A passing control is evidence about the thing it tests, and silence about everything else.**
+
+### Not applied to the running board
+
+E0 and E1 hold locks under the old scheme and are working. Restarting the orchestrator to pick
+this up would kill them, and the fix is for the next dispatch. **Their locks will need clearing by
+hand when they finish** — recorded here so it is not a surprise.

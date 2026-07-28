@@ -260,7 +260,21 @@ Write-Host '  LEG $($leg.id) TERMINATED' -ForegroundColor Cyan
     # R134: refuse to launch a leg another dispatcher already holds.
     if (-not (Take-LegLock $leg.id)) { return }
 
-    Start-Process powershell -ArgumentList '-NoExit','-ExecutionPolicy','Bypass','-File',$script -WindowStyle Normal
+    $proc = Start-Process powershell -PassThru -ArgumentList '-NoExit','-ExecutionPolicy','Bypass','-File',$script -WindowStyle Normal
+
+    # R147: rewrite the lock with the LEG's pid, not the dispatcher's.
+    #
+    # Take-LegLock has to run BEFORE the launch to close the race, so it can
+    # only record $PID - the orchestrator's. That makes the liveness probe ask
+    # "is the orchestrator alive", which is always yes, so a crashed leg's lock
+    # would never be seen as stale. Recording the window's pid here makes the
+    # probe ask the question that matters: is THIS LEG still running.
+    try {
+        $lock = Join-Path (Get-LockDir) "$($leg.id).lock"
+        (@{ leg = $leg.id; pid = $proc.Id; dispatcher = $PID
+            started = (Get-Date -Format o); machine = $env:COMPUTERNAME } |
+            ConvertTo-Json -Compress) | Set-Content $lock -Encoding utf8
+    } catch { }
 
     # Written by US, now, before the agent has done anything. Closes the window
     # between launch and the agent's first write in which the leg would
@@ -361,6 +375,14 @@ while ((Get-Date) -lt $deadline) {
             Say "STATE  $($leg.id) $($leg.name)  $was -> $now" 'Yellow'
 
             if ($now -eq 'done') {
+                # R147: release the lock the moment the leg reports done.
+                # Take-LegLock was built with a Release-LegLock that had ZERO
+                # call sites - a lock with no release, in the mechanism built
+                # to fix a concurrency bug. Without this a finished leg reads
+                # 'running' until the orchestrator itself dies, and cannot be
+                # re-dispatched even deliberately.
+                Release-LegLock $leg.id
+
                 $r = Get-Content (Get-ReceiptPath $leg) -Raw | ConvertFrom-Json
                 $status = $r.status; $ruling = @($r.for_ruling).Count
                 $plain = switch -Wildcard ($status) {
