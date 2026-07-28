@@ -99,7 +99,20 @@ def _load_dotenv() -> None:
                 name = name[len("export ") :].strip()
             value = value.strip().strip('"').strip("'")
             if name:
-                os.environ.setdefault(name, value)
+                # R164: setdefault is a no-op when the key EXISTS, and an
+                # empty string exists. A shell that exports ANTHROPIC_API_KEY=""
+                # - or any launcher that BLANKS a variable rather than unsetting
+                # it - therefore shadows the repo .env permanently, and the
+                # product reports itself unconfigured while holding a valid key.
+                #
+                # Measured, paired control, same repo root and same .env:
+                #   ANTHROPIC_API_KEY=''  -> get_anthropic_api_key() returns None
+                #   variable absent       -> returns the key
+                #
+                # A user who has just funded an account and sees "unconfigured"
+                # concludes the funding failed. Empty is treated as ABSENT.
+                if not os.environ.get(name):
+                    os.environ[name] = value
     except Exception as exc:  # noqa: BLE001 — never let .env loading break boot
         logger.debug("dotenv load skipped: %s", exc)
 

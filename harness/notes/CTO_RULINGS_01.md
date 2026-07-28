@@ -4793,3 +4793,90 @@ providers**, and V3 established that rather than filling them with plausible con
    nobody can read.
 3. **V3 spent nothing to establish this**, as instructed, and reported what it declined to probe on
    cost grounds. **That is the economist axis behaving like one.**
+
+---
+
+## RULING 166 — R164 fixed: an empty env var no longer shadows the `.env`.
+
+`_load_dotenv` used `os.environ.setdefault`, and **setdefault is a no-op when the key exists — an
+empty string exists.** So any shell exporting `ANTHROPIC_API_KEY=""`, or any launcher that *blanks*
+rather than *unsets*, permanently shadowed the repo `.env`.
+
+**The product reported itself unconfigured while holding a valid key.** Silently.
+
+Empty is now treated as absent. **The control asserts both directions**, because a fix that always
+overwrote would be worse than the bug: an explicit key exported in the environment must still win.
+
+```
+variable ABSENT     -> reads .env
+variable EMPTY ''   -> reads .env      <- the fix
+variable SET        -> overrides .env  <- not broken by the fix
+```
+
+---
+
+## RULING 167 — WORK and TOKEN tabs: yes, and the blueprint's own argument has to be answered.
+
+Joe proposes a TOKEN tab beside WORK. **The blueprint argued directly against it**, §P3:
+
+> *"The economist is the rail. A tab nobody opens fails at the moment it matters — mid-cook, out of
+> quota, no warning. Trust is lost once."*
+
+That reasoning is sound and it does not settle the question, because **V3 removed the rail's
+content.**
+
+### What changed
+
+The blueprint's rail was:
+
+```
+DONE · opus-5 · 18.0k / 200k · $0.06 · probed 12s
+```
+
+*"The pool figure is the destination. That's the fix."*
+
+**V3-F4: quota headroom is not obtainable** — no free endpoint returns `anthropic-ratelimit-*`.
+**V3-F5: no provider exposes per-token pricing.** So `200k` cannot be produced, and `$0.06` cannot
+be produced for any metered model.
+
+**The rail was designed around a fuel gauge, and V3 established there is no fuel level to read.**
+
+### The division that follows from that
+
+**The rail keeps what an artist must not miss, and only what is obtainable:**
+
+```
+DONE · opus-5 · 18.0k this session · probed 12s
+```
+
+Model identity, session total, probe freshness, and **availability as colour on the model name** —
+green probed-available, red probed-rate-limited, grey stale. Every one of those is measurable
+today. **No pool. No dollar figure. No fuel gauge whose level nobody can read.**
+
+**The TOKEN tab takes what is diagnostic rather than ambient** — the things you go *looking* for,
+which is exactly what a tab is for:
+
+- **per-turn composition**, which E0 measured and nothing surfaces: system prompt 2,961 · tool
+  surface ~19k · grounding variable to 113k
+- **cache behaviour** — E0-F5 found every write is paid and every read misses, invisibly. **A cache
+  miss looks exactly like normal operation**, so it can only be seen somewhere you look on purpose.
+- **local vs metered**, which is R162's finding and cannot live in a name: `glm-5:cloud` and a
+  local tag are indistinguishable in a dropdown.
+- **the 9-of-126 reachability gap** (V3-F1), so an artist can see what the router chose *between*.
+
+### The blueprint's warning survives as a constraint, not a veto
+
+**§P3's real point is that critical state must not live only behind a click.** That holds. So:
+
+1. **Nothing appears ONLY in the TOKEN tab that an artist needs mid-cook.** Rate-limited, stale
+   probe, model swap — those are rail, and the tab merely explains them.
+2. **The tab is a read-out, never a read-in.** Rendered from probe results and measured counts;
+   nothing on it is typed.
+3. **The tab cannot show a number the providers do not supply.** Unobtainable renders as
+   *unknown*, never as zero and never as an estimate. **A zero is a claim** (R162).
+
+**Ruled: WORK and TOKEN both, with the rail unchanged in its job.** The tab exists because V3 made
+the rail smaller, not because the rail was wrong — and the four things worth showing are all things
+that were measured this week and currently have nowhere to go.
+
+**T.4's freeze still holds.** This is the design; V2 has to land before anything renders.
