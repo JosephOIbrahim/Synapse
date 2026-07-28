@@ -60,7 +60,7 @@ These were not designed. Each one exists because something broke.
 
 This is the part that makes the rest credible.
 
-The rulings document records **125 decisions**. Roughly a dozen correct earlier decisions by the same author. Several were caught not by re-reading, but by an agent, a control, or a direct question.
+The rulings document records **150 decisions**. Roughly a dozen correct earlier decisions by the same author. Several were caught not by re-reading, but by an agent, a control, or a direct question.
 
 **A ruling built on a design brief** that described intent at the time of writing. The brief had aged into a claim about the present with nobody editing it. The prediction it produced was inverted.
 
