@@ -1,0 +1,926 @@
+{
+  "schema": "i0-q1/v1",
+  "build": "22.0.368",
+  "archive": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\nodes.zip",
+  "total_pages": 5032,
+  "contexts": {
+    "apex": {
+      "n_pages": 613,
+      "header_order": {
+        "directives-first": 611,
+        "directives-only": 1,
+        "title-first": 1
+      },
+      "line_endings": {
+        "LF": 613
+      },
+      "pages_with_params": 0,
+      "params_total": 0,
+      "params_with_id": 0,
+      "id_rate_pct": null,
+      "param_base_indent": {},
+      "pages_with_include": 14,
+      "includes_total": 142,
+      "at_sections_top": {
+        "inputs": 593,
+        "outputs": 593,
+        "related": 517,
+        "subtopics": 1
+      },
+      "page_directives_top": {
+        "type": 612,
+        "context": 611,
+        "namespace": 611,
+        "internal": 611,
+        "tags": 611,
+        "since": 611,
+        "icon": 610,
+        "width": 30,
+        "version": 25,
+        "display": 8,
+        "bestbet": 1,
+        "index": 1
+      }
+    },
+    "chop": {
+      "n_pages": 137,
+      "header_order": {
+        "directives-first": 130,
+        "directives-only": 1,
+        "title-first": 6
+      },
+      "line_endings": {
+        "LF": 137
+      },
+      "pages_with_params": 125,
+      "params_total": 1075,
+      "params_with_id": 33,
+      "id_rate_pct": 3.1,
+      "param_base_indent": {
+        "0": 48,
+        "3": 2,
+        "4": 41,
+        "8": 34
+      },
+      "pages_with_include": 131,
+      "includes_total": 192,
+      "at_sections_top": {
+        "parameters": 133,
+        "related": 118,
+        "locals": 29,
+        "px": 1,
+        "py": 1,
+        "inputs": 1,
+        "channelgroupname": 1,
+        "subtopics": 1
+      },
+      "page_directives_top": {
+        "type": 136,
+        "icon": 136,
+        "context": 135,
+        "internal": 135,
+        "since": 49,
+        "tags": 5,
+        "channels": 1,
+        "id": 1,
+        "bestbet": 1
+      }
+    },
+    "cop": {
+      "n_pages": 375,
+      "header_order": {
+        "directives-only": 3,
+        "directives-first": 368,
+        "title-first": 4
+      },
+      "line_endings": {
+        "LF": 308,
+        "CRLF": 67
+      },
+      "pages_with_params": 357,
+      "params_total": 4617,
+      "params_with_id": 4585,
+      "id_rate_pct": 99.3,
+      "param_base_indent": {
+        "0": 357
+      },
+      "pages_with_include": 163,
+      "includes_total": 621,
+      "at_sections_top": {
+        "parameters": 363,
+        "outputs": 359,
+        "inputs": 346,
+        "related": 319,
+        "subtopics": 1
+      },
+      "page_directives_top": {
+        "type": 374,
+        "context": 371,
+        "internal": 371,
+        "icon": 370,
+        "since": 211,
+        "id": 8,
+        "src": 7,
+        "image1": 3,
+        "image2": 3,
+        "display": 2,
+        "version": 1,
+        "tags": 1
+      }
+    },
+    "cop2": {
+      "n_pages": 150,
+      "header_order": {
+        "directives-first": 138,
+        "title-first": 5,
+        "directives-only": 7
+      },
+      "line_endings": {
+        "CRLF": 3,
+        "LF": 147
+      },
+      "pages_with_params": 132,
+      "params_total": 909,
+      "params_with_id": 40,
+      "id_rate_pct": 4.4,
+      "param_base_indent": {
+        "0": 19,
+        "2": 2,
+        "4": 44,
+        "6": 1,
+        "7": 1,
+        "8": 64,
+        "12": 1
+      },
+      "pages_with_include": 143,
+      "includes_total": 594,
+      "at_sections_top": {
+        "parameters": 133,
+        "related": 114,
+        "locals": 109,
+        "inputs": 5,
+        "subtopics": 1
+      },
+      "page_directives_top": {
+        "index": 150,
+        "type": 148,
+        "icon": 142,
+        "context": 141,
+        "internal": 141,
+        "since": 13,
+        "channels": 3,
+        "id": 2,
+        "tags": 2,
+        "version": 1,
+        "bestbet": 1,
+        "style": 1
+      }
+    },
+    "dop": {
+      "n_pages": 591,
+      "header_order": {
+        "directives-only": 90,
+        "directives-first": 464,
+        "neither": 3,
+        "title-first": 34
+      },
+      "line_endings": {
+        "LF": 587,
+        "CRLF": 4
+      },
+      "pages_with_params": 446,
+      "params_total": 5066,
+      "params_with_id": 1365,
+      "id_rate_pct": 26.9,
+      "param_base_indent": {
+        "0": 374,
+        "4": 54,
+        "8": 18
+      },
+      "pages_with_include": 467,
+      "includes_total": 2742,
+      "at_sections_top": {
+        "parameters": 490,
+        "outputs": 426,
+        "locals": 405,
+        "inputs": 360,
+        "related": 282,
+        "attributes": 2,
+        "foo": 2,
+        "bar": 1,
+        "baz": 1,
+        "density": 1
+      },
+      "page_directives_top": {
+        "type": 575,
+        "context": 496,
+        "internal": 496,
+        "icon": 461,
+        "since": 263,
+        "tags": 152,
+        "version": 41,
+        "channels": 27,
+        "id": 23,
+        "index": 11,
+        "src": 7,
+        "loop": 5
+      }
+    },
+    "dop_state": {
+      "n_pages": 1,
+      "header_order": {
+        "directives-first": 1
+      },
+      "line_endings": {
+        "LF": 1
+      },
+      "pages_with_params": 0,
+      "params_total": 0,
+      "params_with_id": 0,
+      "id_rate_pct": null,
+      "param_base_indent": {},
+      "pages_with_include": 0,
+      "includes_total": 0,
+      "at_sections_top": {},
+      "page_directives_top": {
+        "type": 1,
+        "context": 1,
+        "internal": 1,
+        "icon": 1,
+        "index": 1
+      }
+    },
+    "generic_state": {
+      "n_pages": 4,
+      "header_order": {
+        "directives-first": 2,
+        "title-only": 1,
+        "title-first": 1
+      },
+      "line_endings": {
+        "LF": 4
+      },
+      "pages_with_params": 0,
+      "params_total": 0,
+      "params_with_id": 0,
+      "id_rate_pct": null,
+      "param_base_indent": {},
+      "pages_with_include": 0,
+      "includes_total": 0,
+      "at_sections_top": {},
+      "page_directives_top": {
+        "icon": 3,
+        "type": 2,
+        "context": 2,
+        "internal": 2,
+        "helpid": 1,
+        "redirect": 1,
+        "index": 1
+      }
+    },
+    "lop": {
+      "n_pages": 198,
+      "header_order": {
+        "directives-only": 16,
+        "title-first": 157,
+        "directives-first": 25
+      },
+      "line_endings": {
+        "LF": 197,
+        "CRLF": 1
+      },
+      "pages_with_params": 167,
+      "params_total": 2595,
+      "params_with_id": 1681,
+      "id_rate_pct": 64.8,
+      "param_base_indent": {
+        "0": 166,
+        "4": 1
+      },
+      "pages_with_include": 126,
+      "includes_total": 1214,
+      "at_sections_top": {
+        "parameters": 173,
+        "related": 98,
+        "inputs": 5,
+        "locals": 3,
+        "outputs": 2,
+        "ITERATION": 1,
+        "subtopics": 1
+      },
+      "page_directives_top": {
+        "type": 196,
+        "icon": 182,
+        "context": 180,
+        "internal": 180,
+        "since": 178,
+        "group": 91,
+        "tags": 34,
+        "id": 13,
+        "version": 12,
+        "src": 4,
+        "display": 3,
+        "width": 2
+      }
+    },
+    "manager": {
+      "n_pages": 14,
+      "header_order": {
+        "title-first": 12,
+        "title-only": 1,
+        "directives-first": 1
+      },
+      "line_endings": {
+        "LF": 14
+      },
+      "pages_with_params": 7,
+      "params_total": 55,
+      "params_with_id": 47,
+      "id_rate_pct": 85.5,
+      "param_base_indent": {
+        "0": 6,
+        "4": 1
+      },
+      "pages_with_include": 4,
+      "includes_total": 7,
+      "at_sections_top": {
+        "parameters": 9,
+        "subtopics": 1
+      },
+      "page_directives_top": {
+        "type": 13,
+        "context": 13,
+        "internal": 13,
+        "icon": 13,
+        "index": 1,
+        "tags": 1,
+        "since": 1
+      }
+    },
+    "obj": {
+      "n_pages": 98,
+      "header_order": {
+        "directives-first": 82,
+        "title-first": 11,
+        "directives-only": 4,
+        "title-only": 1
+      },
+      "line_endings": {
+        "LF": 98
+      },
+      "pages_with_params": 52,
+      "params_total": 802,
+      "params_with_id": 223,
+      "id_rate_pct": 27.8,
+      "param_base_indent": {
+        "0": 38,
+        "4": 8,
+        "8": 6
+      },
+      "pages_with_include": 52,
+      "includes_total": 432,
+      "at_sections_top": {
+        "parameters": 57,
+        "related": 42,
+        "locals": 10,
+        "subtopics": 1
+      },
+      "page_directives_top": {
+        "type": 96,
+        "context": 92,
+        "internal": 92,
+        "icon": 74,
+        "since": 60,
+        "tags": 46,
+        "status": 4,
+        "index": 4,
+        "id": 2,
+        "bestbet": 2,
+        "version": 2
+      }
+    },
+    "obj_state": {
+      "n_pages": 26,
+      "header_order": {
+        "directives-first": 25,
+        "title-first": 1
+      },
+      "line_endings": {
+        "LF": 26
+      },
+      "pages_with_params": 1,
+      "params_total": 8,
+      "params_with_id": 0,
+      "id_rate_pct": 0.0,
+      "param_base_indent": {
+        "0": 1
+      },
+      "pages_with_include": 0,
+      "includes_total": 0,
+      "at_sections_top": {
+        "related": 6,
+        "parameters": 1
+      },
+      "page_directives_top": {
+        "type": 26,
+        "context": 26,
+        "internal": 26,
+        "icon": 26,
+        "index": 2,
+        "redirect": 1
+      }
+    },
+    "out": {
+      "n_pages": 57,
+      "header_order": {
+        "directives-first": 35,
+        "title-first": 19,
+        "directives-only": 3
+      },
+      "line_endings": {
+        "LF": 57
+      },
+      "pages_with_params": 48,
+      "params_total": 981,
+      "params_with_id": 341,
+      "id_rate_pct": 34.8,
+      "param_base_indent": {
+        "0": 37,
+        "4": 9,
+        "8": 2
+      },
+      "pages_with_include": 41,
+      "includes_total": 313,
+      "at_sections_top": {
+        "parameters": 51,
+        "locals": 28,
+        "related": 21,
+        "outputs": 1,
+        "subtopics": 1
+      },
+      "page_directives_top": {
+        "type": 56,
+        "icon": 54,
+        "context": 53,
+        "internal": 53,
+        "since": 27,
+        "tags": 4,
+        "id": 3,
+        "bestbet": 3,
+        "namespace": 3,
+        "version": 1
+      }
+    },
+    "pop_state": {
+      "n_pages": 1,
+      "header_order": {
+        "directives-first": 1
+      },
+      "line_endings": {
+        "LF": 1
+      },
+      "pages_with_params": 0,
+      "params_total": 0,
+      "params_with_id": 0,
+      "id_rate_pct": null,
+      "param_base_indent": {},
+      "pages_with_include": 0,
+      "includes_total": 0,
+      "at_sections_top": {},
+      "page_directives_top": {
+        "type": 1,
+        "context": 1,
+        "internal": 1,
+        "icon": 1,
+        "index": 1
+      }
+    },
+    "shop": {
+      "n_pages": 162,
+      "header_order": {
+        "directives-first": 140,
+        "title-first": 21,
+        "directives-only": 1
+      },
+      "line_endings": {
+        "LF": 162
+      },
+      "pages_with_params": 44,
+      "params_total": 711,
+      "params_with_id": 215,
+      "id_rate_pct": 30.2,
+      "param_base_indent": {
+        "0": 37,
+        "4": 7
+      },
+      "pages_with_include": 4,
+      "includes_total": 41,
+      "at_sections_top": {
+        "parameters": 45,
+        "related": 41,
+        "inputs": 1,
+        "attributes": 1
+      },
+      "page_directives_top": {
+        "type": 158,
+        "context": 157,
+        "internal": 157,
+        "icon": 155,
+        "since": 46,
+        "order": 5,
+        "index": 2,
+        "version": 2,
+        "bestbet": 1
+      }
+    },
+    "sop": {
+      "n_pages": 1203,
+      "header_order": {
+        "directives-only": 34,
+        "neither": 2,
+        "directives-first": 752,
+        "title-first": 415
+      },
+      "line_endings": {
+        "LF": 1176,
+        "CRLF": 26,
+        "MIXED": 1
+      },
+      "pages_with_params": 1111,
+      "params_total": 19309,
+      "params_with_id": 12289,
+      "id_rate_pct": 63.6,
+      "param_base_indent": {
+        "0": 947,
+        "3": 1,
+        "4": 159,
+        "8": 4
+      },
+      "pages_with_include": 376,
+      "includes_total": 2595,
+      "at_sections_top": {
+        "parameters": 1119,
+        "related": 952,
+        "inputs": 388,
+        "outputs": 257,
+        "attributes": 52,
+        "locals": 47,
+        "state": 33,
+        "output": 3,
+        "input": 2,
+        "miscellaneous": 2
+      },
+      "page_directives_top": {
+        "type": 1199,
+        "context": 1171,
+        "internal": 1170,
+        "icon": 1155,
+        "since": 844,
+        "tags": 774,
+        "verb_since": 188,
+        "namespace": 151,
+        "version": 114,
+        "id": 43,
+        "allow_hidden": 35,
+        "display": 27
+      }
+    },
+    "sop_state": {
+      "n_pages": 12,
+      "header_order": {
+        "directives-first": 11,
+        "title-only": 1
+      },
+      "line_endings": {
+        "LF": 12
+      },
+      "pages_with_params": 0,
+      "params_total": 0,
+      "params_with_id": 0,
+      "id_rate_pct": null,
+      "param_base_indent": {},
+      "pages_with_include": 0,
+      "includes_total": 0,
+      "at_sections_top": {
+        "related": 7
+      },
+      "page_directives_top": {
+        "type": 11,
+        "context": 11,
+        "internal": 11,
+        "icon": 11,
+        "index": 1
+      }
+    },
+    "top": {
+      "n_pages": 158,
+      "header_order": {
+        "directives-only": 9,
+        "title-first": 42,
+        "directives-first": 107
+      },
+      "line_endings": {
+        "LF": 158
+      },
+      "pages_with_params": 132,
+      "params_total": 2220,
+      "params_with_id": 1919,
+      "id_rate_pct": 86.4,
+      "param_base_indent": {
+        "0": 124,
+        "4": 7,
+        "8": 1
+      },
+      "pages_with_include": 127,
+      "includes_total": 993,
+      "at_sections_top": {
+        "parameters": 133,
+        "related": 127,
+        "top_attributes": 43,
+        "subtopics": 1,
+        "installation": 1
+      },
+      "page_directives_top": {
+        "type": 158,
+        "context": 148,
+        "internal": 148,
+        "icon": 147,
+        "since": 147,
+        "tags": 40,
+        "id": 9,
+        "glyph": 3,
+        "src": 2
+      }
+    },
+    "vex": {
+      "n_pages": 20,
+      "header_order": {
+        "directives-first": 19,
+        "title-first": 1
+      },
+      "line_endings": {
+        "LF": 20
+      },
+      "pages_with_params": 18,
+      "params_total": 42,
+      "params_with_id": 0,
+      "id_rate_pct": 0.0,
+      "param_base_indent": {
+        "0": 2,
+        "4": 16
+      },
+      "pages_with_include": 0,
+      "includes_total": 0,
+      "at_sections_top": {
+        "parameters": 18,
+        "related": 11,
+        "subtopics": 1
+      },
+      "page_directives_top": {
+        "icon": 20,
+        "type": 19,
+        "context": 19,
+        "internal": 19,
+        "subtopics_title": 1,
+        "since": 1
+      }
+    },
+    "vop": {
+      "n_pages": 1212,
+      "header_order": {
+        "directives-first": 1026,
+        "directives-only": 19,
+        "title-first": 167
+      },
+      "line_endings": {
+        "LF": 1176,
+        "CRLF": 36
+      },
+      "pages_with_params": 534,
+      "params_total": 3402,
+      "params_with_id": 1851,
+      "id_rate_pct": 54.4,
+      "param_base_indent": {
+        "0": 491,
+        "4": 43
+      },
+      "pages_with_include": 99,
+      "includes_total": 408,
+      "at_sections_top": {
+        "related": 810,
+        "parameters": 549,
+        "outputs": 392,
+        "inputs": 219,
+        "output": 4,
+        "karma_unsupported_disney_brdf": 1,
+        "karma_unsupported": 1,
+        "karmaxpu_unsupported": 1,
+        "karmacpu_unsupported": 1,
+        "lama_unsupported": 1
+      },
+      "page_directives_top": {
+        "type": 1194,
+        "context": 1192,
+        "internal": 1187,
+        "icon": 914,
+        "since": 698,
+        "version": 60,
+        "tags": 48,
+        "namespace": 39,
+        "id": 6,
+        "index": 2,
+        "order": 2,
+        "src": 2
+      }
+    }
+  },
+  "single_parser_break_points": [
+    {
+      "assumption": "a documented node has an @parameters section",
+      "pages_violating": 1761,
+      "pct_of_archive": 35.0,
+      "by_context": {
+        "vop": 666,
+        "apex": 613,
+        "shop": 117,
+        "dop": 101,
+        "sop": 84,
+        "obj": 41,
+        "lop": 25,
+        "obj_state": 25
+      },
+      "example": [
+        "apex/Abs.txt",
+        "apex/Acos.txt",
+        "apex/Add.txt"
+      ],
+      "consequence": "pages documenting via @top_attributes/@properties/prose read as ungrounded"
+    },
+    {
+      "assumption": "parameter text is inline (no ':include' indirection)",
+      "pages_violating": 1595,
+      "pct_of_archive": 31.7,
+      "by_context": {
+        "dop": 404,
+        "sop": 360,
+        "cop2": 143,
+        "chop": 131,
+        "top": 127,
+        "lop": 126,
+        "cop": 98,
+        "vop": 98
+      },
+      "example": [
+        "apex/Log.txt",
+        "apex/rig--MultiBoneIKFromArray.txt",
+        "apex/rig--SampleSplineTransformsToArray.txt"
+      ],
+      "consequence": "parameters/prose pulled from another file are absent from the entry"
+    },
+    {
+      "assumption": "'#id:' is present on documented parameters",
+      "pages_violating": 1443,
+      "pct_of_archive": 28.7,
+      "by_context": {
+        "dop": 344,
+        "vop": 339,
+        "sop": 335,
+        "cop2": 125,
+        "chop": 118,
+        "lop": 60,
+        "obj": 37,
+        "shop": 37
+      },
+      "example": [
+        "chop/acoustic.txt",
+        "chop/agent.txt",
+        "chop/area.txt"
+      ],
+      "consequence": "an id-keyed corpus carries nothing for this page"
+    },
+    {
+      "assumption": "page begins with its # directives, then '= Title ='",
+      "pages_violating": 897,
+      "pct_of_archive": 17.8,
+      "by_context": {
+        "sop": 415,
+        "vop": 167,
+        "lop": 157,
+        "top": 42,
+        "dop": 34,
+        "shop": 21,
+        "out": 19,
+        "manager": 12
+      },
+      "example": [
+        "apex/index.txt",
+        "chop/for.txt",
+        "chop/foreach.txt"
+      ],
+      "consequence": "a header block read only from the file head returns no #context/#internal"
+    },
+    {
+      "assumption": "the page carries a '\"\"\"summary\"\"\"'",
+      "pages_violating": 549,
+      "pct_of_archive": 10.9,
+      "by_context": {
+        "vop": 233,
+        "dop": 146,
+        "sop": 70,
+        "lop": 23,
+        "apex": 19,
+        "top": 12,
+        "manager": 11,
+        "cop2": 8
+      },
+      "example": [
+        "apex/_transform_shared.txt",
+        "apex/ch--CollectionBlendKeys.txt",
+        "apex/ch--CollectionCopyKeys.txt"
+      ],
+      "consequence": "no one-line description; a quality floor requiring one rejects the page"
+    },
+    {
+      "assumption": "parameters are labels at column 0 under @parameters",
+      "pages_violating": 527,
+      "pct_of_archive": 10.5,
+      "by_context": {
+        "sop": 164,
+        "cop2": 113,
+        "chop": 77,
+        "dop": 72,
+        "vop": 43,
+        "vex": 16,
+        "obj": 14,
+        "out": 11
+      },
+      "example": [
+        "chop/acoustic.txt",
+        "chop/area.txt",
+        "chop/attribute.txt"
+      ],
+      "consequence": "every parameter on the page is missed"
+    },
+    {
+      "assumption": "the page carries a '#internal:' directive naming the node type",
+      "pages_violating": 218,
+      "pct_of_archive": 4.3,
+      "by_context": {
+        "dop": 95,
+        "sop": 33,
+        "vop": 25,
+        "lop": 18,
+        "top": 10,
+        "cop2": 9,
+        "obj": 6,
+        "shop": 5
+      },
+      "example": [
+        "apex/_transform_shared.txt",
+        "apex/index.txt",
+        "chop/common.txt"
+      ],
+      "consequence": "no key to join the entry to a live node type; filename is the only fallback"
+    },
+    {
+      "assumption": "the page carries a '= Title =' line",
+      "pages_violating": 193,
+      "pct_of_archive": 3.8,
+      "by_context": {
+        "dop": 93,
+        "sop": 36,
+        "vop": 19,
+        "lop": 16,
+        "top": 9,
+        "cop2": 7,
+        "obj": 4,
+        "cop": 3
+      },
+      "example": [
+        "apex/_transform_shared.txt",
+        "chop/common.txt",
+        "cop/_generator_common.txt"
+      ],
+      "consequence": "no display name for the entry"
+    },
+    {
+      "assumption": "lines are LF-terminated",
+      "pages_violating": 138,
+      "pct_of_archive": 2.7,
+      "by_context": {
+        "cop": 67,
+        "vop": 36,
+        "sop": 27,
+        "dop": 4,
+        "cop2": 3,
+        "lop": 1
+      },
+      "example": [
+        "cop/_parameter_descriptions.txt",
+        "cop/average.txt",
+        "cop/bakegeometrytextures-2.0.txt"
+      ],
+      "consequence": "a '$'-anchored item regex matches nothing: page reads as 0 parameters, silently"
+    }
+  ]
+}

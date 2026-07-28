@@ -1,0 +1,4463 @@
+{
+  "schema": "i0-q2/v1",
+  "build": "22.0.368",
+  "runtime": "22.0.368",
+  "truth_tier": "VERIFIED-RUNTIME",
+  "seed": 20260727,
+  "producer": "harness/notes/ingest/_i0_q2_joinkey.py",
+  "reader": "harness/notes/ingest/_i0_reader.py (calibrated 57/57)",
+  "controls": [
+    {
+      "control": "C1 stem_map plain",
+      "got": [
+        "xform"
+      ],
+      "want": [
+        "xform"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C1 stem_map versioned",
+      "got": [
+        "bakegeometrytextures-2.0",
+        "bakegeometrytextures::2.0"
+      ],
+      "want": [
+        "bakegeometrytextures-2.0",
+        "bakegeometrytextures::2.0"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C1 stem_map namespaced",
+      "got": [
+        "rig--CurveIK",
+        "rig::CurveIK"
+      ],
+      "want": [
+        "rig--CurveIK",
+        "rig::CurveIK"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C2 xform instantiates",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C2 'tx' is a live PARM",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C2 't' is NOT a live parm",
+      "got": false,
+      "want": false,
+      "pass": true,
+      "note": "the documented '#id: t' names the TUPLE, not the parm"
+    },
+    {
+      "control": "C2 't' IS a live parmTuple",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C2 'Translate' is a live tuple label",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C3 fabricated id does NOT match parms",
+      "got": false,
+      "want": false,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C3 fabricated id does NOT match tuples",
+      "got": false,
+      "want": false,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C3 fabricated label does NOT match",
+      "got": false,
+      "want": false,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C6 strip_component fires",
+      "got": "diff",
+      "want": "diff",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C6 strip_component leaves non-suffixed alone",
+      "got": "signature",
+      "want": "signature",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C4 absent type -> None",
+      "got": null,
+      "want": null,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C5 reader intact under hython",
+      "got": 15,
+      "want": 15,
+      "pass": true,
+      "note": ""
+    }
+  ],
+  "controls_passed": 15,
+  "controls_total": 15,
+  "match_rates": {
+    "hand_picked": {
+      "K1_id_vs_parms": {
+        "matched": 135,
+        "of": 265,
+        "pct": 50.9
+      },
+      "K2_id_vs_tuples": {
+        "matched": 158,
+        "of": 265,
+        "pct": 59.6
+      },
+      "K3_idstrip_vs_parms": {
+        "matched": 135,
+        "of": 265,
+        "pct": 50.9
+      },
+      "K4_label_vs_parmlabels": {
+        "matched": 276,
+        "of": 311,
+        "pct": 88.7
+      },
+      "K5_label_vs_tuplelabels": {
+        "matched": 276,
+        "of": 311,
+        "pct": 88.7
+      },
+      "K6_channels_vs_parms": {
+        "matched": 20,
+        "of": 21,
+        "pct": 95.2
+      }
+    },
+    "population_sweep": {
+      "K1_id_vs_parms": {
+        "matched": 779,
+        "of": 922,
+        "pct": 84.5
+      },
+      "K2_id_vs_tuples": {
+        "matched": 806,
+        "of": 922,
+        "pct": 87.4
+      },
+      "K3_idstrip_vs_parms": {
+        "matched": 779,
+        "of": 922,
+        "pct": 84.5
+      },
+      "K4_label_vs_parmlabels": {
+        "matched": 1311,
+        "of": 1473,
+        "pct": 89.0
+      },
+      "K5_label_vs_tuplelabels": {
+        "matched": 1313,
+        "of": 1473,
+        "pct": 89.1
+      },
+      "K6_channels_vs_parms": {
+        "matched": 69,
+        "of": 88,
+        "pct": 78.4
+      }
+    }
+  },
+  "per_node": {
+    "hand_picked": [
+      {
+        "node": "cop/chromakey",
+        "status": "OK",
+        "live_type": "chromakey",
+        "documented_params": 15,
+        "documented_with_id": 15,
+        "documented_with_channels": 0,
+        "live_parms": 26,
+        "live_tuples": 18,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/adjacency_distort",
+        "status": "OK",
+        "live_type": "adjacency_distort",
+        "documented_params": 10,
+        "documented_with_id": 10,
+        "documented_with_channels": 0,
+        "live_parms": 20,
+        "live_tuples": 18,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/grunge_rust",
+        "status": "OK",
+        "live_type": "grunge_rust",
+        "documented_params": 4,
+        "documented_with_id": 4,
+        "documented_with_channels": 0,
+        "live_parms": 34,
+        "live_tuples": 31,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/cellularnoise3d",
+        "status": "OK",
+        "live_type": "cellularnoise3d",
+        "documented_params": 14,
+        "documented_with_id": 14,
+        "documented_with_channels": 0,
+        "live_parms": 49,
+        "live_tuples": 43,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/chromaticaberration",
+        "status": "OK",
+        "live_type": "chromaticaberration",
+        "documented_params": 21,
+        "documented_with_id": 21,
+        "documented_with_channels": 0,
+        "live_parms": 46,
+        "live_tuples": 42,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 17,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 17,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 21,
+          "K2_id_vs_tuples": 21,
+          "K3_idstrip_vs_parms": 21,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/blur",
+        "status": "OK",
+        "live_type": "blur",
+        "documented_params": 6,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 28,
+        "live_tuples": 26,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/edgeblur",
+        "status": "OK",
+        "live_type": "edgeblur",
+        "documented_params": 3,
+        "documented_with_id": 0,
+        "documented_with_channels": 3,
+        "live_parms": 3,
+        "live_tuples": 3,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 2
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 3
+        }
+      },
+      {
+        "node": "cop2/emboss",
+        "status": "OK",
+        "live_type": "emboss",
+        "documented_params": 10,
+        "documented_with_id": 0,
+        "documented_with_channels": 10,
+        "live_parms": 39,
+        "live_tuples": 29,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 18
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 18
+        }
+      },
+      {
+        "node": "lop/karma",
+        "status": "OK",
+        "live_type": "karma",
+        "documented_params": 4,
+        "documented_with_id": 2,
+        "documented_with_channels": 0,
+        "live_parms": 275,
+        "live_tuples": 267,
+        "runtime_deprecated": true,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/rendersettings",
+        "status": "OK",
+        "live_type": "rendersettings",
+        "documented_params": 106,
+        "documented_with_id": 106,
+        "documented_with_channels": 0,
+        "live_parms": 428,
+        "live_tuples": 411,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 95,
+          "K5_label_vs_tuplelabels": 95,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 106,
+          "K2_id_vs_tuples": 106,
+          "K3_idstrip_vs_parms": 106,
+          "K4_label_vs_parmlabels": 106,
+          "K5_label_vs_tuplelabels": 106,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/distantlight",
+        "status": "OK",
+        "live_type": "distantlight",
+        "documented_params": 0,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 203,
+        "live_tuples": 165,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/xform",
+        "status": "OK",
+        "live_type": "xform",
+        "documented_params": 24,
+        "documented_with_id": 19,
+        "documented_with_channels": 0,
+        "live_parms": 49,
+        "live_tuples": 29,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 22,
+          "K5_label_vs_tuplelabels": 22,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 19,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 19,
+          "K4_label_vs_parmlabels": 24,
+          "K5_label_vs_tuplelabels": 24,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/scatter",
+        "status": "OK",
+        "live_type": "scatter",
+        "documented_params": 30,
+        "documented_with_id": 30,
+        "documented_with_channels": 0,
+        "live_parms": 44,
+        "live_tuples": 44,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 30,
+          "K2_id_vs_tuples": 30,
+          "K3_idstrip_vs_parms": 30,
+          "K4_label_vs_parmlabels": 30,
+          "K5_label_vs_tuplelabels": 30,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 30,
+          "K2_id_vs_tuples": 30,
+          "K3_idstrip_vs_parms": 30,
+          "K4_label_vs_parmlabels": 30,
+          "K5_label_vs_tuplelabels": 30,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/geometry",
+        "status": "OK",
+        "live_type": "geometry",
+        "documented_params": 14,
+        "documented_with_id": 10,
+        "documented_with_channels": 0,
+        "live_parms": 32,
+        "live_tuples": 30,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/ropfetch",
+        "status": "OK",
+        "live_type": "ropfetch",
+        "documented_params": 50,
+        "documented_with_id": 34,
+        "documented_with_channels": 0,
+        "live_parms": 78,
+        "live_tuples": 79,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 29,
+          "K2_id_vs_tuples": 30,
+          "K3_idstrip_vs_parms": 29,
+          "K4_label_vs_parmlabels": 32,
+          "K5_label_vs_tuplelabels": 32,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 34,
+          "K2_id_vs_tuples": 34,
+          "K3_idstrip_vs_parms": 34,
+          "K4_label_vs_parmlabels": 50,
+          "K5_label_vs_tuplelabels": 50,
+          "K6_channels_vs_parms": 0
+        }
+      }
+    ],
+    "population_sweep": [
+      {
+        "node": "cop/normaltoheight",
+        "status": "OK",
+        "live_type": "normaltoheight",
+        "documented_params": 8,
+        "documented_with_id": 8,
+        "documented_with_channels": 0,
+        "live_parms": 11,
+        "live_tuples": 11,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/curlnoise3d",
+        "status": "OK",
+        "live_type": "curlnoise3d",
+        "documented_params": 11,
+        "documented_with_id": 11,
+        "documented_with_channels": 0,
+        "live_parms": 20,
+        "live_tuples": 14,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/combinenormals",
+        "status": "OK",
+        "live_type": "combinenormals",
+        "documented_params": 3,
+        "documented_with_id": 3,
+        "documented_with_channels": 0,
+        "live_parms": 3,
+        "live_tuples": 3,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/testgeometry_tommy",
+        "status": "OK",
+        "live_type": "testgeometry_tommy",
+        "documented_params": 8,
+        "documented_with_id": 8,
+        "documented_with_channels": 0,
+        "live_parms": 12,
+        "live_tuples": 8,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/boundrect",
+        "status": "OK",
+        "live_type": "boundrect",
+        "documented_params": 5,
+        "documented_with_id": 5,
+        "documented_with_channels": 0,
+        "live_parms": 5,
+        "live_tuples": 5,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/curve3d",
+        "status": "OK",
+        "live_type": "curve3d",
+        "documented_params": 59,
+        "documented_with_id": 59,
+        "documented_with_channels": 0,
+        "live_parms": 113,
+        "live_tuples": 95,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 49,
+          "K2_id_vs_tuples": 49,
+          "K3_idstrip_vs_parms": 49,
+          "K4_label_vs_parmlabels": 55,
+          "K5_label_vs_tuplelabels": 55,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 59,
+          "K2_id_vs_tuples": 59,
+          "K3_idstrip_vs_parms": 59,
+          "K4_label_vs_parmlabels": 59,
+          "K5_label_vs_tuplelabels": 59,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/bakepreprocess",
+        "status": "OK",
+        "live_type": "bakepreprocess",
+        "documented_params": 18,
+        "documented_with_id": 18,
+        "documented_with_channels": 0,
+        "live_parms": 24,
+        "live_tuples": 25,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 18,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 18,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/average",
+        "status": "OK",
+        "live_type": "average",
+        "documented_params": 6,
+        "documented_with_id": 6,
+        "documented_with_channels": 0,
+        "live_parms": 7,
+        "live_tuples": 7,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/bokeh",
+        "status": "OK",
+        "live_type": "bokeh",
+        "documented_params": 6,
+        "documented_with_id": 6,
+        "documented_with_channels": 0,
+        "live_parms": 9,
+        "live_tuples": 9,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/idtomono",
+        "status": "OK",
+        "live_type": "idtomono",
+        "documented_params": 2,
+        "documented_with_id": 2,
+        "documented_with_channels": 0,
+        "live_parms": 2,
+        "live_tuples": 2,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/spheresample",
+        "status": "OK",
+        "live_type": "spheresample",
+        "documented_params": 10,
+        "documented_with_id": 10,
+        "documented_with_channels": 0,
+        "live_parms": 16,
+        "live_tuples": 10,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/ociotransform",
+        "status": "OK",
+        "live_type": "ociotransform",
+        "documented_params": 8,
+        "documented_with_id": 8,
+        "documented_with_channels": 0,
+        "live_parms": 8,
+        "live_tuples": 8,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/cross",
+        "status": "OK",
+        "live_type": "cross",
+        "documented_params": 1,
+        "documented_with_id": 1,
+        "documented_with_channels": 0,
+        "live_parms": 1,
+        "live_tuples": 1,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/layertovdbleafpoints",
+        "status": "OK",
+        "live_type": "layertovdbleafpoints",
+        "documented_params": 2,
+        "documented_with_id": 2,
+        "documented_with_channels": 0,
+        "live_parms": 2,
+        "live_tuples": 2,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/cableunpack",
+        "status": "OK",
+        "live_type": "cableunpack",
+        "documented_params": 5,
+        "documented_with_id": 5,
+        "documented_with_channels": 0,
+        "live_parms": 2,
+        "live_tuples": 2,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/contactsheet",
+        "status": "OK",
+        "live_type": "contactsheet",
+        "documented_params": 14,
+        "documented_with_id": 14,
+        "documented_with_channels": 0,
+        "live_parms": 18,
+        "live_tuples": 15,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 13,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/blur",
+        "status": "OK",
+        "live_type": "blur",
+        "documented_params": 6,
+        "documented_with_id": 6,
+        "documented_with_channels": 0,
+        "live_parms": 9,
+        "live_tuples": 8,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/curveanimate3d",
+        "status": "OK",
+        "live_type": "curveanimate3d",
+        "documented_params": 41,
+        "documented_with_id": 41,
+        "documented_with_channels": 0,
+        "live_parms": 45,
+        "live_tuples": 46,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 41,
+          "K2_id_vs_tuples": 41,
+          "K3_idstrip_vs_parms": 41,
+          "K4_label_vs_parmlabels": 34,
+          "K5_label_vs_tuplelabels": 34,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 41,
+          "K2_id_vs_tuples": 41,
+          "K3_idstrip_vs_parms": 41,
+          "K4_label_vs_parmlabels": 41,
+          "K5_label_vs_tuplelabels": 41,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/crystalnoise3d",
+        "status": "OK",
+        "live_type": "crystalnoise3d",
+        "documented_params": 16,
+        "documented_with_id": 16,
+        "documented_with_channels": 0,
+        "live_parms": 45,
+        "live_tuples": 40,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 13,
+          "K2_id_vs_tuples": 13,
+          "K3_idstrip_vs_parms": 13,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 16,
+          "K2_id_vs_tuples": 16,
+          "K3_idstrip_vs_parms": 16,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/dilateerode",
+        "status": "OK",
+        "live_type": "dilateerode",
+        "documented_params": 7,
+        "documented_with_id": 7,
+        "documented_with_channels": 0,
+        "live_parms": 9,
+        "live_tuples": 9,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/lensdistort",
+        "status": "OK",
+        "live_type": "lensdistort",
+        "documented_params": 13,
+        "documented_with_id": 13,
+        "documented_with_channels": 0,
+        "live_parms": 15,
+        "live_tuples": 13,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 13,
+          "K2_id_vs_tuples": 13,
+          "K3_idstrip_vs_parms": 13,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/pyro_sourcefromlayer",
+        "status": "OK",
+        "live_type": "pyro_sourcefromlayer",
+        "documented_params": 21,
+        "documented_with_id": 21,
+        "documented_with_channels": 0,
+        "live_parms": 37,
+        "live_tuples": 33,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 21,
+          "K2_id_vs_tuples": 21,
+          "K3_idstrip_vs_parms": 21,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/triplanarhextile",
+        "status": "OK",
+        "live_type": "triplanarhextile",
+        "documented_params": 23,
+        "documented_with_id": 23,
+        "documented_with_channels": 0,
+        "live_parms": 44,
+        "live_tuples": 40,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 18,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 23,
+          "K2_id_vs_tuples": 23,
+          "K3_idstrip_vs_parms": 23,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/vdbleafpoints",
+        "status": "OK",
+        "live_type": "vdbleafpoints",
+        "documented_params": 5,
+        "documented_with_id": 5,
+        "documented_with_channels": 0,
+        "live_parms": 2,
+        "live_tuples": 2,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop/triplanaruv",
+        "status": "OK",
+        "live_type": "triplanaruv",
+        "documented_params": 2,
+        "documented_with_id": 2,
+        "documented_with_channels": 0,
+        "live_parms": 2,
+        "live_tuples": 2,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/scale",
+        "status": "OK",
+        "live_type": "scale",
+        "documented_params": 6,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 10,
+        "live_tuples": 8,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/dof",
+        "status": "OK",
+        "live_type": "dof",
+        "documented_params": 4,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 26,
+        "live_tuples": 24,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/streak",
+        "status": "OK",
+        "live_type": "streak",
+        "documented_params": 5,
+        "documented_with_id": 0,
+        "documented_with_channels": 4,
+        "live_parms": 24,
+        "live_tuples": 22,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 4
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 4
+        }
+      },
+      {
+        "node": "cop2/dsmflatten",
+        "status": "OK",
+        "live_type": "dsmflatten",
+        "documented_params": 3,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 36,
+        "live_tuples": 34,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/shape",
+        "status": "OK",
+        "live_type": "shape",
+        "documented_params": 14,
+        "documented_with_id": 9,
+        "documented_with_channels": 0,
+        "live_parms": 57,
+        "live_tuples": 47,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 9,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/wipe",
+        "status": "OK",
+        "live_type": "wipe",
+        "documented_params": 5,
+        "documented_with_id": 0,
+        "documented_with_channels": 3,
+        "live_parms": 29,
+        "live_tuples": 24,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 6
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 6
+        }
+      },
+      {
+        "node": "cop2/chromakey",
+        "status": "OK",
+        "live_type": "chromakey",
+        "documented_params": 10,
+        "documented_with_id": 0,
+        "documented_with_channels": 9,
+        "live_parms": 33,
+        "live_tuples": 27,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 6
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 9
+        }
+      },
+      {
+        "node": "cop2/degrain",
+        "status": "OK",
+        "live_type": "degrain",
+        "documented_params": 1,
+        "documented_with_id": 0,
+        "documented_with_channels": 1,
+        "live_parms": 20,
+        "live_tuples": 18,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 1
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 1
+        }
+      },
+      {
+        "node": "cop2/fieldswap",
+        "status": "OK",
+        "live_type": "fieldswap",
+        "documented_params": 0,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 0,
+        "live_tuples": 0,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/anaglyph",
+        "status": "OK",
+        "live_type": "anaglyph",
+        "documented_params": 1,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 1,
+        "live_tuples": 1,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/pixel",
+        "status": "OK",
+        "live_type": "pixel",
+        "documented_params": 3,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 29,
+        "live_tuples": 27,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/diff",
+        "status": "OK",
+        "live_type": "diff",
+        "documented_params": 14,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 42,
+        "live_tuples": 37,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/vopcop2gen",
+        "status": "OK",
+        "live_type": "vopcop2gen",
+        "documented_params": 2,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 33,
+        "live_tuples": 31,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/extract",
+        "status": "OK",
+        "live_type": "extract",
+        "documented_params": 4,
+        "documented_with_id": 0,
+        "documented_with_channels": 4,
+        "live_parms": 4,
+        "live_tuples": 4,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 4
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 4
+        }
+      },
+      {
+        "node": "cop2/terrain_noise",
+        "status": "NOT_IN_RUNTIME",
+        "documented_params": 1
+      },
+      {
+        "node": "cop2/edge",
+        "status": "OK",
+        "live_type": "edge",
+        "documented_params": 4,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 28,
+        "live_tuples": 25,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/illpixel",
+        "status": "OK",
+        "live_type": "illpixel",
+        "documented_params": 3,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 4,
+        "live_tuples": 4,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/mosaic",
+        "status": "OK",
+        "live_type": "mosaic",
+        "documented_params": 7,
+        "documented_with_id": 0,
+        "documented_with_channels": 3,
+        "live_parms": 12,
+        "live_tuples": 9,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 6
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 6
+        }
+      },
+      {
+        "node": "cop2/ramp",
+        "status": "OK",
+        "live_type": "ramp",
+        "documented_params": 11,
+        "documented_with_id": 6,
+        "documented_with_channels": 0,
+        "live_parms": 55,
+        "live_tuples": 46,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/convolve",
+        "status": "OK",
+        "live_type": "convolve",
+        "documented_params": 4,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 104,
+        "live_tuples": 29,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/colorcorrect",
+        "status": "OK",
+        "live_type": "colorcorrect",
+        "documented_params": 5,
+        "documented_with_id": 0,
+        "documented_with_channels": 4,
+        "live_parms": 75,
+        "live_tuples": 41,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 16
+        }
+      },
+      {
+        "node": "cop2/color",
+        "status": "OK",
+        "live_type": "color",
+        "documented_params": 3,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 37,
+        "live_tuples": 32,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/gamma",
+        "status": "OK",
+        "live_type": "gamma",
+        "documented_params": 3,
+        "documented_with_id": 0,
+        "documented_with_channels": 2,
+        "live_parms": 29,
+        "live_tuples": 27,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 6
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 6
+        }
+      },
+      {
+        "node": "cop2/render",
+        "status": "OK",
+        "live_type": "render",
+        "documented_params": 5,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 36,
+        "live_tuples": 34,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "cop2/switch",
+        "status": "OK",
+        "live_type": "switch",
+        "documented_params": 1,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 2,
+        "live_tuples": 2,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/drop",
+        "status": "OK",
+        "live_type": "drop",
+        "documented_params": 17,
+        "documented_with_id": 16,
+        "documented_with_channels": 0,
+        "live_parms": 22,
+        "live_tuples": 20,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 16,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 16,
+          "K2_id_vs_tuples": 16,
+          "K3_idstrip_vs_parms": 16,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/assignmaterial",
+        "status": "OK",
+        "live_type": "assignmaterial",
+        "documented_params": 20,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 25,
+        "live_tuples": 25,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 20,
+          "K5_label_vs_tuplelabels": 20,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 20,
+          "K5_label_vs_tuplelabels": 20,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/plane",
+        "status": "OK",
+        "live_type": "plane",
+        "documented_params": 3,
+        "documented_with_id": 3,
+        "documented_with_channels": 0,
+        "live_parms": 67,
+        "live_tuples": 50,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/cube",
+        "status": "OK",
+        "live_type": "cube",
+        "documented_params": 1,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 59,
+        "live_tuples": 42,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/copytopoints",
+        "status": "OK",
+        "live_type": "copytopoints",
+        "documented_params": 19,
+        "documented_with_id": 19,
+        "documented_with_channels": 0,
+        "live_parms": 46,
+        "live_tuples": 46,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 19,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 19,
+          "K4_label_vs_parmlabels": 19,
+          "K5_label_vs_tuplelabels": 19,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 19,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 19,
+          "K4_label_vs_parmlabels": 19,
+          "K5_label_vs_tuplelabels": 19,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/inlineusd",
+        "status": "OK",
+        "live_type": "inlineusd",
+        "documented_params": 2,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 2,
+        "live_tuples": 2,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/blend",
+        "status": "OK",
+        "live_type": "blend",
+        "documented_params": 1,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 1,
+        "live_tuples": 1,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/hdadynamicpayload",
+        "status": "OK",
+        "live_type": "hdadynamicpayload",
+        "documented_params": 8,
+        "documented_with_id": 6,
+        "documented_with_channels": 0,
+        "live_parms": 40,
+        "live_tuples": 39,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/isolatescene",
+        "status": "OK",
+        "live_type": "isolatescene",
+        "documented_params": 9,
+        "documented_with_id": 9,
+        "documented_with_channels": 0,
+        "live_parms": 10,
+        "live_tuples": 13,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 9,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 9,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/merge",
+        "status": "OK",
+        "live_type": "merge",
+        "documented_params": 2,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 5,
+        "live_tuples": 5,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/lpetag",
+        "status": "OK",
+        "live_type": "lpetag",
+        "documented_params": 14,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 12,
+        "live_tuples": 12,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/usd_rop",
+        "status": "OK",
+        "live_type": "usd_rop",
+        "documented_params": 0,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 69,
+        "live_tuples": 66,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/switch",
+        "status": "OK",
+        "live_type": "switch",
+        "documented_params": 8,
+        "documented_with_id": 7,
+        "documented_with_channels": 0,
+        "live_parms": 8,
+        "live_tuples": 9,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/bakeskinning",
+        "status": "OK",
+        "live_type": "bakeskinning",
+        "documented_params": 0,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 0,
+        "live_tuples": 0,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/karmarenderproducts",
+        "status": "OK",
+        "live_type": "karmarenderproducts",
+        "documented_params": 10,
+        "documented_with_id": 4,
+        "documented_with_channels": 0,
+        "live_parms": 30,
+        "live_tuples": 25,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/pythonscript",
+        "status": "OK",
+        "live_type": "pythonscript",
+        "documented_params": 2,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 2,
+        "live_tuples": 2,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/houdinipreviewprocedurals",
+        "status": "OK",
+        "live_type": "houdinipreviewprocedurals",
+        "documented_params": 2,
+        "documented_with_id": 2,
+        "documented_with_channels": 0,
+        "live_parms": 2,
+        "live_tuples": 2,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/editmaterial",
+        "status": "OK",
+        "live_type": "editmaterial",
+        "documented_params": 6,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 8,
+        "live_tuples": 8,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/shotsplit",
+        "status": "OK",
+        "live_type": "shotsplit",
+        "documented_params": 7,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 12,
+        "live_tuples": 12,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/apexanimate",
+        "status": "OK",
+        "live_type": "apexanimate",
+        "documented_params": 3,
+        "documented_with_id": 3,
+        "documented_with_channels": 0,
+        "live_parms": 11,
+        "live_tuples": 11,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/primitive",
+        "status": "OK",
+        "live_type": "primitive",
+        "documented_params": 2,
+        "documented_with_id": 1,
+        "documented_with_channels": 0,
+        "live_parms": 5,
+        "live_tuples": 5,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/lightfilterlibrary",
+        "status": "OK",
+        "live_type": "lightfilterlibrary",
+        "documented_params": 11,
+        "documented_with_id": 4,
+        "documented_with_channels": 0,
+        "live_parms": 17,
+        "live_tuples": 18,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/begincontextoptionsblock",
+        "status": "OK",
+        "live_type": "begincontextoptionsblock",
+        "documented_params": 1,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 1,
+        "live_tuples": 1,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/texturemateriallibrary",
+        "status": "OK",
+        "live_type": "texturemateriallibrary",
+        "documented_params": 8,
+        "documented_with_id": 2,
+        "documented_with_channels": 0,
+        "live_parms": 47,
+        "live_tuples": 42,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "lop/sopcrowdimport",
+        "status": "OK",
+        "live_type": "sopcrowdimport",
+        "documented_params": 46,
+        "documented_with_id": 46,
+        "documented_with_channels": 0,
+        "live_parms": 63,
+        "live_tuples": 63,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 45,
+          "K2_id_vs_tuples": 46,
+          "K3_idstrip_vs_parms": 45,
+          "K4_label_vs_parmlabels": 46,
+          "K5_label_vs_tuplelabels": 46,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 46,
+          "K2_id_vs_tuples": 46,
+          "K3_idstrip_vs_parms": 46,
+          "K4_label_vs_parmlabels": 46,
+          "K5_label_vs_tuplelabels": 46,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/volumenoisesdf",
+        "status": "OK",
+        "live_type": "volumenoisesdf",
+        "documented_params": 6,
+        "documented_with_id": 6,
+        "documented_with_channels": 0,
+        "live_parms": 87,
+        "live_tuples": 73,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/muscleproperties",
+        "status": "OK",
+        "live_type": "muscleproperties",
+        "documented_params": 27,
+        "documented_with_id": 27,
+        "documented_with_channels": 0,
+        "live_parms": 57,
+        "live_tuples": 57,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 27,
+          "K5_label_vs_tuplelabels": 27,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 27,
+          "K2_id_vs_tuples": 27,
+          "K3_idstrip_vs_parms": 27,
+          "K4_label_vs_parmlabels": 27,
+          "K5_label_vs_tuplelabels": 27,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/kinefx--characterblendshapescore",
+        "status": "OK",
+        "live_type": "kinefx::characterblendshapescore",
+        "documented_params": 2,
+        "documented_with_id": 2,
+        "documented_with_channels": 0,
+        "live_parms": 5,
+        "live_tuples": 5,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/assemble",
+        "status": "OK",
+        "live_type": "assemble",
+        "documented_params": 10,
+        "documented_with_id": 5,
+        "documented_with_channels": 0,
+        "live_parms": 17,
+        "live_tuples": 17,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/clay",
+        "status": "OK",
+        "live_type": "clay",
+        "documented_params": 23,
+        "documented_with_id": 0,
+        "documented_with_channels": 14,
+        "live_parms": 37,
+        "live_tuples": 24,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 27
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 27
+        }
+      },
+      {
+        "node": "sop/resample",
+        "status": "OK",
+        "live_type": "resample",
+        "documented_params": 21,
+        "documented_with_id": 19,
+        "documented_with_channels": 0,
+        "live_parms": 25,
+        "live_tuples": 25,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 19,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 19,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 19,
+          "K2_id_vs_tuples": 19,
+          "K3_idstrip_vs_parms": 19,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/heightfield_erode_hydro",
+        "status": "OK",
+        "live_type": "heightfield_erode_hydro",
+        "documented_params": 38,
+        "documented_with_id": 34,
+        "documented_with_channels": 0,
+        "live_parms": 48,
+        "live_tuples": 48,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 32,
+          "K2_id_vs_tuples": 32,
+          "K3_idstrip_vs_parms": 32,
+          "K4_label_vs_parmlabels": 36,
+          "K5_label_vs_tuplelabels": 36,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 34,
+          "K2_id_vs_tuples": 34,
+          "K3_idstrip_vs_parms": 34,
+          "K4_label_vs_parmlabels": 38,
+          "K5_label_vs_tuplelabels": 38,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/unpackpoints",
+        "status": "OK",
+        "live_type": "unpackpoints",
+        "documented_params": 6,
+        "documented_with_id": 0,
+        "documented_with_channels": 3,
+        "live_parms": 10,
+        "live_tuples": 6,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 7
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 7
+        }
+      },
+      {
+        "node": "sop/agentclip-",
+        "status": "NOT_IN_RUNTIME",
+        "documented_params": 5
+      },
+      {
+        "node": "sop/maskbyfeature",
+        "status": "OK",
+        "live_type": "maskbyfeature",
+        "documented_params": 44,
+        "documented_with_id": 37,
+        "documented_with_channels": 0,
+        "live_parms": 96,
+        "live_tuples": 94,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 34,
+          "K2_id_vs_tuples": 35,
+          "K3_idstrip_vs_parms": 34,
+          "K4_label_vs_parmlabels": 41,
+          "K5_label_vs_tuplelabels": 41,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 37,
+          "K2_id_vs_tuples": 37,
+          "K3_idstrip_vs_parms": 37,
+          "K4_label_vs_parmlabels": 44,
+          "K5_label_vs_tuplelabels": 44,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/muscleflex-",
+        "status": "NOT_IN_RUNTIME",
+        "documented_params": 33
+      },
+      {
+        "node": "sop/pointcapturecore",
+        "status": "OK",
+        "live_type": "pointcapturecore",
+        "documented_params": 0,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 11,
+        "live_tuples": 11,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/inflate",
+        "status": "OK",
+        "live_type": "inflate",
+        "documented_params": 10,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 16,
+        "live_tuples": 16,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/dembones_skinningconverter",
+        "status": "NOT_IN_RUNTIME",
+        "documented_params": 18
+      },
+      {
+        "node": "sop/crowdmotionpathevaluate",
+        "status": "OK",
+        "live_type": "crowdmotionpathevaluate",
+        "documented_params": 1,
+        "documented_with_id": 1,
+        "documented_with_channels": 0,
+        "live_parms": 1,
+        "live_tuples": 1,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/matchaxis",
+        "status": "OK",
+        "live_type": "matchaxis",
+        "documented_params": 3,
+        "documented_with_id": 2,
+        "documented_with_channels": 0,
+        "live_parms": 7,
+        "live_tuples": 3,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/rop_gltf-",
+        "status": "NOT_IN_RUNTIME",
+        "documented_params": 0
+      },
+      {
+        "node": "sop/intersectionstitch",
+        "status": "OK",
+        "live_type": "intersectionstitch",
+        "documented_params": 4,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 10,
+        "live_tuples": 10,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/uvpelt-",
+        "status": "NOT_IN_RUNTIME",
+        "documented_params": 16
+      },
+      {
+        "node": "sop/vellumrefframe",
+        "status": "OK",
+        "live_type": "vellumrefframe",
+        "documented_params": 12,
+        "documented_with_id": 12,
+        "documented_with_channels": 0,
+        "live_parms": 15,
+        "live_tuples": 15,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/volumebound",
+        "status": "OK",
+        "live_type": "volumebound",
+        "documented_params": 4,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 6,
+        "live_tuples": 4,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/object_merge",
+        "status": "OK",
+        "live_type": "object_merge",
+        "documented_params": 21,
+        "documented_with_id": 2,
+        "documented_with_channels": 0,
+        "live_parms": 21,
+        "live_tuples": 22,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/kinefx--smoothmotioncore",
+        "status": "OK",
+        "live_type": "kinefx::smoothmotioncore",
+        "documented_params": 0,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 16,
+        "live_tuples": 15,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/ml_examplepartition",
+        "status": "OK",
+        "live_type": "ml_examplepartition",
+        "documented_params": 1,
+        "documented_with_id": 1,
+        "documented_with_channels": 0,
+        "live_parms": 1,
+        "live_tuples": 1,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 1,
+          "K2_id_vs_tuples": 1,
+          "K3_idstrip_vs_parms": 1,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "sop/volumenoisefog",
+        "status": "OK",
+        "live_type": "volumenoisefog",
+        "documented_params": 23,
+        "documented_with_id": 23,
+        "documented_with_channels": 0,
+        "live_parms": 95,
+        "live_tuples": 87,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 20,
+          "K2_id_vs_tuples": 20,
+          "K3_idstrip_vs_parms": 20,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 23,
+          "K2_id_vs_tuples": 23,
+          "K3_idstrip_vs_parms": 23,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/ifdarchive",
+        "status": "OK",
+        "live_type": "ifdarchive",
+        "documented_params": 16,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 33,
+        "live_tuples": 31,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/flipbook",
+        "status": "OK",
+        "live_type": "flipbook",
+        "documented_params": 5,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 214,
+        "live_tuples": 185,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/ifd",
+        "status": "OK",
+        "live_type": "ifd",
+        "documented_params": 28,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 191,
+        "live_tuples": 189,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 24,
+          "K5_label_vs_tuplelabels": 24,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 28,
+          "K5_label_vs_tuplelabels": 28,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/agent",
+        "status": "OK",
+        "live_type": "agent",
+        "documented_params": 13,
+        "documented_with_id": 7,
+        "documented_with_channels": 0,
+        "live_parms": 61,
+        "live_tuples": 66,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/haircardtex",
+        "status": "OK",
+        "live_type": "haircardtex",
+        "documented_params": 16,
+        "documented_with_id": 15,
+        "documented_with_channels": 0,
+        "live_parms": 29,
+        "live_tuples": 27,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 13,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 13,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 16,
+          "K5_label_vs_tuplelabels": 16,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/ribarchive",
+        "status": "OK",
+        "live_type": "ribarchive",
+        "documented_params": 17,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 35,
+        "live_tuples": 33,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/netbarrier",
+        "status": "OK",
+        "live_type": "netbarrier",
+        "documented_params": 7,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 28,
+        "live_tuples": 26,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/hq_render",
+        "status": "OK",
+        "live_type": "hq_render",
+        "documented_params": 65,
+        "documented_with_id": 2,
+        "documented_with_channels": 0,
+        "live_parms": 112,
+        "live_tuples": 109,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 61,
+          "K5_label_vs_tuplelabels": 61,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 65,
+          "K5_label_vs_tuplelabels": 65,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/hq_common",
+        "status": "NOT_IN_RUNTIME",
+        "documented_params": 0
+      },
+      {
+        "node": "out/filmboxfbx",
+        "status": "OK",
+        "live_type": "filmboxfbx",
+        "documented_params": 23,
+        "documented_with_id": 14,
+        "documented_with_channels": 0,
+        "live_parms": 46,
+        "live_tuples": 44,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 12,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 20,
+          "K5_label_vs_tuplelabels": 20,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 23,
+          "K5_label_vs_tuplelabels": 23,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/shell",
+        "status": "OK",
+        "live_type": "shell",
+        "documented_params": 2,
+        "documented_with_id": 0,
+        "documented_with_channels": 2,
+        "live_parms": 23,
+        "live_tuples": 21,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 1,
+          "K5_label_vs_tuplelabels": 1,
+          "K6_channels_vs_parms": 2
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 2
+        }
+      },
+      {
+        "node": "out/wren",
+        "status": "OK",
+        "live_type": "wren",
+        "documented_params": 21,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 57,
+        "live_tuples": 53,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 21,
+          "K5_label_vs_tuplelabels": 21,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/prepost",
+        "status": "OK",
+        "live_type": "prepost",
+        "documented_params": 6,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 6,
+        "live_tuples": 6,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/usdzip",
+        "status": "OK",
+        "live_type": "usdzip",
+        "documented_params": 6,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 7,
+        "live_tuples": 7,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/image3d",
+        "status": "OK",
+        "live_type": "image3d",
+        "documented_params": 15,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 32,
+        "live_tuples": 24,
+        "runtime_deprecated": true,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/standard",
+        "status": "NOT_IN_RUNTIME",
+        "documented_params": 0
+      },
+      {
+        "node": "out/baketexture",
+        "status": "OK",
+        "live_type": "baketexture",
+        "documented_params": 6,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 164,
+        "live_tuples": 161,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/karma",
+        "status": "OK",
+        "live_type": "karma",
+        "documented_params": 0,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 405,
+        "live_tuples": 426,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/rib",
+        "status": "OK",
+        "live_type": "rib",
+        "documented_params": 37,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 115,
+        "live_tuples": 106,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 33,
+          "K5_label_vs_tuplelabels": 33,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 37,
+          "K5_label_vs_tuplelabels": 37,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/bake_animation",
+        "status": "OK",
+        "live_type": "bake_animation",
+        "documented_params": 11,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 20,
+        "live_tuples": 19,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/alembic",
+        "status": "OK",
+        "live_type": "alembic",
+        "documented_params": 48,
+        "documented_with_id": 45,
+        "documented_with_channels": 0,
+        "live_parms": 65,
+        "live_tuples": 62,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 44,
+          "K2_id_vs_tuples": 45,
+          "K3_idstrip_vs_parms": 44,
+          "K4_label_vs_parmlabels": 46,
+          "K5_label_vs_tuplelabels": 46,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 45,
+          "K2_id_vs_tuples": 45,
+          "K3_idstrip_vs_parms": 45,
+          "K4_label_vs_parmlabels": 48,
+          "K5_label_vs_tuplelabels": 48,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/merge",
+        "status": "OK",
+        "live_type": "merge",
+        "documented_params": 0,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 2,
+        "live_tuples": 2,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/subnet",
+        "status": "OK",
+        "live_type": "subnet",
+        "documented_params": 0,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 2,
+        "live_tuples": 2,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/mdd",
+        "status": "OK",
+        "live_type": "mdd",
+        "documented_params": 9,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 31,
+        "live_tuples": 27,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "out/geometryraw",
+        "status": "OK",
+        "live_type": "geometryraw",
+        "documented_params": 25,
+        "documented_with_id": 23,
+        "documented_with_channels": 0,
+        "live_parms": 35,
+        "live_tuples": 33,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 12,
+          "K2_id_vs_tuples": 13,
+          "K3_idstrip_vs_parms": 12,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 23,
+          "K2_id_vs_tuples": 23,
+          "K3_idstrip_vs_parms": 23,
+          "K4_label_vs_parmlabels": 25,
+          "K5_label_vs_tuplelabels": 25,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/mapbyrange",
+        "status": "OK",
+        "live_type": "mapbyrange",
+        "documented_params": 4,
+        "documented_with_id": 4,
+        "documented_with_channels": 0,
+        "live_parms": 4,
+        "live_tuples": 4,
+        "runtime_deprecated": true,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/ropopengl",
+        "status": "OK",
+        "live_type": "ropopengl",
+        "documented_params": 0,
+        "documented_with_id": 0,
+        "documented_with_channels": 0,
+        "live_parms": 198,
+        "live_tuples": 190,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 0,
+          "K2_id_vs_tuples": 0,
+          "K3_idstrip_vs_parms": 0,
+          "K4_label_vs_parmlabels": 0,
+          "K5_label_vs_tuplelabels": 0,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/partitionbybounds",
+        "status": "OK",
+        "live_type": "partitionbybounds",
+        "documented_params": 13,
+        "documented_with_id": 13,
+        "documented_with_channels": 0,
+        "live_parms": 41,
+        "live_tuples": 38,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 13,
+          "K2_id_vs_tuples": 13,
+          "K3_idstrip_vs_parms": 13,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/csvoutput",
+        "status": "OK",
+        "live_type": "csvoutput",
+        "documented_params": 11,
+        "documented_with_id": 11,
+        "documented_with_channels": 0,
+        "live_parms": 18,
+        "live_tuples": 19,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/merge",
+        "status": "OK",
+        "live_type": "merge",
+        "documented_params": 3,
+        "documented_with_id": 3,
+        "documented_with_channels": 0,
+        "live_parms": 3,
+        "live_tuples": 4,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 3,
+          "K5_label_vs_tuplelabels": 3,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/nodepattern",
+        "status": "OK",
+        "live_type": "nodepattern",
+        "documented_params": 10,
+        "documented_with_id": 6,
+        "documented_with_channels": 0,
+        "live_parms": 7,
+        "live_tuples": 8,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/usdimportfiles",
+        "status": "OK",
+        "live_type": "usdimportfiles",
+        "documented_params": 4,
+        "documented_with_id": 4,
+        "documented_with_channels": 0,
+        "live_parms": 11,
+        "live_tuples": 11,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/partitionbyexpression",
+        "status": "OK",
+        "live_type": "partitionbyexpression",
+        "documented_params": 2,
+        "documented_with_id": 2,
+        "documented_with_channels": 0,
+        "live_parms": 25,
+        "live_tuples": 28,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 2,
+          "K2_id_vs_tuples": 2,
+          "K3_idstrip_vs_parms": 2,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/attributefromstring",
+        "status": "OK",
+        "live_type": "attributefromstring",
+        "documented_params": 13,
+        "documented_with_id": 13,
+        "documented_with_channels": 0,
+        "live_parms": 17,
+        "live_tuples": 19,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 13,
+          "K2_id_vs_tuples": 13,
+          "K3_idstrip_vs_parms": 13,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 13,
+          "K2_id_vs_tuples": 13,
+          "K3_idstrip_vs_parms": 13,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/workitemimport",
+        "status": "OK",
+        "live_type": "workitemimport",
+        "documented_params": 17,
+        "documented_with_id": 14,
+        "documented_with_channels": 0,
+        "live_parms": 26,
+        "live_tuples": 28,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/downloadfile",
+        "status": "OK",
+        "live_type": "downloadfile",
+        "documented_params": 5,
+        "documented_with_id": 4,
+        "documented_with_channels": 0,
+        "live_parms": 9,
+        "live_tuples": 9,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 5,
+          "K5_label_vs_tuplelabels": 5,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/attributerename",
+        "status": "OK",
+        "live_type": "attributerename",
+        "documented_params": 6,
+        "documented_with_id": 6,
+        "documented_with_channels": 0,
+        "live_parms": 14,
+        "live_tuples": 15,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 5,
+          "K2_id_vs_tuples": 5,
+          "K3_idstrip_vs_parms": 5,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/xmlinput",
+        "status": "OK",
+        "live_type": "xmlinput",
+        "documented_params": 18,
+        "documented_with_id": 17,
+        "documented_with_channels": 0,
+        "live_parms": 24,
+        "live_tuples": 24,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 17,
+          "K2_id_vs_tuples": 17,
+          "K3_idstrip_vs_parms": 17,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 17,
+          "K2_id_vs_tuples": 17,
+          "K3_idstrip_vs_parms": 17,
+          "K4_label_vs_parmlabels": 18,
+          "K5_label_vs_tuplelabels": 18,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/sort",
+        "status": "OK",
+        "live_type": "sort",
+        "documented_params": 7,
+        "documented_with_id": 7,
+        "documented_with_channels": 0,
+        "live_parms": 4,
+        "live_tuples": 5,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 4,
+          "K2_id_vs_tuples": 4,
+          "K3_idstrip_vs_parms": 4,
+          "K4_label_vs_parmlabels": 4,
+          "K5_label_vs_tuplelabels": 4,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 7,
+          "K5_label_vs_tuplelabels": 7,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/attributestringedit",
+        "status": "OK",
+        "live_type": "attributestringedit",
+        "documented_params": 8,
+        "documented_with_id": 7,
+        "documented_with_channels": 0,
+        "live_parms": 11,
+        "live_tuples": 11,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 3,
+          "K2_id_vs_tuples": 3,
+          "K3_idstrip_vs_parms": 3,
+          "K4_label_vs_parmlabels": 2,
+          "K5_label_vs_tuplelabels": 2,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 7,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 7,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/roptop_common",
+        "status": "NOT_IN_RUNTIME",
+        "documented_params": 0
+      },
+      {
+        "node": "top/attributeclassify",
+        "status": "OK",
+        "live_type": "attributeclassify",
+        "documented_params": 12,
+        "documented_with_id": 11,
+        "documented_with_channels": 0,
+        "live_parms": 15,
+        "live_tuples": 15,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 11,
+          "K5_label_vs_tuplelabels": 11,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 11,
+          "K2_id_vs_tuples": 11,
+          "K3_idstrip_vs_parms": 11,
+          "K4_label_vs_parmlabels": 12,
+          "K5_label_vs_tuplelabels": 12,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/filerename",
+        "status": "OK",
+        "live_type": "filerename",
+        "documented_params": 6,
+        "documented_with_id": 6,
+        "documented_with_channels": 0,
+        "live_parms": 21,
+        "live_tuples": 23,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 6,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/filecopy",
+        "status": "OK",
+        "live_type": "filecopy",
+        "documented_params": 8,
+        "documented_with_id": 8,
+        "documented_with_channels": 0,
+        "live_parms": 24,
+        "live_tuples": 26,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 8,
+          "K5_label_vs_tuplelabels": 8,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/attributearray",
+        "status": "OK",
+        "live_type": "attributearray",
+        "documented_params": 17,
+        "documented_with_id": 17,
+        "documented_with_channels": 0,
+        "live_parms": 24,
+        "live_tuples": 26,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 17,
+          "K2_id_vs_tuples": 17,
+          "K3_idstrip_vs_parms": 17,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 17,
+          "K2_id_vs_tuples": 17,
+          "K3_idstrip_vs_parms": 17,
+          "K4_label_vs_parmlabels": 17,
+          "K5_label_vs_tuplelabels": 17,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/filterbyrange",
+        "status": "OK",
+        "live_type": "filterbyrange",
+        "documented_params": 10,
+        "documented_with_id": 9,
+        "documented_with_channels": 0,
+        "live_parms": 14,
+        "live_tuples": 14,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 6,
+          "K2_id_vs_tuples": 7,
+          "K3_idstrip_vs_parms": 6,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 9,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/filterbyexpression",
+        "status": "OK",
+        "live_type": "filterbyexpression",
+        "documented_params": 10,
+        "documented_with_id": 10,
+        "documented_with_channels": 0,
+        "live_parms": 10,
+        "live_tuples": 11,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 9,
+          "K2_id_vs_tuples": 9,
+          "K3_idstrip_vs_parms": 9,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 10,
+          "K2_id_vs_tuples": 10,
+          "K3_idstrip_vs_parms": 10,
+          "K4_label_vs_parmlabels": 10,
+          "K5_label_vs_tuplelabels": 10,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/sendemail",
+        "status": "OK",
+        "live_type": "sendemail",
+        "documented_params": 15,
+        "documented_with_id": 15,
+        "documented_with_channels": 0,
+        "live_parms": 25,
+        "live_tuples": 25,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 14,
+          "K2_id_vs_tuples": 14,
+          "K3_idstrip_vs_parms": 14,
+          "K4_label_vs_parmlabels": 14,
+          "K5_label_vs_tuplelabels": 14,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 15,
+          "K2_id_vs_tuples": 15,
+          "K3_idstrip_vs_parms": 15,
+          "K4_label_vs_parmlabels": 15,
+          "K5_label_vs_tuplelabels": 15,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/filecompress",
+        "status": "OK",
+        "live_type": "filecompress",
+        "documented_params": 9,
+        "documented_with_id": 8,
+        "documented_with_channels": 0,
+        "live_parms": 27,
+        "live_tuples": 28,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 6,
+          "K5_label_vs_tuplelabels": 6,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 8,
+          "K2_id_vs_tuples": 8,
+          "K3_idstrip_vs_parms": 8,
+          "K4_label_vs_parmlabels": 9,
+          "K5_label_vs_tuplelabels": 9,
+          "K6_channels_vs_parms": 0
+        }
+      },
+      {
+        "node": "top/jsonoutput",
+        "status": "OK",
+        "live_type": "jsonoutput",
+        "documented_params": 13,
+        "documented_with_id": 13,
+        "documented_with_channels": 0,
+        "live_parms": 17,
+        "live_tuples": 17,
+        "runtime_deprecated": false,
+        "hits": {
+          "K1_id_vs_parms": 13,
+          "K2_id_vs_tuples": 13,
+          "K3_idstrip_vs_parms": 13,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        },
+        "denom": {
+          "K1_id_vs_parms": 13,
+          "K2_id_vs_tuples": 13,
+          "K3_idstrip_vs_parms": 13,
+          "K4_label_vs_parmlabels": 13,
+          "K5_label_vs_tuplelabels": 13,
+          "K6_channels_vs_parms": 0
+        }
+      }
+    ]
+  }
+}

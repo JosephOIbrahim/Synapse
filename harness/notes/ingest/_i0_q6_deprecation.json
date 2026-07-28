@@ -1,0 +1,1497 @@
+{
+  "schema": "i0-q6/v1",
+  "build": "22.0.368",
+  "runtime": "22.0.368",
+  "truth_tier": "VERIFIED-RUNTIME (runtime axis) + VERIFIED-STATIC (doc axis)",
+  "producer": "harness/notes/ingest/_i0_q6_deprecation.py",
+  "doc_signal_definition": {
+    "strong": [
+      "#status: deprecated",
+      ":include /composite/_old_cops_deprecated:",
+      ":warning:Deprecated"
+    ],
+    "weak": "prose mention of deprecat|obsolete \u2014 reported, never counted as strong",
+    "why_tiered": "H7-F12: lop/reference.txt's '($IIDX is deprecated)' is about an expression variable; counting it flags a node SYNAPSE emits 78x"
+  },
+  "controls": [
+    {
+      "control": "C1 banner fires on cop2/blur",
+      "got": [
+        "include_banner"
+      ],
+      "want": [
+        "include_banner"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C2 lop/karma in runtime",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C2 lop/karma runtime-deprecated",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": "R72/H7-F2: the doc never says so"
+    },
+    {
+      "control": "C2 lop/karma doc STRONG-silent",
+      "got": [],
+      "want": [],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C3 cop/chromakey doc-clean",
+      "got": [],
+      "want": [],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C3 cop/chromakey runtime-clean",
+      "got": false,
+      "want": false,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C4 lop/reference is WEAK-only, not STRONG",
+      "got": [
+        [],
+        true
+      ],
+      "want": [
+        [],
+        true
+      ],
+      "pass": true,
+      "note": "H7-F12: '($IIDX is deprecated)' is about a variable, not the node"
+    },
+    {
+      "control": "C5 status_header detector fires",
+      "got": [
+        "status_header"
+      ],
+      "want": [
+        "status_header"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C5 warning detector fires",
+      "got": [
+        "warning_block"
+      ],
+      "want": [
+        "warning_block"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C5 clean text yields nothing",
+      "got": [],
+      "want": [],
+      "pass": true,
+      "note": ""
+    }
+  ],
+  "controls_passed": 10,
+  "controls_total": 10,
+  "nodes_scanned": 1960,
+  "pages_typed_node_absent_from_runtime": 104,
+  "counts": {
+    "both": 7,
+    "doc_says_runtime_does_not": 144,
+    "runtime_says_doc_does_not": 51,
+    "neither": 1758,
+    "union": 202,
+    "neither_but_weak_prose_mention": 32
+  },
+  "per_context": {
+    "cop": {
+      "scanned": 363,
+      "both": 0,
+      "doc_only": 0,
+      "runtime_only": 0,
+      "neither": 363,
+      "not_in_runtime": 8,
+      "weak_only": 0
+    },
+    "lop": {
+      "scanned": 180,
+      "both": 0,
+      "doc_only": 2,
+      "runtime_only": 2,
+      "neither": 176,
+      "not_in_runtime": 0,
+      "weak_only": 10
+    },
+    "sop": {
+      "scanned": 1079,
+      "both": 6,
+      "doc_only": 4,
+      "runtime_only": 40,
+      "neither": 1029,
+      "not_in_runtime": 92,
+      "weak_only": 16
+    },
+    "out": {
+      "scanned": 51,
+      "both": 0,
+      "doc_only": 0,
+      "runtime_only": 3,
+      "neither": 48,
+      "not_in_runtime": 2,
+      "weak_only": 0
+    },
+    "top": {
+      "scanned": 148,
+      "both": 0,
+      "doc_only": 0,
+      "runtime_only": 6,
+      "neither": 142,
+      "not_in_runtime": 0,
+      "weak_only": 6
+    },
+    "cop2": {
+      "scanned": 139,
+      "both": 1,
+      "doc_only": 138,
+      "runtime_only": 0,
+      "neither": 0,
+      "not_in_runtime": 2,
+      "weak_only": 0
+    }
+  },
+  "doc_says_runtime_does_not": [
+    {
+      "node": "lop/karmaocean",
+      "markers": [
+        "status_header",
+        "warning_block"
+      ]
+    },
+    {
+      "node": "lop/karmaprocedural",
+      "markers": [
+        "status_header",
+        "warning_block"
+      ]
+    },
+    {
+      "node": "sop/bonesolidify",
+      "markers": [
+        "warning_block"
+      ]
+    },
+    {
+      "node": "sop/cloud",
+      "markers": [
+        "status_header",
+        "warning_block"
+      ]
+    },
+    {
+      "node": "sop/cop2net",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "sop/knife",
+      "markers": [
+        "status_header",
+        "warning_block"
+      ]
+    },
+    {
+      "node": "cop2/add",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/aidenoise",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/anaglyph",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/atop",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/average",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/blend",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/blur",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/border",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/bright",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/bump",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/channelcopy",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/chromakey",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/color",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/colorcorrect",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/colorcurve",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/colormap",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/colorreplace",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/colorwheel",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/composite",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/contrast",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/convert",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/convolve",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/cornerramp",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/crop",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/cryptomatte",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/defocus",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/deform",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/degrain",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/deinterlace",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/delete",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/denoise",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/depthdarken",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/diff",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/dilateerode",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/dof",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/dropshadow",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/dsmflatten",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/edge",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/edgeblur",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/emboss",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/env",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/equalize",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/erftable",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/expand",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/extend",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/extract",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/extrapolateboundaries",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/fetch",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/fieldmerge",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/fieldsplit",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/fieldswap",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/file",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/flip",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/fog",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/font",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/frontface",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/function",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/gamma",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/geokey",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/geometry",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/gradient",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/grain",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/hsv",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/huecurve",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/illpixel",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/inside",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/interleave",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/invert",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/layer",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/levels",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/light",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/limit",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/lookup",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/loopdata",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/lumakey",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/lumamatte",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/mask",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/max",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/median",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/merge",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/metadata",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/min",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/mono",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/mosaic",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/multiply",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/noise",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/null",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/outside",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/over",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/pin",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/pixel",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/premultiply",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/pulldown",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/pushup",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/quantize",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/radialblur",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/ramp",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/reference",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/rename",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/render",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/reverse",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/rop_comp",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/rotoshape",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/scale",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/screen",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/sequence",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/shape",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/sharpen",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/shift",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/shuffle",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/skyenvmap",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/snip",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/sopimport",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/streak",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/subnet",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/subtract",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/switch",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/switchalpha",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/tile",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/tima",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/timefilter",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/timescale",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/trim",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/under",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/unpin",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/uvmap",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/vector",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/velblur",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/vexfilter",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/vexgenerate",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/vopcop2filter",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/vopcop2gen",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/warp",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/window",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/wipe",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/xform",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/xor",
+      "markers": [
+        "include_banner"
+      ]
+    },
+    {
+      "node": "cop2/zcomp",
+      "markers": [
+        "include_banner"
+      ]
+    }
+  ],
+  "runtime_says_doc_does_not": [
+    {
+      "node": "lop/karma",
+      "runtime": {
+        "reason": "Replaced by Karma Render Settings and USD Render.",
+        "version": "21.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "lop/karmarenderproperties",
+      "runtime": {
+        "reason": "Use karmarendersettings instead",
+        "version": "21.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/apex--rigscriptcomponent",
+      "runtime": {
+        "reason": "Use Autorig Component instead",
+        "version": "21.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/break",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop booleanfracture>",
+        "version": "17.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/bridge",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop polybridge>",
+        "version": "15.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/capturemeta",
+      "runtime": {
+        "reason": "",
+        "version": "15.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/cookie",
+      "runtime": {
+        "reason": "boolean",
+        "version": "16.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/copy",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop copytopoints>",
+        "version": "19.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/deform",
+      "runtime": {
+        "reason": "Replaced by new Bone Deform (bonedeform) SOP",
+        "version": "17.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/deformmeta",
+      "runtime": {
+        "reason": "",
+        "version": "15.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/delete_overlapping_polygons",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop polydoctor>",
+        "version": "17.0"
+      },
+      "doc_weak_mention": true
+    },
+    {
+      "node": "sop/dopio",
+      "runtime": {
+        "reason": "Use DOP Import Field and File Cache instead",
+        "version": "19.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/duplicate",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop copyxform>",
+        "version": "16.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/falloff",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop distancealonggeometry>",
+        "version": "18.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/fasciasolidify",
+      "runtime": {
+        "reason": "",
+        "version": "18.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/finalizewaves",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop oceanevaluate>",
+        "version": "16.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/group",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop groupcreate>",
+        "version": "16.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/iso",
+      "runtime": {
+        "reason": "Use Volume and Volume Wrangle instead",
+        "version": "19.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/kinefx--ragdollconstraints",
+      "runtime": {
+        "reason": "Replaced by Ragdoll Solver 2.0",
+        "version": "20.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/loadslices",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop filemerge>",
+        "version": "12.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/muscledeform",
+      "runtime": {
+        "reason": "",
+        "version": "19.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/paint",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop attribpaint>",
+        "version": "18.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/particle",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop vellumsolver>",
+        "version": "17.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/partition",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop groupsfromname>",
+        "version": "19.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/point",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop attribexpression>",
+        "version": "18.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/pointmap",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop scatter>",
+        "version": "16.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/polycap",
+      "runtime": {
+        "reason": "Use PolyFill instead",
+        "version": "16.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/polyknit",
+      "runtime": {
+        "reason": "Use PolyDraw instead",
+        "version": "16.0"
+      },
+      "doc_weak_mention": true
+    },
+    {
+      "node": "sop/polystitch",
+      "runtime": {
+        "reason": "Use Fuse instead",
+        "version": "18.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/primitivesplit",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop splitpoints>",
+        "version": "18.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/spring",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop vellumsolver>",
+        "version": "17.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/sssscatter",
+      "runtime": {
+        "new_type": "<hou.OpNodeType for Vop physicalsss>",
+        "version": "12.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/strokecache",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop stash>",
+        "version": "17.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/timewarp",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop retime>",
+        "version": "17.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/tissuesolver",
+      "runtime": {
+        "reason": "",
+        "version": "19.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/tristrip",
+      "runtime": {
+        "reason": "Tristrip primitives are no longer supported",
+        "version": "15.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/twist",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop bend>",
+        "version": "17.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/vertex",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop attribexpression>",
+        "version": "20.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/vertexsplit",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop splitpoints>",
+        "version": "18.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/vex",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop attribvop>",
+        "version": "17.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/vopsop",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop attribvop>",
+        "version": "14.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "sop/waveform",
+      "runtime": {
+        "new_type": "<hou.SopNodeType for Sop oceanwaves>",
+        "version": "16.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "out/geo2i3d",
+      "runtime": {
+        "reason": "I3D is no longer supported",
+        "version": "14.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "out/image3d",
+      "runtime": {
+        "reason": "I3D is no longer supported",
+        "version": "15.0"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "out/opengl",
+      "runtime": {
+        "reason": "Replaced by the Flipbook ROP.",
+        "version": "22.0"
+      },
+      "doc_weak_mention": true
+    },
+    {
+      "node": "top/errorhandler",
+      "runtime": {
+        "reason": "Replaced by the new Filter by State (filterbystate) TOP",
+        "version": "18.5"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "top/mapall",
+      "runtime": {
+        "reason": "Use partitioner nodes instead of mappers",
+        "version": "18.6"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "top/mapbyexpression",
+      "runtime": {
+        "reason": "Use partitioner nodes instead of mappers",
+        "version": "18.6"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "top/mapbyindex",
+      "runtime": {
+        "reason": "Use partitioner nodes instead of mappers",
+        "version": "18.6"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "top/mapbyrange",
+      "runtime": {
+        "reason": "Use partitioner nodes instead of mappers",
+        "version": "18.6"
+      },
+      "doc_weak_mention": false
+    },
+    {
+      "node": "top/pythonmapper",
+      "runtime": {
+        "reason": "Use partitioner nodes instead of mappers",
+        "version": "18.6"
+      },
+      "doc_weak_mention": false
+    }
+  ],
+  "both": [
+    "sop/deformmuscle",
+    "sop/kinefx--attachcontrolgeo",
+    "sop/muscle",
+    "sop/musclecapture",
+    "sop/pointwrangle",
+    "sop/sky",
+    "cop2/loop"
+  ],
+  "weak_only_examples": [
+    "lop/addvariant",
+    "lop/copyproperty",
+    "lop/duplicate",
+    "lop/editproperties",
+    "lop/graftstages",
+    "lop/layerreplace",
+    "lop/reference",
+    "lop/rendergeometrysettings",
+    "lop/rendersettings",
+    "lop/switch",
+    "sop/apex--autorigbuilder",
+    "sop/apex--autorigcomponent-2.0",
+    "sop/apex--autorigcomponent",
+    "sop/bakeode",
+    "sop/capturecorrect",
+    "sop/crowdsource",
+    "sop/edit",
+    "sop/lidarimport",
+    "sop/posespacedeform",
+    "sop/posespacedeformcombine",
+    "sop/posespaceedit",
+    "sop/posespaceeditconfigure",
+    "sop/rbdconfigure",
+    "sop/softpeak",
+    "sop/softxform",
+    "sop/tetrahedralize",
+    "top/houdiniserver",
+    "top/mayaserver",
+    "top/ml_trainstyletransfer",
+    "top/nukeserver",
+    "top/pythonserver",
+    "top/shotgunserver"
+  ]
+}

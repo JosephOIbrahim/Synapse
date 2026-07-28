@@ -1,0 +1,546 @@
+{
+  "schema": "i0-calibration/v1",
+  "build": "22.0.368",
+  "archive": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\nodes.zip",
+  "passed": 61,
+  "total": 61,
+  "controls": [
+    {
+      "control": "P1 chromakey.title",
+      "got": "Chroma Key",
+      "want": "Chroma Key",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P1 chromakey.context_directive",
+      "got": "cop",
+      "want": "cop",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P1 chromakey.internal",
+      "got": "chromakey",
+      "want": "chromakey",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P1 chromakey.summary",
+      "got": "Keys an input based on hue, saturation, and luminance ranges.",
+      "want": "Keys an input based on hue, saturation, and luminance ranges.",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P1 chromakey.header_order",
+      "got": "directives-first",
+      "want": "directives-first",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P1 chromakey.n_params",
+      "got": 15,
+      "want": 15,
+      "pass": true,
+      "note": "hand-counted"
+    },
+    {
+      "control": "P1 chromakey.n_params_with_id",
+      "got": 15,
+      "want": 15,
+      "pass": true,
+      "note": "hand-counted"
+    },
+    {
+      "control": "P1 chromakey.ids",
+      "got": [
+        "signature",
+        "method",
+        "invert",
+        "huecircle",
+        "lumrange",
+        "screencolor",
+        "threshold",
+        "width",
+        "huerolloff",
+        "satrolloff",
+        "lumrolloff",
+        "interpolation",
+        "preview",
+        "previewcolor",
+        "premult"
+      ],
+      "want": [
+        "signature",
+        "method",
+        "invert",
+        "huecircle",
+        "lumrange",
+        "screencolor",
+        "threshold",
+        "width",
+        "huerolloff",
+        "satrolloff",
+        "lumrolloff",
+        "interpolation",
+        "preview",
+        "previewcolor",
+        "premult"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P1 chromakey.headings",
+      "got": [
+        "Key",
+        "Rolloff",
+        "Visualize"
+      ],
+      "want": [
+        "Key",
+        "Rolloff",
+        "Visualize"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P1 chromakey.at_sections",
+      "got": [
+        "parameters",
+        "inputs",
+        "outputs"
+      ],
+      "want": [
+        "parameters",
+        "inputs",
+        "outputs"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P1 chromakey.n_includes",
+      "got": 0,
+      "want": 0,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P1 chromakey.TIP_not_a_param",
+      "got": false,
+      "want": false,
+      "pass": true,
+      "note": "TIP: is indented under a param; counting it would be the naive bug"
+    },
+    {
+      "control": "P2 blur.title",
+      "got": "Blur",
+      "want": "Blur",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P2 blur.header_order",
+      "got": "directives-first",
+      "want": "directives-first",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P2 blur.n_params",
+      "got": 6,
+      "want": 6,
+      "pass": true,
+      "note": "hand-counted, indent 8"
+    },
+    {
+      "control": "P2 blur.labels",
+      "got": [
+        "X/Y Filter",
+        "Size",
+        "Y Size",
+        "Units",
+        "Per-Pixel Blur",
+        "Fast Blur"
+      ],
+      "want": [
+        "X/Y Filter",
+        "Size",
+        "Y Size",
+        "Units",
+        "Per-Pixel Blur",
+        "Fast Blur"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P2 blur.n_params_with_id",
+      "got": 0,
+      "want": 0,
+      "pass": true,
+      "note": "H9-F3: cop2 rarely ids"
+    },
+    {
+      "control": "P2 blur.menu_entries_excluded",
+      "got": [
+        "Pixels",
+        "UV Coords"
+      ],
+      "want": [
+        "Pixels",
+        "UV Coords"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P2 blur.n_includes",
+      "got": 6,
+      "want": 6,
+      "pass": true,
+      "note": "hand-counted"
+    },
+    {
+      "control": "P2 blur.include_targets",
+      "got": [
+        "/composite/_old_cops_deprecated",
+        "pixelparms#coppixeldescription/",
+        "maskparms#copmaskdescription/",
+        "pixelparms#pixelparms/",
+        "maskparms#maskparms/",
+        "localvars"
+      ],
+      "want": [
+        "/composite/_old_cops_deprecated",
+        "pixelparms#coppixeldescription/",
+        "maskparms#copmaskdescription/",
+        "pixelparms#pixelparms/",
+        "maskparms#maskparms/",
+        "localvars"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P2 blur.deprecation_banner_seen",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": "H7-F4: H5 missed this and read the whole subsystem as current"
+    },
+    {
+      "control": "P3 outkarma.header_order",
+      "got": "title-first",
+      "want": "title-first",
+      "pass": true,
+      "note": "lop/ and out/ invert the header order used by cop/ and top/"
+    },
+    {
+      "control": "P3 outkarma.n_params",
+      "got": 0,
+      "want": 0,
+      "pass": true,
+      "note": "exists but grounds nothing"
+    },
+    {
+      "control": "P3 outkarma.has_summary",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P3 outkarma.at_sections",
+      "got": [
+        "related"
+      ],
+      "want": [
+        "related"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P4 ropfetch.has_top_attributes",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P4 ropfetch.attr_markers_parsed",
+      "got": [
+        "`hip`",
+        "`outputparm`",
+        "`executeparm`",
+        "`rop`"
+      ],
+      "want": [
+        "`hip`",
+        "`outputparm`",
+        "`executeparm`",
+        "`rop`"
+      ],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P5 xform.Combine_found",
+      "got": 1,
+      "want": 1,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P5 xform.Combine_id_not_vimeo",
+      "got": "combine",
+      "want": "combine",
+      "pass": true,
+      "note": "would be '406959576' if a colon-directive did not close the item scope"
+    },
+    {
+      "control": "P5 xform.no_numeric_ids",
+      "got": [],
+      "want": [],
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P5 xform.vimeo_recorded_as_directive",
+      "got": 4,
+      "want": 4,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P6 edgeblur.BlurSize_found",
+      "got": 1,
+      "want": 1,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P6 edgeblur.BlurSize_has_no_#id",
+      "got": null,
+      "want": null,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P6 edgeblur.BlurSize_channels",
+      "got": "/blursize",
+      "want": "/blursize",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P6 edgeblur.internal_names_recovered",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": "0 under an #id-only reader"
+    },
+    {
+      "control": "P7 usd_rop.:import_captured",
+      "got": [
+        [
+          "/nodes/out/usd#parameters",
+          "import"
+        ]
+      ],
+      "want": [
+        [
+          "/nodes/out/usd#parameters",
+          "import"
+        ]
+      ],
+      "pass": true,
+      "note": ":import pulls an ENTIRE @parameters section from another context"
+    },
+    {
+      "control": "P7 cam.:includeprop_captured",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P8 adjacency.Signature_found",
+      "got": 1,
+      "want": 1,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P8 adjacency.Signature_contentfrom",
+      "got": "/nodes/cop/distort#signature",
+      "want": "/nodes/cop/distort#signature",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P8 adjacency.Signature_no_inline_desc",
+      "got": 0,
+      "want": 0,
+      "pass": true,
+      "note": "described BY REFERENCE only"
+    },
+    {
+      "control": "P9 banner_target_absent_from_nodes.zip",
+      "got": false,
+      "want": false,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P9 banner_target_present_in_composite.zip",
+      "got": [
+        "_old_cops_deprecated.txt"
+      ],
+      "want": [
+        "_old_cops_deprecated.txt"
+      ],
+      "pass": true,
+      "note": "H7-F4: resolving it requires globbing every help zip, not just nodes.zip"
+    },
+    {
+      "control": "P9 banner_body_says_deprecated",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P10 bom_page_count",
+      "got": 58,
+      "want": 58,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P10 emboss_is_a_bom_page",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "P10 emboss_type_directive_recovered",
+      "got": "node",
+      "want": "node",
+      "pass": true,
+      "note": "reads as a non-node page under plain utf-8 (H9 helpdoc.py:118)"
+    },
+    {
+      "control": "P10 plain_utf8_LOSES_it",
+      "got": null,
+      "want": null,
+      "pass": true,
+      "note": "the negative half: proves the control is measuring the BOM"
+    },
+    {
+      "control": "N1 strip_all_#id -> ids collapse",
+      "got": 0,
+      "want": 0,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "N1 strip_all_#id -> params HOLD",
+      "got": 15,
+      "want": 15,
+      "pass": true,
+      "note": "labels survive id removal: proves the two are measured independently"
+    },
+    {
+      "control": "N2 kill_@parameters -> params collapse",
+      "got": 0,
+      "want": 0,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "N3 strip_includes -> includes collapse",
+      "got": 0,
+      "want": 0,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "N4 strip_summary -> summary collapses",
+      "got": null,
+      "want": null,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "N5 dedent_cop2 -> params HOLD",
+      "got": 6,
+      "want": 6,
+      "pass": true,
+      "note": "reader is indentation-relative, not column-locked"
+    },
+    {
+      "control": "B1 blind_reader sees chromakey",
+      "got": 15,
+      "want": 15,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "B1 blind_reader BLIND to cop2/blur",
+      "got": 0,
+      "want": 0,
+      "pass": true,
+      "note": "THE failure this calibration exists to exclude"
+    },
+    {
+      "control": "B1 our_reader sees cop2/blur",
+      "got": 6,
+      "want": 6,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "B2 chromakey.eol",
+      "got": "CRLF",
+      "want": "CRLF",
+      "pass": true,
+      "note": "17.9% of cop/ is CRLF"
+    },
+    {
+      "control": "B2 blur.eol",
+      "got": "LF",
+      "want": "LF",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "B2 crlf_blind_reader BLIND to chromakey",
+      "got": 0,
+      "want": 0,
+      "pass": true,
+      "note": "a '$'-anchored reader scores this documented page as ungrounded"
+    },
+    {
+      "control": "B2 crlf_blind_reader is ALIVE on an LF page",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": "isolates CRLF as the cause of its zero, vs. the function being inert"
+    },
+    {
+      "control": "B2 our_reader sees chromakey after fix",
+      "got": 15,
+      "want": 15,
+      "pass": true,
+      "note": ""
+    }
+  ]
+}

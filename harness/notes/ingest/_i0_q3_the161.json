@@ -1,0 +1,61 @@
+{
+  "schema": "i0-q3/v1",
+  "build": "22.0.368",
+  "truth_tier": "VERIFIED-STATIC",
+  "producer": "harness/notes/ingest/_i0_q3_the161.py",
+  "sources": {
+    "S1_shipped": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help\\news.zip!22/copernicus.txt",
+    "S2_browsing_cache": "C:\\Users\\User\\OneDrive\\Documents\\houdini22.0\\config\\Help\\cache\\news\\22\\copernicus.json"
+  },
+  "controls": [
+    {
+      "control": "C1 shipped list non-empty",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C2 known-present name reads PRESENT",
+      "got": true,
+      "want": true,
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C3 fabricated name reads ABSENT",
+      "got": false,
+      "want": false,
+      "pass": true,
+      "note": "without this, 'all present' cannot fail and proves nothing"
+    },
+    {
+      "control": "C4 page really parses as a cop node",
+      "got": "cop",
+      "want": "cop",
+      "pass": true,
+      "note": ""
+    },
+    {
+      "control": "C5 cop page population",
+      "got": 375,
+      "want": 375,
+      "pass": true,
+      "note": ""
+    }
+  ],
+  "controls_passed": 5,
+  "controls_total": 5,
+  "new_cop_nodes_named": 161,
+  "present_in_nodes_zip": 161,
+  "absent_from_nodes_zip": 0,
+  "absent_names": [],
+  "source_cross_check": {
+    "cache_count": 161,
+    "shipped_count": 161,
+    "in_both": 161,
+    "shipped_only": [],
+    "cache_only": []
+  },
+  "cop_pages_in_archive": 375
+}
