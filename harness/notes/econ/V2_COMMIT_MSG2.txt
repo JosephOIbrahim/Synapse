@@ -1,0 +1,46 @@
+fix(econ): V2 D1 - two figures in the report had no producer, and now they cannot
+
+D1. The first committed draft of V2_VERDICT.md published a /stage -> /out swing of
+1,712 where the producer says 1,567, and a schema-to-tone ratio of 1.6x where it is
+1.72x (1.48x lean). Both were written from recall of E0's proxy figures instead of
+read off V2_prompt_delta.json - Law 5 inside the document that cites Law 2, and
+R127's exact shape: a number whose producer I wrote and did not read back.
+
+Corrected against the artifact, and the correction is recorded in a Drift section
+rather than made silently, because the silent version is the defect.
+
+v2_report_verify.py is the structural half. Promising to be more careful is not a
+fix. It declares 26 load-bearing figures with the JSON path that emits each one,
+compares them, and sweeps the measurement section for any number nothing accounts
+for. Citations (R60, E0-F12, face_review.py:56-64) are references, not figures, and
+are excluded - sweeping them would train the next reader to ignore the output.
+The sweep is itself demonstrated failing: it plants an unsourced figure and asserts
+it is caught, then asserts the real section is clean.
+
+v2_voice_probe.py measures the hole the ten rules leave (V2-F9):
+
+    good corpus  8 of 8 accepted     false-positive rate    0%
+    bad corpus   0 of 10 caught      false-negative rate  100%
+
+Zero false positives is the result that matters most - the rules never reject good
+VFX register, including decimals, node paths, units, semicolons and 'e.g.', so they
+never burn a re-ask on a verdict that was already right. But every one of ten
+adversarial verdicts got through, including "Everything went fine with Dark_Glass"
+and the bare token "Dark_Glass". The rules are LEXICAL: they catch banned words,
+sentence breaks, length and markup, not a sentence that is grammatical,
+specific-looking and empty. names_change is satisfied because the token is present,
+not because the sentence is about it.
+
+NOT closed here, deliberately. The brief enumerates the rules and all seven are
+implemented and demonstrated; rules beyond that list, tuned against ten verdicts
+written by one author, would be over-fitted and then cited as coverage. The corpus
+is committed so a later rule has a regression target - it must move 100% down, and
+moving it is how anyone will know it worked. Escalated as V2-F9.
+
+The brief's "a weak model must not be able to produce a weak panel" holds for the
+STRUCTURE and for prose that trips a lexical rule. It does not yet hold for a weak
+sentence that is merely empty: the floor never fires, because nothing failed.
+
+V2 suite unchanged at 139 passed.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>

@@ -1,0 +1,81 @@
+{
+  "schema": "v2_voice_probe/v1",
+  "producer": "harness/notes/econ/v2_voice_probe.py",
+  "rules_under_test": [
+    "not_empty",
+    "one_sentence",
+    "char_ceiling",
+    "outcome_first",
+    "names_change",
+    "no_preamble",
+    "no_hedging",
+    "no_request_echo",
+    "no_decoration",
+    "not_a_question"
+  ],
+  "bad_corpus": 10,
+  "good_corpus": 8,
+  "caught": 0,
+  "false_negatives": 10,
+  "false_negative_rate": 1.0,
+  "false_positives": 0,
+  "false_positive_rate": 0.0,
+  "reading": "A false POSITIVE is the worse error \u2014 it rejects good output and teaches the model to write worse, and it burns a re-ask. A false NEGATIVE lets mediocre register through, which the templated fallback never sees because the sentence passed.",
+  "shape_of_the_gap": "The rules are LEXICAL. They catch banned words, sentence breaks, length and markup. They do not catch a sentence that is grammatical, specific-looking and empty \u2014 'Everything went fine with Dark_Glass' satisfies names_change because the token is present, not because the sentence is about it.",
+  "detail": {
+    "false_negatives": [
+      {
+        "text": "Dark_Glass was assigned to the shader by the agent after a full review of the scene IOR values",
+        "why_bad": "agent-centric, passive, padded",
+        "rules_fired": []
+      },
+      {
+        "text": "The Dark_Glass material has now been successfully applied across the entire stage as requested",
+        "why_bad": "'successfully', 'as requested' \u2014 status theatre",
+        "rules_fired": []
+      },
+      {
+        "text": "Dark_Glass, which is a glass material, was put on the shader and the render was also updated",
+        "why_bad": "two clauses in one sentence, apposition padding",
+        "rules_fired": []
+      },
+      {
+        "text": "Everything went fine with Dark_Glass",
+        "why_bad": "vacuous \u2014 names the change, says nothing",
+        "rules_fired": []
+      },
+      {
+        "text": "Dark_Glass",
+        "why_bad": "a bare noun is not a verdict",
+        "rules_fired": []
+      },
+      {
+        "text": "dark_glass",
+        "why_bad": "a bare lowercase token is not a verdict",
+        "rules_fired": []
+      },
+      {
+        "text": "The operation on /stage/matlib completed",
+        "why_bad": "reports that something ran, not what changed",
+        "rules_fired": []
+      },
+      {
+        "text": "Work on Dark_Glass is now complete",
+        "why_bad": "completion status standing in for an outcome",
+        "rules_fired": []
+      },
+      {
+        "text": "All good on /stage/matlib",
+        "why_bad": "vacuous",
+        "rules_fired": []
+      },
+      {
+        "text": "The Dark_Glass task finished without any issues at all",
+        "why_bad": "padded non-statement",
+        "rules_fired": []
+      }
+    ],
+    "false_positives": [],
+    "caught": []
+  }
+}

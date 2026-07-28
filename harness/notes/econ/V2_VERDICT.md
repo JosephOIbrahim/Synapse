@@ -79,7 +79,7 @@ invariant 1 is a ruling, not a decision this leg may take.**
 | the brief asked for | verdict | evidence |
 |---|---|---|
 | the verdict object as a typed contract, `by` non-nullable **ENFORCED** | **MET** | `test_verdict_without_by_is_a_type_error` + 3 siblings; mutations `none_by`, `anonymous_by` both caught |
-| the voice contract as a VALIDATOR that can fail, **demonstrated failing** (R127) | **MET** | 10/10 rules fire on their own violation and stay silent on a conforming one; `test_every_rule_is_demonstrated_firing` pins the coverage to the rule set |
+| the voice contract as a VALIDATOR that can fail, **demonstrated failing** (R127) | **MET — with a measured hole, see V2-F9** | 10/10 rules fire on their own violation and stay silent on a conforming one; `test_every_rule_is_demonstrated_firing` pins the coverage to the rule set. On an adversarial corpus the rules score **0% false positives and 100% false negatives** |
 | the templated fallback, demonstrated firing after three rejections | **MET** | fires on the 3rd and not the 2nd; a model that recovers on the 3rd keeps its words; degrades rather than smuggling a rejected hedge; empty when nothing structured exists |
 | the invariant-8 suite: same input, ≥2 tiers, byte-identical rendered output | **MET** | 3 tiers, bytes not strings, plus an anti-vacuity control and a demonstrated red |
 | a MEASURED before/after on the system prompt via `count_tokens` | **MET — and it refutes the premise** | calibration PASS against R155's 2,961; net **cost**, not saving. See below |
@@ -122,8 +122,8 @@ the register instruction the structured contract makes unnecessary.
 
 **The intuition was wrong and the measurement said so.** The added cost is not
 relocated register instruction — the rules are 65 tokens. It is JSON Schema
-structure, and **a verbose schema for a seven-field object costs 1.6× the entire
-prose voice guide it replaces.**
+structure, and **a schema for a seven-field object costs 1.72× the entire prose
+voice guide it replaces** (1.48× lean).
 
 ### The net
 
@@ -161,10 +161,13 @@ inferred from code and never observed).
 ### And what it does NOT fix
 
 Removing the tone guide does **not** make the cached span static. `/stage → /obj`
-still swings **1,424 tokens** and `/stage → /out` swings **1,712**, because
-`_solaris_context_block` swaps the guidance literal on navigation (E0-F6). The
-contract addresses the register half of the non-staticness. **The larger half is
-untouched and must not be reported as fixed.**
+still swings **1,424 tokens** and `/stage → /out` swings **1,567**, because
+`_solaris_context_block` swaps the guidance literal on navigation (E0-F6). Both
+figures cross-check against the independently measured whole-prompt counts
+(2,961 − 1,537 = 1,424; 2,961 − 1,394 = 1,567). The contract addresses the
+register half of the non-staticness. **The larger half is untouched — it is more
+than twice the size of the half this leg can reach — and must not be reported as
+fixed.**
 
 ---
 
@@ -237,12 +240,60 @@ tokens**, not a reduction. The voice case for this leg stands entirely on its ow
 merits — tier rotation without voice B is a re-onboarding event — and does not
 need the cache argument. VERIFIED-RUNTIME (`count_tokens`, calibrated).
 
+**V2-F9 · the rules are lexical, and the register failures that matter are not.**
+Producer `v2_voice_probe.py` → `V2_voice_probe.json`, an 18-verdict labelled
+corpus:
+
+    good corpus  8 of 8 accepted     false-positive rate  0%
+    bad corpus   0 of 10 caught      false-negative rate  100%
+
+**Zero false positives is the result that matters most** — the rules never reject
+good VFX register, including decimals, node paths, units (mm, K, fps),
+semicolons and `e.g.`, so they never burn a re-ask on a verdict that was already
+right. But every one of ten adversarial verdicts got through, including
+`"Everything went fine with Dark_Glass"`, `"All good on /stage/matlib"` and the
+bare token `"Dark_Glass"`.
+
+The shape of the gap: the rules catch **banned words, sentence breaks, length and
+markup**. They do not catch a sentence that is grammatical, specific-*looking*
+and empty. `names_change` is satisfied because the token is present, not because
+the sentence is about it.
+
+**This is not closed here, and that is deliberate.** The brief enumerates the
+rules — one sentence, outcome first, names the change, no preamble, no hedging,
+no restating the request, a ceiling — and all seven are implemented and
+demonstrated. Rules beyond that list, tuned against ten verdicts I wrote myself,
+would be over-fitted to a sample of one author and would then be cited as
+coverage. The corpus is committed so a later rule has a regression target: it
+must move 100% down, and moving it is how anyone will know it worked.
+**for_ruling.**
+
+> **What this costs the product, stated plainly.** The brief's *"a weak model
+> must not be able to produce a weak panel"* holds for the **structure** —
+> everything except `verdict` is panel-composed and byte-identical across tiers —
+> and for prose that trips a lexical rule. It does **not** yet hold for a weak
+> sentence that is merely empty. The floor never fires, because nothing failed.
+
 **V2-F8 · `synapse_economist_blueprint.md` is not in the tree.** The brief cites
 §3.1/§3.2/§04/§P7 and invariants numbered 1/6/8; `harness/SYNAPSE_ECONOMIST.md`
 §3 restates six invariants under a **different numbering** (blueprint 6 = harness
 4, blueprint 8 = harness 6, blueprint 1 absent entirely). The load-bearing content
 was inlined in the brief, so this is drift, not a blocker — but no leg after this
 one should cite a blueprint section number as if it could be looked up. **drift.**
+
+---
+
+## Drift
+
+**D1 · two figures in the first committed draft of this document had no
+producer.** `/stage → /out` was published as **1,712** where the artifact says
+**1,567**, and the schema-to-tone ratio as **1.6×** where it is **1.72×** (1.48×
+lean). Both were written from recall of E0's proxy figures rather than read off
+`V2_prompt_delta.json` — **Law 5 in the document that cites Law 2**, and R127's
+exact shape: a number whose producer I wrote and did not read back. Caught by
+cross-checking every figure against its artifact before the receipt; corrected at
+the commit following `a8a773d`. The correction is here rather than silent because
+the silent version is the defect.
 
 ---
 
@@ -253,11 +304,15 @@ one should cite a blueprint section number as if it could be looked up. **drift.
   leg proves the shape, V3 + the panel unfreeze prove the flow.
 - **No model in the loop.** The voice rules were demonstrated against
   hand-written tier-characteristic prose, not against live Haiku/Opus output.
-  `TIER_PROSE` in the invariant-8 suite is a **fixture, not a sample**, and the
-  rules could be over- or under-tuned against real generations.
+  `TIER_PROSE` in the invariant-8 suite and both corpora in `v2_voice_probe.py`
+  are **fixtures, not samples** — written by one author, which is exactly why
+  V2-F9 is reported rather than patched.
+- **The false-negative rate is 100% on the measured corpus** (V2-F9). The rules
+  are lexical; empty-but-grammatical register passes.
 - **`names_change` is lexical.** A verdict that names the change in a synonym is
   rejected. That is deliberate (a synonym is not a name the artist can search
-  for) and it is a false-positive axis nobody has measured on real output.
+  for) and it is a false-positive axis nobody has measured on real output — the
+  8-verdict good corpus found none, which is a floor, not a clearance.
 - **The price figure is DERIVED** on two inputs neither leg verified (above).
 - **`no_request_echo`'s 0.6 ratio has no producer.** It is a chosen threshold, not
   a measured one, and it is the one rule whose constant was not calibrated
