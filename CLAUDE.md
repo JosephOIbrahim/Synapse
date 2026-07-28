@@ -289,79 +289,11 @@ Cross-agent state transfer uses the `AgentHandoff` dataclass (`shared/bridge.py`
 
 ---
 
-## 6. Memory Evolution — Lossless Pokémon Model
+## 6. Memory evolution
 
-Scene memory evolves organically as structured data accumulates:
-
-```
-CHARMANDER: memory.md     — Flat text, no schema overhead. Start here.
-CHARMELEON: memory.usd    — Typed prims + text attributes. Composable.
-CHARIZARD:  memory.usd    — + composition arcs. Cross-scene references.
-```
-
-### Evolution Triggers (Any ONE met → recommend evolution)
-
-| Trigger | Threshold |
-|---|---|
-| structured_data_count | ≥ 5 |
-| asset_references | ≥ 3 |
-| parameter_records | ≥ 5 |
-| wedge_results | ≥ 1 |
-| session_count | ≥ 10 |
-| file_size_kb | ≥ 100 |
-| node_path_references | ≥ 10 |
-
-### Evolution Pipeline (5 Stages)
-
-```
-1. DETECT   — Count structured data, check triggers
-2. EXTRACT  — Parse markdown into sessions, decisions, assets, parameters
-3a. PRESERVE — Archive original markdown (immutable backup for rollback)
-3b. CONVERT — Build USD stage from parsed data (R3: native pxr.Usd)
-4. COMBINE  — Write memory.usd
-5. VERIFY   — Generate companion.md → parse → diff against original
-              Fidelity must be 1.0. If not: delete USD, preserve original, rollback.
-              R10: Force-cook any LOP nodes referencing evolved USD.
-```
-
-### Native OpenUSD Generation (R3)
-
-Evolution uses `pxr.Usd.Stage.CreateInMemory()` — no string templates. It defines `/SYNAPSE` as the default prim, sanitizes prim names, authors `synapse:*` attributes via `Sdf.ValueTypeNames` (String / StringArray through `Vt.StringArray`), and returns `stage.GetRootLayer().ExportToString()` for syntactically perfect USDA. See `shared/evolution.py`.
-
-> **⚠ Idiom-vs-code divergence (verified 2026-06-06).** The `Tf.MakeValidIdentifier` idiom above is the *intended* target, not the live code. `evolution.py` imports only `from pxr import Usd, Sdf` (no `Tf`) and `agent_state.py` hand-rolls `_safe_prim_name(...)`. Reconciling on ONE sanitizer is RFC decision **D-3** (`docs/RFC_agent_usd_ledger.md`). The §12 import guard, §12 production list, and R3 manifest row carry the same aspirational `Tf` claim — treat as target, not verified-live.
-
-**Fallback:** string-template generation for environments without `pxr` (testing only).
-
-### Solaris Viewport Sync (R10)
-
-After successful evolution, force-cook any LOP nodes referencing the evolved USD file. H21 has no `hou.lopNetworks()`, so `_sync_solaris_viewport` walks from `hou.node("/")` collecting `hou.LopNetwork` instances recursively, then for each child of type `sublayer`/`reference` checks `parm("filepath1")` for the memory path and calls `node.cook(force=True)`. Best-effort — never blocks evolution success. See `shared/evolution.py`.
-
-### Three-Tier Memory Hierarchy
-
-```
-Behavior (global)  — How SYNAPSE operates across all projects
-Project ($JOB)     — Decisions, conventions, team preferences per project
-Scene ($HIP)       — Session logs, parameters, assets for this specific scene
-```
-
-### agent.usd Schema (v2.0.0)
-
-Always USD from day one. Tracks execution state:
-
-```
-/SYNAPSE/agent/
-    status, current_plan, dispatched_agents
-/SYNAPSE/agent/integrity/
-    session_fidelity, operations_total, operations_verified, anchor_violations
-/SYNAPSE/agent/routing_log/
-    decision_NNNN → fingerprint, primary_agent, advisory_agent, method, timestamp
-/SYNAPSE/agent/handoff_chain/
-    handoff_NNNN → from_agent, to_agent, task_id, fidelity_at_handoff
-/SYNAPSE/memory/
-    sessions/, decisions/, assets/, parameters/, wedges/
-```
-
----
+Superseded. `memory/evolution.py` documents itself as **SUPERSEDED by the Moneta
+backend** and says *"do not extend it"* - live only for the legacy jsonl path.
+The current substrate is Moneta; see `python/synapse/memory/`.
 
 ## 7. Dispatch Format
 
@@ -393,46 +325,10 @@ After agents complete:
 
 ---
 
-## 9. Implementation Phases
+## 9. Implementation phases
 
-### Phase 1: Lossless Execution Bridge (Foundation)
-
-**Owner:** SUBSTRATE (primary), INTEGRATOR (advisory)
-**Files:** `shared/bridge.py` ✅ (644 lines)
-**Exit gate:** 100 random operations, ALL fidelity = 1.0.
-
-### Phase 2: Agent Handoff Protocol
-
-**Owner:** INTEGRATOR (primary), SUBSTRATE (advisory)
-**Files:** `shared/bridge.py` AgentHandoff ✅, `shared/provenance.py`
-**Exit gate:** 5-agent relay with complete provenance chain, no context dropped.
-
-### Phase 3: Memory Evolution with Integrity
-
-**Owner:** CONDUCTOR (primary), INTEGRATOR (advisory)
-**Files:** `shared/evolution.py` ✅ (593 lines)
-**Exit gate:** 10-session markdown → USD → companion → parse → diff = fidelity 1.0.
-
-### Phase 4: agent.usd Schema Upgrade
-
-**Owner:** HANDS (primary), CONDUCTOR (advisory)
-**Files:** `python/synapse/memory/agent_state.py` (USDA generated inline — there is **no** `agent_schema.usda` file)
-**Status:** Schema BUILT + test-pinned (`tests/test_agent_state.py`). Remaining work is **wiring** — the provenance writers (`log_routing_decision`/`log_handoff`/`log_integrity`/`write_verification`/`create_task`) have no live callers yet. See `docs/RFC_agent_usd_ledger.md`.
-**Exit gate:** agent.usd round-trips with zero data loss.
-
-### Phase 5: Lossless Router Integration
-
-**Owner:** INTEGRATOR (primary), SUBSTRATE (advisory)
-**Files:** `shared/router.py` ✅ (271 lines)
-**Exit gate:** 50 tasks routed, history reconstructed, replay deterministic.
-
-### Phase 6: End-to-End Integration
-
-**Owner:** ALL agents, orchestrated by INTEGRATOR
-**Files:** `src/pipeline.py`, `tests/test_pipeline_e2e.py`
-**Exit gate:** Complex multi-agent task with all verifications passing. Undo restores scene to pre-session state.
-
----
+Historical. The phase plan is complete; `harness/legs.json` and
+`harness/notes/CTO_RULINGS_01.md` are the live record of what is being built and why.
 
 ## 10. Session State
 
@@ -485,70 +381,20 @@ All modules must work in both modes:
 
 ---
 
-## 13. Key Type Definitions
+## 13. Key types
 
-All agents import from `shared/types.py` (INTEGRATOR owns write access):
+`shared/types.py` is the definition. A table here can only go stale against it.
 
-| Type | Purpose |
-|---|---|
-| `AgentID` | Enum: SUBSTRATE, BRAINSTEM, OBSERVER, HANDS, CONDUCTOR, INTEGRATOR |
-| `ExecutionResult` | Universal return type with `.ok()` / `.fail()` + integrity field |
-| `TaskSpec` | Inter-agent dispatch specification |
-| `NodeManifest` | Declarative network builder (parent + NodeSpec list) |
-| `GeoSummary` | Token-efficient geometry metadata (<100 tokens) |
-| `RoutingFeatures` | 4-dimension feature vector with `.fingerprint()` for fast-path |
-| `ChainSpec` | PDG chain specification for multi-step orchestration |
-| `FILE_OWNERSHIP` | Dict mapping file paths → owning AgentID |
+## 14. File structure
 
----
+The file tree is the file tree. The version that was here described `synapse-agents/`,
+which is not this repository's name.
 
-## 14. File Structure
+## 15. Revision manifest
 
-```
-synapse-agents/
-├── CLAUDE.md                      # This file — orchestrator blueprint
-├── README.md                      # Project overview
-├── run_team.py                    # Python orchestrator entry point
-├── agents/
-│   ├── SUBSTRATE.md               # Pillar 1: Async architecture
-│   ├── BRAINSTEM.md               # Pillar 2: Self-healing execution
-│   ├── OBSERVER.md                # Pillar 3: Semantic observability
-│   ├── HANDS.md                   # Pillar 4: H21 native paradigms
-│   ├── CONDUCTOR.md               # Pillar 5: PDG orchestration + memory
-│   └── INTEGRATOR.md              # Cross-cutting: API, tests, CI
-├── shared/
-│   ├── __init__.py
-│   ├── types.py                   # Canonical type definitions (250 lines)
-│   ├── bridge.py                  # Lossless Execution Bridge (644 lines)
-│   ├── evolution.py               # Memory evolution pipeline (593 lines)
-│   └── router.py                  # MOE sparse routing engine (271 lines)
-├── scripts/
-│   ├── dispatch.sh                # Single task dispatch
-│   └── run_full_team.sh           # Full team parallel execution
-├── tasks/
-│   └── templates.yaml             # Pre-defined task decompositions
-├── tests/                         # Generated by INTEGRATOR
-└── results/                       # Execution outputs
-```
-
----
-
-## 15. Revision Manifest
-
-Historical — verified live on Houdini 21.0.596 / SYNAPSE v5.8.0. Not a current-build claim; the target is H22.0.368.
-
-| Rev | What Changed | Where | H21 API | Commit |
-|---|---|---|---|---|
-| R1 | Topological scene hashing | `bridge.py` | `cookCount()` + `sessionId()` + geo intrinsics | 128229d |
-| R2 | Async→sync execution boundary | `bridge.py` | `hdefereval.executeInMainThreadWithResult()` | original |
-| R3 | Native OpenUSD generation | `evolution.py` | `pxr.Usd.Stage.CreateInMemory()` + `Tf.MakeValidIdentifier()` | e71fbfe |
-| R4 | Structural disk-write gate override | `bridge.py` | `Operation.gate_level` property (CRITICAL-aware) | original |
-| R5 | Word-boundary feature extraction | `router.py` | `re.search(rf'\b...\b')` | original |
-| R7 | Blast radius inference | `bridge.py` | `hou.LopNode` isinstance + `node.dependents()` | original |
-| R8 | PDG async cook bridge | `bridge.py` | `pdg.EventType` + `pdg.PyEventHandler` + `pdg.GraphContext` | 3ae4737 |
-| R10 | Solaris viewport sync | `evolution.py` | `hou.LopNetwork` isinstance walk from root | 3ae4737 |
-
----
+Historical - the section said so itself: *verified on Houdini 21.0.596 / v5.8.0, not a
+current-build claim.* `git log` is the revision record; `CTO_RULINGS_01.md` is the
+decision record.
 
 ## 16. Recursive Observability Loop
 
