@@ -35,6 +35,36 @@ Both reuse the streaming transport pinned in `nemotron_provider.py`, so the
 frozen-egress pin (`tests/test_m3_egress_docs.py`) already covers their code
 path; this document is the control for where they are pointed.
 
+### The capability-probe lane (metadata only)
+
+`panel/providers/probe.py` reaches the **same three hosts** — no new host is
+introduced — plus a user-configured Custom base URL, using **read-only
+list/metadata endpoints**:
+
+| Host | Method | What it asks |
+|---|---|---|
+| `api.anthropic.com:443` | `GET /v1/models?limit=100` | which models the account is served |
+| `integrate.api.nvidia.com:443` (or `NVIDIA_BASE_URL`) | `GET /v1/models` | same |
+| `generativelanguage.googleapis.com:443` | `GET /v1beta/models` | same, Gemini only |
+| `{custom base_url}` | `GET /models` | same, operator-configured |
+| `localhost:11434` (or `OLLAMA_HOST`) | `GET /api/tags` | local tag list — loopback by default |
+
+**No prompt, no scene data, no chat history, no tool schema and no memory
+content is sent on this lane.** The request bodies are empty (every call is a
+`GET`); the only thing that leaves is the auth header and the fact that a probe
+happened. It is the lightest-payload lane in the product, and the one a security
+review should find easiest to clear.
+
+**No completion is ever requested from this module.** That is enforced, not
+asserted: the endpoint allowlist is `probe.FREE_ENDPOINTS`, and
+`tests/test_v3_provider_probe.py` parses the module with `ast` and fails if any
+non-docstring string literal names a completions path.
+
+**Frequency:** demand-driven, never on a timer. A probe fires only when a caller
+reads provider state *and* the last result is older than
+`probe.REFRESH_INTERVAL_S` (60 s). An idle panel issues **zero** probes; the
+ceiling under continuous use is 60 requests/hour/provider.
+
 Call sites:
 
 | Lane | Code | Transport |
@@ -46,6 +76,7 @@ Call sites:
 | Panel worker (Custom) | `claude_worker.py` → `panel/providers/custom_provider.py` | inherited nemotron transport to the configured base URL (http or https, scheme preserved) |
 | Host daemon agent loop | `host/daemon.py` → `cognitive/agent_loop.py` | vendored `anthropic` SDK |
 | Routing tiers 2/3 | `routing/router.py` | `anthropic` SDK |
+| Capability probe (all engines) | `panel/providers/probe.py` | stdlib `http.client.HTTPSConnection` / `HTTPConnection`, single bounded `GET`, no retry, no redirect |
 
 No telemetry, analytics, crash-reporting, or update-check endpoint exists
 anywhere in the codebase.
@@ -57,6 +88,7 @@ anywhere in the codebase.
 | **Panel worker** (`claude_worker`) | The system prompt (identity + TONE.md + current network path + **selected node paths** + frame + hip basename); the full chat history including drag-and-dropped node paths; the 121 advertised tool schemas (115 registry + 6 group-info) — names + descriptions; and **every tool result serialized in full** — scene inspection output, parameter values, memory recall/search/context content, render metadata. |
 | **Daemon agent loop** (`agent_loop` / daemon) | The user prompt + registered cognitive tool results (today: `synapse_inspect_stage` stage summaries). |
 | **Routing tiers 2/3** (`router`) | The user query + tier-1 RAG knowledge + up to 3 project-memory search results embedded in the user message. |
+| **Capability probe** (`providers/probe.py`) | Nothing. Every call is a `GET` with an empty body; only the auth header transits. |
 
 ## What NEVER leaves
 

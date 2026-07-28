@@ -1,0 +1,215 @@
+{
+ "schema": "v3_stale_demo/v1",
+ "producer": "harness/notes/econ/v3_stale_demo.py",
+ "generated": "2026-07-28T12:45:31-0400",
+ "source_artifact": "V3_probe_live.install.json",
+ "source_generated": "2026-07-28T12:44:06-0400",
+ "rows": 127,
+ "ttl_s": 180.0,
+ "refresh_interval_s": 60.0,
+ "sweep": [
+  {
+   "offset_s": 0.0,
+   "counts": {
+    "green": 126,
+    "red": 1,
+    "grey": 0
+   },
+   "would_refresh": false
+  },
+  {
+   "offset_s": 30.0,
+   "counts": {
+    "green": 126,
+    "red": 1,
+    "grey": 0
+   },
+   "would_refresh": false
+  },
+  {
+   "offset_s": 59.9,
+   "counts": {
+    "green": 126,
+    "red": 1,
+    "grey": 0
+   },
+   "would_refresh": false
+  },
+  {
+   "offset_s": 60.0,
+   "counts": {
+    "green": 126,
+    "red": 1,
+    "grey": 0
+   },
+   "would_refresh": true
+  },
+  {
+   "offset_s": 179.9,
+   "counts": {
+    "green": 126,
+    "red": 1,
+    "grey": 0
+   },
+   "would_refresh": true
+  },
+  {
+   "offset_s": 180.0,
+   "counts": {
+    "green": 0,
+    "red": 1,
+    "grey": 126
+   },
+   "would_refresh": true
+  },
+  {
+   "offset_s": 180.001,
+   "counts": {
+    "green": 0,
+    "red": 0,
+    "grey": 127
+   },
+   "would_refresh": true
+  },
+  {
+   "offset_s": 300.0,
+   "counts": {
+    "green": 0,
+    "red": 0,
+    "grey": 127
+   },
+   "would_refresh": true
+  },
+  {
+   "offset_s": 3600.0,
+   "counts": {
+    "green": 0,
+    "red": 0,
+    "grey": 127
+   },
+   "would_refresh": true
+  }
+ ],
+ "sample_transitions": [
+  {
+   "provider": "claude",
+   "model": "claude-fable-5",
+   "available": true,
+   "reason": null,
+   "colour_at_probe_time": "green",
+   "colour_after_ttl": "grey",
+   "row_bytes_changed": false
+  },
+  {
+   "provider": "claude",
+   "model": "claude-haiku-4-5-20251001",
+   "available": true,
+   "reason": null,
+   "colour_at_probe_time": "green",
+   "colour_after_ttl": "grey",
+   "row_bytes_changed": false
+  },
+  {
+   "provider": "claude",
+   "model": "claude-opus-4-1-20250805",
+   "available": true,
+   "reason": null,
+   "colour_at_probe_time": "green",
+   "colour_after_ttl": "grey",
+   "row_bytes_changed": false
+  },
+  {
+   "provider": "claude",
+   "model": "claude-opus-4-5-20251101",
+   "available": true,
+   "reason": null,
+   "colour_at_probe_time": "green",
+   "colour_after_ttl": "grey",
+   "row_bytes_changed": false
+  },
+  {
+   "provider": "claude",
+   "model": "claude-opus-4-6",
+   "available": true,
+   "reason": null,
+   "colour_at_probe_time": "green",
+   "colour_after_ttl": "grey",
+   "row_bytes_changed": false
+  },
+  {
+   "provider": "claude",
+   "model": "claude-opus-4-7",
+   "available": true,
+   "reason": null,
+   "colour_at_probe_time": "green",
+   "colour_after_ttl": "grey",
+   "row_bytes_changed": false
+  },
+  {
+   "provider": "gemini",
+   "model": "gemini-3.5-flash",
+   "available": false,
+   "reason": "unconfigured",
+   "colour_at_probe_time": "red",
+   "colour_after_ttl": "grey",
+   "row_bytes_changed": false
+  }
+ ],
+ "checks": {
+  "C1_colour_varies_with_clock_alone": {
+   "condition_under_which_this_fails": "colour_for ignores probed_at, or colour is a stored field \u2014 then every offset in the sweep reports identical counts",
+   "distinct_count_vectors": 3,
+   "pass": true
+  },
+  "C2_aged_green_becomes_grey_never_stays_green": {
+   "condition_under_which_this_fails": "colour_for checks `available` before it checks age",
+   "green_before": 126,
+   "green_after_ageing": 0,
+   "grey_after_ageing": 126,
+   "pass": true
+  },
+  "C3_aged_red_becomes_grey_too": {
+   "condition_under_which_this_fails": "RED is treated as a terminal verdict that survives staleness \u2014 it must not, because an old 'no' is also UNKNOWN",
+   "red_before": 1,
+   "still_red_after_ageing": 0,
+   "pass": true
+  },
+  "C4_negative_control_reprobe_restores_colour": {
+   "condition_under_which_this_fails": "colour_for always returns grey \u2014 the ageing demonstration would then prove nothing at all",
+   "green_after_reprobe": 126,
+   "pass": true
+  },
+  "C5_future_stamp_is_grey_not_green": {
+   "condition_under_which_this_fails": "is_stale drops its age<0 clause \u2014 a skewed clock would then hold a rail green indefinitely",
+   "skewed_green": 0,
+   "pass": true
+  },
+  "C6_colour_is_absent_from_the_structure": {
+   "condition_under_which_this_fails": "a colour/status field is added to ProbeResult",
+   "fields": [
+    "model",
+    "tier_candidates",
+    "available",
+    "quota_remaining",
+    "quota_total",
+    "cost_per_1k_in",
+    "cost_per_1k_out",
+    "latency_ms",
+    "probed_at",
+    "provider",
+    "method",
+    "reason",
+    "evidence_tier",
+    "quota_source",
+    "cost_source",
+    "tier_basis",
+    "declared",
+    "live",
+    "capabilities",
+    "detail"
+   ],
+   "pass": true
+  }
+ },
+ "all_checks_pass": true
+}

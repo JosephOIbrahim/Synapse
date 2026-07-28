@@ -1,0 +1,848 @@
+{
+ "schema": "v3_probe_live/v1",
+ "producer": "harness/notes/econ/v3_probe_live.py",
+ "label": "worktree",
+ "generated": "2026-07-28T12:43:49-0400",
+ "commit": "b92b0d4",
+ "host": {
+  "python": "3.14.2",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "cwd": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\v3-econ"
+ },
+ "env": {
+  "explicit_env_load": {
+   "loaded": false
+  },
+  "empty_string_shadow_check": {
+   "ANTHROPIC_API_KEY": {
+    "present": true,
+    "empty": true
+   },
+   "NVIDIA_API_KEY": {
+    "present": false,
+    "empty": null
+   },
+   "GEMINI_API_KEY": {
+    "present": false,
+    "empty": null
+   },
+   "GOOGLE_API_KEY": {
+    "present": false,
+    "empty": null
+   },
+   "OLLAMA_API_KEY": {
+    "present": false,
+    "empty": null
+   }
+  },
+  "auth_repo_root": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\v3-econ"
+ },
+ "spend": {
+  "completions_issued": 0,
+  "endpoints_called": [
+   "local:config",
+   "ollama:GET /api/tags"
+  ],
+  "allowlist": [
+   "anthropic:GET /v1/models",
+   "anthropic:POST /v1/messages/count_tokens",
+   "custom:GET /models",
+   "gemini:GET /v1beta/models",
+   "local:config",
+   "nvidia:GET /v1/models",
+   "ollama:GET /api/tags"
+  ],
+  "all_calls_in_allowlist": true,
+  "declined": [
+   {
+    "probe": "POST /v1/messages (Anthropic completions, 1 token)",
+    "would_have_measured": "quota headroom \u2014 anthropic-ratelimit-{requests,input-tokens,output-tokens}-{limit,remaining,reset} \u2014 which is published ONLY by the billed completions endpoint",
+    "declined_because": "it bills. The economist axis cannot credibly measure cost while being careless with it, and a liveness check that consumes the quota it reports on is self-defeating.",
+    "consequence_recorded": "quota_remaining/quota_total are None for every metered provider, with quota_source='unavailable_at_zero_cost'. Rate-limiting is still caught reactively on a 429; headroom is not reported."
+   },
+   {
+    "probe": "POST /v1/chat/completions (NVIDIA NIM, Ollama :cloud)",
+    "would_have_measured": "end-to-end generation latency and any x-ratelimit-* headers on the completions bucket",
+    "declined_because": "NIM and Ollama :cloud tags are metered by their host. GET /v1/models and GET /api/tags answer availability for free.",
+    "consequence_recorded": "latency_ms is METADATA-endpoint latency, not generation latency. It is a liveness number, and must not be read as time-to-first-token."
+   }
+  ]
+ },
+ "policy": {
+  "refresh_interval_s": 60.0,
+  "probe_ttl_s": 180.0,
+  "requests_per_hour_per_provider_worst_case": 60.0
+ },
+ "wall_ms": 81.3,
+ "configured": {
+  "ollama": true,
+  "claude": false,
+  "nemotron": false,
+  "gemini": false,
+  "custom": false
+ },
+ "per_provider": {
+  "ollama": {
+   "configured": true,
+   "declared_count": 1,
+   "declared": [
+    "glm-5:cloud"
+   ],
+   "live_count": 13,
+   "rows": 13,
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "latency_ms": 21.214300009887666,
+   "quota_source": "unavailable_at_zero_cost",
+   "declared_but_absent": [],
+   "live_not_declared": [
+    "deepseek-v4-pro:cloud",
+    "gemma4:latest",
+    "glm-5.2:cloud",
+    "gpt-oss:20b",
+    "kimi-k2.5:cloud",
+    "kimi-k3:cloud",
+    "nemotron-3-nano:latest",
+    "nemotron-3-super:latest",
+    "nemotron-3-ultra:cloud",
+    "nemotron-mini:latest",
+    "nemotron:latest",
+    "qwen3-vl:30b"
+   ],
+   "colours": {
+    "green": 13,
+    "red": 0,
+    "grey": 0
+   }
+  },
+  "claude": {
+   "configured": false,
+   "declared_count": 6,
+   "declared": [
+    "claude-opus-5",
+    "claude-opus-4-8",
+    "claude-sonnet-5",
+    "claude-sonnet-4-6",
+    "claude-haiku-4-5-20251001",
+    "claude-fable-5"
+   ],
+   "live_count": 0,
+   "rows": 6,
+   "method": "local:config",
+   "reason": "unconfigured",
+   "latency_ms": null,
+   "quota_source": "not_applicable",
+   "declared_but_absent": [],
+   "live_not_declared": [],
+   "colours": {
+    "green": 0,
+    "red": 6,
+    "grey": 0
+   }
+  },
+  "nemotron": {
+   "configured": false,
+   "declared_count": 2,
+   "declared": [
+    "nvidia/nemotron-3-super-120b-a12b",
+    "nvidia/nemotron-3-nano-30b-a3b"
+   ],
+   "live_count": 0,
+   "rows": 2,
+   "method": "local:config",
+   "reason": "unconfigured",
+   "latency_ms": null,
+   "quota_source": "not_applicable",
+   "declared_but_absent": [],
+   "live_not_declared": [],
+   "colours": {
+    "green": 0,
+    "red": 2,
+    "grey": 0
+   }
+  },
+  "gemini": {
+   "configured": false,
+   "declared_count": 1,
+   "declared": [
+    "gemini-3.5-flash"
+   ],
+   "live_count": 0,
+   "rows": 1,
+   "method": "local:config",
+   "reason": "unconfigured",
+   "latency_ms": null,
+   "quota_source": "not_applicable",
+   "declared_but_absent": [],
+   "live_not_declared": [],
+   "colours": {
+    "green": 0,
+    "red": 1,
+    "grey": 0
+   }
+  },
+  "custom": {
+   "configured": false,
+   "declared_count": 0,
+   "declared": [],
+   "live_count": 0,
+   "rows": 0,
+   "method": null,
+   "reason": null,
+   "latency_ms": null,
+   "quota_source": null,
+   "declared_but_absent": [],
+   "live_not_declared": [],
+   "colours": {
+    "green": 0,
+    "red": 0,
+    "grey": 0
+   }
+  }
+ },
+ "summary": {
+  "rows": 22,
+  "by_colour": {
+   "green": 13,
+   "red": 9,
+   "grey": 0
+  },
+  "by_tier": {
+   "frontier": 6,
+   "balanced": 7,
+   "fast": 6
+  },
+  "unclassified": 3,
+  "ttl_s": 180.0,
+  "refresh_interval_s": 60.0
+ },
+ "rows": [
+  {
+   "model": "claude-fable-5",
+   "tier_candidates": [],
+   "available": false,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": null,
+   "probed_at": 1785257029.8555763,
+   "provider": "claude",
+   "method": "local:config",
+   "reason": "unconfigured",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "not_applicable",
+   "cost_source": "not_applicable",
+   "tier_basis": "unclassified",
+   "declared": true,
+   "live": false,
+   "capabilities": null,
+   "detail": {}
+  },
+  {
+   "model": "claude-haiku-4-5-20251001",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": false,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": null,
+   "probed_at": 1785257029.8555763,
+   "provider": "claude",
+   "method": "local:config",
+   "reason": "unconfigured",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "not_applicable",
+   "cost_source": "not_applicable",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": false,
+   "capabilities": null,
+   "detail": {}
+  },
+  {
+   "model": "claude-opus-4-8",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": false,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": null,
+   "probed_at": 1785257029.8555763,
+   "provider": "claude",
+   "method": "local:config",
+   "reason": "unconfigured",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "not_applicable",
+   "cost_source": "not_applicable",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": false,
+   "capabilities": null,
+   "detail": {}
+  },
+  {
+   "model": "claude-opus-5",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": false,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": null,
+   "probed_at": 1785257029.8555763,
+   "provider": "claude",
+   "method": "local:config",
+   "reason": "unconfigured",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "not_applicable",
+   "cost_source": "not_applicable",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": false,
+   "capabilities": null,
+   "detail": {}
+  },
+  {
+   "model": "claude-sonnet-4-6",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": false,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": null,
+   "probed_at": 1785257029.8555763,
+   "provider": "claude",
+   "method": "local:config",
+   "reason": "unconfigured",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "not_applicable",
+   "cost_source": "not_applicable",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": false,
+   "capabilities": null,
+   "detail": {}
+  },
+  {
+   "model": "claude-sonnet-5",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": false,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": null,
+   "probed_at": 1785257029.8555763,
+   "provider": "claude",
+   "method": "local:config",
+   "reason": "unconfigured",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "not_applicable",
+   "cost_source": "not_applicable",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": false,
+   "capabilities": null,
+   "detail": {}
+  },
+  {
+   "model": "gemini-3.5-flash",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": false,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": null,
+   "probed_at": 1785257029.8561168,
+   "provider": "gemini",
+   "method": "local:config",
+   "reason": "unconfigured",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "not_applicable",
+   "cost_source": "not_applicable",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": false,
+   "capabilities": null,
+   "detail": {}
+  },
+  {
+   "model": "nvidia/nemotron-3-nano-30b-a3b",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": false,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": null,
+   "probed_at": 1785257029.8559015,
+   "provider": "nemotron",
+   "method": "local:config",
+   "reason": "unconfigured",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "not_applicable",
+   "cost_source": "not_applicable",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": false,
+   "capabilities": null,
+   "detail": {}
+  },
+  {
+   "model": "nvidia/nemotron-3-super-120b-a12b",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": false,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": null,
+   "probed_at": 1785257029.8559015,
+   "provider": "nemotron",
+   "method": "local:config",
+   "reason": "unconfigured",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "not_applicable",
+   "cost_source": "not_applicable",
+   "tier_basis": "live_id_token",
+   "declared": true,
+   "live": false,
+   "capabilities": null,
+   "detail": {}
+  },
+  {
+   "model": "deepseek-v4-pro:cloud",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com:443",
+   "tier_basis": "live_id_token",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com:443",
+    "context_length": 1048576,
+    "family": null
+   }
+  },
+  {
+   "model": "gemma4:latest",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": null,
+    "family": "gemma4"
+   }
+  },
+  {
+   "model": "glm-5.2:cloud",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com:443",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com:443",
+    "context_length": 1000000,
+    "family": "glm"
+   }
+  },
+  {
+   "model": "glm-5:cloud",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com:443",
+   "tier_basis": "unclassified",
+   "declared": true,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com:443",
+    "context_length": 202752,
+    "family": null
+   }
+  },
+  {
+   "model": "gpt-oss:20b",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 131072,
+    "family": "gptoss"
+   }
+  },
+  {
+   "model": "kimi-k2.5:cloud",
+   "tier_candidates": [],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com:443",
+   "tier_basis": "unclassified",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking",
+    "vision"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com:443",
+    "context_length": 262144,
+    "family": null
+   }
+  },
+  {
+   "model": "kimi-k3:cloud",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "vision",
+    "thinking",
+    "completion",
+    "tools"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com",
+    "context_length": 1048576,
+    "family": null
+   }
+  },
+  {
+   "model": "nemotron-3-nano:latest",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 1048576,
+    "family": "nemotron_h_moe"
+   }
+  },
+  {
+   "model": "nemotron-3-super:latest",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 262144,
+    "family": "nemotron_h_moe"
+   }
+  },
+  {
+   "model": "nemotron-3-ultra:cloud",
+   "tier_candidates": [
+    "frontier"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": null,
+   "cost_per_1k_out": null,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "metered:remote_host=https://ollama.com:443",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": "https://ollama.com:443",
+    "context_length": 262144,
+    "family": "nemotron"
+   }
+  },
+  {
+   "model": "nemotron-mini:latest",
+   "tier_candidates": [
+    "fast"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 4096,
+    "family": "nemotron"
+   }
+  },
+  {
+   "model": "nemotron:latest",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "completion",
+    "tools"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 131072,
+    "family": "llama"
+   }
+  },
+  {
+   "model": "qwen3-vl:30b",
+   "tier_candidates": [
+    "balanced"
+   ],
+   "available": true,
+   "quota_remaining": null,
+   "quota_total": null,
+   "cost_per_1k_in": 0.0,
+   "cost_per_1k_out": 0.0,
+   "latency_ms": 21.214300009887666,
+   "probed_at": 1785257029.855205,
+   "provider": "ollama",
+   "method": "ollama:GET /api/tags",
+   "reason": null,
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "quota_source": "unavailable_at_zero_cost",
+   "cost_source": "probed:local_weights_no_remote_host",
+   "tier_basis": "parameter_size",
+   "declared": false,
+   "live": true,
+   "capabilities": [
+    "vision",
+    "completion",
+    "tools",
+    "thinking"
+   ],
+   "detail": {
+    "remote_host": null,
+    "context_length": 262144,
+    "family": "qwen3vlmoe"
+   }
+  }
+ ]
+}
