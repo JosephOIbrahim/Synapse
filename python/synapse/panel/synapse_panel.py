@@ -57,6 +57,15 @@ try:
 except Exception:  # pragma: no cover
     get_anthropic_tools = None
 try:
+    # H3b — off-UI-thread single-tool dispatch for the cancel/halt controls.
+    from synapse.panel.direct_tool import (
+        DirectToolCall, extract_node_path, is_cookish_tool,
+    )
+except Exception:  # pragma: no cover
+    DirectToolCall = None
+    extract_node_path = None
+    is_cookish_tool = None
+try:
     from synapse.panel.health_infographic import HealthInfographic
     from synapse.panel import agent_health
 except Exception:  # pragma: no cover
@@ -285,6 +294,11 @@ class SynapsePanel(QtWidgets.QWidget):
         self._turn_tools = []        # [(name, verb, detail), ...] per turn
         self._worker = None
         self._last_tool = None       # C8: name of the in-flight tool, for an honest Stop
+        # H3b: the NODE the in-flight tool is working on. The tool-status detail
+        # already carried it and was discarded during "running"; a cook-cancel
+        # needs a target, and this is the only place the panel ever sees one.
+        self._last_tool_node = None
+        self._direct_call = None     # live DirectToolCall, kept off the GC
         self._tool_executor = ToolExecutor(parent=self) if ToolExecutor else None
         self._pending_context = []  # paths dropped in; prepended to the next send
         # (_font_scale was set above from the host font)
@@ -1576,7 +1590,113 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
         menu.addAction("Larger text", lambda: self._set_scale(1.15))
         menu.addAction("Default text", lambda: self._set_scale(self._chrome_scale))
+
+        # ── H3b · interruption controls (R29 §2: the halt belongs in the
+        # overflow, NOT in the rail competing with Stop). Stop aborts the agent
+        # LOOP; these reach the WORK Houdini is already doing. Three different
+        # verbs, three different consequences — never collapsed into one button.
+        if DirectToolCall is not None:
+            menu.addSeparator()
+            node = getattr(self, "_last_tool_node", None)
+
+            # Cancel cook — state-gated exactly like Stop. An always-enabled
+            # cancel with nothing to cancel is the same lie as a consent gate
+            # that does not gate (R18).
+            cook_act = menu.addAction(
+                "Cancel cook  —  %s" % node if node else "Cancel cook")
+            cook_act.setEnabled(bool(node) and bool(self._was_busy))
+            cook_act.triggered.connect(self._on_cancel_cook)
+            if not node:
+                cook_act.setToolTip(
+                    "No cooking node in flight. SYNAPSE only offers this when "
+                    "it knows which node to cancel.")
+
+            halt_act = menu.addAction("Emergency halt…")
+            halt_act.triggered.connect(self._on_emergency_halt)
+            halt_act.setToolTip(
+                "Cancel PDG cooks under /obj and capture a session report. "
+                "Does NOT stop background renders — those are reported back "
+                "so you can stop them explicitly.")
+
         menu.exec(QtGui.QCursor.pos()) if hasattr(menu, "exec") else menu.exec_(QtGui.QCursor.pos())
+
+    # ── H3b · cook cancel + emergency halt ──────────────────────────────
+    # These are DISTINCT from _on_stop, which is unchanged and stays as
+    # written: it aborts the agent loop cooperatively and refuses to claim
+    # idle. Stop ends the conversation's work; these two reach into Houdini.
+
+    def _run_direct_tool(self, tool_name, arguments, busy_text, done_key=None):
+        """Fire one named tool off the UI thread and report what happened.
+
+        Never claims success from the click. The header says what was
+        requested; the result message says what the server actually did.
+        """
+        if DirectToolCall is None:
+            self._chat.append_system_message(
+                "That control isn't available — the direct-tool transport "
+                "didn't load.")
+            return
+        if self._direct_call is not None and self._direct_call.isRunning():
+            self._set_header("working", "Still %s…" % busy_text)
+            return
+        self._set_header("working", "%s…" % busy_text)
+        call = DirectToolCall(tool_name, arguments, parent=self)
+        call.finished_ok.connect(
+            lambda res: self._on_direct_tool_done(tool_name, res, done_key))
+        call.failed.connect(lambda msg: self._on_direct_tool_failed(tool_name, msg))
+        self._direct_call = call
+        call.start()
+
+    def _on_direct_tool_done(self, tool_name, result, done_key=None):
+        # Law 3 — report the server's own status verbatim rather than assuming
+        # the click did anything. `noop`, `unmappable` and `ambiguous` are all
+        # honest outcomes and none of them is a success.
+        status = None
+        note = None
+        if isinstance(result, dict):
+            status = result.get("status")
+            note = result.get("note")
+        parts = ["%s → %s" % (tool_name, status or "done")]
+        if note:
+            parts.append(note)
+        try:
+            self._chat.append_system_message("  ".join(parts))
+        except Exception:
+            pass
+        self._set_header("done", status or "Done")
+
+    def _on_direct_tool_failed(self, tool_name, msg):
+        try:
+            self._chat.append_system_message(
+                "%s didn't go through: %s" % (tool_name, msg))
+        except Exception:
+            pass
+        self._set_header("done", "Not cancelled")
+
+    def _on_cancel_cook(self):
+        node = getattr(self, "_last_tool_node", None)
+        if not node:
+            # Refuse rather than guess a target. Cancelling the wrong network
+            # is worse than not cancelling.
+            try:
+                self._chat.append_system_message(
+                    "I don't know which node to cancel — no cooking node is "
+                    "in flight right now.")
+            except Exception:
+                pass
+            return
+        # NOTE the unprefixed name: tops_* tools register WITHOUT the
+        # "synapse_" prefix (mcp/_tool_registry.py). Guessing the prefix here
+        # would have produced a control that looked wired and 404'd at runtime.
+        self._run_direct_tool(
+            "tops_cancel_cook", {"node": node},
+            "Cancelling the cook on %s" % node)
+
+    def _on_emergency_halt(self):
+        self._run_direct_tool(
+            "synapse_emergency_halt",
+            {"reason": "Artist triggered emergency halt from the panel"},
+            "Emergency halt")
 
     def _set_scale(self, scale):
         """The Aa control scales CONTENT only — the dialogue and the prompt.
@@ -1824,6 +1944,13 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_tool_status(self, name, phase, _detail):
         if phase == "running":
             self._last_tool = name          # C8: remember what's in flight for Stop
+            # H3b: also remember WHERE. _detail is json.dumps(tool_input)[:120]
+            # — often truncated, so the reader handles fragments (direct_tool).
+            if extract_node_path is not None:
+                try:
+                    self._last_tool_node = extract_node_path(_detail)
+                except Exception:
+                    self._last_tool_node = None
         verb = {"running": "running", "done": "ok", "error": "failed"}.get(phase, phase)
         # P2: accumulate what the turn actually DID. Every terminal tool result
         # is recorded once, in order, so _populate_review has something real to

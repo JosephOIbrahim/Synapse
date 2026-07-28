@@ -31,6 +31,10 @@ TOOL_NAMES = [
     "synapse_safe_render",
     "synapse_render_progressively",
     "synapse_validate_ordering",
+    # H3b -- background-render stop (rps/rkill, R73) + emergency halt
+    "synapse_render_processes",
+    "synapse_render_stop",
+    "synapse_emergency_halt",
 ]
 
 # Dispatch entries for this group
@@ -48,4 +52,7 @@ DISPATCH_KEYS = {
     "synapse_safe_render":        ("safe_render",          "identity"),
     "synapse_render_progressively": ("render_progressively", "identity"),
     "synapse_validate_ordering":  ("solaris_validate_ordering", "identity"),
+    "synapse_render_processes":   ("render_processes",     "passthrough"),
+    "synapse_render_stop":        ("render_stop",          "identity"),
+    "synapse_emergency_halt":     ("emergency_halt",       "identity"),
 }

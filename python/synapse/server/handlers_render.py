@@ -1657,6 +1657,222 @@ class RenderHandlerMixin:
             logger.debug("render_farm_cancel audit write failed (non-blocking)")
         return result
 
+    # ── H3b · background-render stop (rps / rkill, R73) ──────────────────
+    # R48 closed the render half as not-implementable; R73 refuted that.
+    # hou.RopNode still has no cancel verb and hou.ActiveRender is #status:ni
+    # and absent -- but the hscript pair rps/rkill works. See
+    # server/render_stop.py for the measured mapping and partial-frame rules.
+    #
+    # Both are classified read-only for the same reason render_farm_cancel is
+    # (handlers.py _READ_ONLY_COMMANDS): a running render holds the C5 mutation
+    # lock for its duration, so a mutating-classified stop would block behind
+    # the very render it is trying to stop. They mutate no scene state and
+    # create no undo entry -- they signal an OS process.
+
+    def _handle_render_processes(self, payload: Dict) -> Dict:
+        """List background render processes, husk rows resolved to their ROP.
+
+        Read-only. This is the half a stop depends on: a stop that cannot say
+        WHAT it is stopping is not a stop (brief PART B.1).
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+        from .main_thread import run_on_main
+        from . import render_stop as _rs
+
+        rows = run_on_main(_rs.read_render_processes, timeout=30.0)
+        live = [r for r in rows if r["alive"]]
+        return {
+            "renders": rows,
+            "live_count": len(live),
+            "mappable_count": len([r for r in live if r["mappable_to_rop"]]),
+            # Deliberately free of effect-verbs (executed/rendered/completed/
+            # ...). This handler only READS rps; it must not describe anything
+            # as done, or it reads as an outcome claim it never observed
+            # (tests/test_m1_truth_contract.py).
+            "note": (
+                "Rows with pid -1 are renders that have already ended -- "
+                "Houdini's render manager keeps the slot; they are not "
+                "killable. Only usdrender_rop (Karma/husk) rows carry node "
+                "identity -- mantra reports the bare command 'mantra' and "
+                "cannot be attributed to a ROP."
+            ),
+        }
+
+    def _handle_render_stop(self, payload: Dict) -> Dict:
+        """Stop ONE background render, by ROP path or explicit pid.
+
+        Never kills by wildcard. Verifies the kill by re-reading rps, because
+        rkill is silent on both success and no-match (Law 3), and always
+        returns the partial-output residue the caller must check.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+        from .main_thread import run_on_main
+        from . import render_stop as _rs
+
+        node_path = resolve_param_with_default(payload, "node", None)
+        pid = payload.get("pid")
+        if pid is None and not node_path:
+            raise ValueError(
+                "render_stop needs either a node (ROP path) or a pid. Call "
+                "render_processes first to see what is actually running."
+            )
+        if pid is not None and node_path:
+            raise ValueError(
+                "Pass either node or pid, not both -- ambiguous target."
+            )
+
+        result = run_on_main(
+            lambda: _rs.stop_render(node_path=node_path, pid=pid),
+            timeout=30.0,
+        )
+        try:
+            from ..core.audit import audit_log, AuditLevel, AuditCategory
+            audit_log().log(
+                operation="render_stop",
+                message="Background render stop: %s" % result.get("status"),
+                level=AuditLevel.AGENT_ACTION,
+                category=AuditCategory.RENDER,
+                input_data=payload,
+                output_data=result,
+            )
+        except Exception:
+            logger.debug("render_stop audit write failed (non-blocking)")
+        return result
+
+    def _handle_emergency_halt(self, payload: Dict) -> Dict:
+        """Surface EmergencyProtocol.trigger_emergency_halt (R29, brief PART C).
+
+        A SECOND, DISTINCT control -- not a rename of the panel's Stop, which
+        aborts the agent loop cooperatively and stays as written.
+
+        MEASURED, NOT ASSUMED (VERIFIED-RUNTIME 22.0.368, 2026-07-28): the
+        shipped `EmergencyProtocol.trigger_emergency_halt` walks `/obj` ONLY.
+        Probed against a real cooking TOP network at `/tasks/h3b_topnet`, it
+        returned `action="ALL_OPERATIONS_HALTED"` in 0.0 s and the cook was
+        still running 3 s later. `/tasks` is where TOP networks live by
+        default, so the shipped halt misses the common case, and its "action"
+        key is a string literal rather than a state change.
+
+        Surfacing that verbatim would have shipped exactly the R18 defect: an
+        affordance claiming a safety action it does not perform. So this
+        handler does three separable things and reports each on its own terms,
+        never merging them into one reassuring status:
+
+          bridge_halt        what EmergencyProtocol itself did (/obj scope)
+          topnets_cancelled  cooking TOP networks this handler then cancelled
+                             scene-wide, via the same hou.TopNode.cancelCook
+                             verb H3a-F2 found unused
+          renders_still_running  background renders it deliberately did NOT
+                             kill -- `rkill *` would reach renders this session
+                             never started, so they are reported for an
+                             explicit `render_stop` instead
+
+        `status` is `halted` only when nothing survived; otherwise
+        `halted_partial`.
+        """
+        from .main_thread import run_on_main
+
+        reason = payload.get("reason") or "Artist triggered emergency halt"
+        try:
+            from shared.bridge import EmergencyProtocol, get_process_bridge
+        except ImportError as exc:
+            raise RuntimeError(
+                "Emergency halt unavailable: shared.bridge could not be "
+                "imported (%s)" % exc
+            )
+
+        bridge = get_process_bridge()
+        report = run_on_main(
+            lambda: EmergencyProtocol.trigger_emergency_halt(bridge, reason),
+            timeout=60.0,
+        )
+
+        cancelled, failed = [], []
+        if HOU_AVAILABLE:
+            def _sweep_topnets():
+                done, bad = [], []
+                for root in ("/tasks", "/obj", "/stage", "/out"):
+                    parent = hou.node(root)
+                    if parent is None:
+                        continue
+                    for node in parent.allSubChildren():
+                        if not isinstance(node, hou.TopNode):
+                            continue
+                        try:
+                            ctx = node.getPDGGraphContext()
+                            if ctx is None or not ctx.cooking:
+                                continue
+                            node.cancelCook()
+                            done.append(node.path())
+                        except Exception as exc:      # never mask a failure
+                            bad.append({"node": node.path(),
+                                        "error": str(exc)[:160]})
+                return done, bad
+            try:
+                cancelled, failed = run_on_main(_sweep_topnets, timeout=60.0)
+            except Exception as exc:
+                failed = [{"node": "<sweep>", "error": str(exc)[:160]}]
+
+        still_running = []
+        if HOU_AVAILABLE:
+            try:
+                from . import render_stop as _rs
+                rows = run_on_main(_rs.read_render_processes, timeout=15.0)
+                still_running = [r for r in rows if r["alive"]]
+            except Exception:
+                logger.debug("post-halt render sweep failed (non-blocking)")
+
+        result = {
+            "status": "halted_partial" if (still_running or failed) else "halted",
+            "reason": reason,
+            "bridge_halt": {
+                "session_report": report,
+                "scope": "/obj subtree only (shipped EmergencyProtocol scope)",
+                "measured": (
+                    "Probed 2026-07-28 on 22.0.368: returns "
+                    "ALL_OPERATIONS_HALTED in 0.0s and does NOT stop a cook "
+                    "under /tasks."
+                ),
+            },
+            "topnets_cancelled": cancelled,
+            "topnets_cancel_failed": failed,
+            "renders_still_running": still_running,
+            "renders_still_running_count": len(still_running),
+        }
+        notes = []
+        if cancelled:
+            notes.append("Cancelled %d cooking TOP network(s): %s."
+                         % (len(cancelled), ", ".join(cancelled)))
+        else:
+            notes.append("No TOP network was cooking.")
+        if failed:
+            notes.append("%d TOP network(s) could NOT be cancelled -- see "
+                         "topnets_cancel_failed." % len(failed))
+        if still_running:
+            notes.append(
+                "%d background render(s) are STILL RUNNING -- emergency halt "
+                "does not stop renders. Stop each explicitly with render_stop."
+                % len(still_running))
+        else:
+            notes.append("No background renders were in flight.")
+        result["note"] = " ".join(notes)
+        try:
+            from ..core.audit import audit_log, AuditLevel, AuditCategory
+            audit_log().log(
+                operation="emergency_halt",
+                message="Emergency halt: %s" % reason,
+                level=AuditLevel.AGENT_ACTION,
+                category=AuditCategory.RENDER,
+                input_data=payload,
+                output_data={"status": "halted",
+                             "renders_still_running": len(still_running)},
+            )
+        except Exception:
+            logger.debug("emergency_halt audit write failed (non-blocking)")
+        return result
+
     def _handle_configure_render_passes(self, payload: Dict) -> Dict:
         """Configure render passes (AOVs) for Karma via Python LOP.
 
