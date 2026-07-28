@@ -1,0 +1,247 @@
+{
+  "schema": "receipt/v1",
+  "task": "E1",
+  "title": "Tool surface census - decompose the preloaded tool surface per tool, per component",
+  "harness": "ECON-01",
+  "branch": "econ/e1-tool-surface-census",
+  "worktree": ".claude/worktrees/e1-econ",
+  "receipt_written": "2026-07-28",
+
+  "executed_by": {
+    "model": "claude-opus-5[1m]",
+    "settings_profile": "harness/agent-settings.json (narrow; no pytest - no suite evidence is claimed anywhere in this leg)",
+    "mode": "READ-ONLY, fenced to harness/notes/**"
+  },
+
+  "commit_before": "a5150ec",
+  "commit_after": null,
+  "commit_status": {
+    "state": "UNCOMMITTED - all artifacts present and final in the worktree, nothing staged",
+    "reason": "git add is not in this leg's tool grant (harness/agent-settings.json, narrow profile). Two attempts were denied; per Constitution Article I the fence is structural and an agent does not route around its own leash. R93 says commit product before the receipt - that ordering is preserved for whoever commits, because the receipt names itself last in `touches`.",
+    "prepared_commit_message": "harness/notes/econ/E1_COMMIT_MSG.txt",
+    "to_commit": "git add harness/notes/econ/ harness/notes/receipts/E1.json && git commit -F harness/notes/econ/E1_COMMIT_MSG.txt",
+    "do_not": "push, merge, or tag - Gate C is human-only and this leg touched no gate"
+  },
+
+  "touches": [
+    "harness/notes/econ/E1_SURFACE.md",
+    "harness/notes/econ/econ_surface_census.py",
+    "harness/notes/econ/econ_schema_dupes.py",
+    "harness/notes/econ/econ_floor.py",
+    "harness/notes/econ/econ_call_evidence.py",
+    "harness/notes/econ/econ_controls.py",
+    "harness/notes/econ/E1_surface_census.json",
+    "harness/notes/econ/E1_schema_dupes.json",
+    "harness/notes/econ/E1_floor.json",
+    "harness/notes/econ/E1_call_evidence.json",
+    "harness/notes/econ/E1_controls.json",
+    "harness/notes/receipts/E1.json"
+  ],
+  "touches_disjoint_from_E0": true,
+  "touches_note": "E0 writes harness/notes/econ/E0_* and receipts/E0.json. E1 writes only E1_*/econ_* under the same directory. No file is written by both legs; the shared parent directory is created idempotently.",
+
+  "product_code_modified": false,
+  "tests_before": null,
+  "tests_after": null,
+  "test_delta": 0,
+  "suite_evidence_claim": "NONE. This leg ran under the narrow profile, which excludes pytest (Constitution Article V). No product code, test, or config was modified, so the suite is unaffected by construction - but that is an argument, not a measurement, and it is labelled as such.",
+  "commandment_7": "held vacuously - no test was weakened, skipped, xfailed or deleted; none was added",
+
+  "oracle": {
+    "per_tool_table": "DELIVERED - E1_SURFACE.md Appendix A, all 120 rows sorted by total cost, columns description / schema / annotations / name / total / cumulative share / call evidence",
+    "pareto_curve": "DELIVERED - 37 of 120 tools carry 50%, 78 of 120 carry 80%. Concentration hypothesis REFUTED.",
+    "duplicated_fragments_with_repeat_counts": "DELIVERED - E1_SURFACE.md section 5 + E1_schema_dupes.json, 38 repeated property fragments with counts, priced three ways",
+    "tools_with_no_call_evidence_named": "DELIVERED - E1_SURFACE.md section 7, 21 named at high confidence + 13 named at lower confidence, 0 structurally dead",
+    "verdict_on_2000": "DELIVERED - NOT reachable at 120 tools. Catalog floor 2,919 vs ceiling 2,000.",
+    "producers_named_econ_x_py": "DELIVERED - five producers, no leading underscore (R132)"
+  },
+
+  "calibration": {
+    "R60_readers_calibrated_before_trusted": true,
+    "method": "econ_surface_census.py reconstructs the registry as committed at T.0's commit d92bb4b, runs the identical decomposition, and requires T.0's published output",
+    "G1_historical": "PASS - 115 tools and 17,310 tokens reproduced exactly from T.0's own input",
+    "G2_fragment_rebuild": "PASS - all 120 wire objects rebuild byte-for-byte from four fragments",
+    "R133_controls_mutation_tested": "8 of 8 controls flip under mutation (E1_controls.json)",
+    "law_1_note": "C4b, the paired negative control, FAILED on first authoring: the uniquifier renamed only top-level properties so nested bodies stayed duplicated and the reader correctly kept reporting duplication. The control was wrong, not the reader. Recorded rather than quietly fixed, because a control that cannot fail is the defect Law 1 names."
+  },
+
+  "key_numbers": {
+    "live_surface_tokens": 18962,
+    "live_tool_count": 120,
+    "governing_number_tokens": 17310,
+    "governing_number_tool_count": 115,
+    "component_wire_tokens": {
+      "inputSchema": 10778,
+      "annotations": 3987,
+      "description": 3432,
+      "name": 981,
+      "structural_residual": -114
+    },
+    "component_share": {
+      "inputSchema": 0.5684,
+      "annotations": 0.2103,
+      "description": 0.1810,
+      "name": 0.0517
+    },
+    "pareto_50pct_tools": 37,
+    "pareto_80pct_tools": 78,
+    "top20_share": 0.3368,
+    "catalog_floor_tokens_F4": 2919,
+    "ceiling": 2000,
+    "max_tools_under_ceiling_at_floor_shape": 81,
+    "max_tools_under_ceiling_at_current_shape": 13,
+    "deferred_three_verb_tokens": 332,
+    "annotations_free_removal_tokens": 3987,
+    "verbatim_dedup_ceiling_tokens": 1265,
+    "verbatim_dedup_ref_realistic_tokens": 232,
+    "normalise_then_dedup_ceiling_tokens": 4006,
+    "structurally_dead_tools": 0,
+    "no_runtime_evidence_auditable": 21,
+    "no_runtime_evidence_auditable_tokens": 3755,
+    "no_evidence_including_audit_blind": 34,
+    "no_evidence_including_audit_blind_tokens": 5175,
+    "tops_family_no_evidence": "15 of 17 tools, 2377 of 2566 family tokens (92.6%)"
+  },
+
+  "findings": [
+    {
+      "id": "E1-F1",
+      "tier": "VERIFIED-DERIVED",
+      "anchor": "harness/notes/econ/econ_surface_census.py -> E1_surface_census.json stats.drift_vs_governing_number",
+      "claim": "The governing number 17,310 is stale. It was measured at 115 tools; the registry now holds 120 and the live mcp_http surface is 18,962 tokens. The +5 tools and +1,652 tokens are attributable to two named commits (97b879d, 9187f38) that repaired the S1 unreachable-Solaris finding.",
+      "so_what": "Any T.1 planning that quotes 17,310 against a 120-tool registry is comparing two vintages."
+    },
+    {
+      "id": "E1-F2",
+      "tier": "VERIFIED-DERIVED",
+      "anchor": "E1_surface_census.json stats.aggregate.component_share_of_surface",
+      "claim": "Schema is 56.8% of the surface, auto-generated annotations 21.0%, all tool descriptions 18.1%, names 5.2%. The mcp_http wire carries FOUR components, not the three the brief names.",
+      "so_what": "The component the brief correctly flags as correctness-critical is the smallest. Auto-generated metadata alone outweighs every description in the product."
+    },
+    {
+      "id": "E1-F3",
+      "tier": "VERIFIED-DERIVED",
+      "anchor": "E1_surface_census.json stats.pareto",
+      "claim": "There is no Pareto concentration: 37 of 120 tools carry 50% of the mass, 78 of 120 carry 80%, the heaviest 20 carry 33.7%.",
+      "so_what": "The brief's 'if 20 of 120 carry half, it is a targeted edit' branch is refuted. Any flat-catalog reduction is a sweep across all 120."
+    },
+    {
+      "id": "E1-F4",
+      "tier": "VERIFIED-DERIVED",
+      "anchor": "harness/notes/econ/econ_floor.py -> E1_floor.json stats.verdict",
+      "claim": "2,000 is NOT reachable as a flat catalog at 120 tools. The cheapest LEGAL tools/list for 120 tools - empty descriptions, empty schemas, names only - measures 2,919 tokens, 919 over the ceiling. At that floor shape only 81 tools fit; at the current average shape only 13. The three-verb deferred surface the ceiling was calibrated for measures 332 tokens.",
+      "so_what": "The ceiling is a statement about tool COUNT, not tool SIZE. Reading it as 'make the definitions smaller' is a category error."
+    },
+    {
+      "id": "E1-F5",
+      "tier": "VERIFIED-DERIVED",
+      "anchor": "harness/notes/econ/econ_schema_dupes.py -> E1_schema_dupes.json",
+      "claim": "Verbatim duplication is smaller than expected - 1,265 tokens at ceiling, 232 through a real $ref - because the same property name carries many different bodies: 'node' appears in 40 tools under 17 distinct definitions. The genuinely free reduction is the 3,987 tokens of derived annotations, which needs no mechanism at all and already ships absent on mcp_stdio.",
+      "so_what": "The brief's 'node_path written 60 times' shape does not exist; the actual shape is inconsistent authoring, whose repair (4,006 ceiling) is NOT capability-neutral."
+    },
+    {
+      "id": "E1-F6",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "harness/notes/econ/econ_call_evidence.py -> E1_call_evidence.json; python/synapse/server/handlers.py:488,531",
+      "claim": "0 tools are structurally dead - all 120 resolve to a live handler, so the S1 condition is closed. But 34 tools (5,175 tokens, 27.3% of the surface) have no recorded invocation in 58,663 audit records across 85 days plus 1,705 production journal records. 21 of those are auditable, making their absence measured rather than merely unobserved.",
+      "so_what": "Dead surface is real and quantified, and it is a product question rather than a token one."
+    },
+    {
+      "id": "E1-F7",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/server/handlers.py:488 and :531",
+      "claim": "The audit trail records a command only when cmd_type is NOT in _READ_ONLY_COMMANDS, so it is structurally blind to read-only calls. For 32 tools 'never called' was a check that could never have returned 'called'. Worked example: synapse_ping shows zero audit calls and runs on every session start. The coverage model is complete with zero residual - the 7 tools declaring readOnlyHint=true whose command_type is absent from _READ_ONLY_COMMANDS are exactly the 7 read-only-hinted tools carrying audit evidence.",
+      "so_what": "A naive dead-surface count over the audit trail alone would have condemned ~31 live tools. The SessionJournal, which records tool NAMES with no mutation gate, is the source that closes the gap."
+    },
+    {
+      "id": "E1-F8",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "harness/notes/token_baseline.json stats.registry_blake2b; scripts/token_baseline.py:114",
+      "claim": "T.0's registry_blake2b is computed over working-tree bytes and is therefore checkout-dependent. The recorded digest matches the d92bb4b blob only under core.autocrlf=true (CRLF); the same commit checked out LF hashes 047a5acec5c49bf99cad30c095514c54.",
+      "so_what": "The staleness field can false-alarm across machines. It cannot produce a false OK, so no prior conclusion is invalidated - but it is not the drift detector its name implies."
+    },
+    {
+      "id": "E1-F9",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "E1_call_evidence.json stats.audit_coverage.model_check",
+      "claim": "Seven tools advertise readOnlyHint=true in their MCP annotations while the server treats them as mutating - for the C5 mutation lock, the live integrity envelope and the audit write: cops_temporal_analysis, houdini_hda_list, houdini_query_prims, synapse_memory_query, synapse_memory_status, synapse_propose_graph, synapse_render_farm_status.",
+      "so_what": "An annotation/implementation disagreement on a safety-relevant flag. Surfaced, not resolved - which side is wrong is a ruling."
+    },
+    {
+      "id": "E1-F10",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "E1_call_evidence.json stats.tools, family rollup in E1_SURFACE.md section 7",
+      "claim": "15 of 17 tops_* tools have no runtime evidence, carrying 2,377 of the family's 2,566 tokens (92.6%). Only tops_dirty_node and tops_generate_items show any trace.",
+      "so_what": "The most concentrated block of unexercised surface in the product. Whether PDG orchestration is a shipped capability or an aspiration is a product decision."
+    }
+  ],
+
+  "method_notes": {
+    "tokenizer": "tiktoken/cl100k_base - a declared PROXY, explicitly NOT Claude's tokenizer, identical to T.0's method so the numbers are comparable. E1 refuses to emit if tiktoken is absent rather than silently falling back to a chars/4 ratio as T.0 does.",
+    "wire_fidelity": "Tool objects are serialised with orjson.dumps(OPT_SORT_KEYS), matching synapse.mcp.protocol._dumps exactly - so fragments are the literal bytes that ship, in sorted-key order, not registry insertion order.",
+    "reconciliation": "surface(18,962) = sum of tool objects(19,064) + concatenation effect(-116) + jsonrpc framing(+14). The concatenation term is negative because adjacent objects share BPE merges across the '},{' seam that independent tokenisation cannot see. Per-tool totals are therefore ~1 token pessimistic each; the surface total is exact. Reported, never estimated away.",
+    "privacy": "The encrypted audit trail was read in memory through the project's own CryptoEngine. Only operation-name counts and enum-like field distributions were persisted. No decrypted record and no payload was written to disk or printed.",
+    "contamination_handling": "581 of 2,063 audit sessions (28.2%) flagged TEST-SUSPECT via operations absent from the registry. gate_proposal/gate_decision were allowlisted after inspection as the real HumanGate lifecycle. Journal provenance is decided by path, since _resolve_log_dir falls back to <tempdir>/synapse_journal exactly when hou is unimportable, which is the path pytest takes.",
+    "near_miss_recorded": "The first journal provenance rule downgraded the PRODUCTION journal to test-authored over a single unrecognised name, 'hrudini_create_noe' - a fat-fingered houdini_create_node, 1 record in 1,705 (0.06%). That would have discarded 1,705 real dispatches and manufactured dead surface from a typo. The rule now downgrades only on an explicit test-marker name or when unrecognised names exceed 5% of a file."
+  },
+
+  "scope_limits": [
+    "Call evidence is from ONE developer machine. Absence means 'never called on this host across the audit span' - evidence, not proof, that no user calls a tool. Law 4 applies: census output is a hypothesis and classifying is not deleting.",
+    "The tokenizer is a declared proxy. Exact Claude-tokenizer counts will differ; byte and character counts are carried in every artifact so anyone can re-derive with a better tokenizer.",
+    "Only the mcp_http surface is decomposed. mcp_stdio, panel and panel_worker are named in T.0 but not decomposed here, and T.0's own drift D2 records that its stdio row is under-reported by at least 8 tools.",
+    "$ref support in MCP inputSchema / the Anthropic tool API is UNVERIFIED. Every ref-based saving figure is contingent on a probe nobody has run."
+  ],
+
+  "for_ruling": [
+    {
+      "id": "R-E1-1",
+      "item": "Re-base or date-stamp the governing number. token_baseline.json says 17,310/115; live is 18,962/120. Either re-run scripts/token_baseline.py and re-quote, or freeze 17,310 explicitly as a dated historical baseline. It should not keep circulating undated.",
+      "why_escalated": "Choosing between re-basing and freezing is a value judgement about what the T-track's BEFORE number means, not a fact provable from the tree."
+    },
+    {
+      "id": "R-E1-2",
+      "item": "Fix or drop registry_blake2b in token_baseline.json - it hashes working-tree bytes and is checkout-dependent (CRLF vs LF).",
+      "why_escalated": "Touches scripts/ and a committed baseline artifact, both outside this leg's fence."
+    },
+    {
+      "id": "R-E1-3",
+      "item": "Seven tools declare readOnlyHint=true but are treated as mutating by the C5 lock, the integrity envelope and the audit write. Decide which side is authoritative.",
+      "why_escalated": "A safety-surface correctness call with two defensible answers - relax the lock, or correct the annotations."
+    },
+    {
+      "id": "R-E1-4",
+      "item": "Probe $ref support in MCP inputSchema before any reduction plan banks the 232-1,411 token extraction savings.",
+      "why_escalated": "Requires a live client probe; gates a number E2 would otherwise inherit as fact."
+    },
+    {
+      "id": "R-E1-5",
+      "item": "TOPS: 15 of 17 tools and 92.6% of family token mass have no recorded invocation. Is PDG orchestration a shipped capability or an aspiration?",
+      "why_escalated": "Product direction. Constitution Article I reserves 'what to deprecate' to the human."
+    },
+    {
+      "id": "R-E1-6",
+      "item": "The audit trail cannot see read-only calls (handlers.py:531). If standing tool-usage telemetry is wanted, that gate is the thing to change - otherwise roughly a third of the surface stays permanently unmeasurable.",
+      "why_escalated": "Changes a hot dispatch path and a privacy surface; both are rulings, not agent calls."
+    },
+    {
+      "id": "R-E1-7",
+      "item": "If a flat catalog is retained, the 2,000 ceiling is unreachable above 81 tools. Fewer tools versus a deferred surface is the actual decision.",
+      "why_escalated": "Explicitly a product decision, and E2's to frame once E0's cache finding lands."
+    }
+  ],
+
+  "gates_touched": "none. No push, no merge, no tag. No gate flipped. token_ceiling.json and suite_baseline.json untouched.",
+
+  "resume_token": {
+    "skip_if_reentered": [
+      "Do NOT re-derive the surface decomposition, the Pareto curve, the duplication analysis, the floor ladder or the dead-surface classification - all five producers are committed, deterministic, and re-runnable with `python harness/notes/econ/econ_<name>.py`.",
+      "Do NOT re-litigate whether 2,000 is reachable at 120 tools. Measured: no, floor 2,919. Re-open only if the tool count drops below 81 or the ceiling changes.",
+      "Do NOT re-investigate the T.0 registry digest mismatch. Resolved: CRLF vs LF, fully explained, no residual."
+    ],
+    "re_run_when": "the registry changes (any commit touching python/synapse/mcp/_tool_registry.py). All five producers are idempotent and self-calibrating; econ_surface_census.py exits non-zero if it can no longer reproduce T.0's 17,310.",
+    "next_leg": "E2 is gated on E0 + E1. E1's half is complete. E2 must NOT assume the reduction programme is correct - E0's cache finding decides whether reduction or a cache-control header is the right response."
+  },
+
+  "ratified": false,
+  "ratification_note": "ratified:false is the correct resting state. The flip is human-only. This receipt records what was measured; it does not sanction what happens next."
+}

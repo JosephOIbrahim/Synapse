@@ -1,0 +1,46 @@
+harness(ECON-01): E1 - the tool surface, decomposed
+
+A total is not a plan. T.0 published 17,310 for the mcp_http surface; E1
+splits that same payload per tool, per component, and the decomposition
+changes three of the brief's four premises.
+
+The reader is calibrated before it is trusted (R60): it rebuilds the
+registry as committed at T.0's own commit and reproduces 115 tools /
+17,310 tokens exactly. All five readers are mutation-tested, 8/8 controls
+flip (R133). C4b, the paired negative control, failed on first authoring
+and is recorded rather than quietly fixed - the control was wrong, not
+the reader.
+
+  DRIFT     17,310 was measured at 115 tools. The registry now holds 120
+            and the live surface is 18,962. The +5 are the Solaris tools
+            S1 found unreachable and SR1 M1/M2/M5 repaired (+1,652).
+
+  SHAPE     schema 56.8%, auto-generated annotations 21.0%, ALL tool
+            descriptions 18.1%, names 5.2%. The wire carries four
+            components, not three. Derived metadata outweighs every
+            description in the product.
+
+  PARETO    refuted. 37 of 120 tools carry 50% of the mass, 78 carry 80%,
+            the heaviest 20 carry 33.7%. This is a sweep, not an edit.
+
+  CEILING   2,000 is NOT reachable at 120 tools. The cheapest LEGAL
+            tools/list - empty descriptions, empty schemas, names only -
+            is 2,919, i.e. 919 over before a word is written. Only 81
+            tools fit at that floor; 13 at the current shape. The three
+            verbs the ceiling was calibrated for measure 332.
+
+  DEAD      0 structurally dead - all 120 resolve to a handler, so the S1
+            condition is closed. But 34 tools (5,175 tokens, 27.3%) have
+            no recorded invocation across 58,663 audit records and 1,705
+            journal records. tops_* is 15 of 17, 92.6% of family mass.
+
+  TRAP      the audit trail is blind to read-only calls by construction
+            (handlers.py:531). For 32 tools "never called" was a check
+            that could never have returned "called". synapse_ping is the
+            worked example. The SessionJournal closes the gap.
+
+Measures only. Proposes no cut - that is E2's, and E2 needs E0's cache
+answer first, because a cache-read surface is ~1,896 effective and the
+whole reduction programme demotes to a header.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>

@@ -1,0 +1,163 @@
+{
+  "schema": "e1_controls/v1",
+  "producer": "harness/notes/econ/econ_controls.py",
+  "stats": {
+    "n_controls": 8,
+    "passed": 8,
+    "failed": 0,
+    "all_readers_calibrated": true,
+    "readers_covered": [
+      "econ_floor",
+      "econ_schema_dupes",
+      "econ_surface_census"
+    ],
+    "method": "each control runs the REAL producer end to end against a mutated registry (synapse.mcp.tools.get_tools patched), never a re-implementation",
+    "controls": [
+      {
+        "id": "C1",
+        "reader": "econ_surface_census G1",
+        "claim": "the reader reproduces T.0's 17,310 from T.0's own registry",
+        "fails_when": "it would be wrong if its serialisation or tokenizer differed from T.0's; mutation adds 3 words to one historical description",
+        "baseline": {
+          "tokens": 17310,
+          "tokens_match": true,
+          "exit": 0
+        },
+        "under_mutation": {
+          "tokens": 17314,
+          "tokens_match": false,
+          "exit": 2
+        },
+        "verdict_flipped": true,
+        "control_status": "PASS",
+        "detail": "a calibration gate that stays green under a mutated input is not a gate"
+      },
+      {
+        "id": "C2",
+        "reader": "econ_surface_census G2",
+        "claim": "the four decomposed fragments rebuild each wire object byte-for-byte",
+        "fails_when": "it would be wrong if a tool carried a fifth key whose mass vanished into the structural residual; mutation adds outputSchema to one tool",
+        "baseline": {
+          "all_rebuild": true
+        },
+        "under_mutation": {
+          "all_rebuild": false
+        },
+        "verdict_flipped": true,
+        "control_status": "PASS",
+        "detail": ""
+      },
+      {
+        "id": "C3",
+        "reader": "econ_surface_census component totals",
+        "claim": "the description component total is the sum of real per-tool description fragments",
+        "fails_when": "it would be wrong if it double-counted or dropped tools; mutation appends one tool with a description of independently-computed token cost",
+        "baseline": {
+          "description_tokens": 3432,
+          "n_tools": 120
+        },
+        "under_mutation": {
+          "description_tokens": 3454,
+          "n_tools": 121,
+          "delta": 22,
+          "predicted_delta": 22
+        },
+        "verdict_flipped": true,
+        "control_status": "PASS",
+        "detail": "exact-delta control: an approximate match would indicate mis-attribution"
+      },
+      {
+        "id": "C4a",
+        "reader": "econ_schema_dupes repeat counting",
+        "claim": "repeat_count and ceiling_saving reflect real repetition",
+        "fails_when": "it would be wrong if it counted per-tool rather than per-instance; mutation copies the property 'node' into one additional tool",
+        "baseline": {
+          "repeat_count": 10,
+          "ceiling": 162,
+          "fragment_tokens": 18
+        },
+        "under_mutation": {
+          "repeat_count": 11,
+          "ceiling": 180
+        },
+        "verdict_flipped": true,
+        "control_status": "PASS",
+        "detail": "predicted ceiling delta = exactly one fragment's tokens"
+      },
+      {
+        "id": "C4b",
+        "reader": "econ_schema_dupes negative control",
+        "claim": "a surface with no repeated fragments reports no duplication saving",
+        "fails_when": "it would be wrong if it reported savings on unique input - the classic check-that-cannot-fail; mutation makes every property name and description unique",
+        "baseline": {
+          "ceiling_saving": 1265
+        },
+        "under_mutation": {
+          "ceiling_saving": 0
+        },
+        "verdict_flipped": true,
+        "control_status": "PASS",
+        "detail": "paired negative control - the thing probe_phase3_layout was missing"
+      },
+      {
+        "id": "C5",
+        "reader": "econ_floor verdict",
+        "claim": "'2,000 is not reachable' is computed against the committed ceiling file",
+        "fails_when": "it would be wrong if the verdict were hardcoded; mutation raises the ceiling file to 99,999 and the verdict must flip to reachable",
+        "baseline": {
+          "ceiling": 2000,
+          "reachable": false
+        },
+        "under_mutation": {
+          "ceiling": 99999,
+          "reachable": true
+        },
+        "verdict_flipped": true,
+        "control_status": "PASS",
+        "detail": ""
+      },
+      {
+        "id": "C6",
+        "reader": "econ_floor scaling",
+        "claim": "the catalog floor scales with tool COUNT, which is why the ceiling is a count statement rather than a size statement",
+        "fails_when": "it would be wrong if the floor were insensitive to tool count; mutation halves the registry to 60 tools",
+        "baseline": {
+          "n_tools": 120,
+          "F4_tokens": 2919,
+          "fits_2000": false
+        },
+        "under_mutation": {
+          "n_tools": 60,
+          "F4_tokens": 1490,
+          "fits_2000": true
+        },
+        "verdict_flipped": true,
+        "control_status": "PASS",
+        "detail": "halving the count moves the floor from over-ceiling to under-ceiling"
+      },
+      {
+        "id": "C7",
+        "reader": "econ_floor ladder",
+        "claim": "each floor is strictly cheaper than the one above it",
+        "fails_when": "it would be wrong if a 'reduction' step increased cost, which would mean the payload construction is not doing what its label says",
+        "baseline": {
+          "ladder": {
+            "F0_as_shipped": 18962,
+            "F1_no_annotations": 15095,
+            "F2_no_property_descriptions": 9935,
+            "F3_empty_schemas": 6117,
+            "F4_names_only_legal": 2919,
+            "F5_bare_name_array": 742
+          }
+        },
+        "under_mutation": {
+          "strictly_decreasing": true
+        },
+        "verdict_flipped": true,
+        "control_status": "PASS",
+        "detail": "structural self-check; no external mutation needed"
+      }
+    ]
+  },
+  "blake2b": "214e76e577e84d6a133b6cdecd963ba7"
+}

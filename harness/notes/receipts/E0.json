@@ -1,0 +1,333 @@
+{
+  "schema": "receipt/v1",
+  "leg": "E0",
+  "title": "Cache + cost truth - settling T.1's premise before T.1 is built",
+  "harness": "ECON-01",
+  "status": "green",
+  "status_note": "Describes what happened (Law 3). All five questions were answered with measurements taken this session, four producers were built and run, and eleven reader calibrations plus seven scanner/gap controls were mutation-tested. The leg is green because the measurement succeeded. The PREMISE it measured survived - but only after an adversarial pass INVERTED this leg's own first verdict, which is Law 7 working on E0 itself rather than on the blueprint.",
+  "revision_note": "THIS RECEIPT IS A REVISION. An adversarial pass on the finished revision-1 artifact returned 24 attacks across three lenses and upheld showstoppers on three of them; all three were correct and two changed the verdict's DIRECTION. Revision 1 concluded 'caching already did T.1's work on the panel, so re-scope T.1 to MCP and do not run it first'. That was wrong, and it was wrong because of a unit substitution in revision 1's own arithmetic - it compared a COST figure to a CONTEXT-OCCUPANCY budget. Corrected, T.1 appears in every cheapest configuration across all twelve measured regimes and caching-without-reduction wins none. The superseded revision-1 claims are listed in drift D6-D8 so the change is auditable rather than silent. Two further corrections came from evidence the crucible found that this leg had wrongly reported as unavailable: the audit log DOES decrypt, which turned an unsourced assertion about artist think-time into a measurement.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "session .claude/settings.json (hook-bearing, pytest-capable) - NOT harness/agent-settings.json. Subagents ran under read-only agent types (cartographer, crucible) holding no Edit/Write.",
+  "commit_before": "a5150ec",
+  "commit_after": "UNCOMMITTED - product written, receipt written; the commit is the next act (R93 orders product before receipt).",
+  "merged": false,
+  "pushed": false,
+  "touches_declared": ["harness/notes/econ/**", "harness/notes/receipts/E0.json"],
+  "touches_actual": [
+    "harness/notes/econ/E0_COST.md",
+    "harness/notes/econ/econ_segments.py",
+    "harness/notes/econ/econ_effective.py",
+    "harness/notes/econ/econ_cachetrace.py",
+    "harness/notes/econ/econ_gaps.py",
+    "harness/notes/econ/E0_segments.json",
+    "harness/notes/econ/E0_effective.json",
+    "harness/notes/econ/E0_cachetrace.json",
+    "harness/notes/econ/E0_gaps.json",
+    "harness/notes/receipts/E0.json"
+  ],
+  "fence_held": "VERIFIED - git status --porcelain shows only harness/notes/econ/ as new. No product code, no tests, no harness/state, no VERSION, nothing outside the grant. The pre-existing untracked .claude/.orch_launched was present at leg start and was not authored here.",
+  "tests_before": null,
+  "tests_after": null,
+  "suite_note": "NOT RUN, deliberately. This leg is READ-ONLY and fenced to harness/notes/**: it added no test, changed no product code, deleted nothing. A suite run would measure the tree's state, not this leg's effect, and Law 6's 'strictly increases or holds' is satisfied by a zero delta. The evidence that nothing was disturbed is the fence_held git-status check, which is a stronger claim than a green suite.",
+  "commandment_7": "held vacuously - 0 tests added, weakened, skipped, xfailed or deleted",
+  "producers": {
+    "econ_segments.py": "Q1 tool surface on the live tree under both serializations; Q3 segment sizes incl. a DISJOINT chat-only history; Q4 byte-stability across two reconstructed 3-turn sessions; system_prompt_anatomy (part sizes, per-network totals, single-field cache-bust deltas, scene-block range); CAL-1..CAL-8. -> E0_segments.json",
+    "econ_effective.py": "Q5 cost model, REVISION 2. Prices preload-tokens and BTE as SEPARATE quantities, models k API calls per user turn, six scenarios incl. S6, two sessions x k in {1,2,5} x warm/cold. -> E0_effective.json",
+    "econ_cachetrace.py": "Q2 enumeration over 835 non-vendor .py files with four mutation-tested scanner controls. -> E0_cachetrace.json",
+    "econ_gaps.py": "A3 evidence. Decrypts ~/.synapse/audit read-only and emits ONLY timing aggregates (no operation content, paths, values or session ids) to replace revision 1's unsourced think-time assertion. Three mutation-tested controls. -> E0_gaps.json",
+    "naming": "econ_<name>.py, no leading underscore (R132)."
+  },
+  "conditions_attached_to_every_figure": {
+    "date": "2026-07-28",
+    "tokenizer": "tiktoken cl100k_base, o200k_base reported beside it - DECLARED PROXIES.",
+    "model_in_the_loop": "NONE. Payload measurements, not billed usage.",
+    "interpreter": "system python 3.14.2, vendored SDK tree ABI-INACTIVE",
+    "surface_priced": "the interactive panel surface (126 tools), verified at python/synapse/panel/synapse_panel.py:1753",
+    "two_units_never_mixed": "PRELOAD TOKENS = context-window occupancy, what token_ceiling.json budgets. BTE = billed-token-equivalent = input tokens x price multiplier. Revision 1 compared them; revision 2 does not."
+  },
+  "summary": {
+    "premise_under_test": "T.1: cut the tool surface from 17,310 tokens to <=2,000, because 'you cannot be a credible token economist while your own tool surface runs 8.6x over its ceiling.'",
+    "verdict": "T.1 SURVIVES and its case is STRONGER than the brief's own arithmetic made it. What is refuted is the brief's FRAMING, not its mile. Caching and reduction are not 'opposite engineering programmes' - they optimise different quantities. T.1 reduces context-window occupancy (preload tokens); caching reduces price (BTE). A cache read cannot put anything under a preload-token ceiling because the tokens still occupy the window. Measured across twelve regimes (2 sessions x k in {1,2,5} x warm/cold), every cheapest configuration contains T.1's reduction and caching-without-reduction wins none. T.1 is necessary, insufficient, and must ship WITH caching rather than instead of it.",
+    "the_claim_as_it_can_now_honestly_be_made": "Measured on 2026-07-28 against the live tree, with a declared proxy tokenizer and no model in the loop: the tool surface is NOT 17,310 tokens - that figure is stale (registry blake2b differs; 115 tools then, 120 now) and today measures 18,962 on MCP and 15,901-19,711 on the panel depending on which of two defensible serializations you pick, a 24% spread that bounds any local estimate. Prompt caching is NOT absent: cache_control is set at panel/providers/anthropic_provider.py:64 and :69 - the only two occurrences in 835 non-vendor .py files - and the panel chat path provably reaches them through six anchored hops, with correct placement covering both the tool definitions and the system prompt. But caching and reduction are not substitutes. The 2,000 figure in token_ceiling.json is max_preload_tokens, a budget on CONTEXT-WINDOW OCCUPANCY; a cache read changes what a token costs, not whether it occupies the window. So the panel tool surface is 9.86x over that ceiling uncached AND 9.86x over it cached, while its PRICE falls 90% per cache-read call. On preload tokens, T.1 is the only lever that exists. On price, caching is the dominant lever, and it pays more than a single-request model suggests because the shipped panel makes up to 25 full requests per user turn on a byte-identical tools array and a frozen system string, so iterations 2..k are near-certain cache reads. Across every regime measured, the cheapest configuration is T.1 plus caching plus moving the volatile scene block out of the cached span; caching alone never wins. Two things outrank the tool surface anyway: on large scenes scene grounding is 91.5% of an API call and is uncacheable by construction, making it a reduction problem rather than a caching one; and the cached system span is rebuilt every turn from live scene state, so on turns where the artist changed network it is rewritten rather than read - with the largest single-field hazard being a /stage-to-/out navigation, a 5,783-character change inside the cached span. The 5-minute TTL is not the threat this leg first assumed: measured against 58,660 audit entries, 63% of inter-burst gaps fall inside it at a 30s burst threshold. No claim here is verified against billed usage, because the account has no credits and the panel's SSE parser has no message_start branch to read usage from even if it did.",
+    "oracle_check": {
+      "Q1_exact_or_proxy_LABELLED_with_producer": "MET - PROXY, labelled, producer econ_segments.py. Credit probe re-run this session (HTTP 400, req_011CdUVD9PusSuzZDatVCkfN); the offline-tokenizer question closed separately (vendored anthropic 0.96.0, pip 0.75.0, both past 0.39).",
+      "Q2_file_line_or_explicit_absence": "MET - PRESENT at anthropic_provider.py:64,69, called at :109. Absence is a searched claim with its exact search space recorded. Scope stated precisely: 835 non-vendor .py files; tree-wide across all file types the string also appears in five docs/notes and the brief, none of them code.",
+      "Q3_four_segments_ranked_by_MEASURED_size": "MET, and corrected twice from revision 1. The four rows are now DISJOINT (chat-only history measured separately from resident grounding), so the shares are a real partition; and C1's tokens_model_visible column is used rather than its smaller tokens column. Ranking inverts with scene size: small 82.8% tools, large 91.5% grounding.",
+      "Q4_per_segment_stability_across_at_least_3_real_turns": "NOT MET, and now stated as a miss rather than only as an assumption. No real turns exist and none are recoverable: the audit log decrypts (58,660 entries) but carries no message payloads, and the only conversation persistence in code is a lossy 10-item markdown summary (save_shot.py:301-308). Q4 was answered by driving the shipped request-construction code across two 3-turn sessions. Revision 1 named this as assumption A5; naming an assumption is not meeting an oracle, and the miss is now explicit in both the document and here.",
+      "Q5_effective_cost_with_assumptions_NAMED": "MET - seven assumptions A1..A7, each carrying its falsifier and sensitivity, all seven now present in the ARTIFACT (revision 1 listed A6 only in the document, with no producer).",
+      "every_reader_calibrated_before_trusted_R60": "MET - CAL-1..CAL-8 plus CTL-G1..G3. CAL-7 is load-bearing: the reader reproduces T.0's committed panel_worker figure bit-exactly (93 tools, 46,319 bytes, 46,317 chars, 10,264 tokens).",
+      "controls_mutation_tested_R133": "MET - CAL-3/4/5/8, the history-prefix corruption test, CTL-1..CTL-4 (including an explicit false-positive control), and CTL-G1..CTL-G3 on the gap reader.",
+      "producers_named_econ_name_py_no_leading_underscore": "MET - econ_segments.py, econ_effective.py, econ_cachetrace.py, econ_gaps.py."
+    }
+  },
+  "findings": [
+    {
+      "id": "E0-F1",
+      "severity": "method-limit",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "harness/notes/_credit_probe.py",
+      "claim": "The Anthropic account is STILL credit-blocked. count_tokens returns HTTP 400 'Your credit balance is too low', request_id req_011CdUVD9PusSuzZDatVCkfN, 2026-07-28. The key authenticates - a bad key returns 401.",
+      "consequence": "C1-F2 stands. Every token figure is a declared proxy. No offline exact count exists either: vendored anthropic 0.96.0 and pip 0.75.0 are both past 0.39, and no Claude 3+ tokenizer has ever been published for the importable tokenizers 0.22.2 / transformers 4.57.3."
+    },
+    {
+      "id": "E0-F2",
+      "severity": "high",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "harness/notes/econ/E0_segments.json:calibration[CAL-6] ; harness/notes/token_baseline.json:stats.registry_blake2b",
+      "claim": "THE GOVERNING NUMBER IS STALE. Recorded registry blake2b c0cd3db16c293e38a3f18a35ed51870f vs live d6c79a415f13a9dcf4663b089b2bd1ca; 115 -> 120 registry tools, 121 -> 126 panel tools. Re-measured under T.0's own method: mcp_http 17,310 -> 18,962 (+1,652), panel 14,380 -> 15,901 (+1,521).",
+      "why_it_matters": "T.1's headline multiple and the ceiling gate in harness/verify/token_ceiling.json both grade a registry that no longer exists. The surface grew ~9.5% in five days.",
+      "not_fixed": "Re-baselining is outside a read-only fence - scripts/token_baseline.py overwrites another leg's committed evidence."
+    },
+    {
+      "id": "E0-F3",
+      "severity": "high",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/mcp/server.py:394 ; mcp_server.py:910 ; scripts/token_baseline.py:74",
+      "claim": "SYNAPSE CANNOT SET cache_control ON THE MCP PATH. The 17,310 figure measures mcp_http - SYNAPSE's tools/list JSON-RPC response. There SYNAPSE is the SERVER: it hands tool definitions to an external client which builds its own model request. Neither mcp/server.py nor mcp_server.py holds an Anthropic client or any egress to api.anthropic.com.",
+      "what_this_does_NOT_say": "It does NOT say the MCP tool block is uncached. The external client (Claude Code / Desktop) may cache it; SYNAPSE cannot observe this either way. Revision 1 scored that unknown as ABSENT while using the panel's measured-present to discount T.1 - an asymmetry that manufactured its recommendation. Unknown is now recorded as unknown."
+    },
+    {
+      "id": "E0-F4",
+      "severity": "high",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/panel/providers/anthropic_provider.py:64 ; :69 ; :109 ; harness/notes/econ/E0_cachetrace.json",
+      "claim": "CACHING IS ON AND CORRECTLY PLACED - Q2's answer is presence, not absence. cache_control on the last tool (:64) and the system prompt (:69), inside _with_prompt_cache, CALLED at :109. The only two occurrences in 835 non-vendor .py files. Prefix order is tools -> system -> messages, so a hit covers both spans.",
+      "reachability": "Six anchored hops: synapse_panel.py:1684 -> :1690 -> :1738 -> :1758 -> claude_worker.py:157 -> anthropic_provider.py:109. registry.py:161,189,193 makes AnthropicProvider the 'claude' provider AND the unknown-id fallback. claude_worker.py retains no inline SSE/http.client path."
+    },
+    {
+      "id": "E0-F5",
+      "severity": "blocker-for-the-premise",
+      "tier": "VERIFIED-DERIVED",
+      "anchor": "harness/verify/token_ceiling.json:max_preload_tokens ; harness/notes/econ/E0_effective.json:verdict.preload_tokens",
+      "claim": "THE BRIEF'S CENTRAL ARITHMETIC COMMITS A UNIT SUBSTITUTION, AND SO DID REVISION 1 OF THIS LEG. token_ceiling.json declares max_preload_tokens: 2000 - a budget on CONTEXT-WINDOW OCCUPANCY, explicitly listing 'panel' among its measured surfaces. A cache read changes what a token COSTS; it does not remove the token from the window. So the panel tool surface is 19,711 tokens = 9.86x over the ceiling UNCACHED and 9.86x over it CACHED, while its PRICE falls from 19,711 to 1,971 BTE per cache-read call.",
+      "why_it_matters": "This is the finding that decides the leg. The brief's table ('cached (read) ~1,731 effective - UNDER the ceiling') compares a cost figure to an occupancy budget, and concludes the two programmes are alternatives. They are not. On preload tokens T.1 is the ONLY lever; on price caching is the dominant one.",
+      "how_it_was_caught": "Not by this leg's own calibration - by an adversarial pass against the finished revision-1 artifact. Revision 1's producer even carried the sentence 'BTE is a COST unit, not a token count, and is never reported as a token count', and then reported it against a token ceiling anyway."
+    },
+    {
+      "id": "E0-F6",
+      "severity": "high",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/panel/claude_worker.py:34 ; :85 ; :153 ; :157 ; harness/notes/econ/E0_effective.json:assumptions[A7]",
+      "claim": "A USER TURN IS UP TO 25 API CALLS, NOT ONE - and modelling it as one made caching look far worse than it is. claude_worker.py:153 loops to _MAX_TOOL_ITERATIONS=25, and every iteration passes the same self._tools and the same self._system string, which was stored once at :85. Those requests are seconds apart and byte-identical, so iterations 2..k are near-certain cache reads regardless of the inter-turn gap.",
+      "what_it_overturns": "Revision 1 charged every span exactly once per turn and therefore reported (a) that COLD caching costs 23% MORE than no caching, and (b) a '+667 BTE per turn cache written but never read' penalty on the system span. Both are artifacts of k=1. At k>=2 - the shipped minimum for any tool-using turn - the system entry IS re-read, by the next iteration of the same turn.",
+      "tier_note": "The byte-identity is CODE-VERIFIED. The cache behaviour itself is not observed live (assumption A7), because no live request is possible (E0-F1)."
+    },
+    {
+      "id": "E0-F7",
+      "severity": "high",
+      "tier": "VERIFIED-DERIVED",
+      "anchor": "harness/notes/econ/E0_effective.json:table ; verdict.best_scenario_per_regime",
+      "claim": "EVERY CHEAPEST CONFIGURATION CONTAINS T.1'S REDUCTION, AND CACHING ALONE NEVER WINS. Across twelve regimes (2 sessions x k in {1,2,5} x warm/cold): S4 (T.1 + caching) wins 6, S6 (T.1 + caching + volatile fix) wins 4, S3 (T.1 alone) wins 2, S5 (caching + volatile fix, no reduction) wins 0. Steady-state small-scene, stationary k=2 WARM: S6 6,343 BTE vs S5 9,885 vs S1-as-shipped 12,881 vs S2-uncached 50,095.",
+      "what_it_overturns": "Revision 1 concluded 'S5 beats S3 - a few lines outperform T.1's entire months-long reduction' and recommended dropping the panel surface from T.1's scope. That comparison granted S5 caching while denying it to S3, and omitted S6 entirely - the row nobody would decline, since shipping T.1 does not mean switching caching off."
+    },
+    {
+      "id": "E0-F8",
+      "severity": "high",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "harness/notes/econ/E0_gaps.json ; ~/.synapse/audit (read-only, aggregates only)",
+      "claim": "THE TTL IS NOT THE THREAT THIS LEG FIRST ASSUMED, AND THE MEASUREMENT EXISTED ALL ALONG. Revision 1 asserted 'VFX think-time between turns routinely exceeds five minutes' with NO producer and rested an argument on it. Measured against 58,676 audit entries (append-only log; count is as-of-run) spanning 2026-02-06 to 2026-07-28: at a 30s burst threshold 36.8% of inter-burst gaps exceed the 300s TTL - so 63% fall INSIDE it. Sweep: 10s -> 17.2%, 30s -> 36.8%, 60s -> 48.3%, 120s -> 67.3%.",
+      "bias_stated": "These are tool-op bursts, not chat turns. An artist can think without firing an operation, so this is a LOWER bound on how often the cache is cold. It replaces an assertion that had no evidence at all with a proxy that has a stated direction of error.",
+      "privacy_note": "econ_gaps.py reads the audit log read-only and emits ONLY timing aggregates - no operation content, node paths, parameter values or session identifiers enter the artifact."
+    },
+    {
+      "id": "E0-F9",
+      "severity": "high",
+      "tier": "VERIFIED-DERIVED",
+      "anchor": "harness/notes/econ/E0_effective.json:verdict.segment_ranking ; large_scene_spread",
+      "claim": "THE RANKING INVERTS WITH SCENE SIZE AND GROUNDING DOMINATES HARDER THAN REVISION 1 SAID. Per API call at turn 3 with k=2, rows disjoint: small scene (C1 rung L1) tools 82.8% / system 11.2% / grounding 4.2% / chat 1.8%; large scene (rung L6) grounding 91.5% / tools 7.3% / system 1.0% / chat 0.2%. Grounding is the one segment that CANNOT be cached - it changes every turn by construction - so on large scenes it is a reduction problem, not a caching one.",
+      "corrections_from_revision_1": "(a) Revision 1's four rows OVERLAPPED - its history row already contained the grounding payload, which was then added again as a separate row into the same denominator, so its shares were not a partition. (b) Revision 1 used C1's smaller 'tokens' column when 'tokens_model_visible' sat beside it, understating grounding inside the very argument that grounding dominates. (c) Revision 1 claimed 'every large-scene scenario lands within 3% of ~119k BTE'; computed rather than asserted, the spread is 30.4x (246,470 to 7,480,330)."
+    },
+    {
+      "id": "E0-F10",
+      "severity": "high",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/panel/system_prompt.py:280-293 ; harness/notes/econ/E0_segments.json:system_prompt_anatomy ; q4_stability_by_session",
+      "claim": "THE CACHED SYSTEM SPAN IS NOT STATIC, AND THE OBVIOUS FIX IS INSUFFICIENT. The system prompt is rebuilt every turn from live scene state (synapse_panel.py:1754). Measured single-field deltas against /stage: network -> /out is -5,783 chars, network -> /obj is -5,214, selection []->[one] is +11, and frame/hip changes are 0 chars but NOT byte-identical. In the reconstructed NAVIGATING session the 'static remainder' - stable when the artist stays put - becomes UNSTABLE, because _solaris_context_block swaps a 5,779-char literal for a 567-char one inside the span.",
+      "correction_from_revision_1": "Revision 1 named /stage -> /obj as 'the biggest per-turn cache hazard' and quoted -5,214 with NO producer. The figure reproduces, but the superlative is wrong: /stage -> /out is larger, and /img and /mat share that prompt. All of these figures now have a producer (system_prompt_anatomy).",
+      "why_it_matters": "It qualifies the leading remediation. Moving the 31-86 token scene-context block out of the cached span is sufficient only for an artist who stays in one network; the guidance selection must move too."
+    },
+    {
+      "id": "E0-F11",
+      "severity": "medium",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "docs/LATENCY_SOLARIS_REVIEW.md:6 ; python/synapse/panel/providers/anthropic_provider.py:206 ; :284 ; python/synapse/panel/synapse_panel.py:556",
+      "claim": "A 'LIVE-VERIFIED' DOC CLAIM THE CODE CANNOT PRODUCE. The doc asserts caching is 'Live-verified (cache_creation 5052 -> cache_read 5052)'. The token 5052 appears exactly once in the tree - that line. No producer, no receipt, no test, no log. Stronger: anthropic_provider.py:206 has NO message_start branch (where cache_read_input_tokens arrives) and :284 reads only delta.stop_reason, discarding the usage object. _note_usage (synapse_panel.py:556) has zero callers.",
+      "note": "The same file contradicts itself at :208 ('caching is OFF'), which resolves in favour of :6 on the on/off question - the code commit is a git ancestor of the doc commit. The parenthetical figure does not survive. This is C1-F12/C1-F14 still open and is why NO cache claim in E0 is verified against billed usage."
+    },
+    {
+      "id": "E0-F12",
+      "severity": "medium",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "harness/notes/econ/E0_effective.json:tokenizer_and_serialization_band ; scripts/token_baseline.py:96 ; python/synapse/panel/providers/anthropic_provider.py:120 ; python/synapse/mcp/protocol.py:15-24",
+      "claim": "NO LOCAL TOOL-SURFACE FIGURE DESERVES FIVE SIGNIFICANT FIGURES. The identical 126-tool set measures 15,901 or 19,711 cl100k tokens - 24% apart - because token_baseline.py measures the compact form while the panel emits json.dumps(body) at default separators with ensure_ascii=True. Neither is billed: Anthropic re-renders tool definitions canonically. The MCP figure carries a second dependency - protocol.py uses orjson (compact) when importable and json.dumps(sort_keys=True) at default separators otherwise, so the same surface measures differently on two machines."
+    },
+    {
+      "id": "E0-F13",
+      "severity": "medium",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/panel/claude_worker.py:90-91 ; python/synapse/panel/synapse_panel.py:56-58 ; :1753 ; :1758",
+      "claim": "THE INTERACTIVE PANEL SENDS THE FULL SURFACE, NOT THE WORKER SUBSET - checked because getting it wrong would have invalidated every figure. claude_worker.py:90-91 DEFAULTS to get_anthropic_tools_for_worker() (93 tools / 12,813 wire tokens), but synapse_panel.py:1753 passes get_anthropic_tools() explicitly (126 tools / 19,711).",
+      "the_degraded_path": "synapse_panel.py:56-58 sets get_anthropic_tools = None on import failure, in which case tools=None and the worker silently falls back to the 93-tool subset - a 35% smaller surface reached by an import failure rather than a decision, with no log line distinguishing the two."
+    },
+    {
+      "id": "E0-F14",
+      "severity": "low",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/cognitive/agent_loop.py:287 ; python/synapse/routing/router.py:646 ; :794 ; :853 ; agent/synapse_agent.py:186 ; python/synapse/host/daemon.py:502",
+      "claim": "FOUR OTHER PRODUCT PATHS BUILD ANTHROPIC REQUESTS WITH NO CACHING: cognitive/agent_loop.py, routing/router.py (TieredRouter Tier 2 + Tier 3), agent/synapse_agent.py, host/daemon.py. None of the four non-Claude panel providers implements any caching equivalent either.",
+      "scope_note": "agent_loop/daemon is DORMANT - SynapseDaemon is never instantiated outside docs and tests - so its lack of caching costs nothing today. router.py is live on the /synapse dispatch path and is the one worth pricing next."
+    },
+    {
+      "id": "E0-F15",
+      "severity": "low",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "~/.synapse/audit ; ~/.synapse/encryption.key ; python/synapse/panel/save_shot.py:301-308 ; harness/notes/econ/E0_gaps.json:diagnostics",
+      "claim": "NO REAL TURNS ARE RECOVERABLE, BUT REVISION 1 GOT THE REASON WRONG. The audit log DOES decrypt with the key SYNAPSE writes beside it - 58,660 entries across 85 files - so revision 1's 'Fernet-encrypted, 0 of 85 files carry a message array in plaintext' understated what was available by stopping at 'in plaintext'. Decrypted, the log still carries NO messages / system / input_tokens / tool_result key in any entry, so the substantive claim holds. Revision 1's 'there is no conversation persistence in the code' was also false: save_shot.py:277,295,301-308 writes conversation highlights to $HIP/claude/sessions/ - a lossy 10-item markdown summary, not a transcript.",
+      "why_it_matters": "The correction is what made E0-F8 possible. An absence claim that stops one step short of the available evidence is how a measurable quantity becomes an assertion."
+    },
+    {
+      "id": "E0-F16",
+      "severity": "low",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "harness/notes/econ/econ_cachetrace.py:32-40 ; E0_cachetrace.json:searched.site_patterns",
+      "claim": "THE Q2 ENUMERATION HAS AN UNTESTED FALSE-NEGATIVE AXIS, disclosed rather than discovered later. The scanner matches seven literal site patterns; a provider that builds its endpoint from a settings-supplied base_url matches none of them and would be silently absent. CTL-1..CTL-4 can only fail for a pattern the scanner already implements - they cannot fail for a missed site KIND.",
+      "why_it_is_disclosed": "Law 1 says state the condition under which a check fails. This check cannot fail for an unknown request-construction idiom, and saying so is the difference between a control and a decoration."
+    }
+  ],
+  "limits": [
+    "No model in the loop and no exact tokenizer (E0-F1). Payload measurements, not billed usage.",
+    "Q4's ORACLE IS NOT MET. No real turns exist or are recoverable (E0-F15); Q4 is reconstructed by driving the shipped request-construction code across two 3-turn sessions.",
+    "A1's price multipliers (1.25x write / 0.1x read) were TAKEN FROM THE BRIEF and not re-verified against current Anthropic pricing. Every BTE figure scales linearly with them.",
+    "A6 and A7 are both LOAD-BEARING and neither was observed live: that a changed system block leaves the tools breakpoint hittable, and that intra-turn iterations 2..k hit the cache. Both follow from documented prefix ordering plus code-verified byte-identity; neither is a live observation, because no live request is possible.",
+    "The TTL figure is an OP-BURST PROXY, not chat turns, and is a lower bound on how often the cache is cold.",
+    "k is modelled at 1, 2 and 5; the shipped cap is 25 and no real distribution of k exists.",
+    "Grounding figures are C1's and inherit every C1 limit - proxy tokenizer, one machine, one build, one day.",
+    "econ_cachetrace.py is line-oriented (docstring mentions count as sites, flagged per hit) and carries the false-negative axis in E0-F16.",
+    "Instrument drift in C1: its flat-control arm builds selections with n.name() while the panel uses n.path() (c1_token_bench.py:349 vs synapse_panel.py:1727).",
+    "C1-F11's anchor is stale - the block is at system_prompt.py:255-277, not :224."
+  ],
+  "drift": [
+    {
+      "id": "D1",
+      "severity": "accuracy",
+      "note": "The brief's four-segment model is wrong in one respect. 'Scene grounding' is NOT a top-level request segment: the system prompt carries only a 31-86 token flat block (system_prompt.py:255-277), and all node/parm/geometry grounding enters as tool_result blocks inside the conversation history (claude_worker.py:263-269).",
+      "correction": "Grounding and history are structurally the same segment, and the consequence is worse than the brief assumed: grounding is PERMANENT history, re-sent on every later call, not a transient per-turn payload."
+    },
+    {
+      "id": "D2",
+      "severity": "process",
+      "note": "TWO READER DEFECTS caught by calibration before publishing. (a) The first segmenter split the system prompt on '\\n\\n', cutting the scene-context block in half because its body contains a blank line - and therefore reported the VOLATILE block as STABLE and the static remainder as unstable, exactly inverted. (b) The mcp_http surface was initially given a third serialization T.0 never used.",
+      "correction": "CAL-1..CAL-5 all PASSED while defect (a) was live - they calibrated the COUNTER and the HASHER but not the SEGMENTER. A calibration suite that does not cover the segmentation step can pass completely while the segmentation is inverted. CAL-8 now covers it."
+    },
+    {
+      "id": "D3",
+      "severity": "process",
+      "note": "The first cost model priced only TTL expiry and not CONTENT invalidation, reporting the as-shipped system breakpoint as a warm HIT while the measurement in the same artifact said the span changes every turn.",
+      "correction": "span_cost models both failure modes and reads content-stability from E0_segments.json rather than assuming it."
+    },
+    {
+      "id": "D4",
+      "severity": "accuracy",
+      "note": "The first econ_effective.py fell through to a HARDCODED [443, 113411] because its curve reader looked for a key summary.json does not have. The hardcoded values happened to be correct - which is precisely the Law 2 failure mode: a number right by luck, carrying no producer.",
+      "correction": "_curve_tokens reads curve.points from the committed artifact and RAISES if the shape changes, rather than substituting a remembered figure (Law 5)."
+    },
+    {
+      "id": "D5",
+      "severity": "process",
+      "note": "A five-agent read-only trace workflow was dispatched; four returned and the fifth stalled past 30 minutes and was stopped with TaskStop. Its question had already been answered directly in the meantime. The adversarial pass was then re-aimed at the FINISHED artifact rather than intermediate findings, which is the constitution's actual crucible contract (Article IV).",
+      "correction": "Article V's read-only-legs-on-disjoint-questions pattern held: every trace agent ran under an agent type holding no Edit/Write, and the orchestrator was the only writer."
+    },
+    {
+      "id": "D6",
+      "severity": "STRUCTURAL",
+      "note": "REVISION 1'S VERDICT WAS INVERTED BY A UNIT SUBSTITUTION IT COMMITTED ITSELF. Revision 1 concluded: 'T.1 is mis-scoped, not unnecessary - and it should not be Mile 1... on the panel path caching is already on and already collapses the tool surface ~10x to approximately the ceiling... drop the panel surface from T.1's scope, where caching already did the work.' That rests on comparing 1,971 BTE (a COST) against 2,000 max_preload_tokens (an OCCUPANCY budget). Caching does not reduce occupancy at all, so the panel surface is 9.86x over the ceiling cached and uncached alike.",
+      "correction": "econ_effective.py revision 2 computes and reports the two quantities separately and never compares them. The corrected verdict is that T.1 and caching optimise different quantities and are not alternatives - and that every cheapest configuration across twelve regimes contains T.1's reduction (E0-F5, E0-F7). SUPERSEDED: 'caching already did the work', 'T.1 should not be Mile 1', 'drop the panel surface from T.1's scope'."
+    },
+    {
+      "id": "D7",
+      "severity": "STRUCTURAL",
+      "note": "REVISION 1 MODELLED ONE API CALL PER USER TURN. The shipped panel makes up to 25 (claude_worker.py:34,153) on a byte-identical tools array and a frozen system string (:85,:157). Two revision-1 findings were artifacts of k=1: 'COLD, caching is 23% WORSE than no caching' and 'a 25% premium for a cache entry that can never be re-read (+667 BTE/turn)'. At k>=2 - the shipped minimum for any tool-using turn - the entry IS re-read by the next iteration of the same turn.",
+      "correction": "turn_cost now takes k and prices first-call-of-turn separately from iterations 2..k (assumption A7). SUPERSEDED: the +667 never-read penalty as a per-turn claim, and the COLD-is-worse framing as a general result. Both survive ONLY for a tool-free turn."
+    },
+    {
+      "id": "D8",
+      "severity": "accuracy",
+      "note": "THREE FURTHER REVISION-1 CLAIMS WERE FALSIFIED OR UNPRODUCED, all found by the adversarial pass. (a) 'Every large-scene scenario lands within 3% of ~119k BTE' - falsified by revision 1's own printed table; computed, the spread is 30.4x. (b) The system-prompt sub-figures (part sizes, per-network totals, the -5,214 delta, the '29-90 token' block range) came from a subagent's prose and appeared in NO artifact; two did not reproduce, and the superlative was wrong - /stage -> /out is -5,783 chars, larger than /stage -> /obj. (c) Assumption A6 was listed in the document but absent from the artifact it cited, and A6 is load-bearing.",
+      "correction": "system_prompt_anatomy() in econ_segments.py now produces every one of those figures; large_scene_spread is computed rather than asserted; A1..A7 all live in the artifact. The corrected block range is 31-86 tokens and the biggest single-field hazard is /stage -> /out."
+    },
+    {
+      "id": "D9",
+      "severity": "process",
+      "note": "THE ADVERSARIAL PASS FOUND WHAT THE CALIBRATION SUITE STRUCTURALLY COULD NOT. CAL-1..CAL-8 and CTL-1..CTL-4 all passed against revision 1 while three showstoppers were live. Every one of those controls tests whether an INSTRUMENT reads its input correctly; none of them tests whether the MODEL BUILT ON the instrument describes the shipped system. A meter can be perfectly calibrated and still be pointed at the wrong quantity.",
+      "correction": "Recorded as a harness lesson rather than a leg defect: reader calibration (R60) and control mutation (R133) are necessary and are not sufficient. The only thing that caught D6-D8 was an independent agent that did not build the artifact, re-running the producers and reopening the anchors - Constitution Article IV's crucible role, aimed at the finished artefact."
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "R-E0-1",
+      "question": "E0-F5/E0-F7: T.1 and caching optimise different quantities, and every cheapest configuration measured contains T.1's reduction. Confirm T.1 proceeds - and does it still run as Mile 1?",
+      "evidence": "E0-F5 (caching does not reduce preload tokens at all; the panel surface is 9.86x over the ceiling either way), E0-F7 (S4 x6, S6 x4, S3 x2 across 12 of 12 regimes; S5 wins 0), E0-F9 (grounding is 91.5% of a large-scene API call and is uncacheable).",
+      "options": [
+        "(a) T.1 as Mile 1, unchanged, and treat the caching fixes as a parallel cheap track.",
+        "(b) T.1 as Mile 1 but re-scoped to preload tokens explicitly, with the caching fixes sequenced first because they are days rather than months and are already half-built.",
+        "(c) Put grounding before T.1, on the grounds that it is 91.5% of a large-scene call and is the only segment neither programme touches."
+      ],
+      "agent_recommendation": "(b). The reduction is necessary and the evidence for it is stronger than the brief's own arithmetic made it, but the caching fixes are small, already partly shipped, and independent - and (c)'s grounding problem outranks both wherever scenes are large. What must NOT survive is the either/or framing.",
+      "why_this_is_not_the_agents_call": "Ordering a governing blueprint is a value judgement between defensible options (Constitution Article I)."
+    },
+    {
+      "id": "R-E0-2",
+      "question": "E0-F10: the cached system span is rebuilt every turn and the obvious fix is insufficient for a navigating artist. Restructure the system prompt so the cached span is genuinely static?",
+      "evidence": "Whole-system hash changes every turn; the navigating session destabilises even the static remainder; /stage -> /out is a -5,783-char change inside the span.",
+      "agent_recommendation": "Yes, and it is small: move the scene-context block AFTER the breakpoint and either include both guidance literals unconditionally (~567 extra chars buys a stable prefix) or move the guidance selection after the breakpoint too. It changes what the model is told and in what order, so it needs a behavioural check, not a drive-by edit.",
+      "why_this_is_not_the_agents_call": "Changes shipped prompt content; E0 is read-only by brief."
+    },
+    {
+      "id": "R-E0-3",
+      "question": "E0-F2: harness/notes/token_baseline.json is stale (registry hash mismatch, 115 -> 120 tools) and harness/verify/token_ceiling.json gates against it. Re-baseline before T.1 starts?",
+      "agent_recommendation": "Yes, or T.1 measures its own progress against a moving floor. E0 did not do it because scripts/token_baseline.py overwrites another leg's committed evidence, which is outside a read-only fence.",
+      "why_this_is_not_the_agents_call": "Overwrites a committed baseline that a gate reads."
+    },
+    {
+      "id": "R-E0-4",
+      "question": "E0-F11 / C1-F12: no cache claim is verifiable until the panel parses usage. Close the panel half of the instrument?",
+      "evidence": "anthropic_provider.py:206 has no message_start branch; :284 discards the usage object; _note_usage has zero callers; the doc's 5052 figure is orphaned and structurally unproducible.",
+      "agent_recommendation": "Close it before any cache number goes public. Until then every figure here - including A6 and A7, both load-bearing - rests on a proxy tokenizer and a modelled cache. It is also the prerequisite for E3's probe layer.",
+      "why_this_is_not_the_agents_call": "Scope, and a real interface change across four provider adapters (C1-F12)."
+    },
+    {
+      "id": "R-E0-5",
+      "question": "E0-F13: if the tool_bridge import fails, the interactive panel silently ships a 35% smaller tool surface with no log line. Fail loud instead?",
+      "agent_recommendation": "Yes - a Law 3 shape (a degraded path reporting as a normal one). Small fix, and it protects every future tool-surface measurement from silently measuring the wrong surface.",
+      "why_this_is_not_the_agents_call": "Changes shipped fallback behaviour."
+    },
+    {
+      "id": "R-E0-6",
+      "question": "D9: reader calibration and control mutation both passed while three showstoppers were live. Should an independent adversarial pass on the FINISHED artifact become a standing requirement for any leg that publishes a governing number?",
+      "evidence": "CAL-1..CAL-8 and CTL-1..CTL-4 test whether an instrument reads its input; none tests whether the model built on it describes the shipped system. C1's receipt records the same pattern (15 attacks, 3 showstoppers, all upheld).",
+      "agent_recommendation": "Yes. Two legs in a row have had their verdicts materially corrected by a pass that the leg's own controls could not have produced. It is the cheapest defect-detection step in this harness and it has now paid twice.",
+      "why_this_is_not_the_agents_call": "Amends harness process (Constitution Article VII)."
+    }
+  ],
+  "resume_token": {
+    "skip_on_reentry": [
+      "The credit probe - re-run this session, still HTTP 400. Do not re-probe unless the account is funded.",
+      "The offline-tokenizer question - settled. No Claude 3+ tokenizer has ever been published.",
+      "Q2 enumeration - settled and reproducible in seconds via econ_cachetrace.py. Two cache_control lines, both in anthropic_provider.py.",
+      "Panel path reachability - settled, six hops anchored.",
+      "Which tool surface the interactive panel sends - settled at synapse_panel.py:1753 (full 126).",
+      "Whether recorded real turns exist - settled: the audit log decrypts, and it carries no message payloads. Do not re-search.",
+      "The inter-turn gap distribution - MEASURED (econ_gaps.py, 58,676 entries). Do not re-assert it.",
+      "Reader calibration - CAL-7 pins this reader to T.0's committed figure bit-exactly. Do not rebuild the meter."
+    ],
+    "next_if_resumed": [
+      "R-E0-2 (restructure the cached span) is the cheapest real win and is independent of the T.1 ordering ruling.",
+      "E1 (tool surface census) can run against econ_segments.py's per-tool figures directly; CAL-3 already demonstrates per-tool measurement works.",
+      "Price routing/router.py - it is live on the /synapse dispatch path, builds two Anthropic requests, and caches nothing (E0-F14).",
+      "If credits land: re-run the payloads through messages.count_tokens for exact figures, and close R-E0-4 to observe A6 and A7 directly. That converts E0's verdict from modelled to measured."
+    ],
+    "raw_evidence": "harness/notes/econ/E0_{segments,effective,cachetrace,gaps}.json hold every figure; the four econ_*.py producers regenerate all of them offline in under two minutes with no network and no Houdini."
+  },
+  "ratified": false,
+  "ratification_note": "ratified:false is the correct resting state. The flip is human-only. This receipt records what was measured; it does not sanction the blueprint ordering - that is R-E0-1."
+}

@@ -4206,3 +4206,116 @@ E0 spent a leg establishing that the number and the remedy live on different cod
 **The lesson is not "the baseline was stale."** It is that the baseline was *right*, was *specific*,
 and was read as though it were general. **A correct number in a field nobody reads is the same
 outcome as a wrong one.**
+
+---
+
+# ADDENDUM — E1 (R149–R152)
+
+---
+
+## RULING 149 — The 2,000 ceiling is a statement about tool COUNT, not tool SIZE.
+
+**E1-F4, VERIFIED-DERIVED, and it settles the question I asked it to answer:**
+
+> The cheapest **LEGAL** `tools/list` for 120 tools — **empty descriptions, empty schemas, names
+> only** — measures **2,919 tokens. 919 over the ceiling.**
+>
+> At that floor shape only **81 tools** fit. At the current average shape, **13**.
+>
+> The three-verb deferred surface the ceiling was calibrated for measures **332 tokens.**
+
+**So T.1 as stated is arithmetically impossible.** You cannot reach 2,000 with 120 tools by making
+definitions smaller, because 120 *names and nothing else* already exceeds it.
+
+E1's own line is the correct framing and I am adopting it verbatim: **reading the ceiling as
+"make the definitions smaller" is a category error.**
+
+**Ruled:**
+1. **T.1 is not a compression task. It is a tool-count decision**, and that is a product call
+   about what SYNAPSE exposes over MCP — yours, not mine.
+2. **The ceiling stands and its meaning is restated.** 2,000 was set for the deferred surface —
+   three in-context verbs at 332 tokens, with the rest reachable through `tool_search`. **The
+   ceiling was always describing that architecture**, and was later read as a budget for the flat
+   catalog it was meant to replace.
+3. **The blueprint's Mile 1 comes off the roadmap in its current form.** What replaces it is the
+   deferred-surface migration the ceiling was written for, or an explicit decision to ship fewer
+   MCP tools.
+
+**Three legs have now found the same shape:** a number that was right, specific, and read as
+something else. E0 found it about surfaces, R148 found it about the baseline, and E1 found it
+about the ceiling itself.
+
+---
+
+## RULING 150 — E1-F9 is a safety-relevant mislabel and it outranks everything else here.
+
+> **Seven tools advertise `readOnlyHint=true` in their MCP annotations while the server treats
+> them as mutating** — for the C5 mutation lock, the live integrity envelope, and the audit write.
+>
+> `cops_temporal_analysis` · `houdini_hda_list` · `houdini_query_prims` ·
+> `synapse_memory_query` · `synapse_memory_status` · `synapse_propose_graph` ·
+> `synapse_render_farm_status`
+
+An MCP client reads `readOnlyHint` to decide what it can call without confirmation. **Seven tools
+tell a client they are safe while the server treats them as mutations.**
+
+E1 surfaced it and correctly declined to decide which side is wrong. **That is the ruling.**
+
+**Ruled: the SERVER is the authority and the annotations are corrected to match it.** Not the
+reverse. The server's treatment is what actually gates the mutation lock and writes the audit
+record; the annotation is a hint to a client that cannot see any of that. **A hint that
+contradicts the enforcement is worse than no hint** — it invites a caller to skip a confirmation
+the system will then demand or, worse, not demand.
+
+Several of those names read as obviously read-only — `houdini_hda_list`, `synapse_memory_status`.
+**That is exactly why this must be resolved by looking at what the server does rather than by what
+the name suggests**, and why it is not a mechanical rename.
+
+---
+
+## RULING 151 — E1-F8 corrects R148. The baseline hash is checkout-dependent, not stale.
+
+I ruled yesterday that the baseline was stale because its `registry_blake2b` did not match the
+live file.
+
+**E1-F8:** the digest is computed over **working-tree bytes** and is therefore checkout-dependent.
+The recorded digest matches the `d92bb4b` blob **only under `core.autocrlf=true`**; the same commit
+checked out with LF hashes differently.
+
+**So my hash comparison proved nothing about staleness.** It proved my checkout's line endings
+differ from the one that generated the baseline.
+
+**R148's other half survives**, and is the half that mattered: `registry_tools: 115` against 120
+live is a real count difference, and the surface figure has genuinely moved to 18,962. **The
+conclusion was right; one of my two pieces of evidence was not.**
+
+**Ruled:**
+1. **R148 is amended** — the staleness claim rests on the tool count, not the hash.
+2. **The hash is hashed over COMMITTED blob bytes**, not the working tree, so it stops
+   false-alarming across machines.
+3. E1's own note is the right characterisation and I am keeping it: *"it cannot produce a false
+   OK, so no prior conclusion is invalidated — but it is not the drift detector its name implies."*
+
+---
+
+## RULING 152 — E1-F6 closes S1's condition, and opens a better one.
+
+> **0 tools are structurally dead** — all 120 resolve to a live handler. **The S1 condition is
+> closed.**
+>
+> But **34 tools (5,175 tokens, 27.3% of the surface) have no runtime evidence**, and **15 of 17
+> `tops_*` tools carry 2,377 of that family's 2,566 tokens (92.6%) with no evidence at all.**
+
+**Dead and unexercised are different**, and E1 kept them apart where a lazier census would have
+merged them. Nothing is orphaned; a quarter of the surface has simply never been called in any
+run we have logs for.
+
+**And E1-F7 explains why that number is a floor, not a fact:** the audit trail records a command
+only when `cmd_type` is NOT in `_READ_ONLY_COMMANDS`, so **it is structurally blind to read-only
+calls.** For 32 tools, absence of evidence is the instrument's design rather than the tool's
+disuse.
+
+**Ruled:** the 34 are a **candidate list for the deferred surface, not a cut list.** A tool that
+resolves, works, and is rarely called is exactly what `tool_search` exists to reach — it costs
+nothing when not loaded and remains available when needed. **That is the migration R149 points at,
+with its first cohort already identified.**

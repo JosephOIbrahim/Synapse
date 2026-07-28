@@ -1,0 +1,1332 @@
+{
+  "schema": "e0_segments/v1",
+  "produced_by": "harness/notes/econ/econ_segments.py",
+  "tokenizer": "tiktoken cl100k_base + o200k_base - DECLARED PROXIES. Claude's tokenizer is an API call this account cannot reach (harness/notes/_credit_probe.py, HTTP 400, 2026-07-28).",
+  "calibration": [
+    {
+      "id": "CAL-1",
+      "what": "tokenizer determinism",
+      "fails_if": "two counts of the identical string differ",
+      "observed": {
+        "count_1": 15901,
+        "count_2": 15901,
+        "delta": 0
+      },
+      "verdict": "PASS",
+      "mutation": null
+    },
+    {
+      "id": "CAL-2",
+      "what": "segment additivity (sum of parts vs whole)",
+      "fails_if": "|whole - sum(parts)| exceeds 2% of whole, meaning the segmentation does not describe the payload it claims to",
+      "observed": {
+        "sum_of_tools": 16024,
+        "whole_array": 15901,
+        "delta": -123,
+        "pct_of_whole": -0.774
+      },
+      "verdict": "PASS",
+      "note": "delta is the array's own punctuation plus BPE joins, not error",
+      "mutation": null
+    },
+    {
+      "id": "CAL-3",
+      "what": "reader registers a removed tool",
+      "fails_if": "removing a tool does not reduce the count",
+      "observed": {
+        "tokens_lost_by_removal": 85,
+        "that_tool_measured_alone": 86,
+        "name": "synapse_group_cops"
+      },
+      "verdict": "PASS",
+      "mutation": "removed the last tool from the array and re-counted"
+    },
+    {
+      "id": "CAL-4",
+      "what": "byte-stability detector (the Q4 instrument)",
+      "fails_if": "it reports 'changed' for identical content (false alarm) OR 'unchanged' after a one-space edit (blind)",
+      "observed": {
+        "identical_content_same_hash": true,
+        "one_space_edit_detected": true
+      },
+      "verdict": "PASS",
+      "mutation": "appended a single space to one tool description"
+    },
+    {
+      "id": "CAL-5",
+      "what": "tool ORDER is stable across calls",
+      "fails_if": "two calls to get_anthropic_tools() return different order, which invalidates the cache prefix without changing its size",
+      "observed": {
+        "order_stable_across_3_calls": true,
+        "detector_sees_a_reversal": true,
+        "n_tools": 126
+      },
+      "verdict": "PASS",
+      "mutation": "reversed the name list and confirmed the detector fires"
+    },
+    {
+      "id": "CAL-7",
+      "what": "this reader reproduces T.0's committed figure bit-exactly on the one surface whose content did not drift",
+      "fails_if": "the recomputed panel_worker figure differs from the committed one in tools, bytes, chars or tokens - which would mean the deltas on the other surfaces are reader drift and not tree drift",
+      "observed": {
+        "committed": {
+          "tools": 93,
+          "bytes": 46319,
+          "chars": 46317,
+          "preload_tokens": 10264,
+          "source": "synapse.panel.tool_bridge.get_anthropic_tools_for_worker()"
+        },
+        "recomputed": {
+          "tools": 93,
+          "bytes": 46319,
+          "chars": 46317,
+          "tok_cl100k": 10264,
+          "tok_o200k": 10509
+        }
+      },
+      "verdict": "PASS",
+      "note": "PASS licenses the central Q1 inference: mcp_http and panel moved because the TREE moved, not because the meter moved.",
+      "mutation": null
+    },
+    {
+      "id": "CAL-8",
+      "what": "the system-prompt segmenter cuts at the real seam",
+      "fails_if": "the shipped formatter's output is not found verbatim inside the assembled prompt (seam is wrong), OR the volatile block fails to differ between two different scene contexts (segmenter is blind), OR the remainder differs once the block is removed (seam leaks)",
+      "observed": {
+        "block_found_verbatim_in_prompt": true,
+        "volatile_block_differs_between_contexts": true,
+        "remainder_identical_once_block_removed": true,
+        "block_a": "## Current Scene Context\n\n- Network: /stage\n- Selected: (none)\n- Frame: 1\n- File: a.hip",
+        "block_b": "## Current Scene Context\n\n- Network: /stage\n- Selected: /stage/light1\n- Frame: 24\n- File: a.hip"
+      },
+      "verdict": "PASS",
+      "mutation": "two different scene contexts; the detector must call the block changed and the remainder unchanged"
+    },
+    {
+      "id": "CAL-6",
+      "what": "is the inherited T.0 baseline still describing this tree",
+      "fails_if": "the recorded registry digest does not match the live file, meaning the 17,310 figure describes a registry that no longer exists",
+      "observed": {
+        "recorded": "c0cd3db16c293e38a3f18a35ed51870f",
+        "live": "d6c79a415f13a9dcf4663b089b2bd1ca",
+        "match": false,
+        "baseline_registry_tools": 115,
+        "live_registry_tools": 120,
+        "baseline_panel_tools": 121,
+        "live_panel_tools": 126
+      },
+      "verdict": "FAIL",
+      "note": "FAIL here is a FINDING about the inherited number, not about this reader",
+      "mutation": null
+    }
+  ],
+  "q1_tool_surface": {
+    "mcp_http": {
+      "n_tools": 120,
+      "t0_method": {
+        "bytes": 85482,
+        "chars": 85480,
+        "tok_cl100k": 18962,
+        "tok_o200k": 19927
+      },
+      "wire_actual": {
+        "bytes": 85482,
+        "chars": 85480,
+        "tok_cl100k": 18962,
+        "tok_o200k": 19927
+      },
+      "method_note": "T.0's method and the wire are THE SAME payload here: scripts/token_baseline.py:74 measures jsonrpc_result(1, {'tools': get_tools()}) verbatim, envelope included.",
+      "serializer_is_environment_dependent": {
+        "orjson_present": true,
+        "why_it_matters": "mcp/protocol.py:15-24 uses orjson (compact) when importable and json.dumps(sort_keys=True) at DEFAULT separators otherwise. The same tool surface measures differently on two machines."
+      },
+      "who_builds_the_anthropic_request": "NOT SYNAPSE. On the MCP path SYNAPSE is the SERVER; the external client (Claude Code / Desktop) builds the model request and owns every cache_control decision.",
+      "wire_vs_t0_token_delta": 0,
+      "t0_committed_2026_07_23": {
+        "n_tools": 115,
+        "preload_tokens": 17310
+      },
+      "drift_vs_committed_t0_tokens": 1652,
+      "drift_vs_committed_t0_tools": 5,
+      "ceiling_2000_multiple_t0": 9.48,
+      "ceiling_2000_multiple_wire": 9.48
+    },
+    "panel": {
+      "n_tools": 126,
+      "t0_method": {
+        "bytes": 71850,
+        "chars": 71848,
+        "tok_cl100k": 15901,
+        "tok_o200k": 16280
+      },
+      "wire_actual": {
+        "bytes": 75765,
+        "chars": 75765,
+        "tok_cl100k": 19711,
+        "tok_o200k": 19622
+      },
+      "method_note": "t0_method = scripts/token_baseline.py:96 (compact, ensure_ascii=False). wire_actual = the separators and escaping json.dumps(body) actually emits at panel/providers/anthropic_provider.py:120.",
+      "who_builds_the_anthropic_request": "SYNAPSE (panel provider) - the only surface where SYNAPSE can set cache_control.",
+      "wire_vs_t0_token_delta": 3810,
+      "t0_committed_2026_07_23": {
+        "n_tools": 121,
+        "preload_tokens": 14380
+      },
+      "drift_vs_committed_t0_tokens": 1521,
+      "drift_vs_committed_t0_tools": 5,
+      "ceiling_2000_multiple_t0": 7.95,
+      "ceiling_2000_multiple_wire": 9.86
+    },
+    "panel_worker": {
+      "n_tools": 93,
+      "t0_method": {
+        "bytes": 46319,
+        "chars": 46317,
+        "tok_cl100k": 10264,
+        "tok_o200k": 10509
+      },
+      "wire_actual": {
+        "bytes": 48957,
+        "chars": 48957,
+        "tok_cl100k": 12813,
+        "tok_o200k": 12741
+      },
+      "method_note": "RBAC-narrowed subset; reported for contrast.",
+      "who_builds_the_anthropic_request": "SYNAPSE (autonomous worker).",
+      "wire_vs_t0_token_delta": 2549,
+      "t0_committed_2026_07_23": {
+        "n_tools": 93,
+        "preload_tokens": 10264
+      },
+      "drift_vs_committed_t0_tokens": 0,
+      "drift_vs_committed_t0_tools": 0,
+      "ceiling_2000_multiple_t0": 5.13,
+      "ceiling_2000_multiple_wire": 6.41
+    }
+  },
+  "q3_q4_turns": [
+    {
+      "turn": 1,
+      "session": "stationary",
+      "context": {
+        "network": "/stage",
+        "selection": [],
+        "frame": 1,
+        "hip": "shot_010.hip"
+      },
+      "tools": {
+        "bytes": 75765,
+        "chars": 75765,
+        "tok_cl100k": 19711,
+        "tok_o200k": 19622,
+        "hash": "08f96e1349339251"
+      },
+      "system": {
+        "bytes": 11371,
+        "chars": 11341,
+        "tok_cl100k": 2660,
+        "tok_o200k": 2634,
+        "hash": "60293426c8646640"
+      },
+      "system_scene_context_block": {
+        "char_offset_in_prompt": 5466,
+        "pct_through_prompt": 48.2,
+        "text": "## Current Scene Context\n\n- Network: /stage\n- Selected: (none)\n- Frame: 1\n- File: shot_010.hip",
+        "bytes": 94,
+        "chars": 94,
+        "tok_cl100k": 31,
+        "tok_o200k": 31,
+        "hash": "4a7984f8226eebb8"
+      },
+      "system_minus_scene_context": {
+        "bytes": 11277,
+        "chars": 11247,
+        "tok_cl100k": 2628,
+        "tok_o200k": 2602,
+        "hash": "00a91fcbbe60f98b"
+      },
+      "history": {
+        "bytes": 2041,
+        "chars": 2041,
+        "tok_cl100k": 343,
+        "tok_o200k": 343,
+        "hash": "41be4d6817e76ce3",
+        "n_messages": 4
+      },
+      "history_chat_only": {
+        "bytes": 441,
+        "chars": 441,
+        "tok_cl100k": 143,
+        "tok_o200k": 143,
+        "n_messages": 4
+      },
+      "grounding_placeholder_measured": {
+        "bytes": 1600,
+        "chars": 1600,
+        "tok_cl100k": 200,
+        "tok_o200k": 200
+      }
+    },
+    {
+      "turn": 2,
+      "session": "stationary",
+      "context": {
+        "network": "/stage",
+        "selection": [
+          "/stage/karmarendersettings1"
+        ],
+        "frame": 1,
+        "hip": "shot_010.hip"
+      },
+      "tools": {
+        "bytes": 75765,
+        "chars": 75765,
+        "tok_cl100k": 19711,
+        "tok_o200k": 19622,
+        "hash": "08f96e1349339251"
+      },
+      "system": {
+        "bytes": 11392,
+        "chars": 11362,
+        "tok_cl100k": 2666,
+        "tok_o200k": 2640,
+        "hash": "1aae8a89267f6d46"
+      },
+      "system_scene_context_block": {
+        "char_offset_in_prompt": 5466,
+        "pct_through_prompt": 48.1,
+        "text": "## Current Scene Context\n\n- Network: /stage\n- Selected: /stage/karmarendersettings1\n- Frame: 1\n- File: shot_010.hip",
+        "bytes": 115,
+        "chars": 115,
+        "tok_cl100k": 37,
+        "tok_o200k": 37,
+        "hash": "76778fe667685a12"
+      },
+      "system_minus_scene_context": {
+        "bytes": 11277,
+        "chars": 11247,
+        "tok_cl100k": 2628,
+        "tok_o200k": 2602,
+        "hash": "00a91fcbbe60f98b"
+      },
+      "history": {
+        "bytes": 4076,
+        "chars": 4076,
+        "tok_cl100k": 682,
+        "tok_o200k": 682,
+        "hash": "6e1dc9fdb151cd62",
+        "n_messages": 8
+      },
+      "history_chat_only": {
+        "bytes": 876,
+        "chars": 876,
+        "tok_cl100k": 282,
+        "tok_o200k": 282,
+        "n_messages": 8
+      },
+      "grounding_placeholder_measured": {
+        "bytes": 1600,
+        "chars": 1600,
+        "tok_cl100k": 200,
+        "tok_o200k": 200
+      }
+    },
+    {
+      "turn": 3,
+      "session": "stationary",
+      "context": {
+        "network": "/stage",
+        "selection": [
+          "/stage/domelight1",
+          "/stage/keylight1"
+        ],
+        "frame": 24,
+        "hip": "shot_010.hip"
+      },
+      "tools": {
+        "bytes": 75765,
+        "chars": 75765,
+        "tok_cl100k": 19711,
+        "tok_o200k": 19622,
+        "hash": "08f96e1349339251"
+      },
+      "system": {
+        "bytes": 11401,
+        "chars": 11371,
+        "tok_cl100k": 2669,
+        "tok_o200k": 2643,
+        "hash": "94ecc7ea496c4d22"
+      },
+      "system_scene_context_block": {
+        "char_offset_in_prompt": 5466,
+        "pct_through_prompt": 48.1,
+        "text": "## Current Scene Context\n\n- Network: /stage\n- Selected: /stage/domelight1, /stage/keylight1\n- Frame: 24\n- File: shot_010.hip",
+        "bytes": 124,
+        "chars": 124,
+        "tok_cl100k": 40,
+        "tok_o200k": 40,
+        "hash": "b6db4fdc35e29cce"
+      },
+      "system_minus_scene_context": {
+        "bytes": 11277,
+        "chars": 11247,
+        "tok_cl100k": 2628,
+        "tok_o200k": 2602,
+        "hash": "00a91fcbbe60f98b"
+      },
+      "history": {
+        "bytes": 6102,
+        "chars": 6102,
+        "tok_cl100k": 1023,
+        "tok_o200k": 1023,
+        "hash": "5d8519ec57f88de7",
+        "n_messages": 12
+      },
+      "history_chat_only": {
+        "bytes": 1302,
+        "chars": 1302,
+        "tok_cl100k": 423,
+        "tok_o200k": 423,
+        "n_messages": 12
+      },
+      "grounding_placeholder_measured": {
+        "bytes": 1600,
+        "chars": 1600,
+        "tok_cl100k": 200,
+        "tok_o200k": 200
+      }
+    }
+  ],
+  "q4_stability": {
+    "tools": {
+      "hashes": [
+        "08f96e1349339251",
+        "08f96e1349339251",
+        "08f96e1349339251"
+      ],
+      "stable_across_3_turns": true
+    },
+    "system_whole": {
+      "hashes": [
+        "60293426c8646640",
+        "1aae8a89267f6d46",
+        "94ecc7ea496c4d22"
+      ],
+      "stable_across_3_turns": false
+    },
+    "system_scene_context_block": {
+      "hashes": [
+        "4a7984f8226eebb8",
+        "76778fe667685a12",
+        "b6db4fdc35e29cce"
+      ],
+      "stable_across_3_turns": false
+    },
+    "system_minus_scene_context": {
+      "hashes": [
+        "00a91fcbbe60f98b",
+        "00a91fcbbe60f98b",
+        "00a91fcbbe60f98b"
+      ],
+      "stable_across_3_turns": true
+    },
+    "history": {
+      "hashes": [
+        "41be4d6817e76ce3",
+        "6e1dc9fdb151cd62",
+        "5d8519ec57f88de7"
+      ],
+      "stable_across_3_turns": false
+    },
+    "history_prefix": {
+      "older_turns_reproduced_byte_identically": true,
+      "per_step": [
+        {
+          "from_turn": 1,
+          "to_turn": 2,
+          "older_len": 4,
+          "newer_len": 8,
+          "every_older_message_byte_identical_in_newer": true,
+          "messages_appended": 4
+        },
+        {
+          "from_turn": 2,
+          "to_turn": 3,
+          "older_len": 8,
+          "newer_len": 12,
+          "every_older_message_byte_identical_in_newer": true,
+          "messages_appended": 4
+        }
+      ],
+      "mutation_control": {
+        "fails_if": "corrupting an earlier message still reports 'identical'",
+        "corruption_detected": true,
+        "verdict": "PASS"
+      }
+    }
+  },
+  "q4_stability_by_session": {
+    "stationary": {
+      "tools": {
+        "hashes": [
+          "08f96e1349339251",
+          "08f96e1349339251",
+          "08f96e1349339251"
+        ],
+        "stable_across_3_turns": true
+      },
+      "system_whole": {
+        "hashes": [
+          "60293426c8646640",
+          "1aae8a89267f6d46",
+          "94ecc7ea496c4d22"
+        ],
+        "stable_across_3_turns": false
+      },
+      "system_scene_context_block": {
+        "hashes": [
+          "4a7984f8226eebb8",
+          "76778fe667685a12",
+          "b6db4fdc35e29cce"
+        ],
+        "stable_across_3_turns": false
+      },
+      "system_minus_scene_context": {
+        "hashes": [
+          "00a91fcbbe60f98b",
+          "00a91fcbbe60f98b",
+          "00a91fcbbe60f98b"
+        ],
+        "stable_across_3_turns": true
+      },
+      "history": {
+        "hashes": [
+          "41be4d6817e76ce3",
+          "6e1dc9fdb151cd62",
+          "5d8519ec57f88de7"
+        ],
+        "stable_across_3_turns": false
+      },
+      "history_prefix": {
+        "older_turns_reproduced_byte_identically": true,
+        "per_step": [
+          {
+            "from_turn": 1,
+            "to_turn": 2,
+            "older_len": 4,
+            "newer_len": 8,
+            "every_older_message_byte_identical_in_newer": true,
+            "messages_appended": 4
+          },
+          {
+            "from_turn": 2,
+            "to_turn": 3,
+            "older_len": 8,
+            "newer_len": 12,
+            "every_older_message_byte_identical_in_newer": true,
+            "messages_appended": 4
+          }
+        ],
+        "mutation_control": {
+          "fails_if": "corrupting an earlier message still reports 'identical'",
+          "corruption_detected": true,
+          "verdict": "PASS"
+        }
+      }
+    },
+    "navigating": {
+      "tools": {
+        "hashes": [
+          "08f96e1349339251",
+          "08f96e1349339251",
+          "08f96e1349339251"
+        ],
+        "stable_across_3_turns": true
+      },
+      "system_whole": {
+        "hashes": [
+          "60293426c8646640",
+          "2ddaa6427f1daeb0",
+          "fe6671b8daa090b1"
+        ],
+        "stable_across_3_turns": false
+      },
+      "system_scene_context_block": {
+        "hashes": [
+          "4a7984f8226eebb8",
+          "4d09178ad60a1912",
+          "772c14b0b616d620"
+        ],
+        "stable_across_3_turns": false
+      },
+      "system_minus_scene_context": {
+        "hashes": [
+          "00a91fcbbe60f98b",
+          "9c6a28b7a7a64005",
+          "00a91fcbbe60f98b"
+        ],
+        "stable_across_3_turns": false
+      },
+      "history": {
+        "hashes": [
+          "41be4d6817e76ce3",
+          "6e1dc9fdb151cd62",
+          "5d8519ec57f88de7"
+        ],
+        "stable_across_3_turns": false
+      },
+      "history_prefix": {
+        "older_turns_reproduced_byte_identically": true,
+        "per_step": [
+          {
+            "from_turn": 1,
+            "to_turn": 2,
+            "older_len": 4,
+            "newer_len": 8,
+            "every_older_message_byte_identical_in_newer": true,
+            "messages_appended": 4
+          },
+          {
+            "from_turn": 2,
+            "to_turn": 3,
+            "older_len": 8,
+            "newer_len": 12,
+            "every_older_message_byte_identical_in_newer": true,
+            "messages_appended": 4
+          }
+        ],
+        "mutation_control": {
+          "fails_if": "corrupting an earlier message still reports 'identical'",
+          "corruption_detected": true,
+          "verdict": "PASS"
+        }
+      }
+    }
+  },
+  "q3_q4_turns_by_session": {
+    "stationary": [
+      {
+        "turn": 1,
+        "session": "stationary",
+        "context": {
+          "network": "/stage",
+          "selection": [],
+          "frame": 1,
+          "hip": "shot_010.hip"
+        },
+        "tools": {
+          "bytes": 75765,
+          "chars": 75765,
+          "tok_cl100k": 19711,
+          "tok_o200k": 19622,
+          "hash": "08f96e1349339251"
+        },
+        "system": {
+          "bytes": 11371,
+          "chars": 11341,
+          "tok_cl100k": 2660,
+          "tok_o200k": 2634,
+          "hash": "60293426c8646640"
+        },
+        "system_scene_context_block": {
+          "char_offset_in_prompt": 5466,
+          "pct_through_prompt": 48.2,
+          "text": "## Current Scene Context\n\n- Network: /stage\n- Selected: (none)\n- Frame: 1\n- File: shot_010.hip",
+          "bytes": 94,
+          "chars": 94,
+          "tok_cl100k": 31,
+          "tok_o200k": 31,
+          "hash": "4a7984f8226eebb8"
+        },
+        "system_minus_scene_context": {
+          "bytes": 11277,
+          "chars": 11247,
+          "tok_cl100k": 2628,
+          "tok_o200k": 2602,
+          "hash": "00a91fcbbe60f98b"
+        },
+        "history": {
+          "bytes": 2041,
+          "chars": 2041,
+          "tok_cl100k": 343,
+          "tok_o200k": 343,
+          "hash": "41be4d6817e76ce3",
+          "n_messages": 4
+        },
+        "history_chat_only": {
+          "bytes": 441,
+          "chars": 441,
+          "tok_cl100k": 143,
+          "tok_o200k": 143,
+          "n_messages": 4
+        },
+        "grounding_placeholder_measured": {
+          "bytes": 1600,
+          "chars": 1600,
+          "tok_cl100k": 200,
+          "tok_o200k": 200
+        }
+      },
+      {
+        "turn": 2,
+        "session": "stationary",
+        "context": {
+          "network": "/stage",
+          "selection": [
+            "/stage/karmarendersettings1"
+          ],
+          "frame": 1,
+          "hip": "shot_010.hip"
+        },
+        "tools": {
+          "bytes": 75765,
+          "chars": 75765,
+          "tok_cl100k": 19711,
+          "tok_o200k": 19622,
+          "hash": "08f96e1349339251"
+        },
+        "system": {
+          "bytes": 11392,
+          "chars": 11362,
+          "tok_cl100k": 2666,
+          "tok_o200k": 2640,
+          "hash": "1aae8a89267f6d46"
+        },
+        "system_scene_context_block": {
+          "char_offset_in_prompt": 5466,
+          "pct_through_prompt": 48.1,
+          "text": "## Current Scene Context\n\n- Network: /stage\n- Selected: /stage/karmarendersettings1\n- Frame: 1\n- File: shot_010.hip",
+          "bytes": 115,
+          "chars": 115,
+          "tok_cl100k": 37,
+          "tok_o200k": 37,
+          "hash": "76778fe667685a12"
+        },
+        "system_minus_scene_context": {
+          "bytes": 11277,
+          "chars": 11247,
+          "tok_cl100k": 2628,
+          "tok_o200k": 2602,
+          "hash": "00a91fcbbe60f98b"
+        },
+        "history": {
+          "bytes": 4076,
+          "chars": 4076,
+          "tok_cl100k": 682,
+          "tok_o200k": 682,
+          "hash": "6e1dc9fdb151cd62",
+          "n_messages": 8
+        },
+        "history_chat_only": {
+          "bytes": 876,
+          "chars": 876,
+          "tok_cl100k": 282,
+          "tok_o200k": 282,
+          "n_messages": 8
+        },
+        "grounding_placeholder_measured": {
+          "bytes": 1600,
+          "chars": 1600,
+          "tok_cl100k": 200,
+          "tok_o200k": 200
+        }
+      },
+      {
+        "turn": 3,
+        "session": "stationary",
+        "context": {
+          "network": "/stage",
+          "selection": [
+            "/stage/domelight1",
+            "/stage/keylight1"
+          ],
+          "frame": 24,
+          "hip": "shot_010.hip"
+        },
+        "tools": {
+          "bytes": 75765,
+          "chars": 75765,
+          "tok_cl100k": 19711,
+          "tok_o200k": 19622,
+          "hash": "08f96e1349339251"
+        },
+        "system": {
+          "bytes": 11401,
+          "chars": 11371,
+          "tok_cl100k": 2669,
+          "tok_o200k": 2643,
+          "hash": "94ecc7ea496c4d22"
+        },
+        "system_scene_context_block": {
+          "char_offset_in_prompt": 5466,
+          "pct_through_prompt": 48.1,
+          "text": "## Current Scene Context\n\n- Network: /stage\n- Selected: /stage/domelight1, /stage/keylight1\n- Frame: 24\n- File: shot_010.hip",
+          "bytes": 124,
+          "chars": 124,
+          "tok_cl100k": 40,
+          "tok_o200k": 40,
+          "hash": "b6db4fdc35e29cce"
+        },
+        "system_minus_scene_context": {
+          "bytes": 11277,
+          "chars": 11247,
+          "tok_cl100k": 2628,
+          "tok_o200k": 2602,
+          "hash": "00a91fcbbe60f98b"
+        },
+        "history": {
+          "bytes": 6102,
+          "chars": 6102,
+          "tok_cl100k": 1023,
+          "tok_o200k": 1023,
+          "hash": "5d8519ec57f88de7",
+          "n_messages": 12
+        },
+        "history_chat_only": {
+          "bytes": 1302,
+          "chars": 1302,
+          "tok_cl100k": 423,
+          "tok_o200k": 423,
+          "n_messages": 12
+        },
+        "grounding_placeholder_measured": {
+          "bytes": 1600,
+          "chars": 1600,
+          "tok_cl100k": 200,
+          "tok_o200k": 200
+        }
+      }
+    ],
+    "navigating": [
+      {
+        "turn": 1,
+        "session": "navigating",
+        "context": {
+          "network": "/stage",
+          "selection": [],
+          "frame": 1,
+          "hip": "shot_010.hip"
+        },
+        "tools": {
+          "bytes": 75765,
+          "chars": 75765,
+          "tok_cl100k": 19711,
+          "tok_o200k": 19622,
+          "hash": "08f96e1349339251"
+        },
+        "system": {
+          "bytes": 11371,
+          "chars": 11341,
+          "tok_cl100k": 2660,
+          "tok_o200k": 2634,
+          "hash": "60293426c8646640"
+        },
+        "system_scene_context_block": {
+          "char_offset_in_prompt": 5466,
+          "pct_through_prompt": 48.2,
+          "text": "## Current Scene Context\n\n- Network: /stage\n- Selected: (none)\n- Frame: 1\n- File: shot_010.hip",
+          "bytes": 94,
+          "chars": 94,
+          "tok_cl100k": 31,
+          "tok_o200k": 31,
+          "hash": "4a7984f8226eebb8"
+        },
+        "system_minus_scene_context": {
+          "bytes": 11277,
+          "chars": 11247,
+          "tok_cl100k": 2628,
+          "tok_o200k": 2602,
+          "hash": "00a91fcbbe60f98b"
+        },
+        "history": {
+          "bytes": 2041,
+          "chars": 2041,
+          "tok_cl100k": 343,
+          "tok_o200k": 343,
+          "hash": "41be4d6817e76ce3",
+          "n_messages": 4
+        },
+        "history_chat_only": {
+          "bytes": 441,
+          "chars": 441,
+          "tok_cl100k": 143,
+          "tok_o200k": 143,
+          "n_messages": 4
+        },
+        "grounding_placeholder_measured": {
+          "bytes": 1600,
+          "chars": 1600,
+          "tok_cl100k": 200,
+          "tok_o200k": 200
+        }
+      },
+      {
+        "turn": 2,
+        "session": "navigating",
+        "context": {
+          "network": "/obj",
+          "selection": [
+            "/obj/geo1"
+          ],
+          "frame": 1,
+          "hip": "shot_010.hip"
+        },
+        "tools": {
+          "bytes": 75765,
+          "chars": 75765,
+          "tok_cl100k": 19711,
+          "tok_o200k": 19622,
+          "hash": "08f96e1349339251"
+        },
+        "system": {
+          "bytes": 6146,
+          "chars": 6130,
+          "tok_cl100k": 1412,
+          "tok_o200k": 1385,
+          "hash": "2ddaa6427f1daeb0"
+        },
+        "system_scene_context_block": {
+          "char_offset_in_prompt": 5466,
+          "pct_through_prompt": 89.2,
+          "text": "## Current Scene Context\n\n- Network: /obj\n- Selected: /obj/geo1\n- Frame: 1\n- File: shot_010.hip",
+          "bytes": 95,
+          "chars": 95,
+          "tok_cl100k": 34,
+          "tok_o200k": 34,
+          "hash": "4d09178ad60a1912"
+        },
+        "system_minus_scene_context": {
+          "bytes": 6051,
+          "chars": 6035,
+          "tok_cl100k": 1377,
+          "tok_o200k": 1350,
+          "hash": "9c6a28b7a7a64005"
+        },
+        "history": {
+          "bytes": 4076,
+          "chars": 4076,
+          "tok_cl100k": 682,
+          "tok_o200k": 682,
+          "hash": "6e1dc9fdb151cd62",
+          "n_messages": 8
+        },
+        "history_chat_only": {
+          "bytes": 876,
+          "chars": 876,
+          "tok_cl100k": 282,
+          "tok_o200k": 282,
+          "n_messages": 8
+        },
+        "grounding_placeholder_measured": {
+          "bytes": 1600,
+          "chars": 1600,
+          "tok_cl100k": 200,
+          "tok_o200k": 200
+        }
+      },
+      {
+        "turn": 3,
+        "session": "navigating",
+        "context": {
+          "network": "/stage",
+          "selection": [
+            "/stage/domelight1"
+          ],
+          "frame": 24,
+          "hip": "shot_010.hip"
+        },
+        "tools": {
+          "bytes": 75765,
+          "chars": 75765,
+          "tok_cl100k": 19711,
+          "tok_o200k": 19622,
+          "hash": "08f96e1349339251"
+        },
+        "system": {
+          "bytes": 11383,
+          "chars": 11353,
+          "tok_cl100k": 2663,
+          "tok_o200k": 2637,
+          "hash": "fe6671b8daa090b1"
+        },
+        "system_scene_context_block": {
+          "char_offset_in_prompt": 5466,
+          "pct_through_prompt": 48.1,
+          "text": "## Current Scene Context\n\n- Network: /stage\n- Selected: /stage/domelight1\n- Frame: 24\n- File: shot_010.hip",
+          "bytes": 106,
+          "chars": 106,
+          "tok_cl100k": 34,
+          "tok_o200k": 34,
+          "hash": "772c14b0b616d620"
+        },
+        "system_minus_scene_context": {
+          "bytes": 11277,
+          "chars": 11247,
+          "tok_cl100k": 2628,
+          "tok_o200k": 2602,
+          "hash": "00a91fcbbe60f98b"
+        },
+        "history": {
+          "bytes": 6102,
+          "chars": 6102,
+          "tok_cl100k": 1023,
+          "tok_o200k": 1023,
+          "hash": "5d8519ec57f88de7",
+          "n_messages": 12
+        },
+        "history_chat_only": {
+          "bytes": 1302,
+          "chars": 1302,
+          "tok_cl100k": 423,
+          "tok_o200k": 423,
+          "n_messages": 12
+        },
+        "grounding_placeholder_measured": {
+          "bytes": 1600,
+          "chars": 1600,
+          "tok_cl100k": 200,
+          "tok_o200k": 200
+        }
+      }
+    ]
+  },
+  "grounding_reference": {
+    "source": "harness/notes/token_bench/summary.json:curve.A_inspect_scene_d3",
+    "curve": {
+      "arm_kind": "scene_grounding",
+      "coverage_is_meaningful": true,
+      "flat_test": "is_flat is True when tokens at the LARGEST rung are <= 1.10x tokens at the SMALLEST rung. max/min is reported too but is not the test - it is noise-dominated on tiny payloads.",
+      "flatness_ratio_max_over_min": 256.01,
+      "growth_largest_over_smallest_rung": 256.01,
+      "growth_spans": "L1_color_falloff -> L6_karma_user_guide",
+      "is_flat": false,
+      "points": [
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 1.0,
+          "coverage_within_shipped_depth": {
+            "covered": 13,
+            "fraction": 1.0,
+            "total": 13
+          },
+          "node_count": 13,
+          "node_count_precook": 13,
+          "nodes_covered": 13,
+          "nodes_total": 13,
+          "parm_count": 106,
+          "rung": "L1_color_falloff",
+          "tokens": 443,
+          "tokens_model_visible": 499,
+          "tokens_per_covered_node": 34.1
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": null,
+            "total": 0
+          },
+          "coverage_fraction": 1.0,
+          "coverage_within_shipped_depth": {
+            "covered": 22,
+            "fraction": 1.0,
+            "total": 22
+          },
+          "node_count": 22,
+          "node_count_precook": 22,
+          "nodes_covered": 22,
+          "nodes_total": 22,
+          "parm_count": 572,
+          "rung": "L2_obj_xform",
+          "tokens": 741,
+          "tokens_model_visible": 819,
+          "tokens_per_covered_node": 33.7
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 23
+          },
+          "coverage_fraction": 0.7294,
+          "coverage_within_shipped_depth": {
+            "covered": 62,
+            "fraction": 1.0,
+            "total": 62
+          },
+          "node_count": 85,
+          "node_count_precook": 62,
+          "nodes_covered": 62,
+          "nodes_total": 85,
+          "parm_count": 1922,
+          "rung": "L3_RandomExample",
+          "tokens": 3277,
+          "tokens_model_visible": 3505,
+          "tokens_per_covered_node": 52.9
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 82
+          },
+          "coverage_fraction": 0.5148,
+          "coverage_within_shipped_depth": {
+            "covered": 87,
+            "fraction": 1.0,
+            "total": 87
+          },
+          "node_count": 169,
+          "node_count_precook": 168,
+          "nodes_covered": 87,
+          "nodes_total": 169,
+          "parm_count": 7703,
+          "rung": "L4_three_point_lighting",
+          "tokens": 3047,
+          "tokens_model_visible": 3333,
+          "tokens_per_covered_node": 35.0
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 6499
+          },
+          "coverage_fraction": 0.0982,
+          "coverage_within_shipped_depth": {
+            "covered": 708,
+            "fraction": 1.0,
+            "total": 708
+          },
+          "node_count": 7207,
+          "node_count_precook": 3057,
+          "nodes_covered": 708,
+          "nodes_total": 7207,
+          "parm_count": 142850,
+          "rung": "L5_ocean",
+          "tokens": 38555,
+          "tokens_model_visible": 41211,
+          "tokens_per_covered_node": 54.5
+        },
+        {
+          "coverage_below_shipped_depth": {
+            "covered": 0,
+            "fraction": 0.0,
+            "total": 22964
+          },
+          "coverage_fraction": 0.1116,
+          "coverage_within_shipped_depth": {
+            "covered": 2886,
+            "fraction": 1.0,
+            "total": 2886
+          },
+          "node_count": 25850,
+          "node_count_precook": 21085,
+          "nodes_covered": 2886,
+          "nodes_total": 25850,
+          "parm_count": 1187573,
+          "rung": "L6_karma_user_guide",
+          "tokens": 113411,
+          "tokens_model_visible": 122772,
+          "tokens_per_covered_node": 39.3
+        }
+      ]
+    },
+    "ladder": [
+      {
+        "displayed_point_count": 1736,
+        "displayed_prim_count": 1734,
+        "lop_node_count": 0,
+        "node_count": 13,
+        "parm_count": 106,
+        "rung": "L1_color_falloff",
+        "sop_node_count": 2
+      },
+      {
+        "displayed_point_count": 48,
+        "displayed_prim_count": 36,
+        "lop_node_count": 0,
+        "node_count": 22,
+        "parm_count": 572,
+        "rung": "L2_obj_xform",
+        "sop_node_count": 6
+      },
+      {
+        "displayed_point_count": 1976,
+        "displayed_prim_count": 1580,
+        "lop_node_count": 0,
+        "node_count": 62,
+        "parm_count": 1922,
+        "rung": "L3_RandomExample",
+        "sop_node_count": 46
+      },
+      {
+        "displayed_point_count": 8489,
+        "displayed_prim_count": 2887,
+        "lop_node_count": 74,
+        "node_count": 168,
+        "parm_count": 7703,
+        "rung": "L4_three_point_lighting",
+        "sop_node_count": 53
+      },
+      {
+        "displayed_point_count": 415,
+        "displayed_prim_count": 85,
+        "lop_node_count": 0,
+        "node_count": 3057,
+        "parm_count": 142850,
+        "rung": "L5_ocean",
+        "sop_node_count": 611
+      },
+      {
+        "displayed_point_count": 306866013,
+        "displayed_prim_count": 35115587,
+        "lop_node_count": 5844,
+        "node_count": 21085,
+        "parm_count": 1187573,
+        "rung": "L6_karma_user_guide",
+        "sop_node_count": 7332
+      }
+    ]
+  },
+  "system_prompt_anatomy": {
+    "parts": {
+      "_IDENTITY": {
+        "bytes": 678,
+        "chars": 678,
+        "tok_cl100k": 165,
+        "tok_o200k": 163
+      },
+      "_TOOL_GUIDANCE": {
+        "bytes": 2036,
+        "chars": 2036,
+        "tok_cl100k": 454,
+        "tok_o200k": 446
+      },
+      "_SOLARIS_CONTEXT_GUIDANCE": {
+        "bytes": 5793,
+        "chars": 5779,
+        "tok_cl100k": 1369,
+        "tok_o200k": 1370
+      },
+      "_OBJ_CONTEXT_GUIDANCE": {
+        "bytes": 567,
+        "chars": 567,
+        "tok_cl100k": 118,
+        "tok_o200k": 118
+      },
+      "TONE.md": {
+        "bytes": 2770,
+        "chars": 2754,
+        "tok_cl100k": 641,
+        "tok_o200k": 625
+      }
+    },
+    "composed_by_network": {
+      "/stage": {
+        "bytes": 11371,
+        "chars": 11341,
+        "tok_cl100k": 2660,
+        "tok_o200k": 2634,
+        "guidance_block": "_SOLARIS_CONTEXT_GUIDANCE"
+      },
+      "/obj": {
+        "bytes": 6143,
+        "chars": 6127,
+        "tok_cl100k": 1409,
+        "tok_o200k": 1382,
+        "guidance_block": "_OBJ_CONTEXT_GUIDANCE"
+      },
+      "/out": {
+        "bytes": 5574,
+        "chars": 5558,
+        "tok_cl100k": 1290,
+        "tok_o200k": 1263,
+        "guidance_block": "none"
+      },
+      "/img": {
+        "bytes": 5574,
+        "chars": 5558,
+        "tok_cl100k": 1290,
+        "tok_o200k": 1263,
+        "guidance_block": "none"
+      },
+      "/mat": {
+        "bytes": 5574,
+        "chars": 5558,
+        "tok_cl100k": 1290,
+        "tok_o200k": 1263,
+        "guidance_block": "none"
+      },
+      "/": {
+        "bytes": 6140,
+        "chars": 6124,
+        "tok_cl100k": 1407,
+        "tok_o200k": 1380,
+        "guidance_block": "_OBJ_CONTEXT_GUIDANCE"
+      }
+    },
+    "single_field_deltas_vs_stage": {
+      "network /stage->/obj": {
+        "delta_chars": -5214,
+        "delta_tok_cl100k": -1251,
+        "byte_identical": false
+      },
+      "network /stage->/out": {
+        "delta_chars": -5783,
+        "delta_tok_cl100k": -1370,
+        "byte_identical": false
+      },
+      "network /stage->/img": {
+        "delta_chars": -5783,
+        "delta_tok_cl100k": -1370,
+        "byte_identical": false
+      },
+      "frame 1->2": {
+        "delta_chars": 0,
+        "delta_tok_cl100k": 0,
+        "byte_identical": false
+      },
+      "hip rename": {
+        "delta_chars": 0,
+        "delta_tok_cl100k": 0,
+        "byte_identical": false
+      },
+      "selection []->[one]": {
+        "delta_chars": 11,
+        "delta_tok_cl100k": 3,
+        "byte_identical": false
+      }
+    },
+    "scene_context_block_range": {
+      "empty": {
+        "bytes": 94,
+        "chars": 94,
+        "tok_cl100k": 31,
+        "tok_o200k": 31
+      },
+      "one_short": {
+        "bytes": 97,
+        "chars": 97,
+        "tok_cl100k": 34,
+        "tok_o200k": 34
+      },
+      "five_long": {
+        "bytes": 286,
+        "chars": 286,
+        "tok_cl100k": 83,
+        "tok_o200k": 83
+      },
+      "forty_long": {
+        "bytes": 297,
+        "chars": 297,
+        "tok_cl100k": 86,
+        "tok_o200k": 86
+      }
+    },
+    "biggest_single_field_hazard": "network /stage->/out"
+  }
+}

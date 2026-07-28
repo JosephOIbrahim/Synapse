@@ -1,0 +1,513 @@
+{
+  "schema": "e0_cachetrace/v1",
+  "produced_by": "harness/notes/econ/econ_cachetrace.py",
+  "searched": {
+    "root": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\e0-econ",
+    "glob": "**/*.py",
+    "excluded_path_fragments": [
+      "_vendor",
+      "__pycache__",
+      ".git",
+      "site-packages",
+      "node_modules",
+      "harness/notes/econ"
+    ],
+    "site_patterns": {
+      "anthropic_host": "api\\.anthropic\\.com",
+      "messages_endpoint": "[\\\"']/v1/messages[\\\"']",
+      "sdk_messages_create": "\\.messages\\.create\\s*\\(",
+      "sdk_messages_stream": "\\.messages\\.stream\\s*\\(",
+      "anthropic_client_ctor": "\\b(?:Async)?Anthropic\\s*\\(",
+      "generativeai_host": "generativelanguage\\.googleapis\\.com",
+      "openai_compatible_host": "integrate\\.api\\.nvidia\\.com|localhost:11434"
+    },
+    "cache_pattern": "cache_control",
+    "files_scanned": 835
+  },
+  "controls": [
+    {
+      "id": "CTL-1",
+      "what": "scanner detects a request-construction site",
+      "fails_if": "a literal POST to /v1/messages is not flagged",
+      "observed": {
+        "sites_found": {
+          "messages_endpoint": [
+            1
+          ]
+        }
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "CTL-2",
+      "what": "scanner detects a cache breakpoint",
+      "fails_if": "a literal cache_control assignment is not flagged",
+      "observed": {
+        "cache_lines": [
+          1
+        ]
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "CTL-3",
+      "what": "scanner does NOT fire on unrelated code (false-positive control)",
+      "fails_if": "a plain function is reported as a request site or a cache site - which would make an 'everything is cached' verdict meaningless",
+      "observed": {
+        "sites_found": {},
+        "cache_lines": []
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "CTL-4",
+      "what": "an uncached request site is correctly reported as uncached",
+      "fails_if": "a site with no cache_control anywhere near it is reported cached",
+      "observed": {
+        "sites": {
+          "messages_endpoint": [
+            1
+          ]
+        },
+        "cache_lines": []
+      },
+      "verdict": "PASS"
+    }
+  ],
+  "request_construction_sites": [
+    {
+      "file": "agent/synapse_agent.py",
+      "sites": {
+        "anthropic_client_ctor": [
+          {
+            "line": 147,
+            "in": "run_agent (def) at :118",
+            "text": "client = Anthropic()",
+            "looks_like_prose": false
+          }
+        ],
+        "sdk_messages_create": [
+          {
+            "line": 186,
+            "in": "run_agent (def) at :118",
+            "text": "response = client.messages.create(",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "harness/notes/_credit_probe.py",
+      "sites": {
+        "anthropic_host": [
+          {
+            "line": 33,
+            "in": "key_from_env_file (def) at :15",
+            "text": "\"https://api.anthropic.com/v1/messages/count_tokens\",",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "python/synapse/cognitive/agent_loop.py",
+      "sites": {
+        "sdk_messages_create": [
+          {
+            "line": 287,
+            "in": "_cancelled (def) at :264",
+            "text": "response = client.messages.create(**create_kwargs)",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "python/synapse/host/daemon.py",
+      "sites": {
+        "anthropic_client_ctor": [
+          {
+            "line": 502,
+            "in": "_build_anthropic_client (def) at :447",
+            "text": "return Anthropic(api_key=self._resolved_api_key)",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "python/synapse/panel/providers/anthropic_provider.py",
+      "sites": {
+        "anthropic_host": [
+          {
+            "line": 11,
+            "in": "module level",
+            "text": "Remote egress: ``api.anthropic.com:443`` (documented in docs/studio/EGRESS.md).",
+            "looks_like_prose": false
+          },
+          {
+            "line": 25,
+            "in": "module level",
+            "text": "_API_HOST = \"api.anthropic.com\"",
+            "looks_like_prose": true
+          }
+        ],
+        "messages_endpoint": [
+          {
+            "line": 26,
+            "in": "module level",
+            "text": "_API_PATH = \"/v1/messages\"",
+            "looks_like_prose": true
+          }
+        ]
+      },
+      "cache_control_lines": [
+        64,
+        69
+      ],
+      "verdict": "CACHE-AWARE"
+    },
+    {
+      "file": "python/synapse/panel/providers/gemini_provider.py",
+      "sites": {
+        "generativeai_host": [
+          {
+            "line": 3,
+            "in": "module level",
+            "text": "Reaches ``generativelanguage.googleapis.com:443`` (``streamGenerateContent``,",
+            "looks_like_prose": false
+          },
+          {
+            "line": 10,
+            "in": "module level",
+            "text": "Remote egress: ``generativelanguage.googleapis.com:443`` (docs/studio/EGRESS.md).",
+            "looks_like_prose": false
+          },
+          {
+            "line": 27,
+            "in": "module level",
+            "text": "_API_HOST = \"generativelanguage.googleapis.com\"",
+            "looks_like_prose": true
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "python/synapse/panel/providers/nemotron_provider.py",
+      "sites": {
+        "openai_compatible_host": [
+          {
+            "line": 5,
+            "in": "module level",
+            "text": "``integrate.api.nvidia.com/v1``) with stdlib ``http.client`` — consistent with",
+            "looks_like_prose": false
+          },
+          {
+            "line": 21,
+            "in": "module level",
+            "text": "Remote egress: ``integrate.api.nvidia.com:443`` by default (docs/studio/EGRESS.md).",
+            "looks_like_prose": false
+          },
+          {
+            "line": 38,
+            "in": "module level",
+            "text": "_DEFAULT_HOST = \"integrate.api.nvidia.com\"",
+            "looks_like_prose": true
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "python/synapse/panel/providers/ollama_provider.py",
+      "sites": {
+        "openai_compatible_host": [
+          {
+            "line": 8,
+            "in": "module level",
+            "text": "Endpoint: ``OLLAMA_HOST`` env (default ``http://localhost:11434``, tolerant of",
+            "looks_like_prose": false
+          },
+          {
+            "line": 32,
+            "in": "module level",
+            "text": "_DEFAULT_BASE = \"http://localhost:11434\"",
+            "looks_like_prose": true
+          },
+          {
+            "line": 41,
+            "in": "_ollama_endpoint (def) at :35",
+            "text": "host = parts.netloc or \"localhost:11434\"",
+            "looks_like_prose": true
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "python/synapse/panel/providers/registry.py",
+      "sites": {
+        "openai_compatible_host": [
+          {
+            "line": 44,
+            "in": "module level",
+            "text": "# integrate.api.nvidia.com (2026-07-01; both rows still served).",
+            "looks_like_prose": true
+          },
+          {
+            "line": 52,
+            "in": "module level",
+            "text": "# Ollama — local-first OpenAI-compatible endpoint (http://localhost:11434 by",
+            "looks_like_prose": true
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "python/synapse/routing/router.py",
+      "sites": {
+        "sdk_messages_create": [
+          {
+            "line": 646,
+            "in": "_try_tier2 (def) at :625",
+            "text": "response = client.messages.create(",
+            "looks_like_prose": false
+          },
+          {
+            "line": 794,
+            "in": "_tier3_sync (def) at :773",
+            "text": "response = client.messages.create(",
+            "looks_like_prose": false
+          }
+        ],
+        "anthropic_client_ctor": [
+          {
+            "line": 853,
+            "in": "_get_llm_client (def) at :843",
+            "text": "self._llm_client = anthropic.Anthropic(",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "scripts/token_baseline.py",
+      "sites": {
+        "sdk_messages_create": [
+          {
+            "line": 14,
+            "in": "module level",
+            "text": "The tools=[...] array handed to client.messages.create().",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "spikes/spike_0.py",
+      "sites": {
+        "anthropic_client_ctor": [
+          {
+            "line": 79,
+            "in": "run_spike (def) at :55",
+            "text": "client = AsyncAnthropic(api_key=api_key)",
+            "looks_like_prose": false
+          }
+        ],
+        "sdk_messages_create": [
+          {
+            "line": 84,
+            "in": "run_spike (def) at :55",
+            "text": "response = await client.messages.create(",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "tests/test_custom_provider.py",
+      "sites": {
+        "openai_compatible_host": [
+          {
+            "line": 85,
+            "in": "test_registry_builds_custom_never_the_floor (def) at :78",
+            "text": "_patch_settings(monkeypatch, base_url=\"http://localhost:11434\", model=\"glm-5:cloud\")",
+            "looks_like_prose": false
+          },
+          {
+            "line": 89,
+            "in": "test_registry_builds_custom_never_the_floor (def) at :78",
+            "text": "assert prov._get_endpoint() == (\"http\", \"localhost:11434\", \"/v1/chat/completions\")",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "tests/test_m3_egress_docs.py",
+      "sites": {
+        "anthropic_host": [
+          {
+            "line": 35,
+            "in": "test_egress_doc_exists_and_names_the_endpoint (def) at :29",
+            "text": "assert host == \"api.anthropic.com\"",
+            "looks_like_prose": true
+          }
+        ],
+        "anthropic_client_ctor": [
+          {
+            "line": 63,
+            "in": "test_remote_egress_sites_are_frozen (def) at :39",
+            "text": "f\"New Anthropic() construction site(s): {anthropic_sites - allowed} \"",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "tests/test_nemotron_provider.py",
+      "sites": {
+        "openai_compatible_host": [
+          {
+            "line": 145,
+            "in": "test_default_endpoint_is_nvidia_nim (def) at :142",
+            "text": "assert host == \"integrate.api.nvidia.com\"",
+            "looks_like_prose": true
+          },
+          {
+            "line": 198,
+            "in": "test_trailing_slash_keeps_v1_prefix (def) at :196",
+            "text": "monkeypatch.setenv(\"NVIDIA_BASE_URL\", \"https://integrate.api.nvidia.com/\")",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "tests/test_ollama_provider.py",
+      "sites": {
+        "openai_compatible_host": [
+          {
+            "line": 26,
+            "in": "test_default_endpoint_is_plaintext_localhost (def) at :24",
+            "text": "assert _prov()._get_endpoint() == (\"http\", \"localhost:11434\", \"/v1/chat/completions\")",
+            "looks_like_prose": false
+          },
+          {
+            "line": 31,
+            "in": "test_endpoint_variants (def) at :29",
+            "text": "\"localhost:11434\":            (\"http\", \"localhost:11434\", \"/v1/chat/completions\"),",
+            "looks_like_prose": false
+          },
+          {
+            "line": 45,
+            "in": "test_nemotron_base_url_does_not_leak_into_ollama (def) at :42",
+            "text": "monkeypatch.setenv(\"NVIDIA_BASE_URL\", \"https://integrate.api.nvidia.com/v1\")",
+            "looks_like_prose": false
+          },
+          {
+            "line": 47,
+            "in": "test_nemotron_base_url_does_not_leak_into_ollama (def) at :42",
+            "text": "assert (scheme, host) == (\"http\", \"localhost:11434\")",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "tests/test_panel_settings.py",
+      "sites": {
+        "openai_compatible_host": [
+          {
+            "line": 15,
+            "in": "test_roundtrip (def) at :10",
+            "text": "st[\"custom\"] = {\"base_url\": \"http://localhost:11434\", \"model\": \"m\", \"key_env\": \"K\"}",
+            "looks_like_prose": false
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    },
+    {
+      "file": "tests/test_providers_floor.py",
+      "sites": {
+        "anthropic_host": [
+          {
+            "line": 159,
+            "in": "test_anthropic_provider_endpoint_is_anthropic (def) at :158",
+            "text": "assert _API_HOST == \"api.anthropic.com\"",
+            "looks_like_prose": true
+          }
+        ]
+      },
+      "cache_control_lines": [],
+      "verdict": "NO CACHE BREAKPOINT"
+    }
+  ],
+  "summary": {
+    "files_constructing_requests": 18,
+    "cache_aware": [
+      "python/synapse/panel/providers/anthropic_provider.py"
+    ],
+    "no_cache_breakpoint": [
+      "agent/synapse_agent.py",
+      "harness/notes/_credit_probe.py",
+      "python/synapse/cognitive/agent_loop.py",
+      "python/synapse/host/daemon.py",
+      "python/synapse/panel/providers/gemini_provider.py",
+      "python/synapse/panel/providers/nemotron_provider.py",
+      "python/synapse/panel/providers/ollama_provider.py",
+      "python/synapse/panel/providers/registry.py",
+      "python/synapse/routing/router.py",
+      "scripts/token_baseline.py",
+      "spikes/spike_0.py",
+      "tests/test_custom_provider.py",
+      "tests/test_m3_egress_docs.py",
+      "tests/test_nemotron_provider.py",
+      "tests/test_ollama_provider.py",
+      "tests/test_panel_settings.py",
+      "tests/test_providers_floor.py"
+    ]
+  },
+  "repo_wide_cache_control_census": [
+    {
+      "file": "python/synapse/panel/providers/anthropic_provider.py",
+      "line": 64,
+      "text": "cached_tools[-1] = {**cached_tools[-1], \"cache_control\": {\"type\": \"ephemeral\"}}"
+    },
+    {
+      "file": "python/synapse/panel/providers/anthropic_provider.py",
+      "line": 69,
+      "text": "\"cache_control\": {\"type\": \"ephemeral\"},"
+    }
+  ]
+}

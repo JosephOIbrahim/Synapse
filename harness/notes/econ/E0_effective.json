@@ -1,0 +1,2729 @@
+{
+  "schema": "e0_effective/v2",
+  "revision": "2 - rewritten after an adversarial pass upheld three showstoppers against revision 1: unit substitution (BTE vs preload ceiling), per-call vs per-turn modelling, and the omitted S6 row.",
+  "produced_by": "harness/notes/econ/econ_effective.py",
+  "inputs_from": [
+    "harness/notes/econ/E0_segments.json",
+    "harness/notes/econ/E0_gaps.json"
+  ],
+  "cost_unit": "BTE = billed-token-equivalent = input tokens x price multiplier (1.0 plain / 1.25 write / 0.1 read). A COST unit. NEVER compared to a preload-token budget.",
+  "assumptions": [
+    {
+      "id": "A1",
+      "assumption": "Cache WRITE = 1.25x base input rate, cache READ = 0.1x, default 5-minute ephemeral TTL.",
+      "status": "TAKEN FROM THE BRIEF, NOT RE-VERIFIED against current pricing.",
+      "falsified_by": "pricing docs showing different multipliers, or adoption of the 1h TTL (2.0x write).",
+      "sensitivity": "linear - every BTE figure scales directly with these two numbers."
+    },
+    {
+      "id": "A2",
+      "assumption": "Token counts are the tiktoken/cl100k_base proxy from econ_segments.py.",
+      "status": "DECLARED PROXY - Claude's tokenizer is not public and the API is credit-blocked.",
+      "falsified_by": "a funded account running messages.count_tokens.",
+      "sensitivity": "RATIOS between programmes are far more robust than absolute magnitudes."
+    },
+    {
+      "id": "A3",
+      "assumption": "A cache hit needs byte-identity AND the request inside the TTL.",
+      "status": "NOW PARTLY MEASURED (op-burst proxy, econ_gaps.py), not asserted.",
+      "falsified_by": "instrumented CHAT-turn timings, which would beat this op-burst proxy.",
+      "sensitivity": "decides how much weight the COLD column deserves."
+    },
+    {
+      "id": "A4",
+      "assumption": "Billed input tokens are computed on Anthropic's canonical rendering of the tool definitions, not the client's JSON bytes.",
+      "status": "STRUCTURAL LIMIT ON ANY LOCAL ESTIMATE.",
+      "falsified_by": "a funded count_tokens call on the same tools array.",
+      "sensitivity": "the panel's two serializations differ 24% on an identical tool set."
+    },
+    {
+      "id": "A5",
+      "assumption": "The reconstructed sessions are representative in SHAPE, not recordings.",
+      "status": "RECONSTRUCTED FROM SHIPPED CODE. The brief's oracle asked for 3 REAL turns; none exist. This is a NAMED ORACLE MISS, not a satisfied requirement.",
+      "falsified_by": "a captured transcript of real panel turns.",
+      "sensitivity": "affects history/grounding accumulation only."
+    },
+    {
+      "id": "A6",
+      "assumption": "A changed SYSTEM block still leaves the TOOLS breakpoint hittable, because prefix order is tools -> system -> messages and matching is longest-prefix.",
+      "status": "NOT OBSERVED LIVE. Follows from documented ordering; no live request was made.",
+      "falsified_by": "a live request showing cache_read_input_tokens = 0 when only the system block changed.",
+      "sensitivity": "LOAD-BEARING. If false, tools become a 1.25x write on every first call and every cached row gets materially worse."
+    },
+    {
+      "id": "A7",
+      "assumption": "Within one user turn, tool-loop iterations 2..k hit the cache: seconds apart, byte-identical tools array, frozen system string.",
+      "status": "CODE-VERIFIED for byte-identity (claude_worker.py:85 stores the system string once; :157 passes the same self._tools every iteration). The cache behaviour itself is NOT observed live.",
+      "falsified_by": "the same live request A6 needs.",
+      "sensitivity": "LOAD-BEARING and it INVERTS revision 1's conclusion. At k=1 caching can be a net penalty; at k>=2 it wins decisively."
+    }
+  ],
+  "grounding_source": {
+    "artifact": "harness/notes/token_bench/summary.json:curve.A_inspect_scene_d3.points",
+    "rungs": [
+      "L1_color_falloff",
+      "L2_obj_xform",
+      "L3_RandomExample",
+      "L4_three_point_lighting",
+      "L5_ocean",
+      "L6_karma_user_guide"
+    ],
+    "tokens_payload": [
+      443,
+      741,
+      3277,
+      3047,
+      38555,
+      113411
+    ],
+    "tokens_model_visible": [
+      499,
+      819,
+      3505,
+      3333,
+      41211,
+      122772
+    ],
+    "column_used": "tokens_model_visible - what the model is charged after the double JSON encode (C1-F8). Revision 1 used the smaller 'tokens' column without stating the choice.",
+    "min_rung": "L1_color_falloff",
+    "max_rung": "L6_karma_user_guide"
+  },
+  "stability_by_session": {
+    "stationary": {
+      "tools": true,
+      "system_whole": false,
+      "system_static": true
+    },
+    "navigating": {
+      "tools": true,
+      "system_whole": false,
+      "system_static": false
+    }
+  },
+  "table": {
+    "stationary|k=1|WARM": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 28396.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 1971.1,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 6727.1
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 28396.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 1971.1,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 251273.1
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 22802.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 23800.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 22802.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 268346.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 5091.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 6089.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 5091.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 250635.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 6258.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 200.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 4956.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 6258.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 200.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 249502.0
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 28386.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 1971.1,
+            "system": 262.8,
+            "chat": 463.0,
+            "grounding": 998.0,
+            "total": 3694.9
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 28386.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 1971.1,
+            "system": 262.8,
+            "chat": 463.0,
+            "grounding": 245544.0,
+            "total": 248240.9
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 6248.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 200.0,
+            "system": 262.8,
+            "chat": 463.0,
+            "grounding": 998.0,
+            "total": 1923.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 6248.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 200.0,
+            "system": 262.8,
+            "chat": 463.0,
+            "grounding": 245544.0,
+            "total": 246469.8
+          }
+        }
+      }
+    },
+    "stationary|k=1|COLD": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 28396.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 29394.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 28396.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 273940.8
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 22802.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 23800.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 22802.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 268346.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 5091.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 6089.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 5091.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 250635.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 6258.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 7256.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 6258.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 251802.0
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 28386.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 998.0,
+            "total": 29384.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 28386.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 245544.0,
+            "total": 273930.8
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 6248.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 998.0,
+            "total": 7246.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 6248.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 245544.0,
+            "total": 251792.0
+          }
+        }
+      }
+    },
+    "stationary|k=2|WARM": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 31556.6
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 3942.2,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 12881.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 153829.6
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 3942.2,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1113338.0
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 46103.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 50095.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 168376.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1150552.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 10681.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 14673.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 132954.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1115130.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 7646.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 400.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 9338.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 129919.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 400.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1109795.8
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 499.0,
+            "total": 31582.6
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 3942.2,
+            "system": 525.6,
+            "chat": 926.0,
+            "grounding": 4491.0,
+            "total": 9884.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 122772.0,
+            "total": 153855.6
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 3942.2,
+            "system": 525.6,
+            "chat": 926.0,
+            "grounding": 1104948.0,
+            "total": 1110341.8
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 499.0,
+            "total": 7672.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 400.0,
+            "system": 525.6,
+            "chat": 926.0,
+            "grounding": 4491.0,
+            "total": 6342.6
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 122772.0,
+            "total": 129945.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 400.0,
+            "system": 525.6,
+            "chat": 926.0,
+            "grounding": 1104948.0,
+            "total": 1106799.6
+          }
+        }
+      }
+    },
+    "stationary|k=2|COLD": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 31556.6
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 35548.7
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 153829.6
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1136005.6
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 46103.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 50095.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 168376.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1150552.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 10681.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 14673.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 132954.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1115130.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 7646.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 11638.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 129919.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1112095.8
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 499.0,
+            "total": 31582.6
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 4491.0,
+            "total": 35574.7
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 122772.0,
+            "total": 153855.6
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 1104948.0,
+            "total": 1136031.6
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 499.0,
+            "total": 7672.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 4491.0,
+            "total": 11664.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 122772.0,
+            "total": 129945.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 1104948.0,
+            "total": 1112121.8
+          }
+        }
+      }
+    },
+    "stationary|k=5|WARM": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 44030.3
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 9855.5,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 46312.7
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1266760.4
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 9855.5,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7382692.7
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 119000.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 143950.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1341730.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7480330.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 30445.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 55395.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1253175.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7391775.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 14807.2
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 1000.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 37457.2
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1237537.2
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 1000.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7373837.2
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 4990.0,
+            "total": 44164.3
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 9855.5,
+            "system": 1314.0,
+            "chat": 2315.0,
+            "grounding": 29940.0,
+            "total": 43424.5
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 1227720.0,
+            "total": 1266894.4
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 9855.5,
+            "system": 1314.0,
+            "chat": 2315.0,
+            "grounding": 7366320.0,
+            "total": 7379804.5
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 4990.0,
+            "total": 14941.2
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 1000.0,
+            "system": 1314.0,
+            "chat": 2315.0,
+            "grounding": 29940.0,
+            "total": 34569.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 1227720.0,
+            "total": 1237671.2
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 1000.0,
+            "system": 1314.0,
+            "chat": 2315.0,
+            "grounding": 7366320.0,
+            "total": 7370949.0
+          }
+        }
+      }
+    },
+    "stationary|k=5|COLD": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 44030.3
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 68980.3
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1266760.4
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7405360.3
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 119000.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 143950.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1341730.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7480330.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 30445.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 55395.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1253175.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7391775.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 14807.2
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 39757.2
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1237537.2
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7376137.2
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 4990.0,
+            "total": 44164.3
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 29940.0,
+            "total": 69114.3
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 1227720.0,
+            "total": 1266894.4
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 7366320.0,
+            "total": 7405494.3
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 4990.0,
+            "total": 14941.2
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 29940.0,
+            "total": 39891.2
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 1227720.0,
+            "total": 1237671.2
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 7366320.0,
+            "total": 7376271.2
+          }
+        }
+      }
+    },
+    "navigating|k=1|WARM": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 28396.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 1971.1,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 6727.1
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 28396.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 1971.1,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 251273.1
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 22802.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 23800.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 22802.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 268346.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 5091.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 6089.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 5091.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 250635.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 6258.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 200.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 4956.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 6258.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 200.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 249502.0
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 28386.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 1971.1,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 998.0,
+            "total": 6717.1
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 28386.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 1971.1,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 245544.0,
+            "total": 251263.1
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 6248.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 200.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 998.0,
+            "total": 4946.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 6248.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 200.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 245544.0,
+            "total": 249492.0
+          }
+        }
+      }
+    },
+    "navigating|k=1|COLD": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 28396.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 29394.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 28396.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 24638.8,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 273940.8
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 22802.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 23800.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 22802.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 19711.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 268346.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 5091.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 6089.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 5091.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2000.0,
+            "system": 2668.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 250635.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 6258.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 998.0,
+            "total": 7256.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 0.0,
+            "total": 6258.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2500.0,
+            "system": 3335.0,
+            "chat": 423.0,
+            "grounding": 245544.0,
+            "total": 251802.0
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 28386.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 998.0,
+            "total": 29384.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 28386.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 24638.8,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 245544.0,
+            "total": 273930.8
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 6248.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 998.0,
+            "total": 7246.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 0.0,
+            "total": 6248.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2500.0,
+            "system": 3285.0,
+            "chat": 463.0,
+            "grounding": 245544.0,
+            "total": 251792.0
+          }
+        }
+      }
+    },
+    "navigating|k=2|WARM": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 31556.6
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 3942.2,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 12881.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 153829.6
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 3942.2,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1113338.0
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 46103.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 50095.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 168376.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1150552.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 10681.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 14673.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 132954.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1115130.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 7646.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 400.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 9338.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 129919.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 400.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1109795.8
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 499.0,
+            "total": 31582.6
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 3942.2,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 4491.0,
+            "total": 12907.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 122772.0,
+            "total": 153855.6
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 3942.2,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 1104948.0,
+            "total": 1113364.0
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 499.0,
+            "total": 7672.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 400.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 4491.0,
+            "total": 9364.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 122772.0,
+            "total": 129945.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 400.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 1104948.0,
+            "total": 1109821.8
+          }
+        }
+      }
+    },
+    "navigating|k=2|COLD": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 31556.6
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 35548.7
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 153829.6
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 26609.8,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1136005.6
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 46103.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 50095.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 168376.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 39422.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1150552.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 10681.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 14673.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 132954.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 4000.0,
+            "system": 5336.0,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1115130.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 499.0,
+            "total": 7646.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 4491.0,
+            "total": 11638.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 122772.0,
+            "total": 129919.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2700.0,
+            "system": 3601.8,
+            "chat": 846.0,
+            "grounding": 1104948.0,
+            "total": 1112095.8
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 499.0,
+            "total": 31582.6
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 4491.0,
+            "total": 35574.7
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 122772.0,
+            "total": 153855.6
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 26609.8,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 1104948.0,
+            "total": 1136031.6
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 499.0,
+            "total": 7672.8
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 4491.0,
+            "total": 11664.8
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 122772.0,
+            "total": 129945.8
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 2700.0,
+            "system": 3547.8,
+            "chat": 926.0,
+            "grounding": 1104948.0,
+            "total": 1112121.8
+          }
+        }
+      }
+    },
+    "navigating|k=5|WARM": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 44030.3
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 9855.5,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 46312.7
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1266760.4
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 9855.5,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7382692.7
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 119000.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 143950.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1341730.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7480330.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 30445.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 55395.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1253175.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7391775.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 14807.2
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 1000.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 37457.2
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1237537.2
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 1000.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7373837.2
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 4990.0,
+            "total": 44164.3
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 9855.5,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 29940.0,
+            "total": 46446.7
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 1227720.0,
+            "total": 1266894.4
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 9855.5,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 7366320.0,
+            "total": 7382826.7
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 4990.0,
+            "total": 14941.2
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 1000.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 29940.0,
+            "total": 37591.2
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 1227720.0,
+            "total": 1237671.2
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 1000.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 7366320.0,
+            "total": 7373971.2
+          }
+        }
+      }
+    },
+    "navigating|k=5|COLD": {
+      "S1_as_shipped": {
+        "description": "Today: breakpoints on the last tool and on the WHOLE system prompt (anthropic_provider.py:64,69). No breakpoint on history.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 44030.3
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 68980.3
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1266760.4
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 32523.1,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7405360.3
+          }
+        }
+      },
+      "S2_no_caching_at_all": {
+        "description": "The premise T.1 is argued from: nothing cached.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 119000.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 143950.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1341730.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 98555.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7480330.0
+          }
+        }
+      },
+      "S3_T1_reduction_no_caching": {
+        "description": "T.1 delivered (tool surface cut to 2,000), caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 30445.0
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 55395.0
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1253175.0
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 10000.0,
+            "system": 13340.0,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7391775.0
+          }
+        }
+      },
+      "S4_T1_reduction_plus_caching": {
+        "description": "T.1 delivered AND caching on, volatile block still inside the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 4990.0,
+            "total": 14807.2
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 29940.0,
+            "total": 39757.2
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 1227720.0,
+            "total": 1237537.2
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 3300.0,
+            "system": 4402.2,
+            "chat": 2115.0,
+            "grounding": 7366320.0,
+            "total": 7376137.2
+          }
+        }
+      },
+      "S5_caching_plus_volatile_moved": {
+        "description": "No tool reduction. Caching on, volatile scene block moved OUT of the cached span.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 4990.0,
+            "total": 44164.3
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 29940.0,
+            "total": 69114.3
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 1227720.0,
+            "total": 1266894.4
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 32523.1,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 7366320.0,
+            "total": 7405494.3
+          }
+        }
+      },
+      "S6_T1_plus_caching_plus_volatile_moved": {
+        "description": "BOTH programmes plus the volatile fix. The row revision 1 omitted - and the natural combination, since nobody would ship T.1 and switch caching off.",
+        "cells": {
+          "small_L1_color_falloff|turn_1": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 4990.0,
+            "total": 14941.2
+          },
+          "small_L1_color_falloff|turn_3_steady": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 29940.0,
+            "total": 39891.2
+          },
+          "large_L6_karma_user_guide|turn_1": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 1227720.0,
+            "total": 1237671.2
+          },
+          "large_L6_karma_user_guide|turn_3_steady": {
+            "tools": 3300.0,
+            "system": 4336.2,
+            "chat": 2315.0,
+            "grounding": 7366320.0,
+            "total": 7376271.2
+          }
+        }
+      }
+    }
+  },
+  "verdict": {
+    "the_question": "Is T.1 the right first mile, or is a cache-control change?",
+    "the_answer": "They are NOT alternatives - they optimise DIFFERENT QUANTITIES. T.1 reduces context-window occupancy (preload tokens); caching reduces price (BTE). The brief poses them as 'opposite engineering programmes' and that framing is the error: a cache read cannot put anything under a preload-token ceiling, and a tool-surface reduction cannot make a cached token cheaper. Measured, BOTH are worth doing, and S6 - both plus the volatile fix - is the cheapest row in every regime measured.",
+    "preload_tokens": {
+      "_what_this_is": "CONTEXT-WINDOW OCCUPANCY in tokens. This is what harness/verify/token_ceiling.json:max_preload_tokens budgets, and it is the quantity T.1 reduces.",
+      "_caching_does_not_change_it": "A cache read changes what a token COSTS. The tokens still occupy the window, still consume attention, and still count against the ceiling. Revision 1 compared a cost figure to this budget; that was a unit substitution, corrected here.",
+      "ceiling": 2000,
+      "panel_wire_cl100k": 19711,
+      "panel_t0_cl100k": 15901,
+      "mcp_http_cl100k": 18962,
+      "panel_multiple_of_ceiling": 9.86,
+      "mcp_multiple_of_ceiling": 9.48,
+      "verdict": "OVER the ceiling on every surface under every reading. Caching does NOTHING for this quantity. On preload tokens, T.1 is the ONLY lever."
+    },
+    "cost_BTE": {
+      "_what_this_is": "PRICE in billed-token-equivalents (BTE) = input tokens x multiplier. A cost unit, never comparable to a preload-token ceiling.",
+      "tool_span_per_api_call": {
+        "uncached": 19711.0,
+        "cache_read": 1971.1,
+        "cache_write": 24638.8,
+        "read_saving_vs_uncached_pct": 90.0
+      },
+      "verdict": "Caching cuts the PRICE of the tool span by 90% per cache-read call. It does not cut its SIZE at all."
+    },
+    "ttl_evidence": {
+      "status": "MEASURED",
+      "producer": "harness/notes/econ/econ_gaps.py -> E0_gaps.json",
+      "entries": 58676,
+      "span": {
+        "first": "2026-02-06T00:44:51+00:00",
+        "last": "2026-07-28T13:57:39+00:00"
+      },
+      "pct_of_inter_burst_gaps_exceeding_300s_TTL": {
+        "burst_threshold_10s": 17.2,
+        "burst_threshold_30s": 36.9,
+        "burst_threshold_60s": 48.3,
+        "burst_threshold_120s": 67.4,
+        "burst_threshold_300s": 100.0
+      },
+      "reading": "Revision 1 asserted artist think-time 'routinely exceeds 5 minutes' with NO producer, and used it to argue the cache would usually be cold. Measured on this machine's audit log, at a 30s burst threshold 36.8% of inter-burst gaps exceed the TTL - so the majority fall INSIDE it. The assertion is not supported; COLD is a real regime but not the common one.",
+      "bias": "An artist may think for a long time WITHOUT firing an operation, and a single chat turn fires several operations. Collapsing ops into bursts corrects the second and cannot correct the first, so this figure is best read as a LOWER BOUND on how often the cache is cold - the true cold fraction is at least this and possibly higher. It is a proxy, and it replaces an assertion that had no evidence at all."
+    },
+    "best_scenario_per_regime": {
+      "stationary|k=1|WARM|small": {
+        "scenario": "S6_T1_plus_caching_plus_volatile_moved",
+        "BTE": 1923.8
+      },
+      "stationary|k=1|WARM|large": {
+        "scenario": "S6_T1_plus_caching_plus_volatile_moved",
+        "BTE": 246469.8
+      },
+      "stationary|k=1|COLD|small": {
+        "scenario": "S3_T1_reduction_no_caching",
+        "BTE": 6089.0
+      },
+      "stationary|k=1|COLD|large": {
+        "scenario": "S3_T1_reduction_no_caching",
+        "BTE": 250635.0
+      },
+      "stationary|k=2|WARM|small": {
+        "scenario": "S6_T1_plus_caching_plus_volatile_moved",
+        "BTE": 6342.6
+      },
+      "stationary|k=2|WARM|large": {
+        "scenario": "S6_T1_plus_caching_plus_volatile_moved",
+        "BTE": 1106799.6
+      },
+      "stationary|k=2|COLD|small": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 11638.8
+      },
+      "stationary|k=2|COLD|large": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 1112095.8
+      },
+      "stationary|k=5|WARM|small": {
+        "scenario": "S6_T1_plus_caching_plus_volatile_moved",
+        "BTE": 34569.0
+      },
+      "stationary|k=5|WARM|large": {
+        "scenario": "S6_T1_plus_caching_plus_volatile_moved",
+        "BTE": 7370949.0
+      },
+      "stationary|k=5|COLD|small": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 39757.2
+      },
+      "stationary|k=5|COLD|large": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 7376137.2
+      },
+      "navigating|k=1|WARM|small": {
+        "scenario": "S6_T1_plus_caching_plus_volatile_moved",
+        "BTE": 4946.0
+      },
+      "navigating|k=1|WARM|large": {
+        "scenario": "S6_T1_plus_caching_plus_volatile_moved",
+        "BTE": 249492.0
+      },
+      "navigating|k=1|COLD|small": {
+        "scenario": "S3_T1_reduction_no_caching",
+        "BTE": 6089.0
+      },
+      "navigating|k=1|COLD|large": {
+        "scenario": "S3_T1_reduction_no_caching",
+        "BTE": 250635.0
+      },
+      "navigating|k=2|WARM|small": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 9338.8
+      },
+      "navigating|k=2|WARM|large": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 1109795.8
+      },
+      "navigating|k=2|COLD|small": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 11638.8
+      },
+      "navigating|k=2|COLD|large": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 1112095.8
+      },
+      "navigating|k=5|WARM|small": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 37457.2
+      },
+      "navigating|k=5|WARM|large": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 7373837.2
+      },
+      "navigating|k=5|COLD|small": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 39757.2
+      },
+      "navigating|k=5|COLD|large": {
+        "scenario": "S4_T1_reduction_plus_caching",
+        "BTE": 7376137.2
+      }
+    },
+    "segment_ranking": {
+      "small_scene": {
+        "note": "Per-API-CALL occupancy at turn 3 with k=2 calls/turn, grounding RESIDENT in history rather than a separate transient line. The four rows are DISJOINT: conversation_chat excludes grounding, so the shares are a real partition. Revision 1's rows overlapped and its shares were not a partition.",
+        "raw_tokens": {
+          "tool_definitions": 19711,
+          "system_prompt": 2669,
+          "conversation_chat": 423,
+          "scene_grounding_resident": 998
+        },
+        "ranked": [
+          [
+            "tool_definitions",
+            19711
+          ],
+          [
+            "system_prompt",
+            2669
+          ],
+          [
+            "scene_grounding_resident",
+            998
+          ],
+          [
+            "conversation_chat",
+            423
+          ]
+        ],
+        "total": 23801,
+        "pct": {
+          "tool_definitions": 82.8,
+          "system_prompt": 11.2,
+          "conversation_chat": 1.8,
+          "scene_grounding_resident": 4.2
+        }
+      },
+      "large_scene": {
+        "note": "Per-API-CALL occupancy at turn 3 with k=2 calls/turn, grounding RESIDENT in history rather than a separate transient line. The four rows are DISJOINT: conversation_chat excludes grounding, so the shares are a real partition. Revision 1's rows overlapped and its shares were not a partition.",
+        "raw_tokens": {
+          "tool_definitions": 19711,
+          "system_prompt": 2669,
+          "conversation_chat": 423,
+          "scene_grounding_resident": 245544
+        },
+        "ranked": [
+          [
+            "scene_grounding_resident",
+            245544
+          ],
+          [
+            "tool_definitions",
+            19711
+          ],
+          [
+            "system_prompt",
+            2669
+          ],
+          [
+            "conversation_chat",
+            423
+          ]
+        ],
+        "total": 268347,
+        "pct": {
+          "tool_definitions": 7.3,
+          "system_prompt": 1.0,
+          "conversation_chat": 0.2,
+          "scene_grounding_resident": 91.5
+        }
+      }
+    },
+    "large_scene_spread": {
+      "min_BTE": 246469.8,
+      "max_BTE": 7480330.0,
+      "ratio_max_over_min": 30.35,
+      "note": "Revision 1 asserted 'every scenario lands within 3% of ~119k BTE'. Computed rather than asserted, the spread is far wider. The surviving claim is the RANKING (grounding dominates), not a narrow band."
+    }
+  },
+  "tokenizer_and_serialization_band": {
+    "panel_tools_cl100k_t0_serialization": 15901,
+    "panel_tools_cl100k_wire_serialization": 19711,
+    "panel_tools_o200k_wire_serialization": 19622,
+    "spread_pct_between_the_two_serializations": 24.0,
+    "why": "Same tool set, two defensible local serializations, 24% apart. Anthropic re-renders tool definitions canonically (A4), so neither is the billed number."
+  }
+}

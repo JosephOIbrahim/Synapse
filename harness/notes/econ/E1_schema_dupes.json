@@ -1,0 +1,1462 @@
+{
+  "schema": "e1_schema_dupes/v1",
+  "producer": "harness/notes/econ/econ_schema_dupes.py",
+  "stats": {
+    "method": "tiktoken/cl100k_base (proxy BPE, not Claude's tokenizer)",
+    "surface": "mcp_http get_tools()",
+    "n_tools": 120,
+    "ref_template": "{\"$ref\":\"#/$defs/xxxxxxxx\"}",
+    "ref_tokens": 10,
+    "property_totals": {
+      "property_instances": 461,
+      "property_fragment_tokens": 9649,
+      "property_description_tokens": 3998,
+      "description_share_of_property_mass": 0.4143
+    },
+    "duplication": {
+      "property_fragments": {
+        "distinct_repeated": 38,
+        "ceiling_saving_tokens": 1265,
+        "ref_saving_tokens": 232,
+        "top": [
+          {
+            "kind": "property_fragment",
+            "repeat_count": 10,
+            "distinct_tools": 10,
+            "fragment_tokens": 18,
+            "ceiling_saving_tokens": 162,
+            "ref_saving_tokens": 62,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "houdini_assign_material",
+              "houdini_create_material",
+              "houdini_create_point_instancer",
+              "houdini_create_textured_material",
+              "houdini_create_usd_prim",
+              "houdini_modify_usd_prim"
+            ],
+            "fragment": "\"node\":{\"description\":\"LOP node to wire after (optional)\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 10,
+            "distinct_tools": 10,
+            "fragment_tokens": 14,
+            "ceiling_saving_tokens": 126,
+            "ref_saving_tokens": 26,
+            "property_names": [
+              "parent"
+            ],
+            "sample_tools": [
+              "cops_bake_textures",
+              "cops_create_node",
+              "cops_create_solver",
+              "cops_growth_propagation",
+              "cops_pixel_sort",
+              "cops_procedural_texture"
+            ],
+            "fragment": "\"parent\":{\"description\":\"COP network path\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 48,
+            "ceiling_saving_tokens": 96,
+            "ref_saving_tokens": 66,
+            "property_names": [
+              "set_display"
+            ],
+            "sample_tools": [
+              "houdini_create_usd_prim",
+              "houdini_set_usd_attribute",
+              "houdini_set_usd_primvar"
+            ],
+            "fragment": "\"set_display\":{\"description\":\"Move the LOP display flag to the new node when it extends the display chain (default true); on a side-branch fork the result returns display:not_set + needs_rewire instead\",\"type\":\"boolean\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 7,
+            "distinct_tools": 7,
+            "fragment_tokens": 13,
+            "ceiling_saving_tokens": 78,
+            "ref_saving_tokens": 8,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "tops_cook_and_validate",
+              "tops_cook_node",
+              "tops_diagnose",
+              "tops_dirty_node",
+              "tops_generate_items",
+              "tops_get_work_items"
+            ],
+            "fragment": "\"node\":{\"description\":\"TOP node path\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 4,
+            "distinct_tools": 4,
+            "fragment_tokens": 21,
+            "ceiling_saving_tokens": 63,
+            "ref_saving_tokens": 23,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "houdini_configure_light_linking",
+              "houdini_manage_collection",
+              "houdini_manage_variant_set",
+              "houdini_query_prims"
+            ],
+            "fragment": "\"node\":{\"description\":\"LOP node path. If omitted, uses current selection.\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 6,
+            "distinct_tools": 6,
+            "fragment_tokens": 11,
+            "ceiling_saving_tokens": 55,
+            "ref_saving_tokens": -5,
+            "property_names": [
+              "name"
+            ],
+            "sample_tools": [
+              "cops_pixel_sort",
+              "cops_procedural_texture",
+              "cops_stamp_scatter",
+              "cops_stylize",
+              "cops_wetmap",
+              "houdini_hda_package"
+            ],
+            "fragment": "\"name\":{\"description\":\"Node name\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 4,
+            "distinct_tools": 4,
+            "fragment_tokens": 15,
+            "ceiling_saving_tokens": 45,
+            "ref_saving_tokens": 5,
+            "property_names": [
+              "topnet_path"
+            ],
+            "sample_tools": [
+              "tops_configure_scheduler",
+              "tops_get_dependency_graph",
+              "tops_pipeline_status",
+              "tops_setup_wedge"
+            ],
+            "fragment": "\"topnet_path\":{\"description\":\"TOP network path\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 4,
+            "distinct_tools": 4,
+            "fragment_tokens": 14,
+            "ceiling_saving_tokens": 42,
+            "ref_saving_tokens": 2,
+            "property_names": [
+              "prim_path"
+            ],
+            "sample_tools": [
+              "houdini_get_usd_attribute",
+              "houdini_modify_usd_prim",
+              "houdini_set_usd_attribute",
+              "houdini_set_usd_primvar"
+            ],
+            "fragment": "\"prim_path\":{\"description\":\"USD prim path\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 21,
+            "ceiling_saving_tokens": 42,
+            "ref_saving_tokens": 12,
+            "property_names": [
+              "parent"
+            ],
+            "sample_tools": [
+              "synapse_solaris_component_builder",
+              "synapse_solaris_import_megascans",
+              "synapse_solaris_scene_template"
+            ],
+            "fragment": "\"parent\":{\"description\":\"Alias for parent_path (accepted; parent_path wins).\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 20,
+            "ceiling_saving_tokens": 40,
+            "ref_saving_tokens": 10,
+            "property_names": [
+              "parent_path"
+            ],
+            "sample_tools": [
+              "synapse_solaris_component_builder",
+              "synapse_solaris_import_megascans",
+              "synapse_solaris_scene_template"
+            ],
+            "fragment": "\"parent_path\":{\"description\":\"LOP network path (default: /stage)\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 18,
+            "ceiling_saving_tokens": 36,
+            "ref_saving_tokens": 6,
+            "property_names": [
+              "parent"
+            ],
+            "sample_tools": [
+              "cops_composite_aovs",
+              "cops_create_copnet",
+              "cops_create_network"
+            ],
+            "fragment": "\"parent\":{\"description\":\"Parent node path (default: /obj)\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 14,
+            "ceiling_saving_tokens": 28,
+            "ref_saving_tokens": -2,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "cops_read_layer_info",
+              "cops_set_opencl",
+              "cops_temporal_analysis"
+            ],
+            "fragment": "\"node\":{\"description\":\"COP node path\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 26,
+            "ceiling_saving_tokens": 26,
+            "ref_saving_tokens": 6,
+            "property_names": [
+              "rop_path"
+            ],
+            "sample_tools": [
+              "synapse_render_progressively",
+              "synapse_safe_render"
+            ],
+            "fragment": "\"rop_path\":{\"description\":\"Path to the usdrender ROP node (auto-discovered if omitted)\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 12,
+            "ceiling_saving_tokens": 24,
+            "ref_saving_tokens": -6,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "houdini_get_parm",
+              "houdini_set_keyframe",
+              "houdini_set_parm"
+            ],
+            "fragment": "\"node\":{\"description\":\"Node path\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 12,
+            "ceiling_saving_tokens": 24,
+            "ref_saving_tokens": -6,
+            "property_names": [
+              "parm"
+            ],
+            "sample_tools": [
+              "houdini_get_parm",
+              "houdini_set_keyframe",
+              "houdini_set_parm"
+            ],
+            "fragment": "\"parm\":{\"description\":\"Parameter name\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 23,
+            "ceiling_saving_tokens": 23,
+            "ref_saving_tokens": 3,
+            "property_names": [
+              "checks"
+            ],
+            "sample_tools": [
+              "cops_analyze_render",
+              "synapse_validate_frame"
+            ],
+            "fragment": "\"checks\":{\"description\":\"Checks to run (default: all)\",\"items\":{\"type\":\"string\"},\"type\":\"array\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 22,
+            "ceiling_saving_tokens": 22,
+            "ref_saving_tokens": 2,
+            "property_names": [
+              "frame_range"
+            ],
+            "sample_tools": [
+              "cops_batch_cook",
+              "cops_temporal_analysis"
+            ],
+            "fragment": "\"frame_range\":{\"description\":\"[start, end]\",\"items\":{\"type\":\"integer\"},\"type\":\"array\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 21,
+            "ceiling_saving_tokens": 21,
+            "ref_saving_tokens": 1,
+            "property_names": [
+              "resolution"
+            ],
+            "sample_tools": [
+              "cops_procedural_texture",
+              "cops_reaction_diffusion"
+            ],
+            "fragment": "\"resolution\":{\"description\":\"[w, h]\",\"items\":{\"type\":\"integer\"},\"type\":\"array\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 20,
+            "ceiling_saving_tokens": 20,
+            "ref_saving_tokens": 0,
+            "property_names": [
+              "rop_node"
+            ],
+            "sample_tools": [
+              "tops_multi_shot",
+              "tops_render_sequence"
+            ],
+            "fragment": "\"rop_node\":{\"description\":\"ROP node path (auto-discovers if omitted)\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 19,
+            "ceiling_saving_tokens": 19,
+            "ref_saving_tokens": -1,
+            "property_names": [
+              "source_output"
+            ],
+            "sample_tools": [
+              "cops_connect",
+              "houdini_connect_nodes"
+            ],
+            "fragment": "\"source_output\":{\"description\":\"Source output index (default: 0)\",\"type\":\"integer\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 19,
+            "ceiling_saving_tokens": 19,
+            "ref_saving_tokens": -1,
+            "property_names": [
+              "target_input"
+            ],
+            "sample_tools": [
+              "cops_connect",
+              "houdini_connect_nodes"
+            ],
+            "fragment": "\"target_input\":{\"description\":\"Target input index (default: 0)\",\"type\":\"integer\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 19,
+            "ceiling_saving_tokens": 19,
+            "ref_saving_tokens": -1,
+            "property_names": [
+              "parent"
+            ],
+            "sample_tools": [
+              "synapse_solaris_assemble_chain",
+              "synapse_solaris_build_graph"
+            ],
+            "fragment": "\"parent\":{\"description\":\"LOP network path (default: /stage)\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 19,
+            "ceiling_saving_tokens": 19,
+            "ref_saving_tokens": -1,
+            "property_names": [
+              "blocking"
+            ],
+            "sample_tools": [
+              "tops_multi_shot",
+              "tops_render_sequence"
+            ],
+            "fragment": "\"blocking\":{\"description\":\"Wait for cook to complete (default: false)\",\"type\":\"boolean\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 18,
+            "ceiling_saving_tokens": 18,
+            "ref_saving_tokens": -2,
+            "property_names": [
+              "atomic"
+            ],
+            "sample_tools": [
+              "houdini_execute_python",
+              "synapse_batch"
+            ],
+            "fragment": "\"atomic\":{\"description\":\"Wrap in undo group (default: true)\",\"type\":\"boolean\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 18,
+            "ceiling_saving_tokens": 18,
+            "ref_saving_tokens": -2,
+            "property_names": [
+              "hda_path"
+            ],
+            "sample_tools": [
+              "houdini_hda_promote_parm",
+              "houdini_hda_set_help"
+            ],
+            "fragment": "\"hda_path\":{\"description\":\"Path to the HDA instance node\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 17,
+            "ceiling_saving_tokens": 17,
+            "ref_saving_tokens": -3,
+            "property_names": [
+              "end_frame"
+            ],
+            "sample_tools": [
+              "synapse_render_sequence",
+              "tops_render_sequence"
+            ],
+            "fragment": "\"end_frame\":{\"description\":\"Last frame to render (inclusive)\",\"type\":\"integer\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 17,
+            "ceiling_saving_tokens": 17,
+            "ref_saving_tokens": -3,
+            "property_names": [
+              "step"
+            ],
+            "sample_tools": [
+              "synapse_render_sequence",
+              "tops_render_sequence"
+            ],
+            "fragment": "\"step\":{\"description\":\"Frame step (default: 1)\",\"type\":\"integer\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 17,
+            "ceiling_saving_tokens": 17,
+            "ref_saving_tokens": -3,
+            "property_names": [
+              "topnet_path"
+            ],
+            "sample_tools": [
+              "tops_multi_shot",
+              "tops_render_sequence"
+            ],
+            "fragment": "\"topnet_path\":{\"description\":\"Existing TOP network to reuse\",\"type\":\"string\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 15,
+            "ceiling_saving_tokens": 15,
+            "ref_saving_tokens": -5,
+            "property_names": [
+              "start_frame"
+            ],
+            "sample_tools": [
+              "synapse_render_sequence",
+              "tops_render_sequence"
+            ],
+            "fragment": "\"start_frame\":{\"description\":\"First frame to render\",\"type\":\"integer\"}"
+          },
+          {
+            "kind": "property_fragment",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 15,
+            "ceiling_saving_tokens": 15,
+            "ref_saving_tokens": -5,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "tops_cancel_cook",
+              "tops_get_cook_stats"
+            ],
+            "fragment": "\"node\":{\"description\":\"TOP node or network path\",\"type\":\"string\"}"
+          }
+        ]
+      },
+      "property_descriptions": {
+        "distinct_repeated": 38,
+        "ceiling_saving_tokens": 761,
+        "ref_saving_tokens": 52,
+        "strip_all_saving_tokens": 5157,
+        "strip_note": "strip_all removes EVERY property description, unique ones included. It is an upper bound on a lossy edit, not a free one: per-argument prose is what stops the model inventing argument values. Reported for scale, not recommended.",
+        "top": [
+          {
+            "kind": "property_description",
+            "repeat_count": 10,
+            "distinct_tools": 10,
+            "fragment_tokens": 11,
+            "ceiling_saving_tokens": 99,
+            "ref_saving_tokens": -1,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "houdini_assign_material",
+              "houdini_create_material",
+              "houdini_create_point_instancer",
+              "houdini_create_textured_material",
+              "houdini_create_usd_prim",
+              "houdini_modify_usd_prim"
+            ],
+            "fragment": "LOP node to wire after (optional)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 40,
+            "ceiling_saving_tokens": 80,
+            "ref_saving_tokens": 50,
+            "property_names": [
+              "set_display"
+            ],
+            "sample_tools": [
+              "houdini_create_usd_prim",
+              "houdini_set_usd_attribute",
+              "houdini_set_usd_primvar"
+            ],
+            "fragment": "Move the LOP display flag to the new node when it extends the display chain (default true); on a side-branch fork the result returns display:not_set + needs_rewire instead"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 10,
+            "distinct_tools": 10,
+            "fragment_tokens": 7,
+            "ceiling_saving_tokens": 63,
+            "ref_saving_tokens": -37,
+            "property_names": [
+              "parent"
+            ],
+            "sample_tools": [
+              "cops_bake_textures",
+              "cops_create_node",
+              "cops_create_solver",
+              "cops_growth_propagation",
+              "cops_pixel_sort",
+              "cops_procedural_texture"
+            ],
+            "fragment": "COP network path"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 5,
+            "distinct_tools": 5,
+            "fragment_tokens": 12,
+            "ceiling_saving_tokens": 48,
+            "ref_saving_tokens": -2,
+            "property_names": [
+              "parent",
+              "parent_path"
+            ],
+            "sample_tools": [
+              "synapse_solaris_assemble_chain",
+              "synapse_solaris_build_graph",
+              "synapse_solaris_component_builder",
+              "synapse_solaris_import_megascans",
+              "synapse_solaris_scene_template"
+            ],
+            "fragment": "LOP network path (default: /stage)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 4,
+            "distinct_tools": 4,
+            "fragment_tokens": 14,
+            "ceiling_saving_tokens": 42,
+            "ref_saving_tokens": 2,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "houdini_configure_light_linking",
+              "houdini_manage_collection",
+              "houdini_manage_variant_set",
+              "houdini_query_prims"
+            ],
+            "fragment": "LOP node path. If omitted, uses current selection."
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 4,
+            "distinct_tools": 4,
+            "fragment_tokens": 12,
+            "ceiling_saving_tokens": 36,
+            "ref_saving_tokens": -4,
+            "property_names": [
+              "node",
+              "rop",
+              "rop_node"
+            ],
+            "sample_tools": [
+              "houdini_render",
+              "synapse_render_sequence",
+              "tops_multi_shot",
+              "tops_render_sequence"
+            ],
+            "fragment": "ROP node path (auto-discovers if omitted)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 7,
+            "distinct_tools": 7,
+            "fragment_tokens": 6,
+            "ceiling_saving_tokens": 36,
+            "ref_saving_tokens": -34,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "tops_cook_and_validate",
+              "tops_cook_node",
+              "tops_diagnose",
+              "tops_dirty_node",
+              "tops_generate_items",
+              "tops_get_work_items"
+            ],
+            "fragment": "TOP node path"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 13,
+            "ceiling_saving_tokens": 26,
+            "ref_saving_tokens": -4,
+            "property_names": [
+              "parent"
+            ],
+            "sample_tools": [
+              "synapse_solaris_component_builder",
+              "synapse_solaris_import_megascans",
+              "synapse_solaris_scene_template"
+            ],
+            "fragment": "Alias for parent_path (accepted; parent_path wins)."
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 6,
+            "distinct_tools": 6,
+            "fragment_tokens": 5,
+            "ceiling_saving_tokens": 25,
+            "ref_saving_tokens": -35,
+            "property_names": [
+              "name"
+            ],
+            "sample_tools": [
+              "cops_pixel_sort",
+              "cops_procedural_texture",
+              "cops_stamp_scatter",
+              "cops_stylize",
+              "cops_wetmap",
+              "houdini_hda_package"
+            ],
+            "fragment": "Node name"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 11,
+            "ceiling_saving_tokens": 22,
+            "ref_saving_tokens": -8,
+            "property_names": [
+              "parent"
+            ],
+            "sample_tools": [
+              "cops_composite_aovs",
+              "cops_create_copnet",
+              "cops_create_network"
+            ],
+            "fragment": "Parent node path (default: /obj)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 11,
+            "ceiling_saving_tokens": 22,
+            "ref_saving_tokens": -8,
+            "property_names": [
+              "output",
+              "source_output"
+            ],
+            "sample_tools": [
+              "cops_connect",
+              "houdini_connect_nodes",
+              "synapse_solaris_build_graph"
+            ],
+            "fragment": "Source output index (default: 0)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 4,
+            "distinct_tools": 4,
+            "fragment_tokens": 6,
+            "ceiling_saving_tokens": 18,
+            "ref_saving_tokens": -22,
+            "property_names": [
+              "prim_path"
+            ],
+            "sample_tools": [
+              "houdini_get_usd_attribute",
+              "houdini_modify_usd_prim",
+              "houdini_set_usd_attribute",
+              "houdini_set_usd_primvar"
+            ],
+            "fragment": "USD prim path"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 18,
+            "ceiling_saving_tokens": 18,
+            "ref_saving_tokens": -2,
+            "property_names": [
+              "rop_path"
+            ],
+            "sample_tools": [
+              "synapse_render_progressively",
+              "synapse_safe_render"
+            ],
+            "fragment": "Path to the usdrender ROP node (auto-discovered if omitted)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 4,
+            "distinct_tools": 4,
+            "fragment_tokens": 6,
+            "ceiling_saving_tokens": 18,
+            "ref_saving_tokens": -22,
+            "property_names": [
+              "topnet_path"
+            ],
+            "sample_tools": [
+              "tops_configure_scheduler",
+              "tops_get_dependency_graph",
+              "tops_pipeline_status",
+              "tops_setup_wedge"
+            ],
+            "fragment": "TOP network path"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 7,
+            "ceiling_saving_tokens": 14,
+            "ref_saving_tokens": -16,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "cops_read_layer_info",
+              "cops_set_opencl",
+              "cops_temporal_analysis"
+            ],
+            "fragment": "COP node path"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 6,
+            "ceiling_saving_tokens": 12,
+            "ref_saving_tokens": -18,
+            "property_names": [
+              "value"
+            ],
+            "sample_tools": [
+              "houdini_set_keyframe",
+              "houdini_set_parm",
+              "houdini_set_usd_attribute"
+            ],
+            "fragment": "Value to set"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 12,
+            "ceiling_saving_tokens": 12,
+            "ref_saving_tokens": -8,
+            "property_names": [
+              "blocking"
+            ],
+            "sample_tools": [
+              "tops_multi_shot",
+              "tops_render_sequence"
+            ],
+            "fragment": "Wait for cook to complete (default: false)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 11,
+            "ceiling_saving_tokens": 11,
+            "ref_saving_tokens": -9,
+            "property_names": [
+              "target_input"
+            ],
+            "sample_tools": [
+              "cops_connect",
+              "houdini_connect_nodes"
+            ],
+            "fragment": "Target input index (default: 0)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 11,
+            "ceiling_saving_tokens": 11,
+            "ref_saving_tokens": -9,
+            "property_names": [
+              "atomic"
+            ],
+            "sample_tools": [
+              "houdini_execute_python",
+              "synapse_batch"
+            ],
+            "fragment": "Wrap in undo group (default: true)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 10,
+            "ceiling_saving_tokens": 10,
+            "ref_saving_tokens": -10,
+            "property_names": [
+              "checks"
+            ],
+            "sample_tools": [
+              "cops_analyze_render",
+              "synapse_validate_frame"
+            ],
+            "fragment": "Checks to run (default: all)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 5,
+            "ceiling_saving_tokens": 10,
+            "ref_saving_tokens": -20,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "houdini_get_parm",
+              "houdini_set_keyframe",
+              "houdini_set_parm"
+            ],
+            "fragment": "Node path"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 3,
+            "distinct_tools": 3,
+            "fragment_tokens": 5,
+            "ceiling_saving_tokens": 10,
+            "ref_saving_tokens": -20,
+            "property_names": [
+              "parm"
+            ],
+            "sample_tools": [
+              "houdini_get_parm",
+              "houdini_set_keyframe",
+              "houdini_set_parm"
+            ],
+            "fragment": "Parameter name"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 10,
+            "ceiling_saving_tokens": 10,
+            "ref_saving_tokens": -10,
+            "property_names": [
+              "hda_path"
+            ],
+            "sample_tools": [
+              "houdini_hda_promote_parm",
+              "houdini_hda_set_help"
+            ],
+            "fragment": "Path to the HDA instance node"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 10,
+            "ceiling_saving_tokens": 10,
+            "ref_saving_tokens": -10,
+            "property_names": [
+              "action"
+            ],
+            "sample_tools": [
+              "houdini_manage_collection",
+              "houdini_manage_variant_set"
+            ],
+            "fragment": "Action to perform (default: list)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 10,
+            "ceiling_saving_tokens": 10,
+            "ref_saving_tokens": -10,
+            "property_names": [
+              "step"
+            ],
+            "sample_tools": [
+              "synapse_render_sequence",
+              "tops_render_sequence"
+            ],
+            "fragment": "Frame step (default: 1)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 9,
+            "ceiling_saving_tokens": 9,
+            "ref_saving_tokens": -11,
+            "property_names": [
+              "end_frame"
+            ],
+            "sample_tools": [
+              "synapse_render_sequence",
+              "tops_render_sequence"
+            ],
+            "fragment": "Last frame to render (inclusive)"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 8,
+            "ceiling_saving_tokens": 8,
+            "ref_saving_tokens": -12,
+            "property_names": [
+              "node"
+            ],
+            "sample_tools": [
+              "tops_cancel_cook",
+              "tops_get_cook_stats"
+            ],
+            "fragment": "TOP node or network path"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 8,
+            "ceiling_saving_tokens": 8,
+            "ref_saving_tokens": -12,
+            "property_names": [
+              "topnet_path"
+            ],
+            "sample_tools": [
+              "tops_multi_shot",
+              "tops_render_sequence"
+            ],
+            "fragment": "Existing TOP network to reuse"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 7,
+            "ceiling_saving_tokens": 7,
+            "ref_saving_tokens": -13,
+            "property_names": [
+              "frame_range"
+            ],
+            "sample_tools": [
+              "cops_batch_cook",
+              "cops_temporal_analysis"
+            ],
+            "fragment": "[start, end]"
+          },
+          {
+            "kind": "property_description",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 7,
+            "ceiling_saving_tokens": 7,
+            "ref_saving_tokens": -13,
+            "property_names": [
+              "resolution"
+            ],
+            "sample_tools": [
+              "cops_procedural_texture",
+              "cops_reaction_diffusion"
+            ],
+            "fragment": "[w, h]"
+          }
+        ]
+      },
+      "enum_bodies": {
+        "distinct_repeated": 1,
+        "ceiling_saving_tokens": 15,
+        "ref_saving_tokens": 0,
+        "top": [
+          {
+            "kind": "enum_body",
+            "repeat_count": 2,
+            "distinct_tools": 2,
+            "fragment_tokens": 15,
+            "ceiling_saving_tokens": 15,
+            "ref_saving_tokens": -5,
+            "property_names": [
+              "category"
+            ],
+            "sample_tools": [
+              "houdini_hda_create",
+              "houdini_hda_package"
+            ],
+            "fragment": "[\"Sop\",\"Object\",\"Driver\",\"Lop\",\"Top\"]"
+          }
+        ]
+      }
+    },
+    "annotations_derivable": {
+      "total_wire_tokens": 3987,
+      "distinct_annotation_bodies": 120,
+      "n_tools": 120,
+      "derivable": true,
+      "derivation": "title = name.replace('_',' ').replace('houdini ','').replace('synapse ','').title(); readOnlyHint/destructiveHint/idempotentHint are TOOL_DEFS tuple slots 5/6/7; openWorldHint is the constant False. _tool_registry.py:1543-1552.",
+      "note": "Not duplication - derivation. Every byte is recomputable from data the caller already has, so removal needs no dictionary, no $ref, and no client support. The mcp_stdio surface already drops it, which is why stdio measured lower than http at T.0."
+    },
+    "shared_property_names": [
+      {
+        "property": "node",
+        "tool_count": 40,
+        "sample_tools": [
+          "cops_analyze_render",
+          "cops_read_layer_info",
+          "cops_set_opencl",
+          "cops_temporal_analysis",
+          "houdini_assign_material"
+        ]
+      },
+      {
+        "property": "name",
+        "tool_count": 22,
+        "sample_tools": [
+          "cops_bake_textures",
+          "cops_batch_cook",
+          "cops_composite_aovs",
+          "cops_create_copnet",
+          "cops_create_network"
+        ]
+      },
+      {
+        "property": "parent",
+        "tool_count": 21,
+        "sample_tools": [
+          "cops_bake_textures",
+          "cops_composite_aovs",
+          "cops_create_copnet",
+          "cops_create_network",
+          "cops_create_node"
+        ]
+      },
+      {
+        "property": "prim_path",
+        "tool_count": 11,
+        "sample_tools": [
+          "houdini_create_point_instancer",
+          "houdini_create_usd_prim",
+          "houdini_get_usd_attribute",
+          "houdini_manage_collection",
+          "houdini_manage_variant_set"
+        ]
+      },
+      {
+        "property": "resolution",
+        "tool_count": 7,
+        "sample_tools": [
+          "cops_bake_textures",
+          "cops_procedural_texture",
+          "cops_reaction_diffusion",
+          "cops_wetmap",
+          "synapse_render_progressively"
+        ]
+      },
+      {
+        "property": "type",
+        "tool_count": 6,
+        "sample_tools": [
+          "cops_create_node",
+          "houdini_create_node",
+          "houdini_hda_package",
+          "houdini_set_usd_primvar",
+          "synapse_solaris_build_graph"
+        ]
+      },
+      {
+        "property": "topnet_path",
+        "tool_count": 6,
+        "sample_tools": [
+          "tops_configure_scheduler",
+          "tops_get_dependency_graph",
+          "tops_multi_shot",
+          "tops_pipeline_status",
+          "tops_render_sequence"
+        ]
+      },
+      {
+        "property": "action",
+        "tool_count": 5,
+        "sample_tools": [
+          "houdini_configure_light_linking",
+          "houdini_manage_collection",
+          "houdini_manage_variant_set",
+          "houdini_set_payload_loadstate",
+          "tops_monitor_stream"
+        ]
+      }
+    ],
+    "normalisation_potential": {
+      "normalise_only_saving_tokens": 927,
+      "normalise_then_dedup_ceiling_tokens": 4006,
+      "normalise_then_ref_realistic_tokens": 1411,
+      "distinct_property_names_with_repeats": 69,
+      "not_free": "Normalisation is NOT capability-neutral the way annotations removal is. Converging 'LOP node path', 'TOP node path' and 'COP node path' onto one string deletes the context that currently tells the model which network the argument belongs to. information_lost_tokens per row is the size of what is discarded, and is the number to argue over - not the saving.",
+      "top": [
+        {
+          "property": "node",
+          "instances": 40,
+          "distinct_bodies": 17,
+          "actual_tokens": 649,
+          "canonical_tokens": 12,
+          "normalise_only_saving": 169,
+          "normalise_then_dedup_ceiling": 637,
+          "normalise_then_ref_saving": 237,
+          "canonical_body": "\"node\":{\"description\":\"Node path\",\"type\":\"string\"}",
+          "longest_body": "\"node\":{\"description\":\"Starting node path (render ROP or Karma LOP). Auto-discovers if omitted.\",\"type\":\"string\"}",
+          "information_lost_tokens": 15
+        },
+        {
+          "property": "parent",
+          "instances": 21,
+          "distinct_bodies": 7,
+          "actual_tokens": 351,
+          "canonical_tokens": 14,
+          "normalise_only_saving": 57,
+          "normalise_then_dedup_ceiling": 337,
+          "normalise_then_ref_saving": 127,
+          "canonical_body": "\"parent\":{\"description\":\"COP network path\",\"type\":\"string\"}",
+          "longest_body": "\"parent\":{\"description\":\"LOP network path for assembly (default: /stage)\",\"type\":\"string\"}",
+          "information_lost_tokens": 7
+        },
+        {
+          "property": "name",
+          "instances": 23,
+          "distinct_bodies": 16,
+          "actual_tokens": 316,
+          "canonical_tokens": 11,
+          "normalise_only_saving": 63,
+          "normalise_then_dedup_ceiling": 305,
+          "normalise_then_ref_saving": 75,
+          "canonical_body": "\"name\":{\"description\":\"Material name\",\"type\":\"string\"}",
+          "longest_body": "\"name\":{\"description\":\"Material name (e.g. 'wood', 'red')\",\"type\":\"string\"}",
+          "information_lost_tokens": 10
+        },
+        {
+          "property": "nodes",
+          "instances": 4,
+          "distinct_bodies": 4,
+          "actual_tokens": 213,
+          "canonical_tokens": 20,
+          "normalise_only_saving": 133,
+          "normalise_then_dedup_ceiling": 193,
+          "normalise_then_ref_saving": 153,
+          "canonical_body": "\"nodes\":{\"description\":\"COP node paths\",\"items\":{\"type\":\"string\"},\"type\":\"array\"}",
+          "longest_body": "\"nodes\":{\"description\":\"Nodes to create\",\"items\":{\"properties\":{\"id\":{\"description\":\"Local graph ID for connections\",\"type\":\"string\"},\"name\":{\"description\":\"Houdini node name (defaults to id)\",\"type\":",
+          "information_lost_tokens": 74
+        },
+        {
+          "property": "prim_path",
+          "instances": 11,
+          "distinct_bodies": 8,
+          "actual_tokens": 177,
+          "canonical_tokens": 14,
+          "normalise_only_saving": 23,
+          "normalise_then_dedup_ceiling": 163,
+          "normalise_then_ref_saving": 53,
+          "canonical_body": "\"prim_path\":{\"description\":\"USD prim path\",\"type\":\"string\"}",
+          "longest_body": "\"prim_path\":{\"description\":\"USD prim path for the PointInstancer\",\"type\":\"string\"}",
+          "information_lost_tokens": 5
+        },
+        {
+          "property": "resolution",
+          "instances": 7,
+          "distinct_bodies": 6,
+          "actual_tokens": 178,
+          "canonical_tokens": 18,
+          "normalise_only_saving": 52,
+          "normalise_then_dedup_ceiling": 160,
+          "normalise_then_ref_saving": 90,
+          "canonical_body": "\"resolution\":{\"description\":\"UV res\",\"items\":{\"type\":\"integer\"},\"type\":\"array\"}",
+          "longest_body": "\"resolution\":{\"description\":\"Render resolution [width, height] (default: [1920, 1080])\",\"items\":{\"type\":\"integer\"},\"maxItems\":2,\"minItems\":2,\"type\":\"array\"}",
+          "information_lost_tokens": 26
+        },
+        {
+          "property": "type",
+          "instances": 6,
+          "distinct_bodies": 6,
+          "actual_tokens": 147,
+          "canonical_tokens": 13,
+          "normalise_only_saving": 69,
+          "normalise_then_dedup_ceiling": 134,
+          "normalise_then_ref_saving": 74,
+          "canonical_body": "\"type\":{\"description\":\"COP node type\",\"type\":\"string\"}",
+          "longest_body": "\"type\":{\"description\":\"Value type, e.g. float, float3, color3f, int, normal3f, texcoord2f; append '[]' for the array form (float3[])\",\"type\":\"string\"}",
+          "information_lost_tokens": 34
+        },
+        {
+          "property": "action",
+          "instances": 5,
+          "distinct_bodies": 5,
+          "actual_tokens": 136,
+          "canonical_tokens": 23,
+          "normalise_only_saving": 21,
+          "normalise_then_dedup_ceiling": 113,
+          "normalise_then_ref_saving": 63,
+          "canonical_body": "\"action\":{\"description\":\"Load or unload the payload (optional)\",\"enum\":[\"load\",\"unload\"],\"type\":\"string\"}",
+          "longest_body": "\"action\":{\"description\":\"Light linking action (default: include)\",\"enum\":[\"include\",\"exclude\",\"shadow_include\",\"shadow_exclude\",\"reset\"],\"type\":\"string\"}",
+          "information_lost_tokens": 8
+        },
+        {
+          "property": "variants",
+          "instances": 2,
+          "distinct_bodies": 2,
+          "actual_tokens": 122,
+          "canonical_tokens": 25,
+          "normalise_only_saving": 72,
+          "normalise_then_dedup_ceiling": 97,
+          "normalise_then_ref_saving": 77,
+          "canonical_body": "\"variants\":{\"description\":\"Variant names to create (required for create action)\",\"items\":{\"type\":\"string\"},\"type\":\"array\"}",
+          "longest_body": "\"variants\":{\"description\":\"List of variants to create. At least 2 are required.\",\"items\":{\"properties\":{\"geometry_source\":{\"description\":\"SOP path or file path (variant_type='geometry' only)\",\"type\":\"",
+          "information_lost_tokens": 72
+        },
+        {
+          "property": "set_display",
+          "instances": 3,
+          "distinct_bodies": 1,
+          "actual_tokens": 144,
+          "canonical_tokens": 48,
+          "normalise_only_saving": 0,
+          "normalise_then_dedup_ceiling": 96,
+          "normalise_then_ref_saving": 66,
+          "canonical_body": "\"set_display\":{\"description\":\"Move the LOP display flag to the new node when it extends the display chain (default true); on a side-branch fork the result returns display:not_set + needs_rewire instea",
+          "longest_body": "\"set_display\":{\"description\":\"Move the LOP display flag to the new node when it extends the display chain (default true); on a side-branch fork the result returns display:not_set + needs_rewire instea",
+          "information_lost_tokens": 0
+        },
+        {
+          "property": "connections",
+          "instances": 2,
+          "distinct_bodies": 2,
+          "actual_tokens": 135,
+          "canonical_tokens": 43,
+          "normalise_only_saving": 49,
+          "normalise_then_dedup_ceiling": 92,
+          "normalise_then_ref_saving": 72,
+          "canonical_body": "\"connections\":{\"description\":\"Connection triples: [src_name, dst_name, dst_input_idx]. Use __input0 for subnet input\",\"items\":{\"items\":{\"type\":\"string\"},\"type\":\"array\"},\"type\":\"array\"}",
+          "longest_body": "\"connections\":{\"description\":\"Connection wiring\",\"items\":{\"properties\":{\"from\":{\"description\":\"Source node id\",\"type\":\"string\"},\"input\":{\"description\":\"Target input index (default: 0). Order matters f",
+          "information_lost_tokens": 49
+        },
+        {
+          "property": "topnet_path",
+          "instances": 6,
+          "distinct_bodies": 2,
+          "actual_tokens": 94,
+          "canonical_tokens": 15,
+          "normalise_only_saving": 4,
+          "normalise_then_dedup_ceiling": 79,
+          "normalise_then_ref_saving": 19,
+          "canonical_body": "\"topnet_path\":{\"description\":\"TOP network path\",\"type\":\"string\"}",
+          "longest_body": "\"topnet_path\":{\"description\":\"Existing TOP network to reuse\",\"type\":\"string\"}",
+          "information_lost_tokens": 2
+        },
+        {
+          "property": "purpose",
+          "instances": 4,
+          "distinct_bodies": 4,
+          "actual_tokens": 86,
+          "canonical_tokens": 12,
+          "normalise_only_saving": 38,
+          "normalise_then_dedup_ceiling": 74,
+          "normalise_then_ref_saving": 34,
+          "canonical_body": "\"purpose\":{\"description\":\"Prim purpose\",\"type\":\"string\"}",
+          "longest_body": "\"purpose\":{\"description\":\"Filter by purpose (e.g. 'default', 'render', 'proxy', 'guide')\",\"type\":\"string\"}",
+          "information_lost_tokens": 17
+        },
+        {
+          "property": "category",
+          "instances": 3,
+          "distinct_bodies": 3,
+          "actual_tokens": 89,
+          "canonical_tokens": 26,
+          "normalise_only_saving": 11,
+          "normalise_then_dedup_ceiling": 63,
+          "normalise_then_ref_saving": 33,
+          "canonical_body": "\"category\":{\"description\":\"Node category\",\"enum\":[\"Sop\",\"Object\",\"Driver\",\"Lop\",\"Top\"],\"type\":\"string\"}",
+          "longest_body": "\"category\":{\"description\":\"Material category for organization (e.g. 'metal', 'cloth'). Creates /materials/{category}/{name} hierarchy\",\"type\":\"string\"}",
+          "information_lost_tokens": 7
+        },
+        {
+          "property": "dry_run",
+          "instances": 4,
+          "distinct_bodies": 4,
+          "actual_tokens": 75,
+          "canonical_tokens": 18,
+          "normalise_only_saving": 3,
+          "normalise_then_dedup_ceiling": 57,
+          "normalise_then_ref_saving": 17,
+          "canonical_body": "\"dry_run\":{\"description\":\"Syntax-check only (default: false)\",\"type\":\"boolean\"}",
+          "longest_body": "\"dry_run\":{\"description\":\"Preview wiring plan without mutating (default: false)\",\"type\":\"boolean\"}",
+          "information_lost_tokens": 2
+        },
+        {
+          "property": "blocking",
+          "instances": 4,
+          "distinct_bodies": 3,
+          "actual_tokens": 75,
+          "canonical_tokens": 18,
+          "normalise_only_saving": 3,
+          "normalise_then_dedup_ceiling": 57,
+          "normalise_then_ref_saving": 17,
+          "canonical_body": "\"blocking\":{\"description\":\"Wait for each cook (default: true)\",\"type\":\"boolean\"}",
+          "longest_body": "\"blocking\":{\"description\":\"Wait for cook to complete (default: false)\",\"type\":\"boolean\"}",
+          "information_lost_tokens": 1
+        },
+        {
+          "property": "rop_path",
+          "instances": 3,
+          "distinct_bodies": 2,
+          "actual_tokens": 73,
+          "canonical_tokens": 21,
+          "normalise_only_saving": 10,
+          "normalise_then_dedup_ceiling": 52,
+          "normalise_then_ref_saving": 22,
+          "canonical_body": "\"rop_path\":{\"description\":\"Render ROP path (auto-discovers if omitted)\",\"type\":\"string\"}",
+          "longest_body": "\"rop_path\":{\"description\":\"Path to the usdrender ROP node (auto-discovered if omitted)\",\"type\":\"string\"}",
+          "information_lost_tokens": 5
+        },
+        {
+          "property": "depth",
+          "instances": 3,
+          "distinct_bodies": 3,
+          "actual_tokens": 65,
+          "canonical_tokens": 18,
+          "normalise_only_saving": 11,
+          "normalise_then_dedup_ceiling": 47,
+          "normalise_then_ref_saving": 17,
+          "canonical_body": "\"depth\":{\"description\":\"Input traversal depth (default: 1)\",\"type\":\"integer\"}",
+          "longest_body": "\"depth\":{\"description\":\"How deep to traverse subnets (default: 2, max: 5)\",\"type\":\"integer\"}",
+          "information_lost_tokens": 8
+        },
+        {
+          "property": "mode",
+          "instances": 2,
+          "distinct_bodies": 2,
+          "actual_tokens": 86,
+          "canonical_tokens": 39,
+          "normalise_only_saving": 8,
+          "normalise_then_dedup_ceiling": 47,
+          "normalise_then_ref_saving": 27,
+          "canonical_body": "\"mode\":{\"description\":\"Import mode: reference (default), payload (deferred load), or sublayer (most Karma-compatible)\",\"enum\":[\"reference\",\"payload\",\"sublayer\"],\"type\":\"string\"}",
+          "longest_body": "\"mode\":{\"description\":\"Assembly mode: 'all' (scan unwired), 'nodes' (specific paths), 'after' (append). Default: 'all'.\",\"enum\":[\"all\",\"nodes\",\"after\"],\"type\":\"string\"}",
+          "information_lost_tokens": 8
+        },
+        {
+          "property": "proxy_reduction",
+          "instances": 2,
+          "distinct_bodies": 2,
+          "actual_tokens": 90,
+          "canonical_tokens": 44,
+          "normalise_only_saving": 2,
+          "normalise_then_dedup_ceiling": 46,
+          "normalise_then_ref_saving": 26,
+          "canonical_body": "\"proxy_reduction\":{\"description\":\"PolyReduce percentage for proxy geometry (0.0-1.0, default: 0.05)\",\"maximum\":1.0,\"minimum\":0.0,\"type\":\"number\"}",
+          "longest_body": "\"proxy_reduction\":{\"description\":\"PolyReduce percentage for proxy/simproxy (0.0-1.0, default: 0.05)\",\"maximum\":1.0,\"minimum\":0.0,\"type\":\"number\"}",
+          "information_lost_tokens": 2
+        }
+      ]
+    },
+    "free_reduction_summary": {
+      "annotations_removal_tokens": 3987,
+      "fragment_dedup_ceiling_tokens": 1265,
+      "fragment_dedup_ref_realistic_tokens": 232,
+      "combined_ceiling_tokens": 5252,
+      "capability_lost": "none - no tool description or argument set changes",
+      "mechanism_risk": "annotations removal needs no mechanism. $ref extraction DOES: $ref support in MCP inputSchema / Anthropic tool input_schema is UNVERIFIED here and must be probed before ref_saving is counted as bankable."
+    }
+  },
+  "blake2b": "5aaac3cfb54dfa7835b913c9fb88e2bd"
+}

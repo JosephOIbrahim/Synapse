@@ -1,0 +1,179 @@
+{
+  "schema": "e1_floor/v1",
+  "producer": "harness/notes/econ/econ_floor.py",
+  "stats": {
+    "method": "tiktoken/cl100k_base (proxy BPE, not Claude's tokenizer)",
+    "surface": "mcp_http jsonrpc_result(1, {'tools': ...})",
+    "n_tools": 120,
+    "floors": {
+      "F0_as_shipped": {
+        "tokens": 18962,
+        "what": "everything: name + description + inputSchema + annotations",
+        "legal_mcp_tools_list": true,
+        "capability_note": "the shipped surface",
+        "over_ceiling_by": 16962,
+        "ratio_to_ceiling": 9.48,
+        "fits_under_ceiling": false
+      },
+      "F1_no_annotations": {
+        "tokens": 15095,
+        "what": "annotations dropped (the mcp_stdio shape)",
+        "legal_mcp_tools_list": true,
+        "capability_note": "annotations are OPTIONAL in the MCP Tool object and the stdio transport already ships without them. Zero capability change.",
+        "over_ceiling_by": 13095,
+        "ratio_to_ceiling": 7.55,
+        "fits_under_ceiling": false
+      },
+      "F2_no_property_descriptions": {
+        "tokens": 9935,
+        "what": "F1 + every per-argument description removed; names/types/required kept",
+        "legal_mcp_tools_list": true,
+        "capability_note": "LOSSY. Per-argument prose is what stops the model inventing argument values. Measured as a bound, not proposed.",
+        "over_ceiling_by": 7935,
+        "ratio_to_ceiling": 4.97,
+        "fits_under_ceiling": false
+      },
+      "F3_empty_schemas": {
+        "tokens": 6117,
+        "what": "F1 + inputSchema emptied; tool descriptions kept",
+        "legal_mcp_tools_list": true,
+        "capability_note": "LOSSY - the model no longer knows any argument exists.",
+        "over_ceiling_by": 4117,
+        "ratio_to_ceiling": 3.06,
+        "fits_under_ceiling": false
+      },
+      "F4_names_only_legal": {
+        "tokens": 2919,
+        "what": "name + empty description + empty schema",
+        "legal_mcp_tools_list": true,
+        "capability_note": "THE CATALOG FLOOR. Cheapest legal tools/list for 120 tools. Says nothing about any tool - the model would have to route on the name alone.",
+        "over_ceiling_by": 919,
+        "ratio_to_ceiling": 1.46,
+        "fits_under_ceiling": false
+      },
+      "F5_bare_name_array": {
+        "tokens": 742,
+        "what": "a JSON array of the 120 names, nothing else",
+        "legal_mcp_tools_list": false,
+        "capability_note": "NOT a tools/list response. Absolute lower bound on putting 120 identifiers on the wire in any form.",
+        "over_ceiling_by": -1258,
+        "ratio_to_ceiling": 0.37,
+        "fits_under_ceiling": true
+      }
+    },
+    "verdict": {
+      "ceiling": 2000,
+      "ceiling_source": "harness/verify/token_ceiling.json (CTO ruling 2026-07-23)",
+      "live_surface_tokens": 18962,
+      "live_tool_count": 120,
+      "catalog_floor_tokens": 2919,
+      "catalog_floor_over_ceiling_by": 919,
+      "reachable_as_flat_catalog": false,
+      "max_tools_under_ceiling_at_floor_shape": 81,
+      "max_tools_under_ceiling_at_current_shape": 13,
+      "mean_floor_tokens_per_tool": 24.32,
+      "scaling_probe": [
+        {
+          "n_tools": 10,
+          "F4_tokens": 257
+        },
+        {
+          "n_tools": 20,
+          "F4_tokens": 497
+        },
+        {
+          "n_tools": 30,
+          "F4_tokens": 746
+        },
+        {
+          "n_tools": 40,
+          "F4_tokens": 995
+        },
+        {
+          "n_tools": 60,
+          "F4_tokens": 1490
+        },
+        {
+          "n_tools": 80,
+          "F4_tokens": 1958
+        },
+        {
+          "n_tools": 100,
+          "F4_tokens": 2447
+        },
+        {
+          "n_tools": 120,
+          "F4_tokens": 2919
+        }
+      ],
+      "deferred_three_verb_tokens": 332,
+      "deferred_fits": true,
+      "deferred_headroom": 1668,
+      "statement": "2,000 is NOT reachable as a flat catalog at 120 tools. The cheapest LEGAL tools/list for 120 tools - every description empty, every schema empty, nothing but names - costs 2919 tokens, which is 919 OVER the ceiling before a single word of description is written. At the floor shape only 81 tools fit under 2,000; at the current average tool shape only 13 do. The ceiling is therefore a statement about tool COUNT, not tool SIZE, and no description- or schema-editing programme can satisfy it while all 120 definitions stay in context. The ceiling IS satisfiable by the deferred surface it was calibrated for: three verbs measure 332 tokens with 1668 to spare."
+    },
+    "deferred_surface_definition": [
+      {
+        "name": "tool_search",
+        "description": "Find SYNAPSE tools by capability. Query in plain language (e.g. 'create a karma render node', 'read USD prim attributes'). Returns matching tool names with one-line summaries. Families: houdini_* (scene/USD/render), synapse_* (memory/routing/solaris), cops_* (Copernicus 2D), tops_* (PDG orchestration). Call this before tool_describe when you do not already know the tool name.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Plain-language capability description"
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Max results (default 10)"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      },
+      {
+        "name": "tool_describe",
+        "description": "Return the full definition - description and JSON Schema - for one or more SYNAPSE tools by exact name. Call before tool_execute so arguments are built against the real schema rather than guessed.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "names": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Exact tool names from tool_search"
+            }
+          },
+          "required": [
+            "names"
+          ]
+        }
+      },
+      {
+        "name": "tool_execute",
+        "description": "Invoke a SYNAPSE tool by exact name with arguments matching the schema from tool_describe. Same dispatch spine as the flat surface: undo-wrapped, consent-gated, ledger-recorded.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Exact tool name"
+            },
+            "arguments": {
+              "type": "object",
+              "description": "Arguments per the tool's schema"
+            }
+          },
+          "required": [
+            "name",
+            "arguments"
+          ]
+        }
+      }
+    ],
+    "deferred_note": "The three verbs are E1's own construction, written to be realistic rather than flattering - full routing hints in tool_search. They are NOT a proposal (that is E2's call, and it needs E0's cache answer first); they exist so the ceiling is compared against the shape it was actually calibrated for."
+  },
+  "blake2b": "ac18ed1440568088c70e944d9c3c372a"
+}

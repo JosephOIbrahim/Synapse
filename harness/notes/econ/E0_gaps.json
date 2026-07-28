@@ -1,0 +1,146 @@
+{
+  "schema": "e0_gaps/v1",
+  "produced_by": "harness/notes/econ/econ_gaps.py",
+  "status": "MEASURED",
+  "what_this_measures": "Gaps between bursts of SYNAPSE TOOL OPERATIONS, from the audit log. NOT chat turns.",
+  "bias_direction": "An artist may think for a long time WITHOUT firing an operation, and a single chat turn fires several operations. Collapsing ops into bursts corrects the second and cannot correct the first, so this figure is best read as a LOWER BOUND on how often the cache is cold - the true cold fraction is at least this and possibly higher. It is a proxy, and it replaces an assertion that had no evidence at all.",
+  "ttl_seconds_assumed": 300,
+  "source": {
+    "dir": "C:\\Users\\User\\.synapse\\audit",
+    "key": "C:\\Users\\User\\.synapse\\encryption.key",
+    "read_only": true,
+    "content_retained": "NONE - timing statistics only; no operation content, paths, values or session ids are read into the artifact"
+  },
+  "diagnostics": {
+    "files": 85,
+    "lines": 58679,
+    "decrypted": 58665,
+    "parsed": 58676,
+    "with_timestamp": 58676,
+    "carries_message_payloads": false,
+    "top_level_keys_present": [
+      "after_state_hash",
+      "agent_id",
+      "before_state_hash",
+      "category",
+      "duration_ms",
+      "entry_hash",
+      "input_data",
+      "level",
+      "message",
+      "operation",
+      "operation_id",
+      "output_data",
+      "previous_hash",
+      "sequence_id",
+      "session_id",
+      "timestamp_utc",
+      "tool",
+      "user_id"
+    ]
+  },
+  "span": {
+    "first": "2026-02-06T00:44:51+00:00",
+    "last": "2026-07-28T13:57:39+00:00"
+  },
+  "controls": [
+    {
+      "id": "CTL-G1",
+      "what": "reader detects a gap that exceeds the TTL",
+      "fails_if": "a synthetic 1000s gap is not reported as over-TTL",
+      "observed": {
+        "gaps": [
+          990.0
+        ],
+        "summary": {
+          "n_gaps": 1,
+          "median_s": 990.0,
+          "mean_s": 990.0,
+          "p25_s": 990.0,
+          "p75_s": 990.0,
+          "frac_over_ttl": 1.0,
+          "frac_within_ttl": 0.0,
+          "pct_over_ttl": 100.0
+        }
+      },
+      "verdict": "PASS",
+      "mutation": "injected a 1000s gap between two ops"
+    },
+    {
+      "id": "CTL-G2",
+      "what": "reader does NOT manufacture gaps from tightly spaced ops",
+      "fails_if": "ops 2s apart produce a burst gap, which would inflate the over-TTL fraction and make the cache look worse than it is",
+      "observed": {
+        "gaps": []
+      },
+      "verdict": "PASS",
+      "mutation": "ten ops at 2s spacing"
+    },
+    {
+      "id": "CTL-G3",
+      "what": "the burst threshold materially changes the answer",
+      "fails_if": "every threshold yields the same over-TTL fraction, in which case sweeping it is theatre and one number should be quoted",
+      "observed": {
+        "burst_threshold_10s": 17.2,
+        "burst_threshold_30s": 36.9,
+        "burst_threshold_60s": 48.3,
+        "burst_threshold_120s": 67.4,
+        "burst_threshold_300s": 100.0
+      },
+      "verdict": "PASS",
+      "mutation": "swept 10/30/60/120/300s"
+    }
+  ],
+  "sweep": {
+    "burst_threshold_10s": {
+      "n_gaps": 4209,
+      "median_s": 26.0,
+      "mean_s": 3536.9,
+      "p25_s": 15.0,
+      "p75_s": 124.0,
+      "frac_over_ttl": 0.1722,
+      "frac_within_ttl": 0.8278,
+      "pct_over_ttl": 17.2
+    },
+    "burst_threshold_30s": {
+      "n_gaps": 1966,
+      "median_s": 147.0,
+      "mean_s": 7553.5,
+      "p25_s": 65.0,
+      "p75_s": 690.0,
+      "frac_over_ttl": 0.3688,
+      "frac_within_ttl": 0.6312,
+      "pct_over_ttl": 36.9
+    },
+    "burst_threshold_60s": {
+      "n_gaps": 1500,
+      "median_s": 273.5,
+      "mean_s": 9886.9,
+      "p25_s": 120.0,
+      "p75_s": 1131.0,
+      "frac_over_ttl": 0.4833,
+      "frac_within_ttl": 0.5167,
+      "pct_over_ttl": 48.3
+    },
+    "burst_threshold_120s": {
+      "n_gaps": 1076,
+      "median_s": 572.0,
+      "mean_s": 13744.8,
+      "p25_s": 234.0,
+      "p75_s": 2129.0,
+      "frac_over_ttl": 0.6738,
+      "frac_within_ttl": 0.3262,
+      "pct_over_ttl": 67.4
+    },
+    "burst_threshold_300s": {
+      "n_gaps": 725,
+      "median_s": 1204.0,
+      "mean_s": 20307.2,
+      "p25_s": 560.0,
+      "p75_s": 4459.0,
+      "frac_over_ttl": 1.0,
+      "frac_within_ttl": 0.0,
+      "pct_over_ttl": 100.0
+    }
+  }
+}

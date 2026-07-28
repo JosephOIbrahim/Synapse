@@ -1,0 +1,5478 @@
+{
+  "schema": "e1_surface_census/v1",
+  "producer": "harness/notes/econ/econ_surface_census.py",
+  "surface": "mcp_http (synapse.mcp.protocol.jsonrpc_result(1, {'tools': get_tools()}))",
+  "stats": {
+    "calibration": {
+      "method": "tiktoken/cl100k_base (proxy BPE, not Claude's tokenizer)",
+      "method_matches_t0": true,
+      "G1_historical": {
+        "ran": true,
+        "commit": "d92bb4b",
+        "expected_tools": 115,
+        "measured_tools": 115,
+        "tools_match": true,
+        "expected_tokens": 17310,
+        "measured_tokens": 17310,
+        "tokens_match": true,
+        "how_this_fails": "Fails if this reader's serialisation (orjson sorted-key compact), tokenizer (cl100k_base), or entry point differs from T.0's in any respect. Reproducing 17,310 from T.0's own input is the only evidence that E1's per-tool numbers decompose the same quantity."
+      },
+      "G2_fragment_rebuild": {
+        "all_tools_rebuild_exactly": true,
+        "how_this_fails": "Fails if a tool object carries a key other than the four decomposed here."
+      },
+      "calibrated": true
+    },
+    "drift_vs_governing_number": {
+      "governing_number": 17310,
+      "governing_source": "harness/notes/token_baseline.json (stats.surfaces.mcp_http.preload_tokens)",
+      "governing_tool_count": 115,
+      "live_number": 18962,
+      "live_tool_count": 120,
+      "token_delta": 1652,
+      "tool_delta": 5,
+      "tools_added_since_t0": [
+        {
+          "name": "synapse_solaris_component_builder",
+          "total_tokens": 450
+        },
+        {
+          "name": "synapse_solaris_create_variants",
+          "total_tokens": 272
+        },
+        {
+          "name": "synapse_solaris_import_megascans",
+          "total_tokens": 409
+        },
+        {
+          "name": "synapse_solaris_scene_template",
+          "total_tokens": 342
+        },
+        {
+          "name": "synapse_solaris_set_purpose",
+          "total_tokens": 184
+        }
+      ],
+      "tools_removed_since_t0": [],
+      "added_token_mass": 1657,
+      "commits_touching_registry_since_t0": [
+        "9187f38 feat(solaris): M5 register import_megascans - F9+F3 live-proven, schema parent_path convergence",
+        "97b879d fix(solaris): M1+M2 one tree - relocate + register 4 of 5, collect tests"
+      ],
+      "registry_blake2b_lf": "d6c79a415f13a9dcf4663b089b2bd1ca",
+      "registry_blake2b_worktree_bytes": "d6c79a415f13a9dcf4663b089b2bd1ca",
+      "t0_recorded_registry_blake2b": "c0cd3db16c293e38a3f18a35ed51870f",
+      "t0_digest_defect": "T.0 hashed working-tree bytes. That digest equals the d92bb4b blob ONLY when checked out CRLF; this LF checkout of the same commit hashes 047a5acec5c49bf99cad30c095514c54. The staleness field is therefore checkout-dependent and can false-alarm across machines. Content drift here is established independently, by tool count and by the two named registry commits - not by the digest."
+    },
+    "aggregate": {
+      "n_tools": 120,
+      "surface_tokens": 18962,
+      "sum_of_tool_objects": 19064,
+      "tools_array_tokens": 18948,
+      "jsonrpc_framing_tokens": 14,
+      "concatenation_effect_tokens": -116,
+      "delta_note": "surface = sum_of_tool_objects + concatenation_effect + framing. concatenation_effect is NEGATIVE because adjacent objects share BPE merges across the '},{' seam that independent tokenisation cannot see. Per-tool totals are therefore very slightly PESSIMISTIC; the surface total is exact. Both are reported, neither is estimated.",
+      "component_totals_wire": {
+        "name_tokens": 981,
+        "description_tokens": 3432,
+        "schema_tokens": 10778,
+        "annotations_tokens": 3987,
+        "structural_residual_tokens": -114
+      },
+      "component_totals_content": {
+        "name_tokens": 621,
+        "description_tokens": 3192,
+        "schema_tokens": 10418,
+        "annotations_tokens": 3747
+      },
+      "component_share_of_surface": {
+        "name_tokens": 0.0517,
+        "description_tokens": 0.181,
+        "schema_tokens": 0.5684,
+        "annotations_tokens": 0.2103,
+        "structural_residual_tokens": -0.006
+      },
+      "all_four_key_shape_ok": true,
+      "wire_impl": "orjson.dumps(OPT_SORT_KEYS)"
+    },
+    "distributions": {
+      "description_tokens_content": {
+        "n": 120,
+        "min": 6,
+        "p25": 12,
+        "median": 18,
+        "mean": 26.6,
+        "p75": 40,
+        "p90": 56,
+        "max": 89,
+        "total": 3192
+      },
+      "schema_tokens_content": {
+        "n": 120,
+        "min": 12,
+        "p25": 38,
+        "median": 65,
+        "mean": 86.82,
+        "p75": 110,
+        "p90": 182,
+        "max": 401,
+        "total": 10418
+      },
+      "annotations_tokens_content": {
+        "n": 120,
+        "min": 29,
+        "p25": 30,
+        "median": 31,
+        "mean": 31.23,
+        "p75": 32,
+        "p90": 33,
+        "max": 34,
+        "total": 3747
+      },
+      "total_tokens": {
+        "n": 120,
+        "min": 61,
+        "p25": 104,
+        "median": 133,
+        "mean": 158.87,
+        "p75": 186,
+        "p90": 272,
+        "max": 495,
+        "total": 19064
+      },
+      "description_histogram": [
+        {
+          "range": "0-10",
+          "count": 16,
+          "tokens": 123,
+          "examples": [
+            "cops_stamp_scatter",
+            "houdini_set_usd_attribute",
+            "houdini_create_usd_prim"
+          ]
+        },
+        {
+          "range": "10-20",
+          "count": 49,
+          "tokens": 693,
+          "examples": [
+            "cops_growth_propagation",
+            "cops_pixel_sort",
+            "cops_procedural_texture"
+          ]
+        },
+        {
+          "range": "20-40",
+          "count": 25,
+          "tokens": 685,
+          "examples": [
+            "houdini_hda_package",
+            "houdini_query_prims",
+            "synapse_autonomous_render"
+          ]
+        },
+        {
+          "range": "40-80",
+          "count": 27,
+          "tokens": 1432,
+          "examples": [
+            "houdini_create_material",
+            "synapse_solaris_build_graph",
+            "synapse_solaris_component_builder"
+          ]
+        },
+        {
+          "range": "80-160",
+          "count": 3,
+          "tokens": 259,
+          "examples": [
+            "synapse_solaris_assemble_chain",
+            "synapse_solaris_scene_template",
+            "synapse_propose_graph"
+          ]
+        },
+        {
+          "range": "160-inf",
+          "count": 0,
+          "tokens": 0,
+          "examples": []
+        }
+      ]
+    },
+    "pareto": {
+      "grand_total": 19064,
+      "n_tools": 120,
+      "points": {
+        "50pct": {
+          "tools_needed": 37,
+          "share_of_tools": 0.3083,
+          "tokens_covered": 9637,
+          "share_of_tokens": 0.5055
+        },
+        "80pct": {
+          "tools_needed": 78,
+          "share_of_tools": 0.65,
+          "tokens_covered": 15347,
+          "share_of_tokens": 0.805
+        },
+        "90pct": {
+          "tools_needed": 96,
+          "share_of_tools": 0.8,
+          "tokens_covered": 17246,
+          "share_of_tokens": 0.9046
+        }
+      },
+      "top_n": {
+        "5": {
+          "tokens": 2186,
+          "share_of_tokens": 0.1147
+        },
+        "10": {
+          "tokens": 3852,
+          "share_of_tokens": 0.2021
+        },
+        "20": {
+          "tokens": 6420,
+          "share_of_tokens": 0.3368
+        },
+        "24": {
+          "tokens": 7250,
+          "share_of_tokens": 0.3803
+        },
+        "30": {
+          "tokens": 8392,
+          "share_of_tokens": 0.4402
+        },
+        "50": {
+          "tokens": 11716,
+          "share_of_tokens": 0.6146
+        }
+      },
+      "heaviest_25": [
+        {
+          "name": "houdini_create_material",
+          "total_tokens": 495,
+          "description_tokens": 50,
+          "schema_tokens": 401,
+          "annotations_tokens": 30,
+          "property_count": 17
+        },
+        {
+          "name": "synapse_solaris_build_graph",
+          "total_tokens": 476,
+          "description_tokens": 64,
+          "schema_tokens": 364,
+          "annotations_tokens": 32,
+          "property_count": 7
+        },
+        {
+          "name": "synapse_solaris_component_builder",
+          "total_tokens": 450,
+          "description_tokens": 56,
+          "schema_tokens": 346,
+          "annotations_tokens": 32,
+          "property_count": 9
+        },
+        {
+          "name": "synapse_solaris_import_megascans",
+          "total_tokens": 409,
+          "description_tokens": 44,
+          "schema_tokens": 312,
+          "annotations_tokens": 34,
+          "property_count": 10
+        },
+        {
+          "name": "houdini_set_usd_primvar",
+          "total_tokens": 356,
+          "description_tokens": 54,
+          "schema_tokens": 252,
+          "annotations_tokens": 33,
+          "property_count": 9
+        },
+        {
+          "name": "tops_multi_shot",
+          "total_tokens": 351,
+          "description_tokens": 57,
+          "schema_tokens": 249,
+          "annotations_tokens": 32,
+          "property_count": 8
+        },
+        {
+          "name": "synapse_solaris_assemble_chain",
+          "total_tokens": 345,
+          "description_tokens": 87,
+          "schema_tokens": 208,
+          "annotations_tokens": 33,
+          "property_count": 7
+        },
+        {
+          "name": "synapse_solaris_scene_template",
+          "total_tokens": 342,
+          "description_tokens": 83,
+          "schema_tokens": 211,
+          "annotations_tokens": 32,
+          "property_count": 7
+        },
+        {
+          "name": "houdini_hda_package",
+          "total_tokens": 320,
+          "description_tokens": 34,
+          "schema_tokens": 240,
+          "annotations_tokens": 31,
+          "property_count": 8
+        },
+        {
+          "name": "houdini_create_textured_material",
+          "total_tokens": 308,
+          "description_tokens": 53,
+          "schema_tokens": 207,
+          "annotations_tokens": 32,
+          "property_count": 11
+        },
+        {
+          "name": "tops_render_sequence",
+          "total_tokens": 294,
+          "description_tokens": 55,
+          "schema_tokens": 194,
+          "annotations_tokens": 32,
+          "property_count": 11
+        },
+        {
+          "name": "houdini_manage_collection",
+          "total_tokens": 272,
+          "description_tokens": 49,
+          "schema_tokens": 179,
+          "annotations_tokens": 30,
+          "property_count": 7
+        },
+        {
+          "name": "synapse_solaris_create_variants",
+          "total_tokens": 272,
+          "description_tokens": 46,
+          "schema_tokens": 176,
+          "annotations_tokens": 33,
+          "property_count": 4
+        },
+        {
+          "name": "houdini_hda_create",
+          "total_tokens": 270,
+          "description_tokens": 42,
+          "schema_tokens": 182,
+          "annotations_tokens": 31,
+          "property_count": 9
+        },
+        {
+          "name": "houdini_reference_usd",
+          "total_tokens": 260,
+          "description_tokens": 51,
+          "schema_tokens": 163,
+          "annotations_tokens": 31,
+          "property_count": 7
+        },
+        {
+          "name": "houdini_shot_render_ready",
+          "total_tokens": 255,
+          "description_tokens": 56,
+          "schema_tokens": 153,
+          "annotations_tokens": 31,
+          "property_count": 8
+        },
+        {
+          "name": "houdini_network_explain",
+          "total_tokens": 243,
+          "description_tokens": 47,
+          "schema_tokens": 151,
+          "annotations_tokens": 30,
+          "property_count": 6
+        },
+        {
+          "name": "houdini_query_prims",
+          "total_tokens": 239,
+          "description_tokens": 29,
+          "schema_tokens": 164,
+          "annotations_tokens": 31,
+          "property_count": 7
+        },
+        {
+          "name": "synapse_autonomous_render",
+          "total_tokens": 236,
+          "description_tokens": 35,
+          "schema_tokens": 156,
+          "annotations_tokens": 31,
+          "property_count": 4
+        },
+        {
+          "name": "houdini_manage_variant_set",
+          "total_tokens": 227,
+          "description_tokens": 48,
+          "schema_tokens": 133,
+          "annotations_tokens": 31,
+          "property_count": 6
+        },
+        {
+          "name": "cops_reaction_diffusion",
+          "total_tokens": 224,
+          "description_tokens": 23,
+          "schema_tokens": 153,
+          "annotations_tokens": 33,
+          "property_count": 8
+        },
+        {
+          "name": "houdini_configure_light_linking",
+          "total_tokens": 215,
+          "description_tokens": 59,
+          "schema_tokens": 107,
+          "annotations_tokens": 32,
+          "property_count": 4
+        },
+        {
+          "name": "houdini_hda_promote_parm",
+          "total_tokens": 196,
+          "description_tokens": 27,
+          "schema_tokens": 119,
+          "annotations_tokens": 33,
+          "property_count": 7
+        },
+        {
+          "name": "synapse_render_sequence",
+          "total_tokens": 195,
+          "description_tokens": 31,
+          "schema_tokens": 121,
+          "annotations_tokens": 30,
+          "property_count": 6
+        },
+        {
+          "name": "cops_growth_propagation",
+          "total_tokens": 194,
+          "description_tokens": 17,
+          "schema_tokens": 130,
+          "annotations_tokens": 33,
+          "property_count": 7
+        }
+      ],
+      "lightest_10": [
+        {
+          "name": "synapse_search",
+          "total_tokens": 71
+        },
+        {
+          "name": "synapse_list_recipes",
+          "total_tokens": 69
+        },
+        {
+          "name": "synapse_memory_status",
+          "total_tokens": 69
+        },
+        {
+          "name": "houdini_undo",
+          "total_tokens": 68
+        },
+        {
+          "name": "houdini_get_selection",
+          "total_tokens": 66
+        },
+        {
+          "name": "synapse_ping",
+          "total_tokens": 66
+        },
+        {
+          "name": "synapse_metrics",
+          "total_tokens": 62
+        },
+        {
+          "name": "synapse_context",
+          "total_tokens": 61
+        },
+        {
+          "name": "synapse_health",
+          "total_tokens": 61
+        },
+        {
+          "name": "synapse_router_stats",
+          "total_tokens": 61
+        }
+      ]
+    },
+    "families": {
+      "houdini": {
+        "n_tools": 40,
+        "total_tokens": 6874,
+        "description_tokens": 1095,
+        "schema_tokens": 3953,
+        "annotations_tokens": 1232,
+        "share_of_surface": 0.3625,
+        "mean_tokens_per_tool": 171.8
+      },
+      "synapse": {
+        "n_tools": 42,
+        "total_tokens": 6513,
+        "description_tokens": 1351,
+        "schema_tokens": 3299,
+        "annotations_tokens": 1279,
+        "share_of_surface": 0.3435,
+        "mean_tokens_per_tool": 155.1
+      },
+      "cops": {
+        "n_tools": 21,
+        "total_tokens": 3111,
+        "description_tokens": 318,
+        "schema_tokens": 1811,
+        "annotations_tokens": 686,
+        "share_of_surface": 0.1641,
+        "mean_tokens_per_tool": 148.1
+      },
+      "tops": {
+        "n_tools": 17,
+        "total_tokens": 2566,
+        "description_tokens": 428,
+        "schema_tokens": 1355,
+        "annotations_tokens": 550,
+        "share_of_surface": 0.1353,
+        "mean_tokens_per_tool": 150.9
+      }
+    },
+    "empty_schema_tools": {
+      "count": 15,
+      "names": [
+        "synapse_render_farm_cancel",
+        "synapse_sleep_pass",
+        "houdini_hda_list",
+        "houdini_scene_info",
+        "synapse_render_farm_status",
+        "houdini_redo",
+        "synapse_list_recipes",
+        "synapse_memory_status",
+        "houdini_undo",
+        "houdini_get_selection",
+        "synapse_ping",
+        "synapse_metrics",
+        "synapse_context",
+        "synapse_health",
+        "synapse_router_stats"
+      ]
+    },
+    "tools": [
+      {
+        "name": "houdini_create_material",
+        "family": "houdini",
+        "total_tokens": 495,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 52,
+          "schema_tokens": 404,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 50,
+          "schema_tokens": 401,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 2019,
+          "description": 230,
+          "schema": 1592
+        },
+        "schema_shape": {
+          "property_count": 17,
+          "required_count": 0,
+          "described_property_count": 17,
+          "property_description_chars": 676,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 3,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_solaris_build_graph",
+        "family": "synapse",
+        "total_tokens": 476,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 66,
+          "schema_tokens": 367,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 64,
+          "schema_tokens": 364,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 2227,
+          "description": 323,
+          "schema": 1699
+        },
+        "schema_shape": {
+          "property_count": 7,
+          "required_count": 0,
+          "described_property_count": 15,
+          "property_description_chars": 716,
+          "enum_field_count": 1,
+          "enum_member_total": 7,
+          "nested_object_count": 4,
+          "array_property_count": 2,
+          "max_depth": 3,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_solaris_component_builder",
+        "family": "synapse",
+        "total_tokens": 450,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 58,
+          "schema_tokens": 349,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 56,
+          "schema_tokens": 346,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 2067,
+          "description": 313,
+          "schema": 1536
+        },
+        "schema_shape": {
+          "property_count": 9,
+          "required_count": 1,
+          "described_property_count": 12,
+          "property_description_chars": 688,
+          "enum_field_count": 2,
+          "enum_member_total": 6,
+          "nested_object_count": 2,
+          "array_property_count": 2,
+          "max_depth": 3,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_solaris_import_megascans",
+        "family": "synapse",
+        "total_tokens": 409,
+        "wire": {
+          "name_tokens": 13,
+          "description_tokens": 46,
+          "schema_tokens": 315,
+          "annotations_tokens": 36,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 10,
+          "description_tokens": 44,
+          "schema_tokens": 312,
+          "annotations_tokens": 34
+        },
+        "chars": {
+          "total": 1731,
+          "description": 197,
+          "schema": 1318
+        },
+        "schema_shape": {
+          "property_count": 10,
+          "required_count": 2,
+          "described_property_count": 10,
+          "property_description_chars": 645,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_set_usd_primvar",
+        "family": "houdini",
+        "total_tokens": 356,
+        "wire": {
+          "name_tokens": 11,
+          "description_tokens": 56,
+          "schema_tokens": 255,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 8,
+          "description_tokens": 54,
+          "schema_tokens": 252,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 1520,
+          "description": 213,
+          "schema": 1110
+        },
+        "schema_shape": {
+          "property_count": 9,
+          "required_count": 4,
+          "described_property_count": 9,
+          "property_description_chars": 592,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_multi_shot",
+        "family": "tops",
+        "total_tokens": 351,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 59,
+          "schema_tokens": 252,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 57,
+          "schema_tokens": 249,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 1626,
+          "description": 274,
+          "schema": 1163
+        },
+        "schema_shape": {
+          "property_count": 8,
+          "required_count": 1,
+          "described_property_count": 13,
+          "property_description_chars": 437,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 2,
+          "array_property_count": 1,
+          "max_depth": 3,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_solaris_assemble_chain",
+        "family": "synapse",
+        "total_tokens": 345,
+        "wire": {
+          "name_tokens": 11,
+          "description_tokens": 89,
+          "schema_tokens": 211,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 8,
+          "description_tokens": 87,
+          "schema_tokens": 208,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 1483,
+          "description": 399,
+          "schema": 873
+        },
+        "schema_shape": {
+          "property_count": 7,
+          "required_count": 0,
+          "described_property_count": 7,
+          "property_description_chars": 437,
+          "enum_field_count": 1,
+          "enum_member_total": 3,
+          "nested_object_count": 0,
+          "array_property_count": 2,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_solaris_scene_template",
+        "family": "synapse",
+        "total_tokens": 342,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 85,
+          "schema_tokens": 214,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 83,
+          "schema_tokens": 211,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 1480,
+          "description": 369,
+          "schema": 899
+        },
+        "schema_shape": {
+          "property_count": 7,
+          "required_count": 0,
+          "described_property_count": 7,
+          "property_description_chars": 407,
+          "enum_field_count": 1,
+          "enum_member_total": 2,
+          "nested_object_count": 0,
+          "array_property_count": 2,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_hda_package",
+        "family": "houdini",
+        "total_tokens": 320,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 36,
+          "schema_tokens": 243,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 34,
+          "schema_tokens": 240,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 1435,
+          "description": 149,
+          "schema": 1097
+        },
+        "schema_shape": {
+          "property_count": 8,
+          "required_count": 4,
+          "described_property_count": 11,
+          "property_description_chars": 304,
+          "enum_field_count": 1,
+          "enum_member_total": 5,
+          "nested_object_count": 3,
+          "array_property_count": 5,
+          "max_depth": 3,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_create_textured_material",
+        "family": "houdini",
+        "total_tokens": 308,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 55,
+          "schema_tokens": 210,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 53,
+          "schema_tokens": 207,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 1488,
+          "description": 282,
+          "schema": 991
+        },
+        "schema_shape": {
+          "property_count": 11,
+          "required_count": 0,
+          "described_property_count": 11,
+          "property_description_chars": 416,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_render_sequence",
+        "family": "tops",
+        "total_tokens": 294,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 57,
+          "schema_tokens": 197,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 55,
+          "schema_tokens": 194,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 1394,
+          "description": 238,
+          "schema": 957
+        },
+        "schema_shape": {
+          "property_count": 11,
+          "required_count": 2,
+          "described_property_count": 11,
+          "property_description_chars": 334,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_manage_collection",
+        "family": "houdini",
+        "total_tokens": 272,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 51,
+          "schema_tokens": 182,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 49,
+          "schema_tokens": 179,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 1280,
+          "description": 220,
+          "schema": 860
+        },
+        "schema_shape": {
+          "property_count": 7,
+          "required_count": 1,
+          "described_property_count": 7,
+          "property_description_chars": 316,
+          "enum_field_count": 2,
+          "enum_member_total": 7,
+          "nested_object_count": 0,
+          "array_property_count": 2,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_solaris_create_variants",
+        "family": "synapse",
+        "total_tokens": 272,
+        "wire": {
+          "name_tokens": 11,
+          "description_tokens": 48,
+          "schema_tokens": 179,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 8,
+          "description_tokens": 46,
+          "schema_tokens": 176,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 1346,
+          "description": 295,
+          "schema": 837
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 3,
+          "described_property_count": 7,
+          "property_description_chars": 314,
+          "enum_field_count": 1,
+          "enum_member_total": 2,
+          "nested_object_count": 2,
+          "array_property_count": 1,
+          "max_depth": 3,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_hda_create",
+        "family": "houdini",
+        "total_tokens": 270,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 44,
+          "schema_tokens": 185,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 42,
+          "schema_tokens": 182,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 1190,
+          "description": 177,
+          "schema": 826
+        },
+        "schema_shape": {
+          "property_count": 9,
+          "required_count": 5,
+          "described_property_count": 9,
+          "property_description_chars": 236,
+          "enum_field_count": 1,
+          "enum_member_total": 5,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_reference_usd",
+        "family": "houdini",
+        "total_tokens": 260,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 53,
+          "schema_tokens": 166,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 51,
+          "schema_tokens": 163,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 1204,
+          "description": 243,
+          "schema": 768
+        },
+        "schema_shape": {
+          "property_count": 7,
+          "required_count": 1,
+          "described_property_count": 7,
+          "property_description_chars": 360,
+          "enum_field_count": 1,
+          "enum_member_total": 3,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_shot_render_ready",
+        "family": "houdini",
+        "total_tokens": 255,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 58,
+          "schema_tokens": 156,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 56,
+          "schema_tokens": 153,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 1222,
+          "description": 275,
+          "schema": 746
+        },
+        "schema_shape": {
+          "property_count": 8,
+          "required_count": 0,
+          "described_property_count": 8,
+          "property_description_chars": 322,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_network_explain",
+        "family": "houdini",
+        "total_tokens": 243,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 49,
+          "schema_tokens": 154,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 47,
+          "schema_tokens": 151,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 1132,
+          "description": 238,
+          "schema": 698
+        },
+        "schema_shape": {
+          "property_count": 6,
+          "required_count": 1,
+          "described_property_count": 6,
+          "property_description_chars": 258,
+          "enum_field_count": 2,
+          "enum_member_total": 6,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_query_prims",
+        "family": "houdini",
+        "total_tokens": 239,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 31,
+          "schema_tokens": 167,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 29,
+          "schema_tokens": 164,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 1019,
+          "description": 134,
+          "schema": 696
+        },
+        "schema_shape": {
+          "property_count": 7,
+          "required_count": 0,
+          "described_property_count": 7,
+          "property_description_chars": 327,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_autonomous_render",
+        "family": "synapse",
+        "total_tokens": 236,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 37,
+          "schema_tokens": 159,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 35,
+          "schema_tokens": 156,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 1019,
+          "description": 167,
+          "schema": 651
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 344,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_manage_variant_set",
+        "family": "houdini",
+        "total_tokens": 227,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 50,
+          "schema_tokens": 136,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 48,
+          "schema_tokens": 133,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 1050,
+          "description": 198,
+          "schema": 650
+        },
+        "schema_shape": {
+          "property_count": 6,
+          "required_count": 1,
+          "described_property_count": 6,
+          "property_description_chars": 261,
+          "enum_field_count": 1,
+          "enum_member_total": 3,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_reaction_diffusion",
+        "family": "cops",
+        "total_tokens": 224,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 25,
+          "schema_tokens": 156,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": 0
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 23,
+          "schema_tokens": 153,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 923,
+          "description": 97,
+          "schema": 621
+        },
+        "schema_shape": {
+          "property_count": 8,
+          "required_count": 1,
+          "described_property_count": 8,
+          "property_description_chars": 166,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_configure_light_linking",
+        "family": "houdini",
+        "total_tokens": 215,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 61,
+          "schema_tokens": 110,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": 0
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 59,
+          "schema_tokens": 107,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 1018,
+          "description": 294,
+          "schema": 511
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 176,
+          "enum_field_count": 1,
+          "enum_member_total": 5,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_hda_promote_parm",
+        "family": "houdini",
+        "total_tokens": 196,
+        "wire": {
+          "name_tokens": 11,
+          "description_tokens": 29,
+          "schema_tokens": 122,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 8,
+          "description_tokens": 27,
+          "schema_tokens": 119,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 936,
+          "description": 127,
+          "schema": 611
+        },
+        "schema_shape": {
+          "property_count": 7,
+          "required_count": 3,
+          "described_property_count": 7,
+          "property_description_chars": 202,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 1,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_render_sequence",
+        "family": "synapse",
+        "total_tokens": 195,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 33,
+          "schema_tokens": 124,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 31,
+          "schema_tokens": 121,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 894,
+          "description": 152,
+          "schema": 545
+        },
+        "schema_shape": {
+          "property_count": 6,
+          "required_count": 2,
+          "described_property_count": 6,
+          "property_description_chars": 195,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_growth_propagation",
+        "family": "cops",
+        "total_tokens": 194,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 19,
+          "schema_tokens": 133,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 17,
+          "schema_tokens": 130,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 838,
+          "description": 72,
+          "schema": 561
+        },
+        "schema_shape": {
+          "property_count": 7,
+          "required_count": 1,
+          "described_property_count": 7,
+          "property_description_chars": 180,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_configure_render_passes",
+        "family": "synapse",
+        "total_tokens": 193,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 59,
+          "schema_tokens": 92,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 57,
+          "schema_tokens": 89,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 848,
+          "description": 244,
+          "schema": 391
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 173,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_write_report",
+        "family": "synapse",
+        "total_tokens": 191,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 80,
+          "schema_tokens": 73,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 78,
+          "schema_tokens": 70,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 838,
+          "description": 314,
+          "schema": 333
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 2,
+          "described_property_count": 3,
+          "property_description_chars": 118,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_pixel_sort",
+        "family": "cops",
+        "total_tokens": 190,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 18,
+          "schema_tokens": 131,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": 0
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 16,
+          "schema_tokens": 128,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 814,
+          "description": 75,
+          "schema": 550
+        },
+        "schema_shape": {
+          "property_count": 7,
+          "required_count": 1,
+          "described_property_count": 7,
+          "property_description_chars": 167,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_create_point_instancer",
+        "family": "houdini",
+        "total_tokens": 188,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 42,
+          "schema_tokens": 103,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 40,
+          "schema_tokens": 100,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 867,
+          "description": 203,
+          "schema": 453
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 137,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 3,
+          "max_depth": 3,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_monitor_stream",
+        "family": "tops",
+        "total_tokens": 186,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 65,
+          "schema_tokens": 81,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 63,
+          "schema_tokens": 78,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 835,
+          "description": 280,
+          "schema": 357
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 138,
+          "enum_field_count": 1,
+          "enum_member_total": 3,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_solaris_set_purpose",
+        "family": "synapse",
+        "total_tokens": 184,
+        "wire": {
+          "name_tokens": 11,
+          "description_tokens": 46,
+          "schema_tokens": 94,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 8,
+          "description_tokens": 44,
+          "schema_tokens": 91,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 859,
+          "description": 194,
+          "schema": 460
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 2,
+          "described_property_count": 3,
+          "property_description_chars": 203,
+          "enum_field_count": 1,
+          "enum_member_total": 3,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_procedural_texture",
+        "family": "cops",
+        "total_tokens": 181,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 21,
+          "schema_tokens": 116,
+          "annotations_tokens": 36,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 19,
+          "schema_tokens": 113,
+          "annotations_tokens": 34
+        },
+        "chars": {
+          "total": 756,
+          "description": 73,
+          "schema": 478
+        },
+        "schema_shape": {
+          "property_count": 6,
+          "required_count": 1,
+          "described_property_count": 6,
+          "property_description_chars": 123,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_stamp_scatter",
+        "family": "cops",
+        "total_tokens": 180,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 11,
+          "schema_tokens": 128,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 9,
+          "schema_tokens": 125,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 811,
+          "description": 62,
+          "schema": 554
+        },
+        "schema_shape": {
+          "property_count": 7,
+          "required_count": 1,
+          "described_property_count": 7,
+          "property_description_chars": 126,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 2,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_hda_set_help",
+        "family": "houdini",
+        "total_tokens": 180,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 31,
+          "schema_tokens": 106,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 29,
+          "schema_tokens": 103,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 806,
+          "description": 139,
+          "schema": 477
+        },
+        "schema_shape": {
+          "property_count": 6,
+          "required_count": 1,
+          "described_property_count": 6,
+          "property_description_chars": 117,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 1,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_propose_graph",
+        "family": "synapse",
+        "total_tokens": 175,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 91,
+          "schema_tokens": 44,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 89,
+          "schema_tokens": 41,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 815,
+          "description": 425,
+          "schema": 198
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 1,
+          "described_property_count": 1,
+          "property_description_chars": 96,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 1,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_wetmap",
+        "family": "cops",
+        "total_tokens": 173,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 18,
+          "schema_tokens": 114,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 16,
+          "schema_tokens": 111,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 712,
+          "description": 70,
+          "schema": 461
+        },
+        "schema_shape": {
+          "property_count": 6,
+          "required_count": 1,
+          "described_property_count": 6,
+          "property_description_chars": 116,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_set_usd_attribute",
+        "family": "houdini",
+        "total_tokens": 172,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 10,
+          "schema_tokens": 119,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 8,
+          "schema_tokens": 116,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 778,
+          "description": 30,
+          "schema": 547
+        },
+        "schema_shape": {
+          "property_count": 5,
+          "required_count": 3,
+          "described_property_count": 5,
+          "property_description_chars": 247,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_stylize",
+        "family": "cops",
+        "total_tokens": 170,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 19,
+          "schema_tokens": 109,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 17,
+          "schema_tokens": 106,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 704,
+          "description": 57,
+          "schema": 464
+        },
+        "schema_shape": {
+          "property_count": 6,
+          "required_count": 1,
+          "described_property_count": 6,
+          "property_description_chars": 135,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_render_progressively",
+        "family": "synapse",
+        "total_tokens": 169,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 41,
+          "schema_tokens": 88,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 39,
+          "schema_tokens": 85,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 727,
+          "description": 152,
+          "schema": 368
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 0,
+          "described_property_count": 3,
+          "property_description_chars": 156,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_bake_textures",
+        "family": "cops",
+        "total_tokens": 168,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 22,
+          "schema_tokens": 103,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 20,
+          "schema_tokens": 100,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 741,
+          "description": 88,
+          "schema": 458
+        },
+        "schema_shape": {
+          "property_count": 6,
+          "required_count": 1,
+          "described_property_count": 6,
+          "property_description_chars": 81,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 2,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_set_payload_loadstate",
+        "family": "houdini",
+        "total_tokens": 168,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 38,
+          "schema_tokens": 87,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 36,
+          "schema_tokens": 84,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 786,
+          "description": 178,
+          "schema": 399
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 139,
+          "enum_field_count": 1,
+          "enum_member_total": 2,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_create_usd_prim",
+        "family": "houdini",
+        "total_tokens": 166,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 10,
+          "schema_tokens": 113,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 8,
+          "schema_tokens": 110,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 728,
+          "description": 31,
+          "schema": 500
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 257,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_modify_usd_prim",
+        "family": "houdini",
+        "total_tokens": 161,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 19,
+          "schema_tokens": 99,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 17,
+          "schema_tokens": 96,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 728,
+          "description": 76,
+          "schema": 455
+        },
+        "schema_shape": {
+          "property_count": 6,
+          "required_count": 1,
+          "described_property_count": 6,
+          "property_description_chars": 126,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_inspect_node",
+        "family": "synapse",
+        "total_tokens": 159,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 23,
+          "schema_tokens": 97,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 21,
+          "schema_tokens": 94,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 726,
+          "description": 84,
+          "schema": 452
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 194,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_query_items",
+        "family": "tops",
+        "total_tokens": 159,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 28,
+          "schema_tokens": 90,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": 0
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 26,
+          "schema_tokens": 87,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 695,
+          "description": 98,
+          "schema": 407
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 3,
+          "described_property_count": 4,
+          "property_description_chars": 91,
+          "enum_field_count": 1,
+          "enum_member_total": 7,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_configure_scheduler",
+        "family": "tops",
+        "total_tokens": 157,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 30,
+          "schema_tokens": 87,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 28,
+          "schema_tokens": 84,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 763,
+          "description": 152,
+          "schema": 405
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 143,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_safe_render",
+        "family": "synapse",
+        "total_tokens": 153,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 36,
+          "schema_tokens": 79,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 34,
+          "schema_tokens": 76,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 679,
+          "description": 177,
+          "schema": 313
+        },
+        "schema_shape": {
+          "property_count": 2,
+          "required_count": 0,
+          "described_property_count": 2,
+          "property_description_chars": 154,
+          "enum_field_count": 1,
+          "enum_member_total": 2,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_composite_aovs",
+        "family": "cops",
+        "total_tokens": 152,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 17,
+          "schema_tokens": 90,
+          "annotations_tokens": 36,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 15,
+          "schema_tokens": 87,
+          "annotations_tokens": 34
+        },
+        "chars": {
+          "total": 630,
+          "description": 67,
+          "schema": 366
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 107,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_get_work_items",
+        "family": "tops",
+        "total_tokens": 151,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 14,
+          "schema_tokens": 95,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 12,
+          "schema_tokens": 92,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 685,
+          "description": 61,
+          "schema": 428
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 183,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_to_materialx",
+        "family": "cops",
+        "total_tokens": 146,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 18,
+          "schema_tokens": 86,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 16,
+          "schema_tokens": 83,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 662,
+          "description": 81,
+          "schema": 388
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 2,
+          "described_property_count": 4,
+          "property_description_chars": 128,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_instantiate_graph",
+        "family": "synapse",
+        "total_tokens": 144,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 68,
+          "schema_tokens": 36,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": 0
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 66,
+          "schema_tokens": 33,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 651,
+          "description": 293,
+          "schema": 157
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 1,
+          "described_property_count": 1,
+          "property_description_chars": 49,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_render",
+        "family": "houdini",
+        "total_tokens": 142,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 37,
+          "schema_tokens": 68,
+          "annotations_tokens": 31,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 35,
+          "schema_tokens": 65,
+          "annotations_tokens": 29
+        },
+        "chars": {
+          "total": 642,
+          "description": 136,
+          "schema": 327
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 0,
+          "described_property_count": 4,
+          "property_description_chars": 107,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_set_parm",
+        "family": "houdini",
+        "total_tokens": 142,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 54,
+          "schema_tokens": 49,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 52,
+          "schema_tokens": 46,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 590,
+          "description": 195,
+          "schema": 213
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 3,
+          "described_property_count": 3,
+          "property_description_chars": 35,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_cook_node",
+        "family": "tops",
+        "total_tokens": 142,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 16,
+          "schema_tokens": 85,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 14,
+          "schema_tokens": 82,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 647,
+          "description": 72,
+          "schema": 388
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 148,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_validate_ordering",
+        "family": "synapse",
+        "total_tokens": 140,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 43,
+          "schema_tokens": 58,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 41,
+          "schema_tokens": 55,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 651,
+          "description": 206,
+          "schema": 245
+        },
+        "schema_shape": {
+          "property_count": 2,
+          "required_count": 0,
+          "described_property_count": 2,
+          "property_description_chars": 109,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_create_copnet",
+        "family": "cops",
+        "total_tokens": 138,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 27,
+          "schema_tokens": 67,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": 0
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 25,
+          "schema_tokens": 64,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 579,
+          "description": 91,
+          "schema": 293
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 0,
+          "described_property_count": 3,
+          "property_description_chars": 116,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_setup_wedge",
+        "family": "tops",
+        "total_tokens": 138,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 14,
+          "schema_tokens": 82,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 12,
+          "schema_tokens": 79,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 589,
+          "description": 60,
+          "schema": 338
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 2,
+          "described_property_count": 3,
+          "property_description_chars": 96,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 1,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_connect_nodes",
+        "family": "houdini",
+        "total_tokens": 136,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 14,
+          "schema_tokens": 83,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 12,
+          "schema_tokens": 80,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 622,
+          "description": 55,
+          "schema": 374
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 2,
+          "described_property_count": 4,
+          "property_description_chars": 120,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_cook_and_validate",
+        "family": "tops",
+        "total_tokens": 135,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 24,
+          "schema_tokens": 68,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 22,
+          "schema_tokens": 65,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 603,
+          "description": 98,
+          "schema": 302
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 104,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_doctor",
+        "family": "synapse",
+        "total_tokens": 134,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 64,
+          "schema_tokens": 33,
+          "annotations_tokens": 31,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 62,
+          "schema_tokens": 30,
+          "annotations_tokens": 29
+        },
+        "chars": {
+          "total": 633,
+          "description": 311,
+          "schema": 142
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 0,
+          "described_property_count": 1,
+          "property_description_chars": 51,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_batch_cook",
+        "family": "cops",
+        "total_tokens": 133,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 10,
+          "schema_tokens": 82,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 8,
+          "schema_tokens": 79,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 578,
+          "description": 43,
+          "schema": 346
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 61,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 2,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_batch_cook",
+        "family": "tops",
+        "total_tokens": 133,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 17,
+          "schema_tokens": 75,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 15,
+          "schema_tokens": 72,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 603,
+          "description": 85,
+          "schema": 329
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 99,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_create_solver",
+        "family": "cops",
+        "total_tokens": 130,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 14,
+          "schema_tokens": 76,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 12,
+          "schema_tokens": 73,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 605,
+          "description": 64,
+          "schema": 346
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 1,
+          "described_property_count": 4,
+          "property_description_chars": 113,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_execute_python",
+        "family": "houdini",
+        "total_tokens": 129,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 28,
+          "schema_tokens": 62,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 26,
+          "schema_tokens": 59,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 602,
+          "description": 132,
+          "schema": 275
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 90,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_diagnose",
+        "family": "tops",
+        "total_tokens": 128,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 24,
+          "schema_tokens": 62,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 22,
+          "schema_tokens": 59,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 597,
+          "description": 104,
+          "schema": 309
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 100,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_slap_comp",
+        "family": "cops",
+        "total_tokens": 127,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 13,
+          "schema_tokens": 72,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 11,
+          "schema_tokens": 69,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 532,
+          "description": 61,
+          "schema": 284
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 89,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_create_node",
+        "family": "houdini",
+        "total_tokens": 127,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 19,
+          "schema_tokens": 69,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 17,
+          "schema_tokens": 66,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 523,
+          "description": 67,
+          "schema": 267
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 2,
+          "described_property_count": 3,
+          "property_description_chars": 78,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_create_network",
+        "family": "cops",
+        "total_tokens": 126,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 15,
+          "schema_tokens": 71,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 13,
+          "schema_tokens": 68,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 563,
+          "description": 64,
+          "schema": 302
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 0,
+          "described_property_count": 3,
+          "property_description_chars": 94,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_inspect_scene",
+        "family": "synapse",
+        "total_tokens": 126,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 19,
+          "schema_tokens": 68,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 17,
+          "schema_tokens": 65,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 552,
+          "description": 80,
+          "schema": 280
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 0,
+          "described_property_count": 3,
+          "property_description_chars": 92,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_connect",
+        "family": "cops",
+        "total_tokens": 125,
+        "wire": {
+          "name_tokens": 6,
+          "description_tokens": 8,
+          "schema_tokens": 79,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 3,
+          "description_tokens": 6,
+          "schema_tokens": 76,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 571,
+          "description": 31,
+          "schema": 357
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 2,
+          "described_property_count": 4,
+          "property_description_chars": 103,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_temporal_analysis",
+        "family": "cops",
+        "total_tokens": 124,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 15,
+          "schema_tokens": 67,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 13,
+          "schema_tokens": 64,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 552,
+          "description": 68,
+          "schema": 282
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 43,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 2,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_validate_frame",
+        "family": "synapse",
+        "total_tokens": 122,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 20,
+          "schema_tokens": 64,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 18,
+          "schema_tokens": 61,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 571,
+          "description": 85,
+          "schema": 292
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 69,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 1,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_set_opencl",
+        "family": "cops",
+        "total_tokens": 121,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 19,
+          "schema_tokens": 60,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 17,
+          "schema_tokens": 57,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 528,
+          "description": 68,
+          "schema": 271
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 2,
+          "described_property_count": 3,
+          "property_description_chars": 65,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_set_keyframe",
+        "family": "houdini",
+        "total_tokens": 120,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 15,
+          "schema_tokens": 64,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 13,
+          "schema_tokens": 61,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 530,
+          "description": 55,
+          "schema": 284
+        },
+        "schema_shape": {
+          "property_count": 4,
+          "required_count": 3,
+          "described_property_count": 4,
+          "property_description_chars": 47,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_batch",
+        "family": "synapse",
+        "total_tokens": 119,
+        "wire": {
+          "name_tokens": 6,
+          "description_tokens": 14,
+          "schema_tokens": 69,
+          "annotations_tokens": 31,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 3,
+          "description_tokens": 12,
+          "schema_tokens": 66,
+          "annotations_tokens": 29
+        },
+        "chars": {
+          "total": 547,
+          "description": 57,
+          "schema": 313
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 89,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 1,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_execute_vex",
+        "family": "houdini",
+        "total_tokens": 118,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 14,
+          "schema_tokens": 63,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 12,
+          "schema_tokens": 60,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 526,
+          "description": 55,
+          "schema": 282
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 88,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_get_usd_attribute",
+        "family": "houdini",
+        "total_tokens": 117,
+        "wire": {
+          "name_tokens": 10,
+          "description_tokens": 14,
+          "schema_tokens": 60,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 7,
+          "description_tokens": 12,
+          "schema_tokens": 57,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 522,
+          "description": 52,
+          "schema": 270
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 2,
+          "described_property_count": 3,
+          "property_description_chars": 55,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_get_dependency_graph",
+        "family": "tops",
+        "total_tokens": 115,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 22,
+          "schema_tokens": 51,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 20,
+          "schema_tokens": 48,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 504,
+          "description": 86,
+          "schema": 210
+        },
+        "schema_shape": {
+          "property_count": 2,
+          "required_count": 1,
+          "described_property_count": 2,
+          "property_description_chars": 58,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_wedge",
+        "family": "houdini",
+        "total_tokens": 114,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 14,
+          "schema_tokens": 61,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 12,
+          "schema_tokens": 58,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 503,
+          "description": 53,
+          "schema": 273
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 68,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_analyze_render",
+        "family": "cops",
+        "total_tokens": 113,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 20,
+          "schema_tokens": 51,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 18,
+          "schema_tokens": 48,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 483,
+          "description": 77,
+          "schema": 210
+        },
+        "schema_shape": {
+          "property_count": 2,
+          "required_count": 1,
+          "described_property_count": 2,
+          "property_description_chars": 47,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_assign_material",
+        "family": "houdini",
+        "total_tokens": 113,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 10,
+          "schema_tokens": 64,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 8,
+          "schema_tokens": 61,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 531,
+          "description": 36,
+          "schema": 298
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 2,
+          "described_property_count": 3,
+          "property_description_chars": 79,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_memory_write",
+        "family": "synapse",
+        "total_tokens": 113,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 12,
+          "schema_tokens": 63,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 10,
+          "schema_tokens": 60,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 525,
+          "description": 48,
+          "schema": 285
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 2,
+          "described_property_count": 3,
+          "property_description_chars": 47,
+          "enum_field_count": 1,
+          "enum_member_total": 3,
+          "nested_object_count": 1,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_pipeline_status",
+        "family": "tops",
+        "total_tokens": 112,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 22,
+          "schema_tokens": 50,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 20,
+          "schema_tokens": 47,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 513,
+          "description": 95,
+          "schema": 220
+        },
+        "schema_shape": {
+          "property_count": 2,
+          "required_count": 1,
+          "described_property_count": 2,
+          "property_description_chars": 60,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_add_memory",
+        "family": "synapse",
+        "total_tokens": 111,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 10,
+          "schema_tokens": 63,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 8,
+          "schema_tokens": 60,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 501,
+          "description": 34,
+          "schema": 280
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 64,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 1,
+          "max_depth": 2,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_capture_viewport",
+        "family": "houdini",
+        "total_tokens": 108,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 12,
+          "schema_tokens": 55,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 10,
+          "schema_tokens": 52,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 483,
+          "description": 41,
+          "schema": 244
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 0,
+          "described_property_count": 3,
+          "property_description_chars": 43,
+          "enum_field_count": 1,
+          "enum_member_total": 2,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_evolve_memory",
+        "family": "synapse",
+        "total_tokens": 107,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 8,
+          "schema_tokens": 59,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 6,
+          "schema_tokens": 56,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 480,
+          "description": 34,
+          "schema": 252
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 0,
+          "described_property_count": 1,
+          "property_description_chars": 40,
+          "enum_field_count": 2,
+          "enum_member_total": 4,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_create_node",
+        "family": "cops",
+        "total_tokens": 106,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 11,
+          "schema_tokens": 55,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 9,
+          "schema_tokens": 52,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 466,
+          "description": 39,
+          "schema": 236
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 2,
+          "described_property_count": 3,
+          "property_description_chars": 47,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_render_farm_cancel",
+        "family": "synapse",
+        "total_tokens": 106,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 50,
+          "schema_tokens": 15,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 48,
+          "schema_tokens": 12,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 506,
+          "description": 257,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_sleep_pass",
+        "family": "synapse",
+        "total_tokens": 105,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 52,
+          "schema_tokens": 15,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 50,
+          "schema_tokens": 12,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 459,
+          "description": 225,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_decide",
+        "family": "synapse",
+        "total_tokens": 104,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 11,
+          "schema_tokens": 55,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 9,
+          "schema_tokens": 52,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 496,
+          "description": 51,
+          "schema": 265
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 3,
+          "property_description_chars": 66,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_dirty_node",
+        "family": "tops",
+        "total_tokens": 103,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 17,
+          "schema_tokens": 46,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 15,
+          "schema_tokens": 43,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 468,
+          "description": 78,
+          "schema": 202
+        },
+        "schema_shape": {
+          "property_count": 2,
+          "required_count": 1,
+          "described_property_count": 2,
+          "property_description_chars": 55,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_project_setup",
+        "family": "synapse",
+        "total_tokens": 100,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 31,
+          "schema_tokens": 31,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 29,
+          "schema_tokens": 28,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 461,
+          "description": 140,
+          "schema": 128
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 0,
+          "described_property_count": 1,
+          "property_description_chars": 30,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_read_material",
+        "family": "houdini",
+        "total_tokens": 98,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 15,
+          "schema_tokens": 44,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 13,
+          "schema_tokens": 41,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 441,
+          "description": 65,
+          "schema": 184
+        },
+        "schema_shape": {
+          "property_count": 2,
+          "required_count": 1,
+          "described_property_count": 2,
+          "property_description_chars": 38,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_live_metrics",
+        "family": "synapse",
+        "total_tokens": 97,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 26,
+          "schema_tokens": 33,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 24,
+          "schema_tokens": 30,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 451,
+          "description": 120,
+          "schema": 141
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 0,
+          "described_property_count": 1,
+          "property_description_chars": 43,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_render_settings",
+        "family": "houdini",
+        "total_tokens": 96,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 16,
+          "schema_tokens": 41,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 14,
+          "schema_tokens": 38,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 452,
+          "description": 66,
+          "schema": 190
+        },
+        "schema_shape": {
+          "property_count": 2,
+          "required_count": 1,
+          "described_property_count": 2,
+          "property_description_chars": 50,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 1,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_memory_query",
+        "family": "synapse",
+        "total_tokens": 93,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 8,
+          "schema_tokens": 47,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 6,
+          "schema_tokens": 44,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 419,
+          "description": 30,
+          "schema": 199
+        },
+        "schema_shape": {
+          "property_count": 3,
+          "required_count": 1,
+          "described_property_count": 1,
+          "property_description_chars": 12,
+          "enum_field_count": 1,
+          "enum_member_total": 3,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_get_cook_stats",
+        "family": "tops",
+        "total_tokens": 93,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 21,
+          "schema_tokens": 29,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 19,
+          "schema_tokens": 26,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 402,
+          "description": 88,
+          "schema": 118
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 1,
+          "described_property_count": 1,
+          "property_description_chars": 24,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_get_parm",
+        "family": "houdini",
+        "total_tokens": 91,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 13,
+          "schema_tokens": 39,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 11,
+          "schema_tokens": 36,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 391,
+          "description": 43,
+          "schema": 166
+        },
+        "schema_shape": {
+          "property_count": 2,
+          "required_count": 2,
+          "described_property_count": 2,
+          "property_description_chars": 23,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "cops_read_layer_info",
+        "family": "cops",
+        "total_tokens": 90,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 20,
+          "schema_tokens": 28,
+          "annotations_tokens": 35,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 18,
+          "schema_tokens": 25,
+          "annotations_tokens": 33
+        },
+        "chars": {
+          "total": 383,
+          "description": 78,
+          "schema": 107
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 1,
+          "described_property_count": 1,
+          "property_description_chars": 13,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_hda_list",
+        "family": "houdini",
+        "total_tokens": 87,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 31,
+          "schema_tokens": 15,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 29,
+          "schema_tokens": 12,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 358,
+          "description": 128,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_inspect_selection",
+        "family": "synapse",
+        "total_tokens": 86,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 16,
+          "schema_tokens": 31,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 14,
+          "schema_tokens": 28,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 401,
+          "description": 77,
+          "schema": 124
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 0,
+          "described_property_count": 1,
+          "property_description_chars": 34,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_generate_items",
+        "family": "tops",
+        "total_tokens": 86,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 19,
+          "schema_tokens": 27,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 17,
+          "schema_tokens": 24,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 389,
+          "description": 85,
+          "schema": 107
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 1,
+          "described_property_count": 1,
+          "property_description_chars": 13,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_knowledge_lookup",
+        "family": "synapse",
+        "total_tokens": 84,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 18,
+          "schema_tokens": 27,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 16,
+          "schema_tokens": 24,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 388,
+          "description": 72,
+          "schema": 118
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 1,
+          "described_property_count": 1,
+          "property_description_chars": 22,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_delete_node",
+        "family": "houdini",
+        "total_tokens": 83,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 13,
+          "schema_tokens": 31,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 11,
+          "schema_tokens": 28,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 351,
+          "description": 37,
+          "schema": 125
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 1,
+          "described_property_count": 1,
+          "property_description_chars": 31,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "tops_cancel_cook",
+        "family": "tops",
+        "total_tokens": 83,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 13,
+          "schema_tokens": 29,
+          "annotations_tokens": 34,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 11,
+          "schema_tokens": 26,
+          "annotations_tokens": 32
+        },
+        "chars": {
+          "total": 356,
+          "description": 47,
+          "schema": 118
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 1,
+          "described_property_count": 1,
+          "property_description_chars": 24,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_stage_info",
+        "family": "houdini",
+        "total_tokens": 79,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 12,
+          "schema_tokens": 28,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 10,
+          "schema_tokens": 25,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 343,
+          "description": 47,
+          "schema": 110
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 0,
+          "described_property_count": 1,
+          "property_description_chars": 22,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_scene_info",
+        "family": "houdini",
+        "total_tokens": 77,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 23,
+          "schema_tokens": 15,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 21,
+          "schema_tokens": 12,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 316,
+          "description": 83,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_recall",
+        "family": "synapse",
+        "total_tokens": 77,
+        "wire": {
+          "name_tokens": 6,
+          "description_tokens": 13,
+          "schema_tokens": 27,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 3,
+          "description_tokens": 11,
+          "schema_tokens": 24,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 350,
+          "description": 57,
+          "schema": 115
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 1,
+          "described_property_count": 1,
+          "property_description_chars": 19,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_render_farm_status",
+        "family": "synapse",
+        "total_tokens": 76,
+        "wire": {
+          "name_tokens": 9,
+          "description_tokens": 20,
+          "schema_tokens": 15,
+          "annotations_tokens": 33,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 6,
+          "description_tokens": 18,
+          "schema_tokens": 12,
+          "annotations_tokens": 31
+        },
+        "chars": {
+          "total": 335,
+          "description": 86,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_redo",
+        "family": "houdini",
+        "total_tokens": 72,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 18,
+          "schema_tokens": 15,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 16,
+          "schema_tokens": 12,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 291,
+          "description": 69,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_search",
+        "family": "synapse",
+        "total_tokens": 71,
+        "wire": {
+          "name_tokens": 6,
+          "description_tokens": 9,
+          "schema_tokens": 26,
+          "annotations_tokens": 31,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 3,
+          "description_tokens": 7,
+          "schema_tokens": 23,
+          "annotations_tokens": 29
+        },
+        "chars": {
+          "total": 329,
+          "description": 43,
+          "schema": 108
+        },
+        "schema_shape": {
+          "property_count": 1,
+          "required_count": 1,
+          "described_property_count": 1,
+          "property_description_chars": 12,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 1,
+          "is_empty_schema": false
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_list_recipes",
+        "family": "synapse",
+        "total_tokens": 69,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 15,
+          "schema_tokens": 15,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 13,
+          "schema_tokens": 12,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 311,
+          "description": 74,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_memory_status",
+        "family": "synapse",
+        "total_tokens": 69,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 16,
+          "schema_tokens": 15,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 14,
+          "schema_tokens": 12,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 308,
+          "description": 69,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_undo",
+        "family": "houdini",
+        "total_tokens": 68,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 16,
+          "schema_tokens": 15,
+          "annotations_tokens": 31,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 14,
+          "schema_tokens": 12,
+          "annotations_tokens": 29
+        },
+        "chars": {
+          "total": 281,
+          "description": 59,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": false,
+          "destructive": true,
+          "idempotent": false
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "houdini_get_selection",
+        "family": "houdini",
+        "total_tokens": 66,
+        "wire": {
+          "name_tokens": 8,
+          "description_tokens": 12,
+          "schema_tokens": 15,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 5,
+          "description_tokens": 10,
+          "schema_tokens": 12,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 283,
+          "description": 44,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_ping",
+        "family": "synapse",
+        "total_tokens": 66,
+        "wire": {
+          "name_tokens": 6,
+          "description_tokens": 15,
+          "schema_tokens": 15,
+          "annotations_tokens": 31,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 3,
+          "description_tokens": 13,
+          "schema_tokens": 12,
+          "annotations_tokens": 29
+        },
+        "chars": {
+          "total": 274,
+          "description": 53,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_metrics",
+        "family": "synapse",
+        "total_tokens": 62,
+        "wire": {
+          "name_tokens": 6,
+          "description_tokens": 11,
+          "schema_tokens": 15,
+          "annotations_tokens": 31,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 3,
+          "description_tokens": 9,
+          "schema_tokens": 12,
+          "annotations_tokens": 29
+        },
+        "chars": {
+          "total": 273,
+          "description": 46,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_context",
+        "family": "synapse",
+        "total_tokens": 61,
+        "wire": {
+          "name_tokens": 6,
+          "description_tokens": 10,
+          "schema_tokens": 15,
+          "annotations_tokens": 31,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 3,
+          "description_tokens": 8,
+          "schema_tokens": 12,
+          "annotations_tokens": 29
+        },
+        "chars": {
+          "total": 267,
+          "description": 40,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_health",
+        "family": "synapse",
+        "total_tokens": 61,
+        "wire": {
+          "name_tokens": 6,
+          "description_tokens": 10,
+          "schema_tokens": 15,
+          "annotations_tokens": 31,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 3,
+          "description_tokens": 8,
+          "schema_tokens": 12,
+          "annotations_tokens": 29
+        },
+        "chars": {
+          "total": 277,
+          "description": 52,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      },
+      {
+        "name": "synapse_router_stats",
+        "family": "synapse",
+        "total_tokens": 61,
+        "wire": {
+          "name_tokens": 7,
+          "description_tokens": 8,
+          "schema_tokens": 15,
+          "annotations_tokens": 32,
+          "structural_residual_tokens": -1
+        },
+        "content": {
+          "name_tokens": 4,
+          "description_tokens": 6,
+          "schema_tokens": 12,
+          "annotations_tokens": 30
+        },
+        "chars": {
+          "total": 273,
+          "description": 36,
+          "schema": 47
+        },
+        "schema_shape": {
+          "property_count": 0,
+          "required_count": 0,
+          "described_property_count": 0,
+          "property_description_chars": 0,
+          "enum_field_count": 0,
+          "enum_member_total": 0,
+          "nested_object_count": 0,
+          "array_property_count": 0,
+          "max_depth": 0,
+          "is_empty_schema": true
+        },
+        "flags": {
+          "read_only": true,
+          "destructive": false,
+          "idempotent": true
+        },
+        "four_key_shape_ok": true
+      }
+    ]
+  },
+  "blake2b": "a99f3955e620af36c8dc563f29bbedde"
+}
