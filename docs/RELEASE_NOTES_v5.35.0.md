@@ -87,6 +87,8 @@ The reverse case exists too: `hou.ActiveRender` documents `kill()`, `suspend()` 
 
 **Emergency halt is not surfaced in the panel.** The mechanism exists; there is no always-visible artist-reachable control. Stop aborts the agent loop cooperatively and is honest about it, but does not cancel a running render.
 
+> **Superseded 2026-07-28 (H3b).** Emergency halt is now surfaced in the panel's `⋯` overflow as a control distinct from Stop, and the running render is now stoppable via `render_stop` (`rkill`). Two corrections that came with it: the shipped `trigger_emergency_halt` walks `/obj` only and does **not** stop a cook under `/tasks` (measured), and it does not stop renders at all — the halt handler now sweeps scene-wide and reports what it did *not* cover rather than implying a wider guarantee.
+
 **Node grounding is thin.** 18.3% of LOP types and 6.2% of Copernicus types carry semantic grounding. The shipped reference documents 37.9% of LOP parameters — the realistic ceiling from documentation alone, and well below what type-level coverage of 83% would suggest.
 
 **Six shipping dependencies are not vendored.** Listed above. A fresh install on Houdini's Python will not have them.

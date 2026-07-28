@@ -1,0 +1,232 @@
+{
+  "schema": "receipt/v1",
+  "leg": "H3b",
+  "title": "Render and cook cancellation — TOPS cancel, rkill-based render stop, emergency halt (R73 scope)",
+  "harness": "REPAIR-01",
+  "status": "green",
+  "status_note": "Describes what happened (Law 3). All three parts of the brief were built AND demonstrated live on Houdini 22.0.368. PART A: a real /tasks cook was cancelled through the shipped handler, with an uncancelled control proving the same cook runs past 25s untouched. PART B: rkill was demonstrated against real mantra and Karma renders through the shipped module, the RopNode->process mapping was established for Karma and REFUTED for mantra, and the mandatory partial-frame question was probed on both renderers. PART C: emergency halt is surfaced as a distinct overflow control, and probing exposed that the shipped EmergencyProtocol does NOT halt what it claims. _on_stop is byte-for-byte unchanged. Suite 5031 -> 5069 (+38, 0 failed).",
+
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "harness/relay-settings.json (governing). RECORDED HONESTLY, NOT CLAIMED (per H3a precedent): execution was in an interactive Claude Code session whose grant is wider than that file. Two writes fall outside the relay allowlist and are named rather than hidden: docs/RELEASE_NOTES_v5.34.0.md + v5.35.0.md and README.md (required by the leg's own oracle), and CLAUDE.md line 3 (the tool-count banner, forced by tests/test_phase0c_doc1_toolcount.py). No deny-listed path was touched: shared/bridge.py, VERSION, harness/state/**, the constitution and the rulings doc are all unmodified.",
+  "commit_at_run": "39e27ab",
+  "worktree": ".claude/worktrees/h3b-tops-cancel on branch repair/h3b-tops-cancel",
+  "run_date": "2026-07-28",
+  "mode": "implementation + live demonstration",
+  "build": "Houdini 22.0.368, licenseCategoryType.Indie, Python 3.13.10, hou.isUIAvailable()=True, houdini pid 40868",
+
+  "authority": {
+    "brief": "harness/prompts/h3b.md",
+    "rulings": {
+      "R73": "AMENDS R48. rkill works and has the whole time; H3b's scope WIDENS to TOPS cancel AND an rkill-based render stop, with an explicit finding on partial frames. The narrow claim (hou.RopNode has no cancel verb, hou.ActiveRender is #status:ni and absent) still holds.",
+      "R48": "AMENDED BY R73. Its clause 2 -- 'the render half is closed as not-implementable' -- is the thing this leg refutes by shipping it. Its clause 3 (v5.34.0 wording is wrong) is discharged here.",
+      "R44": "H3 split; H3a probe ran read-only, H3b held. Released by Joe at 39e27ab.",
+      "R49": "The SideFX ask. Item 1 (no RopNode cancel verb) and item 2 (ActiveRender #status:ni) are re-confirmed by this leg. Item 3 unchanged.",
+      "R29": "Keep _on_stop exactly as written; surface emergency halt as a DISTINCT second control in the rail's overflow, not competing with Stop. Both honoured.",
+      "R18": "An affordance that claims a safety gate it does not perform is a defect. This is the ruling that forced H3b-F6.",
+      "R34": "Every pin must be shown to fail against a deliberately broken implementation.",
+      "R60": "A pin's READER requires its own control. A blind reader produces green pins and zero information.",
+      "R25": "Receipts record model and settings_profile.",
+      "R46": "Discharged by H3a for the marshal symbols; no design here rests on prior-session memory.",
+      "R132": "Producer scripts must not be named _*.py or .gitignore:50 makes them uncommittable."
+    },
+    "constitution": "harness/AGENT_CONSTITUTION.md — Article I (escalate value judgements to for_ruling, never mid-run), Article II (evidence ladder), Law 1 (every check must be able to fail), Law 2 (no number without a producer), Law 3 (status describes what happened), Law 6 (fix forward), Law 7 (a red leg is a finding)."
+  },
+
+  "suite": {
+    "before": {"passed": 5031, "failed": 0,
+               "source": "docs/RELEASE_NOTES_v5.37.0.md:88 — the v5.37.0 release measurement at this branch's merge-base (39e27ab)",
+               "cross_check": "5031 + 38 new H3b pins = 5069 observed after. The decomposition closes exactly, which is why this 'before' is citable rather than assumed."},
+    "after": {"passed": 5069, "failed": 0, "skipped": 137,
+              "producer": "python -m pytest -q -p no:cacheprovider, cwd=.claude/worktrees/h3b-tops-cancel, system python 3.14.2",
+              "duration_s": 118.05},
+    "delta": "+38 passed, 0 failed. Strictly increases (Law 6).",
+    "ratchet_floor": {"passed": 4875, "failed": 0, "skipped": 129,
+                      "source": "harness/verify/suite_baseline.json, promoted 2026-07-26, read at merge-base(master,HEAD)=39e27ab",
+                      "clearance": "+194 above the floor"},
+    "red_then_green": "The FIRST full run was 5066 passed / 3 FAILED. All three failures were mine and all three were the suite working: test_m1_truth_contract (my render_processes note used the effect-verb 'completed' in a handler that only reads), test_mcp_protocol tool-group coverage (3 new tools in no group), test_phase0c_doc1_toolcount (CLAUDE.md banner said 120, registry now 123). Each was FIXED FORWARD -- reworded, grouped, and the banner corrected. No test was weakened, skipped, xfailed or deleted.",
+    "shipping_interpreter": "NOT measured this leg. The hython3.13 shipping number is a separate instrument (suite_baseline.shipping) and no claim here depends on it."
+  },
+
+  "what_shipped": {
+    "python/synapse/server/render_stop.py": "NEW. The rps/rkill capability. Pure parsing/mapping (no hou) + a live surface. Carries the measured mapping rules and the per-renderer partial-output advisory as data.",
+    "python/synapse/server/handlers_render.py": "+3 handlers: _handle_render_processes, _handle_render_stop, _handle_emergency_halt.",
+    "python/synapse/server/handlers.py": "registration; read-only classification for all three (same C5-lock argument render_farm_cancel already carries); audit categories.",
+    "python/synapse/server/rbac.py": "the three commands added to _ARTIST_COMMANDS.",
+    "python/synapse/mcp/_tool_registry.py + mcp_tools_render.py": "3 MCP tools (120 -> 123), grouped.",
+    "python/synapse/panel/direct_tool.py": "NEW. Off-UI-thread single-tool dispatch (DirectToolCall) + the truncation-tolerant node reader.",
+    "python/synapse/panel/synapse_panel.py": "in-flight node captured from tool status; 'Cancel cook' + 'Emergency halt…' in the ⋯ overflow; _on_cancel_cook / _on_emergency_halt / _run_direct_tool. _on_stop UNCHANGED.",
+    "tests/test_h3b_render_stop.py": "20 pins.",
+    "tests/test_h3b_panel_cancel.py": "18 pins.",
+    "harness/notes/h3b_mutate.py": "the R34 mutation harness (producer).",
+    "harness/notes/h3b_mutation_evidence.json": "its output.",
+    "harness/notes/h3b/rkill_probe_evidence.json": "the PART B live evidence.",
+    "docs + README + CLAUDE.md": "wording corrections (see oracle below)."
+  },
+
+  "findings": [
+    {
+      "id": "H3b-F1",
+      "severity": "capability_shipped",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "A background render CAN be stopped from SYNAPSE, and it now is. R48's 'not-implementable' is refuted by working code, not by argument.",
+      "evidence": "Shipped module driven end-to-end against live renders: idle ROP -> 'noop_not_rendering'; live Karma render -> pid 23120 mapped to /stage/h3b_usdrender; stop by ROP path -> status 'stopped', killed=True, verified by rps re-read; stopping again -> 'noop_not_rendering'; bogus pid -> 'noop_no_such_pid'.",
+      "anchor": "python/synapse/server/render_stop.py:stop_render; harness/notes/h3b/rkill_probe_evidence.json -> shipped_code_end_to_end"
+    },
+    {
+      "id": "H3b-F2",
+      "severity": "user_facing_open",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "THE MAPPING IS RENDERER-DEPENDENT, and for mantra it does not exist. Karma/husk renders are attributable to their ROP; mantra renders are not attributable by ANY available field.",
+      "karma": "rps reports husk's full command line containing usd_renders/usdrender_<houdiniPID>_<node.sessionId()>_<counter>/. Decoded live: ROP sessionId 113 -> usdrender_40868_113_4; sessionId 339 -> usdrender_40868_339_1.",
+      "mantra": "rps Command is the bare word 'mantra' for every mantra render. The OS command line is ALSO bare 'mantra' (Win32_Process), because Houdini pipes the IFD over stdin (soho_pipecmd='mantra'). Two concurrent mantra renders are indistinguishable.",
+      "consequence": "render_stop returns status='unmappable' and REFUSES rather than killing the only render running. Demonstrated live: stop by node -> 'unmappable', killed=False; stop by explicit pid -> 'stopped', killed=True.",
+      "why_this_is_the_finding": "The brief asked for the mapping and said that if it cannot be made reliable, THAT is the deliverable. It is reliable for one renderer and impossible for the other, and shipping a stop that guessed between them is how you kill the wrong render.",
+      "anchor": "harness/notes/h3b/rkill_probe_evidence.json -> F3_mapping_husk_MAPPABLE, F4_mapping_mantra_NOT_MAPPABLE"
+    },
+    {
+      "id": "H3b-F3",
+      "severity": "user_facing_open",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "MANDATORY FINDING (brief PART B.3). Stopping a MANTRA render leaves a structurally valid but PIXEL-EMPTY EXR at the real output path. It is not corrupt -- it is valid-and-empty, which is worse, because a file-exists or file-parses check passes it.",
+      "measured": "Mid-render: h3b_mantra.0001.exr = 1,015 bytes + h3b_mantra.0001.exr.mantra_checkpoint = 5,249,684 bytes. After rkill: BOTH unchanged -- the 1,015-byte EXR and the orphaned checkpoint remain. After clean completion: EXR = 49,863 bytes, checkpoint REMOVED.",
+      "the_dangerous_part": "iinfo -v on the killed frame exits 0 and reports a full, correct 1920x1080 header with EXR magic 762f3101. It parses. It has no pixels.",
+      "detectors_both_measured": [
+        "an orphaned <output>.mantra_checkpoint beside the frame (removed on clean completion)",
+        "the EXR header lacks renderTime / renderMemory / date; a completed mantra frame carries all three (observed renderTime=3.157328, renderTime_s='0:00:03.16')"
+      ],
+      "shipped_as": "render_stop.partial_output_risk() returns this as DATA with every stop, so a caller cannot receive a clean-looking success without also receiving the residue it must check. Pinned by test_mantra_partial_output_is_declared_UNSAFE and its mutation.",
+      "anchor": "harness/notes/h3b/rkill_probe_evidence.json -> F6_partial_frame_MANTRA_hazardous"
+    },
+    {
+      "id": "H3b-F4",
+      "severity": "capability_confirmed",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "Stopping a KARMA render is SAFE. husk cannot corrupt the declared output because it never writes it until completion.",
+      "mechanism": "husk writes progressive snapshots to a SEPARATE file <stem>_part.exr and writes the declared output only on completion, removing _part as it goes. The usdrender_rop invokes husk with --snapshot 300.",
+      "evidence": "Driving husk directly with --snapshot 3, its own log reads verbatim 'Saved Image: .../h3b_snap_part.exr' repeatedly during the render; on completion h3b_snap.exr exists (2,378,855 bytes) and h3b_snap_part.exr is GONE. A Karma render killed mid-flight produced NO file at its declared output path at all. Killed husk temp dirs were cleaned up.",
+      "anchor": "harness/notes/h3b/rkill_probe_evidence.json -> F7_partial_frame_HUSK_safe"
+    },
+    {
+      "id": "H3b-F5",
+      "severity": "instrument_defect_caught_in_run",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "rkill is SILENT on both success and no-match, so it can never be its own receipt.",
+      "evidence": "hou.hscript('rkill zzz_no_such_render_h3b') -> out='', err=''. hou.hscript('rkill 72712') -> out='', err='' -- and the process WAS killed (tasklist confirmed dead).",
+      "consequence": "Every stop in render_stop.py is verified by re-reading rps, and the status 'kill_unconfirmed' exists specifically for the case where rkill was issued and the PID is still live. Law 3: a status that reported the ISSUING of rkill would be reporting an attempt, not an outcome.",
+      "second_instrument_note": "rps retains ended renders as rows with PID -1; they are excluded from every mapping and are never returned as kill targets (pinned + mutation-proved, M1)."
+    },
+    {
+      "id": "H3b-F6",
+      "severity": "shipped_defect_confirmed",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "EmergencyProtocol.trigger_emergency_halt DOES NOT HALT WHAT IT CLAIMS. It returns action='ALL_OPERATIONS_HALTED' while the cook it was asked to stop keeps running.",
+      "measured": "With a real cook in flight at /tasks/h3b_topnet (ctx.cooking=True), trigger_emergency_halt returned action='ALL_OPERATIONS_HALTED' in 0.0 s and ctx.cooking was STILL True at every 0.5s sample through t=3.0s.",
+      "root_cause": "shared/bridge.py:2288 walks hou.node('/obj').allSubChildren() ONLY. TOP networks live under /tasks by default, so the shipped halt misses the common case entirely. Its 'action' key is a string literal, not a state change, and the whole hou walk is inside try/except: pass.",
+      "why_it_matters": "This was one step from shipping as my Emergency-halt button -- the exact R18 defect: an affordance claiming a safety action it does not perform. It was caught only because the control was probed against a real cook instead of being wired and assumed.",
+      "what_was_done": "shared/bridge.py is DENY-LISTED, so the function was not edited. Instead _handle_emergency_halt reports three things separately and never merges them: bridge_halt (what EmergencyProtocol itself did, /obj scope, with the measurement quoted inline), topnets_cancelled (a scene-wide sweep the handler then performs via hou.TopNode.cancelCook -- the verb H3a-F2 found unused), and renders_still_running (deliberately NOT killed). status is 'halted' only when nothing survived, else 'halted_partial'.",
+      "verified_after": "The handler's sweep, run against the SAME cook that defeated the shipped halt: ctx.cooking False at t=0.5s and every sample after; topnets_cancelled=['/tasks/h3b_topnet'], failures none.",
+      "anchor": "shared/bridge.py:2282-2296; python/synapse/server/handlers_render.py::_handle_emergency_halt"
+    },
+    {
+      "id": "H3b-F7",
+      "severity": "probe_defect_caught_by_the_instrument",
+      "tier": "VERIFIED-STATIC",
+      "claim": "My own reader had an untested branch, and the mutation harness found it -- not review.",
+      "detail": "Mutation M6 ('reader returns a default target instead of None') initially SURVIVED: 35/35 pins still green. Cause: the negative control used VALID json, which returns None from an earlier branch and never reaches the mutated line. The truncated-with-no-node path -- the one a real cook produces -- had no control at all. A reader that invented '/tasks/topnet1' as a fallback would have passed every pin and cancelled the wrong network.",
+      "fixed": "Added test_reader_returns_None_for_a_TRUNCATED_payload_with_no_node and test_reader_refuses_a_file_path_as_a_node_target; tightened the fallback to decline file-looking paths (a truncated payload can hide the node key while leaving an output path visible). M6 and a new M7 now both go red.",
+      "second_order": "When M6's anchor went stale after the repair, the harness reported 'anchor not found -- this result proves nothing' rather than a green. That is the harness obeying Law 1 about itself.",
+      "anchor": "harness/notes/h3b_mutate.py; harness/notes/h3b_mutation_evidence.json"
+    },
+    {
+      "id": "H3b-F8",
+      "severity": "scope_boundary",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "What this stop does NOT cover, stated rather than implied.",
+      "foreground_renders": "A foreground/in-process render never becomes a background process, never appears in rps, and cannot be reached. Related and unchanged: CHANGELOG.md:27's head-of-line blocking on the WS /synapse path still applies to that transport. The panel's new controls use the HTTP /mcp path (tool_executor.try_mcp_tool_call), and both demonstrations above ran while the cook/render was in flight.",
+      "ipr": "hou.IPRViewer.killRender EXISTS and is a DIFFERENT case -- interactive preview, not a ROP render. Noted and left there, per brief PART B.4. Not wrapped.",
+      "wildcard": "'rkill *' kills every background render on the host including renders this session never started. Deliberately unreachable from render_stop.",
+      "license": "Probed on Houdini Indie. mantra and husk both spawn and both appear in rps on this license; no Indie-specific limitation was observed for either. A commercial license was not tested and no claim is made about it."
+    },
+    {
+      "id": "H3b-F9",
+      "severity": "method",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "A wrong result was one report away from shipping, and re-running rather than reporting is what caught it.",
+      "detail": "The first selective-kill test showed BOTH renders gone after rkill on one PID, which reads as 'rkill is not PID-selective' -- a finding that would have made a per-ROP stop impossible and changed the leg's whole conclusion. Re-run with separated outputs and tight timing: the target died inside 0.5s and the OTHER render stayed alive across a full 5s watch. The first run's survivor had simply finished naturally, having been running far longer.",
+      "recorded_because": "Article VI -- the drift log is the record of the instrument being wrong. The false version is preserved in the evidence artifact under false_start_recorded so no future reader re-derives it."
+    }
+  ],
+
+  "oracle": [
+    {"item": "TOPS cancel reachable from the panel, demonstrated against a REAL cook",
+     "status": "MET",
+     "evidence": "Panel: ⋯ overflow -> 'Cancel cook — <node>', state-gated to busy AND to a known node, dispatched off the Qt thread by DirectToolCall to tops_cancel_cook. Live: /tasks/h3b_topnet with 40 work items x 3s, ctx.cooking=True, cancelled via the shipped handler -> cooking False within 0.5s. CONTROL: the same graph left uncancelled was STILL cooking at 25s, so the stop is not an artifact of the cook ending on its own."},
+    {"item": "rkill path demonstrated against a REAL render, with the RopNode->process mapping shown",
+     "status": "MET",
+     "evidence": "Shipped render_stop.stop_render killed a live Karma render by ROP path (pid 23120 -> /stage/h3b_usdrender) and a live mantra render by explicit pid (10272). Mapping shown and decoded: usdrender_<houdiniPID>_<sessionId>_<counter>. Selectivity proved with a surviving control (H3b-F9)."},
+    {"item": "partial-frame behaviour PROBED and reported, whatever the answer",
+     "status": "MET",
+     "evidence": "Both renderers probed against real renders. mantra: HAZARDOUS -- valid-but-empty EXR at the real output path, two detectors measured (H3b-F3). husk: SAFE -- declared output never written until completion, _part sidecar is the residue (H3b-F4). Neither answer was assumed; the mantra answer is the bad one and is reported as such, in the tool description the model reads and in README."},
+    {"item": "emergency halt present as a distinct control, not a renamed Stop",
+     "status": "MET",
+     "evidence": "Separate ⋯ overflow entry, separate handler _on_emergency_halt, separate server command. Pinned by test_cancel_cook_and_emergency_halt_are_separate_handlers, which also asserts the halt is NOT connected to _stop_btn. Probing it produced H3b-F6."},
+    {"item": "_on_stop unchanged in behaviour",
+     "status": "MET",
+     "evidence": "git diff shows no line of _on_stop's body changed. Pinned by test_on_stop_still_only_aborts_the_loop_and_never_claims_idle and test_stop_button_is_still_state_gated_to_working."},
+    {"item": "every pin fails against its mutation (R34); readers calibrated (R60)",
+     "status": "MET",
+     "evidence": "harness/notes/h3b_mutate.py applies 7 mutations to the SHIPPED source and runs the pins: all 7 caught, baseline 0 failed, after-restore 0 failed. Readers (parse_rps, extract_node_path) each have positive AND negative controls, and R60 paid off directly -- the harness found an uncalibrated branch in my own reader (H3b-F7)."},
+    {"item": "gate suite green, count strictly increases or holds",
+     "status": "MET",
+     "evidence": "5031 -> 5069 passed, 0 failed, 137 skipped. +38. Three self-inflicted failures in the first run were fixed forward, none weakened."},
+    {"item": "v5.34.0 known-limitations wording corrected",
+     "status": "MET",
+     "evidence": "docs/RELEASE_NOTES_v5.34.0.md gains a dated CORRECTION block stating plainly that a render CAN be stopped via rkill, and that what is missing is a RopNode-level cancel verb and a working hou.ActiveRender (#status:ni, absent at runtime). README.md's already-correct sentence is extended with the two limits and the mantra partial-frame hazard. docs/RELEASE_NOTES_v5.35.0.md's 'emergency halt is not surfaced' is marked superseded."}
+  ],
+
+  "scope_discipline": {
+    "not_touched": "shared/bridge.py (deny-listed -- EmergencyProtocol was surfaced and measured, never edited), VERSION, harness/state/**, harness/AGENT_CONSTITUTION.md, harness/notes/CTO_RULINGS_01.md, harness/relay-settings.json, harness/agent-settings.json.",
+    "_on_stop": "UNCHANGED, per the brief's explicit instruction. Stop remains state-gated to busy; it was not made always-visible.",
+    "main_repo": "The live Houdini resolves `synapse` from the PRIMARY checkout C:/Users/User/SYNAPSE/python. It was NOT written to. Live demonstration of the new module loaded it by explicit file path from this worktree (importlib.util.spec_from_file_location), so no cross-worktree write occurred.",
+    "gates": "Never pushed, never merged, never tagged. Gate A, B and C untouched. No release note was authored for a new version -- that is release-time human work.",
+    "houdini_scene": "The probe scene (h3b_* nodes in /obj, /out, /stage, /tasks of the unsaved untitled.hip) was LEFT IN PLACE as inspectable evidence rather than deleted -- Law 4, classification before deletion, and the human may want to re-run the demonstration. All background render processes started by this leg were killed; rps shows no live renders."
+  },
+
+  "for_ruling": [
+    {
+      "id": "H3b-R1",
+      "question": "EmergencyProtocol.trigger_emergency_halt is defective in shared/bridge.py, which is deny-listed. Who repairs it, and is the handler-side compensation the permanent answer or a stopgap?",
+      "context": "H3b-F6: it walks /obj only, misses /tasks entirely, sets action='ALL_OPERATIONS_HALTED' as a literal regardless of what happened, and wraps its only real work in except: pass. This leg compensated in the handler because it could not edit the file. That leaves TWO halt implementations with different scopes, which is its own drift risk. The clean fix is a scene-wide sweep inside bridge.py and an action string derived from what was actually cancelled.",
+      "why_escalated": "Assigns work behind a deny fence, and choosing between 'fix the bridge' and 'keep the compensation' is a value judgement about where the halt's authority lives. Article I."
+    },
+    {
+      "id": "H3b-R2",
+      "question": "Should SYNAPSE record the render PID at spool time so MANTRA renders become mappable?",
+      "context": "H3b-F2: mantra is unmappable from rps because its command carries no identity. But SYNAPSE could snapshot rps immediately before and after ITS OWN render call and attribute the new PID to the ROP it just launched -- the differential approach. It would work only for renders SYNAPSE starts, and it carries a race: a second render starting inside the same window would be misattributed. The alternative is the current honest refusal.",
+      "why_escalated": "A defensible-either-way trade between coverage and the risk of killing the wrong render. The cost of being wrong is an artist's 40-minute render. Not an agent's call."
+    },
+    {
+      "id": "H3b-R3",
+      "question": "Do the harness notes that still carry the over-broad 'Houdini exposes NO API to cancel a render' claim get corrected, or preserved as historical record?",
+      "context": "harness/notes/receipts/H3a.json:89 is the strongest surviving instance and it is now REFUTED. It is a receipt, and receipts are supposed to be the immutable record of what a leg found; editing one retroactively is its own hazard. R73 already corrects it in the rulings doc. Also open: harness/notes/H3a_SIDEFX_ASK.md carries the superseded ask (docs/SIDEFX_ASK_H22_DRAFT.md is the corrected one).",
+      "why_escalated": "Amending a completed leg's receipt is a governance question, not an engineering one."
+    },
+    {
+      "id": "H3b-R4",
+      "question": "Should the panel's Cancel-cook control be reachable while the tool detail carries no node -- e.g. by asking Houdini directly which TOP network is cooking?",
+      "context": "The control is currently gated on the panel knowing a node path, recovered from a truncated tool-status string. When it does not know, it refuses (H3b-F7 is why that refusal is not negotiable). A scene-wide 'cancel whatever is cooking' would always be available but removes the artist's certainty about WHAT gets cancelled -- the same class of trade as H3b-R2. The emergency-halt control already offers the scene-wide version, which may make this moot.",
+      "why_escalated": "Product-direction judgement about how much the panel should infer on the artist's behalf."
+    }
+  ],
+
+  "resume_token": {
+    "skip": [
+      "The rps/rkill probe. The mapping, the selectivity, the silence, the dead-row semantics and BOTH renderers' partial-frame behaviour are settled on 22.0.368 with a verbatim evidence artifact. Do not re-probe unless the build changes.",
+      "H3a's 68-symbol probe -- still settled; this leg used it and did not contradict it. Its one over-broad CLAIM (H3a-F1's 'no API to cancel a render') is refuted, but every SYMBOL verdict it recorded held.",
+      "Whether hou.RopNode has a cancel verb. Re-confirmed ABSENT this leg by dir() sweep. Re-guessing spellings will find nothing."
+    ],
+    "redo_if": "The Houdini build changes from 22.0.368 (re-run the rps command-line shape check first -- the ENTIRE Karma mapping rests on husk's temp-dir naming, which is an implementation detail SideFX may change without notice; harness/notes/h3b/rkill_probe_evidence.json -> F3 names the exact string). Also re-probe if the usdrender_rop stops passing --snapshot, which would change F4's safety conclusion.",
+    "next": "H3b-R1 (the bridge-side halt repair) is the highest-value follow-up and is blocked on a ruling, not on evidence. H3b-R2 (mantra PID capture at spool time) is the only way the render stop reaches full renderer coverage. Neither needs further probing to decide -- both need a decision.",
+    "artifacts_root": "harness/notes/h3b/"
+  }
+}

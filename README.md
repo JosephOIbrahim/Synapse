@@ -188,13 +188,18 @@ Read this here rather than discover it mid-shot.
 
 **No delta path.** Every inspect is a full re-read. Re-asking about the same thing costs the same again.
 
-**A render can be stopped, but not from `RopNode`.** No cancel method exists there. `rkill` works and SYNAPSE does not yet use it. `hou.ActiveRender` is documented, `#status: ni`, and absent at runtime.
+**A render can be stopped, but not from `RopNode`.** No cancel method exists there. `hou.ActiveRender` is documented, `#status: ni`, and absent at runtime. SYNAPSE now stops renders through `rkill` (`render_stop`), with two limits worth knowing:
+
+- Only **background** renders can be stopped — those are the only ones `rps` can see. A foreground, in-process render is not reachable.
+- Only **Karma/husk** renders can be stopped *by ROP path*. A **mantra** render shows up in `rps` as the bare word `mantra` with no node identity, so SYNAPSE refuses to guess which one is yours and asks for an explicit PID instead.
+
+**Stopping a mantra render leaves a valid-looking but empty frame.** mantra writes the EXR header to the real output path immediately and keeps pixels in a `.mantra_checkpoint` sidecar, so a stopped render leaves a ~1KB EXR that opens fine and contains no image. A "does the file exist?" check will pass it. Detect it by the leftover `.mantra_checkpoint`, or by a header missing `renderTime`. **Stopping a Karma render is safe** — husk only writes the declared output on completion, so it simply never appears.
 
 **The PDG rollback has never executed.** `bridge.py:1718` passes `remove_files=`; the real keyword is `remove_outputs`. It raises `TypeError` every time.
 
 **41 node types in use are deprecated** — 39 of them deprecated in the docs while the runtime says nothing, so a probe alone cannot see them.
 
-**Emergency halt is not surfaced in the panel.** The mechanism exists; there is no always-visible control.
+**Emergency halt is surfaced, and the shipped mechanism alone was not enough.** It now lives in the panel's `⋯` overflow as a control distinct from Stop. Worth knowing why it is not just a button on the old function: `EmergencyProtocol.trigger_emergency_halt` walks **`/obj` only**. Probed against a real cook at `/tasks/h3b_topnet` on 22.0.368 it returned `ALL_OPERATIONS_HALTED` in 0.0s and the cook was still running three seconds later — and `/tasks` is where TOP networks live by default. The halt handler therefore does its own scene-wide sweep and reports the three results separately: what the bridge halt did, which TOP networks it then cancelled, and which background renders are **still running** (it does not kill those — `rkill *` would reach renders this session never started).
 
 **Node grounding is thin.** 18.3% of LOP types and 6.2% of Copernicus types carry semantic grounding. 37.9% of LOP parameters are documented — the ceiling from documentation alone.
 

@@ -1,0 +1,103 @@
+{
+  "leg": "H3b",
+  "artifact": "PART B evidence — rps/rkill on live Houdini 22.0.368",
+  "generated": "2026-07-28",
+  "build": "22.0.368",
+  "license": "licenseCategoryType.Indie",
+  "houdini_pid": 40868,
+  "producer": "Live GUI Houdini session over the SYNAPSE WS bridge (protocol 4.0.0), hou.isUIAvailable()=True, main thread. Every row below is a verbatim capture, not a summary.",
+  "tier": "VERIFIED-RUNTIME",
+
+  "controls": {
+    "why": "Law 1 — a probe that cannot demonstrate success against a known-good target produces uninterpretable failures.",
+    "positive_hscript": "hou.hscript('version') -> 'Houdini FX Version 22.0.368 (Compiled on Jul 11 2026)'",
+    "negative_hscript": "hou.hscript('zzz_synthetic_not_a_command_h3b') -> err 'Unknown command: zzz_synthetic_not_a_command_h3b'",
+    "scene_positive_control": "Before concluding anything about background renders, a FOREGROUND mantra render of the same scene was proven to write a real EXR (49,863 bytes with renderTime metadata). This ruled out 'my scene is broken' as the explanation for an empty rps.",
+    "result": "controls green in every capture below."
+  },
+
+  "commands_exist": {
+    "rps": "EXISTS. help: 'Lists background render processes. The command lists the PID of the process, the host which the command is running on, the command being run, and the frame being rendered.'",
+    "rkill": "EXISTS. help: 'Stop or pause/unpause a render. USAGE rkill [-s | -r] <process_pattern>'. Examples include 'rkill *  Kills all render processes'.",
+    "hou.RopNode_cancel_verb": "ABSENT — re-confirmed this leg. dir(hou.RopNode) render-ish names: addRenderEventCallback, cook, render, removeRenderEventCallback, removeAllRenderEventCallbacks, _cookNoInterruptInternal. No cancel/abort/interrupt/stop/kill."
+  },
+
+  "F1_rkill_is_silent": {
+    "claim": "rkill reports NOTHING on either success or no-match, so it cannot be its own receipt.",
+    "evidence_nomatch": "hou.hscript('rkill zzz_no_such_render_h3b') -> out='', err=''",
+    "evidence_success": "hou.hscript('rkill 72712') -> out='', err='' — and the process was in fact killed (tasklist confirmed dead).",
+    "consequence": "server/render_stop.py verifies every stop by re-reading rps. Law 3."
+  },
+
+  "F2_dead_rows": {
+    "claim": "rps retains COMPLETED renders as rows with PID -1. They are not killable.",
+    "evidence": "PID Command / -1 mantra x7 accumulated across the session's finished renders."
+  },
+
+  "F3_mapping_husk_MAPPABLE": {
+    "claim": "usdrender_rop (Karma/husk) renders ARE attributable to their ROP.",
+    "mechanism": "rps reports husk's full command line, which contains a per-invocation temp scene at usd_renders/usdrender_<houdiniPID>_<node.sessionId()>_<counter>/__render__.usd",
+    "decode_evidence": {
+      "rop_A": {"path": "/stage/h3b_usdrender", "sessionId": 113, "rps_dir": "usdrender_40868_113_4"},
+      "rop_B": {"path": "/stage/h3b_usdrender_B", "sessionId": 339, "rps_dir": "usdrender_40868_339_1"}
+    },
+    "verbatim_rps_row": "66252 husk --make-output-path -f 1 --purpose 'geometry,render' --complexity 'veryhigh' --snapshot 300 --mplay-session 'untitled' 'C:/Users/User/AppData/Local/Temp/houdini_temp/usd_renders/usdrender_40868_113_4/__render__.usd'"
+  },
+
+  "F4_mapping_mantra_NOT_MAPPABLE": {
+    "claim": "ifd/mantra renders CANNOT be attributed to a ROP by any available field.",
+    "evidence_rps": "Two concurrent mantra renders: 'PID Command / 31416 mantra / 75828 mantra' — the Command column is the bare word 'mantra' for both.",
+    "evidence_os": "Win32_Process CommandLine for both PIDs is literally 'mantra' with no arguments — Houdini pipes the IFD over stdin (soho_pipecmd='mantra'), so the OS command line is bare too.",
+    "consequence": "render_stop returns status='unmappable' and REFUSES rather than killing the only render running. Verified live: stop_render(node_path='/out/h3b_mantra') -> 'unmappable', killed=False, while stop_render(pid=10272) -> 'stopped', killed=True."
+  },
+
+  "F5_rkill_is_pid_selective": {
+    "claim": "rkill <pid> kills ONLY that process; other renders survive.",
+    "method": "Two concurrent husk renders from two different ROPs, one killed by its mapped PID.",
+    "evidence": {
+      "t0": "A=28192 (usdrender_40868_113_5), B=52508 (usdrender_40868_339_2)",
+      "action": "rkill 52508",
+      "watch_5s": "B_alive False at t=0.5s and every sample after; A_alive TRUE at every sample through t=5.0s"
+    },
+    "false_start_recorded": "An EARLIER run of this test showed both renders gone after the kill and looked like proof that rkill is not selective. It was re-run rather than reported: A had simply finished naturally (it had been running far longer). The corrected run above is the evidence. Recorded because the wrong version was one report away from shipping."
+  },
+
+  "F6_partial_frame_MANTRA_hazardous": {
+    "claim": "A stopped mantra render leaves a STRUCTURALLY VALID but PIXEL-EMPTY EXR at the real output path.",
+    "mid_render": {"h3b_mantra.0001.exr": 1015, "h3b_mantra.0001.exr.mantra_checkpoint": 5249684},
+    "after_rkill": {"h3b_mantra.0001.exr": 1015, "h3b_mantra.0001.exr.mantra_checkpoint": 5249684},
+    "after_clean_completion": {"h3b_mantra.0001.exr": 49863, "checkpoint": "REMOVED"},
+    "killed_file_is_valid": "iinfo -v exits 0 and reports Resolution 1920x1080, full header, correct EXR magic 762f3101. It PARSES. It has no pixels.",
+    "why_this_is_the_dangerous_case": "It is not corrupt — it is valid-and-empty, so any 'does the file exist and parse?' check passes it.",
+    "detectors": [
+      "orphaned <output>.mantra_checkpoint beside the frame (removed on clean completion)",
+      "EXR header lacks renderTime / renderMemory / date — a completed mantra frame carries all three (observed: renderTime=3.157328, renderTime_s='0:00:03.16')"
+    ]
+  },
+
+  "F7_partial_frame_HUSK_safe": {
+    "claim": "A stopped Karma/husk render CANNOT corrupt the declared output — it simply never appears.",
+    "mechanism": "husk writes progressive snapshots to a SEPARATE file <stem>_part.exr and writes the declared output path only on completion, removing _part as it goes. The usdrender_rop invokes it with --snapshot 300.",
+    "verbatim_log": "[12:30:09] Saved Image: C:/.../h3b_snap_part.exr   (repeated every ~3s under --snapshot 3)",
+    "after_completion": "h3b_snap.exr present (2,378,855 bytes); h3b_snap_part.exr ABSENT — removed on completion.",
+    "after_kill_mid_render": "Killed husk (rop B) produced NO file at its declared output path at all.",
+    "temp_dirs": "usdrender_<pid>_<sid>_<n>/ temp dirs were cleaned up even for the killed render. One stale dir from 2026-07-24 (usdrender_73500_82_1) exists but predates this run and is not attributable to rkill."
+  },
+
+  "F8_scope_not_covered": {
+    "foreground_renders": "A foreground/in-process render never becomes a background process, never appears in rps, and cannot be reached by rkill. Measured: with soho_foreground=0 a mantra render() returns in 0.054s (spooled); the render itself runs in a separate mantra.exe.",
+    "IPR": "hou.IPRViewer.killRender EXISTS and is a DIFFERENT case — interactive preview, not a ROP render. Not wrapped by this leg. Noted and left there per brief PART B.4.",
+    "rkill_wildcard": "'rkill *' kills every background render on the host including renders this session never started. Deliberately unreachable from render_stop."
+  },
+
+  "shipped_code_end_to_end": {
+    "what": "server/render_stop.py exercised against live renders, not just the ad-hoc probe.",
+    "idle_rop": "noop_not_rendering",
+    "live_karma": "pid 23120, renderer=husk, rop_path resolved to /stage/h3b_usdrender, mappable=True",
+    "stop_by_node": "status=stopped, killed=True, resolved_from=node, verified_by='rps re-read after rkill'",
+    "stop_again": "noop_not_rendering (never a second success)",
+    "bogus_pid": "noop_no_such_pid",
+    "mantra_by_node": "unmappable, killed=False",
+    "mantra_by_pid": "stopped, killed=True, declared_output_safe=False"
+  }
+}

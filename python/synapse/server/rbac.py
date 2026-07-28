@@ -63,6 +63,10 @@ _ARTIST_COMMANDS: FrozenSet[str] = frozenset({
     "tops_configure_scheduler", "tops_cancel_cook", "tops_dirty_node",
     "tops_setup_wedge", "tops_batch_cook",
     "tops_cook_and_validate",
+    # H3b -- an artist must be able to stop their own render and halt the
+    # pipeline. Gating a kill switch above the role that triggers the work is
+    # the same defect as a Stop that does not stop.
+    "render_processes", "render_stop", "emergency_halt",
     "project_setup", "memory_write", "evolve_memory",
 })
 

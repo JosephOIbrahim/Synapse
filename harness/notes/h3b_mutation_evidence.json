@@ -1,0 +1,76 @@
+[
+  {
+    "mutation": "BASELINE (unmutated)",
+    "failed_count": 0,
+    "failed": [],
+    "summary": "======================= 38 passed, 2 warnings in 0.63s ========================"
+  },
+  {
+    "mutation": "M1 drop dead-row guard from resolve_rop_pids",
+    "failed_count": 2,
+    "failed": [
+      "test_MUTATION_CATCHES_dead_row_exclusion",
+      "test_dead_rows_are_never_mapped_or_killable"
+    ],
+    "summary": "================== 2 failed, 36 passed, 2 warnings in 0.72s ==================="
+  },
+  {
+    "mutation": "M2 drop houdini-pid scoping from rop_token",
+    "failed_count": 2,
+    "failed": [
+      "test_MUTATION_CATCHES_cross_session_scoping",
+      "test_mapping_is_scoped_to_this_houdini_process"
+    ],
+    "summary": "================== 2 failed, 36 passed, 2 warnings in 0.71s ==================="
+  },
+  {
+    "mutation": "M3 declare mantra partial output SAFE",
+    "failed_count": 2,
+    "failed": [
+      "test_MUTATION_CATCHES_partial_risk_flip",
+      "test_mantra_partial_output_is_declared_UNSAFE"
+    ],
+    "summary": "================== 2 failed, 36 passed, 2 warnings in 0.78s ==================="
+  },
+  {
+    "mutation": "M4 assume unmeasured renderer is safe",
+    "failed_count": 1,
+    "failed": [
+      "test_unknown_renderer_risk_is_not_asserted_in_either_direction"
+    ],
+    "summary": "================== 1 failed, 37 passed, 2 warnings in 0.85s ==================="
+  },
+  {
+    "mutation": "M5 reader loses its truncation fallback",
+    "failed_count": 3,
+    "failed": [
+      "test_MUTATION_CATCHES_truncation_blindness",
+      "test_reader_recovers_node_from_TRUNCATED_json",
+      "test_reader_refuses_a_file_path_as_a_node_target"
+    ],
+    "summary": "================== 3 failed, 35 passed, 2 warnings in 0.74s ==================="
+  },
+  {
+    "mutation": "M6 reader guesses a default target instead of None",
+    "failed_count": 2,
+    "failed": [
+      "test_reader_refuses_a_file_path_as_a_node_target",
+      "test_reader_returns_None_for_a_TRUNCATED_payload_with_no_node"
+    ],
+    "summary": "================== 2 failed, 36 passed, 2 warnings in 0.68s ==================="
+  },
+  {
+    "mutation": "M7 reader accepts a FILE path as a node target",
+    "failed_count": 1,
+    "failed": [
+      "test_reader_refuses_a_file_path_as_a_node_target"
+    ],
+    "summary": "================== 1 failed, 37 passed, 2 warnings in 0.74s ==================="
+  },
+  {
+    "mutation": "AFTER RESTORE",
+    "failed_count": 0,
+    "failed": [],
+    "summary": "======================= 38 passed, 2 warnings in 0.66s ========================"
+  }
+]

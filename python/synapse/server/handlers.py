@@ -154,6 +154,10 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     # Safe / progressive render
     "safe_render": AuditCategory.RENDER,
     "render_progressively": AuditCategory.RENDER,
+    # H3b -- background-render stop + emergency halt
+    "render_processes": AuditCategory.RENDER,
+    "render_stop": AuditCategory.RENDER,
+    "emergency_halt": AuditCategory.RENDER,
     # Chat routing
     "route_chat": AuditCategory.SYNAPSE,
     # Undo / Redo
@@ -220,6 +224,14 @@ _READ_ONLY_COMMANDS = frozenset({
     # -- and the WS resilience layer (read-only fast path). Audit is written
     # in-handler (handlers_render._handle_render_farm_cancel).
     "render_farm_cancel",
+    # H3b -- the same argument, for the same reason. render_processes only
+    # reads rps. render_stop and emergency_halt signal an OS process / cancel
+    # PDG contexts; they author no scene state and no undo entry. Critically,
+    # a running render holds the C5 mutation lock for its whole duration, so a
+    # mutating-classified stop or halt would queue behind the very operation it
+    # exists to interrupt -- which is the difference between a kill switch and
+    # a decoration. Audit is written in-handler (handlers_render).
+    "render_processes", "render_stop", "emergency_halt",
     # cops_temporal_analysis is NOT read-only: it moves the global playhead
     # (hou.setFrame loop) and force-cooks — it must take the C5 mutation lock
     # and leave audit + Floor provenance records.
@@ -741,6 +753,11 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("render_sequence", self._handle_render_sequence)
         reg.register("render_farm_status", self._handle_render_farm_status)
         reg.register("render_farm_cancel", self._handle_render_farm_cancel)
+
+        # H3b -- background-render stop (rps/rkill) + emergency halt
+        reg.register("render_processes", self._handle_render_processes)
+        reg.register("render_stop", self._handle_render_stop)
+        reg.register("emergency_halt", self._handle_emergency_halt)
 
         # Safe / progressive render
         reg.register("safe_render", self._handle_safe_render)

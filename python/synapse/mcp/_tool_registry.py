@@ -1209,6 +1209,40 @@ TOOL_DEFS: list[tuple] = [
      "synapse_render_farm_status to confirm. Does not undo scene changes or delete partial frames.",
      _EMPTY_SCHEMA, False, True, True),
 
+    # -- H3b: background-render stop (rps/rkill, R73) --
+    ("synapse_render_processes", "render_processes", _passthrough,
+     "List background render processes (hscript rps), with Karma/husk rows resolved back to "
+     "the usdrender_rop that spawned them. Rows with pid -1 are completed renders retained by "
+     "Houdini's render manager and are not killable. mantra rows carry NO node identity and "
+     "cannot be attributed to a ROP. Call this before synapse_render_stop.",
+     _EMPTY_SCHEMA, True, False, True),
+    ("synapse_render_stop", "render_stop", _identity,
+     "Stop ONE in-flight BACKGROUND render (hscript rkill). Identify it by 'node' (a ROP path -- "
+     "works for usdrender_rop/Karma only) or by explicit 'pid' from synapse_render_processes. "
+     "Never kills by wildcard, and refuses rather than guessing when the target is ambiguous or "
+     "unattributable. The kill is verified by re-reading rps because rkill reports nothing. "
+     "IMPORTANT -- partial output: stopping a KARMA render is safe (husk writes the declared "
+     "output only on completion, so it simply never appears). Stopping a MANTRA render leaves a "
+     "structurally valid but PIXEL-EMPTY .exr at the real output path plus an orphaned "
+     ".mantra_checkpoint; a file-exists check will pass it. The returned partial_output block "
+     "states the residue and how to detect it. Does NOT stop foreground/in-process renders -- "
+     "those never appear in rps.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "ROP path whose render should be stopped (usdrender_rop/Karma only -- mantra cannot be mapped)"},
+         "pid": {"type": "integer", "description": "Explicit process id from synapse_render_processes; use when 'node' cannot resolve"},
+     }, "required": []},
+     False, True, True),
+    ("synapse_emergency_halt", "emergency_halt", _identity,
+     "Emergency halt: cancel PDG graph contexts under /obj and capture a session report. This is "
+     "a DISTINCT control from the panel's Stop (which aborts the agent loop cooperatively). "
+     "Scope is stated honestly -- it does NOT stop background renders and does not reach TOP "
+     "networks outside /obj; the result lists any renders still running so they can be stopped "
+     "explicitly with synapse_render_stop.",
+     {"type": "object", "properties": {
+         "reason": {"type": "string", "description": "Why the halt was triggered (recorded in the session report and audit log)"},
+     }, "required": []},
+     False, True, True),
+
     # -- Autonomous Render --
     ("synapse_autonomous_render", "autonomous_render", _identity,
      "Execute an autonomous render loop: plan the render from intent, validate the scene, "
