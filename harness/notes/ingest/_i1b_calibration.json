@@ -1,0 +1,765 @@
+{
+ "producer": "harness/notes/ingest/i1b_calibrate.py",
+ "build": "22.0.368",
+ "reader_sha256": "fe70c88d561e00f5833490263dca81cf0e80e5d12032f2dad23ba771ff83f8f4",
+ "total": 70,
+ "passed": 70,
+ "failed": 0,
+ "by_class": {
+  "POSITIVE": {
+   "pass": 43,
+   "fail": 0
+  },
+  "NEGATIVE": {
+   "pass": 10,
+   "fail": 0
+  },
+  "BLIND": {
+   "pass": 17,
+   "fail": 0
+  }
+ },
+ "all_pass": true,
+ "controls": [
+  {
+   "class": "POSITIVE",
+   "control": "chromakey.eol",
+   "ok": true,
+   "cmp": "eq",
+   "got": "CRLF",
+   "want": "CRLF",
+   "note": "101 CRLF line breaks; a '\\n'-splitting reader scores this page 0"
+  },
+  {
+   "class": "POSITIVE",
+   "control": "chromakey.header_order",
+   "ok": true,
+   "cmp": "eq",
+   "got": "directives-first",
+   "want": "directives-first",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "chromakey.title",
+   "ok": true,
+   "cmp": "eq",
+   "got": "Chroma Key",
+   "want": "Chroma Key",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "chromakey.summary",
+   "ok": true,
+   "cmp": "eq",
+   "got": "Keys an input based on hue, saturation, and luminance ranges.",
+   "want": "Keys an input based on hue, saturation, and luminance ranges.",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "chromakey.internal",
+   "ok": true,
+   "cmp": "eq",
+   "got": "chromakey",
+   "want": "chromakey",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "chromakey.param_count",
+   "ok": true,
+   "cmp": "eq",
+   "got": 15,
+   "want": 15,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "chromakey.labels",
+   "ok": true,
+   "cmp": "eq",
+   "got": [
+    "Signature",
+    "Method",
+    "Invert",
+    "Hue/Saturation",
+    "Luminance Range",
+    "Screen Color",
+    "Threshold",
+    "Width",
+    "Hue",
+    "Saturation",
+    "Luminance",
+    "Interpolation",
+    "Preview",
+    "Preview Color",
+    "Premultiply"
+   ],
+   "want": [
+    "Signature",
+    "Method",
+    "Invert",
+    "Hue/Saturation",
+    "Luminance Range",
+    "Screen Color",
+    "Threshold",
+    "Width",
+    "Hue",
+    "Saturation",
+    "Luminance",
+    "Interpolation",
+    "Preview",
+    "Preview Color",
+    "Premultiply"
+   ],
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "chromakey.ids",
+   "ok": true,
+   "cmp": "eq",
+   "got": [
+    "signature",
+    "method",
+    "invert",
+    "huecircle",
+    "lumrange",
+    "screencolor",
+    "threshold",
+    "width",
+    "huerolloff",
+    "satrolloff",
+    "lumrolloff",
+    "interpolation",
+    "preview",
+    "previewcolor",
+    "premult"
+   ],
+   "want": [
+    "signature",
+    "method",
+    "invert",
+    "huecircle",
+    "lumrange",
+    "screencolor",
+    "threshold",
+    "width",
+    "huerolloff",
+    "satrolloff",
+    "lumrolloff",
+    "interpolation",
+    "preview",
+    "previewcolor",
+    "premult"
+   ],
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "chromakey.all_described",
+   "ok": true,
+   "cmp": "eq",
+   "got": 15,
+   "want": 15,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "chromakey.rung",
+   "ok": true,
+   "cmp": "eq",
+   "got": "ACTIONABLE",
+   "want": "ACTIONABLE",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "chromakey.TIP_not_a_param",
+   "ok": true,
+   "cmp": "eq",
+   "got": false,
+   "want": false,
+   "note": "an indented 'TIP:' inside an entry must not be counted as a parameter"
+  },
+  {
+   "class": "POSITIVE",
+   "control": "camerablend.since",
+   "ok": true,
+   "cmp": "eq",
+   "got": "22.0",
+   "want": "22.0",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "camerablend.param_count",
+   "ok": true,
+   "cmp": "eq",
+   "got": 1,
+   "want": 1,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "camerablend.label",
+   "ok": true,
+   "cmp": "eq",
+   "got": [
+    "Blend"
+   ],
+   "want": [
+    "Blend"
+   ],
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "camerablend.id",
+   "ok": true,
+   "cmp": "eq",
+   "got": [
+    "blend"
+   ],
+   "want": [
+    "blend"
+   ],
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "camerablend.D4_no_page_id",
+   "ok": true,
+   "cmp": "eq",
+   "got": false,
+   "want": false,
+   "note": "an indented 'NOTE:'+'#id: blend_cameras' in the PREAMBLE must not become a page-level directive"
+  },
+  {
+   "class": "POSITIVE",
+   "control": "camerablend.rung",
+   "ok": true,
+   "cmp": "eq",
+   "got": "ACTIONABLE",
+   "want": "ACTIONABLE",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "blur.raw_params",
+   "ok": true,
+   "cmp": "eq",
+   "got": 6,
+   "want": 6,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "blur.raw_labels",
+   "ok": true,
+   "cmp": "eq",
+   "got": [
+    "X/Y Filter",
+    "Size",
+    "Y Size",
+    "Units",
+    "Per-Pixel Blur",
+    "Fast Blur"
+   ],
+   "want": [
+    "X/Y Filter",
+    "Size",
+    "Y Size",
+    "Units",
+    "Per-Pixel Blur",
+    "Fast Blur"
+   ],
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "blur.UVCoords_not_a_param",
+   "ok": true,
+   "cmp": "eq",
+   "got": false,
+   "want": false,
+   "note": "menu values nested under 'Units:' are depth 1, not parameters"
+  },
+  {
+   "class": "POSITIVE",
+   "control": "blur.raw_actionable",
+   "ok": true,
+   "cmp": "eq",
+   "got": 0,
+   "want": 0,
+   "note": "no #id and no #channels inline \u2014 cop2 documents them via includes"
+  },
+  {
+   "class": "POSITIVE",
+   "control": "blur.raw_rung",
+   "ok": true,
+   "cmp": "eq",
+   "got": "FLOOR",
+   "want": "FLOOR",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "blur.includes",
+   "ok": true,
+   "cmp": "eq",
+   "got": 6,
+   "want": 6,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "blur.resolved_params",
+   "ok": true,
+   "cmp": "eq",
+   "got": 17,
+   "want": 17,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "blur.resolved_actionable",
+   "ok": true,
+   "cmp": "eq",
+   "got": 6,
+   "want": 6,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "blur.resolved_rung",
+   "ok": true,
+   "cmp": "eq",
+   "got": "ACTIONABLE",
+   "want": "ACTIONABLE",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "blur.doc_deprecated",
+   "ok": true,
+   "cmp": "eq",
+   "got": true,
+   "want": true,
+   "note": "the _old_cops_deprecated banner lives in composite.zip, NOT nodes.zip"
+  },
+  {
+   "class": "POSITIVE",
+   "control": "distantlight.header_order",
+   "ok": true,
+   "cmp": "eq",
+   "got": "title-first",
+   "want": "title-first",
+   "note": "79% of lop pages put the title before the directives"
+  },
+  {
+   "class": "POSITIVE",
+   "control": "distantlight.raw_params",
+   "ok": true,
+   "cmp": "eq",
+   "got": 0,
+   "want": 0,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "distantlight.raw_rung",
+   "ok": true,
+   "cmp": "eq",
+   "got": "SUMMARY",
+   "want": "SUMMARY",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "distantlight.raw_clears_floor",
+   "ok": true,
+   "cmp": "eq",
+   "got": false,
+   "want": false,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "distantlight.includes",
+   "ok": true,
+   "cmp": "eq",
+   "got": 14,
+   "want": 14,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "distantlight.resolved_params",
+   "ok": true,
+   "cmp": "eq",
+   "got": 87,
+   "want": 87,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "distantlight.resolved_actionable",
+   "ok": true,
+   "cmp": "eq",
+   "got": 78,
+   "want": 78,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "distantlight.resolved_rung",
+   "ok": true,
+   "cmp": "eq",
+   "got": "ACTIONABLE",
+   "want": "ACTIONABLE",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "distantlight.FLOOR_FLIP",
+   "ok": true,
+   "cmp": "eq",
+   "got": [
+    false,
+    true
+   ],
+   "want": [
+    false,
+    true
+   ],
+   "note": "a fully-documented node reads as ungrounded without include resolution"
+  },
+  {
+   "class": "POSITIVE",
+   "control": "emboss.had_bom",
+   "ok": true,
+   "cmp": "eq",
+   "got": true,
+   "want": true,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "emboss.type_directive",
+   "ok": true,
+   "cmp": "eq",
+   "got": "node",
+   "want": "node",
+   "note": "decoded as plain utf-8 the first directive is eaten and the page reads as a non-node"
+  },
+  {
+   "class": "POSITIVE",
+   "control": "emboss.raw_params",
+   "ok": true,
+   "cmp": "eq",
+   "got": 10,
+   "want": 10,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "emboss.first_label",
+   "ok": true,
+   "cmp": "eq",
+   "got": "Light Position",
+   "want": "Light Position",
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "emboss.no_ids",
+   "ok": true,
+   "cmp": "eq",
+   "got": 10,
+   "want": 10,
+   "note": ""
+  },
+  {
+   "class": "POSITIVE",
+   "control": "emboss.channels_split",
+   "ok": true,
+   "cmp": "eq",
+   "got": [
+    "lightposx",
+    "lightposy",
+    "lightposz"
+   ],
+   "want": [
+    "lightposx",
+    "lightposy",
+    "lightposz"
+   ],
+   "note": "'/lightposx /lightposy /lightposz' -> '/' stripped, space split"
+  },
+  {
+   "class": "POSITIVE",
+   "control": "emboss.rung",
+   "ok": true,
+   "cmp": "eq",
+   "got": "ACTIONABLE",
+   "want": "ACTIONABLE",
+   "note": ""
+  },
+  {
+   "class": "NEGATIVE",
+   "control": "chromakey.no_at_parameters",
+   "ok": true,
+   "cmp": "eq",
+   "got": 0,
+   "want": 0,
+   "note": ""
+  },
+  {
+   "class": "NEGATIVE",
+   "control": "chromakey.no_at_parameters.rung",
+   "ok": true,
+   "cmp": "eq",
+   "got": "SUMMARY",
+   "want": "SUMMARY",
+   "note": ""
+  },
+  {
+   "class": "NEGATIVE",
+   "control": "chromakey.no_summary",
+   "ok": true,
+   "cmp": "eq",
+   "got": "EXISTS",
+   "want": "EXISTS",
+   "note": ""
+  },
+  {
+   "class": "NEGATIVE",
+   "control": "chromakey.no_ids.actionable",
+   "ok": true,
+   "cmp": "eq",
+   "got": 0,
+   "want": 0,
+   "note": ""
+  },
+  {
+   "class": "NEGATIVE",
+   "control": "chromakey.no_ids.rung",
+   "ok": true,
+   "cmp": "eq",
+   "got": "FLOOR",
+   "want": "FLOOR",
+   "note": ""
+  },
+  {
+   "class": "NEGATIVE",
+   "control": "chromakey.no_ids.params_survive",
+   "ok": true,
+   "cmp": "eq",
+   "got": 15,
+   "want": 15,
+   "note": "deleting ids must remove the ACTIONABLE rung WITHOUT losing the parameters themselves \u2014 otherwise the mutation proves the wrong thing"
+  },
+  {
+   "class": "NEGATIVE",
+   "control": "distantlight.includes_neutralised",
+   "ok": true,
+   "cmp": "eq",
+   "got": 0,
+   "want": 0,
+   "note": ""
+  },
+  {
+   "class": "NEGATIVE",
+   "control": "blur.descriptions_stripped.described",
+   "ok": true,
+   "cmp": "eq",
+   "got": 0,
+   "want": 0,
+   "note": ""
+  },
+  {
+   "class": "NEGATIVE",
+   "control": "blur.descriptions_stripped.rung",
+   "ok": true,
+   "cmp": "eq",
+   "got": "SUMMARY",
+   "want": "SUMMARY",
+   "note": ""
+  },
+  {
+   "class": "NEGATIVE",
+   "control": "emboss.no_channels.actionable",
+   "ok": true,
+   "cmp": "eq",
+   "got": 0,
+   "want": 0,
+   "note": ""
+  },
+  {
+   "class": "BLIND",
+   "control": "B1.crlf_naive_finds_zero",
+   "ok": true,
+   "cmp": "eq",
+   "got": 0,
+   "want": 0,
+   "note": "the naive reader must be WRONG here"
+  },
+  {
+   "class": "BLIND",
+   "control": "B1.ours_finds_fifteen",
+   "ok": true,
+   "cmp": "eq",
+   "got": 15,
+   "want": 15,
+   "note": ""
+  },
+  {
+   "class": "BLIND",
+   "control": "B1.disagree",
+   "ok": true,
+   "cmp": "eq",
+   "got": true,
+   "want": true,
+   "note": "if these ever agree, the CRLF guard is no longer evidenced"
+  },
+  {
+   "class": "BLIND",
+   "control": "B2.bom_naive_loses_type",
+   "ok": true,
+   "cmp": "eq",
+   "got": false,
+   "want": false,
+   "note": ""
+  },
+  {
+   "class": "BLIND",
+   "control": "B2.ours_keeps_type",
+   "ok": true,
+   "cmp": "eq",
+   "got": "node",
+   "want": "node",
+   "note": ""
+  },
+  {
+   "class": "BLIND",
+   "control": "B3.vimeo_naive_rekeys_combine",
+   "ok": true,
+   "cmp": "eq",
+   "got": true,
+   "want": true,
+   "note": "naive binds ':vimeo:'+'#id: <video id>' to the preceding parameter"
+  },
+  {
+   "class": "BLIND",
+   "control": "B3.ours_keeps_combine",
+   "ok": true,
+   "cmp": "eq",
+   "got": [
+    "combine"
+   ],
+   "want": [
+    "combine"
+   ],
+   "note": ""
+  },
+  {
+   "class": "BLIND",
+   "control": "B4.naive_page_gets_bogus_id",
+   "ok": true,
+   "cmp": "eq",
+   "got": "blend_cameras",
+   "want": "blend_cameras",
+   "note": ""
+  },
+  {
+   "class": "BLIND",
+   "control": "B4.ours_has_no_page_id",
+   "ok": true,
+   "cmp": "eq",
+   "got": false,
+   "want": false,
+   "note": ""
+  },
+  {
+   "class": "BLIND",
+   "control": "B5.narrow_verb_sees_fewer",
+   "ok": true,
+   "cmp": "eq",
+   "got": 12,
+   "want": 12,
+   "note": ""
+  },
+  {
+   "class": "BLIND",
+   "control": "B5.wide_verb_sees_more",
+   "ok": true,
+   "cmp": "eq",
+   "got": 38,
+   "want": 38,
+   "note": ""
+  },
+  {
+   "class": "BLIND",
+   "control": "B5.widening_takes_effect",
+   "ok": true,
+   "cmp": "eq",
+   "got": true,
+   "want": true,
+   "note": "26 ':includeprop' statements are INVISIBLE to a ':include'-only reader \u2014 an undercount that looks like a clean parse"
+  },
+  {
+   "class": "BLIND",
+   "control": "B7.id_anchor_resolver_is_blind_to_sections",
+   "ok": true,
+   "cmp": "eq",
+   "got": null,
+   "want": null,
+   "note": "the naive (original) resolver must be WRONG here"
+  },
+  {
+   "class": "BLIND",
+   "control": "B7.ours_finds_the_section",
+   "ok": true,
+   "cmp": "eq",
+   "got": true,
+   "want": true,
+   "note": ""
+  },
+  {
+   "class": "BLIND",
+   "control": "B7.rop_image_section_anchor_resolves",
+   "ok": true,
+   "cmp": "eq",
+   "got": [
+    true,
+    true
+   ],
+   "want": [
+    true,
+    true
+   ],
+   "note": "cop/rop_image is a newly-named Copernicus node whose ENTIRE @parameters section is one section-anchored include"
+  },
+  {
+   "class": "BLIND",
+   "control": "B6.id_only_scores_zero",
+   "ok": true,
+   "cmp": "eq",
+   "got": 0,
+   "want": 0,
+   "note": ""
+  },
+  {
+   "class": "BLIND",
+   "control": "B6.ours_scores_ten",
+   "ok": true,
+   "cmp": "eq",
+   "got": 10,
+   "want": 10,
+   "note": "cop2 is dominated by #channels; an #id-only reader reports the entire cop2 parameter surface as un-identifiable"
+  }
+ ]
+}
