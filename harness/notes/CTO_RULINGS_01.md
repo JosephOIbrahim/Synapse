@@ -4530,3 +4530,50 @@ is today's.
 **The thing everyone optimises is not always the thing that costs.** Two legs on the tool surface;
 zero on a file two-thirds its size sitting in the same request. That is the coverage-denominator
 shape again — R136 — in the context window rather than the catalogue.
+
+---
+
+## RULING 155 — The proxy tokenizer UNDERCOUNTS by ~6%. Every figure it produced is optimistic.
+
+$20 on the API account. `count_tokens` works, and **it is free** — it is not billed as a
+completion, so the asterisk came off at zero cost.
+
+**Measured immediately:**
+
+```
+                 PROXY     EXACT    PROXY ERROR
+CLAUDE.md before 11,647   12,535       -7.1%
+CLAUDE.md after   9,578   10,158       -5.7%
+saved per turn    2,069    2,377
+```
+
+**The audit saved more than reported — 2,377 tokens, not 2,069.** R154's direction was right and
+its magnitude was low, which is the good direction to be wrong in.
+
+### But the error rate is the finding, not the correction
+
+**Every token figure in C1 and E0 is optimistic by roughly 6%**, because both measured with
+`tiktoken/cl100k_base` against a credit-blocked account. Both said so plainly — that is why their
+work stands — but a systematic 6% undercount changes any conclusion that sits near a threshold.
+
+**The one to re-check is E0-F7:** *"a warm cache collapses the panel tool surface to approximately
+the ceiling."* **Approximately** is doing load-bearing work in that sentence, and a 6% undercount
+pushes it the wrong way.
+
+### And a number nobody had: the system prompt is 2,961 tokens exact
+
+E0 analysed the cache boundary across it — R143 called for restructuring so the cached prefix is
+genuinely static — **without anyone knowing its size.** It is 2,961 tokens, 11,334 characters,
+every turn, and currently written so the cache entry can never be read.
+
+**Ruled:**
+1. **`econ_exact_tokens.py` is the producer for token figures from now on.** The proxy is retired
+   for anything that governs a decision.
+2. **E0's conclusions are re-checked against exact counts before Mile 2 is scoped** — specifically
+   F7 and F8, the two that turn on a threshold.
+3. **The $20 is for `count_tokens` and nothing else.** It is free and unmetered; completions are
+   not. **Budget discipline is a first-principles constraint here, not a preference** — the
+   economist axis cannot credibly measure cost while being careless with it.
+
+**The cheapest fix of the week.** One funded call removed an asterisk from two legs, five rulings,
+and a roadmap — and revealed that the direction of the error had never been established either.
