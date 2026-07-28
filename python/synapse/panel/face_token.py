@@ -308,12 +308,44 @@ class FaceToken(QtWidgets.QWidget):
         # the token was never the problem, the missing scale was.
         self._scale = float(scale or 1.0)
         self._rows = {}
-        lay = QtWidgets.QVBoxLayout(self)
+
+        # CROP AND SCROLL, LIKE A NATIVE HOUDINI PANEL.
+        #
+        # Without this the face compresses when the pane is short: the Voronoi
+        # field holds its height, the rows collapse into it, and the labels
+        # render ON TOP of the cells. Measured against Houdini's own parameter
+        # panel - it does not compress anything. Content keeps its natural size
+        # and the panel CROPS, with a scrollbar if you want the rest.
+        #
+        # So this widget is a scroll viewport and everything below is its
+        # content. A read-out that becomes unreadable at small sizes is not a
+        # read-out, and compressing is the failure mode that produces that.
+        outer = QtWidgets.QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+        self._scroll = QtWidgets.QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        self._scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._scroll.setStyleSheet("QScrollArea{background:transparent;}")
+        outer.addWidget(self._scroll)
+
+        body = QtWidgets.QWidget()
+        self._scroll.setWidget(body)
+        lay = QtWidgets.QVBoxLayout(body)
         lay.setContentsMargins(t.GUTTER, 20, t.GUTTER, 20)
         lay.setSpacing(18)
 
         lay.addWidget(self._eyebrow("THIS TURN"))
         self._field = TokenField()
+        # FIXED height, not minimum. Inside a scroll area a widget that can
+        # stretch will, and the field would grow to eat the viewport on a tall
+        # pane while the rows stayed bunched at the bottom. It is a read-out of
+        # a fixed thing; it does not need more room when there is more room.
+        self._field.setFixedHeight(self._px(150))
+        self._field.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,
+                                  QtWidgets.QSizePolicy.Policy.Fixed)
         lay.addWidget(self._field)
         # A legend, because a field whose colours nobody can decode is
         # decoration. Two entries only — the two segments that are actually
