@@ -281,7 +281,7 @@
     {
       "id": "P1",
       "name": "panel redesign",
-      "state": "ready",
+      "state": "done",
       "receipt": "P1.json",
       "branch": "design/p1-panel-redesign",
       "worktree": ".claude/worktrees/p1-panel-redesign",
@@ -293,7 +293,8 @@
         "python/synapse/panel/styles.py",
         "python/synapse/panel/chat_panel.py"
       ],
-      "note": "The v3 study was rendered in chat 2026-07-25 and never implemented - ruled out of scope twice, correctly, because the panel had no test surface. RES/R30 cleared that gate. Three moves: the mark carries halt state, the result becomes the hero, decisions are credited in-frame. Explicitly NOT touching _on_stop (R29 found it honest) or token declarations (H4 collapsed nine sites to one)."
+      "note": "STALLED 2026-07-27 - worktree unwritten for 3.5h while its process sat alive at 367MB. Its census LANDED and is the useful half (R128): five of eight result-surface setters had zero product callers. P2 built the connection. Pinned done so it cannot re-dispatch.",
+      "receipt_lost": true
     },
     {
       "id": "RSI0",
