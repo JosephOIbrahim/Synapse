@@ -3954,3 +3954,118 @@ column-0 page directives (D4)  published 2   produced 2
 Described as *"a one-line fix with a re-merge behind it."* The evidence directory carries `verify_i1.py` and `live_probe.json` but not the finding's own statement — the agent had not written `I1_VERIFY.md` when it stopped, which is precisely the outcome its escalation was about.
 
 **Ruled: accepted provisionally, and the anchor is owed.** A finding I cannot open is a recollection (R82). It is one line of report away and the producers are now in the tree, so it costs nothing to state properly.
+
+---
+
+# ADDENDUM — E0 (R141–R145)
+
+---
+
+## RULING 141 — T.1 is MIS-SCOPED, not unnecessary. Its number and its remedy live on different code paths.
+
+**E0-F3, and it is the structural finding of the leg:**
+
+> The 17,310 measures **`mcp_http`** — SYNAPSE's `tools/list` JSON-RPC response. **On that path
+> SYNAPSE is the SERVER and cannot set `cache_control`.** Reduction is genuinely the only lever
+> there.
+>
+> On the **panel** surface, where SYNAPSE builds the request, **caching is already on, already
+> correctly placed, and already collapses the tool surface ~10× to approximately the ceiling.**
+
+**Two surfaces. The number came from the one that cannot be cached; the remedy already exists on
+the one that can.**
+
+My own hypothesis was half right and half wrong in the same way. I proposed that caching might
+make T.1 unnecessary. **Caching is on** — E0-F4 confirms presence, not absence, which is what I
+guessed. **And it does not touch the surface the 17,310 came from**, which I did not.
+
+**Ruled:**
+1. **T.1 is re-scoped to the MCP surface** and comes off Mile 1. On that path the blueprint's
+   reasoning is untouched: SYNAPSE is a server, it cannot cache its own tool list, and 18,962
+   tokens is paid by every client on every connection.
+2. **The panel surface gets a different, smaller, higher-value job** — R143.
+3. **The blueprint's opening claim survives with a boundary.** *"You cannot be a credible token
+   economist while your own tool surface runs 8.6× over its ceiling"* is true of the MCP surface
+   and false of the panel one. **A claim that is true on one path and false on another is not
+   wrong — it is unscoped**, and that is the third time this week a governing number lacked its
+   conditions.
+
+---
+
+## RULING 142 — E0-F8 is the sharpest finding and it inverts the intuition.
+
+> **Cold, caching is WORSE than no caching.** With the 5-minute ephemeral TTL expired, the
+> as-shipped configuration costs **23% MORE** than not caching at all.
+
+A cache write is charged at 1.25×. If the next turn falls outside the TTL, that premium buys
+nothing and is paid again.
+
+**So the economics depend entirely on a number nobody has measured: the distribution of gaps
+between turns.** An artist who sends three messages in a minute is cached. One who sends a
+message, cooks for eight minutes, and sends another is paying a 25% surcharge on every turn.
+
+**The second pattern is what Houdini work actually looks like.**
+
+**Ruled:**
+1. **Measure the real inter-turn gap distribution before touching the TTL.** It is in the session
+   logs and it is the input to every decision downstream.
+2. **The 1-hour TTL is the likely answer and is not adopted on that basis** — it is adopted on the
+   measurement, or not at all.
+3. **This is the strongest honest argument FOR the blueprint's instinct**, arrived at from the
+   opposite direction: if caching cannot be relied on, surface size matters again.
+
+---
+
+## RULING 143 — E0-F5 and E0-F6: a cache entry is written that can never be read.
+
+**E0-F5:** the breakpoint at `anthropic_provider.py:67-70` wraps the **whole system prompt** — and
+the system prompt is not static.
+
+**E0-F6:** the largest hazard is `_solaris_context_block`, which **substring-matches the network
+path and appends guidance.** So the cached span changes the moment an artist navigates from
+`/stage` to `/obj`. **And it defeats the obvious fix**, because the variable part is not at the
+end.
+
+**Every write is paid at 1.25× and every read misses.** That is the worst of both configurations,
+and it is invisible because a cache miss looks exactly like normal operation.
+
+**Ruled: this is the panel surface's actual work, and it replaces T.1 as the near-term token
+item.** Restructure so the cached prefix is genuinely static — identity, tool guidance and the
+verdict contract above the breakpoint; scene context and navigation-dependent guidance below it.
+
+**It is smaller than T.1, it is verifiable, and it makes the caching that already exists start
+working.** Nothing about it requires cutting a tool.
+
+---
+
+## RULING 144 — E0-F2: the governing number is stale, and a gate depends on it.
+
+> `token_baseline.json` records registry blake2b `c0cd3db1…`; **the live registry hashes
+> `d6c79a41…`. 115 tools then, 120 now.**
+
+The 17,310 was measured against a registry that no longer exists. Today: **18,962 on MCP, and
+15,901–19,711 on the panel depending on which of two defensible serializations you pick — a 24%
+spread that bounds any local estimate.**
+
+**And `harness/verify/token_ceiling.json` gates against the stale baseline.** A ratchet whose floor
+describes a previous tree — which is R2 verbatim, in a different subsystem, four days later.
+
+**Ruled:** the baseline is re-derived and **records the registry hash it was taken against**, so a
+future mismatch is loud rather than silent. The 24% serialization spread is published with it —
+**an estimate whose method changes it by a quarter must carry that spread**, or it is precision
+theatre.
+
+---
+
+## RULING 145 — E0-F1: still no model in the loop, and the leg said so first.
+
+The Anthropic account **remains credit-blocked** — `count_tokens` returns HTTP 400, request id
+recorded.
+
+So every figure here is a **declared proxy measurement**, exactly as C1's were. The leg led with
+this rather than burying it, and its verdict names the tokenizer and the absence of a live arm in
+the same sentence as the numbers.
+
+**Ruled: this is now a standing blocker on the economist axis, not a footnote.** A token economist
+that cannot count tokens exactly is estimating, and every downstream figure inherits that. **One
+funded call removes the asterisk from E0, C1, and everything either produces.**
