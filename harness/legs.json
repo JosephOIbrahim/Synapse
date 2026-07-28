@@ -297,8 +297,8 @@
       ],
       "note": "STALLED 2026-07-27 - worktree unwritten for 3.5h while its process sat alive at 367MB. Its census LANDED and is the useful half (R128): five of eight result-surface setters had zero product callers. P2 built the connection. Pinned done so it cannot re-dispatch.",
       "receipt_lost": true,
-      "merge_status": "held",
-      "merge_note": "Stalled 2026-07-27. Its LAYOUT CENSUS landed separately and was the useful half (R128); P2 built the connection it identified. The remaining code - decision_log.py and the components.py edits - is unreviewed and written mid-stall. Preserved at 9807e4d for review, not merge."
+      "merge_status": "merged",
+      "merge_note": "Released and merged 2026-07-28 after review. decision_log.py quotes the agent reasoning rather than composing it; P2 shipped the weaker tool-derived version and the wiring choice between them is a follow-up."
     },
     {
       "id": "RSI0",
