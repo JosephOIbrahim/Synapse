@@ -1,0 +1,207 @@
+{
+ "schema": "i1_reentry_verification/v1",
+ "leg": "I1",
+ "harness": "INGEST-01",
+ "build": "22.0.368",
+ "producer": "harness/notes/ingest/i1_verify_reentry.py",
+ "purpose": "independent adversarial re-derivation of the committed I1 leg from primary sources",
+ "corpus_verified": "harness/notes/ingest/h22_node_corpus.json",
+ "corpus_sha256": "1a53b852ed846d29629a552798f144bf8988013edc2318340efe5fbf1cfaefc7",
+ "checks": {
+  "V1": {
+   "title": "link-form census on the shipped What's New page",
+   "ok": true,
+   "with_leading_slash": 161,
+   "without_leading_slash": 11,
+   "in_both_forms": 1,
+   "union": 171,
+   "dropped_by_the_slash_pattern": [
+    "adjacency_attribsample",
+    "adjacency_distort",
+    "adjacency_extrapolate",
+    "adjacency_spacetransform",
+    "geotoadjacency",
+    "layerattribcreate",
+    "layerattribdelete",
+    "reactiondiffusion_block_begin",
+    "ripple_block_begin",
+    "ripple_block_end"
+   ],
+   "source": "news.zip!22/copernicus.txt",
+   "reading": "the governing 161 is the slash-requiring form alone; the page uses two forms"
+  },
+  "V2": {
+   "title": "the dropped names are real live Cop types, not doc typos",
+   "ok": true,
+   "probed": 10,
+   "absent_from_live_catalogue": [],
+   "live_cop_catalogue_total": 384,
+   "tier": "VERIFIED-RUNTIME",
+   "build": "22.0.368"
+  },
+  "V3": {
+   "title": "per-context counts recomputed from the entries themselves",
+   "ok": true,
+   "recomputed": {
+    "cop": {
+     "ingested": 371,
+     "clears": 358,
+     "thin": 13
+    },
+    "lop": {
+     "ingested": 181,
+     "clears": 169,
+     "thin": 12
+    },
+    "cop2": {
+     "ingested": 141,
+     "clears": 133,
+     "thin": 8
+    }
+   },
+   "disagreements": {},
+   "catalogue_totals_live": {
+    "cop": 384,
+    "lop": 218,
+    "cop2": 169
+   }
+  },
+  "V4": {
+   "title": "per-entry provenance integrity",
+   "ok": true,
+   "entries": 693,
+   "violations": "NONE"
+  },
+  "V7": {
+   "title": "the three named as needing a runtime probe are genuinely below the floor",
+   "ok": true,
+   "named": [
+    "layertogeo-2.0",
+    "pointmerge",
+    "usdmaterial"
+   ],
+   "that_actually_clear_and_should_not": []
+  },
+  "V5": {
+   "title": "claimed live parm counts re-read by instantiating on the running build",
+   "ok": true,
+   "probed": 8,
+   "rows": [
+    {
+     "type": "cop/chromakey",
+     "claimed": 26,
+     "actual": 26,
+     "match": true
+    },
+    {
+     "type": "cop/cellularnoise3d",
+     "claimed": 49,
+     "actual": 49,
+     "match": true
+    },
+    {
+     "type": "cop/grunge_rust",
+     "claimed": 34,
+     "actual": 34,
+     "match": true
+    },
+    {
+     "type": "lop/karma",
+     "claimed": 275,
+     "actual": 275,
+     "match": true
+    },
+    {
+     "type": "lop/componentoutput",
+     "claimed": 111,
+     "actual": 111,
+     "match": true
+    },
+    {
+     "type": "lop/rendersettings",
+     "claimed": 428,
+     "actual": 428,
+     "match": true
+    },
+    {
+     "type": "cop2/blur",
+     "claimed": 28,
+     "actual": 28,
+     "match": true
+    },
+    {
+     "type": "cop2/light",
+     "claimed": 60,
+     "actual": 60,
+     "match": true
+    }
+   ],
+   "mismatched": [],
+   "tier": "VERIFIED-RUNTIME",
+   "build": "22.0.368"
+  },
+  "V6": {
+   "title": "the corpus was built by the reader the calibration actually gated",
+   "ok": true,
+   "reader_sha256_on_disk": "fe70c88d561e00f5833490263dca81cf0e80e5d12032f2dad23ba771ff83f8f4",
+   "reader_sha256_calibrated": "fe70c88d561e00f5833490263dca81cf0e80e5d12032f2dad23ba771ff83f8f4",
+   "bound": true,
+   "controls_total": 72,
+   "controls_passed": 72,
+   "by_class": {
+    "POSITIVE": {
+     "pass": 43,
+     "fail": 0
+    },
+    "NEGATIVE": {
+     "pass": 10,
+     "fail": 0
+    },
+    "BLIND": {
+     "pass": 19,
+     "fail": 0
+    }
+   }
+  },
+  "V8": {
+   "title": "provenance anchors reproduce from the COMMITTED tree, not just this working copy",
+   "ok": false,
+   "anchors": {
+    "corpus": {
+     "path": "harness/notes/ingest/h22_node_corpus.json",
+     "recorded_anchor": "0d4cbda6983cb78112b25ef7e1767a7de598ad6e86ca5bda0e7daecbab71d1ce",
+     "committed_blob_sha256": "1a53b852ed846d29629a552798f144bf8988013edc2318340efe5fbf1cfaefc7",
+     "lf_normalised_sha256": "1a53b852ed846d29629a552798f144bf8988013edc2318340efe5fbf1cfaefc7",
+     "crlf_normalised_sha256": "0d4cbda6983cb78112b25ef7e1767a7de598ad6e86ca5bda0e7daecbab71d1ce",
+     "recorded_anchor_reproduces_from_committed_tree": false,
+     "recorded_anchor_is_the_crlf_variant": true,
+     "content_identical_modulo_line_endings": true
+    },
+    "reader": {
+     "path": "harness/notes/ingest/i1b_reader.py",
+     "recorded_anchor": "fe70c88d561e00f5833490263dca81cf0e80e5d12032f2dad23ba771ff83f8f4",
+     "committed_blob_sha256": "84ba77c5ceb3d58ed6b0672b429515bf82a491d08faf4f0beee75e3473ca7db4",
+     "lf_normalised_sha256": "84ba77c5ceb3d58ed6b0672b429515bf82a491d08faf4f0beee75e3473ca7db4",
+     "crlf_normalised_sha256": "fe70c88d561e00f5833490263dca81cf0e80e5d12032f2dad23ba771ff83f8f4",
+     "recorded_anchor_reproduces_from_committed_tree": false,
+     "recorded_anchor_is_the_crlf_variant": true,
+     "content_identical_modulo_line_endings": true
+    }
+   },
+   "unreproducible": [
+    "corpus",
+    "reader"
+   ],
+   "mechanism": "core.autocrlf=true - producers hashed CRLF working-copy bytes; git stores LF",
+   "content_verdict": "IDENTICAL modulo line endings - this is a provenance defect, NOT tampering",
+   "reproducible_anchor_to_use": {
+    "corpus": "1a53b852ed846d29629a552798f144bf8988013edc2318340efe5fbf1cfaefc7",
+    "reader": "84ba77c5ceb3d58ed6b0672b429515bf82a491d08faf4f0beee75e3473ca7db4"
+   }
+  }
+ },
+ "all_pass": false,
+ "failed": [
+  "V8"
+ ]
+}

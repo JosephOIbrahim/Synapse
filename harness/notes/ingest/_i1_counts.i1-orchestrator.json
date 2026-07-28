@@ -1,0 +1,520 @@
+{
+ "schema": "h22_node_corpus/v1",
+ "leg": "I1 (harness/SYNAPSE_INGEST.md)",
+ "build": "22.0.368",
+ "producer": "harness/notes/ingest/i1_build.py (extractor: i1_extract.py, calibration: i1_calibrate.py, runtime: i1_runtime.py under hython)",
+ "source_archive": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help",
+ "gated_on": "I0 -- the join key is its finding, not this leg's assumption. LABEL is the key (I0-F3, measured against the live runtime four ways); #id and #channels are recorded as EVIDENCE and are never the key.",
+ "truth_tier": "VERIFIED-DOC per entry, at this build. Every record carries its own tier, build and archive path.",
+ "tier_rule": "VERIFIED-DOC and VERIFIED-RUNTIME are DIFFERENT tiers and are never summed into one grounding number. Documentation supplies what a node is FOR; only a probe supplies what it DOES. The runtime fields in each entry are labelled VERIFIED-RUNTIME and are reported beside the doc fields, never merged into them.",
+ "wiring_status": "NOT WIRED. Nothing here is referenced by the RAG corpus or the emission path, and no product file was touched. U.6 found 15 phantom createNode sites already living in the RAG corpus outside the emission gate; adding thousands of doc-derived entries to that surface without a gate is that mistake at scale. Wiring is a separate decision with its own oracle.",
+ "floor": "I0-FLOOR, taken verbatim so the two legs' numbers are comparable: the page carries a \"\"\"summary\"\"\" AND >= 1 documented parameter with a non-empty description. Rungs are cumulative: EXISTS < SUMMARY < FLOOR < ACTIONABLE.",
+ "stub_rule": "An entry clearing the floor is INGESTED. One that does not is recorded in known_thin with the reason, and counted -- not padded to look complete.",
+ "counts": {
+  "cop": {
+   "exists": 375,
+   "node_pages": 371,
+   "clears_floor": 358,
+   "ingested": 358,
+   "known_thin": 13,
+   "live_type_matched": 371,
+   "doc_deprecated": 0,
+   "runtime_deprecated": 0,
+   "deprecation_union": 0,
+   "disagree_doc_only": 0,
+   "disagree_runtime_only": 0,
+   "parameters": 5294,
+   "parameters_live_label_matched": 4771,
+   "catalogue_total": 384
+  },
+  "lop": {
+   "exists": 198,
+   "node_pages": 181,
+   "clears_floor": 169,
+   "ingested": 169,
+   "known_thin": 12,
+   "live_type_matched": 181,
+   "doc_deprecated": 2,
+   "runtime_deprecated": 2,
+   "deprecation_union": 4,
+   "disagree_doc_only": 2,
+   "disagree_runtime_only": 2,
+   "parameters": 5345,
+   "parameters_live_label_matched": 4311,
+   "catalogue_total": 218
+  },
+  "cop2": {
+   "exists": 150,
+   "node_pages": 141,
+   "clears_floor": 133,
+   "ingested": 133,
+   "known_thin": 8,
+   "live_type_matched": 140,
+   "doc_deprecated": 141,
+   "runtime_deprecated": 1,
+   "deprecation_union": 141,
+   "disagree_doc_only": 140,
+   "disagree_runtime_only": 0,
+   "parameters": 1943,
+   "parameters_live_label_matched": 1761,
+   "catalogue_total": 169
+  }
+ },
+ "catalogue_coverage": {
+  "cop": {
+   "category": "Cop",
+   "catalogue_total": 384,
+   "types_grounded_to_floor": 350,
+   "types_grounded_pct": 91.1,
+   "types_known_thin": 13,
+   "types_with_no_page_at_all": 21,
+   "types_with_no_page_named": [
+    "chopnet",
+    "dopnet",
+    "labs::uv_grid_texture::1.0",
+    "lopnet",
+    "matnet",
+    "objnet",
+    "paintinternalconvert",
+    "paintinternals",
+    "pyro_activate::2.0",
+    "pyro_advect::2.0",
+    "pyro_block_begin::2.0",
+    "pyro_block_end::2.0",
+    "pyro_buildadvectionmap::2.0",
+    "pyro_buoyancy::2.0",
+    "pyro_configure::2.0",
+    "pyro_sourcefromlayer::2.0",
+    "ropnet",
+    "shopnet",
+    "sopnet",
+    "topnet",
+    "vopnet"
+   ],
+   "types_with_no_page_truncated": 0,
+   "runtime_deprecated_types": 0,
+   "runtime_deprecated_with_no_page": []
+  },
+  "lop": {
+   "category": "Lop",
+   "catalogue_total": 218,
+   "types_grounded_to_floor": 169,
+   "types_grounded_pct": 77.5,
+   "types_known_thin": 12,
+   "types_with_no_page_at_all": 37,
+   "types_with_no_page_named": [
+    "Labs::biome_plant_scatter_import::1.0",
+    "cache",
+    "capsule",
+    "chopnet",
+    "collection",
+    "cop2net",
+    "copnet",
+    "copnet_filterlist",
+    "cylinder",
+    "distantlight",
+    "domelight",
+    "domelight::2.0",
+    "dopnet",
+    "explorevariants::2.0",
+    "karmarenderproducts::2.0",
+    "karmastandardrendervars::2.0",
+    "karmatoonshading",
+    "labs::karma::1.0",
+    "labs::karma::2.0",
+    "labs::karma_aovs_for_prman_denoiser::1.0",
+    "labs::ml_cv_directory_variant::1.0",
+    "labs::ml_cv_dome_camera::1.0",
+    "labs::ml_cv_synthetics_karma_rop::1.0",
+    "labs::ml_cv_synthetics_karma_rop::1.1",
+    "labs::zibravdb_import::1.0",
+    "light",
+    "lopnet",
+    "matnet",
+    "objnet",
+    "reference",
+    "rendervar::2.0",
+    "ropnet",
+    "sceneimport",
+    "shopnet",
+    "sopnet",
+    "topnet",
+    "vopnet"
+   ],
+   "types_with_no_page_truncated": 0,
+   "runtime_deprecated_types": 2,
+   "runtime_deprecated_with_no_page": []
+  },
+  "cop2": {
+   "category": "Cop2",
+   "catalogue_total": 169,
+   "types_grounded_to_floor": 131,
+   "types_grounded_pct": 77.5,
+   "types_known_thin": 8,
+   "types_with_no_page_at_all": 30,
+   "types_with_no_page_named": [
+    "chopnet",
+    "cop2net",
+    "dopnet",
+    "labs::attribute_import::1.0",
+    "labs::blackbody_cop",
+    "labs::dds_file",
+    "labs::demosaic::1.0",
+    "labs::grid_texture",
+    "labs::normal_color",
+    "labs::normal_combine",
+    "labs::normal_invert",
+    "labs::normal_levels",
+    "labs::normal_map",
+    "labs::normal_normalize",
+    "labs::normal_rotate",
+    "labs::sbs_archive",
+    "labs::vector_normalize::1.0",
+    "lopnet",
+    "matnet",
+    "objnet",
+    "ropnet",
+    "shopnet",
+    "skycube",
+    "skycubedaylight",
+    "sopnet",
+    "swap",
+    "topnet",
+    "vopcop2filtertype",
+    "vopcop2gentype",
+    "vopnet"
+   ],
+   "types_with_no_page_truncated": 0,
+   "runtime_deprecated_types": 2,
+   "runtime_deprecated_with_no_page": [
+    "swap"
+   ]
+  }
+ },
+ "denominator_rule": "clears-floor is reported against BOTH denominators and they are labelled: counts.* is per help PAGE (the archive's view), catalogue_coverage.* is per LIVE TYPE (SYNAPSE's view). Only the second one can see a type that ships with no documentation at all.",
+ "the_161": {
+  "named_in_shipped_whats_new": 171,
+  "governing_figure_was": 161,
+  "governing_figure_correction": "The shipped page links node paths in TWO forms; a leading-slash-only pattern returns 161 and drops 10 real node types (the adjacency_* family, layerattribcreate/delete, and three block_begin/end nodes). All 10 have a page and all 10 clear the floor. 161 is a floor, not a total. Wrong in docs/H22_FRONTIER.md, I0 Q3, harness/SYNAPSE_INGEST.md and this leg's brief.",
+  "source": "news.zip!22/copernicus.txt (SHIPPED, version-pinned by construction -- not the browsing help cache)",
+  "have_a_page": 171,
+  "ingested": 168,
+  "known_thin": 3,
+  "no_page_at_all": 0,
+  "known_thin_named": [
+   {
+    "stem": "layertogeo-2.0",
+    "live_type": "layertogeo::2.0",
+    "thin_class": "parameterless-node",
+    "live_parm_tuples": 0,
+    "needs_runtime_probe": false,
+    "probe_status": "PROBED: the live type carries 0 parameter tuples. The page is not a stub -- there is nothing further to document. No probe outstanding."
+   },
+   {
+    "stem": "pointmerge",
+    "live_type": "pointmerge",
+    "thin_class": "parameterless-node",
+    "live_parm_tuples": 0,
+    "needs_runtime_probe": false,
+    "probe_status": "PROBED: the live type carries 0 parameter tuples. The page is not a stub -- there is nothing further to document. No probe outstanding."
+   },
+   {
+    "stem": "usdmaterial",
+    "live_type": "usdmaterial",
+    "thin_class": "parameterless-node",
+    "live_parm_tuples": 0,
+    "needs_runtime_probe": false,
+    "probe_status": "PROBED: the live type carries 0 parameter tuples. The page is not a stub -- there is nothing further to document. No probe outstanding."
+   }
+  ],
+  "still_need_a_runtime_probe": 0,
+  "no_page_named": [],
+  "ingested_live_type_matched": 168
+ },
+ "totals": {
+  "ingested": 660,
+  "known_thin": 33,
+  "parameters": 12582,
+  "parameters_live_label_matched": 10843
+ },
+ "known_thin_by_class": {
+  "cop": {
+   "parameterless-node": 13
+  },
+  "lop": {
+   "doc-gap": 8,
+   "parameterless-node": 4
+  },
+  "cop2": {
+   "doc-gap": 2,
+   "parameterless-node": 6
+  }
+ },
+ "known_thin_rule": "thin_class is reported BESIDE the floor verdict and never merged into it. parameterless-node = the live type carries 0 parameter tuples, so no floor requiring a described parameter can ever be cleared and the documentation is complete for what the node is. doc-gap = the live type carries parameters this page does not ground -- the real gap.",
+ "known_thin_index": [
+  {
+   "help_key": "nodes/cop/layertogeo-2.0",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/pointmerge",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/usdmaterial",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/cablefilter",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/channelsplit",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/cryptomattedecode",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/cryptomatteencode",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/input",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/output",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/pyro_collisionfromshape",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/pyro_sourcefromshape",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/statisticsbyid",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop/vdbreshape",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/lop/additionalrendervars",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "doc-gap",
+   "live_parm_tuples": 18,
+   "needs_runtime_probe": true
+  },
+  {
+   "help_key": "nodes/lop/bakeskinning",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/lop/editcontextoptions",
+   "rung": "EXISTS",
+   "why_thin": "no authored summary (19 described parameters)",
+   "thin_class": "doc-gap",
+   "live_parm_tuples": 17,
+   "needs_runtime_probe": true
+  },
+  {
+   "help_key": "nodes/lop/editlayer_end",
+   "rung": "EXISTS",
+   "why_thin": "no summary and no described parameter",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/lop/geoclipsequence",
+   "rung": "EXISTS",
+   "why_thin": "no authored summary (29 described parameters)",
+   "thin_class": "doc-gap",
+   "live_parm_tuples": 30,
+   "needs_runtime_probe": true
+  },
+  {
+   "help_key": "nodes/lop/layerbreak",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "doc-gap",
+   "live_parm_tuples": 3,
+   "needs_runtime_probe": true
+  },
+  {
+   "help_key": "nodes/lop/loadlayer",
+   "rung": "EXISTS",
+   "why_thin": "no authored summary (6 described parameters)",
+   "thin_class": "doc-gap",
+   "live_parm_tuples": 6,
+   "needs_runtime_probe": true
+  },
+  {
+   "help_key": "nodes/lop/null",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/lop/subnet",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/lop/usd_rop",
+   "rung": "EXISTS",
+   "why_thin": "no authored summary (36 described parameters)",
+   "thin_class": "doc-gap",
+   "live_parm_tuples": 51,
+   "needs_runtime_probe": true
+  },
+  {
+   "help_key": "nodes/lop/usdrender_rop",
+   "rung": "EXISTS",
+   "why_thin": "no summary and no described parameter",
+   "thin_class": "doc-gap",
+   "live_parm_tuples": 166,
+   "needs_runtime_probe": true
+  },
+  {
+   "help_key": "nodes/lop/valueclip",
+   "rung": "EXISTS",
+   "why_thin": "no authored summary (17 described parameters)",
+   "thin_class": "doc-gap",
+   "live_parm_tuples": 20,
+   "needs_runtime_probe": true
+  },
+  {
+   "help_key": "nodes/cop2/erftable",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "doc-gap",
+   "live_parm_tuples": 31,
+   "needs_runtime_probe": true
+  },
+  {
+   "help_key": "nodes/cop2/fieldswap",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop2/interleave",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop2/loopdata",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop2/null",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop2/reference",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop2/reverse",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "parameterless-node",
+   "live_parm_tuples": 0,
+   "needs_runtime_probe": false
+  },
+  {
+   "help_key": "nodes/cop2/rop_comp",
+   "rung": "SUMMARY",
+   "why_thin": "summary only -- 0 of 0 parameters carry a description",
+   "thin_class": "doc-gap",
+   "live_parm_tuples": 73,
+   "needs_runtime_probe": true
+  }
+ ]
+}

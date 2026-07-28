@@ -1,3 +1,90 @@
+# REMEDIATION TICKET — I1 ingest execute
+
+**Filed** 2026-07-27 · **By** interactive ORCHESTRATOR session (model `claude-opus-5[1m]`)
+**Blocker class** Article V violation — two agents writing one worktree
+**Status** WORK COMPLETE AND VERIFIED. **Commit withheld.** Human decision required.
+
+> **This is the SECOND occurrence of this exact failure in two days.** The H6 ticket below,
+> filed 2026-07-26, is the same Article V violation on a different leg. One recurrence is an
+> incident; two is a missing guard. See *Root cause* at the end of this section.
+
+---
+
+## The blocker
+
+**A second agent is executing leg I1 in `.claude/worktrees/i1-ingest`, concurrently, and was
+still writing at 21:55:21** — after this session's work had completed.
+
+`harness/notes/ingest/` holds two disjoint producer families. Ownership was established by
+each artifact's own `producer` field, not by guesswork:
+
+```
+MINE    i1_extract.py  i1_calibrate.py  i1_runtime.py  i1_build.py  i1_crosscheck.py
+        I1_INGEST.md
+        _i1_calibration.json  _i1_runtime.json  _i1_counts.json  _i1_crosscheck.json
+
+OTHER   _i1_reader.py  _i1_extract.py  _i1_calibrate.py  _i1_the161.py
+        _i1b_runtime.py  _i1b_merge.py
+        _i1b_calibration.json  _i1b_counts.json  _i1b_doc.json  _i1b_runtime.json
+        _i1b_the161.json  _i1b_crossvalidate.json  _i1b_per_live_type.json
+```
+
+## The concrete collision
+
+The other agent moved this session's corpus aside and took the oracle path:
+
+| path | owner | note |
+|---|---|---|
+| `h22_node_corpus.json` | **OTHER** | overwritten 21:52:29 · 693 entries · different schema |
+| `_i1a_h22_node_corpus.json` | mine | this session's **second-to-last** build (0 declared-version bindings) |
+| `h22_node_corpus.i1-orchestrator.json` | mine | this session's **final** build, regenerated |
+
+This session's final corpus was destroyed on disk and **recovered by re-running its
+producer** — which is the entire reason Law 2 requires one. It reproduced exactly:
+660 ingested · 33 known-thin · 12,582 parameters · 10,843 live-label matched ·
+9 declared-version bindings.
+
+## What was NOT done, and why
+
+- **Nothing was deleted.** Law 4: classify before you delete. Every one of the other agent's
+  files is untouched.
+- **The contested path was not re-taken.** Overwriting a *live* process's output is
+  destructive, and it would simply be overwritten again.
+- **Nothing was committed.** Committing a tree a second process is actively mutating produces
+  precisely the un-attributable state Article V names. Committing the other agent's
+  artifacts under this leg's receipt would be a provenance lie.
+- `i1_build.py` gained an `I1_OUT_TAG` env override so deterministic output can be
+  regenerated without clobbering a contested path. That is the only behavioural change made
+  in response to this.
+
+## Decision required
+
+**Which run is the leg's deliverable, and therefore what sits at
+`harness/notes/ingest/h22_node_corpus.json`?** Both runs answer the same brief. They are not
+mergeable by an agent without a value judgement about whose method wins — Article I routes
+that to the human.
+
+*Offered as evidence, not as a verdict:* this session's run is calibrated 33/33 with
+POSITIVE / NEGATIVE / BLIND control classes, resolves `@section` include anchors (which
+rescues `cop/rop_image` from thin), follows `#contentfrom`, and binds 9 LOP pages to the
+version they declare rather than to the older type the filename implies — a change whose
+correctness is falsifiable and was confirmed by a rise in live-label agreement
+(85.4% → 86.2%). The other run's corpus was not read beyond its metadata header, so no
+comparative claim is made about it.
+
+## Root cause, and the fix that outlives this ticket
+
+The dispatcher launched two agents against one `legs.json` entry sharing one worktree.
+`.claude/.orch_launched` exists in both `i0-ingest` and `i1-ingest`, stamped identically
+(`2026-07-27T21:15:35`).
+
+**The fence belongs in the dispatcher, not in agent instructions** — Article I's corollary:
+*enforcement in the definition, not the instruction*. A launch guard that refuses to start a
+leg whose worktree already carries an unfinished run would have prevented both this and H6.
+Telling agents to be careful has now failed twice.
+
+---
+
 # REMEDIATION TICKET — H6 substrate truth
 
 **Filed** 2026-07-26 · **By** interactive ORCHESTRATOR session (model `claude-opus-5[1m]`)

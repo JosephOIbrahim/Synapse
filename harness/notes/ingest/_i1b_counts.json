@@ -1,0 +1,152 @@
+{
+ "build": "22.0.368",
+ "catalogue_totals_live": {
+  "cop": 384,
+  "lop": 218,
+  "cop2": 169
+ },
+ "counts": {
+  "cop": {
+   "catalogue_total_live": 384,
+   "exists": 371,
+   "clears_floor": 358,
+   "ingested": 371,
+   "known_thin": 13,
+   "exists_minus_clears": 13,
+   "clears_vs_catalogue_pct": 93.2,
+   "live_type_resolved": 371,
+   "rescued_by_include_resolution": 1,
+   "rungs": {
+    "EXISTS": 0,
+    "SUMMARY": 13,
+    "FLOOR": 0,
+    "ACTIONABLE": 358
+   },
+   "parameters_documented": 5294,
+   "parameters_label_resolved_live": 4892,
+   "parameters_label_resolved_pct": 92.4,
+   "deprecation": {
+    "both": 0,
+    "doc_only": 0,
+    "runtime_only": 0,
+    "neither": 371
+   }
+  },
+  "lop": {
+   "catalogue_total_live": 218,
+   "exists": 181,
+   "clears_floor": 169,
+   "ingested": 181,
+   "known_thin": 12,
+   "exists_minus_clears": 12,
+   "clears_vs_catalogue_pct": 77.5,
+   "live_type_resolved": 181,
+   "rescued_by_include_resolution": 7,
+   "rungs": {
+    "EXISTS": 7,
+    "SUMMARY": 5,
+    "FLOOR": 21,
+    "ACTIONABLE": 148
+   },
+   "parameters_documented": 5452,
+   "parameters_label_resolved_live": 4392,
+   "parameters_label_resolved_pct": 80.6,
+   "deprecation": {
+    "both": 0,
+    "doc_only": 2,
+    "runtime_only": 2,
+    "neither": 177
+   }
+  },
+  "cop2": {
+   "catalogue_total_live": 169,
+   "exists": 141,
+   "clears_floor": 133,
+   "ingested": 141,
+   "known_thin": 8,
+   "exists_minus_clears": 8,
+   "clears_vs_catalogue_pct": 78.7,
+   "live_type_resolved": 140,
+   "rescued_by_include_resolution": 1,
+   "rungs": {
+    "EXISTS": 0,
+    "SUMMARY": 8,
+    "FLOOR": 31,
+    "ACTIONABLE": 102
+   },
+   "parameters_documented": 1950,
+   "parameters_label_resolved_live": 1773,
+   "parameters_label_resolved_pct": 90.9,
+   "deprecation": {
+    "both": 1,
+    "doc_only": 140,
+    "runtime_only": 0,
+    "neither": 0
+   }
+  }
+ },
+ "named_copernicus": {
+  "named_shipped_total": 171,
+  "governing_number_161_reproduced": 161,
+  "entries_built": 171,
+  "have_a_page": 171,
+  "ingested": 171,
+  "clears_floor": 168,
+  "known_thin_need_a_runtime_probe": 3,
+  "known_thin_named": [
+   "layertogeo-2.0",
+   "pointmerge",
+   "usdmaterial"
+  ],
+  "live_type_resolved": 171,
+  "invisible_to_the_governing_number": [
+   "adjacency_attribsample",
+   "adjacency_distort",
+   "adjacency_extrapolate",
+   "adjacency_spacetransform",
+   "bakegeometrytextures-2.0",
+   "geotoadjacency",
+   "layerattribcreate",
+   "layerattribdelete",
+   "layertogeo-2.0",
+   "reactiondiffusion_block_begin",
+   "ripple_block_begin",
+   "ripple_block_end"
+  ],
+  "named_in_new_sections": 98,
+  "named_only_in_improvements": 73
+ },
+ "calibration": {
+  "controls": 72,
+  "passed": 72,
+  "by_class": {
+   "POSITIVE": {
+    "pass": 43,
+    "fail": 0
+   },
+   "NEGATIVE": {
+    "pass": 10,
+    "fail": 0
+   },
+   "BLIND": {
+    "pass": 19,
+    "fail": 0
+   }
+  },
+  "reader_sha256": "fe70c88d561e00f5833490263dca81cf0e80e5d12032f2dad23ba771ff83f8f4"
+ },
+ "cross_validation": {
+  "available": true,
+  "other_corpus_file": "h22_node_corpus.i1-orchestrator.json",
+  "other_producer": "harness/notes/ingest/i1_build.py (extractor: i1_extract.py, calibration: i1_calibrate.py, runtime: i1_runtime.py under hython)",
+  "other_entries": 660,
+  "mine_entries": 693,
+  "compared": 660,
+  "agree_on_floor": 660,
+  "disagree_on_floor": 0,
+  "agreement_pct": 100.0,
+  "in_mine_only": 33,
+  "disagreements": [],
+  "note": "Two independent extractors. Disagreements are reported and adjudicated against the live runtime, never averaged."
+ }
+}

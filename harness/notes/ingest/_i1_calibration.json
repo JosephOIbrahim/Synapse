@@ -1,0 +1,685 @@
+{
+ "schema": "i1_calibration/v1",
+ "build": "22.0.368",
+ "producer": "harness/notes/ingest/i1_calibrate.py",
+ "reader_under_test": "harness/notes/ingest/i1_extract.py",
+ "corpus_pages": 11709,
+ "rule": "R60 -- a reader is shown returning KNOWN answers on hand-read pages before it is trusted on pages nobody has read. Law 1 -- every control states the condition under which it fails.",
+ "counts": {
+  "total": 35,
+  "passed": 35,
+  "failed": 0,
+  "by_class": {
+   "BLIND": 8,
+   "CROSS-CHECK": 1,
+   "NEGATIVE": 7,
+   "POSITIVE": 19
+  }
+ },
+ "controls": [
+  {
+   "id": "P1a",
+   "class": "POSITIVE",
+   "asserts": "cop/chromakey -- the 15 hand-read parameter LABELS, in document order",
+   "fails_if": "the parser adds, drops or re-orders any parameter on a page read by hand",
+   "expected": [
+    "Signature",
+    "Method",
+    "Invert",
+    "Hue/Saturation",
+    "Luminance Range",
+    "Screen Color",
+    "Threshold",
+    "Width",
+    "Hue",
+    "Saturation",
+    "Luminance",
+    "Interpolation",
+    "Preview",
+    "Preview Color",
+    "Premultiply"
+   ],
+   "got": [
+    "Signature",
+    "Method",
+    "Invert",
+    "Hue/Saturation",
+    "Luminance Range",
+    "Screen Color",
+    "Threshold",
+    "Width",
+    "Hue",
+    "Saturation",
+    "Luminance",
+    "Interpolation",
+    "Preview",
+    "Preview Color",
+    "Premultiply"
+   ],
+   "pass": true
+  },
+  {
+   "id": "P1b",
+   "class": "POSITIVE",
+   "asserts": "cop/chromakey -- the 15 hand-read #id values (evidence, not the key)",
+   "fails_if": "an #id is bound to the wrong label, or lost",
+   "expected": [
+    "signature",
+    "method",
+    "invert",
+    "huecircle",
+    "lumrange",
+    "screencolor",
+    "threshold",
+    "width",
+    "huerolloff",
+    "satrolloff",
+    "lumrolloff",
+    "interpolation",
+    "preview",
+    "previewcolor",
+    "premult"
+   ],
+   "got": [
+    "signature",
+    "method",
+    "invert",
+    "huecircle",
+    "lumrange",
+    "screencolor",
+    "threshold",
+    "width",
+    "huerolloff",
+    "satrolloff",
+    "lumrolloff",
+    "interpolation",
+    "preview",
+    "previewcolor",
+    "premult"
+   ],
+   "pass": true
+  },
+  {
+   "id": "P1c",
+   "class": "POSITIVE",
+   "asserts": "cop/chromakey -- title, summary, rung, header order",
+   "fails_if": "the summary regex loses the trailing sentence, or the rung ladder mis-scores a full page",
+   "expected": [
+    "Chroma Key",
+    "Keys an input based on hue, saturation, and luminance ranges.",
+    "ACTIONABLE",
+    "directives-first"
+   ],
+   "got": [
+    "Chroma Key",
+    "Keys an input based on hue, saturation, and luminance ranges.",
+    "ACTIONABLE",
+    "directives-first"
+   ],
+   "pass": true
+  },
+  {
+   "id": "P1d",
+   "class": "POSITIVE",
+   "asserts": "cop/chromakey is CRLF -- recorded, and parsed anyway",
+   "fails_if": "line endings are absorbed before being measured, hiding the hazard",
+   "expected": "CRLF",
+   "got": "CRLF",
+   "pass": true
+  },
+  {
+   "id": "P1e",
+   "class": "POSITIVE",
+   "asserts": "cop/chromakey -- the nested 'TIP:' block is folded into its parent, not counted",
+   "fails_if": "a nested box is promoted to a parameter, inflating the count",
+   "expected": [
+    false
+   ],
+   "got": [
+    false
+   ],
+   "pass": true
+  },
+  {
+   "id": "P2a",
+   "class": "POSITIVE",
+   "asserts": "cop2/emboss RAW -- the 10 hand-read labels at indent 4 (cop2 is not column-0)",
+   "fails_if": "the item base indent is assumed rather than resolved per scope",
+   "expected": [
+    "Light Position",
+    "Diffuse Color",
+    "Specular Color",
+    "Diffuse Dimmer",
+    "Specular Dimmer",
+    "Bump Height",
+    "Specular Model",
+    "Phong Exponent",
+    "Blinn Roughness",
+    "Bump Plane"
+   ],
+   "got": [
+    "Light Position",
+    "Diffuse Color",
+    "Specular Color",
+    "Diffuse Dimmer",
+    "Specular Dimmer",
+    "Bump Height",
+    "Specular Model",
+    "Phong Exponent",
+    "Blinn Roughness",
+    "Bump Plane"
+   ],
+   "pass": true
+  },
+  {
+   "id": "P2b",
+   "class": "POSITIVE",
+   "asserts": "cop2/emboss -- internal names arrive via #channels, and there are ZERO #id",
+   "fails_if": "the reader follows only #id and reports the cop2 surface as un-identifiable",
+   "expected": [
+    [
+     "lightposx",
+     "lightposy",
+     "lightposz"
+    ],
+    [
+     "diffr",
+     "diffg",
+     "diffb",
+     "diffa"
+    ],
+    [
+     "specr",
+     "specg",
+     "specb",
+     "speca"
+    ],
+    [
+     "diffdimmer"
+    ],
+    [
+     "specdimmer"
+    ],
+    [
+     "bumpscale"
+    ],
+    [
+     "specmodel"
+    ],
+    [
+     "specexp"
+    ],
+    [
+     "specrough"
+    ],
+    [
+     "bumpplane"
+    ],
+    0
+   ],
+   "got": [
+    [
+     "lightposx",
+     "lightposy",
+     "lightposz"
+    ],
+    [
+     "diffr",
+     "diffg",
+     "diffb",
+     "diffa"
+    ],
+    [
+     "specr",
+     "specg",
+     "specb",
+     "speca"
+    ],
+    [
+     "diffdimmer"
+    ],
+    [
+     "specdimmer"
+    ],
+    [
+     "bumpscale"
+    ],
+    [
+     "specmodel"
+    ],
+    [
+     "specexp"
+    ],
+    [
+     "specrough"
+    ],
+    [
+     "bumpplane"
+    ],
+    0
+   ],
+   "pass": true
+  },
+  {
+   "id": "P2c",
+   "class": "POSITIVE",
+   "asserts": "cop2/emboss ships a BOM -- and its first directive survives decoding",
+   "fails_if": "the corpus decodes plain utf-8, leaving U+FEFF at offset 0 and eating '#type: node'",
+   "expected": [
+    true,
+    "node"
+   ],
+   "got": [
+    true,
+    "node"
+   ],
+   "pass": true
+  },
+  {
+   "id": "P2d",
+   "class": "POSITIVE",
+   "asserts": "cop2/emboss 'Specular Model' is documented BY ITS MENU VALUES",
+   "fails_if": "menu values are dropped instead of folded, scoring a documented parameter as a stub",
+   "expected": [
+    true
+   ],
+   "got": [
+    true
+   ],
+   "pass": true
+  },
+  {
+   "id": "P3a",
+   "class": "POSITIVE",
+   "asserts": "lop/distantlight -- 0 parameters as it ships, 87 once includes resolve",
+   "fails_if": "include resolution is skipped, reporting a fully-documented node as ungrounded",
+   "expected": [
+    0,
+    87
+   ],
+   "got": [
+    0,
+    87
+   ],
+   "pass": true
+  },
+  {
+   "id": "P3b",
+   "class": "POSITIVE",
+   "asserts": "lop/distantlight is TITLE-first -- directives are not assumed to lead the file",
+   "fails_if": "the header block is read from the top of the file, losing #context/#internal on 79% of lop pages",
+   "expected": "title-first",
+   "got": "title-first",
+   "pass": true
+  },
+  {
+   "id": "P3c",
+   "class": "POSITIVE",
+   "asserts": "lop/distantlight's one broken include is MARKED and counted, never dropped",
+   "fails_if": "an unresolvable target is silently deleted, turning an undercount into a clean-looking parse",
+   "expected": [
+    1,
+    [
+     "_simple_prims#create_prims/"
+    ]
+   ],
+   "got": [
+    1,
+    [
+     "_simple_prims#create_prims/"
+    ]
+   ],
+   "pass": true
+  },
+  {
+   "id": "P4",
+   "class": "POSITIVE",
+   "asserts": "cop/adjacency_distort 'Signature' has NO inline prose -- #contentfrom supplies it",
+   "fails_if": "the #contentfrom axis is not followed, scoring documented parameters as described-by-nothing",
+   "expected": [
+    "contentfrom:/nodes/cop/distort#signature",
+    true
+   ],
+   "got": [
+    "contentfrom:/nodes/cop/distort#signature",
+    true
+   ],
+   "pass": true
+  },
+  {
+   "id": "P5",
+   "class": "POSITIVE",
+   "asserts": "sop/xform 'Combine' keys to 'combine' -- NOT to the Vimeo video id on the page",
+   "fails_if": "a ':vimeo:' block does not close the item scope and its '#id: 406959576' re-keys a real parameter",
+   "expected": [
+    [
+     "combine"
+    ],
+    false
+   ],
+   "got": [
+    [
+     "combine"
+    ],
+    false
+   ],
+   "pass": true
+  },
+  {
+   "id": "P6",
+   "class": "POSITIVE",
+   "asserts": "the new Copernicus nodes, from the SHIPPED news.zip -- BOTH link forms",
+   "fails_if": "the what's-new extraction over- or under-counts, or the shipped page stops naming node paths",
+   "expected": [
+    171,
+    171,
+    true
+   ],
+   "got": [
+    171,
+    171,
+    true
+   ],
+   "pass": true
+  },
+  {
+   "id": "B8",
+   "class": "BLIND",
+   "asserts": "a leading-slash-only link pattern returns 161 and drops 10 real node types",
+   "fails_if": "both link forms turn out to name the same set, in which case 171 is wrong and the slash-only pattern was fine all along",
+   "expected": [
+    161,
+    10,
+    [
+     "adjacency_attribsample",
+     "adjacency_distort",
+     "adjacency_extrapolate"
+    ]
+   ],
+   "got": [
+    161,
+    10,
+    [
+     "adjacency_attribsample",
+     "adjacency_distort",
+     "adjacency_extrapolate"
+    ]
+   ],
+   "pass": true
+  },
+  {
+   "id": "P6b",
+   "class": "POSITIVE",
+   "asserts": "every node the slash-only pattern dropped HAS a page and CLEARS the floor",
+   "fails_if": "the 10 missed names are not real node pages, which would make 161 the right total",
+   "expected": [
+    10,
+    10
+   ],
+   "got": [
+    10,
+    10
+   ],
+   "pass": true
+  },
+  {
+   "id": "P7",
+   "class": "POSITIVE",
+   "asserts": "lop/usd_rop -- ':import' is followed, and the @parameters header travels with the section",
+   "fails_if": "only ':include' is matched, or an imported @section body lands in the preamble where a parameter parser ignores it",
+   "expected": ">= 30 parameters",
+   "got": 36,
+   "pass": true
+  },
+  {
+   "id": "P8",
+   "class": "POSITIVE",
+   "asserts": "the deprecation banner target resolves -- it lives in composite.zip, NOT nodes.zip",
+   "fails_if": "the corpus opens only nodes.zip, reproducing H7-F4: a vendor-deprecated subsystem reads as current",
+   "expected": [
+    true,
+    true
+   ],
+   "got": [
+    true,
+    true
+   ],
+   "pass": true
+  },
+  {
+   "id": "P9",
+   "class": "CROSS-CHECK",
+   "asserts": "nodes.zip BOM count == 58, the figure I0 measured independently",
+   "fails_if": "this leg's corpus loader disagrees with I0's on the archive's own composition",
+   "expected": 58,
+   "got": 58,
+   "pass": true
+  },
+  {
+   "id": "P10",
+   "class": "POSITIVE",
+   "asserts": "cop2/emboss is doc-deprecated by the banner, and the signal NAMES its source",
+   "fails_if": "the deprecation detector reports a bare boolean with no evidence of which side said so",
+   "expected": [
+    true,
+    [
+     ":include /composite/_old_cops_deprecated"
+    ]
+   ],
+   "got": [
+    true,
+    [
+     ":include /composite/_old_cops_deprecated"
+    ]
+   ],
+   "pass": true
+  },
+  {
+   "id": "N1",
+   "class": "NEGATIVE",
+   "asserts": "strip every #id: the 15 parameters SURVIVE (label is the key) and 0 ids remain",
+   "fails_if": "the parser is secretly keyed on #id -- the count would collapse with the ids",
+   "expected": [
+    15,
+    0
+   ],
+   "got": [
+    15,
+    0
+   ],
+   "pass": true
+  },
+  {
+   "id": "N2",
+   "class": "NEGATIVE",
+   "asserts": "rename @parameters: the parameter count goes to ZERO",
+   "fails_if": "the count is not actually measuring the @parameters section -- it would survive its removal",
+   "expected": 0,
+   "got": 0,
+   "pass": true
+  },
+  {
+   "id": "N3",
+   "class": "NEGATIVE",
+   "asserts": "remove the banner: doc-deprecation goes FALSE",
+   "fails_if": "the deprecation verdict is unfalsifiable -- it would report True on a clean page",
+   "expected": false,
+   "got": false,
+   "pass": true
+  },
+  {
+   "id": "N4",
+   "class": "NEGATIVE",
+   "asserts": "remove the summary: the rung falls ACTIONABLE -> EXISTS and the page stops clearing",
+   "fails_if": "the floor cannot fail -- every page would clear it regardless of content",
+   "expected": [
+    "EXISTS",
+    false
+   ],
+   "got": [
+    "EXISTS",
+    false
+   ],
+   "pass": true
+  },
+  {
+   "id": "N5",
+   "class": "NEGATIVE",
+   "asserts": "remove distantlight's includes: 87 parameters -> 0",
+   "fails_if": "the 87 are being invented somewhere other than include resolution",
+   "expected": 0,
+   "got": 0,
+   "pass": true
+  },
+  {
+   "id": "N6",
+   "class": "NEGATIVE",
+   "asserts": "a fabricated Copernicus name is ABSENT from the 161 and from the archive",
+   "fails_if": "the presence test says yes to everything, making '161 of 161' unfalsifiable",
+   "expected": "[False, False]",
+   "got": [
+    false,
+    false
+   ],
+   "pass": true
+  },
+  {
+   "id": "N7",
+   "class": "NEGATIVE",
+   "asserts": "strip descriptions only: 15 parameters remain but the rung falls to SUMMARY",
+   "fails_if": "the floor counts parameters rather than DOCUMENTED parameters -- a stub page would clear it",
+   "expected": [
+    15,
+    "SUMMARY"
+   ],
+   "got": [
+    15,
+    "SUMMARY"
+   ],
+   "pass": true
+  },
+  {
+   "id": "B1",
+   "class": "BLIND",
+   "asserts": "a no-CRLF-normalisation reader finds 0 parameters on cop/chromakey; ours finds 15",
+   "fails_if": "the blind reader accidentally works -- then it is not demonstrating the hazard",
+   "expected": [
+    0,
+    15
+   ],
+   "got": [
+    0,
+    15
+   ],
+   "pass": true
+  },
+  {
+   "id": "B2",
+   "class": "BLIND",
+   "asserts": "a plain-utf-8 reader loses emboss's '#type: node'; ours keeps it",
+   "fails_if": "the BOM stops being silent -- the decode would raise instead of succeeding wrongly",
+   "expected": [
+    null,
+    "node"
+   ],
+   "got": [
+    null,
+    "node"
+   ],
+   "pass": true
+  },
+  {
+   "id": "B3",
+   "class": "BLIND",
+   "asserts": "a no-scope-close reader binds sop/xform's Vimeo VIDEO id onto 'Combine'; ours does not",
+   "fails_if": "the Vimeo trap stops reproducing -- then P5 is passing for no reason",
+   "expected": [
+    [
+     "combine",
+     "406959576",
+     "406959551",
+     "406959500",
+     "406959532"
+    ],
+    [
+     "combine"
+    ]
+   ],
+   "got": [
+    [
+     "combine",
+     "406959576",
+     "406959551",
+     "406959500",
+     "406959532"
+    ],
+    [
+     "combine"
+    ]
+   ],
+   "pass": true
+  },
+  {
+   "id": "B4",
+   "class": "BLIND",
+   "asserts": "a nodes.zip-only corpus cannot resolve the deprecation banner; ours can",
+   "fails_if": "the banner target turns out to live in nodes.zip after all, and I0-F9 is wrong",
+   "expected": [
+    false,
+    true
+   ],
+   "got": [
+    false,
+    true
+   ],
+   "pass": true
+  },
+  {
+   "id": "B5",
+   "class": "BLIND",
+   "asserts": "a ':include'-only reader loses every usd_rop parameter; ours keeps them",
+   "fails_if": "':import' turns out to be decorative, and P7 is testing nothing",
+   "expected": [
+    true,
+    true
+   ],
+   "got": [
+    true,
+    true
+   ],
+   "pass": true
+  },
+  {
+   "id": "B6",
+   "class": "BLIND",
+   "asserts": "without following #contentfrom, adjacency_distort 'Signature' is described by nothing",
+   "fails_if": "#contentfrom entries carry inline prose after all, and P4 is redundant",
+   "expected": [
+    false,
+    true
+   ],
+   "got": [
+    false,
+    true
+   ],
+   "pass": true
+  },
+  {
+   "id": "B7",
+   "class": "BLIND",
+   "asserts": "a no-fold reader scores emboss 'Specular Model' as undocumented; ours documents it",
+   "fails_if": "the entry carries inline prose after all, so the fold pass is not what rescues it",
+   "expected": [
+    "",
+    true,
+    true
+   ],
+   "got": [
+    "",
+    true,
+    true
+   ],
+   "pass": true
+  }
+ ]
+}
