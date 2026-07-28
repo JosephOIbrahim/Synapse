@@ -1,0 +1,170 @@
+{
+  "schema": "v2_mutation/v1",
+  "producer": "harness/notes/econ/v2_mutation_test.py",
+  "interpreter": "3.14.2",
+  "baseline": {
+    "exit_code": 0,
+    "summary": "======================= 129 passed, 2 warnings in 0.60s =======================",
+    "verdict": "GREEN"
+  },
+  "mutations_run": 22,
+  "survivors": [],
+  "verdict": "PASS \u2014 every mutation was caught",
+  "rows": [
+    {
+      "mutation": "anonymous_by",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "exit_code": 1,
+      "summary": "================== 9 failed, 60 passed, 2 warnings in 0.46s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "bool_is_a_count",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "exit_code": 1,
+      "summary": "================== 12 failed, 57 passed, 2 warnings in 0.38s ==================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "drop_skipped",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 4 failed, 42 passed, 2 warnings in 0.39s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "fourth_attempt",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 2 failed, 44 passed, 2 warnings in 0.36s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "inconclusive_is_a_pass",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "exit_code": 1,
+      "summary": "================== 1 failed, 68 passed, 2 warnings in 0.34s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "invariant1_model_free",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "exit_code": 1,
+      "summary": "================== 3 failed, 66 passed, 2 warnings in 0.37s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "leaky_fallback",
+      "control_file": "tests/test_v2_invariant8.py",
+      "exit_code": 1,
+      "summary": "================== 3 failed, 11 passed, 2 warnings in 0.31s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "name_may_be_a_sentence",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "exit_code": 1,
+      "summary": "================== 4 failed, 65 passed, 2 warnings in 0.36s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "none_by",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "exit_code": 1,
+      "summary": "================== 1 failed, 68 passed, 2 warnings in 0.37s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:char_ceiling",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 1 failed, 45 passed, 2 warnings in 0.32s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:names_change",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 3 failed, 43 passed, 2 warnings in 0.32s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:no_decoration",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 1 failed, 45 passed, 2 warnings in 0.41s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:no_hedging",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 4 failed, 42 passed, 2 warnings in 0.34s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:no_preamble",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 1 failed, 45 passed, 2 warnings in 0.37s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:no_request_echo",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 3 failed, 43 passed, 2 warnings in 0.43s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:not_a_question",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 1 failed, 45 passed, 2 warnings in 0.34s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:not_empty",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 1 failed, 45 passed, 2 warnings in 0.33s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:one_sentence",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 1 failed, 45 passed, 2 warnings in 0.32s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "rule:outcome_first",
+      "control_file": "tests/test_v2_voice_contract.py",
+      "exit_code": 1,
+      "summary": "================== 1 failed, 45 passed, 2 warnings in 0.34s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "silent_unclassified",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "exit_code": 1,
+      "summary": "================== 2 failed, 67 passed, 2 warnings in 0.36s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "terminal_act_forecast",
+      "control_file": "tests/test_v2_verdict_contract.py",
+      "exit_code": 1,
+      "summary": "================== 3 failed, 66 passed, 2 warnings in 0.41s ===================",
+      "verdict": "PASS"
+    },
+    {
+      "mutation": "tier_branching_renderer",
+      "control_file": "tests/test_v2_invariant8.py",
+      "exit_code": 1,
+      "summary": "=================== 5 failed, 9 passed, 2 warnings in 0.34s ===================",
+      "verdict": "PASS"
+    }
+  ],
+  "duration_s": 105.2
+}

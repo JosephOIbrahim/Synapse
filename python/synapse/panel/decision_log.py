@@ -30,6 +30,24 @@ because it is a provenance claim nobody can check. Three rules hold:
    recorded with ``classified=False`` so nothing downstream can claim registry
    backing it does not have.
 
+V2 · WHERE THIS MEETS THE TYPED CONTRACT
+----------------------------------------
+``verdict.Verdict`` gives the Review face a shape, and its ``decision`` field is
+the typed home of the rows this module produces. ``to_verdict_decision`` is the
+adapter, and it exists so that BOTH credit producers in the tree land in the same
+field with their source recorded rather than one quietly replacing the other:
+
+* here — the "why" is a sentence the model actually wrote, tagged
+  ``MODEL_QUOTED``. Stronger, because it reports what the agent CHOSE.
+* ``synapse_panel::_turn_evidence`` — derived from tool names and results, tagged
+  ``TOOL`` via ``verdict.decision_from_tool_evidence``. Honest and weaker,
+  because it reports what a tool DID.
+
+The adapter refuses an unclassified row by default. The typed schema has no slot
+for ``classified``, and converting an unregistered tool's row into a field that
+cannot carry the warning would make the surface quietest exactly where rule 3
+above makes it loudest.
+
 Pure Python: no Qt, no ``hou``. It runs, and is tested, standalone.
 """
 
@@ -85,6 +103,33 @@ class Decision:
     def as_credit_row(self):
         """``(label, value, note)`` in the shape ``FaceReview.set_credit`` wants."""
         return ("DECISION", self.choice, self.why)
+
+    def to_verdict_decision(self, allow_unclassified=False):
+        """This row as a ``verdict.Decision``, or ``None``.
+
+        ``provenance`` is ``MODEL_QUOTED`` when a sentence was actually quoted
+        and ``TOOL`` when the turn carried no prose — the row is still real, but
+        nothing downstream may read an empty ``because`` as the model's reason.
+
+        Returns ``None`` for a row with nothing to credit, and — unless
+        ``allow_unclassified`` is set — for a row the tool registry could not
+        classify. See the module docstring for why that is a refusal rather than
+        a silent conversion.
+        """
+        if not self.choice:
+            return None
+        if not self.classified and not allow_unclassified:
+            return None
+        try:
+            from synapse.panel.verdict import Decision as VerdictDecision
+            from synapse.panel.verdict import MODEL_QUOTED, TOOL
+        except Exception:
+            return None
+        return VerdictDecision(
+            chose=self.choice,
+            because=self.why,
+            provenance=MODEL_QUOTED if self.why else TOOL,
+        )
 
     def __eq__(self, other):
         return (isinstance(other, Decision)
@@ -230,6 +275,16 @@ class DecisionLog:
     def credit_rows(self):
         """``[(label, value, note)]`` for ``FaceReview.set_credit``."""
         return [d.as_credit_row() for d in self._rows]
+
+    def to_verdict_decisions(self, allow_unclassified=False):
+        """This cycle's rows as ``verdict.Decision`` objects, in order.
+
+        Rows that decline to convert are DROPPED, not defaulted — the count can
+        legitimately be smaller than ``len(self)`` and a caller comparing the two
+        is reading the refusal, which is the point.
+        """
+        out = [d.to_verdict_decision(allow_unclassified) for d in self._rows]
+        return tuple(d for d in out if d is not None)
 
     def __len__(self):
         return len(self._rows)
