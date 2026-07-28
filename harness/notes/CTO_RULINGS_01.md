@@ -4695,3 +4695,101 @@ that cannot name its target is the ORPHAN pattern, and asking Houdini which TOP 
 is the panel guessing on the artist's behalf about an irreversible action.
 
 **Who repairs `EmergencyProtocol`?** Answered in R158 — Joe, in the deny-listed file.
+
+---
+
+# ADDENDUM — V3 (R162–R165)
+
+---
+
+## RULING 162 — "Ollama is local and therefore free" is FALSE of the exact model the panel ships selected.
+
+**V3-F3, VERIFIED-RUNTIME:**
+
+> **Six of the thirteen live Ollama tags carry `remote_host=https://ollama.com` and are metered by
+> that host — including `glm-5:cloud`, which is the registry's DEFAULT Ollama pick.** Seven tags
+> have no remote_host and run on local weights.
+
+Joe's working assumption today — stated in this session — is that GLM runs locally at zero cost and
+is the answer to an uncomfortable credit burn. **It is the cloud tag, and it is metered by
+ollama.com.**
+
+**And the probe's handling is exactly right:** it reports that model's cost as **unknown**, not
+zero. A naive zero would have understated the cost of the default engine to nothing — which is the
+specific failure a token economist cannot afford.
+
+**Ruled:**
+1. **This goes to Joe today, not into a backlog.** It changes a live cost decision he has already
+   made on the opposite belief.
+2. **The panel must distinguish local from remote tags**, because the distinction is invisible in
+   the name — `glm-5:cloud` and a local tag look identical in a dropdown.
+3. **Unknown cost renders as unknown.** Never zero. **A zero is a claim; unknown is the truth**, and
+   this is the same rule as V3's grey probe state.
+
+---
+
+## RULING 163 — V3-F1 proves §P2 with a number: the registry reaches 9 of 126.
+
+> The registry declares **9 models** across three configured providers. The providers serve **126.**
+> **117 live rows the config file never heard of** — ollama 1 vs 13, claude 6 vs 11, nemotron
+> 2 vs 102.
+
+The blueprint's §P2 says *"a model list typed into a config file is documentation."* **That was an
+argument. This is a 13×-to-51× reachability gap, measured.**
+
+**Ruled: the probe layer replaces the registry as the routing source.** The registry survives as a
+*fallback* for the offline case and as the place tier constants live — never as the list of what
+is reachable.
+
+**And R74 was the warning nobody heeded:** that same file once carried *"no glm-5.2 tag exists,
+verified 2026-07-01"* while Ollama was serving it. **A config file describing a remote surface is
+stale the moment it is written**; the only question is whether anyone checks.
+
+---
+
+## RULING 164 — V3-F6 is a live product defect: an empty env var silently disables the key.
+
+> An `ANTHROPIC_API_KEY` that exists in the environment **as an empty string permanently shadows
+> the repo `.env`**, because `_load_dotenv` uses `os.environ.setdefault` and **setdefault is a
+> no-op when the key exists.**
+>
+> Paired control, same repo root, same `.env`: empty → `get_anthropic_api_key()` returns `None`;
+> variable absent → returns the key.
+
+**The product reports itself unconfigured while holding a valid key, silently.**
+
+**Not hypothetical** — the shell this leg ran in exports it empty by design, and any launcher that
+*blanks* rather than *unsets* puts the panel in that state.
+
+**Ruled: this is a repair leg and it outranks the rest of V3's follow-ons.** A user who just funded
+an account and gets "unconfigured" will conclude the funding failed. And the fix is small: treat an
+empty value as absent.
+
+**V3-F7 is the same family** — key resolution is checkout-dependent, because in a worktree
+`parents[3]` is the worktree root, which carries no `.env`. **Two runs of the same producer, one in
+the main tree and one in a worktree, resolve differently.** Both are R127's shape: the code reads
+a path that depends on where it happens to be standing.
+
+---
+
+## RULING 165 — What V3 could NOT get, and why saying so is the leg's best work.
+
+**V3-F4:** quota headroom is **not obtainable at zero completion spend.** Neither free Anthropic
+endpoint returns any `anthropic-ratelimit-*` header.
+
+**V3-F5:** **no provider exposes per-token pricing over its API.** `cost_per_1k_in/out` cannot be
+probed for any metered model.
+
+The blueprint's §3.3 asks the probe result to carry `quota_remaining`, `quota_total`,
+`cost_per_1k_in` and `cost_per_1k_out`. **Four of nine fields are not obtainable from the
+providers**, and V3 established that rather than filling them with plausible constants.
+
+**Ruled:**
+1. **The contract changes to match reality.** Unobtainable fields are `null` with a stated reason,
+   never a typed-in figure. **A pricing table in a config file is exactly what §P2 forbids**, and
+   §3.3 was quietly asking for one.
+2. **The rail cannot show quota headroom.** It can show *probed available*, *probed rate-limited*
+   and *stale* — which is what §P2 specified — and it must not show a fuel gauge whose fuel level
+   nobody can read.
+3. **V3 spent nothing to establish this**, as instructed, and reported what it declined to probe on
+   cost grounds. **That is the economist axis behaving like one.**

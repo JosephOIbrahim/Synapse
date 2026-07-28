@@ -171,3 +171,4 @@ demo/captures/
 # committed under harness/notes/c1/ instead)
 .c1out/
 .c1smoke/
+harness/state/locks/
