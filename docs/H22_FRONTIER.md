@@ -67,12 +67,18 @@ existed when the corpus was written.
 runtime.** Of the 171 named nodes, **168 clear the quality floor; 3 need a runtime probe.**
 
 ```
-cop    358 of 371 pages clear the floor    against 384 live types
-lop    169 of 181                          against 218
-cop2   133 of 141                          against 169
+cop    358 of 383 SideFX-shipped types    (384 installed, 1 third-party)
+lop    169 of 210                          (219 installed, 9 third-party)
+cop2   133 of 156                          (169 installed, 13 third-party)
 33 known-thin — counted and named, not padded
 88 live types ship with NO help page at all — documentation cannot ground them
 ```
+
+**Denominators corrected 2026-07-27 (R136).** The earlier figures measured against the *installed*
+catalogue, which includes third-party HDAs — SideFX Labs, MOPS. **SideFX help cannot document a
+node SideFX did not ship**, so those types were unreachable by construction and their presence
+understated coverage while overstating what a documentation ingest could ever close. `lop` is 219
+installed, not the 218 quoted since H9.
 
 **Not wired into the RAG corpus.** That is a separate decision with its own oracle.
 

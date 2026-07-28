@@ -1,0 +1,44 @@
+{
+ "lop_total": 219,
+ "with_definition": 131,
+ "hfs": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.368",
+ "non_hfs_definitions": [
+  {
+   "name": "Labs::biome_plant_scatter_import::1.0",
+   "lib": "C:/Program Files/Side Effects Software/sidefx_packages/SideFXLabs22.0/otls/SideFX_Labs.hda"
+  },
+  {
+   "name": "MOPSPlus::MOPsCamLOP::1.0",
+   "lib": "C:/Users/User/OneDrive/Documents/houdini22.0/packages/MOPS_Plus/otls/MOPSPlus_MOPsCamLOP.hdalc"
+  },
+  {
+   "name": "labs::karma::1.0",
+   "lib": "C:/Program Files/Side Effects Software/sidefx_packages/SideFXLabs22.0/otls/SideFX_Labs.hda"
+  },
+  {
+   "name": "labs::karma::2.0",
+   "lib": "C:/Program Files/Side Effects Software/sidefx_packages/SideFXLabs22.0/otls/SideFX_Labs.hda"
+  },
+  {
+   "name": "labs::karma_aovs_for_prman_denoiser::1.0",
+   "lib": "C:/Program Files/Side Effects Software/sidefx_packages/SideFXLabs22.0/otls/SideFX_Labs.hda"
+  },
+  {
+   "name": "labs::ml_cv_directory_variant::1.0",
+   "lib": "C:/Program Files/Side Effects Software/sidefx_packages/SideFXLabs22.0/otls/SideFX_Labs.hda"
+  },
+  {
+   "name": "labs::ml_cv_dome_camera::1.0",
+   "lib": "C:/Program Files/Side Effects Software/sidefx_packages/SideFXLabs22.0/otls/SideFX_Labs.hda"
+  },
+  {
+   "name": "labs::ml_cv_synthetics_karma_rop::1.0",
+   "lib": "C:/Program Files/Side Effects Software/sidefx_packages/SideFXLabs22.0/otls/SideFX_Labs.hda"
+  },
+  {
+   "name": "labs::ml_cv_synthetics_karma_rop::1.1",
+   "lib": "C:/Program Files/Side Effects Software/sidefx_packages/SideFXLabs22.0/otls/SideFX_Labs.hda"
+  }
+ ],
+ "scene": "C:/Users/User/untitled.hip"
+}

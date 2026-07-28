@@ -3889,3 +3889,68 @@ a mutex** — it never was, and this is the third time the difference has cost r
 
 Against live catalogue totals of 384 Copernicus, 218 LOP, 169 Cop2. **Not wired into RAG**, per
 the harness rule, and the wiring decision is owed separately.
+
+---
+
+## RULING 135 — The verification agent was right to refuse, and neither option it offered was the answer.
+
+It declined to write into `i1-ingest` while a sibling was active, because Article V says one worktree per agent and it would have been the third concurrent writer on a leg whose top open ruling asks for a lock.
+
+**Correct refusal.** And it could only see one sibling. **There were four.** Four `orch_I1` windows were alive at 23:38 on a leg whose receipt landed at 23:12 — R78 at four times scale. Twelve processes stopped.
+
+It offered two ways forward: commit from the worktree once the sibling stops, or take the findings from the report and leave the evidence at `C:\Users\User\.i1verify\`.
+
+**Neither.** Option 2 leaves the producers outside the repository — **which is R128 and R132 in a home directory.** Evidence that exists and cannot be kept, cited by findings that will outlive it.
+
+**Ruled: a third party commits it from the main tree.** The sibling writes in the worktree; I do not. The collision the agent correctly feared is avoided by changing *who writes*, not by choosing between losing the evidence and racing for it.
+
+**This is now the standing answer** when a leg cannot safely preserve its own work: the orchestrator's operator harvests it from outside the contended tree.
+
+---
+
+## RULING 136 — V-3: every coverage figure I have quoted uses a denominator that cannot be grounded.
+
+Measured in `harness/notes/ingest/verify/catalogue_all.json`:
+
+```
+cop    384 total   includes labs::uv_grid_texture::1.0
+cop2   169 total   includes labs::attribute_import, labs::blackbody_cop, labs::dds_file, ...
+lop    219 total   includes Labs::biome_plant_scatter_import, MOPSPlus::MOPsCamLOP
+```
+
+**SideFX's help cannot document a node SideFX did not ship.** Third-party HDAs — SideFX Labs, MOPS, and anything else installed — are in the live catalogue and can never appear in `nodes.zip`.
+
+So `358 of 384` is not the honest number. It measures the corpus against a denominator containing types that are unreachable by construction, and it **understates** documentation coverage while **overstating** what a documentation ingest could ever close.
+
+**And `lop` is 219, not 218** — a figure I have quoted repeatedly since H9.
+
+**Ruled:**
+1. **Coverage is reported against SIDEFX-SHIPPED types.** The third-party count is reported separately and named, because "we cannot ground the Labs nodes from SideFX docs" is a true and useful statement, not a gap.
+2. `docs/H22_FRONTIER.md` and every derived figure carry the corrected denominator.
+3. **This is the third governing number of mine that a later leg corrected today** — 4,357 for 4,795, 161 for 171, and now the denominator itself. All three were mine, all three were caught by something re-deriving rather than trusting, and **that is the argument for the gating, not against it.**
+
+---
+
+## RULING 137 — V-2: the guard counts were RIGHT and TYPED. The fix is the harness, not the number.
+
+I1's receipt published, per parser guard, how many controls go red when that guard is reverted. `mutation_check.py` re-derives them:
+
+```
+utf-8-sig (BOM)                published 2   produced 2
+EOL normalisation              published 9   produced 9
+item-scope close (:vimeo:)     published 1   produced 1
+column-0 page directives (D4)  published 2   produced 2
+#channels as internal name     published 5   produced 5
+```
+
+**Every figure agrees.** The defect was never accuracy — it was that a reader had to take them on trust.
+
+**Ruled: `mutation_check.py` is the answer and it is now committed** at `harness/notes/ingest/verify/`. A typed number that happens to be correct is a number nobody can re-check, and Law 2 asks for the producer rather than the value. **The agent's instinct — add a control rather than retype the number — was exactly right.**
+
+---
+
+## RULING 138 — V-1 is accepted on the agent's report and needs its anchor recorded.
+
+Described as *"a one-line fix with a re-merge behind it."* The evidence directory carries `verify_i1.py` and `live_probe.json` but not the finding's own statement — the agent had not written `I1_VERIFY.md` when it stopped, which is precisely the outcome its escalation was about.
+
+**Ruled: accepted provisionally, and the anchor is owed.** A finding I cannot open is a recollection (R82). It is one line of report away and the producers are now in the tree, so it costs nothing to state properly.

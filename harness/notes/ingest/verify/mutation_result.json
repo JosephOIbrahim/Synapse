@@ -1,0 +1,67 @@
+{
+ "baseline_failed": 0,
+ "guards": [
+  {
+   "guard": "utf-8-sig (BOM)",
+   "controls_red_when_reverted": 2,
+   "published": 2,
+   "red_control_names": [
+    "emboss.type_directive",
+    "B2.ours_keeps_type"
+   ]
+  },
+  {
+   "guard": "EOL normalisation",
+   "controls_red_when_reverted": 9,
+   "published": 9,
+   "red_control_names": [
+    "chromakey.internal",
+    "chromakey.param_count",
+    "chromakey.labels",
+    "chromakey.ids",
+    "chromakey.all_described",
+    "chromakey.rung",
+    "chromakey.no_ids.rung",
+    "chromakey.no_ids.params_survive",
+    "B1.ours_finds_fifteen"
+   ]
+  },
+  {
+   "guard": "item-scope close (:vimeo:)",
+   "controls_red_when_reverted": 1,
+   "published": 1,
+   "red_control_names": [
+    "B8.ours_leaves_it_unkeyed"
+   ]
+  },
+  {
+   "guard": "column-0 page directives (D4)",
+   "controls_red_when_reverted": 2,
+   "published": 2,
+   "red_control_names": [
+    "camerablend.D4_no_page_id",
+    "B4.ours_has_no_page_id"
+   ]
+  },
+  {
+   "guard": "#channels as internal name",
+   "controls_red_when_reverted": 5,
+   "published": 5,
+   "red_control_names": [
+    "blur.resolved_actionable",
+    "blur.resolved_rung",
+    "emboss.channels_split",
+    "emboss.rung",
+    "B6.ours_scores_ten"
+   ]
+  },
+  {
+   "guard": "@section include anchors",
+   "controls_red_when_reverted": 1,
+   "published": 2,
+   "red_control_names": [
+    "B7.rop_image_section_anchor_resolves"
+   ]
+  }
+ ]
+}

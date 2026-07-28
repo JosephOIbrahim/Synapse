@@ -1,0 +1,21 @@
+{
+  "build": "22.0.368",
+  "note": "R136 - coverage is reported against SIDEFX-SHIPPED types; third-party HDAs cannot be grounded from SideFX help",
+  "contexts": {
+    "cop": {
+      "total": 384,
+      "third_party": 1,
+      "sidefx": 383
+    },
+    "cop2": {
+      "total": 169,
+      "third_party": 13,
+      "sidefx": 156
+    },
+    "lop": {
+      "total": 219,
+      "third_party": 9,
+      "sidefx": 210
+    }
+  }
+}
