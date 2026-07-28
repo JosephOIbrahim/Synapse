@@ -285,6 +285,47 @@ def blind(a: R.Archive) -> None:
           "26 ':includeprop' statements are INVISIBLE to a ':include'-only "
           "reader — an undercount that looks like a clean parse")
 
+    # ---- B8  D3 again, on a page that ACTUALLY exercises the guard.
+    #
+    # B3 above uses sop/xform's 'Combine', which already carries '#id: combine'
+    # BEFORE the ':vimeo:' block — so FIRST-WINS alone defends it and the
+    # item-scope close is never exercised. Mutation-testing this leg's own
+    # controls proved it: reverting the scope close turned NOTHING red.
+    # A guard whose removal changes no control is not pinned, it is decorative.
+    #
+    # sop/copyxform's 'Copy Number Attribute' has NO #id of its own and is
+    # followed by ':vimeo:' + '#id: 406958778'. Without the scope close the
+    # parameter is keyed to a VIDEO ID. This control fails if the guard goes.
+    tcx, _ = a.raw_text("sop/copyxform.txt")
+    section = None
+    pend = None
+    naive2: dict = {}
+    for line in tcx.replace("\r\n", "\n").split("\n"):
+        ms = R.RE_AT_SECTION.match(line)
+        if ms and not line.startswith("@@"):
+            section, pend = ms.group("name"), None
+            continue
+        if section not in R.PARAM_SECTIONS:
+            continue
+        if R.RE_COLON_DIRECTIVE.match(line):
+            continue                                    # scope NOT closed
+        md = R.RE_DIRECTIVE.match(line)
+        if md:
+            if md.group("key") == "id" and pend and pend not in naive2:
+                naive2[pend] = md.group("val").strip()
+            continue
+        mi = R.RE_ITEM.match(line)
+        if mi and mi.group("label").strip():
+            pend = mi.group("label").strip()
+    ours2 = [i.ident for i in a.raw("sop/copyxform.txt").params
+             if i.label == "Copy Number Attribute"]
+    check("BLIND", "B8.naive_keys_a_parm_to_a_video_id",
+          naive2.get("Copy Number Attribute"), "406958778",
+          "the naive reader must be WRONG here")
+    check("BLIND", "B8.ours_leaves_it_unkeyed", ours2, [None],
+          "a colon-directive CLOSES the item scope, so the Vimeo #id binds to "
+          "nothing instead of to the preceding parameter")
+
     # ---- B7  an @section-name anchor, which helpdoc's id-anchor resolver
     #          cannot see. Found by cross-validation, not by these controls —
     #          which is itself the finding: a second instrument caught what a

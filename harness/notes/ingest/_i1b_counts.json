@@ -117,8 +117,8 @@
   "named_only_in_improvements": 73
  },
  "calibration": {
-  "controls": 70,
-  "passed": 70,
+  "controls": 72,
+  "passed": 72,
   "by_class": {
    "POSITIVE": {
     "pass": 43,
@@ -129,7 +129,7 @@
     "fail": 0
    },
    "BLIND": {
-    "pass": 17,
+    "pass": 19,
     "fail": 0
    }
   },

@@ -2,8 +2,8 @@
  "producer": "harness/notes/ingest/i1b_calibrate.py",
  "build": "22.0.368",
  "reader_sha256": "fe70c88d561e00f5833490263dca81cf0e80e5d12032f2dad23ba771ff83f8f4",
- "total": 70,
- "passed": 70,
+ "total": 72,
+ "passed": 72,
  "failed": 0,
  "by_class": {
   "POSITIVE": {
@@ -15,7 +15,7 @@
    "fail": 0
   },
   "BLIND": {
-   "pass": 17,
+   "pass": 19,
    "fail": 0
   }
  },
@@ -709,6 +709,28 @@
    "got": true,
    "want": true,
    "note": "26 ':includeprop' statements are INVISIBLE to a ':include'-only reader \u2014 an undercount that looks like a clean parse"
+  },
+  {
+   "class": "BLIND",
+   "control": "B8.naive_keys_a_parm_to_a_video_id",
+   "ok": true,
+   "cmp": "eq",
+   "got": "406958778",
+   "want": "406958778",
+   "note": "the naive reader must be WRONG here"
+  },
+  {
+   "class": "BLIND",
+   "control": "B8.ours_leaves_it_unkeyed",
+   "ok": true,
+   "cmp": "eq",
+   "got": [
+    null
+   ],
+   "want": [
+    null
+   ],
+   "note": "a colon-directive CLOSES the item scope, so the Vimeo #id binds to nothing instead of to the preceding parameter"
   },
   {
    "class": "BLIND",

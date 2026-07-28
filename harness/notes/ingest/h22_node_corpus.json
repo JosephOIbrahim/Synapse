@@ -5,7 +5,7 @@
  "build": "22.0.368",
  "generated_by": [
   "harness/notes/ingest/i1b_reader.py     (parser + include resolver)",
-  "harness/notes/ingest/i1b_calibrate.py  (R60 gate, 70/70 controls)",
+  "harness/notes/ingest/i1b_calibrate.py  (R60 gate, 72/72 controls)",
   "harness/notes/ingest/i1b_the161.py     (the named Copernicus set)",
   "harness/notes/ingest/i1b_extract.py    (VERIFIED-DOC axis)",
   "harness/notes/ingest/i1b_runtime.py   (VERIFIED-RUNTIME axis, hython)",
@@ -16,8 +16,8 @@
  "join_key": "LABEL, normalised (collapse whitespace, casefold, U+2019 -> '). #id and #channels are recorded as EVIDENCE and are never the key (R97). Re-confirmed on this build: lop/rendersettings resolves 12% of its documented ids and 92% of its labels.",
  "wiring_status": "NOT WIRED. Nothing here is referenced by rag/, by the emission path, or by any product file. U.6 found 15 phantom createNode sites already living in the RAG corpus outside the emission gate; adding thousands of doc-derived entries to that surface without a gate is that mistake at scale. Wiring is a separate decision with its own oracle.",
  "calibration": {
-  "controls": 70,
-  "passed": 70,
+  "controls": 72,
+  "passed": 72,
   "by_class": {
    "POSITIVE": {
     "pass": 43,
@@ -28,7 +28,7 @@
     "fail": 0
    },
    "BLIND": {
-    "pass": 17,
+    "pass": 19,
     "fail": 0
    }
   },

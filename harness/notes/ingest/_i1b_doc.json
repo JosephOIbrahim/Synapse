@@ -5,8 +5,8 @@
  "tier_note": "Documentation grounding ONLY. Never summed with probe-derived grounding \u2014 see _i1b_runtime.json for the probe axis, which is a separate artifact by design.",
  "floor": "summary AND >=1 documented parameter with a non-empty description (I0-FLOOR, adopted verbatim so the two legs are comparable rather than merely similar)",
  "calibration": {
-  "controls": 70,
-  "passed": 70,
+  "controls": 72,
+  "passed": 72,
   "reader_sha256": "fe70c88d561e00f5833490263dca81cf0e80e5d12032f2dad23ba771ff83f8f4"
  },
  "per_context": {

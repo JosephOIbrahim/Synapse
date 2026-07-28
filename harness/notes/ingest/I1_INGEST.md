@@ -41,14 +41,36 @@ Escalated as `I1-R1`.
 Every figure below comes from one reader, `i1b_reader.py`, **calibrated before it was trusted** (R60).
 
 ```
-i1b_calibrate.py          70/70 controls pass
+i1b_calibrate.py          72/72 controls pass
   POSITIVE  43   five pages read BY HAND in this leg's transcript, whose expected
                  values were written down BEFORE the parser was pointed at them
   NEGATIVE  10   the same pages mutated — a count that does not move when the
                  thing it counts is deleted is not measuring anything
-  BLIND     17   seven deliberately naive readers, each shown returning the WRONG
+  BLIND     19   eight deliberately naive readers, each shown returning the WRONG
                  answer where this reader returns the right one
 ```
+
+**And the controls were themselves mutation-tested**, because Law 1 applies to them too:
+each of the reader's six guards was reverted in turn and the calibration re-run. A guard whose
+removal turns nothing red is not pinned — it is decorative, and it will be cited as evidence.
+
+| guard reverted | controls that go red |
+|---|---:|
+| decode `utf-8-sig` → `utf-8` (BOM) | 2 |
+| EOL normalisation | **9** |
+| item scope closed by a `:xxx:` directive | **1** ← was **0** |
+| page directives at column 0 only (D4) | 2 |
+| `#channels` counted as an internal name | 5 |
+| `@section` include anchors | 2 |
+
+**The third row is the finding.** Reverting the `:vimeo:` scope-close guard originally turned
+**nothing** red: the blind control used `sop/xform`'s *Combine*, which already carries
+`#id: combine` **before** the `:vimeo:` block, so first-wins alone defended it and the scope close
+was never exercised. The control proved a guard it was not actually testing.
+
+Replaced with `sop/copyxform`'s *Copy Number Attribute* — no `#id` of its own, immediately
+followed by `:vimeo:` + `#id: 406958778`. Without the scope close **that parameter is keyed to a
+video id**; with it, the id binds to nothing. That control fails when the guard goes.
 
 The five hand-read pages span the measured hazards rather than the easy cases: `cop/chromakey`
 (CRLF, parameters at column 0), `cop/camerablend` (a preamble trap, `#since: 22.0`), `cop2/blur`
@@ -77,7 +99,7 @@ indented `NOTE:` + `#id:` in a page's *preamble* being recorded as a page-level 
 
 ```
 i1b_reader.py     parser + include resolver (3 verbs, all help zips + loose dirs)
-i1b_calibrate.py  70 controls        -> _i1b_calibration.json          [R60 GATE]
+i1b_calibrate.py  72 controls        -> _i1b_calibration.json          [R60 GATE]
 i1b_the161.py     the named set      -> _i1b_the161.json
 i1b_extract.py    VERIFIED-DOC axis  -> _i1b_doc.json      [refuses without the gate]
 i1b_runtime.py    VERIFIED-RUNTIME   -> _i1b_runtime.json  [hython, live 22.0.368]
