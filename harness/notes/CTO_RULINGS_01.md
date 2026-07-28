@@ -5250,3 +5250,76 @@ that trips the rate limit it reports on, and a face nobody is looking at has no 
 The economist axis now has: a probe layer that returns structure, a verdict schema with a voice
 contract, and a surface that renders both. **Every figure on it traces to a measurement made this
 week, and every gap on it says `unknown` rather than guessing.**
+
+---
+
+## RULING 177 — The freeze: what it is NOT, measured. And a 31-hour runaway that contaminated everything before it.
+
+Joe: SYNAPSE freezes Houdini during a request. Panels unclickable, menus
+unreachable, but typing lands in the panel and the window still resizes.
+
+### The first finding was not SYNAPSE at all
+
+```
+hython.exe   c1_token_bench   started 07-27 10:37   113,857 CPU-seconds
+```
+
+**31.6 CPU-hours.** C1's benchmark script never exited and had been pinning a
+core since the previous morning — through every measurement taken today,
+including the freeze probe.
+
+**And it is R168 one level down.** This morning's fix reaps a finished leg's
+WINDOW and its immediate children. A script the leg spawned separately outlives
+both. C1 finished yesterday; its benchmark did not.
+
+Killed. **The freeze survived it**, so the runaway was a contaminant rather than
+the cause — but every number taken before the kill is suspect.
+
+### What the freeze is NOT, each by measurement
+
+```
+scene traversal       ruled out - it freezes on an EMPTY scene
+the inline fallback   ruled out - main_thread_direct_stats count 0, sum 0ms
+long hou.* calls      ruled out - 6 marshals, 465ms total, max 132ms
+main thread wedged    ruled out - probe_main_thread returns True in 52ms
+local inference       ruled out - ollama 0.00 CPU across a 60s sample
+the panel's paint     ruled out - TokenField 0.62ms, chat append 0.1ms, flat
+the H22 corpus        ruled out - full KnowledgeIndex build 64ms
+sentence-transformers ruled out - torch absent in every site-packages
+```
+
+### What it IS, and the one deduction that survives
+
+Sampled at 500ms during a request on an empty scene:
+
+```
+14.4s   houdini +3.08 CPU-s per 0.5s sample
+35.8s   houdini +3.73
+37.9s   houdini +3.09
+```
+
+**~7 cores, saturated by Houdini's own process.** Not waiting — burning.
+
+**And plain Python cannot do that.** The GIL permits one core. So the work is
+either Houdini's own C++ threads or a native library that releases the GIL.
+`sentence_transformers` was the obvious candidate and is not installed.
+
+### What I would do next, and it is not more guessing
+
+**Houdini's own Performance Monitor.** It profiles cooks AND Python inside the
+process, which is precisely the boundary every external instrument has failed to
+cross. Start a recording, trigger the request, read the tree.
+
+**Ruled: no more inference from the outside.** Eight candidates eliminated by
+measurement and the ninth will not be found by reasoning about the architecture —
+every architectural hypothesis I formed today was wrong, and the two things I
+actually found (the runaway, the 7-core burn) both came from process accounting
+rather than from reading code.
+
+### The residual worth fixing regardless
+
+**A leg's spawned scripts are not reaped.** `orchestrate.ps1` kills the window
+and its immediate children; anything the leg launched separately survives both
+the leg and the reap. That cost a pegged core for 31 hours and nothing detected
+it. **The status surface should count stray `hython`/`python` processes under
+the repo path**, the same way it counts stranded branches.
