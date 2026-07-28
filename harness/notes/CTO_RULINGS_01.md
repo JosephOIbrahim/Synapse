@@ -5143,3 +5143,55 @@ times.
 
 **Write the check, publish the disagreement, and let the handler decide** — rather than ruling from
 the shape of the mismatch.
+
+---
+
+## RULING 175 — The corpus is wired. The gate was already in the data, and two defects hid inside the wiring.
+
+`INGEST-01` forbade this: *"Nothing wires into the RAG corpus in this harness. U.6 found 15 phantom
+`createNode` sites already living there, outside the emission gate."*
+
+**The gate turned out to be in the data.** I1 validated every entry against the live runtime at
+ingest, and each carries `live_type_matched`: **660 entries, 659 matched, one unmatched —
+`cop2/terrain_noise`.**
+
+So the gate is applied **at build time**, and that is the stronger placement. A read-time filter can
+be bypassed by a future caller. **An entry that was never written cannot be served by anyone.**
+
+### Two defects found inside the fix, neither by me reasoning
+
+**51 type names exist in more than one context.** `blur`, `crop`, `chromakey` and `average` are in
+**both `cop` and `cop2`** — and insertion order let **cop2, the legacy image context, overwrite cop,
+the Copernicus one that replaced it.**
+
+An artist asking about `blur` would have been answered from the subsystem Copernicus superseded.
+**That is the H21-corpus problem reappearing inside the H22 corpus**, and I found it only because
+603 unique types from 659 entries did not add up.
+
+**And the suite caught my placement.** I put the node match *first*, before keyword lookup, and
+broke 8 tests. `merge`, `wrangle`, `solver` and `reference` are all live node types, so *"vex
+attribute wrangle"* and *"scene assembly merge reference"* were hijacked out of their topics into a
+node datasheet.
+
+**The corpus should answer when the query IS a node type, not when a sentence CONTAINS one.** It now
+fires only on two tokens or fewer.
+
+### What changed for a user
+
+```
+before   knowledge_lookup served H21 prose. COP grounding 6.2%, against a
+         subsystem that barely existed in H21.
+after    603 live node types, VERIFIED-DOC, pinned to 22.0.368, each carrying
+         its summary, its documented parameters and its build in agent_hint.
+```
+
+**The answer to "does it know Copernicus?" changed from no to yes**, and it can be checked in one
+lookup.
+
+### The three things I would keep from how this went
+
+1. **The gate belongs at build time**, where absence is enforcement.
+2. **A collision count that does not add up is a finding.** 659 entries and 603 keys was the only
+   signal that legacy was overwriting current.
+3. **The suite is the placement check.** I could not have reasoned my way to "`wrangle` is a node
+   type"; eight failures told me in 110 seconds.
