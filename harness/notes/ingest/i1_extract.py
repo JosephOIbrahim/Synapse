@@ -752,20 +752,54 @@ def type_candidates(help_key: str, directives: dict) -> list:
     return helpdoc.canonical_type_names(help_key, directives)
 
 
-def the_161() -> list:
-    """The new Copernicus node names, from the SHIPPED what's-new page.
+# The shipped what's-new page links node paths in TWO forms, and the difference
+# is one character:
+#
+#     [Grunge Aurora COP|Node:/cop/grunge_aurora]      161 occurrences
+#     [Node:cop/geotoadjacency]                         11 occurrences
+#
+# A pattern requiring the leading slash returns 161 and drops 10 real node
+# types -- the entire adjacency_* family, both layerattrib_* nodes, and three
+# block_begin/block_end pairs. All 10 have a page and all 10 clear the floor.
+#
+# **The governing "161" is therefore a floor, not a total. The number is 171.**
+# It is wrong in docs/H22_FRONTIER.md, in I0's Q3 ("161 named, 161 present"),
+# in harness/SYNAPSE_INGEST.md and in this leg's own brief -- and it was wrong
+# in this extractor's first version, whose calibration control asserted 161 and
+# so PINNED the defect. A positive control inherited from the brief rather than
+# measured from the archive locks in the brief's error (Law 5).
+#
+# Found by the concurrent I1 run (see .claude/remediation_ticket.md), verified
+# here independently before being accepted.
+RE_NODE_LINK = re.compile(r"Node:/?cop/([A-Za-z0-9_:.\-]+)")
 
-    ``news.zip!22/copernicus.txt``, not the browsing help cache. I0-F5: the two
-    sources agree exactly (161 each, zero set difference in either direction),
-    and the shipped one is version-pinned by construction while the cache is a
-    reading history that records only what somebody happened to open.
+
+def new_copernicus_nodes() -> list:
+    """Every new Copernicus node named in the SHIPPED what's-new page.
+
+    ``news.zip!22/copernicus.txt``, not the browsing help cache: the shipped
+    page is version-pinned by construction while the cache is a reading history
+    that records only what somebody happened to open (I0-F5).
+
+    Returns **171** on 22.0.368, both link forms counted.
     """
     import zipfile
     with zipfile.ZipFile(NEWS_ZIP) as z:
         text = z.read("22/copernicus.txt").decode("utf-8-sig")
     names = []
-    for m in re.finditer(r"Node:/cop/([A-Za-z0-9_:.\-]+)", text):
+    for m in RE_NODE_LINK.finditer(text):
         n = m.group(1).rstrip("].,")
         if n not in names:
             names.append(n)
     return sorted(names)
+
+
+def new_copernicus_nodes_slash_only() -> list:
+    """The 161 a leading-slash-only pattern returns. Kept as a NEGATIVE
+    instrument: the calibration proves this undercounts, so the defect cannot
+    silently return."""
+    import zipfile
+    with zipfile.ZipFile(NEWS_ZIP) as z:
+        text = z.read("22/copernicus.txt").decode("utf-8-sig")
+    return sorted({m.group(1).rstrip("].,")
+                   for m in re.finditer(r"Node:/cop/([A-Za-z0-9_:.\-]+)", text)})

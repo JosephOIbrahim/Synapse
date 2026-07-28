@@ -193,10 +193,12 @@
  },
  "denominator_rule": "clears-floor is reported against BOTH denominators and they are labelled: counts.* is per help PAGE (the archive's view), catalogue_coverage.* is per LIVE TYPE (SYNAPSE's view). Only the second one can see a type that ships with no documentation at all.",
  "the_161": {
-  "named_in_shipped_whats_new": 161,
+  "named_in_shipped_whats_new": 171,
+  "governing_figure_was": 161,
+  "governing_figure_correction": "The shipped page links node paths in TWO forms; a leading-slash-only pattern returns 161 and drops 10 real node types (the adjacency_* family, layerattribcreate/delete, and three block_begin/end nodes). All 10 have a page and all 10 clear the floor. 161 is a floor, not a total. Wrong in docs/H22_FRONTIER.md, I0 Q3, harness/SYNAPSE_INGEST.md and this leg's brief.",
   "source": "news.zip!22/copernicus.txt (SHIPPED, version-pinned by construction -- not the browsing help cache)",
-  "have_a_page": 161,
-  "ingested": 158,
+  "have_a_page": 171,
+  "ingested": 168,
   "known_thin": 3,
   "no_page_at_all": 0,
   "known_thin_named": [
@@ -227,7 +229,7 @@
   ],
   "still_need_a_runtime_probe": 0,
   "no_page_named": [],
-  "ingested_live_type_matched": 158
+  "ingested_live_type_matched": 168
  },
  "totals": {
   "ingested": 660,

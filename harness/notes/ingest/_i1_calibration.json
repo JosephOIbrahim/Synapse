@@ -6,14 +6,14 @@
  "corpus_pages": 11709,
  "rule": "R60 -- a reader is shown returning KNOWN answers on hand-read pages before it is trusted on pages nobody has read. Law 1 -- every control states the condition under which it fails.",
  "counts": {
-  "total": 33,
-  "passed": 33,
+  "total": 35,
+  "passed": 35,
   "failed": 0,
   "by_class": {
-   "BLIND": 7,
+   "BLIND": 8,
    "CROSS-CHECK": 1,
    "NEGATIVE": 7,
-   "POSITIVE": 18
+   "POSITIVE": 19
   }
  },
  "controls": [
@@ -368,17 +368,57 @@
   {
    "id": "P6",
    "class": "POSITIVE",
-   "asserts": "the 161 new Copernicus nodes, from the SHIPPED news.zip (not the browsing cache)",
+   "asserts": "the new Copernicus nodes, from the SHIPPED news.zip -- BOTH link forms",
    "fails_if": "the what's-new extraction over- or under-counts, or the shipped page stops naming node paths",
    "expected": [
-    161,
-    161,
+    171,
+    171,
     true
    ],
    "got": [
-    161,
-    161,
+    171,
+    171,
     true
+   ],
+   "pass": true
+  },
+  {
+   "id": "B8",
+   "class": "BLIND",
+   "asserts": "a leading-slash-only link pattern returns 161 and drops 10 real node types",
+   "fails_if": "both link forms turn out to name the same set, in which case 171 is wrong and the slash-only pattern was fine all along",
+   "expected": [
+    161,
+    10,
+    [
+     "adjacency_attribsample",
+     "adjacency_distort",
+     "adjacency_extrapolate"
+    ]
+   ],
+   "got": [
+    161,
+    10,
+    [
+     "adjacency_attribsample",
+     "adjacency_distort",
+     "adjacency_extrapolate"
+    ]
+   ],
+   "pass": true
+  },
+  {
+   "id": "P6b",
+   "class": "POSITIVE",
+   "asserts": "every node the slash-only pattern dropped HAS a page and CLEARS the floor",
+   "fails_if": "the 10 missed names are not real node pages, which would make 161 the right total",
+   "expected": [
+    10,
+    10
+   ],
+   "got": [
+    10,
+    10
    ],
    "pass": true
   },

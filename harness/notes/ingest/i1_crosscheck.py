@@ -25,6 +25,7 @@ PRODUCER: this file -> harness/notes/ingest/_i1_crosscheck.json
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import unicodedata
@@ -33,8 +34,11 @@ from pathlib import Path
 import hou
 
 HERE = Path(__file__).resolve().parent
-CORPUS = HERE / "h22_node_corpus.json"
-OUT = HERE / "_i1_crosscheck.json"
+# Same I1_OUT_TAG override as i1_build.py, for the same reason: a second agent
+# ran this leg concurrently in this worktree and took the untagged names.
+_TAG = os.environ.get("I1_OUT_TAG", "")
+CORPUS = HERE / ("h22_node_corpus%s.json" % _TAG)
+OUT = HERE / ("_i1_crosscheck%s.json" % _TAG)
 
 PLAN = [("cop", 10, True), ("lop", 6, False), ("cop2", 4, False)]
 

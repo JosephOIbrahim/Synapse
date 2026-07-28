@@ -193,10 +193,12 @@
  },
  "denominator_rule": "clears-floor is reported against BOTH denominators and they are labelled: counts.* is per help PAGE (the archive's view), catalogue_coverage.* is per LIVE TYPE (SYNAPSE's view). Only the second one can see a type that ships with no documentation at all.",
  "the_161": {
-  "named_in_shipped_whats_new": 161,
+  "named_in_shipped_whats_new": 171,
+  "governing_figure_was": 161,
+  "governing_figure_correction": "The shipped page links node paths in TWO forms; a leading-slash-only pattern returns 161 and drops 10 real node types (the adjacency_* family, layerattribcreate/delete, and three block_begin/end nodes). All 10 have a page and all 10 clear the floor. 161 is a floor, not a total. Wrong in docs/H22_FRONTIER.md, I0 Q3, harness/SYNAPSE_INGEST.md and this leg's brief.",
   "source": "news.zip!22/copernicus.txt (SHIPPED, version-pinned by construction -- not the browsing help cache)",
-  "have_a_page": 161,
-  "ingested": 158,
+  "have_a_page": 171,
+  "ingested": 168,
   "known_thin": 3,
   "no_page_at_all": 0,
   "known_thin_named": [
@@ -227,7 +229,7 @@
   ],
   "still_need_a_runtime_probe": 0,
   "no_page_named": [],
-  "ingested_live_type_matched": 158
+  "ingested_live_type_matched": 168
  },
  "totals": {
   "ingested": 660,
@@ -236,6 +238,576 @@
   "parameters_live_label_matched": 10843
  },
  "entries": [
+  {
+   "tier": "VERIFIED-DOC",
+   "build": "22.0.368",
+   "source": "nodes.zip!cop/adjacency_attribsample.txt",
+   "help_key": "nodes/cop/adjacency_attribsample",
+   "context": "cop",
+   "stem": "adjacency_attribsample",
+   "type_candidates": [
+    "adjacency_attribsample"
+   ],
+   "live_type": "adjacency_attribsample",
+   "live_type_match": "candidate",
+   "live_type_matched": true,
+   "live_type_also_matched": [],
+   "runtime_label": "Attribute Sample with Adjacency",
+   "live_parm_tuples": 4,
+   "new_in_22": true,
+   "title": "Attribute Sample with Adjacency",
+   "summary": "Creates a texture map of an attribute sampled from geometry.",
+   "overview": "This node rasterizes an attribute from a geometry into a texture map. Wire an adjacency cable from a Node:cop/geotoadjacency COP into the adjacency input and then set the Attribute you want to sample. You can also choose which attribute Class to sample. The node automatically outputs the type of the attribute you select when the Signature is Select Automatically. You can use the attrib input to sample a point attribute from another geometry. For example, wire an Node:cop/attribextract COP that's attached to a geometry into this input. See /copernicus/adjacency for information about how to use this node.",
+   "since": "22.0",
+   "headings": [],
+   "related": [
+    "[Node:cop/geotoadjacency]",
+    "[Node:cop/attribextract]"
+   ],
+   "parameters": [
+    {
+     "label": "Signature",
+     "label_norm": "signature",
+     "ids": [
+      "signature"
+     ],
+     "channels": [],
+     "description": "The layer type that the attrib input accepts and the node outputs. Use Select Automatically for most workflows. See Signatures for more information.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "signature"
+    },
+    {
+     "label": "Attribute",
+     "label_norm": "attribute",
+     "ids": [
+      "attribute"
+     ],
+     "channels": [],
+     "description": "The name of the geometry attribute to sample. For example, P provides a world space position map.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "attribute"
+    },
+    {
+     "label": "Class",
+     "label_norm": "class",
+     "ids": [
+      "class"
+     ],
+     "channels": [],
+     "description": "The type of attribute class to sample. Primitive: Sample a geometry's primitive attribute. Point: Sample a geometry's point attribute. Vertex: Sample a geometry's vertex attribute.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "class"
+    }
+   ],
+   "rung": "ACTIONABLE",
+   "clears_floor": true,
+   "known_thin": false,
+   "floor_facts": {
+    "has_summary": true,
+    "parameters": 3,
+    "with_description": 3,
+    "with_internal_name": 3
+   },
+   "deprecation": {
+    "doc": {
+     "deprecated": false,
+     "signals": [],
+     "weak_mention": false,
+     "tier": "VERIFIED-DOC",
+     "build": "22.0.368"
+    },
+    "runtime": {
+     "deprecated": false,
+     "reason": null,
+     "version": null,
+     "tier": "VERIFIED-RUNTIME",
+     "build": "22.0.368",
+     "applicable": true
+    },
+    "union": false,
+    "disagree": false,
+    "direction": null
+   },
+   "extraction": {
+    "eol": "LF",
+    "bom": false,
+    "header_order": "directives-first",
+    "includes": {},
+    "live_label_matched": 3,
+    "live_label_match_rate": 1.0
+   }
+  },
+  {
+   "tier": "VERIFIED-DOC",
+   "build": "22.0.368",
+   "source": "nodes.zip!cop/adjacency_distort.txt",
+   "help_key": "nodes/cop/adjacency_distort",
+   "context": "cop",
+   "stem": "adjacency_distort",
+   "type_candidates": [
+    "adjacency_distort"
+   ],
+   "live_type": "adjacency_distort",
+   "live_type_match": "candidate",
+   "live_type_matched": true,
+   "live_type_also_matched": [],
+   "runtime_label": "Distort with Adjacency",
+   "live_parm_tuples": 15,
+   "new_in_22": true,
+   "title": "Distort with Adjacency",
+   "summary": "Distorts a layer over texture seams using adjacency.",
+   "overview": "This node distorts an incoming layer. Use this node when you want to distort pixels over a geometry's texture seams. Configure the Direction parameter to distort the layer in a fixed world space direction, or wire in a dir input to trace through vectors of a UV layer. NOTE: Adjacency workflows output the best results when the texture of the target matches that of the rasterized adjacency maps. Wire a layer that you want to distort into the source input, and then wire an adjacency cable from a Node:cop/geotoadjacency COP into the adjacency input. The node distorts the pixels of the source layer over the texture seams of the adjacency geometry. Use this node instead of the Node:cop/distort COP when you want to distort over texture seams. The Distort COP creates similar results as this node, but without adjacency support. See /copernicus/adjacency for information about how to use this node.",
+   "since": "22.0",
+   "headings": [],
+   "related": [
+    "[Node:cop/adjacency_spacetransform]",
+    "[Node:cop/distort]",
+    "[Node:cop/geotoadjacency]"
+   ],
+   "parameters": [
+    {
+     "label": "Signature",
+     "label_norm": "signature",
+     "ids": [
+      "signature"
+     ],
+     "channels": [],
+     "description": "The layer type that the source accepts. See Signatures for more information.",
+     "description_source": "contentfrom:/nodes/cop/distort#signature",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "signature"
+    },
+    {
+     "label": "Border",
+     "label_norm": "border",
+     "ids": [
+      "border"
+     ],
+     "channels": [],
+     "description": "The sampling behavior outside of the incoming layer's boundaries. Automatically uses the layer's border property. See Border types for more information.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "border"
+    },
+    {
+     "label": "Mask",
+     "label_norm": "mask",
+     "ids": [
+      "mask"
+     ],
+     "channels": [],
+     "description": "The amount of the new value to mix in with the original value. Higher values mix in more of the new value. Lower values mix in less of the new value. A value of 1 means this node uses only the new value. The default value is 1. See Mask for more information.",
+     "description_source": "contentfrom:/nodes/cop/distort#mask",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "mask"
+    },
+    {
+     "label": "Direction",
+     "label_norm": "direction",
+     "ids": [
+      "dir"
+     ],
+     "channels": [],
+     "description": "The world space direction in which you want to distort. This parameter doesn't apply when you wire in a dir input, which instead distorts the layer in a texture space direction.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "dir"
+    },
+    {
+     "label": "Scale",
+     "label_norm": "scale",
+     "ids": [
+      "scale"
+     ],
+     "channels": [],
+     "description": "The strength of distortion. Negative values follow the directions backwards when tracing. This parameter distorts along the Direction parameter's values. When you wire in a dir input, this parameter then distorts in that texture space direction.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "scale"
+    },
+    {
+     "label": "Scale by Timestep",
+     "label_norm": "scale by timestep",
+     "ids": [
+      "scalebytimeinc"
+     ],
+     "channels": [],
+     "description": "Adjusts the distortion's overall strength by the current timestep. The timestep is usually 1/$FPS, but in a sub-stepped simulation it represents the current step size.",
+     "description_source": "contentfrom:/nodes/cop/distort#scalebytimeinc",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "scalebytimeinc"
+    },
+    {
+     "label": "Streak",
+     "label_norm": "streak",
+     "ids": [
+      "streak"
+     ],
+     "channels": [],
+     "description": "The method used to combine the pixel values along the direction of distortion. Off: Don't smear the image. Blur: Average the samples together. This smears the image along the distortion direction. Min: Accept the smallest value encountered along the trajectory. This is useful when eroding an input shape. Max: Accept the largest value encountered along the trajectory. This is useful when adding edge roughness on an input shape.",
+     "description_source": "contentfrom:/nodes/cop/distort#streak",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "streak"
+    },
+    {
+     "label": "Use Streak Weight Ramp",
+     "label_norm": "use streak weight ramp",
+     "ids": [
+      "usestreakweight"
+     ],
+     "channels": [],
+     "description": "When Streak is Blur, Min, or Max , weight the samples encountered along the path. Use Streak Weight to weaken the values over the trajectory.",
+     "description_source": "contentfrom:/nodes/cop/distort#usestreakweight",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "usestreakweight"
+    },
+    {
+     "label": "Streak Weight",
+     "label_norm": "streak weight",
+     "ids": [
+      "streakweight"
+     ],
+     "channels": [],
+     "description": "When Use Streak Weight Ramp is on, this ramp acts as a multiplier on the pixel values when streaking. The left side of the ramp corresponds to the start of the trajectory. For example, when the Streak is Blur, the default linear ramp fades the pixels over their path. This makes the pixels more faint near the start. For more information about using ramps, see Ramp parameters.",
+     "description_source": "contentfrom:/nodes/cop/distort#streakweight",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "streakweight"
+    },
+    {
+     "label": "Pixels per Step",
+     "label_norm": "pixels per step",
+     "ids": [
+      "cfl"
+     ],
+     "channels": [],
+     "description": "Controls the tracing quality to increase the accuracy of tracing curved trajectories. Higher values let the node take larger steps, which runs faster, but can miss intermediate variations in the distortion directions and texture island transitions. When off, the node takes a single step for each pixel to determine the source location. This is fast, but causes inconsistencies at texture seams and inaccuracies when the direction or scale vary.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "usecfl"
+    },
+    {
+     "label": "Maximum Steps",
+     "label_norm": "maximum steps",
+     "ids": [
+      "maxsteps"
+     ],
+     "channels": [],
+     "description": "Clamps the number of steps taken when Pixels per Step is on. You can raise this parameter (and lower Pixels per Step) if the distortion doesn't faithfully follow the directions. This can be especially noticeable when Streak is turned on.",
+     "description_source": "contentfrom:/nodes/cop/distort#maxsteps",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "maxsteps"
+    }
+   ],
+   "rung": "ACTIONABLE",
+   "clears_floor": true,
+   "known_thin": false,
+   "floor_facts": {
+    "has_summary": true,
+    "parameters": 11,
+    "with_description": 11,
+    "with_internal_name": 11
+   },
+   "deprecation": {
+    "doc": {
+     "deprecated": false,
+     "signals": [],
+     "weak_mention": false,
+     "tier": "VERIFIED-DOC",
+     "build": "22.0.368"
+    },
+    "runtime": {
+     "deprecated": false,
+     "reason": null,
+     "version": null,
+     "tier": "VERIFIED-RUNTIME",
+     "build": "22.0.368",
+     "applicable": true
+    },
+    "union": false,
+    "disagree": false,
+    "direction": null
+   },
+   "extraction": {
+    "eol": "LF",
+    "bom": false,
+    "header_order": "directives-first",
+    "includes": {
+     "seen": 3,
+     "verbs": {
+      "include": 3
+     },
+     "resolved": 3
+    },
+    "live_label_matched": 11,
+    "live_label_match_rate": 1.0
+   }
+  },
+  {
+   "tier": "VERIFIED-DOC",
+   "build": "22.0.368",
+   "source": "nodes.zip!cop/adjacency_extrapolate.txt",
+   "help_key": "nodes/cop/adjacency_extrapolate",
+   "context": "cop",
+   "stem": "adjacency_extrapolate",
+   "type_candidates": [
+    "adjacency_extrapolate"
+   ],
+   "live_type": "adjacency_extrapolate",
+   "live_type_match": "candidate",
+   "live_type_matched": true,
+   "live_type_also_matched": [],
+   "runtime_label": "Extrapolate with Adjacency",
+   "live_parm_tuples": 2,
+   "new_in_22": true,
+   "title": "Extrapolate with Adjacency",
+   "summary": "Fills areas of a texture outside the UV islands with information from their island neighbors.",
+   "overview": "This node extends the borders of a UV island using the pixel color information from its neighboring islands. Use this node to make sure that pixels on an island's edge have viable neighbor pixels so that subsequent nodes without built-in adjacency awareness can use that data to work over texture seams. NOTE: Adjacency workflows output the best results when the texture of the target matches that of the rasterized adjacency maps. Turn on Transform Vectors between Islands to also transfer pixel vector information between islands when you're working with velocity fields and normals. This reorients the vector direction to match the rotation of neighboring islands. You can also use this node to ensure that there is no mipmap bleeding for texture mapping. This node is similar to the Node:cop/extrapolateboundaries COP, but faster. See /copernicus/adjacency for information about how to use this node.",
+   "since": "22.0",
+   "headings": [],
+   "related": [
+    "[Node:cop/geotoadjacency]",
+    "[Node:cop/extrapolateboundaries]"
+   ],
+   "parameters": [
+    {
+     "label": "Signature",
+     "label_norm": "signature",
+     "ids": [
+      "signature"
+     ],
+     "channels": [],
+     "description": "The layer type that the source accepts. See Signatures for more information.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "signature"
+    },
+    {
+     "label": "Transform Vectors between Islands",
+     "label_norm": "transform vectors between islands",
+     "ids": [
+      "tangentxform"
+     ],
+     "channels": [],
+     "description": "Treats pixel data as vectors and orients those vectors to match the boundary rotation between islands.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "tangentxform"
+    }
+   ],
+   "rung": "ACTIONABLE",
+   "clears_floor": true,
+   "known_thin": false,
+   "floor_facts": {
+    "has_summary": true,
+    "parameters": 2,
+    "with_description": 2,
+    "with_internal_name": 2
+   },
+   "deprecation": {
+    "doc": {
+     "deprecated": false,
+     "signals": [],
+     "weak_mention": false,
+     "tier": "VERIFIED-DOC",
+     "build": "22.0.368"
+    },
+    "runtime": {
+     "deprecated": false,
+     "reason": null,
+     "version": null,
+     "tier": "VERIFIED-RUNTIME",
+     "build": "22.0.368",
+     "applicable": true
+    },
+    "union": false,
+    "disagree": false,
+    "direction": null
+   },
+   "extraction": {
+    "eol": "LF",
+    "bom": false,
+    "header_order": "directives-first",
+    "includes": {
+     "seen": 1,
+     "verbs": {
+      "include": 1
+     },
+     "resolved": 1
+    },
+    "live_label_matched": 2,
+    "live_label_match_rate": 1.0
+   }
+  },
+  {
+   "tier": "VERIFIED-DOC",
+   "build": "22.0.368",
+   "source": "nodes.zip!cop/adjacency_spacetransform.txt",
+   "help_key": "nodes/cop/adjacency_spacetransform",
+   "context": "cop",
+   "stem": "adjacency_spacetransform",
+   "type_candidates": [
+    "adjacency_spacetransform"
+   ],
+   "live_type": "adjacency_spacetransform",
+   "live_type_match": "candidate",
+   "live_type_matched": true,
+   "live_type_also_matched": [],
+   "runtime_label": "Space Transform with Adjacency",
+   "live_parm_tuples": 2,
+   "new_in_22": true,
+   "title": "Space Transform with Adjacency",
+   "summary": "Transforms a vector from world space into tangent space.",
+   "overview": "This node transforms world space vectors into tangent space. In this node, tangent space refers to the parametrization of the tangent plane (the plane of best fit) on a 3D surface. Use this node when you need a geometry's vectors to point in a specific direction. NOTE: Adjacency workflows output the best results when the texture of the target matches that of the rasterized adjacency maps. Wire an RGB vector that you want to transform into the coord input, and then wire an adjacency cable from a Node:cop/geotoadjacency COP into the adjacency input. See /copernicus/adjacency for information about how to use this node.",
+   "since": "22.0",
+   "headings": [],
+   "related": [
+    "[Node:cop/geotoadjacency]"
+   ],
+   "parameters": [
+    {
+     "label": "Signature",
+     "label_norm": "signature",
+     "ids": [
+      "signature"
+     ],
+     "channels": [],
+     "description": "The layer type that the source outputs. RGB outputs the full vector and UV outputs only the X and Y components of the vector. See Signatures for more information.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "signature"
+    },
+    {
+     "label": "Transformation",
+     "label_norm": "transformation",
+     "ids": [
+      "method"
+     ],
+     "channels": [],
+     "description": "The space to which you transform the vector. World to Tangent: Transforms the vector from world space to tangent space.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "method"
+    }
+   ],
+   "rung": "ACTIONABLE",
+   "clears_floor": true,
+   "known_thin": false,
+   "floor_facts": {
+    "has_summary": true,
+    "parameters": 2,
+    "with_description": 2,
+    "with_internal_name": 2
+   },
+   "deprecation": {
+    "doc": {
+     "deprecated": false,
+     "signals": [],
+     "weak_mention": false,
+     "tier": "VERIFIED-DOC",
+     "build": "22.0.368"
+    },
+    "runtime": {
+     "deprecated": false,
+     "reason": null,
+     "version": null,
+     "tier": "VERIFIED-RUNTIME",
+     "build": "22.0.368",
+     "applicable": true
+    },
+    "union": false,
+    "disagree": false,
+    "direction": null
+   },
+   "extraction": {
+    "eol": "LF",
+    "bom": false,
+    "header_order": "directives-first",
+    "includes": {
+     "seen": 1,
+     "verbs": {
+      "include": 1
+     },
+     "resolved": 1
+    },
+    "live_label_matched": 2,
+    "live_label_match_rate": 1.0
+   }
+  },
   {
    "tier": "VERIFIED-DOC",
    "build": "22.0.368",
@@ -17395,6 +17967,94 @@
   {
    "tier": "VERIFIED-DOC",
    "build": "22.0.368",
+   "source": "nodes.zip!cop/geotoadjacency.txt",
+   "help_key": "nodes/cop/geotoadjacency",
+   "context": "cop",
+   "stem": "geotoadjacency",
+   "type_candidates": [
+    "geotoadjacency"
+   ],
+   "live_type": "geotoadjacency",
+   "live_type_match": "candidate",
+   "live_type_matched": true,
+   "live_type_also_matched": [],
+   "runtime_label": "Geometry to Adjacency",
+   "live_parm_tuples": 1,
+   "new_in_22": true,
+   "title": "Geometry to Adjacency",
+   "summary": "Rasterizes geometry to generate an adjacency cable.",
+   "overview": "This node generates an adjacency cable from a geometry. The node converts the geometry into triangles and rasterizes the geometry using a UV Attribute. The rasterized data is output as an adjacency cable that you can then use in other adjacency COP nodes for processing. For most workflows, wire this node into the Node:cop/adjacency_attribsample COP to rasterize your geometry attributes. When connected, these nodes are similar to the Node:cop/rasterizegeo COP, but with support for adjacency information. NOTE: If your geometry has n-gons and you sample attributes from that geometry, there may be unwanted distortion in your workflow. See /copernicus/adjacency for information about how to use this node.",
+   "since": "22.0",
+   "headings": [],
+   "related": [
+    "[Node:cop/adjacency_attribsample]",
+    "[Node:cop/sopimport]"
+   ],
+   "parameters": [
+    {
+     "label": "UV Attribute",
+     "label_norm": "uv attribute",
+     "ids": [
+      "uvattrib"
+     ],
+     "channels": [],
+     "description": "The name of the vertex UV attribute to rasterize.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "uvattrib"
+    }
+   ],
+   "rung": "ACTIONABLE",
+   "clears_floor": true,
+   "known_thin": false,
+   "floor_facts": {
+    "has_summary": true,
+    "parameters": 1,
+    "with_description": 1,
+    "with_internal_name": 1
+   },
+   "deprecation": {
+    "doc": {
+     "deprecated": false,
+     "signals": [],
+     "weak_mention": false,
+     "tier": "VERIFIED-DOC",
+     "build": "22.0.368"
+    },
+    "runtime": {
+     "deprecated": false,
+     "reason": null,
+     "version": null,
+     "tier": "VERIFIED-RUNTIME",
+     "build": "22.0.368",
+     "applicable": true
+    },
+    "union": false,
+    "disagree": false,
+    "direction": null
+   },
+   "extraction": {
+    "eol": "LF",
+    "bom": false,
+    "header_order": "directives-first",
+    "includes": {
+     "seen": 1,
+     "verbs": {
+      "include": 1
+     },
+     "resolved": 1
+    },
+    "live_label_matched": 1,
+    "live_label_match_rate": 1.0
+   }
+  },
+  {
+   "tier": "VERIFIED-DOC",
+   "build": "22.0.368",
    "source": "nodes.zip!cop/grunge_aurora.txt",
    "help_key": "nodes/cop/grunge_aurora",
    "context": "cop",
@@ -26345,6 +27005,265 @@
      "resolved": 2
     },
     "live_label_matched": 17,
+    "live_label_match_rate": 1.0
+   }
+  },
+  {
+   "tier": "VERIFIED-DOC",
+   "build": "22.0.368",
+   "source": "nodes.zip!cop/layerattribcreate.txt",
+   "help_key": "nodes/cop/layerattribcreate",
+   "context": "cop",
+   "stem": "layerattribcreate",
+   "type_candidates": [
+    "layerattribcreate"
+   ],
+   "live_type": "layerattribcreate",
+   "live_type_match": "candidate",
+   "live_type_matched": true,
+   "live_type_also_matched": [],
+   "runtime_label": "Layer Property Create",
+   "live_parm_tuples": 6,
+   "new_in_22": true,
+   "title": "Layer Property Create",
+   "summary": "Adds or edits user-defined properties on a layer.",
+   "overview": "This node adds or edits user-defined properties on a layer. This node is useful when you want to set the savepath property. When a USD ROP or USD Render ROP is writing out USD files, if any files reference a COP node using the op: syntax, the ROP looks for the savepath property. If set, the EXR file is saved to the location specified by savepath. Multiple layers can have multiple savepaths set. When saving out multiple layers with a savepath that isn't unique, the file name is auto-incremented so that each texture has a unique file name. TIP: When setting the savepath property, set Name to savepath and Value to the path of the texture (for example, $HIP/textures/roughness.exr).",
+   "since": null,
+   "headings": [],
+   "related": [
+    "[Node:cop/layerattribdelete]"
+   ],
+   "parameters": [
+    {
+     "label": "Signature",
+     "label_norm": "signature",
+     "ids": [
+      "signature"
+     ],
+     "channels": [],
+     "description": "The layer type that the source accepts. See Signatures for more information.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "signature"
+    },
+    {
+     "label": "Number of Properties",
+     "label_norm": "number of properties",
+     "ids": [
+      "numattrib"
+     ],
+     "channels": [],
+     "description": "The number of properties.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": false,
+     "live_id_match": null,
+     "live_channels_match": false
+    },
+    {
+     "label": "Name #",
+     "label_norm": "name #",
+     "ids": [
+      "name#"
+     ],
+     "channels": [],
+     "description": "The name of the property. If blank no property is created.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "name#"
+    },
+    {
+     "label": "Type",
+     "label_norm": "type",
+     "ids": [
+      "type#"
+     ],
+     "channels": [],
+     "description": "The type of property to create.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "type#"
+    },
+    {
+     "label": "Value #",
+     "label_norm": "value #",
+     "ids": [
+      "vals#",
+      "valf#",
+      "vali#"
+     ],
+     "channels": [],
+     "description": "The property's string, float, or integer value (which the Type parameter determines).",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "valf#"
+    }
+   ],
+   "rung": "ACTIONABLE",
+   "clears_floor": true,
+   "known_thin": false,
+   "floor_facts": {
+    "has_summary": true,
+    "parameters": 5,
+    "with_description": 5,
+    "with_internal_name": 5
+   },
+   "deprecation": {
+    "doc": {
+     "deprecated": false,
+     "signals": [],
+     "weak_mention": false,
+     "tier": "VERIFIED-DOC",
+     "build": "22.0.368"
+    },
+    "runtime": {
+     "deprecated": false,
+     "reason": null,
+     "version": null,
+     "tier": "VERIFIED-RUNTIME",
+     "build": "22.0.368",
+     "applicable": true
+    },
+    "union": false,
+    "disagree": false,
+    "direction": null
+   },
+   "extraction": {
+    "eol": "CRLF",
+    "bom": false,
+    "header_order": "directives-first",
+    "includes": {},
+    "live_label_matched": 4,
+    "live_label_match_rate": 0.8
+   }
+  },
+  {
+   "tier": "VERIFIED-DOC",
+   "build": "22.0.368",
+   "source": "nodes.zip!cop/layerattribdelete.txt",
+   "help_key": "nodes/cop/layerattribdelete",
+   "context": "cop",
+   "stem": "layerattribdelete",
+   "type_candidates": [
+    "layerattribdelete"
+   ],
+   "live_type": "layerattribdelete",
+   "live_type_match": "candidate",
+   "live_type_matched": true,
+   "live_type_also_matched": [],
+   "runtime_label": "Layer Property Delete",
+   "live_parm_tuples": 3,
+   "new_in_22": true,
+   "title": "Layer Property Delete",
+   "summary": "Removes user-defined properties from a layer.",
+   "overview": "This node removes user-defined properties from a layer. Use this node to clear out unwanted properties imported from files, such as an EXR file.",
+   "since": "21.0",
+   "headings": [],
+   "related": [
+    "[Node:cop/layerattribcreate]"
+   ],
+   "parameters": [
+    {
+     "label": "Signature",
+     "label_norm": "signature",
+     "ids": [
+      "signature"
+     ],
+     "channels": [],
+     "description": "The layer type that the source accepts. See Signatures for more information.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "signature"
+    },
+    {
+     "label": "Delete Property",
+     "label_norm": "delete property",
+     "ids": [
+      "delete"
+     ],
+     "channels": [],
+     "description": "The property pattern to delete. The node deletes any layer property that matches this pattern.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "delete"
+    },
+    {
+     "label": "Keep Property",
+     "label_norm": "keep property",
+     "ids": [
+      "keep"
+     ],
+     "channels": [],
+     "description": "The property pattern to keep. The node deletes any layer property that doesn't match this pattern.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "keep"
+    }
+   ],
+   "rung": "ACTIONABLE",
+   "clears_floor": true,
+   "known_thin": false,
+   "floor_facts": {
+    "has_summary": true,
+    "parameters": 3,
+    "with_description": 3,
+    "with_internal_name": 3
+   },
+   "deprecation": {
+    "doc": {
+     "deprecated": false,
+     "signals": [],
+     "weak_mention": false,
+     "tier": "VERIFIED-DOC",
+     "build": "22.0.368"
+    },
+    "runtime": {
+     "deprecated": false,
+     "reason": null,
+     "version": null,
+     "tier": "VERIFIED-RUNTIME",
+     "build": "22.0.368",
+     "applicable": true
+    },
+    "union": false,
+    "disagree": false,
+    "direction": null
+   },
+   "extraction": {
+    "eol": "LF",
+    "bom": false,
+    "header_order": "directives-first",
+    "includes": {},
+    "live_label_matched": 3,
     "live_label_match_rate": 1.0
    }
   },
@@ -41894,6 +42813,127 @@
   {
    "tier": "VERIFIED-DOC",
    "build": "22.0.368",
+   "source": "nodes.zip!cop/reactiondiffusion_block_begin.txt",
+   "help_key": "nodes/cop/reactiondiffusion_block_begin",
+   "context": "cop",
+   "stem": "reactiondiffusion_block_begin",
+   "type_candidates": [
+    "reactiondiffusion_block_begin"
+   ],
+   "live_type": "reactiondiffusion_block_begin",
+   "live_type_match": "candidate",
+   "live_type_matched": true,
+   "live_type_also_matched": [],
+   "runtime_label": "Reaction-Diffusion Block Begin",
+   "live_parm_tuples": 4,
+   "new_in_22": true,
+   "title": "Reaction-Diffusion Block Begin",
+   "summary": "Start of a Reaction-Diffusion simulation block.",
+   "overview": "This node is the beginning of a Reaction-Diffusion simulation block. Reaction-Diffusion simulations are complex 2D simulations of chemicals reacting and diffusing. NOTE: Operations that're independent of previous frames should occur before the Reaction-Diffusion Block Begin so that they only get cooked once. Post-processing operations that aren't required to feedback should occur after the Reaction-Diffusion Block End. Use the passthrough input to bring additional inputs inside the block. Use the feedback input to add additional values that must be updated every frame. See /copernicus/reaction_diffusion for information about how to use this node. NOTE: In Copernicus blocks, you can't use Time Shifts when they require the inputs of the block to cook at different times. As a workaround, Node:cop/timepack the required frames before the Block Begin and wire them into the block as a cable. Each iteration of the block extracts only the required wire from the cable.",
+   "since": "21.0",
+   "headings": [],
+   "related": [
+    "[Node:cop/reactiondiffusion_block_end]",
+    "[Node:cop/block_begin]",
+    "[Node:cop/block_end]"
+   ],
+   "parameters": [
+    {
+     "label": "Signature",
+     "label_norm": "signature",
+     "ids": [
+      "signature"
+     ],
+     "channels": [],
+     "description": "The signature mode to evaluate the activation input as. This also controls how the reaction initiates using the activation pattern. Activation (Mono): Use a mono input pattern to initiate the reaction with. In this mode, it's best to provide high contrast noise patterns to help the reaction start. Chemical (UV): Use a UV input, which causes the reaction to continue using the raw chemical values. Use this to stack multiple Reaction-Diffusion blocks.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "signature"
+    },
+    {
+     "label": "Block Path",
+     "label_norm": "block path",
+     "ids": [
+      "blockpath"
+     ],
+     "channels": [],
+     "description": "The path to the Reaction-Diffusion Block End COP that's the final and closing node of this block. The Reaction-Diffusion Block End node must be at the same network level as this Reaction-Diffusion Block Begin node.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "blockpath"
+    },
+    {
+     "label": "Continuous Activation",
+     "label_norm": "continuous activation",
+     "ids": [
+      "continuousactivation"
+     ],
+     "channels": [],
+     "description": "Makes the simulation evaluate the activation pattern as if it were a constant source. When off, the simulation evaluates the activation pattern on only the first frame.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "continuousactivation"
+    }
+   ],
+   "rung": "ACTIONABLE",
+   "clears_floor": true,
+   "known_thin": false,
+   "floor_facts": {
+    "has_summary": true,
+    "parameters": 3,
+    "with_description": 3,
+    "with_internal_name": 3
+   },
+   "deprecation": {
+    "doc": {
+     "deprecated": false,
+     "signals": [],
+     "weak_mention": false,
+     "tier": "VERIFIED-DOC",
+     "build": "22.0.368"
+    },
+    "runtime": {
+     "deprecated": false,
+     "reason": null,
+     "version": null,
+     "tier": "VERIFIED-RUNTIME",
+     "build": "22.0.368",
+     "applicable": true
+    },
+    "union": false,
+    "disagree": false,
+    "direction": null
+   },
+   "extraction": {
+    "eol": "CRLF",
+    "bom": false,
+    "header_order": "directives-first",
+    "includes": {
+     "seen": 1,
+     "verbs": {
+      "include": 1
+     },
+     "resolved": 1
+    },
+    "live_label_matched": 3,
+    "live_label_match_rate": 1.0
+   }
+  },
+  {
+   "tier": "VERIFIED-DOC",
+   "build": "22.0.368",
    "source": "nodes.zip!cop/refractfromheight.txt",
    "help_key": "nodes/cop/refractfromheight",
    "context": "cop",
@@ -42883,6 +43923,435 @@
     "includes": {},
     "live_label_matched": 1,
     "live_label_match_rate": 1.0
+   }
+  },
+  {
+   "tier": "VERIFIED-DOC",
+   "build": "22.0.368",
+   "source": "nodes.zip!cop/ripple_block_begin.txt",
+   "help_key": "nodes/cop/ripple_block_begin",
+   "context": "cop",
+   "stem": "ripple_block_begin",
+   "type_candidates": [
+    "ripple_block_begin"
+   ],
+   "live_type": "ripple_block_begin",
+   "live_type_match": "candidate",
+   "live_type_matched": true,
+   "live_type_also_matched": [],
+   "runtime_label": "Ripple Block Begin",
+   "live_parm_tuples": 1,
+   "new_in_22": true,
+   "title": "Ripple Block Begin",
+   "summary": "Start of a Ripple simulation block.",
+   "overview": "NOTE: Although the Ripple solver is in COPs, you need DOP level permissions to use it. This means that it is _not_ available in Houdini Core, but only in Houdini FX, Houdini Apprentice, Houdini Indie, and Houdini Education. This node defines the start of a Ripple simulation block. The Ripple block simulates ripples propagating across an image layer. Operations that do not depend on previous frames should be placed before the block so they are only cooked once. Post-processing operations that do not need to be fed back into the simulation should be placed after the Ripple Block End. The passthrough input can be used to bring additional data into the block, while the feedback input is used to carry values forward between frames. NOTE: In Copernicus blocks, you can't use Time Shifts when they require the inputs of the block to cook at different times. As a workaround, Node:cop/timepack the required frames before the Block Begin and wire them into the block as a cable. Each iteration of the block extracts only the required wire from the cable.",
+   "since": "22.0",
+   "headings": [],
+   "related": [
+    "[Node:cop/ripple_block_end]"
+   ],
+   "parameters": [
+    {
+     "label": "Block Path",
+     "label_norm": "block path",
+     "ids": [
+      "blockpath"
+     ],
+     "channels": [],
+     "description": "The path to the Ripple Block End COP that defines the end of this block. The Block End node must be at the same network level as this Block Begin node.",
+     "description_source": "inline",
+     "heading": null,
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "blockpath"
+    }
+   ],
+   "rung": "ACTIONABLE",
+   "clears_floor": true,
+   "known_thin": false,
+   "floor_facts": {
+    "has_summary": true,
+    "parameters": 1,
+    "with_description": 1,
+    "with_internal_name": 1
+   },
+   "deprecation": {
+    "doc": {
+     "deprecated": false,
+     "signals": [],
+     "weak_mention": false,
+     "tier": "VERIFIED-DOC",
+     "build": "22.0.368"
+    },
+    "runtime": {
+     "deprecated": false,
+     "reason": null,
+     "version": null,
+     "tier": "VERIFIED-RUNTIME",
+     "build": "22.0.368",
+     "applicable": true
+    },
+    "union": false,
+    "disagree": false,
+    "direction": null
+   },
+   "extraction": {
+    "eol": "CRLF",
+    "bom": false,
+    "header_order": "directives-first",
+    "includes": {
+     "seen": 1,
+     "verbs": {
+      "include": 1
+     },
+     "resolved": 1
+    },
+    "live_label_matched": 1,
+    "live_label_match_rate": 1.0
+   }
+  },
+  {
+   "tier": "VERIFIED-DOC",
+   "build": "22.0.368",
+   "source": "nodes.zip!cop/ripple_block_end.txt",
+   "help_key": "nodes/cop/ripple_block_end",
+   "context": "cop",
+   "stem": "ripple_block_end",
+   "type_candidates": [
+    "ripple_block_end"
+   ],
+   "live_type": "ripple_block_end",
+   "live_type_match": "candidate",
+   "live_type_matched": true,
+   "live_type_also_matched": [],
+   "runtime_label": "Ripple Block End",
+   "live_parm_tuples": 15,
+   "new_in_22": true,
+   "title": "Ripple Block End",
+   "summary": "End of a Ripple simulation block",
+   "overview": "NOTE: Although the Ripple solver is in COPs, you need DOP level permissions to use it. This means that it is _not_ available in Houdini Core, but only in Houdini FX, Houdini Apprentice, Houdini Indie, and Houdini Education. The Ripple block simulates ripples propagating across an image layer. Two parameters control how waves evolve over time: - The Wave Speed parameter controls how fast waves move across the image layer. - The Rest Spring parameter applies a restoring force that pulls values toward the rest state each time step. Higher values will dissipate waves faster, causing waves to lose energy more quickly and settle toward the rest value. This node defines the end of a Ripple simulation block and must be paired with a Ripple Block Begin COP. NOTE: Compiled COP networks don't support simulation.",
+   "since": "22.0",
+   "headings": [
+    "Time",
+    "Caching",
+    "Wave Parameters"
+   ],
+   "related": [
+    "[Node:cop/ripple_block_begin]"
+   ],
+   "parameters": [
+    {
+     "label": "Simulate",
+     "label_norm": "simulate",
+     "ids": [
+      "simulate"
+     ],
+     "channels": [],
+     "description": "Simulate: Turns on simulation so block outputs feed directly back into the inputs, which creates a feedback loop. This is useful for complex motion and simulations.",
+     "description_source": "inline",
+     "heading": "Time",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "simulate"
+    },
+    {
+     "label": "Reset Simulation",
+     "label_norm": "reset simulation",
+     "ids": [
+      "resimulate"
+     ],
+     "channels": [],
+     "description": "Reset Simulation: When Simulate is on, this clears the entire simulation cache.",
+     "description_source": "inline",
+     "heading": "Time",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "resimulate"
+    },
+    {
+     "label": "Time Scale",
+     "label_norm": "time scale",
+     "ids": [
+      "timescale"
+     ],
+     "channels": [],
+     "description": "Time Scale: When Simulate is on, this is the amount to scale the time inside the block. A value of 1 maintains the normal speed, a value greater than 1 speeds up the simulation, and a value less than 1 slows down the simulation.",
+     "description_source": "inline",
+     "heading": "Time",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "timescale"
+    },
+    {
+     "label": "Substeps",
+     "label_norm": "substeps",
+     "ids": [
+      "substeps"
+     ],
+     "channels": [],
+     "description": "When simulation is on, each frame is divided into this number of substeps. Increasing the number of substeps improves simulation accuracy and can help maintain stability when high-speed ripples would otherwise cause instability.",
+     "description_source": "inline",
+     "heading": "Time",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "substeps"
+    },
+    {
+     "label": "Iterations",
+     "label_norm": "iterations",
+     "ids": [
+      "iterations"
+     ],
+     "channels": [],
+     "description": "Amount of iterations to run in non-simulation mode.",
+     "description_source": "inline",
+     "heading": "Time",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "iterations"
+    },
+    {
+     "label": "Live Simulation",
+     "label_norm": "live simulation",
+     "ids": [
+      "continuouscook"
+     ],
+     "channels": [],
+     "description": "Live Simulation: When Simulate is on, this turns on live simulation to provide an interactive, non-deterministic simulation mode. It simulates independent of the playbar and isn't associated with any keyframes or caching. This parameter (and its associated parameters) is intended as a sandbox mode where you don't have to rely on the playbar. TIP: Live Simulation doesn't save the results like other simulation types in Houdini, so use a Stash COP to save results.",
+     "description_source": "inline",
+     "heading": "Time",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "continuouscook"
+    },
+    {
+     "label": "Toggle Live Simulation",
+     "label_norm": "toggle live simulation",
+     "ids": [
+      "continuouscook_toggle"
+     ],
+     "channels": [],
+     "description": "Toggle Live Simulation: When Live Simulation is on, this lets you pause and resume the live simulation. TIP: You can also use the Icon:BUTTONS/live_disable Live Simulation button to pause and resume live simulation. See Cooking controls for more information.",
+     "description_source": "inline",
+     "heading": "Time",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "continuouscook_toggle"
+    },
+    {
+     "label": "Live Tick",
+     "label_norm": "live tick",
+     "ids": [
+      "continuouscook_tick"
+     ],
+     "channels": [],
+     "description": "Live Tick: When Live Simulation is on, this is the current tick (frame) within the live simulation.",
+     "description_source": "inline",
+     "heading": "Time",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "continuouscook_tick"
+    },
+    {
+     "label": "NOTE",
+     "label_norm": "note",
+     "ids": [],
+     "channels": [],
+     "description": "When Live Simulation is on, the Start Frame, Cached Frames, and Checkpoint Rate parameters no longer apply.",
+     "description_source": "inline",
+     "heading": "Caching",
+     "section": "parameters",
+     "live_label_match": false,
+     "live_id_match": null,
+     "live_channels_match": false
+    },
+    {
+     "label": "Caching",
+     "label_norm": "caching",
+     "ids": [
+      "cacheenabled"
+     ],
+     "channels": [],
+     "description": "Turns on caching of frames.",
+     "description_source": "inline",
+     "heading": "Caching",
+     "section": "parameters",
+     "live_label_match": false,
+     "live_id_match": "tuple",
+     "live_channels_match": false
+    },
+    {
+     "label": "Start Frame",
+     "label_norm": "start frame",
+     "ids": [
+      "startframe"
+     ],
+     "channels": [],
+     "description": "Start Frame: When Simulate is on, this is the frame on the Houdini playbar where the simulation starts.",
+     "description_source": "inline",
+     "heading": "Caching",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "startframe"
+    },
+    {
+     "label": "Cached Frames",
+     "label_norm": "cached frames",
+     "ids": [
+      "cachedframes"
+     ],
+     "channels": [],
+     "description": "Cached Frames: When Simulate is on, this is how many frames behind the current frame to keep cached.",
+     "description_source": "inline",
+     "heading": "Caching",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "cachedframes"
+    },
+    {
+     "label": "Checkpoint Rate",
+     "label_norm": "checkpoint rate",
+     "ids": [
+      "checkpointframes"
+     ],
+     "channels": [],
+     "description": "Checkpoint Rate: When Simulate is on, this is the rate at which the node continually caches a single frame. For example, set this to 24 to cache frames 24, 48, 72, and such. This allows random-scrubbing to be faster as it only has to re-cook from the checkpoint frame. Set to 0 to disable checkpointing.",
+     "description_source": "inline",
+     "heading": "Caching",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "checkpointframes"
+    },
+    {
+     "label": "Collision Threshold",
+     "label_norm": "collision threshold",
+     "ids": [
+      "colthresh"
+     ],
+     "channels": [],
+     "description": "When the collision input is used, this value sets the threshold at which the mask acts as a collider.",
+     "description_source": "inline",
+     "heading": "Wave Parameters",
+     "section": "parameters",
+     "live_label_match": false,
+     "live_id_match": null,
+     "live_channels_match": false
+    },
+    {
+     "label": "Wave Speed",
+     "label_norm": "wave speed",
+     "ids": [
+      "wavespeed"
+     ],
+     "channels": [],
+     "description": "Controls how fast the ripples travel from pixel to pixel. This is proportional to the change in image space when the buffer coordinate changes by one in either x or y.",
+     "description_source": "inline",
+     "heading": "Wave Parameters",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "wavespeed"
+    },
+    {
+     "label": "Conservation",
+     "label_norm": "conservation",
+     "ids": [
+      "conservation"
+     ],
+     "channels": [],
+     "description": "Controls how much wave velocity is kept over time. It directly affects how quickly the motion slows down. A value of 1 means no velocity is lost. A value of 0.5 means half the velocity remains after one second. A value of 0 removes all motion immediately. Values outside the 0\u20131 range are not valid and will be clamped.",
+     "description_source": "inline",
+     "heading": "Wave Parameters",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "conservation"
+    },
+    {
+     "label": "Spring",
+     "label_norm": "spring",
+     "ids": [
+      "spring"
+     ],
+     "channels": [],
+     "description": "Controls the strength of the spring force that pulls pixels toward their rest value. Wave motion is preserved by the wave speed, while the spring pulls values back toward the rest state. This can create additional ripples as the values settle.",
+     "description_source": "inline",
+     "heading": "Wave Parameters",
+     "section": "parameters",
+     "live_label_match": true,
+     "live_id_match": "tuple",
+     "live_channels_match": false,
+     "live_matched_name": "spring"
+    }
+   ],
+   "rung": "ACTIONABLE",
+   "clears_floor": true,
+   "known_thin": false,
+   "floor_facts": {
+    "has_summary": true,
+    "parameters": 17,
+    "with_description": 17,
+    "with_internal_name": 16
+   },
+   "deprecation": {
+    "doc": {
+     "deprecated": false,
+     "signals": [],
+     "weak_mention": false,
+     "tier": "VERIFIED-DOC",
+     "build": "22.0.368"
+    },
+    "runtime": {
+     "deprecated": false,
+     "reason": null,
+     "version": null,
+     "tier": "VERIFIED-RUNTIME",
+     "build": "22.0.368",
+     "applicable": true
+    },
+    "union": false,
+    "disagree": false,
+    "direction": null
+   },
+   "extraction": {
+    "eol": "CRLF",
+    "bom": false,
+    "header_order": "directives-first",
+    "includes": {
+     "seen": 10,
+     "verbs": {
+      "include": 10
+     },
+     "resolved": 10
+    },
+    "live_label_matched": 14,
+    "live_label_match_rate": 0.8235
    }
   },
   {
@@ -58034,576 +59503,6 @@
   {
    "tier": "VERIFIED-DOC",
    "build": "22.0.368",
-   "source": "nodes.zip!cop/adjacency_attribsample.txt",
-   "help_key": "nodes/cop/adjacency_attribsample",
-   "context": "cop",
-   "stem": "adjacency_attribsample",
-   "type_candidates": [
-    "adjacency_attribsample"
-   ],
-   "live_type": "adjacency_attribsample",
-   "live_type_match": "candidate",
-   "live_type_matched": true,
-   "live_type_also_matched": [],
-   "runtime_label": "Attribute Sample with Adjacency",
-   "live_parm_tuples": 4,
-   "new_in_22": false,
-   "title": "Attribute Sample with Adjacency",
-   "summary": "Creates a texture map of an attribute sampled from geometry.",
-   "overview": "This node rasterizes an attribute from a geometry into a texture map. Wire an adjacency cable from a Node:cop/geotoadjacency COP into the adjacency input and then set the Attribute you want to sample. You can also choose which attribute Class to sample. The node automatically outputs the type of the attribute you select when the Signature is Select Automatically. You can use the attrib input to sample a point attribute from another geometry. For example, wire an Node:cop/attribextract COP that's attached to a geometry into this input. See /copernicus/adjacency for information about how to use this node.",
-   "since": "22.0",
-   "headings": [],
-   "related": [
-    "[Node:cop/geotoadjacency]",
-    "[Node:cop/attribextract]"
-   ],
-   "parameters": [
-    {
-     "label": "Signature",
-     "label_norm": "signature",
-     "ids": [
-      "signature"
-     ],
-     "channels": [],
-     "description": "The layer type that the attrib input accepts and the node outputs. Use Select Automatically for most workflows. See Signatures for more information.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "signature"
-    },
-    {
-     "label": "Attribute",
-     "label_norm": "attribute",
-     "ids": [
-      "attribute"
-     ],
-     "channels": [],
-     "description": "The name of the geometry attribute to sample. For example, P provides a world space position map.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "attribute"
-    },
-    {
-     "label": "Class",
-     "label_norm": "class",
-     "ids": [
-      "class"
-     ],
-     "channels": [],
-     "description": "The type of attribute class to sample. Primitive: Sample a geometry's primitive attribute. Point: Sample a geometry's point attribute. Vertex: Sample a geometry's vertex attribute.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "class"
-    }
-   ],
-   "rung": "ACTIONABLE",
-   "clears_floor": true,
-   "known_thin": false,
-   "floor_facts": {
-    "has_summary": true,
-    "parameters": 3,
-    "with_description": 3,
-    "with_internal_name": 3
-   },
-   "deprecation": {
-    "doc": {
-     "deprecated": false,
-     "signals": [],
-     "weak_mention": false,
-     "tier": "VERIFIED-DOC",
-     "build": "22.0.368"
-    },
-    "runtime": {
-     "deprecated": false,
-     "reason": null,
-     "version": null,
-     "tier": "VERIFIED-RUNTIME",
-     "build": "22.0.368",
-     "applicable": true
-    },
-    "union": false,
-    "disagree": false,
-    "direction": null
-   },
-   "extraction": {
-    "eol": "LF",
-    "bom": false,
-    "header_order": "directives-first",
-    "includes": {},
-    "live_label_matched": 3,
-    "live_label_match_rate": 1.0
-   }
-  },
-  {
-   "tier": "VERIFIED-DOC",
-   "build": "22.0.368",
-   "source": "nodes.zip!cop/adjacency_distort.txt",
-   "help_key": "nodes/cop/adjacency_distort",
-   "context": "cop",
-   "stem": "adjacency_distort",
-   "type_candidates": [
-    "adjacency_distort"
-   ],
-   "live_type": "adjacency_distort",
-   "live_type_match": "candidate",
-   "live_type_matched": true,
-   "live_type_also_matched": [],
-   "runtime_label": "Distort with Adjacency",
-   "live_parm_tuples": 15,
-   "new_in_22": false,
-   "title": "Distort with Adjacency",
-   "summary": "Distorts a layer over texture seams using adjacency.",
-   "overview": "This node distorts an incoming layer. Use this node when you want to distort pixels over a geometry's texture seams. Configure the Direction parameter to distort the layer in a fixed world space direction, or wire in a dir input to trace through vectors of a UV layer. NOTE: Adjacency workflows output the best results when the texture of the target matches that of the rasterized adjacency maps. Wire a layer that you want to distort into the source input, and then wire an adjacency cable from a Node:cop/geotoadjacency COP into the adjacency input. The node distorts the pixels of the source layer over the texture seams of the adjacency geometry. Use this node instead of the Node:cop/distort COP when you want to distort over texture seams. The Distort COP creates similar results as this node, but without adjacency support. See /copernicus/adjacency for information about how to use this node.",
-   "since": "22.0",
-   "headings": [],
-   "related": [
-    "[Node:cop/adjacency_spacetransform]",
-    "[Node:cop/distort]",
-    "[Node:cop/geotoadjacency]"
-   ],
-   "parameters": [
-    {
-     "label": "Signature",
-     "label_norm": "signature",
-     "ids": [
-      "signature"
-     ],
-     "channels": [],
-     "description": "The layer type that the source accepts. See Signatures for more information.",
-     "description_source": "contentfrom:/nodes/cop/distort#signature",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "signature"
-    },
-    {
-     "label": "Border",
-     "label_norm": "border",
-     "ids": [
-      "border"
-     ],
-     "channels": [],
-     "description": "The sampling behavior outside of the incoming layer's boundaries. Automatically uses the layer's border property. See Border types for more information.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "border"
-    },
-    {
-     "label": "Mask",
-     "label_norm": "mask",
-     "ids": [
-      "mask"
-     ],
-     "channels": [],
-     "description": "The amount of the new value to mix in with the original value. Higher values mix in more of the new value. Lower values mix in less of the new value. A value of 1 means this node uses only the new value. The default value is 1. See Mask for more information.",
-     "description_source": "contentfrom:/nodes/cop/distort#mask",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "mask"
-    },
-    {
-     "label": "Direction",
-     "label_norm": "direction",
-     "ids": [
-      "dir"
-     ],
-     "channels": [],
-     "description": "The world space direction in which you want to distort. This parameter doesn't apply when you wire in a dir input, which instead distorts the layer in a texture space direction.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "dir"
-    },
-    {
-     "label": "Scale",
-     "label_norm": "scale",
-     "ids": [
-      "scale"
-     ],
-     "channels": [],
-     "description": "The strength of distortion. Negative values follow the directions backwards when tracing. This parameter distorts along the Direction parameter's values. When you wire in a dir input, this parameter then distorts in that texture space direction.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "scale"
-    },
-    {
-     "label": "Scale by Timestep",
-     "label_norm": "scale by timestep",
-     "ids": [
-      "scalebytimeinc"
-     ],
-     "channels": [],
-     "description": "Adjusts the distortion's overall strength by the current timestep. The timestep is usually 1/$FPS, but in a sub-stepped simulation it represents the current step size.",
-     "description_source": "contentfrom:/nodes/cop/distort#scalebytimeinc",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "scalebytimeinc"
-    },
-    {
-     "label": "Streak",
-     "label_norm": "streak",
-     "ids": [
-      "streak"
-     ],
-     "channels": [],
-     "description": "The method used to combine the pixel values along the direction of distortion. Off: Don't smear the image. Blur: Average the samples together. This smears the image along the distortion direction. Min: Accept the smallest value encountered along the trajectory. This is useful when eroding an input shape. Max: Accept the largest value encountered along the trajectory. This is useful when adding edge roughness on an input shape.",
-     "description_source": "contentfrom:/nodes/cop/distort#streak",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "streak"
-    },
-    {
-     "label": "Use Streak Weight Ramp",
-     "label_norm": "use streak weight ramp",
-     "ids": [
-      "usestreakweight"
-     ],
-     "channels": [],
-     "description": "When Streak is Blur, Min, or Max , weight the samples encountered along the path. Use Streak Weight to weaken the values over the trajectory.",
-     "description_source": "contentfrom:/nodes/cop/distort#usestreakweight",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "usestreakweight"
-    },
-    {
-     "label": "Streak Weight",
-     "label_norm": "streak weight",
-     "ids": [
-      "streakweight"
-     ],
-     "channels": [],
-     "description": "When Use Streak Weight Ramp is on, this ramp acts as a multiplier on the pixel values when streaking. The left side of the ramp corresponds to the start of the trajectory. For example, when the Streak is Blur, the default linear ramp fades the pixels over their path. This makes the pixels more faint near the start. For more information about using ramps, see Ramp parameters.",
-     "description_source": "contentfrom:/nodes/cop/distort#streakweight",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "streakweight"
-    },
-    {
-     "label": "Pixels per Step",
-     "label_norm": "pixels per step",
-     "ids": [
-      "cfl"
-     ],
-     "channels": [],
-     "description": "Controls the tracing quality to increase the accuracy of tracing curved trajectories. Higher values let the node take larger steps, which runs faster, but can miss intermediate variations in the distortion directions and texture island transitions. When off, the node takes a single step for each pixel to determine the source location. This is fast, but causes inconsistencies at texture seams and inaccuracies when the direction or scale vary.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "usecfl"
-    },
-    {
-     "label": "Maximum Steps",
-     "label_norm": "maximum steps",
-     "ids": [
-      "maxsteps"
-     ],
-     "channels": [],
-     "description": "Clamps the number of steps taken when Pixels per Step is on. You can raise this parameter (and lower Pixels per Step) if the distortion doesn't faithfully follow the directions. This can be especially noticeable when Streak is turned on.",
-     "description_source": "contentfrom:/nodes/cop/distort#maxsteps",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "maxsteps"
-    }
-   ],
-   "rung": "ACTIONABLE",
-   "clears_floor": true,
-   "known_thin": false,
-   "floor_facts": {
-    "has_summary": true,
-    "parameters": 11,
-    "with_description": 11,
-    "with_internal_name": 11
-   },
-   "deprecation": {
-    "doc": {
-     "deprecated": false,
-     "signals": [],
-     "weak_mention": false,
-     "tier": "VERIFIED-DOC",
-     "build": "22.0.368"
-    },
-    "runtime": {
-     "deprecated": false,
-     "reason": null,
-     "version": null,
-     "tier": "VERIFIED-RUNTIME",
-     "build": "22.0.368",
-     "applicable": true
-    },
-    "union": false,
-    "disagree": false,
-    "direction": null
-   },
-   "extraction": {
-    "eol": "LF",
-    "bom": false,
-    "header_order": "directives-first",
-    "includes": {
-     "seen": 3,
-     "verbs": {
-      "include": 3
-     },
-     "resolved": 3
-    },
-    "live_label_matched": 11,
-    "live_label_match_rate": 1.0
-   }
-  },
-  {
-   "tier": "VERIFIED-DOC",
-   "build": "22.0.368",
-   "source": "nodes.zip!cop/adjacency_extrapolate.txt",
-   "help_key": "nodes/cop/adjacency_extrapolate",
-   "context": "cop",
-   "stem": "adjacency_extrapolate",
-   "type_candidates": [
-    "adjacency_extrapolate"
-   ],
-   "live_type": "adjacency_extrapolate",
-   "live_type_match": "candidate",
-   "live_type_matched": true,
-   "live_type_also_matched": [],
-   "runtime_label": "Extrapolate with Adjacency",
-   "live_parm_tuples": 2,
-   "new_in_22": false,
-   "title": "Extrapolate with Adjacency",
-   "summary": "Fills areas of a texture outside the UV islands with information from their island neighbors.",
-   "overview": "This node extends the borders of a UV island using the pixel color information from its neighboring islands. Use this node to make sure that pixels on an island's edge have viable neighbor pixels so that subsequent nodes without built-in adjacency awareness can use that data to work over texture seams. NOTE: Adjacency workflows output the best results when the texture of the target matches that of the rasterized adjacency maps. Turn on Transform Vectors between Islands to also transfer pixel vector information between islands when you're working with velocity fields and normals. This reorients the vector direction to match the rotation of neighboring islands. You can also use this node to ensure that there is no mipmap bleeding for texture mapping. This node is similar to the Node:cop/extrapolateboundaries COP, but faster. See /copernicus/adjacency for information about how to use this node.",
-   "since": "22.0",
-   "headings": [],
-   "related": [
-    "[Node:cop/geotoadjacency]",
-    "[Node:cop/extrapolateboundaries]"
-   ],
-   "parameters": [
-    {
-     "label": "Signature",
-     "label_norm": "signature",
-     "ids": [
-      "signature"
-     ],
-     "channels": [],
-     "description": "The layer type that the source accepts. See Signatures for more information.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "signature"
-    },
-    {
-     "label": "Transform Vectors between Islands",
-     "label_norm": "transform vectors between islands",
-     "ids": [
-      "tangentxform"
-     ],
-     "channels": [],
-     "description": "Treats pixel data as vectors and orients those vectors to match the boundary rotation between islands.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "tangentxform"
-    }
-   ],
-   "rung": "ACTIONABLE",
-   "clears_floor": true,
-   "known_thin": false,
-   "floor_facts": {
-    "has_summary": true,
-    "parameters": 2,
-    "with_description": 2,
-    "with_internal_name": 2
-   },
-   "deprecation": {
-    "doc": {
-     "deprecated": false,
-     "signals": [],
-     "weak_mention": false,
-     "tier": "VERIFIED-DOC",
-     "build": "22.0.368"
-    },
-    "runtime": {
-     "deprecated": false,
-     "reason": null,
-     "version": null,
-     "tier": "VERIFIED-RUNTIME",
-     "build": "22.0.368",
-     "applicable": true
-    },
-    "union": false,
-    "disagree": false,
-    "direction": null
-   },
-   "extraction": {
-    "eol": "LF",
-    "bom": false,
-    "header_order": "directives-first",
-    "includes": {
-     "seen": 1,
-     "verbs": {
-      "include": 1
-     },
-     "resolved": 1
-    },
-    "live_label_matched": 2,
-    "live_label_match_rate": 1.0
-   }
-  },
-  {
-   "tier": "VERIFIED-DOC",
-   "build": "22.0.368",
-   "source": "nodes.zip!cop/adjacency_spacetransform.txt",
-   "help_key": "nodes/cop/adjacency_spacetransform",
-   "context": "cop",
-   "stem": "adjacency_spacetransform",
-   "type_candidates": [
-    "adjacency_spacetransform"
-   ],
-   "live_type": "adjacency_spacetransform",
-   "live_type_match": "candidate",
-   "live_type_matched": true,
-   "live_type_also_matched": [],
-   "runtime_label": "Space Transform with Adjacency",
-   "live_parm_tuples": 2,
-   "new_in_22": false,
-   "title": "Space Transform with Adjacency",
-   "summary": "Transforms a vector from world space into tangent space.",
-   "overview": "This node transforms world space vectors into tangent space. In this node, tangent space refers to the parametrization of the tangent plane (the plane of best fit) on a 3D surface. Use this node when you need a geometry's vectors to point in a specific direction. NOTE: Adjacency workflows output the best results when the texture of the target matches that of the rasterized adjacency maps. Wire an RGB vector that you want to transform into the coord input, and then wire an adjacency cable from a Node:cop/geotoadjacency COP into the adjacency input. See /copernicus/adjacency for information about how to use this node.",
-   "since": "22.0",
-   "headings": [],
-   "related": [
-    "[Node:cop/geotoadjacency]"
-   ],
-   "parameters": [
-    {
-     "label": "Signature",
-     "label_norm": "signature",
-     "ids": [
-      "signature"
-     ],
-     "channels": [],
-     "description": "The layer type that the source outputs. RGB outputs the full vector and UV outputs only the X and Y components of the vector. See Signatures for more information.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "signature"
-    },
-    {
-     "label": "Transformation",
-     "label_norm": "transformation",
-     "ids": [
-      "method"
-     ],
-     "channels": [],
-     "description": "The space to which you transform the vector. World to Tangent: Transforms the vector from world space to tangent space.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "method"
-    }
-   ],
-   "rung": "ACTIONABLE",
-   "clears_floor": true,
-   "known_thin": false,
-   "floor_facts": {
-    "has_summary": true,
-    "parameters": 2,
-    "with_description": 2,
-    "with_internal_name": 2
-   },
-   "deprecation": {
-    "doc": {
-     "deprecated": false,
-     "signals": [],
-     "weak_mention": false,
-     "tier": "VERIFIED-DOC",
-     "build": "22.0.368"
-    },
-    "runtime": {
-     "deprecated": false,
-     "reason": null,
-     "version": null,
-     "tier": "VERIFIED-RUNTIME",
-     "build": "22.0.368",
-     "applicable": true
-    },
-    "union": false,
-    "disagree": false,
-    "direction": null
-   },
-   "extraction": {
-    "eol": "LF",
-    "bom": false,
-    "header_order": "directives-first",
-    "includes": {
-     "seen": 1,
-     "verbs": {
-      "include": 1
-     },
-     "resolved": 1
-    },
-    "live_label_matched": 2,
-    "live_label_match_rate": 1.0
-   }
-  },
-  {
-   "tier": "VERIFIED-DOC",
-   "build": "22.0.368",
    "source": "nodes.zip!cop/autostereogram.txt",
    "help_key": "nodes/cop/autostereogram",
    "context": "cop",
@@ -72084,94 +72983,6 @@
   {
    "tier": "VERIFIED-DOC",
    "build": "22.0.368",
-   "source": "nodes.zip!cop/geotoadjacency.txt",
-   "help_key": "nodes/cop/geotoadjacency",
-   "context": "cop",
-   "stem": "geotoadjacency",
-   "type_candidates": [
-    "geotoadjacency"
-   ],
-   "live_type": "geotoadjacency",
-   "live_type_match": "candidate",
-   "live_type_matched": true,
-   "live_type_also_matched": [],
-   "runtime_label": "Geometry to Adjacency",
-   "live_parm_tuples": 1,
-   "new_in_22": false,
-   "title": "Geometry to Adjacency",
-   "summary": "Rasterizes geometry to generate an adjacency cable.",
-   "overview": "This node generates an adjacency cable from a geometry. The node converts the geometry into triangles and rasterizes the geometry using a UV Attribute. The rasterized data is output as an adjacency cable that you can then use in other adjacency COP nodes for processing. For most workflows, wire this node into the Node:cop/adjacency_attribsample COP to rasterize your geometry attributes. When connected, these nodes are similar to the Node:cop/rasterizegeo COP, but with support for adjacency information. NOTE: If your geometry has n-gons and you sample attributes from that geometry, there may be unwanted distortion in your workflow. See /copernicus/adjacency for information about how to use this node.",
-   "since": "22.0",
-   "headings": [],
-   "related": [
-    "[Node:cop/adjacency_attribsample]",
-    "[Node:cop/sopimport]"
-   ],
-   "parameters": [
-    {
-     "label": "UV Attribute",
-     "label_norm": "uv attribute",
-     "ids": [
-      "uvattrib"
-     ],
-     "channels": [],
-     "description": "The name of the vertex UV attribute to rasterize.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "uvattrib"
-    }
-   ],
-   "rung": "ACTIONABLE",
-   "clears_floor": true,
-   "known_thin": false,
-   "floor_facts": {
-    "has_summary": true,
-    "parameters": 1,
-    "with_description": 1,
-    "with_internal_name": 1
-   },
-   "deprecation": {
-    "doc": {
-     "deprecated": false,
-     "signals": [],
-     "weak_mention": false,
-     "tier": "VERIFIED-DOC",
-     "build": "22.0.368"
-    },
-    "runtime": {
-     "deprecated": false,
-     "reason": null,
-     "version": null,
-     "tier": "VERIFIED-RUNTIME",
-     "build": "22.0.368",
-     "applicable": true
-    },
-    "union": false,
-    "disagree": false,
-    "direction": null
-   },
-   "extraction": {
-    "eol": "LF",
-    "bom": false,
-    "header_order": "directives-first",
-    "includes": {
-     "seen": 1,
-     "verbs": {
-      "include": 1
-     },
-     "resolved": 1
-    },
-    "live_label_matched": 1,
-    "live_label_match_rate": 1.0
-   }
-  },
-  {
-   "tier": "VERIFIED-DOC",
-   "build": "22.0.368",
    "source": "nodes.zip!cop/geotolayer.txt",
    "help_key": "nodes/cop/geotolayer",
    "context": "cop",
@@ -79863,265 +80674,6 @@
      "resolved": 1
     },
     "live_label_matched": 8,
-    "live_label_match_rate": 1.0
-   }
-  },
-  {
-   "tier": "VERIFIED-DOC",
-   "build": "22.0.368",
-   "source": "nodes.zip!cop/layerattribcreate.txt",
-   "help_key": "nodes/cop/layerattribcreate",
-   "context": "cop",
-   "stem": "layerattribcreate",
-   "type_candidates": [
-    "layerattribcreate"
-   ],
-   "live_type": "layerattribcreate",
-   "live_type_match": "candidate",
-   "live_type_matched": true,
-   "live_type_also_matched": [],
-   "runtime_label": "Layer Property Create",
-   "live_parm_tuples": 6,
-   "new_in_22": false,
-   "title": "Layer Property Create",
-   "summary": "Adds or edits user-defined properties on a layer.",
-   "overview": "This node adds or edits user-defined properties on a layer. This node is useful when you want to set the savepath property. When a USD ROP or USD Render ROP is writing out USD files, if any files reference a COP node using the op: syntax, the ROP looks for the savepath property. If set, the EXR file is saved to the location specified by savepath. Multiple layers can have multiple savepaths set. When saving out multiple layers with a savepath that isn't unique, the file name is auto-incremented so that each texture has a unique file name. TIP: When setting the savepath property, set Name to savepath and Value to the path of the texture (for example, $HIP/textures/roughness.exr).",
-   "since": null,
-   "headings": [],
-   "related": [
-    "[Node:cop/layerattribdelete]"
-   ],
-   "parameters": [
-    {
-     "label": "Signature",
-     "label_norm": "signature",
-     "ids": [
-      "signature"
-     ],
-     "channels": [],
-     "description": "The layer type that the source accepts. See Signatures for more information.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "signature"
-    },
-    {
-     "label": "Number of Properties",
-     "label_norm": "number of properties",
-     "ids": [
-      "numattrib"
-     ],
-     "channels": [],
-     "description": "The number of properties.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": false,
-     "live_id_match": null,
-     "live_channels_match": false
-    },
-    {
-     "label": "Name #",
-     "label_norm": "name #",
-     "ids": [
-      "name#"
-     ],
-     "channels": [],
-     "description": "The name of the property. If blank no property is created.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "name#"
-    },
-    {
-     "label": "Type",
-     "label_norm": "type",
-     "ids": [
-      "type#"
-     ],
-     "channels": [],
-     "description": "The type of property to create.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "type#"
-    },
-    {
-     "label": "Value #",
-     "label_norm": "value #",
-     "ids": [
-      "vals#",
-      "valf#",
-      "vali#"
-     ],
-     "channels": [],
-     "description": "The property's string, float, or integer value (which the Type parameter determines).",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "valf#"
-    }
-   ],
-   "rung": "ACTIONABLE",
-   "clears_floor": true,
-   "known_thin": false,
-   "floor_facts": {
-    "has_summary": true,
-    "parameters": 5,
-    "with_description": 5,
-    "with_internal_name": 5
-   },
-   "deprecation": {
-    "doc": {
-     "deprecated": false,
-     "signals": [],
-     "weak_mention": false,
-     "tier": "VERIFIED-DOC",
-     "build": "22.0.368"
-    },
-    "runtime": {
-     "deprecated": false,
-     "reason": null,
-     "version": null,
-     "tier": "VERIFIED-RUNTIME",
-     "build": "22.0.368",
-     "applicable": true
-    },
-    "union": false,
-    "disagree": false,
-    "direction": null
-   },
-   "extraction": {
-    "eol": "CRLF",
-    "bom": false,
-    "header_order": "directives-first",
-    "includes": {},
-    "live_label_matched": 4,
-    "live_label_match_rate": 0.8
-   }
-  },
-  {
-   "tier": "VERIFIED-DOC",
-   "build": "22.0.368",
-   "source": "nodes.zip!cop/layerattribdelete.txt",
-   "help_key": "nodes/cop/layerattribdelete",
-   "context": "cop",
-   "stem": "layerattribdelete",
-   "type_candidates": [
-    "layerattribdelete"
-   ],
-   "live_type": "layerattribdelete",
-   "live_type_match": "candidate",
-   "live_type_matched": true,
-   "live_type_also_matched": [],
-   "runtime_label": "Layer Property Delete",
-   "live_parm_tuples": 3,
-   "new_in_22": false,
-   "title": "Layer Property Delete",
-   "summary": "Removes user-defined properties from a layer.",
-   "overview": "This node removes user-defined properties from a layer. Use this node to clear out unwanted properties imported from files, such as an EXR file.",
-   "since": "21.0",
-   "headings": [],
-   "related": [
-    "[Node:cop/layerattribcreate]"
-   ],
-   "parameters": [
-    {
-     "label": "Signature",
-     "label_norm": "signature",
-     "ids": [
-      "signature"
-     ],
-     "channels": [],
-     "description": "The layer type that the source accepts. See Signatures for more information.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "signature"
-    },
-    {
-     "label": "Delete Property",
-     "label_norm": "delete property",
-     "ids": [
-      "delete"
-     ],
-     "channels": [],
-     "description": "The property pattern to delete. The node deletes any layer property that matches this pattern.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "delete"
-    },
-    {
-     "label": "Keep Property",
-     "label_norm": "keep property",
-     "ids": [
-      "keep"
-     ],
-     "channels": [],
-     "description": "The property pattern to keep. The node deletes any layer property that doesn't match this pattern.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "keep"
-    }
-   ],
-   "rung": "ACTIONABLE",
-   "clears_floor": true,
-   "known_thin": false,
-   "floor_facts": {
-    "has_summary": true,
-    "parameters": 3,
-    "with_description": 3,
-    "with_internal_name": 3
-   },
-   "deprecation": {
-    "doc": {
-     "deprecated": false,
-     "signals": [],
-     "weak_mention": false,
-     "tier": "VERIFIED-DOC",
-     "build": "22.0.368"
-    },
-    "runtime": {
-     "deprecated": false,
-     "reason": null,
-     "version": null,
-     "tier": "VERIFIED-RUNTIME",
-     "build": "22.0.368",
-     "applicable": true
-    },
-    "union": false,
-    "disagree": false,
-    "direction": null
-   },
-   "extraction": {
-    "eol": "LF",
-    "bom": false,
-    "header_order": "directives-first",
-    "includes": {},
-    "live_label_matched": 3,
     "live_label_match_rate": 1.0
    }
   },
@@ -100621,127 +101173,6 @@
   {
    "tier": "VERIFIED-DOC",
    "build": "22.0.368",
-   "source": "nodes.zip!cop/reactiondiffusion_block_begin.txt",
-   "help_key": "nodes/cop/reactiondiffusion_block_begin",
-   "context": "cop",
-   "stem": "reactiondiffusion_block_begin",
-   "type_candidates": [
-    "reactiondiffusion_block_begin"
-   ],
-   "live_type": "reactiondiffusion_block_begin",
-   "live_type_match": "candidate",
-   "live_type_matched": true,
-   "live_type_also_matched": [],
-   "runtime_label": "Reaction-Diffusion Block Begin",
-   "live_parm_tuples": 4,
-   "new_in_22": false,
-   "title": "Reaction-Diffusion Block Begin",
-   "summary": "Start of a Reaction-Diffusion simulation block.",
-   "overview": "This node is the beginning of a Reaction-Diffusion simulation block. Reaction-Diffusion simulations are complex 2D simulations of chemicals reacting and diffusing. NOTE: Operations that're independent of previous frames should occur before the Reaction-Diffusion Block Begin so that they only get cooked once. Post-processing operations that aren't required to feedback should occur after the Reaction-Diffusion Block End. Use the passthrough input to bring additional inputs inside the block. Use the feedback input to add additional values that must be updated every frame. See /copernicus/reaction_diffusion for information about how to use this node. NOTE: In Copernicus blocks, you can't use Time Shifts when they require the inputs of the block to cook at different times. As a workaround, Node:cop/timepack the required frames before the Block Begin and wire them into the block as a cable. Each iteration of the block extracts only the required wire from the cable.",
-   "since": "21.0",
-   "headings": [],
-   "related": [
-    "[Node:cop/reactiondiffusion_block_end]",
-    "[Node:cop/block_begin]",
-    "[Node:cop/block_end]"
-   ],
-   "parameters": [
-    {
-     "label": "Signature",
-     "label_norm": "signature",
-     "ids": [
-      "signature"
-     ],
-     "channels": [],
-     "description": "The signature mode to evaluate the activation input as. This also controls how the reaction initiates using the activation pattern. Activation (Mono): Use a mono input pattern to initiate the reaction with. In this mode, it's best to provide high contrast noise patterns to help the reaction start. Chemical (UV): Use a UV input, which causes the reaction to continue using the raw chemical values. Use this to stack multiple Reaction-Diffusion blocks.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "signature"
-    },
-    {
-     "label": "Block Path",
-     "label_norm": "block path",
-     "ids": [
-      "blockpath"
-     ],
-     "channels": [],
-     "description": "The path to the Reaction-Diffusion Block End COP that's the final and closing node of this block. The Reaction-Diffusion Block End node must be at the same network level as this Reaction-Diffusion Block Begin node.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "blockpath"
-    },
-    {
-     "label": "Continuous Activation",
-     "label_norm": "continuous activation",
-     "ids": [
-      "continuousactivation"
-     ],
-     "channels": [],
-     "description": "Makes the simulation evaluate the activation pattern as if it were a constant source. When off, the simulation evaluates the activation pattern on only the first frame.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "continuousactivation"
-    }
-   ],
-   "rung": "ACTIONABLE",
-   "clears_floor": true,
-   "known_thin": false,
-   "floor_facts": {
-    "has_summary": true,
-    "parameters": 3,
-    "with_description": 3,
-    "with_internal_name": 3
-   },
-   "deprecation": {
-    "doc": {
-     "deprecated": false,
-     "signals": [],
-     "weak_mention": false,
-     "tier": "VERIFIED-DOC",
-     "build": "22.0.368"
-    },
-    "runtime": {
-     "deprecated": false,
-     "reason": null,
-     "version": null,
-     "tier": "VERIFIED-RUNTIME",
-     "build": "22.0.368",
-     "applicable": true
-    },
-    "union": false,
-    "disagree": false,
-    "direction": null
-   },
-   "extraction": {
-    "eol": "CRLF",
-    "bom": false,
-    "header_order": "directives-first",
-    "includes": {
-     "seen": 1,
-     "verbs": {
-      "include": 1
-     },
-     "resolved": 1
-    },
-    "live_label_matched": 3,
-    "live_label_match_rate": 1.0
-   }
-  },
-  {
-   "tier": "VERIFIED-DOC",
-   "build": "22.0.368",
    "source": "nodes.zip!cop/reactiondiffusion_block_end.txt",
    "help_key": "nodes/cop/reactiondiffusion_block_end",
    "context": "cop",
@@ -101840,435 +102271,6 @@
     "includes": {},
     "live_label_matched": 1,
     "live_label_match_rate": 1.0
-   }
-  },
-  {
-   "tier": "VERIFIED-DOC",
-   "build": "22.0.368",
-   "source": "nodes.zip!cop/ripple_block_begin.txt",
-   "help_key": "nodes/cop/ripple_block_begin",
-   "context": "cop",
-   "stem": "ripple_block_begin",
-   "type_candidates": [
-    "ripple_block_begin"
-   ],
-   "live_type": "ripple_block_begin",
-   "live_type_match": "candidate",
-   "live_type_matched": true,
-   "live_type_also_matched": [],
-   "runtime_label": "Ripple Block Begin",
-   "live_parm_tuples": 1,
-   "new_in_22": false,
-   "title": "Ripple Block Begin",
-   "summary": "Start of a Ripple simulation block.",
-   "overview": "NOTE: Although the Ripple solver is in COPs, you need DOP level permissions to use it. This means that it is _not_ available in Houdini Core, but only in Houdini FX, Houdini Apprentice, Houdini Indie, and Houdini Education. This node defines the start of a Ripple simulation block. The Ripple block simulates ripples propagating across an image layer. Operations that do not depend on previous frames should be placed before the block so they are only cooked once. Post-processing operations that do not need to be fed back into the simulation should be placed after the Ripple Block End. The passthrough input can be used to bring additional data into the block, while the feedback input is used to carry values forward between frames. NOTE: In Copernicus blocks, you can't use Time Shifts when they require the inputs of the block to cook at different times. As a workaround, Node:cop/timepack the required frames before the Block Begin and wire them into the block as a cable. Each iteration of the block extracts only the required wire from the cable.",
-   "since": "22.0",
-   "headings": [],
-   "related": [
-    "[Node:cop/ripple_block_end]"
-   ],
-   "parameters": [
-    {
-     "label": "Block Path",
-     "label_norm": "block path",
-     "ids": [
-      "blockpath"
-     ],
-     "channels": [],
-     "description": "The path to the Ripple Block End COP that defines the end of this block. The Block End node must be at the same network level as this Block Begin node.",
-     "description_source": "inline",
-     "heading": null,
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "blockpath"
-    }
-   ],
-   "rung": "ACTIONABLE",
-   "clears_floor": true,
-   "known_thin": false,
-   "floor_facts": {
-    "has_summary": true,
-    "parameters": 1,
-    "with_description": 1,
-    "with_internal_name": 1
-   },
-   "deprecation": {
-    "doc": {
-     "deprecated": false,
-     "signals": [],
-     "weak_mention": false,
-     "tier": "VERIFIED-DOC",
-     "build": "22.0.368"
-    },
-    "runtime": {
-     "deprecated": false,
-     "reason": null,
-     "version": null,
-     "tier": "VERIFIED-RUNTIME",
-     "build": "22.0.368",
-     "applicable": true
-    },
-    "union": false,
-    "disagree": false,
-    "direction": null
-   },
-   "extraction": {
-    "eol": "CRLF",
-    "bom": false,
-    "header_order": "directives-first",
-    "includes": {
-     "seen": 1,
-     "verbs": {
-      "include": 1
-     },
-     "resolved": 1
-    },
-    "live_label_matched": 1,
-    "live_label_match_rate": 1.0
-   }
-  },
-  {
-   "tier": "VERIFIED-DOC",
-   "build": "22.0.368",
-   "source": "nodes.zip!cop/ripple_block_end.txt",
-   "help_key": "nodes/cop/ripple_block_end",
-   "context": "cop",
-   "stem": "ripple_block_end",
-   "type_candidates": [
-    "ripple_block_end"
-   ],
-   "live_type": "ripple_block_end",
-   "live_type_match": "candidate",
-   "live_type_matched": true,
-   "live_type_also_matched": [],
-   "runtime_label": "Ripple Block End",
-   "live_parm_tuples": 15,
-   "new_in_22": false,
-   "title": "Ripple Block End",
-   "summary": "End of a Ripple simulation block",
-   "overview": "NOTE: Although the Ripple solver is in COPs, you need DOP level permissions to use it. This means that it is _not_ available in Houdini Core, but only in Houdini FX, Houdini Apprentice, Houdini Indie, and Houdini Education. The Ripple block simulates ripples propagating across an image layer. Two parameters control how waves evolve over time: - The Wave Speed parameter controls how fast waves move across the image layer. - The Rest Spring parameter applies a restoring force that pulls values toward the rest state each time step. Higher values will dissipate waves faster, causing waves to lose energy more quickly and settle toward the rest value. This node defines the end of a Ripple simulation block and must be paired with a Ripple Block Begin COP. NOTE: Compiled COP networks don't support simulation.",
-   "since": "22.0",
-   "headings": [
-    "Time",
-    "Caching",
-    "Wave Parameters"
-   ],
-   "related": [
-    "[Node:cop/ripple_block_begin]"
-   ],
-   "parameters": [
-    {
-     "label": "Simulate",
-     "label_norm": "simulate",
-     "ids": [
-      "simulate"
-     ],
-     "channels": [],
-     "description": "Simulate: Turns on simulation so block outputs feed directly back into the inputs, which creates a feedback loop. This is useful for complex motion and simulations.",
-     "description_source": "inline",
-     "heading": "Time",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "simulate"
-    },
-    {
-     "label": "Reset Simulation",
-     "label_norm": "reset simulation",
-     "ids": [
-      "resimulate"
-     ],
-     "channels": [],
-     "description": "Reset Simulation: When Simulate is on, this clears the entire simulation cache.",
-     "description_source": "inline",
-     "heading": "Time",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "resimulate"
-    },
-    {
-     "label": "Time Scale",
-     "label_norm": "time scale",
-     "ids": [
-      "timescale"
-     ],
-     "channels": [],
-     "description": "Time Scale: When Simulate is on, this is the amount to scale the time inside the block. A value of 1 maintains the normal speed, a value greater than 1 speeds up the simulation, and a value less than 1 slows down the simulation.",
-     "description_source": "inline",
-     "heading": "Time",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "timescale"
-    },
-    {
-     "label": "Substeps",
-     "label_norm": "substeps",
-     "ids": [
-      "substeps"
-     ],
-     "channels": [],
-     "description": "When simulation is on, each frame is divided into this number of substeps. Increasing the number of substeps improves simulation accuracy and can help maintain stability when high-speed ripples would otherwise cause instability.",
-     "description_source": "inline",
-     "heading": "Time",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "substeps"
-    },
-    {
-     "label": "Iterations",
-     "label_norm": "iterations",
-     "ids": [
-      "iterations"
-     ],
-     "channels": [],
-     "description": "Amount of iterations to run in non-simulation mode.",
-     "description_source": "inline",
-     "heading": "Time",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "iterations"
-    },
-    {
-     "label": "Live Simulation",
-     "label_norm": "live simulation",
-     "ids": [
-      "continuouscook"
-     ],
-     "channels": [],
-     "description": "Live Simulation: When Simulate is on, this turns on live simulation to provide an interactive, non-deterministic simulation mode. It simulates independent of the playbar and isn't associated with any keyframes or caching. This parameter (and its associated parameters) is intended as a sandbox mode where you don't have to rely on the playbar. TIP: Live Simulation doesn't save the results like other simulation types in Houdini, so use a Stash COP to save results.",
-     "description_source": "inline",
-     "heading": "Time",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "continuouscook"
-    },
-    {
-     "label": "Toggle Live Simulation",
-     "label_norm": "toggle live simulation",
-     "ids": [
-      "continuouscook_toggle"
-     ],
-     "channels": [],
-     "description": "Toggle Live Simulation: When Live Simulation is on, this lets you pause and resume the live simulation. TIP: You can also use the Icon:BUTTONS/live_disable Live Simulation button to pause and resume live simulation. See Cooking controls for more information.",
-     "description_source": "inline",
-     "heading": "Time",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "continuouscook_toggle"
-    },
-    {
-     "label": "Live Tick",
-     "label_norm": "live tick",
-     "ids": [
-      "continuouscook_tick"
-     ],
-     "channels": [],
-     "description": "Live Tick: When Live Simulation is on, this is the current tick (frame) within the live simulation.",
-     "description_source": "inline",
-     "heading": "Time",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "continuouscook_tick"
-    },
-    {
-     "label": "NOTE",
-     "label_norm": "note",
-     "ids": [],
-     "channels": [],
-     "description": "When Live Simulation is on, the Start Frame, Cached Frames, and Checkpoint Rate parameters no longer apply.",
-     "description_source": "inline",
-     "heading": "Caching",
-     "section": "parameters",
-     "live_label_match": false,
-     "live_id_match": null,
-     "live_channels_match": false
-    },
-    {
-     "label": "Caching",
-     "label_norm": "caching",
-     "ids": [
-      "cacheenabled"
-     ],
-     "channels": [],
-     "description": "Turns on caching of frames.",
-     "description_source": "inline",
-     "heading": "Caching",
-     "section": "parameters",
-     "live_label_match": false,
-     "live_id_match": "tuple",
-     "live_channels_match": false
-    },
-    {
-     "label": "Start Frame",
-     "label_norm": "start frame",
-     "ids": [
-      "startframe"
-     ],
-     "channels": [],
-     "description": "Start Frame: When Simulate is on, this is the frame on the Houdini playbar where the simulation starts.",
-     "description_source": "inline",
-     "heading": "Caching",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "startframe"
-    },
-    {
-     "label": "Cached Frames",
-     "label_norm": "cached frames",
-     "ids": [
-      "cachedframes"
-     ],
-     "channels": [],
-     "description": "Cached Frames: When Simulate is on, this is how many frames behind the current frame to keep cached.",
-     "description_source": "inline",
-     "heading": "Caching",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "cachedframes"
-    },
-    {
-     "label": "Checkpoint Rate",
-     "label_norm": "checkpoint rate",
-     "ids": [
-      "checkpointframes"
-     ],
-     "channels": [],
-     "description": "Checkpoint Rate: When Simulate is on, this is the rate at which the node continually caches a single frame. For example, set this to 24 to cache frames 24, 48, 72, and such. This allows random-scrubbing to be faster as it only has to re-cook from the checkpoint frame. Set to 0 to disable checkpointing.",
-     "description_source": "inline",
-     "heading": "Caching",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "checkpointframes"
-    },
-    {
-     "label": "Collision Threshold",
-     "label_norm": "collision threshold",
-     "ids": [
-      "colthresh"
-     ],
-     "channels": [],
-     "description": "When the collision input is used, this value sets the threshold at which the mask acts as a collider.",
-     "description_source": "inline",
-     "heading": "Wave Parameters",
-     "section": "parameters",
-     "live_label_match": false,
-     "live_id_match": null,
-     "live_channels_match": false
-    },
-    {
-     "label": "Wave Speed",
-     "label_norm": "wave speed",
-     "ids": [
-      "wavespeed"
-     ],
-     "channels": [],
-     "description": "Controls how fast the ripples travel from pixel to pixel. This is proportional to the change in image space when the buffer coordinate changes by one in either x or y.",
-     "description_source": "inline",
-     "heading": "Wave Parameters",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "wavespeed"
-    },
-    {
-     "label": "Conservation",
-     "label_norm": "conservation",
-     "ids": [
-      "conservation"
-     ],
-     "channels": [],
-     "description": "Controls how much wave velocity is kept over time. It directly affects how quickly the motion slows down. A value of 1 means no velocity is lost. A value of 0.5 means half the velocity remains after one second. A value of 0 removes all motion immediately. Values outside the 0\u20131 range are not valid and will be clamped.",
-     "description_source": "inline",
-     "heading": "Wave Parameters",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "conservation"
-    },
-    {
-     "label": "Spring",
-     "label_norm": "spring",
-     "ids": [
-      "spring"
-     ],
-     "channels": [],
-     "description": "Controls the strength of the spring force that pulls pixels toward their rest value. Wave motion is preserved by the wave speed, while the spring pulls values back toward the rest state. This can create additional ripples as the values settle.",
-     "description_source": "inline",
-     "heading": "Wave Parameters",
-     "section": "parameters",
-     "live_label_match": true,
-     "live_id_match": "tuple",
-     "live_channels_match": false,
-     "live_matched_name": "spring"
-    }
-   ],
-   "rung": "ACTIONABLE",
-   "clears_floor": true,
-   "known_thin": false,
-   "floor_facts": {
-    "has_summary": true,
-    "parameters": 17,
-    "with_description": 17,
-    "with_internal_name": 16
-   },
-   "deprecation": {
-    "doc": {
-     "deprecated": false,
-     "signals": [],
-     "weak_mention": false,
-     "tier": "VERIFIED-DOC",
-     "build": "22.0.368"
-    },
-    "runtime": {
-     "deprecated": false,
-     "reason": null,
-     "version": null,
-     "tier": "VERIFIED-RUNTIME",
-     "build": "22.0.368",
-     "applicable": true
-    },
-    "union": false,
-    "disagree": false,
-    "direction": null
-   },
-   "extraction": {
-    "eol": "CRLF",
-    "bom": false,
-    "header_order": "directives-first",
-    "includes": {
-     "seen": 10,
-     "verbs": {
-      "include": 10
-     },
-     "resolved": 10
-    },
-    "live_label_matched": 14,
-    "live_label_match_rate": 0.8235
    }
   },
   {

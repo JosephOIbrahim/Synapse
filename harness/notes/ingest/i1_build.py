@@ -325,7 +325,7 @@ def main() -> int:
 
     corpus = X.load_corpus()
     boms = X.bom_keys()
-    the161 = X.the_161()
+    the161 = X.new_copernicus_nodes()
     key161 = ["nodes/cop/%s" % n for n in the161]
 
     entries: list = []
@@ -415,6 +415,8 @@ def main() -> int:
     absent161 = [k for k in key161 if k not in by_key and k not in thin_keys]
     the_161_block = {
         "named_in_shipped_whats_new": len(the161),
+        "governing_figure_was": 161,
+        "governing_figure_correction": "The shipped page links node paths in TWO forms; a leading-slash-only pattern returns 161 and drops 10 real node types (the adjacency_* family, layerattribcreate/delete, and three block_begin/end nodes). All 10 have a page and all 10 clear the floor. 161 is a floor, not a total. Wrong in docs/H22_FRONTIER.md, I0 Q3, harness/SYNAPSE_INGEST.md and this leg's brief.",
         "source": "news.zip!22/copernicus.txt (SHIPPED, version-pinned by "
                   "construction -- not the browsing help cache)",
         "have_a_page": len(the161) - len(absent161),

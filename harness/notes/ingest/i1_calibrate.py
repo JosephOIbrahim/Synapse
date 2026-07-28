@@ -164,11 +164,31 @@ def main() -> int:
            any(d.isdigit() and len(d) > 5 for i in xf.items for d in i.ids)],
           [["combine"], False])
 
-    names = X.the_161()
+    names = X.new_copernicus_nodes()
+    slash_only = X.new_copernicus_nodes_slash_only()
+    missed = sorted(set(names) - set(slash_only))
     check("P6", "POSITIVE",
-          "the 161 new Copernicus nodes, from the SHIPPED news.zip (not the browsing cache)",
+          "the new Copernicus nodes, from the SHIPPED news.zip -- BOTH link forms",
           "the what's-new extraction over- or under-counts, or the shipped page stops naming node paths",
-          [len(names), len(set(names)), "chromakey" in names], [161, 161, True])
+          [len(names), len(set(names)), "chromakey" in names], [171, 171, True])
+    # The control this leg did not have, and whose absence let the brief's
+    # number through unchallenged. A POSITIVE control whose expectation is
+    # inherited rather than measured PINS the error it was meant to catch.
+    check("B8", "BLIND",
+          "a leading-slash-only link pattern returns 161 and drops 10 real node types",
+          "both link forms turn out to name the same set, in which case 171 is wrong "
+          "and the slash-only pattern was fine all along",
+          [len(slash_only), len(missed), missed[:3]],
+          [161, 10, ["adjacency_attribsample", "adjacency_distort",
+                     "adjacency_extrapolate"]])
+    check("P6b", "POSITIVE",
+          "every node the slash-only pattern dropped HAS a page and CLEARS the floor",
+          "the 10 missed names are not real node pages, which would make 161 the right total",
+          [sum(1 for n in missed if ("nodes/cop/%s" % n) in corpus.pages),
+           sum(1 for n in missed
+               if ("nodes/cop/%s" % n) in corpus.pages
+               and X.clears_floor(X.rung(X.parse_page("nodes/cop/%s" % n, corpus))))],
+          [10, 10])
 
     ur = X.parse_page("nodes/lop/usd_rop", corpus)
     checkf("P7", "POSITIVE",
