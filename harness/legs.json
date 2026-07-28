@@ -92,12 +92,12 @@
     {
       "id": "H3b",
       "name": "cook-cancel",
-      "state": "held",
+      "state": "ready",
       "receipt": "H3b.json",
       "deps": [
         "H3a"
       ],
-      "note": "R44: HELD by ruling. Human release required - do not auto-dispatch. The safety gap is open.",
+      "note": "RELEASED by Joe 2026-07-28. R44 held it pending human release; the safety gap is open and the brief carries R73s correction - rkill works, the render CAN be stopped, and an earlier version of this brief wrongly said otherwise. R44: HELD by ruling. Human release required - do not auto-dispatch. The safety gap is open.",
       "prompt": "harness/prompts/h3b.md",
       "branch": "repair/h3b-tops-cancel",
       "worktree": ".claude/worktrees/h3b-tops-cancel",
