@@ -365,6 +365,36 @@
       "readonly": true,
       "touches": [],
       "note": "What makes SYNAPSE novel to a mid-size studio, DERIVED from S0-S2 rather than asserted. 'Irrefutably positive' is not achievable; the target is legible value, survivable failure, no new burden. A tool missing the second is uninstalled after one incident however good the first is."
+    },
+    {
+      "id": "I0",
+      "name": "ingest scout",
+      "state": "ready",
+      "receipt": "I0.json",
+      "branch": "ingest/i0-ingest-scout",
+      "worktree": ".claude/worktrees/i0-ingest",
+      "prompt": "harness/prompts/i0.md",
+      "deps": [],
+      "readonly": true,
+      "touches": [],
+      "note": "READ-ONLY. nodes.zip holds 5,034 pages version-pinned to 22.0.368 - a PAGE count, not a KNOWLEDGE count. Measures structure, the JOIN KEY (against the live runtime, because H9 found 385 documented ids that are wrong as names while labels resolve), coverage of the 161 new Copernicus nodes, the quality floor, :include: banners (one made a whole deprecated subsystem read as current), and the doc-vs-runtime deprecation disagreement. I1 is gated on it because the join key is a FINDING, not an assumption."
+    },
+    {
+      "id": "I1",
+      "name": "ingest execute",
+      "state": "ready",
+      "receipt": "I1.json",
+      "branch": "ingest/i1-ingest-execute",
+      "worktree": ".claude/worktrees/i1-ingest",
+      "prompt": "harness/prompts/i1.md",
+      "deps": [
+        "I0"
+      ],
+      "readonly": false,
+      "touches": [
+        "harness/notes/ingest"
+      ],
+      "note": "Builds the extractor and the corpus against what I0 measured. The frontier gap is 161 new Copernicus nodes, SYNAPSE grounds 3. Provenance per ENTRY (VERIFIED-DOC + build), never summed with probe-derived grounding. A stub is recorded known-thin, not padded. Deprecation travels with the entry. NOTHING wires into RAG - U.6 found 15 phantom createNode sites already living there outside the emission gate."
     }
   ]
 }
