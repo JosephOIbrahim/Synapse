@@ -4461,3 +4461,72 @@ finding this week is about whether the code is honest. **Not one is about whethe
 **The method that found 150 defects cannot tell you whether the product is worth having.** That is
 not a criticism of the method. It is the boundary of what verification can do, and the honest
 CTO call is that we have reached it.
+
+---
+
+## RULING 154 — CLAUDE.md was 11,647 tokens and nothing had ever measured it.
+
+The economist axis spent two legs on a tool surface E0 measured at 15,901–19,711 tokens.
+**`CLAUDE.md` is two-thirds of that, paid on every turn of every session, and no leg, ruling or
+check had ever looked at it.**
+
+Audited against Anthropic's context-engineering guidance, whose governing observation is the one
+that makes this urgent: **a guardrail written for a weaker model does not decay to neutral on a
+stronger one — it decays to interference.**
+
+### Measured before cut, and the measurement changed the approach
+
+`ctx_claudemd_census.py`: **4 of 22 sections carry 50% of the file.** There *is* concentration
+here — unlike E1's finding that the tool surface has none. So this was a targeted edit rather than
+a sweep, and the census is what established that.
+
+### Cut only where there was evidence
+
+```
+6.  Memory Evolution — Pokémon   950   memory/evolution.py says of ITSELF:
+                                       "SUPERSEDED by the Moneta backend...
+                                       do not extend it"        (RSI0, verified)
+9.  Implementation Phases        482   a build plan whose phases are complete
+14. File Structure               372   a tree naming synapse-agents/ — not this repo
+15. Revision Manifest            307   says of ITSELF: "Historical... not a
+                                       current-build claim"
+13. Key Type Definitions         201   a table of types living in shared/types.py
+                               -----
+                               2,069   18% of the file, every turn
+```
+
+**Two of the five said in their own text that they were stale.** §15 opens by declaring itself
+historical. §14 names a repository that does not exist. **Nobody had read them recently enough to
+notice, which is precisely the condition that makes prose in a context file expensive.**
+
+### Replaced, not deleted
+
+Each cut section is now a pointer naming the artifact that supersedes it. **A reader who wanted
+that section finds the real thing rather than a gap** — which is the difference between a context
+audit and a deletion.
+
+### What was kept, and why the reasoning matters more than the cuts
+
+**§1 Lossless Execution Bridge (2,559)** — the `/mcp` safety anchors. I attempted to refute its
+`hdefereval` claim and **could not**: `hdefereval` is only available in graphical Houdini, so its
+absence under hython is by design, not evidence. **A claim I could not refute stays.**
+
+**§11 Safety Rules (986)** — the guidance is explicit that irreversible-action rules are what
+survives an audit. This is exactly those.
+
+**§16 Recursive Observability (1,380)** — it claims *"pinned by tests"* and I did not verify that.
+**Left standing rather than cut on suspicion.** Cutting on a hunch is the same error as keeping on
+one.
+
+### The stop rule was the hard part
+
+The guidance names *"audit everything"* as the failure mode, because it feels like the
+highest-leverage available work and is meta-work. **One file, then ship.** The skills directory,
+the MCP tool descriptions and the harness prompts are all plausible next targets and none of them
+is today's.
+
+### The general finding
+
+**The thing everyone optimises is not always the thing that costs.** Two legs on the tool surface;
+zero on a file two-thirds its size sitting in the same request. That is the coverage-denominator
+shape again — R136 — in the context window rather than the catalogue.
