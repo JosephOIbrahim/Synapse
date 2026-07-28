@@ -4944,3 +4944,99 @@ surface. A context audit went into CLAUDE.md. Both were real work on the wrong t
 unattended sessions and three zombies carried the actual bill.
 
 **R136 in the context window. R154 in the session. Same error, third instance.**
+
+---
+
+# ADDENDUM — V2 (R169–R172)
+
+---
+
+## RULING 169 — V2-F7 REFUTES MY OWN BRIEF, on the argument I was proudest of.
+
+I wrote V2's brief claiming a convergence: *"if the model emits STRUCTURE instead of PROSE, register
+instruction comes out of the system prompt — and that is a large part of what makes it non-static.
+Two problems, one contract."*
+
+**Measured, VERIFIED-RUNTIME:**
+
+```
+register instruction OUT   688 tokens
+schema documentation IN  1,046 tokens  (928 lean)
+net                        +240 to +358 preload tokens
+```
+
+**The schema costs more preload than it saves.** The convergence I claimed does not exist as
+stated.
+
+**And the leg then made the finding sharper than the refutation.** Price moves the *other* way —
+roughly 755 tokens saved per call — **because the tokens moved from a span rewritten every turn
+into the cached tool prefix.**
+
+> *"E0's central correction applied to the leg that cited E0: preload tokens and price are different
+> quantities."*
+
+**That is exactly the error E0 caught in T.1**, committed by me, in the brief that cited E0 for it.
+I read E0's finding, wrote it into the brief as context, and then made the same conflation one
+paragraph later.
+
+**Ruled:** the voice case for this leg **stands on its own and never needed the cache argument.**
+Register consistency across tier rotation is the reason; I attached a second reason that was
+measured false. **The leg is right, the brief was wrong, and the leg said so.**
+
+---
+
+## RULING 170 — V2-F6: Invariant 1 as I wrote it is contradicted by work merged the same morning.
+
+> *"the panel renders NO string the model wrote, except `verdict`"* — contradicted by
+> `decision_log`, which **quotes a model sentence and renders it.**
+
+Both landed today. **I wrote the invariant in V2's brief hours after merging the module that
+violates it**, and did not notice.
+
+**Ruled — the invariant is amended, not the module.** `decision_log`'s rule is the stronger of the
+two: the *why* is **quoted, never composed**, selected from what the model actually wrote, empty
+when there is nothing to quote. **That is a provenance guarantee. My invariant was a rendering
+rule, and it was the cruder instrument.**
+
+Invariant 1 becomes: **the panel renders no string the model COMPOSED for the panel.** A quoted
+sentence carries its own provenance and is checkable against the transcript; a composed one is not.
+
+V2's `PROVENANCE` ladder with `MODEL_QUOTED` as an explicit tier is the right mechanism, and it
+makes the distinction enforceable rather than stated.
+
+---
+
+## RULING 171 — V2-F8: the blueprint is not in the tree, and a brief cited it by section.
+
+I wrote V2's brief citing `synapse_economist_blueprint.md` §3.1, §3.2, §04 and §P7. **That file does
+not exist in the repository.** It was pasted into a chat.
+
+**Second instance.** C0-F1 found the same thing about the positioning document — graded against a
+transcription, because the artifact had no file and therefore no history.
+
+**Ruled: a brief may not cite a document that is not in the tree.** Either the blueprint is
+committed, or briefs quote the passages they depend on inline. **A citation nobody can open is
+R82's recollection problem, one level up** — and this time it was load-bearing for a leg's entire
+design.
+
+---
+
+## RULING 172 — What V2 got right, and it is the pattern to keep.
+
+**V2-F1:** all ten voice rules were **unpinnable** — `validate()` took `rules=VOICE_RULES` as a
+**default argument**, snapshotting the table at import, so nothing a test did to the table could
+reach the validator. **Ten rules that could not be tested, in the module whose entire job is
+testability.**
+
+**V2-F2:** there is **no ratified model-tier vocabulary.** `RoutingTier` is the cascade axis, a
+different thing entirely, and the blueprint's `by.tier` assumes one that was never agreed.
+
+**V2-F3:** the schema's two-state `checks` **cannot express "inconclusive"**, while `face_review`
+renders five statuses and RETINA's receipt is tri-state.
+
+**V2-F5:** no slot for `decision_log`'s `classified` flag, **which that module deliberately keeps
+loud.**
+
+Every one of those is the leg reading what already exists and refusing to build past a
+contradiction. **Four of five findings are about the brief's assumptions rather than the code**,
+which is what a keystone leg should produce.
