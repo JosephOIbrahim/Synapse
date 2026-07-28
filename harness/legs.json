@@ -396,6 +396,32 @@
         "harness/notes/ingest"
       ],
       "note": "Builds the extractor and the corpus against what I0 measured. The frontier gap is 161 new Copernicus nodes, SYNAPSE grounds 3. Provenance per ENTRY (VERIFIED-DOC + build), never summed with probe-derived grounding. A stub is recorded known-thin, not padded. Deprecation travels with the entry. NOTHING wires into RAG - U.6 found 15 phantom createNode sites already living there outside the emission gate."
+    },
+    {
+      "id": "E0",
+      "name": "cost truth",
+      "state": "ready",
+      "receipt": "E0.json",
+      "branch": "econ/e0-cost-truth",
+      "worktree": ".claude/worktrees/e0-econ",
+      "prompt": "harness/prompts/e0.md",
+      "deps": [],
+      "readonly": true,
+      "touches": [],
+      "note": "READ-ONLY, and it goes first because it settles T.1's PREMISE. The blueprint's Mile 1 cuts the tool surface 17,310 -> 2,000 on the reasoning that 8.6x over ceiling is not credible for a token economist. Anthropic charges a cache WRITE at 1.25x and a cache READ at 0.1x, and tool definitions are the most cache-stable content in any request - so if cached, the effective cost is ~1,731 and UNDER the ceiling. Those are opposite programmes: a months-long reduction, or a cache-control header. Nobody has measured which applies. Also asks whether GROUNDING dominates tools - C1 measured it at 113,411 tokens, 6.5x the whole tool surface, and it is not cacheable."
+    },
+    {
+      "id": "E1",
+      "name": "tool surface census",
+      "state": "ready",
+      "receipt": "E1.json",
+      "branch": "econ/e1-tool-surface-census",
+      "worktree": ".claude/worktrees/e1-econ",
+      "prompt": "harness/prompts/e1.md",
+      "deps": [],
+      "readonly": true,
+      "touches": [],
+      "note": "READ-ONLY, PARALLEL to E0 on a disjoint question - E0 asks what a turn COSTS, E1 asks what the surface IS. A total is not a plan. Decomposes 17,310 per tool into name / description / schema, because those three compress differently and only one risks correctness. Looks for concentration (is it 20 tools of 120?), duplicated schema fragments (free reduction, no capability lost), and DEAD SURFACE - a registered tool never called costs its full definition every turn, and S1 already found five Solaris tools registered, tested and unreachable. Ends with the honest counter-question: is 2,000 even reachable at 120 tools, or is the real decision FEWER tools rather than smaller ones."
     }
   ]
 }
