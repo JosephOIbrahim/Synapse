@@ -57,71 +57,167 @@ UNKNOWN = "unknown"
 
 
 class TokenField(QtWidgets.QWidget):
-    """A cell field where each segment's AREA is its share of the turn.
+    """A Voronoi field where each segment's AREA is its share of the turn.
 
-    Extends FaceWork's BucketGrid idiom rather than inventing a second visual
-    language: same cell vocabulary, but allocated by proportion instead of by
-    progress.
+    Cells are real Voronoi regions, built by clipping the bounding rect with the
+    perpendicular bisector between each seed and every other seed. No scipy, no
+    dependency - at ~44 seeds the O(n^2) clip is trivial and it runs inside a
+    paintEvent without complaint.
 
-    THE RULE THAT SHAPES IT: an unknown segment is NOT drawn as a small share.
-    It gets a hairline outline and no cells. A segment rendered small reads as
-    'this costs little'; the truth is 'nobody measured this', and those are
-    different claims (R162 - a zero is a claim).
+    THE HARD PART IS HONESTY, not the geometry. Voronoi cells have UNEQUAL
+    areas, so allocating them by COUNT would misstate every proportion. Cells
+    are assigned by CUMULATIVE AREA: walk them left-to-right and hand each
+    segment cells until its measured share of the total area is met. Segments
+    come out spatially coherent and areally correct.
 
-    So the field only fills to the extent the turn has actually been measured,
-    and the unfilled remainder is honest empty space rather than an implied
-    zero.
+    AND THE RULE THAT SHAPES IT: an unmeasured segment claims NO CELLS. Not a
+    small region - none. A segment drawn small reads as "this costs little";
+    the truth is "nobody measured this", and those are different claims (R162 -
+    a zero is a claim). So the field fills only as far as the turn has actually
+    been measured, and the remainder stays unfilled.
+
+    Seeded deterministically from a fixed constant, so the pattern is stable
+    across repaints - a field that reshuffles every paint reads as animation
+    and this is a read-out.
     """
 
-    _COLS, _ROWS = 24, 8
+    _SEEDS = 44
+    _JITTER = 0.42          # 0 = regular lattice, 0.5 = fully scattered
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsSection")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._segments = []          # [(label, tokens, colour)]
-        self.setMinimumHeight(96)
+        self._cells = None           # cached [(polygon, area, cx)]
+        self._cell_size = None
+        self.setMinimumHeight(150)
 
     def sizeHint(self):
-        return QtCore.QSize(420, 110)
+        return QtCore.QSize(420, 170)
 
     def set_segments(self, segments):
         """segments: [(label, tokens_or_None, colour)]. None means UNMEASURED
-        and claims no cells."""
+        and claims no area."""
         self._segments = list(segments or [])
         self.update()
 
+    # -- geometry ------------------------------------------------------------
+
+    def _seed_points(self, w, h):
+        """A jittered lattice. Pure lattice gives rectangles; pure random gives
+        slivers. The jitter is what makes it read as organic while keeping the
+        cells within an order of magnitude of each other."""
+        import math
+        cols = int(round(math.sqrt(self._SEEDS * w / float(max(h, 1)))))
+        cols = max(2, cols)
+        rows = max(2, int(round(self._SEEDS / float(cols))))
+        cw, ch = w / float(cols), h / float(rows)
+        pts, n = [], 0
+        for r in range(rows):
+            for c in range(cols):
+                # Deterministic hash-jitter: same layout every repaint.
+                n += 1
+                jx = (((n * 1103515245 + 12345) >> 8) % 1000) / 1000.0 - 0.5
+                jy = (((n * 1664525 + 1013904223) >> 8) % 1000) / 1000.0 - 0.5
+                pts.append((
+                    (c + 0.5 + jx * self._JITTER * 2) * cw,
+                    (r + 0.5 + jy * self._JITTER * 2) * ch,
+                ))
+        return pts
+
+    @staticmethod
+    def _clip(poly, ax, ay, bx, by):
+        """Clip a convex polygon to the half-plane closer to A than to B.
+
+        The perpendicular bisector of AB; keep the side containing A. This is
+        the whole Voronoi construction - a cell is the rect clipped against
+        every other seed.
+        """
+        mx, my = (ax + bx) / 2.0, (ay + by) / 2.0
+        dx, dy = bx - ax, by - ay          # normal, pointing away from A
+        out = []
+        n = len(poly)
+        for i in range(n):
+            px, py = poly[i]
+            qx, qy = poly[(i + 1) % n]
+            dp = (px - mx) * dx + (py - my) * dy
+            dq = (qx - mx) * dx + (qy - my) * dy
+            if dp <= 0:
+                out.append((px, py))
+            if (dp <= 0) != (dq <= 0):
+                t_ = dp / (dp - dq) if (dp - dq) else 0.0
+                out.append((px + (qx - px) * t_, py + (qy - py) * t_))
+        return out
+
+    @staticmethod
+    def _area(poly):
+        a = 0.0
+        n = len(poly)
+        for i in range(n):
+            x1, y1 = poly[i]
+            x2, y2 = poly[(i + 1) % n]
+            a += x1 * y2 - x2 * y1
+        return abs(a) / 2.0
+
+    def _build_cells(self, w, h):
+        """One Voronoi cell per seed, cached until the widget resizes."""
+        if self._cells is not None and self._cell_size == (w, h):
+            return self._cells
+        pts = self._seed_points(w, h)
+        rect = [(0, 0), (w, 0), (w, h), (0, h)]
+        cells = []
+        for i, (ax, ay) in enumerate(pts):
+            poly = rect
+            for j, (bx, by) in enumerate(pts):
+                if i == j:
+                    continue
+                poly = self._clip(poly, ax, ay, bx, by)
+                if len(poly) < 3:
+                    break
+            if len(poly) >= 3:
+                cells.append((poly, self._area(poly), ax))
+        cells.sort(key=lambda c: c[2])       # left-to-right: coherent regions
+        self._cells, self._cell_size = cells, (w, h)
+        return cells
+
+    # -- paint ---------------------------------------------------------------
+
     def paintEvent(self, _event):
-        p = QtGui.QPainter(self)
-        p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, False)
         w, h = self.width(), self.height()
-        n = self._COLS * self._ROWS
-        cw, ch = w / float(self._COLS), h / float(self._ROWS)
-        gap = 2.0
+        if w < 8 or h < 8:
+            return
+        cells = self._build_cells(w, h)
+        total_area = sum(a for _, a, _ in cells) or 1.0
 
         known = [(lab, tok, col) for lab, tok, col in self._segments
                  if isinstance(tok, (int, float)) and tok > 0]
-        total_known = sum(tok for _, tok, _ in known)
+        total_known = float(sum(tok for _, tok, _ in known)) or 1.0
 
-        # Cells are allocated against the KNOWN total only. If half the turn is
-        # unmeasured the field is half empty - which is the honest picture.
-        alloc, idx = [], 0
+        # Allocate by CUMULATIVE AREA, not by cell count - cells are unequal.
+        targets, run = [], 0.0
         for lab, tok, col in known:
-            take = int(round((tok / float(total_known)) * n)) if total_known else 0
-            alloc.append((col, idx, min(idx + take, n)))
-            idx += take
+            run += (tok / total_known) * total_area
+            targets.append((run, col))
 
-        empty = QtGui.QColor(t.NEAR_BLACK if hasattr(t, "NEAR_BLACK") else "#111111")
-        for i in range(n):
-            r, cix = divmod(i, self._COLS)
-            x, y = cix * cw, r * ch
+        p = QtGui.QPainter(self)
+        p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
+        empty = QtGui.QColor(getattr(t, "GROUND", "#1B1B1B"))
+        edge = QtGui.QPen(QtGui.QColor(getattr(t, "VOID", "#0A0A0A")))
+        edge.setWidthF(1.4)
+        p.setPen(edge)
+
+        acc = 0.0
+        for poly, area, _cx in cells:
+            acc += area
             colour = empty
-            for col, lo, hi in alloc:
-                if lo <= i < hi:
+            for limit, col in targets:
+                if acc <= limit:
                     colour = QtGui.QColor(col)
                     break
-            p.fillRect(QtCore.QRectF(x + gap / 2, y + gap / 2,
-                                     cw - gap, ch - gap), colour)
+            path = QtGui.QPolygonF([QtCore.QPointF(x, y) for x, y in poly])
+            p.setBrush(QtGui.QBrush(colour))
+            p.drawPolygon(path)
         p.end()
 
 
