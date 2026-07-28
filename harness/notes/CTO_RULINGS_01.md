@@ -5040,3 +5040,50 @@ loud.**
 Every one of those is the leg reading what already exists and refusing to build past a
 contradiction. **Four of five findings are about the brief's assumptions rather than the code**,
 which is what a keystone leg should produce.
+
+---
+
+## RULING 173 — I nearly cut a section on a measurement error, and my own script caught it.
+
+R154 left CLAUDE.md §16 standing because it claims *"every API in this section is public, frozen,
+and pinned by tests"* and I had not verified that. **Cutting on suspicion is the same error as
+keeping on one**, so it stayed.
+
+Today I verified it — badly.
+
+```
+my check      git grep -c "operation_stats" -- tests/ | Measure-Object   ->  0
+the truth     git grep -l "operation_stats" -- tests/                    ->  4 files
+                                _verify_lossless                          ->  1 file
+```
+
+**`grep -c` piped through `Measure-Object` counts the wrong thing.** I read zero, concluded the
+claim was false, and wrote the cut.
+
+**The claim is TRUE.** Five test files pin those APIs.
+
+### Two errors stacked, and the second is worse
+
+**The measurement was wrong** — a shell pipe that returned a plausible zero.
+
+**And the script verified correctly, printed the right answer, and cut anyway** — because I wrote
+the verification as a *print* and the cut as an *unconditional action* below it. It reported
+`pinned by 4 test file(s)` and removed the section in the next breath.
+
+**A check whose result does not gate the action is not a check. It is a log line.**
+
+That is R127's shape — a verifier that cannot fail — and R168's — measuring the wrong term — in one
+script, at 92% of a weekly limit, on a file I had already audited once.
+
+**Ruled:**
+1. **§16 stays, and its claim is now verified rather than merely unrefuted.** `operation_stats` is
+   pinned by `test_bridge_multiclient`, `test_evolution_bridge_internals`,
+   `test_live_integrity_envelope` and `test_pass7_per_agent_and_canonical`.
+2. **Counting via a shell pipe is retired for anything that gates a decision.** `git grep -l` and
+   count the lines in Python, where the failure is visible.
+3. **A script that verifies and then acts must branch on the verification.** If the action runs
+   either way, delete the check — it is worse than nothing, because it looks like diligence.
+
+**The good news is the smallest possible version of it:** the correct number was printed on screen
+before the damage, and the revert was one command. **The check was right and the wiring was wrong**
+— which is R147 again, in a throwaway script.
