@@ -121,6 +121,34 @@ def registered_paths():
     return out
 
 
+def head_sha():
+    """HEAD's commit, without invoking git. Loose ref first, then packed-refs."""
+    try:
+        with open(os.path.join(ROOT, ".git", "HEAD"), encoding="utf-8") as fh:
+            head = fh.read().strip()
+    except Exception:
+        return ""
+    if not head.startswith("ref: "):
+        return head
+    ref = head[5:].strip()
+    try:
+        with open(os.path.join(ROOT, ".git", *ref.split("/")), encoding="utf-8") as fh:
+            return fh.read().strip()
+    except OSError:
+        pass
+    try:
+        with open(os.path.join(ROOT, ".git", "packed-refs"), encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith(("#", "^")):
+                    continue
+                sha, _, name = line.strip().partition(" ")
+                if name == ref:
+                    return sha
+    except OSError:
+        pass
+    return ""
+
+
 def legs():
     try:
         with open(MANIFEST, encoding="utf-8-sig") as fh:
@@ -187,8 +215,17 @@ def suite():
             d = json.load(fh)
     except Exception:
         return None
-    age = time.time() - d.get("at", 0)
-    return {"passed": d.get("passed"), "failed": d.get("failed", 0), "age": age}
+    # AGE IS THE WRONG AXIS WHEN THE TREE MOVES UNDERNEATH YOU.
+    # This shipped showing "5307 ok 17m" in confident green while the figure had
+    # been measured two commits earlier - a green suite asserted for a tree it
+    # had never run against, and 17m made it read as current. A figure from a
+    # different commit is not old evidence, it is evidence about something else.
+    stamped = str(d.get("commit") or "")
+    here = head_sha()
+    same = bool(stamped) and bool(here) and here.startswith(stamped)
+    return {"passed": d.get("passed"), "failed": d.get("failed", 0),
+            "age": time.time() - d.get("at", 0),
+            "commit": stamped, "same_tree": same}
 
 
 def live_agents(payload):
@@ -248,11 +285,13 @@ def render(payload):
 
     s = suite()
     if s:
-        stale = s["age"] > 86400
-        col = RED if s["failed"] else (YEL if stale else GRN)
+        drift = not s["same_tree"]
+        col = RED if s["failed"] else (YEL if (drift or s["age"] > 86400) else GRN)
         mark = "%d fail" % s["failed"] if s["failed"] else "ok"
-        parts.append("%s%s %s%s %s%s%s"
-                     % (col, s["passed"], mark, OFF, DIM, human_age(s["age"]), OFF))
+        # On drift the age is suppressed rather than shown: "17m" is the part
+        # that reads as fresh, and it is the part that is not true of this tree.
+        tail = "other tree" if drift else human_age(s["age"])
+        parts.append("%s%s %s%s %s%s%s" % (col, s["passed"], mark, OFF, DIM, tail, OFF))
 
     n = live_agents(payload)
     if n:

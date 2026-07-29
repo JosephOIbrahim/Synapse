@@ -205,6 +205,48 @@ def test_stamp_reads_the_summary_line_not_the_whole_stream(tmp_path):
     assert rec["failed"] == 0, "took failed from noise: %r" % rec
 
 
+def test_head_sha_matches_git():
+    """FAILS IF: the subprocess-free HEAD read drifts from git's answer."""
+    s = _mod("statusline")
+    real = subprocess.run(["git", "-C", ROOT, "rev-parse", "HEAD"],
+                          capture_output=True, text=True, encoding="utf-8").stdout.strip()
+    assert s.head_sha() == real, "%r != %r" % (s.head_sha(), real)
+
+
+def test_suite_figure_from_another_commit_is_not_shown_as_fresh(tmp_path, monkeypatch):
+    """FAILS IF: a figure measured on a different tree renders as a fresh pass.
+
+    This shipped broken. The bar showed '5307 ok 17m' in confident green while
+    the stamp named a commit two behind HEAD - a green suite asserted for a tree
+    it had never run against, with an age that read as current.
+
+    Age is the wrong axis when the tree moves underneath you. A figure from
+    another commit is not old evidence, it is evidence about something else.
+    """
+    s = _mod("statusline")
+    stamp = tmp_path / "s.json"
+    monkeypatch.setattr(s, "STAMP", str(stamp))
+
+    def write(commit):
+        stamp.write_text(json.dumps({"at": __import__("time").time(), "passed": 5307,
+                                     "failed": 0, "commit": commit}), encoding="utf-8")
+
+    # Same tree -> green, with an age.
+    write(s.head_sha()[:12])
+    assert s.suite()["same_tree"] is True
+    out_same = s.render({})
+    assert "other tree" not in out_same
+    assert "5307 ok" in out_same
+
+    # Different tree -> must NOT read as fresh.
+    write("0" * 12)
+    assert s.suite()["same_tree"] is False
+    out_drift = s.render({})
+    assert "other tree" in out_drift, "drifted figure rendered as current: %r" % out_drift
+    assert s.GRN not in out_drift.split("5307")[0][-12:], \
+        "drifted figure still rendered in the pass colour"
+
+
 def test_stamp_refuses_to_write_a_zero_pass_summary():
     """FAILS IF: a run that passed nothing is stamped as a suite figure.
 
