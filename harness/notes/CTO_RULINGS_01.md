@@ -5574,3 +5574,76 @@ objects, and Karma refuses an integer render-var outright.
 
 **The other half needed none of it.** Look at the viewport and say what you see:
 blocked not by a renderer limitation but by a base64 encode nobody had written.
+
+---
+
+## RULING 182 — The scoped-delta primitive works. Not by ID masks — by vision, and by a capability nobody built.
+
+V1-F1 ruled it out: *"No usable per-object integer ID mask exists on Karma
+22.0.368 via any path probed. **The scoped-delta primitive cannot be built as
+designed.**"*
+
+That was correct, and it closed one road while the goal stayed open.
+
+### It ran, first try, on code written for something else
+
+```
+YOU      capture the viewport, add a distant light, capture it again,
+         and tell me what changed
+SYNAPSE  ...the front of the character — the face and chest that were bright
+         before — has fallen into shadow. The top of the head, back, and tail
+         are catching most of the light now.
+
+         Light guide geometry appeared. Those white wireframe lines and the box
+         near the toy are the distant light's viewport guide.
+```
+
+**The viewport guide is the unforgeable part.** It is display-only — not a prim,
+not geometry, absent from any render — and it exists solely in the second image.
+Reporting that it *appeared* requires holding both frames.
+
+The lighting account is the other half: spatial, per-region, and stated as a
+CHANGE. *"The face and chest that were bright before"* cannot be derived from a
+graph, from `inspect_scene`, or from either image alone.
+
+### And nothing was built for it
+
+The worker collects every tool result from a turn into ONE user message, and the
+attach fires per-result. So **two captures in one turn place two images side by
+side automatically.** Probed before the live run: `image blocks in one user
+message: 2`.
+
+The diff capability fell out of an attach written an hour earlier for a different
+purpose. **It needed asking for, not building.**
+
+### Why this is the right answer and the ID mask was not
+
+Joe's push: *"it should be able to see without cryptomatte — it should come from
+computer vision."* He was right, and V1's own findings say why.
+
+**V1-F10: renders are deterministic.** Pixel-identical across separate husk
+processes, sampling noise floor of ZERO. V1 filed that as contradicting RETINA's
+design premise. It is actually the licence for the whole approach: **if nothing
+else moved, the pixels that changed ARE the change.** Object identity was never
+required to attribute a delta — only the confidence that the rest held still.
+
+And the semantic half — *which* object a region belongs to — is exactly what a
+vision model does. It named the SideFX rubber toy from a node called
+`sopcreate1`, where the graph carries nothing about the geometry.
+
+**So the ID mask was solving a problem two other things already solve:**
+determinism supplies the isolation, vision supplies the identity.
+
+### What this does and does not close
+
+**Closes:** *what changed, and where.* Renderer-agnostic, works on the VIEWPORT —
+which husk-based ID passes never could — and needs no cooperation from Karma.
+
+**Does not close:** *by how much.* The model gives a semantic difference; a
+measured one — changed-pixel count, bounding boxes, a threshold — still wants
+OpenCV in the sidecar, because `cv2` is absent from hython and present in system
+Python. **That is the verification half, and it is a different job.**
+
+**And V1-F10's determinism is still a strong prior, not a property** — its own
+`scope_limit` says one frame, one trivial scene, one machine. Confirm it on a
+real scene before anything depends on it.
