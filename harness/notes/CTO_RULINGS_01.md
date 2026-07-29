@@ -5458,3 +5458,63 @@ before I sampled the frozen one.
 
 **Two hours, one regression of my own making, and the thing that would have found
 it fastest was a question rather than a probe.**
+
+---
+
+## RULING 180 — Vision is closed, and it was proven rather than assumed.
+
+```
+token planted in the image : SYN-B8VVNL
+model replied              : SYN-B8VVNL
+```
+
+A random token, present in the **pixels only** — absent from every scene, graph
+and prompt. The model read it back exactly. **The attach path delivers pixels a
+model can read**, demonstrated end to end.
+
+### Why this control and not a simpler one
+
+Twenty minutes after the attach shipped, Joe asked SYNAPSE to *"look at the
+viewport and say what you see."* `glm-5:cloud` is not vision-capable, no image
+was sent, and it answered:
+
+> *"A single default sphere sitting at the origin… reading as a plain,
+> flat-shaded ball with no materials, no custom lights…"*
+
+**Fluent, accurate, and derived entirely from the node graph.**
+Indistinguishable from sight.
+
+**A vision feature that cannot be told apart from scene inspection is not a
+vision feature. It is a confidence generator.** Any control that asked *"does it
+describe the scene?"* would have passed on a turn where nothing was seen.
+
+So the control asks for something **only the picture contains.** `inspect_scene`
+cannot return it, the graph does not hold it, and no plausible inference reaches
+it. That is V1's method — probe with what only the real path can produce — turned
+from a refutation into a confirmation.
+
+### And the guard had to move
+
+My first refusal lived in the tool result and trusted the model to relay it.
+**The model absorbed it and answered as if it had looked.**
+
+**A note in a tool result is a request, not enforcement.** The verdict now rides
+the tool-status rail to the result surface, where the model does not author the
+output and cannot smooth it away.
+
+### What is now true, precisely
+
+**SYNAPSE can capture the viewport** — it always could; `_handle_capture_viewport`
+reads the GL framebuffer via the flipbook API because `QWidget.grab()` returns
+black on a GL surface.
+
+**SYNAPSE can show that capture to a vision-capable model** — new today, and
+proven.
+
+**SYNAPSE tells you when it cannot** — on the panel, not in the prose.
+
+**The per-object ID mask is still impossible** on Karma 22.0.368 (V1). RETINA's
+scoped-delta primitive remains unbuildable as designed. **This was the other half
+all along**, and it needed none of that — the ambitious version was blocked by
+the renderer, and the useful version was blocked by a base64 encode nobody had
+written.
