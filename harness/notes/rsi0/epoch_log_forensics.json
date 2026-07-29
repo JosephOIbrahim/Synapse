@@ -1,0 +1,59 @@
+{
+  "_what": "Forensics on the ONLY on-disk residue the epoch loop has ever left: logger.info lines emitted by adaptation.py:155-160 inside _rotate_epoch. This is the artifact most likely to be mistaken for proof that the RSI loop runs in production. It is not.",
+
+  "_producer_path": {
+    "command": "python -c '<inline script>' over C:/Users/User/.synapse/logs/synapse.log*",
+    "regex": "Epoch (\\d+) complete \\((\\d+) outcomes\\)\\. Success rates: (.*)",
+    "emitting_code": "python/synapse/routing/adaptation.py:155-160",
+    "note": "The regex is anchored on the exact format string in adaptation.py, so a match is that log call and nothing else."
+  },
+
+  "totals": {
+    "epoch_complete_lines": 4357,
+    "files": {
+      "C:/Users/User/.synapse/logs/synapse.log": {"epoch_lines": 898, "total_lines": 23332},
+      "C:/Users/User/.synapse/logs/synapse.log.1": {"epoch_lines": 2162, "total_lines": 41616},
+      "C:/Users/User/.synapse/logs/synapse.log.3": {"epoch_lines": 1297, "total_lines": 39153}
+    },
+    "location_significance": "C:/Users/User/.synapse/logs/ is the OPERATOR'S REAL LOG DIRECTORY, not a pytest tmp_path. Test-generated rotations are being written into the same sink an operator or a self-inspecting agent would read."
+  },
+
+  "the_discriminator": {
+    "principle": "Production can construct EpochAdapter in exactly one way: router.py:202, `EpochAdapter()` with no arguments, therefore epoch_size = DEFAULT_EPOCH_SIZE = 100 (adaptation.py:28). Any log line reporting an epoch that completed on a number of outcomes OTHER than 100 cannot have come from production. The outcome count is printed in the line itself.",
+    "outcomes_per_epoch_histogram": {"2": 3653, "3": 176, "5": 176, "100": 352},
+    "attribution": {
+      "2": "tests/test_v5_features.py:258 (test_adapter_stale_pin_epoch, epoch_size=2) and tests/test_routing.py:1792 (test_epoch_history_capped, epoch_size=2)",
+      "3": "tests/test_v5_features.py:248 (test_adapter_epoch_rotation, epoch_size=3)",
+      "5": "tests/test_v5_features.py:297 (test_adapter_threshold_evolves, epoch_size=5)",
+      "100": "tests/test_v5_features.py:276 (test_adapter_thread_safety, epoch_size=100, 4 threads x 50 records = 200 records = 2 rotations per run). THIS IS THE IMPORTANT ONE: size-100 lines are NOT production evidence, because a test also produces them. 352 / 2 rotations-per-run = 176 runs, matching the 176 count seen for sizes 3 and 5 exactly."
+    },
+    "the_176_signature": "The counts for epoch_size 3 and 5 are both exactly 176, and the size-100 count is exactly 2x176. That is 176 executions of the same test module. The arithmetic is the attribution."
+  },
+
+  "the_conclusive_evidence": {
+    "distinct_success_rate_payloads_across_all_4357_lines": 2,
+    "payloads": {"{'instant': 1.0}": 4181, "{'instant': 0.0}": 176},
+    "arithmetic_check": "4181 + 176 = 4357 — these two payloads account for EVERY line. There are no others.",
+    "why_this_settles_it": [
+      "Every epoch is either 100% success or 100% failure. Not one epoch in 4,357 has a mixed rate. Real traffic cannot produce that distribution; synthetic uniform test input is the only thing that can.",
+      "Every line reports the single tier name 'instant'. Production routes across recipe / instant / fast / standard / deep / cache (router.py:285,448,515,554,584,706,742,819) and would emit those tier names. 'instant' is the tier string every unit test hardcodes.",
+      "The 176 all-failure epochs are exactly test_adapter_threshold_evolves recording 5 explicit failures — and production has NO call site that can pass success=False (all 8 _record_metric calls omit the argument, defaulting True at router.py:917)."
+    ],
+    "verdict": "All 4,357 epoch rotations are unit-test-generated. Production has crossed ZERO epoch boundaries."
+  },
+
+  "recency_is_the_trap": {
+    "epoch_lines_by_date": {
+      "2026-07-21": 154, "2026-07-22": 35, "2026-07-23": 21,
+      "2026-07-25": 1087, "2026-07-26": 2510, "2026-07-27": 550
+    },
+    "why_it_matters": "550 of these were written TODAY and 2,510 yesterday. They are not stale residue from an old run — they are being generated continuously by this week's own harness/test activity. An operator grepping today's log, or an agent doing the CLAUDE.md section-16 'read your own telemetry' loop, would find 550 fresh 'Epoch complete' lines and reasonably conclude the adaptation loop is running hot in production. It has never run in production at all.",
+    "highest_epoch_id_observed": 124,
+    "highest_epoch_id_note": "In-memory only. No epoch_id is persisted; each test process starts again at epoch 0."
+  },
+
+  "what_this_lane_does_NOT_claim": [
+    "It does not claim the log proves the loop never ran in some past production session. It proves these 4,357 lines are test-generated. The separate finding that NO EpochAdapter state is persisted is what makes 'has it ever run in production' unanswerable by artifact in principle.",
+    "It does not claim the logging is a defect in itself. logger.info in _rotate_epoch is reasonable. The defect is that a test sink and an operator sink are the same file."
+  ]
+}

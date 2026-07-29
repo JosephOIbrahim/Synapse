@@ -1,0 +1,266 @@
+{
+ "schema": "receipt/v1",
+ "leg": "S1",
+ "title": "The inventory — 128 registered tools classified, and the fake `hou` that explains 90 of them",
+ "harness": "FORENSIC-01",
+ "status": "amber",
+ "status_note": "Amber, not green. The oracle is satisfied on its face — all 128 registered tools carry a class, the counts are integers with a producer path, the artist-task grouping exists and names its thin groups. But two oracle-adjacent conditions failed and the leg refuses to call that green: (1) the adversarial refutation pass NEVER RAN — 8 of 10 fan-out agents died on a session token limit, so 31 carried verdicts are UNREFUTED; (2) 5 tools are UNKNOWN because nothing reached them. Law 7: a red/amber leg is a finding, not a failure. Softening this to green would destroy the only instrument that worked.",
+
+ "model": "claude-opus-5[1m]",
+ "settings_profile": "harness/readonly-settings.json (READ-ONLY leg; writes confined to harness/notes/**)",
+ "commit_at_run": "61df5bc",
+ "branch": "forensic/s1-tool-inventory",
+ "mode": "read-only inventory; zero tracked files modified",
+ "houdini_build_live": "22.0.368 (bridge ws://localhost:9999, pid 38084, symbol-table stamp == running build)",
+
+ "the_headline": {
+  "counts": {"WORKS": 25, "PARTIAL": 90, "SCAFFOLD": 5, "UNREACHABLE": 3, "UNKNOWN": 5, "total": 128},
+  "what_the_controls_changed": "Three verdicts moved because controls were run, and one framing was withdrawn. (1) synapse_recall: provisionally UNREACHABLE on a 1800s hang; isolation control returned FAST, hang was concurrency-induced, verdict WITHDRAWN to PARTIAL. (2) synapse_scout: its control produced a MECHANISM instead of a hang — a SQLite cross-thread ProgrammingError (S1-F4). (3) synapse_metrics: PARTIAL -> WORKS once actually called. (4) The 'trivial 9-node scene' framing on S1-F2 is WITHDRAWN — two metrics surfaces in the same session report 9 and 16122 nodes (S1-F13). The verdicts that did NOT move survived the identical test, which is the only reason they are worth trusting.",
+  "producer": "harness/notes/forensic/_s1_classify.py -> s1_classification.json. No count hand-entered; the script exits non-zero if the verdict set and the census disagree.",
+  "the_sentence": "SYNAPSE registers 128 tools, and the 24 that are proven are mostly the ones it uses to talk to itself. Every tool that would put an image on screen — 13 rendering, 4 lighting, 2 comp — is unproven on a host, not because the code is bad but because 5 of 286 test files are capable of disagreeing with Houdini.",
+  "second_axis": "12 of the 24 WORKS tools are agent-internal, and exactly 1 of those 25 agent-internal tools is something an artist would reach for. WORKS count in rendering / lighting / caching / comp is ZERO in all four."
+ },
+
+ "findings": [
+  {
+   "id": "S1-F1",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "tests/conftest.py:132-135",
+   "severity": "structural",
+   "summary": "A canonical FAKE `hou` is planted into sys.modules at collection time, so `import hou` always succeeds under plain pytest and `pytest.importorskip(\"hou\")` gates nothing anywhere in this suite. Only a host-IDENTITY probe (`__synapse_canonical__`) is a real gate.",
+   "evidence": "5 of 286 test files carry that gate and assert host behaviour: tests/solaris/test_live_wiring.py, test_h22_cops_solver_live.py, test_h22_setdressing_live.py, test_guards.py, test_introspection.py. 101 files build a mock. 2 use importorskip('hou') and are therefore ungated.",
+   "producer": "harness/notes/forensic/_s1_test_honesty.py -> s1_test_honesty.json; the script voids its own numbers if the planting block leaves conftest.py.",
+   "why_it_bites": "This is the single reason 90 of 128 tools are PARTIAL. A green 4,873-test suite is real evidence about payload contracts and regressions, and NO evidence that a tool moves Houdini. The brief's warning about mock tests describes the suite's default condition, not an edge case."
+  },
+  {
+   "id": "S1-F2",
+   "tier": "VERIFIED-RUNTIME",
+   "anchor": "python/synapse/server/handlers.py:1460 -> introspection.py:278",
+   "severity": "structural",
+   "summary": "synapse_inspect_scene does not return. Called live twice; ran 1800s and was aborted by the MCP idle timeout.",
+   "evidence": "Control run: re-invoked ALONE, nothing else in flight, max_depth=1, against a 9-node EMPTY scene (untitled.hip). It ran the FULL 1800s and was aborted with no response — identical to the first call — while synapse_ping answered instantly in the same session and the bridge stayed healthy throughout. The concurrency explanation is REFUTED, and the isolated run did not merely block past a 120s foreground budget: it never returned. Two-sided control, both sides observed to termination.",
+   "why_it_bites": "synapse_group_scene — the knowledge preamble served to the LLM — explicitly instructs 'Always inspect before mutating -- use synapse_inspect_node or synapse_inspect_scene first.' The documented entry point to every scene workflow does not return.",
+   "not_established": "The mechanism. Candidate carried, untested: _node_issues calls node.errors() (introspection.py:184), which forces cooks. Root-causing is S2's job; S1 records the observation."
+  },
+  {
+   "id": "S1-F3",
+   "tier": "VERIFIED-RUNTIME",
+   "anchor": "python/synapse/server/handlers.py:1566 + :1605-1608",
+   "severity": "medium",
+   "summary": "synapse_router_stats is structurally incapable of returning data through the MCP surface. Called live: {\"error\":\"Router not initialized\"}.",
+   "evidence": "self._router is constructed in exactly ONE place, _handle_route_chat, and route_chat is one of 7 handlers no MCP tool dispatches to (s1_reachability.json dead_handlers_no_tool_reaches). Only the Houdini panel sends route_chat (panel/chat_panel.py:799,903). Static proof and live observation agree.",
+   "collateral": "synapse_metrics guards on hasattr(self,'_router') at handlers.py:1500 and therefore always emits router_stats=None on this path — silently, with no note to the caller."
+  },
+  {
+   "id": "S1-F4",
+   "tier": "VERIFIED-RUNTIME",
+   "anchor": "mcp_server.py:936 -> python/synapse/cognitive/tools/scout.py:828",
+   "severity": "medium",
+   "summary": "synapse_scout fails on SQLite THREAD AFFINITY. Not a hang — slow, then a hard error. Mechanism found, not inferred.",
+   "evidence": "Called live twice. First: 1800s, no response, aborted. Second, ALONE, single trivial symbol query (k=2): blocked past 120s and then RETURNED {\"error\":\"ProgrammingError\",\"message\":\"SQLite objects created in a thread can only be used in that same thread. The object was created in thread id 51668 and this is thread id 65704.\"} The retrieval store's connection is created on one thread and used on another. The concurrency explanation is refuted (synapse_recall, tested identically in the same session, returned fast).",
+   "how_it_was_found": "The control was run ONLY to rule out concurrency, per the two-sided-control discipline. It produced the mechanism instead. This is the one hang in this leg that is NOT handed to S2 as a mystery.",
+   "why_it_bites": "CLAUDE.md rule 15 makes scout the MANDATORY pre-flight before emitting any unfamiliar hou./pdg./pxr. call — the project's front-line defence against its self-declared #1 failure class (phantom APIs). It did not answer.",
+   "not_same_class": "synapse_recall LOOKED like the same defect and is not. Its control returned fast; verdict withdrawn to PARTIAL. Two tools hung in the same concurrent burst and only one of them has a defect — which is exactly what the control was for."
+  },
+  {
+   "id": "S1-F5",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "mcp_server.py:899-942",
+   "severity": "low",
+   "summary": "The registered tool surface is 128, not the 120 the CLAUDE.md banner states. 120 is the size of TOOL_DEFS; 6 group-info tools + synapse_inspect_stage + synapse_scout are appended by list_tools().",
+   "evidence": "Static census (_s1_enumerate_tools.py) and this session's own live MCP listing agree exactly: 128 mcp__synapse__* tools — 21 cops_*, 40 houdini_*, 50 synapse_*, 17 tops_*.",
+   "note": "Not a contradiction of the seed fact — the seed is right about TOOL_DEFS and right about the banner. It is drift: the quoted number is 8 short of the served number, and the classification surface is 128."
+  },
+  {
+   "id": "S1-F6",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "tests/solaris/conftest.py:11-21; tests/solaris/test_live_wiring.py:15-22",
+   "severity": "positive",
+   "summary": "The Solaris family is the ONE family with honest host evidence, and the mechanism that produced it is worth naming: the mock fixtures were DELETED under Constitution Law 1, not supplemented.",
+   "evidence": "What replaced them gates on host IDENTITY (the planted fake carries __synapse_canonical__; real Houdini does not), skips honestly off-host, and executes under hython 22.0.368. That tier then FOUND F7 (set_purpose reporting success having set nothing) and F9 (import_megascans raising PermissionError on every invocation). Both repaired. SR1 receipt green, suite 4841->4873 passed / 0 failed / +9 skipped — those skips ARE the live tier standing down off-host.",
+   "why_it_matters": "This is the repo's own proof that live gating works. The mock said green while the tool set nothing; deleting the mock is what found it. It is also the counter-example to S1-F1 — the fix is known, demonstrated, and confined to one family."
+  },
+  {
+   "id": "S1-F7",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "harness/notes/forensic/s1_classification.json (by_artist_task)",
+   "severity": "structural",
+   "summary": "The artist-facing groups are the empty ones. WORKS count is ZERO in rendering (13 PARTIAL), lighting (4), caching (8) and comp (2).",
+   "evidence": "Of 24 WORKS: 12 agent-internal, 7 scene-assembly, 3 look-dev, 1 debugging, 1 pipeline-admin. Exactly 1 of the 25 agent-internal tools is one an artist would reach for.",
+   "the_inversion": "Half of everything proven is a tool the agent uses to orient itself. SYNAPSE can reliably report the frame, its memory, its health and its recipes. Nothing that puts an image on screen or a light in a scene has been observed working."
+  },
+  {
+   "id": "S1-F8",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "python/synapse/server/handlers_solaris_assemble.py:308",
+   "severity": "medium",
+   "summary": "The highest-leverage tool in the inventory has no host evidence. synapse_solaris_assemble_chain auto-wires unwired LOP nodes into canonical order — the clearest 'twenty minutes off every shot setup' claim in the product — and its 3 tests are mock/registration only. It is not in the live tier that covers its four siblings.",
+   "evidence": "Its siblings (component_builder, scene_template, set_purpose, import_megascans) are covered by tests/solaris/test_live_wiring.py. assemble_chain is not. The family reads uniformly green from outside; it is not uniform.",
+   "adjacent": "synapse_solaris_create_variants is in the live file but its ONLY live test is a NEGATIVE one (test_create_variants_rejects_a_non_lop_path_live:313). Nothing live asserts it builds a variant."
+  },
+  {
+   "id": "S1-F9",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "python/synapse/server/handlers.py:882",
+   "severity": "medium",
+   "summary": "houdini_undo and houdini_redo do not marshal to Houdini's main thread — neither calls run_on_main, unlike essentially every sibling handler.",
+   "evidence": "handlers.py:882 calls hou.undos.performUndo() directly on the handler thread. The redo case was found independently by the batch-3 reader. The WS transport calls handle() from a server thread.",
+   "why_it_bites": "Undo grouping is the product's headline safety claim — 'every action reversible and recorded'. Its two entry points are both unproven on the host AND unmarshalled."
+  },
+  {
+   "id": "S1-F10",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "harness/notes/forensic/s1_evidence_index.json (no_test_names_it)",
+   "severity": "low",
+   "summary": "Ten registered tools have zero tests naming them anywhere in 286 test files.",
+   "evidence": "houdini_configure_light_linking, houdini_create_point_instancer, houdini_manage_collection, houdini_manage_variant_set, houdini_reference_usd, houdini_set_payload_loadstate, houdini_shot_render_ready, synapse_configure_render_passes, synapse_live_metrics, synapse_memory_write.",
+   "sharpest": "synapse_configure_render_passes — a genuinely useful 17-entry AOV preset table, emitted as GENERATED PYTHON that calls editableStage() (returns None outside a LOP cook), with no test anywhere.",
+   "counterpoint_worth_keeping": "houdini_create_node is the MOST-tested tool in the product (32 tests) and still has no host-behaviour evidence. Test count and evidence are independent axes here."
+  },
+  {
+   "id": "S1-F11",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "harness/notes/forensic/s1_reachability.json",
+   "severity": "low",
+   "summary": "Two SCAFFOLDs beyond the three the brief named: cops_growth_propagation and cops_procedural_texture. Also 7 dead handlers that no registered tool reaches.",
+   "evidence": "Dead handlers: assess_render_ready, get_help, matlib_bind, route_chat, solaris_shotsetup_karma_xpu, tops_pause_cook, tops_resume_cook. This inverse list is the POSITIVE CONTROL for the reachability diff — it proves the check runs in both directions rather than passing vacuously (Law 1).",
+   "note": "A 4th self-report marker fired on cops_create_copnet, but reading it clears the tool: its name promises only the network, which it delivers. Self-report is a lead, not a verdict."
+  },
+  {
+   "id": "S1-F12",
+   "tier": "VERIFIED-RUNTIME",
+   "anchor": "python/synapse/server/handlers_memory.py:112",
+   "severity": "medium",
+   "summary": "Three memory tools give three different answers about whether memory exists, in the same live session.",
+   "evidence": "synapse_memory_status returned entries_total 19. synapse_context returned 23 memories with real authored scene notes. synapse_recall returned {\"error\":\"Memory not available\",\"found\":false} — while its RAG half worked correctly (knowledge_found true, confidence 0.8125, correct punycode parm names).",
+   "why_it_bites": "The recall path is the one an agent uses mid-session to answer 'have we decided this before'. It is the only one of the three that reports memory absent, and it reports it inside a success-shaped payload rather than raising.",
+   "found_by": "The isolation control run for S1-F4 — the test that WITHDREW this tool's UNREACHABLE verdict is the same test that found the real defect underneath it.",
+   "note": "Contract 1 already names the single-source-of-truth problem in this area: handlers_memory.py:230-242 patches memory_status's count from the live store because it 'contradicted synapse_context'. Recall was not included in that reconciliation."
+  },
+  {
+   "id": "S1-F13",
+   "tier": "VERIFIED-RUNTIME",
+   "anchor": "python/synapse/server/handlers.py:1495 vs :1635",
+   "severity": "medium",
+   "summary": "Two metrics surfaces report the scene's node count three orders of magnitude apart, in the same session, minutes apart.",
+   "evidence": "synapse_live_metrics returned total_nodes 9 with obj_nodes 0, sop_nodes 0, lop_nodes 0. synapse_metrics returned synapse_scene_nodes_total 16122 with synapse_scene_warnings 3. Both are read-only, both were called live this session, neither raised.",
+   "why_it_bites": "It also forced a CORRECTION to this leg's own S1-F2 write-up, which had characterised the live scene as a 'trivial 9-node empty scene' on the strength of the first number. That framing is withdrawn. If 16122 is the true walk size, the node.errors() candidate for the inspect_scene hang becomes MORE plausible, not less — so the contradiction is not cosmetic, it changes which mechanism is likely.",
+   "self_correction": "Recorded rather than quietly fixed. An earlier draft of S1_INVENTORY.md asserted the 9-node framing; the assertion is withdrawn in place, with the reason, per Article VI."
+  },
+  {
+   "id": "S1-F14",
+   "tier": "VERIFIED-RUNTIME",
+   "anchor": "python/synapse/server/handlers.py:1495",
+   "severity": "positive",
+   "summary": "SYNAPSE's own telemetry already names its slowest tool, and it is the one that does not return.",
+   "evidence": "synapse_metrics returns synapse_panel_inline_slow_total{slowest_tool=\"synapse_inspect_scene\"}, plus a real run_on_main dispatch-wait histogram (299 samples, max 698ms) and a main-thread direct-path histogram. This is genuine instrumentation, not a stub — and it corroborates S1-F2 from a completely independent direction, unprompted.",
+   "note": "The observability layer works. Nothing reads it."
+  }
+ ],
+
+ "method": {
+  "producers": [
+   "_s1_enumerate_tools.py -> s1_tool_census.json (128 registered, cross-checked against the live MCP listing)",
+   "_s1_reachability.py -> s1_reachability.json (AST diff of reg.register(<str>) vs TOOL_DEFS command_types, both directions)",
+   "_s1_evidence_index.py -> s1_evidence_index.json (handler sites, cook/build/scaffold tells, per-tool test inventory)",
+   "_s1_handler_digest.py -> s1_handler_digest.txt (source of the 88 handlers read by the orchestrator)",
+   "_s1_test_honesty.py -> s1_test_honesty.json (the fake-hou measurement)",
+   "_s1_classify.py -> s1_classification.json (the 128 verdicts + every count in the report)"
+  ],
+  "live_probes": "Read-only tools only, called through the /mcp bridge against the artist's live Houdini 22.0.368. No mutating tool was exercised. Probed: ping, health, doctor, scene_info, memory_status, list_recipes, context, knowledge_lookup, group_scene, hda_list, live_metrics, router_stats, stage_info, inspect_scene (x2, incl. isolation control), recall, scout.",
+  "two_sided_control": "s1_reachability.py reports BOTH unreachable-tools and dead-handlers; the 7 dead handlers are the positive control proving the diff can fire. The inspect_scene hang got an isolation re-run that refutes the concurrency explanation; recall and scout did NOT and are flagged weaker."
+ },
+
+ "counts_by_provenance": {
+  "live": 20,
+  "read": 71,
+  "agent-b1/b3 (UNREFUTED)": 31,
+  "not-reached (UNKNOWN)": 5,
+  "note": "Provenance is recorded per verdict in s1_classification.json so a reader can discount each source differently. Agent verdicts were carried verbatim and NOT upgraded."
+ },
+
+ "suite": {
+  "run": false,
+  "why": "Read-only leg. Constitution Article V: a leg under the read-only profile has no pytest grant and must not claim suite evidence.",
+  "structural_verification": "git status --porcelain snapshotted before fan-out and re-read after: identical except harness/notes/forensic/ (this leg's own writable path) and the orchestrator's .orch_launched marker. `git diff HEAD --stat` is EMPTY — zero tracked files modified.",
+  "borrowed_number_disclosure": "The 4841->4873 suite figures quoted for the Solaris family are READ FROM harness/notes/receipts/SR1.json, not measured here. Cited as SR1's number, never as S1's."
+ },
+
+ "fan_out_containment": {
+  "agents_dispatched": 10,
+  "agents_completed": 2,
+  "agents_failed": 8,
+  "failure_cause": "session token limit (resets 1:20pm America/New_York) — not an agent defect",
+  "agent_types_used": ["cartographer (read-only by definition)", "crucible (read-only by definition)"],
+  "write_fence": "Both agent types hold Read/Grep/Glob/Bash only — no Write/Edit in the definition, which is the structural fence rather than a prompt instruction.",
+  "tracked_files_modified": 0,
+  "method": "git status --porcelain before and after; identical."
+ },
+
+ "not_established": [
+  "The adversarial refutation pass. It never ran. 31 verdicts are carried UNREFUTED and tagged as such.",
+  "5 tools are UNKNOWN: cops_stamp_scatter, cops_stylize, cops_temporal_analysis, cops_to_materialx, cops_wetmap.",
+  "82 of 128 tools mutate and were deliberately not exercised — this leg is read-only against a live artist session.",
+  "The live scene was untitled.hip: 9 nodes, no USD stage, no TOP network. houdini_stage_info could only prove its refusal path; all 17 TOPS tools had nothing to run against.",
+  "The mechanism behind the two surviving hangs. Observation only; root-causing belongs to S2.",
+  "Why synapse_recall reports memory absent while memory_status and context both report it present (S1-F12). Observed, not explained."
+ ],
+
+ "for_ruling": [
+  {
+   "id": "S1-R1",
+   "question": "Should the CLAUDE.md banner read 128, or should the 8 non-TOOL_DEFS tools be folded into TOOL_DEFS so one number is true?",
+   "context": "S1-F5. The banner says 120 (= TOOL_DEFS); the wire serves 128. Both numbers are defensible descriptions of different things, which is exactly why one of them keeps getting quoted as the other.",
+   "why_escalated": "Article I — which number a governing document should carry is a value judgement, not a fact from the tree."
+  },
+  {
+   "id": "S1-R2",
+   "question": "Does the Solaris live-gating pattern (delete the mock, gate on host identity, skip honestly off-host) become the standard for the tools an artist actually reaches for — and if so, in what order?",
+   "context": "S1-F1 + S1-F6 + S1-F7. The pattern is proven in-repo and it FOUND two real defects that mocks had hidden. Applying it to all 128 is a large cost; applying it to zero leaves 90 PARTIAL. The inventory suggests an order — assemble_chain (S1-F8), then create_node, then the undo pair (S1-F9), then rendering — but which of those is worth the cost is product direction.",
+   "why_escalated": "Article I — what to build and in what order is a value judgement between defensible options."
+  },
+  {
+   "id": "S1-R3",
+   "question": "Is synapse_inspect_scene a release blocker?",
+   "context": "S1-F2. It does not return on a 9-node empty scene, controlled. It is also the tool the shipped group-knowledge preamble instructs the agent to call FIRST before any mutation. So the documented first step of every scene workflow does not terminate — but no artist has ever run this product, so nothing is currently broken FOR anyone.",
+   "why_escalated": "Whether an unshipped product has a blocker is a judgement about release posture, not a fact provable from the tree."
+  },
+  {
+   "id": "S1-R4",
+   "question": "Re-run the killed S1 fan-out after the session limit resets, or accept 31 UNREFUTED verdicts and 5 UNKNOWN?",
+   "context": "The workflow is resumable: Workflow({scriptPath: '<session>/workflows/scripts/s1-tool-inventory-wf_cb86d227-4cd.js', resumeFromRunId: 'wf_cb86d227-4cd'}) replays the 2 completed agents from cache and runs only the 8 that died. Cost is ~8 agents; benefit is the adversarial pass this leg's own oracle asked for.",
+   "why_escalated": "Spending another fan-out is a budget decision."
+  },
+  {
+   "id": "S1-R5",
+   "question": "The 62 recipes are the most substantial artist-facing asset found in this leg and are reachable only via synapse_list_recipes. Is that the intended surface?",
+   "context": "Live-verified: real cinema-camera sensor data for 8 bodies, lighting-law-compliant rigs, destruction and vellum chains, turntables with AOVs. They are domain knowledge, not tools, and nothing in the tool surface advertises them to an artist.",
+   "why_escalated": "Product surfacing decision, not a fact from the tree."
+  }
+ ],
+
+ "artifacts": [
+  "harness/notes/forensic/S1_INVENTORY.md — the leg's deliverable",
+  "harness/notes/forensic/s1_classification.json — 128 verdicts with provenance per row",
+  "harness/notes/forensic/s1_tool_census.json — the 128 registered tools",
+  "harness/notes/forensic/s1_reachability.json — both-directions handler diff + positive control",
+  "harness/notes/forensic/s1_evidence_index.json — per-tool handler/test evidence",
+  "harness/notes/forensic/s1_test_honesty.json — the fake-hou measurement",
+  "harness/notes/forensic/s1_agent_batch_1_3.json — the salvaged agent verdicts",
+  "harness/notes/forensic/s1_handler_digest.txt — source of the 88 handlers read",
+  "harness/notes/forensic/_s1_*.py — the six producers"
+ ],
+
+ "resume_token": {
+  "skip": [
+   "the census — 128 registered, static and live agree, producer pinned",
+   "the reachability diff — 0 unreachable command_types, 7 dead handlers, control fired",
+   "the fake-hou measurement — 5 of 286 host-behaviour files, producer voids itself if conftest changes",
+   "the inspect_scene isolation control — already run; concurrency refuted",
+   "the Solaris family evidence review — live tier read, SR1 receipt read"
+  ],
+  "redo_if": "tests/conftest.py stops planting the fake hou (every PARTIAL verdict would need re-deriving), or any tool gains a host-identity-gated test, or TOOL_DEFS changes size.",
+  "do_not_redo": "Do not re-derive the seed facts the brief supplied (120 in TOOL_DEFS, 41 deprecated node types, 18.3%/6.2% grounding, 37.9% LOP parms). S1 touched none of them except to note the 120-vs-128 drift.",
+  "next_leg_handoff": "S2 (pre-mortem) inherits three mechanism-shaped questions this leg deliberately did not answer: why inspect_scene does not return; whether recall/scout share that mechanism; and whether the unmarshalled undo/redo pair can corrupt state under a real cook."
+ }
+}

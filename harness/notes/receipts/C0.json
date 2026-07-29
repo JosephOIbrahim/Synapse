@@ -1,0 +1,296 @@
+{
+  "schema": "receipt/v1",
+  "leg": "C0",
+  "title": "Claim census — the positioning document's four SHIPPING claims audited against the tree",
+  "harness": "CLAIMS-01",
+  "ruling": null,
+  "status": "amber",
+  "status_note": "Describes what happened (Law 3). Every oracle condition is MET and the product is written to harness/notes/POSITIONING_CLAIM_AUDIT.md — but it is UNCOMMITTED, because `git add` is outside this session's tool grant (denied at the permission layer, not attempted twice). R93 is explicit that a leg whose product sits uncommitted in a worktree is amber at best and the receipt must say so, so this is amber and not green. The product is durable on disk but is one worktree prune from gone; a human with the commit grant should land it on claims/c0-census. Nothing pushed, merged or tagged. One agent write occurred, was self-disclosed, was classified per Law 4 and was reversed — the tracked tree is byte-identical to the pre-run snapshot.",
+
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "interactive orchestrator session (pytest and hython available, so suite/live evidence is admissible per Constitution Article V; git WRITE is not granted, which is what makes this leg amber)",
+  "commit_at_run": "6ee9a2e",
+  "merge_base_master_head": "46b2bd7",
+  "branch": "claims/c0-census",
+  "worktree": ".claude/worktrees/c0-census",
+  "date": "2026-07-27",
+
+  "counts": {
+    "SUPPORTED": 0,
+    "PARTIALLY_SUPPORTED": 3,
+    "UNSUPPORTED": 1,
+    "UNVERIFIABLE": 0,
+    "total_audited": 4
+  },
+
+  "oracle": [
+    {
+      "condition": "harness/notes/POSITIONING_CLAIM_AUDIT.md exists with all four claims and all five fields each (CLAIM / VERDICT / PRODUCER / CONDITIONS / AGE)",
+      "verdict": "MET",
+      "evidence": "Sections 2-5, one per claim, each carrying all five fields. Claim 1 PARTIALLY_SUPPORTED (6 conditions), claim 2 PARTIALLY_SUPPORTED (6), claim 3 PARTIALLY_SUPPORTED (7), claim 4 UNSUPPORTED (5). Every condition is tagged stated-in-document true/false; 30 of the 31 conditions across the four claims are NOT stated in the document.",
+      "producer": "harness/notes/POSITIONING_CLAIM_AUDIT.md"
+    },
+    {
+      "condition": "every PRODUCER is a command that was actually RUN, with its output, or NONE",
+      "verdict": "MET",
+      "evidence": "57 producers were gathered across the four claims (12/16/15/14) and every load-bearing one was independently re-executed by a second agent that did not gather it. The audit document cites real stdout verbatim, never paraphrase. Where nothing demonstrates the claim the producer is recorded as NONE — claim 2's cost curve is explicitly NONE (`grep` for input_tokens/output_tokens/.usage/prompt_tokens across python/, shared/ and mcp_server.py excluding _vendor returns zero matches), and claim 2's 'sends only what changed' half is recorded became_true_commit = NONE / NOT_YET_TRUE.",
+      "producer": "Section 2-5 of the audit doc; 526 tool calls across 13 agents; raw returns in the workflow journal"
+    },
+    {
+      "condition": "counts as integers: SUPPORTED / PARTIALLY / UNSUPPORTED / UNVERIFIABLE",
+      "verdict": "MET",
+      "evidence": "0 / 3 / 1 / 0 across 4 claims. Recorded in the `counts` block above and in section 0 of the audit doc.",
+      "producer": "harness/notes/POSITIONING_CLAIM_AUDIT.md section 0"
+    },
+    {
+      "condition": "no edit to any file outside harness/notes/",
+      "verdict": "MET-WITH-DISCLOSURE",
+      "evidence": "`git status --porcelain` is byte-identical before and after the run apart from the two intended harness/notes/ artifacts. ONE unintended write occurred: the completeness critic's synapse_project_setup probe invoked ensure_scene_structure, seeding claude/project.md (204 bytes, empty scaffold, 15:10:41Z). The agent self-disclosed it unprompted. It was classified per Law 4 before action (untracked, gitignored at .gitignore:87, absent from HEAD, created during this run, no data) and then removed, restoring the pre-run snapshot. Disclosed in full at section 10 of the audit doc rather than suppressed.",
+      "producer": "git status --porcelain (before: only ?? .claude/.orch_launched; after removal: identical) ; git check-ignore -v claude/project.md -> .gitignore:87 ; git ls-tree -r HEAD --name-only | grep '^claude/' -> empty"
+    },
+    {
+      "condition": "AGE recorded per claim — when did it BECOME true",
+      "verdict": "MET",
+      "evidence": "Claim 1: 2026-06-01 (d40d398 cluster), MEDIUM. Claim 2: 2026-06-25 (07b5726) for the flatness half, NOT_YET_TRUE for the delta half, LOW. Claim 3: 2026-02-11 (2e09e42) for 'across shots' and 2026-02-05 (a21c1ed) for 'across sessions', but with the default-path substrate swapped at b2c2c04 (2026-07-26) and the ledger seam closed at 189180d (2026-07-27, today), MEDIUM. Claim 4: 2026-04-20 (c6d232b), LOW. Each dated by git log -S on a distinctive string plus, where contested, git log -L line-history and git show of the prior body.",
+      "producer": "git log -S / git log -L / git log --follow --diff-filter=A / git show <sha>:<path>, per claim; recorded in each claim's AGE field"
+    },
+    {
+      "condition": "Law 1 applied — a check that cannot fail is not evidence",
+      "verdict": "MET",
+      "evidence": "Six producers were STRUCK during verification and are listed in section 7 of the audit doc with the reason for each: TestDaemonBootGate (mock-hou, banned as host-behaviour evidence), tests/test_moneta_integration.py (8 SKIPPED on the shipping interpreter), check_token_baseline_fresh + token_baseline.json (fixed payload, no scene input, structurally cannot show a non-flat curve), the two root benchmarks (milliseconds, no token axis), check_shot_login (imports the module directly, never exercises the panel path), and claim 1's vendored-SDK ABI probe (wrong subject). Every surviving producer carries a stated failure condition.",
+      "producer": "harness/notes/POSITIONING_CLAIM_AUDIT.md section 7"
+    },
+    {
+      "condition": "R93 — product committed before the receipt",
+      "verdict": "NOT MET",
+      "evidence": "`git add harness/notes/POSITIONING_CLAIM_AUDIT.md` was denied at the permission layer. Git write is not in this session's grant. Per Constitution Article I, a task requiring writing outside the grant is a ruling item, not a permission problem — so the action was not retried and the leg is recorded amber per R93's own prescription rather than green. See FR-C0-10.",
+      "producer": "git status --porcelain -> `?? harness/notes/POSITIONING_CLAIM_AUDIT.md` (untracked at receipt time)"
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "C0-F1",
+      "tier": "VERIFIED-STATIC",
+      "severity": "high",
+      "claim": "The document being audited is not in the repository and never has been. Every verdict in this leg grades a TRANSCRIPTION, not a source.",
+      "anchor": "harness/prompts/c0.md:13-16 ; harness/SYNAPSE_CLAIMS.md:24-27 (the only two matches repo-wide, and they disagree on punctuation)",
+      "detail": "grep -rli for the claim prose across all tracked files returns exactly those two harness files. `git log --all --diff-filter=A --name-only | grep -iE 'position|pitch|landing'` finds only unrelated USD/test files — the positioning document has never existed in this repository's history.",
+      "consequence": "The oracle's 'verbatim from the document' cannot be satisfied. If the real document scopes claim 4 more narrowly (e.g. 'the agent daemon physically refuses to boot'), that verdict shifts materially toward SUPPORTED. The transcription must be diffed against the source before this audit is used to change the document.",
+      "for_ruling": "FR-C0-1"
+    },
+    {
+      "id": "C0-F2",
+      "tier": "VERIFIED-STATIC",
+      "severity": "medium",
+      "claim": "Seven claims are declared Shipping; four are named anywhere in the repository. Three are unaccounted for.",
+      "anchor": "harness/SYNAPSE_CLAIMS.md:11 ('seven claims marked Shipping') vs its own table at :24-27 (four) ; harness/prompts/c0.md:13-16 (same four) ; harness/legs.json:253-262",
+      "detail": "The 'roadmap items are exempt' framing does not close the gap: c0.md:18 names those exempt items (local routing, Nuke portability, hard token caps) as ROADMAP, explicitly not Shipping. 7 - 4 = 3 unnamed.",
+      "consequence": "The census cannot know whether the missing three were audited elsewhere, exempted, or forgotten. A claim census that does not know its own denominator is incomplete by construction.",
+      "for_ruling": "FR-C0-2"
+    },
+    {
+      "id": "C0-F3",
+      "tier": "REFUTED-LIVE",
+      "severity": "high",
+      "claim": "CLAIM 4 is UNSUPPORTED as worded. The gate is real and fires; it guards a component with zero production callers, while the shipping surfaces boot and mutate headless.",
+      "anchor": "python/synapse/host/daemon.py:236,300-332 (the gate) ; python/synapse/server/hwebserver_adapter.py:273 ; python/synapse/server/handlers.py:457 ; python/synapse/panel/claude_worker.py (no gate needles)",
+      "detail": "POSITIVE: SynapseDaemon().start() raises DaemonBootError on live headless hython3.13 AND on hbatch.exe (Houdini's canonical farm binary), fails closed three ways, and the probe carried an explicit BOOTED-GATE-DID-NOT-FIRE else-branch so it could fail. NEGATIVE: repo-wide grep across ALL filetypes finds zero SynapseDaemon constructions outside tests/ ; start_hwebserver bound and listened headless under a two-way port negative control ; SynapseHandler.handle created /obj/synapse_farm_probe headless with success=True (independently reproduced as crucible_farm_probe) ; six gate needles all absent from claude_worker.py, the shipping brain ; boot_gate=False booted the daemon headless in one line and is a public documented kwarg named in the refusal string itself.",
+      "consequence": "A studio TD reads the sentence's subject as the product. The product does not refuse to boot on a render node; a dormant module does. This is the one claim that would fail a studio evaluation as written. It is not an unstated condition — the condition 'if you construct a SynapseDaemon' is never met in the shipping product, which is a subject mismatch, not a caveat.",
+      "note": "I moved this verdict off the panel's PARTIALLY_SUPPORTED to UNSUPPORTED as orchestrator, with the reasoning stated in full at section 5 of the audit doc so it can be overturned on evidence. The investigator and the adversarial verifier graded the component; the completeness critic graded the sentence.",
+      "for_ruling": "FR-C0-9"
+    },
+    {
+      "id": "C0-F4",
+      "tier": "VERIFIED-STATIC",
+      "severity": "high",
+      "claim": "The repository already shipped the correctly-scoped version of claim 4, and deleted it.",
+      "anchor": "git log -S 'refuses to boot' --reverse -> c6d232b (2026-04-20), 4faaa3a (2026-04-20), 45584d4 (2026-06-25)",
+      "detail": "SYNAPSE's README once carried: 'The daemon refuses to boot in PDG / render-farm contexts (Fork-Bomb prevention). For tests, pass boot_gate=False.' Correctly scoped to the component AND disclosing the bypass. Deleted at 45584d4 on 2026-06-25. HEAD's README has zero mentions of daemon, headless or isUIAvailable. docs/sprint_freeze/marshal_map.md:197 independently records 'This path is not reachable in production'.",
+      "consequence": "The remedy for the leg's worst finding is not new engineering — it is restoring a sentence this project already wrote and then lost.",
+      "for_ruling": "FR-C0-9"
+    },
+    {
+      "id": "C0-F5",
+      "tier": "REFUTED-LIVE",
+      "severity": "high",
+      "claim": "CLAIM 2's named mechanism does not exist, and 'even on huge scenes' is refuted at the tool-result channel.",
+      "anchor": "python/synapse/panel/system_prompt.py:224-246 (rebuilt snapshot, not a delta) ; handlers_node.py:357-373 (depth cap only, NO node cap) ; claude_worker.py:263 (tool results appended verbatim, uncapped) ; synapse_panel.py:257,1687 (history never pruned)",
+      "detail": "No delta/diff/dirty engine anywhere at HEAD; `git merge-base --is-ancestor feat/scene-model HEAD` -> ANCESTOR-NO and 3 of 4 scene-model artifacts are ABSENT. The static prefix IS flat and was measured: 86,847 -> 86,908 chars across 0 -> 100,000 selected nodes (+0.07%). But on real Houdini scenes built headless, houdini_network_explain returns 1,940 / 17,871 / 180,773 chars for 10 / 100 / 1,000 children — strictly linear, ~181 chars/node, no cap. The advertised token-budgeted mitigation (synapse_inspect_scene, GeoSummary '<100 tokens per node') is ALSO linear: 1,776 / 8,978 / 82,780.",
+      "consequence": "Scene-size independence comes from omission plus truncation — sending the question, not the scene — which is a better story than the document tells, and a different sentence. The cost curve itself has producer NONE: zero token accounting in product code, and the API's usage field is discarded on every call.",
+      "for_ruling": "FR-C0-5"
+    },
+    {
+      "id": "C0-F6",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "medium",
+      "claim": "CLAIM 3's load-bearing persistence proof does not run on the interpreter Houdini runs.",
+      "anchor": "tests/test_moneta_integration.py:38 ; python/synapse/memory/store.py:810 (backend default 'jsonl') ; packages/synapse.json:22-24",
+      "detail": "python -m pytest tests/test_moneta_integration.py -> 8 passed on stock Python. hython3.13.exe -m pytest same file -> 8 SKIPPED, 'Moneta not importable (set $MONETA_SRC)'. Cost to discover: 0.13 seconds; nobody had run it. Separately, the age finding's 'the live default entry store is Moneta as of 2026-07-26' was REFUTED-LIVE: the probe that produced it manually injected MONETA_SRC, and SYNAPSE is not installed as a Houdini package on this seat at all.",
+      "consequence": "A shipping claim's proof must run on the shipping interpreter. Under Law 1 this producer is struck as evidence for a shipping seat, though it remains valid for the gate interpreter.",
+      "for_ruling": "FR-C0-6"
+    },
+    {
+      "id": "C0-F7",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "medium",
+      "claim": "CLAIM 2's only cost-flattening mechanism is frame-unstable and entirely untested.",
+      "anchor": "python/synapse/panel/providers/anthropic_provider.py:52-71 (_with_prompt_cache) ; system_prompt.py:224-246",
+      "detail": "build_system_prompt run twice across a frame change: 'system identical across turns? False', differing lines ['-- Frame: 1', '+- Frame: 2'], both 6,130 chars. The span carrying the system-level cache_control breakpoint changes when an artist scrubs the timeline. grep -rln for cache_control across tests/ returns nothing; grep for _format_scene_context/build_system_prompt across tests/ returns nothing. Both load-bearing mechanisms are untested. Prompt caching also exists in exactly 1 of 5 provider adapters (gemini/nemotron/ollama/custom all grep -c cache_control = 0).",
+      "consequence": "The claim's one real cost mechanism is partially defeated by ordinary artist behaviour, and the product's advertised five-engine breadth cancels it for four engines out of five.",
+      "for_ruling": "FR-C0-5"
+    },
+    {
+      "id": "C0-F8",
+      "tier": "VERIFIED-STATIC",
+      "severity": "medium",
+      "claim": "The claim-4 mitigation is one 6-line file from void, by the repository's own instructions.",
+      "anchor": "python/synapse/server/start_hwebserver.py:1-18 (docstring: 'Usage from 456.py or pythonrc.py (auto-start)') ; packages/synapse.json ('hpath': '$SYNAPSE_ROOT/houdini')",
+      "detail": "No 456.py / pythonrc.py / 123.py exists anywhere in the tree, so nothing SYNAPSE autostarts today — the strongest mitigating fact for claim 4, and unstated by the document. But hpath points at exactly the HOUDINI_PATH directory where Houdini auto-executes scripts/456.py, and the ungated transport's own docstring recommends autostarting it from there.",
+      "consequence": "The fork-bomb scenario is closed by ABSENCE of an autostart, not by the gate the claim points at — and the repo tells the reader how to remove that absence.",
+      "for_ruling": "FR-C0-8"
+    },
+    {
+      "id": "C0-F9",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "medium",
+      "claim": "The de-facto positioning surface an evaluator actually opens carries the same failure mode, unaudited.",
+      "anchor": "DEMO_SCRIPT.md:5,7,148,168 ; docs/getting-started and 4 other shipped docs ; tests/test_phase0c_doc1_toolcount.py",
+      "detail": "hython3.13 -c 'len(tr.TOOL_DEFS)' -> 120 (TOOL_NAMES/TOOL_JSON/TOOL_DISPATCH/TOOLS_LIST_CACHE all 120). Six shipped docs publish 115. DEMO_SCRIPT.md:148 asserts the count is 'doc-count pinned by test'; reading the test, _documented_count() regexes CLAUDE.md ONLY — which says 120 and is correct. The pin covers exactly one file. Separately, DEMO_SCRIPT Act 4's cited producer check_shot_login (harness/verify/checks.py:147) imports the module directly and never exercises the panel path — a decoration. CLEAN BY CONTRAST: README.md:97's 4,940 suite figure has a real producer chain (receipts/F1.json:83-86 -> RELEASE_NOTES_v5.35.0.md:11).",
+      "consequence": "The README's numbers survive audit; its sentences and DEMO_SCRIPT's numbers do not. C0 was scoped to four transcribed sentences and is blind to the surface a customer actually watches.",
+      "for_ruling": "FR-C0-3"
+    },
+    {
+      "id": "C0-F10",
+      "tier": "VERIFIED-STATIC",
+      "severity": "medium",
+      "claim": "Claims 1 and 4 are mutually corrosive and cannot be corrected independently.",
+      "anchor": "grep isUIAvailable across product source -> exactly two modules, both under python/synapse/host/ ; python/synapse/panel/claude_worker.py (the shipping brain, ungated)",
+      "detail": "The only render-node gate in the product lives in the dormant daemon. Honestly scoping claim 1's 'where the AI lives' to ClaudeWorker — which the evidence requires — automatically collapses claim 4, because ClaudeWorker has no gate. Three further cross-claim couplings are recorded in section 6 of the audit doc: claim 2 depends on claim 3's persisted prior state; claim 1's in-process virtue is the direct CAUSE of claim 3's per-directory/per-user scoping; and README's 'no RPC hop' is load-bearing on a phantom (hou.webServer.port absent on H22.0.368), so a future Houdini build could silently falsify it.",
+      "consequence": "A per-claim audit is structurally blind to this class. Correcting the four sentences independently risks ending up defending two different architectures.",
+      "for_ruling": "FR-C0-9"
+    },
+    {
+      "id": "C0-F11",
+      "tier": "VERIFIED-STATIC",
+      "severity": "medium",
+      "claim": "harness/CLAUDE.md's 'Default architecture: SIDECAR' is stale and misled this leg's own dispatch brief.",
+      "anchor": "harness/CLAUDE.md (last touched 634050 2026-07-17) vs harness/notes/CTO_RULINGS_01.md:700-738 (RULING 30, 2026-07-25)",
+      "detail": "Ruling 30 closed Gate 0.1b on evidence — the vendored in-process path stands, no sidecar on ABI grounds. Corroborated live: synapse._VENDOR_ABI_RISK == False on hython3.13 with anthropic 0.96.0 + the cp313 pydantic_core/jiter Rust extensions importing cleanly. The doc predates the ruling by 8 days.",
+      "consequence": "The C0 brief named the sidecar line as claim 1's crux; it resolved in the claim's favour, but only after an agent spent effort reconciling a document that a ruling had already superseded.",
+      "for_ruling": "FR-C0-4"
+    },
+    {
+      "id": "C0-F12",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "low",
+      "claim": "'Call the handler and see what comes back' is not read-only for the memory subsystem.",
+      "anchor": "python/synapse/memory/scene_memory.py:96-140 (ensure_scene_structure) ; .gitignore:87",
+      "detail": "The completeness critic's synapse_project_setup probe seeded claude/project.md (204 bytes, empty scaffold, 15:10:41Z) inside a leg fenced read-only. The agent self-disclosed it unprompted. Its own read-back probe then reported 'project_memory -> 191 chars' — it was reading back the scaffold it had just created, which is a false-positive shape worth naming.",
+      "consequence": "Directly relevant to C3 (memory proof), which will exercise this subsystem far harder. Anyone re-running memory probes read-only must stub the filesystem first. Classified per Law 4 (untracked, gitignored, absent from HEAD, created during the run, no data) and reversed; tracked tree byte-identical to the pre-run snapshot.",
+      "for_ruling": null
+    }
+  ],
+
+  "method": {
+    "shape": "13 agents: 4 claim investigators -> 4 git-archaeology age-forensics -> 4 adversarial verifiers -> 1 completeness critic. Pipelined, so each claim's verification began as soon as its own investigation finished.",
+    "separation_of_roles": "Constitution Article IV. Investigators (cartographer) did not verify their own work; verifiers (crucible) did not gather the producers they attacked; the critic attacked the finished set, including the verifiers.",
+    "fence": "All 13 agents ran under cartographer/crucible agent types, which hold NO Write or Edit tools — the fence was structural, not instructional. Reason: a prompt that says READ-ONLY does nothing if the agent holds write tools.",
+    "adversarial_result": "All four investigator verdicts SURVIVED attack as PARTIALLY_SUPPORTED. The verifiers broke five specific sub-claims (two of them in the TOO-HARSH direction, strengthening the claims) and the critic then moved claim 4 to UNSUPPORTED on the sentence-vs-component reading, which the orchestrator adopted.",
+    "cost": "526 tool calls, 1,498,993 subagent tokens, 3,686s wall clock, 13/13 agents completed, 0 errors."
+  },
+
+  "suite": {
+    "ran": "targeted node ids only, never the full suite",
+    "results": [
+      "python -m pytest tests/test_install_verify.py -x --no-header -q -> 22 passed",
+      "python -m pytest tests/test_host_layer.py::TestDaemonBootGate -q --no-header -> 4 passed (DISQUALIFIED as host-behaviour evidence: mock hou, stock Python 3.14)",
+      "python -m pytest tests/test_moneta_integration.py -q --no-header -> 8 passed",
+      "hython3.13.exe -m pytest tests/test_moneta_integration.py -q --no-header -rs -> 8 SKIPPED (finding C0-F6)",
+      "python -m pytest tests/test_store_degraded_load.py -q --no-header -> 3 passed",
+      "python -m pytest tests/test_phase0c_doc1_toolcount.py -q --no-header -> 3 passed (pin covers CLAUDE.md only — finding C0-F9)"
+    ],
+    "baseline_note": "No suite-baseline claim is made. This leg changed no product code, so the gate floor is untouched. Law 6 is not engaged."
+  },
+
+  "changes": {
+    "files_written": [
+      "harness/notes/POSITIONING_CLAIM_AUDIT.md",
+      "harness/notes/receipts/C0.json"
+    ],
+    "files_outside_grant": [],
+    "committed": false,
+    "commit_blocked_reason": "`git add` denied at the permission layer; git write is not in this session's tool grant. Not retried (Article I: writing outside the grant is a ruling item, not a permission problem).",
+    "declared_touches_drift": "harness/legs.json:253-262 declares C0 with `touches: []` and `readonly: true`. The leg necessarily writes two files under harness/notes/. R92 requires `touches` to express file collisions; an empty array under-declares. Cosmetic (no other leg writes these two paths, so no collision was missed) and recorded rather than corrected, because legs.json is not this leg's to edit."
+  },
+
+  "for_ruling": [
+    {
+      "id": "FR-C0-1",
+      "item": "The positioning document is not under version control and never has been. Every verdict in this leg grades a transcription. Diff the transcription against the source before acting on this audit — and consider committing the document so it is auditable at a commit like everything else."
+    },
+    {
+      "id": "FR-C0-2",
+      "item": "Seven Shipping claims declared, four named. The three unaccounted claims were not audited and the census does not know its own denominator."
+    },
+    {
+      "id": "FR-C0-3",
+      "item": "DEMO_SCRIPT.md publishes 115 MCP tools in six shipped docs against a live 120, and asserts the count is 'pinned by test' when the pin covers CLAUDE.md alone. Its Act 4 memory producer (check_shot_login) is a decoration that bypasses the panel path. Same failure class as the four audited claims, in the document a customer actually watches."
+    },
+    {
+      "id": "FR-C0-4",
+      "item": "harness/CLAUDE.md's 'Default architecture: SIDECAR' is stale, superseded by CTO Ruling 30 (2026-07-25), and misled this leg's own dispatch brief."
+    },
+    {
+      "id": "FR-C0-5",
+      "item": "Claim 2's only cost mechanism (prompt caching) is frame-unstable, untested, and Claude-only in a five-engine product. C1 should treat cache stability as part of the instrument, not an assumption — and should note that the 'sends only what changed' half of the claim has no mechanism at HEAD to benchmark."
+    },
+    {
+      "id": "FR-C0-6",
+      "item": "Claim 3's load-bearing persistence test yields 8 SKIPPED on hython3.13. A shipping claim's proof must run on the shipping interpreter. Directly gates C3."
+    },
+    {
+      "id": "FR-C0-7",
+      "item": "Three shot/project panel surfaces — cross_scene.py (480 LOC), shot_login.py, save_shot.py — have zero callers while DEMO_SCRIPT demos the capability. Wire or retire."
+    },
+    {
+      "id": "FR-C0-8",
+      "item": "start_hwebserver.py's docstring recommends autostart from 456.py, and packages/synapse.json sets hpath to the directory where Houdini auto-executes it. The claim-4 mitigation (no autostart ships) is one 6-line file from void, by the repo's own instructions."
+    },
+    {
+      "id": "FR-C0-9",
+      "item": "PRODUCT DIRECTION, not an agent's call. Claim 4 as worded is UNSUPPORTED. Two coherent remedies: (a) restore the correctly-scoped sentence the repo shipped at 4faaa3a and deleted at 45584d4, or (b) wire the gate into the shipping transport so the product-level sentence becomes true. Note (a) interacts with claim 1 — see C0-F10; the two cannot be corrected independently."
+    },
+    {
+      "id": "FR-C0-10",
+      "item": "This leg could not satisfy R93 because git write is outside the session grant, so it is amber with its product uncommitted. Either grant the commit capability to legs whose standing rules require R93, or amend R93 to exempt read-only legs whose product is a note. As written the two rules cannot both be satisfied by a fenced read-only leg."
+    }
+  ],
+
+  "standing_compliance": {
+    "never_push": true,
+    "never_merge": true,
+    "never_tag": true,
+    "read_only_fence": "held — tracked tree byte-identical before and after; one agent write disclosed, classified per Law 4, and reversed",
+    "gates_untouched": "A (architecture rulings), B (drop.json), C (merge to main) — none approached",
+    "law_1": "applied — 6 producers struck as unfalsifiable or wrong-subject, listed in audit section 7",
+    "law_2": "applied — every figure in the audit carries the command that emitted it",
+    "law_3": "applied — status is amber because the product is uncommitted, not green with an advisory note",
+    "law_4": "applied — the stray probe artifact was classified (untracked, gitignored, absent from HEAD, created in-run, no data) before removal",
+    "law_5": "applied — H6-F3 was re-confirmed at HEAD by probe rather than inherited from the receipt",
+    "law_7": "this leg is amber on a process constraint, not on a failed oracle; the findings are the deliverable"
+  },
+
+  "resume_token": {
+    "skip_on_reentry": [
+      "the four claim investigations, age forensics and adversarial verifications — all 13 agent returns are cached in the workflow journal at .../workflows/wf_9f6ac9a7-bca/journal.jsonl",
+      "the live claim-4 probes on hython3.13 and hbatch — VERIFIED-RUNTIME, reproduced twice by different agents",
+      "the arm-A static-prefix flatness measurement (86,847 -> 86,908 chars) — C1 can reuse it as a starting point but must NOT treat it as the cost curve; it excludes the tool-result channel where the dependence lives"
+    ],
+    "do_on_reentry": [
+      "commit harness/notes/POSITIONING_CLAIM_AUDIT.md and this receipt to claims/c0-census (blocked here by the grant; this is what makes the leg amber)",
+      "the five open items in audit section 8 — chiefly: no probe ran in a GRAPHICAL Houdini session, and no real farm node was tested for isUIAvailable() (hython and hbatch both report False; houdini -foreground is untested and is the fail-open direction)"
+    ],
+    "hands_to": "C1 (token bench) inherits FR-C0-5 and the arm-A caveat; C2 (render-node) inherits C0-F3/F4/F8 and should start from the entry-point table in audit section 5 rather than re-deriving it; C3 (memory proof) inherits FR-C0-6 and the C0-F12 warning that memory probes are not read-only."
+  }
+}

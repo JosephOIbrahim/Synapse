@@ -1,0 +1,394 @@
+{
+ "producer": "harness/notes/recovery/recover_orphan_writes.py",
+ "applied": true,
+ "scope": [
+  "c0-census",
+  "h9-doc-grounding",
+  "s1-forensic",
+  "v1-capture-probe",
+  "rsi0-surface-audit",
+  "s0-forensic"
+ ],
+ "excluded": {
+  "h1-schemas": "UNCLEAR; real artifact safe at origin/repair/h1-schemas-b (0929d56)",
+  "c1-token-bench": "DUPLICATE-OF-MAIN; unlanded items are scratch"
+ },
+ "entries": [
+  {
+   "orphan": "c0-census",
+   "path": "harness/notes/POSITIONING_CLAIM_AUDIT.md",
+   "status": "SKIPPED-EXISTS",
+   "main_bytes": 30086,
+   "worktree_chars": 29860
+  },
+  {
+   "orphan": "c0-census",
+   "path": "harness/notes/receipts/C0.json",
+   "status": "recovered",
+   "chars": 28877,
+   "edits_replayed": 0,
+   "sha256": "66e69b2fa51ca24b"
+  },
+  {
+   "orphan": "h9-doc-grounding",
+   "path": "harness/notes/h9/harvest_runtime_parms.py",
+   "status": "recovered",
+   "chars": 8947,
+   "edits_replayed": 1,
+   "sha256": "fe4dbf9c43e2457f"
+  },
+  {
+   "orphan": "h9-doc-grounding",
+   "path": "harness/notes/h9/docparse.py",
+   "status": "recovered",
+   "chars": 22746,
+   "edits_replayed": 16,
+   "sha256": "2a5daa09321e2686"
+  },
+  {
+   "orphan": "h9-doc-grounding",
+   "path": "harness/notes/h9/build_corpus.py",
+   "status": "recovered",
+   "chars": 54341,
+   "edits_replayed": 51,
+   "sha256": "f1cbe8e7ef28b588"
+  },
+  {
+   "orphan": "h9-doc-grounding",
+   "path": "harness/notes/h9/crosscheck_runtime.py",
+   "status": "SKIPPED-EXISTS",
+   "main_bytes": 17050,
+   "worktree_chars": 17050
+  },
+  {
+   "orphan": "h9-doc-grounding",
+   "path": "harness/notes/h9/drift.md",
+   "status": "recovered",
+   "chars": 5586,
+   "edits_replayed": 2,
+   "sha256": "14954b7f361d852b"
+  },
+  {
+   "orphan": "h9-doc-grounding",
+   "path": "harness/notes/h9/floor_control.py",
+   "status": "recovered",
+   "chars": 6391,
+   "edits_replayed": 0,
+   "sha256": "cff4cec4af084a5b"
+  },
+  {
+   "orphan": "h9-doc-grounding",
+   "path": "harness/notes/receipts/H9.json",
+   "status": "recovered",
+   "chars": 35541,
+   "edits_replayed": 3,
+   "sha256": "c57edda7acd14bcc"
+  },
+  {
+   "orphan": "h9-doc-grounding",
+   "path": "harness/notes/h9/harvest_instantiated_parms.py",
+   "status": "recovered",
+   "chars": 4519,
+   "edits_replayed": 0,
+   "sha256": "0dd5f07c024325f1"
+  },
+  {
+   "orphan": "h9-doc-grounding",
+   "path": "harness/notes/h9/crosscheck_census.py",
+   "status": "recovered",
+   "chars": 8855,
+   "edits_replayed": 0,
+   "sha256": "192da783ceabfce7"
+  },
+  {
+   "orphan": "s1-forensic",
+   "path": "harness/notes/forensic/_s1_enumerate_tools.py",
+   "status": "recovered",
+   "chars": 4514,
+   "edits_replayed": 2,
+   "sha256": "a0cc890ae46e917c"
+  },
+  {
+   "orphan": "s1-forensic",
+   "path": "harness/notes/forensic/_s1_reachability.py",
+   "status": "recovered",
+   "chars": 3544,
+   "edits_replayed": 0,
+   "sha256": "309d96256fa3bd4b"
+  },
+  {
+   "orphan": "s1-forensic",
+   "path": "harness/notes/forensic/_s1_evidence_index.py",
+   "status": "recovered",
+   "chars": 6848,
+   "edits_replayed": 0,
+   "sha256": "c1ad61b03406804d"
+  },
+  {
+   "orphan": "s1-forensic",
+   "path": "harness/notes/forensic/_s1_handler_digest.py",
+   "status": "recovered",
+   "chars": 2522,
+   "edits_replayed": 0,
+   "sha256": "16f17210653d0e6b"
+  },
+  {
+   "orphan": "s1-forensic",
+   "path": "harness/notes/forensic/_s1_classify.py",
+   "status": "recovered",
+   "chars": 39850,
+   "edits_replayed": 5,
+   "sha256": "e012cb3c0aecedb7"
+  },
+  {
+   "orphan": "s1-forensic",
+   "path": "harness/notes/forensic/_s1_test_honesty.py",
+   "status": "recovered",
+   "chars": 3579,
+   "edits_replayed": 0,
+   "sha256": "2dd6618c74ff89bf"
+  },
+  {
+   "orphan": "s1-forensic",
+   "path": "harness/notes/forensic/S1_INVENTORY.md",
+   "status": "recovered",
+   "chars": 20370,
+   "edits_replayed": 9,
+   "sha256": "82d98679672b4db0"
+  },
+  {
+   "orphan": "s1-forensic",
+   "path": "harness/notes/receipts/S1.json",
+   "status": "recovered",
+   "chars": 25136,
+   "edits_replayed": 8,
+   "sha256": "09288c3b527cf4a6"
+  },
+  {
+   "orphan": "s1-forensic",
+   "path": "harness/notes/forensic/_s1_reconcile.py",
+   "status": "recovered",
+   "chars": 6316,
+   "edits_replayed": 0,
+   "sha256": "1f067417e4b1e3fa"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_a_surfaces.py",
+   "status": "recovered",
+   "chars": 11930,
+   "edits_replayed": 1,
+   "sha256": "fd874fb38974c2d5"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_a_mutation.py",
+   "status": "recovered",
+   "chars": 4760,
+   "edits_replayed": 1,
+   "sha256": "ea8863e5c59b5d7b"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_b_copernicus.py",
+   "status": "recovered",
+   "chars": 9020,
+   "edits_replayed": 0,
+   "sha256": "a2bc9ca8fbc119a7"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_b2_readback.py",
+   "status": "recovered",
+   "chars": 9490,
+   "edits_replayed": 0,
+   "sha256": "f25fdc9d4e8a8554"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_c_aov_denoise.py",
+   "status": "recovered",
+   "chars": 7972,
+   "edits_replayed": 0,
+   "sha256": "662677a147928e06"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_d_render_cost.py",
+   "status": "recovered",
+   "chars": 10928,
+   "edits_replayed": 0,
+   "sha256": "1b46342e2e6de395"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_d2_id_integrality.py",
+   "status": "recovered",
+   "chars": 9171,
+   "edits_replayed": 0,
+   "sha256": "7c3ffdae833f10d9"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_d3_id_semantics.py",
+   "status": "recovered",
+   "chars": 10054,
+   "edits_replayed": 0,
+   "sha256": "a573b53afd5f4466"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_d4_id_collision.py",
+   "status": "recovered",
+   "chars": 11767,
+   "edits_replayed": 0,
+   "sha256": "6cc2fd3f82e4f74e"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_e_objectid.py",
+   "status": "recovered",
+   "chars": 13224,
+   "edits_replayed": 0,
+   "sha256": "2396e31e8c2ec94a"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_e2_objectid_correct.py",
+   "status": "recovered",
+   "chars": 11636,
+   "edits_replayed": 0,
+   "sha256": "3bbd5cf6d69e096e"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_e3_objectid_isolated.py",
+   "status": "recovered",
+   "chars": 10684,
+   "edits_replayed": 0,
+   "sha256": "2a6ba268b3eb2d3b"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_f_objectid_mask.py",
+   "status": "recovered",
+   "chars": 11217,
+   "edits_replayed": 0,
+   "sha256": "66a9caa8c0db5809"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_g_objectid_filters.py",
+   "status": "recovered",
+   "chars": 7706,
+   "edits_replayed": 0,
+   "sha256": "ef954de482e1443b"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/V1_CAPTURE_PROBE.md",
+   "status": "SKIPPED-EXISTS",
+   "main_bytes": 21467,
+   "worktree_chars": 21282
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_h_stability_baseline.py",
+   "status": "recovered",
+   "chars": 10056,
+   "edits_replayed": 0,
+   "sha256": "29ec39454c6fbe8b"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/receipts/V1.json",
+   "status": "SKIPPED-EXISTS",
+   "main_bytes": 30075,
+   "worktree_chars": 29965
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_i_primvar_mask.py",
+   "status": "recovered",
+   "chars": 10726,
+   "edits_replayed": 0,
+   "sha256": "b97abd9854ac2b58"
+  },
+  {
+   "orphan": "v1-capture-probe",
+   "path": "harness/notes/v1/probe_j_primvar_wrangle.py",
+   "status": "recovered",
+   "chars": 10840,
+   "edits_replayed": 0,
+   "sha256": "7d55fd259166cfc8"
+  },
+  {
+   "orphan": "rsi0-surface-audit",
+   "path": "harness/notes/rsi0/live_probe.json",
+   "status": "recovered",
+   "chars": 6546,
+   "edits_replayed": 0,
+   "sha256": "17d0bd86a1828fc1"
+  },
+  {
+   "orphan": "rsi0-surface-audit",
+   "path": "harness/notes/rsi0/epoch_log_forensics.json",
+   "status": "recovered",
+   "chars": 5138,
+   "edits_replayed": 0,
+   "sha256": "aafa3353276fdd35"
+  },
+  {
+   "orphan": "rsi0-surface-audit",
+   "path": "harness/notes/RSI_SURFACE_AUDIT.md",
+   "status": "SKIPPED-EXISTS",
+   "main_bytes": 19708,
+   "worktree_chars": 19547
+  },
+  {
+   "orphan": "rsi0-surface-audit",
+   "path": "harness/notes/receipts/RSI0.json",
+   "status": "SKIPPED-EXISTS",
+   "main_bytes": 21858,
+   "worktree_chars": 21782
+  },
+  {
+   "orphan": "s0-forensic",
+   "path": "harness/notes/forensic/s0_native_probe.py",
+   "status": "recovered",
+   "chars": 5717,
+   "edits_replayed": 0,
+   "sha256": "e7335cc1306e411a"
+  },
+  {
+   "orphan": "s0-forensic",
+   "path": "harness/notes/forensic/s0_typedump.py",
+   "status": "recovered",
+   "chars": 3795,
+   "edits_replayed": 0,
+   "sha256": "8ade68b58ee109cd"
+  },
+  {
+   "orphan": "s0-forensic",
+   "path": "harness/notes/forensic/s0_native_delta.py",
+   "status": "recovered",
+   "chars": 5471,
+   "edits_replayed": 0,
+   "sha256": "cdc9f12ac210bba3"
+  },
+  {
+   "orphan": "s0-forensic",
+   "path": "harness/notes/forensic/S0_SCOUT.md",
+   "status": "SKIPPED-EXISTS",
+   "main_bytes": 71885,
+   "worktree_chars": 71221
+  },
+  {
+   "orphan": "s0-forensic",
+   "path": "harness/notes/receipts/S0.json",
+   "status": "SKIPPED-EXISTS",
+   "main_bytes": 18423,
+   "worktree_chars": 18329
+  }
+ ]
+}

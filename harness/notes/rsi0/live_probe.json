@@ -1,0 +1,89 @@
+{
+  "_what": "RSI0 live-runtime probe. The ONLY evidence in this leg that is VERIFIED-RUNTIME rather than VERIFIED-STATIC. Produced by three read-only introspections of the running Houdini process over the SYNAPSE WS bridge (protocol 4.0.0) on 2026-07-27.",
+  "_producer_path": "mcp__synapse__synapse_ping, synapse_router_stats, synapse_memory_status, synapse_metrics, and two mcp__synapse__houdini_execute_python calls with atomic=false and read-only payloads (no imports of synapse modules, no instantiation, no mutation). Payloads are reproduced verbatim below.",
+  "_why_atomic_false": "The payloads mutate nothing. atomic=false skips hou.undos.group so the probe leaves no entry in the artist's undo stack.",
+
+  "host": {
+    "houdini": "22.0.368",
+    "python": "3.13.10",
+    "protocol_version": "4.0.0",
+    "bridge_ping": "pong=true"
+  },
+
+  "P1_router_stats": {
+    "tool": "mcp__synapse__synapse_router_stats",
+    "raw": {"error": "Router not initialized"},
+    "served_by": "python/synapse/server/handlers.py:1566 _handle_router_stats -> :1568 'if not hasattr(self, \"_router\")' -> :1569 returns this literal",
+    "means": "The SynapseHandler instance serving this call has no _router attribute. TieredRouter is constructed at exactly one production site, handlers.py:1608, lazily inside _handle_route_chat."
+  },
+
+  "P2_traffic_context": {
+    "tool": "mcp__synapse__synapse_metrics",
+    "synapse_dispatch_wait_ms_count": 530,
+    "synapse_dispatch_wait_ms_sum": 56002.9092,
+    "synapse_dispatch_wait_ms_max": 8307.2885,
+    "synapse_memory_entries_total": 9,
+    "synapse_scene_nodes_total": 9,
+    "why_it_matters": "530 main-thread dispatches have been served by this process. The router is uninitialised DESPITE substantial traffic, not because traffic is low. This is the specific point on which the prior health report's own explanation ('normal for a fresh session with minimal tool traffic') does not hold."
+  },
+
+  "P3_memory_status": {
+    "tool": "mcp__synapse__synapse_memory_status",
+    "raw": {
+      "agent": {"status": "idle", "suspended_count": 0, "task_count": 0},
+      "entries_total": 7,
+      "project": {"evolution": "charmander", "session_count": 0, "size_kb": 0.2},
+      "scene": {"evolution": "charmander", "session_count": 0, "size_kb": 2.75}
+    },
+    "means": "Both memory scopes report evolution stage 'charmander' -- the FIRST stage. Neither has ever advanced to charmeleon or charizard.",
+    "caveat_stated_honestly": "A reported stage label is not proof the evolution pipeline ran or did not run; it is the label the memory handler computes. The decisive evidence for evolution.py is P4, not this."
+  },
+
+  "P4_import_graph": {
+    "tool": "mcp__synapse__houdini_execute_python (atomic=false)",
+    "payload_verbatim": "import sys, os, json\ninfo = {}\ninfo[\"houdini\"] = hou.applicationVersionString()\ninfo[\"py\"] = sys.version.split()[0]\ninfo[\"env_SYNAPSE_MEMORY_BACKEND\"] = os.environ.get(\"SYNAPSE_MEMORY_BACKEND\", \"<UNSET>\")\nmods = [...]\ninfo[\"modules_loaded\"] = {m: (m in sys.modules) for m in mods}\n... gc scan guarded on module presence ...\nresult = json.dumps(info)",
+    "raw": {
+      "houdini": "22.0.368",
+      "py": "3.13.10",
+      "env_SYNAPSE_MEMORY_BACKEND": "moneta",
+      "modules_loaded": {
+        "synapse.routing.adaptation": false,
+        "synapse.routing.router": false,
+        "synapse.agent.learning": false,
+        "synapse.agent.executor": false,
+        "synapse.memory.evolution": false,
+        "synapse.memory.ledger": false,
+        "synapse.server.handlers": true
+      },
+      "live_EpochAdapter_instances": "not-scanned-module-not-imported",
+      "live_TieredRouter_instances": "not-scanned-module-not-imported"
+    },
+    "gc_scan_note": "The gc.get_objects() instance count was deliberately guarded behind module presence. Because the modules are absent from sys.modules, the class objects do not exist, therefore zero instances can exist, therefore the scan was correctly skipped rather than run and reported as 0. Absence of the module is the STRONGER claim and it is the one made."
+  },
+
+  "P5_full_import_census": {
+    "tool": "mcp__synapse__houdini_execute_python (atomic=false)",
+    "total_synapse_modules_loaded": 133,
+    "by_subpackage_count": {
+      "synapse": 1, "synapse.cognitive": 7, "synapse.core": 14, "synapse.host": 10,
+      "synapse.inspector": 5, "synapse.mcp": 14, "synapse.memory": 8,
+      "synapse.panel": 31, "synapse.server": 40, "synapse.session": 3
+    },
+    "routing_modules_loaded": [],
+    "agent_modules_loaded": [],
+    "memory_modules_loaded": [
+      "synapse.memory", "synapse.memory.context", "synapse.memory.embedding",
+      "synapse.memory.markdown", "synapse.memory.models",
+      "synapse.memory.moneta_runtime", "synapse.memory.moneta_store",
+      "synapse.memory.store"
+    ],
+    "why_this_is_the_control": "This is the negative control for P4. If the process were cold or half-loaded, P4's falses would be uninterpretable. 133 loaded modules across 10 subpackages -- including the full panel (31) and server (40) -- establish a warm, working install. Against that baseline, routing=[] and agent=[] are meaningful absences, not startup lag.",
+    "evolution_absent": "synapse.memory.evolution is not among the 8 loaded memory modules. moneta_runtime and moneta_store ARE loaded, corroborating env SYNAPSE_MEMORY_BACKEND=moneta by direct observation."
+  },
+
+  "the_inference_and_its_limit": {
+    "inference": "The TieredRouter import at handlers.py:1600 is FUNCTION-LOCAL, inside _handle_route_chat. A function-local import leaves its module in sys.modules permanently after the first call. synapse.routing.router is absent from sys.modules; therefore _handle_route_chat has never been called in this process; therefore no EpochAdapter has ever been constructed in this process; therefore no tier outcome has ever been recorded and no epoch boundary has ever been crossed here.",
+    "tier": "VERIFIED-RUNTIME",
+    "limit_stated_explicitly": "This proves the mechanism is not firing in THIS process, which is one long-lived heavily-used session. It does NOT by itself prove the mechanism never fired in any session ever. That stronger claim rests on the separate static finding that NO EpochAdapter state is persisted anywhere -- so no prior session could have left evidence either way. The two findings are complementary: the live probe shows it is not firing now; the absence of persistence shows that 'has it ever fired' is unanswerable by artifact, by construction."
+  }
+}
