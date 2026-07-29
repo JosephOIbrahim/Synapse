@@ -45,13 +45,54 @@ def receipt_for(leg):
     return None
 
 
+# R14x. A receipt FILE is not a verdict. Of the 41 receipts on this tree, 17
+# carry something other than plain green - amber, red, held_not_started,
+# green_with_findings, green-with-collision, and four with no status at all.
+# The previous rule was `if receipt_for(leg): return "done"`, so every one of
+# them printed as done. H2's receipt says "held_not_started" in as many words
+# and the board called it complete.
+#
+# That is this project's central finding for the third time: heats_status.py
+# was retired for rendering real receipts into a layout that no longer
+# described anything, and its replacement went on reading presence as success.
+# Presence is not status. Read the field.
+GREEN = {"green", "pass", "passed", "ok", "complete", "done"}
+
+
+def verdict_of(path):
+    """'green' | 'attention' | 'unreadable' - never inferred from existence."""
+    if not path:
+        return None
+    try:
+        with open(path, encoding="utf-8") as fh:
+            d = json.load(fh)
+    except Exception:
+        return "unreadable"
+    if not isinstance(d, dict):
+        return "unreadable"
+    s = str(d.get("status", "")).strip().lower()
+    if s in GREEN:
+        return "green"
+    return "attention"
+
+
+def qualifier(path):
+    """The receipt's own word for why it is not plain green."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return str(json.load(fh).get("status") or "no status field")[:28]
+    except Exception:
+        return "unreadable"
+
+
 def state_of(leg, held):
     if leg.get("state") in ("held", "done"):
         return leg["state"]
     if leg["id"] in held:
         return "running"
-    if receipt_for(leg):
-        return "done"
+    r = receipt_for(leg)
+    if r:
+        return "done" if verdict_of(r) == "green" else "attention"
     unmet = [d for d in leg.get("deps", []) if d not in DONE]
     return "blocked" if unmet else "ready"
 
@@ -61,9 +102,12 @@ held = set()
 if os.path.isdir(LOCKS):
     held = {f[:-5] for f in os.listdir(LOCKS) if f.endswith(".lock")}
 
+# A leg only satisfies a downstream dependency when its receipt is actually
+# green. A halted leg must not unblock the work that was waiting on it - that
+# is how H2's collision would have propagated.
 DONE = set()
 for l in legs:
-    if l.get("state") == "done" or receipt_for(l):
+    if l.get("state") == "done" or verdict_of(receipt_for(l)) == "green":
         DONE.add(l["id"])
 
 rows = [(l["id"], l.get("name", ""), state_of(l, held), l) for l in legs]
@@ -75,14 +119,17 @@ print()
 print("  SYNAPSE  %s" % git("rev-parse", "--abbrev-ref", "HEAD"))
 print("  " + "-" * 74)
 
-for st in ("running", "ready", "blocked", "held"):
+for st in ("running", "attention", "ready", "blocked", "held"):
     for lid, name, _, leg in by_state.get(st, []):
-        mark = {"running": ">", "ready": ".", "blocked": "-", "held": "#"}[st]
+        mark = {"running": ">", "attention": "!", "ready": ".",
+                "blocked": "-", "held": "#"}[st]
         note = ""
         if st == "blocked":
             note = "waits on " + ",".join(d for d in leg.get("deps", []) if d not in DONE)
         elif st == "running" and lid in held:
             note = "locked"
+        elif st == "attention":
+            note = "receipt says: " + qualifier(receipt_for(leg))
         print("   %s %-5s %-26s %-9s %s" % (mark, lid, name[:26], st, note))
 
 done = by_state.get("done", [])
@@ -106,13 +153,23 @@ print("   rulings %-6d receipts %-5d unpushed %-4d dirty %d"
 # prune_safety covers exactly that case. Neither covers it alone, and nothing
 # said to run both - so the status tool runs both.
 for name, script in (("branches", "branch_harvest.py"),
-                     ("worktrees", "prune_safety.py")):
-    h = subprocess.run([sys.executable,
-                        os.path.join(ROOT, "harness", "verify", script)],
-                       capture_output=True, text=True, encoding="utf-8",
+                     ("worktrees", "prune_safety.py"),
+                     ("isolation", "../worktree_guard.py")):
+    path = os.path.normpath(os.path.join(ROOT, "harness", "verify", script))
+    args = [sys.executable, path]
+    if name == "isolation":
+        # A leg whose worktree directory exists but is not a git worktree reads
+        # 'ready' here while a dispatch into it would write to the MAIN tree on
+        # the live branch. The board must not stay quiet about that.
+        args.append("audit")
+    h = subprocess.run(args, capture_output=True, text=True, encoding="utf-8",
                        errors="replace")
     if h.returncode == 0:
         print("   %-9s clean" % name)
+    elif name == "isolation":
+        n = h.stdout.count("ARMED ")
+        print("   %-9s %d LEG(S) ARMED - run harness/worktree_guard.py audit"
+              % (name, n))
     else:
         print("   %-9s NEEDS ATTENTION - run harness/verify/%s" % (name, script))
 print()

@@ -172,3 +172,4 @@ demo/captures/
 .c1out/
 .c1smoke/
 harness/state/locks/
+harness/state/suite_stamp.json

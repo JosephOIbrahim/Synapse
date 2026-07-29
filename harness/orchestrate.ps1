@@ -238,6 +238,36 @@ function Start-Leg([object]$leg) {
     if (-not (Test-Path $wt)) {
         git worktree add -b $leg.branch $wt HEAD 2>&1 | Select-Object -Last 1 | ForEach-Object { Say "  $_" 'DarkGray' }
     }
+    else {
+        # A DIRECTORY IS NOT A WORKTREE. Test-Path only asks whether something is
+        # there, so an orphaned directory skips the creation above and dispatch
+        # proceeds into it. Because these live INSIDE the repo, git run from one
+        # walks up and resolves to the main tree:
+        #
+        #   git -C .claude/worktrees/h2-requalify rev-parse --show-toplevel
+        #       -> C:/Users/User/SYNAPSE
+        #   git -C .claude/worktrees/h2-requalify rev-parse --abbrev-ref HEAD
+        #       -> feat/repair-heats-01
+        #
+        # So the agent launches with acceptEdits and commits to the LIVE branch
+        # of the MAIN tree - Article V inverted, because the isolation mechanism
+        # routes back into the thing it isolates from while the board still
+        # reports the leg as isolated.
+        #
+        # Found 2026-07-29: 26 directories under .claude/worktrees, 12 registered,
+        # 14 orphans, 14 legs pointing at them, 9 of those state=ready.
+        #
+        # The guard REPORTS and never reclaims. Law 4 - the 2026-07-27 pass
+        # recorded at line 142 destroyed the only copies of three receipts, and
+        # an orphan may be the last copy of something.
+        $isoOut = & python (Join-Path $repo 'harness\worktree_guard.py') check $leg.id 2>&1
+        if ($LASTEXITCODE -eq 5) {
+            Say "  REFUSED - worktree is not a worktree" 'Red'
+            Say "  $isoOut" 'DarkGray'
+            Notify "$($leg.id) NOT dispatched" "Its worktree directory exists but is not a git worktree. An agent there would write to the main tree on the live branch. Nothing was deleted - run: python harness/worktree_guard.py audit"
+            return
+        }
+    }
 
     # A fresh worktree is UNTRUSTED - Claude Code blocks on the trust dialog
     # before its first token. Silent, indefinite, indistinguishable from slow
