@@ -209,6 +209,19 @@ def attention_count(all_legs):
     return n
 
 
+def decision_count():
+    """Open items awaiting a human. with_ages=False keeps this subprocess-free."""
+    try:
+        sys.path.insert(0, os.path.join(ROOT, "harness"))
+        try:
+            import decisions
+        finally:
+            sys.path.pop(0)
+        return len(decisions.collect(with_ages=False))
+    except Exception:
+        return 0
+
+
 def suite():
     try:
         with open(STAMP, encoding="utf-8") as fh:
@@ -282,6 +295,16 @@ def render(payload):
     at = attention_count(L)
     if at:
         parts.append("%s!%d attention%s" % (YEL, at, OFF))
+
+    # The open-decision count. This segment IS the loop closure: an audit found
+    # receipt for_ruling[] - which the constitution calls the only channel to
+    # the human - was read by no code at all, and 24 of 26 parked flywheel
+    # cycles gated nothing mechanically. Nothing was blocked; nobody was
+    # looking. Putting the number where it cannot be avoided is the fix that
+    # matches the actual defect.
+    d = decision_count()
+    if d:
+        parts.append("%s%d decisions%s" % (YEL, d, OFF))
 
     s = suite()
     if s:

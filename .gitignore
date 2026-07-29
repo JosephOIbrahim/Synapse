@@ -173,3 +173,4 @@ demo/captures/
 .c1smoke/
 harness/state/locks/
 harness/state/suite_stamp.json
+harness/state/DECISIONS.md

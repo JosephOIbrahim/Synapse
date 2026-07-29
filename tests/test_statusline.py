@@ -124,10 +124,11 @@ def test_zero_segments_are_hidden(monkeypatch, tmp_path):
     monkeypatch.setattr(s, "attention_count", lambda legs: 0)
     monkeypatch.setattr(s, "running_legs", lambda: [])
     monkeypatch.setattr(s, "live_agents", lambda p: 0)
+    monkeypatch.setattr(s, "decision_count", lambda: 0)
     monkeypatch.setattr(s, "STAMP", str(tmp_path / "none.json"))
 
     out = s.render({})
-    for word in ("armed", "running", "attention", "agents", " ok "):
+    for word in ("armed", "running", "attention", "agents", "decisions", " ok "):
         assert word not in out, "rendered an empty segment %r in %r" % (word, out)
     # The branch must survive on its own - an all-clear bar is not a blank one.
     assert s.branch() in out, "branch vanished from an all-clear bar: %r" % out
