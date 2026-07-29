@@ -358,12 +358,35 @@ class ClaudeWorker(QThread):
                 content_str = "OK"
             is_error = False
 
-        return {
+        result = {
             "type": "tool_result",
             "tool_use_id": tool_use_id,
             "content": content_str,
             "is_error": is_error,
         }
+        # THE SAME ATTACH, ON THE OTHER BRANCH.
+        #
+        # _execute_tool_block has two paths - MCP first, then this Qt-signal
+        # fallback - and the first version of this wired ONLY the MCP one. So
+        # whether a viewport capture reached the model depended on which route
+        # its tool happened to take, which is not a decision anyone made.
+        #
+        # Measured live: Fable 5, vision-capable, on a session that HAD the
+        # code, answered "the capture tool gives me the image file, but it
+        # doesn't stream the pixels back to me". It was right. The attach was
+        # sitting on the branch its tool did not take.
+        #
+        # That is 'built and connected to nothing' with the connection half
+        # made, which is harder to see than not making it at all.
+        try:
+            from .vision_attach import attach_image
+            _model = getattr(self._provider, "model_identity", "") or ""
+            result, _verdict = attach_image(result, request.result, _model)
+            if _verdict is not None:
+                self.tool_status.emit("vision", _verdict[0], _verdict[1])
+        except Exception:
+            pass
+        return result
 
     # ------------------------------------------------------------------
     # Integrity tracking (best-effort)
