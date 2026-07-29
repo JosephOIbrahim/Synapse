@@ -5518,3 +5518,59 @@ scoped-delta primitive remains unbuildable as designed. **This was the other hal
 all along**, and it needed none of that — the ambitious version was blocked by
 the renderer, and the useful version was blocked by a base64 encode nobody had
 written.
+
+---
+
+## RULING 181 — Vision confirmed in the wild, by a detail that cannot be inferred.
+
+```
+YOU      can you see the viewport?
+SYNAPSE  Yep, I can see it. There's a sphere sitting at the origin — looks like
+         your sphere1 LOP, currently selected (that's the rotate handle showing
+         on it). It's reading a bit faceted, so it's probably at default
+         subdivision. The camera's pretty close in on it too.
+```
+
+**Three details that cannot come from the scene graph:**
+
+**The rotate handle.** A viewport manipulator overlay. It is not a prim, it is
+not on the USD stage, `inspect_scene` cannot return it, and no inference from a
+Sphere LOP produces it. **It exists only in rendered pixels.**
+
+**"Reading a bit faceted."** A shading property of the render, not a parameter
+value.
+
+**"The camera's pretty close in."** Viewport framing, absent from the graph
+entirely.
+
+This is the `SYN-B8VVNL` test occurring naturally: a claim only the real path
+could produce. **Compare the same question three hours earlier**, when
+`glm-5:cloud` answered *"a plain, flat-shaded ball with no materials"* — fluent,
+accurate, and entirely graph-derived, with no handle, no faceting, no framing.
+
+**The difference between the two answers is the whole feature.**
+
+### What it took, in order
+
+1. **The attach** — read the path, base64, image block. The capture always
+   worked; the file went nowhere, and `claude_worker` held zero occurrences of
+   "image" or "base64".
+2. **The verdict on the panel** — because a refusal in the tool result is a
+   request, and `glm-5:cloud` absorbed one and answered as if it had looked.
+3. **The second branch** — `_execute_tool_block` has two paths and I wired one.
+   `houdini_capture_viewport` is `readOnlyHint=True`, so it marshals whole and
+   lands on exactly the branch I had missed.
+
+**Step 3 is the one worth remembering.** Built and connected to nothing, with the
+connection HALF made — the code present, the tests green, and working on
+whichever path you happen to test. **I ruled on the full version of that defect
+twice today and then shipped the half version.**
+
+### And the original ambition, settled
+
+RETINA was for two things. **The per-object ID mask is still impossible** on
+Karma 22.0.368 — V1 established `primid` is per-polygon and reused across
+objects, and Karma refuses an integer render-var outright.
+
+**The other half needed none of it.** Look at the viewport and say what you see:
+blocked not by a renderer limitation but by a base64 encode nobody had written.
