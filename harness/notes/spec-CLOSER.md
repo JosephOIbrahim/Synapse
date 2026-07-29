@@ -152,12 +152,40 @@ RSI0 S0. Producer: `python harness/worktree_guard.py audit`.
 
 Recorded because a partial fix described as a complete one is worse than no fix.
 
-1. **The root cause is upstream of the guard.** `orchestrate.ps1:239` runs
-   `git worktree add` and never checks its exit code — the dispatcher
-   *manufactures* the orphans it later trips on.
-2. **The failed-add case is worse and uncovered.** When the worktree is
-   *missing*, the launched agent runs in the **main repo root**. The guard sits
-   in the `else` branch of the existence test, so it never fires there.
+1. **The dispatcher manufactures SOME orphans — 6 of 14, not all.**
+   `orchestrate.ps1:239` discards `git worktree add`'s exit code, and — the
+   stronger anchor, missed on first pass — `$ErrorActionPreference =
+   'SilentlyContinue'` at `:19` drops the failed add's stderr ErrorRecords
+   through the pipe, so **a failed add leaves no log line at all**. `:334` then
+   unconditionally `New-Item`s `$wt/.claude` *after* the launch, producing an
+   unregistered directory at exactly the path the next dispatch will `Test-Path`
+   as "exists".
+
+   Reproduced end-to-end (add exit 255, no directory, no output, `:334` creates
+   it unregistered) and observed live on **2026-07-27 14:41:25–30** manufacturing
+   six orphans — H9 V1 C0 RSI0 S0 S1. Evidence: six DISPATCH blocks with no
+   `HEAD is now at` line, directory `CreationTime` matching the dispatch second,
+   and `.claude/{.orch_launched, settings.local.json}` as the only contents.
+
+   The other 8 orphans came from a **different, non-orchestrator process**:
+   seven were once-real worktrees emptied 2026-07-26 19:33:52–19:34:00 (they
+   contain no `.claude` at all, so `:334` never ran on them), and
+   `c1-token-bench` had its `.git` stripped 2026-07-27 14:40:49. **That process
+   is unidentified and is a separate open question.**
+
+2. **REFUTED — the failed-add case does NOT land the agent in the main repo root.**
+   An earlier draft of this spec, and the commit message of `55371c9`, claimed
+   it did. The sub-mechanics are real (a failed `Set-Location` is
+   non-terminating, the `claude` line is reached, `Start-Process` honours the
+   provider location rather than the process cwd) — but nothing between `:315`
+   and `:334` can abort, so `:334` always creates `$wt` **67 ms** after launch
+   while the child's first statement runs at **+1294 ms**. The child loses the
+   race by ~1.2 s and its `Set-Location` succeeds. The agent lands in the
+   freshly-manufactured orphan, not the repo root.
+
+   Kept in the record rather than deleted: the corrected mechanism is still a
+   P0, and the refuted one shows how a chain of individually-true steps
+   assembles into a false scenario.
 3. **`lock.py` is on no dispatch path.** Its guard protects direct callers only.
 4. **`os.getppid()` is the wrong pid default under real dispatch** — it is a
    per-command `bash.exe` that dies within a second.
