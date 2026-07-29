@@ -236,7 +236,33 @@ function Start-Leg([object]$leg) {
     }
 
     if (-not (Test-Path $wt)) {
-        git worktree add -b $leg.branch $wt HEAD 2>&1 | Select-Object -Last 1 | ForEach-Object { Say "  $_" 'DarkGray' }
+        # THE ADD'S FAILURE USED TO BE INVISIBLE, AND THAT MANUFACTURED ORPHANS.
+        #
+        # This line piped straight into Say and never looked at the exit code.
+        # Worse, $ErrorActionPreference = 'SilentlyContinue' (:19) drops the
+        # stderr ErrorRecords on the way through the pipe, so a failed add
+        # printed NOTHING - no error, no log line, nothing to notice. Dispatch
+        # then carried on, and the unconditional New-Item further down created
+        # $wt/.claude, leaving an unregistered directory at exactly the path the
+        # NEXT dispatch would Test-Path as "exists" and skip creating.
+        #
+        # Reproduced: `git worktree add -b <existing-branch> ...` exits 255,
+        # creates no directory, and prints nothing through this pipe. Observed
+        # live on 2026-07-27 14:41:25-30 manufacturing six orphans - H9 V1 C0
+        # RSI0 S0 S1 - each with directory CreationTime equal to the dispatch
+        # second and only .claude/ inside. (The other 8 orphans came from a
+        # different, still-unidentified process; see spec-CLOSER.md 3.4.)
+        #
+        # Capture to a variable so the ErrorRecords survive, and branch on the
+        # exit code before anything downstream can run.
+        $addOut = & git worktree add -b $leg.branch $wt HEAD 2>&1
+        $addCode = $LASTEXITCODE
+        foreach ($l in $addOut) { Say "  $l" 'DarkGray' }
+        if ($addCode -ne 0 -or -not (Test-Path $wt)) {
+            Say "  REFUSED - git worktree add failed (exit $addCode)" 'Red'
+            Notify "$($leg.id) NOT dispatched" "git worktree add failed with exit $addCode. Nothing was launched and no directory was left behind. Check whether branch $($leg.branch) already exists."
+            return
+        }
     }
     else {
         # A DIRECTORY IS NOT A WORKTREE. Test-Path only asks whether something is
@@ -331,8 +357,20 @@ Write-Host '  LEG $($leg.id) TERMINATED' -ForegroundColor Cyan
     # Written by US, now, before the agent has done anything. Closes the window
     # between launch and the agent's first write in which the leg would
     # otherwise read 'ready' again and be dispatched twice.
-    New-Item -ItemType Directory -Force -Path (Join-Path $wt '.claude') | Out-Null
-    Set-Content -Path (Join-Path $wt '.claude\.orch_launched') -Value (Get-Date -Format o)
+    # -Force creates MISSING PARENTS, so this line creates $wt itself when the
+    # worktree is not there - which is the second half of the orphan
+    # manufacture. It runs after Start-Process and nothing between can abort,
+    # so on a failed add it reliably produced an unregistered directory ~67ms
+    # after launch. Guard it: write the marker into a worktree that exists,
+    # never conjure one to write into.
+    if (-not (Test-Path $wt)) {
+        Say "  WARNING - worktree vanished before the launch marker; not creating it" 'Red'
+        Notify "$($leg.id) worktree missing at marker time" "Refused to create $wt as a side effect of writing .orch_launched. An unregistered directory there is how orphans are manufactured."
+    }
+    else {
+        New-Item -ItemType Directory -Force -Path (Join-Path $wt '.claude') | Out-Null
+        Set-Content -Path (Join-Path $wt '.claude\.orch_launched') -Value (Get-Date -Format o)
+    }
 
     Say "  launched" 'Green'
 }
