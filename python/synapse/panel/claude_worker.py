@@ -14,6 +14,7 @@ from __future__ import annotations
 import copy
 import json
 import logging
+import threading
 
 try:
     from PySide6.QtCore import QThread, Signal
@@ -44,6 +45,20 @@ def _wait_budget(tool_name):
         return max(_TOOL_WAIT_TIMEOUT, timeout_for(tool_name) + 5.0)
     except Exception:
         return _TOOL_WAIT_TIMEOUT
+
+
+def _spawn_off_main_tool_thread(executor, request: ToolRequest) -> None:
+    """Run ``executor.execute_tool_off_main(request)`` on a short-lived daemon
+    thread so the handler's internal ``run_on_main`` calls take the DEFERRED
+    path instead of Fast path 2 inline. Lives at module scope so it is testable
+    without constructing a full ClaudeWorker."""
+    t = threading.Thread(
+        target=executor.execute_tool_off_main,
+        args=(request,),
+        name="synapse.panel.tool.{}".format(request.tool_name),
+        daemon=True,
+    )
+    t.start()
 
 
 class ClaudeWorker(QThread):
@@ -91,6 +106,15 @@ class ClaudeWorker(QThread):
             tools if tools is not None else get_anthropic_tools_for_worker()
         )
         self._abort: bool = False
+        # Off-main ToolExecutor for the bridge-DOWN fallback. Built lazily on
+        # first use (on this worker thread) — the panel wires its own executor
+        # to the tool_requested signal for the synchronous Qt slot path, but
+        # this worker has no handle to that instance (the wiring lives in
+        # synapse_panel.py, outside this module). A dedicated executor is safe:
+        # execute_tool_off_main calls _dispatch directly (no Qt signal/slot),
+        # and handler.handle's hou.* work routes through run_on_main regardless
+        # of which ToolExecutor instance owns the handler.
+        self._offmain_executor = None
         # The engine for this turn. Defaults to the Claude floor; the panel
         # passes a selected provider for the multi-provider switch. Transport +
         # request/response translation live in the provider — the loop below is
@@ -321,14 +345,33 @@ class ClaudeWorker(QThread):
         except Exception:
             pass  # MCP unavailable — fall through to signal path
 
-        # --- Fallback: Qt signal to main-thread executor ---
+        # --- Fallback: dispatch on a daemon thread (off-main) ---
+        # The MCP path is down (try_mcp_tool_call returned None above), so the
+        # hwebserver thread is not going to run the handler for us. The OLD
+        # fallback emitted a Qt signal delivered via AutoConnection to
+        # ToolExecutor.execute_tool on the MAIN thread — which meant the entire
+        # handler (including node.render / execute_python / solaris_build_graph)
+        # ran UNINTERRUPTIBLY on the GUI thread: every internal run_on_main call
+        # hit Fast path 2 (main_thread.py:240, "caller IS main thread → fn()
+        # inline, NO timeout possible"). That is the multi-second "cannot
+        # select nodes" freeze the artist feels while chatting.
+        #
+        # Instead, run the SAME dispatch on a daemon thread. Because the daemon
+        # thread is OFF main, handler.handle's internal run_on_main calls take
+        # the DEFERRED path (hdefereval.executeDeferred + per-tool timeout,
+        # interleaved with UI events) — identical to what the MCP path does
+        # when the bridge is up. The main thread is freed for node selection /
+        # viewport / the 1s FreezeChain heartbeat. The tool_requested signal +
+        # execute_tool slot stay in place for any direct/test caller and as a
+        # fallback-of-last-resort, but the worker no longer routes through
+        # them.
         request = ToolRequest(
             tool_use_id=tool_use_id,
             tool_name=tool_name,
             tool_input=tool_input,
         )
 
-        self.tool_requested.emit(request)
+        self._dispatch_off_main(request)
 
         # Block until executor completes (or per-tool timeout — C7)
         budget = _wait_budget(tool_name)
@@ -387,6 +430,35 @@ class ClaudeWorker(QThread):
         except Exception:
             pass
         return result
+
+    # ------------------------------------------------------------------
+    # Off-main fallback dispatch (bridge-DOWN path)
+    # ------------------------------------------------------------------
+
+    def _get_offmain_executor(self):
+        """Lazily build the ToolExecutor used for the off-main fallback.
+
+        Built on the worker thread on first use. ``ToolExecutor`` subclasses
+        ``QObject``; constructing it parentless on a background thread gives it
+        this thread's affinity, which is safe here because the off-main path
+        never drives its Qt signals (``execute_tool_off_main`` skips the
+        ``preflight_warning`` emit and never touches ``tool_requested``). The
+        handler it lazy-loads routes all ``hou.*`` work through ``run_on_main``
+        regardless of which executor instance owns it.
+        """
+        if self._offmain_executor is None:
+            from .tool_executor import ToolExecutor
+            self._offmain_executor = ToolExecutor()
+        return self._offmain_executor
+
+    def _dispatch_off_main(self, request: ToolRequest) -> None:
+        """Spawn the daemon thread that runs the tool off the main thread.
+
+        Thin instance wrapper around :func:`_spawn_off_main_tool_thread` so the
+        executor is resolved via :meth:`_get_offmain_executor`.
+        """
+        executor = self._get_offmain_executor()
+        _spawn_off_main_tool_thread(executor, request)
 
     # ------------------------------------------------------------------
     # Integrity tracking (best-effort)
