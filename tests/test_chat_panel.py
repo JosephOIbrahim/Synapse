@@ -539,11 +539,23 @@ class TestChatDisplayNodeClick:
 
 
 class TestStaleContextGather:
-    """Test the stale-check context gathering logic."""
+    """Test the stale-check context gathering logic.
+
+    Contract after the panel freeze-hardening (follow-up #1 to 6f354ae):
+    ``_gather_context_if_stale`` NEVER gathers inline on the main thread. It
+    returns the current cache (possibly ``None`` on a cold start) and, when
+    the cache is stale, fire-and-forgets an off-main refresh via
+    ``ws_bridge.gather_context_off_main``. The async refresh updates the
+    cache for the NEXT call; the LLM treats context as advisory, so a
+    slightly-stale value is fine. These tests assert the new contract by
+    patching ``gather_context_off_main`` (not the main-thread gather, which
+    no longer runs synchronously here).
+    """
 
     def test_fresh_context_skips_gather(self):
-        """When context is fresh (<5s old), gather is not called."""
+        """When context is fresh (<5s old), no refresh is dispatched."""
         import time
+        from unittest.mock import patch
         from synapse.panel.chat_panel import SynapseChatPanel
 
         panel = SynapseChatPanel()
@@ -552,12 +564,15 @@ class TestStaleContextGather:
         panel._last_context = {"current_network": "/obj"}
         panel._last_context_time = time.time() * 1000  # now
 
-        result = panel._gather_context_if_stale()
+        with patch("synapse.panel.ws_bridge.gather_context_off_main") as gather:
+            result = panel._gather_context_if_stale()
+
         assert result == {"current_network": "/obj"}
-        panel._bridge.gather_context.assert_not_called()
+        gather.assert_not_called()
 
     def test_stale_context_triggers_gather(self):
-        """When context is stale (>5s old), gather runs directly."""
+        """When context is stale (>5s old), an off-main refresh is
+        fire-and-forget'd and the existing cache is returned unchanged."""
         import time
         from unittest.mock import patch
         from synapse.panel.chat_panel import SynapseChatPanel
@@ -569,14 +584,18 @@ class TestStaleContextGather:
         # Set time 10s in the past
         panel._last_context_time = (time.time() - 10) * 1000
 
-        fresh = {"current_network": "/stage", "selected_nodes": [], "scene_file": "", "frame": 1.0}
-        with patch("synapse.panel.ws_bridge._gather_context_on_main_thread", return_value=fresh):
+        with patch("synapse.panel.ws_bridge.gather_context_off_main") as gather:
             result = panel._gather_context_if_stale()
 
-        assert result["current_network"] == "/stage"
+        # The refresh is dispatched (off-main, fire-and-forget)...
+        assert gather.called, "stale cache must trigger an off-main refresh"
+        # ...but the returned value is the existing (stale) cache, not a
+        # freshly-gathered one — the async refresh updates the NEXT call.
+        assert result == {"current_network": "/obj"}
 
     def test_no_context_time_triggers_gather(self):
-        """When context has never been gathered, trigger a gather."""
+        """When context has never been gathered (cold start), an off-main
+        refresh is dispatched and None is returned (no inline gather)."""
         from unittest.mock import patch
         from synapse.panel.chat_panel import SynapseChatPanel
 
@@ -586,14 +605,16 @@ class TestStaleContextGather:
         panel._last_context = None
         panel._last_context_time = None
 
-        fresh = {"current_network": "/obj", "selected_nodes": [], "scene_file": "", "frame": 1.0}
-        with patch("synapse.panel.ws_bridge._gather_context_on_main_thread", return_value=fresh):
+        with patch("synapse.panel.ws_bridge.gather_context_off_main") as gather:
             result = panel._gather_context_if_stale()
 
-        assert result["current_network"] == "/obj"
+        assert gather.called, "cold start must trigger an off-main refresh"
+        # Cold start: no cache yet — the async refresh will populate it.
+        assert result is None
 
     def test_no_bridge_skips_gather(self):
-        """When bridge is None, gather still works (runs on main thread)."""
+        """When bridge is None, no refresh is dispatched and None is
+        returned (the off-main helper guards on a connected bridge)."""
         from unittest.mock import patch
         from synapse.panel.chat_panel import SynapseChatPanel
 
@@ -602,12 +623,11 @@ class TestStaleContextGather:
         panel._last_context = None
         panel._last_context_time = None
 
-        fresh = {"current_network": "", "selected_nodes": [], "scene_file": "", "frame": 1.0}
-        with patch("synapse.panel.ws_bridge._gather_context_on_main_thread", return_value=fresh):
+        with patch("synapse.panel.ws_bridge.gather_context_off_main") as gather:
             result = panel._gather_context_if_stale()
 
-        # Context is gathered even without bridge (main-thread direct call)
-        assert result is not None
+        gather.assert_not_called()
+        assert result is None
 
 
 # ===========================================================================
