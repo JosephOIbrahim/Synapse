@@ -337,13 +337,20 @@ class ToolExecutor(QtCore.QObject):
     # Pre-flight heads-up (TASK 1)
     # ------------------------------------------------------------------
 
-    def _preflight(self, request: ToolRequest) -> None:
-        """Cheap pre-flight before an inline (main-thread) dispatch.
+    def _preflight(self, request: ToolRequest, emit: bool = True) -> None:
+        """Cheap pre-flight before a tool dispatch.
 
         Estimates cost from the tool name + input shape (no round-trip). If the
         op is heavy enough to briefly freeze the Qt loop, log a warning (so the
-        freeze is attributable) and emit a non-blocking advisory the panel can
-        surface. Does NOT block or change the result — best-effort only.
+        freeze is attributable) and — when ``emit`` is True — emit a non-blocking
+        advisory the panel can surface. Does NOT block or change the result —
+        best-effort only.
+
+        ``emit=False`` is used on the off-main path: ``preflight_warning`` is a
+        Qt signal owned by a QObject whose thread affinity may not be the main
+        thread there, so emitting across threads is avoided. The
+        ``logger.warning`` is thread-safe and is always kept — it is the
+        load-bearing part.
         """
         try:
             from synapse.panel.bridge_adapter import estimate_inline_cost
@@ -356,10 +363,11 @@ class ToolExecutor(QtCore.QObject):
 
         self._last_preflight = message
         logger.warning("Pre-flight advisory — %s", message)
-        try:
-            self.preflight_warning.emit(request.tool_name, message)
-        except Exception:
-            pass  # signal surface is optional; the log is the load-bearing part
+        if emit:
+            try:
+                self.preflight_warning.emit(request.tool_name, message)
+            except Exception:
+                pass  # signal surface is optional; the log is the load-bearing part
 
     # ------------------------------------------------------------------
     # Main-thread slot
@@ -379,9 +387,40 @@ class ToolExecutor(QtCore.QObject):
                 and ``request.done`` will be signalled.
         """
         try:
+            self._dispatch(request, emit_preflight=True)
+        finally:
+            # ALWAYS signal done -- the worker thread is blocking on this
+            request.done.set()
+
+    # ------------------------------------------------------------------
+    # Pure dispatch helper (shared by the main-thread slot + the off-main path)
+    # ------------------------------------------------------------------
+
+    def _dispatch(self, request: ToolRequest, emit_preflight: bool = True) -> None:
+        """Resolve the tool, run the handler, and map the response onto the
+        request. Sets ``request.result`` OR ``request.error``. Does NOT touch
+        ``request.done`` and does NOT spawn threads — the caller owns both.
+
+        This is the exact body the historical ``execute_tool`` slot ran, pulled
+        out unchanged so it can be invoked from two threading contexts:
+
+          * ``execute_tool`` (the @Slot) — on the main thread (Qt
+            AutoConnection). ``emit_preflight=True`` so the panel advisory
+            signal fires exactly as before.
+          * ``execute_tool_off_main`` — on a daemon thread the worker spawns
+            when the MCP path is down. ``emit_preflight=False`` (the Qt signal
+            is main-thread-affined; the thread-safe ``logger.warning`` still
+            fires). Because the caller is NOT the main thread, every
+            ``run_on_main`` call inside ``handler.handle`` takes the DEFERRED
+            path (bounded, interleaved with UI events, per-tool timeout)
+            instead of Fast path 2 inline. That is the strictly-intended
+            behaviour — see module docstring lines 20-21 on why MCP (and now
+            the fallback) must not run on the main thread.
+        """
+        try:
             # 0. Pre-flight heads-up (TASK 1): cheap cost estimate; warn + emit a
-            # non-blocking advisory if this inline op may briefly freeze the loop.
-            self._preflight(request)
+            # non-blocking advisory if this op may briefly freeze the loop.
+            self._preflight(request, emit=emit_preflight)
 
             # 1. Resolve tool name to (command_type, payload_builder)
             dispatch = get_tool_dispatch(request.tool_name)
@@ -451,8 +490,36 @@ class ToolExecutor(QtCore.QObject):
             )
             request.error = f"Exception: {exc}"
 
+    # ------------------------------------------------------------------
+    # Off-main entrypoint (the bridge-DOWN fallback the worker now uses)
+    # ------------------------------------------------------------------
+
+    def execute_tool_off_main(self, request: ToolRequest) -> None:
+        """Run :meth:`_dispatch` in the CALLER's thread, then signal ``done``.
+
+        No main-thread affinity is assumed — this must be safe to call from a
+        daemon thread the worker spawns. It deliberately skips the
+        ``preflight_warning`` Qt emit (the signal's QObject may not live on the
+        main thread here; the thread-safe ``logger.warning`` inside
+        ``_preflight`` still fires). The synchronous ``execute_tool`` slot
+        contract is preserved unchanged for tests / direct callers.
+
+        The load-bearing difference from the slot path: because the caller is
+        NOT the main thread, ``run_on_main`` calls inside ``handler.handle``
+        resolve to the DEFERRED path (``hdefereval.executeDeferred`` + per-tool
+        timeout, interleaved with UI events) instead of Fast path 2 inline. The
+        main thread is freed for node selection / viewport / the 1s FreezeChain
+        heartbeat — which is the whole point of the fix. No handler, undo,
+        consent, or integrity logic is touched here; only the threading context
+        of the dispatch changes.
+        """
+        try:
+            self._dispatch(request, emit_preflight=False)
         finally:
-            # ALWAYS signal done -- the worker thread is blocking on this
+            # ALWAYS signal done -- the worker thread is blocking on this.
+            # Idempotent: a late set after the worker's wait() times out is
+            # harmless (the worker has already recorded its timeout error and
+            # will not double-dispatch).
             request.done.set()
 
 

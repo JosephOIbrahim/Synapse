@@ -103,6 +103,62 @@ def _gather_context_on_main_thread():
     return context
 
 
+# Short marshal timeout for the off-main context gather. The panel polls every
+# 10s; this read (selectedNodes / paneTabs / hipFile) is advisory, never
+# load-bearing. A busy main thread (cook/render) is shed within this budget and
+# the stale cache is kept — mirroring live_metrics._SCENE_COLLECT_TIMEOUT.
+_CONTEXT_GATHER_TIMEOUT = 2.0
+
+
+def gather_context_off_main(on_ready, timeout=_CONTEXT_GATHER_TIMEOUT):
+    """Gather scene context on a daemon thread, marshalled onto the main thread.
+
+    Spawns a short-lived daemon thread that calls
+    ``run_on_main(_gather_context_on_main_thread, ...)`` from OFF the main
+    thread, so the ``hou.*`` read takes the DEFERRED path
+    (``hdefereval.executeDeferred`` + bounded timeout, interleaved with UI
+    events) rather than ``run_on_main``'s Fast path 2 (caller IS main thread →
+    ``fn()`` inline, NO timeout possible). This closes the same class of
+    inline-hou-on-main-thread freeze the tool-call fallback closed
+    (6f354ae) and mirrors ``live_metrics._collect_scene``.
+
+    Fire-and-forget: on success ``on_ready(ctx)`` is invoked on the daemon
+    thread (the caller is expected to do only thread-safe cache writes + a
+    queued ``emit``); on timeout / busy main thread it sheds silently.
+    ``record_stall=False`` / ``record_wait=False`` keep this advisory read
+    out of the stall detector and the C6 dispatch-wait histogram
+    (observe-only posture — see ``run_on_main``'s docstring).
+
+    Lives at module scope so it is testable without constructing a
+    SynapseWSBridge / ChatPanel instance (mirrors the
+    ``_spawn_off_main_tool_thread`` seam in claude_worker).
+    """
+    from synapse.server.main_thread import run_on_main
+
+    def _off_main():
+        try:
+            ctx = run_on_main(
+                _gather_context_on_main_thread,
+                timeout=timeout,
+                record_stall=False,
+                record_wait=False,
+            )
+        except Exception:
+            return  # main thread busy / timeout — shed, caller keeps stale cache
+        if ctx:
+            try:
+                on_ready(ctx)
+            except Exception:
+                logger.debug("context on_ready callback failed", exc_info=True)
+
+    t = threading.Thread(
+        target=_off_main,
+        name="synapse.panel.ctx.gather",
+        daemon=True,
+    )
+    t.start()
+
+
 # HDA Progress stages (sent during hda_package execution)
 HDA_STAGES = [
     "parsing_prompt",       # Understanding the request

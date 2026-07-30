@@ -819,20 +819,51 @@ class SynapseChatPanel:
 
     # -- Actions ---------------------------------------------------------
 
+    def _refresh_context_off_main(self):
+        """Refresh scene context on a short-lived daemon thread.
+
+        Thin wrapper over :func:`synapse.panel.ws_bridge.gather_context_off_main`
+        so the ``hou.*`` read takes the DEFERRED ``run_on_main`` path from off
+        the main thread (bounded, interleaved, C6-instrumented) instead of
+        Fast path 2 inline — the same fix class as the tool-call fallback
+        (6f354ae) and the same pattern ``live_metrics._collect_scene`` uses.
+
+        Fire-and-forget: the ``on_ready`` callback does only thread-safe cache
+        writes and a queued ``emit``; on timeout / busy main thread it sheds
+        silently and the stale cache is kept. The context chips are advisory.
+        """
+        if self._bridge is None or not self._bridge.connected:
+            return
+        from synapse.panel.ws_bridge import gather_context_off_main
+
+        def _on_ready(ctx):
+            import time as _time
+            self._last_context = ctx
+            self._last_context_time = _time.time() * 1000
+            try:
+                self._bridge.context_updated.emit(ctx)
+            except Exception:
+                pass
+
+        gather_context_off_main(_on_ready)
+
     def _gather_context_if_stale(self, max_age_ms=_CONTEXT_MAX_AGE_MS):
-        """Gather context only if cached data is stale."""
+        """Return cached context, refreshing off-main if stale.
+
+        Never gathers inline on the main thread — the chat send path must
+        not do ``hou.*`` work. If the cache is stale, fire-and-forget an
+        off-main refresh (the poll also does this every 10 s) and return
+        the current cache, which may be ``None`` on a cold start. The LLM
+        treats context as advisory, so slightly-stale context is fine.
+        """
         import time
         now = time.time() * 1000
-        if self._last_context_time and (now - self._last_context_time) < max_age_ms:
-            return self._last_context
-        try:
-            from synapse.panel.ws_bridge import _gather_context_on_main_thread
-            ctx = _gather_context_on_main_thread()
-            if ctx:
-                self._last_context = ctx
-                self._last_context_time = time.time() * 1000
-        except Exception:
-            pass
+        stale = not (
+            self._last_context_time
+            and (now - self._last_context_time) < max_age_ms
+        )
+        if stale:
+            self._refresh_context_off_main()
         return self._last_context
 
     def _send_message(self):
@@ -1002,15 +1033,12 @@ class SynapseChatPanel:
             self._bridge.send_command("get_session_report", {})
 
     def _poll_context(self):
-        """Periodically refresh scene context for the context chips."""
-        if self._bridge is not None and self._bridge.connected:
-            try:
-                import time as _time
-                from synapse.panel.ws_bridge import _gather_context_on_main_thread
-                ctx = _gather_context_on_main_thread()
-                if ctx:
-                    self._last_context = ctx
-                    self._last_context_time = _time.time() * 1000
-                    self._bridge.context_updated.emit(ctx)
-            except Exception:
-                pass
+        """Periodically refresh scene context for the context chips (off-main).
+
+        The QTimer slot fires on the main thread; calling the gather inline
+        here would hit run_on_main's Fast path 2 (no timeout, no
+        interleaving). ``_refresh_context_off_main`` spawns the gather on a
+        daemon thread so it takes the deferred path instead — the same fix
+        class as the tool-call fallback (6f354ae).
+        """
+        self._refresh_context_off_main()
