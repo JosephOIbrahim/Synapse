@@ -2,7 +2,7 @@
 
 ## Triggers
 
-karma, karma xpu, karma cpu, render settings, pixel samples, progressive render, resolution override, output path, usdrender_rop rop, soho_foreground, iconvert, exr to jpeg, denoiser, oidn, aov, render pass, light linking, light group, motion blur, depth of field, dof, volume rendering, fireflies, black render, render output
+karma, karma xpu, karma cpu, render settings, pixel samples, progressive render, resolution override, output path, usdrender, usdrender_rop, soho_foreground, iconvert, exr to jpeg, denoiser, oidn, aov, render pass, light linking, light group, motion blur, depth of field, dof, volume rendering, fireflies, black render, render output
 
 ## Context
 
