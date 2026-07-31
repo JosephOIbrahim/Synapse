@@ -19,7 +19,7 @@ CRITICAL: Houdini has THREE different frame token systems that are NOT interchan
 
 ```python
 # --- System 1: Houdini Parameter Expressions ($F4) ---
-# Used in: Karma LOP picture parm, usdrender ROP outputimage parm
+# Used in: Karma LOP picture parm, usdrender_rop ROP outputimage parm
 # $F = frame number (no padding)
 # $F4 = frame number zero-padded to 4 digits
 # $F6 = frame number zero-padded to 6 digits
