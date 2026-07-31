@@ -8,6 +8,7 @@ Hook protocol: reads JSON from stdin, writes JSON or plain text to stdout.
 
 import json
 import os
+import socket
 import sys
 import time
 
@@ -16,6 +17,34 @@ EVENTS_FILE = os.path.join(EVENTS_DIR, "houdini_events.jsonl")
 LAST_READ_FILE = os.path.join(EVENTS_DIR, ".last_read_ts")
 
 MAX_EVENT_AGE = 300  # 5 minutes
+
+# F6 (CLEAR P3.1): the SessionStart hook used to print "Synapse bridge
+# connected." unconditionally -- a lying "connected" signal when Houdini / the
+# Synapse server was not running at all. ping_bridge() is a real network probe
+# (TCP connect to the Synapse WS port) so the connected report is ping-gated.
+PING_TIMEOUT = 1.5  # seconds -- short, this runs on every session start
+
+
+def ping_bridge(host=None, port=None, timeout=PING_TIMEOUT):
+    """Probe the Synapse bridge WebSocket port.
+
+    A real network probe, not a flag check. Returns True only if something is
+    accepting TCP connections on the Synapse port (i.e. the Synapse server
+    inside Houdini is actually listening). Returns False on any connection
+    refusal, timeout, or error.
+
+    This is a liveness ping, not a full WS handshake: a successful TCP connect
+    proves the bridge is up; a refused/timeout proves it is not. The
+    SessionStart "connected" report is gated on this so it can no longer lie
+    when Houdini is not running.
+    """
+    host = host or os.environ.get("SYNAPSE_HOST", "localhost")
+    port = port or int(os.environ.get("SYNAPSE_PORT", "9999"))
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
 
 
 def read_last_timestamp():
@@ -130,7 +159,15 @@ def main():
     context = format_events(events)
 
     if hook_event in ("SessionStart", "startup", "resume"):
-        print("Synapse bridge connected.")
+        # F6: ping BEFORE reporting connected. Only claim "connected" if the
+        # Synapse bridge is actually reachable; otherwise report honestly.
+        if ping_bridge():
+            print("Synapse bridge connected.")
+        else:
+            print(
+                "Synapse bridge not reachable — "
+                "Houdini/Synapse server may not be running (ping failed)."
+            )
         if context:
             print(context)
         else:
