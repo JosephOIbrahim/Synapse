@@ -344,7 +344,7 @@ def render_validation_range(
 
     Args:
         karma_node_path: Path to Karma LOP (for settings)
-        rop_node_path:   Path to usdrender ROP in /out
+        rop_node_path:   Path to usdrender_rop ROP in /out
         start_frame:     First frame of validation range
         end_frame:       Last frame of validation range
         output_dir:      Directory for output EXRs (defaults to system temp)
