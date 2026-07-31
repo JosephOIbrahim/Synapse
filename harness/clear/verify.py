@@ -39,6 +39,7 @@ DECISIONS_MD = STATE / "DECISIONS.md"
 CHANGELOG = REPO / "CHANGELOG.md"
 MCP_SERVER = REPO / "mcp_server.py"
 REQUIREMENTS = REPO / "requirements.txt"
+PYPROJECT = REPO / "pyproject.toml"
 
 LATENCY_FILES = [
     ".claude/agents/latency-forge.md",
@@ -169,11 +170,20 @@ def p3_2():
     check dishonest on a green local box): does mcp_server.py still call the
     dropped server.list_tools() API, and is mcp pinned?"""
     src = _read(MCP_SERVER)
-    uses_dropped = "server.list_tools()" in src or "list_tools()" in src and "server." in src
-    # look for the specific dropped symbol at/around the cited line
     uses_dropped = bool(re.search(r"\.list_tools\s*\(", src))
-    reqs = _read(REQUIREMENTS)
-    pinned = bool(re.search(r"^\s*mcp[<>=!~]", reqs, re.M)) or bool(re.search(r"mcp==", reqs))
+    # The deps live in pyproject.toml (no requirements.txt). A pin is an exact
+    # or upper-bounded mcp constraint; the unbounded "mcp>=1.0.0" is NOT a pin.
+    reqs = _read(PYPROJECT) + _read(REQUIREMENTS)
+    has_unbounded = bool(re.search(r'"mcp>=', reqs))
+    pinned = (bool(re.search(r'"mcp==', reqs)) or
+              bool(re.search(r'"mcp>=?[\d.]+,\s*<', reqs)) or
+              bool(re.search(r'"mcp<', reqs)))
+    # unbounded pin alongside a real pin is fine (real pin wins); unbounded
+    # alone is the drift that turned CI red.
+    if pinned and has_unbounded:
+        pinned = True
+    elif has_unbounded and not pinned:
+        pinned = False
     if (not uses_dropped) or pinned:
         return PASS, "mcp_server.py off the dropped list_tools API OR mcp pinned"
     return FAIL, "mcp_server.py still calls list_tools() and mcp is not pinned"

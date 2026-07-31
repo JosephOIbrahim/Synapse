@@ -50,7 +50,13 @@ encryption = [
     "cryptography>=41.0.0",
 ]
 mcp = [
-    "mcp>=1.0.0",
+    # Pinned: mcp >=1.27 dropped Server.list_tools()/Server.call_tool() decorators,
+    # which mcp_server.py:899 (@server.list_tools()) and the call_tool decorator
+    # depend on. That drop turned master CI red (collection error at :899 + 2
+    # tests) since 2026-07-29 while the local suite stayed green on 1.26.0.
+    # 1.26.0 is verified to retain Server.list_tools (probed live). Relax only
+    # after migrating mcp_server.py to the new decorator API. See CLEAR P3.2.
+    "mcp==1.26.0",
     "websockets>=11.0",
 ]
 routing = [
