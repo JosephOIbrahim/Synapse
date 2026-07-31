@@ -415,6 +415,51 @@ def _hou_phantoms_in_source(src, table_syms):
                 hits.append((node.lineno, symbol))
     return hits
 
+def _phantoms_in_source(src, table_syms):
+    """[(lineno, symbol), ...] for hou/pdg/pxr attribute accesses the table PROVES absent.
+    hou: identical to _hou_phantoms_in_source (calls it) — behavior byte-identical.
+    pdg (depth-1): `import pdg [as X]`; flags `X.<attr>` when "pdg.<attr>" absent (depth-2
+    members like pdg.EventType.CookComplete are not table-judged, so unknown != phantom).
+    When a flagged pdg symbol is a camelCase near-miss of a real one (pdg.WorkItemState vs
+    pdg.workItemState), the hint "check camelCase: pdg.workItemState?" is appended so the
+    fix is actionable. pxr (depth-2): `from pxr import N [as X]`; flags `X.<attr>` when
+    "pxr.N.<attr>" absent — pxr runtime refs are exactly one level under each namespace.
+    getattr(X, "name", ...) string accesses are out of scope (attr name is a Constant,
+    not an Attribute) — known limitation, not scanned by design."""
+    hits = list(_hou_phantoms_in_source(src, table_syms))
+    import ast
+    tree = ast.parse(src)
+    pdg_names = {"pdg"}
+    pxr_names = {}  # local name -> pxr namespace (Usd/Sdf/Gf/…)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "pdg":
+                    pdg_names.add(alias.asname or "pdg")
+        elif isinstance(node, ast.ImportFrom) and node.module == "pxr" and node.level == 0:
+            # level==0: only absolute `from pxr import N` binds pxr namespaces. A relative
+            # `from .pxr import Usd` (level>0) refers to a package-local module, NOT the pxr
+            # surface — judged-by-level fixes the F2 false-binding crucible flagged.
+            for alias in node.names:
+                pxr_names[alias.asname or alias.name] = alias.name
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name)):
+            continue
+        local = node.value.id
+        if local in pdg_names:
+            symbol = "pdg." + node.attr
+            if symbol not in table_syms:
+                camel = "pdg." + node.attr[:1].lower() + node.attr[1:]
+                if camel in table_syms:
+                    symbol += f" (check camelCase: {camel}?)"
+                hits.append((node.lineno, symbol))
+        elif local in pxr_names:
+            symbol = f"pxr.{pxr_names[local]}.{node.attr}"
+            if symbol not in table_syms:
+                hits.append((node.lineno, symbol))
+    return sorted(hits)
+
+
 def _sprint_added_py(wt, base):
     """{relpath: set(added_line_no) | None} for .py touched since <base> — None marks a new
     untracked file (whole file is new). `git diff --unified=0` gives exact added line numbers
@@ -464,6 +509,9 @@ def check_phantom_clean(ctx):
     if "hou" not in table_syms:
         return {"ok": None, "detail": "symbol table lacks the hou surface — cannot prove hou.* absence "
                                       "(regenerate via host/introspect_runtime.py)"}
+    if "pdg" not in table_syms or "pxr" not in table_syms:
+        return {"ok": None, "detail": "symbol table lacks the pdg/pxr surfaces — cannot prove their "
+                                      "absence (regenerate via host/introspect_runtime.py)"}
     # GUI-only submodules (hou.ui/qt/audio/…) are real but absent from a HEADLESS dir() table —
     # union them so a live panel/host sprint isn't false-flagged into a stall.
     table_syms = table_syms | _GUI_HOU_ABSENT_HEADLESS
@@ -489,7 +537,7 @@ def check_phantom_clean(ctx):
         except Exception:
             continue
         try:
-            hits = _hou_phantoms_in_source(src, table_syms)
+            hits = _phantoms_in_source(src, table_syms)
         except SyntaxError:
             unparseable.append(rel)  # a broken file fails other checks anyway — don't crash the gate
             continue
@@ -499,9 +547,10 @@ def check_phantom_clean(ctx):
     ver = status.get("houdini_version", "?")
     if offenders:
         note = f" (+{len(unparseable)} unparseable, skipped)" if unparseable else ""
-        return {"ok": False, "detail": (f"phantom hou.* introduced (absent in the {ver} symbol "
+        return {"ok": False, "detail": (f"phantom hou/pdg/pxr API introduced (absent in the {ver} symbol "
                 f"table): {', '.join(sorted(set(offenders))[:12])}{note}")[:500]}
-    clean = f"{len(added)} changed .py clean of table-proven phantom hou.* APIs (vs {len(table_syms)} live symbols @ {ver})"
+    clean = (f"{len(added)} changed .py clean of table-proven phantom hou/pdg/pxr APIs "
+             f"(vs {len(table_syms)} live symbols @ {ver})")
     if unparseable:
         clean += f" ({len(unparseable)} unparseable, skipped)"
     return {"ok": True, "detail": clean[:500]}
