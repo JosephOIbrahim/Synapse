@@ -90,6 +90,40 @@ def get_live_server():
         return _live_server
 
 
+# P3.3 — cancel-aware recv loop. ``for message in websocket:`` parks on the
+# websocket iterator and a cancel cannot reach the handler mid-frame. This
+# generator polls ``recv`` with a bounded timeout so a cancel event is
+# checked at least every ``CANCEL_POLL_INTERVAL`` seconds. Behavior is
+# identical to the plain iterator when no cancel fires: messages are yielded
+# in order and the loop stops on connection close (ConnectionClosed* still
+# propagates to the caller, exactly as ``for message in websocket:`` does).
+CANCEL_POLL_INTERVAL = 0.1  # seconds between cancel-event checks
+
+
+def iter_messages(websocket, cancel_event, poll_interval=CANCEL_POLL_INTERVAL):
+    """Yield messages from ``websocket`` until close or ``cancel_event`` is set.
+
+    Replaces ``for message in websocket:`` (P3.3). The plain iterator blocks
+    inside the websocket's recv and cannot be interrupted mid-frame; this loop
+    calls ``websocket.recv(timeout=poll_interval)`` so it wakes up regularly
+    and re-checks the cancel event. When ``cancel_event`` is set, the loop
+    stops promptly — it does NOT wait for the next message.
+
+    ``ConnectionClosedOK`` / ``ConnectionClosedError`` propagate out of the
+    generator (matching the plain iterator's close behavior). ``TimeoutError``
+    from the bounded recv is swallowed and retried — that is the poll tick.
+    """
+    while not cancel_event.is_set():
+        try:
+            message = websocket.recv(timeout=poll_interval)
+        except TimeoutError:
+            # No message within the poll window — re-check cancel and retry.
+            continue
+        if cancel_event.is_set():
+            break
+        yield message
+
+
 class SynapseServer:
     """
     WebSocket server for AI-Houdini communication.
@@ -140,6 +174,11 @@ class SynapseServer:
         self._client_ids: Dict[Any, str] = {}  # websocket -> client_id
         self._clients_lock = threading.Lock()
         self._client_counter = 0  # monotonic counter for deterministic IDs
+
+        # P3.3 — per-connection cancel events. Lets stop()/request_cancel()
+        # interrupt a handler's recv loop mid-frame instead of parking on the
+        # websocket iterator. Keyed by the websocket object handle.
+        self._client_cancels: Dict[Any, threading.Event] = {}
 
         # Command processing
         self._command_queue = DeterministicCommandQueue()
@@ -273,6 +312,10 @@ class SynapseServer:
         self._running = False
         _register_live_server(None, only_if=self)  # D3: deregister (own instance only)
 
+        # P3.3 — interrupt any handler recv loops parked mid-frame so they
+        # exit promptly instead of waiting for the next client message.
+        self.request_cancel_all()
+
         # Remove our discoverable endpoint sidecar (only if it's ours).
         # Best-effort — never let a clear failure break shutdown.
         try:
@@ -296,6 +339,26 @@ class SynapseServer:
                 logger.error("Shutdown error: %s", e)
 
         logger.info("Stopped")
+
+    def request_cancel(self, websocket):
+        """Interrupt a connected client's recv loop mid-frame (P3.3).
+
+        Sets the per-connection cancel event that ``iter_messages`` checks
+        between recv polls, so the handler exits its loop promptly instead of
+        parking on the websocket iterator until the next message. No-op if the
+        websocket is not currently connected.
+        """
+        with self._clients_lock:
+            event = self._client_cancels.get(websocket)
+        if event is not None:
+            event.set()
+
+    def request_cancel_all(self):
+        """Interrupt every connected client's recv loop mid-frame (P3.3)."""
+        with self._clients_lock:
+            events = list(self._client_cancels.values())
+        for event in events:
+            event.set()
 
     def _run_server(self):
         """Run the sync WebSocket server (no asyncio — avoids Houdini's haio.py)."""
@@ -368,6 +431,13 @@ class SynapseServer:
             self._client_ids[websocket] = client_id
 
         session_id = None
+
+        # P3.3 — cancel event for this connection. Lets request_cancel() /
+        # stop() interrupt the recv loop below mid-frame instead of parking on
+        # the websocket iterator. Deregistered in the finally block below.
+        cancel_event = threading.Event()
+        with self._clients_lock:
+            self._client_cancels[websocket] = cancel_event
 
         try:
             logger.info("Client connected: %s", client_id)
@@ -468,7 +538,12 @@ class SynapseServer:
                 }))
                 logger.info("Client authenticated: %s", client_id)
 
-            for message in websocket:
+            # P3.3 — cancel-aware recv loop. Replaces ``for message in websocket:``
+            # which parked on the websocket iterator and could not be
+            # interrupted mid-frame. iter_messages polls recv with a bounded
+            # timeout and re-checks cancel_event each tick. Behavior is
+            # identical to the plain iterator when no cancel fires.
+            for message in iter_messages(websocket, cancel_event):
                 # Lazy session: create on first real command, not on connect
                 if session_id is None:
                     with self._clients_lock:
@@ -490,6 +565,9 @@ class SynapseServer:
         except Exception as e:
             logger.error("Error handling client: %s", e)
         finally:
+            # P3.3 — deregister the cancel event for this connection.
+            with self._clients_lock:
+                self._client_cancels.pop(websocket, None)
             # Cleanup under lock (guaranteed even if bridge.start_session fails)
             with self._clients_lock:
                 session_id = self._client_sessions.pop(websocket, None)
@@ -622,7 +700,7 @@ class SynapseServer:
                     websocket.send(SynapseResponse(
                         id=command.id,
                         success=False,
-                        error=f"Synapse is handling a lot of requests right now \u2014 try again in a moment ({info.get('reason')})",
+                        error=f"Synapse is handling a lot of requests right now — try again in a moment ({info.get('reason')})",
                         data={"retry_after": info.get("retry_after", 1.0)},
                         sequence=command.sequence
                     ).to_json())
@@ -634,7 +712,7 @@ class SynapseServer:
                     websocket.send(SynapseResponse(
                         id=command.id,
                         success=False,
-                        error=f"Synapse paused commands temporarily to recover from errors \u2014 it'll resume shortly ({cb_info.get('reason')})",
+                        error=f"Synapse paused commands temporarily to recover from errors — it'll resume shortly ({cb_info.get('reason')})",
                         data={"retry_after": cb_info.get("retry_after", 30.0)},
                         sequence=command.sequence
                     ).to_json())
@@ -645,7 +723,7 @@ class SynapseServer:
                     websocket.send(SynapseResponse(
                         id=command.id,
                         success=False,
-                        error=f"Synapse is under heavy load right now (level: {self._backpressure.level.value}) \u2014 try again shortly",
+                        error=f"Synapse is under heavy load right now (level: {self._backpressure.level.value}) — try again shortly",
                         data={"retry_after": 2.0},
                         sequence=command.sequence
                     ).to_json())
@@ -714,7 +792,7 @@ class SynapseServer:
             websocket.send(SynapseResponse(
                 id="unknown",
                 success=False,
-                error=f"Couldn't parse the incoming message as JSON \u2014 check the message format ({e})"
+                error=f"Couldn't parse the incoming message as JSON — check the message format ({e})"
             ).to_json())
         except Exception as e:
             # Notify circuit breaker on handler exceptions (service errors)
