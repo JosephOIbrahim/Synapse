@@ -1,7 +1,7 @@
 # Karma Rendering Reference
 
 ## Triggers
-render, karma, rop, usdrender, xpu, cpu, samples, bounces, denoiser, resolution,
+render, karma, rop, usdrender, usdrender_rop, xpu, cpu, samples, bounces, denoiser, resolution,
 override_res, output format, exr, fireflies, motion blur, volume step rate
 
 ## Context
@@ -12,7 +12,7 @@ All code is Houdini Python.
 ## Code
 
 ```python
-# Create and configure a usdrender ROP in /out
+# Create and configure a usdrender_rop ROP in /out
 import hou
 
 def setup_karma_rop(
@@ -24,10 +24,10 @@ def setup_karma_rop(
     output_path="$HIP/render/shot.$F4.exr",
 ):
     """Full Karma ROP setup checklist.
-    IMPORTANT: output_file kwarg in rop.render() does NOT work for usdrender.
+    IMPORTANT: output_file kwarg in rop.render() does NOT work for usdrender_rop.
     Must set outputimage or picture parm directly."""
     out = hou.node("/out")
-    rop = out.createNode("usdrender", name)
+    rop = out.createNode("usdrender_rop", name)
 
     # 1. LOP path -- must point to a LOP node with a valid stage
     lop_display = hou.node(lop_path)
@@ -311,7 +311,7 @@ def render_synchronous(rop_path, start_frame=None, end_frame=None):
 ```
 
 ## Common Mistakes
-- Using `rop.render(output_file=...)` -- does NOT work for usdrender ROPs; set `outputimage` parm directly
+- Using `rop.render(output_file=...)` -- does NOT work for usdrender_rop ROPs; set `outputimage` parm directly
 - Setting `override_res` as int instead of string -- it's a string menu: `""`, `"scale"`, `"specific"`
 - Camera as Houdini node path instead of USD prim path -- use `/cameras/render_cam` not `/stage/render_cam`
 - Light intensity > 1.0 -- violates Lighting Law; use exposure for brightness
