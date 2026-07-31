@@ -152,6 +152,44 @@ Connect on `ws://localhost:9999/synapse` — the path matters, a bare `host:port
 
 ---
 
+## The chat freeze, and what fixed it
+
+A third freeze class — distinct from the render freeze and the marshal self-deadlock.
+
+**The symptom.** Mid-chat, Houdini's UI grips. You can't select nodes, the viewport won't update, and it stays that way until the tool call finishes. No render is running — just a chat turn.
+
+**The cause.** Chat turns run on a background thread, but every tool call has to reach `hou.*` on the main thread. With the local bridge **up**, the call rides the hwebserver `/mcp` thread and marshals cleanly. With the bridge **down**, the call fell back to a Qt signal that ran the *whole handler inline on the main thread* — so every internal marshal hit the no-timeout inline path and the GUI stalled for the handler's full duration. A lying "connected" SessionStart signal made this fire in ordinary sessions, not just broken ones.
+
+**The fix (v5.40.1).** Tool calls and the panel's own context-gather now spawn a daemon thread *off* the main thread, so the marshal takes the deferred path — the same path the bridge-up call takes, with a per-call timeout and UI events interleaved. Node selection and the viewport stay live mid-chat.
+
+```mermaid
+flowchart TB
+    TURN["agent turn<br/>ClaudeWorker &middot; QThread"]:::panel
+    TURN -->|"tool_use block"| BR{"local MCP endpoint<br/>reachable?"}:::obs
+    BR -->|"yes — bridge UP"| WS["hwebserver /mcp thread<br/>(off main)"]:::obs
+    WS --> HDLR1["SynapseHandler.handle<br/>on hwebserver thread"]:::panel
+    BR -->|"no — bridge DOWN"| DAEMON["daemon thread<br/>synapse.panel.tool.&lt;tool&gt;<br/>execute_tool_off_main"]:::panel
+    DAEMON --> HDLR2["SynapseHandler.handle<br/>on daemon thread"]:::panel
+    HDLR1 --> ROM["run_on_main<br/>inside handler"]:::obs
+    HDLR2 --> ROM
+    ROM -->|"caller NOT main thread<br/>→ DEFERRED path"| DEF["hdefereval.executeDeferred<br/>+ per-tool timeout<br/>interleaved with UI events<br/>(node select / viewport live)"]:::ok
+    ROM -.->|"OLD: caller IS main thread<br/>→ Fast path 2<br/>fn() inline, NO timeout"| FROZEN["Qt loop stalled<br/>cannot select nodes<br/>(the freeze this closed)"]:::hot
+    TURN -.->|"10s QTimer &middot; chat send"| CTX["context-gather sibling"]:::panel
+    CTX -->|"_refresh_context_off_main"| GATHER["daemon thread<br/>synapse.panel.ctx.gather<br/>gather_context_off_main"]:::panel
+    GATHER --> ROMCTX["run_on_main<br/>2s &middot; observe-only<br/>record_stall=False"]:::obs
+    ROMCTX -->|"DEFERRED path"| DEFCTX["hou.selectedNodes / paneTabs<br/>read interleaved &middot;<br/>sheds on busy main thread"]:::ok
+    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
+    classDef hot fill:#334155,stroke:#ef4444,color:#f1f5f9
+    classDef ok fill:#1e293b,stroke:#22c55e,color:#f1f5f9
+```
+
+**What it does not fix.** The residual in-process render freeze is a separate class (out-of-process husk is Indie-blocked). The websocket read loop's cancel gap is still open. The 2026-07-27 latency report's "Houdini-side is milliseconds" verdict still holds for the bridge-up path but is stale for the bridge-down case this closed. CI is red on an unrelated `mcp`-library drift on the runners, not this fix — the local suite is green.
+
+*Producers: `6f354ae` (tool dispatch off-main) + `bf74ed7` (context-gather off-main) · PR #50, merge `d15d9b2` · pinned by `tests/test_offmain_fallback.py` (8) + `tests/test_context_poll_offmain.py` (6) + `tests/test_chat_panel.py::TestStaleContextGather` (4).*
+
+---
+
 ## Undo, precisely
 
 This used to say *"every mutation is reversible."* That was overstated.
@@ -199,6 +237,8 @@ Read this here rather than discover it mid-shot.
 - Only **Karma/husk** renders can be stopped *by ROP path*. A **mantra** render shows up in `rps` as the bare word `mantra` with no node identity, so SYNAPSE refuses to guess which one is yours and asks for an explicit PID instead.
 
 **Stopping a mantra render leaves a valid-looking but empty frame.** mantra writes the EXR header to the real output path immediately and keeps pixels in a `.mantra_checkpoint` sidecar, so a stopped render leaves a ~1KB EXR that opens fine and contains no image. A "does the file exist?" check will pass it. Detect it by the leftover `.mantra_checkpoint`, or by a header missing `renderTime`. **Stopping a Karma render is safe** — husk only writes the declared output on completion, so it simply never appears.
+
+**The chat-time UI grip is closed (v5.40.1).** Mid-chat node-selection freezes — the bridge-down Qt-fallback class — no longer fire; tool calls and context-gather run off the main thread. See *The chat freeze, and what fixed it* above. Distinct from the render freezes above.
 
 **The PDG rollback has never executed.** `bridge.py:1718` passes `remove_files=`; the real keyword is `remove_outputs`. It raises `TypeError` every time.
 
