@@ -599,7 +599,7 @@ Report written to: /render/reports/render_report_2026-02-19.md
 
 ## Expected Scene Graph
 
-For a correctly configured Karma/usdrender pipeline the relevant prim and node hierarchy is:
+For a correctly configured Karma/USD Render ROP pipeline the relevant prim and node hierarchy is:
 
 ```
 /stage
@@ -616,7 +616,7 @@ For a correctly configured Karma/usdrender pipeline the relevant prim and node h
       /hero_shader            (MaterialX or VOP shader)
 
 /out
-  /usdrender1                 (usdrender ROP)
+  /usdrender1                 (usdrender_rop ROP)
     loppath   -> /stage/karma1
     outputimage -> /render/beauty.####.exr
     soho_foreground = 1        (synchronous write -- required for validate-fix loop)
@@ -645,7 +645,7 @@ good_light.parm("xn__inputsexposure_vya").set(2.0)          # +2 stops = 4x brig
 good_light.parm("xn__inputsexposure_control_wcb").set("set")  # activate override
 
 
-# MISTAKE 2: forgetting soho_foreground=1 on the usdrender ROP
+# MISTAKE 2: forgetting soho_foreground=1 on the usdrender_rop ROP
 # Default is 0 (async). The render starts but the function returns immediately.
 # The validate step then checks for a file that doesn't exist yet and fails.
 rop_node.parm("soho_foreground").set(0)   # WRONG for validate-fix loops
