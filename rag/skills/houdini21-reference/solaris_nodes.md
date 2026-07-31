@@ -1,7 +1,7 @@
 # Solaris/LOP Node Types Reference
 
 ## Triggers
-solaris, lop, lops, stage, usd, sopimport, sublayer, reference, merge, edit, camera, light, domelight, rectlight, spherelight, distantlight, disklight, cylinderlight, materiallibrary, assignmaterial, karmarendersettings, karmarendersettings, usdrender, render settings, render properties, configureprimitive, componentoutput, switch, null, configurestage, sceneimport, sopcreate, instancer, layout, copytopoints, paintinstances, renderproduct, rendersettings, rendergeometrysettings, mtlxstandard_surface, materiallinker, create node lop, lop node python, solaris python, stage node
+solaris, lop, lops, stage, usd, sopimport, sublayer, reference, merge, edit, camera, light, domelight, rectlight, spherelight, distantlight, disklight, cylinderlight, materiallibrary, assignmaterial, karmarendersettings, karmarendersettings, usdrender, usdrender_rop, render settings, render properties, configureprimitive, componentoutput, switch, null, configurestage, sceneimport, sopcreate, instancer, layout, copytopoints, paintinstances, renderproduct, rendersettings, rendergeometrysettings, mtlxstandard_surface, materiallinker, create node lop, lop node python, solaris python, stage node
 
 ## Context
 Comprehensive Python reference for creating and configuring Solaris (LOP) nodes via `hou.node().createNode()` and `parm().set()`. Covers stage management, geometry import, materials, all light types, cameras, render settings, and instancing nodes. H22 renames (W.3, live-verified 22.0.368): the `instancer` LOP is now `copytopoints` and the `layout` LOP is now `paintinstances` — the old spellings are gone from type lookup, emit canonical names only (`pointinstancer` is a NEW H22 node, not the rename). Lighting Law: intensity is ALWAYS 1.0; brightness is controlled exclusively by exposure (logarithmic, in stops).
@@ -502,10 +502,10 @@ rgs.parm("karma:object:geo_motionsamples").set(2)     # deformation (point) moti
 ```python
 import hou
 
-# The usdrender ROP lives in /out, NOT /stage
+# The usdrender_rop ROP lives in /out, NOT /stage
 out_net = hou.node("/out")
 
-rop = out_net.createNode("usdrender", "karma_rop")
+rop = out_net.createNode("usdrender_rop", "karma_rop")
 
 # loppath: path to the LOP display/output node
 rop.parm("loppath").set("/stage/OUTPUT")
@@ -525,7 +525,7 @@ rop.parm("res_user2").set(1080)    # height
 # Output image path
 rop.parm("outputimage").set("$HIP/render/beauty.$F4.exr")
 
-# GOTCHA: rop.render(output_file="...") does NOT work for usdrender ROPs.
+# GOTCHA: rop.render(output_file="...") does NOT work for usdrender_rop ROPs.
 # Set outputimage parm directly (as above), then call render with no output_file arg.
 rop.render()
 
@@ -717,7 +717,7 @@ out_null.setInput(0, merge)
 out_null.setDisplayFlag(True)
 
 # 10. USD Render ROP in /out
-rop = hou.node("/out").createNode("usdrender", "karma_rop")
+rop = hou.node("/out").createNode("usdrender_rop", "karma_rop")
 rop.parm("loppath").set("/stage/OUTPUT")
 rop.parm("renderer").set("BRAY_HdKarma")
 rop.parm("override_camera").set(cam_path)
@@ -761,7 +761,7 @@ comp_out.parm("thumbnail").set(True)   # generate thumbnail image on export
 
 - **Wrong camera path format** — Karma requires the USD prim path (`/cameras/render_cam`), not the Houdini node path (`/stage/render_cam`). Use `cam.parm("primpath").eval()` to get the correct value.
 
-- **`rop.render(output_file=...)` does nothing for usdrender** — Set the `outputimage` parm directly, then call `rop.render()` with no arguments.
+- **`rop.render(output_file=...)` does nothing for usdrender_rop** — Set the `outputimage` parm directly, then call `rop.render()` with no arguments.
 
 - **`override_res` type mismatch** — `override_res` is a string menu: `""`, `"scale"`, `"specific"`. Do not pass an integer.
 
