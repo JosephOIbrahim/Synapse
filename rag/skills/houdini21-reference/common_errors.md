@@ -63,7 +63,7 @@ def create_node_safe(parent_path, node_type, name=None):
         "copy_to_points": "copytopoints",
         "attribute_wrangle": "attribwrangle",
         "material_library": "materiallibrary",
-        "usd_render": "usdrender",
+        "usd_render": "usdrender_rop",
     }
 
     parent = hou.node(parent_path)
