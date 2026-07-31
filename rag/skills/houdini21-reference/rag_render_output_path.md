@@ -5,12 +5,12 @@ render output, output path, render file, picture parm, outputimage, render to fi
 save render, render destination, soho_foreground, synchronous render
 
 ## Context
-For reliable render output, set the path on BOTH the Karma LOP (`picture`) AND the usdrender ROP (`outputimage`). The ROP's `soho_foreground=1` flag enables synchronous rendering but blocks Houdini entirely — only use for quick test renders.
+For reliable render output, set the path on BOTH the Karma LOP (`picture`) AND the usdrender_rop ROP (`outputimage`). The ROP's `soho_foreground=1` flag enables synchronous rendering but blocks Houdini entirely — only use for quick test renders.
 
 ## Code
 
 ```python
-# Setting render output on both Karma LOP and usdrender ROP
+# Setting render output on both Karma LOP and usdrender_rop ROP
 import hou
 import os
 
@@ -28,12 +28,12 @@ if not os.path.isdir(expanded_dir):
     print(f"Created output directory: {expanded_dir}")
 
 
-# --- Step 2: Configure usdrender ROP ---
-# Create or find usdrender ROP in /out
+# --- Step 2: Configure usdrender_rop ROP ---
+# Create or find usdrender_rop ROP in /out
 out_net = hou.node("/out")
 rop = out_net.node("usdrender1")
 if not rop:
-    rop = out_net.createNode("usdrender", "usdrender1")
+    rop = out_net.createNode("usdrender_rop", "usdrender1")
 
 # CRITICAL: Set outputimage on the ROP too
 # Without this, the ROP may not write to the expected location
@@ -122,6 +122,6 @@ $HIP/render/
 ## Common Mistakes
 - Setting `picture` on Karma LOP but not `outputimage` on the ROP — output may silently go elsewhere
 - Using `soho_foreground=1` on heavy scenes — locks Houdini, WebSocket becomes unresponsive, user must force-kill
-- Forgetting to set `loppath` on usdrender ROP — ROP has no LOP node to render from
+- Forgetting to set `loppath` on usdrender_rop ROP — ROP has no LOP node to render from
 - Not expanding `$HIP` before checking if output directory exists — `os.path.isdir("$HIP/render")` is always False
-- Render output_file kwarg doesn't work for usdrender ROPs — must set `outputimage` or `picture` parm directly
+- Render output_file kwarg doesn't work for usdrender_rop ROPs — must set `outputimage` or `picture` parm directly
