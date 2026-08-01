@@ -33,6 +33,7 @@ from .schemas import (
     CorpusEntry,
     CycleMetrics,
     FailureCategory,
+    FixOutcome,
     ScenarioComplexity,
     ScenarioDefinition,
     ScenarioDomain,
@@ -132,17 +133,27 @@ class ForgeOrchestrator:
         self,
         results: list[ScenarioResult],
         tier: int = 1,
+        fix_outcomes: list[FixOutcome] | None = None,
     ) -> dict[str, Any]:
         """Process collected results through the improvement engine.
-        
+
         1. Classify failures
-        2. Generate fixes (or queue for human review)
+        2. Route fixes (automated destination, or queue for human review)
         3. Update corpus
         4. Compute metrics
         5. Generate report
-        
+
+        ``fix_outcomes`` carries **evidence** that fixes were actually applied
+        and/or re-run. There is no apply/verify stage in ``forge/engine`` —
+        ``FORGE.md`` Phase 5 is a procedure a human or Claude Code follows — so
+        the engine cannot observe application or validation, only be told with
+        evidence. With no evidence: ``fixes_applied`` is 0 (nothing confirmed
+        applied) and ``fixes_validated`` is ``None`` (*unvalidated*), never a
+        fabricated 0.
+
         Returns a summary dict with the cycle report.
         """
+        outcomes = list(fix_outcomes or [])
         # --- CLASSIFY ---
         failed_results = [r for r in results if not r.success]
         friction_results = [
@@ -151,9 +162,11 @@ class ForgeOrchestrator:
 
         classified = classify_batch(failed_results + friction_results)
 
-        # --- GENERATE FIXES & UPDATE CORPUS ---
+        # --- ROUTE FIXES & UPDATE CORPUS ---
+        # NOTE: fixes_applied / fixes_validated are NOT computed here. Nothing
+        # in this loop writes a fix, so nothing in this loop may claim one was
+        # applied. Both are derived from FixOutcome evidence after the loop.
         fixes_generated = 0
-        fixes_applied = 0
         fixes_queued = 0
         new_corpus_entries = 0
         new_backlog_items = []
@@ -170,11 +183,12 @@ class ForgeOrchestrator:
                 new_corpus_entries += 1
 
                 if category.fix_destination == "automated":
+                    # Counts a failure ROUTED to the automated-fix destination.
+                    # Claude Code writes the actual fix (skill file, CLAUDE.md
+                    # rule, test case) outside this module and reports the
+                    # result back via fix_outcomes. Routing is not applying:
+                    # nothing is incremented here on intent.
                     fixes_generated += 1
-                    # In real execution, Claude Code generates the actual fix here
-                    # (skill file, CLAUDE.md rule, test case, etc.)
-                    # For now, we track the intent
-                    fixes_applied += 1  # Optimistic — verification step catches failures
 
                 elif category.fix_destination == "human_review":
                     fixes_generated += 1
@@ -205,14 +219,25 @@ class ForgeOrchestrator:
             self.backlog.append(item)
         self._save_backlog()
 
+        # --- FIX OUTCOMES (evidence-derived, never optimistic) ---
+        fixes_applied = sum(1 for o in outcomes if o.applied)
+        fixes_failed = sum(1 for o in outcomes if not o.applied)
+        # Only outcomes that both applied AND carry a real re-run verdict count
+        # as validation evidence. No such evidence => None (unvalidated), which
+        # is a different fact from a measured zero.
+        revalidated = [o for o in outcomes if o.applied and o.validated is not None]
+        fixes_validated = (
+            sum(1 for o in revalidated if o.validated) if revalidated else None
+        )
+
         # --- COMPUTE METRICS ---
         cycle_metrics = self.metrics.compute_cycle_metrics(
             cycle_number=self.current_cycle,
             results=results,
             fixes_generated=fixes_generated,
             fixes_applied=fixes_applied,
-            fixes_validated=0,  # Set after verification phase
-            fixes_failed=0,
+            fixes_validated=fixes_validated,
+            fixes_failed=fixes_failed,
             fixes_queued_human=fixes_queued,
             corpus_entries_added=new_corpus_entries,
             corpus_promotions=len(promotions),
@@ -230,6 +255,8 @@ class ForgeOrchestrator:
             "cycle_number": cycle_metrics.cycle_number,
             "report": report,
             "metrics": cycle_metrics.to_dict(),
+            "fixes_validated": fixes_validated,
+            "validation_evidence": bool(revalidated),
             "new_backlog_items": len(new_backlog_items),
             "corpus_promotions": len(promotions),
             "should_stop": cycle_metrics.should_stop,

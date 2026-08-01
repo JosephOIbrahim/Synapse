@@ -17,13 +17,16 @@
 
 | 2026-08-01 | RELAY | Execution arm built: `.claude/workflows/rsi-closure.js` (3 phases, ~7/5/4 agents, args-as-string parsed defensively) + `rsi-closure-orchestrator` agent + `RELAY.md` + operator card. No new predicates, no new bar (R140). File-overlap check for parallel SIGNAL worktrees: A1→routing/router.py, F→shared/router.py only, E→forge/engine/ — disjoint, verified by grep. |
 
+| 2026-08-01 | RL-2 · E | SIGNAL fix for loop `E` (FORGE build counters). Defect re-confirmed at HEAD `c574d49`: `orchestrator.py:177` `fixes_applied += 1  # Optimistic`, `:214` `fixes_validated=0`, `reporter.py:65` rendering it. **First question answered: NO verification phase exists** — grep over `forge/` found no apply/verify/re-run function and no runnable entry point; `FORGE.md` Phase 5 is prose. The `:214` comment's promised phase was a phantom, so took the **honest-reporting** branch, not a fabricated validator. `fixes_validated` → `int \| None` with `None` = *unvalidated*; `reporter.validated_cell()` renders the word; `fixes_applied`/`fixes_failed`/`fixes_validated` all derive from new `FixOutcome` evidence. Suite **5341→5356 passed** (+15 new tests, same 4 pre-existing `test_statusline.py` worktree failures both sides). Mutation-checked: re-introducing the optimism fails 4 tests. `E` → **L0+L1, blocked L2**. verify.py: **9 PASS / 0 FAIL**. |
+| 2026-08-01 | RL-2 · E CATCH | Two first-draft alignment tests asserted every report box row shares a width. They failed — the FORGE report boxes were **already ragged upstream of this change** (rows measure 61/58/55/52/63/62 chars). The tests were wrong, not the code; rewritten to the invariant that actually belongs to this fix: swapping the sentinel for a number must not change *that row's* width. A test that pins a defect you did not introduce is a false floor. |
+
 ---
 
 ## Standing state at frame
 
 - **Registry honesty:** 9 PASS / 0 FAIL.
 - **Closure:** 0 of 9 loops beneficial. 0 of 9 reach L3 CONSUMED. Highest rung anywhere is `A3` at **L2**.
-- **L1 failures:** 3 (`A1` verified at HEAD; `F` and `E` carried, pending `RL-1`).
+- **L1 failures:** 3 at frame → **2 open** (`A1`, `F`). `E` closed by `RL-2` on 2026-08-01.
 - **Next action:** `RL-1 RECONCILE` — re-derive `R/O/S/F/E/C` at HEAD under this ladder. Blocked on SPEC
   ratification.
 - **Open human gates:** SPEC ratification · any L3→L4 advance · signal-semantics change (`RL-2`) ·

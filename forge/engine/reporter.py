@@ -33,6 +33,23 @@ def progress_bar(current: int, total: int, width: int = 40, label: str = "") -> 
     return f"  {bar}  {pct_str}"
 
 
+UNVALIDATED_LABEL = "unvalidated"
+_VALIDATED_CELL_WIDTH = len(UNVALIDATED_LABEL)
+
+
+def validated_cell(value: int | None, width: int = _VALIDATED_CELL_WIDTH) -> str:
+    """Render a validated-fix count — or the honest 'unvalidated' sentinel.
+
+    A number is rendered **only** when a real validation re-run produced it.
+    ``None`` means no re-run happened; it renders as the word, never as ``0``.
+    A displayed ``0`` therefore always means "validation ran and confirmed
+    nothing", which is a different fact and must stay distinguishable.
+    """
+    if value is None:
+        return f"{UNVALIDATED_LABEL:>{width}}"
+    return f"{value:>{width}}"
+
+
 def delta_indicator(value: float | None) -> str:
     """Format a delta value with arrow indicator."""
     if value is None:
@@ -62,7 +79,7 @@ def cycle_report(metrics: CycleMetrics) -> str:
         f"║  Scenarios: {metrics.scenarios_run:>3} run  │  Pass Rate: {pass_pct:>4} ({delta:>10})   ║",
         f"║  Passed:    {metrics.scenarios_passed:>3}     │  Failed:    {metrics.scenarios_failed:>3}                  ║",
         "╠══════════════════════════════════════════════════════════════╣",
-        f"║  Fixes Generated:  {metrics.fixes_generated:>3}  │  Validated: {metrics.fixes_validated:>3}              ║",
+        f"║  Fixes Generated:  {metrics.fixes_generated:>3}  │  Validated: {validated_cell(metrics.fixes_validated)}      ║",
         f"║  Fixes Applied:    {metrics.fixes_applied:>3}  │  Failed:    {metrics.fixes_failed:>3}              ║",
         f"║  Queued (Human):   {metrics.fixes_queued_human:>3}  │                              ║",
         "╠══════════════════════════════════════════════════════════════╣",
@@ -197,7 +214,7 @@ def convergence_dashboard(report: dict[str, Any]) -> str:
 
     lines.append("╠══════════════════════════════════════════════════════════════╣")
     lines.append(f"║  Total Fixes Applied:    {report.get('total_fixes_applied', 0):>4}                           ║")
-    lines.append(f"║  Total Fixes Validated:  {report.get('total_fixes_validated', 0):>4}                           ║")
+    lines.append(f"║  Total Fixes Validated:  {validated_cell(report.get('total_fixes_validated'))}                    ║")
 
     # Persistent failures
     persistent = report.get("persistent_failures", [])

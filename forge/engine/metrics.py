@@ -41,7 +41,7 @@ class MetricsTracker:
         results: list[ScenarioResult],
         fixes_generated: int = 0,
         fixes_applied: int = 0,
-        fixes_validated: int = 0,
+        fixes_validated: int | None = None,
         fixes_failed: int = 0,
         fixes_queued_human: int = 0,
         corpus_entries_added: int = 0,
@@ -49,7 +49,12 @@ class MetricsTracker:
         total_corpus_entries: int = 0,
         tier: int = 1,
     ) -> CycleMetrics:
-        """Compute aggregate metrics for a completed cycle."""
+        """Compute aggregate metrics for a completed cycle.
+
+        ``fixes_validated`` defaults to ``None`` — the sentinel for *no
+        validation ran*. Pass an int only when a real re-run produced it; a
+        numeric 0 asserts that validation executed and confirmed nothing.
+        """
         metrics = CycleMetrics(cycle_number=cycle_number, tier=tier)
 
         # Execution stats
@@ -139,6 +144,24 @@ class MetricsTracker:
         return [c.get("avg_friction_ratio", 0.0) for c in self._cycles]
 
     @property
+    def total_fixes_validated(self) -> int | None:
+        """Total validated fixes across cycles, or ``None`` if never measured.
+
+        Cycles recorded without a validation re-run persist
+        ``fixes_validated: null``. Summing those as zeroes would manufacture a
+        measurement out of missing data, so they are excluded. If **no** cycle
+        carries a numeric count, the aggregate itself is ``None`` —
+        "unvalidated", not "zero validated".
+        """
+        counts = [
+            c.get("fixes_validated")
+            for c in self._cycles
+            if isinstance(c.get("fixes_validated"), int)
+            and not isinstance(c.get("fixes_validated"), bool)
+        ]
+        return sum(counts) if counts else None
+
+    @property
     def is_flatlined(self) -> bool:
         """Check if improvement_delta has flatlined (< 0.5% for 3+ cycles)."""
         if len(self._cycles) < 3:
@@ -163,9 +186,7 @@ class MetricsTracker:
             "total_fixes_applied": sum(
                 c.get("fixes_applied", 0) for c in self._cycles
             ),
-            "total_fixes_validated": sum(
-                c.get("fixes_validated", 0) for c in self._cycles
-            ),
+            "total_fixes_validated": self.total_fixes_validated,
             "persistent_failures": self._find_persistent_failures(),
             "tool_gap_accumulation": self._accumulate_tool_gaps(),
             "recommendation": self._convergence_recommendation(),

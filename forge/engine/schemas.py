@@ -323,6 +323,39 @@ class CorpusEntry:
 
 
 @dataclass
+class FixOutcome:
+    """Evidence that a generated fix was actually written, and optionally re-run.
+
+    FORGE has **no automated apply/verify stage in code**. ``FORGE.md`` Phase 5
+    ("VERIFY (Re-run)") describes a procedure a human or Claude Code follows,
+    not a module in ``forge/engine``. So the engine cannot observe whether a
+    fix applied or validated — it can only be *told*, with evidence.
+
+    A caller that really applied a fix (and optionally really re-ran the
+    scenario) passes one of these into
+    :meth:`ForgeOrchestrator.process_results`. Absent evidence, nothing is
+    counted: ``fixes_applied`` stays at the number of confirmed applications
+    (zero) and ``fixes_validated`` is reported as ``None`` — *unvalidated* —
+    rather than as a fabricated ``0``.
+
+    Fields:
+      scenario_id  — which scenario's failure this fix targets
+      applied      — did the write actually land? False = attempted and failed
+      validated    — did a re-run pass? ``None`` means **no re-run happened**;
+                     True/False are real measurements from an actual re-run
+      detail       — free text: what was written, or why it failed
+    """
+
+    scenario_id: str
+    applied: bool = False
+    validated: bool | None = None
+    detail: str = ""
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
 class CycleMetrics:
     """Aggregate metrics for one improvement cycle.
     
@@ -355,9 +388,18 @@ class CycleMetrics:
     top_failure_count: int = 0
 
     # Fixes
+    # fixes_generated  — failures routed to the automated-fix destination
+    #                    (candidates for automation this cycle)
+    # fixes_applied    — fixes CONFIRMED applied, counted from FixOutcome
+    #                    evidence only. Never incremented on intent/attempt.
+    # fixes_validated  — fixes confirmed by a real re-run. ``None`` is the
+    #                    honest sentinel for "no validation ran"; a numeric 0
+    #                    means a re-run DID run and validated nothing. The two
+    #                    are different facts and must not be conflated.
+    # fixes_failed     — fixes whose application was attempted and failed.
     fixes_generated: int = 0
     fixes_applied: int = 0
-    fixes_validated: int = 0
+    fixes_validated: int | None = None
     fixes_failed: int = 0
     fixes_queued_human: int = 0
 

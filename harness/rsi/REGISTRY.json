@@ -175,17 +175,26 @@
       "name": "FORGE build loop -- fix application and validation counters",
       "origin": "june-harness",
       "surfaces": ["forge/engine/orchestrator.py", "forge/engine/metrics.py", "forge/engine/reporter.py"],
-      "rungs_proven": ["L0"],
-      "blocked_at": "L1",
+      "rungs_proven": ["L0", "L1"],
+      "blocked_at": "L2",
       "verification": "verified-at-head",
       "rl1_rederived": "2026-08-01",
-      "blocker": "CONFIRMED at HEAD, and worse than the carried claim. The path resolved to forge/engine/orchestrator.py (main tree, tracked). Line :177 reads `fixes_applied += 1  # Optimistic -- verification step catches failures`, and line :214 reads `fixes_validated=0,  # Set after verification phase`. This is the second L1 failure and it is structurally identical to A1: the loop authors its own success value instead of measuring it. The aggravating factor the carried claim did not mention is forge/engine/reporter.py:65, which RENDERS that hardcoded zero to a human as `Validated: {metrics.fixes_validated}` -- so the constant is not merely stored, it is displayed in a report as though it were a measurement.",
+      "rl2_signal_fixed": "2026-08-01",
+      "blocker": "L1 CLOSED 2026-08-01 (RL-2 SIGNAL). The prior blocker was: orchestrator.py:177 `fixes_applied += 1  # Optimistic`, orchestrator.py:214 `fixes_validated=0,  # Set after verification phase`, and reporter.py:65 RENDERING that hardcoded zero to a human as `Validated: {metrics.fixes_validated}` -- a constant displayed as a measurement. FIRST QUESTION ANSWERED: no verification phase exists in forge/engine. `FORGE.md` Phase 5 ('VERIFY (Re-run)') is a procedure a human or Claude Code follows, not a module -- grep over forge/ found no apply/verify/re-run function and no runnable entry point, confirming the 2026-06-05 CTO finding. The :214 comment's claimed 'verification phase' was therefore a phantom. Taken the HONEST-REPORTING branch rather than fabricating a validator: fixes_validated is now `None` (the 'unvalidated' sentinel) unless real FixOutcome re-run evidence produced a number, reporter.py renders the word `unvalidated` and never a numeral without a measurement, and a displayed 0 now means only 'validation ran and confirmed nothing'. fixes_applied is derived from confirmed-application evidence and no longer increments on classification. BLOCKED AT L2: no live non-test path constructs ForgeOrchestrator -- there is still no __main__/argparse/console-script, so the loop is honest but not yet driven.",
       "evidence": {
-        "L0": ["forge/engine/orchestrator.py:156,:177,:213,:214", "forge/engine/metrics.py:44,:86,:166-167", "forge/engine/reporter.py:65"]
+        "L0": ["forge/engine/orchestrator.py:156,:177,:213,:214", "forge/engine/metrics.py:44,:86,:166-167", "forge/engine/reporter.py:65"],
+        "L1": [
+          "forge/engine/schemas.py -- FixOutcome dataclass (scenario_id/applied/validated/detail); CycleMetrics.fixes_validated is now `int | None = None`, the sentinel for 'no validation ran'",
+          "forge/engine/orchestrator.py -- process_results(fix_outcomes=...) derives fixes_applied = sum(o.applied), fixes_failed = sum(not o.applied), fixes_validated = count of applied outcomes with a real re-run verdict, else None; the `fixes_applied += 1  # Optimistic` increment is gone and `fixes_validated=0` is gone",
+          "forge/engine/reporter.py -- validated_cell() renders UNVALIDATED_LABEL ('unvalidated') for the sentinel; cycle_report + convergence_dashboard both route through it",
+          "forge/engine/metrics.py -- MetricsTracker.total_fixes_validated excludes null cycles and returns None when no cycle was ever measured (a null is never summed as a zero)",
+          "tests/test_forge_engine_honest_signal.py -- 15 tests; mutation-checked (re-introducing the optimistic increment / the fabricated zero fails 4 of them)",
+          "L1 bar met in the 'honest unvalidated' direction: the signal CAN represent failure -- an applied fix whose re-run refutes it (FixOutcome(applied=True, validated=False)) lowers the count, and an all-refuted cycle yields a MEASURED 0 that is distinguishable from the unmeasured sentinel (test_all_reruns_failing_yields_a_measured_zero_not_the_sentinel)"
+        ]
       },
-      "danger_if_closed_now": "HIGH. June called this 'the ONE large build'. Closing an apply-compound loop whose validation counter is a constant would compound unvalidated fixes -- the exact hazard named in the harness-updating-is-not-harness-benefit lens: benefit without verification is a hazard, not a win.",
-      "reversal": {"persisted": "unknown", "versioned": false, "bounded": "unknown", "rollback": "unknown"},
-      "reversal_note": "To be established by Line A.",
+      "danger_if_closed_now": "HIGH at L2+. June called this 'the ONE large build'. The L1 fix removes the fabricated success value but does NOT build an apply/verify stage -- FORGE still cannot improve itself, it can now only report that fact honestly. Driving this loop live (L2) without first building a real apply+re-run stage would compound unvalidated fixes: the exact hazard in the harness-updating-is-not-harness-benefit lens. Benefit without verification is a hazard, not a win.",
+      "reversal": {"persisted": "partial", "versioned": false, "bounded": true, "rollback": "unknown"},
+      "reversal_note": "Counters persist to forge/metrics/cycles.json (append-only list, no schema version); the three historical cycles carry fixes_validated: 0 written under the old fabricating code and are NOT retroactively corrected -- they remain readable as pre-fix records. Corpus/backlog writes are separate and untouched by this change. Full reversal posture still to be established by Line A.",
       "human_ratified": false,
       "benefit": null
     },
