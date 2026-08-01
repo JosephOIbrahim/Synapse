@@ -19,6 +19,7 @@ from .schemas import (
     ScenarioResult,
     CorpusEntry,
     CycleMetrics,
+    FixOutcome,
     BacklogItem,
     AgentAssignment,
 )
@@ -39,6 +40,7 @@ __all__ = [
     "ScenarioResult",
     "CorpusEntry",
     "CycleMetrics",
+    "FixOutcome",
     "BacklogItem",
     "AgentAssignment",
     # Engine
