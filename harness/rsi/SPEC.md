@@ -1,7 +1,14 @@
 # SPEC — the RSI closure harness
 
-*The contract. **STATUS: AWAITING RATIFICATION.** Written at FRAME 2026-08-01. Changed only at explicit
-ratification points; do not edit without a ratified change.*
+*The contract. **STATUS: RATIFIED 2026-08-01** (human sanction, Joe — CTO authority granted for this harness
+and its running tasks). Written at FRAME 2026-08-01. Changed only at explicit ratification points; do not
+edit without a ratified change.*
+
+> **What ratification did and did not grant.** It opens the lines for execution. It does **not** promote any
+> loop's rung. Rungs are promoted by evidence, never by permission — a blanket approval cannot manufacture a
+> proof, and treating it as though it could is the precise failure this harness was built to prevent. Every
+> loop below therefore keeps the rung its evidence supports, and `P8` still refuses any L4+ sitting without
+> `human_ratified`.
 
 ---
 
