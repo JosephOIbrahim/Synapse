@@ -11,6 +11,7 @@ Run without Houdini or API key:
 import sys
 import os
 import json
+import re
 import time
 import tempfile
 import shutil
@@ -36,6 +37,7 @@ from synapse.routing.router import (
     RoutingResult,
     RoutingTier,
     RoutingConfig,
+    NO_TIER_KEY,
 )
 from synapse.routing.adaptation import EpochAdapter
 from synapse.core.audit import AuditCategory
@@ -723,7 +725,12 @@ class TestTieredRouter:
         mock_fn = Mock(side_effect=RuntimeError("Houdini not connected"))
         router = TieredRouter(command_fn=mock_fn, config=self.config)
         result = router.route("ping")
-        assert result.success  # Routing succeeded even if execution failed
+        # RSI A1: success describes what HAPPENED, not what was attempted.
+        # Pre-fix this asserted `result.success` on the grounds that "routing
+        # succeeded even if execution failed" — which made the tier-0 reward
+        # signal a constant True. The command was executed and it failed, so
+        # the route failed. Same contract as _try_recipe / _try_plan.
+        assert not result.success
         assert len(result.responses) == 1
         assert not result.responses[0].success
 
@@ -1800,3 +1807,241 @@ class TestEpochHistoryBounded:
         adapter = EpochAdapter(epoch_size=10)
         assert isinstance(adapter._epoch_history, deque)
         assert adapter._epoch_history.maxlen == 100
+
+
+# =============================================================================
+# TEST: Reward signal honesty (RSI loop A1, rung L1)
+# =============================================================================
+
+class TestRewardSignalHonesty:
+    """RSI A1 / rung L1 — the router's reward signal CAN represent failure.
+
+    Before this rung, `_record_metric` was declared with `success: bool = True`
+    and not one of its call sites passed an outcome, `_try_tier0` hardcoded
+    RoutingResult(success=True) without consulting the responses it had just
+    collected, and the no-tier-matched fallback never recorded anything at all.
+    Every sample the EpochAdapter ever saw was a success, including the runs
+    that failed.
+
+    These tests read the sample directly — `router._epoch._current_epoch.outcomes`
+    is the list of (tier_key, success, latency_ms) tuples the adapter was told.
+    Asserting on RoutingResult alone would not prove what the ADAPTER heard,
+    which is the thing that was lying.
+
+    Nothing consumes the adapter's output today (TierThresholds.get() has zero
+    non-test callers), so honest recording changes no routing decision — it
+    makes the signal readable, which is what L1 claims and all it claims.
+    """
+
+    def setup_method(self):
+        self.config = RoutingConfig(
+            enable_tier2=False,
+            enable_tier3=False,
+        )
+
+    @staticmethod
+    def _outcomes(router):
+        """The (tier_key, success, latency) tuples handed to the adapter."""
+        return list(router._epoch._current_epoch.outcomes)
+
+    # --- P7b: a failing command_fn must reach the sample as False ----------
+
+    def test_raising_command_fn_is_recorded_as_failure(self):
+        """command_fn raises -> the adapter is told False, not True."""
+        mock_fn = Mock(side_effect=RuntimeError("Houdini not connected"))
+        router = TieredRouter(command_fn=mock_fn, config=self.config)
+        router.route("ping")
+
+        outcomes = self._outcomes(router)
+        assert len(outcomes) == 1, f"expected one recorded outcome, got {outcomes}"
+        tier_key, success, _latency = outcomes[0]
+        assert tier_key == RoutingTier.INSTANT.value
+        assert success is False, (
+            "the router executed a command that raised and told the adapter it "
+            "succeeded — the reward signal is a constant again"
+        )
+
+    def test_returned_failure_response_is_recorded_as_failure(self):
+        """command_fn returns success=False -> the adapter is told False."""
+        mock_fn = Mock(return_value=SynapseResponse(
+            id="x", success=False, error="node not found",
+        ))
+        router = TieredRouter(command_fn=mock_fn, config=self.config)
+        router.route("ping")
+
+        outcomes = self._outcomes(router)
+        assert [o[1] for o in outcomes] == [False]
+
+    # --- P7a: tier 0 must not claim success it did not have ----------------
+
+    def test_tier0_success_reflects_response_outcomes(self):
+        """RoutingResult.success is False AND the adapter is told False."""
+        mock_fn = Mock(return_value=SynapseResponse(
+            id="x", success=False, error="boom",
+        ))
+        router = TieredRouter(command_fn=mock_fn, config=self.config)
+        result = router.route("create a hlight at /obj")
+
+        assert result.tier == RoutingTier.INSTANT
+        assert result.success is False, (
+            "_try_tier0 hardcoded success=True without consulting its responses"
+        )
+        assert result.responses and not result.responses[0].success
+        assert [o[1] for o in self._outcomes(router)] == [False]
+
+    def test_tier0_without_command_fn_is_not_a_failure(self):
+        """No command channel wired: nothing executed, so nothing failed.
+
+        Guards the fix from overcorrecting — a parse-only route is a real
+        success, and marking it False would poison the sample the other way.
+        """
+        router = TieredRouter(config=self.config)
+        result = router.route("create a hlight at /obj")
+
+        assert result.success is True
+        assert result.responses == []
+        assert [o[1] for o in self._outcomes(router)] == [True]
+
+    # --- P5: genuine failures must ENTER the sample ------------------------
+
+    def test_no_tier_matched_records_a_failure(self):
+        """The fallback path recorded nothing at all — invisible failures."""
+        config = RoutingConfig(
+            enable_tier0=False,
+            enable_recipes=False,
+            enable_tier2=False,
+            enable_tier3=False,
+        )
+        router = TieredRouter(config=config)
+        result = router.route("ping")
+
+        assert result.success is False
+        assert result.metadata["reason"] == "no_tier_matched"
+
+        outcomes = self._outcomes(router)
+        assert len(outcomes) == 1, (
+            "a routing failure that no tier handled never entered the sample"
+        )
+        tier_key, success, _latency = outcomes[0]
+        assert success is False
+        assert tier_key == NO_TIER_KEY
+
+    def test_no_tier_key_is_tolerated_by_the_adapter_and_stats(self):
+        """The reserved key is a real string key end to end, not a crash."""
+        config = RoutingConfig(
+            enable_tier0=False,
+            enable_recipes=False,
+            enable_tier2=False,
+            enable_tier3=False,
+        )
+        router = TieredRouter(config=config)
+        router.route("ping")
+
+        stats = router.stats()
+        assert stats["total_routes"] == 1
+        assert stats["tiers"][NO_TIER_KEY]["count"] == 1
+        # aggregate() must survive the non-enum key (it sorts raw tuples)
+        rates = router._epoch._current_epoch.aggregate()
+        assert rates[NO_TIER_KEY] == 0.0
+
+    # --- paired positive control -------------------------------------------
+
+    def test_success_path_still_records_true(self):
+        """Without this, the suite passes vacuously if recording stopped.
+
+        Every assertion above is satisfied by a router that records nothing or
+        records False forever. This one is not.
+        """
+        mock_fn = Mock(return_value=SynapseResponse(
+            id="x", success=True, data={},
+        ))
+        router = TieredRouter(command_fn=mock_fn, config=self.config)
+        result = router.route("create a hlight at /obj")
+
+        assert result.success is True
+        outcomes = self._outcomes(router)
+        assert len(outcomes) == 1
+        assert outcomes[0][0] == RoutingTier.INSTANT.value
+        assert outcomes[0][1] is True
+
+    def test_mixed_run_produces_a_mixed_sample(self):
+        """End to end: the sample must contain BOTH values in one process.
+
+        A signal that can only emit one value is not a signal, whichever
+        value it is.
+        """
+        outcome_by_call = {}
+
+        def flaky(cmd):
+            n = outcome_by_call["n"] = outcome_by_call.get("n", 0) + 1
+            return SynapseResponse(id=cmd.id, success=(n % 2 == 1), error=None)
+
+        router = TieredRouter(command_fn=flaky, config=self.config)
+        router.route("create a hlight at /obj/a")
+        router.route("create a hlight at /obj/b")
+
+        recorded = [o[1] for o in self._outcomes(router)]
+        assert True in recorded and False in recorded, recorded
+
+    # --- structural ratchet -------------------------------------------------
+
+    def test_record_metric_success_has_no_default(self):
+        """The defect was a DEFAULT, not a typo. Pin the default out.
+
+        With `success: bool = True` back in the signature, every test above
+        still passes for the call sites that were fixed while any new call
+        site silently reports success. A required parameter turns that from a
+        silent lie into a TypeError.
+        """
+        import inspect
+        sig = inspect.signature(TieredRouter._record_metric)
+        param = sig.parameters["success"]
+        assert param.default is inspect.Parameter.empty, (
+            "success must stay REQUIRED — a default is how this signal became "
+            "a constant in the first place"
+        )
+
+    def test_every_record_metric_call_site_passes_an_outcome(self):
+        """Source-level guard: no call site may fall back to a default.
+
+        Mirrors harness/rsi/verify.py P4, in the test suite, so the ratchet
+        holds even for someone who never runs the RSI harness.
+        """
+        import inspect
+        from synapse.routing import router as router_mod
+
+        src = inspect.getsource(router_mod)
+        calls = []
+        for m in re.finditer(r"self\._record_metric\s*\(", src):
+            line_no = src.count("\n", 0, m.start()) + 1
+            i, depth, args = m.end(), 1, ""
+            while i < len(src) and depth:
+                ch = src[i]
+                if ch == "(":
+                    depth += 1
+                elif ch == ")":
+                    depth -= 1
+                    if depth == 0:
+                        break
+                args += ch
+                i += 1
+            parts, d, cur = [], 0, ""
+            for ch in args:
+                if ch in "([{":
+                    d += 1
+                elif ch in ")]}":
+                    d -= 1
+                if ch == "," and d == 0:
+                    parts.append(cur)
+                    cur = ""
+                else:
+                    cur += ch
+            if cur.strip():
+                parts.append(cur)
+            calls.append((line_no, len(parts)))
+
+        assert calls, "no _record_metric call sites found — did the module move?"
+        silent = [ln for ln, n in calls if n < 3]
+        assert not silent, (
+            f"_record_metric call site(s) at line(s) {silent} pass no outcome"
+        )
