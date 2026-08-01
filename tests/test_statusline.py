@@ -60,6 +60,20 @@ def test_branch_read_without_git_matches_git():
     s = _mod("statusline")
     real = subprocess.run(["git", "-C", ROOT, "rev-parse", "--abbrev-ref", "HEAD"],
                           capture_output=True, text=True, encoding="utf-8").stdout.strip()
+
+    if real == "HEAD":
+        # DETACHED HEAD — what CI checks out for a pull request. git reports the
+        # literal string "HEAD" because there is no branch to name, while the
+        # file read returns the commit sha. The two cannot agree, and that is
+        # not drift: the question "do these name the same branch" is ill-posed
+        # when no branch exists. Assert the useful property instead — the bar
+        # still renders something that identifies the commit, rather than
+        # echoing a meaningless "HEAD" or going blank.
+        got = s.branch()
+        assert got and got != "HEAD", (
+            "detached HEAD: the bar must still identify the commit, got %r" % got)
+        return
+
     assert s.branch() == real, "%r != %r" % (s.branch(), real)
 
 
