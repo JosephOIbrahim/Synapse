@@ -13,6 +13,7 @@ import os
 import json
 import re
 import time
+import threading
 import tempfile
 import shutil
 from pathlib import Path
@@ -2044,4 +2045,255 @@ class TestRewardSignalHonesty:
         silent = [ln for ln, n in calls if n < 3]
         assert not silent, (
             f"_record_metric call site(s) at line(s) {silent} pass no outcome"
+        )
+
+
+class TestAsyncDeepSignalHonesty:
+    """RSI A1 / rung L1, second pass — the DEEP series must survive the thread.
+
+    Passing `result.success` at every call site is necessary and was not
+    sufficient: `_try_tier3` built its RoutingResult with a hardcoded
+    success=True and recorded it AT LAUNCH, before the background worker had
+    produced any outcome at all. The worker's real verdict — stored into
+    `_async_results` milliseconds to minutes later — never entered the sample.
+    Plumbing honest values from a literal source is still a constant.
+
+    The fix records in `_tier3_worker`, which is the only place the outcome is
+    known. These tests read `router._epoch._current_epoch.outcomes` — what the
+    ADAPTER was told — for the same reason TestRewardSignalHonesty does.
+
+    Every failure assertion below is paired with a success control, so the
+    class cannot pass by recording nothing at all.
+    """
+
+    def setup_method(self):
+        self.config = RoutingConfig(
+            enable_tier2=False,
+            tier3_async=True,
+            llm_api_key="test-key-not-used",
+        )
+
+    @staticmethod
+    def _outcomes(router):
+        return list(router._epoch._current_epoch.outcomes)
+
+    @staticmethod
+    def _answering_client(answer="done"):
+        """A stand-in Anthropic client whose reply parses cleanly."""
+        block = Mock()
+        block.text = json.dumps(
+            {"action": "answer", "answer": answer, "confidence": 0.8}
+        )
+        response = Mock()
+        response.content = [block]
+        client = Mock()
+        client.messages.create.return_value = response
+        return client
+
+    # --- the launch must not pre-score the route --------------------------
+
+    def test_async_launch_records_no_outcome(self):
+        """Launching the worker is an acknowledgement, not an outcome.
+
+        Pins the actual defect: `_try_tier3` used to call `_record_metric`
+        here with a hardcoded True, so every async DEEP route scored 1.0 the
+        instant the thread started, whatever happened next.
+        """
+        router = TieredRouter(config=self.config)
+        started = threading.Event()
+        router._tier3_worker = Mock(side_effect=lambda *a, **k: started.set())
+
+        result = router._try_tier3("build me a rig", {}, "ctxhash", time.monotonic())
+
+        assert started.wait(timeout=5.0), "worker thread never ran"
+        assert result is not None and result.async_handle, (
+            "async launch should hand back a claimable handle"
+        )
+        assert self._outcomes(router) == [], (
+            "the launch scored the route before any outcome existed — "
+            "the DEEP series is pinned to True again"
+        )
+
+    # --- the worker's real verdict must reach the sample ------------------
+
+    def test_worker_exception_is_recorded_as_failure(self):
+        """The agent loop raised. The adapter must hear False."""
+        router = TieredRouter(config=self.config)
+        router._tier3_sync = Mock(side_effect=RuntimeError("agent loop died"))
+
+        router._tier3_worker("h1", "build me a rig", {}, "ctxhash")
+
+        outcomes = self._outcomes(router)
+        assert len(outcomes) == 1, f"expected one recorded outcome, got {outcomes}"
+        tier_key, success, _latency = outcomes[0]
+        assert tier_key == RoutingTier.DEEP.value
+        assert success is False, (
+            "the async worker died and the adapter was told the route succeeded"
+        )
+        stored = router.get_async_result("h1")
+        assert stored is not None and stored.success is False
+
+    def test_worker_none_result_is_recorded_as_failure(self):
+        """`_tier3_sync` bailed (no client / swallowed exception) -> False.
+
+        Also pins that the handle now RESOLVES: this path used to store
+        nothing, so a poller waited forever on a route that was already dead.
+        """
+        router = TieredRouter(config=self.config)
+        router._tier3_sync = Mock(return_value=None)
+
+        router._tier3_worker("h2", "build me a rig", {}, "ctxhash")
+
+        assert [o[1] for o in self._outcomes(router)] == [False]
+        stored = router.get_async_result("h2")
+        assert stored is not None, (
+            "a dead async route left its handle unresolvable forever"
+        )
+        assert stored.success is False
+
+    # --- paired success controls ------------------------------------------
+
+    def test_worker_success_is_recorded_once_as_true(self):
+        """Success control: a real end-to-end async route scores True, ONCE.
+
+        Guards both directions — that success still reaches the sample (so the
+        failure tests above are not passing on a signal that records nothing),
+        and that the worker does not double-count a route `_tier3_sync`
+        already recorded.
+        """
+        router = TieredRouter(config=self.config)
+        router._llm_client = self._answering_client()
+
+        router._tier3_worker("h3", "build me a rig", {}, "ctxhash")
+
+        outcomes = self._outcomes(router)
+        assert len(outcomes) == 1, (
+            f"a successful async route recorded {len(outcomes)} outcomes, "
+            f"expected exactly one: {outcomes}"
+        )
+        tier_key, success, _latency = outcomes[0]
+        assert tier_key == RoutingTier.DEEP.value
+        assert success is True
+        stored = router.get_async_result("h3")
+        assert stored is not None and stored.success is True
+
+    def test_deep_series_carries_both_values(self):
+        """A mixed run must produce BOTH values — the definition of a signal.
+
+        A series that only ever emits one value carries no information, which
+        is the whole of what A1/L1 is about.
+        """
+        router = TieredRouter(config=self.config)
+
+        router._llm_client = self._answering_client()
+        router._tier3_worker("ok", "build me a rig", {}, "ctxhash")
+
+        router._tier3_sync = Mock(side_effect=RuntimeError("agent loop died"))
+        router._tier3_worker("bad", "build me a rig", {}, "ctxhash")
+
+        values = [o[1] for o in self._outcomes(router)]
+        assert set(values) == {True, False}, (
+            f"DEEP recorded only {set(values)} across a mixed run"
+        )
+
+
+class TestRefutedConstantSites:
+    """Sites the crucible flagged as pinning the signal that DO NOT.
+
+    Recorded as tests rather than prose so the refutation is checkable and a
+    later pass does not "fix" a line that was already telling the truth. If
+    either behaviour below ever changes, the refutation stops holding and
+    these fail — which is the point.
+    """
+
+    @staticmethod
+    def _outcomes(router):
+        return list(router._epoch._current_epoch.outcomes)
+
+    def test_conversational_shortcircuit_is_outside_the_sample(self):
+        """router.py's greeting path records no metric, so it pins nothing.
+
+        Its success=True is a constant, but it never reaches the adapter: a
+        static reply from the _CONVERSATIONAL table cannot fail, and the
+        return happens before any _record_metric or _cache_result call.
+        """
+        router = TieredRouter(config=RoutingConfig(
+            enable_tier2=False, enable_tier3=False,
+        ))
+        result = router.route("hello")
+
+        assert result.metadata.get("conversational") is True
+        assert result.success is True
+        assert self._outcomes(router) == [], (
+            "the conversational short-circuit now enters the reward sample; "
+            "its hardcoded success=True is no longer harmless"
+        )
+
+    def test_cache_hit_replays_a_recorded_failure(self):
+        """CACHE is not a constant series — it inherits the cached outcome.
+
+        The cache-hit RoutingResult is built with `success=cached.success`
+        (router.py, the 0.5 cache branch in route()) — not a literal — so it
+        is not one of the hardcoded sites and cannot pin the CACHE series.
+
+        Seeded on the "standard" tier, deliberately. Two facts make that the
+        only honest seed: repeats are served by the tier pin, not the cache
+        (see the next test), and cache.py's _DEFAULT_TTLS gives "recipe" and
+        "instant" a TTL of 0, so ResponseCache.put() returns early and tier-0
+        results are never cached at all. Tier 2 is the cacheable tier whose
+        stored success can genuinely be False.
+        """
+        router = TieredRouter(config=RoutingConfig(
+            enable_tier2=False, enable_tier3=False, enable_cache=True,
+        ))
+        text = "create a hlight at /obj"
+        context_hash = router._hash_context({})
+        failed = RoutingResult(
+            success=False,
+            tier=RoutingTier.STANDARD,
+            answer="node not found",
+            latency_ms=1.0,
+        )
+        router._cache.put("standard", text, context_hash, failed)
+
+        result = router.route(text)
+
+        assert result.cached is True, "the cache branch was not exercised"
+        assert result.success is False, (
+            "a cached failure was replayed to the caller as a success"
+        )
+        outcomes = self._outcomes(router)
+        assert len(outcomes) == 1, f"expected one sample, got {outcomes}"
+        assert outcomes[0][0] == RoutingTier.CACHE.value
+        assert outcomes[0][1] is False, (
+            "the CACHE series scored a replayed failure as a success"
+        )
+
+    def test_repeat_of_a_failing_route_is_served_by_the_tier_pin(self):
+        """Incidental but load-bearing: repeats hit the PIN, not the cache.
+
+        route() checks the tier pin (step 0) BEFORE the cache (step 0.5), and
+        `_try_pinned_tier` re-executes the pinned tier rather than replaying a
+        stored answer. So an identical repeat of a failing command re-runs
+        tier 0 and is sampled as INSTANT again — still False, which is the
+        part that matters here, but it is not a cache hit and a test that
+        assumed one would be asserting on a path it never took.
+        """
+        mock_fn = Mock(return_value=SynapseResponse(
+            id="x", success=False, error="node not found",
+        ))
+        router = TieredRouter(command_fn=mock_fn, config=RoutingConfig(
+            enable_tier2=False, enable_tier3=False, enable_cache=True,
+        ))
+
+        first = router.route("create a hlight at /obj")
+        second = router.route("create a hlight at /obj")
+
+        assert first.success is False and second.success is False
+        assert second.cached is False
+        outcomes = self._outcomes(router)
+        assert len(outcomes) == 2, f"expected two samples, got {outcomes}"
+        assert [o[0] for o in outcomes] == [RoutingTier.INSTANT.value] * 2
+        assert all(o[1] is False for o in outcomes), (
+            f"a repeated failing route was scored as a success: {outcomes}"
         )

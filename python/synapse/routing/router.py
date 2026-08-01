@@ -242,6 +242,10 @@ class TieredRouter:
         text_stripped = input_text.strip()
         for pattern, reply in _CONVERSATIONAL:
             if pattern.match(text_stripped):
+                # This return records NO metric and caches nothing — it is not
+                # in the reward sample at all, so it cannot pin any series. The
+                # reply is a constant from the _CONVERSATIONAL table; nothing
+                # executes, so nothing can fail. success=True is the truth.
                 return RoutingResult(
                     success=True,
                     tier=RoutingTier.INSTANT,
@@ -586,6 +590,18 @@ class TieredRouter:
             return None
 
         result = RoutingResult(
+            # Truth contract for tier 1 — the literal True is CORRECT here, and
+            # deriving it would be theatre. Tier 1 never touches self._command_fn
+            # and never populates `responses`, so `all(r.success for r in
+            # responses)` is `all([])` — a literal True wearing a costume.
+            #
+            # The FAST success series IS pinned at 1.0, but not because of this
+            # line: tier 1 only reaches _record_metric on its success path. The
+            # not-found / low-confidence exit above is `return None`, which is a
+            # CASCADE decision, not a tier-1 failure — the request continues to
+            # tier 2 and may well succeed there. Recording it as a FAST failure
+            # would score one request twice, in two different series. Total
+            # routing failure is already sampled: NO_TIER_KEY, see route().
             success=True,
             tier=RoutingTier.FAST,
             answer=lookup.answer,
@@ -753,7 +769,30 @@ class TieredRouter:
             )
             thread.start()
 
-            result = RoutingResult(
+            # success=True here means "the launch succeeded" — the thread
+            # started and `handle` is claimable. It is an acknowledgement, not
+            # an outcome: at this instant no outcome exists yet.
+            #
+            # RSI A1 / rung L1: this site used to ALSO call _record_metric,
+            # which fed the EpochAdapter a guaranteed True at launch time and
+            # left the worker's real verdict — arriving milliseconds to minutes
+            # later — permanently outside the sample. Every async DEEP route
+            # scored 1.0 no matter how it ended.
+            #
+            # Design call (option c of defer / provisional-then-amend / do-not-
+            # record-at-launch): DO NOT RECORD HERE. The outcome is recorded by
+            # _tier3_worker, which is the only place it is actually known.
+            #   - deferring to get_async_result() was rejected: that method
+            #     POPs, so a handle nobody polls would never be sampled at all,
+            #     and the timing would attribute worker latency to the poller.
+            #   - record-then-amend was rejected: EpochAdapter.record()
+            #     (adaptation.py:138-143) appends into a fixed-size deque and
+            #     rotates the epoch when full. There is no amend API, and a
+            #     provisional True can be rotated out of the epoch — and
+            #     already aggregated into a threshold — before its correction
+            #     arrives. Amending would need new adapter machinery, which is
+            #     more than an honest-signal fix should smuggle in.
+            return RoutingResult(
                 success=True,
                 tier=RoutingTier.DEEP,
                 answer="Processing in background...",
@@ -762,8 +801,6 @@ class TieredRouter:
                 async_handle=handle,
                 metadata={"async": True},
             )
-            self._record_metric(RoutingTier.DEEP, result.latency_ms, result.success)
-            return result
         else:
             # Synchronous execution
             return self._tier3_sync(text, context, context_hash, start, tier1_hint)
@@ -776,22 +813,54 @@ class TieredRouter:
         context_hash: str,
         tier1_hint: Optional[KnowledgeLookupResult] = None,
     ):
-        """Background worker for Tier 3 agent execution."""
+        """Background worker for Tier 3 agent execution.
+
+        RSI A1 / rung L1 — this worker is where an async DEEP route's outcome
+        actually becomes known, so this is where it is recorded. `_try_tier3`
+        deliberately records nothing at launch (see the note there).
+
+        Recording contract, exactly one DEEP sample per async route:
+          - success  → `_tier3_sync` already recorded True at its own return.
+                       Do NOT record again here or one route counts twice.
+          - None     → `_tier3_sync` bailed (no LLM client, or it swallowed an
+                       exception into a warning). For an async route that is
+                       terminal: there is no cascade left to fall through to.
+                       Record False.
+          - raised   → terminal too. Record False.
+        Both failure paths also STORE a result, so a poller gets a verdict
+        instead of a handle that never resolves.
+        """
         start = time.monotonic()
         try:
             result = self._tier3_sync(text, context, context_hash, start, tier1_hint)
             if result:
                 with self._async_lock:
                     self._async_results[handle] = result
-        except Exception as e:
-            logger.error("Tier 3 worker failed: %s", e)
-            with self._async_lock:
-                self._async_results[handle] = RoutingResult(
+            else:
+                latency_ms = (time.monotonic() - start) * 1000
+                failure = RoutingResult(
                     success=False,
                     tier=RoutingTier.DEEP,
-                    answer=f"Agent execution failed: {e}",
-                    latency_ms=(time.monotonic() - start) * 1000,
+                    answer="Agent execution produced no result.",
+                    latency_ms=latency_ms,
+                    metadata={"async": True, "reason": "tier3_sync_returned_none"},
                 )
+                with self._async_lock:
+                    self._async_results[handle] = failure
+                self._record_metric(RoutingTier.DEEP, latency_ms, failure.success)
+        except Exception as e:
+            logger.error("Tier 3 worker failed: %s", e)
+            latency_ms = (time.monotonic() - start) * 1000
+            failure = RoutingResult(
+                success=False,
+                tier=RoutingTier.DEEP,
+                answer=f"Agent execution failed: {e}",
+                latency_ms=latency_ms,
+                metadata={"async": True, "reason": "tier3_worker_raised"},
+            )
+            with self._async_lock:
+                self._async_results[handle] = failure
+            self._record_metric(RoutingTier.DEEP, latency_ms, failure.success)
 
     def _tier3_sync(
         self,
@@ -825,6 +894,16 @@ class TieredRouter:
             parsed = self._parse_llm_response(raw_text)
 
             result = RoutingResult(
+                # Same truth contract as tier 1: no command channel, no
+                # `responses` to derive from. Unlike tier 2, _tier3_sync never
+                # builds a SynapseCommand — it answers. Reaching this line means
+                # the model replied and _parse_llm_response returned (it cannot
+                # fail: its last branch is a plain-text fallback, see :884-905).
+                # Every failure path above is `return None`.
+                #
+                # The DEEP series is no longer constant, but the correction is
+                # in _tier3_worker, not here — an async route that dies now
+                # records False. See _try_tier3 / _tier3_worker.
                 success=True,
                 tier=RoutingTier.DEEP,
                 answer=parsed.get("answer", raw_text),
