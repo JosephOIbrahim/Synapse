@@ -29,7 +29,7 @@ Both statements are true at once, and conflating them is the failure this file e
 | **R** | render-farm learning | — | L0 | LOW — recording an unverified rung is itself the risk |
 | **O** | §16 observability | — | L0 | LOW — same |
 | **S** | science registry → substrate | — | L0 | UNKNOWN pending RL-1 |
-| **F** | router fast-path promotion | — | L1 | **HIGH** if only persistence is addressed |
+| **F** | router fast-path promotion | **L1** | L2 | **HIGH** if only persistence is addressed |
 | **E** | FORGE build counters | **L1** | L2 | **HIGH** — would compound unvalidated fixes |
 | **C** | Moneta convergence | — | L0 | MEDIUM — relocates every loop's substrate at once |
 
@@ -37,7 +37,39 @@ Both statements are true at once, and conflating them is the failure this file e
 `A1` reached **L1 HONEST** on 2026-08-01 (`RL-2`) — its signal can now represent failure. That is one rung,
 not a closure: nothing consumes it and no production traffic has exercised it.
 
-`R`, `O`, `S`, `F`, `C` show `—` rather than a number. That is not a demotion of the June work; it is
+`F` moved `—` → **L1 HONEST** on 2026-08-01 (`RL-2`, R18), then was **hardened in place** the same day by
+`RL-2c` (R19) after the crucible attacked the fix itself. That is the first L1 this harness has *earned by
+fixing code* rather than by re-deriving a claim — and the first rung to survive an attack on its own remedy.
+It changes no closure number.
+
+**What the crucible caught in R18.** The new `record_outcome()` gated on a bare `if success:`, so
+`record_outcome(fp, "FAIL")` did not merely fail to veto — it **manufactured positive evidence**, because
+every non-empty string is truthy. Reproduced at `eca11ef`: after reporting a *failure*, `outcome_counts()`
+read `(1, 0)` and `_outcome_confirmed` read `True`. A signal that upgrades garbage into a success is worse
+than the constant it replaced, because the constant was at least *visibly* a constant. `success` is now
+checked by identity against `True`/`False`; anything else raises and records nothing. Second hole, also
+fixed: `outcome_confirmed` could never go `False → True`, since promotion fires on the frequency-crossing
+call — necessarily before any outcome exists.
+
+**F's real blocker is dormancy, not a missing feed.** Say it the harder way, because the two words imply
+different work — *unfed* implies wiring a producer, *dormant* implies deciding whether the loop should exist.
+Nothing calls `record_outcome()`, **and** `filter_tools()` — the sole enclosing function of the sole non-test
+`MOERouter.route()` call site — has **zero references in the entire repository**. The promotion path runs
+zero times in production. That makes L2 a **wire-or-delete** question, the same one `A2` faces, and answering
+it comes before any wiring. Two docs written independently of this harness already reached the same verdict
+(`docs/RFC_agent_usd_ledger.md:307` — "the dead `panel/tool_filter.filter_tools` (no caller)";
+`docs/SCIENCE_HARNESS_LEDGER.md:256` — "DORMANT").
+
+**A third promotion door was found and deliberately NOT fixed here.**
+`ConductorAdvisor._analyze_routing_promotions` (`shared/conductor_advisor.py:296-324`) recommends promotion
+on frequency alone, with confidence *scaling* with frequency. It is filed under **`O`**, not `F`: that file is
+already one of `O`'s surfaces and `O`'s own note calls it "the read side of this loop"; it writes no routing
+table (it emits an INFO `Recommendation` a human acts on); and its `analyze()` input contract is
+frequency-only by construction, so fixing it means widening **`O`'s** inputs. Ruling and evidence in
+`REGISTRY.json` → loop `O` → `_third_door_note`. Lane F exposed `MOERouter.outcome_counts()` so `O` has a
+source to consume when it gets there.
+
+`R`, `O`, `S`, `C` show `—` rather than a number. That is not a demotion of the June work; it is
 the honest consequence of the ladder collision recorded in `REGISTRY.json._ladder_collision_warning`. June's
 L2 meant "survives a restart" — this ladder's L4. `RL-1` re-derives them.
 
@@ -47,7 +79,7 @@ L2 meant "survives a restart" — this ladder's L4. `RL-1` re-derives them.
 
 The rung this harness added, and the reason it added it. Three of nine loops could not observe their own
 failure. `A1` and `E` now can (both `RL-2` 2026-08-01, both corrected the same day by `RL-2b`/`RL-2c`);
-`F`'s fix is built and attacked but merges after this commit:
+each was corrected the same day after its crucible attacked the remedy itself:
 
 - **`A1`** — ~~eight call sites pass `(tier, latency_ms)` only~~ **CLOSED `RL-2` 2026-08-01, CORRECTED
   `RL-2b` the same day.** `success` is now a REQUIRED parameter (`router.py:1019`), all **ten** call sites
@@ -69,8 +101,14 @@ failure. `A1` and `E` now can (both `RL-2` 2026-08-01, both corrected the same d
   **`FAST` cannot** — `_try_tier1` executes nothing and only reaches `_record_metric` on its success path;
   its low-confidence exit is a cascade decision, not a tier failure. `FAST`'s 1.0 is definitional, not
   evidence. Documented in code and registry, deliberately not "fixed".
-- **`F`** — promotion is driven by fingerprint **frequency**, not outcome. A fingerprint that fails every
-  time is promoted identically to one that always succeeds. *(carried; `RL-1` confirms)*
+- **`F`** — ~~promotion is driven by fingerprint **frequency**, not outcome~~. **CONFIRMED at HEAD, then
+  CLOSED by `RL-2` (R18).** The claim was true: `route()` took only `features`, no outcome parameter existed
+  on `MOERouter`, and the promotion block gated on the frequency counter alone. `record_outcome()` now gives
+  it an outcome channel and any recorded failure vetoes promotion — through `route()` *and* through the
+  `learn_fast_path()` side door, which `RL-2` found carried the identical defect. **Hardened by `RL-2c`
+  (R19)** after the crucible showed the remedy had its own hole: `record_outcome(fp, "FAIL")` was counted as
+  a *success*. **F is at L1, blocked at L2:** nothing calls `record_outcome()` yet, so every entry written
+  today is stamped `outcome_confirmed=False`. Honest, and **dormant** — not merely unfed.
 - **`E`** — ~~`fixes_validated` hardcoded `0`, `fixes_applied` incremented on classification~~ **CLOSED
   2026-08-01 (`RL-2`).** The first question decided the shape: **no verification phase exists** in
   `forge/engine` — `FORGE.md` Phase 5 is a human/Claude-Code procedure, not a module — so the `:214` comment
