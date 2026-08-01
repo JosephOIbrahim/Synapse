@@ -36,6 +36,30 @@ def progress_bar(current: int, total: int, width: int = 40, label: str = "") -> 
 UNVALIDATED_LABEL = "unvalidated"
 _VALIDATED_CELL_WIDTH = len(UNVALIDATED_LABEL)
 
+# Inner width of the report boxes (the ║…║ rows are 64 chars wide).
+_BOX_INNER_WIDTH = 62
+
+
+def _box_row(text: str, width: int = _BOX_INNER_WIDTH) -> str:
+    """One box row, padded to the box's inner width."""
+    return f"║{text[:width]:<{width}}║"
+
+
+def partial_validation_note(metrics: CycleMetrics) -> str | None:
+    """The coverage caveat for a PARTIALLY validated cycle, or ``None``.
+
+    ``fixes_validated`` is one number for the whole cycle, so without this a
+    single re-run verdict among many applied fixes reads as though the cycle
+    had been measured. It was not — the un-re-run remainder is unvalidated.
+    """
+    if not metrics.validation_is_partial:
+        return None
+    unmeasured = metrics.fixes_applied - metrics.fixes_revalidated
+    return (
+        f"  ! PARTIAL: {metrics.fixes_revalidated} of {metrics.fixes_applied} "
+        f"applied fixes re-run ({unmeasured} unvalidated)"
+    )
+
 
 def validated_cell(value: int | None, width: int = _VALIDATED_CELL_WIDTH) -> str:
     """Render a validated-fix count — or the honest 'unvalidated' sentinel.
@@ -82,6 +106,14 @@ def cycle_report(metrics: CycleMetrics) -> str:
         f"║  Fixes Generated:  {metrics.fixes_generated:>3}  │  Validated: {validated_cell(metrics.fixes_validated)}      ║",
         f"║  Fixes Applied:    {metrics.fixes_applied:>3}  │  Failed:    {metrics.fixes_failed:>3}              ║",
         f"║  Queued (Human):   {metrics.fixes_queued_human:>3}  │                              ║",
+    ]
+
+    # A PARTIALLY validated cycle must not render as a measured one.
+    partial = partial_validation_note(metrics)
+    if partial:
+        lines.append(_box_row(partial))
+
+    lines += [
         "╠══════════════════════════════════════════════════════════════╣",
         f"║  Corpus: +{metrics.corpus_entries_added:>3} entries  │  Promotions: {metrics.corpus_promotions:>3}           ║",
         f"║  Total:   {metrics.total_corpus_entries:>4}       │  Friction:  {metrics.avg_friction_ratio:>5.2f}         ║",

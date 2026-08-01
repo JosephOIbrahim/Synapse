@@ -42,6 +42,7 @@ class MetricsTracker:
         fixes_generated: int = 0,
         fixes_applied: int = 0,
         fixes_validated: int | None = None,
+        fixes_revalidated: int = 0,
         fixes_failed: int = 0,
         fixes_queued_human: int = 0,
         corpus_entries_added: int = 0,
@@ -54,6 +55,16 @@ class MetricsTracker:
         ``fixes_validated`` defaults to ``None`` — the sentinel for *no
         validation ran*. Pass an int only when a real re-run produced it; a
         numeric 0 asserts that validation executed and confirmed nothing.
+
+        This default is load-bearing and is pinned by
+        ``tests/test_forge_engine_honest_signal.py``: flipping it to ``0``
+        re-fabricates a whole-cycle measurement for every caller that omits
+        the argument, which is exactly the defect this contract removed.
+
+        ``fixes_revalidated`` is the denominator — how many APPLIED fixes
+        carried a real re-run verdict. When it is below ``fixes_applied`` the
+        cycle was only partially validated and says so
+        (``CycleMetrics.validation_is_partial``).
         """
         metrics = CycleMetrics(cycle_number=cycle_number, tier=tier)
 
@@ -89,6 +100,7 @@ class MetricsTracker:
         metrics.fixes_generated = fixes_generated
         metrics.fixes_applied = fixes_applied
         metrics.fixes_validated = fixes_validated
+        metrics.fixes_revalidated = fixes_revalidated
         metrics.fixes_failed = fixes_failed
         metrics.fixes_queued_human = fixes_queued_human
 

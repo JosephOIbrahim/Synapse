@@ -229,6 +229,10 @@ class ForgeOrchestrator:
         fixes_validated = (
             sum(1 for o in revalidated if o.validated) if revalidated else None
         )
+        # The denominator. A cycle where 1 of 8 applied fixes was re-run is not
+        # a measured cycle — it is a partial measurement, and the report must
+        # be able to say so rather than let one verdict speak for all eight.
+        fixes_revalidated = len(revalidated)
 
         # --- COMPUTE METRICS ---
         cycle_metrics = self.metrics.compute_cycle_metrics(
@@ -237,6 +241,7 @@ class ForgeOrchestrator:
             fixes_generated=fixes_generated,
             fixes_applied=fixes_applied,
             fixes_validated=fixes_validated,
+            fixes_revalidated=fixes_revalidated,
             fixes_failed=fixes_failed,
             fixes_queued_human=fixes_queued,
             corpus_entries_added=new_corpus_entries,
@@ -256,7 +261,9 @@ class ForgeOrchestrator:
             "report": report,
             "metrics": cycle_metrics.to_dict(),
             "fixes_validated": fixes_validated,
+            "fixes_revalidated": fixes_revalidated,
             "validation_evidence": bool(revalidated),
+            "validation_is_partial": cycle_metrics.validation_is_partial,
             "new_backlog_items": len(new_backlog_items),
             "corpus_promotions": len(promotions),
             "should_stop": cycle_metrics.should_stop,

@@ -58,12 +58,48 @@ failure. `E` was fixed on 2026-08-01 (`RL-2 SIGNAL`); `A1` and `F` remain open:
   `fixes_validated` is `None` = *unvalidated* unless a real re-run produced a number, the reporter prints the
   word rather than a numeral, and `fixes_applied` counts only confirmed applications. A missing measurement
   stated plainly beats an invented one. **Now blocked at L2** — nothing live constructs the orchestrator.
+  *(Corrected the same day — see the surviving-mutant note below.)*
 
 Every one of these would have been wired by the June thesis. That is the finding.
 
 > **`E`'s closure is not `E`'s benefit.** The loop now reports honestly that it is not improving anything.
 > That is a real rung and a real gain in trustworthiness, and it is *not* self-improvement. `E` reaches L2+
 > only when an actual apply → re-run stage exists to feed `FixOutcome` evidence.
+
+### `E` — the surviving mutant at its own defect site
+
+The first `RL-2` pass shipped 15 tests and a mutation claim. The crucible flipped
+`metrics.py:44` back to `fixes_validated: int | None = 0` and **all fifteen still passed.**
+
+The gap was one layer deep. The tests exercised the `CycleMetrics` dataclass default
+(`schemas.py`) and `ForgeOrchestrator.process_results` above it — but never
+`MetricsTracker.compute_cycle_metrics`, the single function *between* them where every
+cycle's metrics are actually built. A fabricated `0` there re-fabricates a whole-cycle
+measurement for any caller that omits the argument, invisibly to both layers that were
+tested.
+
+Four tests now kill it — one behavioural (`compute_cycle_metrics` with no validation
+argument must yield the sentinel), one following it through to disk and to the rendered
+box, one `inspect.signature` pin, one source pin. Proven in both directions: default → `0`
+gives **4 red**, default → `None` gives **26 green**.
+
+**The transferable rule:** a mutation claim is only worth what it was actually run against.
+"Re-introducing the fabrication fails 4 tests" was true of the fabrication the author
+happened to think of, at the layer the author happened to test. The defect site itself was
+never called. Mutate the *line you changed*, not the behaviour you remember changing.
+
+Two more crucible findings closed with it: the three legacy `fixes_validated: 0` rows in
+`forge/metrics/cycles.json` (which made the repo's own `total_fixes_validated` report a
+**measured** 0 for a project with no validator — now `null`, aggregate now `None`), and
+per-cycle all-or-nothing validation (one outcome carrying a verdict used to flip the whole
+cycle into reading as measured — `fixes_revalidated` now records the denominator and the
+report prints a `! PARTIAL: N of M` row).
+
+One deferred, deliberately: `process_results` still cross-checks nothing a caller asserts.
+There is nothing in `forge/engine` to cross-check *against* — no apply stage, no re-run
+stage, no execution surface — so any check it performed would be a self-assertion in a
+different costume. The engine no longer manufactures counts on its own authority; that is
+the whole of what this rung claims. The rest needs the real verifier that also blocks L2.
 
 ---
 
