@@ -15,6 +15,8 @@
 | 2026-08-01 | RL-1 | RECONCILE run for all six June lines. `R` → L0+L1 (blocked L2). `O` → L0 (blocked L1). `S` → L0 (blocked L1; operative L2). `E` → L0 (blocked L1, confirmed exact lines). `F`/`C` unchanged. verify.py re-run: **9 PASS / 0 FAIL**, 10 proven rungs all carrying evidence. |
 | 2026-08-01 | RL-1 CATCH | `tests/rsi/eval_line_r_closure.py` collects **ZERO** tests under pytest — its `eval_` prefix matches neither `test_*.py` nor `*_test.py`. Run directly (`python tests/rsi/eval_line_r_closure.py`) it returns **OVERALL: PASS**. A pytest-based existence check would have read live evidence as absent. |
 
+| 2026-08-01 | RELAY | Execution arm built: `.claude/workflows/rsi-closure.js` (3 phases, ~7/5/4 agents, args-as-string parsed defensively) + `rsi-closure-orchestrator` agent + `RELAY.md` + operator card. No new predicates, no new bar (R140). File-overlap check for parallel SIGNAL worktrees: A1→routing/router.py, F→shared/router.py only, E→forge/engine/ — disjoint, verified by grep. |
+
 ---
 
 ## Standing state at frame
