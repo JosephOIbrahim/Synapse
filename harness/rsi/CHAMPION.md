@@ -35,9 +35,37 @@ Both statements are true at once, and conflating them is the failure this file e
 
 **Highest rung anywhere: `A3` at L2 REACHABLE.** It fires on every 10th memory write and ends in a log line.
 
-`F` moved `—` → **L1 HONEST** on 2026-08-01 (`RL-2`, R18). That is the first L1 this harness has *earned by
-fixing code* rather than by re-deriving a claim. It changes no closure number: F is still not consumed, and
-its promotion path is in fact **dormant** — `RL-2` found no production caller of `filter_tools()` at all.
+`F` moved `—` → **L1 HONEST** on 2026-08-01 (`RL-2`, R18), then was **hardened in place** the same day by
+`RL-2c` (R19) after the crucible attacked the fix itself. That is the first L1 this harness has *earned by
+fixing code* rather than by re-deriving a claim — and the first rung to survive an attack on its own remedy.
+It changes no closure number.
+
+**What the crucible caught in R18.** The new `record_outcome()` gated on a bare `if success:`, so
+`record_outcome(fp, "FAIL")` did not merely fail to veto — it **manufactured positive evidence**, because
+every non-empty string is truthy. Reproduced at `eca11ef`: after reporting a *failure*, `outcome_counts()`
+read `(1, 0)` and `_outcome_confirmed` read `True`. A signal that upgrades garbage into a success is worse
+than the constant it replaced, because the constant was at least *visibly* a constant. `success` is now
+checked by identity against `True`/`False`; anything else raises and records nothing. Second hole, also
+fixed: `outcome_confirmed` could never go `False → True`, since promotion fires on the frequency-crossing
+call — necessarily before any outcome exists.
+
+**F's real blocker is dormancy, not a missing feed.** Say it the harder way, because the two words imply
+different work — *unfed* implies wiring a producer, *dormant* implies deciding whether the loop should exist.
+Nothing calls `record_outcome()`, **and** `filter_tools()` — the sole enclosing function of the sole non-test
+`MOERouter.route()` call site — has **zero references in the entire repository**. The promotion path runs
+zero times in production. That makes L2 a **wire-or-delete** question, the same one `A2` faces, and answering
+it comes before any wiring. Two docs written independently of this harness already reached the same verdict
+(`docs/RFC_agent_usd_ledger.md:307` — "the dead `panel/tool_filter.filter_tools` (no caller)";
+`docs/SCIENCE_HARNESS_LEDGER.md:256` — "DORMANT").
+
+**A third promotion door was found and deliberately NOT fixed here.**
+`ConductorAdvisor._analyze_routing_promotions` (`shared/conductor_advisor.py:296-324`) recommends promotion
+on frequency alone, with confidence *scaling* with frequency. It is filed under **`O`**, not `F`: that file is
+already one of `O`'s surfaces and `O`'s own note calls it "the read side of this loop"; it writes no routing
+table (it emits an INFO `Recommendation` a human acts on); and its `analyze()` input contract is
+frequency-only by construction, so fixing it means widening **`O`'s** inputs. Ruling and evidence in
+`REGISTRY.json` → loop `O` → `_third_door_note`. Lane F exposed `MOERouter.outcome_counts()` so `O` has a
+source to consume when it gets there.
 
 `R`, `O`, `S`, `F`, `E`, `C` show `—` rather than a number. That is not a demotion of the June work; it is
 the honest consequence of the ladder collision recorded in `REGISTRY.json._ladder_collision_warning`. June's
@@ -57,9 +85,10 @@ failure:
   CLOSED by `RL-2` (R18).** The claim was true: `route()` took only `features`, no outcome parameter existed
   on `MOERouter`, and the promotion block gated on the frequency counter alone. `record_outcome()` now gives
   it an outcome channel and any recorded failure vetoes promotion — through `route()` *and* through the
-  `learn_fast_path()` side door, which `RL-2` found carried the identical defect. **F is at L1, blocked at
-  L2:** nothing calls `record_outcome()` yet, so every entry written today is stamped
-  `outcome_confirmed=False`. Honest, not yet fed.
+  `learn_fast_path()` side door, which `RL-2` found carried the identical defect. **Hardened by `RL-2c`
+  (R19)** after the crucible showed the remedy had its own hole: `record_outcome(fp, "FAIL")` was counted as
+  a *success*. **F is at L1, blocked at L2:** nothing calls `record_outcome()` yet, so every entry written
+  today is stamped `outcome_confirmed=False`. Honest, and **dormant** — not merely unfed.
 - **`E`** — `fixes_validated` reportedly hardcoded `0`. *(carried; `RL-1` confirms)*
 
 Every one of these would have been wired by the June thesis. That is the finding.

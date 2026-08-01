@@ -32,6 +32,17 @@ Revisions:
          and the table is still in-memory only (L4 is not attempted: persisting
          a promotion table before its signal is honest is the exact hazard
          REGISTRY.json flags for this loop).
+  R19 -- Two holes the crucible found in R18 itself (RSI loop F, corrective).
+         (a) TYPE GUARD: record_outcome() gated on `if success:`, so a truthy
+         non-bool -- record_outcome(fp, "FAIL"), the obvious miswiring --
+         did not merely fail to veto, it MANUFACTURED POSITIVE EVIDENCE by
+         incrementing the success tally. Now a strict identity check against
+         True/False; anything else raises TypeError and records nothing.
+         (b) STALE CONFIRMATION: outcome_confirmed could never go False ->
+         True, because promotion fires on the frequency-crossing call, which
+         is necessarily before any outcome exists. A recorded success now
+         relabels an existing entry. Neither change can create a promotion;
+         (a) can only refuse to record, (b) can only relabel.
 """
 
 from __future__ import annotations
@@ -219,10 +230,51 @@ class MOERouter:
         fingerprint and (b) evicts an already-promoted session fast path for
         it — otherwise a decision promoted before its first failure would be
         frozen in past the evidence that refutes it.
+
+        R19a — ``success`` MUST be a real ``bool``; anything else raises
+        ``TypeError`` and records nothing. Under the original ``if success:``
+        this method did not merely fail to veto on a bad argument, it
+        MANUFACTURED POSITIVE EVIDENCE: ``record_outcome(fp, "FAIL")`` — the
+        obvious way to miswire a producer — incremented the SUCCESS tally,
+        because every non-empty string is truthy. The same held for ``"0"``,
+        ``[]``-vs-``["err"]``, and any status object. A signal that upgrades
+        garbage into a success is strictly worse than the hardcoded constant
+        it replaced: the constant was at least *visibly* a constant.
+
+        Raise rather than log-and-ignore, deliberately. Silently dropping a
+        malformed outcome is safe for the veto (nothing is promoted on it)
+        but it reproduces loop A1's defect one level up — a producer that
+        believes it is reporting outcomes while reporting none. A tri-state
+        producer (success / failure / never-observed) must resolve the third
+        state itself by NOT CALLING, not by handing this method something
+        that is neither True nor False.
+
+        R19b — a recorded success also upgrades an existing session entry's
+        ``outcome_confirmed`` flag False → True. Promotion fires on the call
+        that crosses the frequency threshold, which is necessarily before any
+        outcome for that decision can exist, so without this an entry stamped
+        "never observed" at promotion time stayed "never observed" forever —
+        a lie in the opposite direction from the one R18 fixed. Upgrading
+        cannot create a promotion; it only relabels one that already exists.
         """
+        if success is not True and success is not False:
+            raise TypeError(
+                "record_outcome(fingerprint, success) requires a bool; got "
+                f"{type(success).__name__!r} ({success!r}). Truthiness is not "
+                "accepted: a non-bool would be silently counted as a SUCCESS "
+                "and would manufacture positive evidence for a route that may "
+                "have failed. If the outcome is genuinely unknown, do not call."
+            )
         tally = self._outcomes.setdefault(fingerprint, [0, 0])
         if success:
             tally[0] += 1
+            # R19b: relabel an already-promoted entry now that a success exists.
+            # Indexed, not unpacked, so a hand-injected 3-tuple normalises to 4.
+            entry = self._session_fast_paths.get(fingerprint)
+            if entry is not None:
+                self._session_fast_paths[fingerprint] = (
+                    entry[0], entry[1], entry[2], True,
+                )
         else:
             tally[1] += 1
             self._session_fast_paths.pop(fingerprint, None)

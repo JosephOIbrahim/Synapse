@@ -269,6 +269,144 @@ class TestOutcomeVetoedPromotion:
 
 
 # ─────────────────────────────────────────────────────────────────
+# R19a: record_outcome type guard — truthiness must not become success
+# ─────────────────────────────────────────────────────────────────
+
+class TestOutcomeTypeGuard:
+    """The crucible's finding against R18 itself.
+
+    Under the original ``if success:`` a truthy non-bool did not merely fail
+    to veto — it manufactured POSITIVE evidence. ``record_outcome(fp, "FAIL")``
+    incremented the SUCCESS tally and made ``_outcome_confirmed`` return True
+    for a route that had just been reported as failing.
+    """
+
+    # The literal that names the bug, plus the other plausible miswirings.
+    BAD_VALUES = [
+        "FAIL", "fail", "False", "0", "error", "ok", "",
+        0, 1, -1, None, [], ["err"], {}, {"ok": False}, 1.0, 0.0,
+    ]
+
+    @pytest.mark.parametrize("bad", BAD_VALUES)
+    def test_non_bool_raises_and_records_nothing(self, bad):
+        router = MOERouter()
+        with pytest.raises(TypeError):
+            router.record_outcome("fp", bad)
+        # nothing was tallied in EITHER column
+        assert router.outcome_counts() == {}
+
+    def test_the_literal_crucible_case_no_longer_confirms_success(self):
+        """record_outcome(fp, "FAIL") must never read back as a success."""
+        router = MOERouter()
+        with pytest.raises(TypeError):
+            router.record_outcome("fp", "FAIL")
+        assert router.outcome_counts().get("fp", (0, 0))[0] == 0
+        assert router._outcome_confirmed("fp") is False
+
+    def test_rejected_outcome_does_not_promote_or_veto(self):
+        """A refused call leaves the promotion decision exactly as it was."""
+        router = _warmed_router()
+        feat = _novel_features()
+        fp = feat.fingerprint()
+
+        with pytest.raises(TypeError):
+            router.record_outcome(fp, "FAIL")
+
+        # veto untouched (no failure recorded) …
+        assert router._promotion_allowed(fp) is True
+        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
+            router.route(feat)
+        # … and the entry is stamped unproven, not falsely confirmed
+        assert router._session_fast_paths[fp][3] is False
+
+    def test_real_bools_still_accepted(self):
+        router = MOERouter()
+        router.record_outcome("fp", True)
+        router.record_outcome("fp", False)
+        assert router.outcome_counts()["fp"] == (1, 1)
+
+    def test_numpy_style_bool_lookalike_is_rejected(self):
+        """An object that merely *behaves* boolean is not a bool."""
+        class BoolLike:
+            def __bool__(self):
+                return True
+
+        router = MOERouter()
+        with pytest.raises(TypeError):
+            router.record_outcome("fp", BoolLike())
+        assert router.outcome_counts() == {}
+
+
+# ─────────────────────────────────────────────────────────────────
+# R19b: outcome_confirmed upgrades False -> True on an observed success
+# ─────────────────────────────────────────────────────────────────
+
+class TestOutcomeConfirmationUpgrade:
+    """Promotion fires on the frequency-crossing call, which is necessarily
+    before any outcome for that decision can exist. So every auto-promoted
+    entry is born ``outcome_confirmed=False``; without an upgrade path it
+    stayed False forever, even after real successes were recorded.
+    """
+
+    def test_success_after_promotion_upgrades_the_flag(self):
+        router = _warmed_router()
+        feat = _novel_features()
+        fp = feat.fingerprint()
+
+        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
+            router.route(feat)
+        assert router._session_fast_paths[fp][3] is False   # born unproven
+
+        router.record_outcome(fp, success=True)
+        assert router._session_fast_paths[fp][3] is True    # now proven
+
+    def test_upgrade_preserves_agents_and_constants_hash(self):
+        router = _warmed_router()
+        feat = _novel_features()
+        fp = feat.fingerprint()
+
+        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
+            router.route(feat)
+        before = router._session_fast_paths[fp]
+
+        router.record_outcome(fp, success=True)
+        after = router._session_fast_paths[fp]
+        assert after[:3] == before[:3]
+        assert after[2] == CONSTANTS_HASH
+
+    def test_upgrade_never_creates_a_promotion(self):
+        """A success on an unpromoted fingerprint must not write an entry."""
+        router = MOERouter()
+        router.record_outcome("never|routed|at|all", success=True)
+        assert "never|routed|at|all" not in router._session_fast_paths
+
+    def test_upgrade_normalises_a_hand_injected_3_tuple(self):
+        """Older callers/tests inject 3-tuples; the upgrade must not IndexError."""
+        router = MOERouter()
+        fp = "architecture|moderate|testing|normal"
+        router._session_fast_paths[fp] = (AgentID.HANDS, None, CONSTANTS_HASH)
+
+        router.record_outcome(fp, success=True)
+        entry = router._session_fast_paths[fp]
+        assert len(entry) == 4
+        assert entry[3] is True
+
+    def test_failure_still_evicts_rather_than_downgrades(self):
+        """A failure is not a relabel — it removes the frozen decision."""
+        router = _warmed_router()
+        feat = _novel_features()
+        fp = feat.fingerprint()
+
+        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
+            router.route(feat)
+        router.record_outcome(fp, success=True)
+        assert router._session_fast_paths[fp][3] is True
+
+        router.record_outcome(fp, success=False)
+        assert fp not in router._session_fast_paths
+
+
+# ─────────────────────────────────────────────────────────────────
 # R13: Score-based task type extraction (no insertion-order dependency)
 # ─────────────────────────────────────────────────────────────────
 
