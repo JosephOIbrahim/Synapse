@@ -176,7 +176,9 @@ orchestration|complex|pdg+rendering|normal      → CONDUCTOR + BRAINSTEM
 integration|moderate|testing|normal             → INTEGRATOR only
 ```
 
-**Session learning:** Inside `MOERouter.route()`, every fingerprint increments a counter. Once a fingerprint reaches `FAST_PATH_PROMOTION_THRESHOLD` (default 3) and isn't already a hand-tuned `FAST_PATHS` entry, it's auto-promoted to `_session_fast_paths` stamped with the current `CONSTANTS_HASH`. Subsequent calls hit the session fast path. If the keyword tables drift (CONSTANTS_HASH changes), stamped entries are skipped — silent misses become loud invalidations. External injection via `router.learn_fast_path()` is still supported for the panel/RoutingLog layer.
+**Session learning:** Inside `MOERouter.route()`, every fingerprint increments a counter. Once a fingerprint reaches `FAST_PATH_PROMOTION_THRESHOLD` (default 3), isn't already a hand-tuned `FAST_PATHS` entry, **and carries no recorded failure (R18)**, it's auto-promoted to `_session_fast_paths` stamped with the current `CONSTANTS_HASH`. Subsequent calls hit the session fast path. If the keyword tables drift (CONSTANTS_HASH changes), stamped entries are skipped — silent misses become loud invalidations. External injection via `router.learn_fast_path()` is still supported for the panel/RoutingLog layer, and honours the same veto (returns False when refused).
+
+> **⚠ R18 / RSI loop F — outcome veto is honest but unwired.** Frequency alone cannot represent failure, so `MOERouter.record_outcome(fingerprint, success)` is the outcome channel: any recorded failure vetoes promotion of that fingerprint and evicts an existing session entry for it. Entries carry `outcome_confirmed` (tuple index 3) — `True` only when a success was actually observed. **Nothing calls `record_outcome()` yet**, so today every promotion is stamped `outcome_confirmed=False`: the signal is honest (L1) but not yet reachable (L2). `_session_fast_paths` remains in-memory only — deliberately, per `harness/rsi/REGISTRY.json` loop F: persisting a promotion table before its signal is honest is the hazard, not the feature.
 
 ### 2.4 Execution Modes
 

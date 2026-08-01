@@ -29,11 +29,15 @@ Both statements are true at once, and conflating them is the failure this file e
 | **R** | render-farm learning | — | L0 | LOW — recording an unverified rung is itself the risk |
 | **O** | §16 observability | — | L0 | LOW — same |
 | **S** | science registry → substrate | — | L0 | UNKNOWN pending RL-1 |
-| **F** | router fast-path promotion | — | L1 | **HIGH** if only persistence is addressed |
+| **F** | router fast-path promotion | **L1** | L2 | **HIGH** if only persistence is addressed |
 | **E** | FORGE build counters | — | L1 | **HIGH** — would compound unvalidated fixes |
 | **C** | Moneta convergence | — | L0 | MEDIUM — relocates every loop's substrate at once |
 
 **Highest rung anywhere: `A3` at L2 REACHABLE.** It fires on every 10th memory write and ends in a log line.
+
+`F` moved `—` → **L1 HONEST** on 2026-08-01 (`RL-2`, R18). That is the first L1 this harness has *earned by
+fixing code* rather than by re-deriving a claim. It changes no closure number: F is still not consumed, and
+its promotion path is in fact **dormant** — `RL-2` found no production caller of `filter_tools()` at all.
 
 `R`, `O`, `S`, `F`, `E`, `C` show `—` rather than a number. That is not a demotion of the June work; it is
 the honest consequence of the ladder collision recorded in `REGISTRY.json._ladder_collision_warning`. June's
@@ -49,8 +53,13 @@ failure:
 - **`A1`** — eight call sites pass `(tier, latency_ms)` only; `success` takes its `True` default at
   `router.py:917`. Plus `router.py:537` hardcodes tier-0 success. Plus `router.py:367-373` never records
   failures at all. *(verified at HEAD)*
-- **`F`** — promotion is driven by fingerprint **frequency**, not outcome. A fingerprint that fails every
-  time is promoted identically to one that always succeeds. *(carried; `RL-1` confirms)*
+- **`F`** — ~~promotion is driven by fingerprint **frequency**, not outcome~~. **CONFIRMED at HEAD, then
+  CLOSED by `RL-2` (R18).** The claim was true: `route()` took only `features`, no outcome parameter existed
+  on `MOERouter`, and the promotion block gated on the frequency counter alone. `record_outcome()` now gives
+  it an outcome channel and any recorded failure vetoes promotion — through `route()` *and* through the
+  `learn_fast_path()` side door, which `RL-2` found carried the identical defect. **F is at L1, blocked at
+  L2:** nothing calls `record_outcome()` yet, so every entry written today is stamped
+  `outcome_confirmed=False`. Honest, not yet fed.
 - **`E`** — `fixes_validated` reportedly hardcoded `0`. *(carried; `RL-1` confirms)*
 
 Every one of these would have been wired by the June thesis. That is the finding.

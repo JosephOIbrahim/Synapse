@@ -110,8 +110,15 @@ class RoutingLog:
             try:
                 primary = AgentID(entry["primary"])
                 advisory = AgentID(entry["advisory"]) if entry["advisory"] != "none" else None
-                router.learn_fast_path(entry["fingerprint"], primary, advisory)
-                applied += 1
+                # R18: learn_fast_path returns False when the router's
+                # outcome veto refuses a known-failing fingerprint. Count
+                # what was actually applied, not what was attempted. Older
+                # routers return None — treated as applied, as before.
+                written = router.learn_fast_path(
+                    entry["fingerprint"], primary, advisory
+                )
+                if written is None or written:
+                    applied += 1
             except (ValueError, KeyError):
                 pass
         return applied
