@@ -1,0 +1,214 @@
+{
+  "schema": "rsi_registry/v1",
+  "_doc": "The single registry of every recursive-self-improvement loop in SYNAPSE. Reconciles the June 2026 six-line harness (docs/rsi/) with the July 2026 read-only audit (harness/notes/RSI_SURFACE_AUDIT.md). A loop's rung is the highest rung for which EVERY rung below is also proven -- rungs_proven is a contiguous prefix, never a cherry-pick. 'human_ratified' is flipped by a HUMAN only; an agent may propose any rung and flip none above L3.",
+  "frame_date": "2026-08-01",
+  "frame_commit": "f427320",
+  "ladder": {
+    "L0": "EXISTS -- the mechanism is present in code",
+    "L1": "HONEST -- its input signal CAN represent failure",
+    "L2": "REACHABLE -- a live non-test path constructs and drives it",
+    "L3": "CONSUMED -- something reads its output AND a later decision differs",
+    "L4": "DURABLE -- the effect survives a real process restart (two-run proof)",
+    "L5": "BENEFICIAL -- a task-outcome metric moved, measured before AND after"
+  },
+  "_ladder_collision_warning": "The June harness (docs/rsi/SPEC.md) ALSO used L0-L4 with DIFFERENT semantics: its L2 meant 'survives a real restart' (this ladder's L4) and its L3 meant 'alters a later decision' (this ladder's L3). June closure claims are therefore NOT directly importable. Every june-harness loop below starts at rungs_proven=[] and must be re-derived by Line A. This collision is the single largest reconciliation hazard in the harness.",
+  "verification_legend": {
+    "verified-at-head": "re-confirmed against working-tree code at frame_commit during this frame",
+    "audit-cited": "asserted by RSI_SURFACE_AUDIT.md with a probe; not personally re-run this frame",
+    "unverified": "carried from a prior effort or memory; Line A must establish it"
+  },
+  "loops": [
+    {
+      "id": "A1",
+      "name": "EpochAdapter -- router tier-threshold adaptation",
+      "origin": "july-audit",
+      "surfaces": [
+        "python/synapse/routing/adaptation.py",
+        "python/synapse/routing/router.py"
+      ],
+      "rungs_proven": ["L0"],
+      "blocked_at": "L1",
+      "verification": "verified-at-head",
+      "blocker": "The reward signal is a constant. _record_metric is declared (self, tier, latency_ms, success: bool = True) at router.py:917 and NOT ONE of its eight call sites passes success -- router.py:285, :448, :515, :554, :584, :706, :742, :819, each passing exactly two positional args (re-verified at HEAD f427320 on 2026-08-01). _try_tier0 additionally hardcodes RoutingResult(success=True) at router.py:537 without consulting the responses it just collected, which can carry success=False. The no_tier_matched fallback at router.py:367-373 never calls _record_metric at all, so genuine routing failures never enter the sample.",
+      "evidence": {
+        "L0": ["python/synapse/routing/adaptation.py:121-126", "python/synapse/routing/adaptation.py:145-166"]
+      },
+      "danger_if_closed_now": "CRITICAL. Success rate is permanently 1.0, which is above HIGH_SUCCESS_THRESHOLD (0.9), so adjust() takes the 'great performance' branch every epoch for every tier. Audit probe P4 drove 300 outcomes and measured a monotonic slide to the 0.10 clamp floor in eight epochs, then flat for the life of the process. Wiring TierThresholds.get() into router.py:523 converts a decorative mechanism into a live one-way ratchet with no persistence, no versioning and no rollback.",
+      "reversal": {"persisted": false, "versioned": false, "bounded": "partial", "rollback": false},
+      "reversal_note": "adaptation.py:121-126 -- no disk read, no disk write, always starts at epoch_id=0 with thresholds={}. Bounded only by deque(maxlen=100) and the [0.1, 1.0] clamp. De-facto reversal is process restart, which is amnesia rather than rollback.",
+      "human_ratified": false,
+      "benefit": null
+    },
+    {
+      "id": "A2",
+      "name": "OutcomeTracker -- agent reward signal",
+      "origin": "july-audit",
+      "surfaces": [
+        "python/synapse/agent/learning.py",
+        "python/synapse/agent/executor.py",
+        "python/synapse/agent/__init__.py"
+      ],
+      "rungs_proven": ["L0"],
+      "blocked_at": "L1",
+      "verification": "audit-cited",
+      "blocker": "L1 is unassessable because the loop has no caller to assess. The OPERATIVE obstacle is L2: AgentExecutor has zero non-test constructions in the entire main tree -- the only occurrence is inside the module docstring at python/synapse/agent/__init__.py:12 (the docstring spans lines 1-21). Every other construction is in tests/test_agent.py. executor.py:60 reads OutcomeTracker(memory) if memory else None, but the guard is not the reason it is dormant; there is no live executor at all. Downstream consumers (learning.py:120 get_relevant, :140 get_rejections, :170 success_rate) therefore all read an empty history by construction, with success_rate returning a hard 0.0 at learning.py:191-192.",
+      "evidence": {
+        "L0": ["python/synapse/agent/learning.py:109-116", "python/synapse/agent/executor.py:60"]
+      },
+      "danger_if_closed_now": "LOW while inert. Before wiring, decide wire-or-delete: a reward signal that has never recorded a single outcome is either the missing substrate for every other loop, or dead weight that should be removed rather than resurrected. Line C owns that call.",
+      "reversal": {"persisted": "n/a", "versioned": false, "bounded": false, "rollback": false},
+      "reversal_note": "Not applicable while unreachable. Becomes a live question the moment a production AgentExecutor exists.",
+      "human_ratified": false,
+      "benefit": null
+    },
+    {
+      "id": "A3",
+      "name": "memory evolution (charmander/charmeleon) -- detector and converter",
+      "origin": "july-audit",
+      "surfaces": [
+        "python/synapse/memory/evolution.py",
+        "python/synapse/memory/store.py",
+        "python/synapse/memory/scene_memory.py",
+        "python/synapse/server/handlers_memory.py"
+      ],
+      "rungs_proven": ["L0", "L1", "L2"],
+      "blocked_at": "L3",
+      "verification": "audit-cited",
+      "blocker": "The detector fires; the converter does not. Both automatic call sites invoke only check_evolution and then log: store.py:530-547 emits 'Memory evolution triggered: ...' and does not convert; scene_memory.py:486-500 runs on a background thread and logs '... Call synapse_evolve_memory to upgrade' and does not convert. The converter evolve_to_charmeleon (evolution.py:217) has exactly one caller in the tree -- handlers_memory.py:263, inside _handle_evolve_memory, reachable only through the explicit synapse_evolve_memory tool and gated behind dry_run which DEFAULTS TO TRUE at handlers_memory.py:252. No automatic path can reach it. No memory.usd artifact exists anywhere outside pytest temp directories.",
+      "evidence": {
+        "L0": ["python/synapse/memory/evolution.py:217"],
+        "L1": ["Detector observes real accumulated memory state rather than a literal; it can report should_evolve False."],
+        "L2": ["Audit probe Q6: 2 check_evolution calls per 25 add() calls on the live default backend, with a jsonl negative control and a moneta zero-arm.", "python/synapse/memory/store.py:525", "python/synapse/memory/store.py:165 (_EVOLUTION_CHECK_INTERVAL = 10)", "python/synapse/memory/store.py:810 (SYNAPSE_MEMORY_BACKEND defaults to jsonl, and is unset on this machine)"]
+      },
+      "danger_if_closed_now": "MEDIUM. evolution.py documents itself as SUPERSEDED by the Moneta backend and says 'do not extend it'. Its own stated removal condition -- that SYNAPSE_MEMORY_BACKEND defaults to moneta -- has NOT been met, so the deprecated mechanism is live by default. Closing L3 here would deepen investment in a module marked for removal. Line C (convergence) should decide the substrate before this loop is closed.",
+      "reversal": {"persisted": true, "versioned": false, "bounded": false, "rollback": false},
+      "reversal_note": "Conversion writes a durable artifact; there is no documented un-evolve path. CLAUDE.md requires memory evolution to be lossless or aborted, which is a guard, not a rollback.",
+      "human_ratified": false,
+      "benefit": null
+    },
+    {
+      "id": "R",
+      "name": "render-farm learning -- handlers_render memory guard",
+      "origin": "june-harness",
+      "surfaces": ["python/synapse/server/handlers_render.py"],
+      "rungs_proven": ["L0", "L1"],
+      "blocked_at": "L2",
+      "verification": "verified-at-head",
+      "rl1_rederived": "2026-08-01",
+      "blocker": "L2 REACHABLE is unproven, and it is the ONLY thing standing between this loop and the highest rung in the registry. The wiring is present -- handlers_render.py:1572-1578 sets self._render_farm._memory = get_synapse_memory() (the June fix survived; the line moved from :858 as the file grew). But L2 per SPEC requires production artifacts, and there are none: synapse_live_metrics reports session.total_commands 0 and routing.total_requests 0, and no render has run. The mechanism is correct and has never been exercised in production.",
+      "evidence": {
+        "L0": ["python/synapse/server/handlers_render.py:1572-1578", "python/synapse/server/render_diagnostics.py:311 (record_fix_outcome)", "python/synapse/server/render_farm.py:249,:280"],
+        "L1": ["record_fix_outcome declares success: bool as a REQUIRED parameter with no default (render_diagnostics.py:315) -- structurally unlike _record_metric's silent success=True.", "Both branches are reachable and pass DIFFERENT values: render_farm.py:249 passes success=True on the validation-passed branch; render_farm.py:280 passes success=False on the exhausted-retries branch, commented 'Record failure for learning'. Verified at HEAD 2026-08-01."]
+      },
+      "_eval_note": "tests/rsi/eval_line_r_closure.py PASSES at HEAD, but it is a SCRIPT, not a pytest module -- its eval_ prefix matches neither test_*.py nor *_test.py, so pytest collects ZERO tests from it and a pytest-based check reads as absent evidence. Run it directly: `python tests/rsi/eval_line_r_closure.py` -> OVERALL: PASS. It demonstrates, under eval conditions with a real store: in-process record->read-back; reload across 2/2 FRESH processes; and a decision change (warm _warmup_from_memory returns {'pathtracedsamples': 128.0} where a cold store returns {}). Those are this ladder's L3 and L4 PROPERTIES -- deliberately NOT promoted, because rungs are a contiguous prefix (P3) and L2 is unproven. R is the healthiest loop in the registry and still cannot be called closed.",
+      "danger_if_closed_now": "LOW mechanically -- the signal is honest and the persistence is real. The danger is EPISTEMIC: R is exactly the loop a reviewer is tempted to mark closed on the strength of a passing eval. An eval proves the path works when driven; it does not prove the path is ever driven. Parked boundary retained: tops_render_sequence (the PDG path) is a separate render entry that never hit the guard.",
+      "reversal": {"persisted": "unknown", "versioned": false, "bounded": "unknown", "rollback": "unknown"},
+      "reversal_note": "To be established by Line A.",
+      "human_ratified": false,
+      "benefit": null
+    },
+    {
+      "id": "O",
+      "name": "section-16 observability -- RecommendationHistory into agent health",
+      "origin": "june-harness",
+      "surfaces": [
+        "shared/router.py",
+        "shared/bridge.py",
+        "shared/conductor_advisor.py",
+        "shared/evolution.py",
+        "python/synapse/panel/agent_health.py",
+        "python/synapse/panel/health_infographic.py"
+      ],
+      "_surface_note": "shared/conductor_advisor.py is the read side of this loop -- it consumes LosslessExecutionBridge.operation_stats(), MOERouter fingerprint counts, and LosslessEvolution's EvolutionIntegrity failure list, and emits Recommendations. shared/evolution.py (LosslessEvolution, markdown->USD, EvolutionIntegrity) is one of those data sources and is a DIFFERENT module from python/synapse/memory/evolution.py, which is loop A3's superseded charmander/charmeleon path. Both were added after the P1 sweep caught them unregistered at frame time.",
+      "rungs_proven": ["L0"],
+      "blocked_at": "L1",
+      "verification": "verified-at-head",
+      "rl1_rederived": "2026-08-01",
+      "blocker": "L1 HONEST is unproven -- not refuted, simply never checked, by June or by this pass. The June wiring SURVIVES at HEAD: RecommendationHistory is defined at shared/conductor_advisor.py:363, exported at shared/__init__.py:59,:110, and imported by a real non-test caller at python/synapse/panel/agent_health.py:35. Its eval also passes -- tests/test_area4_observability.py, 10 passed at HEAD. What nobody has established is whether the advisor's INPUT can represent failure: it reads bridge operation_stats, router fingerprint counts, and EvolutionIntegrity failures, and at least one of those (router fingerprint counts, see loop F) is known failure-blind. An observability loop fed partly by a failure-blind source can faithfully report health that was never measured.",
+      "evidence": {
+        "L0": ["shared/conductor_advisor.py:363 (RecommendationHistory)", "shared/__init__.py:59,:110 (exported)", "python/synapse/panel/agent_health.py:35 (real non-test caller)", "tests/test_area4_observability.py -- 10 passed at HEAD 2026-08-01"]
+      },
+      "danger_if_closed_now": "MEDIUM, and the reason is new. This loop's recommendations are SURFACED TO A HUMAN in the panel. A loop that displays advice derived from a partly failure-blind signal spends the operator's trust rather than the machine's. Establish L1 by auditing each of the advisor's three inputs separately before promoting.",
+      "reversal": {"persisted": "unknown", "versioned": false, "bounded": "unknown", "rollback": "unknown"},
+      "reversal_note": "To be established by Line A.",
+      "human_ratified": false,
+      "benefit": null
+    },
+    {
+      "id": "S",
+      "name": "science registry to substrate -- apex verify deposit",
+      "origin": "june-harness",
+      "surfaces": ["python/synapse/", "docs/SCIENCE_HARNESS_LEDGER.md"],
+      "rungs_proven": ["L0"],
+      "blocked_at": "L1",
+      "verification": "verified-at-head",
+      "rl1_rederived": "2026-08-01",
+      "blocker": "L1 unassessable; the OPERATIVE obstacle is L2 and it is the SAME defect as A2. The seam is fully built -- python/synapse/science/deposit.py exists and is documented as 'the deposit_fn seam', and Registry accepts deposit_fn at registry.py:26 (defaulting to None at :28). But a tree-wide sweep finds the ONLY construction passing a real deposit_fn at deposit.py:58 -- and that line is INSIDE the LedgerDeposit class docstring's 'Usage::' block, not executable code. Verified at HEAD 2026-08-01 by reading deposit.py:50-62. So science verdicts are computed and never deposited: an unclosed benefit edge with no live caller.",
+      "evidence": {
+        "L0": ["python/synapse/science/deposit.py:53 (LedgerDeposit, the deposit_fn callable)", "python/synapse/science/registry.py:26,:28 (deposit_fn param, defaults None)"]
+      },
+      "danger_if_closed_now": "LOW while inert. Note the PATTERN this shares with A2: in both loops the only construction of the live object appears inside a docstring. That is now twice in this registry, which makes it a codebase habit worth naming rather than two coincidences -- a docstring example is not a caller, and a grep that does not distinguish them reports a wired loop that is not wired.",
+      "reversal": {"persisted": "unknown", "versioned": false, "bounded": "unknown", "rollback": "unknown"},
+      "reversal_note": "To be established by Line A.",
+      "human_ratified": false,
+      "benefit": null
+    },
+    {
+      "id": "F",
+      "name": "router fast-path session promotion",
+      "origin": "june-harness",
+      "surfaces": ["shared/router.py", "shared/constants.py", "python/synapse/routing/router.py"],
+      "_surface_note": "shared/constants.py holds FAST_PATHS and FAST_PATH_PROMOTION_THRESHOLD -- the promotion threshold and the CONSTANTS_HASH that stamps session fast paths. Added after the P1 sweep caught it unregistered at frame time.",
+      "rungs_proven": [],
+      "blocked_at": "L1",
+      "verification": "unverified",
+      "blocker": "Two independent obstacles, and the L1 one is the newly-identified and more serious. (1) L1: promotion is driven by fingerprint FREQUENCY -- MOERouter.route() increments a per-fingerprint counter and auto-promotes at FAST_PATH_PROMOTION_THRESHOLD (default 3), stamped with CONSTANTS_HASH. Frequency cannot represent failure: a fingerprint that fails every single time is promoted identically to one that always succeeds. This loop inherits A1's constant-success blindness at the routing layer. (2) L4: _session_fast_paths is in-memory only and dies with the process. Both claims need Line A confirmation against HEAD -- CLAUDE.md section 2.3 is the doc source, not a verification.",
+      "evidence": {},
+      "danger_if_closed_now": "HIGH if only the persistence half is addressed. Persisting a frequency-promoted fast-path table across restarts would make a failure-blind promotion permanent instead of process-scoped -- strictly worse than today. Fix L1 before L4. This loop is the clearest illustration of why this harness exists.",
+      "reversal": {"persisted": false, "versioned": false, "bounded": "unknown", "rollback": false},
+      "reversal_note": "Process restart clears _session_fast_paths today. CONSTANTS_HASH stamping means keyword-table drift invalidates stamped entries, which is an invalidation mechanism, not a rollback.",
+      "human_ratified": false,
+      "benefit": null
+    },
+    {
+      "id": "E",
+      "name": "FORGE build loop -- fix application and validation counters",
+      "origin": "june-harness",
+      "surfaces": ["forge/engine/orchestrator.py", "forge/engine/metrics.py", "forge/engine/reporter.py"],
+      "rungs_proven": ["L0"],
+      "blocked_at": "L1",
+      "verification": "verified-at-head",
+      "rl1_rederived": "2026-08-01",
+      "blocker": "CONFIRMED at HEAD, and worse than the carried claim. The path resolved to forge/engine/orchestrator.py (main tree, tracked). Line :177 reads `fixes_applied += 1  # Optimistic -- verification step catches failures`, and line :214 reads `fixes_validated=0,  # Set after verification phase`. This is the second L1 failure and it is structurally identical to A1: the loop authors its own success value instead of measuring it. The aggravating factor the carried claim did not mention is forge/engine/reporter.py:65, which RENDERS that hardcoded zero to a human as `Validated: {metrics.fixes_validated}` -- so the constant is not merely stored, it is displayed in a report as though it were a measurement.",
+      "evidence": {
+        "L0": ["forge/engine/orchestrator.py:156,:177,:213,:214", "forge/engine/metrics.py:44,:86,:166-167", "forge/engine/reporter.py:65"]
+      },
+      "danger_if_closed_now": "HIGH. June called this 'the ONE large build'. Closing an apply-compound loop whose validation counter is a constant would compound unvalidated fixes -- the exact hazard named in the harness-updating-is-not-harness-benefit lens: benefit without verification is a hazard, not a win.",
+      "reversal": {"persisted": "unknown", "versioned": false, "bounded": "unknown", "rollback": "unknown"},
+      "reversal_note": "To be established by Line A.",
+      "human_ratified": false,
+      "benefit": null
+    },
+    {
+      "id": "C",
+      "name": "convergence -- two-tier Moneta substrate (subtractive)",
+      "origin": "june-harness",
+      "surfaces": [
+        "python/synapse/memory/",
+        "python/synapse/memory/store.py"
+      ],
+      "rungs_proven": [],
+      "blocked_at": "L0",
+      "verification": "audit-cited",
+      "blocker": "Not a dormant loop but the substrate the other loops converge onto, and it is SUBTRACTIVE by design: delete the bespoke append-logs and repoint at Moneta. Moneta is built and importable (moneta_runtime.moneta_available() returns True) but default-OFF -- store.py:810 reads SYNAPSE_MEMORY_BACKEND with a jsonl default, and the variable is unset on this machine. A confounder found by the audit: .synapse/config.yaml:17 says memory_backend: 'flat', a DIFFERENT key that the store selector never reads, so it neither selects moneta nor changes the backend and must not be mistaken for configuration.",
+      "evidence": {
+        "L0": ["python/synapse/memory/store.py:810", "harness/notes/RSI_SURFACE_AUDIT.md (Q6)"]
+      },
+      "danger_if_closed_now": "MEDIUM. Flipping the backend default relocates every other loop's persistence substrate at once. Sequence it after the L1 fixes, not before, or the signal work lands on a substrate that is about to move.",
+      "reversal": {"persisted": true, "versioned": false, "bounded": false, "rollback": "env flag"},
+      "reversal_note": "SYNAPSE_MEMORY_BACKEND is a genuine reversal lever -- flipping it back restores jsonl -- but data written under one backend is not automatically migrated to the other.",
+      "human_ratified": false,
+      "benefit": null
+    }
+  ]
+}
