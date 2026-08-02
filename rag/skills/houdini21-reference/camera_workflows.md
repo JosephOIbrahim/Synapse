@@ -273,7 +273,7 @@ def setup_multi_camera(parent="/stage"):
 
 
 def switch_render_camera(rop_path, camera_prim):
-    """Switch the render camera on a usdrender ROP.
+    """Switch the render camera on a usdrender_rop ROP.
     camera_prim must be USD prim path, NOT Houdini node path.
     Example: /cameras/closeup_cam (not /stage/closeup_cam)"""
     rop = hou.node(rop_path)

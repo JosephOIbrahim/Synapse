@@ -168,12 +168,12 @@ import hou
 
 def configure_usdrender_rop(rop_path, lop_path="/stage", camera="/cameras/cam1",
                              width=1920, height=1080, output_path="$HIP/render/shot.$F4.exr"):
-    """Configure a usdrender ROP for Karma rendering."""
+    """Configure a usdrender_rop ROP for Karma rendering."""
     rop = hou.node(rop_path)
     if not rop:
         # Create it
         out = hou.node("/out")
-        rop = out.createNode("usdrender", "karma_rop")
+        rop = out.createNode("usdrender_rop", "karma_rop")
 
     # LOP path -- points to the display node in /stage
     rop.parm("loppath").set(lop_path)

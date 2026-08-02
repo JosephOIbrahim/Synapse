@@ -207,7 +207,7 @@ stage.layoutChildren()
 import hou
 
 # After building the Solaris chain in /stage:
-# Karma LOP feeds usdrender ROP in /out
+# Karma LOP feeds usdrender_rop ROP in /out
 
 # Karma render-settings LOP (inside /stage, before OUTPUT null).
 # NOTE: the old monolithic `karma` LOP is deprecated (Houdini 21.0, "Replaced
@@ -223,7 +223,7 @@ karma.parm("picture").set("$HIP/render/$HIPNAME.$OS.$F4.exr")
 
 # ROP (in /out)
 out_net = hou.node("/out")
-rop = out_net.createNode("usdrender", "render_rop")
+rop = out_net.createNode("usdrender_rop", "render_rop")
 rop.parm("loppath").set("/stage/karma_render")
 rop.parm("outputimage").set("$HIP/render/$HIPNAME.$OS.$F4.exr")
 rop.parm("soho_foreground").set(1)  # Wait for render to finish before returning
@@ -241,7 +241,7 @@ rop.parm("soho_foreground").set(1)  # Wait for render to finish before returning
 8. **HDRI on dome light** for environment lighting — dome exposure ~0.25 for studio HDRI
 9. **Camera focalLength in mm**: 25=wide, 50=standard, 85=portrait
 10. **OUTPUT null with display flag** at chain end — convention for render/display output
-11. **soho_foreground=1** on usdrender ROP for synchronous file write
+11. **soho_foreground=1** on usdrender_rop ROP for synchronous file write
 12. **Set picture on Karma LOP AND outputimage on ROP** for reliable output paths
 
 ## Auto-Assembly Tool

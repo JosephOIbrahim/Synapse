@@ -558,7 +558,7 @@ def full_vellum_lops_pipeline(hip_path, cache_name="cloth"):
             "merge (cloth + character)",
             "assignmaterial (primpattern = exact USD prim path)",
             "karma LOP",
-            "usdrender ROP",
+            "usdrender_rop ROP",
         ],
     }
     return pipeline

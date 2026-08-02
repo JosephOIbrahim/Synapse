@@ -2,11 +2,11 @@
 
 ## Triggers
 
-karma, karma xpu, karma cpu, render settings, pixel samples, progressive render, resolution override, output path, usdrender rop, soho_foreground, iconvert, exr to jpeg, denoiser, oidn, aov, render pass, light linking, light group, motion blur, depth of field, dof, volume rendering, fireflies, black render, render output
+karma, karma xpu, karma cpu, render settings, pixel samples, progressive render, resolution override, output path, usdrender, usdrender_rop, soho_foreground, iconvert, exr to jpeg, denoiser, oidn, aov, render pass, light linking, light group, motion blur, depth of field, dof, volume rendering, fireflies, black render, render output
 
 ## Context
 
-Karma is Houdini's native path-tracer. Karma XPU (GPU+CPU hybrid) is the default choice for almost all work; Karma CPU is reserved for OSL shaders or complex nested dielectrics. All configuration lives on Karma LOP nodes inside `/stage` and on a `usdrender` ROP in `/out`.
+Karma is Houdini's native path-tracer. Karma XPU (GPU+CPU hybrid) is the default choice for almost all work; Karma CPU is reserved for OSL shaders or complex nested dielectrics. All configuration lives on Karma LOP nodes inside `/stage` and on a `usdrender_rop` ROP in `/out`.
 
 ## Code
 
@@ -30,7 +30,7 @@ def set_karma_engine(karma_lop_path, use_xpu=True):
 ```python
 # ── KARMA LOP NODE CONFIGURATION ─────────────────────────────────────────────
 # The Karma LOP ("karmasettings") lives in /stage and holds ALL render quality
-# knobs. The usdrender ROP in /out only handles output paths and frame range.
+# knobs. The usdrender_rop ROP in /out only handles output paths and frame range.
 
 import hou
 
@@ -153,14 +153,14 @@ RENDER_TIERS = {
 }
 
 def apply_render_tier(karma_lop_path, rop_path, tier_name):
-    """Apply a named render tier to the Karma LOP and usdrender ROP."""
+    """Apply a named render tier to the Karma LOP and usdrender_rop ROP."""
     tier = RENDER_TIERS[tier_name]
     karma = hou.node(karma_lop_path)
     rop   = hou.node(rop_path)
     if karma is None:
         raise ValueError(f"Couldn't find Karma LOP at {karma_lop_path!r}")
     if rop is None:
-        raise ValueError(f"Couldn't find usdrender ROP at {rop_path!r}")
+        raise ValueError(f"Couldn't find usdrender_rop ROP at {rop_path!r}")
 
     # Apply resolution to the ROP (override_res must be "specific" to take effect)
     w, h = tier["res"]
@@ -180,11 +180,11 @@ def apply_render_tier(karma_lop_path, rop_path, tier_name):
 
 ```python
 # ── RESOLUTION OVERRIDE ───────────────────────────────────────────────────────
-# Resolution lives on the usdrender ROP, not on the Karma LOP.
+# Resolution lives on the usdrender_rop ROP, not on the Karma LOP.
 # override_res is a string menu: "" (no override), "scale", "specific".
 
 def set_render_resolution(rop_path, width, height):
-    """Force a specific resolution on the usdrender ROP."""
+    """Force a specific resolution on the usdrender_rop ROP."""
     rop = hou.node(rop_path)
     if rop is None:
         raise ValueError(f"Couldn't find ROP at {rop_path!r}")
@@ -201,13 +201,13 @@ def set_render_resolution_scale(rop_path, fraction=0.5):
 ```
 
 ```python
-# ── OUTPUT PATHS: KARMA LOP + USDRENDER ROP ───────────────────────────────────
+# ── OUTPUT PATHS: KARMA LOP + USD RENDER ROP ──────────────────────────────────
 # Both must agree on the output path. If they differ, the ROP outputimage wins.
 # Best practice: set both to the same value to avoid confusion.
 
 def set_output_paths(karma_lop_path, rop_path, output_path):
     """
-    Set output EXR path on both the Karma LOP and the usdrender ROP.
+    Set output EXR path on both the Karma LOP and the usdrender_rop ROP.
     output_path example: "$HIP/render/beauty/shot.$F4.exr"
     """
     karma = hou.node(karma_lop_path)
@@ -215,10 +215,10 @@ def set_output_paths(karma_lop_path, rop_path, output_path):
     if karma is None:
         raise ValueError(f"Couldn't find Karma LOP at {karma_lop_path!r}")
     if rop is None:
-        raise ValueError(f"Couldn't find usdrender ROP at {rop_path!r}")
+        raise ValueError(f"Couldn't find usdrender_rop ROP at {rop_path!r}")
 
     karma.parm("picture").set(output_path)    # Karma LOP: "picture" parm
-    rop.parm("outputimage").set(output_path)  # usdrender ROP: "outputimage" parm
+    rop.parm("outputimage").set(output_path)  # usdrender_rop ROP: "outputimage" parm
 
     # Ensure output directory exists before rendering
     resolved = hou.expandString(output_path.replace("$F4", "0001"))
@@ -227,8 +227,8 @@ def set_output_paths(karma_lop_path, rop_path, output_path):
 ```
 
 ```python
-# ── USDRENDER ROP SETUP ───────────────────────────────────────────────────────
-# The usdrender ROP in /out connects the Karma LOP to the render pipeline.
+# ── USD RENDER ROP SETUP ──────────────────────────────────────────────────────
+# The usdrender_rop ROP in /out connects the Karma LOP to the render pipeline.
 # loppath must point to the last Karma/render-settings LOP in /stage.
 
 def configure_usdrender_rop(
@@ -240,7 +240,7 @@ def configure_usdrender_rop(
     soho_foreground=1,   # 1 = synchronous (blocks until done); 0 = async (returns immediately)
 ):
     """
-    Configure a usdrender ROP for Karma rendering.
+    Configure a usdrender_rop ROP for Karma rendering.
     soho_foreground=1 is REQUIRED for reliable file output from MCP/scripted renders.
     With soho_foreground=0 the ROP returns before the EXR is written.
     """
@@ -248,7 +248,7 @@ def configure_usdrender_rop(
     out_net = hou.node("/out")
     rop = hou.node(rop_path)
     if rop is None:
-        rop = out_net.createNode("usdrender", rop_path.split("/")[-1])
+        rop = out_net.createNode("usdrender_rop", rop_path.split("/")[-1])
 
     # Point the ROP at the Karma LOP (LOP network path, not prim path)
     rop.parm("loppath").set(karma_lop_path)
@@ -269,13 +269,13 @@ def configure_usdrender_rop(
     else:
         rop.parm("trange").set(0)  # render only current frame
 
-    print(f"[karma] usdrender ROP configured: {rop_path} -> {karma_lop_path}")
+    print(f"[karma] usdrender_rop ROP configured: {rop_path} -> {karma_lop_path}")
     return rop
 ```
 
 ```python
 # ── SOHO_FOREGROUND PARAMETER ─────────────────────────────────────────────────
-# soho_foreground controls whether usdrender blocks the Python thread until done.
+# soho_foreground controls whether usdrender_rop blocks the Python thread until done.
 # This is the single most common cause of "render started but no file appeared".
 
 def render_frame_synchronous(rop_path, frame=None):
@@ -568,7 +568,7 @@ def setup_karma_render_pipeline(
     # 2. Set engine to XPU (default) — switch to "cpu" only if OSL is needed
     set_karma_engine(karma_lop_path, use_xpu=True)
 
-    # 3. Configure the usdrender ROP
+    # 3. Configure the usdrender_rop ROP
     rop = configure_usdrender_rop(
         rop_path=rop_path,
         karma_lop_path=karma_lop_path,

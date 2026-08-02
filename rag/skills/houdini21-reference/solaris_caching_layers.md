@@ -227,7 +227,7 @@ env_cache = create_lop_file_cache("/stage", "$HIP/usd/cache/", "environment_stat
 ### USD ROP Per-Frame Export
 
 ```python
-# The usdrender ROP in /out exports per-frame .usd files from a LOP network.
+# The USD Render ROP in /out exports per-frame .usd files from a LOP network.
 # This is the standard way to write USD to disk from a Solaris pipeline.
 import hou
 
