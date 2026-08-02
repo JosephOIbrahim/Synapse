@@ -35,10 +35,15 @@ REPO = HERE.parent.parent
 REGISTRY = HERE / "REGISTRY.json"
 LEDGER = HERE / "LEDGER.md"
 
-# Scale terms a cost row must carry to have reached L2. A row that names no
-# growth term has not been attributed to a scale regime, whatever else it says.
+# NOTE: this list is documentation, not a check. P1 originally matched cost
+# rows against it; that version measured the LEDGER's table shape rather than
+# the contract, and P1 now reads REGISTRY.json's scale_behavior directly and
+# accepts any non-empty term. Kept as the vocabulary a scale_behavior should
+# speak — and deliberately open-ended, because the H10 finding added
+# LINEAR_IN_AUTHORED_ARRAY_VOLUME after the fact and a closed enum would have
+# rejected the truest term on the board.
 SCALE_TERMS = ("CONSTANT", "LINEAR_IN_PRIMS", "LINEAR_IN_NODES",
-               "LINEAR_IN_TURNS", "OTHER")
+               "LINEAR_IN_TURNS", "LINEAR_IN_AUTHORED_ARRAY_VOLUME", "OTHER")
 
 
 def row(pid, label, status, detail, producer):

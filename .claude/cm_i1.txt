@@ -1,0 +1,55 @@
+feat(latency): R305 scale bench — the axis is now a swept curve; board closes 8/8
+
+Merged per R301 with all three crucible SEV-2s closed BEFORE the push.
+
+WHAT IT MEASURES. The 07-27 report put T4 at "1-70 ms per op" with no scene-scale
+term, and that missing denominator is what let a 6.9-7.7 s per-op cost coexist
+with a ledger calling the same bin "the 5%". This instrument supplies the term.
+
+THE CURVE (producer: python scripts/bench_scale.py --json-out -). Prims held
+CONSTANT at 4 -- 2,500x below the shipped 10k prim gate, so the prim term
+structurally cannot fire and any response is the volume term or nothing:
+
+  authored_elements   100,000  -> mode full     flatten_exports 2
+                      200,000  -> mode full     flatten_exports 2
+                      500,000  -> mode full     flatten_exports 2
+                    1,000,000  -> mode REDUCED  flatten_exports 0
+                    4,000,000  -> mode REDUCED  flatten_exports 0
+
+The gate flips on VOLUME ALONE between 500k and 1M authored elements, at FOUR
+prims -- exactly where a prim-keyed gate answers False. H10 is now a curve with a
+crossover, not a single repro, and reaches L5: pinned by the ARMED ratchet and
+swept by this bench.
+
+The lane applied the brief's design correction rather than the design: I1 was
+specified to parameterize by PRIM COUNT, which H10 refuted as the central axis
+after the design was written. Building it as specified would have reproduced the
+exact blindness it exists to remove.
+
+CRUCIBLE FOLLOWUPS, closed here:
+ * 16 wall-clock-shaped key names escaped the offline denylist (wall_time,
+   cpu_time, hash_time, runtime, millis, micros, nanoseconds, timings, clock,
+   took, ...). `time` is now denied as a whole token, with `time_samples` carved
+   out EXPLICITLY so the exception is visible rather than implicit.
+ * assert_record_honest had ZERO call sites on the live path -- its
+   share-of-turn and Law-2 producer rules were properties of a function nobody
+   invoked. Now wired into the live emit and source-pinned.
+ * Degenerate fits emitted a fabricated r2 of 1.0 (1-point, 2-point, flat-x,
+   flat-y). r2 is load-bearing in this module -- it is how attrs_examined is
+   shown SATURATING at 0.982 rather than growing -- so a fabricated 1.0 was the
+   highest-value lie the emitter could tell. Those cases now report None; a
+   genuine perfect fit still reports 1.0, so the two are distinguishable.
+
+Also collapsed a smell the first fix introduced: the checker and its tests each
+decided "is this a wall-clock key" separately, and disagreed the moment a
+carve-out existed. One authority now, bench_scale.is_wallclock_key(), consulted
+by both.
+
+HONESTY THE LANE KEPT, unprompted: the live tier is WRITTEN AND NEVER RUN (no
+bridge was reachable) -- it prints LIVE TIER UNAVAILABLE and returns 2 rather
+than emitting a number; and it REFUSED to price the stage term over live WS at
+all, because integrity_envelope.py:219 passes include_stage=False (verified by
+grep, not assumed).
+
+Suite: 5540 passed / 0 failed. Ratchet: 8 PASS / 0 FAIL. Latency board: 8 PASS /
+0 FAIL / 0 PENDING -- P5 closed by the instrument it was written last to answer.

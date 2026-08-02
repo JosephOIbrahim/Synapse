@@ -324,11 +324,39 @@ def env_pins(prim_threshold: int, volume_threshold: int) -> dict:
 # Token-boundary, not suffix-only: a suffix-anchored pattern let `ms_total`
 # and `duration_of_hash` through, which is the whole class this rule exists to
 # stop. Underscore-delimited tokens, matched anywhere in the key.
+# Widened after the R305 crucible swept the key space and found 16 escapes
+# (wall_time, cpu_time, hash_time, runtime, millis, micros, nanoseconds,
+# timings, clock, took, ...). `time` as a whole token is now denied, which is
+# why `time_samples` — a legitimate USD schema key — is carved out explicitly
+# below rather than by weakening the pattern.
 _WALLCLOCK_KEY = re.compile(
-    r"(^|_)(ms|msec|msecs|sec|secs|second|seconds|ns|us|latency|elapsed"
-    r"|duration|walltime|wallclock|wall_clock|perf_counter)($|_)",
+    r"(^|_)(ms|msec|msecs|millis|millisecond|milliseconds"
+    r"|sec|secs|second|seconds|ns|us|nanos|nanosecond|nanoseconds"
+    r"|micros|microsecond|microseconds|latency|elapsed|duration|runtime"
+    r"|time|times|timing|timings|took|clock|walltime|wallclock|perf_counter)"
+    r"($|_)",
     re.IGNORECASE)
+# Keys that MATCH the pattern but are not wall-clock. Each one is a real key in
+# a schema this bench emits or reads; the carve-out is explicit so a future
+# reader sees the exception rather than a mysteriously narrow denylist.
+_WALLCLOCK_ALLOW = frozenset({
+    "time_samples",        # Usd.Attribute.GetNumTimeSamples — a COUNT
+    "time_sample_count",
+})
 _SHARE_KEY = re.compile(r"(share|percent|pct|_of_turn|fraction)", re.IGNORECASE)
+
+
+def is_wallclock_key(key) -> bool:
+    """THE authority on whether a key names a wall-clock quantity.
+
+    A function, not a bare regex, because the pattern alone is not the rule —
+    the rule is pattern MINUS the explicit carve-outs. The first version
+    exposed only ``_WALLCLOCK_KEY`` and the tests scanned with it directly, so
+    the checker and its tests disagreed the moment a carve-out was added
+    (``time_samples``). One authority, consulted by both.
+    """
+    k = str(key)
+    return k not in _WALLCLOCK_ALLOW and bool(_WALLCLOCK_KEY.search(k))
 _REQUIRED_PRODUCER = ("cmd", "git", "interpreter", "builder_sha256",
                       "producer_path")
 
@@ -360,7 +388,7 @@ def assert_record_honest(rec: dict) -> dict:
                 f"record carries a share-of-turn/percent field {path!r}; no "
                 f"tier of this bench may emit one (there is no absolute-"
                 f"seconds producer for the LLM turn at HEAD)")
-        if tier == "offline" and _WALLCLOCK_KEY.search(str(key)):
+        if tier == "offline" and is_wallclock_key(key):
             raise BenchScaleError(
                 f"OFFLINE record carries wall-clock key {path!r}; the offline "
                 f"tier emits COUNTS ONLY — an offline tier that reports "
@@ -512,18 +540,36 @@ def _least_squares(xs, ys) -> tuple[float, float, float]:
     ``attrs_examined`` caps at _STAGE_HASH_VOLUME_ATTR_BUDGET (4096) — and a
     bare slope on a saturating counter reads as a growth rate it does not
     have. r2 is what lets a reader see that before quoting the slope.
+
+    Returns r2 as ``None`` — never a number — when r2 is UNDEFINED rather
+    than perfect (R305 crucible, SEV 2). A 1-point regime, a 2-point regime,
+    a zero-variance x, and a zero-variance y all used to report r2 == 1.0,
+    which is indistinguishable from a genuine perfect fit at exactly the
+    moment a reader most needs to know the fit is unconstrained. Since this
+    module makes r2 load-bearing (it is how ``attrs_examined`` is shown to be
+    SATURATING at 0.982 rather than growing), a fabricated 1.0 was the
+    highest-value lie the emitter could tell.
     """
     n = len(xs)
+    if n < 3:
+        # 2 points define a line exactly; 1 defines nothing. No fit quality
+        # exists to report.
+        if n == 2 and xs[0] != xs[1]:
+            slope = (ys[1] - ys[0]) / (xs[1] - xs[0])
+            return ys[0] - slope * xs[0], slope, None
+        return (float(ys[0]) if n else 0.0), 0.0, None
     mx = sum(xs) / n
     my = sum(ys) / n
     den = sum((x - mx) ** 2 for x in xs)
     if den == 0:
-        return my, 0.0, 1.0
+        return my, 0.0, None          # every x identical: slope undefined
     slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / den
     intercept = my - slope * mx
     ss_tot = sum((y - my) ** 2 for y in ys)
     if ss_tot == 0:
-        return intercept, slope, 1.0
+        # A flat counter. The fit is exact, but r2 is 0/0 — report the
+        # constant, not a perfect score.
+        return intercept, slope, None
     ss_res = sum((y - (intercept + slope * x)) ** 2 for x, y in zip(xs, ys))
     return intercept, slope, 1.0 - ss_res / ss_tot
 
@@ -566,7 +612,7 @@ def fit_curve(records: list[dict], *, cmd: str = "") -> dict:
         counters_out[cname] = {
             "intercept": round(intercept, 6),
             "slope_per_unit": round(slope, 12),
-            "r2": round(r2, 6),
+            "r2": (round(r2, 6) if r2 is not None else None),
             "monotonic": _monotonicity(ys),
             "values": ys,
         }
@@ -586,11 +632,11 @@ def fit_curve(records: list[dict], *, cmd: str = "") -> dict:
             if len(idx) >= 2:
                 ri, rs, rr2 = _least_squares(rxs, rys)
             else:
-                ri, rs, rr2 = float(rys[0]), 0.0, 1.0
+                ri, rs, rr2 = float(rys[0]), 0.0, None   # 1 point: no fit quality
             rcounters[cname] = {
                 "intercept": round(ri, 6),
                 "slope_per_unit": round(rs, 12),
-                "r2": round(rr2, 6),
+                "r2": (round(rr2, 6) if rr2 is not None else None),
                 "monotonic": _monotonicity(rys),
                 "values": rys,
             }

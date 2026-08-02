@@ -255,7 +255,7 @@ class TestEmitterHonesty:
     def test_the_wallclock_rule_does_not_fire_on_real_schema_keys(
             self, bench, innocent_key):
         """A rule that also rejects the schema's own keys is unusable."""
-        assert not bench._WALLCLOCK_KEY.search(innocent_key), innocent_key
+        assert not bench.is_wallclock_key(innocent_key), innocent_key
         assert not bench._SHARE_KEY.search(innocent_key), innocent_key
 
     def test_a_prim_only_rung_is_rejected_as_the_H10_blind_spot(self, bench):
@@ -302,7 +302,7 @@ class TestOfflineTierNeedsNothing:
                                 volume_points=(25_000, 250_000, 1_000_000))
         blob = json.dumps(run)
         for _path, key, _v in bench._walk_keys(run):
-            assert not bench._WALLCLOCK_KEY.search(str(key)), \
+            assert not bench.is_wallclock_key(key), \
                 f"offline run leaked a wall-clock key: {key}"
             assert not bench._SHARE_KEY.search(str(key)), \
                 f"offline run leaked a share-of-turn key: {key}"
@@ -471,3 +471,77 @@ class TestSharedVocabulary:
         assert (b._HOU_AVAILABLE, b.hou,
                 b._import_pxr_composition) == before, \
             "a sweep leaked the fake-hou seam into the rest of the session"
+
+# ---------------------------------------------------------------------------
+# R305 crucible followups — the three SEV-2s, pinned
+# ---------------------------------------------------------------------------
+
+class TestCrucibleFollowups:
+    """The three SEV-2 escapes the R305 crucible demonstrated, each pinned so
+    it cannot silently return. Uses the same record shape as
+    TestEmitterHonesty._good — one vocabulary for one contract."""
+
+    def _good(self, bench):
+        return {
+            "tier": "offline",
+            "rung": {"prim_count": 4, "authored_elements": 100},
+            "counters": {"prim_visits": 12},
+            "producer": bench.producer_stamp("pytest"),
+        }
+
+    @pytest.mark.parametrize("key", [
+        "wall_time", "cpu_time", "hash_time", "runtime", "millis", "micros",
+        "nanoseconds", "timings", "clock", "took", "total_time", "time_ms",
+        "op_timing", "microseconds", "milliseconds", "nanos",
+    ])
+    def test_widened_wallclock_denylist_catches_the_crucible_escapes(
+            self, bench, key):
+        """16 wall-clock-shaped names escaped the first denylist. An OFFLINE
+        record carrying any of them must raise, not sail through."""
+        rec = self._good(bench)
+        rec[key] = 12.5
+        with pytest.raises(bench.BenchScaleError, match="wall-clock"):
+            bench.assert_record_honest(rec)
+
+    @pytest.mark.parametrize("key", ["time_samples", "time_sample_count"])
+    def test_widened_denylist_does_not_fire_on_real_schema_keys(
+            self, bench, key):
+        """`time` is now a denied TOKEN, so the legitimate USD count keys are
+        carved out EXPLICITLY. If the carve-out is lost this fails — which is
+        the point: the exception should be visible, not implicit."""
+        rec = self._good(bench)
+        rec["rung"][key] = 4
+        assert bench.assert_record_honest(rec) is rec
+
+    def test_degenerate_fits_report_r2_none_not_a_fabricated_one(self, bench):
+        """r2 is load-bearing here (it is how attrs_examined is shown
+        SATURATING rather than growing). A 1-point, 2-point, flat-y or flat-x
+        regime has NO fit quality; reporting 1.0 there is indistinguishable
+        from a genuine perfect fit at exactly the moment it matters."""
+        assert bench._least_squares([5], [7])[2] is None
+        assert bench._least_squares([1, 2], [10, 20])[2] is None
+        assert bench._least_squares([1, 2, 3], [5, 5, 5])[2] is None
+        assert bench._least_squares([2, 2, 2], [1, 5, 9])[2] is None
+        # ...and a real perfect fit still says 1.0, so the two are separable.
+        assert bench._least_squares([1, 2, 3], [2, 4, 6])[2] == pytest.approx(1.0)
+
+    def test_live_rows_pass_through_the_honesty_gate(self):
+        """assert_record_honest had ZERO call sites on the live path, so its
+        share-of-turn and Law-2 rules were properties of a function nobody
+        invoked. Source-pin the call site (the live arm needs a bridge, so the
+        behaviour itself is not reachable in CI)."""
+        src = (REPO / "_benchmark_latency.py").read_text(encoding="utf-8")
+        assert "rows.append(bench.assert_record_honest(row))" in src, (
+            "the live tier must push every row through the honesty gate; a "
+            "bare rows.append(row) means the gate is decorative on that path")
+
+    def test_live_tier_may_carry_wallclock_but_never_a_share_field(self, bench):
+        """The tier carve-out is real: live MAY time things. It may never
+        express a number as a share of an unmeasured whole."""
+        live = self._good(bench)
+        live["tier"] = "live"
+        live["timings_ms"] = {"ping": {"p50": 1.2}}
+        assert bench.assert_record_honest(live) is live
+        live["share_of_turn"] = 0.03
+        with pytest.raises(bench.BenchScaleError, match="share-of-turn"):
+            bench.assert_record_honest(live)

@@ -13,7 +13,7 @@
       "verdict": "refuted_as_cost",
       "accepted": false,
       "scale_behavior": "CONSTANT per op for the hash reads themselves; the cook is node-dependent",
-      "probe": "scripts/probe_h1_topo_hash_cook.py (hython 22.0.397, committed producer)",
+      "probe": "scripts/probe_h1_topo_hash_cook.py (hython 22.0.397, committed producer)  |  CURVE PRODUCER: python scripts/bench_scale.py --json-out -   (offline tier, no Houdini/bridge/pxr)",
       "checked_against_refuted": true,
       "seed_evidence": [
         "CLAUDE.md 1.3 IntegrityBlock",
@@ -31,7 +31,7 @@
       "verdict": "refuted",
       "accepted": false,
       "scale_behavior": "LINEAR_IN_NODES at ~0.17us/node - the depth-3 cap bounds chain traces to 4 visited nodes",
-      "probe": "scripts/probe_h2_dependents_trace.py (hython 22.0.397, committed producer)",
+      "probe": "scripts/probe_h2_dependents_trace.py (hython 22.0.397, committed producer)  |  CURVE PRODUCER: python scripts/bench_scale.py --json-out -   (offline tier, no Houdini/bridge/pxr)",
       "checked_against_refuted": true,
       "seed_evidence": [
         "CLAUDE.md 1.6",
@@ -48,7 +48,7 @@
       "verdict": "real_and_open",
       "accepted": false,
       "scale_behavior": "LINEAR_IN_PRIMS - O(P) default-prims traverse per mutation, ungated, inside the open undo group",
-      "probe": "standalone pxr, zero hou: extend scripts/probe_stage_hash_floor.py with a comp-ms column; run N=1k/10k/100k",
+      "probe": "standalone pxr, zero hou: extend scripts/probe_stage_hash_floor.py with a comp-ms column; run N=1k/10k/100k  |  CURVE PRODUCER: python scripts/bench_scale.py --json-out -   (offline tier, no Houdini/bridge/pxr)",
       "checked_against_refuted": true,
       "seed_evidence": [
         "CLAUDE.md 1.1 Scene Integrity anchor"
@@ -81,7 +81,7 @@
       "verdict": "real_and_open_split",
       "accepted": false,
       "scale_behavior": "LINEAR_IN_PRIMS O(P+2F+V)",
-      "probe": "phantom half settled offline; timing half = hython probe",
+      "probe": "phantom half settled offline; timing half = hython probe  |  CURVE PRODUCER: python scripts/bench_scale.py --json-out -   (offline tier, no Houdini/bridge/pxr)",
       "checked_against_refuted": true,
       "seed_evidence": [
         "98b556f gated ONE site"
@@ -157,17 +157,17 @@
       "id": "H10-gate-keys-on-wrong-axis",
       "title": "The shipped 4x gate keys on prim count; cost is authored ARRAY VOLUME - bypass class measured",
       "bin": "T4",
-      "rung": "L4",
+      "rung": "L5",
       "verdict": "real_and_open",
       "accepted": true,
       "scale_behavior": "LINEAR_IN_AUTHORED_ARRAY_VOLUME, not prims: 4-prim PointInstancer @2M instances = 2017.9 ms/op while _stage_exceeds(stage,10000) returns False (16,677x miss); instanceable 101 prims = 5.0 ms",
-      "probe": "C2's live probe, wf_b9c32632-1fc journal - rerunnable standalone pxr",
+      "probe": "python scripts/bench_scale.py --json-out -   (offline tier, no Houdini/bridge/pxr)",
       "checked_against_refuted": true,
       "seed_evidence": [
         "shared/bridge.py:422 _DEFAULT_STAGE_HASH_PRIM_THRESHOLD=10_000 (the real gate; :427 is a sentinel)",
         "C2 crucible verdict PREMISE-scale-model: ')re-parameterize, do not loop to Pass 0' severity 4/5"
       ],
-      "note": "REDUCED, measured on the same input both sides (lane f89c116 -> master f60b5b0, crucible SOUND): 4-prim/2M-instance repro now trips the volume gate; reduced path ~55,000x-100,000x cheaper than the full serialize it sheds (two machines, both in the lane/crucible reports). L5 = the R304 ratchet. Crucible's bounded weaknesses, all fenced at stock defaults: zero-attr TraverseAll probe cost (148.99ms @100k bare Xforms, prim term fires first there), varying-topology animated arrays undercount (falls to the honest full path), instanceable prototypes evade BOTH terms (pre-existing class, shared with the prim gate).",
+      "note": "REDUCED, measured on the same input both sides (lane f89c116 -> master f60b5b0, crucible SOUND): 4-prim/2M-instance repro now trips the volume gate; reduced path ~55,000x-100,000x cheaper than the full serialize it sheds (two machines, both in the lane/crucible reports). L5 = the R304 ratchet. Crucible's bounded weaknesses, all fenced at stock defaults: zero-attr TraverseAll probe cost (148.99ms @100k bare Xforms, prim term fires first there), varying-topology animated arrays undercount (falls to the honest full path), instanceable prototypes evade BOTH terms (pre-existing class, shared with the prim gate). L5 2026-08-02: the ARMED perf ratchet pins the counts, and the I1 bench SWEEPS the axis \u2014 prims held at 4, the gate flips on volume alone between 500k and 1M authored elements. Curve, not anecdote.",
       "ratified_by": "Joe ('go', 2026-08-02) on the ranked recommendation; build wave wf_006556ba-f9c"
     },
     {
@@ -214,6 +214,11 @@
       "state": "landed",
       "locator": "shared/bridge.py _BRIDGE_PHASE_BUCKETS_MS (0.1ms..60s, +Inf terminal); composition_stats()/stage_touch_stats(); prometheus synapse_composition_ms + synapse_stage_touch_ms",
       "note": "Non-saturating by construction - the G4 defect class (every prior histogram topped out at 4000-5000 ms) cannot recur: a 7s sample lands in a finite bucket, 100s in +Inf."
+    },
+    "I1_scale_bench": {
+      "state": "landed",
+      "locator": "scripts/bench_scale.py (shared core) + _benchmark_latency.py / _benchmark_api.py --tier/--axis/--scale",
+      "note": "Offline tier is CI-gateable and emits COUNTS ONLY \u2014 enforced in code by bench_scale.is_wallclock_key(), not in prose. Live tier is WRITTEN BUT NEVER RUN (no bridge was reachable); it prints LIVE TIER UNAVAILABLE and returns 2 rather than emitting a number. The live WS path cannot price the stage term at all: integrity_envelope.py:219 passes include_stage=False."
     }
   },
   "ratchet": {
@@ -227,12 +232,12 @@
   },
   "designs": {
     "I1_scale_bench": {
-      "status": "designed, unbuilt",
+      "status": "BUILT + crucible-verified (SOUND-WITH-NITS), merged",
       "where": "wf_b9c32632-1fc journal (I1-scale-bench)",
       "shape": "extend _benchmark_latency.py (repo root) with --tier offline|live + --mode count + --scale; offline emits NO *_ms keys ever"
     },
     "I2_perf_ratchet": {
-      "status": "BUILT 2026-08-02 (R304 lane R) - floor PROPOSED, arming pending human",
+      "status": "BUILT + ARMED by Joe 2026-08-02",
       "where": "wf_b9c32632-1fc journal (I2-perf-ratchet); built: tests/perf_counters.py + tests/test_perf_ratchet.py + harness/verify/perf_ratchet.py + harness/verify/perf_baseline.json (proposed) + harness/notes/perf/PROPOSED_perf_baseline.json",
       "shape": "tests/perf_counters.py + harness/verify/perf_ratchet.py + perf_baseline.json; floor read at merge-base; regression proofs are deleteable-guard tests",
       "second_sprint_open": "checks.py::check_perf_ratchet + DISPATCH entry; agent-settings deny line (human, at arming); LEDGER/LOG/SPEC rows; Tier B --ratio-gate on scripts/probe_stage_hash_floor.py; bridge.py comment fixes ALREADY LANDED via H10 (f60b5b0)"

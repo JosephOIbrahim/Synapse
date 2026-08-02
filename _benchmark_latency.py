@@ -350,7 +350,13 @@ def _live_scale_arm(args, bench, cmd):
                               iterations=args.iterations)
             if stats:
                 row["timings_ms"][label] = stats
-        rows.append(row)
+        # R305 crucible (SEV 2): assert_record_honest had ZERO call sites on
+        # the live path, so its share-of-turn and Law-2 producer rules were
+        # properties of a function nobody invoked rather than of the pipeline.
+        # The live tier MAY carry wall-clock (that carve-out is keyed on
+        # tier == "live" inside the checker); it may NOT carry a share-of-turn
+        # field or a row with no producer.
+        rows.append(bench.assert_record_honest(row))
 
     _call(ws, "execute_python",
           {"content": "import hou; n=hou.node('/stage/sbench');"
