@@ -4,7 +4,7 @@
 
 SYNAPSE lives in Houdini's own Python interpreter and calls `hou.*` directly. No external bridge, no RPC hop, no second copy of the scene.
 
-> Houdini 22.0.368 · Python 3.13 · USD 0.26.5 · PySide6
+> v5.42.0 · Houdini 22.0.368 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6
 
 ---
 
@@ -45,7 +45,7 @@ flowchart TD
     K[what SYNAPSE knows] --> S[symbols and node types]
     K --> N[H22 node reference]
     K --> P[prose and how-to]
-    S --> S1["h22_symbol_table.json<br/>35,903 symbols"]
+    S --> S1["h22_symbol_table.json<br/>35,908 symbols, re-stamped per build"]
     S --> S2["connectivity_22.json<br/>lop_solaris_knowledge_22.json"]
     N --> N1["rag/corpus/h22_nodes.json<br/>603 live types, 22.0.368"]
     P --> P1["rag/skills/houdini21-reference<br/>H21 documentation"]
@@ -72,6 +72,10 @@ flowchart TD
 **Explains itself.** Every mutation records what it did and why.
 
 **Stays on the main thread.** All `hou.*` calls marshal to Houdini's main thread.
+
+**Says no when it can't.** This took four fixes in one day (2026-08-02), all the same disease — a green light that couldn't report failure. `get_health` now carries `write_plane` (it used to say *healthy* over a dead write path); `composition_valid` carries a real verdict (it had **zero** assignment sites — an integrity anchor that could never fail); operations that fail *before* validation say so instead of inheriting "ran and passed"; and value-only edits the reduced hash cannot see are **counted** as `unobservable_deltas` rather than vanishing. *Producers: commits `68ab53e`, `57c4ec6`, `73284e1`; pinned by `tests/test_write_plane_health.py` (26), `tests/test_stage_exceeds_cache_and_composition_valid.py` (13), `tests/test_r306_reduced_mode_surfacing.py` (19).*
+
+**Writes memory on a fresh scene.** The first `memory_write` on an unsaved scene used to die with `WinError 5` — `$JOB` points into Houdini's install `bin/`, which the seat can't write. Scene memory now resolves a writable address (discovery still reads the raw `$JOB` root, so studio show-configs keep working). Verified end-to-end on the live seat, twice, against a captured cold-boot baseline. *Producer: `scripts/live_probes/probe_g1_acceptance_ws.py` → `VERDICT: PASS`.*
 
 **Refuses to boot on a render node** — *narrowly.* `hou.isUIAvailable()` gates the daemon, the Fork Bomb guard. But it protects a component with no production callers today while other surfaces boot headless. A guard that exists, not a guarantee that holds.
 
@@ -143,12 +147,37 @@ flowchart LR
     T --> S["/synapse — live"]
     M --> A1[undo-wrapped]
     M --> A2[consent-gated]
-    M --> A3[scene-hashed]
+    M --> A3["scene-hashed<br/>pays the stage cost — gated"]
     S --> B1[RBAC-gated]
     S --> B2[partial undo]
+    S --> B3["no stage term<br/>by construction — flat cost"]
 ```
 
 Connect on `ws://localhost:9999/synapse` — the path matters, a bare `host:port` returns HTTP 400.
+
+The cost asymmetry on the right is **measured, both sides**: the `/mcp` path's stage hashing is where scene-scale cost lives (and where the gate below operates); the live path skips that term by construction (`integrity_envelope.py:219`) and stays flat — ping ~0.4 ms, `set_parm` ~3.7 ms whether the stage holds 100k or 4M authored elements. *Producer: `python _benchmark_latency.py --tier live`, first live rows 2026-08-02, `.claude/live_rows_v5420.json`, measured on 22.0.397.*
+
+**One wire-contract wart worth knowing on the live path:** `execute_python` results come back **stringified** — a dict arrives as its Python repr, not JSON (`handlers.py`, `"result": str(result)`). Parse with `ast.literal_eval` client-side, never `eval`.
+
+---
+
+## Fast, and staying fast
+
+Three instruments landed 2026-08-02, built on one finding.
+
+**The finding.** Houdini-side cost was believed to be "1–70 ms per op — the 5%." True on small scenes; at scale, stage hashing on the audited path cost **6.9–7.7 s per op at 100k prims**. And the axis everyone assumed — prim count — was wrong: cost tracks **authored array volume**. A 4-prim PointInstancer at 2M instances cost 2,017.9 ms per op while the prim-keyed gate said the scene was small — a **16,677× miss**. *Producers: `98b556f` (measured floor), `harness/latency/LEDGER.md` §1 (the volume evidence, C2 crucible).*
+
+```mermaid
+flowchart LR
+    B["board<br/>harness/latency/verify.py<br/>8 checks"] --> R["ratchet<br/>perf_ratchet.py<br/>ARMED — counts may fall,<br/>never silently rise"]
+    R --> F["floor<br/>perf_baseline.json<br/>human-promoted only"]
+    B --> C["bench<br/>bench_scale.py<br/>offline: counts ONLY<br/>live: wall-clock, build-stamped"]
+    C --> K["the curve:<br/>gate flips on VOLUME alone<br/>500k–1M elements at 4 prims"]
+```
+
+**The gate now keys on both terms** — prim count *and* authored volume — so the bypass class is closed. **The ratchet pins it**: a deterministic counted proxy (stage traversals, prims visited — never wall-clock, because CI has no `pxr` and a timer would flake), floor read at `merge-base(origin/master)` so a branch cannot gate against its own doctored floor. **The bench maps it**: the offline tier emits counts only — a CI-runnable tier that reported latency numbers would be the exact dishonesty this guards against, and that rule is enforced in code, not prose.
+
+*Producers: board `harness/latency/verify.py` → 8 PASS · ratchet `harness/verify/perf_ratchet.py` → 8 PASS · curve `python scripts/bench_scale.py --axis volume` · all re-runnable.*
 
 ---
 
@@ -206,7 +235,7 @@ It does **not** roll back when something raises. On the exception path a partial
 
 | | interpreter | result |
 |---|---|---|
-| **Gate** | system Python 3.14 | 5,279 passed · 0 failed |
+| **Gate** | system Python 3.14 | 5,551 passed · 0 failed *(2026-08-02)* |
 | **Shipping** | `hython3.13` — what Houdini runs | 4,048 passed · 110 failed · 771 errors |
 
 The gate runs with the vendored SDK **inactive**; shipping runs with it **active**. They share almost no dependency surface.
@@ -240,6 +269,8 @@ Read this here rather than discover it mid-shot.
 
 **The chat-time UI grip is closed (v5.40.1).** Mid-chat node-selection freezes — the bridge-down Qt-fallback class — no longer fire; tool calls and context-gather run off the main thread. See *The chat freeze, and what fixed it* above. Distinct from the render freezes above.
 
+**`execute_python` results are stringified over the live WS.** A dict comes back as its Python repr (`"result": str(result)`). Parse with `ast.literal_eval`; a handler-side fix is queued but needs a Houdini restart to go live, so the client-side parse is the current contract. *Found by the bench's first live contact, 2026-08-02.*
+
 **The PDG rollback has never executed.** `bridge.py:1718` passes `remove_files=`; the real keyword is `remove_outputs`. It raises `TypeError` every time.
 
 **41 node types in use are deprecated** — 39 of them deprecated in the docs while the runtime says nothing, so a probe alone cannot see them.
@@ -255,11 +286,15 @@ Read this here rather than discover it mid-shot.
 ## Verifying any of this
 
 ```
+python harness/progress.py                     # every harness, every live wave
+python harness/latency/verify.py               # the latency board (8 checks)
+python harness/verify/perf_ratchet.py          # the armed speed floor
 python harness/verify/version_agreement.py     # every version location
 python harness/verify/bom_audit.py             # every JSON, VERSION included
-python harness/heats_status.py                 # leg board
 powershell harness/run_suite_shipping_python.ps1
 ```
+
+(`heats_status.py` is retired — it rendered real receipts into a hardcoded layout, which is the failure mode these tools exist to avoid. `progress.py` discovers; it does not list.)
 
 Each fails on an unfixed tree. That was demonstrated before any of them was trusted.
 
