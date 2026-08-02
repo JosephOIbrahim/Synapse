@@ -200,7 +200,7 @@ def test_escalate_dumps_evidence(tmp_path, monkeypatch):
         data = json.loads(dumps[0].read_text(encoding="utf-8"))
         assert data["reason"] == "sustained_freeze"
     finally:
-        chain._watchdog.stop()
+        chain.stop()
 
 
 def test_dump_failure_never_blocks_escalation(monkeypatch):
@@ -218,7 +218,43 @@ def test_dump_failure_never_blocks_escalation(monkeypatch):
         assert chain.escalated is True
         breaker.force_open.assert_called_once()  # the breaker still ACTED
     finally:
-        chain._watchdog.stop()
+        chain.stop()
+
+
+def test_stop_cancels_pending_escalation(monkeypatch):
+    """FAILS IF: a chain stopped BEFORE its escalation deadline still escalates.
+
+    The zombie that flaked master CI twice (2026-08-02): Watchdog.stop() does
+    not cancel the chain's armed escalation Timer, and _is_frozen stays True
+    after stop — so the orphaned timer fired later, passed its guard, and
+    force_open'd the breaker registered by the NEXT test. chain.stop() must
+    kill the whole episode.
+    """
+    srv, breaker, _bridge = _fake_server(with_bridge=True)
+    ws._register_live_server(srv)
+    chain = _chain()
+    chain.heartbeat()
+    time.sleep(0.1)          # past freeze_threshold (0.06): timer armed
+    chain.stop()             # BEFORE escalate_after (0.2)
+    time.sleep(0.3)          # past the would-be deadline
+    assert chain.escalated is False
+    breaker.force_open.assert_not_called()
+
+
+def test_escalation_is_idempotent_per_episode(monkeypatch):
+    """FAILS IF: one sustained freeze episode acts twice. _escalate must be
+    a no-op once escalated, however many timers reach it."""
+    srv, breaker, _bridge = _fake_server(with_bridge=True)
+    ws._register_live_server(srv)
+    chain = _chain()
+    try:
+        chain.heartbeat()
+        time.sleep(0.6)
+        assert chain.escalated is True
+        chain._escalate()    # a duplicate/zombie timer firing again
+        breaker.force_open.assert_called_once()
+    finally:
+        chain.stop()
 
 
 def test_freeze_dumps_pruned(tmp_path):
