@@ -1,13 +1,22 @@
 """
 Synapse Agent Executor
 
-The core prepare → propose → execute → learn loop.
+The core prepare → propose → execute loop.
 Orchestrates tasks through gate approval and step-by-step execution.
 
 Key design: command_fn is optional. Without it, the executor works in
 "planning mode" — plans are created, gated, and audited, but not sent
 to Houdini. This enables testing without Houdini and separation of
 planning from execution.
+
+**There is no "learn" stage.** It was removed on 2026-08-01 when RSI loop
+`A2` was RETIRED (`harness/rsi/REGISTRY.json` → loop `A2`). The stage was
+`OutcomeTracker` (`agent/learning.py`, deleted): it recorded plan outcomes as
+FEEDBACK memories and read them back to seed task context. It never recorded a
+single outcome in production, because `AgentExecutor` itself has no production
+construction site — the only non-test `AgentExecutor(` in the tree was the
+illustrative one in this package's `__init__` docstring. Reviving the reward
+signal means reviving it against a *live* executor; see the registry entry.
 """
 
 import time
@@ -28,14 +37,13 @@ from .protocol import (
     PlanStatus,
     classify_gate_level,
 )
-from .learning import OutcomeTracker
 
 
 class AgentExecutor:
     """
     Core agent execution loop.
 
-    Manages the lifecycle: prepare → propose → execute → learn.
+    Manages the lifecycle: prepare → propose → execute.
     Works in dry-run mode when command_fn is None.
     """
 
@@ -49,7 +57,11 @@ class AgentExecutor:
         """
         Args:
             command_fn: Callback to execute commands (None = dry-run/planning mode).
-            memory: For context retrieval and outcome storage.
+            memory: Memory handle. Retained on the instance, but nothing in this
+                class reads it since RSI loop `A2` was retired — its only reader
+                was the deleted `OutcomeTracker`. Kept rather than removed
+                because the constructor signature is not part of what A2's
+                retirement ruled on.
             gate: For human approval routing.
             router: Optional TieredRouter for introspection (set by router externally).
         """
@@ -57,7 +69,6 @@ class AgentExecutor:
         self._memory = memory
         self._gate = gate
         self._router = router
-        self._tracker = OutcomeTracker(memory) if memory else None
 
     def prepare(
         self,
@@ -67,11 +78,13 @@ class AgentExecutor:
         agent_id: str = "",
     ) -> AgentTask:
         """
-        Create a task with memory context.
+        Create a task.
 
-        1. Search memory for relevant past decisions/outcomes
-        2. Search memory for past rejections → extract constraints
-        3. Build context summary for AI prompt
+        The task is returned with empty `relevant_memories`, `constraints` and
+        `context_summary`. Populating them from past outcomes was the read half
+        of the retired `OutcomeTracker` (RSI loop `A2`, retired 2026-08-01) and
+        went with it; the fields remain on `AgentTask` for a caller that fills
+        them itself.
 
         Returns:
             AgentTask ready for plan creation.
@@ -85,30 +98,6 @@ class AgentExecutor:
             category=cat,
             agent_id=agent_id,
         )
-
-        # Populate context from memory if available
-        if self._memory and self._tracker:
-            # Search for relevant past outcomes
-            relevant = self._tracker.get_relevant(goal, cat, limit=5)
-            task.relevant_memories = [r.memory.id for r in relevant]
-
-            # Search for past rejections to build constraints
-            rejections = self._tracker.get_rejections(sequence_id, cat)
-            task.constraints = [
-                m.content for m in rejections
-            ]
-
-            # Build context summary
-            parts = []
-            if relevant:
-                parts.append("## Relevant Past Outcomes")
-                for r in relevant:
-                    parts.append(f"- [{r.score:.0%}] {r.memory.summary}")
-            if task.constraints:
-                parts.append("\n## Constraints (from past rejections)")
-                for c in task.constraints:
-                    parts.append(f"- {c}")
-            task.context_summary = "\n".join(parts)
 
         audit_log().log(
             operation="agent_prepare",
@@ -204,7 +193,6 @@ class AgentExecutor:
 
         1. Verify plan.status == APPROVED
         2. For each step: execute via command_fn or mark completed (dry run)
-        3. Record outcome
 
         Returns:
             Completed (or failed) plan.
@@ -283,7 +271,6 @@ class AgentExecutor:
                 plan.outcome = f"Failed at step {i+1}: {step.error}"
                 plan.success = False
                 plan.completed_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-                self.record_outcome(plan, success=False)
                 return plan
 
         # All steps completed
@@ -291,19 +278,4 @@ class AgentExecutor:
         plan.outcome = f"All {len(plan.steps)} steps completed successfully"
         plan.success = True
         plan.completed_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        self.record_outcome(plan, success=True)
         return plan
-
-    def record_outcome(
-        self,
-        plan: AgentPlan,
-        success: bool,
-        feedback: str = "",
-    ) -> None:
-        """
-        Store outcome in memory via OutcomeTracker.
-
-        Called automatically at end of execute(), or manually for external feedback.
-        """
-        if self._tracker:
-            self._tracker.record(plan, success, feedback)

@@ -3,7 +3,14 @@ Synapse Agent Layer
 
 Agentic execution protocol that transforms Synapse from a dumb pipe
 into a smart runtime. Agents propose plans, plans route through gates,
-steps execute and observe, outcomes feed back into memory for learning.
+steps execute and observe.
+
+Outcomes no longer feed back into memory: the `OutcomeTracker` that did
+that (`learning.py`) was deleted on 2026-08-01 when RSI loop `A2` was
+RETIRED for dormancy — see `harness/rsi/REGISTRY.json` → loop `A2`.
+
+NOTE: the `AgentExecutor()` below is illustrative. It is also — as of this
+writing — the ONLY non-test `AgentExecutor(` anywhere in the main tree.
 
 Usage:
     from synapse.agent import AgentExecutor, AgentStep
@@ -30,7 +37,6 @@ from .protocol import (
     classify_gate_level,
 )
 from .executor import AgentExecutor
-from .learning import OutcomeTracker
 
 # v8-DSA: DeepSeek-V3.2 research graft (Phase 1)
 from .sparse_router import (
@@ -78,7 +84,6 @@ __all__ = [
     "DEFAULT_GATE_LEVELS",
     "classify_gate_level",
     "AgentExecutor",
-    "OutcomeTracker",
     # v8-DSA: Sparse Router
     "SparseToolIndexer",
     "SparseRouterConfig",

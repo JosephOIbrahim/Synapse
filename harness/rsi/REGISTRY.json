@@ -60,24 +60,34 @@
     },
     {
       "id": "A2",
-      "name": "OutcomeTracker -- agent reward signal",
+      "name": "OutcomeTracker -- agent reward signal (RETIRED)",
       "origin": "july-audit",
+      "disposition": "RETIRED-2026-08-01",
       "surfaces": [
-        "python/synapse/agent/learning.py",
         "python/synapse/agent/executor.py",
         "python/synapse/agent/__init__.py"
       ],
-      "rungs_proven": ["L0"],
-      "blocked_at": "L1",
-      "verification": "audit-cited",
-      "blocker": "L1 is unassessable because the loop has no caller to assess. The OPERATIVE obstacle is L2: AgentExecutor has zero non-test constructions in the entire main tree -- the only occurrence is inside the module docstring at python/synapse/agent/__init__.py:12 (the docstring spans lines 1-21). Every other construction is in tests/test_agent.py. executor.py:60 reads OutcomeTracker(memory) if memory else None, but the guard is not the reason it is dormant; there is no live executor at all. Downstream consumers (learning.py:120 get_relevant, :140 get_rejections, :170 success_rate) therefore all read an empty history by construction, with success_rate returning a hard 0.0 at learning.py:191-192.",
+      "_deleted_surface": "python/synapse/agent/learning.py -- deleted in this commit. It was A2's primary surface; the path is kept here so a future reader can find it in git history (last live at 38aba50).",
+      "rungs_proven": [],
+      "blocked_at": "L0",
+      "verification": "verified-at-head",
+      "blocker": "RETIRED, not blocked. The mechanism was DELETED on 2026-08-01; there is no longer a loop here to advance, and the entry is retained only because verify.py P9 requires all nine ids present exactly once. A retired loop sits at no rung, so rungs_proven is [] -- per CHAMPION.md promotion rule 6, demotion carries no stigma. WHAT WAS DELETED (3 items): (1) python/synapse/agent/learning.py in full -- the OutcomeTracker class and its four methods record/get_relevant/get_rejections/success_rate, 194 lines; (2) its wiring in python/synapse/agent/executor.py -- the `from .learning import OutcomeTracker` import, the `self._tracker = OutcomeTracker(memory) if memory else None` construction at the old :60, the tracker-driven memory-context block in prepare() at the old :89-111 (get_relevant + get_rejections + context_summary assembly), the public record_outcome() method at the old :297-309, and its two call sites in execute() at the old :286 and :294; (3) the export surfaces -- `OutcomeTracker` removed from agent/__init__.py (import + __all__) and from synapse/__init__.py (the _agent_names lazy set, the lazy import, the _map entry, and the top-level __all__). WHY IT WAS DORMANT: OutcomeTracker had never recorded a single outcome and could not, because its only constructor is AgentExecutor and AgentExecutor has ZERO non-test constructions in the main tree. Re-verified at this commit: `grep -rn 'AgentExecutor(' --include=*.py python/ shared/ scripts/ host/ | grep -v _vendor` returns exactly one line, python/synapse/agent/__init__.py:12, which is inside the module docstring (the docstring spans lines 1-21). Every real construction is in tests/test_agent.py. The dormancy was therefore structural, not a config gap: the `if memory else None` guard at :60 was never the reason -- there was no live executor to reach the guard. No FEEDBACK memory tagged 'outcome' has ever been produced outside pytest temp directories. WHAT WOULD HAVE TO BE TRUE TO REVIVE IT: a production construction site for AgentExecutor -- i.e. some live path (a handler, the panel agent loop, or the MCP tool layer) that builds an executor, passes it a real SynapseMemory, and drives prepare -> propose -> execute on real artist traffic. Absent that, reviving the reward signal only re-creates code that runs zero times. Note the ordering: the executor comes first, the reward signal second. NOT DELETED, and why: AgentExecutor itself, its `memory` constructor parameter, and the whole rest of python/synapse/agent/ (protocol.py, sparse_router.py, reasoning_context.py, specialist_modes.py, task_synthesizer.py). AgentExecutor is equally free of production callers by the same grep, which makes it a candidate for a LARGER subtraction -- but that is a bigger decision than the one ratified on 2026-08-01, which named OutcomeTracker. Escalated to the human as a separate recommendation rather than taken on agent authority. THE RETIREMENT IS PINNED: tests/test_agent.py::TestExecutorMemoryIsInert asserts the executor has no _tracker attribute and no record_outcome method, that `synapse.agent.learning` raises ImportError, that prepare() no longer seeds relevant_memories/constraints/context_summary from prior FEEDBACK memories, and that neither the success nor the failure path of execute() writes a FEEDBACK memory. Growing the mechanism back silently now turns the suite red.",
       "evidence": {
-        "L0": ["python/synapse/agent/learning.py:109-116", "python/synapse/agent/executor.py:60"]
+        "_note": "Rungs are [] -- these are the dormancy findings that established the retirement, kept because the ruling rests on them. They are not rung claims.",
+        "dormancy": [
+          "python/synapse/agent/__init__.py:12 (at 38aba50) -- the sole non-test 'AgentExecutor(' in the main tree, inside the module docstring spanning lines 1-21. Re-verified at this commit by tree-wide grep over python/ shared/ scripts/ host/, excluding _vendor.",
+          "python/synapse/agent/learning.py:109-116 (at 38aba50) -- OutcomeTracker.record, the only writer of a FEEDBACK memory tagged 'outcome'. Unreachable: no live path constructs its owner.",
+          "python/synapse/agent/executor.py:60 (at 38aba50) -- 'OutcomeTracker(memory) if memory else None', the sole construction site, itself inside a class with no production caller.",
+          "python/synapse/agent/learning.py:191-192 (at 38aba50) -- success_rate() returns a hard 0.0 on empty history, so every downstream read was 0.0 by construction.",
+          "harness/notes/RSI_SURFACE_AUDIT.md:83-106 (Q2) and harness/notes/receipts/RSI0.json (claim + RSI0-F5) -- the independent July audit that first reached 'unreachable, not unfed'.",
+          "harness/notes/CTO_RULINGS_01.md:3415 (F4) -- 'OutcomeTracker is unreachable code, not a None-valued field.'"
+        ]
       },
-      "danger_if_closed_now": "LOW while inert. Before wiring, decide wire-or-delete: a reward signal that has never recorded a single outcome is either the missing substrate for every other loop, or dead weight that should be removed rather than resurrected. Line C owns that call.",
-      "reversal": {"persisted": "n/a", "versioned": false, "bounded": false, "rollback": false},
-      "reversal_note": "Not applicable while unreachable. Becomes a live question the moment a production AgentExecutor exists.",
+      "danger_if_closed_now": "NONE -- there is nothing left to close. The residual risk runs the other way: a future agent reading the July audit could re-create the tracker without first creating a live AgentExecutor, reproducing exactly the dormant mechanism this retirement removed. The blocker text above states the ordering (executor first, reward signal second) for that reader, and TestExecutorMemoryIsInert makes a silent regrowth fail the suite.",
+      "reversal": {"persisted": "n/a", "versioned": false, "bounded": "n/a", "rollback": "git"},
+      "reversal_note": "Retirement is reversed by reverting this commit -- the deletion is the whole change and it is atomic. The mechanism has no persisted state anywhere to unwind: it never wrote a FEEDBACK memory outside pytest temp directories, so nothing on disk depends on it.",
       "human_ratified": false,
+      "_human_ratified_note": "false is correct and not a gap. P8 gates rungs at L4+; this loop is at no rung. The RETIREMENT itself was human-ratified on 2026-08-01 (the wire-or-delete call that CHAMPION.md and LOG.md recorded as an open human gate). Ratification of a subtraction is not a rung flip.",
       "benefit": null
     },
     {

@@ -311,7 +311,7 @@ def __getattr__(name):
     _agent_names = {
         'AgentTask', 'AgentPlan', 'AgentStep', 'StepStatus', 'PlanStatus',
         'DEFAULT_GATE_LEVELS', 'classify_gate_level',
-        'AgentExecutor', 'OutcomeTracker',
+        'AgentExecutor',
         # v8-DSA: Sparse Router
         'SparseToolIndexer', 'SparseRouterConfig', 'ToolSignature',
         'RouteCandidate', 'Domain', 'CostTier', 'build_signatures_from_registry',
@@ -337,7 +337,6 @@ def __getattr__(name):
             classify_gate_level as _classify_gate_level,
         )
         from .agent.executor import AgentExecutor as _AgentExecutor
-        from .agent.learning import OutcomeTracker as _OutcomeTracker
         from .agent.sparse_router import (
             SparseToolIndexer as _SparseToolIndexer,
             SparseRouterConfig as _SparseRouterConfig,
@@ -382,7 +381,6 @@ def __getattr__(name):
             'DEFAULT_GATE_LEVELS': _DEFAULT_GATE_LEVELS,
             'classify_gate_level': _classify_gate_level,
             'AgentExecutor': _AgentExecutor,
-            'OutcomeTracker': _OutcomeTracker,
             # v8-DSA
             'SparseToolIndexer': _SparseToolIndexer,
             'SparseRouterConfig': _SparseRouterConfig,
@@ -636,7 +634,6 @@ __all__ = [
     'DEFAULT_GATE_LEVELS',
     'classify_gate_level',
     'AgentExecutor',
-    'OutcomeTracker',
     # Agent v8-DSA
     'SparseToolIndexer',
     'SparseRouterConfig',
