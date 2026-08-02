@@ -98,3 +98,18 @@ regressions slip. **Executor: queued, panel session.**
 **Sequence:** wf_006556ba-f9c merge (R301) → R302+R304 parallel wave → R306, R307 →
 I1 (R305) → panel session (R309 + R204). H3's gating-half stays behind its probe
 (C4 rank 9 — the one T4 item that can create a new integrity blind spot).
+
+## R310 — The module-planting class: finish the kill (surfaced by R307, 2026-08-02)
+
+Lane O fixed the canonical idiom (synthetic namespace package planted into sys.modules
+WITHOUT parent-attribute binding) at 25 perpetrator files and pinned the pair-order
+reproduction. Two residues it correctly left out of scope:
+- ~20 further sites plant dotted modules via spec_from_file_location in OTHER shapes
+  (e.g. spec_from_file_location("synapse.server.rbac", ...)). Same class, different
+  costume. **Ruling: LANE + crucible, low priority — sweep the remaining shapes with
+  the same fix-at-perpetrator discipline, one commit, pinned the same way.**
+- tests/test_m3_logs_doctor.py flaked 2/6 full-suite runs at Lane O's HEAD, a
+  DIFFERENT test each time, in a file the lane never touched. Unattributed, recorded
+  honestly. **Ruling: OWN IT before it erodes a floor read — one forensic pass:
+  reproduce under -p no:randomly repetition, attribute (timer race / tmp collision /
+  ordering), fix at cause or file the skip-with-ticket. Never waive it silently.**
