@@ -19,7 +19,7 @@ Core scene manipulation. Always inspect before mutating. One mutation per tool c
 | # | Tool | Safety | Description |
 |---|------|--------|-------------|
 | 1 | `synapse_ping` | RO IDEM | Check if Houdini/Synapse is connected and responding. |
-| 2 | `synapse_health` | RO IDEM | Get system health status including resilience layer. |
+| 2 | `synapse_health` | RO IDEM | Get bridge health: liveness, hou availability, protocol version, plus write_plane (ok / degraded / unknown) — whether the memory/report write targets actually accept a write. Check write_plane before trusting a green light: 'healthy' is liveness only. |
 | 3 | `synapse_doctor` | MUT | Run SYNAPSE install/ops diagnostics: log file, telemetry freshness, encryption-key fingerprint, symbol-table build stamp, bridge endpoint. `bundle:true` also writes a diagnostic zip to `~/.synapse/diagnostics` (secrets are never collected). Reports only checks it actually ran. Distinct from the panel Scene Doctor. |
 | 4 | `houdini_scene_info` | RO IDEM | Get current Houdini scene info: HIP file path, current frame, FPS, and frame range. |
 | 5 | `houdini_get_selection` | RO IDEM | Get the currently selected nodes in Houdini. |

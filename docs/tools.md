@@ -76,7 +76,7 @@ SYNAPSE registers **115 tools**, live-counted from the tool registry (`python/sy
 | `synapse_decide` | Record a decision in project memory with reasoning. |
 | `synapse_doctor` | Run SYNAPSE install/ops diagnostics: log file, telemetry freshness, encryption-key fingerprint, symbol-tabl… |
 | `synapse_evolve_memory` | Manually trigger memory evolution. |
-| `synapse_health` | Get system health status including resilience layer. |
+| `synapse_health` | Get bridge health: liveness, hou availability, protocol version, plus write_plane (ok / degraded / unknown) — whether the memory/report write targets a… |
 | `synapse_inspect_node` | Deep-dive into a single node: all parameters, expressions, code, geometry, HDA info. |
 | `synapse_inspect_scene` | Bird's-eye scene overview: node tree, context breakdown, warnings, sticky notes. |
 | `synapse_inspect_selection` | Inspect selected nodes: parameters, connections, geometry stats, input graph. |

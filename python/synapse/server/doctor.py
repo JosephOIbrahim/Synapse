@@ -13,9 +13,15 @@ manifest lists what was actually collected, what was absent (and why),
 and what was deliberately excluded (secrets — test-pinned denylist).
 
 Adjudicated a NEW command, not a synapse_health extension: get_health's
-3-key shape is test-pinned and read-only-classified, and a bundle mode
-that writes a zip cannot live behind a read-only-classified command (the
-WP6/M1 lesson). "doctor" is deliberately NOT in _READ_ONLY_COMMANDS — a
+shape is test-pinned and read-only-classified, and a bundle mode that
+writes a zip cannot live behind a read-only-classified command (the
+WP6/M1 lesson). (That shape is now FOUR keys — get_health gained an
+additive ``write_plane`` field on 2026-08-02, pinned by
+tests/test_write_plane_health.py. The adjudication is unaffected: a
+transient probe file that is unlinked in the same call is not a durable
+artifact, which is what the WP6/M1 lesson is about — see the read-only
+tension section in server/write_plane.py.) "doctor" is deliberately NOT
+in _READ_ONLY_COMMANDS — a
 run takes the C5 lock and leaves audit + Floor provenance (zero hou work,
 so the lock hold is milliseconds).
 
@@ -190,10 +196,14 @@ def _check_telemetry(home: Path) -> Dict[str, Any]:
 
 # -- memory key fingerprint (check design owned by M3-D; implemented here) ----
 
-def _resolve_store_dir() -> Optional[Path]:
-    """Resolve the scene-memory storage dir exactly as the live store does
-    (<hip_dir>/.synapse via hou.hipFile.path(), no-hou fallback = cwd), but
-    READ-ONLY: no migration copies, no mkdir. None when no store dir exists."""
+def _resolve_store_base_dir() -> Path:
+    """The directory a scene-memory store lives IN, resolved exactly as the
+    live store resolves it (<hip_dir> via hou.hipFile.path(), no-hou fallback
+    = cwd), READ-ONLY: no migration copies, no mkdir.
+
+    Split out of ``_resolve_store_dir`` so ``server.write_plane`` can ask where
+    a store WOULD be created without a second copy of this logic — a second
+    copy is precisely how the C-0 unsaved-scene bug survived (see below)."""
     project: Optional[Path] = None
     try:
         import hou
@@ -212,7 +222,14 @@ def _resolve_store_dir() -> Optional[Path]:
         project = None
     if project is None:
         project = Path.cwd() / "untitled.hip"
-    base_dir = project.parent if project.is_file() else project
+    return project.parent if project.is_file() else project
+
+
+def _resolve_store_dir() -> Optional[Path]:
+    """Resolve the scene-memory storage dir exactly as the live store does
+    (<hip_dir>/.synapse via hou.hipFile.path(), no-hou fallback = cwd), but
+    READ-ONLY: no migration copies, no mkdir. None when no store dir exists."""
+    base_dir = _resolve_store_base_dir()
     for store_name in (".synapse", ".nexus", ".engram"):
         candidate = base_dir / store_name
         if candidate.is_dir():
