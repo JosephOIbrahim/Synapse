@@ -174,3 +174,4 @@ demo/captures/
 harness/state/locks/
 harness/state/suite_stamp.json
 harness/state/DECISIONS.md
+.synapse_write_probe_*

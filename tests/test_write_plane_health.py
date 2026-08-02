@@ -5,11 +5,15 @@ WinError 5`` while ``get_health`` answered ``healthy: true``. These tests pin
 the fix (``synapse/server/write_plane.py``) and, just as importantly, pin the
 EXISTING health contract so the improvement cannot silently break a consumer.
 
-The classification tests inject the refusal (``mkstemp`` raising
-``PermissionError``) rather than trying to build a genuinely ACL-denied
-directory: what is under test is how SYNAPSE *classifies* a refusal, and an
-OS-specific permission dance would pin the OS instead. The ``ok`` path is real
-I/O against a real ``tmp_path``.
+The classification tests inject the refusal (``wp._probe_open`` raising
+``PermissionError``) rather than building an ACL-denied directory: what is
+under test is how SYNAPSE *classifies* a refusal. The ``ok`` path is real I/O
+against a real ``tmp_path``. The REAL ACL-denied case is additionally pinned
+on Windows with a wall-clock bound (test_probe_bounded_on_real_acl_denied_dir)
+because the first version of this module hung ~43 hours on exactly that case
+while these mock-seam tests stayed green — a mock seam can never see the
+primitive's own pathology, so the primitive is pinned separately
+(test_probe_never_uses_mkstemp).
 """
 
 from __future__ import annotations
@@ -87,16 +91,22 @@ def test_probe_targets_the_dir_that_would_be_created(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_degraded_when_a_target_is_unwritable(targets, monkeypatch):
-    """The WinError 5 shape: the OS refuses the create."""
+    """The WinError 5 shape: the OS refuses the create.
+
+    Injection seam is ``wp._probe_open`` — the single non-retrying create —
+    NOT ``tempfile.mkstemp``. mkstemp is banned from the probe path (its retry
+    loop spins ~43h on a real ACL-denied dir; see the module docstring and
+    test_probe_never_uses_mkstemp below).
+    """
     mem, _reports = targets
-    real_mkstemp = tempfile.mkstemp
+    real_open = wp._probe_open
 
-    def denied(*args, **kwargs):
-        if kwargs.get("dir") == str(mem):
+    def denied(tmp_path):
+        if os.path.dirname(tmp_path) == str(mem):
             raise PermissionError(13, "Access is denied")
-        return real_mkstemp(*args, **kwargs)
+        return real_open(tmp_path)
 
-    monkeypatch.setattr(wp.tempfile, "mkstemp", denied)
+    monkeypatch.setattr(wp, "_probe_open", denied)
 
     state = wp.write_plane_state()
     assert state["status"] == "degraded"
@@ -314,3 +324,147 @@ def test_memory_target_falls_back_to_the_dir_that_would_be_created(tmp_path, mon
 
     (scene / ".synapse").mkdir()
     assert wp.resolve_memory_target_dir() == scene / ".synapse"
+
+
+# ---------------------------------------------------------------------------
+# G1b crucible pins — the primitive itself, not just the classification
+# ---------------------------------------------------------------------------
+
+def test_probe_never_uses_mkstemp(tmp_path, monkeypatch):
+    """mkstemp is BANNED from the probe path.
+
+    Its retry loop trusts os.access(W_OK) — which lies on Windows ACL-denied
+    dirs — and retries PermissionError up to TMP_MAX (2**31-1) times: the
+    crucible measured ~43 hours of spin on the health call, on the transport
+    event loop, pre-RBAC. This pin makes reintroducing it a test failure, not
+    a studio incident.
+    """
+    def _banned(*_a, **_k):  # pragma: no cover - the whole point is no call
+        raise AssertionError(
+            "tempfile.mkstemp reached the probe path - banned, see docstring")
+
+    monkeypatch.setattr(tempfile, "mkstemp", _banned)
+    writable, probed, detail = wp.probe_dir_writable(tmp_path)
+    assert writable is True and probed == str(tmp_path) and detail is None
+    assert not list(tmp_path.glob(f"{wp._PROBE_PREFIX}*")), "probe file leaked"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="icacls / Windows ACL semantics")
+def test_probe_bounded_on_real_acl_denied_dir(tmp_path):
+    """THE crucible reproduction: a genuinely ACL-write-denied directory.
+
+    The old mkstemp probe never returned on this fixture (~43h projected).
+    The contract now: returns within seconds, verdict False, and the detail
+    carries the REAL refusal — not mkstemp's bogus name-collision message.
+    """
+    import getpass
+    import subprocess
+    import threading as _threading
+    import time as _time
+
+    denied = tmp_path / "denied"
+    denied.mkdir()
+    user = getpass.getuser()
+    rc = subprocess.run(
+        ["icacls", str(denied), "/deny", f"{user}:(WD,AD)"],
+        capture_output=True, text=True).returncode
+    if rc != 0:
+        pytest.skip("icacls could not deny on this seat")
+    try:
+        result = {}
+
+        def _run():
+            result["r"] = wp.probe_dir_writable(denied)
+
+        t = _threading.Thread(target=_run, daemon=True)
+        start = _time.perf_counter()
+        t.start()
+        t.join(timeout=10.0)
+        elapsed = _time.perf_counter() - start
+        assert not t.is_alive(), (
+            f"probe still running after {elapsed:.1f}s on an ACL-denied dir "
+            f"- the 43-hour spin is back")
+        writable, probed, detail = result["r"]
+        assert writable is False
+        assert probed == str(denied)
+        assert "PermissionError" in detail or "Access is denied" in detail, (
+            f"detail must carry the real refusal, got: {detail}")
+        assert elapsed < 5.0, f"probe took {elapsed:.2f}s - bounded means fast"
+    finally:
+        subprocess.run(["icacls", str(denied), "/remove:d", user],
+                       capture_output=True, text=True)
+
+
+def test_memory_resolver_marshals_off_main_when_hou_is_live(monkeypatch, tmp_path):
+    """Off the main thread with a live hou, resolution rides run_on_main.
+
+    The lane's original commit claimed 'no hou call'; the crucible refuted it
+    (hou.hipFile.path recorded on ws-handler-thread). The contract now: the
+    hou-touching resolution is marshalled, same as every other hou-reading
+    handler.
+    """
+    import sys
+    import threading as _threading
+    import types
+
+    fake_hou = types.ModuleType("hou")
+    monkeypatch.setitem(sys.modules, "hou", fake_hou)
+
+    calls = {}
+
+    def fake_run_on_main(fn, timeout=None, label=None, **_k):
+        calls["used"] = True
+        calls["timeout"] = timeout
+        calls["thread"] = _threading.current_thread().name
+        return tmp_path / ".synapse"
+
+    from synapse.server import main_thread as mt
+    monkeypatch.setattr(mt, "run_on_main", fake_run_on_main)
+
+    result = {}
+
+    def _off_main():
+        result["path"] = wp.resolve_memory_target_dir()
+
+    t = _threading.Thread(target=_off_main, name="fake-ws-handler", daemon=True)
+    t.start()
+    t.join(timeout=10.0)
+    assert not t.is_alive()
+    assert calls.get("used") is True, "off-main + live hou must marshal"
+    assert calls["timeout"] == wp._RESOLVE_TIMEOUT_S, "marshal must be bounded"
+    assert result["path"] == tmp_path / ".synapse"
+
+
+def test_memory_resolver_direct_on_main_thread(monkeypatch, tmp_path):
+    """On the main thread the resolver never marshals (marshal-deadlock class:
+    a blocking marshal FROM main self-deadlocks on H22)."""
+    import sys
+    import types
+
+    fake_hou = types.ModuleType("hou")
+    monkeypatch.setitem(sys.modules, "hou", fake_hou)
+
+    def _boom(*_a, **_k):  # pragma: no cover
+        raise AssertionError("run_on_main called from the main thread")
+
+    from synapse.server import main_thread as mt
+    monkeypatch.setattr(mt, "run_on_main", _boom)
+    monkeypatch.setattr(wp, "_resolve_via_doctor", lambda: tmp_path / ".synapse")
+
+    assert wp.resolve_memory_target_dir() == tmp_path / ".synapse"
+
+
+def test_resolver_failure_degrades_one_target_not_the_whole_verdict(
+        targets, monkeypatch):
+    """A busy-main marshal timeout on the memory resolver must not blank the
+    reports verdict: one unresolvable target -> that target unclear, the rest
+    still probed."""
+    def _busy():
+        raise RuntimeError("main thread busy (simulated marshal timeout)")
+
+    monkeypatch.setattr(wp, "resolve_memory_target_dir", _busy)
+    state = wp.write_plane_state()
+    assert state["targets"]["memory"]["writable"] is None
+    assert "unresolvable" in state["reason"]
+    assert state["targets"]["reports"]["writable"] is True
+    assert state["status"] == "unknown"

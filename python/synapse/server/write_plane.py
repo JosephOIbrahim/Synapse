@@ -34,9 +34,30 @@ CONTRACT
 WHAT IT DOES NOT DO
 -------------------
 No scene mutation, no ``hou`` write, no real memory write, no network. Health
-is called constantly, so the probe is two ``mkstemp`` + ``unlink`` pairs
-against directories that already exist, and the ancestor walk is bounded by
-``_MAX_ANCESTOR_WALK`` so no path can spin.
+is called constantly, so the probe is two ``O_CREAT|O_EXCL`` create + unlink
+pairs against directories that already exist, and the ancestor walk is bounded
+by ``_MAX_ANCESTOR_WALK`` so no path can spin.
+
+``tempfile.mkstemp`` is deliberately NOT the probe primitive. Its internal
+retry loop trusts ``os.access(dir, W_OK)`` — the exact Windows lie documented
+below — and retries ``PermissionError`` up to ``TMP_MAX`` (2**31-1) times on an
+ACL-denied directory: measured ~13.7k refusals/s ≈ 43 HOURS per call, on the
+transport's event loop, pre-RBAC and un-rate-limited (G1b crucible,
+2026-08-02). One non-retrying ``os.open`` surfaces the real ``WinError``
+immediately. ``tests/test_write_plane_health.py`` pins both the primitive and
+the wall-clock bound against a real ACL-denied directory.
+
+``hou`` READS are marshalled: ``resolve_memory_target_dir`` reaches
+``hou.hipFile.path()`` through the doctor's resolvers, so off the main thread
+it routes through ``run_on_main`` with a short timeout (the marshal-deadlock
+class: never call ``hou`` off-main, never blocking-marshal FROM main). A
+failed or timed-out marshal surfaces as ``unknown`` with the reason — never a
+silently wrong address.
+
+The probe file lands in the probed directory itself (for reports that is the
+git-tracked ``docs/``). If the process dies inside the create→unlink window a
+``.synapse_write_probe_*`` file can persist; accepted narrow risk, fenced by a
+``.gitignore`` entry for the prefix so it can never become a tracked artifact.
 
 Measured warm cost 2.29 ms/call (20 calls, this worktree, 2026-08-02, Python
 3.14 on Windows; producer: ``for _ in range(20): write_plane_state()`` timed
@@ -70,7 +91,8 @@ downgrade the probe to one that answers ``ok`` while the product is broken.
 from __future__ import annotations
 
 import os
-import tempfile
+import threading
+import uuid
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -108,6 +130,21 @@ def resolve_reports_base_dir() -> str:
     return os.path.join(repo_root, "docs")
 
 
+# Off-main marshal budget for the hou-touching resolution. Health must stay
+# bounded: a busy main thread turns into 'unknown(reason)' after this many
+# seconds, never into an open-ended wait.
+_RESOLVE_TIMEOUT_S = 2.0
+
+
+def _resolve_via_doctor() -> Path:
+    from .doctor import _resolve_store_base_dir, _resolve_store_dir
+
+    existing = _resolve_store_dir()
+    if existing is not None:
+        return existing
+    return _resolve_store_base_dir() / ".synapse"
+
+
 def resolve_memory_target_dir() -> Path:
     """The directory the scene-memory store writes into.
 
@@ -118,13 +155,31 @@ def resolve_memory_target_dir() -> Path:
     second copy of that logic is how the C-0 unsaved-scene bug survived (the
     doctor's old inline mirror inspected the wrong directory for every unsaved
     scene).
-    """
-    from .doctor import _resolve_store_base_dir, _resolve_store_dir
 
-    existing = _resolve_store_dir()
-    if existing is not None:
-        return existing
-    return _resolve_store_base_dir() / ".synapse"
+    THREAD CONTRACT (G1b crucible): the doctor resolvers read
+    ``hou.hipFile.path()``. On the main thread (hwebserver transport) that is
+    a direct call. Off the main thread with a LIVE ``hou`` (websockets
+    transport handler thread) it is marshalled via ``run_on_main`` with a
+    short timeout — the same discipline every other hou-reading handler
+    follows. Headless (no ``hou`` in the process) there is nothing to marshal;
+    the resolvers' own no-hou fallback runs wherever we are. Failures
+    propagate to the caller, which records ``unknown`` with the reason.
+    """
+    on_main = threading.current_thread() is threading.main_thread()
+    # sys.modules check, not an import attempt: inside Houdini the host has
+    # already imported hou; headless it is absent and the resolvers fall back
+    # without touching it, so a marshal would be pure overhead (and hdefereval
+    # is unimportable headless anyway).
+    import sys as _sys
+    hou_live = "hou" in _sys.modules and _sys.modules["hou"] is not None
+
+    if on_main or not hou_live:
+        return _resolve_via_doctor()
+
+    from .main_thread import run_on_main
+
+    return run_on_main(_resolve_via_doctor, timeout=_RESOLVE_TIMEOUT_S,
+                       label="write_plane.resolve_memory_target_dir")
 
 
 # ---------------------------------------------------------------------------
@@ -152,34 +207,59 @@ def _nearest_existing_dir(path: Path) -> Optional[Path]:
     return None
 
 
+def _probe_open(tmp_path: str) -> int:
+    """The probe primitive: ONE non-retrying exclusive create.
+
+    Split out as the injection seam for the classification tests (they patch
+    this, not the OS) and as the single place the no-mkstemp rule is visible.
+    """
+    return os.open(tmp_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+
+
 def probe_dir_writable(path: Any) -> Tuple[Optional[bool], Optional[str], Optional[str]]:
     """Can we actually create a file in (the nearest existing ancestor of) *path*?
 
     Returns ``(writable, probed_path, detail)`` where ``writable`` is
     ``True`` (probe file created and removed), ``False`` (the OS refused — this
     is the WinError 5 case), or ``None`` (could not determine).
+
+    The primitive is one NON-RETRYING ``os.open(O_CREAT|O_EXCL|O_WRONLY)``.
+    Never ``tempfile.mkstemp``: its retry loop trusts ``os.access(W_OK)``,
+    which answers True on a Windows ACL-denied directory, so it spins
+    ``PermissionError`` for up to ``TMP_MAX`` (2**31-1) iterations — measured
+    ~43 hours — on exactly the condition this probe exists to report in
+    milliseconds (G1b crucible, 2026-08-02). A uuid filename makes collision
+    effectively impossible; two bounded attempts are kept purely so a
+    same-nanosecond crash leftover cannot flip the verdict.
     """
     target = _nearest_existing_dir(Path(path))
     if target is None:
         return None, None, "no existing ancestor directory to probe"
-    fd = None
-    tmp_path = None
-    try:
-        fd, tmp_path = tempfile.mkstemp(prefix=_PROBE_PREFIX, dir=str(target))
-    except OSError as exc:
-        return False, str(target), f"{type(exc).__name__}: {exc}"
-    finally:
-        if fd is not None:
-            try:
-                os.close(fd)
-            except OSError:
-                pass
-    # Cleanup failure does not change the verdict — the write succeeded.
-    try:
-        os.unlink(tmp_path)
-    except OSError:
-        pass
-    return True, str(target), None
+    last_exists: Optional[str] = None
+    for _ in range(2):
+        tmp_path = os.path.join(
+            str(target), f"{_PROBE_PREFIX}{os.getpid()}_{uuid.uuid4().hex}")
+        try:
+            fd = _probe_open(tmp_path)
+        except FileExistsError as exc:
+            last_exists = f"{type(exc).__name__}: {exc}"
+            continue  # bounded: one more unique name, then give up honestly
+        except OSError as exc:
+            # The real refusal, immediately, with the real winerror.
+            return False, str(target), f"{type(exc).__name__}: {exc}"
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        # Cleanup failure does not change the verdict — the write succeeded.
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        return True, str(target), None
+    return None, str(target), (
+        f"probe name collided twice (uuid) — not a permission verdict: "
+        f"{last_exists}")
 
 
 # ---------------------------------------------------------------------------
@@ -226,7 +306,15 @@ def write_plane_state() -> Dict[str, Any]:
             ("memory", resolve_memory_target_dir),
             ("reports", resolve_reports_base_dir),
         ):
-            target = resolver()
+            try:
+                target = resolver()
+            except Exception as exc:  # noqa: BLE001 -- e.g. busy-main marshal timeout
+                targets[name] = {"path": None, "probed": None,
+                                 "writable": None,
+                                 "detail": f"{type(exc).__name__}: {exc}"}
+                unclear.append(
+                    f"{name} target unresolvable: {type(exc).__name__}: {exc}")
+                continue
             writable, probed, detail = probe_dir_writable(target)
             targets[name] = {
                 "path": str(target),
