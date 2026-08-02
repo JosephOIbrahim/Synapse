@@ -50,7 +50,6 @@
       "state": "done",
       "receipt": "LEDGER.json",
       "branch": "repair/ledger-moneta-seam",
-      "worktree": ".claude/worktrees/ledger-moneta-seam",
       "prompt": "harness/prompts/ledger.md",
       "deps": [],
       "note": "ledger.py:275 _deposit_to_moneta is a hardcoded no-op with pragma:no cover, and ledger.py:329 calls it. Backend went live at b2c2c04; this seam did not. Also fixes MONETA_SRC provenance - the substrate currently resolves to a working directory. Disjoint from RES (tests/solaris) and H3a (read-only), so it runs in parallel.",
@@ -61,20 +60,22 @@
         "docs/studio/DEPLOYMENT.md"
       ],
       "merge_status": "superseded",
-      "merge_note": "Superseded: U1 authored the union from this branch (R91). Its finding is CLOSED - ledger.py:452 _deposit_to_moneta is no longer a no-op, U1 wrote the real implementation and it is called at :548. Pinned done so it cannot re-dispatch and cannot false-flag R92."
+      "merge_note": "Superseded: U1 authored the union from this branch (R91). Its finding is CLOSED - ledger.py:452 _deposit_to_moneta is no longer a no-op, U1 wrote the real implementation and it is called at :548. Pinned done so it cannot re-dispatch and cannot false-flag R92.",
+      "worktree_released": ".claude/worktrees/ledger-moneta-seam"
     },
     {
       "id": "H2",
       "name": "requalify",
-      "state": "blocked",
+      "state": "done",
       "receipt": "H2b.json",
       "branch": "repair/h2-requalify",
-      "worktree": ".claude/worktrees/h2-requalify",
       "prompt": "harness/prompts/h2.md",
       "deps": [
         "RES"
       ],
-      "note": "R42/R43: unblocks when residency is gone. Scope includes the 17 bucket-2 decorations."
+      "note": "R42/R43: unblocks when residency is gone. Scope includes the 17 bucket-2 decorations.",
+      "closed_note": "state->done 2026-08-02 (bar-truth pass): branch merged to master (ancestor of 8e4c385-era cleanup); findings routed to the decisions board via H2b.json for_ruling",
+      "worktree_released": ".claude/worktrees/h2-requalify"
     },
     {
       "id": "H1",
@@ -184,7 +185,7 @@
     {
       "id": "F1",
       "name": "integrate",
-      "state": "blocked",
+      "state": "done",
       "receipt": "F1.json",
       "deps": [
         "H1",
@@ -196,8 +197,9 @@
       "note": "merge, housekeep, prune worktrees. Runs LAST - gated on every evidence-producing leg so integration never merges a picture that is still moving.",
       "prompt": "harness/prompts/f1.md",
       "branch": "repair/f1-integrate",
-      "worktree": ".claude/worktrees/f1-integrate",
-      "readonly": false
+      "readonly": false,
+      "closed_note": "state->done 2026-08-02 (bar-truth pass): green_with_findings receipt; findings live on the decisions board; integrate lane concluded",
+      "worktree_released": ".claude/worktrees/f1-integrate"
     },
     {
       "id": "H9",
@@ -205,12 +207,12 @@
       "state": "done",
       "receipt": "H9.json",
       "branch": "repair/h9-doc-grounding",
-      "worktree": ".claude/worktrees/h9-doc-grounding",
       "prompt": "harness/prompts/h9.md",
       "deps": [],
       "readonly": true,
       "note": "done. Receipt LOST in the 2026-07-27 housekeeping prune - never committed. Findings survive as R95-R98 with anchors. LOP grounding 18%, COP 6% - both D2-shaped gaps. nodes.zip ships with 22.0.368: 5,034 pages, lop/ 198 at median 4,376B, cop/+cop2/ 525 at median ~2,900B. Measured coverage LOP 179/198=90%, COP 460/491=94%. Harvests to a NEW tier VERIFIED-DOC, reported SEPARATELY from probe-derived grounding - docs supply D2 and cannot supply D3, and karmarenderproperties proves docs go silent (69,921 chars, never mentions its own deprecation). Produces the corpus; wiring it is a separate decision.",
-      "receipt_lost": true
+      "receipt_lost": true,
+      "worktree_released": ".claude/worktrees/h9-doc-grounding"
     },
     {
       "id": "U1",
@@ -233,15 +235,16 @@
     {
       "id": "V0",
       "name": "retina m2 reconcile",
-      "state": "ready",
+      "state": "done",
       "receipt": "V0.json",
       "branch": "retina/v0-m2-reconcile",
-      "worktree": ".claude/worktrees/v0-m2-reconcile",
       "prompt": "harness/prompts/v0.md",
       "deps": [],
       "readonly": true,
       "touches": [],
-      "note": "archive/retina-m2-orphan carries 1,966 lines on no other branch - found in a workflow worktree nothing was backing up, preserved minutes before pruning. Verdict only: does it merge, does its 15/15 T0 byte-identity claim hold, does the worker venv it names actually exist. R91 precedent: building on unmerged work is how four decided rulings got stranded."
+      "note": "archive/retina-m2-orphan carries 1,966 lines on no other branch - found in a workflow worktree nothing was backing up, preserved minutes before pruning. Verdict only: does it merge, does its 15/15 T0 byte-identity claim hold, does the worker venv it names actually exist. R91 precedent: building on unmerged work is how four decided rulings got stranded.",
+      "closed_note": "state->done 2026-08-02 (bar-truth pass): RETINA M2 verdict banked (v5.29.0 shipped, archive branch rejected); reconcile concluded",
+      "worktree_released": ".claude/worktrees/v0-m2-reconcile"
     },
     {
       "id": "V1",
@@ -262,13 +265,13 @@
       "state": "done",
       "receipt": "C0.json",
       "branch": "claims/c0-census",
-      "worktree": ".claude/worktrees/c0-census",
       "prompt": "harness/prompts/c0.md",
       "deps": [],
       "readonly": true,
       "touches": [],
       "note": "done. Receipt LOST in the same prune. Findings survive as R117. The positioning document says 'a technical evaluator will open the repo'. This is that evaluator, run internally first. Four SHIPPING claims, each gets a producer path or NONE. Roadmap items exempt - they are honest by construction. Records AGE: claim 3 became defensible on 2026-07-26 and reads as long-established, which is a different risk than being false.",
-      "receipt_lost": true
+      "receipt_lost": true,
+      "worktree_released": ".claude/worktrees/c0-census"
     },
     {
       "id": "C1",
@@ -291,7 +294,6 @@
       "state": "done",
       "receipt": "P1.json",
       "branch": "design/p1-panel-redesign",
-      "worktree": ".claude/worktrees/p1-panel-redesign",
       "prompt": "harness/prompts/p1.md",
       "deps": [],
       "readonly": false,
@@ -303,7 +305,8 @@
       "note": "STALLED 2026-07-27 - worktree unwritten for 3.5h while its process sat alive at 367MB. Its census LANDED and is the useful half (R128): five of eight result-surface setters had zero product callers. P2 built the connection. Pinned done so it cannot re-dispatch.",
       "receipt_lost": true,
       "merge_status": "merged",
-      "merge_note": "Released and merged 2026-07-28 after review. decision_log.py quotes the agent reasoning rather than composing it; P2 shipped the weaker tool-derived version and the wiring choice between them is a follow-up."
+      "merge_note": "Released and merged 2026-07-28 after review. decision_log.py quotes the agent reasoning rather than composing it; P2 shipped the weaker tool-derived version and the wiring choice between them is a follow-up.",
+      "worktree_released": ".claude/worktrees/p1-panel-redesign"
     },
     {
       "id": "RSI0",
@@ -337,13 +340,13 @@
       "state": "done",
       "receipt": "S1.json",
       "branch": "forensic/s1-tool-inventory",
-      "worktree": ".claude/worktrees/s1-forensic",
       "prompt": "harness/prompts/s1.md",
       "deps": [],
       "readonly": true,
       "touches": [],
       "note": "done. Receipt LOST in the same prune. Findings survive as R121-R122. What SYNAPSE DOES today, per tool, mapped to a real artist task. Every tool classified WORKS/PARTIAL/SCAFFOLD/UNREACHABLE/UNKNOWN with its evidence. This week found five Solaris tools registered, tested and completely unreachable - the gap between 'a tool exists' and 'a tool works' is this project's most reliable finding, and this measures it deliberately.",
-      "receipt_lost": true
+      "receipt_lost": true,
+      "worktree_released": ".claude/worktrees/s1-forensic"
     },
     {
       "id": "S2",
@@ -422,15 +425,16 @@
     {
       "id": "E1",
       "name": "tool surface census",
-      "state": "ready",
+      "state": "done",
       "receipt": "E1.json",
       "branch": "econ/e1-tool-surface-census",
-      "worktree": ".claude/worktrees/e1-econ",
       "prompt": "harness/prompts/e1.md",
       "deps": [],
       "readonly": true,
       "touches": [],
-      "note": "READ-ONLY, PARALLEL to E0 on a disjoint question - E0 asks what a turn COSTS, E1 asks what the surface IS. A total is not a plan. Decomposes 17,310 per tool into name / description / schema, because those three compress differently and only one risks correctness. Looks for concentration (is it 20 tools of 120?), duplicated schema fragments (free reduction, no capability lost), and DEAD SURFACE - a registered tool never called costs its full definition every turn, and S1 already found five Solaris tools registered, tested and unreachable. Ends with the honest counter-question: is 2,000 even reachable at 120 tools, or is the real decision FEWER tools rather than smaller ones."
+      "note": "READ-ONLY, PARALLEL to E0 on a disjoint question - E0 asks what a turn COSTS, E1 asks what the surface IS. A total is not a plan. Decomposes 17,310 per tool into name / description / schema, because those three compress differently and only one risks correctness. Looks for concentration (is it 20 tools of 120?), duplicated schema fragments (free reduction, no capability lost), and DEAD SURFACE - a registered tool never called costs its full definition every turn, and S1 already found five Solaris tools registered, tested and unreachable. Ends with the honest counter-question: is 2,000 even reachable at 120 tools, or is the real decision FEWER tools rather than smaller ones.",
+      "closed_note": "state->done 2026-08-02 (bar-truth pass): econ/e1-tool-surface-census ancestor-merged into master (deleted in the 2026-08-02 77-branch cleanup)",
+      "worktree_released": ".claude/worktrees/e1-econ"
     },
     {
       "id": "V2",
@@ -452,10 +456,9 @@
     {
       "id": "V3",
       "name": "probe layer",
-      "state": "ready",
+      "state": "done",
       "receipt": "V3.json",
       "branch": "econ/v3-probe-layer",
-      "worktree": ".claude/worktrees/v3-econ",
       "prompt": "harness/prompts/v3.md",
       "deps": [],
       "readonly": false,
@@ -463,7 +466,9 @@
         "python/synapse/panel/providers/probe.py",
         "python/synapse/panel/providers/registry.py"
       ],
-      "note": "Blueprint Mile 4. Routing is probe-derived, never config-declared - and this project has the receipts: hou.ActiveRender documented and absent, EXPECTED_HOUDINI_VERSION declared and never assigned, five Solaris tools registered and unreachable. A model list is the same shape of claim and fails the same way. Returns a structure, no panel work. Colour COMPUTED from probe age and quota, never stored; staleness degrades to GREY, never to green. Zero completion spend - count_tokens is free, completions are not."
+      "note": "Blueprint Mile 4. Routing is probe-derived, never config-declared - and this project has the receipts: hou.ActiveRender documented and absent, EXPECTED_HOUDINI_VERSION declared and never assigned, five Solaris tools registered and unreachable. A model list is the same shape of claim and fails the same way. Returns a structure, no panel work. Colour COMPUTED from probe age and quota, never stored; staleness degrades to GREY, never to green. Zero completion spend - count_tokens is free, completions are not.",
+      "closed_note": "state->done 2026-08-02 (bar-truth pass): econ/v3-probe-layer ancestor-merged into master (same cleanup)",
+      "worktree_released": ".claude/worktrees/v3-econ"
     }
   ]
 }

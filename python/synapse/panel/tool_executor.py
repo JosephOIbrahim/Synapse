@@ -55,17 +55,43 @@ PANEL_INLINE_SLOW_MS = 1000.0  # a single inline op over this is logged as slow
 
 _panel_inline_lock = threading.Lock()
 _panel_inline_stats = {
+    # MAIN-THREAD dispatches only. These are the samples that mean "the Qt loop
+    # was stalled this long"; nothing else may be added to them.
     "count": 0,
     "sum_ms": 0.0,
     "max_ms": 0.0,
     "slow_count": 0,
     "slowest_tool": None,
+    # OFF-MAIN dispatches, counted separately (FREEZE_FORENSICS_20260731 §2,
+    # "Follow-on defect"). Before this split, _dispatch recorded daemon-thread
+    # wall-time into the counters above and logged it as main-thread time. The
+    # forensics recorded that this "corrupted forensics this run and will
+    # corrupt the next one" — an off-main dispatch stalls no Qt loop, so
+    # attributing it as a freeze contribution sends the next investigator at
+    # the wrong mechanism. Kept rather than dropped: the duration is still
+    # useful, it simply is not main-thread hold time.
+    "offmain_count": 0,
+    "offmain_sum_ms": 0.0,
+    "offmain_max_ms": 0.0,
+    "offmain_slowest_tool": None,
 }
 
 
-def _record_panel_inline(tool_name: str, ms: float) -> None:
-    """Record one inline tool-dispatch duration (main-thread)."""
+def _record_panel_inline(tool_name: str, ms: float, on_main: bool = True) -> None:
+    """Record one tool-dispatch duration, attributed by REAL thread identity.
+
+    ``on_main`` must come from an actual thread-identity check at execution
+    time, never from a proxy flag such as which entrypoint was used — a proxy
+    is exactly what rotted the previous version of this counter.
+    """
     with _panel_inline_lock:
+        if not on_main:
+            _panel_inline_stats["offmain_count"] += 1
+            _panel_inline_stats["offmain_sum_ms"] += ms
+            if ms > _panel_inline_stats["offmain_max_ms"]:
+                _panel_inline_stats["offmain_max_ms"] = ms
+                _panel_inline_stats["offmain_slowest_tool"] = tool_name
+            return
         _panel_inline_stats["count"] += 1
         _panel_inline_stats["sum_ms"] += ms
         if ms > _panel_inline_stats["max_ms"]:
@@ -94,6 +120,10 @@ def reset_panel_inline_stats() -> None:
         _panel_inline_stats["max_ms"] = 0.0
         _panel_inline_stats["slow_count"] = 0
         _panel_inline_stats["slowest_tool"] = None
+        _panel_inline_stats["offmain_count"] = 0
+        _panel_inline_stats["offmain_sum_ms"] = 0.0
+        _panel_inline_stats["offmain_max_ms"] = 0.0
+        _panel_inline_stats["offmain_slowest_tool"] = None
 
 
 # ---------------------------------------------------------------------------
@@ -299,11 +329,20 @@ class ToolExecutor(QtCore.QObject):
     # NEVER changes the tool result — hou must run on the main thread regardless.
     preflight_warning = QtCore.Signal(str, str)
 
+    #: Escape hatch for the h7 inline guard below. Default False: a tool the
+    #: pre-flight predicts is heavy is REFUSED when the dispatch is genuinely
+    #: on Houdini's main thread, because at that point no bound is possible
+    #: (handlers_render.py:109-113 — "nothing in Python can interrupt the main
+    #: thread from the main thread"). Set True only by a caller that has
+    #: accepted a GUI freeze for the payload's full duration.
+    _allow_heavy_inline = False
+
     def __init__(self, parent: Optional[QtCore.QObject] = None) -> None:
         super().__init__(parent)
         self._handler = None  # Lazy-loaded SynapseHandler
         self._handler_error: Optional[str] = None  # real import/init failure
         self._last_preflight: Optional[str] = None  # last advisory (diagnostic)
+        self._last_preflight_heavy: bool = False    # drives the h7 inline guard
 
     # ------------------------------------------------------------------
     # Lazy handler initialisation
@@ -352,6 +391,9 @@ class ToolExecutor(QtCore.QObject):
         ``logger.warning`` is thread-safe and is always kept — it is the
         load-bearing part.
         """
+        # Reset first: a stale True from the previous request must never leak
+        # into this one and refuse a light tool.
+        self._last_preflight_heavy = False
         try:
             from synapse.panel.bridge_adapter import estimate_inline_cost
             heavy, message = estimate_inline_cost(request.tool_name, request.tool_input)
@@ -361,6 +403,7 @@ class ToolExecutor(QtCore.QObject):
         if not heavy:
             return
 
+        self._last_preflight_heavy = True
         self._last_preflight = message
         logger.warning("Pre-flight advisory — %s", message)
         if emit:
@@ -422,6 +465,46 @@ class ToolExecutor(QtCore.QObject):
             # non-blocking advisory if this op may briefly freeze the loop.
             self._preflight(request, emit=emit_preflight)
 
+            # h7 INLINE GUARD — FREEZE_FORENSICS_20260731 §5 item 1 (PRIMARY).
+            #
+            # Thread identity is read HERE, from the real thread, not inferred
+            # from which entrypoint was used. execute_tool (the Qt slot) and
+            # execute_tool_off_main (a daemon thread) both land in _dispatch,
+            # and only the first one can stall the Qt loop.
+            #
+            # Why refuse rather than time-box: once a payload is executing on
+            # the main thread it cannot be interrupted from the main thread
+            # (handlers_render.py:109-113). The v5.40.1 class-3 fix bounded the
+            # caller's WAIT and never the running payload, which is precisely
+            # why freezes continued after it — 8 of them on 2026-07-31, up to
+            # 44.4s. A guard that refuses BEFORE entry is the only mechanism
+            # that can work, and it is the same shape as the render
+            # foreground_guard that already protects the render path.
+            #
+            # In production today this should never fire: the worker dispatches
+            # off-main (claude_worker.py:348-374) and h9's tool_requested wire
+            # has zero emitters. It exists so that if that wire is ever armed,
+            # the result is one refused tool with an actionable message instead
+            # of a 46-second frozen UI.
+            _on_main = threading.current_thread() is threading.main_thread()
+            if (_on_main and self._last_preflight_heavy
+                    and not self._allow_heavy_inline):
+                request.error = (
+                    "Refused to run %r inline on Houdini's main thread: the "
+                    "pre-flight predicts a heavy payload, and a payload already "
+                    "running on the main thread cannot be interrupted from the "
+                    "main thread — the UI would freeze for its full duration "
+                    "with no bound. %s Re-dispatch via execute_tool_off_main(), "
+                    "or set _allow_heavy_inline=True to accept the freeze "
+                    "deliberately." % (request.tool_name,
+                                       self._last_preflight or "")
+                ).strip()
+                logger.warning(
+                    "h7 guard refused inline main-thread dispatch of %r "
+                    "(heavy pre-flight)", request.tool_name,
+                )
+                return
+
             # 1. Resolve tool name to (command_type, payload_builder)
             dispatch = get_tool_dispatch(request.tool_name)
             if dispatch is None:
@@ -470,13 +553,27 @@ class ToolExecutor(QtCore.QObject):
                 response = handler.handle(command)
             finally:
                 _elapsed_ms = (time.perf_counter() - _t0) * 1000.0
-                _record_panel_inline(request.tool_name, _elapsed_ms)
+                _record_panel_inline(request.tool_name, _elapsed_ms,
+                                     on_main=_on_main)
                 if _elapsed_ms >= PANEL_INLINE_SLOW_MS:
-                    logger.warning(
-                        "Inline tool %r ran %.0fms on the main thread "
-                        "(Qt loop stalled this long; slow threshold %.0fms)",
-                        request.tool_name, _elapsed_ms, PANEL_INLINE_SLOW_MS,
-                    )
+                    # The label must discriminate. The previous single string
+                    # claimed "on the main thread ... Qt loop stalled this
+                    # long" for BOTH paths, so every off-main dispatch read as
+                    # a freeze contribution. FREEZE_FORENSICS_20260731 §2 names
+                    # this as the follow-on defect that corrupted that run's
+                    # forensics and would corrupt the next one.
+                    if _on_main:
+                        logger.warning(
+                            "Inline tool %r ran %.0fms on the main thread "
+                            "(Qt loop stalled this long; slow threshold %.0fms)",
+                            request.tool_name, _elapsed_ms, PANEL_INLINE_SLOW_MS,
+                        )
+                    else:
+                        logger.warning(
+                            "Off-main tool %r ran %.0fms on a worker thread "
+                            "(Qt loop NOT stalled; slow threshold %.0fms)",
+                            request.tool_name, _elapsed_ms, PANEL_INLINE_SLOW_MS,
+                        )
 
             # 6. Transfer result
             if response.success:

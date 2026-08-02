@@ -45,8 +45,19 @@ def test_for_ruling_items_are_actually_read():
         except Exception:
             pass
     collected = [i for i in d.collect(with_ages=False) if i["kind"] == "ruling"]
-    assert len(collected) == on_disk, \
-        "%d for_ruling entries on disk, %d collected" % (on_disk, len(collected))
+    # Since the resolution channel (PR #58) an item can leave the board — but
+    # ONLY through resolved.json, which snapshots what it retired. The read
+    # guarantee is therefore: everything on disk is either collected or
+    # accounted for by a resolution. A bare count equality would re-pin the
+    # old no-exit contract and fail on the first legitimate resolution.
+    resolved_rulings = sum(
+        1 for e in d.load_resolved().values()
+        if (e.get("item_snapshot") or {}).get("kind") == "ruling"
+    )
+    assert len(collected) + resolved_rulings == on_disk, \
+        "%d for_ruling on disk, %d collected + %d resolved — %d unaccounted for" % (
+            on_disk, len(collected), resolved_rulings,
+            on_disk - len(collected) - resolved_rulings)
     assert on_disk > 0, "no for_ruling entries to test against - cannot establish the case"
 
 

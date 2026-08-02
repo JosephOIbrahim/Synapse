@@ -32,14 +32,10 @@ except ImportError:
     Sdf = None  # type: ignore[assignment]
     Tf = None  # type: ignore[assignment]
 
-_TYPES_AVAILABLE = False
-try:
-    from shared.types import AgentID
-    from shared.router import MOERouter
-    _TYPES_AVAILABLE = True
-except ImportError:
-    AgentID = None  # type: ignore[assignment,misc]
-    MOERouter = None  # type: ignore[assignment,misc]
+# The shared.types / shared.router import guard that used to live here served
+# only apply_learned_fast_paths (retired 2026-08-01, RSI loop F). Nothing else
+# in this module touches AgentID or MOERouter, so the guard went with it —
+# RoutingLog now records decisions without importing the router that made them.
 
 
 class RoutingLog:
@@ -97,24 +93,11 @@ class RoutingLog:
                         break
         return result
 
-    def apply_learned_fast_paths(self, router) -> int:
-        """Apply session-learned fast paths to a router instance.
-
-        Returns number of fast paths applied.
-        """
-        if not _TYPES_AVAILABLE or router is None:
-            return 0
-
-        applied = 0
-        for entry in self.get_frequent_fingerprints():
-            try:
-                primary = AgentID(entry["primary"])
-                advisory = AgentID(entry["advisory"]) if entry["advisory"] != "none" else None
-                router.learn_fast_path(entry["fingerprint"], primary, advisory)
-                applied += 1
-            except (ValueError, KeyError):
-                pass
-        return applied
+    # RETIRED 2026-08-01 (RSI loop F): apply_learned_fast_paths(router) is
+    # deleted. It was the SECOND writer into MOERouter._session_fast_paths,
+    # via the now-deleted learn_fast_path(), and had zero callers of its own.
+    # get_frequent_fingerprints() survives above because to_dict() reports it
+    # as read-only panel telemetry — counting is not promoting.
 
     def write_to_usd(self, path: str | None = None) -> bool:
         """Write routing log to agent.usd.

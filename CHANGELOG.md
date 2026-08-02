@@ -2,6 +2,22 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.41.0 — the clearance release, and the house gets a broom
+
+*2026-07-31: v5.40.1's deferred list closes and the #1 failure class (phantom APIs) gets a standing housecleaning harness. **5,336 tests passing, 0 failures, 137 skipped** — **+6** against v5.40.1 (5,330; +3 `test_sessionstart_ping.py`, +3 `test_websocket_cancel_reachable.py`), local Windows suite · Houdini 22.0.368 · two review branches deliberately NOT in this release.*
+
+**THE LYING SIGNAL IS GONE (P3.1, `340db86`).** The SessionStart hook reported "bridge connected" without ever pinging — the exact false-positive that armed the v5.40.1 chat-freeze class every session. Health claims now require a real bridge ping. Pinned by `tests/test_sessionstart_ping.py` (3).
+
+**CANCEL REACHES MID-FRAME (P3.3, `9c9bc8e`) — closes v5.40.1's open list.** The `websocket.py:471` serial `for message in websocket:` read loop made cancellation unreachable until a frame ended. The loop is now cancel-aware (`threading.Event` + `recv`), 0.46s deterministic in tests. Pinned by `tests/test_websocket_cancel_reachable.py` (3).
+
+**CI RE-GREENED (P3.2, `9c8fe87`).** `mcp==1.26.0` pinned — the pre-existing `server.list_tools()` drift that reddened every PR since 2026-07-29.
+
+**THE CLEAR HARNESS SHIPS (`8fbabd1` + L1-L4).** The work-clearance harness (`harness/clear/`, `clear-orchestrator`): the 6 untracked latency-relay files committed (L1), the decisions board regenerated fresh — 289 open, C.0 still the human gate (L2), the CHANGELOG backfilled v5.34.0–v5.40.0 from the release commits (L4). Bar: 5 PASS / 3 FAIL honest — the 3 remaining are human gates by design (C.0, husk-Indie, report addendum).
+
+**THE PHANTOM SWEEP HARNESS SHIPS (`harness/phantoms/`).** House-cleaning for phantom APIs across source/docs/corpus: inventory → assay against the introspected h22 symbol-table authority → KEEP/FIX classification (KEEP-biased — a wrongly-erased warning is the worst failure) → ledger + crucible ledger-attack. Read-only by construction; every fix is a human-gated forge dispatch. First-run proof (not in this release, in review): the corpus was re-teaching the `usdrender` phantom in 14 files (the code/corpus-divergence class, live and caught); `hdefereval` was root-caused as the sixth headless-blind module ("only available in a graphical Houdini"). The fix-verify pass rejected 0/6 ledger plans as written — the substring trap that would have minted `configure_usdrender_rop_rop` — which is exactly why verify precedes dispatch.
+
+**IN REVIEW, NOT IN THIS RELEASE.** `clear/l5-phantom-scanner` (pdg/pxr phantom-scanner extension, 24 tests, crucible-attacked) and `fix/corpus-usdrender-rop` (14 commits, 3 attacks, SOUND — corpus no longer teaches `usdrender`). Both await merge gates. The quarantine packet (`harness/phantoms/QUARANTINE-PACKET-2026-07-31.md`) carries the proposed `rulebook/phantoms.json` candidates and the hdefereval allowlist review input.
+
 ## v5.40.1 — the chat no longer grips the UI
 
 *2026-07-30: a third inline-main-thread freeze class is closed on the panel/agent-loop path — distinct from the in-process render freeze (v5.33.0's bounded mitigation) and the hdefereval self-deadlock (v5.33.0's deletion). When the local bridge was down, a chat tool call fell back to a Qt AutoConnection that ran the whole handler inline on the GUI thread, so every internal `run_on_main` hit Fast path 2 (inline, no timeout) and Houdini's UI gripped for the handler's full duration — you could not select nodes mid-chat. A lying "connected" SessionStart signal made this fire in everyday sessions. **5,330 tests passing, 0 failures, 137 skipped** — **+14** against v5.40.0 (5,316; +8 in `test_offmain_fallback.py` at `6f354ae`, +6 in `test_context_poll_offmain.py` at `bf74ed7`, the 4 `TestStaleContextGather` cases are contract updates net 0), local Windows suite · `mcp` library drift makes CI red on the runners (pre-existing, since 2026-07-29, `server.list_tools()` dropped) — not this fix · Houdini 22.0.368 · not live-measured (the fix targets exactly the bridge-down state that was live at diagnosis).*

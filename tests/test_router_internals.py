@@ -1,14 +1,21 @@
 """
 Conformance + regression tests for shared/router.py.
 
-Covers the seven bug/brittleness fixes:
+Covers the bug/brittleness fixes that survive R20:
   R11 -- route_task() singleton (fast paths actually reachable)
-  R12 -- internal auto-promotion at FAST_PATH_PROMOTION_THRESHOLD
   R13 -- score-based task type extraction (no insertion-order dependency)
   R14 -- complexity classification independent of word count
   R15 -- relative advisory threshold (gap-aware top-K)
-  R16 -- CONSTANTS_HASH stamping for session fast paths
   R17 -- empty domain_signals tuple instead of GEOMETRY fallback
+
+RETIRED 2026-08-01 (R20, RSI loop F): the auto-promotion suites are deleted
+along with the mechanism they pinned -- TestAutoPromotion (R12),
+TestConstantsHashStamping (R16), TestOutcomeVetoedPromotion (R18),
+TestOutcomeTypeGuard + TestOutcomeConfirmationUpgrade (R19) -- 37 tests. They were
+honest and passing; they tested a mechanism that ran zero times in production.
+Deleting the code deletes its tests. What is asserted below instead is that the
+promotion surface is GONE (TestPromotionRetired) -- a test that fails loudly if
+someone reintroduces it without reopening the registry decision.
 
 Plus a doc-vs-code conformance check that parses CLAUDE.md and asserts the
 mechanisms it claims to have are actually present in router.py.
@@ -91,49 +98,6 @@ class TestRouteTaskSingleton:
 
 
 # ─────────────────────────────────────────────────────────────────
-# R12: Internal auto-promotion
-# ─────────────────────────────────────────────────────────────────
-
-class TestAutoPromotion:
-    def test_fingerprint_promoted_after_threshold(self):
-        router = MOERouter()
-        # Burn calibration so fast path lookups are active
-        warmup = extract_features("orchestrate the pdg render farm pipeline")
-        for _ in range(ROUTER_CALIBRATION_PERIOD + 1):
-            router.route(warmup)
-
-        novel = RoutingFeatures(
-            task_type=TaskType.ARCHITECTURE,
-            complexity=Complexity.MODERATE,
-            domain_signals=(DomainSignal.TESTING,),
-            urgency=Urgency.NORMAL,
-        )
-        fp = novel.fingerprint()
-        assert fp not in FAST_PATHS  # precondition
-
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
-            router.route(novel)
-
-        assert fp in router._session_fast_paths
-        # Stamped with current constants hash
-        assert router._session_fast_paths[fp][2] == CONSTANTS_HASH
-
-    def test_existing_fast_path_not_double_promoted(self):
-        router = MOERouter()
-        for _ in range(ROUTER_CALIBRATION_PERIOD + 1):
-            router.route(extract_features("noop"))
-
-        # Construct a feature vector matching a hand-tuned FAST_PATHS key
-        feat = extract_features("inspect the geometry")
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD + 2):
-            router.route(feat)
-
-        # Should NOT have been added to session paths (already in FAST_PATHS)
-        if feat.fingerprint() in FAST_PATHS:
-            assert feat.fingerprint() not in router._session_fast_paths
-
-
-# ─────────────────────────────────────────────────────────────────
 # R13: Score-based task type extraction (no insertion-order dependency)
 # ─────────────────────────────────────────────────────────────────
 
@@ -206,31 +170,6 @@ class TestRelativeAdvisory:
 
 
 # ─────────────────────────────────────────────────────────────────
-# R16: CONSTANTS_HASH stamping invalidates stale session fast paths
-# ─────────────────────────────────────────────────────────────────
-
-class TestConstantsHashStamping:
-    def test_stale_hash_skipped(self):
-        router = MOERouter()
-        for _ in range(ROUTER_CALIBRATION_PERIOD + 1):
-            router.route(extract_features("noop"))
-
-        feat = RoutingFeatures(
-            task_type=TaskType.ARCHITECTURE,
-            complexity=Complexity.MODERATE,
-            domain_signals=(DomainSignal.TESTING,),
-            urgency=Urgency.NORMAL,
-        )
-        fp = feat.fingerprint()
-        # Inject a stale entry directly
-        router._session_fast_paths[fp] = (AgentID.HANDS, None, "deadbeefdead")
-
-        decision = router.route(feat)
-        # Stale entry must NOT be used — should fall through to scored
-        assert decision.method != "session_fast_path"
-
-
-# ─────────────────────────────────────────────────────────────────
 # R17: No GEOMETRY fallback for empty keyword prompts
 # ─────────────────────────────────────────────────────────────────
 
@@ -289,6 +228,79 @@ class TestFastPathsReachability:
 
 
 # ─────────────────────────────────────────────────────────────────
+# R20: the promotion surface is RETIRED and must stay retired
+# ─────────────────────────────────────────────────────────────────
+
+class TestPromotionRetired:
+    """The subtraction, pinned.
+
+    RSI loop F was retired 2026-08-01 because its promotion path executed zero
+    times in production: nothing produced outcomes, and route()'s only non-test
+    call site sat inside a function with no references. Reintroducing any of
+    these names silently would restore a self-modifying mechanism without
+    reopening that decision, so it fails here instead.
+    """
+
+    RETIRED_ROUTER_ATTRS = [
+        "learn_fast_path", "record_outcome", "outcome_counts",
+        "_promotion_allowed", "_outcome_confirmed",
+    ]
+
+    @pytest.mark.parametrize("name", RETIRED_ROUTER_ATTRS)
+    def test_retired_method_is_gone(self, name):
+        assert not hasattr(MOERouter, name), (
+            f"MOERouter.{name} was retired with RSI loop F (2026-08-01). "
+            f"If it is genuinely needed again, reopen harness/rsi/REGISTRY.json "
+            f"loop F first — it carries the evidence for why this was deleted."
+        )
+
+    def test_router_keeps_no_session_promotion_state(self):
+        router = MOERouter()
+        assert not hasattr(router, "_session_fast_paths")
+        assert not hasattr(router, "_outcomes")
+
+    def test_routing_never_reports_a_session_fast_path(self):
+        """Only two methods survive: hand-tuned 'fast_path' and 'scored'."""
+        router = MOERouter()
+        feat = RoutingFeatures(
+            task_type=TaskType.ARCHITECTURE,
+            complexity=Complexity.MODERATE,
+            domain_signals=(DomainSignal.TESTING,),
+            urgency=Urgency.NORMAL,
+        )
+        assert feat.fingerprint() not in FAST_PATHS   # precondition
+        # Route far past the old promotion threshold and the calibration window.
+        methods = {
+            router.route(feat).method
+            for _ in range(ROUTER_CALIBRATION_PERIOD + FAST_PATH_PROMOTION_THRESHOLD * 5)
+        }
+        assert methods == {"scored"}
+        assert "session_fast_path" not in methods
+
+    def test_fingerprint_counting_survives_the_cut(self):
+        """The advisor reads this — counting is advice, not self-modification."""
+        router = MOERouter()
+        feat = extract_features("inspect the geometry")
+        for _ in range(3):
+            router.route(feat)
+        assert router.fingerprint_counts()[feat.fingerprint()] == 3
+
+    def test_promotion_writer_is_gone_from_the_panel(self):
+        """RoutingLog was the second writer into the promotion table."""
+        from synapse.panel.routing_log import RoutingLog
+        assert not hasattr(RoutingLog, "apply_learned_fast_paths")
+        # …but its read-only frequency telemetry survives.
+        assert hasattr(RoutingLog, "get_frequent_fingerprints")
+
+    def test_dead_tool_filter_entry_point_is_gone(self):
+        """filter_tools() was the sole non-test caller of MOERouter.route()."""
+        from synapse.panel import tool_filter
+        assert not hasattr(tool_filter, "filter_tools")
+        # classify_tool is what the palette actually imports — it stays.
+        assert callable(tool_filter.classify_tool)
+
+
+# ─────────────────────────────────────────────────────────────────
 # Doc/code conformance — parse CLAUDE.md §2.3 and assert mechanisms
 # named there actually exist in router.py / constants.py
 # ─────────────────────────────────────────────────────────────────
@@ -299,21 +311,31 @@ class TestClaudeMdConformance:
         path = _REPO_ROOT / "CLAUDE.md"
         return path.read_text(encoding="utf-8")
 
-    def test_session_learning_threshold_documented_matches_code(self, claude_md):
-        # CLAUDE.md should reference the FAST_PATH_PROMOTION_THRESHOLD constant
-        # OR the literal default value (3). If neither, doc has drifted.
-        m = re.search(r"FAST_PATH_PROMOTION_THRESHOLD.*?(\d+)", claude_md)
-        if m:
-            assert int(m.group(1)) == FAST_PATH_PROMOTION_THRESHOLD
-        else:
-            # Fall back to checking the default literal appears in §2.3 context
-            assert str(FAST_PATH_PROMOTION_THRESHOLD) in claude_md
+    def test_promotion_threshold_still_has_a_live_consumer(self, claude_md):
+        """FAST_PATH_PROMOTION_THRESHOLD survived R20 — but not in the router.
 
-    def test_constants_hash_documented(self, claude_md):
-        assert "CONSTANTS_HASH" in claude_md, (
-            "CLAUDE.md §2.3 must mention CONSTANTS_HASH-based invalidation "
-            "now that the router enforces it."
+        It is no longer a promotion gate; it is the advisor's threshold for
+        RECOMMENDING a hand-tuned FAST_PATHS entry to a human. The constant
+        stays because that consumer is live; the doc must say which one it is.
+        """
+        import shared.conductor_advisor as advisor
+        assert advisor.FAST_PATH_PROMOTION_THRESHOLD == FAST_PATH_PROMOTION_THRESHOLD
+        assert "FAST_PATH_PROMOTION_THRESHOLD" in claude_md
+        # and the router must NOT be a consumer any more
+        router_src = (_REPO_ROOT / "shared" / "router.py").read_text(encoding="utf-8")
+        assert "FAST_PATH_PROMOTION_THRESHOLD," not in router_src, (
+            "router.py re-imported the promotion threshold — R20 retired that gate."
         )
+
+    def test_constants_hash_survives_but_router_does_not_stamp(self):
+        """CONSTANTS_HASH is a constants-module drift primitive, not F's.
+
+        It outlives the retirement because it is an exported constant in its
+        own right; what went is the router stamping promoted entries with it.
+        """
+        assert isinstance(CONSTANTS_HASH, str) and CONSTANTS_HASH
+        router_src = (_REPO_ROOT / "shared" / "router.py").read_text(encoding="utf-8")
+        assert "self._constants_hash" not in router_src
 
     def test_calibration_period_documented(self, claude_md):
         # CLAUDE.md mentions 'calibration period with dense evaluation'
@@ -323,5 +345,21 @@ class TestClaudeMdConformance:
     def test_route_method_exists(self):
         # The mechanism CLAUDE.md describes must actually be present
         assert hasattr(MOERouter, "route")
-        assert hasattr(MOERouter, "learn_fast_path")
+        assert hasattr(MOERouter, "fingerprint_counts")
         assert callable(get_default_router)
+
+    def test_claude_md_no_longer_teaches_session_promotion(self, claude_md):
+        """Doc drift in the dangerous direction: teaching a deleted feature.
+
+        §2.3 is the section that used to describe auto-promotion as live
+        behaviour. It must now describe the retirement instead.
+        """
+        start = claude_md.index("### 2.3")
+        section = claude_md[start:claude_md.index("### 2.4", start)]
+        assert "RETIRED" in section, (
+            "CLAUDE.md §2.3 must record that session auto-promotion was retired."
+        )
+        for gone in ("_session_fast_paths", "learn_fast_path", "record_outcome"):
+            for line in section.splitlines():
+                if gone in line:
+                    assert "RETIRED" in section, f"{gone} described without the retirement note"

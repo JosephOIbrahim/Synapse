@@ -11,8 +11,21 @@ hou MUST run on the main thread, so we cannot move it off. Instead:
   TASK 2 — instrument: record every inline tool duration and log when a single
            op exceeds the slow threshold, so the freeze contributor is named.
 
-These tests pin that the pre-flight is advisory ONLY (never blocks, never alters
-the tool result) and that the instrumentation records + flags slow ops.
+These tests pin that the pre-flight is advisory on the OFF-MAIN path (never
+blocks, never alters the tool result) and that the instrumentation records +
+flags slow ops.
+
+⚠ Contract change, 2026-08-01 (FREEZE_FORENSICS_20260731 §5.1). The pre-flight
+is no longer advisory on ALL paths. When a dispatch is genuinely inline on
+Houdini's main thread, a heavy payload is now REFUSED — bounding the caller's
+wait was never enough, because a payload already on the main thread cannot be
+interrupted from the main thread (handlers_render.py:109-113), and freezes
+continued after the v5.40.1 fix for exactly that reason. The advisory-only
+contract still holds on the off-main path, which is what the worker actually
+uses, so the tests below now exercise it there via a real thread. The refusal
+itself is pinned in tests/test_panel_preflight_h7_guard.py — named to sort
+immediately after this module so it inherits this file's Qt stub rather than
+planting its own earlier in collection (see that file's header).
 
 Pure logic + a lightweight Qt stub — runs under stock pytest.
 """
@@ -147,7 +160,26 @@ def _wire_executor(monkeypatch, handler, cmd_type="execute_python"):
 # TASK 1 — pre-flight surfaces an advisory, but never changes the result
 # ===========================================================================
 
+def _run_really_off_main(executor, req, timeout=10.0):
+    """Execute on a REAL non-main thread.
+
+    The h7 guard (FREEZE_FORENSICS_20260731 §5.1) keys on actual thread
+    identity, not on which entrypoint was called — a proxy flag is exactly what
+    rotted the old attribution counter. So calling ``execute_tool_off_main``
+    from the test's own thread is still main-thread execution and is still
+    guarded. Exercising the off-main contract requires a genuine thread.
+    """
+    import threading as _t
+    th = _t.Thread(target=executor.execute_tool_off_main, args=(req,), daemon=True)
+    th.start()
+    th.join(timeout=timeout)
+    assert not th.is_alive(), "off-main dispatch did not finish"
+
+
 def test_heavy_execute_python_logs_advisory_and_returns_result(monkeypatch, caplog):
+    """Off-main (the production path): the advisory is surfaced but the result
+    is delivered unchanged. The pre-flight only REFUSES when the dispatch is
+    genuinely inline on Houdini's main thread, where no bound is possible."""
     te.reset_panel_inline_stats()
     data = {"made": "box"}
     handler = _Handler(data)
@@ -160,7 +192,7 @@ def test_heavy_execute_python_logs_advisory_and_returns_result(monkeypatch, capl
     )
 
     with caplog.at_level("WARNING"):
-        executor.execute_tool(req)
+        _run_really_off_main(executor, req)
 
     # Advisory surfaced (attributable, not silent)...
     assert any("Pre-flight advisory" in r.message for r in caplog.records)
@@ -197,19 +229,20 @@ def test_light_tool_emits_no_advisory_but_still_records(monkeypatch, caplog):
 
 
 def test_preflight_does_not_change_result_heavy_vs_light(monkeypatch):
-    """The pre-flight verdict must not influence the delivered result."""
+    """On the off-main path the pre-flight verdict must not influence the
+    delivered result — heavy and light both come back identical."""
     data = {"value": 42}
 
     heavy_handler = _Handler(data)
     heavy_exec = _wire_executor(monkeypatch, heavy_handler)
     heavy_req = te.ToolRequest("tu_h", "houdini_execute_python",
                                {"code": "z = 1\n" * 1000})
-    heavy_exec.execute_tool(heavy_req)
+    _run_really_off_main(heavy_exec, heavy_req)
 
     light_handler = _Handler(data)
     light_exec = _wire_executor(monkeypatch, light_handler)
     light_req = te.ToolRequest("tu_l", "houdini_execute_python", {"code": "z = 1"})
-    light_exec.execute_tool(light_req)
+    _run_really_off_main(light_exec, light_req)
 
     assert heavy_req.result == light_req.result == data
     assert heavy_req.error is None and light_req.error is None
