@@ -418,7 +418,7 @@ section is public, frozen, and pinned by tests.
 
 ### 16.2 Public API surface
 
-- **SUBSTRATE** — `LosslessExecutionBridge.operation_stats()` (dict: `per_agent`, `per_agent_verified`, `per_agent_success_rate`, `success_rate`, `anchor_violations`, `operations_total`, `operations_verified`, `log_size`, `log_capacity`, `per_operation_type`, `session_id`); `recent_operations(n=100)` → list[IntegrityBlock] copy; `clear_operation_log()` → int dropped; `record_external_block(block)` → thread-safe live-envelope append; `MOERouter.fingerprint_counts()` → dict[str,int] copy.
+- **SUBSTRATE** — `LosslessExecutionBridge.operation_stats()` (dict: `per_agent`, `per_agent_verified`, `per_agent_success_rate`, `success_rate`, `anchor_violations`, `operations_total`, `operations_verified`, `log_size`, `log_capacity`, `per_operation_type`, `session_id`, `stage_hash_reduced_ops`, `composition_checks_reduced_ops`); `recent_operations(n=100)` → list[IntegrityBlock] copy; `clear_operation_log()` → int dropped; `record_external_block(block)` → thread-safe live-envelope append; `MOERouter.fingerprint_counts()` → dict[str,int] copy.
 - **CONDUCTOR** — `LosslessEvolution._verify_lossless` (internal) → `EvolutionIntegrity` with content-hash failures; `ConductorAdvisor.analyze(bridge_stats, evolution_failures, routing_fingerprints)` and `.analyze_history(history)` → `list[Recommendation]`; `RecommendationHistory.record(recs, timestamp)` → int, `.recent(n=50)`/`.all()`/`.clear()`, `.to_jsonl(path)`/`.from_jsonl(path)`; `advise_from_bridge` one-shot helper.
 
 ### 16.3 Recommendation schema
@@ -433,6 +433,7 @@ section is public, frozen, and pinned by tests.
 - **History is bounded** — `RecommendationHistory.DEFAULT_CAPACITY=500`, FIFO eviction; JSONL persistence atomic via `.tmp + replace`, tolerates malformed lines on read.
 - **Meta-recursion threshold** — `REPEATED_RECOMMENDATION_THRESHOLD=5`: five occurrences of the same `(kind, target)` flag a chronic issue; ten+ escalates to CRITICAL.
 - **Per-agent counters are lifetime** — survive operation-log eviction; bounded log caps IntegrityBlock detail, not aggregate counters.
+- **Reduced-mode counts are observational** (R306) — `stage_hash_reduced_ops` / `composition_checks_reduced_ops` (and the panel tracker's `unobservable_deltas`) report where the R1 size gate degraded observation. They never move `fidelity`: an honest reduction is not a pipeline bug, and the fidelity=1.0-or-stop rule is unchanged.
 
 ### 16.5 Tests pinning the loop
 

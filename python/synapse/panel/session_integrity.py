@@ -46,6 +46,10 @@ class SessionIntegrityTracker:
         self._total: int = 0
         self._tool_calls: int = 0
         self._node_paths: set[str] = set()
+        # R306: the R1 stage-hash size gate's blind spot, counted instead of
+        # invisible. See record() for what each one means.
+        self._reduced_fidelity: int = 0
+        self._unobservable_deltas: int = 0
 
     def record(self, integrity_dict: dict) -> None:
         """Record an IntegrityBlock result from bridge execution."""
@@ -56,11 +60,39 @@ class SessionIntegrityTracker:
         if fidelity < 1.0:
             self._violations += 1
 
+        # ── R306: the reduced-mode blind spot is COUNTED, never hidden ──
+        # Above the R1 size gate the stage hash runs the reduced signature,
+        # which never reads attribute VALUES. The bridge records that honestly
+        # (stage_hash_full_fidelity=False) but nothing read it. Two counts:
+        #   reduced_fidelity     ops whose delta was computed by the reduced
+        #                        signature at all (the denominator).
+        #   unobservable_deltas  the blind-spot case itself: reduced mode AND
+        #                        delta_hash "no_change". before == after here
+        #                        means "this algorithm could not see a change",
+        #                        NOT "nothing changed" — a value-only edit above
+        #                        threshold lands here.
+        # Deliberately NOT folded into violations/fidelity: an honest reduction
+        # is not a pipeline bug, and R306 puts fidelity semantics out of scope.
+        # Deliberately NOT counted as a mutation either — the point is that an
+        # unobservable delta is VISIBLE as unobservable, not invented.
+        if not integrity_dict.get("stage_hash_full_fidelity", True):
+            self._reduced_fidelity += 1
+            if integrity_dict.get("delta_hash") == "no_change":
+                self._unobservable_deltas += 1
+
         # Track tool usage for evolution triggers
         self._tool_calls += 1
         operation = integrity_dict.get("operation", "")
         if operation in ("create_node", "set_parameter", "connect_nodes"):
-            # Extract node path hints from the block
+            # Extract node path hints from the block.
+            # NOTE (R306, verified at HEAD): the sentinels below guard the two
+            # SCENE-HASH fields, which only ever hold a hex digest or "" —
+            # shared/bridge.py assigns "no_change"/"rolled_back" to delta_hash
+            # ALONE, never to these. So this filter has never discarded the
+            # blind-spot case; it simply never saw it. The real gap was that
+            # nothing counted that case at all — closed above, not here. Left
+            # behaviorally untouched: it is inert, and the evolution-trigger
+            # heuristic is not this lane's contract.
             for key in ("scene_hash_before", "scene_hash_after"):
                 val = integrity_dict.get(key, "")
                 if val and val not in ("", "no_change", "rolled_back"):
@@ -86,6 +118,16 @@ class SessionIntegrityTracker:
     def violation_count(self) -> int:
         return self._violations
 
+    @property
+    def unobservable_delta_count(self) -> int:
+        """Ops whose delta could not be observed at full fidelity (R306).
+
+        NOT a violation count and NOT a mutation count — a separate, honest
+        third category: the reduced stage hash ran and saw no change, which
+        does not establish that no change happened.
+        """
+        return self._unobservable_deltas
+
     def should_warn(self) -> bool:
         """True if 3+ integrity violations occurred."""
         return self._violations >= 3
@@ -101,6 +143,11 @@ class SessionIntegrityTracker:
 
         This method stays ``hou``-free / Qt-free so the honesty-critical
         aggregation is testable under stock CPython.
+
+        ``reduced_fidelity`` / ``unobservable_deltas`` are ADDITIVE (R306) and
+        deliberately sit outside the verified/violations split: a reduced-mode
+        op is neither a proven pass nor a pipeline bug, and collapsing it into
+        either would be the same lie in the other direction.
         """
         return {
             "total": self._total,
@@ -109,6 +156,8 @@ class SessionIntegrityTracker:
             "fidelity": self.session_fidelity,
             "has_data": self._total > 0,
             "should_warn": self.should_warn(),
+            "reduced_fidelity": self._reduced_fidelity,
+            "unobservable_deltas": self._unobservable_deltas,
         }
 
     def should_evolve(self, login_data: dict | None = None) -> bool:
@@ -131,7 +180,14 @@ class SessionIntegrityTracker:
         return False
 
     def format_report(self) -> str:
-        """Format an HTML report for the activity log."""
+        """Format an HTML report for the activity log.
+
+        NOTE (Law 2, honest scope): this method has NO caller in the tree today
+        — ``summary()`` is the live path (claude_worker -> integrity_updated ->
+        face_work -> IntegrityReadout). The R306 line below is kept in step with
+        ``summary()`` so the two renderings cannot diverge if it is ever wired,
+        but it is not itself a surfacing claim.
+        """
         lines = []
         lines.append("<b>Session Integrity</b>")
         lines.append("Operations: {} | Verified: {} | Violations: {}".format(
@@ -141,6 +197,17 @@ class SessionIntegrityTracker:
         lines.append("Tool calls: {} | Node paths: {}".format(
             self._tool_calls, len(self._node_paths),
         ))
+
+        if self._unobservable_deltas:
+            lines.append(
+                '<span style="color: #FFAB00;">{} operation{} ran on a '
+                'reduced stage hash with no delta observed -- a value-only '
+                'edit would be invisible to it. Not a violation; not a '
+                'verified no-op either.</span>'.format(
+                    self._unobservable_deltas,
+                    "" if self._unobservable_deltas == 1 else "s",
+                )
+            )
 
         if self.should_warn():
             lines.append(

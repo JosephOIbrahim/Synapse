@@ -227,6 +227,12 @@ mutation — a real per-op cost floor on large production stages.
 > `scene_hash_before`). Set `SYNAPSE_STAGE_HASH_LARGE_MODE=full` to restore
 > full fidelity everywhere; use `scene_hash_ms` telemetry (`scene_hash_stats()`,
 > surfaced in `telemetry_dump`) to see what the choice costs on your stages.
+> **To see how often the gate actually fired on your stages**, read
+> `stage_hash_reduced_ops` and `composition_checks_reduced_ops` from
+> `LosslessExecutionBridge.operation_stats()` (CLAUDE.md §16.2) — lifetime
+> counters, so operation-log eviction cannot age them out. Zero means the gate
+> never degraded a hash this session; a non-zero count is the honest answer to
+> "could a value-only edit have been missed?" (R306).
 > The same threshold also sheds `_verify_composition`'s inherit/specialize
 > sweep on oversized stages (recorded as `composition_checks_reduced=true`);
 > the per-prim reference/payload checks — the composition anchor itself —

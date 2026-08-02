@@ -181,6 +181,9 @@ class TestRecordExternalBlock:
 
     def test_operation_stats_keys_unchanged(self):
         # §16.2 pinned read surface — additive only.
+        # stage_hash_reduced_ops / composition_checks_reduced_ops added by R306
+        # (give the recorded honesty fields a consumer); every pre-existing key
+        # below is unchanged, which is what this pin exists to prove.
         bridge = b.LosslessExecutionBridge()
         bridge.record_external_block(_live_block())
         assert set(bridge.operation_stats()) == {
@@ -188,6 +191,7 @@ class TestRecordExternalBlock:
             "success_rate", "log_size", "log_capacity", "per_agent",
             "per_agent_verified", "per_agent_success_rate",
             "per_operation_type", "session_id",
+            "stage_hash_reduced_ops", "composition_checks_reduced_ops",
         }
 
     def test_thread_safe_under_concurrent_appends_and_reads(self):

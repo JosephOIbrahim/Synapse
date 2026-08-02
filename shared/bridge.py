@@ -807,6 +807,17 @@ class LosslessExecutionBridge:
         # — survive operation log eviction.
         self._per_agent_total: dict[str, int] = {}
         self._per_agent_verified: dict[str, int] = {}
+        # R306: reduced-mode honesty counters. The R1 size gate can degrade the
+        # stage hash (stage_hash_full_fidelity=False) and shed the composition
+        # class-arc sweep (composition_checks_reduced=True). Both were recorded
+        # per block and read by NOTHING — honest at the point of record, dead at
+        # the point of use. These give them a consumer on the §16.2 surface.
+        # Lifetime totals like _per_agent_* — they survive operation-log
+        # eviction, so a long session cannot age its own blind spots out of the
+        # count. They are OBSERVATIONAL: fidelity semantics are untouched
+        # (R306 puts that explicitly out of scope).
+        self._stage_hash_reduced_ops: int = 0
+        self._composition_checks_reduced_ops: int = 0
         # Live-envelope thread safety: record_external_block() is called from
         # the handlers' _log_executor threads concurrent with execute() on the
         # main thread. One lock guards the log deque + counter dicts at every
@@ -886,7 +897,33 @@ class LosslessExecutionBridge:
                 "per_agent_success_rate": per_agent_success_rate,
                 "per_operation_type": per_op,
                 "session_id": self._session_id,
+                # R306 (additive): how often the R1 size gate actually degraded
+                # this session. stage_hash_reduced_ops counts blocks recorded
+                # with stage_hash_full_fidelity=False — ops whose delta was
+                # computed by the reduced signature, which cannot see
+                # attribute-VALUE or time-sample edits.
+                # composition_checks_reduced_ops counts blocks whose
+                # composition validation shed the inherit/specialize sweep.
+                # Lifetime totals — not log-scoped like per_operation_type.
+                "stage_hash_reduced_ops": self._stage_hash_reduced_ops,
+                "composition_checks_reduced_ops":
+                    self._composition_checks_reduced_ops,
             }
+
+    def _tally_reduced_modes(self, integrity: IntegrityBlock) -> None:
+        """R306: count an appended block's reduced-mode flags.
+
+        CALLER MUST ALREADY HOLD ``_log_lock`` — every call site is inside it.
+        Placed at the log-append sites because every block reaches the log
+        exactly once (``_finalize`` on success, ``_fail_with_integrity`` on
+        every failure path, ``record_external_block`` for live envelopes), so
+        the tally is exactly one per operation with no double-count and no
+        silent drop of a degraded op that also failed.
+        """
+        if not integrity.stage_hash_full_fidelity:
+            self._stage_hash_reduced_ops += 1
+        if integrity.composition_checks_reduced:
+            self._composition_checks_reduced_ops += 1
 
     def clear_operation_log(self) -> int:
         """Clear the operation log. Returns the number of entries dropped."""
@@ -912,6 +949,7 @@ class LosslessExecutionBridge:
                 )
             else:
                 self._anchor_violations += 1
+            self._tally_reduced_modes(integrity)
             self._operation_log.append(integrity)
 
     # ── R1: Cryptographic Topological Hashing ────────────────
@@ -2287,6 +2325,7 @@ class LosslessExecutionBridge:
             self._per_agent_verified[agent_key] = (
                 self._per_agent_verified.get(agent_key, 0) + 1
             )
+            self._tally_reduced_modes(integrity)
             self._operation_log.append(integrity)
 
         if isinstance(result, ExecutionResult):
@@ -2742,6 +2781,7 @@ class LosslessExecutionBridge:
     def _fail_with_integrity(self, integrity: IntegrityBlock,
                              error: str, error_type: str) -> ExecutionResult:
         with self._log_lock:
+            self._tally_reduced_modes(integrity)
             self._operation_log.append(integrity)
         result = ExecutionResult.fail(
             error=error, error_type=error_type,
