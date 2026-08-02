@@ -16,6 +16,9 @@ Contract
   no-silent-fallback discipline, D3).
 * **Model identity is data** (carried on the instance from the registry), never
   hardcoded in dispatch.
+* ``last_usage`` is ADDITIVE telemetry, never part of the return tuple:
+  providers that observe API-reported token usage publish it there after each
+  ``stream()`` call; ``None`` means "not measured" — never estimated.
 """
 from __future__ import annotations
 
@@ -29,6 +32,14 @@ class StreamProvider:
     """Base interface. Subclasses set ``id`` and implement the three methods."""
 
     id: str = "base"
+
+    #: Token usage reported by the API for the MOST RECENT ``stream()`` call:
+    #: a dict with any of ``input_tokens`` / ``cache_read_input_tokens`` /
+    #: ``cache_creation_input_tokens`` / ``output_tokens``, or ``None`` when
+    #: the provider observed no usage (never estimated). Additive to the
+    #: ``(stop_reason, content_blocks)`` contract — nothing unpacks it, so
+    #: providers that don't capture usage need no change.
+    last_usage: Optional[dict] = None
 
     @property
     def model_identity(self) -> str:
