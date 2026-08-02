@@ -781,3 +781,42 @@ def pytest_sessionfinish(session, exitstatus):
         "re-execution) and restore the prior resident BY OBJECT.\n"
         f"{listed}"
     )
+
+
+@pytest.fixture(autouse=True)
+def _contain_leaked_freeze_chain():
+    """Suite-wide net for the R310a zombie class (attack-F followup 2).
+
+    The file-local guard in tests/test_freeze_chain.py protects one file; the
+    crucible falsified the lane's 'only place that builds the singleton'
+    claim, so the net has to cover every test. Teardown-side and nearly free:
+    a sys.modules dict lookup unless the freeze-chain module was actually
+    imported.
+
+    CONTAINS rather than fails: a leaked process-wide chain is shut down HERE,
+    deterministically, so its ~30s escalation timer can never fire into a
+    later, unrelated test (the exact mechanism behind the m3_logs_doctor
+    flake). The leak is surfaced as a WARNING naming the offending test --
+    visible in -W and the warnings summary -- rather than an error, so
+    enumerating current offenders is observation, not a suite-red event.
+    Flipping this to a hard fail once offenders are enumerated is the
+    recorded followup.
+    """
+    yield
+    import sys as _sys
+    fc = _sys.modules.get("synapse.server.freeze_chain")
+    if fc is None:
+        return
+    chain = getattr(fc, "_chain", None)
+    if chain is None or getattr(chain, "_stopped", False):
+        return
+    try:
+        fc.shutdown_freeze_chain()
+    except Exception:
+        pass
+    import warnings as _warnings
+    _warnings.warn(
+        "process-wide FreezeChain left ARMED by this test and shut down by "
+        "the conftest net (R310a zombie class) -- add shutdown_freeze_chain() "
+        "to the test's teardown",
+        RuntimeWarning, stacklevel=2)

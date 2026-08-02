@@ -98,17 +98,25 @@ class FreezeChain:
     def escalated(self) -> bool:
         """This freeze episode has been CLAIMED — not that its actions landed.
 
-        ``_escalate`` sets the latch (:150) before it acts (dump :164, breaker
-        :174, halt :188) so a duplicate timer can never act twice. So there is
-        a real window — measured 0.5-9.3 ms, R310a — in which ``escalated`` is
-        True and the breaker is still shut. Do not read this as "the breaker
-        is open"; wait on the outcome you actually care about.
+        ``_escalate`` sets this latch FIRST, then acts (telemetry dump, then
+        breaker ``force_open``, then the emergency halt — in that order, in
+        ``_escalate``'s body; line numbers deliberately not cited, they rotted
+        once already inside this very docstring). The latch-before-act order
+        is what makes a duplicate timer unable to act twice, and it opens a
+        real millisecond-class window in which ``escalated`` is True while the
+        breaker is still shut. Measured twice: the R310a lane probe read
+        0.5-9.3 ms (flagged by its own author as an overestimate — the probe's
+        spin loop steals GIL slices); the attack-F crucible's independent
+        re-measure read 0.79-6.50 ms over 5 trials. Do not read this property
+        as "the breaker is open"; wait on the outcome you actually care about.
 
-        This is also why the sustained-freeze dump ``_escalate`` writes at :164
-        ALWAYS records ``freeze.escalated: true`` while the breaker is provably
-        not yet open: the dump is taken from inside the window. Honest fix is a
-        separate completion signal (see the R310a followup); not folded into
-        the zombie fix, which is a different defect.
+        The dump ``flush_telemetry`` writes from inside that window records
+        whatever this latch holds at read time — for a dump taken by
+        ``_escalate`` itself that is ``escalated: true`` before the breaker
+        provably opened (a claim recorded as an outcome, in SYNAPSE's own
+        post-mortem artifact). Honest fix is a separate completion signal
+        (R310a followup); deliberately not folded into the zombie fix, which
+        was a different defect.
         """
         return self._escalated
 

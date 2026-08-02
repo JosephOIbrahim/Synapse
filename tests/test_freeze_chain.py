@@ -202,3 +202,32 @@ def test_shutdown_freeze_chain_stops_and_clears():
         assert chain._escalation_timer is None  # no timer left to fire
 
     assert fc.shutdown_freeze_chain() is False  # idempotent, nothing to stop
+
+
+# ---------------------------------------------------------------------------
+# attack-F followup 1 — the production half of the R310a fix, pinned
+# ---------------------------------------------------------------------------
+
+def test_panel_close_shuts_the_process_wide_chain_sourcepin():
+    """The crucible DELETED the entire closeEvent shutdown block and no test
+    failed — the production half of the zombie fix was unpinned. The panel's
+    Qt tests skip on stock CPython, so this is a SOURCE pin (the house
+    pattern: tests/test_panel_fidelity_honesty_sourcepin.py): closeEvent must
+    stop the beat timer and shut the process-wide chain down, or a closed
+    panel leaves an unbeaten chain that escalates ~30s later against a
+    still-live bridge."""
+    from pathlib import Path
+    src = (Path(__file__).resolve().parent.parent
+           / "python" / "synapse" / "panel" / "synapse_panel.py"
+           ).read_text(encoding="utf-8", errors="replace")
+    start = src.find("def closeEvent")
+    assert start != -1, "synapse_panel.closeEvent no longer exists"
+    # Bound the scan to closeEvent's body (up to the next def at any indent).
+    import re
+    m = re.search(r"\n    def \w+", src[start + 10:])
+    body = src[start:start + 10 + (m.start() if m else len(src))]
+    assert "shutdown_freeze_chain" in body, (
+        "closeEvent no longer shuts the process-wide FreezeChain down — "
+        "deleting that block revives the R310a zombie: a closed panel leaves "
+        "an unbeaten chain whose escalation fires ~30s later (force_open + "
+        "emergency halt) against a still-live bridge")

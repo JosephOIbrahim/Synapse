@@ -101,7 +101,9 @@ __all__ = [
     "rebind_modules",
     "restore_modules",
     "snapshot_modules",
-    "swapped_modules",
+    # "swapped_modules" deliberately NOT here — deleted with zero callers (see
+    # the NOTE above divergent_modules); its name lingering in __all__ made
+    # `from pkgbootstrap import *` raise (attack-P crucible, demonstrated).
     "divergent_modules",
 ]
 
