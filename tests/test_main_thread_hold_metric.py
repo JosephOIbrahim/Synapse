@@ -117,20 +117,49 @@ def test_label_threads_through(monkeypatch):
 
 def test_abandoned_mid_payload_still_records_marked(monkeypatch):
     """A payload the caller abandoned WHILE it was running (C4 residual race)
-    is precisely the interesting hold — it must record, marked abandoned."""
+    is precisely the interesting hold — it must record, marked abandoned.
+
+    Event-anchored (flaked on CI 2026-08-02): the old shape used sleeps, so a
+    starved runner could wake the deferred thread AFTER the 0.1s abandonment —
+    C4 then kills the payload pre-start and the premise ("abandoned while
+    RUNNING") never happened; count stayed 0. Now the payload proves it
+    started before we let the caller time out, and only finishes after the
+    abandonment has demonstrably occurred. No fixed sleep decides anything.
+    """
     mt = _load_mt()
-    monkeypatch.setitem(sys.modules, "hdefereval", _fake_hdefereval(delay=0.02))
+    monkeypatch.setitem(sys.modules, "hdefereval", _fake_hdefereval())
     mt.reset_main_thread_hold_stats()
 
-    out = _from_worker(mt, lambda: time.sleep(0.5), timeout=0.1, label="slow_op")
-    assert "error" in out                     # caller timed out mid-payload
-    time.sleep(0.9)                           # let the zombie payload finish
+    started = threading.Event()
+    release = threading.Event()
 
+    def payload():
+        started.set()
+        assert release.wait(timeout=10), "test bug: release never set"
+
+    out = {}
+    def worker():
+        try:
+            out["value"] = mt.run_on_main(payload, timeout=0.05, label="slow_op")
+        except Exception as e:  # noqa: BLE001
+            out["error"] = e
+    t = threading.Thread(target=worker)
+    t.start()
+    assert started.wait(timeout=10), "payload never started"   # mid-payload…
+    t.join(timeout=10)                                          # …caller gone
+    assert "error" in out                     # caller timed out mid-payload
+    release.set()                             # zombie finishes AFTER abandon
+
+    deadline = time.time() + 10
+    while time.time() < deadline:
+        if mt.main_thread_hold_stats()["count"] == 1:
+            break
+        time.sleep(0.01)
     s = mt.main_thread_hold_stats()
     assert s["count"] == 1
     assert s["abandoned_count"] == 1
     assert s["slowest_label"] == "slow_op"
-    assert s["sum_ms"] >= 300                 # the full ≈500ms hold, recorded
+    assert s["sum_ms"] > 0                    # a real hold was measured
 
 
 def test_abandoned_before_start_records_no_hold(monkeypatch):
@@ -144,7 +173,13 @@ def test_abandoned_before_start_records_no_hold(monkeypatch):
     ran = []
     out = _from_worker(mt, lambda: ran.append(1), timeout=0.05)
     assert "error" in out
-    time.sleep(0.8)                           # let the abandoned wake fire
+    # State-anchored: wait for the abandoned wake to land its dispatch-wait
+    # datum, bounded — never a fixed sleep (CI runners stretch sleeps).
+    deadline = time.time() + 10
+    while time.time() < deadline:
+        if mt.dispatch_wait_stats()["count"] == 1:
+            break
+        time.sleep(0.01)
 
     assert ran == []                          # fn() never executed (C4 intact)
     assert mt.main_thread_hold_stats()["count"] == 0
