@@ -1,0 +1,134 @@
+{
+  "_doc": "Latency hypothesis registry. Each entry is a candidate cost, not an accepted work item. The scout fan-out (workflow 'latency-scale-ledger') populates verdict/evidence/probe; a HUMAN moves an entry to accepted. No agent flips 'accepted' — that is the anti-runaway anchor, and it survives delegation because its purpose is that no agent ratifies its own findings.",
+  "_ladder": "L0 CLAIMED -> L1 REPRODUCIBLE -> L2 ATTRIBUTED -> L3 BOUNDED -> L4 REDUCED -> L5 HELD. See SPEC.md.",
+  "_scale_axis": "Every entry MUST state scale_behavior. A cost with no scale term has not reached L2.",
+  "populated_by": "workflow latency-scale-ledger (run wf_b9c32632-1fc, 20 agents, read-only)",
+  "refuted_list_source": "docs/reviews/synapse-latency-report-2026-07-27.md section 2 'Refuted - do not re-propose'",
+
+  "hypotheses": [
+    {
+      "id": "H1-double-topo-hash",
+      "title": "Every bridge mutation pays two full topology walks (scene_hash_before + after)",
+      "bin": "T4",
+      "rung": "L0",
+      "verdict": "pending",
+      "accepted": false,
+      "scale_behavior": null,
+      "probe": null,
+      "checked_against_refuted": false,
+      "seed_evidence": ["CLAUDE.md 1.3 IntegrityBlock", "CLAUDE.md 1.4 _topo_hash", "shared/bridge.py:427"]
+    },
+    {
+      "id": "H2-blast-radius-traversal",
+      "title": "R7 _infer_stage_touch traces node.dependents() forward on every execution",
+      "bin": "T4",
+      "rung": "L0",
+      "verdict": "pending",
+      "accepted": false,
+      "scale_behavior": null,
+      "probe": null,
+      "checked_against_refuted": false,
+      "seed_evidence": ["CLAUDE.md 1.6", "shared/bridge.py"]
+    },
+    {
+      "id": "H3-composition-validation",
+      "title": "USD composition validation after mutation may be a second ungated stage traversal",
+      "bin": "T4",
+      "rung": "L0",
+      "verdict": "pending",
+      "accepted": false,
+      "scale_behavior": null,
+      "probe": null,
+      "checked_against_refuted": false,
+      "seed_evidence": ["CLAUDE.md 1.1 Scene Integrity anchor"]
+    },
+    {
+      "id": "H4-observation-payload",
+      "title": "Observation payloads scale with the scene and land in the next prompt — a T4 cost that becomes a T1 cost",
+      "bin": "T4->T1",
+      "rung": "L0",
+      "verdict": "pending",
+      "accepted": false,
+      "scale_behavior": null,
+      "probe": null,
+      "checked_against_refuted": false,
+      "seed_evidence": ["CLAUDE.md stage 1 claims '<100 tokens per node' - unverified at scale"]
+    },
+    {
+      "id": "H5-residual-serialization",
+      "title": "Other ungated full-stage serialization sites (the direct sequel to the 4x win)",
+      "bin": "T4",
+      "rung": "L0",
+      "verdict": "pending",
+      "accepted": false,
+      "scale_behavior": null,
+      "probe": null,
+      "checked_against_refuted": false,
+      "seed_evidence": ["98b556f gated ONE site"]
+    },
+    {
+      "id": "H6-mainthread-queue",
+      "title": "Serial per-connection WS loop makes cancel unreachable; queue wait under a busy main thread",
+      "bin": "T3",
+      "rung": "L0",
+      "verdict": "pending",
+      "accepted": false,
+      "scale_behavior": null,
+      "probe": null,
+      "checked_against_refuted": false,
+      "seed_evidence": ["websocket.py:471", "main_thread.py:20,204,311"]
+    },
+    {
+      "id": "H7-declarative-coverage",
+      "title": "COPs/TOPS/rig builds still burn O(N) LLM turns; declarative collapse is Solaris-only",
+      "bin": "T1",
+      "rung": "L0",
+      "verdict": "pending",
+      "accepted": false,
+      "scale_behavior": null,
+      "probe": null,
+      "checked_against_refuted": false,
+      "seed_evidence": ["report section 2 #1 names this the biggest remaining lever", "claude_worker.py:34", "graph_builder.py:131-160"]
+    },
+    {
+      "id": "H8-perceived-latency",
+      "title": "Tool-first turns emit nothing; a silent multi-turn build feels broken at 1ms/op",
+      "bin": "T1-perceived",
+      "rung": "L0",
+      "verdict": "pending",
+      "accepted": false,
+      "scale_behavior": null,
+      "probe": null,
+      "checked_against_refuted": false,
+      "seed_evidence": ["synapse_panel.py:1646-1653", "anthropic_provider.py:255-257"]
+    },
+    {
+      "id": "H9-schema-prefill-tax",
+      "title": "~123 tool schemas are prefilled on every turn — a T1 cost hiding inside a tidiness problem",
+      "bin": "T1",
+      "rung": "L0",
+      "verdict": "pending",
+      "accepted": false,
+      "scale_behavior": null,
+      "probe": null,
+      "checked_against_refuted": false,
+      "seed_evidence": ["123 MCP tools registered (CLAUDE.md header)"]
+    }
+  ],
+
+  "instruments": {
+    "_doc": "U1-U4 from the 2026-07-17 report. The 07-27 report claims none landed; the fan-out verifies that against HEAD rather than trusting the snapshot.",
+    "U1_ttft_histogram": {"state": "pending", "locator": null},
+    "U2_turns_per_build": {"state": "pending", "locator": null},
+    "U3_llm_stream_timer": {"state": "pending", "locator": null},
+    "U4_percentiles": {"state": "pending", "locator": null}
+  },
+
+  "ratchet": {
+    "_doc": "The missing primitive. The 4x win from 98b556f has NOTHING pinning it - a refactor can silently give it back and no test fails. Floor must be read at merge-base so a branch cannot lower its own bar (same discipline as the suite ratchet).",
+    "armed": false,
+    "floor_kind": null,
+    "floor_path": null,
+    "human_armed_by": null
+  }
+}
