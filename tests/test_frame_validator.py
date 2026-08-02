@@ -5,7 +5,6 @@ Covers all 6 validation checks, integration scenarios, aliases,
 threshold overrides, and OIIO graceful degradation.
 """
 
-import importlib.util
 import os
 import sys
 import tempfile
@@ -34,27 +33,24 @@ if "hdefereval" not in sys.modules:
 
 _base = Path(__file__).resolve().parent.parent / "python" / "synapse"
 
+# R307: plants each namespace package AND binds it on its parent, so
+# sys.modules['synapse.x'] and the attribute synapse.x stay the same object.
+import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+
 for mod_name, mod_path in [
     ("synapse", _base),
     ("synapse.core", _base / "core"),
     ("synapse.server", _base / "server"),
     ("synapse.session", _base / "session"),
 ]:
-    if mod_name not in sys.modules:
-        pkg = types.ModuleType(mod_name)
-        pkg.__path__ = [str(mod_path)]
-        sys.modules[mod_name] = pkg
+    pkgbootstrap.ensure_package(mod_name, mod_path)
 
 for mod_name, fpath in [
     ("synapse.core.protocol", _base / "core" / "protocol.py"),
     ("synapse.core.aliases", _base / "core" / "aliases.py"),
     ("synapse.server.handlers", _base / "server" / "handlers.py"),
 ]:
-    if mod_name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(mod_name, fpath)
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[mod_name] = mod
-        spec.loader.exec_module(mod)
+    pkgbootstrap.load_module(mod_name, fpath)
 
 handlers_mod = sys.modules["synapse.server.handlers"]
 

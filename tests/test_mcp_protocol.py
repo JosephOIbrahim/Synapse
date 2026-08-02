@@ -9,7 +9,6 @@ No Houdini required — MCPServer is tested with a mocked handler.
 import importlib.util
 import json
 import sys
-import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -22,6 +21,10 @@ import pytest
 
 _base = Path(__file__).resolve().parent.parent / "python" / "synapse"
 
+# R307: plants each namespace package AND binds it on its parent, so
+# sys.modules['synapse.x'] and the attribute synapse.x stay the same object.
+import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+
 # Ensure package stubs exist
 for mod_name, mod_path in [
     ("synapse", _base),
@@ -30,10 +33,7 @@ for mod_name, mod_path in [
     ("synapse.session", _base / "session"),
     ("synapse.mcp", _base / "mcp"),
 ]:
-    if mod_name not in sys.modules:
-        pkg = types.ModuleType(mod_name)
-        pkg.__path__ = [str(mod_path)]
-        sys.modules[mod_name] = pkg
+    pkgbootstrap.ensure_package(mod_name, mod_path)
 
 # Load core modules the MCP layer depends on
 _core_modules = {
@@ -42,11 +42,7 @@ _core_modules = {
 }
 
 for mod_name, fpath in _core_modules.items():
-    if mod_name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(mod_name, fpath)
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[mod_name] = mod
-        spec.loader.exec_module(mod)
+    pkgbootstrap.load_module(mod_name, fpath)
 
 # Load MCP modules (registry must load before tools.py which imports from it)
 _mcp_modules = {
@@ -59,11 +55,7 @@ _mcp_modules = {
 }
 
 for mod_name, fpath in _mcp_modules.items():
-    if mod_name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(mod_name, fpath)
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[mod_name] = mod
-        spec.loader.exec_module(mod)
+    pkgbootstrap.load_module(mod_name, fpath)
 
 protocol_mod = sys.modules["synapse.mcp.protocol"]
 session_mod = sys.modules["synapse.mcp.session"]

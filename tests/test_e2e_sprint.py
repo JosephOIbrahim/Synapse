@@ -10,7 +10,6 @@ Verifies cross-workstream data flow:
 Mock-based -- no Houdini required.
 """
 
-import importlib.util
 import sys
 import types
 from pathlib import Path
@@ -65,6 +64,10 @@ else:
 # Import handlers via importlib to bypass package __init__
 _base = Path(__file__).resolve().parent.parent / "python" / "synapse"
 
+# R307: plants each namespace package AND binds it on its parent, so
+# sys.modules['synapse.x'] and the attribute synapse.x stay the same object.
+import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+
 for mod_name, mod_path in [
     ("synapse", _base),
     ("synapse.core", _base / "core"),
@@ -72,21 +75,14 @@ for mod_name, mod_path in [
     ("synapse.session", _base / "session"),
     ("synapse.panel", _base / "panel" if (_base / "panel").exists() else _base),
 ]:
-    if mod_name not in sys.modules:
-        pkg = types.ModuleType(mod_name)
-        pkg.__path__ = [str(mod_path)]
-        sys.modules[mod_name] = pkg
+    pkgbootstrap.ensure_package(mod_name, mod_path)
 
 for mod_name, fpath in [
     ("synapse.core.protocol", _base / "core" / "protocol.py"),
     ("synapse.core.aliases", _base / "core" / "aliases.py"),
     ("synapse.server.handlers", _base / "server" / "handlers.py"),
 ]:
-    if mod_name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(mod_name, fpath)
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[mod_name] = mod
-        spec.loader.exec_module(mod)
+    pkgbootstrap.load_module(mod_name, fpath)
 
 handlers_mod = sys.modules["synapse.server.handlers"]
 
@@ -103,55 +99,25 @@ if not hasattr(_handlers_hou.scriptLanguage, "Python"):
     _handlers_hou.scriptLanguage.Python = "Python"
 
 # Load handlers_node module (for _NETWORK_PATTERNS)
-if "synapse.server.handlers_node" not in sys.modules:
-    spec = importlib.util.spec_from_file_location(
-        "synapse.server.handlers_node",
-        _base / "server" / "handlers_node.py",
-    )
-    handlers_node_mod = importlib.util.module_from_spec(spec)
-    sys.modules["synapse.server.handlers_node"] = handlers_node_mod
-    spec.loader.exec_module(handlers_node_mod)
-else:
-    handlers_node_mod = sys.modules["synapse.server.handlers_node"]
+handlers_node_mod = pkgbootstrap.load_module(
+    "synapse.server.handlers_node", _base / "server" / "handlers_node.py"
+)
 
 # Load mcp/tools.py
 _mcp_path = _base / "mcp"
-if "synapse.mcp" not in sys.modules:
-    pkg = types.ModuleType("synapse.mcp")
-    pkg.__path__ = [str(_mcp_path)]
-    sys.modules["synapse.mcp"] = pkg
-if "synapse.mcp.tools" not in sys.modules:
-    spec = importlib.util.spec_from_file_location(
-        "synapse.mcp.tools", _mcp_path / "tools.py"
-    )
-    mcp_tools_mod = importlib.util.module_from_spec(spec)
-    sys.modules["synapse.mcp.tools"] = mcp_tools_mod
-    spec.loader.exec_module(mcp_tools_mod)
-else:
-    mcp_tools_mod = sys.modules["synapse.mcp.tools"]
+pkgbootstrap.ensure_package("synapse.mcp", _mcp_path)
+mcp_tools_mod = pkgbootstrap.load_module("synapse.mcp.tools", _mcp_path / "tools.py")
 
 # Load panel/quick_actions.py
 _panel_path = _base / "panel"
-if "synapse.panel.quick_actions" not in sys.modules:
-    spec = importlib.util.spec_from_file_location(
-        "synapse.panel.quick_actions", _panel_path / "quick_actions.py"
-    )
-    quick_actions_mod = importlib.util.module_from_spec(spec)
-    sys.modules["synapse.panel.quick_actions"] = quick_actions_mod
-    spec.loader.exec_module(quick_actions_mod)
-else:
-    quick_actions_mod = sys.modules["synapse.panel.quick_actions"]
+quick_actions_mod = pkgbootstrap.load_module(
+    "synapse.panel.quick_actions", _panel_path / "quick_actions.py"
+)
 
 # Load panel/message_formatter.py
-if "synapse.panel.message_formatter" not in sys.modules:
-    spec = importlib.util.spec_from_file_location(
-        "synapse.panel.message_formatter", _panel_path / "message_formatter.py"
-    )
-    formatter_mod = importlib.util.module_from_spec(spec)
-    sys.modules["synapse.panel.message_formatter"] = formatter_mod
-    spec.loader.exec_module(formatter_mod)
-else:
-    formatter_mod = sys.modules["synapse.panel.message_formatter"]
+formatter_mod = pkgbootstrap.load_module(
+    "synapse.panel.message_formatter", _panel_path / "message_formatter.py"
+)
 
 
 # ---------------------------------------------------------------------------

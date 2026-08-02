@@ -9,8 +9,6 @@ Covers:
 - Phase 5: Recipe discovery, routing benchmark expansion
 """
 
-import importlib
-import importlib.util
 import json
 import logging
 import os
@@ -43,6 +41,10 @@ if "hou" not in sys.modules:
 if "hdefereval" not in sys.modules:
     sys.modules["hdefereval"] = types.ModuleType("hdefereval")
 
+# R307: plants each namespace package AND binds it on its parent, so
+# sys.modules['synapse.x'] and the attribute synapse.x stay the same object.
+import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+
 # Bootstrap package hierarchy for relative imports
 for mod_name, mod_path in [
     ("synapse", _PKG / "synapse"),
@@ -54,10 +56,7 @@ for mod_name, mod_path in [
     ("synapse.ui", _PKG / "synapse" / "ui"),
     ("synapse.ui.tabs", _PKG / "synapse" / "ui" / "tabs"),
 ]:
-    if mod_name not in sys.modules:
-        pkg = types.ModuleType(mod_name)
-        pkg.__path__ = [str(mod_path)]
-        sys.modules[mod_name] = pkg
+    pkgbootstrap.ensure_package(mod_name, mod_path)
 
 # Now import via standard mechanism (relative imports will work)
 from synapse.server.handlers import SynapseHandler, _CMD_CATEGORY, _READ_ONLY_COMMANDS

@@ -4,9 +4,7 @@ layer wires correctly to RenderFarmOrchestrator.
 Mock-based — no Houdini required.
 """
 
-import importlib.util
 import sys
-import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -18,16 +16,17 @@ import pytest
 
 _root = Path(__file__).resolve().parent.parent / "python"
 
+# R307: plants each namespace package AND binds it on its parent, so
+# sys.modules['synapse.x'] and the attribute synapse.x stay the same object.
+import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+
 for mod_name, mod_path in [
     ("synapse", _root / "synapse"),
     ("synapse.core", _root / "synapse" / "core"),
     ("synapse.server", _root / "synapse" / "server"),
     ("synapse.memory", _root / "synapse" / "memory"),
 ]:
-    if mod_name not in sys.modules:
-        pkg = types.ModuleType(mod_name)
-        pkg.__path__ = [str(mod_path)]
-        sys.modules[mod_name] = pkg
+    pkgbootstrap.ensure_package(mod_name, mod_path)
 
 for mod_name, fpath in [
     ("synapse.core.determinism", _root / "synapse" / "core" / "determinism.py"),
@@ -39,11 +38,7 @@ for mod_name, fpath in [
     ("synapse.server.handlers_usd", _root / "synapse" / "server" / "handlers_usd.py"),
     ("synapse.server.handlers_render", _root / "synapse" / "server" / "handlers_render.py"),
 ]:
-    if mod_name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(mod_name, fpath)
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[mod_name] = mod
-        spec.loader.exec_module(mod)
+    pkgbootstrap.load_module(mod_name, fpath)
 
 render_handlers_mod = sys.modules["synapse.server.handlers_render"]
 farm_mod = sys.modules["synapse.server.render_farm"]

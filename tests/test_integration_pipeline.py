@@ -56,6 +56,10 @@ if "hdefereval" not in sys.modules:
     _hde.executeInMainThreadWithResult = lambda fn: fn()
     sys.modules["hdefereval"] = _hde
 
+# R307: plants each namespace package AND binds it on its parent, so
+# sys.modules['synapse.x'] and the attribute synapse.x stay the same object.
+import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+
 # ---------------------------------------------------------------------------
 # Bootstrap synapse package stubs for relative imports
 # ---------------------------------------------------------------------------
@@ -67,10 +71,7 @@ for mod_name, mod_path in [
     ("synapse.memory", Path(__file__).resolve().parent.parent / "python" / "synapse" / "memory"),
     ("synapse.routing", Path(__file__).resolve().parent.parent / "python" / "synapse" / "routing"),
 ]:
-    if mod_name not in sys.modules:
-        pkg = types.ModuleType(mod_name)
-        pkg.__path__ = [str(mod_path)]
-        sys.modules[mod_name] = pkg
+    pkgbootstrap.ensure_package(mod_name, mod_path)
 
 # Import key modules via importlib (with correct module names for relative imports)
 _base = Path(__file__).resolve().parent.parent / "python" / "synapse"
@@ -93,6 +94,10 @@ for mod_name, fpath in [
             spec.loader.exec_module(mod)
         except Exception:
             pass  # Some modules may fail without full Houdini
+    # R307: this loader swallows exec failures, so it cannot use
+    # pkgbootstrap.load_module (which propagates). Bind by hand instead.
+    if mod_name in sys.modules:
+        pkgbootstrap.bind_to_parent(mod_name, sys.modules[mod_name])
 
 # ---------------------------------------------------------------------------
 # Import what we need

@@ -45,27 +45,24 @@ _handlers_path = Path(__file__).resolve().parent.parent / "python" / "synapse" /
 _proto_path = Path(__file__).resolve().parent.parent / "python" / "synapse" / "core" / "protocol.py"
 _aliases_path = Path(__file__).resolve().parent.parent / "python" / "synapse" / "core" / "aliases.py"
 
+# R307: plants each namespace package AND binds it on its parent, so
+# sys.modules['synapse.x'] and the attribute synapse.x stay the same object.
+import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+
 for mod_name, mod_path in [
     ("synapse", Path(__file__).resolve().parent.parent / "python" / "synapse"),
     ("synapse.core", Path(__file__).resolve().parent.parent / "python" / "synapse" / "core"),
     ("synapse.server", Path(__file__).resolve().parent.parent / "python" / "synapse" / "server"),
     ("synapse.session", Path(__file__).resolve().parent.parent / "python" / "synapse" / "session"),
 ]:
-    if mod_name not in sys.modules:
-        pkg = types.ModuleType(mod_name)
-        pkg.__path__ = [str(mod_path)]
-        sys.modules[mod_name] = pkg
+    pkgbootstrap.ensure_package(mod_name, mod_path)
 
 for mod_name, fpath in [
     ("synapse.core.protocol", _proto_path),
     ("synapse.core.aliases", _aliases_path),
     ("synapse.server.handlers", _handlers_path),
 ]:
-    if mod_name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(mod_name, fpath)
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[mod_name] = mod
-        spec.loader.exec_module(mod)
+    pkgbootstrap.load_module(mod_name, fpath)
 
 handlers_mod = sys.modules["synapse.server.handlers"]
 

@@ -40,6 +40,10 @@ def _mock_executeDeferred(fn):
 _hdefereval.executeDeferred = _mock_executeDeferred
 sys.modules["hdefereval"] = _hdefereval
 
+# R307: plants each namespace package AND binds it on its parent, so
+# sys.modules['synapse.x'] and the attribute synapse.x stay the same object.
+import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+
 # Ensure package modules exist for relative imports
 for mod_name, mod_path in [
     ("synapse", Path(__file__).resolve().parent.parent / "python" / "synapse"),
@@ -47,10 +51,7 @@ for mod_name, mod_path in [
     ("synapse.server", Path(__file__).resolve().parent.parent / "python" / "synapse" / "server"),
     ("synapse.session", Path(__file__).resolve().parent.parent / "python" / "synapse" / "session"),
 ]:
-    if mod_name not in sys.modules:
-        pkg = types.ModuleType(mod_name)
-        pkg.__path__ = [str(mod_path)]
-        sys.modules[mod_name] = pkg
+    pkgbootstrap.ensure_package(mod_name, mod_path)
 
 # Import the module under test
 _mt_path = Path(__file__).resolve().parent.parent / "python" / "synapse" / "server" / "main_thread.py"
@@ -58,6 +59,10 @@ spec = importlib.util.spec_from_file_location("synapse.server.main_thread", _mt_
 mt_mod = importlib.util.module_from_spec(spec)
 sys.modules["synapse.server.main_thread"] = mt_mod
 spec.loader.exec_module(mt_mod)
+# R307: this loader deliberately re-execs even when the module is already
+# imported, so it cannot use pkgbootstrap.load_module (which reuses). Bind by
+# hand instead — sys.modules and the parent attribute must name one object.
+pkgbootstrap.bind_to_parent("synapse.server.main_thread", mt_mod)
 
 run_on_main = mt_mod.run_on_main
 _tls = mt_mod._tls

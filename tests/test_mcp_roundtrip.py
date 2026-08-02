@@ -47,6 +47,10 @@ if "hdefereval" not in sys.modules:
 # Set up package hierarchy for relative imports
 _root = Path(__file__).resolve().parent.parent / "python"
 
+# R307: plants each namespace package AND binds it on its parent, so
+# sys.modules['synapse.x'] and the attribute synapse.x stay the same object.
+import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+
 # Register stub packages so relative imports work
 for mod_name, mod_path in [
     ("synapse", _root / "synapse"),
@@ -56,10 +60,7 @@ for mod_name, mod_path in [
     ("synapse.memory", _root / "synapse" / "memory"),
     ("synapse.routing", _root / "synapse" / "routing"),
 ]:
-    if mod_name not in sys.modules:
-        pkg = types.ModuleType(mod_name)
-        pkg.__path__ = [str(mod_path)]
-        sys.modules[mod_name] = pkg
+    pkgbootstrap.ensure_package(mod_name, mod_path)
 
 # Load actual modules
 _module_files = [
@@ -88,6 +89,10 @@ for mod_name, fpath in _module_files:
             spec.loader.exec_module(mod)
         except Exception:
             pass  # Some modules may fail; we only need handlers
+    # R307: this loader swallows exec failures, so it cannot use
+    # pkgbootstrap.load_module (which propagates). Bind by hand instead.
+    if mod_name in sys.modules:
+        pkgbootstrap.bind_to_parent(mod_name, sys.modules[mod_name])
 
 handlers_mod = sys.modules["synapse.server.handlers"]
 _handlers_hou = handlers_mod.hou

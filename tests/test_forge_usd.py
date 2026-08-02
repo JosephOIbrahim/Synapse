@@ -12,7 +12,6 @@ into sys.modules and handlers are loaded via importlib bypassing the package
 __init__. Pure-function tests do not touch hou at all.
 """
 
-import importlib.util
 import sys
 import types
 from pathlib import Path
@@ -56,27 +55,24 @@ _proto_path = _root / "core" / "protocol.py"
 _aliases_path = _root / "core" / "aliases.py"
 _usd_path = _root / "server" / "handlers_usd.py"
 
+# R307: plants each namespace package AND binds it on its parent, so
+# sys.modules['synapse.x'] and the attribute synapse.x stay the same object.
+import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+
 for mod_name, mod_path in [
     ("synapse", _root),
     ("synapse.core", _root / "core"),
     ("synapse.server", _root / "server"),
     ("synapse.session", _root / "session"),
 ]:
-    if mod_name not in sys.modules:
-        pkg = types.ModuleType(mod_name)
-        pkg.__path__ = [str(mod_path)]
-        sys.modules[mod_name] = pkg
+    pkgbootstrap.ensure_package(mod_name, mod_path)
 
 for mod_name, fpath in [
     ("synapse.core.protocol", _proto_path),
     ("synapse.core.aliases", _aliases_path),
     ("synapse.server.handlers", _handlers_path),
 ]:
-    if mod_name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(mod_name, fpath)
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[mod_name] = mod
-        spec.loader.exec_module(mod)
+    pkgbootstrap.load_module(mod_name, fpath)
 
 handlers_mod = sys.modules["synapse.server.handlers"]
 usd_mod = sys.modules["synapse.server.handlers_usd"]
