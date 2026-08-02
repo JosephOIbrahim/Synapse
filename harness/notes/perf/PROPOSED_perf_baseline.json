@@ -1,0 +1,289 @@
+{
+  "schema": "perf_baseline/counts-v1",
+  "proposed": true,
+  "promoted": null,
+  "promoted_by": null,
+  "human_armed_by": null,
+  "_governance": "COUNTED PROXY, NOT WALL-CLOCK (I2 design, wf_b9c32632-1fc journal; R304). Advance ONLY in a human-promoted commit. The gate reads this file at merge-base(master, HEAD), never the worktree, so a branch cannot lower its own bar (harness/verify/perf_ratchet.py::read_floor). Counts may FALL freely; they may only RISE via promotion carrying a per-cell _why or an unexpired waiver. PROPOSED means: measured by the R304 lane agent, NOT yet a floor — arming (REGISTRY.json ratchet.armed=true + human_armed_by) is a HUMAN gate (harness/latency/SPEC.md) and includes deny-listing this file in harness/agent-settings.json. A count is not a second: this file HOLDS the 98b556f/H10 win, it does not MEASURE one — seconds claims need Tier B (ratio) or Tier C (live).",
+  "_fidelity_limit": "The counters measure the CALL PATTERN the bridge makes through the counting fakes (tests/perf_counters.py), not the cost pxr pays. The pxr-gated cross-check in tests/test_perf_ratchet.py is the only guard against fake/pxr drift and it SKIPS in CI.",
+  "measured": {
+    "date": "2026-08-02",
+    "interpreter": "system python 3.14.2 (no pxr consulted - _import_pxr_composition patched by the seam)",
+    "producer": "python tests/perf_counters.py, worktree wf_ab4a9489-6a9-2 @ master 10db19d",
+    "note": "Derived-count deltas vs the I2 design (authored at 48bf572) investigated per its own rule ('the run wins'): mcp_lop_op_below_gate pays 4 traversals / 400 prim_visits, not the derived 3 / 300 - the extra bounded pass is H10's _stage_volume_exceeds probe (f60b5b0, landed after the design HEAD). Above the prim gate the volume probe is skipped, so the 98b556f cell matches the design exactly (17002 / 5 / 0)."
+  },
+  "pinned_constants": {
+    "_what": "Count cells pin their OWN env (SYNAPSE_STAGE_HASH_*), so a change to a SHIPPED default would leave every cell green while changing production - exactly how the pre-98b556f 1<<62 default survived. These close that hole via an EQUALITY check in harness/verify/perf_ratchet.py::check_pinned_constants. Any change here is a promotion event. The two H10 volume constants were not in the I2 design (it predates f60b5b0) - same hole, same closure.",
+    "shared/bridge.py:_DEFAULT_STAGE_HASH_PRIM_THRESHOLD": 10000,
+    "shared/bridge.py:_STAGE_HASH_UNBOUNDED": 4611686018427387904,
+    "shared/bridge.py:_stage_hash_large_mode()_default": "reduced",
+    "shared/bridge.py:_DEFAULT_STAGE_HASH_VOLUME_THRESHOLD": 500000,
+    "shared/bridge.py:_STAGE_HASH_VOLUME_ATTR_BUDGET": 4096,
+    "shared/bridge.py:_SCENE_HASH_BUCKETS_MS[-1]": 4000
+  },
+  "scenarios": {
+    "mcp_lop_op_below_gate": {
+      "_what": "S-A: one bridge.execute() stage-touching /mcp op, LOP hash target, stage BELOW both gate terms (100 prims, threshold 1000). Exists to prove the gate is SILENT below threshold, not to bound cost: below the gate the counter UNDERSTATES real cost because Flatten is O(authored value volume).",
+      "producer": "python -m pytest tests/test_perf_ratchet.py -q",
+      "harness": "tests/perf_counters.py::measure('mcp_lop_op_below_gate')",
+      "env_pins": {
+        "SYNAPSE_STAGE_HASH_PRIM_THRESHOLD": "1000",
+        "SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD": "500000",
+        "SYNAPSE_STAGE_HASH_LARGE_MODE": "<unset>"
+      },
+      "scale_term": "LINEAR_IN_PRIMS",
+      "intercept": {
+        "at": { "prims": 100, "threshold": 1000 },
+        "counters": {
+          "scene_hash_calls": 2,
+          "stage_traversals": 4,
+          "prim_visits": 400,
+          "flatten_exports": 2,
+          "value_reads": 0,
+          "attrs_examined": 100,
+          "prop_name_reads": 0,
+          "rel_target_reads": 0,
+          "prim_state_reads": 200,
+          "arc_queries": 400,
+          "node_children_reads": 2,
+          "geometry_accessor_calls": 2,
+          "geometry_intrinsic_reads": 0,
+          "dependents_calls": 0,
+          "node_visits": 0
+        }
+      },
+      "_why": "BELOW-GATE ENVELOPE: mode full, Flatten x2, full-fidelity sweep (4 arc_queries/prim). 4 traversals = prim probe + H10 volume probe + composition probe + composition Traverse (the design derived 3; H10's volume probe landed after its HEAD - run wins). attrs_examined 100 = the volume probe's type peek, 1 scalar attr/prim, zero value_reads."
+    },
+    "mcp_lop_op_above_gate": {
+      "_what": "S-B: THE 98b556f CELL. Same op shape, stage ABOVE the prim gate (5000 prims, threshold 1000): mode reduced, flatten_exports == 0 IS the 4x win; value_reads == 0 is the C2/H10 axis (authored array volume) that nothing asserted before this floor.",
+      "producer": "python -m pytest tests/test_perf_ratchet.py -q",
+      "harness": "tests/perf_counters.py::measure('mcp_lop_op_above_gate')",
+      "env_pins": {
+        "SYNAPSE_STAGE_HASH_PRIM_THRESHOLD": "1000",
+        "SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD": "500000",
+        "SYNAPSE_STAGE_HASH_LARGE_MODE": "<unset>"
+      },
+      "scale_term": "LINEAR_IN_PRIMS",
+      "intercept": {
+        "at": { "prims": 5000, "threshold": 1000 },
+        "counters": {
+          "scene_hash_calls": 2,
+          "stage_traversals": 5,
+          "prim_visits": 17002,
+          "flatten_exports": 0,
+          "value_reads": 0,
+          "attrs_examined": 0,
+          "prop_name_reads": 10000,
+          "rel_target_reads": 10000,
+          "prim_state_reads": 40000,
+          "arc_queries": 10000,
+          "node_children_reads": 2,
+          "geometry_accessor_calls": 2,
+          "geometry_intrinsic_reads": 0,
+          "dependents_calls": 0,
+          "node_visits": 0
+        }
+      },
+      "slope": {
+        "pair": "mcp_lop_op_above_gate_2x",
+        "measured_at": [5000, 10000],
+        "per_unit": {
+          "prim_visits": 3.0,
+          "flatten_exports": 0.0,
+          "stage_traversals": 0.0,
+          "value_reads": 0.0,
+          "scene_hash_calls": 0.0,
+          "attrs_examined": 0.0,
+          "prop_name_reads": 2.0,
+          "rel_target_reads": 2.0,
+          "prim_state_reads": 8.0,
+          "arc_queries": 2.0
+        }
+      },
+      "passes_per_op": 3,
+      "_why": "BRIDGE-FLOOR 98b556f + H10. flatten_exports=0 IS the 4x win (producer: shared/bridge.py:1012 gated by _stage_exceeds/_stage_volume_exceeds). prim_visits 17002 = 1001 (bounded before-probe) + 5000 (reduced before) + 5000 (reduced after) + 1001 (bounded composition probe) + 5000 (composition Traverse). stage_traversals slope 0.0 PROVES the two probes are bounded - nothing asserted that before this floor. passes_per_op = round(prim_visits slope) = 3 per the I2 SS4 formula (the design's prose examples say 5, conflating traversal STARTS - pinned separately by the stage_traversals intercept - with SCALING passes; the formula governs, both regressions still trip)."
+    },
+    "mcp_lop_op_above_gate_2x": {
+      "_what": "S-B2: the slope cell's 2N arm (10000 prims, same env). Its intercept is pinned too - more instrument, same price.",
+      "producer": "python -m pytest tests/test_perf_ratchet.py -q",
+      "harness": "tests/perf_counters.py::measure('mcp_lop_op_above_gate_2x')",
+      "env_pins": {
+        "SYNAPSE_STAGE_HASH_PRIM_THRESHOLD": "1000",
+        "SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD": "500000",
+        "SYNAPSE_STAGE_HASH_LARGE_MODE": "<unset>"
+      },
+      "scale_term": "LINEAR_IN_PRIMS",
+      "intercept": {
+        "at": { "prims": 10000, "threshold": 1000 },
+        "counters": {
+          "scene_hash_calls": 2,
+          "stage_traversals": 5,
+          "prim_visits": 32002,
+          "flatten_exports": 0,
+          "value_reads": 0,
+          "attrs_examined": 0,
+          "prop_name_reads": 20000,
+          "rel_target_reads": 20000,
+          "prim_state_reads": 80000,
+          "arc_queries": 20000,
+          "node_children_reads": 2,
+          "geometry_accessor_calls": 2,
+          "geometry_intrinsic_reads": 0,
+          "dependents_calls": 0,
+          "node_visits": 0
+        }
+      },
+      "_why": "The 2N arm of the S-B slope. 32002 = 1001 + 10000 + 10000 + 1001 + 10000: the two probe terms are IDENTICAL to the N arm - the slope cell's whole point."
+    },
+    "live_ws_op": {
+      "_what": "S-C: the live-envelope hash shape - two _compute_scene_hash(target, include_stage=False) calls (integrity_envelope.py:219 before/after) on a node carrying BOTH geometry and a REACHABLE stage(). Pins structurally that the live /synapse path can NEVER hit stage.Flatten() (shared/bridge.py:825-827 promise, previously a comment) and ratchets the H1 geometry residue (bridge.py:880-884).",
+      "producer": "python -m pytest tests/test_perf_ratchet.py -q",
+      "harness": "tests/perf_counters.py::measure('live_ws_op')",
+      "env_pins": {
+        "SYNAPSE_STAGE_HASH_PRIM_THRESHOLD": "1000",
+        "SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD": "500000",
+        "SYNAPSE_STAGE_HASH_LARGE_MODE": "<unset>"
+      },
+      "scale_term": "CONSTANT",
+      "intercept": {
+        "at": { "hash_calls": 2 },
+        "counters": {
+          "scene_hash_calls": 2,
+          "stage_traversals": 0,
+          "prim_visits": 0,
+          "flatten_exports": 0,
+          "value_reads": 0,
+          "attrs_examined": 0,
+          "prop_name_reads": 0,
+          "rel_target_reads": 0,
+          "prim_state_reads": 0,
+          "arc_queries": 0,
+          "node_children_reads": 2,
+          "geometry_accessor_calls": 2,
+          "geometry_intrinsic_reads": 6,
+          "dependents_calls": 0,
+          "node_visits": 0
+        }
+      },
+      "_why": "Finding-3 floor: stage_traversals 0 + flatten_exports 0 with a stage PRESENT on the node - the skip is structural (include_stage=False), not an absent API. geometry_intrinsic_reads 6 = 3 intrinsics x 2 calls: H1 residue, ratcheted here; whether geometry() cooks is REQUIRES LIVE BRIDGE."
+    },
+    "rollback_op": {
+      "_what": "S-D: the op fn mutates then raises - worst-case hash count on the H2 _guarded_rollback path (bridge.py:1365). Deterministic branch with the fake undo: hash differs, performUndo no-ops, re-hash still differs, delta rollback_incomplete. Nothing pinned this path's cost before.",
+      "producer": "python -m pytest tests/test_perf_ratchet.py -q",
+      "harness": "tests/perf_counters.py::measure('rollback_op')",
+      "env_pins": {
+        "SYNAPSE_STAGE_HASH_PRIM_THRESHOLD": "1000",
+        "SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD": "500000",
+        "SYNAPSE_STAGE_HASH_LARGE_MODE": "<unset>"
+      },
+      "scale_term": "LINEAR_IN_PRIMS",
+      "intercept": {
+        "at": { "prims": 5000, "threshold": 1000, "mutation": "+1 prim, then raise" },
+        "counters": {
+          "scene_hash_calls": 3,
+          "stage_traversals": 4,
+          "prim_visits": 16003,
+          "flatten_exports": 0,
+          "value_reads": 0,
+          "attrs_examined": 0,
+          "prop_name_reads": 15002,
+          "rel_target_reads": 15002,
+          "prim_state_reads": 45006,
+          "arc_queries": 0,
+          "node_children_reads": 3,
+          "geometry_accessor_calls": 3,
+          "geometry_intrinsic_reads": 0,
+          "dependents_calls": 0,
+          "node_visits": 0
+        }
+      },
+      "_why": "3 scene-hash calls on the exception path (before + H2 guard h_now + post-undo h_post; scene_hash_after never runs - fn raised first). prim_visits 16003 = 1001 probe + 5000 + 5001 + 5001 reduced passes (pin holds through rollback - symmetric degradation). The I2 design left this cell CONFIRM-BY-RUN; this is the run. arc_queries 0: composition never reached on the raise path."
+    },
+    "blast_radius_trace": {
+      "_what": "S-E: R7 _infer_stage_touch (bridge.py:1280) on a flat LOP-free fanout graph (root + 8 dependents): the trace must walk every node and find nothing. No cost test for R7 existed at all before this floor; H2's proposed fix would re-open closed finding S3, so the CURRENT shape is pinned first (I2 SS9).",
+      "producer": "python -m pytest tests/test_perf_ratchet.py -q",
+      "harness": "tests/perf_counters.py::measure('blast_radius_trace')",
+      "env_pins": {
+        "SYNAPSE_STAGE_HASH_PRIM_THRESHOLD": "1000",
+        "SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD": "500000",
+        "SYNAPSE_STAGE_HASH_LARGE_MODE": "<unset>"
+      },
+      "scale_term": "LINEAR_IN_NODES",
+      "intercept": {
+        "at": { "fanout": 8 },
+        "counters": {
+          "scene_hash_calls": 2,
+          "stage_traversals": 0,
+          "prim_visits": 0,
+          "flatten_exports": 0,
+          "value_reads": 0,
+          "attrs_examined": 0,
+          "prop_name_reads": 0,
+          "rel_target_reads": 0,
+          "prim_state_reads": 0,
+          "arc_queries": 0,
+          "node_children_reads": 2,
+          "geometry_accessor_calls": 2,
+          "geometry_intrinsic_reads": 0,
+          "dependents_calls": 18,
+          "node_visits": 9
+        }
+      },
+      "slope": {
+        "pair": "blast_radius_trace_2x",
+        "measured_at": [8, 16],
+        "per_unit": {
+          "node_visits": 1.0,
+          "dependents_calls": 2.0,
+          "stage_traversals": 0.0,
+          "flatten_exports": 0.0
+        }
+      },
+      "_why": "R7 cost shape: 1 node_visit + 2 dependents_calls (dependents()+outputs()) per graph node, LINEAR_IN_NODES. node_visits 9 = root + 8 dependents."
+    },
+    "blast_radius_trace_2x": {
+      "_what": "S-E2: the 2F arm (fanout 16) of the blast-radius slope.",
+      "producer": "python -m pytest tests/test_perf_ratchet.py -q",
+      "harness": "tests/perf_counters.py::measure('blast_radius_trace_2x')",
+      "env_pins": {
+        "SYNAPSE_STAGE_HASH_PRIM_THRESHOLD": "1000",
+        "SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD": "500000",
+        "SYNAPSE_STAGE_HASH_LARGE_MODE": "<unset>"
+      },
+      "scale_term": "LINEAR_IN_NODES",
+      "intercept": {
+        "at": { "fanout": 16 },
+        "counters": {
+          "scene_hash_calls": 2,
+          "stage_traversals": 0,
+          "prim_visits": 0,
+          "flatten_exports": 0,
+          "value_reads": 0,
+          "attrs_examined": 0,
+          "prop_name_reads": 0,
+          "rel_target_reads": 0,
+          "prim_state_reads": 0,
+          "arc_queries": 0,
+          "node_children_reads": 2,
+          "geometry_accessor_calls": 2,
+          "geometry_intrinsic_reads": 0,
+          "dependents_calls": 34,
+          "node_visits": 17
+        }
+      },
+      "_why": "The 2F arm: 17 = root + 16, dependents_calls 34 = 2 x 17."
+    },
+    "execute_async_sync_payload": {
+      "status": "UNPINNED",
+      "_what": "DELIBERATELY NOT IN v1 (named so nobody believes it is covered): execute_async/_sync_payload (shared/bridge.py:1646/1687) - the production FastMCP path. Its hash/composition sites parallel _execute_houdini but are separately wired; pinning it needs an event-loop harness. A reader who sees 'ratchet armed' and assumes op coverage is complete is wrong until this cell is measured."
+    },
+    "execute_pdg_deferred": {
+      "status": "UNPINNED",
+      "_what": "DELIBERATELY NOT IN v1: _execute_pdg_deferred (shared/bridge.py:1811) - PDG cook path, hashes at its own sites; also carries the dirtyAllTasks TypeError class (CLAUDE.md SS1.7). Unpinned until the R8 harness exists."
+    },
+    "structural_large_mode": {
+      "status": "UNPINNED",
+      "_what": "DELIBERATELY NOT IN v1: SYNAPSE_STAGE_HASH_LARGE_MODE=structural (opt-in; shared/bridge.py:1159). value_reads would be NON-zero there - that cell is where value_reads earns its keep. Pinning it is a promotion event that adds the GetNumTimeSamples counting decision (see tests/perf_counters.py module note)."
+    }
+  }
+}
