@@ -391,6 +391,32 @@ def check_provenance_not_bypassed(ctx):
 # absence from the headless table is an introspection artifact, NOT a phantom, so union them in.
 _GUI_HOU_ABSENT_HEADLESS = {"hou.ui", "hou.qt", "hou.audio", "hou.desktop", "hou.viewportVisualizers"}
 
+# hdefereval is the SIXTH headless-blind module (QUARANTINE-PACKET-2026-07-31 §2, carried
+# with the L5 merge per CTO_RULINGS_02 R201): absent from the headless table because
+# `import hdefereval` hard-RAISES under headless hython ("only available in a graphical
+# Houdini") and host/introspect_runtime.py never walks it — yet it is real, documented, and
+# used in production (server/main_thread.py, host/main_thread_executor.py). Membership here
+# is VENDOR-PINNED against H22 22.0.368 `houdini/python3.13libs/hdefereval.py`: the three
+# camelCase entry points (:21/:32/:43), their snake_case aliases (:30/:41/:45 — the packet
+# attack's bounded correction), and the two background-thread decorators (:176/:210 —
+# vendor-real, omitted by the packet's entry-point enumeration; same correction class).
+# `hdefereval.executeInMainThread` is deliberately ABSENT from this set — it is a
+# known-quarantined phantom (harness/phantoms/SPEC.md; marshal-deadlock class) and must
+# keep flagging if hdefereval roots are ever judged. Axis separation (packet §2.3): this
+# set is MEMBERSHIP authority only; `executeInMainThreadWithResult` stays BANNED by policy
+# via tests/test_marshal_lint.py — membership, not permission.
+_HEADLESS_BLIND_SYMBOLS = _GUI_HOU_ABSENT_HEADLESS | {
+    "hdefereval",
+    "hdefereval.executeDeferred",
+    "hdefereval.executeDeferredAfterWaiting",
+    "hdefereval.executeInMainThreadWithResult",       # real (vendor :43); banned by marshal lint
+    "hdefereval.execute_deferred",                    # snake_case alias (vendor :30)
+    "hdefereval.execute_deferred_after_waiting",      # snake_case alias (vendor :41)
+    "hdefereval.execute_in_main_thread_with_result",  # snake_case alias (vendor :45)
+    "hdefereval.in_separate_thread",                  # decorator (vendor :176)
+    "hdefereval.do_work_in_background_thread",        # decorator (vendor :210)
+}
+
 
 def _hou_phantoms_in_source(src, table_syms):
     """[(lineno, "hou.<attr>"), ...] for hou-module attribute accesses the table PROVES absent.
@@ -414,6 +440,67 @@ def _hou_phantoms_in_source(src, table_syms):
             if symbol not in table_syms:
                 hits.append((node.lineno, symbol))
     return hits
+
+def _phantoms_in_source(src, table_syms):
+    """[(lineno, symbol), ...] for hou/pdg/pxr attribute accesses the table PROVES absent.
+    hou: identical to _hou_phantoms_in_source (calls it) — behavior byte-identical.
+    pdg (depth-1): `import pdg [as X]`; flags `X.<attr>` when "pdg.<attr>" absent (depth-2
+    members like pdg.EventType.CookComplete are not table-judged, so unknown != phantom).
+    When a flagged pdg symbol is a camelCase near-miss of a real one (pdg.WorkItemState vs
+    pdg.workItemState), the hint "check camelCase: pdg.workItemState?" is appended so the
+    fix is actionable. pxr (depth-2): `from pxr import N [as X]`; flags `X.<attr>` when
+    "pxr.N.<attr>" absent — pxr runtime refs are exactly one level under each namespace.
+    getattr(X, "name", ...) string accesses are out of scope (attr name is a Constant,
+    not an Attribute) — known limitation, not scanned by design.
+
+    Soundness asymmetry (CTO verdict 2026-07-30, salvaged from PR #67's retired branch):
+    - pdg is SOUND at depth-1: host/introspect_runtime.py:95-97 dir()-walks pdg at depth 0
+      — the same mechanism hou uses — so "pdg.<attr>" absence IS proof. Production reaches
+      it via `import pdg as _pdg` (shared/bridge.py:1581-1593); alias resolution above.
+    - pxr is NOT dir()-complete at TOP level: introspect_runtime.py:101-115 enumerates
+      pkgutil submodules (silently skipping any whose import fails at harvest) and never
+      calls dir(pxr). Two consequences enforced here: (a) `import pxr [as X]` binds
+      nothing — a depth-1 `pxr.<attr>` access is never judged (top-level absence is not
+      proof); (b) `from pxr import N` names are judged ONLY when "pxr.N" is table-present
+      — a walked namespace's depth-1 surface IS dir()-complete, so absence within it is
+      proof; an unwalked namespace (harvest import-failure, non-submodule attr) is
+      unknown, not phantom."""
+    hits = list(_hou_phantoms_in_source(src, table_syms))
+    import ast
+    tree = ast.parse(src)
+    pdg_names = {"pdg"}
+    pxr_names = {}  # local name -> pxr namespace (Usd/Sdf/Gf/…)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "pdg":
+                    pdg_names.add(alias.asname or "pdg")
+        elif isinstance(node, ast.ImportFrom) and node.module == "pxr" and node.level == 0:
+            # level==0: only absolute `from pxr import N` binds pxr namespaces. A relative
+            # `from .pxr import Usd` (level>0) refers to a package-local module, NOT the pxr
+            # surface — judged-by-level fixes the F2 false-binding crucible flagged.
+            for alias in node.names:
+                pxr_names[alias.asname or alias.name] = alias.name
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name)):
+            continue
+        local = node.value.id
+        if local in pdg_names:
+            symbol = "pdg." + node.attr
+            if symbol not in table_syms:
+                camel = "pdg." + node.attr[:1].lower() + node.attr[1:]
+                if camel in table_syms:
+                    symbol += f" (check camelCase: {camel}?)"
+                hits.append((node.lineno, symbol))
+        elif local in pxr_names:
+            ns = f"pxr.{pxr_names[local]}"
+            if ns not in table_syms:
+                continue  # namespace never walked by the harvester — absence is not proof
+            symbol = f"{ns}.{node.attr}"
+            if symbol not in table_syms:
+                hits.append((node.lineno, symbol))
+    return sorted(hits)
+
 
 def _sprint_added_py(wt, base):
     """{relpath: set(added_line_no) | None} for .py touched since <base> — None marks a new
@@ -464,9 +551,13 @@ def check_phantom_clean(ctx):
     if "hou" not in table_syms:
         return {"ok": None, "detail": "symbol table lacks the hou surface — cannot prove hou.* absence "
                                       "(regenerate via host/introspect_runtime.py)"}
-    # GUI-only submodules (hou.ui/qt/audio/…) are real but absent from a HEADLESS dir() table —
-    # union them so a live panel/host sprint isn't false-flagged into a stall.
-    table_syms = table_syms | _GUI_HOU_ABSENT_HEADLESS
+    if "pdg" not in table_syms or "pxr" not in table_syms:
+        return {"ok": None, "detail": "symbol table lacks the pdg/pxr surfaces — cannot prove their "
+                                      "absence (regenerate via host/introspect_runtime.py)"}
+    # Headless-blind modules (hou.ui/qt/audio/… + hdefereval) are real but absent from a
+    # HEADLESS dir() table — union them so a live panel/host sprint isn't false-flagged into
+    # a stall (hdefereval carried per QUARANTINE-PACKET-2026-07-31 §2.3 / R201).
+    table_syms = table_syms | _HEADLESS_BLIND_SYMBOLS
     # 2) scope to the sprint's ADDED .py lines — base = master HEAD at worktree-add time (fork
     #    point, robust if master advanced). Judging only newly-authored lines means a pre-existing
     #    phantom on an unchanged line of a merely-edited file never blocks the sprint.
@@ -489,7 +580,7 @@ def check_phantom_clean(ctx):
         except Exception:
             continue
         try:
-            hits = _hou_phantoms_in_source(src, table_syms)
+            hits = _phantoms_in_source(src, table_syms)
         except SyntaxError:
             unparseable.append(rel)  # a broken file fails other checks anyway — don't crash the gate
             continue
@@ -499,9 +590,10 @@ def check_phantom_clean(ctx):
     ver = status.get("houdini_version", "?")
     if offenders:
         note = f" (+{len(unparseable)} unparseable, skipped)" if unparseable else ""
-        return {"ok": False, "detail": (f"phantom hou.* introduced (absent in the {ver} symbol "
+        return {"ok": False, "detail": (f"phantom hou/pdg/pxr API introduced (absent in the {ver} symbol "
                 f"table): {', '.join(sorted(set(offenders))[:12])}{note}")[:500]}
-    clean = f"{len(added)} changed .py clean of table-proven phantom hou.* APIs (vs {len(table_syms)} live symbols @ {ver})"
+    clean = (f"{len(added)} changed .py clean of table-proven phantom hou/pdg/pxr APIs "
+             f"(vs {len(table_syms)} live symbols @ {ver})")
     if unparseable:
         clean += f" ({len(unparseable)} unparseable, skipped)"
     return {"ok": True, "detail": clean[:500]}
