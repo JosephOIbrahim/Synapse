@@ -766,6 +766,95 @@ class MemoryStore:
 
 
 # =============================================================================
+# BACKEND FALLBACK TELEMETRY (C-0 loudness)
+# =============================================================================
+# When $SYNAPSE_MEMORY_BACKEND selects moneta/shadow but this process ends up
+# serving jsonl, the swap must be observable after the fact — twice in
+# production (2026-07-31, 2026-08-01) the store landed on an unwritable
+# address, raised PermissionError, and the only trace was one log line while
+# the operator believed moneta was active. ``_make_store()`` records the
+# event here; ``synapse.server.doctor._check_moneta_substrate()`` reads it
+# via ``backend_fallback()``. Process-local by design: the doctor diagnoses
+# THIS seat. The flag reflects the most recent ``_make_store()`` call.
+
+_BACKEND_FALLBACK: Optional[Dict[str, Any]] = None
+
+
+def _record_backend_fallback(requested: str, storage_dir: Any, reason: str) -> None:
+    global _BACKEND_FALLBACK
+    _BACKEND_FALLBACK = {
+        "requested": requested,
+        "served": "jsonl",
+        "storage_dir": str(storage_dir),
+        "reason": reason,
+        "at": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
+def backend_fallback() -> Optional[Dict[str, Any]]:
+    """Details of the backend fallback recorded by the most recent
+    ``_make_store()`` in this process, or None when the selected backend is
+    the one actually serving."""
+    return None if _BACKEND_FALLBACK is None else dict(_BACKEND_FALLBACK)
+
+
+def hip_is_unsaved(hip_path: Optional[str], hou_mod: Any = None) -> bool:
+    """True when *hip_path* is Houdini's placeholder for a never-saved scene.
+
+    ``hou.hipFile.path()`` returns a FULL path ending in ``untitled.hip`` for
+    an unsaved scene — wherever the process was launched from, e.g.
+    ``C:/Program Files/.../bin/untitled.hip`` (VERIFIED in production logs
+    2026-07-31 14:42:14 and 2026-08-01 10:25:01) — so equality against the
+    bare string ``"untitled.hip"`` never matches. Detection is by BASENAME.
+
+    A scene can legitimately be SAVED as ``untitled.hip`` inside a real
+    project directory. When the running hou exposes
+    ``hou.hipFile.isNewFile()`` (the canonical never-saved probe) it decides
+    that case. The call is getattr-guarded rather than emitted directly
+    because the committed h22 symbol table is depth-limited (hou depth 2) and
+    cannot verdict ``hou.hipFile`` members either way — even
+    ``hou.hipFile.path``, in production use for years, is absent from it. If
+    ``isNewFile`` is unavailable, basename wins: a scene genuinely saved as
+    ``untitled.hip`` is then treated as unsaved and its store lives under
+    $HOUDINI_TEMP_DIR. Documented limitation, chosen deliberately — the
+    wrong-but-writable temp address beats risking the launch-directory
+    address that put the store inside Program Files.
+    """
+    if not hip_path:
+        return True
+    if os.path.basename(str(hip_path)) != "untitled.hip":
+        return False
+    if hou_mod is not None:
+        hip_file = getattr(hou_mod, "hipFile", None)
+        is_new = getattr(hip_file, "isNewFile", None) if hip_file is not None else None
+        if callable(is_new):
+            try:
+                return bool(is_new())
+            except Exception:
+                pass
+    return True
+
+
+#: Migration honesty (C-0): the unsaved-scene address changed on 2026-08-01.
+#: Announce once per process where the store lives now; never relocate data
+#: silently.
+_UNSAVED_RELOCATION_ANNOUNCED = False
+
+
+def _announce_unsaved_relocation(temp_root: Any) -> None:
+    global _UNSAVED_RELOCATION_ANNOUNCED
+    if _UNSAVED_RELOCATION_ANNOUNCED:
+        return
+    _UNSAVED_RELOCATION_ANNOUNCED = True
+    logger.info(
+        "Unsaved scene: the memory store lives under $HOUDINI_TEMP_DIR (%s). "
+        "Stores previously written next to the process working directory "
+        "(e.g. <cwd>/untitled.hip/.synapse) are NOT carried over.",
+        temp_root,
+    )
+
+
+# =============================================================================
 # SYNAPSE MEMORY - HIGH-LEVEL API
 # =============================================================================
 
@@ -807,6 +896,8 @@ class SynapseMemory:
         Any other value (including ``sqlite``, which is NOT wired to this
         selector) falls back to JSONL with a warning.
         """
+        global _BACKEND_FALLBACK
+        _BACKEND_FALLBACK = None  # reflects the most recent construction
         backend = os.environ.get("SYNAPSE_MEMORY_BACKEND", "jsonl").strip().lower()
         if backend == "moneta":
             # H6 / Law 3: ask whether Moneta is importable rather than inferring
@@ -832,6 +923,9 @@ class SynapseMemory:
                     "SYNAPSE_MEMORY_BACKEND=moneta but Moneta is not importable "
                     "(%s); falling back to jsonl. Install the moneta package or "
                     "set $MONETA_SRC.", why,
+                )
+                _record_backend_fallback(
+                    "moneta", storage_dir, f"Moneta not importable: {why}",
                 )
                 return MemoryStore(storage_dir)
             try:
@@ -863,9 +957,15 @@ class SynapseMemory:
                     )
                 logger.error(
                     "SYNAPSE_MEMORY_BACKEND=moneta is installed but failed to "
-                    "initialize (%s: %s); provenance=%s. Serving jsonl. This is "
-                    "an API-drift or defect, not a missing dependency.",
-                    type(exc).__name__, exc, provenance,
+                    "initialize (%s: %s); provenance=%s; attempted storage: %s. "
+                    "The memory backend FELL BACK to jsonl — the selected "
+                    "backend is NOT serving. This is an API-drift or defect, "
+                    "not a missing dependency.",
+                    type(exc).__name__, exc, provenance, storage_dir,
+                )
+                _record_backend_fallback(
+                    "moneta", storage_dir,
+                    f"init failed: {type(exc).__name__}: {exc}",
                 )
         elif backend == "shadow":
             try:
@@ -877,8 +977,12 @@ class SynapseMemory:
                 return ShadowMemoryStore(primary, shadow)
             except Exception as exc:
                 logger.warning(
-                    "SYNAPSE_MEMORY_BACKEND=shadow unavailable (%s); "
-                    "falling back to jsonl.", exc,
+                    "SYNAPSE_MEMORY_BACKEND=shadow unavailable (%s); attempted "
+                    "storage: %s. The memory backend fell back to jsonl.",
+                    exc, storage_dir,
+                )
+                _record_backend_fallback(
+                    "shadow", storage_dir, f"shadow unavailable: {exc}",
                 )
         if backend not in ("jsonl", "moneta", "shadow", ""):
             logger.warning(
@@ -894,11 +998,17 @@ class SynapseMemory:
 
         if HOU_AVAILABLE:
             hip_path = hou.hipFile.path()
-            if hip_path and hip_path != "untitled.hip":
+            if not hip_is_unsaved(hip_path, hou):
                 return Path(hip_path)
-            else:
-                # Use temp directory for unsaved projects
-                return Path(hou.text.expandString("$HOUDINI_TEMP_DIR")) / "untitled"
+            # Unsaved scene -> $HOUDINI_TEMP_DIR, the address this branch
+            # always intended. Until 2026-08-01 the guard compared the FULL
+            # path against the bare string "untitled.hip", which never
+            # matched, so this branch was dead code and the store landed at
+            # <process-cwd>/untitled.hip/.synapse — twice logged inside
+            # Program Files, where mkdir raised PermissionError WinError 5.
+            temp_root = Path(hou.text.expandString("$HOUDINI_TEMP_DIR")) / "untitled"
+            _announce_unsaved_relocation(temp_root)
+            return temp_root
 
         # Fallback
         return Path.cwd() / "untitled.hip"

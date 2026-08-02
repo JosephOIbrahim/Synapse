@@ -151,8 +151,14 @@ def _resolve_store_dir() -> Optional[Path]:
     project: Optional[Path] = None
     try:
         import hou
+        # C-0: the unsaved-scene verdict lives in ONE place — the store's
+        # hip_is_unsaved (basename + getattr-guarded isNewFile). The old
+        # inline copy compared the FULL path against "untitled.hip", which
+        # never matched, so this mirror inspected the wrong directory for
+        # every unsaved scene.
+        from ..memory.store import hip_is_unsaved
         hip = hou.hipFile.path()
-        if hip and hip != "untitled.hip":
+        if not hip_is_unsaved(hip, hou):
             project = Path(hip)
         else:
             project = Path(hou.text.expandString("$HOUDINI_TEMP_DIR")) / "untitled"
@@ -318,6 +324,20 @@ def _check_moneta_substrate() -> Dict[str, Any]:
             return {"name": name, "status": "skipped",
                     "detail": (f"SYNAPSE_MEMORY_BACKEND={backend!r} — the Moneta "
                                "backend is not selected on this seat")}
+        # C-0 loudness: a backend that was selected but fell back to jsonl in
+        # this process is a fail regardless of what the schema registry says —
+        # the substrate the operator asked for is not the one serving.
+        from ..memory import store as _store_mod
+        fallback = _store_mod.backend_fallback()
+        if fallback is not None:
+            return {"name": name, "status": "fail",
+                    "result": {"backend": backend, "fallback": fallback},
+                    "detail": (f"backend {fallback.get('requested')!r} was "
+                               "selected but this process FELL BACK to jsonl "
+                               f"({fallback.get('reason')}; attempted storage: "
+                               f"{fallback.get('storage_dir')}). Memory is "
+                               "being served by jsonl, not the selected "
+                               "backend.")}
         from ..memory import moneta_runtime as mr
         # Hint the store's Moneta dir so a real stage IS found once
         # from_storage_dir starts passing use_real_usd=True. Today it does not,
