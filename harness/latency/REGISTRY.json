@@ -57,7 +57,7 @@
       "id": "H4-observation-payload",
       "title": "Observation payloads scale with the scene and land in the next prompt \u2014 a T4 cost that becomes a T1 cost",
       "bin": "T4->T1",
-      "rung": "L2",
+      "rung": "L2+fix-landed",
       "verdict": "real_and_open",
       "accepted": true,
       "scale_behavior": "LINEAR_IN_NODES in-window, then multiplied by up to 25 iterations (O(K^2) prefill)",
@@ -67,7 +67,8 @@
         "CLAUDE.md stage 1 claims '<100 tokens per node' - unverified at scale"
       ],
       "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)",
-      "ratified_by": "Joe ('go', 2026-08-02) on the ranked recommendation; build wave wf_006556ba-f9c"
+      "ratified_by": "Joe ('go', 2026-08-02) on the ranked recommendation; build wave wf_006556ba-f9c",
+      "note": "Fixes 1+2 MERGED (lane commit 9504bef -> master 42624c8, crucible SOUND-WITH-NITS): cache breakpoint + last_usage producer. STILL UNPRICED - L4 requires before/after usage numbers through the new producer on a real session. Followups (crucible, both fenced-unreachable in current regime): strip pre-marked history blocks (>4 breakpoints -> API 400 if a caller hands pre-marked history); guard thinking-block stamping."
     },
     {
       "id": "H5-residual-serialization",
@@ -152,7 +153,7 @@
       "id": "H10-gate-keys-on-wrong-axis",
       "title": "The shipped 4x gate keys on prim count; cost is authored ARRAY VOLUME - bypass class measured",
       "bin": "T4",
-      "rung": "L2",
+      "rung": "L4",
       "verdict": "real_and_open",
       "accepted": true,
       "scale_behavior": "LINEAR_IN_AUTHORED_ARRAY_VOLUME, not prims: 4-prim PointInstancer @2M instances = 2017.9 ms/op while _stage_exceeds(stage,10000) returns False (16,677x miss); instanceable 101 prims = 5.0 ms",
@@ -162,7 +163,7 @@
         "shared/bridge.py:422 _DEFAULT_STAGE_HASH_PRIM_THRESHOLD=10_000 (the real gate; :427 is a sentinel)",
         "C2 crucible verdict PREMISE-scale-model: ')re-parameterize, do not loop to Pass 0' severity 4/5"
       ],
-      "note": "Surfaced by the premise attack AFTER C4 ranked - carries no rank yet; strongest mechanism evidence on the board.",
+      "note": "REDUCED, measured on the same input both sides (lane f89c116 -> master f60b5b0, crucible SOUND): 4-prim/2M-instance repro now trips the volume gate; reduced path ~55,000x-100,000x cheaper than the full serialize it sheds (two machines, both in the lane/crucible reports). L5 = the R304 ratchet. Crucible's bounded weaknesses, all fenced at stock defaults: zero-attr TraverseAll probe cost (148.99ms @100k bare Xforms, prim term fires first there), varying-topology animated arrays undercount (falls to the honest full path), instanceable prototypes evade BOTH terms (pre-existing class, shared with the prim gate).",
       "ratified_by": "Joe ('go', 2026-08-02) on the ranked recommendation; build wave wf_006556ba-f9c"
     },
     {
