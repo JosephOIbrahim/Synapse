@@ -32,7 +32,7 @@ disposition naming what was deleted, why it was dormant, and what would revive i
 | **A3** | memory evolution (charmander) | **L2** | L3 | MEDIUM — deepens a module marked for removal |
 | **R** | render-farm learning | — | L0 | LOW — recording an unverified rung is itself the risk |
 | **O** | §16 observability | — | L0 | LOW — same |
-| **S** | science registry → substrate | — | L0 | UNKNOWN pending RL-1 |
+| **S** | science registry → substrate | — | L0 | UNKNOWN — retirement **REFUSED** 2026-08-01; the seam has a live caller and deposits |
 | **F** | ~~router fast-path promotion~~ | **RETIRED-2026-08-01** | — | N/A — the mechanism is deleted from the tree |
 | **E** | FORGE build counters | **L1** | L2 | **HIGH** — would compound unvalidated fixes |
 | **C** | Moneta convergence | — | L0 | MEDIUM — relocates every loop's substrate at once |
@@ -85,6 +85,22 @@ table (it emits an INFO `Recommendation` a human acts on); and its `analyze()` i
 frequency-only by construction, so fixing it means widening **`O`'s** inputs. Ruling and evidence in
 `REGISTRY.json` → loop `O` → `_third_door_note`. Lane F exposed `MOERouter.outcome_counts()` so `O` has a
 source to consume when it gets there.
+
+**`S`'s retirement was ordered and REFUSED — the dormancy finding was wrong.** The 2026-08-01 ruling to retire
+`S` rested on "the only `Registry(deposit_fn=...)` construction is inside the `LedgerDeposit` docstring." It is
+not. `scripts/run_apex_verify.py:89-93` constructs it for real, `harness/verify/checks.py:98` runs that
+entrypoint under hython every sprint, and commit `cfe14f9` closed this exact seam on purpose. Run live on
+22.0.368 it printed **`ledger deposits: 16 ok, 0 failed`** and wrote 16 `Confirmation_*.json` records.
+Nothing was deleted.
+
+The cause is worth more than the correction. The sweep that produced "no live caller" was not tree-wide — it
+was scoped to `S`'s own `surfaces` list (`python/synapse/` + one doc), and SYNAPSE keeps operator entrypoints
+in `scripts/`. **A registry entry's `surfaces` field silently defined the search space that its own dormancy
+verdict was drawn from.** That is a self-confirming loop: narrow the scope, find nothing, record "nothing
+found" as evidence of absence. So the "docstring is not a caller" pattern — filed here as a codebase habit
+after `A2` and `S` — has **one confirmed instance, not two**; `S`'s was an artifact of scope. Whether `A2`'s
+survives the same scope check is untested and now owed. `surfaces` is a starting point for a sweep, never
+its boundary, and *absence of evidence inside a chosen scope* is not evidence of absence.
 
 `R`, `O`, `S`, `C` show `—` rather than a number. That is not a demotion of the June work; it is
 the honest consequence of the ladder collision recorded in `REGISTRY.json._ladder_collision_warning`. June's

@@ -226,30 +226,18 @@
       "id": "S",
       "name": "science registry to substrate -- apex verify deposit",
       "origin": "june-harness",
-      "surfaces": [
-        "python/synapse/",
-        "docs/SCIENCE_HARNESS_LEDGER.md"
-      ],
-      "rungs_proven": [
-        "L0"
-      ],
+      "surfaces": ["python/synapse/", "scripts/run_apex_verify.py", "scripts/flywheel_review_wiring.py", "scripts/flywheel_review_lop.py", "docs/SCIENCE_HARNESS_LEDGER.md"],
+      "rungs_proven": ["L0"],
       "blocked_at": "L1",
+      "disposition": "RETIREMENT-REFUSED-2026-08-01",
       "verification": "verified-at-head",
       "rl1_rederived": "2026-08-01",
-      "blocker": "L1 unassessable; the OPERATIVE obstacle is L2 and it is the SAME defect as A2. The seam is fully built -- python/synapse/science/deposit.py exists and is documented as 'the deposit_fn seam', and Registry accepts deposit_fn at registry.py:26 (defaulting to None at :28). But a tree-wide sweep finds the ONLY construction passing a real deposit_fn at deposit.py:58 -- and that line is INSIDE the LedgerDeposit class docstring's 'Usage::' block, not executable code. Verified at HEAD 2026-08-01 by reading deposit.py:50-62. So science verdicts are computed and never deposited: an unclosed benefit edge with no live caller.",
+      "blocker": "RETIREMENT REFUSED 2026-08-01. The dormancy finding this entry rested on is REFUTED, and the prior blocker text is retracted in full. It read: 'a tree-wide sweep finds the ONLY construction passing a real deposit_fn at deposit.py:58 -- and that line is INSIDE the LedgerDeposit class docstring'. That sweep was NOT tree-wide. It was scoped to this entry's own 'surfaces' list, which named python/synapse/ and one doc -- and SYNAPSE keeps its operator entrypoints in scripts/, outside that scope. The live caller was never in the search space. Ground truth at HEAD 38aba50: scripts/run_apex_verify.py:37 imports LedgerDeposit, :89 constructs it unconditionally, and :90-93 passes it as Registry(jsonl_path=..., deposit_fn=sink if (have_apex or have_catalog) else None) -- a real, non-test, non-docstring Registry(deposit_fn=...) construction. It is not orphaned: harness/verify/checks.py:98 (check_probe_runs) invokes 'hython scripts/run_apex_verify.py' as an every-sprint verify check, and harness/agent-settings.json:7 allowlists it. git log -L 86,94:scripts/run_apex_verify.py names commit cfe14f9 'feat(science): close the deposit_fn seam - probe verdicts reach the durable Ledger (RFC 7.2)' -- this loop was deliberately closed in a prior release, and CHANGELOG.md:359 records it under v5.20.0 WS4. EXECUTED, not merely read: run under Houdini 22.0.368 hython with SYNAPSE_LEDGER_DIR pointed at a scratch dir, the entrypoint printed 'ledger deposits: 16 ok, 0 failed' and wrote 16 Confirmation_*.json records to that dir. Two further non-test callers construct LedgerDeposit directly behind an opt-in --deposit flag: scripts/flywheel_review_wiring.py:281-306 and scripts/flywheel_review_lop.py:217-257 (harness/verify/checks.py:600,:711 run them WITHOUT --deposit by design, so those two are operator-invoked, not every-sprint). NOTHING WAS DELETED. What is still owed is a rung re-assessment by a human, which this pass deliberately did not perform: L2 REACHABLE now has direct evidence (the mechanism executes in production and deposits), but rungs_proven is left at L0 because proving the mechanism RUNS is not proving it BENEFITS -- the distinction this harness exists to hold. To revive the retirement case someone must first refute the hython run above.",
       "evidence": {
-        "L0": [
-          "python/synapse/science/deposit.py:53 (LedgerDeposit, the deposit_fn callable)",
-          "python/synapse/science/registry.py:26,:28 (deposit_fn param, defaults None)"
-        ]
+        "L0": ["python/synapse/science/deposit.py:53 (LedgerDeposit, the deposit_fn callable)", "python/synapse/science/registry.py:26,:28 (deposit_fn param, defaults None)", "scripts/run_apex_verify.py:37,:89,:90-93 (LIVE non-test Registry(deposit_fn=sink) construction -- refutes the docstring-only claim)", "harness/verify/checks.py:98 (every-sprint check_probe_runs invokes the entrypoint under hython)", "git commit cfe14f9 (the seam was deliberately closed, not left unwired)", "hython 22.0.368 run 2026-08-01: 'ledger deposits: 16 ok, 0 failed' + 16 Confirmation_*.json written to $SYNAPSE_LEDGER_DIR"]
       },
-      "danger_if_closed_now": "LOW while inert. Note the PATTERN this shares with A2: in both loops the only construction of the live object appears inside a docstring. That is now twice in this registry, which makes it a codebase habit worth naming rather than two coincidences -- a docstring example is not a caller, and a grep that does not distinguish them reports a wired loop that is not wired.",
-      "reversal": {
-        "persisted": "unknown",
-        "versioned": false,
-        "bounded": "unknown",
-        "rollback": "unknown"
-      },
+      "danger_if_closed_now": "UNKNOWN pending a human rung re-assessment. The prior 'LOW while inert' rested on the refuted dormancy claim and no longer applies -- the seam is not inert, it deposits on every live hython probe run. THE PATTERN CLAIM IS ALSO RETRACTED for this loop: S was cited alongside A2 as the second case of 'the only construction lives in a docstring', and that reading is now known to be an artifact of a sweep whose scope excluded scripts/. The generalisable lesson is the opposite of the one recorded: the hazard was not a docstring masquerading as a caller, it was a REGISTRY ENTRY WHOSE OWN 'surfaces' FIELD SILENTLY DEFINED THE SEARCH SPACE that the dormancy verdict was drawn from. A grep is only tree-wide if its scope is the tree. Whether A2's identical finding survives its own scope check is a separate question this pass did not test.",
+      "reversal": {"persisted": "unknown", "versioned": false, "bounded": "unknown", "rollback": "unknown"},
       "reversal_note": "To be established by Line A.",
       "human_ratified": false,
       "benefit": null
