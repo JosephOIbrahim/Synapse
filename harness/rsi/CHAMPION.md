@@ -3,19 +3,23 @@
 *Current best proven rung per loop. A rung is recorded here **only** after evidence gathered at HEAD. Never
 promoted on a carried claim, a memory note, or a prior harness's numbering.*
 
-**Framed 2026-08-01 at `f427320` · SPEC RATIFIED 2026-08-01 · last updated by `RL-2b` (A1 corrective)**
+**Framed 2026-08-01 at `f427320` · SPEC RATIFIED 2026-08-01 · last updated by `RL-3` (A2 retirement)**
 
 ---
 
 ## Read this before reading the numbers
 
-`harness/rsi/verify.py` reports **9 PASS / 0 FAIL** at frame time. That means **the registry is honest about
-the code** — not that anything is closed. The scoreboard below is the closure measure, and it reads:
+`harness/rsi/verify.py` reports **9 PASS / 0 FAIL**. That means **the registry is honest about the code** —
+not that anything is closed. The scoreboard below is the closure measure, and it reads:
 
-> **0 of 9 loops beneficial. 0 of 9 loops even reach L3 CONSUMED. Nothing in this codebase has yet improved
-> itself.**
+> **0 of 8 live loops beneficial. 0 of 8 even reach L3 CONSUMED. Nothing in this codebase has yet improved
+> itself. One loop was retired rather than closed.**
 
 Both statements are true at once, and conflating them is the failure this file exists to prevent.
+
+**9 registered, 8 live.** `A2` is **RETIRED**, not blocked. Its registry entry survives because `P9` requires
+all nine ids present exactly once — the entry is a tombstone, not a loop. Read denominators as **8** from
+2026-08-01 forward.
 
 ---
 
@@ -24,7 +28,7 @@ Both statements are true at once, and conflating them is the failure this file e
 | Loop | Name | Rung | Blocked at | Danger if closed now |
 |---|---|---|---|---|
 | **A1** | EpochAdapter router adaptation | **L1** | L2 | LOW at L1 — nothing consumes the adapter; **FAST is still structurally 1.0** (documented, not fixed); CRITICAL still applies at L3 |
-| **A2** | OutcomeTracker reward signal | **L0** | L1 *(operative: L2)* | LOW while inert |
+| **A2** | ~~OutcomeTracker reward signal~~ | **RETIRED** | — | **NONE — deleted 2026-08-01.** Residual risk runs the other way: re-creating it before a live `AgentExecutor` exists |
 | **A3** | memory evolution (charmander) | **L2** | L3 | MEDIUM — deepens a module marked for removal |
 | **R** | render-farm learning | — | L0 | LOW — recording an unverified rung is itself the risk |
 | **O** | §16 observability | — | L0 | LOW — same |
@@ -55,8 +59,8 @@ call — necessarily before any outcome exists.
 different work — *unfed* implies wiring a producer, *dormant* implies deciding whether the loop should exist.
 Nothing calls `record_outcome()`, **and** `filter_tools()` — the sole enclosing function of the sole non-test
 `MOERouter.route()` call site — has **zero references in the entire repository**. The promotion path runs
-zero times in production. That makes L2 a **wire-or-delete** question, the same one `A2` faces, and answering
-it comes before any wiring. Two docs written independently of this harness already reached the same verdict
+zero times in production. That makes L2 a **wire-or-delete** question — the same one `A2` faced and
+**answered by deletion** on 2026-08-01 (`RL-3`, section below) — and answering it comes before any wiring. Two docs written independently of this harness already reached the same verdict
 (`docs/RFC_agent_usd_ledger.md:307` — "the dead `panel/tool_filter.filter_tools` (no caller)";
 `docs/SCIENCE_HARNESS_LEDGER.md:256` — "DORMANT").
 
@@ -72,6 +76,48 @@ source to consume when it gets there.
 `R`, `O`, `S`, `C` show `—` rather than a number. That is not a demotion of the June work; it is
 the honest consequence of the ladder collision recorded in `REGISTRY.json._ladder_collision_warning`. June's
 L2 meant "survives a restart" — this ladder's L4. `RL-1` re-derives them.
+
+---
+
+## `A2` RETIRED — the harness's first subtraction
+
+**2026-08-01, `RL-3`.** `A2` did not advance and did not stall. It was **deleted**. `OutcomeTracker`
+(`python/synapse/agent/learning.py`, 194 lines) is gone, along with its executor wiring — the construction at
+`executor.py:60`, the `prepare()` context block that read past outcomes back, `record_outcome()` and its two
+call sites in `execute()` — and its exports from `agent/__init__.py` and `synapse/__init__.py`.
+
+**Why deletion and not wiring.** The reward signal had never recorded one outcome, and structurally could
+not: its only constructor is `AgentExecutor`, and `AgentExecutor` has **zero non-test constructions in the
+main tree**. The single non-test `AgentExecutor(` was inside a module docstring. There was no live executor
+for the `if memory else None` guard at `:60` to fail — the guard was never the reason. Wiring a producer onto
+that would have connected two things that both run zero times.
+
+**Scoped, not blunt.** `AgentExecutor` itself was **not** deleted, though the same grep condemns it. That is
+a larger subtraction than the one ratified, and it is escalated to the human rather than taken on agent
+authority. Its `memory` parameter also survives, unread, for the same reason — see the open recommendation
+below.
+
+**The tombstone is load-bearing.** `REGISTRY.json` → `A2` keeps the dormancy evidence and states plainly what
+would have to be true to revive it: **a production construction site for `AgentExecutor` comes first, the
+reward signal second.** A future agent reading the July audit could otherwise re-create the tracker and
+reproduce the exact dormancy this removed. `tests/test_agent.py::TestExecutorMemoryIsInert` makes that
+regrowth fail the suite rather than pass unnoticed.
+
+**What it does not mean.** A subtraction is not a closure. The scoreboard did not move: still 0 of 8 live
+loops beneficial, still 0 at L3. What moved is the denominator, and the registry now describes less code.
+
+> **Open recommendation for the human (NOT acted on — a larger decision than the one ratified).**
+> `AgentExecutor` has no production caller either, and the finding widened while scoping this cut: a
+> symbol-level grep over every `*.py` for `SparseToolIndexer`, `ReasoningContextManager`, `get_specialist`,
+> `TaskSynthesizer`, `build_enhanced_prompt` returns **10 files — the four defining modules, their four test
+> files, and the two `__init__.py` re-exports. Zero production consumers.** Same shape for
+> `agent/protocol.py`: outside the package and `tests/`, its only importer is `tests/test_set_usd_primvar.py`.
+>
+> So the candidate is not one dead class — it is plausibly the **whole `python/synapse/agent/` package**
+> (~7 modules) held live by nothing but its own `__init__` re-exports and its own tests. That is a
+> self-referential liveness signal, which is the same trap `A2` sat in one level down. It wants its own
+> scoping pass and its own ratification. **Not acted on here.** Caveat on the evidence: static name grep only
+> — it would miss dynamic `getattr`/plugin-registry access, which should be checked before any cut.
 
 ---
 
@@ -137,7 +183,8 @@ for **two** reasons — and `RL-2` named only the second, while explicitly rulin
 command channel cannot execute a command, so it can never observe one fail. L2 needs the wiring *and* the
 traffic — and wiring the command channel is a signal-semantics change behind the human gate.
 
-Closure did not move the scoreboard line below: still 0 of 9 beneficial, still 0 of 9 at L3.
+Closure did not move the scoreboard line below: still 0 beneficial, still 0 at L3. *(Stated as `0 of 9` when
+written; the denominator became **8 live** when `A2` was retired on 2026-08-01.)*
 
 > **`E`'s closure is not `E`'s benefit.** The loop now reports honestly that it is not improving anything.
 > That is a real rung and a real gain in trustworthiness, and it is *not* self-improvement. `E` reaches L2+
@@ -191,3 +238,13 @@ the whole of what this rung claims. The rest needs the real verifier that also b
    survive the `P6` activity blacklist.
 6. **Demotion is normal and carries no stigma.** If evidence stops supporting a rung, drop it and log it.
    A champion board that only goes up is a champion board that is lying.
+7. **Retirement is a valid outcome, and it is a human call.** A dormant loop may be deleted rather than
+   wired. When it is: `rungs_proven` goes to `[]` (a retired loop sits at no rung), `blocked_at` to `L0`,
+   `disposition` to `RETIRED-<date>`, and the **entry stays** — `P9` needs the id. The blocker is rewritten
+   to say what was deleted, why it was dormant, and what would have to be true to revive it, keeping the
+   evidence that established dormancy. Deleting the entry instead of the code is the failure mode here: it
+   makes the registry shorter without making the codebase smaller.
+8. **Cut precisely or not at all.** Grep for live callers before deleting any symbol; anything with a
+   non-test caller survives and the cut narrows around it. Over-deleting is worse than under-deleting —
+   it breaks working software to tidy a registry. If scoping shows the real cut is bigger than the one
+   ratified, **stop and escalate**; an agent does not widen its own mandate.
