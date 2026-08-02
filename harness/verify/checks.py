@@ -415,6 +415,67 @@ def _hou_phantoms_in_source(src, table_syms):
                 hits.append((node.lineno, symbol))
     return hits
 
+def _module_depth1_phantoms(src, table_syms, module_name):
+    """[(lineno, "<module>.<attr>"), ...] for <module>-attribute accesses the table PROVES absent.
+    Generalized depth-1 scanner for any top-level module the introspect table enumerates via
+    dir() at depth 0 — the same proof-by-absence guarantee _hou_phantoms_in_source has for hou.
+    Collects `import <module>` and `import <module> as X` aliases, flags <alias>.<attr> depth-1
+    accesses not in table_syms. Deeper access (<module>.Class.method) is unknown != phantom
+    (the inner <module>.Class is judged + covered; the outer has an Attribute value and is
+    skipped), identical to the hou depth-1 boundary.
+
+    Soundness note (CTO verdict, 2026-07-30):
+    - pdg: SOUND. host/introspect_runtime.py:94-97 calls _walk(pdg, "pdg", 0, DEPTH_HOU_PDG=2,
+      ...) which iterates dir(pdg) at depth 0, so every top-level pdg name is enumerated by the
+      same mechanism hou uses. The H22 table confirms: 235 pdg depth-1 names, and pdg.EventType,
+      pdg.PyEventHandler, pdg.GraphContext, pdg.Scheduler, pdg.WorkItem are all present (self-
+      check at introspect_runtime.py:141 asserts pdg.EventType). pdg.<attr> absence is proof.
+      Codebase caveat: production code (shared/bridge.py:1581-1593) uses `import pdg as _pdg`
+      then `_pdg.EventType.CookComplete`, so alias resolution (`import pdg as X`) is required to
+      reach real code — handled here exactly as the hou lint resolves `import hou as X`.
+    - pxr: NOT dir()-complete. host/introspect_runtime.py:101-115 does NOT call _walk(pxr, ...);
+      it enumerates pxr.<submodule> via pkgutil.iter_modules(pxr.__path__) + each submodule's
+      depth-1 members, but NOT dir(pxr) itself. The 41 pxr depth-1 names in the H22 table are all
+      submodules (Ar, Sdf, Tf, Usd, UsdGeom, ...). A real pxr.<non-submodule> top-level attr (a
+      function/constant/dynamically-attached name) is absent from the table and would FALSE-
+      PHANTOM; the AST checker cannot distinguish submodule vs non-submodule at resolution time.
+      This is a KNOWN SOUNDNESS GAP, accepted because SYNAPSE production code uses
+      `from pxr import X` (so node.value.id is the submodule name, not `pxr`) — zero pxr.<attr>
+      depth-1 Attribute accesses exist today (verified by grep), so no false phantom fires in
+      current code. Closing the gap requires a table-build change (add _walk(pxr, "pxr", 0, 0,
+      ...) to capture non-submodule top-level attrs). No allowlist is unioned here because no
+      real false-phantom would otherwise fire today (the CTO's `only if a real false-phantom
+      would otherwise fire` condition is not met); the gap is documented, not papered over."""
+    import ast
+    tree = ast.parse(src)
+    aliases = {module_name}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == module_name:
+                    aliases.add(alias.asname or module_name)
+    hits = []
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name)
+                and node.value.id in aliases):
+            symbol = module_name + "." + node.attr
+            if symbol not in table_syms:
+                hits.append((node.lineno, symbol))
+    return hits
+
+def _phantoms_in_source(src, table_syms):
+    """Unified depth-1 phantom scan across hou, pdg, pxr. Unions the existing hou scan (kept
+    intact — tests/test_phantom_guardrail.py pins it) with pdg and pxr depth-1 scans. The
+    introspect symbol table authoritatively covers all three modules (its self-check asserts
+    pdg.EventType and pxr.Usd), so this closes the gap where the hou-only lint let
+    pdg.PyEventHandler / pdg.EventType slip through check_phantom_clean even though the table
+    knew they were real. See _module_depth1_phantoms for the pdg-sound / pxr-not-dir()-
+    complete asymmetry (CTO verdict 2026-07-30)."""
+    hits = list(_hou_phantoms_in_source(src, table_syms))
+    hits.extend(_module_depth1_phantoms(src, table_syms, "pdg"))
+    hits.extend(_module_depth1_phantoms(src, table_syms, "pxr"))
+    return hits
+
 def _sprint_added_py(wt, base):
     """{relpath: set(added_line_no) | None} for .py touched since <base> — None marks a new
     untracked file (whole file is new). `git diff --unified=0` gives exact added line numbers
@@ -478,7 +539,10 @@ def check_phantom_clean(ctx):
     added = _sprint_added_py(wt, base)  # {relpath: set(added_lines) | None (=whole new file)}
     if not added:
         return {"ok": True, "detail": "no changed .py lines in this sprint"}
-    # 3) AST-scan each changed file; flag table-proven-absent hou.<attr> only on ADDED lines.
+    # 3) AST-scan each changed file; flag table-proven-absent hou.*/pdg.*/pxr.* only on ADDED lines.
+    # Unified scan (P5.1 extension): the introspect table authoritatively covers hou, pdg, AND pxr
+    # (its self-check asserts pdg.EventType + pxr.Usd); the hou-only lint let pdg.PyEventHandler /
+    # pdg.EventType slip through. _phantoms_in_source unions all three depth-1 surfaces.
     offenders, unparseable = [], []
     for rel, addl in added.items():
         f = Path(wt) / rel
@@ -489,7 +553,7 @@ def check_phantom_clean(ctx):
         except Exception:
             continue
         try:
-            hits = _hou_phantoms_in_source(src, table_syms)
+            hits = _phantoms_in_source(src, table_syms)
         except SyntaxError:
             unparseable.append(rel)  # a broken file fails other checks anyway — don't crash the gate
             continue
@@ -499,9 +563,9 @@ def check_phantom_clean(ctx):
     ver = status.get("houdini_version", "?")
     if offenders:
         note = f" (+{len(unparseable)} unparseable, skipped)" if unparseable else ""
-        return {"ok": False, "detail": (f"phantom hou.* introduced (absent in the {ver} symbol "
+        return {"ok": False, "detail": (f"phantom hou.*/pdg.*/pxr.* introduced (absent in the {ver} symbol "
                 f"table): {', '.join(sorted(set(offenders))[:12])}{note}")[:500]}
-    clean = f"{len(added)} changed .py clean of table-proven phantom hou.* APIs (vs {len(table_syms)} live symbols @ {ver})"
+    clean = f"{len(added)} changed .py clean of table-proven phantom hou.*/pdg.*/pxr.* APIs (vs {len(table_syms)} live symbols @ {ver})"
     if unparseable:
         clean += f" ({len(unparseable)} unparseable, skipped)"
     return {"ok": True, "detail": clean[:500]}
