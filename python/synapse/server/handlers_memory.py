@@ -36,15 +36,17 @@ class MemoryHandlerMixin:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         from .main_thread import run_on_main
-        from ..memory.scene_memory import resolve_hip_dir
+        from ..memory.scene_memory import resolve_hip_dir, resolve_job_dir
 
         def _on_main():
             hip_path = hou.hipFile.path()
-            # Must match the writer's scene-dir resolution (ensure_scene_structure)
-            # so reads land on the same claude/ dir writes use -- critical for
-            # unsaved/untitled scenes where dirname(hip) != the writer's dir.
+            # Must match the writer's resolution (ensure_scene_structure) so
+            # reads land on the same claude/ dirs writes use -- critical for
+            # unsaved/untitled scenes, where dirname(hip) != the writer's dir
+            # AND $JOB points at Houdini's own install bin, which this process
+            # may not write to (WinError 5). Both resolvers are idempotent.
             hip_dir = resolve_hip_dir(hip_path)
-            job_path = hou.getenv("JOB", hip_dir)
+            job_path = resolve_job_dir(hou.getenv("JOB", hip_dir))
             return {"hip_path": hip_path, "hip_dir": hip_dir, "job_path": job_path}
 
         return run_on_main(_on_main)

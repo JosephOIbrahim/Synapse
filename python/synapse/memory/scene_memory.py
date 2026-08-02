@@ -10,9 +10,17 @@ Every function is idempotent, non-destructive, and encoding-safe.
 
 import logging
 import os
+import tempfile
 import threading
 import time
 from typing import Dict, List, Optional, Any
+
+try:
+    import hou
+    HOU_AVAILABLE = True
+except ImportError:
+    hou = None
+    HOU_AVAILABLE = False
 
 logger = logging.getLogger("synapse.scene_memory")
 
@@ -81,19 +89,213 @@ def _get_file_lock(path: str) -> _ProcessFileLock:
 # DIRECTORY & FILE MANAGEMENT
 # =============================================================================
 
+#: Parents whose ``claude/`` could not be created here, mapped to where the
+#: memory actually went. Populated by the writer AND by the read-side probe, so
+#: readers follow the writer without re-deriving anything (see the resolver
+#: contract in ``resolve_hip_dir``). Process-local: an address is a runtime
+#: fact about THIS host, never persisted.
+_RELOCATED: Dict[str, str] = {}
+_RELOCATED_LOCK = threading.Lock()
+
+
+def unsaved_memory_base() -> str:
+    """Where an UNSAVED scene's memory lives: ``$HOUDINI_TEMP_DIR/untitled``.
+
+    Deliberately the SAME root ``store._resolve_project_path`` routes an
+    unsaved scene's ``.synapse`` store to (C-0 / PR #60, commit 19c299b). The
+    two memory subsystems must address one scene at one place; divergence
+    between them is its own bug.
+
+    Outside Houdini (tests/CI) the ``$HOUDINI_TEMP_DIR`` environment variable
+    wins, then the platform temp dir -- always somewhere writable, never the
+    process working directory.
+
+    An UNEXPANDED result is rejected: when the variable is undefined
+    ``expandString`` hands the token straight back, and joining it would
+    create a literal ``$HOUDINI_TEMP_DIR`` directory wherever the process
+    happens to be standing -- the same "address nobody can predict" class of
+    bug this whole module is fixing.
+    """
+    _TOKEN = "$HOUDINI_TEMP_DIR"
+    if HOU_AVAILABLE:
+        try:
+            expanded = hou.text.expandString(_TOKEN)
+            if expanded and expanded.strip() != _TOKEN:
+                return os.path.normpath(os.path.join(expanded, "untitled"))
+        except Exception:
+            pass
+    env = os.environ.get("HOUDINI_TEMP_DIR")
+    if env:
+        return os.path.normpath(os.path.join(env, "untitled"))
+    return os.path.normpath(
+        os.path.join(tempfile.gettempdir(), "synapse", "untitled")
+    )
+
+
+def _hip_is_unsaved(hip_path: str) -> bool:
+    """Delegate to ``store.hip_is_unsaved`` -- one detector, one verdict.
+
+    Never re-implemented here: a second unsaved-scene detector is how the two
+    subsystems would drift apart again. The absolute-import fallback exists
+    because ``tests/test_scene_memory.py`` loads this file as a TOP-LEVEL
+    module via ``importlib.util.spec_from_file_location``, where the relative
+    import has no parent package.
+    """
+    try:
+        from .store import hip_is_unsaved as _impl
+    except (ImportError, ValueError):
+        try:
+            from synapse.memory.store import hip_is_unsaved as _impl
+        except ImportError:
+            # store unreachable -> assume saved and let the writability probe
+            # decide. Guessing "unsaved" here would relocate real project
+            # memory on an import accident.
+            return False
+    return bool(_impl(hip_path, hou))
+
+
+def _can_create_under(parent: str) -> bool:
+    """True when this process may create a directory under *parent*.
+
+    Probes the nearest EXISTING ancestor by creating and deleting a temp file
+    there -- exactly the permission ``os.makedirs`` needs, and nothing is left
+    behind. ``os.access(path, os.W_OK)`` is deliberately NOT used: on Windows
+    it reports the read-only ATTRIBUTE, not the ACL, so an ACL-protected
+    directory like ``C:/Program Files/...`` reads writable and the WinError 5
+    arrives later, at makedirs, in front of the artist.
+    """
+    probe = os.path.abspath(parent)
+    while not os.path.isdir(probe):
+        nxt = os.path.dirname(probe)
+        if nxt == probe:
+            return False
+        probe = nxt
+    try:
+        fd, tmp = tempfile.mkstemp(prefix=".synapse-probe-", dir=probe)
+    except (PermissionError, OSError):
+        return False
+    try:
+        os.close(fd)
+    except OSError:
+        pass
+    try:
+        os.unlink(tmp)
+    except OSError:
+        pass
+    return True
+
+
+def _record_relocation(parent: str, fallback: str, kind: str, reason: str) -> None:
+    """Remember (and announce, once per parent) that memory moved.
+
+    LOUDNESS over silence: never write somewhere the caller cannot predict
+    without naming the attempted path, the fallback and the reason.
+    """
+    parent = os.path.normpath(parent)
+    with _RELOCATED_LOCK:
+        if parent in _RELOCATED:
+            return
+        _RELOCATED[parent] = fallback
+    logger.warning(
+        "Scene memory relocated: %s memory cannot live at %s (%s). "
+        "Using %s instead. Nothing is carried over from the original path.",
+        kind, os.path.join(parent, "claude"), reason, os.path.join(fallback, "claude"),
+    )
+
+
+def _resolve_memory_parent(parent: str, kind: str) -> str:
+    """Resolve the directory whose ``claude/`` actually holds memory.
+
+    Order, and why:
+
+    1. ``parent/claude`` already exists -> that IS the address. Never probed,
+       so a populated but read-only project dir keeps being read from where it
+       is.
+    2. A recorded relocation for this parent -> follow it. This is what keeps
+       readers on the writer's address after an unpredicted makedirs failure.
+    3. Writable -> use it.
+    4. Otherwise -> ``unsaved_memory_base()``, recorded + warned.
+    """
+    parent = os.path.normpath(parent)
+    if os.path.isdir(os.path.join(parent, "claude")):
+        return parent
+    with _RELOCATED_LOCK:
+        recorded = _RELOCATED.get(parent)
+    if recorded is not None:
+        return recorded
+    if _can_create_under(parent):
+        return parent
+    fallback = unsaved_memory_base()
+    if os.path.normpath(fallback) == parent:
+        return parent  # nowhere left to go; the makedirs guard will raise
+    _record_relocation(parent, fallback, kind, "not writable by this process")
+    return fallback
+
+
 def resolve_hip_dir(hip_path: str) -> str:
     """Resolve the directory whose ``claude/`` holds this scene's memory.
 
     For a SAVED hip (a real file on disk) that is the file's parent directory.
-    For an UNSAVED/untitled hip (``hou.hipFile.path()`` returns a path that is
-    not yet a real file) it is the hip path itself.
+    For an UNSAVED/untitled hip it is ``unsaved_memory_base()`` -- Houdini
+    reports a full path under its own install dir for a never-saved scene
+    (``C:/Program Files/.../Houdini 22.0.397/bin/untitled.hip``), so the hip
+    path itself is not somewhere this process may write. Trusting it raw is
+    what made ``synapse_memory_write`` die with
+    ``PermissionError WinError 5: '<install>/bin/claude'``.
 
     Single source of truth: readers (status, context, query, project_setup)
     and the writer (ensure_scene_structure) MUST resolve this identically, or
-    they read and write different ``claude/`` dirs for unsaved scenes.
+    they read and write different ``claude/`` dirs. Every branch here is a
+    pure function of the hip path plus on-disk facts both sides can observe,
+    so both sides land on the same directory. Pinned by
+    ``tests/test_g1a_scene_memory_address.py``.
+
+    Idempotent: ``resolve_hip_dir(resolve_hip_dir(p))`` == ``resolve_hip_dir(p)``.
     """
-    hip_path = os.path.normpath(hip_path)
-    return os.path.dirname(hip_path) if os.path.isfile(hip_path) else hip_path
+    hip_path = os.path.normpath(hip_path or ".")
+    if _hip_is_unsaved(hip_path):
+        return unsaved_memory_base()
+    base = os.path.dirname(hip_path) if os.path.isfile(hip_path) else hip_path
+    return _resolve_memory_parent(base, "scene")
+
+
+def resolve_job_dir(job_path: str) -> str:
+    """Resolve the directory whose ``claude/`` holds PROJECT memory.
+
+    Normally ``$JOB``. For an unsaved scene Houdini leaves ``$JOB`` pointing at
+    its own install ``bin`` -- the directory that produced the WinError 5 --
+    so the same writability contract applies here as to the scene dir. Readers
+    (``load_full_context``, ``get_memory_status``) and the writer
+    (``ensure_scene_structure``) all route through this one function.
+
+    Idempotent, same as ``resolve_hip_dir``.
+    """
+    job_path = os.path.normpath(job_path or ".")
+    return _resolve_memory_parent(job_path, "project")
+
+
+def _makedirs_or_relocate(parent: str, kind: str) -> str:
+    """``makedirs(parent/claude)``; on refusal relocate rather than raise.
+
+    ``os.makedirs`` must never be the thing that surfaces to the artist. The
+    resolvers above already steer away from unwritable addresses; this is the
+    last line for what they could not predict (a race, a revoked ACL, a full
+    or read-only volume). The relocation is recorded so every subsequent
+    reader resolves to the same place. Only if the fallback ALSO fails does
+    this raise.
+    """
+    target = os.path.join(parent, "claude")
+    try:
+        os.makedirs(target, exist_ok=True)
+        return target
+    except OSError as exc:
+        fallback_parent = unsaved_memory_base()
+        if os.path.normpath(fallback_parent) == os.path.normpath(parent):
+            raise
+        _record_relocation(parent, fallback_parent, kind, f"{type(exc).__name__}: {exc}")
+        fallback = os.path.join(fallback_parent, "claude")
+        os.makedirs(fallback, exist_ok=True)
+        return fallback
 
 
 def ensure_scene_structure(hip_path: str, job_path: str) -> Dict[str, str]:
@@ -105,19 +307,21 @@ def ensure_scene_structure(hip_path: str, job_path: str) -> Dict[str, str]:
         {project_dir, scene_dir, project_md, scene_md, agent_usd}
 
     Idempotent: safe to call repeatedly. Never overwrites existing files.
+
+    Addresses come from ``resolve_hip_dir`` / ``resolve_job_dir`` -- the same
+    two functions every reader uses -- so the writer can never land on a
+    ``claude/`` the readers do not look in.
     """
     hip_path = os.path.normpath(hip_path)
     job_path = os.path.normpath(job_path)
 
     hip_dir = resolve_hip_dir(hip_path)
+    job_dir = resolve_job_dir(job_path)
     hip_name = os.path.basename(hip_path)
     job_name = os.path.basename(job_path)
 
-    project_dir = os.path.join(job_path, "claude")
-    scene_dir = os.path.join(hip_dir, "claude")
-
-    os.makedirs(project_dir, exist_ok=True)
-    os.makedirs(scene_dir, exist_ok=True)
+    project_dir = _makedirs_or_relocate(job_dir, "project")
+    scene_dir = _makedirs_or_relocate(hip_dir, "scene")
 
     # Seed project.md
     project_md = os.path.join(project_dir, "project.md")
@@ -509,9 +713,15 @@ def load_full_context(hip_dir: str, job_dir: str) -> Dict[str, Any]:
 
     Returns: {project: {...}, scene: {...}, agent: {...}, summary: str}
     Truncates to ~8000 tokens max, prioritizing recent sessions and unresolved blockers.
+
+    Both dirs are re-resolved through the shared resolvers so this reader can
+    never look in a different ``claude/`` than ``ensure_scene_structure``
+    wrote to. The resolvers are idempotent, so an already-resolved dir passes
+    through unchanged -- and a caller that hand-rolled ``dirname(hip)``
+    (``houdini/scripts/python/synapse_shelf.py``) is corrected here.
     """
-    hip_dir = os.path.normpath(hip_dir)
-    job_dir = os.path.normpath(job_dir)
+    hip_dir = resolve_hip_dir(os.path.normpath(hip_dir))
+    job_dir = resolve_job_dir(os.path.normpath(job_dir))
 
     project_claude = os.path.join(job_dir, "claude")
     scene_claude = os.path.join(hip_dir, "claude")
@@ -880,7 +1090,17 @@ def get_evolution_stage(claude_dir: str, name: str = "memory") -> str:
 
 
 def get_memory_status(scene_dir: str, project_dir: str) -> Dict[str, Any]:
-    """Get current memory system status."""
+    """Get current memory system status.
+
+    Routes both dirs through the shared resolvers (idempotent) so status
+    reports on the same ``claude/`` the writer uses -- status reading an empty
+    directory while writes landed elsewhere is the exact class of bug the
+    resolver contract exists to prevent.
+    """
+    if not scene_dir.endswith("claude"):
+        scene_dir = resolve_hip_dir(scene_dir)
+    if not project_dir.endswith("claude"):
+        project_dir = resolve_job_dir(project_dir)
     scene_claude = os.path.join(scene_dir, "claude") if not scene_dir.endswith("claude") else scene_dir
     project_claude = os.path.join(project_dir, "claude") if not project_dir.endswith("claude") else project_dir
 
