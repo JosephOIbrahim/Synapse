@@ -213,6 +213,7 @@ mutation — a real per-op cost floor on large production stages.
 | Variable | Meaning | Default | Read by |
 |----------|---------|---------|---------|
 | `SYNAPSE_STAGE_HASH_PRIM_THRESHOLD` | Prim-count gate above which the bridge stops running the full `Flatten()`+sha256 per hash and switches to the mode selected by `SYNAPSE_STAGE_HASH_LARGE_MODE`. At/below the threshold the hash is byte-identical to the original `Flatten()` algorithm. Non-negative ints only; a bad value falls back to the default. | `10000` (measured — `scripts/probe_stage_hash_floor.py`) | `shared/bridge.py` |
+| `SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD` | Authored-array-volume gate (total array elements x authored time samples, counted by a bounded probe that never reads element values). Trips the same `SYNAPSE_STAGE_HASH_LARGE_MODE` switch when a stage is prim-light but value-heavy — the H10 class (a 4-prim PointInstancer @ 2M instances cost 2017.9 ms/op while staying under the prim gate). The hash is full-`Flatten()` only when BOTH gates pass. Non-negative ints only; a bad value falls back to the default. | `500000` (measured 2026-08-02 — see the H10 constants block in `shared/bridge.py`) | `shared/bridge.py` |
 | `SYNAPSE_STAGE_HASH_LARGE_MODE` | What runs ABOVE the threshold. `reduced` (default) — a cheap reduced-detail signature (topology, typing, property structure, relationship targets; **no attribute values, no time samples, no metadata**), recorded honestly on the IntegrityBlock as `stage_hash_mode="reduced"` / `stage_hash_full_fidelity=false`. `structural` — the COMPLETE structural signature (every mutation class incl. values + time samples; measured NOT faster than `Flatten()`, a memory choice not a speed one). `full` — never degrade: `Flatten()` everywhere, the always-full override. | `reduced` | `shared/bridge.py` |
 
 > **The gate is real since 2026-08-01** (BRIDGE-FLOOR). Measured on the dev
@@ -229,7 +230,8 @@ mutation — a real per-op cost floor on large production stages.
 > The same threshold also sheds `_verify_composition`'s inherit/specialize
 > sweep on oversized stages (recorded as `composition_checks_reduced=true`);
 > the per-prim reference/payload checks — the composition anchor itself —
-> always run.
+> always run. The sweep shed is keyed on the PRIM threshold only — the
+> array-volume gate affects the stage hash, never composition validation.
 >
 > This variable is read in `shared/`, outside the studio env-var conformance scanner
 > (`tests/test_m3_env_conformance.py` scans `python/synapse/**`), so it is documented

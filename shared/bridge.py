@@ -415,8 +415,11 @@ def reset_scene_hash_stats() -> None:
 # 10_000 is the largest measured point where the full-fidelity per-op envelope
 # stays under ~1s across all three profiles; beyond it the cost scales into
 # multiple seconds per op (the BRIDGE-FLOOR class the freeze recon flagged).
-# Note the gate keys on PRIM COUNT: a small-prim-count stage carrying huge
-# arrays (value-heavy 100 = 310ms/op) stays below it and keeps full fidelity.
+# The gate originally keyed on PRIM COUNT alone: a small-prim-count stage
+# carrying huge arrays stayed below it and paid full-Flatten cost anyway.
+# Adjudicated H10 (crucible C2 live probe): a 4-prim PointInstancer @ 2M
+# instances cost 2017.9 ms/op while _stage_exceeds(stage, 10000) read False —
+# a 16,677x miss. The AUTHORED-ARRAY-VOLUME term below closes that class.
 # Raise the threshold (or set SYNAPSE_STAGE_HASH_LARGE_MODE=full) to restore
 # always-full fidelity everywhere.
 _DEFAULT_STAGE_HASH_PRIM_THRESHOLD = 10_000
@@ -444,10 +447,11 @@ def _stage_hash_large_mode() -> str:
 
 
 def _stage_hash_prim_threshold() -> int:
-    """Prim-count gate above which the stage hash uses the structural signature
-    instead of full Flatten()+ExportToString(). Env override; non-negative ints
-    only, else the default (effectively unbounded => structural OFF / opt-in; a bad
-    value never silently CHANGES the default)."""
+    """Prim-count gate above which the stage hash switches from full
+    Flatten()+ExportToString() to the SYNAPSE_STAGE_HASH_LARGE_MODE path
+    (default: the reduced signature). Env override; non-negative ints only,
+    else the measured finite default (10_000 since the 2026-08 BRIDGE-FLOOR
+    measurement — a bad value never silently CHANGES the default)."""
     raw = os.environ.get(_STAGE_HASH_THRESHOLD_ENV)
     if raw:
         try:
@@ -457,6 +461,52 @@ def _stage_hash_prim_threshold() -> int:
         except (TypeError, ValueError):
             pass
     return _DEFAULT_STAGE_HASH_PRIM_THRESHOLD
+
+
+# ── H10 volume term (2026-08-02): per-op hash cost tracks AUTHORED ARRAY
+# VOLUME, not prim count (crucible C2, adjudicated severity 4/5 — 're-
+# parameterize, do not re-litigate'). Re-measured at this HEAD
+# (Python 3.14.2 / pxr 0.26.5, median of 3, in-memory stages, 50/50
+# int/vec3 element mix — the instancing shape):
+#   4-prim PointInstancer @ 2M instances (4M elements): 1361.5 ms/hash
+#     (2722.9 ms/op) while _stage_exceeds(stage, 10000) is False
+#   elements → Flatten cost: 100k = 46.0 ms/hash | 250k = 114.0 | 500k = 232.9
+#     | 1M = 459.8 | 4M = 1361.5 (linear in volume)
+# DEFAULT = 500_000 elements: full-path cost there (~233 ms/hash, ~466 ms/op)
+# sits at/below the pain band already accepted by the 10k-prim default
+# (611-895 ms/op per the constants block above; 1059 ms/op re-measured at
+# this HEAD). Below it the gate would shed fidelity the accepted envelope
+# tolerates; the C2 repro lands 8x past it. "Elements" = array LENGTHS
+# (a vec3 counts once), x number of authored time samples for animated attrs.
+_DEFAULT_STAGE_HASH_VOLUME_THRESHOLD = 500_000
+_STAGE_HASH_VOLUME_THRESHOLD_ENV = "SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD"
+# Work bound for the volume probe itself: attributes EXAMINED before it gives
+# up (returns False → the full path runs, exactly the pre-H10 status quo).
+# Measured need: without a budget, a 10k-prim all-scalar stage costs the probe
+# 99.9 ms/walk (40k UsdAttribute constructions) against the ~530 ms/hash it
+# gates — not "far cheaper". With it, probe cost on that same stage is 6.5 ms
+# (capped at ~budget attribute peeks regardless of shape). The H10 target class
+# (prim-LIGHT, value-heavy) trips within the first few attributes and never
+# nears the budget; attr-dense stages that exhaust it keep full fidelity and
+# remain bounded by the PRIM term at 10k prims.
+_STAGE_HASH_VOLUME_ATTR_BUDGET = 4096
+
+
+def _stage_hash_volume_threshold() -> int:
+    """Authored-array-volume gate (total array elements x time samples) above
+    which the stage hash takes the SYNAPSE_STAGE_HASH_LARGE_MODE path even
+    when the prim count is small (H10: value-heavy-but-prim-light stages).
+    Env override; non-negative ints only, else the measured finite default
+    (500_000 — a bad value never silently CHANGES the default)."""
+    raw = os.environ.get(_STAGE_HASH_VOLUME_THRESHOLD_ENV)
+    if raw:
+        try:
+            v = int(raw)
+            if v >= 0:
+                return v
+        except (TypeError, ValueError):
+            pass
+    return _DEFAULT_STAGE_HASH_VOLUME_THRESHOLD
 
 
 # ── PDG Cook Timeout (R8-bounded) ───────────────────────────────
@@ -840,8 +890,9 @@ class LosslessExecutionBridge:
         # without this the hash collapses to "did the node recook" and cannot detect
         # that the composed stage CHANGED — blind on the headline Solaris path.
         # Flatten-export verified stable + attribute-value-sensitive on H21.0.631.
-        # Size-gated: below the prim threshold this is byte-identical to the old
-        # Flatten()+sha256; above it, the SYNAPSE_STAGE_HASH_LARGE_MODE path
+        # Size-gated: below the prim AND array-volume thresholds this is
+        # byte-identical to the old
+        # Flatten()+sha256; above either, the SYNAPSE_STAGE_HASH_LARGE_MODE path
         # (default: reduced-detail signature, recorded honestly on the
         # IntegrityBlock as stage_hash_mode/stage_hash_full_fidelity).
         # include_stage=False (live envelope) skips this block structurally.
@@ -904,11 +955,13 @@ class LosslessExecutionBridge:
         """Hash a composed USD stage. Returns the 16-hex digest appended after the
         ``stage:`` prefix in the scene hash.
 
-        SIZE GATE (cost control, HONESTY-QUALIFIED):
-          - At/below the prim threshold: the EXACT original
+        SIZE GATE (cost control, HONESTY-QUALIFIED, two terms):
+          - At/below BOTH terms — prim count (SYNAPSE_STAGE_HASH_PRIM_THRESHOLD)
+            AND authored array volume (SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD,
+            H10) — the EXACT original
             ``sha256(stage.Flatten().ExportToString())[:HASH_LENGTH]`` — byte-identical,
             zero behavior change for normal stages. Recorded mode "full".
-          - Above the threshold: SYNAPSE_STAGE_HASH_LARGE_MODE selects
+          - Above EITHER term: SYNAPSE_STAGE_HASH_LARGE_MODE selects
             "reduced" (default — cheap reduced-detail signature, recorded as
             reduced fidelity on the IntegrityBlock), "structural" (COMPLETE
             structural signature — full detail, Flatten-order cost), or
@@ -931,6 +984,14 @@ class LosslessExecutionBridge:
                 large = self._stage_exceeds(stage, _stage_hash_prim_threshold())
             except Exception:
                 large = False  # probe failed → behave exactly like before (Flatten)
+            if not large:
+                # H10: prim-light stages can still be VALUE-heavy (the C2
+                # PointInstancer miss) — the volume term catches those.
+                try:
+                    large = self._stage_volume_exceeds(
+                        stage, _stage_hash_volume_threshold())
+                except Exception:
+                    pass  # probe failure never trips the gate (same posture)
             mode = _stage_hash_large_mode() if large else "full"
 
         if mode == "structural":
@@ -1023,6 +1084,75 @@ class LosslessExecutionBridge:
             n += 1
             if n > threshold:
                 return True
+        return False
+
+    @staticmethod
+    def _stage_volume_exceeds(stage, threshold: int,
+                              attr_budget: int = _STAGE_HASH_VOLUME_ATTR_BUDGET
+                              ) -> bool:
+        """H10: True if the stage's total AUTHORED ARRAY VOLUME — array
+        elements across authored array-typed attributes, x max(1, authored
+        time samples) — exceeds ``threshold``. The term that catches
+        value-heavy-but-prim-light stages (crucible C2: 4-prim PointInstancer
+        @ 2M instances, 2017.9 ms/op, invisible to the prim probe).
+
+        Cost discipline (the probe must stay far cheaper than the Flatten it
+        gates):
+          - element counts only, never element reads: the peek is ``len()``
+            on the resolved Vt array handle — VtArray extraction is
+            copy-on-write and ``len()`` is O(1). Measured 0.013 ms on the 2M-
+            instance repro vs the 1361.5 ms/hash it gates (~100,000x). Caveat:
+            on compressed-crate-backed layers the FIRST resolve of an
+            attribute may decompress that one array; still bounded, because—
+          - short-circuits the moment accumulated volume passes ``threshold``
+            (the heavy stage stops the walk at its first big attributes), and
+          - gives up (returns False → full path, the pre-H10 status quo)
+            after ``attr_budget`` attributes examined, so attr-dense stages
+            below the prim threshold cannot make the probe itself expensive
+            (measured 99.9 ms unbudgeted on a 10k-prim/40k-scalar-attr stage).
+
+        Sampled-count estimate: animated attrs contribute
+        len(earliest/default sample) x GetNumTimeSamples() without reading
+        every sample — an estimate, acceptable for a cost gate (the honesty
+        fields record whichever mode actually ran). Per-attribute failures
+        skip that attribute; the probe never raises past its caller's guard.
+        Deliberately NOT used by _verify_composition's sweep shed — that gate
+        stays prim-keyed (H3, deferred pending its own probe)."""
+        total = 0
+        examined = 0
+        for prim in stage.TraverseAll():
+            try:
+                attrs = prim.GetAuthoredAttributes()
+            except Exception:
+                continue
+            for attr in attrs:
+                examined += 1
+                if examined > attr_budget:
+                    return False
+                try:
+                    tn = attr.GetTypeName()
+                    if not getattr(tn, "isArray", False):
+                        continue
+                    v = attr.Get()
+                    if v is None:
+                        # Time-sampled-only attr (no default): peek exactly
+                        # one sample via EarliestTime — never the full set.
+                        _sdf, _usd = _import_pxr_composition()
+                        if _usd is not None:
+                            v = attr.Get(_usd.TimeCode.EarliestTime())
+                    if v is None:
+                        continue
+                    try:
+                        n = len(v)
+                    except TypeError:
+                        continue
+                    if n:
+                        ns = attr.GetNumTimeSamples()
+                        total += n * (ns if ns and ns > 0 else 1)
+                        if total > threshold:
+                            return True
+                except Exception:
+                    continue  # one bad attribute never kills the probe
         return False
 
     @staticmethod
@@ -2135,10 +2265,13 @@ class LosslessExecutionBridge:
             # path) a PrimCompositionQuery per inheriting prim — main-thread
             # time inside the open undo group, scaling with stage size. Gate
             # it behind the SAME operator-tunable prim threshold as the
-            # stage hash: at the default (unbounded) no probe runs and the
-            # sweep is always on; lowering
-            # SYNAPSE_STAGE_HASH_PRIM_THRESHOLD for hash cost also sheds
-            # this sweep on stages above it (advisory skip, debug note).
+            # stage hash (finite 10_000 by default since the 2026-08
+            # BRIDGE-FLOOR measurement): stages above it shed the sweep
+            # (advisory skip, debug note + composition_checks_reduced);
+            # raise SYNAPSE_STAGE_HASH_PRIM_THRESHOLD toward the unbounded
+            # sentinel to keep the sweep on everywhere. PRIM term only: the
+            # H10 array-volume term gates the stage HASH, not this sweep
+            # (H3 — deferred pending its own probe).
             class_arcs_enabled = Usd is not None
             if class_arcs_enabled:
                 threshold = _stage_hash_prim_threshold()
