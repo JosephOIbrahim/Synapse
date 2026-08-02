@@ -816,17 +816,16 @@ class TestHdaRegistration:
         ]:
             pkgbootstrap.ensure_package(mod_name, mod_path)
 
+        # R310: the load half was still the raw idiom (the package plant above
+        # was converted by R307). The reload branch is preserved as-is — it
+        # mutates the SAME object, so the parent binding keeps pointing at it.
         if "synapse.mcp.tools" not in sys.modules:
-            spec = importlib.util.spec_from_file_location("synapse.mcp.tools", tools_path)
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules["synapse.mcp.tools"] = mod
-            spec.loader.exec_module(mod)
+            tools_mod = pkgbootstrap.load_module("synapse.mcp.tools", tools_path)
         else:
             # Reload to pick up new tool
-            mod = sys.modules["synapse.mcp.tools"]
-            importlib.reload(mod)
-
-        tools_mod = sys.modules["synapse.mcp.tools"]
+            tools_mod = sys.modules["synapse.mcp.tools"]
+            importlib.reload(tools_mod)
+            pkgbootstrap.bind_to_parent("synapse.mcp.tools", tools_mod)
         tool_names = tools_mod.get_tool_names()
 
         assert "houdini_hda_create" in tool_names

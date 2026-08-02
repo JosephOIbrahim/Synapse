@@ -27,8 +27,33 @@ from pathlib import Path
 
 import pytest
 
+import pkgbootstrap
+
 REPO = Path(__file__).resolve().parent.parent
 HANDLERS = REPO / "python" / "synapse" / "server" / "handlers_memory.py"
+
+# Modules `_load_handlers` evicts and re-imports. monkeypatch.delitem's undo
+# puts the ORIGINAL object back into sys.modules but never re-binds it on its
+# parent package — importlib bound the reloaded copy there, and that binding
+# survives. Measured at base (this file alone): synapse.server.handlers_memory
+# came out WRONG-MOD, with _pytest.monkeypatch.resolve() returning a DIFFERENT
+# object than sys.modules held. There is no hook into monkeypatch's teardown,
+# so the reconciliation runs after it.
+_REBIND_AFTER = ("synapse.server.handlers_memory",)
+
+
+@pytest.fixture(autouse=True)
+def _rebind_reloaded_modules():
+    """Re-assert sys.modules[name] is <parent>.<leaf> after monkeypatch undoes.
+
+    Autouse fixtures are set up BEFORE the test's own fixtures, so they
+    finalize AFTER them — this runs once monkeypatch has already restored the
+    sys.modules entries. Pinned rather than assumed: see
+    tests/test_pkg_bootstrap_invariant.py::
+    test_autouse_rebind_runs_after_monkeypatch_undo.
+    """
+    yield
+    pkgbootstrap.rebind_modules(_REBIND_AFTER)
 
 
 # ── harness ──────────────────────────────────────────────────────────────────

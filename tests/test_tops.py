@@ -10,7 +10,6 @@ Tests all 5 TOPS handlers:
 Mock-based -- no Houdini or PDG required.
 """
 
-import importlib.util
 import sys
 import types
 from pathlib import Path
@@ -1072,19 +1071,12 @@ class TestHandlerRegistration:
 class TestMCPToolDefs:
     def test_all_tops_tools_in_registry(self):
         """All 14 TOPS tools should appear in mcp/tools.py _TOOL_DEFS."""
-        # Import the tools module
-        tools_path = _base / "mcp" / "tools.py"
-        if "synapse.mcp" not in sys.modules:
-            pkg = types.ModuleType("synapse.mcp")
-            pkg.__path__ = [str(_base / "mcp")]
-            sys.modules["synapse.mcp"] = pkg
-        if "synapse.mcp.tools" not in sys.modules:
-            spec = importlib.util.spec_from_file_location("synapse.mcp.tools", tools_path)
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules["synapse.mcp.tools"] = mod
-            spec.loader.exec_module(mod)
-
-        tools_mod = sys.modules["synapse.mcp.tools"]
+        # Import the tools module.
+        # R310: the R307 four-line idiom inside a test BODY — invisible to that
+        # sweep's import-time probe, identical defect.
+        pkgbootstrap.ensure_package("synapse.mcp", _base / "mcp")
+        tools_mod = pkgbootstrap.load_module(
+            "synapse.mcp.tools", _base / "mcp" / "tools.py")
         tool_names = tools_mod.get_tool_names()
 
         for name in [

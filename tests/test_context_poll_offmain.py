@@ -48,6 +48,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import pkgbootstrap
+
 # Ensure THIS worktree's synapse.panel.ws_bridge wins.
 _PYTHON_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "python"
@@ -75,7 +77,13 @@ def ws_bridge_module():
         "PySide2", "PySide2.QtCore",
         "synapse.panel.ws_bridge",
     ]
-    saved = {k: sys.modules.get(k) for k in touched}
+    # R310: snapshot through pkgbootstrap so the teardown restores BOTH halves.
+    # The `import synapse.panel.ws_bridge` below is a real import and binds its
+    # fresh module on synapse.panel; putting the original back in sys.modules
+    # alone leaves that binding on the throwaway — resolution that succeeds and
+    # returns the wrong module. snapshot_modules also keeps ABSENT distinct
+    # from a stored None, which the old `sys.modules.get(k)` dict conflated.
+    saved = pkgbootstrap.snapshot_modules(touched)
 
     def _is_genuine_qt(modname):
         try:
@@ -124,11 +132,7 @@ def ws_bridge_module():
     try:
         yield wsb
     finally:
-        for k, v in saved.items():
-            if v is None:
-                sys.modules.pop(k, None)
-            else:
-                sys.modules[k] = v
+        pkgbootstrap.restore_modules(saved)
 
 
 # ---------------------------------------------------------------------------

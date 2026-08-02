@@ -27,12 +27,15 @@ import sys
 import pytest
 
 # Source-checkout importability, matching the sibling panel tests' bootstrap.
+# ``tests/`` is on the list so ``pkgbootstrap`` imports from this subdirectory
+# without depending on pytest's conftest-driven sys.path insertion.
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(os.path.dirname(_HERE))
-for _p in (_ROOT, os.path.join(_ROOT, "python")):
+for _p in (_ROOT, os.path.join(_ROOT, "python"), os.path.dirname(_HERE)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+import pkgbootstrap  # noqa: E402
 from synapse.panel.designsystem import theme_source  # noqa: E402
 
 _TOKENS = "synapse.panel.designsystem.tokens"
@@ -132,25 +135,47 @@ def _reload_tokens_with(hou_module):
     Absence is ``sys.modules["hou"] = None``, never a pop — see ``_install_hou``
     above for why. ``theme_source._hcs_surface_rgb`` does a lazy ``import hou``,
     so a popped `hou` here re-executes hou.py under hython and half-builds the
-    SWIG `Parm` class for the rest of the process."""
-    saved = {k: sys.modules.get(k) for k in ("hou", _TOKENS)}
+    SWIG `Parm` class for the rest of the process.
+
+    R310: ``_TOKENS`` is snapshotted through ``pkgbootstrap`` because the
+    ``importlib.import_module`` below is a REAL import — it binds the throwaway
+    module on ``synapse.panel.designsystem`` — and putting the original back in
+    ``sys.modules`` alone leaves that binding pointing at the throwaway. See
+    ``_restore``. ``hou`` keeps its own handling: it is top-level (no parent to
+    bind) and its restore rule forbids the pop that a generic restore performs.
+    """
+    saved_hou = sys.modules.get("hou")
+    saved_tokens = pkgbootstrap.snapshot_modules([_TOKENS])
     sys.modules["hou"] = hou_module  # None => deterministic ImportError
     sys.modules.pop(_TOKENS, None)
     mod = importlib.import_module(_TOKENS)
-    return mod, saved
+    return mod, (saved_hou, saved_tokens)
 
 
 def _restore(saved):
-    for k, v in saved.items():
-        if k == "hou":
-            # Always restore `hou` BY OBJECT — never pop. A pop here would
-            # re-open the eviction window that ``_reload_tokens_with`` exists to
-            # avoid, one line after closing it.
-            sys.modules["hou"] = v
-        elif v is None:
-            sys.modules.pop(k, None)
-        else:
-            sys.modules[k] = v
+    """Undo ``_reload_tokens_with``.
+
+    THE DEFECT THIS FIXES (R310, reproduced at base): the old body restored
+    only ``sys.modules[_TOKENS]``. The reload had already bound its throwaway
+    copy on the parent package, so afterwards
+    ``synapse.panel.designsystem.tokens`` (the attribute) and
+    ``sys.modules['synapse.panel.designsystem.tokens']`` named two DIFFERENT
+    module objects with the same name — resolution that succeeds and returns
+    the wrong one, rather than the loud R307 AttributeError.
+
+    Victim, base-verified: ``pytest tests/panel/test_theme_source.py
+    tests/test_hda_panel.py`` failed
+    ``TestRegression::test_tokens_import_cleanly`` with
+    ``'#1F1F1F' != '#BDBDBD'`` — ``import synapse.panel.designsystem.tokens as
+    ds`` walked the parent attribute to the headless reload while
+    ``synapse.panel.tokens`` re-exported from the host-seeded resident.
+    """
+    saved_hou, saved_tokens = saved
+    # Always restore `hou` BY OBJECT — never pop. A pop here would re-open the
+    # eviction window that ``_reload_tokens_with`` exists to avoid, one line
+    # after closing it.
+    sys.modules["hou"] = saved_hou
+    pkgbootstrap.restore_modules(saved_tokens)
 
 
 # ── (a) the 'hcs' backend is byte-identical to the former inline read ─────────

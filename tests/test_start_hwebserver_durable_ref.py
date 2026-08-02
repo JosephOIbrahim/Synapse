@@ -21,6 +21,33 @@ import types
 
 import pytest
 
+import pkgbootstrap
+
+# Same R310 shape as tests/test_g1a_followup_job_root_discovery.py:
+# `monkeypatch.delitem(sys.modules, "synapse.server.start_hwebserver")` +
+# `importlib.import_module(...)` makes importlib bind the FRESH module on
+# synapse.server, and monkeypatch's undo restores only the sys.modules entry.
+# Measured at base (this file alone): synapse.server.start_hwebserver came out
+# WRONG-MOD — resolve() returned a different object than sys.modules held.
+_REBIND_AFTER = (
+    "synapse.server.start_hwebserver",
+    "synapse.server.hwebserver_adapter",
+    "synapse.server.websocket",
+)
+
+
+@pytest.fixture(autouse=True)
+def _rebind_reloaded_modules():
+    """Re-bind the evicted/re-imported modules after monkeypatch's undo.
+
+    Autouse fixtures set up first and therefore finalize last, so this runs
+    once monkeypatch has restored the sys.modules entries. Pinned by
+    tests/test_pkg_bootstrap_invariant.py::
+    test_autouse_rebind_runs_after_monkeypatch_undo.
+    """
+    yield
+    pkgbootstrap.rebind_modules(_REBIND_AFTER)
+
 
 def _fake_adapter():
     """A drop-in ``synapse.server.hwebserver_adapter`` whose

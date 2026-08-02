@@ -23,12 +23,16 @@ import os
 import sys
 
 # Make the package importable from a source checkout (no install), matching the
-# sys.path bootstrap the existing panel tests use.
+# sys.path bootstrap the existing panel tests use. ``tests/`` is on the list so
+# ``pkgbootstrap`` imports from this subdirectory without depending on pytest's
+# conftest-driven sys.path insertion.
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(os.path.dirname(_HERE))
-for _p in (_ROOT, os.path.join(_ROOT, "python")):
+for _p in (_ROOT, os.path.join(_ROOT, "python"), os.path.dirname(_HERE)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+import pkgbootstrap  # noqa: E402
 
 _TOKENS = "synapse.panel.designsystem.tokens"
 
@@ -109,7 +113,17 @@ def _make_light_hou():
 def _reload_tokens_with(hou_module):
     """Reload the tokens module with `hou_module` installed as `hou` (or removed
     when None). Returns (module, saved) — pass `saved` to `_restore`."""
-    saved = {k: sys.modules.get(k) for k in ("hou", _TOKENS)}
+    # R310: `_TOKENS` is snapshotted through pkgbootstrap because the
+    # `importlib.import_module` below is a REAL import and binds the throwaway
+    # module on `synapse.panel.designsystem`; restoring only the sys.modules
+    # entry leaves that binding on the throwaway. Same defect as the sibling
+    # tests/panel/test_theme_source.py — this file was the SECOND perpetrator,
+    # masked while that one still left the residue first. `hou` keeps its own
+    # handling: top-level (no parent to bind) and its restore rule forbids the
+    # pop a generic restore performs.
+    saved_hou = sys.modules.get("hou")
+    saved_tokens = pkgbootstrap.snapshot_modules([_TOKENS])
+    saved = (saved_hou, saved_tokens)
     # Absence is `sys.modules["hou"] = None`, never a pop: CPython raises
     # ImportError on a None entry without reaching the import machinery, so
     # `tokens` sees a deterministic absent `hou`. Popping instead lets `hou.py`
@@ -126,17 +140,19 @@ def _reload_tokens_with(hou_module):
 def _restore(saved):
     """Return sys.modules to its exact pre-test state (no re-execution), so this
     test never leaks a fake `hou` or a reloaded tokens module to its neighbours
-    (the 46-file sys.modules['hou'] residency trap)."""
-    for k, v in saved.items():
-        if k == "hou":
-            # Always restore `hou` BY OBJECT — never pop. A pop would re-open
-            # the eviction window `_reload_tokens_with` exists to avoid, one
-            # line after closing it.
-            sys.modules["hou"] = v
-        elif v is None:
-            sys.modules.pop(k, None)
-        else:
-            sys.modules[k] = v
+    (the 46-file sys.modules['hou'] residency trap).
+
+    R310: "exact pre-test state" now includes the PARENT ATTRIBUTE. Restoring
+    only the sys.modules entry left `synapse.panel.designsystem.tokens` (the
+    attribute) on the reloaded copy — resolution that succeeds and returns the
+    wrong module. See tests/test_pkg_bootstrap_invariant.py for the victim.
+    """
+    saved_hou, saved_tokens = saved
+    # Always restore `hou` BY OBJECT — never pop. A pop would re-open the
+    # eviction window `_reload_tokens_with` exists to avoid, one line after
+    # closing it.
+    sys.modules["hou"] = saved_hou
+    pkgbootstrap.restore_modules(saved_tokens)
 
 
 def test_follows_host_scheme():

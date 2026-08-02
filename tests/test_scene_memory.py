@@ -517,21 +517,38 @@ class TestAgentState:
 
 # Register scene_memory as a package-relative module so evolution's
 # "from .scene_memory import ..." resolves correctly.
+#
+# R310: these three dotted names used to go into sys.modules by bare
+# setdefault/assignment, with no parent-attribute binding — the R307 class in a
+# setdefault costume. Measured residue when this file ran alone (fresh pytest,
+# _pytest.monkeypatch.resolve): synapse.memory.evolution and
+# synapse.memory.scene_memory both RAISED
+# "'module' object at synapse.memory.X has no attribute 'X'", and
+# synapse.memory.evolution survived the FULL suite. The helpers plant and bind.
 import types
-_memory_pkg = types.ModuleType("synapse.memory")
-_memory_pkg.__path__ = [os.path.join(os.path.dirname(__file__), "..", "python", "synapse", "memory")]
+import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+
+_MEMORY_DIR = os.path.join(
+    os.path.dirname(__file__), "..", "python", "synapse", "memory")
+
+# Top-level `synapse` has no parent to bind, so it stays a plain setdefault —
+# that shape was never the defect.
 sys.modules.setdefault("synapse", types.ModuleType("synapse"))
-sys.modules.setdefault("synapse.memory", _memory_pkg)
-sys.modules.setdefault("synapse.memory.scene_memory", sm)
+pkgbootstrap.ensure_package("synapse.memory", _MEMORY_DIR)
+pkgbootstrap.install_module("synapse.memory.scene_memory", sm)
 
 _evo_spec = importlib.util.spec_from_file_location(
     "synapse.memory.evolution",
-    os.path.join(os.path.dirname(__file__), "..", "python", "synapse", "memory", "evolution.py"),
+    os.path.join(_MEMORY_DIR, "evolution.py"),
 )
 evo = importlib.util.module_from_spec(_evo_spec)
 evo.__package__ = "synapse.memory"
 _evo_spec.loader.exec_module(evo)
 sys.modules["synapse.memory.evolution"] = evo
+# This loader re-execs UNCONDITIONALLY (pkgbootstrap.load_module would reuse an
+# existing entry instead), so it takes the binding half on its own — the
+# tests/test_main_thread.py precedent from R307.
+pkgbootstrap.bind_to_parent("synapse.memory.evolution", evo)
 
 
 class TestEvolutionDetection:

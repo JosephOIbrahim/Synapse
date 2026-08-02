@@ -670,13 +670,13 @@ class TestAuthIntegration:
 
     def test_authenticate_function(self):
         """authenticate() with no key should return True."""
-        if "synapse.server.auth" not in sys.modules:
-            auth_path = _base / "server" / "auth.py"
-            spec = importlib.util.spec_from_file_location("synapse.server.auth", auth_path)
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules["synapse.server.auth"] = mod
-            spec.loader.exec_module(mod)
-        auth_mod = sys.modules["synapse.server.auth"]
+        # R310: was a raw guarded spec/exec that wrote sys.modules
+        # ["synapse.server.auth"] without binding `auth` on synapse.server.
+        # Measured at base (this file alone): resolve("synapse.server.auth")
+        # RAISED "'module' object at synapse.server.auth has no attribute
+        # 'auth'". load_module keeps both halves together.
+        auth_mod = pkgbootstrap.load_module(
+            "synapse.server.auth", _base / "server" / "auth.py")
         # Reset cache for clean test
         auth_mod.reset_auth_cache()
         # No key configured -> always passes

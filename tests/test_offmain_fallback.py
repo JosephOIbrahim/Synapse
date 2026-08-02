@@ -41,6 +41,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
+import pkgbootstrap
+
 # Ensure THIS worktree's synapse.panel submodules win (same rationale as
 # test_worker_tool_policy.py).
 _PYTHON_DIR = os.path.join(
@@ -75,7 +77,11 @@ def claude_worker_module():
         "synapse.panel.claude_worker",
         "synapse.panel.tool_executor",
     ]
-    saved = {k: sys.modules.get(k) for k in touched}
+    # R310: see tests/test_context_poll_offmain.py — the `import
+    # synapse.panel.claude_worker` below binds its fresh module on
+    # synapse.panel, and a sys.modules-only restore leaves that binding on the
+    # throwaway copy. restore_modules puts both halves back.
+    saved = pkgbootstrap.snapshot_modules(touched)
 
     def _is_genuine_qt(modname):
         try:
@@ -120,11 +126,7 @@ def claude_worker_module():
     try:
         yield cw
     finally:
-        for k, v in saved.items():
-            if v is None:
-                sys.modules.pop(k, None)
-            else:
-                sys.modules[k] = v
+        pkgbootstrap.restore_modules(saved)
 
 
 # ---------------------------------------------------------------------------

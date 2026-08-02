@@ -10,6 +10,8 @@ import types
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
+import pkgbootstrap  # tests/ is on sys.path under pytest
+
 _base = Path(__file__).resolve().parent.parent / "python" / "synapse"
 
 # Add package to path for normal imports
@@ -73,10 +75,15 @@ class TestSessionExpiry:
         spec = importlib.util.spec_from_file_location(
             "synapse.mcp.session", _base / "mcp" / "session.py"
         )
-        if "synapse.mcp" not in sys.modules:
-            pkg = types.ModuleType("synapse.mcp")
-            pkg.__path__ = [str(_base / "mcp")]
-            sys.modules["synapse.mcp"] = pkg
+        # R310: the package plant here was the raw four-line idiom — it wrote
+        # sys.modules["synapse.mcp"] without binding `mcp` on synapse.
+        # Measured at base (this file alone): resolve("synapse.mcp") RAISED
+        # "'module' object at synapse.mcp has no attribute 'mcp'".
+        #
+        # `mod` itself is deliberately NOT registered in sys.modules — it is
+        # exec'd and handed straight back, so it has no dotted entry to
+        # diverge and stays as it was.
+        pkgbootstrap.ensure_package("synapse.mcp", _base / "mcp")
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         return mod

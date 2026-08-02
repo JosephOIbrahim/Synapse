@@ -1789,22 +1789,13 @@ class TestCopsRecipes:
 class TestCopsMcpTools:
     def test_mcp_tool_defs_exist(self):
         """Verify all 21 COPs tools are in mcp/tools.py _TOOL_DEFS."""
-        # Import the mcp tools module
-        mcp_tools_path = _base / "mcp" / "tools.py"
-        if "synapse.mcp" not in sys.modules:
-            pkg = types.ModuleType("synapse.mcp")
-            pkg.__path__ = [str(_base / "mcp")]
-            sys.modules["synapse.mcp"] = pkg
-
-        if "synapse.mcp.tools" not in sys.modules:
-            spec = importlib.util.spec_from_file_location(
-                "synapse.mcp.tools", mcp_tools_path
-            )
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules["synapse.mcp.tools"] = mod
-            spec.loader.exec_module(mod)
-
-        mcp_tools_mod = sys.modules["synapse.mcp.tools"]
+        # Import the mcp tools module.
+        # R310: this is the R307 four-line idiom inside a test BODY rather than
+        # at module import, which is why the R307 sweep's import-time probe did
+        # not see it. Same defect, same fix.
+        pkgbootstrap.ensure_package("synapse.mcp", _base / "mcp")
+        mcp_tools_mod = pkgbootstrap.load_module(
+            "synapse.mcp.tools", _base / "mcp" / "tools.py")
         tool_names = [t[0] for t in mcp_tools_mod.TOOL_DEFS]
 
         cops_tools = [n for n in tool_names if n.startswith("cops_")]

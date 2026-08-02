@@ -22,6 +22,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
+import pkgbootstrap
+
 # Ensure THIS worktree's synapse.panel submodules win. An editable install
 # elsewhere may have bound ``synapse`` to a sibling checkout that lacks the new
 # worker_policy module (and the new get_anthropic_tools_for_worker in
@@ -243,7 +245,12 @@ def claude_worker_module():
         "synapse.panel.claude_worker",
         "synapse.panel.tool_executor",
     ]
-    saved = {k: sys.modules.get(k) for k in touched}
+    # R310: the `import synapse.panel.claude_worker` below is a REAL import and
+    # binds the fresh module on synapse.panel; a sys.modules-only restore
+    # leaves that binding on the throwaway. This file was the SECOND
+    # perpetrator of the shape, masked while tests/test_offmain_fallback.py
+    # (same fixture convention) still left the residue first.
+    saved = pkgbootstrap.snapshot_modules(touched)
 
     def _is_genuine_qt(modname):
         """True only if ``modname`` exposes a REAL ``QThread`` *class*.
@@ -304,11 +311,7 @@ def claude_worker_module():
     try:
         yield cw
     finally:
-        for k, v in saved.items():
-            if v is None:
-                sys.modules.pop(k, None)
-            else:
-                sys.modules[k] = v
+        pkgbootstrap.restore_modules(saved)
 
 
 def _make_worker(cw_module, **kwargs):

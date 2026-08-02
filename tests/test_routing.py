@@ -21,6 +21,8 @@ from unittest.mock import Mock, MagicMock, patch
 
 import pytest
 
+import pkgbootstrap
+
 # Add package to path
 package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 python_dir = os.path.join(package_root, "python")
@@ -1600,11 +1602,22 @@ class TestRouteChatHandler:
             handler = SynapseHandler()
             assert handler._registry.has("route_chat"), "route_chat not registered"
         finally:
-            # Restore everything
-            for mod_name in list(sys.modules):
-                if mod_name.startswith("synapse.server"):
-                    sys.modules.pop(mod_name, None)
-            sys.modules.update(_cached)
+            # Restore everything.
+            # R310: `sys.modules.update(_cached)` restored only the sys.modules
+            # half. The `from synapse.server.handlers import ...` above is a
+            # REAL import, so importlib bound its fresh synapse.server (and
+            # submodules) on the parent packages; putting the originals back in
+            # sys.modules left those bindings on the throwaways —
+            # `synapse.server` was measurably WRONG-MOD for the rest of a full
+            # suite run. restore_modules puts back AND re-binds; the ABSENT
+            # pass drops both halves of the names this block created.
+            fresh = {
+                mod_name: pkgbootstrap.ABSENT
+                for mod_name in list(sys.modules)
+                if mod_name.startswith("synapse.server") and mod_name not in _cached
+            }
+            pkgbootstrap.restore_modules(fresh)
+            pkgbootstrap.restore_modules(_cached)
             # `= None`, never a pop — an eviction window lets a lazy
             # `import hou` re-execute hou.py under hython and half-build the
             # SWIG `Parm` class. See HOU_REIMPORT_GUARD in tests/conftest.py.
