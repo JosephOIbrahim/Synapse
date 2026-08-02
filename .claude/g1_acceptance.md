@@ -60,3 +60,13 @@ empty Choice/Reasoning. Address + permission were the acceptance question.
 
 Not covered: health write_plane surfacing — that was G1b, ruled BROKEN by its
 crucible and NOT merged (pinned at g1b-health-write-plane-DO-NOT-MERGE).
+
+## Also logged 2026-08-02: pre-existing order-dependent suite failures
+
+tests/test_tops.py OR tests/test_tops_assembly.py before
+tests/test_websocket_cancel_reachable.py -> test_handle_client_cancel_mid_frame
+fails. REPRODUCED ON BASELINE 4c76cc5 (pre-G1) in a detached worktree - NOT
+caused by today's commits. Same environment class as the m-group interference
+that hit test_write_plane_health (fixed forward via importlib.import_module).
+The tops fix is unowned - needs its own lane: find what test_tops leaves in
+sys.modules/threading state that the cancel test inherits.
