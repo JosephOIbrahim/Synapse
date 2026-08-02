@@ -1,14 +1,16 @@
 """
 Synapse Agent Layer Tests
 
-Tests for protocol models and the executor (dry-run and with mock command_fn).
+Tests for the protocol models — the surviving half of `synapse/agent/`.
 
-The outcome-tracking/learning tests were removed on 2026-08-01 with the
-mechanism they covered: `OutcomeTracker` (`synapse/agent/learning.py`), RSI
-loop `A2`, RETIRED for dormancy. What replaces them is smaller and points the
-other way — `TestExecutorMemoryIsInert` pins that the executor no longer reads
-or writes memory, so a future revival has to be deliberate rather than
-accidental.
+The executor tests were removed on 2026-08-01 with the mechanism they
+covered: `AgentExecutor` (`synapse/agent/executor.py`) was deleted when the
+`RL-3` escalation from RSI loop `A2`'s retirement was ruled — it had zero
+production constructions. The four v8-DSA modules and their dedicated test
+files went in the same cut. `TestDeletedAgentSubsystemStaysDeleted` below
+pins the subtraction, so a revival has to be deliberate rather than
+accidental (and per the `A2` tombstone: a production construction site
+comes first).
 
 Run without Houdini:
     python -m pytest tests/test_agent.py -v
@@ -16,23 +18,18 @@ Run without Houdini:
 
 import sys
 import os
-import time
-import tempfile
-import shutil
-from pathlib import Path
-from unittest.mock import Mock, MagicMock
+import importlib
+
+import pytest
 
 # Add package to path
 package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 python_dir = os.path.join(package_root, "python")
 sys.path.insert(0, python_dir)
 
-from synapse.core.protocol import SynapseCommand, SynapseResponse
-from synapse.core.gates import GateLevel, GateDecision, HumanGate
-from synapse.core.audit import AuditLog, AuditCategory
-from synapse.core.determinism import deterministic_uuid
-from synapse.memory.store import SynapseMemory
-from synapse.memory.models import MemoryType, MemoryQuery
+from synapse.core.protocol import SynapseCommand
+from synapse.core.gates import GateLevel
+from synapse.core.audit import AuditCategory
 
 from synapse.agent.protocol import (
     AgentStep,
@@ -43,7 +40,6 @@ from synapse.agent.protocol import (
     DEFAULT_GATE_LEVELS,
     classify_gate_level,
 )
-from synapse.agent.executor import AgentExecutor
 
 
 # =============================================================================
@@ -325,436 +321,62 @@ class TestClassifyGateLevel:
 
 
 # =============================================================================
-# EXECUTOR TESTS — Without Houdini (dry-run)
-# =============================================================================
-
-class TestExecutorDryRun:
-    """Tests for AgentExecutor without command_fn (planning/dry-run mode)."""
-
-    def setup_method(self):
-        HumanGate.reset_instance()
-        AuditLog.reset_instance()
-        self.tmp_dir = Path(tempfile.mkdtemp())
-        self.audit_dir = self.tmp_dir / "audit"
-        self.gate_dir = self.tmp_dir / "gates"
-        AuditLog.get_instance(log_dir=self.audit_dir)
-        self.executor = AgentExecutor()
-
-    def teardown_method(self):
-        HumanGate.reset_instance()
-        AuditLog.reset_instance()
-        shutil.rmtree(self.tmp_dir, ignore_errors=True)
-
-    def test_prepare_creates_task(self):
-        task = self.executor.prepare("Set up three-point lighting", "shot_010", "lighting")
-        assert isinstance(task, AgentTask)
-        assert task.goal == "Set up three-point lighting"
-        assert task.sequence_id == "shot_010"
-        assert task.category == AuditCategory.LIGHTING
-        assert task.task_id != ""
-        assert task.created_at != ""
-
-    def test_prepare_accepts_category_enum(self):
-        task = self.executor.prepare("Test", "shot_010", AuditCategory.MATERIAL)
-        assert task.category == AuditCategory.MATERIAL
-
-    def test_prepare_with_agent_id(self):
-        task = self.executor.prepare("Test", "shot_010", "lighting", agent_id="agent_001")
-        assert task.agent_id == "agent_001"
-
-    def test_propose_creates_plan(self):
-        task = self.executor.prepare("Test lighting", "shot_010", "lighting")
-        steps = [_make_step(action="create_node", description="Create light")]
-        plan = self.executor.propose(task, steps, reasoning="Basic setup")
-
-        assert isinstance(plan, AgentPlan)
-        assert plan.task is task
-        assert len(plan.steps) == 1
-        assert plan.reasoning == "Basic setup"
-        assert plan.plan_id != ""
-
-    def test_propose_auto_assigns_gate_levels(self):
-        task = self.executor.prepare("Test", "shot_010", "lighting")
-        steps = [
-            _make_step(action="get_parm", gate_level=None),
-            _make_step(action="create_node", gate_level=None),
-            _make_step(action="delete_node", gate_level=None),
-        ]
-        plan = self.executor.propose(task, steps, reasoning="Mixed actions")
-
-        assert plan.steps[0].gate_level == GateLevel.INFORM
-        assert plan.steps[1].gate_level == GateLevel.REVIEW
-        assert plan.steps[2].gate_level == GateLevel.APPROVE
-
-    def test_propose_preserves_explicit_gate_level(self):
-        task = self.executor.prepare("Test", "shot_010", "lighting")
-        steps = [_make_step(action="get_parm", gate_level=GateLevel.CRITICAL)]
-        plan = self.executor.propose(task, steps, reasoning="Overridden")
-
-        assert plan.steps[0].gate_level == GateLevel.CRITICAL
-
-    def test_propose_auto_approves_all_inform(self):
-        task = self.executor.prepare("Test", "shot_010", "lighting")
-        steps = [
-            _make_step(action="get_parm"),
-            _make_step(action="ping"),
-        ]
-        plan = self.executor.propose(task, steps, reasoning="Read-only")
-
-        assert plan.status == PlanStatus.APPROVED
-
-    def test_propose_stays_proposed_for_review_steps(self):
-        task = self.executor.prepare("Test", "shot_010", "lighting")
-        steps = [
-            _make_step(action="create_node"),
-        ]
-        plan = self.executor.propose(task, steps, reasoning="Creating stuff")
-
-        # Without a gate, non-INFORM steps stay PROPOSED
-        assert plan.status == PlanStatus.PROPOSED
-
-    def test_execute_dry_run_completes_all_steps(self):
-        task = self.executor.prepare("Test", "shot_010", "lighting")
-        steps = [
-            _make_step(action="get_parm", description="Read param"),
-            _make_step(action="get_parm", description="Read another"),
-        ]
-        plan = self.executor.propose(task, steps, reasoning="Read-only")
-        assert plan.status == PlanStatus.APPROVED
-
-        result = self.executor.execute(plan)
-
-        assert result.status == PlanStatus.COMPLETED
-        assert result.success is True
-        assert len(result.completed_steps()) == 2
-        assert all(s.status == StepStatus.COMPLETED for s in result.steps)
-        assert all(s.executed_at is not None for s in result.steps)
-        assert result.completed_at is not None
-
-    def test_execute_raises_on_non_approved(self):
-        task = self.executor.prepare("Test", "shot_010", "lighting")
-        plan = AgentPlan(
-            plan_id="", task=task, steps=[], reasoning="Test",
-            status=PlanStatus.DRAFT,
-        )
-        try:
-            self.executor.execute(plan)
-            assert False, "Should have raised ValueError"
-        except ValueError as e:
-            assert "APPROVED" in str(e)
-
-    def test_execute_records_audit(self):
-        task = self.executor.prepare("Test", "shot_010", "lighting")
-        steps = [_make_step(action="ping")]
-        plan = self.executor.propose(task, steps, reasoning="Check")
-        assert plan.status == PlanStatus.APPROVED
-
-        self.executor.execute(plan)
-
-        # Verify audit entries were created
-        entries = AuditLog.get_instance().get_entries()
-        operations = [e.operation for e in entries]
-        assert "agent_prepare" in operations
-        assert "agent_propose" in operations
-        assert "agent_step_start" in operations
-        assert "agent_step_end" in operations
-
-
-# =============================================================================
-# EXECUTOR TESTS — With mock command_fn
-# =============================================================================
-
-class TestExecutorWithHandler:
-    """Tests for AgentExecutor with a mock command_fn."""
-
-    def setup_method(self):
-        HumanGate.reset_instance()
-        AuditLog.reset_instance()
-        self.tmp_dir = Path(tempfile.mkdtemp())
-        AuditLog.get_instance(log_dir=self.tmp_dir / "audit")
-
-    def teardown_method(self):
-        HumanGate.reset_instance()
-        AuditLog.reset_instance()
-        shutil.rmtree(self.tmp_dir, ignore_errors=True)
-
-    def test_execute_calls_command_fn(self):
-        mock_fn = Mock(return_value=SynapseResponse(
-            id="resp_1", success=True, data={"result": "light_created"}
-        ))
-        executor = AgentExecutor(command_fn=mock_fn)
-
-        task = executor.prepare("Test", "shot_010", "lighting")
-        steps = [_make_step(action="ping")]
-        plan = executor.propose(task, steps, reasoning="Test")
-        assert plan.status == PlanStatus.APPROVED
-
-        result = executor.execute(plan)
-
-        assert mock_fn.call_count == 1
-        cmd_arg = mock_fn.call_args[0][0]
-        assert isinstance(cmd_arg, SynapseCommand)
-        assert cmd_arg.type == "ping"
-
-    def test_execute_captures_response_data(self):
-        mock_fn = Mock(return_value=SynapseResponse(
-            id="resp_1", success=True, data={"path": "/obj/key", "created": True}
-        ))
-        executor = AgentExecutor(command_fn=mock_fn)
-
-        task = executor.prepare("Test", "shot_010", "lighting")
-        steps = [_make_step(action="ping")]
-        plan = executor.propose(task, steps, reasoning="Test")
-        result = executor.execute(plan)
-
-        assert result.steps[0].observation == {"path": "/obj/key", "created": True}
-        assert result.steps[0].status == StepStatus.COMPLETED
-        assert result.status == PlanStatus.COMPLETED
-
-    def test_execute_handles_non_dict_response_data(self):
-        mock_fn = Mock(return_value=SynapseResponse(
-            id="resp_1", success=True, data="pong"
-        ))
-        executor = AgentExecutor(command_fn=mock_fn)
-
-        task = executor.prepare("Test", "shot_010", "lighting")
-        steps = [_make_step(action="ping")]
-        plan = executor.propose(task, steps, reasoning="Test")
-        result = executor.execute(plan)
-
-        assert result.steps[0].observation == {"result": "pong"}
-
-    def test_execute_handles_error_response(self):
-        mock_fn = Mock(return_value=SynapseResponse(
-            id="resp_1", success=False, error="Node not found"
-        ))
-        executor = AgentExecutor(command_fn=mock_fn)
-
-        task = executor.prepare("Test", "shot_010", "lighting")
-        steps = [
-            _make_step(action="ping", description="Step 1"),
-            _make_step(action="ping", description="Step 2"),
-        ]
-        plan = executor.propose(task, steps, reasoning="Test")
-        result = executor.execute(plan)
-
-        assert result.steps[0].status == StepStatus.FAILED
-        assert result.steps[0].error == "Node not found"
-        assert result.status == PlanStatus.FAILED
-        assert result.success is False
-        # Step 2 should still be PENDING (never executed)
-        assert result.steps[1].status == StepStatus.PENDING
-
-    def test_execute_stops_on_failure(self):
-        call_count = 0
-
-        def failing_fn(cmd):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 2:
-                return SynapseResponse(id="r", success=False, error="Boom")
-            return SynapseResponse(id="r", success=True, data={})
-
-        executor = AgentExecutor(command_fn=failing_fn)
-
-        task = executor.prepare("Test", "shot_010", "lighting")
-        steps = [
-            _make_step(action="ping", description="Step 1"),
-            _make_step(action="ping", description="Step 2"),
-            _make_step(action="ping", description="Step 3"),
-        ]
-        plan = executor.propose(task, steps, reasoning="Test")
-        result = executor.execute(plan)
-
-        assert call_count == 2  # Third step never reached
-        assert result.steps[0].status == StepStatus.COMPLETED
-        assert result.steps[1].status == StepStatus.FAILED
-        assert result.steps[2].status == StepStatus.PENDING
-        assert result.status == PlanStatus.FAILED
-
-    def test_execute_handles_exception_in_command_fn(self):
-        def exploding_fn(cmd):
-            raise ConnectionError("Houdini disconnected")
-
-        executor = AgentExecutor(command_fn=exploding_fn)
-
-        task = executor.prepare("Test", "shot_010", "lighting")
-        steps = [_make_step(action="ping")]
-        plan = executor.propose(task, steps, reasoning="Test")
-        result = executor.execute(plan)
-
-        assert result.steps[0].status == StepStatus.FAILED
-        assert "Houdini disconnected" in result.steps[0].error
-        assert result.status == PlanStatus.FAILED
-
-    def test_execute_records_duration(self):
-        def slow_fn(cmd):
-            time.sleep(0.01)
-            return SynapseResponse(id="r", success=True, data={})
-
-        executor = AgentExecutor(command_fn=slow_fn)
-
-        task = executor.prepare("Test", "shot_010", "lighting")
-        steps = [_make_step(action="ping")]
-        plan = executor.propose(task, steps, reasoning="Test")
-        result = executor.execute(plan)
-
-        assert result.steps[0].duration_ms > 0
-
-
-# =============================================================================
-# EXECUTOR TESTS — With Gate
-# =============================================================================
-
-class TestExecutorWithGate:
-    """Tests for AgentExecutor with HumanGate integration."""
-
-    def setup_method(self):
-        HumanGate.reset_instance()
-        AuditLog.reset_instance()
-        self.tmp_dir = Path(tempfile.mkdtemp())
-        self.gate = HumanGate(storage_dir=self.tmp_dir / "gates")
-        AuditLog.get_instance(log_dir=self.tmp_dir / "audit")
-
-    def teardown_method(self):
-        HumanGate.reset_instance()
-        AuditLog.reset_instance()
-        shutil.rmtree(self.tmp_dir, ignore_errors=True)
-
-    def test_propose_routes_inform_through_gate(self):
-        executor = AgentExecutor(gate=self.gate)
-        task = executor.prepare("Test", "shot_010", "lighting")
-        steps = [_make_step(action="ping")]  # INFORM level
-        plan = executor.propose(task, steps, reasoning="Read")
-
-        # INFORM is auto-approved by gate
-        assert plan.status == PlanStatus.APPROVED
-
-    def test_propose_routes_review_through_gate(self):
-        executor = AgentExecutor(gate=self.gate)
-        task = executor.prepare("Test", "shot_010", "lighting")
-        steps = [_make_step(action="create_node")]  # REVIEW level
-        plan = executor.propose(task, steps, reasoning="Create")
-
-        # REVIEW goes to batch, not auto-approved
-        assert plan.status == PlanStatus.PROPOSED
-
-        # Gate should have a batch for this sequence
-        batch = self.gate.get_batch("shot_010")
-        assert batch is not None
-        assert len(batch.proposals) >= 1
-
-
-# =============================================================================
-# EXECUTOR + MEMORY: THE RETIRED REWARD SIGNAL
+# THE DELETED SUBSYSTEM STAYS DELETED
 #
-# RSI loop `A2` (`OutcomeTracker`, `synapse/agent/learning.py`) was RETIRED on
-# 2026-08-01 for dormancy — it never recorded an outcome in production because
-# `AgentExecutor` has no production construction site at all. The tests that
-# covered it went with it. These pin the ABSENCE, so nothing silently grows
-# back: passing `memory=` must not make the executor read or write memory.
+# 2026-08-01, two cuts the same day. First `A2` retired `OutcomeTracker`
+# (`learning.py`). Then the `RL-3` escalation it raised was ruled: the
+# executor and the four v8-DSA modules had no production consumer at all —
+# only their own dedicated tests and the package re-exports — and were
+# deleted. `protocol.py` survived because a live tool suite imports it
+# (`tests/test_set_usd_primvar.py::test_gate_level_is_review`).
+#
+# These pins make silent regrowth fail the suite. Reviving any of it
+# requires a production construction site first (see the `A2` tombstone in
+# `harness/rsi/REGISTRY.json`: executor first, reward signal second).
 # =============================================================================
 
-class TestExecutorMemoryIsInert:
-    """The executor accepts a memory handle and does nothing with it."""
+class TestDeletedAgentSubsystemStaysDeleted:
+    """None of the deleted agent modules may quietly return."""
 
-    def setup_method(self):
-        HumanGate.reset_instance()
-        AuditLog.reset_instance()
-        self.tmp_dir = Path(tempfile.mkdtemp())
-        AuditLog.get_instance(log_dir=self.tmp_dir / "audit")
-        self.memory = SynapseMemory(project_path=str(self.tmp_dir / "project"))
+    DELETED_MODULES = [
+        "synapse.agent.learning",          # A2 retirement
+        "synapse.agent.executor",          # RL-3 cut
+        "synapse.agent.sparse_router",     # RL-3 cut (v8-DSA)
+        "synapse.agent.reasoning_context", # RL-3 cut (v8-DSA)
+        "synapse.agent.specialist_modes",  # RL-3 cut (v8-DSA)
+        "synapse.agent.task_synthesizer",  # RL-3 cut (v8-DSA)
+    ]
 
-    def teardown_method(self):
-        HumanGate.reset_instance()
-        AuditLog.reset_instance()
-        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+    def test_deleted_modules_are_gone(self):
+        for mod in self.DELETED_MODULES:
+            with pytest.raises(ImportError):
+                importlib.import_module(mod)
 
-    def test_executor_has_no_outcome_tracker(self):
-        """The wiring at the old executor.py:60 is gone, not merely disabled."""
-        executor = AgentExecutor(memory=self.memory)
-        assert not hasattr(executor, "_tracker")
-
-    def test_executor_has_no_record_outcome_method(self):
-        """The public reward-signal entry point is gone."""
-        assert not hasattr(AgentExecutor(memory=self.memory), "record_outcome")
-
-    def test_learning_module_is_gone(self):
-        """`synapse.agent.learning` must not be importable, from anywhere."""
-        import pytest
+    def test_deleted_names_not_exported_from_agent_package(self):
         with pytest.raises(ImportError):
-            import synapse.agent.learning  # noqa: F401
+            from synapse.agent import AgentExecutor  # noqa: F401
         with pytest.raises(ImportError):
             from synapse.agent import OutcomeTracker  # noqa: F401
         with pytest.raises(ImportError):
+            from synapse.agent import TaskSynthesizer  # noqa: F401
+
+    def test_deleted_names_not_exported_from_synapse_root(self):
+        with pytest.raises(ImportError):
+            from synapse import AgentExecutor  # noqa: F401
+        with pytest.raises(ImportError):
             from synapse import OutcomeTracker  # noqa: F401
+        with pytest.raises(ImportError):
+            from synapse import SparseToolIndexer  # noqa: F401
+        with pytest.raises(ImportError):
+            from synapse import TaskSynthesizer  # noqa: F401
 
-    def test_prepare_no_longer_reads_memory(self):
-        """The read half is retired: prior FEEDBACK memories do not seed context."""
-        self.memory.add(
-            content="Previous lighting setup worked well",
-            memory_type=MemoryType.FEEDBACK,
-            tags=["lighting", "success", "shot_010", "outcome"],
-            keywords=["lighting", "setup"],
-        )
-
-        executor = AgentExecutor(memory=self.memory)
-        task = executor.prepare("Set up lighting", "shot_010", "lighting")
-
-        assert task.relevant_memories == []
-        assert task.constraints == []
-        assert task.context_summary == ""
-
-    def test_execute_writes_no_outcome_memory(self):
-        """The write half is retired: a completed plan records nothing."""
-        executor = AgentExecutor(memory=self.memory)
-        task = executor.prepare("Test", "shot_010", "lighting")
-        plan = executor.propose(task, [_make_step(action="ping")], reasoning="Test")
-        assert plan.status == PlanStatus.APPROVED
-
-        result = executor.execute(plan)
-        assert result.success is True
-
-        assert self.memory.store.get_by_type(MemoryType.FEEDBACK) == []
-
-    def test_execute_writes_no_outcome_memory_on_failure(self):
-        """The failure path recorded too. It also records nothing now."""
-        def failing_fn(cmd):
-            return SynapseResponse(success=False, error="nope")
-
-        executor = AgentExecutor(command_fn=failing_fn, memory=self.memory)
-        task = executor.prepare("Test", "shot_010", "lighting")
-        plan = executor.propose(task, [_make_step(action="ping")], reasoning="Test")
-        assert plan.status == PlanStatus.APPROVED
-
-        result = executor.execute(plan)
-        assert result.success is False
-
-        assert self.memory.store.get_by_type(MemoryType.FEEDBACK) == []
-
-    def test_full_loop_prepare_propose_execute(self):
-        """End-to-end: prepare -> propose -> execute. No learn stage."""
-        executor = AgentExecutor(memory=self.memory)
-
-        task = executor.prepare(
-            "Set up three-point lighting for shot_010",
-            "shot_010",
-            "lighting",
-            agent_id="test_agent",
-        )
-        assert isinstance(task, AgentTask)
-
-        steps = [
-            _make_step(action="get_scene_info", description="Check current scene"),
-            _make_step(action="get_parm", description="Check existing lights"),
-        ]
-        plan = executor.propose(task, steps, reasoning="Gather info first")
-        assert plan.status == PlanStatus.APPROVED
-
-        result = executor.execute(plan)
-        assert result.status == PlanStatus.COMPLETED
-        assert result.success is True
-        assert result.progress() == 1.0
+    def test_agent_package_all_is_protocol_only(self):
+        import synapse.agent as agent_pkg
+        assert set(agent_pkg.__all__) == {
+            "AgentTask", "AgentPlan", "AgentStep",
+            "StepStatus", "PlanStatus",
+            "DEFAULT_GATE_LEVELS", "classify_gate_level",
+        }
 
 
 # =============================================================================
@@ -769,15 +391,12 @@ class TestPackageImports:
             AgentTask, AgentPlan, AgentStep,
             StepStatus, PlanStatus,
             DEFAULT_GATE_LEVELS, classify_gate_level,
-            AgentExecutor,
         )
         assert AgentTask is not None
-        assert AgentExecutor is not None
+        assert classify_gate_level is not None
 
     def test_import_from_synapse_root(self):
         from synapse import (
             AgentTask, AgentPlan, AgentStep,
-            AgentExecutor,
         )
         assert AgentTask is not None
-        assert AgentExecutor is not None
