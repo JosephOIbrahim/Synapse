@@ -59,14 +59,15 @@
       "bin": "T4->T1",
       "rung": "L2",
       "verdict": "real_and_open",
-      "accepted": false,
+      "accepted": true,
       "scale_behavior": "LINEAR_IN_NODES in-window, then multiplied by up to 25 iterations (O(K^2) prefill)",
       "probe": "offline token count ran (C3); pricing needs the message_start usage capture",
       "checked_against_refuted": true,
       "seed_evidence": [
         "CLAUDE.md stage 1 claims '<100 tokens per node' - unverified at scale"
       ],
-      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)",
+      "ratified_by": "Joe ('go', 2026-08-02) on the ranked recommendation; build wave wf_006556ba-f9c"
     },
     {
       "id": "H5-residual-serialization",
@@ -153,7 +154,7 @@
       "bin": "T4",
       "rung": "L2",
       "verdict": "real_and_open",
-      "accepted": false,
+      "accepted": true,
       "scale_behavior": "LINEAR_IN_AUTHORED_ARRAY_VOLUME, not prims: 4-prim PointInstancer @2M instances = 2017.9 ms/op while _stage_exceeds(stage,10000) returns False (16,677x miss); instanceable 101 prims = 5.0 ms",
       "probe": "C2's live probe, wf_b9c32632-1fc journal - rerunnable standalone pxr",
       "checked_against_refuted": true,
@@ -161,7 +162,8 @@
         "shared/bridge.py:422 _DEFAULT_STAGE_HASH_PRIM_THRESHOLD=10_000 (the real gate; :427 is a sentinel)",
         "C2 crucible verdict PREMISE-scale-model: ')re-parameterize, do not loop to Pass 0' severity 4/5"
       ],
-      "note": "Surfaced by the premise attack AFTER C4 ranked - carries no rank yet; strongest mechanism evidence on the board."
+      "note": "Surfaced by the premise attack AFTER C4 ranked - carries no rank yet; strongest mechanism evidence on the board.",
+      "ratified_by": "Joe ('go', 2026-08-02) on the ranked recommendation; build wave wf_006556ba-f9c"
     },
     {
       "id": "H11-honesty-fields-unconsumed",
