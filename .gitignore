@@ -175,3 +175,11 @@ harness/state/locks/
 harness/state/suite_stamp.json
 harness/state/DECISIONS.md
 .synapse_write_probe_*
+
+# Test litter: the literal-named dir created by suite runs (pre-C-0-fix shape)
+$HOUDINI_TEMP_DIR/
+
+# Orchestration scratch: commit-message drafts and resume state
+.claude/cm_*.txt
+.claude/commit_*.txt
+.token-saver/
