@@ -330,15 +330,17 @@ def run_on_main_observed(fn, timeout, label):
 
     ``label`` is the stable ``where`` identifier for the guard sink; use the
     command name, prefixed so it never collides with the central report.
+    It also threads through to run_on_main's OCC main-thread hold histogram,
+    so deferred payloads dispatched here are attributed by command name.
     """
     from .main_thread import run_on_main
 
     if not _would_run_inline_on_main():
-        return run_on_main(fn, timeout=timeout)
+        return run_on_main(fn, timeout=timeout, label=label)
 
     _t0 = time.perf_counter()
     try:
-        return run_on_main(fn, timeout=timeout)
+        return run_on_main(fn, timeout=timeout, label=label)
     finally:
         _elapsed = time.perf_counter() - _t0
         if _elapsed > timeout:
@@ -1552,6 +1554,15 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         except Exception:
             main_thread_directs = None
 
+        # OCC — deferred-path main-thread HOLD histogram: fn() duration
+        # measured ON the main thread inside _on_main. Real occupancy on the
+        # path every off-main tool payload takes. Same guarded pattern.
+        try:
+            from .main_thread import main_thread_hold_stats
+            main_thread_holds = main_thread_hold_stats()
+        except Exception:
+            main_thread_holds = None
+
         # R1 stage-integrity hash duration (the Flatten floor on large stages).
         try:
             from shared.bridge import scene_hash_stats
@@ -1574,6 +1585,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             tool_durations=self.tool_duration_stats(),
             dispatch_waits=dispatch_waits,
             main_thread_directs=main_thread_directs,
+            main_thread_holds=main_thread_holds,
             scene_hashes=scene_hashes,
             panel_inlines=panel_inlines,
             live_snapshot=live_snapshot,

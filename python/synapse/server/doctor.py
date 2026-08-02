@@ -507,10 +507,16 @@ def _check_main_thread() -> Dict[str, Any]:
     state only — the bounded recovery probe belongs to the fast-fail gates."""
     name = "main_thread"
     try:
-        from .main_thread import dispatch_wait_stats, stall_state
+        from .main_thread import (
+            dispatch_wait_stats, main_thread_hold_stats, stall_state,
+        )
         state = stall_state()
         waits = dispatch_wait_stats()
-        result = {"stall": state, "dispatch_waits": waits}
+        # OCC: deferred-path payload holds — real main-thread occupancy, the
+        # number the freeze investigations previously inferred from proxies.
+        holds = main_thread_hold_stats()
+        result = {"stall": state, "dispatch_waits": waits,
+                  "main_thread_holds": holds}
         if state["stalled"]:
             return {"name": name, "status": "fail",
                     "detail": (f"main thread stalled "
@@ -518,10 +524,14 @@ def _check_main_thread() -> Dict[str, Any]:
                                "run_on_main timeouts) — a heavy cook, render, or "
                                "another MCP client may be saturating it"),
                     "result": result}
+        hold_note = (f", {holds['count']} hold samples, max hold "
+                     f"{holds['max_ms']:.0f}ms"
+                     + (f" ({holds['slowest_label']})"
+                        if holds["slowest_label"] else ""))
         return {"name": name, "status": "ok",
                 "detail": (f"not stalled ({state['consecutive_timeouts']} "
                            f"consecutive timeouts, {waits['count']} dispatch-wait "
-                           f"samples, max {waits['max_ms']:.0f}ms)"),
+                           f"samples, max {waits['max_ms']:.0f}ms{hold_note})"),
                 "result": result}
     except Exception as e:
         return {"name": name, "status": "skipped", "detail": f"probe failed: {e}"}
