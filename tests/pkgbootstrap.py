@@ -93,9 +93,22 @@ def ensure_package(mod_name: str, mod_path: _PathLike) -> types.ModuleType:
     Reuses an existing ``sys.modules`` entry when one is present (so a real
     package already imported by conftest or another test always wins), and
     binds the result on its parent either way.
+
+    A ``None`` entry is NOT "absent": ``sys.modules[name] = None`` is this
+    repo's deliberate-absence idiom (see the fake-residency rule for ``hou``),
+    and Python's own import machinery raises ``ImportError`` on it. Silently
+    replacing the sentinel with a synthetic package would undo somebody's
+    deliberate eviction, so we refuse loudly instead (attack-O crucible nit:
+    the first version's ``.get(name) is None`` guard did exactly that).
     """
-    module = sys.modules.get(mod_name)
-    if module is None:
+    if mod_name in sys.modules:
+        module = sys.modules[mod_name]
+        if module is None:
+            raise ImportError(
+                f"{mod_name} carries a None sentinel in sys.modules "
+                f"(deliberate absence) — refusing to replace it with a "
+                f"synthetic package; evict the sentinel first if you mean to")
+    else:
         module = types.ModuleType(mod_name)
         module.__path__ = [str(mod_path)]
         sys.modules[mod_name] = module
@@ -115,9 +128,18 @@ def load_module(mod_name: str, file_path: _PathLike) -> types.ModuleType:
     Mirrors ``importlib._bootstrap._load`` ordering: the module goes into
     ``sys.modules`` *before* ``exec_module`` (so intra-package imports resolve),
     and the parent-attribute binding happens *after* a successful exec.
+
+    Same ``None``-sentinel refusal as :func:`ensure_package` — a deliberate
+    eviction is never silently overwritten.
     """
-    module = sys.modules.get(mod_name)
-    if module is None:
+    if mod_name in sys.modules:
+        module = sys.modules[mod_name]
+        if module is None:
+            raise ImportError(
+                f"{mod_name} carries a None sentinel in sys.modules "
+                f"(deliberate absence) — refusing to load over it; evict the "
+                f"sentinel first if you mean to")
+    else:
         spec = importlib.util.spec_from_file_location(mod_name, file_path)
         module = importlib.util.module_from_spec(spec)
         sys.modules[mod_name] = module
@@ -134,9 +156,20 @@ def load_modules(specs: Iterable[Tuple[str, _PathLike]]) -> None:
 
 def divergent_modules(prefix: str = "synapse.") -> list:
     """Return every ``sys.modules`` key under ``prefix`` whose parent attribute
-    is not the same object as the ``sys.modules`` entry.
+    diverges from the ``sys.modules`` entry in the way that BREAKS dotted
+    resolution: the attribute is missing, or it is a *different module*.
 
-    The diagnostic form of the invariant.  An empty list is the healthy state.
+    Deliberately NOT flagged (attack-O crucible: the first version
+    false-positived on these, and its "empty list is the healthy state" claim
+    was false for this repo):
+
+    * a parent attribute that is a non-module object — the ordinary
+      ``from pkg.mod import name`` re-export shadowing a same-named submodule
+      (production ``synapse.cognitive`` does this legitimately);
+    * a ``None`` sentinel entry (deliberate absence, skipped above).
+
+    So: an empty list means no dotted MODULE binding diverges. It does not
+    mean the tree is free of shadows — shadows are legal Python.
     """
     bad = []
     for key in sorted(k for k in list(sys.modules) if k.startswith(prefix)):
@@ -147,6 +180,11 @@ def divergent_modules(prefix: str = "synapse.") -> list:
         parent = sys.modules.get(parent_name)
         if parent is None:
             continue
-        if getattr(parent, leaf, None) is not module:
-            bad.append(key)
+        attr = getattr(parent, leaf, None)
+        if attr is module:
+            continue
+        if attr is not None and not isinstance(attr, types.ModuleType):
+            # Legitimate function/class re-export shadowing the submodule name.
+            continue
+        bad.append(key)
     return bad

@@ -20,42 +20,33 @@ if "hou" not in sys.modules:
     sys.modules["hou"] = MagicMock()
 
 # ---------------------------------------------------------------------------
-# Import modules via importlib
+# Import modules via importlib — through the R307 bootstrap helpers.
+#
+# The old open-coded shape here was the exact class R307 killed in 25 files,
+# in a different costume: it planted synapse/synapse.core/synapse.server via
+# bare setdefault (no parent-attribute binding) AND planted the leaf modules
+# BEFORE the parents, so the parents' attributes never pointed at the leaves.
+# The attack-O crucible demonstrated this file was a LIVE surviving
+# reproduction at HEAD: `pytest tests/test_studio_integration.py
+# tests/test_websocket_cancel_reachable.py` -> ModuleNotFoundError. Same
+# fix-at-the-perpetrator discipline; the remaining ~20 other-shape sites are
+# R310's sweep.
 # ---------------------------------------------------------------------------
-_BASE = os.path.join(os.path.dirname(__file__), "..", "python", "synapse")
+from pkgbootstrap import ensure_package, load_module
 
-# determinism
-spec_det = importlib.util.spec_from_file_location(
-    "synapse.core.determinism",
-    os.path.abspath(os.path.join(_BASE, "core", "determinism.py")),
-)
-det_mod = importlib.util.module_from_spec(spec_det)
-sys.modules["synapse.core.determinism"] = det_mod
-spec_det.loader.exec_module(det_mod)
+_BASE = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "python", "synapse"))
 
-# rbac
-spec_rbac = importlib.util.spec_from_file_location(
-    "synapse.server.rbac",
-    os.path.abspath(os.path.join(_BASE, "server", "rbac.py")),
-)
-rbac_mod = importlib.util.module_from_spec(spec_rbac)
-sys.modules["synapse.server.rbac"] = rbac_mod
-spec_rbac.loader.exec_module(rbac_mod)
+ensure_package("synapse", _BASE)
+ensure_package("synapse.core", os.path.join(_BASE, "core"))
+ensure_package("synapse.server", os.path.join(_BASE, "server"))
 
-# Patch parent modules for sessions' relative imports
-sys.modules.setdefault("synapse", type(sys)("synapse"))
-sys.modules.setdefault("synapse.core", type(sys)("synapse.core"))
-sys.modules["synapse.core.determinism"] = det_mod
-sys.modules.setdefault("synapse.server", type(sys)("synapse.server"))
-sys.modules["synapse.server.rbac"] = rbac_mod
-
-# sessions
-spec_sess = importlib.util.spec_from_file_location(
-    "synapse.server.sessions",
-    os.path.abspath(os.path.join(_BASE, "server", "sessions.py")),
-)
-sess_mod = importlib.util.module_from_spec(spec_sess)
-spec_sess.loader.exec_module(sess_mod)
+det_mod = load_module("synapse.core.determinism",
+                      os.path.join(_BASE, "core", "determinism.py"))
+rbac_mod = load_module("synapse.server.rbac",
+                       os.path.join(_BASE, "server", "rbac.py"))
+sess_mod = load_module("synapse.server.sessions",
+                       os.path.join(_BASE, "server", "sessions.py"))
 
 Role = rbac_mod.Role
 check_permission = rbac_mod.check_permission

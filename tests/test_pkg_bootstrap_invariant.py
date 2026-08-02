@@ -177,19 +177,32 @@ def test_failing_order_passes(perpetrator):
         ],
         cwd=str(REPO), capture_output=True, text=True, timeout=600,
     )
-    assert proc.returncode == 0, (
-        f"`pytest {perpetrator} {VICTIM_FILE}` failed — the suite's green "
-        f"depends on ordering again.\n"
-        f"stdout tail:\n{proc.stdout[-3000:]}\nstderr tail:\n{proc.stderr[-1500:]}"
-    )
+    if proc.returncode != 0:
+        # Disambiguate (attack-O nit): a failure of the KNOWN VICTIM test is
+        # the ordering defect returning; any other failure in the pair run is
+        # its own problem and must not masquerade as one. Whole-file argument
+        # form is kept deliberately — node-id form pre-imports the victim and
+        # hides the defect (verified against the reverted perpetrator).
+        ordering = "test_handle_client_cancel_mid_frame" in proc.stdout
+        raise AssertionError(
+            (f"the R307 ordering defect is BACK — the known victim failed "
+             f"behind {perpetrator}.\n"
+             if ordering else
+             f"`pytest {perpetrator} {VICTIM_FILE}` failed, but NOT on the "
+             f"known victim test — an unrelated failure in the pair run, "
+             f"not (necessarily) the ordering defect.\n")
+            + f"stdout tail:\n{proc.stdout[-3000:]}\n"
+              f"stderr tail:\n{proc.stderr[-1500:]}")
 
 
 # ---------------------------------------------------------------------------
 # 4. The raw idiom must not be copy-pasted back in
 # ---------------------------------------------------------------------------
 
+# Optional indentation (attack-O nit: requiring leading whitespace let a
+# top-level copy of the same four lines through).
 _RAW_PKG_IDIOM = re.compile(
-    r"^(?P<ind>[ \t]+)if (?P<key>[A-Za-z_]\w*) not in sys\.modules:\n"
+    r"^(?P<ind>[ \t]*)if (?P<key>[A-Za-z_]\w*) not in sys\.modules:\n"
     r"(?P=ind)[ \t]+(?P<pkg>[A-Za-z_]\w*) = types\.ModuleType\((?P=key)\)\n"
     r"(?P=ind)[ \t]+(?P=pkg)\.__path__ = \[str\([^\n]+?\)\]\n"
     r"(?P=ind)[ \t]+sys\.modules\[(?P=key)\] = (?P=pkg)\n",
@@ -198,7 +211,12 @@ _RAW_PKG_IDIOM = re.compile(
 
 
 def test_raw_namespace_package_idiom_is_not_reintroduced():
-    """The plant-without-binding idiom spread to 25 files by copy-paste. Use
+    """Guards ONE SHAPE: the canonical four-line copy-paste block that spread
+    to 25 files. A source-shape tripwire, not the invariant itself (attack-O:
+    the first docstring over-claimed exactly that way). Variants — different
+    variable dances, spec_from_file_location shapes, guard-less plants — pass
+    this regex freely; they are caught at RUNTIME by the divergence checks in
+    this file, and the remaining in-tree shapes are R310's sweep. Use
     ``pkgbootstrap.ensure_package`` / ``load_module`` instead."""
     offenders = [
         p.name for p in sorted(TESTS.glob("test_*.py"))
