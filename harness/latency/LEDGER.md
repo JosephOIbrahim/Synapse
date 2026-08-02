@@ -37,9 +37,17 @@ dimension is real; every hypothesis and the shipped gate key on the wrong variab
 - **The honesty fields are recorded and consumed by NOTHING.** `stage_hash_mode` /
   `stage_hash_full_fidelity` / `composition_checks_reduced` are set (`:530-535`) but
   `anchors_hold` and `fidelity` ignore them (`:537-556`) — a reduced-fidelity op
-  finalizes as verified, fidelity 1.0. Worse: `panel/session_integrity.py:66`
-  filters `delta_hash="no_change"` OUT of mutation accounting, so the blind-spot
-  case (value-only edit above 10k prims) is not merely unflagged, it is discarded.
+  finalizes as verified, fidelity 1.0.
+- **CORRECTION (2026-08-02, caught by the R306 lane).** This section originally added
+  that `panel/session_integrity.py:66` "filters `delta_hash='no_change'` OUT of
+  mutation accounting, so the blind-spot case is discarded." **That was wrong**, and
+  it was inherited from a fan-out result and published here without my verifying it.
+  Reading `session_integrity.record()`: mutations are counted unconditionally at
+  `self._total += 1` (`:53`) BEFORE any filter; the `:66` check excludes the sentinel
+  strings `""` / `"no_change"` / `"rolled_back"` from `_node_paths` — a NODE-PATH
+  extraction guard reading `scene_hash_before/after`, not `delta_hash`, and correct
+  as written (a sentinel is not a path). The real gap was narrower and still real:
+  nothing reported HOW MANY ops ran in reduced mode. That is what R306 adds.
 - **Three passes still run unbounded per stage-touching op**: the reduced signature
   `TraverseAll` x2 (`:986`, ~9.0-9.5 us/prim/pass — extrapolates ~18 s/op at 1M
   prims), `_verify_composition`'s `Traverse` (`:2167`, deliberately ungated, inside

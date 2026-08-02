@@ -178,14 +178,14 @@
       "verdict": "real_and_open",
       "accepted": false,
       "scale_behavior": "CONSTANT",
-      "probe": "grep consumers: hits only bridge.py, DEPLOYMENT.md, 2 test files; panel/session_integrity.py:66 filters 'no_change' OUT of mutation accounting (G1-pr61-anatomy)",
+      "probe": "grep consumers: hits only bridge.py, DEPLOYMENT.md, 2 test files. CORRECTED 2026-08-02: the earlier claim that session_integrity.py:66 'filters the blind-spot case out of mutation accounting' was WRONG - mutations count unconditionally at :53; :66 is a node-path sentinel guard on scene_hash_before/after (not delta_hash) and is correct. The real gap: no count of how many ops ran reduced.",
       "checked_against_refuted": true,
       "seed_evidence": [
         "shared/bridge.py:530-535 recorded",
         "shared/bridge.py:537-556 anchors_hold/fidelity ignore them",
         "doc-drift: bridge.py:449-450 + :2137-2139 still describe the pre-98b556f unbounded default"
       ],
-      "note": "Honest at the point of record, dead at the point of use. Value-only edits above 10k prims record delta_hash='no_change' and session_integrity discards them."
+      "note": "Honest at the point of record, dead at the point of use. R306 lane adds the consumers (operation_stats reduced-op counters + session_integrity unobservable_deltas label); fidelity semantics deliberately untouched."
     }
   ],
   "instruments": {
