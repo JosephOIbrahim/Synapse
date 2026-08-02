@@ -61,8 +61,9 @@ def test_clean_file_is_empty():
 def test_gui_submodules_allowlisted():
     # hou.ui/qt/audio/desktop/viewportVisualizers are real but absent from a HEADLESS dir() table;
     # check_phantom_clean unions them in. Simulate that union and confirm they're not flagged.
+    # All FIVE documented GUI headless-blind siblings pinned (QUARANTINE-PACKET-2026-07-31 §2.1b).
     gui = checks._GUI_HOU_ABSENT_HEADLESS
-    assert {"hou.ui", "hou.qt"} <= gui
+    assert {"hou.ui", "hou.qt", "hou.audio", "hou.desktop", "hou.viewportVisualizers"} <= gui
     tbl = TABLE | gui
     assert checks._hou_phantoms_in_source("import hou\nhou.ui.displayMessage('x')\nx = hou.qt.mainWindow()\n", tbl) == []
     # a genuine phantom still trips even with the allowlist in place
@@ -217,6 +218,69 @@ def test_pxr_unwalked_namespace_not_judged():
     assert _psyms("from pxr import MadeUpNs\nMadeUpNs.Thing\n") == []
     # the gate does not weaken true positives: a WALKED namespace still flags absent attrs
     assert _psyms("from pxr import Usd\nUsd.NotAClass\n") == ["pxr.Usd.NotAClass"]
+
+
+# --- R201 merge condition: the hdefereval headless-blind allowlist (packet §2.3 + §2.4) ------
+# hdefereval is the 6th headless-blind module: `import hdefereval` hard-raises under headless
+# hython, the harvester never walks it, yet production uses it (main_thread.py:309,
+# main_thread_executor.py:290). The allowlist is vendor-pinned MEMBERSHIP; the
+# executeInMainThreadWithResult BAN stays with tests/test_marshal_lint.py (policy axis).
+
+
+def test_hdefereval_allowlist_carried_in_union():
+    # The constant exists, supersedes (never replaces) the GUI set, and carries the packet's
+    # seven specified entries + the two vendor-real decorators the packet's enumeration missed.
+    allow = checks._HEADLESS_BLIND_SYMBOLS
+    assert checks._GUI_HOU_ABSENT_HEADLESS <= allow
+    assert {
+        "hdefereval",
+        "hdefereval.executeDeferred",
+        "hdefereval.executeDeferredAfterWaiting",
+        "hdefereval.executeInMainThreadWithResult",
+        "hdefereval.execute_deferred",
+        "hdefereval.execute_deferred_after_waiting",
+        "hdefereval.execute_in_main_thread_with_result",
+        "hdefereval.in_separate_thread",
+        "hdefereval.do_work_in_background_thread",
+    } <= allow
+    # The known-quarantined phantom must NEVER enter the allowlist: if hdefereval roots are
+    # ever judged, hdefereval.executeInMainThread (marshal-deadlock class, phantom on H22)
+    # must flag. Membership excludes it by construction.
+    assert "hdefereval.executeInMainThread" not in allow
+
+
+def test_legitimate_hdefereval_usage_does_not_flag():
+    # The R201 tripwire. Today hdefereval roots are not judged by _phantoms_in_source, so
+    # this passes structurally; if judging is ever extended to hdefereval (packet §2.2's
+    # forward-looking scenario under P5.1), this test stays green ONLY while the allowlist
+    # is unioned — exactly the false-flag regression the merge condition exists to prevent.
+    src = ("import hdefereval\n"
+           "hdefereval.executeDeferred(fn)\n"
+           "hdefereval.execute_deferred(fn)\n"
+           "hdefereval.executeDeferredAfterWaiting(fn, 2)\n"
+           "r = hdefereval.executeInMainThreadWithResult(fn)\n")
+    assert checks._phantoms_in_source(src, TABLE_EXT | checks._HEADLESS_BLIND_SYMBOLS) == []
+
+
+def test_check_phantom_clean_unions_hdefereval_end_to_end(monkeypatch, tmp_path):
+    # End-to-end wiring pin: check_phantom_clean's own union line must carry
+    # _HEADLESS_BLIND_SYMBOLS (not the narrower GUI set). A real added .py containing
+    # legitimate hdefereval usage, judged against a stub table WITHOUT hdefereval, returns
+    # ok:True — and keeps doing so if hdefereval judging is ever switched on.
+    import synapse.cognitive.tools.scout as scout
+    monkeypatch.setattr(
+        scout, "_load_symbol_table",
+        lambda: ({"hou", "hou.node", "pdg", "pxr"}, {"houdini_version": "22.0.368"}),
+    )
+    monkeypatch.setattr(checks, "sh", lambda *a, **k: (0, "deadbeef\n", ""))
+    rel = "python/synapse/_hdef_probe.py"
+    f = tmp_path / rel
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text("import hdefereval\nhdefereval.executeDeferred(print)\nn = hou.node('/obj')\n",
+                 encoding="utf-8")
+    monkeypatch.setattr(checks, "_sprint_added_py", lambda wt, base: {rel: None})
+    result = checks.check_phantom_clean({"wt": str(tmp_path)})
+    assert result["ok"] is True
 
 
 def test_real_h22_table_usdrender_stage_absent():

@@ -391,6 +391,32 @@ def check_provenance_not_bypassed(ctx):
 # absence from the headless table is an introspection artifact, NOT a phantom, so union them in.
 _GUI_HOU_ABSENT_HEADLESS = {"hou.ui", "hou.qt", "hou.audio", "hou.desktop", "hou.viewportVisualizers"}
 
+# hdefereval is the SIXTH headless-blind module (QUARANTINE-PACKET-2026-07-31 §2, carried
+# with the L5 merge per CTO_RULINGS_02 R201): absent from the headless table because
+# `import hdefereval` hard-RAISES under headless hython ("only available in a graphical
+# Houdini") and host/introspect_runtime.py never walks it — yet it is real, documented, and
+# used in production (server/main_thread.py, host/main_thread_executor.py). Membership here
+# is VENDOR-PINNED against H22 22.0.368 `houdini/python3.13libs/hdefereval.py`: the three
+# camelCase entry points (:21/:32/:43), their snake_case aliases (:30/:41/:45 — the packet
+# attack's bounded correction), and the two background-thread decorators (:176/:210 —
+# vendor-real, omitted by the packet's entry-point enumeration; same correction class).
+# `hdefereval.executeInMainThread` is deliberately ABSENT from this set — it is a
+# known-quarantined phantom (harness/phantoms/SPEC.md; marshal-deadlock class) and must
+# keep flagging if hdefereval roots are ever judged. Axis separation (packet §2.3): this
+# set is MEMBERSHIP authority only; `executeInMainThreadWithResult` stays BANNED by policy
+# via tests/test_marshal_lint.py — membership, not permission.
+_HEADLESS_BLIND_SYMBOLS = _GUI_HOU_ABSENT_HEADLESS | {
+    "hdefereval",
+    "hdefereval.executeDeferred",
+    "hdefereval.executeDeferredAfterWaiting",
+    "hdefereval.executeInMainThreadWithResult",       # real (vendor :43); banned by marshal lint
+    "hdefereval.execute_deferred",                    # snake_case alias (vendor :30)
+    "hdefereval.execute_deferred_after_waiting",      # snake_case alias (vendor :41)
+    "hdefereval.execute_in_main_thread_with_result",  # snake_case alias (vendor :45)
+    "hdefereval.in_separate_thread",                  # decorator (vendor :176)
+    "hdefereval.do_work_in_background_thread",        # decorator (vendor :210)
+}
+
 
 def _hou_phantoms_in_source(src, table_syms):
     """[(lineno, "hou.<attr>"), ...] for hou-module attribute accesses the table PROVES absent.
@@ -528,9 +554,10 @@ def check_phantom_clean(ctx):
     if "pdg" not in table_syms or "pxr" not in table_syms:
         return {"ok": None, "detail": "symbol table lacks the pdg/pxr surfaces — cannot prove their "
                                       "absence (regenerate via host/introspect_runtime.py)"}
-    # GUI-only submodules (hou.ui/qt/audio/…) are real but absent from a HEADLESS dir() table —
-    # union them so a live panel/host sprint isn't false-flagged into a stall.
-    table_syms = table_syms | _GUI_HOU_ABSENT_HEADLESS
+    # Headless-blind modules (hou.ui/qt/audio/… + hdefereval) are real but absent from a
+    # HEADLESS dir() table — union them so a live panel/host sprint isn't false-flagged into
+    # a stall (hdefereval carried per QUARANTINE-PACKET-2026-07-31 §2.3 / R201).
+    table_syms = table_syms | _HEADLESS_BLIND_SYMBOLS
     # 2) scope to the sprint's ADDED .py lines — base = master HEAD at worktree-add time (fork
     #    point, robust if master advanced). Judging only newly-authored lines means a pre-existing
     #    phantom on an unchanged line of a merely-edited file never blocks the sprint.
