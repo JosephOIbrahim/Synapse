@@ -60,6 +60,7 @@ class FreezeChain:
         self._timer_lock = threading.Lock()
         self._escalation_timer: Optional[threading.Timer] = None
         self._escalated = False
+        self._stopped = False
         self._watchdog = Watchdog(
             heartbeat_interval=heartbeat_interval,
             freeze_threshold=freeze_threshold,
@@ -71,6 +72,23 @@ class FreezeChain:
     # -- the one call the panel makes ------------------------------------
     def heartbeat(self):
         self._watchdog.heartbeat()
+
+    def stop(self):
+        """Shut the WHOLE chain down: watchdog AND any pending escalation.
+
+        Stopping only the watchdog leaves a zombie: an armed escalation Timer
+        survives ``Watchdog.stop()``, and the watchdog's ``_is_frozen`` stays
+        True after stop — so the orphaned timer fires later, passes its
+        is-frozen guard, and acts (dump + breaker force_open) against whatever
+        globals are live AT THAT MOMENT. In tests that double-fired
+        force_open across test boundaries (the two flaky master-CI reds of
+        2026-08-02); in production the same zombie could fire into a
+        successor session after a panel teardown. Idempotent.
+        """
+        self._stopped = True
+        with self._timer_lock:
+            self._cancel_timer_locked()
+        self._watchdog.stop()
 
     @property
     def is_frozen(self) -> bool:
@@ -88,6 +106,8 @@ class FreezeChain:
 
     # -- detection callbacks (Watchdog monitor thread) --------------------
     def _on_freeze(self, elapsed: float):
+        if self._stopped:
+            return  # monitor tick racing a shutdown must not arm a new timer
         logger.warning(
             "Main thread frozen for %.1fs — escalation in %.0fs unless it recovers",
             elapsed, max(0.0, self._escalate_after - elapsed),
@@ -121,6 +141,10 @@ class FreezeChain:
     # -- the acting half (escalation timer thread) ------------------------
     def _escalate(self):
         try:
+            if self._stopped:
+                return  # chain shut down after this timer was armed
+            if self._escalated:
+                return  # already acted for this freeze episode — never twice
             if not self._watchdog.is_frozen:
                 return  # recovered between detection and the deadline
             self._escalated = True
