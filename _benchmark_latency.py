@@ -44,7 +44,12 @@ import time
 import uuid
 from pathlib import Path
 
-URL = "ws://localhost:9999"
+# hwebserver mounts the WS handler at /synapse (hwebserver_adapter.py:93);
+# the bare root answers HTTP 400 to a WS upgrade. Written blind pre-bridge,
+# found the first time the live tier ever met a live bridge (LB lane,
+# wf_b71ed347-e4d) — its refusal path fired honestly instead of fabricating
+# rows, which is exactly what it was built to do.
+URL = "ws://localhost:9999/synapse"
 WARMUP = 5
 ITERATIONS = 50
 
@@ -300,6 +305,20 @@ def _live_scale_arm(args, bench, cmd):
             else built
         verified = payload.get("result") if isinstance(
             payload.get("result"), dict) else {}
+        if not verified and isinstance(payload.get("result"), str):
+            # The live handler STRINGIFIES every execute_python result
+            # ("result": str(result), handlers.py:1294) — a dict comes over
+            # the wire as its Python repr. Found on the live tier's first
+            # contact with a real bridge (2026-08-02); parsed client-side
+            # because a handler change would not be live without another
+            # Houdini restart. literal_eval only — never eval.
+            import ast
+            try:
+                parsed = ast.literal_eval(payload["result"])
+                if isinstance(parsed, dict):
+                    verified = parsed
+            except (ValueError, SyntaxError):
+                pass
         v_prims = verified.get("prim_count_verified")
         v_elems = verified.get("authored_elements_verified")
         if v_prims is None or v_elems is None:

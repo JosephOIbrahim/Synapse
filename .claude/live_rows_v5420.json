@@ -1,0 +1,401 @@
+{
+ "rows": [
+  {
+   "_cross_tier_note": "the LIVE builder authors a real USD stage; the OFFLINE builder drives a counting fake. Different builder_sha256 by construction \u2014 these rows may NOT share a curve with offline rows (bench_scale.fit_curve refuses the mix).",
+   "_stage_term_note": "live WS transport only. The stage-hash term is ABSENT BY CONSTRUCTION on this path [python/synapse/server/integrity_envelope.py:219].",
+   "axis": "authored_elements",
+   "cross_tier_comparable": false,
+   "houdini_build_measured": "22.0.397",
+   "mode": "envelope",
+   "producer": {
+    "builder_sha256": "56a0a3c427c74f15",
+    "cmd": "python _benchmark_latency.py --tier live --json-out .claude/live_rows_v5420.json",
+    "doc_pinned_houdini": "22.0.368",
+    "git": "fada390",
+    "git_dirty": true,
+    "host": "AMD64 Family 25 Model 24 Stepping 1, AuthenticAMD",
+    "houdini": "22.0.397",
+    "interpreter": "CPython 3.14.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "producer_path": "_benchmark_latency.py::_live_scale_arm",
+    "pxr": "present"
+   },
+   "rung": {
+    "array_len": 25000,
+    "arrays_per_prim": 1,
+    "authored_elements": 100000,
+    "authored_elements_requested": 100000,
+    "prim_count": 6,
+    "prim_count_requested": 4,
+    "shape": "Lop/pythonscript authored Float3Array",
+    "time_samples": 0
+   },
+   "schema": "bench_scale/record-v1",
+   "tier": "live",
+   "timings_ms": {
+    "get_parm": {
+     "avg_ms": 0.4277240007650107,
+     "cold_ms": 0.4065999819431454,
+     "max_ms": 0.772899977164343,
+     "measured": 50,
+     "med_ms": 0.41485000110697,
+     "min_ms": 0.3369000041857362,
+     "op": "get_parm",
+     "p95_ms": 0.5350999999791384,
+     "requested": 50
+    },
+    "get_scene_info": {
+     "avg_ms": 0.4165499971713871,
+     "cold_ms": 0.40649998118169606,
+     "max_ms": 0.5642999894917011,
+     "measured": 50,
+     "med_ms": 0.4110999871045351,
+     "min_ms": 0.3404000017326325,
+     "op": "get_scene_info",
+     "p95_ms": 0.5254999850876629,
+     "requested": 50
+    },
+    "ping": {
+     "avg_ms": 0.3802819992415607,
+     "cold_ms": 0.3662999952211976,
+     "max_ms": 0.5271999980323017,
+     "measured": 50,
+     "med_ms": 0.3668999997898936,
+     "min_ms": 0.2967000182252377,
+     "op": "ping",
+     "p95_ms": 0.4834999854210764,
+     "requested": 50
+    },
+    "set_parm (/obj null)": {
+     "avg_ms": 3.6653859965736046,
+     "cold_ms": 2.8591000009328127,
+     "max_ms": 7.957499998155981,
+     "measured": 50,
+     "med_ms": 3.5069000005023554,
+     "min_ms": 2.311099990038201,
+     "op": "set_parm (/obj null)",
+     "p95_ms": 5.74270001379773,
+     "requested": 50
+    }
+   }
+  },
+  {
+   "_cross_tier_note": "the LIVE builder authors a real USD stage; the OFFLINE builder drives a counting fake. Different builder_sha256 by construction \u2014 these rows may NOT share a curve with offline rows (bench_scale.fit_curve refuses the mix).",
+   "_stage_term_note": "live WS transport only. The stage-hash term is ABSENT BY CONSTRUCTION on this path [python/synapse/server/integrity_envelope.py:219].",
+   "axis": "authored_elements",
+   "cross_tier_comparable": false,
+   "houdini_build_measured": "22.0.397",
+   "mode": "envelope",
+   "producer": {
+    "builder_sha256": "56a0a3c427c74f15",
+    "cmd": "python _benchmark_latency.py --tier live --json-out .claude/live_rows_v5420.json",
+    "doc_pinned_houdini": "22.0.368",
+    "git": "fada390",
+    "git_dirty": true,
+    "host": "AMD64 Family 25 Model 24 Stepping 1, AuthenticAMD",
+    "houdini": "22.0.397",
+    "interpreter": "CPython 3.14.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "producer_path": "_benchmark_latency.py::_live_scale_arm",
+    "pxr": "present"
+   },
+   "rung": {
+    "array_len": 50000,
+    "arrays_per_prim": 1,
+    "authored_elements": 200000,
+    "authored_elements_requested": 200000,
+    "prim_count": 6,
+    "prim_count_requested": 4,
+    "shape": "Lop/pythonscript authored Float3Array",
+    "time_samples": 0
+   },
+   "schema": "bench_scale/record-v1",
+   "tier": "live",
+   "timings_ms": {
+    "get_parm": {
+     "avg_ms": 0.43809999944642186,
+     "cold_ms": 0.38109999150037766,
+     "max_ms": 0.6253999890759587,
+     "measured": 50,
+     "med_ms": 0.43614998867269605,
+     "min_ms": 0.34669999149627984,
+     "op": "get_parm",
+     "p95_ms": 0.603599997702986,
+     "requested": 50
+    },
+    "get_scene_info": {
+     "avg_ms": 0.48317999753635377,
+     "cold_ms": 0.4090000002179295,
+     "max_ms": 0.671899993903935,
+     "measured": 50,
+     "med_ms": 0.4799999878741801,
+     "min_ms": 0.36880001425743103,
+     "op": "get_scene_info",
+     "p95_ms": 0.6224999960977584,
+     "requested": 50
+    },
+    "ping": {
+     "avg_ms": 0.3937039995798841,
+     "cold_ms": 0.391399982618168,
+     "max_ms": 0.5743999790865928,
+     "measured": 50,
+     "med_ms": 0.3725999849848449,
+     "min_ms": 0.3215000033378601,
+     "op": "ping",
+     "p95_ms": 0.4965999978594482,
+     "requested": 50
+    },
+    "set_parm (/obj null)": {
+     "avg_ms": 3.6649880005279556,
+     "cold_ms": 2.261100016767159,
+     "max_ms": 6.077400001231581,
+     "measured": 50,
+     "med_ms": 3.3780999947339296,
+     "min_ms": 2.135099988663569,
+     "op": "set_parm (/obj null)",
+     "p95_ms": 5.6634000211488456,
+     "requested": 50
+    }
+   }
+  },
+  {
+   "_cross_tier_note": "the LIVE builder authors a real USD stage; the OFFLINE builder drives a counting fake. Different builder_sha256 by construction \u2014 these rows may NOT share a curve with offline rows (bench_scale.fit_curve refuses the mix).",
+   "_stage_term_note": "live WS transport only. The stage-hash term is ABSENT BY CONSTRUCTION on this path [python/synapse/server/integrity_envelope.py:219].",
+   "axis": "authored_elements",
+   "cross_tier_comparable": false,
+   "houdini_build_measured": "22.0.397",
+   "mode": "envelope",
+   "producer": {
+    "builder_sha256": "56a0a3c427c74f15",
+    "cmd": "python _benchmark_latency.py --tier live --json-out .claude/live_rows_v5420.json",
+    "doc_pinned_houdini": "22.0.368",
+    "git": "fada390",
+    "git_dirty": true,
+    "host": "AMD64 Family 25 Model 24 Stepping 1, AuthenticAMD",
+    "houdini": "22.0.397",
+    "interpreter": "CPython 3.14.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "producer_path": "_benchmark_latency.py::_live_scale_arm",
+    "pxr": "present"
+   },
+   "rung": {
+    "array_len": 125000,
+    "arrays_per_prim": 1,
+    "authored_elements": 500000,
+    "authored_elements_requested": 500000,
+    "prim_count": 6,
+    "prim_count_requested": 4,
+    "shape": "Lop/pythonscript authored Float3Array",
+    "time_samples": 0
+   },
+   "schema": "bench_scale/record-v1",
+   "tier": "live",
+   "timings_ms": {
+    "get_parm": {
+     "avg_ms": 0.39993199752643704,
+     "cold_ms": 0.39370000013150275,
+     "max_ms": 0.665100000333041,
+     "measured": 50,
+     "med_ms": 0.3883499884977937,
+     "min_ms": 0.3454000107012689,
+     "op": "get_parm",
+     "p95_ms": 0.519900000654161,
+     "requested": 50
+    },
+    "get_scene_info": {
+     "avg_ms": 0.4040339996572584,
+     "cold_ms": 0.3671000013127923,
+     "max_ms": 0.5314000009093434,
+     "measured": 50,
+     "med_ms": 0.3894499968737364,
+     "min_ms": 0.35489999572746456,
+     "op": "get_scene_info",
+     "p95_ms": 0.47619998804293573,
+     "requested": 50
+    },
+    "ping": {
+     "avg_ms": 0.4084920004243031,
+     "cold_ms": 0.3926999925170094,
+     "max_ms": 0.6797999958507717,
+     "measured": 50,
+     "med_ms": 0.385349994758144,
+     "min_ms": 0.3276000206824392,
+     "op": "ping",
+     "p95_ms": 0.5155999970156699,
+     "requested": 50
+    },
+    "set_parm (/obj null)": {
+     "avg_ms": 3.643497999291867,
+     "cold_ms": 3.6211999831721187,
+     "max_ms": 6.436900002881885,
+     "measured": 50,
+     "med_ms": 3.591249987948686,
+     "min_ms": 2.25800002226606,
+     "op": "set_parm (/obj null)",
+     "p95_ms": 5.787799978861585,
+     "requested": 50
+    }
+   }
+  },
+  {
+   "_cross_tier_note": "the LIVE builder authors a real USD stage; the OFFLINE builder drives a counting fake. Different builder_sha256 by construction \u2014 these rows may NOT share a curve with offline rows (bench_scale.fit_curve refuses the mix).",
+   "_stage_term_note": "live WS transport only. The stage-hash term is ABSENT BY CONSTRUCTION on this path [python/synapse/server/integrity_envelope.py:219].",
+   "axis": "authored_elements",
+   "cross_tier_comparable": false,
+   "houdini_build_measured": "22.0.397",
+   "mode": "envelope",
+   "producer": {
+    "builder_sha256": "56a0a3c427c74f15",
+    "cmd": "python _benchmark_latency.py --tier live --json-out .claude/live_rows_v5420.json",
+    "doc_pinned_houdini": "22.0.368",
+    "git": "fada390",
+    "git_dirty": true,
+    "host": "AMD64 Family 25 Model 24 Stepping 1, AuthenticAMD",
+    "houdini": "22.0.397",
+    "interpreter": "CPython 3.14.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "producer_path": "_benchmark_latency.py::_live_scale_arm",
+    "pxr": "present"
+   },
+   "rung": {
+    "array_len": 250000,
+    "arrays_per_prim": 1,
+    "authored_elements": 1000000,
+    "authored_elements_requested": 1000000,
+    "prim_count": 6,
+    "prim_count_requested": 4,
+    "shape": "Lop/pythonscript authored Float3Array",
+    "time_samples": 0
+   },
+   "schema": "bench_scale/record-v1",
+   "tier": "live",
+   "timings_ms": {
+    "get_parm": {
+     "avg_ms": 0.46393999829888344,
+     "cold_ms": 0.4370999813545495,
+     "max_ms": 0.6565000221598893,
+     "measured": 50,
+     "med_ms": 0.4521999944699928,
+     "min_ms": 0.38979999953880906,
+     "op": "get_parm",
+     "p95_ms": 0.5878999945707619,
+     "requested": 50
+    },
+    "get_scene_info": {
+     "avg_ms": 0.4724160023033619,
+     "cold_ms": 0.43769998592324555,
+     "max_ms": 0.6807000027038157,
+     "measured": 50,
+     "med_ms": 0.46100000326987356,
+     "min_ms": 0.3470999945420772,
+     "op": "get_scene_info",
+     "p95_ms": 0.6132999842520803,
+     "requested": 50
+    },
+    "ping": {
+     "avg_ms": 0.4229479993227869,
+     "cold_ms": 0.41280000004917383,
+     "max_ms": 0.6351000047288835,
+     "measured": 50,
+     "med_ms": 0.41354999120812863,
+     "min_ms": 0.3501000173855573,
+     "op": "ping",
+     "p95_ms": 0.4920999926980585,
+     "requested": 50
+    },
+    "set_parm (/obj null)": {
+     "avg_ms": 4.225242002285086,
+     "cold_ms": 3.341200004797429,
+     "max_ms": 7.428200013237074,
+     "measured": 50,
+     "med_ms": 3.787549998378381,
+     "min_ms": 2.8064000071026385,
+     "op": "set_parm (/obj null)",
+     "p95_ms": 6.8143999960739166,
+     "requested": 50
+    }
+   }
+  },
+  {
+   "_cross_tier_note": "the LIVE builder authors a real USD stage; the OFFLINE builder drives a counting fake. Different builder_sha256 by construction \u2014 these rows may NOT share a curve with offline rows (bench_scale.fit_curve refuses the mix).",
+   "_stage_term_note": "live WS transport only. The stage-hash term is ABSENT BY CONSTRUCTION on this path [python/synapse/server/integrity_envelope.py:219].",
+   "axis": "authored_elements",
+   "cross_tier_comparable": false,
+   "houdini_build_measured": "22.0.397",
+   "mode": "envelope",
+   "producer": {
+    "builder_sha256": "56a0a3c427c74f15",
+    "cmd": "python _benchmark_latency.py --tier live --json-out .claude/live_rows_v5420.json",
+    "doc_pinned_houdini": "22.0.368",
+    "git": "fada390",
+    "git_dirty": true,
+    "host": "AMD64 Family 25 Model 24 Stepping 1, AuthenticAMD",
+    "houdini": "22.0.397",
+    "interpreter": "CPython 3.14.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "producer_path": "_benchmark_latency.py::_live_scale_arm",
+    "pxr": "present"
+   },
+   "rung": {
+    "array_len": 1000000,
+    "arrays_per_prim": 1,
+    "authored_elements": 4000000,
+    "authored_elements_requested": 4000000,
+    "prim_count": 6,
+    "prim_count_requested": 4,
+    "shape": "Lop/pythonscript authored Float3Array",
+    "time_samples": 0
+   },
+   "schema": "bench_scale/record-v1",
+   "tier": "live",
+   "timings_ms": {
+    "get_parm": {
+     "avg_ms": 0.48897000204306096,
+     "cold_ms": 0.5362000083550811,
+     "max_ms": 1.0470999986864626,
+     "measured": 50,
+     "med_ms": 0.42725000821519643,
+     "min_ms": 0.3696999920066446,
+     "op": "get_parm",
+     "p95_ms": 0.8977999968919903,
+     "requested": 50
+    },
+    "get_scene_info": {
+     "avg_ms": 0.4187200014712289,
+     "cold_ms": 0.3769999893847853,
+     "max_ms": 0.5636000132653862,
+     "measured": 50,
+     "med_ms": 0.4050499992445111,
+     "min_ms": 0.3415000101085752,
+     "op": "get_scene_info",
+     "p95_ms": 0.49730000318959355,
+     "requested": 50
+    },
+    "ping": {
+     "avg_ms": 0.45025600178632885,
+     "cold_ms": 0.3863000019919127,
+     "max_ms": 1.113600010285154,
+     "measured": 50,
+     "med_ms": 0.4300500004319474,
+     "min_ms": 0.34180001239292324,
+     "op": "ping",
+     "p95_ms": 0.6026000191923231,
+     "requested": 50
+    },
+    "set_parm (/obj null)": {
+     "avg_ms": 3.7741380027728155,
+     "cold_ms": 3.1454999989364296,
+     "max_ms": 7.3324999830219895,
+     "measured": 50,
+     "med_ms": 3.4688500163611025,
+     "min_ms": 2.0819000201299787,
+     "op": "set_parm (/obj null)",
+     "p95_ms": 5.978499975753948,
+     "requested": 50
+    }
+   }
+  }
+ ],
+ "schema": "bench_scale/run-v1",
+ "tier": "live"
+}
