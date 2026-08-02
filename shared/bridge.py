@@ -389,6 +389,110 @@ def reset_scene_hash_stats() -> None:
             _scene_hash_metrics["buckets"][b] = 0
 
 
+# ── Bridge Phase Instrumentation (T4 family, NON-SATURATING) ────
+# R302 rank 6: the T4 scale terms beyond the stage hash were unobservable by
+# construction — bridge.py carried exactly ONE perf_counter pair (the
+# _compute_scene_hash wrapper above), so _verify_composition (the second-
+# largest scale term, a full-stage traversal per stage-touching op) and
+# _infer_stage_touch (R7 dependents() trace, scales with NODE count) had no
+# timer at all.
+#
+# BUCKET DESIGN — deliberately NOT the _SCENE_HASH_BUCKETS_MS ladder. Every
+# pre-existing histogram saturates at a finite 4000-5000 ms top edge with
+# cumulative ``<=`` recording, so a sample above the top increments NO
+# in-memory bucket and survives only in count/sum_ms/max_ms — the exact
+# mechanism by which the 6.9-7.7 s/op BRIDGE-FLOOR regime hid inside a
+# "1-70 ms" ledger (G4, harness/latency/LEDGER.md §5). These edges resolve
+# 0.1 ms .. 60 s on a 1-2.5-5 ladder and END IN +Inf: every sample lands in
+# an in-memory bucket, no matter how slow. Hot-path cost per sample: one
+# perf_counter pair + one locked bucket sweep (same as scene_hash).
+_BRIDGE_PHASE_BUCKETS_MS = (
+    0.1, 0.25, 0.5, 1, 2.5, 5, 10, 25, 50, 100, 250, 500,
+    1000, 2500, 5000, 10000, 25000, 60000, float("inf"),
+)
+
+
+def _phase_metrics_new() -> dict:
+    return {
+        "count": 0,
+        "sum_ms": 0.0,
+        "max_ms": 0.0,
+        "buckets": {b: 0 for b in _BRIDGE_PHASE_BUCKETS_MS},
+    }
+
+
+def _phase_record(lock: threading.Lock, metrics: dict, ms: float) -> None:
+    with lock:
+        metrics["count"] += 1
+        metrics["sum_ms"] += ms
+        if ms > metrics["max_ms"]:
+            metrics["max_ms"] = ms
+        for b in _BRIDGE_PHASE_BUCKETS_MS:
+            if ms <= b:
+                metrics["buckets"][b] += 1
+
+
+def _phase_snapshot(lock: threading.Lock, metrics: dict) -> dict:
+    with lock:
+        return {
+            "count": metrics["count"],
+            "sum_ms": metrics["sum_ms"],
+            "max_ms": metrics["max_ms"],
+            "buckets": dict(metrics["buckets"]),
+        }
+
+
+def _phase_reset(lock: threading.Lock, metrics: dict) -> None:
+    with lock:
+        metrics["count"] = 0
+        metrics["sum_ms"] = 0.0
+        metrics["max_ms"] = 0.0
+        for b in _BRIDGE_PHASE_BUCKETS_MS:
+            metrics["buckets"][b] = 0
+
+
+_composition_lock = threading.Lock()
+_composition_metrics = _phase_metrics_new()
+_stage_touch_lock = threading.Lock()
+_stage_touch_metrics = _phase_metrics_new()
+
+
+def _record_composition_ms(ms: float) -> None:
+    _phase_record(_composition_lock, _composition_metrics, ms)
+
+
+def composition_stats() -> dict:
+    """Snapshot of the _verify_composition duration histogram in ms (copy —
+    safe to serialize). The Scene Integrity anchor's full-stage traversal per
+    stage-touching op — main-thread time inside the open undo group. Same
+    shape as scene_hash_stats(); non-saturating buckets (see the design note
+    on _BRIDGE_PHASE_BUCKETS_MS)."""
+    return _phase_snapshot(_composition_lock, _composition_metrics)
+
+
+def reset_composition_stats() -> None:
+    """Test/diagnostic helper — zero the composition-validation histogram."""
+    _phase_reset(_composition_lock, _composition_metrics)
+
+
+def _record_stage_touch_ms(ms: float) -> None:
+    _phase_record(_stage_touch_lock, _stage_touch_metrics, ms)
+
+
+def stage_touch_stats() -> dict:
+    """Snapshot of the _infer_stage_touch (R7 blast-radius) duration histogram
+    in ms (copy — safe to serialize). Runs once per bridge op BEFORE execution;
+    dominant term scales with the target container's NODE count (H2 axis), a
+    different axis from the prim-count regime. Same shape as
+    scene_hash_stats(); non-saturating buckets."""
+    return _phase_snapshot(_stage_touch_lock, _stage_touch_metrics)
+
+
+def reset_stage_touch_stats() -> None:
+    """Test/diagnostic helper — zero the stage-touch histogram."""
+    _phase_reset(_stage_touch_lock, _stage_touch_metrics)
+
+
 # ── Stage-Hash Size Gate (R1 cost control) ──────────────────────
 # Below this prim count the stage hash stays the EXACT, byte-identical
 # Flatten().ExportToString()+sha256 (zero behavior change for normal stages).
@@ -926,6 +1030,12 @@ class LosslessExecutionBridge:
         tl.mode = ""
         tl.pin = None
         tl.comp_reduced = False
+        # H3 free-half (R302 rank 5): per-op cache of the PRIM-term
+        # _stage_exceeds verdict. None = not probed this op. Written by
+        # _hash_stage_signature's un-pinned (before-hash) probe; read by
+        # _verify_composition_impl so the sweep gate reuses the answer
+        # instead of re-walking the stage (~2 ms/op above threshold, C4).
+        tl.prim_large = None
 
     def _stage_hash_observed_mode(self) -> str:
         return getattr(self._stage_hash_tl, "mode", "")
@@ -935,6 +1045,9 @@ class LosslessExecutionBridge:
 
     def _stage_hash_end_op(self) -> None:
         self._stage_hash_tl.pin = None
+        # Drop the per-op _stage_exceeds cache: a bare _verify_composition
+        # call outside an op must never inherit a previous op's verdict.
+        self._stage_hash_tl.prim_large = None
 
     def _note_stage_hash_mode(self, mode: str) -> None:
         self._stage_hash_tl.mode = mode
@@ -982,6 +1095,15 @@ class LosslessExecutionBridge:
         else:
             try:
                 large = self._stage_exceeds(stage, _stage_hash_prim_threshold())
+                # H3 free-half: park the PRIM-term verdict in the per-op
+                # thread-local so _verify_composition_impl's sweep gate can
+                # reuse it instead of re-walking the stage. Prim term ONLY —
+                # the H10 volume term below never feeds this cache (the
+                # sweep gate is deliberately prim-keyed).
+                try:
+                    self._stage_hash_tl.prim_large = large
+                except Exception:
+                    pass
             except Exception:
                 large = False  # probe failed → behave exactly like before (Flatten)
             if not large:
@@ -1278,6 +1400,23 @@ class LosslessExecutionBridge:
     # ── R7: Blast Radius Inference ─────────────────────────────
 
     def _infer_stage_touch(self, operation: Operation) -> bool:
+        """R7 blast-radius inference, timed (R302 rank 6).
+
+        Timed wrapper around _infer_stage_touch_impl: every call records its
+        wall-clock duration into the module ``stage_touch_ms`` histogram
+        (stage_touch_stats()) — non-saturating buckets, see
+        _BRIDGE_PHASE_BUCKETS_MS. The RESULT and all side effects
+        (touches_stage/stage_path auto-set) are identical to the un-timed
+        implementation. Wrapping at the definition covers every call site
+        (execute + execute_async) by construction.
+        """
+        _t0 = time.perf_counter()
+        try:
+            return self._infer_stage_touch_impl(operation)
+        finally:
+            _record_stage_touch_ms((time.perf_counter() - _t0) * 1000.0)
+
+    def _infer_stage_touch_impl(self, operation: Operation) -> bool:
         """
         R7: Never trust the LLM's boundary flags. Compute the blast radius.
 
@@ -1544,6 +1683,9 @@ class LosslessExecutionBridge:
         """Test path: direct execution without Houdini."""
         integrity.main_thread_executed = True
         integrity.undo_group_active = True
+        # Standalone mode never runs composition validation (no hou, no
+        # stage) — record the anchor N/A honestly (H3, R302 rank 5).
+        integrity.composition_applicable = False
 
         self._stage_hash_begin_op()
         try:
@@ -1604,6 +1746,13 @@ class LosslessExecutionBridge:
                 # ── ANCHOR: Scene Integrity ─────────────────
                 if operation.touches_stage and operation.stage_path:
                     comp_ok = self._verify_composition(operation.stage_path)
+                    # H3 honesty (R302 rank 5): record the anchor's ACTUAL
+                    # outcome. composition_valid previously had zero
+                    # assignment sites — a constant True the anchor
+                    # conjunction could never falsify. True = ran and
+                    # passed; False = ran and failed (recorded BEFORE the
+                    # raise so the failed op's block carries it).
+                    integrity.composition_valid = comp_ok
                     integrity.composition_checks_reduced = getattr(
                         self._stage_hash_tl, "comp_reduced", False)
                     if not comp_ok:
@@ -1616,6 +1765,11 @@ class LosslessExecutionBridge:
                         raise RuntimeError(
                             f"USD Composition violation on {operation.stage_path}"
                         )
+                else:
+                    # No composition validation ran on this op (not stage-
+                    # touching) — record the anchor N/A honestly instead of
+                    # leaving the default-True pair to read as "validated".
+                    integrity.composition_applicable = False
 
             # Group CLOSED — capture undo-stack evidence (Finding 1).
             integrity.undo_group_active = self._undo_group_evidence(
@@ -1718,6 +1872,9 @@ class LosslessExecutionBridge:
 
                     if operation.touches_stage and operation.stage_path:
                         comp_ok = self._verify_composition(operation.stage_path)
+                        # H3 honesty (parity with _execute_houdini): record
+                        # the anchor's actual outcome, before the raise.
+                        integrity.composition_valid = comp_ok
                         integrity.composition_checks_reduced = getattr(
                             self._stage_hash_tl, "comp_reduced", False)
                         if not comp_ok:
@@ -1726,6 +1883,10 @@ class LosslessExecutionBridge:
                             # undo within an undo group" and masks this error. The
                             # outer `except` performs the single rollback.
                             raise RuntimeError("USD Composition violation detected.")
+                    else:
+                        # No composition validation ran on this op — anchor
+                        # N/A, recorded honestly (parity with _execute_houdini).
+                        integrity.composition_applicable = False
 
                 # Group CLOSED — capture undo-stack evidence (Finding 1).
                 integrity.undo_group_active = self._undo_group_evidence(
@@ -1825,6 +1986,10 @@ class LosslessExecutionBridge:
         opt-in per operation via the ``remove_generated_files`` kwarg
         (single-user local scratch), never the default.
         """
+        # No composition validation ever runs on the PDG cook path — anchor
+        # N/A, recorded honestly on both branches (H3 parity, R302 rank 5).
+        integrity.composition_applicable = False
+
         if not _HOU_AVAILABLE:
             # Test/standalone fallback: simulate successful cook — keeps the
             # _execute_direct posture (both anchors asserted, no hou).
@@ -2247,6 +2412,25 @@ class LosslessExecutionBridge:
         return False
 
     def _verify_composition(self, stage_path: str) -> bool:
+        """Scene Integrity anchor validation, timed (R302 rank 6).
+
+        Timed wrapper around _verify_composition_impl: every call records its
+        wall-clock duration into the module ``composition_ms`` histogram
+        (composition_stats()) — non-saturating buckets, see
+        _BRIDGE_PHASE_BUCKETS_MS. The verdict is identical to the un-timed
+        implementation. Wrapping at the definition covers both execute-path
+        call sites (sync _execute_houdini + async _sync_payload) by
+        construction. This was the second-largest scale term with ZERO
+        timing (G4/H3): a full-stage traversal per stage-touching op, on the
+        main thread, inside the open undo group.
+        """
+        _t0 = time.perf_counter()
+        try:
+            return self._verify_composition_impl(stage_path)
+        finally:
+            _record_composition_ms((time.perf_counter() - _t0) * 1000.0)
+
+    def _verify_composition_impl(self, stage_path: str) -> bool:
         if not _HOU_AVAILABLE:
             return True
         try:
@@ -2280,7 +2464,17 @@ class LosslessExecutionBridge:
                 # the 2026-08 BRIDGE-FLOOR measurement).
                 if threshold < _STAGE_HASH_UNBOUNDED:
                     try:
-                        if self._stage_exceeds(stage, threshold):
+                        # H3 free-half (R302 rank 5): reuse the PRIM-term
+                        # verdict the before-hash probe already computed this
+                        # op (per-op thread-local, None when no probe ran —
+                        # e.g. a bare direct call outside an op). Same
+                        # per-op pinning semantics as the stage-hash mode:
+                        # the verdict is the BEFORE-stage's, by design.
+                        cached = getattr(
+                            self._stage_hash_tl, "prim_large", None)
+                        exceeds = (cached if cached is not None
+                                   else self._stage_exceeds(stage, threshold))
+                        if exceeds:
                             class_arcs_enabled = False
                             # Recorded honestly on the IntegrityBlock
                             # (composition_checks_reduced) via the per-op

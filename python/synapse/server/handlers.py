@@ -1579,6 +1579,20 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         except Exception:
             scene_hashes = None
 
+        # T4 phase instruments (R302 rank 6): composition-validation and
+        # blast-radius durations — non-saturating buckets. Same guarded
+        # best-effort pattern as scene_hash above.
+        try:
+            from shared.bridge import composition_stats
+            compositions = composition_stats()
+        except Exception:
+            compositions = None
+        try:
+            from shared.bridge import stage_touch_stats
+            stage_touches = stage_touch_stats()
+        except Exception:
+            stage_touches = None
+
         # Panel inline (main-thread Qt slot) tool-dispatch summary. Importing the
         # accessor pulls in Qt; absent in headless servers → gracefully None.
         try:
@@ -1598,6 +1612,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             scene_hashes=scene_hashes,
             panel_inlines=panel_inlines,
             live_snapshot=live_snapshot,
+            compositions=compositions,
+            stage_touches=stage_touches,
         )
         return {"format": "prometheus", "text": text}
 

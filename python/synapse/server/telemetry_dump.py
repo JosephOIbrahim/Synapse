@@ -107,6 +107,8 @@ def collect_telemetry() -> dict:
         "dispatch_waits": None,
         "main_thread_direct": None,
         "scene_hash": None,
+        "composition": None,
+        "stage_touch": None,
         "tool_durations": None,
         "freeze": None,
         "live_metrics_latest": None,
@@ -140,6 +142,22 @@ def collect_telemetry() -> dict:
         out["scene_hash"] = scene_hash_stats()
     except Exception:
         out["scene_hash_absent"] = "bridge scene_hash stats unavailable"
+
+    # T4 phase instruments (R302 rank 6) — additive keys, same posture as
+    # scene_hash: composition = the Scene Integrity full-stage traversal per
+    # stage-touching op; stage_touch = the R7 blast-radius dependents() trace
+    # per op. Both use NON-SATURATING buckets (finite 4-5s tops on the older
+    # histograms hid the 6.9-7.7s regime — G4).
+    try:
+        from shared.bridge import composition_stats
+        out["composition"] = composition_stats()
+    except Exception:
+        out["composition_absent"] = "bridge composition stats unavailable"
+    try:
+        from shared.bridge import stage_touch_stats
+        out["stage_touch"] = stage_touch_stats()
+    except Exception:
+        out["stage_touch_absent"] = "bridge stage_touch stats unavailable"
 
     # Per-tool duration histogram — lives on the live handler instance.
     try:

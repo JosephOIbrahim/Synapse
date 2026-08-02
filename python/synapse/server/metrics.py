@@ -31,6 +31,8 @@ def render_prometheus(
     scene_hashes: Optional[Dict[str, Any]] = None,
     panel_inlines: Optional[Dict[str, Any]] = None,
     live_snapshot: Optional[Dict[str, Any]] = None,
+    compositions: Optional[Dict[str, Any]] = None,
+    stage_touches: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Render metrics in Prometheus text exposition format.
 
@@ -54,6 +56,12 @@ def render_prometheus(
         panel_inlines: panel inline (main-thread Qt) tool-dispatch summary
             {count, sum_ms, max_ms, slow_count, slowest_tool} (no buckets)
         live_snapshot: Optional MetricSnapshot dict from MetricsAggregator
+        compositions: _verify_composition (Scene Integrity anchor) duration
+            histogram {count, sum_ms, max_ms, buckets} — NON-SATURATING
+            bucket ladder ending in +Inf (R302 rank 6); the inf edge is
+            skipped on export (the derived le="+Inf" line carries it)
+        stage_touches: _infer_stage_touch (R7 blast radius) duration
+            histogram, same shape and bucket ladder as compositions
 
     Returns:
         Prometheus-formatted text string.
@@ -198,6 +206,44 @@ def render_prometheus(
         lines.append(f'synapse_scene_hash_ms_sum {round_float(scene_hashes.get("sum_ms", 0.0))}')
         lines.append(f'synapse_scene_hash_ms_count {count}')
         lines.append(f'synapse_scene_hash_ms_max {round_float(scene_hashes.get("max_ms", 0.0))}')
+
+    # T4 phase instruments (R302 rank 6) — _verify_composition and
+    # _infer_stage_touch duration histograms. Their in-memory bucket ladders
+    # END IN +Inf (non-saturating by design — the finite 4-5s tops on the
+    # older histograms hid the 6.9-7.7s regime, G4). On export the inf edge
+    # is skipped: under cumulative recording its value equals count, which
+    # the derived le="+Inf" line already carries.
+    for _phase_name, _phase_stats in (
+        ("composition", compositions),
+        ("stage_touch", stage_touches),
+    ):
+        if not (_phase_stats and _phase_stats.get("count", 0) > 0):
+            continue
+        _help = {
+            "composition": "Scene Integrity composition validation duration in milliseconds",
+            "stage_touch": "R7 blast-radius inference duration in milliseconds",
+        }[_phase_name]
+        lines.append("")
+        lines.append(f"# HELP synapse_{_phase_name}_ms {_help}")
+        lines.append(f"# TYPE synapse_{_phase_name}_ms histogram")
+        buckets = _phase_stats.get("buckets", {})
+        for le in sorted(buckets, key=float):
+            if float(le) == float("inf"):
+                continue  # carried by the derived le="+Inf" line below
+            lines.append(
+                f'synapse_{_phase_name}_ms_bucket{{le="{le}"}} {buckets[le]}'
+            )
+        count = _phase_stats.get("count", 0)
+        lines.append(f'synapse_{_phase_name}_ms_bucket{{le="+Inf"}} {count}')
+        lines.append(
+            f'synapse_{_phase_name}_ms_sum '
+            f'{round_float(_phase_stats.get("sum_ms", 0.0))}'
+        )
+        lines.append(f'synapse_{_phase_name}_ms_count {count}')
+        lines.append(
+            f'synapse_{_phase_name}_ms_max '
+            f'{round_float(_phase_stats.get("max_ms", 0.0))}'
+        )
 
     # Panel inline (main-thread Qt slot) tool-dispatch duration. The accessor
     # tracks count/sum/max + a slow-op count (no buckets), so it exports as a
