@@ -103,7 +103,16 @@ Verified live by the L5 scout legs against `python/synapse/cognitive/tools/data/
    "added lines only" — and that choice belongs to the SPEC side when this is ratified.
    This proposal takes no position; it only insists the scope be *named* in the predicate,
    not left implicit.
-6. ~~Relative pxr imports falsely bind the namespace~~ — **fixed after the crucible review.**
+6. ~~Unwalked pxr namespaces were judged as if walked~~ — **fixed by the PR #67 salvage
+   (see below).** `from pxr import N` with `"pxr.N"` absent from the table used to flag
+   every `N.<attr>` — but the table's pxr top level is only the pkgutil submodules that
+   *imported successfully* at harvest (`host/introspect_runtime.py:105-111` silently
+   skips import failures), so namespace absence is not proof. The scanner now judges
+   `N.<attr>` only when `"pxr.N"` is table-present (that namespace's depth-1 surface IS
+   dir()-complete); an unwalked namespace is unknown, not phantom. Pinned by
+   `test_pxr_unwalked_namespace_not_judged`. True positives unaffected: a walked
+   namespace (`pxr.UsdRender` + made-up `Stage`) still flags.
+7. ~~Relative pxr imports falsely bind the namespace~~ — **fixed after the crucible review.**
    `from .pxr import Usd` (a package-local relative import, `ast.ImportFrom.level > 0`)
    used to register `Usd` as a pxr namespace, so `Usd.<anything>` was judged against the
    USD surface. The binding branch in `harness/verify/checks.py:_phantoms_in_source` now
@@ -111,3 +120,41 @@ Verified live by the L5 scout legs against `python/synapse/cognitive/tools/data/
    `test_pxr_relative_import_does_not_bind_pxrsurface` (`from .pxr import Usd` +
    `Usd.MadeUp` produces no flag). Zero production exposure: no repo file uses a relative
    `from .pxr import …`.
+
+## PR #67 salvage record (2026-08-02)
+
+PR #67 carried two parallel pdg/pxr scanner implementations. Ruling: **this branch's
+`_phantoms_in_source` stays** (its own lineage; judges pxr at the sound namespace depth);
+the alternate `_module_depth1_phantoms` (branch `worktree-wf_4131d29a-13b-4`, commit
+`e179f2e`) is **retired**. Before retiring it, the two were diffed semantically:
+
+**Compared.** The alternate's 14 tests vs this branch's 24, case by case, on the property
+each pins — not textually. Its prose CTO soundness verdict (2026-07-30) vs this scanner's
+actual behavior, line by line against `host/introspect_runtime.py`.
+
+**Ported (4 test properties + prose):**
+
+- string/comment immunity pinned for pdg/pxr, not just hou
+  (`test_pdg_pxr_phantoms_in_strings_and_comments_not_flagged`);
+- the depth boundary pinned with an **absent** depth-2 name — the existing present-name
+  variant could not prove unknown != phantom (`test_pdg_depth2_absent_member_not_flagged`,
+  `test_pxr_depth3_absent_member_not_flagged`);
+- `import pxr [as X]` structurally out of scope, per the pxr-not-dir()-complete verdict
+  (`test_import_pxr_toplevel_access_out_of_scope`);
+- the CTO soundness asymmetry (pdg SOUND via depth-0 dir() walk; pxr top level =
+  pkgutil-submodules-only, absence there is NOT proof) now lives in the
+  `_phantoms_in_source` docstring, not just in a retired branch's prose.
+
+**Bug the salvage caught (fixed, limitation 6 above):** verifying this scanner against the
+CTO verdict exposed that it judged `N.<attr>` for ANY `from pxr import N` binding, even
+when `"pxr.N"` was never walked — transitively treating top-level pxr absence as proof.
+Namespace-present gate added; pinned by `test_pxr_unwalked_namespace_not_judged`.
+
+**Discarded, and why:** the `_module_depth1_phantoms` implementation itself — it judges
+depth-1 `pxr.<attr>` accesses against a table that is not dir()-complete at that level, a
+soundness gap its own docstring documents and accepts; this branch's design makes that
+false-phantom structurally impossible instead. Its helper-API test
+(`test_module_depth1_phantoms_helper_is_sound_for_pdg`) pins a function that no longer
+exists. Its remaining tests duplicate properties already pinned here (real-name clean,
+alias resolution, hou-unchanged, real-table smoke — the latter covered more strongly here
+by the two `test_real_h22_table_*` tests against the actual 35,903-symbol table).

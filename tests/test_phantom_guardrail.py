@@ -173,6 +173,52 @@ def test_pdg_and_pxr_names_outside_imports_judged_anyway_when_bound():
     assert hits == [(1, "pdg.NotAName")]
 
 
+# --- PR #67 salvage: properties ported from the retired _module_depth1_phantoms branch ------
+# The alternate scanner (worktree-wf_4131d29a-13b-4) was retired in favour of this one; these
+# pin the properties its tests carried that the L5 suite above did not.
+
+
+def test_pdg_pxr_phantoms_in_strings_and_comments_not_flagged():
+    # String/comment immunity was pinned for hou only; the pdg/pxr branches walk the same
+    # AST but deserve their own pin (a regex rewrite would pass the hou tests and fail these).
+    assert _psyms('x = "pdg.PyEventHandler"\n# pdg.NotAName\n') == []
+    assert _psyms('"""never call pdg.NotAName()"""\n') == []
+    assert _psyms('y = "pxr.Usd.NotAClass"\n# Usd.NotAClass\n') == []
+
+
+def test_pdg_depth2_absent_member_not_flagged():
+    # pdg.EventType.CookComplte (misspelled): pdg.EventType is depth-1 (judged, present);
+    # the depth-2 member is not table-judged → unknown != phantom. Pinned with an ABSENT
+    # name — the suite's present-name variant (CookComplete, which is in TABLE_EXT) would
+    # pass even if the scanner wrongly judged depth-2, so it cannot prove this boundary.
+    assert _psyms("import pdg\npdg.EventType.CookComplte\n") == []
+
+
+def test_pxr_depth3_absent_member_not_flagged():
+    # Usd.Stage.CreateNw (misspelled): pxr.Usd.Stage judged + present; depth-3 out of scope.
+    assert _psyms("from pxr import Usd\nUsd.Stage.CreateNw('x')\n") == []
+
+
+def test_import_pxr_toplevel_access_out_of_scope():
+    # CTO verdict 2026-07-30: the table's pxr top level is pkgutil-submodules-only, never
+    # dir(pxr) — top-level absence is not proof. `import pxr [as X]` therefore binds
+    # nothing here; pxr.<attr> / X.<attr> is never judged, so no false phantom is possible
+    # on that form. (The retired branch judged it and documented the gap; this one doesn't
+    # scan it at all — same verdict, enforced structurally.)
+    assert _psyms("import pxr\ns = pxr.Usd.Stage.CreateNew('x')\n") == []
+    assert _psyms("import pxr as _pxr\n_pxr.MadeUpNamespace.Thing\n") == []
+
+
+def test_pxr_unwalked_namespace_not_judged():
+    # Salvage-caught bug (fixed): `from pxr import N` with "pxr.N" absent from the table
+    # (harvest import-failure skip at introspect_runtime.py:110-111, or a non-submodule
+    # top-level attr) used to flag EVERY N.<attr> — treating top-level pxr absence as
+    # proof, against the CTO verdict. The namespace-present gate makes it unknown != phantom.
+    assert _psyms("from pxr import MadeUpNs\nMadeUpNs.Thing\n") == []
+    # the gate does not weaken true positives: a WALKED namespace still flags absent attrs
+    assert _psyms("from pxr import Usd\nUsd.NotAClass\n") == ["pxr.Usd.NotAClass"]
+
+
 def test_real_h22_table_usdrender_stage_absent():
     # Exercises the REAL table (h22_symbol_table.json, 35903 syms, stamp 22.0.368):
     # UsdRender.Stage is made up — the true positive the scanner must produce.

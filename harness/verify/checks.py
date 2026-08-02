@@ -425,7 +425,20 @@ def _phantoms_in_source(src, table_syms):
     fix is actionable. pxr (depth-2): `from pxr import N [as X]`; flags `X.<attr>` when
     "pxr.N.<attr>" absent — pxr runtime refs are exactly one level under each namespace.
     getattr(X, "name", ...) string accesses are out of scope (attr name is a Constant,
-    not an Attribute) — known limitation, not scanned by design."""
+    not an Attribute) — known limitation, not scanned by design.
+
+    Soundness asymmetry (CTO verdict 2026-07-30, salvaged from PR #67's retired branch):
+    - pdg is SOUND at depth-1: host/introspect_runtime.py:95-97 dir()-walks pdg at depth 0
+      — the same mechanism hou uses — so "pdg.<attr>" absence IS proof. Production reaches
+      it via `import pdg as _pdg` (shared/bridge.py:1581-1593); alias resolution above.
+    - pxr is NOT dir()-complete at TOP level: introspect_runtime.py:101-115 enumerates
+      pkgutil submodules (silently skipping any whose import fails at harvest) and never
+      calls dir(pxr). Two consequences enforced here: (a) `import pxr [as X]` binds
+      nothing — a depth-1 `pxr.<attr>` access is never judged (top-level absence is not
+      proof); (b) `from pxr import N` names are judged ONLY when "pxr.N" is table-present
+      — a walked namespace's depth-1 surface IS dir()-complete, so absence within it is
+      proof; an unwalked namespace (harvest import-failure, non-submodule attr) is
+      unknown, not phantom."""
     hits = list(_hou_phantoms_in_source(src, table_syms))
     import ast
     tree = ast.parse(src)
@@ -454,7 +467,10 @@ def _phantoms_in_source(src, table_syms):
                     symbol += f" (check camelCase: {camel}?)"
                 hits.append((node.lineno, symbol))
         elif local in pxr_names:
-            symbol = f"pxr.{pxr_names[local]}.{node.attr}"
+            ns = f"pxr.{pxr_names[local]}"
+            if ns not in table_syms:
+                continue  # namespace never walked by the harvester — absence is not proof
+            symbol = f"{ns}.{node.attr}"
             if symbol not in table_syms:
                 hits.append((node.lineno, symbol))
     return sorted(hits)
