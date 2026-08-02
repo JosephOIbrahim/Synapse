@@ -127,7 +127,10 @@ TOOL_DEFS: list[tuple] = [
      "Check if Houdini/Synapse is connected and responding.",
      _EMPTY_SCHEMA, True, False, True),
     ("synapse_health", "get_health", _passthrough,
-     "Get system health status including resilience layer.",
+     "Get bridge health: liveness, hou availability, protocol version, plus "
+     "write_plane (ok | degraded | unknown) — whether the memory/report write "
+     "targets actually accept a write. Check write_plane before trusting a "
+     "green light: 'healthy' is liveness only.",
      _EMPTY_SCHEMA, True, False, True),
     ("synapse_doctor", "doctor", _filter_keys(("bundle",)),
      "Run SYNAPSE install/ops diagnostics: log file, telemetry freshness, "

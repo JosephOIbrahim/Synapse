@@ -174,12 +174,20 @@ if HWEBSERVER_AVAILABLE:
 
     @hwebserver.apiFunction("synapse")
     def get_health(request):
-        """System health check."""
+        """System health check.
+
+        ``write_plane`` mirrors the WS handler's field (``server/write_plane.py``)
+        so this transport cannot report a green light the other one withholds.
+        Additive — the four pre-existing keys are unchanged.
+        """
+        from .write_plane import write_plane_state
+
         return {
             "healthy": True,
             "houdini_available": HOU_AVAILABLE,
             "protocol_version": PROTOCOL_VERSION,
             "transport": "apiFunction",
+            "write_plane": write_plane_state(),
         }
 
     @hwebserver.apiFunction("synapse")

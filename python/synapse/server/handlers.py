@@ -874,11 +874,21 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         }
 
     def _handle_get_health(self, payload: Dict) -> Dict:
-        """Handle health check command."""
+        """Handle health check command.
+
+        ``write_plane`` is ADDITIVE (see ``server/write_plane.py``): the three
+        pre-existing keys keep their exact meanings so no consumer breaks.
+        ``healthy`` deliberately stays a liveness answer — a degraded write
+        plane is reported in its own field rather than by redefining a key
+        other code already reads.
+        """
+        from .write_plane import write_plane_state
+
         return {
             "healthy": True,
             "houdini_available": HOU_AVAILABLE,
             "protocol_version": PROTOCOL_VERSION,
+            "write_plane": write_plane_state(),
         }
 
     def _handle_get_help(self, payload: Dict) -> Dict:
@@ -1315,12 +1325,11 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         backups = resolve_param_with_default(payload, "backups", 0)
         binary = resolve_param_with_default(payload, "binary", False)
 
-        base_dir = os.environ.get("SYNAPSE_REPORTS_DIR")
-        if not base_dir:
-            here = os.path.dirname(os.path.abspath(__file__))
-            base_dir = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(here))), "docs"
-            )
+        # Single definition, shared with the health write-plane probe, so the
+        # dir health reports on and the dir reports land in cannot drift.
+        from .write_plane import resolve_reports_base_dir
+
+        base_dir = resolve_reports_base_dir()
         return write_report(
             relative_path, content, overwrite=overwrite, base_dir=base_dir,
             backups=backups, binary=binary,
