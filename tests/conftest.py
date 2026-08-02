@@ -466,6 +466,20 @@ def mock_undo_group():
     return _MockUndoCtx
 
 
+@pytest.fixture(autouse=True)
+def _reset_backend_fallback_telemetry():
+    """C-0: the backend-fallback flag in synapse.memory.store is process-global
+    by design (the doctor reads it to report a selected-but-not-serving
+    backend). In a test session that global would leak one test's simulated
+    fallback into a later test's doctor verdict — e.g. the broken-moneta
+    ``_make_store`` tests run before the doctor cell tests in the same file.
+    Clear it after every test. No-op when the module was never imported."""
+    yield
+    store_mod = sys.modules.get("synapse.memory.store")
+    if store_mod is not None:
+        store_mod._BACKEND_FALLBACK = None
+
+
 # ===========================================================================
 # Inspector subsystem fixtures (added Sprint 2 Week 1, 2026-04-18)
 # ---------------------------------------------------------------------------

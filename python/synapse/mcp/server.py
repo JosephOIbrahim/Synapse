@@ -623,6 +623,8 @@ class MCPServer:
             result = run_on_main(
                 lambda: dispatch_tool(handler, tool_name, arguments),
                 timeout=timeout_for(tool_name),
+                # OCC: attribute the deferred main-thread hold to the tool.
+                label=tool_name,
             )
         except ImportError:
             result = dispatch_tool(handler, tool_name, arguments)
