@@ -250,6 +250,47 @@ def discover_locks():
     return out
 
 
+def _journal_results(journal: Path):
+    """agentId -> its recorded result, for agents the run has already finished.
+
+    Producer: <run>/journal.jsonl 'result' rows. This is the ONLY authority for
+    'done' — an agent file can stop changing because it finished OR because it
+    stalled, and those must not render the same.
+    """
+    out = {}
+    if not journal.is_file():
+        return out
+    for line in _read(journal).splitlines():
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            continue
+        if rec.get("type") != "result" or not rec.get("agentId"):
+            continue
+        res = rec.get("result")
+        out[rec["agentId"]] = res if isinstance(res, dict) else {}
+    return out
+
+
+def _agent_label(agent_jsonl: Path):
+    """Best-effort lane name for an IN-FLIGHT agent, mined from its brief.
+
+    Producer: the most frequent lane-shaped token (G1a, RL-3, P3.1 ...) in the
+    first 3 KB of the dispatch prompt. Heuristic by construction — returns '?'
+    rather than a guess when nothing matches, and is superseded by the
+    journal's own `lane` the moment the agent reports.
+    """
+    try:
+        with agent_jsonl.open("r", encoding="utf-8", errors="replace") as fh:
+            head = fh.read(3000)
+    except OSError:
+        return "?"
+    toks = re.findall(r"\b[A-Z]{1,3}\d{1,2}(?:[a-z]|\.\d{1,2}|-\d{1,2})?\b", head)
+    if not toks:
+        return "?"
+    return max(set(toks), key=toks.count)
+
+
 def discover_workflow_runs():
     """Live Claude Code workflow runs and their agent counts.
 
@@ -276,17 +317,33 @@ def discover_workflow_runs():
                 age = time.time() - newest
                 if age > LIVE_WINDOW_S:
                     continue
-                agents = sorted(run.glob("agent-*.jsonl"))
+                agents = sorted(a for a in run.glob("agent-*.jsonl"))
+                done = _journal_results(run / "journal.jsonl")
                 live_agents = 0
+                rows = []
                 for a in agents:
+                    aid = a.stem[len("agent-"):]
                     try:
-                        if time.time() - a.stat().st_mtime <= LIVE_WINDOW_S:
-                            live_agents += 1
+                        a_age = time.time() - a.stat().st_mtime
                     except OSError:
                         continue
+                    finished = done.get(aid)
+                    if finished is None and a_age <= LIVE_WINDOW_S:
+                        live_agents += 1
+                    rows.append({
+                        "id": aid[:8],
+                        "label": (finished or {}).get("lane") or _agent_label(a),
+                        "state": (finished or {}).get("outcome", "DONE") if finished
+                                 else ("running" if a_age <= LIVE_WINDOW_S else "stalled?"),
+                        "done": finished is not None,
+                        "age_s": a_age,
+                    })
+                rows.sort(key=lambda r: (r["done"], r["age_s"]))
                 runs.append({"run": run.name,
                              "agents_total": len(agents),
                              "agents_recent": live_agents,
+                             "agents_done": len(done),
+                             "rows": rows,
                              "age_s": age})
     except OSError:
         return None
@@ -360,8 +417,14 @@ def render(records, locks, runs, worktrees, branch, fast):
         print(f"{SIDE} running    no live workflow runs in the last {LIVE_WINDOW_S // 60}m")
     else:
         for r in runs:
-            print(f"{SIDE} running    {r['run']}  {r['agents_recent']}/{r['agents_total']} agents active  "
-                  f"(last write {_age(r['age_s'])} ago)")
+            done, total = r.get("agents_done", 0), r["agents_total"]
+            cells = "".join("█" if row["done"] else ("▓" if row["state"] == "running" else "░")
+                            for row in r["rows"])
+            print(f"{SIDE} running    {r['run']}  [{cells}]  {done}/{total} reported"
+                  f"  {DOT} {r['agents_recent']} live  (last write {_age(r['age_s'])} ago)")
+            for row in r["rows"]:
+                print(f"{SIDE}   {row['state']:<8} {row['label']:<20} {row['id']}"
+                      f"  {_age(row['age_s'])} ago")
 
     if locks is None:
         print(f"{SIDE} locks      ?  (harness/state/locks unreadable)")
@@ -383,6 +446,8 @@ def render(records, locks, runs, worktrees, branch, fast):
     print(f"{SIDE} producers  bars: <harness>/verify.py --json" +
           ("  [SKIPPED: --fast]" if fast else ""))
     print(f"{SIDE}            running: ~/.claude/.../subagents/workflows/wf_*")
+    print(f"{SIDE}            agent rows: <run>/journal.jsonl results (done) + "
+          f"agent-*.jsonl mtime (live); label mined from the brief, '?' if unmatched")
     print(f"{SIDE}            locks: harness/state/locks/*.lock")
     print(f"{SIDE}            worktrees: git worktree list --porcelain")
     print(f"{BL}{rule}")
