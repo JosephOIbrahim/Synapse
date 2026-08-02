@@ -272,19 +272,43 @@ def _journal_results(journal: Path):
     return out
 
 
+def _agent_type(agent_jsonl: Path):
+    """The agent's declared type — a FACT, read from its meta sidecar.
+
+    Producer: <run>/agent-<id>.meta.json 'agentType'. Unlike the mined label
+    below this is recorded by the runtime, not inferred, so it is what the row
+    leads with.
+    """
+    meta = agent_jsonl.with_suffix(".meta.json")
+    try:
+        return json.loads(meta.read_text(encoding="utf-8")).get("agentType") or "?"
+    except (OSError, ValueError, AttributeError):
+        return "?"
+
+
 def _agent_label(agent_jsonl: Path):
     """Best-effort lane name for an IN-FLIGHT agent, mined from its brief.
 
-    Producer: the most frequent lane-shaped token (G1a, RL-3, P3.1 ...) in the
-    first 3 KB of the dispatch prompt. Heuristic by construction — returns '?'
-    rather than a guess when nothing matches, and is superseded by the
-    journal's own `lane` the moment the agent reports.
+    The runtime does not persist the label passed to agent(), so this is mined
+    and is heuristic by construction. Two producers, in order:
+
+      1. A parenthesised id inside a '== HEADER (id) ==' dispatch marker — the
+         house brief convention, and an explicit signal.
+      2. The most frequent lane-shaped token (G1a, RL-3, P3.1 ...).
+
+    Producer 2 alone is weak: it picked the cost-bin token 'T4' for all five
+    agents of the latency fan-out because the brief discusses T4 throughout.
+    Hence the header rule first. Returns '?' rather than a guess when neither
+    matches, and the journal's own `lane` supersedes it once the agent reports.
     """
     try:
         with agent_jsonl.open("r", encoding="utf-8", errors="replace") as fh:
-            head = fh.read(3000)
+            head = fh.read(6000)
     except OSError:
         return "?"
+    m = re.findall(r"==[^=\n]*?\(([A-Za-z0-9][\w.\-]{2,38})\)[^=\n]*?==", head)
+    if m:
+        return m[-1]
     toks = re.findall(r"\b[A-Z]{1,3}\d{1,2}(?:[a-z]|\.\d{1,2}|-\d{1,2})?\b", head)
     if not toks:
         return "?"
@@ -332,6 +356,7 @@ def discover_workflow_runs():
                         live_agents += 1
                     rows.append({
                         "id": aid[:8],
+                        "type": _agent_type(a),
                         "label": (finished or {}).get("lane") or _agent_label(a),
                         "state": (finished or {}).get("outcome", "DONE") if finished
                                  else ("running" if a_age <= LIVE_WINDOW_S else "stalled?"),
@@ -423,8 +448,8 @@ def render(records, locks, runs, worktrees, branch, fast):
             print(f"{SIDE} running    {r['run']}  [{cells}]  {done}/{total} reported"
                   f"  {DOT} {r['agents_recent']} live  (last write {_age(r['age_s'])} ago)")
             for row in r["rows"]:
-                print(f"{SIDE}   {row['state']:<8} {row['label']:<20} {row['id']}"
-                      f"  {_age(row['age_s'])} ago")
+                print(f"{SIDE}   {row['state']:<8} {row['label'][:26]:<26} "
+                      f"{row.get('type', '?')[:14]:<14} {_age(row['age_s'])} ago")
 
     if locks is None:
         print(f"{SIDE} locks      ?  (harness/state/locks unreadable)")
