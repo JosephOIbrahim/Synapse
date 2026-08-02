@@ -212,16 +212,24 @@ mutation — a real per-op cost floor on large production stages.
 
 | Variable | Meaning | Default | Read by |
 |----------|---------|---------|---------|
-| `SYNAPSE_STAGE_HASH_PRIM_THRESHOLD` | Prim-count gate above which the bridge switches from `Flatten()`+sha256 to a cheaper structural-traversal signature. **Structural hashing is OPT-IN and OFF by default** (default threshold is effectively unbounded), so the proven byte-identical `Flatten()` runs on every stage. Set a positive threshold (e.g. `5000`) to opt in. The structural signature changes on every mutation class — prim add/remove/rename, type/specifier change, attribute add/remove, attribute value change, **relationship-target change (material rebind / light-linking / collections)**, metadata/composition-arc change, activation, visibility. Non-negative ints only; a bad value falls back to the default. | unbounded (off) | `shared/bridge.py` |
+| `SYNAPSE_STAGE_HASH_PRIM_THRESHOLD` | Prim-count gate above which the bridge stops running the full `Flatten()`+sha256 per hash and switches to the mode selected by `SYNAPSE_STAGE_HASH_LARGE_MODE`. At/below the threshold the hash is byte-identical to the original `Flatten()` algorithm. Non-negative ints only; a bad value falls back to the default. | `10000` (measured — `scripts/probe_stage_hash_floor.py`) | `shared/bridge.py` |
+| `SYNAPSE_STAGE_HASH_LARGE_MODE` | What runs ABOVE the threshold. `reduced` (default) — a cheap reduced-detail signature (topology, typing, property structure, relationship targets; **no attribute values, no time samples, no metadata**), recorded honestly on the IntegrityBlock as `stage_hash_mode="reduced"` / `stage_hash_full_fidelity=false`. `structural` — the COMPLETE structural signature (every mutation class incl. values + time samples; measured NOT faster than `Flatten()`, a memory choice not a speed one). `full` — never degrade: `Flatten()` everywhere, the always-full override. | `reduced` | `shared/bridge.py` |
 
-> Structural hashing is **opt-in pending live-at-scale measurement** (the explicit
-> "measure first" caveat): it can be *slower* than `Flatten()` on value-heavy stages,
-> and it carries one narrow known gap — editing the VALUE of an existing time sample
-> at constant key count is not detected (digesting time samples would reintroduce the
-> array-serialization cost the gate exists to avoid). For an integrity primitive the
-> default keeps the proven path everywhere. Before opting in, read the new
-> `scene_hash_ms` telemetry (`scene_hash_stats()`, surfaced in `telemetry_dump`) to
-> confirm the `Flatten()` cost actually dominates per-op latency on your heavy stages.
+> **The gate is real since 2026-08-01** (BRIDGE-FLOOR). Measured on the dev
+> workstation (pxr 0.26.5, median of 3): the per-op `Flatten()` envelope (2
+> hashes) costs ~6ms at 100 prims, 0.6–0.9s at 10k, 6.9–7.7s at 100k — a per-op
+> floor scaling with stage size, not the mutation. The reduced envelope holds
+> ~175ms at 10k and ~1.8s at 100k, independent of authored value volume. The
+> honest tradeoff: above the threshold, **value-only edits hash as `no_change`**
+> — every affected IntegrityBlock says so (`stage_hash_full_fidelity=false`), and
+> both hashes of an op always use the same algorithm (mode pinned at
+> `scene_hash_before`). Set `SYNAPSE_STAGE_HASH_LARGE_MODE=full` to restore
+> full fidelity everywhere; use `scene_hash_ms` telemetry (`scene_hash_stats()`,
+> surfaced in `telemetry_dump`) to see what the choice costs on your stages.
+> The same threshold also sheds `_verify_composition`'s inherit/specialize
+> sweep on oversized stages (recorded as `composition_checks_reduced=true`);
+> the per-prim reference/payload checks — the composition anchor itself —
+> always run.
 >
 > This variable is read in `shared/`, outside the studio env-var conformance scanner
 > (`tests/test_m3_env_conformance.py` scans `python/synapse/**`), so it is documented

@@ -1,23 +1,31 @@
 """
-Synapse Agent Layer
+Synapse Agent Layer — protocol only.
 
-Agentic execution protocol that transforms Synapse from a dumb pipe
-into a smart runtime. Agents propose plans, plans route through gates,
-steps execute and observe, outcomes feed back into memory for learning.
+This package once carried a full agentic execution subsystem. It was deleted
+on 2026-08-01 when the escalation from RSI loop `A2`'s retirement (`RL-3`,
+`harness/rsi/LOG.md`) was ruled: none of it had a production consumer.
+Deleted (last live at fc38cc4 — find the code in git history):
 
-Usage:
-    from synapse.agent import AgentExecutor, AgentStep
+- ``executor.py`` (`AgentExecutor`) — the prepare -> propose -> execute loop.
+  Zero non-test constructions anywhere in the tree; the only non-test
+  ``AgentExecutor(`` was an illustrative example in this very docstring.
+- ``sparse_router.py``, ``reasoning_context.py``, ``specialist_modes.py``,
+  ``task_synthesizer.py`` (the v8-DSA research graft) — each consumed only
+  by its own dedicated test file and the package re-exports.
+- ``learning.py`` (`OutcomeTracker`) went earlier the same day, in the `A2`
+  retirement itself — see ``harness/rsi/REGISTRY.json`` -> loop `A2`.
 
-    # Dry-run mode (no Houdini needed)
-    ex = AgentExecutor()
-    task = ex.prepare("Set up key light", "shot_010", "lighting")
-    plan = ex.propose(task, [
-        AgentStep(step_id="", action="create_node",
-                  description="Create key light",
-                  payload={"type": "hlight", "path": "/obj/key"},
-                  gate_level=None, reasoning="Need key light")
-    ], reasoning="Basic lighting setup")
-    result = ex.execute(plan)
+What remains, and why: ``protocol.py``. Its gate map is imported by a live
+tool's suite (``tests/test_set_usd_primvar.py::test_gate_level_is_review``,
+"Wiring site 1: gate map (protocol.py)"), and its dataclasses pin the plan
+serialization contract in ``tests/test_agent.py``. A live import keeps a
+module; a docstring example never did.
+
+Reviving the agent loop means building a production construction site first —
+a handler, panel loop, or MCP tool that drives it on real artist traffic.
+Resurrecting the deleted files without that caller only re-creates code that
+runs zero times. Ordering per the `A2` tombstone: the executor comes first,
+everything downstream of it second.
 """
 
 from .protocol import (
@@ -29,45 +37,6 @@ from .protocol import (
     DEFAULT_GATE_LEVELS,
     classify_gate_level,
 )
-from .executor import AgentExecutor
-from .learning import OutcomeTracker
-
-# v8-DSA: DeepSeek-V3.2 research graft (Phase 1)
-from .sparse_router import (
-    SparseToolIndexer,
-    SparseRouterConfig,
-    ToolSignature,
-    RouteCandidate,
-    Domain,
-    CostTier,
-    build_signatures_from_registry,
-)
-from .reasoning_context import (
-    ReasoningContext,
-    ReasoningContextManager,
-    ReasoningEntry,
-    EntryCategory,
-    PROTECTED_CATEGORIES,
-)
-from .specialist_modes import (
-    SpecialistMode,
-    SpecialistDomain,
-    QualitySignal,
-    SPECIALIST_REGISTRY,
-    get_specialist,
-    get_specialist_by_name,
-    build_enhanced_prompt,
-    list_specialists,
-)
-from .task_synthesizer import (
-    TaskSynthesizer,
-    TaskEnvironment,
-    TaskConstraint,
-    SuccessCriterion,
-    Complexity,
-    ConstraintType,
-    FailureMode,
-)
 
 __all__ = [
     "AgentTask",
@@ -77,37 +46,4 @@ __all__ = [
     "PlanStatus",
     "DEFAULT_GATE_LEVELS",
     "classify_gate_level",
-    "AgentExecutor",
-    "OutcomeTracker",
-    # v8-DSA: Sparse Router
-    "SparseToolIndexer",
-    "SparseRouterConfig",
-    "ToolSignature",
-    "RouteCandidate",
-    "Domain",
-    "CostTier",
-    "build_signatures_from_registry",
-    # v8-DSA: Reasoning Context
-    "ReasoningContext",
-    "ReasoningContextManager",
-    "ReasoningEntry",
-    "EntryCategory",
-    "PROTECTED_CATEGORIES",
-    # v8-DSA: Specialist Modes
-    "SpecialistMode",
-    "SpecialistDomain",
-    "QualitySignal",
-    "SPECIALIST_REGISTRY",
-    "get_specialist",
-    "get_specialist_by_name",
-    "build_enhanced_prompt",
-    "list_specialists",
-    # v8-DSA: Task Synthesizer
-    "TaskSynthesizer",
-    "TaskEnvironment",
-    "TaskConstraint",
-    "SuccessCriterion",
-    "Complexity",
-    "ConstraintType",
-    "FailureMode",
 ]

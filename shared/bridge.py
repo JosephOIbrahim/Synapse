@@ -391,18 +391,56 @@ def reset_scene_hash_stats() -> None:
 
 # ── Stage-Hash Size Gate (R1 cost control) ──────────────────────
 # Below this prim count the stage hash stays the EXACT, byte-identical
-# Flatten().ExportToString()+sha256 (zero behavior change for normal stages). ONLY
-# above it do we switch to a cheaper-but-COMPLETE structural traversal signature
-# that avoids the full USDA string serialization. Override via env at call time so
-# operators (and tests) can tune it without a restart. Documented in
+# Flatten().ExportToString()+sha256 (zero behavior change for normal stages).
+# Above it, the per-op envelope switches to a REDUCED-DETAIL structural
+# signature and the IntegrityBlock records the reduction honestly
+# (stage_hash_mode="reduced", stage_hash_full_fidelity=False) — never
+# presented as the full hash. Override via env at call time so operators
+# (and tests) can tune it without a restart. Documented in
 # docs/studio/DEPLOYMENT.md ('Stage-Hash Integrity Tuning').
-# Structural stage-hash is OPT-IN, OFF by default. It is unproven at scale (can be
-# SLOWER than Flatten on value-heavy stages) and carries a narrow time-sample-value
-# completeness gap, so for an INTEGRITY primitive the default keeps the proven
-# Flatten path on EVERY stage. Lower SYNAPSE_STAGE_HASH_PRIM_THRESHOLD (after reading
-# the scene_hash_ms telemetry the hash wrapper now records) to opt in.
-_DEFAULT_STAGE_HASH_PRIM_THRESHOLD = 1 << 62  # effectively unbounded => Flatten always
+#
+# DEFAULT = 10_000 prims, from measurement (scripts/probe_stage_hash_floor.py,
+# 2026-08-01, Threadripper PRO 7965WX / pxr 0.26.5, median of 3, three stage
+# profiles: hierarchy / animated / value-heavy):
+#   per-op Flatten envelope (2x hash): 100 prims 6-7ms (value-heavy: 310ms)
+#                                      10k prims 611-895ms | 100k 6.9-7.7s
+#   per-op REDUCED envelope:           100 prims ~1.7ms | 10k ~175-182ms
+#                                      100k ~1.8-1.9s
+#   the COMPLETE structural signature is NOT cheaper than Flatten
+#   (flat/struct 0.84-1.03x, down to 0.32x on value-heavy stages) — it digests
+#   every attribute value + every time sample, so it scales with value volume
+#   exactly like Flatten. The REDUCED signature (topology/typing/property
+#   structure, NO values) is the only measured path that actually bounds the
+#   floor — its cost is O(prims) and independent of authored value volume.
+# 10_000 is the largest measured point where the full-fidelity per-op envelope
+# stays under ~1s across all three profiles; beyond it the cost scales into
+# multiple seconds per op (the BRIDGE-FLOOR class the freeze recon flagged).
+# Note the gate keys on PRIM COUNT: a small-prim-count stage carrying huge
+# arrays (value-heavy 100 = 310ms/op) stays below it and keeps full fidelity.
+# Raise the threshold (or set SYNAPSE_STAGE_HASH_LARGE_MODE=full) to restore
+# always-full fidelity everywhere.
+_DEFAULT_STAGE_HASH_PRIM_THRESHOLD = 10_000
+# Sentinel meaning "no finite gate" — kept for operators who set a huge
+# threshold and for the F-H composition-sweep gate's "is a finite gate
+# configured" check (which previously compared against the old unbounded
+# default).
+_STAGE_HASH_UNBOUNDED = 1 << 62
 _STAGE_HASH_THRESHOLD_ENV = "SYNAPSE_STAGE_HASH_PRIM_THRESHOLD"
+
+# What runs ABOVE the threshold. "reduced" (default) = the cheap reduced-detail
+# signature, recorded as reduced fidelity. "structural" = the COMPLETE
+# structural signature (full detail capture, Flatten-order cost — a memory
+# choice, not a speed one). "full" = never degrade: Flatten on every stage
+# regardless of threshold (the always-full config override).
+_STAGE_HASH_LARGE_MODE_ENV = "SYNAPSE_STAGE_HASH_LARGE_MODE"
+_STAGE_HASH_LARGE_MODES = ("reduced", "structural", "full")
+
+
+def _stage_hash_large_mode() -> str:
+    """Above-threshold stage-hash mode from env; unknown/absent values fall
+    back to "reduced" (a bad value never silently disables the gate)."""
+    raw = (os.environ.get(_STAGE_HASH_LARGE_MODE_ENV) or "").strip().lower()
+    return raw if raw in _STAGE_HASH_LARGE_MODES else "reduced"
 
 
 def _stage_hash_prim_threshold() -> int:
@@ -474,6 +512,28 @@ class IntegrityBlock:
     undo_applicable: bool = True         # False => undo wrapping not verified on this path — anchor N/A
     hash_target: str = ""                # what node path the topo hashes measured ("" = legacy/implicit)
 
+    # R1 size-gate honesty (2026-08, BRIDGE-FLOOR). Which stage-hash algorithm
+    # actually backed scene_hash_before/after:
+    #   ""           no composed-stage content was hashed (non-LOP target, or
+    #                include_stage=False on the live envelope)
+    #   "full"       Flatten().ExportToString()+sha256 — the proven full-
+    #                fidelity algorithm
+    #   "structural" the COMPLETE structural signature (full detail capture)
+    #   "reduced"    the reduced-detail signature: topology/typing/property
+    #                structure only — attribute VALUE and time-sample edits are
+    #                NOT captured, so before==after ("no_change") on a value-
+    #                only mutation is a KNOWN blind spot of this mode.
+    # stage_hash_full_fidelity=False iff mode=="reduced" — recorded honestly,
+    # never faked (same house rule as *_applicable above). Both hashes of an
+    # op always use the SAME mode (pinned at scene_hash_before) so the delta
+    # comparison never compares across algorithms.
+    stage_hash_mode: str = ""
+    stage_hash_full_fidelity: bool = True
+    # F-H composition-sweep honesty: True when _verify_composition shed the
+    # inherit/specialize sweep because the stage exceeded the same gate
+    # threshold (reference/payload checks still ran — those are the anchor).
+    composition_checks_reduced: bool = False
+
     @property
     def anchors_hold(self) -> bool:
         # *_applicable flags gate the anchor set per execution path; defaults
@@ -515,6 +575,9 @@ class IntegrityBlock:
             "composition_applicable": self.composition_applicable,
             "undo_applicable": self.undo_applicable,
             "hash_target": self.hash_target,
+            "stage_hash_mode": self.stage_hash_mode,
+            "stage_hash_full_fidelity": self.stage_hash_full_fidelity,
+            "composition_checks_reduced": self.composition_checks_reduced,
         }
 
 
@@ -612,6 +675,16 @@ class LosslessExecutionBridge:
             else None
         )
         self._session_id = datetime.now().strftime("bridge_%Y%m%d_%H%M%S")
+        # R1 size-gate observation/pinning (per-thread: the sync path hashes on
+        # the caller thread, the async payload hashes on the Houdini main
+        # thread — one op's state never bleeds into a concurrent op's).
+        #   .mode  what the LAST stage hash actually ran ("" = no stage hashed)
+        #   .pin   forced mode for the rest of the op (set right after
+        #          scene_hash_before) so before/after ALWAYS degrade
+        #          symmetrically even if the mutation moves the stage across
+        #          the prim threshold mid-op
+        #   .comp_reduced  _verify_composition shed the F-H class-arc sweep
+        self._stage_hash_tl = threading.local()
 
     # ── B2: Public read access to the operation log ──────────────
     # The operation log was previously a write-only sink. These accessors let
@@ -768,7 +841,9 @@ class LosslessExecutionBridge:
         # that the composed stage CHANGED — blind on the headline Solaris path.
         # Flatten-export verified stable + attribute-value-sensitive on H21.0.631.
         # Size-gated: below the prim threshold this is byte-identical to the old
-        # Flatten()+sha256; above it, a cheaper COMPLETE structural signature.
+        # Flatten()+sha256; above it, the SYNAPSE_STAGE_HASH_LARGE_MODE path
+        # (default: reduced-detail signature, recorded honestly on the
+        # IntegrityBlock as stage_hash_mode/stage_hash_full_fidelity).
         # include_stage=False (live envelope) skips this block structurally.
         try:
             if include_stage and hasattr(node, "stage"):
@@ -787,39 +862,156 @@ class LosslessExecutionBridge:
             "|".join(str(x) for x in hash_data).encode("utf-8")
         ).hexdigest()[:HASH_LENGTH]
 
-    # ── R1 stage hash: size-gated complete signature ──────────
+    # ── R1 stage hash: size-gated signature ───────────────────
+
+    # Per-op observation/pinning helpers. The execute paths call
+    # _stage_hash_begin_op() before scene_hash_before, read
+    # _stage_hash_observed_mode() into the IntegrityBlock, pin it for the rest
+    # of the op (symmetric before/after degradation), and _stage_hash_end_op()
+    # in a finally. All state is thread-local (see __init__).
+
+    def _stage_hash_begin_op(self) -> None:
+        tl = self._stage_hash_tl
+        tl.mode = ""
+        tl.pin = None
+        tl.comp_reduced = False
+
+    def _stage_hash_observed_mode(self) -> str:
+        return getattr(self._stage_hash_tl, "mode", "")
+
+    def _stage_hash_pin_mode(self, mode: str) -> None:
+        self._stage_hash_tl.pin = mode or None
+
+    def _stage_hash_end_op(self) -> None:
+        self._stage_hash_tl.pin = None
+
+    def _note_stage_hash_mode(self, mode: str) -> None:
+        self._stage_hash_tl.mode = mode
+
+    def _record_stage_hash_mode(self, integrity: IntegrityBlock) -> None:
+        """Called right after scene_hash_before: record the observed stage-hash
+        mode honestly on the block and PIN it so scene_hash_after (and any
+        rollback re-hash) uses the same algorithm — symmetric degradation, the
+        delta comparison never crosses algorithms. Mode "" (no composed stage
+        hashed) records nothing and pins nothing."""
+        mode = self._stage_hash_observed_mode()
+        integrity.stage_hash_mode = mode
+        integrity.stage_hash_full_fidelity = mode != "reduced"
+        if mode:
+            self._stage_hash_pin_mode(mode)
 
     def _hash_stage_signature(self, stage) -> str:
         """Hash a composed USD stage. Returns the 16-hex digest appended after the
         ``stage:`` prefix in the scene hash.
 
-        SIZE GATE (cost control, INTEGRITY-PRESERVING):
+        SIZE GATE (cost control, HONESTY-QUALIFIED):
           - At/below the prim threshold: the EXACT original
             ``sha256(stage.Flatten().ExportToString())[:HASH_LENGTH]`` — byte-identical,
-            zero behavior change for normal stages.
-          - Above the threshold: a cheaper-but-COMPLETE structural signature that
-            avoids the full USDA string serialization (see
-            _structural_stage_signature).
+            zero behavior change for normal stages. Recorded mode "full".
+          - Above the threshold: SYNAPSE_STAGE_HASH_LARGE_MODE selects
+            "reduced" (default — cheap reduced-detail signature, recorded as
+            reduced fidelity on the IntegrityBlock), "structural" (COMPLETE
+            structural signature — full detail, Flatten-order cost), or
+            "full" (never degrade — the always-full config override).
 
-        Conservative by construction: the size-probe and the structural path each
-        fall back to the proven Flatten path on ANY error, so the gate can only ever
-        make the hash *cheaper*, never *blinder* than before.
+        The default threshold + mode were chosen from measurement
+        (scripts/probe_stage_hash_floor.py) — see the constants block above.
+        The size-probe and both non-Flatten paths each fall back to the proven
+        Flatten path on ANY error, so a failure can only ever make the hash
+        MORE detailed, never blinder. The mode that actually ran is noted into
+        the per-op thread-local so the IntegrityBlock records it honestly; a
+        pin set after scene_hash_before forces the SAME mode for
+        scene_hash_after so the delta never compares across algorithms.
         """
-        try:
-            large = self._stage_exceeds(stage, _stage_hash_prim_threshold())
-        except Exception:
-            large = False  # probe failed → behave exactly like before (Flatten)
-
-        if large:
+        pin = getattr(self._stage_hash_tl, "pin", None)
+        if pin is not None:
+            mode = pin
+        else:
             try:
-                return self._structural_stage_signature(stage)
+                large = self._stage_exceeds(stage, _stage_hash_prim_threshold())
             except Exception:
-                # Structural path failed → fall back to the proven Flatten algorithm
-                # rather than dropping the stage hash (under-capture is a defect).
-                pass
+                large = False  # probe failed → behave exactly like before (Flatten)
+            mode = _stage_hash_large_mode() if large else "full"
+
+        if mode == "structural":
+            try:
+                sig = self._structural_stage_signature(stage)
+                self._note_stage_hash_mode("structural")
+                return sig
+            except Exception:
+                pass  # fall through to Flatten — never drop the stage hash
+        elif mode == "reduced":
+            try:
+                sig = self._reduced_stage_signature(stage)
+                self._note_stage_hash_mode("reduced")
+                return sig
+            except Exception:
+                pass  # fall through to Flatten — never drop the stage hash
 
         flat = stage.Flatten().ExportToString()
+        self._note_stage_hash_mode("full")
         return hashlib.sha256(flat.encode("utf-8")).hexdigest()[:HASH_LENGTH]
+
+    @staticmethod
+    def _reduced_stage_signature(stage) -> str:
+        """REDUCED-DETAIL stage signature — the size gate's default
+        above-threshold path. O(prims) with tiny per-prim cost because it never
+        reads attribute VALUES; Flatten and the complete structural signature
+        both scale with authored value volume (every point array, every time
+        sample), which measurement showed is where the seconds go
+        (scripts/probe_stage_hash_floor.py).
+
+        CAPTURED (mutation classes that flip the digest):
+          prim add/remove/rename ....... per-prim path
+          type change .................. typeName
+          specifier change ............. specifier (def/over/class)
+          activation ................... IsActive() (TraverseAll keeps inactive)
+          property add/remove/rename ... sorted authored property names
+          relationship retarget ........ per-rel target paths (material rebind,
+                                         light-linking, collections)
+
+        NOT captured — the honest reduction, recorded on the IntegrityBlock as
+        stage_hash_mode="reduced" / stage_hash_full_fidelity=False:
+          attribute VALUE edits, time-sample edits, metadata-only edits
+          (incl. reference/payload retargets that alter no prim/property
+          structure), variant-selection flips that alter no structure.
+        A value-only mutation above threshold therefore reads "no_change" —
+        the block says so honestly instead of presenting a full-fidelity hash
+        that was never computed. Set SYNAPSE_STAGE_HASH_LARGE_MODE=full (or
+        raise SYNAPSE_STAGE_HASH_PRIM_THRESHOLD) to restore full fidelity.
+        Per-prim failures degrade to a path-bound marker — one bad prim never
+        erases the rest of the signature.
+        """
+        h = hashlib.sha256()
+        for prim in stage.TraverseAll():
+            try:
+                parts = [
+                    prim.GetPath().pathString,        # add/remove/rename
+                    str(prim.GetTypeName()),          # type change
+                    str(prim.GetSpecifier()),         # def / over / class
+                    "1" if prim.IsActive() else "0",  # activation
+                ]
+                try:
+                    parts.append(",".join(sorted(prim.GetAuthoredPropertyNames())))
+                except Exception:
+                    parts.append("?props")
+                for rel in prim.GetAuthoredRelationships():
+                    try:
+                        parts.append(
+                            f"REL:{rel.GetName()}="
+                            + ",".join(t.pathString for t in rel.GetTargets())
+                        )
+                    except Exception:
+                        parts.append(f"REL:{rel.GetName()}=<err>")
+                line = "|".join(parts)
+            except Exception:
+                try:
+                    line = "ERRPRIM:" + prim.GetPath().pathString
+                except Exception:
+                    line = "ERRPRIM:?"
+            h.update(line.encode("utf-8"))
+            h.update(b"\n")
+        return h.hexdigest()[:HASH_LENGTH]
 
     @staticmethod
     def _stage_exceeds(stage, threshold: int) -> bool:
@@ -1223,8 +1415,10 @@ class LosslessExecutionBridge:
         integrity.main_thread_executed = True
         integrity.undo_group_active = True
 
+        self._stage_hash_begin_op()
         try:
             integrity.scene_hash_before = self._compute_scene_hash(hash_target)
+            self._record_stage_hash_mode(integrity)
             result = operation.fn(*operation.args, **operation.kwargs)
             integrity.scene_hash_after = self._compute_scene_hash(hash_target)
 
@@ -1238,6 +1432,8 @@ class LosslessExecutionBridge:
         except Exception as e:
             integrity.delta_hash = "rolled_back"
             return self._fail_with_integrity(integrity, str(e), "execution_error")
+        finally:
+            self._stage_hash_end_op()
 
         return self._finalize(operation, integrity, result)
 
@@ -1253,8 +1449,10 @@ class LosslessExecutionBridge:
 
         undo_enabled: bool | None = None
         undo_topo_before: str | None = None
+        self._stage_hash_begin_op()
         try:
             integrity.scene_hash_before = self._compute_scene_hash(hash_target)
+            self._record_stage_hash_mode(integrity)
             self._note_external_change(integrity, hash_target)  # H1
 
             undo_enabled, undo_depth_before, undo_topo_before = (
@@ -1275,7 +1473,10 @@ class LosslessExecutionBridge:
 
                 # ── ANCHOR: Scene Integrity ─────────────────
                 if operation.touches_stage and operation.stage_path:
-                    if not self._verify_composition(operation.stage_path):
+                    comp_ok = self._verify_composition(operation.stage_path)
+                    integrity.composition_checks_reduced = getattr(
+                        self._stage_hash_tl, "comp_reduced", False)
+                    if not comp_ok:
                         # S1 fix (verified live H21.0.671): do NOT performUndo()
                         # inside the still-open undo group — H21 raises "Cannot
                         # undo within an undo group", which masks this error and
@@ -1307,6 +1508,8 @@ class LosslessExecutionBridge:
                 integrity.undo_group_active = False
             msg = f"{e} [{note}]" if note else str(e)
             return self._fail_with_integrity(integrity, msg, "execution_error")
+        finally:
+            self._stage_hash_end_op()
 
     # ── R2: Async Execute (FastMCP server path) ──────────────
 
@@ -1359,7 +1562,9 @@ class LosslessExecutionBridge:
             # presumption; the success path refines this from undo-stack
             # evidence after the group closes below.
             integrity.undo_group_active = True
+            self._stage_hash_begin_op()
             integrity.scene_hash_before = self._compute_scene_hash(hash_target)
+            self._record_stage_hash_mode(integrity)
             self._note_external_change(integrity, hash_target)  # H1
 
             undo_enabled: bool | None = None
@@ -1382,7 +1587,10 @@ class LosslessExecutionBridge:
                         integrity.delta_hash = "no_change"
 
                     if operation.touches_stage and operation.stage_path:
-                        if not self._verify_composition(operation.stage_path):
+                        comp_ok = self._verify_composition(operation.stage_path)
+                        integrity.composition_checks_reduced = getattr(
+                            self._stage_hash_tl, "comp_reduced", False)
+                        if not comp_ok:
                             # S1 fix (parity with _execute_houdini, verified live
                             # H21.0.671): no inner performUndo — it raises "Cannot
                             # undo within an undo group" and masks this error. The
@@ -1406,6 +1614,8 @@ class LosslessExecutionBridge:
                     integrity.undo_group_active = False
                 msg = f"{e} [{note}]" if note else str(e)
                 return self._fail_with_integrity(integrity, msg, "execution_error")
+            finally:
+                self._stage_hash_end_op()
 
         # ── Dispatch to main thread without blocking FastMCP ──
         # Was: hdefereval.executeInMainThreadWithResult(_sync_payload). That is
@@ -1932,10 +2142,20 @@ class LosslessExecutionBridge:
             class_arcs_enabled = Usd is not None
             if class_arcs_enabled:
                 threshold = _stage_hash_prim_threshold()
-                if threshold < _DEFAULT_STAGE_HASH_PRIM_THRESHOLD:
+                # "is a finite gate configured" — compare against the UNBOUNDED
+                # sentinel, not the default (the default itself is finite since
+                # the 2026-08 BRIDGE-FLOOR measurement).
+                if threshold < _STAGE_HASH_UNBOUNDED:
                     try:
                         if self._stage_exceeds(stage, threshold):
                             class_arcs_enabled = False
+                            # Recorded honestly on the IntegrityBlock
+                            # (composition_checks_reduced) via the per-op
+                            # thread-local — never silently.
+                            try:
+                                self._stage_hash_tl.comp_reduced = True
+                            except Exception:
+                                pass
                             import logging
                             logging.getLogger("synapse.bridge").debug(
                                 "stage exceeds %d prims -- skipping the "

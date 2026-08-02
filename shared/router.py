@@ -6,16 +6,49 @@ Revisions:
   R5  -- Precise lexical boundary routing (\b word boundaries)
   R11 -- Module-level singleton for route_task() so calibration / fast paths
          are not reset on every call
-  R12 -- Internal auto-promotion: fingerprints seen FAST_PATH_PROMOTION_THRESHOLD
-         times are promoted to session fast paths from inside route()
   R13 -- Score-based task type extraction (no insertion-order dependency)
   R14 -- Complexity classification by domain count + COMPLEX_SOLO_DOMAINS;
          word count of an LLM-rewritten prompt no longer drives complexity
   R15 -- Relative advisory threshold via ADVISORY_GAP_RATIO (gap-aware top-K)
-  R16 -- CONSTANTS_HASH stamping: session fast paths invalidated on
-         constants drift; loud failure rather than silent miss
   R17 -- Empty domain_signals tuple instead of GEOMETRY fallback (no
          silent OBSERVER/HANDS bias on keyword-less prompts)
+
+  R20 -- RETIRED 2026-08-01: the session auto-promotion machinery (R12, R16,
+         R18, R19) is DELETED. This router is now a pure classifier: features
+         in, agent pair out, hand-tuned FAST_PATHS honoured, nothing learned.
+
+         What went: _session_fast_paths, the FAST_PATH_PROMOTION_THRESHOLD
+         frequency gate inside route(), the CONSTANTS_HASH stamp on promoted
+         entries, learn_fast_path(), record_outcome(), outcome_counts(),
+         _promotion_allowed(), _outcome_confirmed(), the _outcomes tally and
+         the outcome_confirmed tuple slot.
+
+         Why: the promotion path executed ZERO times in production. Nothing
+         called record_outcome(), and route()'s only non-test call site lived
+         inside panel/tool_filter.py::filter_tools() -- a function with no
+         references anywhere in the repository. Dormant, not unfed: there was
+         no producer of outcomes AND no consumer of decisions, so wiring one
+         would have been building a customer for the mechanism rather than
+         serving one.
+
+         R18/R19 (the outcome channel and its type guard) were built and
+         merged earlier the same day and are deleted here deliberately, not
+         by accident. Making the signal honest is what PROVED the loop was
+         dormant rather than merely unfed -- a frequency counter with no
+         failure channel can always be excused as "not wired yet", while an
+         honest channel with no producer is a mechanism nobody wants. The
+         retire/keep question was only answerable because that work was done.
+
+         What survives, and why: fingerprint_counts() (read live by
+         shared/conductor_advisor.py:480 via advise_from_bridge, which
+         RECOMMENDS hand-tuned FAST_PATHS entries to a human -- advice, not
+         self-modification), the hand-tuned FAST_PATHS table, and the
+         ROUTER_CALIBRATION_PERIOD dense-evaluation window that gates it.
+
+         To revive: a production caller of MOERouter.route() must exist first,
+         and it must be able to observe and report the outcome of the turn it
+         routed. Absent both, this is a promotion table nothing writes to and
+         nothing reads.
 """
 
 from __future__ import annotations
@@ -39,11 +72,9 @@ from shared.constants import (
     BLOCKING_URGENCY_BOOST,
     COMPLEX_SCORE_MULTIPLIER,
     COMPLEX_SOLO_DOMAINS,
-    CONSTANTS_HASH,
     DOMAIN_AFFINITY,
     DOMAIN_KEYWORDS,
     FAST_PATHS,
-    FAST_PATH_PROMOTION_THRESHOLD,
     RESEARCH_INTEGRATOR_FLOOR,
     ROUTER_CALIBRATION_PERIOD,
     TASK_TYPE_BOOST,
@@ -71,29 +102,27 @@ class MOERouter:
         self.k = k
         self._call_count = 0
         self._dense_threshold = ROUTER_CALIBRATION_PERIOD
-        # R16: stamp constants hash so session fast paths are invalidated
-        # if the keyword tables drift between hot reloads.
-        self._constants_hash = CONSTANTS_HASH
-        # R12: fingerprint frequency counter feeds auto-promotion.
+        # Fingerprint frequency counter. R20 retired the auto-promotion that
+        # used to consume this; it survives because fingerprint_counts() is
+        # read live by shared/conductor_advisor.py, which turns hot
+        # fingerprints into a RECOMMENDATION that a human add a hand-tuned
+        # FAST_PATHS entry. Counting is advice here, not self-modification.
         self._fingerprint_counts: dict[str, int] = {}
-        # Session fast paths stored as {fingerprint: (primary, advisory, hash)}
-        self._session_fast_paths: dict[str, tuple[AgentID, AgentID | None, str]] = {}
 
     def route(self, features: RoutingFeatures) -> RoutingDecision:
         """Route a task to primary + optional advisory agent.
 
         Decision hierarchy (first match wins):
           1. Hand-tuned FAST_PATHS (after calibration period)
-          2. Session-learned fast paths (R12 auto-promoted, R16 hash-validated)
-          3. Full scoring across all 6 agents
+          2. Full scoring across all 6 agents
 
         Advisory selection (R15): second-highest agent must clear both an
         absolute score floor (ADVISORY_SCORE_THRESHOLD) and a relative gap
         ratio (ADVISORY_GAP_RATIO * primary_score) to be included.
 
-        Auto-promotion (R12): fingerprints hitting FAST_PATH_PROMOTION_THRESHOLD
-        are promoted to session fast paths, stamped with CONSTANTS_HASH so
-        they auto-invalidate if the keyword tables change.
+        R20: there is no third tier. Session auto-promotion is retired — this
+        router learns nothing across calls. The only cross-call state is the
+        fingerprint counter (read by the advisor) and the calibration count.
 
         Args:
             features: 4-dimension feature vector (task_type, complexity,
@@ -102,8 +131,7 @@ class MOERouter:
 
         Returns:
             RoutingDecision with primary agent, optional advisory, scores,
-            method ('fast_path', 'session_fast_path', or 'scored'), and
-            the input features for audit.
+            method ('fast_path' or 'scored'), and the input features for audit.
         """
         self._call_count += 1
         fingerprint = features.fingerprint()
@@ -117,13 +145,6 @@ class MOERouter:
                 primary, advisory = FAST_PATHS[fingerprint]
                 return self._fast_path_decision(
                     primary, advisory, features, "fast_path"
-                )
-            entry = self._session_fast_paths.get(fingerprint)
-            # R16: skip stale entries from a different constants snapshot
-            if entry is not None and entry[2] == self._constants_hash:
-                primary, advisory, _ = entry
-                return self._fast_path_decision(
-                    primary, advisory, features, "session_fast_path"
                 )
 
         # Full scoring
@@ -139,24 +160,10 @@ class MOERouter:
             if adv_score >= ADVISORY_SCORE_THRESHOLD and adv_score >= min_relative:
                 advisory = adv_agent
 
-        decision = RoutingDecision(
+        return RoutingDecision(
             primary=primary_agent, advisory=advisory,
             scores=scores, method="scored", features=features
         )
-
-        # R12: auto-promote frequent fingerprints from inside route().
-        # Cheap O(1) check; promotion happens on the call that crosses the
-        # threshold so the next request hits the fast path immediately.
-        if (
-            self._fingerprint_counts[fingerprint] >= FAST_PATH_PROMOTION_THRESHOLD
-            and fingerprint not in FAST_PATHS
-            and fingerprint not in self._session_fast_paths
-        ):
-            self._session_fast_paths[fingerprint] = (
-                primary_agent, advisory, self._constants_hash
-            )
-
-        return decision
 
     def _fast_path_decision(
         self,
@@ -197,14 +204,6 @@ class MOERouter:
             scores[AgentID.BRAINSTEM] += BLOCKING_URGENCY_BOOST
 
         return scores
-
-    def learn_fast_path(
-        self, fingerprint: str, primary: AgentID, advisory: AgentID | None
-    ) -> None:
-        """External fast-path injection (used by panel/RoutingLog)."""
-        self._session_fast_paths[fingerprint] = (
-            primary, advisory, self._constants_hash
-        )
 
     # Pass 8: public accessor so the ConductorAdvisor can read fingerprint
     # frequency without poking private state. Returns a copy — caller cannot

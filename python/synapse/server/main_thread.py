@@ -139,6 +139,76 @@ def reset_main_thread_direct_stats():
             _main_thread_direct["buckets"][b] = 0
 
 
+# OCC — deferred-path main-thread HOLD instrumentation. The two C6 sinks above
+# cover the queue wait (worker path, enqueue→callback-start) and the inline
+# fn() duration (fast path 2). The DEFERRED payload itself — fn() running on
+# the main thread inside _on_main, which is how EVERY off-main tool payload
+# reaches Houdini — was timed by NOTHING: main-thread occupancy had to be
+# inferred from wall clocks and timeout constants, and the 2026-07-31 freeze
+# investigation got both wrong (10,005ms was _DEFAULT_TIMEOUT + overhead; the
+# "46.7s stall" contained three recoveries). This histogram times fn() ON the
+# main thread, between the C4 abandoned-flag check and the result store.
+# Distinct sink from _dispatch_wait (queue time, same call) and from
+# _main_thread_direct (inline path, which never reaches _on_main). Same bucket
+# scheme as both for read parity. ``abandoned_count`` counts payloads that
+# finished AFTER their caller had already timed out (the C4 residual race) —
+# exactly the holds a freeze investigation is looking for. ``slowest_label``
+# names the payload that set ``max_ms`` (labels arrive via run_on_main's
+# optional ``label=``; unlabeled callers record as "unlabeled").
+_HOLD_BUCKETS_MS = (1, 5, 10, 50, 100, 250, 500, 1000, 2000, 4000)
+_hold_lock = threading.Lock()
+_main_thread_hold = {
+    "count": 0,
+    "sum_ms": 0.0,
+    "max_ms": 0.0,
+    "buckets": {b: 0 for b in _HOLD_BUCKETS_MS},
+    "slowest_label": None,
+    "abandoned_count": 0,
+}
+
+
+def _record_main_thread_hold(ms, label=None, abandoned=False):
+    label = label or "unlabeled"
+    with _hold_lock:
+        _main_thread_hold["count"] += 1
+        _main_thread_hold["sum_ms"] += ms
+        if ms > _main_thread_hold["max_ms"]:
+            _main_thread_hold["max_ms"] = ms
+            _main_thread_hold["slowest_label"] = label
+        for b in _HOLD_BUCKETS_MS:
+            if ms <= b:
+                _main_thread_hold["buckets"][b] += 1
+        if abandoned:
+            _main_thread_hold["abandoned_count"] += 1
+
+
+def main_thread_hold_stats():
+    """Snapshot of the deferred-path main-thread hold histogram (copy — safe
+    to serialize). This is real occupancy: fn()'s duration measured on the
+    main thread itself, not inferred from wall clocks or timeout constants."""
+    with _hold_lock:
+        return {
+            "count": _main_thread_hold["count"],
+            "sum_ms": _main_thread_hold["sum_ms"],
+            "max_ms": _main_thread_hold["max_ms"],
+            "buckets": dict(_main_thread_hold["buckets"]),
+            "slowest_label": _main_thread_hold["slowest_label"],
+            "abandoned_count": _main_thread_hold["abandoned_count"],
+        }
+
+
+def reset_main_thread_hold_stats():
+    """Test/diagnostic helper — zero the hold histogram."""
+    with _hold_lock:
+        _main_thread_hold["count"] = 0
+        _main_thread_hold["sum_ms"] = 0.0
+        _main_thread_hold["max_ms"] = 0.0
+        for b in _HOLD_BUCKETS_MS:
+            _main_thread_hold["buckets"][b] = 0
+        _main_thread_hold["slowest_label"] = None
+        _main_thread_hold["abandoned_count"] = 0
+
+
 def is_main_thread_stalled():
     """Return True if recent run_on_main calls have been timing out.
 
@@ -201,7 +271,8 @@ def _record_success():
         _consecutive_timeouts = 0
 
 
-def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=True):
+def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=True,
+                label=None):
     """Run *fn* on Houdini's main thread with a timeout.
 
     Returns the result of fn(). Raises RuntimeError if the timeout
@@ -225,6 +296,10 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
     captures pass it: ~2 envelope wakes per mutating op would otherwise
     dominate the C6/T1 attribution instrument — that histogram must stay
     a measure of REAL command waits only.
+
+    ``label`` (optional) attributes the deferred payload in the OCC
+    main-thread hold histogram (main_thread_hold_stats). ``None`` records as
+    "unlabeled". Attribution only — it changes no dispatch behaviour.
     """
     # Fast path 1: reentrant call from within a run_on_main callback
     if getattr(_tls, "on_main", False):
@@ -298,12 +373,27 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
             if abandoned[0]:
                 return  # caller already timed out — do not mutate the scene
         _tls.on_main = True
+        # OCC — time the payload itself, ON the main thread. This is the hold
+        # the freeze investigations previously inferred from proxies.
+        # Measurement only: control flow, C4 semantics, and the result path
+        # are untouched.
+        _t_hold = time.perf_counter()
         try:
             result_holder[0] = fn()
         except Exception as e:
             error_holder[0] = e
         finally:
+            _hold_ms = (time.perf_counter() - _t_hold) * 1000.0
             _tls.on_main = False
+            try:
+                # A payload that ran past its caller's timeout (the C4
+                # residual race — abandoned flipped while fn() was running)
+                # is the most interesting sample: record it marked.
+                with state_lock:
+                    _was_abandoned = abandoned[0]
+                _record_main_thread_hold(_hold_ms, label, _was_abandoned)
+            except Exception:
+                pass  # telemetry must never break the result path
             done.set()
 
     hdefereval.executeDeferred(_on_main)

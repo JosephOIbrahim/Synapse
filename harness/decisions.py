@@ -57,13 +57,14 @@ commit date of the last change to the file carrying the item, via a single
 `git log --name-only` pass. That is a lower bound on the true wait, and it is
 labelled as such rather than presented as the deposit date.
 """
-import argparse, json, os, subprocess, sys, time
+import argparse, hashlib, json, os, subprocess, sys, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RDIR = os.path.join(ROOT, "harness", "notes", "receipts")
 FLYWHEEL = os.path.join(ROOT, "harness", "state", "flywheel_queue.json")
 MANIFEST = os.path.join(ROOT, "harness", "legs.json")
 OUT = os.path.join(ROOT, "harness", "state", "DECISIONS.md")
+RESOLVED = os.path.join(ROOT, "harness", "state", "resolved.json")
 
 MAX_DAYS = int(os.environ.get("SYNAPSE_DECISION_MAX_DAYS", 30))
 EXIT_OVERDUE = 6
@@ -83,6 +84,50 @@ def _text(v, fallback="(no text)"):
                 return v[k].strip()
         return json.dumps(v, ensure_ascii=False)[:200]
     return str(v)[:200] or fallback
+
+
+def item_key(i):
+    """Stable 12-hex identity for a board item.
+
+    Derived from what the item IS (kind, source, leg, text), not from its
+    position — so the key survives re-ordering and re-generation, and dies
+    when the underlying text changes (a changed ruling is a new question and
+    must be re-resolved, not inherit the old answer).
+    """
+    basis = "%s|%s|%s|%s" % (i.get("kind"), i.get("source"), i.get("leg"),
+                             i.get("text"))
+    return hashlib.sha256(basis.encode("utf-8")).hexdigest()[:12]
+
+
+def load_resolved():
+    """{key: entry} from harness/state/resolved.json. Missing file = empty."""
+    try:
+        with open(RESOLVED, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except Exception:
+        return {}
+    out = {}
+    for e in (data.get("resolutions") or []):
+        if isinstance(e, dict) and e.get("key"):
+            out[str(e["key"])] = e
+    return out
+
+
+def _save_resolved(entries):
+    os.makedirs(os.path.dirname(RESOLVED), exist_ok=True)
+    tmp = RESOLVED + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump({"_doc": ("Resolution channel for the decisions board. Each entry "
+                            "retires ONE board item, identified by item_key() over "
+                            "(kind|source|leg|text). This file NEVER closes a flywheel "
+                            "item - those close only via the human ratified flip in "
+                            "flywheel_queue.json, and collect() refuses to subtract "
+                            "them no matter what this file says. Append via "
+                            "'python harness/decisions.py --resolve KEY --reason ...' "
+                            "so every entry carries a snapshot and evidence."),
+                   "resolutions": entries}, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    os.replace(tmp, RESOLVED)
 
 
 def file_ages():
@@ -172,6 +217,25 @@ def collect(with_ages=True):
             "flip": 'set "ratified": true on cycle %s' % cid,
         })
 
+    # --- resolution subtraction (the closure mechanism the board never had:
+    # before this, collect() only ever appended, so the count could not go
+    # DOWN except by hand-editing receipt JSON — every triage sitting re-read
+    # already-landed items, and CLEAR SPEC names a rising count as
+    # falsification).
+    for i in items:
+        i["key"] = item_key(i)
+    resolved = load_resolved()
+    if resolved:
+        kept = []
+        for i in items:
+            # A flywheel item NEVER closes through this file, no matter what
+            # resolved.json says — its only exit is the human ratified flip in
+            # flywheel_queue.json. Subtracting it here would shadow the fence.
+            if i["key"] in resolved and i["kind"] != "flywheel":
+                continue
+            kept.append(i)
+        items = kept
+
     # Oldest first; unknown age sorts last rather than pretending to be new.
     items.sort(key=lambda i: (i["age"] is None, -(i["age"] or 0)))
     return items
@@ -232,13 +296,72 @@ def markdown(items):
     return "\n".join(L)
 
 
+def resolve(key, reason, by="human"):
+    """Retire ONE live board item. Refuses phantoms and flywheel items.
+
+    Requiring the key to match a LIVE item means you cannot pre-resolve
+    something that has not surfaced, cannot resolve a typo, and cannot
+    resolve the same item twice — each failure mode is a distinct error.
+    """
+    if not reason or not reason.strip():
+        return 2, "a resolution without a reason is indistinguishable from a deletion"
+    live = {i["key"]: i for i in collect(with_ages=False)}
+    item = live.get(key)
+    if item is None:
+        already = load_resolved()
+        if key in already:
+            return 2, "key %s is already resolved (%s)" % (key, already[key].get("resolved_at"))
+        return 2, ("key %s matches no live board item - run "
+                   "'python harness/decisions.py --keys' to list them" % key)
+    if item["kind"] == "flywheel":
+        return 2, ("flywheel items close ONLY via the human ratified flip in "
+                   "flywheel_queue.json - this channel refuses them by design")
+    entries = list(load_resolved().values())
+    entries.append({
+        "key": key,
+        "resolved_at": time.strftime("%Y-%m-%d %H:%M"),
+        "by": by,
+        "reason": reason.strip(),
+        "item_snapshot": {k: item.get(k) for k in ("kind", "source", "leg", "text")},
+    })
+    _save_resolved(entries)
+    return 0, "resolved %s (%s: %s)" % (key, item["leg"], item["text"][:60])
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--write", action="store_true")
     p.add_argument("--count", action="store_true")
+    p.add_argument("--keys", action="store_true",
+                   help="board with each item's resolution key")
+    p.add_argument("--resolve", metavar="KEY",
+                   help="retire one item (requires --reason)")
+    p.add_argument("--reason", default="",
+                   help="why the item is resolved - the evidence, not a mood")
+    p.add_argument("--resolved", action="store_true",
+                   help="list past resolutions")
     ns = p.parse_args(argv)
 
+    if ns.resolve:
+        rc, msg = resolve(ns.resolve, ns.reason)
+        print(("  " if rc == 0 else "  ERROR: ") + msg)
+        return rc
+
+    if ns.resolved:
+        for e in load_resolved().values():
+            snap = e.get("item_snapshot") or {}
+            print("  %s  %s  %-8s %s" % (e.get("key"), e.get("resolved_at"),
+                                         snap.get("leg", "?"),
+                                         str(e.get("reason"))[:80]))
+        return 0
+
     items = collect()
+    if ns.keys:
+        for i in items:
+            print("  %s  %-9s %-8s %s" % (i["key"], i["kind"], i["leg"],
+                                          i["text"][:76]))
+        print("  -- %d open" % len(items))
+        return 0
     if ns.count:
         print(len(items))
         return EXIT_OVERDUE if overdue(items) else 0

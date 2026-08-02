@@ -21,6 +21,15 @@ jobs:
       MONETA_DEPLOY_KEY: ${{ secrets.MONETA_DEPLOY_KEY }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Full history, not the default depth-1 shallow clone.
+          # tests/test_d_track.py anchors its quarantine diff against master and
+          # fails "master ref unresolvable; fetch/create master before trusting
+          # this guard" on a shallow checkout — so the guard was reporting an
+          # environment gap on EVERY pull request, on every matrix leg, with
+          # nothing wrong in the code under test. A guard that cannot resolve
+          # its own baseline is not guarding.
+          fetch-depth: 0
 
       - name: Check out private Moneta backend (when key is configured)
         if: ${{ env.MONETA_DEPLOY_KEY != '' }}

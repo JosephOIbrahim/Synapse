@@ -1,6 +1,6 @@
 # SYNAPSE Agent Team — Lossless MOE Orchestrator
 
-> **Target:** Houdini 22.0.368 (dual-build with H21 artifacts) · SYNAPSE v5.40.1 · Python 3.13 · 123 MCP tools registered
+> **Target:** Houdini 22.0.368 (dual-build with H21 artifacts) · SYNAPSE v5.41.0 · Python 3.13 · 123 MCP tools registered
 > Revisions in §15 were verified live on their own build, not on H22.
 
 ## Identity
@@ -176,7 +176,17 @@ orchestration|complex|pdg+rendering|normal      → CONDUCTOR + BRAINSTEM
 integration|moderate|testing|normal             → INTEGRATOR only
 ```
 
-**Session learning:** Inside `MOERouter.route()`, every fingerprint increments a counter. Once a fingerprint reaches `FAST_PATH_PROMOTION_THRESHOLD` (default 3) and isn't already a hand-tuned `FAST_PATHS` entry, it's auto-promoted to `_session_fast_paths` stamped with the current `CONSTANTS_HASH`. Subsequent calls hit the session fast path. If the keyword tables drift (CONSTANTS_HASH changes), stamped entries are skipped — silent misses become loud invalidations. External injection via `router.learn_fast_path()` is still supported for the panel/RoutingLog layer.
+**Session learning: RETIRED 2026-08-01 (R20 · RSI loop F).** The router learns nothing across calls. There are exactly two decision tiers — hand-tuned `FAST_PATHS` after the calibration window, then full scoring. There is no third tier.
+
+> **⚠ What was deleted, and why.** The auto-promotion machinery (`_session_fast_paths`, the `FAST_PATH_PROMOTION_THRESHOLD` gate inside `route()`, the `CONSTANTS_HASH` stamp on promoted entries, `learn_fast_path()`, `record_outcome()`, `outcome_counts()`, the `outcome_confirmed` tuple slot) and its two dead entry points — `panel/tool_filter.py::filter_tools()` and `RoutingLog.apply_learned_fast_paths()` — are **gone from the tree**, not disabled.
+>
+> **It was dormant, not unfed.** The promotion path executed **zero times in production**: nothing called `record_outcome()`, *and* `route()`'s only non-test call site lived inside `filter_tools()`, which had zero references anywhere in the repo. No producer of outcomes and no consumer of decisions — so wiring it would have meant inventing a customer for the mechanism rather than serving one.
+>
+> **The R18/R19 outcome veto was built and merged the same day it was deleted, deliberately.** Making the signal honest is what *proved* dormancy: a frequency counter with no failure channel can always be excused as "not wired yet"; an honest channel with no producer is a mechanism nobody wants. The retire-or-keep question was only answerable because that work was done first.
+>
+> **What survived the cut, and why:** `MOERouter.fingerprint_counts()` — read live by `shared/conductor_advisor.py` to *recommend* that a human add a hand-tuned `FAST_PATHS` entry. Counting is advice; promoting was self-modification. `FAST_PATH_PROMOTION_THRESHOLD` and `CONSTANTS_HASH` remain in `shared/constants.py` for that advisor and for constants-drift detection respectively. `RoutingLog.get_frequent_fingerprints()` remains as read-only panel telemetry.
+>
+> **To revive:** a production caller of `MOERouter.route()` must exist first, *and* be able to observe and report the outcome of the turn it routed. Evidence and full disposition: `harness/rsi/REGISTRY.json` → loop `F`. Pinned by `tests/test_router_internals.py::TestPromotionRetired`.
 
 ### 2.4 Execution Modes
 

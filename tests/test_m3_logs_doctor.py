@@ -193,14 +193,16 @@ def test_escalate_dumps_evidence(tmp_path, monkeypatch):
     chain = _chain()
     try:
         chain.heartbeat()                       # arm monitoring
-        time.sleep(0.6)                         # freeze past detection + deadline
+        deadline = time.time() + 10
+        while time.time() < deadline and not chain.escalated:
+            time.sleep(0.01)                    # bounded poll, never a bare sleep
         assert chain.escalated is True
         dumps = list(tmp_path.glob("freeze_dump_*.json"))
         assert len(dumps) == 1
         data = json.loads(dumps[0].read_text(encoding="utf-8"))
         assert data["reason"] == "sustained_freeze"
     finally:
-        chain._watchdog.stop()
+        chain.stop()
 
 
 def test_dump_failure_never_blocks_escalation(monkeypatch):
@@ -214,11 +216,62 @@ def test_dump_failure_never_blocks_escalation(monkeypatch):
     chain = _chain()
     try:
         chain.heartbeat()
-        time.sleep(0.6)
+        deadline = time.time() + 10
+        while time.time() < deadline and not chain.escalated:
+            time.sleep(0.01)
         assert chain.escalated is True
         breaker.force_open.assert_called_once()  # the breaker still ACTED
     finally:
-        chain._watchdog.stop()
+        chain.stop()
+
+
+def test_stop_cancels_pending_escalation(monkeypatch):
+    """FAILS IF: a chain stopped BEFORE its escalation deadline still escalates.
+
+    The zombie that flaked master CI twice (2026-08-02): Watchdog.stop() does
+    not cancel the chain's armed escalation Timer, and _is_frozen stays True
+    after stop — so the orphaned timer fired later, passed its guard, and
+    force_open'd the breaker registered by the NEXT test. chain.stop() must
+    kill the whole episode.
+    """
+    srv, breaker, _bridge = _fake_server(with_bridge=True)
+    ws._register_live_server(srv)
+    # LONG deadline: the escalation can never fire naturally during this
+    # test, so no runner speed can turn "stop before deadline" into "stop
+    # after". State-anchored, per the same doctrine as the fix itself.
+    chain = fc.FreezeChain(escalate_after=30.0, heartbeat_interval=0.02,
+                           freeze_threshold=0.06)
+    chain.heartbeat()
+    deadline = time.time() + 10
+    while time.time() < deadline and not chain.is_frozen:
+        time.sleep(0.01)                     # wait for the freeze EDGE
+    assert chain.is_frozen, "freeze never detected"
+    with chain._timer_lock:
+        assert chain._escalation_timer is not None   # timer really armed
+    chain.stop()
+    with chain._timer_lock:
+        assert chain._escalation_timer is None       # stop() cancelled it
+    chain._escalate()                        # even a zombie firing now…
+    assert chain.escalated is False          # …acts on nothing
+    breaker.force_open.assert_not_called()
+
+
+def test_escalation_is_idempotent_per_episode(monkeypatch):
+    """FAILS IF: one sustained freeze episode acts twice. _escalate must be
+    a no-op once escalated, however many timers reach it."""
+    srv, breaker, _bridge = _fake_server(with_bridge=True)
+    ws._register_live_server(srv)
+    chain = _chain()
+    try:
+        chain.heartbeat()
+        deadline = time.time() + 10
+        while time.time() < deadline and not chain.escalated:
+            time.sleep(0.01)
+        assert chain.escalated is True
+        chain._escalate()    # a duplicate/zombie timer firing again
+        breaker.force_open.assert_called_once()
+    finally:
+        chain.stop()
 
 
 def test_freeze_dumps_pruned(tmp_path):
