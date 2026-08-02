@@ -230,6 +230,9 @@ class AuditLog:
         input_data: Optional[Dict[str, Any]] = None,
         output_data: Optional[Dict[str, Any]] = None,
         sequence_id: str = "",
+        duration_ms: float = 0.0,
+        before_state_hash: str = "",
+        after_state_hash: str = "",
     ) -> AuditEntry:
         """
         Log an audit entry.
@@ -264,6 +267,9 @@ class AuditLog:
                 operation_id=operation_id or deterministic_uuid(f"{operation}:{message}"),
                 input_data=input_data or {},
                 output_data=output_data or {},
+                duration_ms=duration_ms,
+                before_state_hash=before_state_hash,
+                after_state_hash=after_state_hash,
                 previous_hash=self._last_hash,
             )
 
