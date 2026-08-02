@@ -45,9 +45,19 @@ class MemoryHandlerMixin:
             # unsaved/untitled scenes, where dirname(hip) != the writer's dir
             # AND $JOB points at Houdini's own install bin, which this process
             # may not write to (WinError 5). Both resolvers are idempotent.
+            #
+            # TWO keys, two meanings (G1a crucible, SEV 3):
+            #   job_path -- the RESOLVED memory ADDRESS. Where memory is
+            #               written and read back. May relocate to temp.
+            #   job_root -- the RAW project ROOT ($JOB as configured). Where
+            #               DISCOVERY looks: cross-scene search and show.json.
+            #               A show root is routinely readable-not-writable;
+            #               relocating it silently empties discovery.
             hip_dir = resolve_hip_dir(hip_path)
-            job_path = resolve_job_dir(hou.getenv("JOB", hip_dir))
-            return {"hip_path": hip_path, "hip_dir": hip_dir, "job_path": job_path}
+            job_root = hou.getenv("JOB", hip_dir)
+            job_path = resolve_job_dir(job_root)
+            return {"hip_path": hip_path, "hip_dir": hip_dir,
+                    "job_path": job_path, "job_root": job_root}
 
         return run_on_main(_on_main)
 
@@ -137,7 +147,12 @@ class MemoryHandlerMixin:
         # Dirs were already resolved on the main thread by _scene_paths --
         # no new hou surface here. Result keys are purely additive.
         reload_show_config()
-        cfg = get_show_config(hip_dir=sp["hip_dir"], job_dir=job_path)
+        # show.json is DISCOVERY, not memory: read it from the raw project
+        # root. A readable-but-unwritable show root must still serve its
+        # config -- resolving here silently swapped a real show.json for
+        # defaults (G1a crucible, proven fps 48.0 -> None).
+        cfg = get_show_config(hip_dir=sp["hip_dir"],
+                              job_dir=sp.get("job_root", job_path))
 
         return {
             "paths": paths,
@@ -190,12 +205,17 @@ class MemoryHandlerMixin:
                 hit["layer"] = layer_name
                 results.append(hit)
 
-        # Cross-scene search
-        if scope == "all" and HOU_AVAILABLE and sp["job_path"]:
+        # Cross-scene search walks the RAW project root ($JOB), not the
+        # resolved memory address: on a studio layout the show root is
+        # readable-not-writable, so resolving it points the glob at temp and
+        # every sibling scene's memory silently vanishes from results
+        # (G1a crucible, proven 2 hits -> 0).
+        job_root = sp.get("job_root") or sp["job_path"]
+        if scope == "all" and HOU_AVAILABLE and job_root:
             import glob as glob_mod
             current_scene_md = os.path.join(sp["hip_dir"], "claude", "memory.md")
             for scene_md in sorted(glob_mod.glob(
-                os.path.join(sp["job_path"], "**", "claude", "memory.md"),
+                os.path.join(job_root, "**", "claude", "memory.md"),
                 recursive=True,
             )):
                 if scene_md == current_scene_md:
