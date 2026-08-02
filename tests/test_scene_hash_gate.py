@@ -54,7 +54,7 @@ def _sig(stage):
 # ── TASK 1a: below-threshold byte-identical ────────────────────
 
 def test_below_threshold_is_byte_identical_to_old_flatten(monkeypatch):
-    """A small stage (< default 5000 prims) must hash to the EXACT old digest."""
+    """A small stage (< default 10_000 prims) must hash to the EXACT old digest."""
     monkeypatch.delenv("SYNAPSE_STAGE_HASH_PRIM_THRESHOLD", raising=False)
     stage = _base_stage()
     gated = b.LosslessExecutionBridge()._hash_stage_signature(stage)
@@ -63,22 +63,46 @@ def test_below_threshold_is_byte_identical_to_old_flatten(monkeypatch):
     )
 
 
-def test_gate_routes_to_flatten_below_and_structural_above(monkeypatch):
-    """The gate itself: high threshold -> Flatten path; threshold 0 -> structural."""
+def test_gate_routes_to_flatten_below_and_reduced_above(monkeypatch):
+    """The gate itself: high threshold -> Flatten path; threshold 0 -> the
+    REDUCED signature (default large mode).
+
+    CONTRACT CHANGE (2026-08-01, BRIDGE-FLOOR, honest-degradation rationale):
+    this test previously pinned threshold-0 -> the COMPLETE structural
+    signature. Measurement (scripts/probe_stage_hash_floor.py) showed the
+    structural signature is NOT cheaper than Flatten (0.84-1.03x, 0.32x on
+    value-heavy stages — it digests every attribute value + time sample), so a
+    gate pointing at it bounded nothing. The gate now degrades to the REDUCED
+    signature (3.5-4.9x cheaper, value-volume-independent) and the reduction
+    is recorded honestly on the IntegrityBlock (stage_hash_mode="reduced",
+    stage_hash_full_fidelity=False — pinned by test_stage_hash_honesty.py).
+    The structural path remains available via SYNAPSE_STAGE_HASH_LARGE_MODE.
+    """
     stage = _base_stage()
     old = _old_flatten_hash(stage)
+    monkeypatch.delenv("SYNAPSE_STAGE_HASH_LARGE_MODE", raising=False)
 
     monkeypatch.setenv("SYNAPSE_STAGE_HASH_PRIM_THRESHOLD", "100000")
     assert b.LosslessExecutionBridge()._hash_stage_signature(stage) == old
 
     monkeypatch.setenv("SYNAPSE_STAGE_HASH_PRIM_THRESHOLD", "0")
     above = b.LosslessExecutionBridge()._hash_stage_signature(stage)
-    assert above == _sig(stage), "above-threshold must use the structural signature"
-    assert above != old, "structural signature must differ from the Flatten digest"
+    assert above == b.LosslessExecutionBridge()._reduced_stage_signature(stage), (
+        "above-threshold default must use the reduced signature")
+    assert above != old, "reduced signature must differ from the Flatten digest"
+
+    # The complete structural path stays available as the opt-in large mode.
+    monkeypatch.setenv("SYNAPSE_STAGE_HASH_LARGE_MODE", "structural")
+    assert b.LosslessExecutionBridge()._hash_stage_signature(stage) == _sig(stage)
+
+    # And "full" restores always-full fidelity regardless of threshold.
+    monkeypatch.setenv("SYNAPSE_STAGE_HASH_LARGE_MODE", "full")
+    assert b.LosslessExecutionBridge()._hash_stage_signature(stage) == old
 
 
 def test_threshold_env_parsing(monkeypatch):
-    """Bad/absent env values fall back to the default (structural off / opt-in)."""
+    """Bad/absent env values fall back to the default (finite since 2026-08:
+    measured 10_000 — a bad value never silently CHANGES the default)."""
     monkeypatch.delenv("SYNAPSE_STAGE_HASH_PRIM_THRESHOLD", raising=False)
     assert b._stage_hash_prim_threshold() == b._DEFAULT_STAGE_HASH_PRIM_THRESHOLD
     monkeypatch.setenv("SYNAPSE_STAGE_HASH_PRIM_THRESHOLD", "garbage")
