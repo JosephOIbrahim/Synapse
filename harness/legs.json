@@ -66,7 +66,7 @@
     {
       "id": "H2",
       "name": "requalify",
-      "state": "blocked",
+      "state": "done",
       "receipt": "H2b.json",
       "branch": "repair/h2-requalify",
       "worktree": ".claude/worktrees/h2-requalify",
@@ -74,7 +74,8 @@
       "deps": [
         "RES"
       ],
-      "note": "R42/R43: unblocks when residency is gone. Scope includes the 17 bucket-2 decorations."
+      "note": "R42/R43: unblocks when residency is gone. Scope includes the 17 bucket-2 decorations.",
+      "closed_note": "state->done 2026-08-02 (bar-truth pass): branch merged to master (ancestor of 8e4c385-era cleanup); findings routed to the decisions board via H2b.json for_ruling"
     },
     {
       "id": "H1",
@@ -184,7 +185,7 @@
     {
       "id": "F1",
       "name": "integrate",
-      "state": "blocked",
+      "state": "done",
       "receipt": "F1.json",
       "deps": [
         "H1",
@@ -197,7 +198,8 @@
       "prompt": "harness/prompts/f1.md",
       "branch": "repair/f1-integrate",
       "worktree": ".claude/worktrees/f1-integrate",
-      "readonly": false
+      "readonly": false,
+      "closed_note": "state->done 2026-08-02 (bar-truth pass): green_with_findings receipt; findings live on the decisions board; integrate lane concluded"
     },
     {
       "id": "H9",
@@ -233,7 +235,7 @@
     {
       "id": "V0",
       "name": "retina m2 reconcile",
-      "state": "ready",
+      "state": "done",
       "receipt": "V0.json",
       "branch": "retina/v0-m2-reconcile",
       "worktree": ".claude/worktrees/v0-m2-reconcile",
@@ -241,7 +243,8 @@
       "deps": [],
       "readonly": true,
       "touches": [],
-      "note": "archive/retina-m2-orphan carries 1,966 lines on no other branch - found in a workflow worktree nothing was backing up, preserved minutes before pruning. Verdict only: does it merge, does its 15/15 T0 byte-identity claim hold, does the worker venv it names actually exist. R91 precedent: building on unmerged work is how four decided rulings got stranded."
+      "note": "archive/retina-m2-orphan carries 1,966 lines on no other branch - found in a workflow worktree nothing was backing up, preserved minutes before pruning. Verdict only: does it merge, does its 15/15 T0 byte-identity claim hold, does the worker venv it names actually exist. R91 precedent: building on unmerged work is how four decided rulings got stranded.",
+      "closed_note": "state->done 2026-08-02 (bar-truth pass): RETINA M2 verdict banked (v5.29.0 shipped, archive branch rejected); reconcile concluded"
     },
     {
       "id": "V1",
@@ -422,7 +425,7 @@
     {
       "id": "E1",
       "name": "tool surface census",
-      "state": "ready",
+      "state": "done",
       "receipt": "E1.json",
       "branch": "econ/e1-tool-surface-census",
       "worktree": ".claude/worktrees/e1-econ",
@@ -430,7 +433,8 @@
       "deps": [],
       "readonly": true,
       "touches": [],
-      "note": "READ-ONLY, PARALLEL to E0 on a disjoint question - E0 asks what a turn COSTS, E1 asks what the surface IS. A total is not a plan. Decomposes 17,310 per tool into name / description / schema, because those three compress differently and only one risks correctness. Looks for concentration (is it 20 tools of 120?), duplicated schema fragments (free reduction, no capability lost), and DEAD SURFACE - a registered tool never called costs its full definition every turn, and S1 already found five Solaris tools registered, tested and unreachable. Ends with the honest counter-question: is 2,000 even reachable at 120 tools, or is the real decision FEWER tools rather than smaller ones."
+      "note": "READ-ONLY, PARALLEL to E0 on a disjoint question - E0 asks what a turn COSTS, E1 asks what the surface IS. A total is not a plan. Decomposes 17,310 per tool into name / description / schema, because those three compress differently and only one risks correctness. Looks for concentration (is it 20 tools of 120?), duplicated schema fragments (free reduction, no capability lost), and DEAD SURFACE - a registered tool never called costs its full definition every turn, and S1 already found five Solaris tools registered, tested and unreachable. Ends with the honest counter-question: is 2,000 even reachable at 120 tools, or is the real decision FEWER tools rather than smaller ones.",
+      "closed_note": "state->done 2026-08-02 (bar-truth pass): econ/e1-tool-surface-census ancestor-merged into master (deleted in the 2026-08-02 77-branch cleanup)"
     },
     {
       "id": "V2",
@@ -452,7 +456,7 @@
     {
       "id": "V3",
       "name": "probe layer",
-      "state": "ready",
+      "state": "done",
       "receipt": "V3.json",
       "branch": "econ/v3-probe-layer",
       "worktree": ".claude/worktrees/v3-econ",
@@ -463,7 +467,8 @@
         "python/synapse/panel/providers/probe.py",
         "python/synapse/panel/providers/registry.py"
       ],
-      "note": "Blueprint Mile 4. Routing is probe-derived, never config-declared - and this project has the receipts: hou.ActiveRender documented and absent, EXPECTED_HOUDINI_VERSION declared and never assigned, five Solaris tools registered and unreachable. A model list is the same shape of claim and fails the same way. Returns a structure, no panel work. Colour COMPUTED from probe age and quota, never stored; staleness degrades to GREY, never to green. Zero completion spend - count_tokens is free, completions are not."
+      "note": "Blueprint Mile 4. Routing is probe-derived, never config-declared - and this project has the receipts: hou.ActiveRender documented and absent, EXPECTED_HOUDINI_VERSION declared and never assigned, five Solaris tools registered and unreachable. A model list is the same shape of claim and fails the same way. Returns a structure, no panel work. Colour COMPUTED from probe age and quota, never stored; staleness degrades to GREY, never to green. Zero completion spend - count_tokens is free, completions are not.",
+      "closed_note": "state->done 2026-08-02 (bar-truth pass): econ/v3-probe-layer ancestor-merged into master (same cleanup)"
     }
   ]
 }
