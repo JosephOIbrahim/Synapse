@@ -32,7 +32,8 @@
       "Edit(harness/daily.ts)",
       "Edit(harness/state/**)",
       "Edit(harness/verify/suite_baseline.json)",
-      "Edit(harness/verify/token_ceiling.json)"
+      "Edit(harness/verify/token_ceiling.json)",
+      "Edit(harness/verify/perf_baseline.json)"
     ]
   },
   "env": {
