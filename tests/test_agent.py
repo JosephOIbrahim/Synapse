@@ -1,8 +1,14 @@
 """
 Synapse Agent Layer Tests
 
-Tests for protocol models, executor (dry-run and with mock command_fn),
-and outcome tracking/learning.
+Tests for protocol models and the executor (dry-run and with mock command_fn).
+
+The outcome-tracking/learning tests were removed on 2026-08-01 with the
+mechanism they covered: `OutcomeTracker` (`synapse/agent/learning.py`), RSI
+loop `A2`, RETIRED for dormancy. What replaces them is smaller and points the
+other way — `TestExecutorMemoryIsInert` pins that the executor no longer reads
+or writes memory, so a future revival has to be deliberate rather than
+accidental.
 
 Run without Houdini:
     python -m pytest tests/test_agent.py -v
@@ -38,7 +44,6 @@ from synapse.agent.protocol import (
     classify_gate_level,
 )
 from synapse.agent.executor import AgentExecutor
-from synapse.agent.learning import OutcomeTracker
 
 
 # =============================================================================
@@ -641,143 +646,17 @@ class TestExecutorWithGate:
 
 
 # =============================================================================
-# LEARNING TESTS — OutcomeTracker
+# EXECUTOR + MEMORY: THE RETIRED REWARD SIGNAL
+#
+# RSI loop `A2` (`OutcomeTracker`, `synapse/agent/learning.py`) was RETIRED on
+# 2026-08-01 for dormancy — it never recorded an outcome in production because
+# `AgentExecutor` has no production construction site at all. The tests that
+# covered it went with it. These pin the ABSENCE, so nothing silently grows
+# back: passing `memory=` must not make the executor read or write memory.
 # =============================================================================
 
-class TestOutcomeTracker:
-    """Tests for OutcomeTracker learning system."""
-
-    def setup_method(self):
-        HumanGate.reset_instance()
-        AuditLog.reset_instance()
-        self.tmp_dir = Path(tempfile.mkdtemp())
-        AuditLog.get_instance(log_dir=self.tmp_dir / "audit")
-        self.memory = SynapseMemory(project_path=str(self.tmp_dir / "project"))
-        self.tracker = OutcomeTracker(self.memory)
-
-    def teardown_method(self):
-        HumanGate.reset_instance()
-        AuditLog.reset_instance()
-        shutil.rmtree(self.tmp_dir, ignore_errors=True)
-
-    def _make_plan(self, goal="Set up lighting", success=True):
-        """Create a completed plan for testing."""
-        task = _make_task(goal=goal)
-        steps = [
-            _make_step(action="create_node", description="Create key light"),
-            _make_step(action="set_parm", description="Set intensity to 1.0"),
-        ]
-        if success:
-            for s in steps:
-                s.status = StepStatus.COMPLETED
-        else:
-            steps[0].status = StepStatus.COMPLETED
-            steps[1].status = StepStatus.FAILED
-            steps[1].error = "Parameter not found"
-
-        plan = AgentPlan(
-            plan_id="", task=task, steps=steps,
-            reasoning="Three-point lighting",
-            status=PlanStatus.COMPLETED if success else PlanStatus.FAILED,
-            success=success,
-        )
-        return plan
-
-    def test_record_stores_feedback_memory(self):
-        plan = self._make_plan(success=True)
-        mem = self.tracker.record(plan, success=True)
-
-        assert mem.memory_type == MemoryType.FEEDBACK
-        assert "success" in mem.tags
-        assert "lighting" in mem.tags
-        assert "outcome" in mem.tags
-        assert "Set up lighting" in mem.content
-        assert "Success" in mem.content
-
-    def test_record_failure_tags_correctly(self):
-        plan = self._make_plan(success=False)
-        mem = self.tracker.record(plan, success=False)
-
-        assert "failure" in mem.tags
-        assert "success" not in mem.tags
-        assert "Failure" in mem.content
-
-    def test_record_includes_feedback_text(self):
-        plan = self._make_plan(success=True)
-        mem = self.tracker.record(plan, success=True, feedback="Looks great!")
-
-        assert "Looks great!" in mem.content
-
-    def test_record_includes_step_errors(self):
-        plan = self._make_plan(success=False)
-        mem = self.tracker.record(plan, success=False)
-
-        assert "Parameter not found" in mem.content
-
-    def test_get_relevant_finds_similar(self):
-        # Record some outcomes
-        plan1 = self._make_plan(goal="Set up key lighting")
-        self.tracker.record(plan1, success=True)
-
-        plan2 = self._make_plan(goal="Configure fill lighting")
-        self.tracker.record(plan2, success=True)
-
-        # Search for similar
-        results = self.tracker.get_relevant("Set up lighting", AuditCategory.LIGHTING)
-        assert len(results) >= 1
-        # At least one should mention lighting
-        contents = [r.memory.content for r in results]
-        assert any("lighting" in c.lower() for c in contents)
-
-    def test_get_rejections_filters_correctly(self):
-        # Record a failure for shot_010
-        plan_fail = self._make_plan(goal="Bad lighting attempt")
-        plan_fail.task.sequence_id = "shot_010"
-        self.tracker.record(plan_fail, success=False)
-
-        # Record a success for shot_010
-        plan_ok = self._make_plan(goal="Good lighting")
-        plan_ok.task.sequence_id = "shot_010"
-        self.tracker.record(plan_ok, success=True)
-
-        # Get rejections
-        rejections = self.tracker.get_rejections("shot_010")
-        assert len(rejections) >= 1
-        # All should be failures
-        for r in rejections:
-            assert "failure" in r.tags
-
-    def test_success_rate_calculation(self):
-        # Record 3 successes and 1 failure
-        for i in range(3):
-            plan = self._make_plan(goal=f"Success task {i}")
-            self.tracker.record(plan, success=True)
-
-        plan_fail = self._make_plan(goal="Failure task")
-        self.tracker.record(plan_fail, success=False)
-
-        rate = self.tracker.success_rate()
-        assert 0.7 <= rate <= 0.8  # 3/4 = 0.75
-
-    def test_success_rate_empty(self):
-        rate = self.tracker.success_rate()
-        assert rate == 0.0
-
-    def test_success_rate_by_category(self):
-        # Record success in LIGHTING
-        plan = self._make_plan(goal="Lighting task")
-        self.tracker.record(plan, success=True)
-
-        rate = self.tracker.success_rate(AuditCategory.LIGHTING)
-        assert rate > 0.0
-
-
-# =============================================================================
-# EXECUTOR + MEMORY INTEGRATION
-# =============================================================================
-
-class TestExecutorWithMemory:
-    """Tests for AgentExecutor with memory integration."""
+class TestExecutorMemoryIsInert:
+    """The executor accepts a memory handle and does nothing with it."""
 
     def setup_method(self):
         HumanGate.reset_instance()
@@ -791,8 +670,27 @@ class TestExecutorWithMemory:
         AuditLog.reset_instance()
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
-    def test_prepare_populates_context_from_memory(self):
-        # Add some feedback memories first
+    def test_executor_has_no_outcome_tracker(self):
+        """The wiring at the old executor.py:60 is gone, not merely disabled."""
+        executor = AgentExecutor(memory=self.memory)
+        assert not hasattr(executor, "_tracker")
+
+    def test_executor_has_no_record_outcome_method(self):
+        """The public reward-signal entry point is gone."""
+        assert not hasattr(AgentExecutor(memory=self.memory), "record_outcome")
+
+    def test_learning_module_is_gone(self):
+        """`synapse.agent.learning` must not be importable, from anywhere."""
+        import pytest
+        with pytest.raises(ImportError):
+            import synapse.agent.learning  # noqa: F401
+        with pytest.raises(ImportError):
+            from synapse.agent import OutcomeTracker  # noqa: F401
+        with pytest.raises(ImportError):
+            from synapse import OutcomeTracker  # noqa: F401
+
+    def test_prepare_no_longer_reads_memory(self):
+        """The read half is retired: prior FEEDBACK memories do not seed context."""
         self.memory.add(
             content="Previous lighting setup worked well",
             memory_type=MemoryType.FEEDBACK,
@@ -803,29 +701,41 @@ class TestExecutorWithMemory:
         executor = AgentExecutor(memory=self.memory)
         task = executor.prepare("Set up lighting", "shot_010", "lighting")
 
-        # Should have found relevant memories
-        assert task.relevant_memories is not None
+        assert task.relevant_memories == []
+        assert task.constraints == []
+        assert task.context_summary == ""
 
-    def test_execute_records_outcome_in_memory(self):
+    def test_execute_writes_no_outcome_memory(self):
+        """The write half is retired: a completed plan records nothing."""
         executor = AgentExecutor(memory=self.memory)
         task = executor.prepare("Test", "shot_010", "lighting")
-        steps = [_make_step(action="ping")]
-        plan = executor.propose(task, steps, reasoning="Test")
+        plan = executor.propose(task, [_make_step(action="ping")], reasoning="Test")
         assert plan.status == PlanStatus.APPROVED
 
         result = executor.execute(plan)
         assert result.success is True
 
-        # Check that a feedback memory was created
-        feedback = self.memory.store.get_by_type(MemoryType.FEEDBACK)
-        assert len(feedback) >= 1
-        assert any("success" in m.tags for m in feedback)
+        assert self.memory.store.get_by_type(MemoryType.FEEDBACK) == []
+
+    def test_execute_writes_no_outcome_memory_on_failure(self):
+        """The failure path recorded too. It also records nothing now."""
+        def failing_fn(cmd):
+            return SynapseResponse(success=False, error="nope")
+
+        executor = AgentExecutor(command_fn=failing_fn, memory=self.memory)
+        task = executor.prepare("Test", "shot_010", "lighting")
+        plan = executor.propose(task, [_make_step(action="ping")], reasoning="Test")
+        assert plan.status == PlanStatus.APPROVED
+
+        result = executor.execute(plan)
+        assert result.success is False
+
+        assert self.memory.store.get_by_type(MemoryType.FEEDBACK) == []
 
     def test_full_loop_prepare_propose_execute(self):
-        """End-to-end: prepare → propose → execute → learn."""
+        """End-to-end: prepare -> propose -> execute. No learn stage."""
         executor = AgentExecutor(memory=self.memory)
 
-        # Prepare
         task = executor.prepare(
             "Set up three-point lighting for shot_010",
             "shot_010",
@@ -834,7 +744,6 @@ class TestExecutorWithMemory:
         )
         assert isinstance(task, AgentTask)
 
-        # Propose (read-only steps auto-approve)
         steps = [
             _make_step(action="get_scene_info", description="Check current scene"),
             _make_step(action="get_parm", description="Check existing lights"),
@@ -842,15 +751,10 @@ class TestExecutorWithMemory:
         plan = executor.propose(task, steps, reasoning="Gather info first")
         assert plan.status == PlanStatus.APPROVED
 
-        # Execute
         result = executor.execute(plan)
         assert result.status == PlanStatus.COMPLETED
         assert result.success is True
         assert result.progress() == 1.0
-
-        # Verify outcome was stored
-        feedback = self.memory.store.get_by_type(MemoryType.FEEDBACK)
-        assert len(feedback) >= 1
 
 
 # =============================================================================
@@ -865,7 +769,7 @@ class TestPackageImports:
             AgentTask, AgentPlan, AgentStep,
             StepStatus, PlanStatus,
             DEFAULT_GATE_LEVELS, classify_gate_level,
-            AgentExecutor, OutcomeTracker,
+            AgentExecutor,
         )
         assert AgentTask is not None
         assert AgentExecutor is not None
@@ -873,7 +777,7 @@ class TestPackageImports:
     def test_import_from_synapse_root(self):
         from synapse import (
             AgentTask, AgentPlan, AgentStep,
-            AgentExecutor, OutcomeTracker,
+            AgentExecutor,
         )
         assert AgentTask is not None
         assert AgentExecutor is not None
