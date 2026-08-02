@@ -1,134 +1,226 @@
 {
-  "_doc": "Latency hypothesis registry. Each entry is a candidate cost, not an accepted work item. The scout fan-out (workflow 'latency-scale-ledger') populates verdict/evidence/probe; a HUMAN moves an entry to accepted. No agent flips 'accepted' — that is the anti-runaway anchor, and it survives delegation because its purpose is that no agent ratifies its own findings.",
+  "_doc": "Latency hypothesis registry. Each entry is a candidate cost, not an accepted work item. The scout fan-out (workflow 'latency-scale-ledger') populates verdict/evidence/probe; a HUMAN moves an entry to accepted. No agent flips 'accepted' \u2014 that is the anti-runaway anchor, and it survives delegation because its purpose is that no agent ratifies its own findings.",
   "_ladder": "L0 CLAIMED -> L1 REPRODUCIBLE -> L2 ATTRIBUTED -> L3 BOUNDED -> L4 REDUCED -> L5 HELD. See SPEC.md.",
   "_scale_axis": "Every entry MUST state scale_behavior. A cost with no scale term has not reached L2.",
   "populated_by": "workflow latency-scale-ledger (run wf_b9c32632-1fc, 20 agents, read-only)",
   "refuted_list_source": "docs/reviews/synapse-latency-report-2026-07-27.md section 2 'Refuted - do not re-propose'",
-
   "hypotheses": [
     {
       "id": "H1-double-topo-hash",
       "title": "Every bridge mutation pays two full topology walks (scene_hash_before + after)",
       "bin": "T4",
-      "rung": "L0",
-      "verdict": "pending",
+      "rung": "L1",
+      "verdict": "downgraded_residue",
       "accepted": false,
-      "scale_behavior": null,
-      "probe": null,
-      "checked_against_refuted": false,
-      "seed_evidence": ["CLAUDE.md 1.3 IntegrityBlock", "CLAUDE.md 1.4 _topo_hash", "shared/bridge.py:427"]
+      "scale_behavior": "OTHER - three terms; 3/4 parts self-refuted",
+      "probe": "hython one-liner (C4 rank 7)",
+      "checked_against_refuted": true,
+      "seed_evidence": [
+        "CLAUDE.md 1.3 IntegrityBlock",
+        "CLAUDE.md 1.4 _topo_hash",
+        "shared/bridge.py:427"
+      ],
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
     },
     {
       "id": "H2-blast-radius-traversal",
       "title": "R7 _infer_stage_touch traces node.dependents() forward on every execution",
       "bin": "T4",
-      "rung": "L0",
-      "verdict": "pending",
+      "rung": "L1",
+      "verdict": "blocked_on_instrument",
       "accepted": false,
-      "scale_behavior": null,
-      "probe": null,
-      "checked_against_refuted": false,
-      "seed_evidence": ["CLAUDE.md 1.6", "shared/bridge.py"]
+      "scale_behavior": "LINEAR_IN_NODES (subtree)",
+      "probe": "hython one-liner (C4 rank 7); cost claim needs the rank-6 timers",
+      "checked_against_refuted": true,
+      "seed_evidence": [
+        "CLAUDE.md 1.6",
+        "shared/bridge.py"
+      ],
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
     },
     {
       "id": "H3-composition-validation",
       "title": "USD composition validation after mutation may be a second ungated stage traversal",
       "bin": "T4",
-      "rung": "L0",
-      "verdict": "pending",
+      "rung": "L2",
+      "verdict": "real_and_open",
       "accepted": false,
-      "scale_behavior": null,
-      "probe": null,
-      "checked_against_refuted": false,
-      "seed_evidence": ["CLAUDE.md 1.1 Scene Integrity anchor"]
+      "scale_behavior": "LINEAR_IN_PRIMS - O(P) default-prims traverse per mutation, ungated, inside the open undo group",
+      "probe": "standalone pxr, zero hou: extend scripts/probe_stage_hash_floor.py with a comp-ms column; run N=1k/10k/100k",
+      "checked_against_refuted": true,
+      "seed_evidence": [
+        "CLAUDE.md 1.1 Scene Integrity anchor"
+      ],
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
     },
     {
       "id": "H4-observation-payload",
-      "title": "Observation payloads scale with the scene and land in the next prompt — a T4 cost that becomes a T1 cost",
+      "title": "Observation payloads scale with the scene and land in the next prompt \u2014 a T4 cost that becomes a T1 cost",
       "bin": "T4->T1",
-      "rung": "L0",
-      "verdict": "pending",
+      "rung": "L2",
+      "verdict": "real_and_open",
       "accepted": false,
-      "scale_behavior": null,
-      "probe": null,
-      "checked_against_refuted": false,
-      "seed_evidence": ["CLAUDE.md stage 1 claims '<100 tokens per node' - unverified at scale"]
+      "scale_behavior": "LINEAR_IN_NODES in-window, then multiplied by up to 25 iterations (O(K^2) prefill)",
+      "probe": "offline token count ran (C3); pricing needs the message_start usage capture",
+      "checked_against_refuted": true,
+      "seed_evidence": [
+        "CLAUDE.md stage 1 claims '<100 tokens per node' - unverified at scale"
+      ],
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
     },
     {
       "id": "H5-residual-serialization",
       "title": "Other ungated full-stage serialization sites (the direct sequel to the 4x win)",
       "bin": "T4",
-      "rung": "L0",
-      "verdict": "pending",
+      "rung": "L2",
+      "verdict": "real_and_open_split",
       "accepted": false,
-      "scale_behavior": null,
-      "probe": null,
-      "checked_against_refuted": false,
-      "seed_evidence": ["98b556f gated ONE site"]
+      "scale_behavior": "LINEAR_IN_PRIMS O(P+2F+V)",
+      "probe": "phantom half settled offline; timing half = hython probe",
+      "checked_against_refuted": true,
+      "seed_evidence": [
+        "98b556f gated ONE site"
+      ],
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
     },
     {
       "id": "H6-mainthread-queue",
       "title": "Serial per-connection WS loop makes cancel unreachable; queue wait under a busy main thread",
       "bin": "T3",
-      "rung": "L0",
-      "verdict": "pending",
+      "rung": "L2",
+      "verdict": "real_and_open",
       "accepted": false,
-      "scale_behavior": null,
-      "probe": null,
-      "checked_against_refuted": false,
-      "seed_evidence": ["websocket.py:471", "main_thread.py:20,204,311"]
+      "scale_behavior": "OTHER - linear in duration of the in-flight op ahead of you",
+      "probe": "un-stub _handle_message in a scratch copy of tests/test_websocket_cancel_reachable.py (stub at :157 hid the defect)",
+      "checked_against_refuted": true,
+      "seed_evidence": [
+        "websocket.py:471",
+        "main_thread.py:20,204,311"
+      ],
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
     },
     {
       "id": "H7-declarative-coverage",
       "title": "COPs/TOPS/rig builds still burn O(N) LLM turns; declarative collapse is Solaris-only",
       "bin": "T1",
-      "rung": "L0",
-      "verdict": "pending",
+      "rung": "dead",
+      "verdict": "refuted",
       "accepted": false,
-      "scale_behavior": null,
-      "probe": null,
-      "checked_against_refuted": false,
-      "seed_evidence": ["report section 2 #1 names this the biggest remaining lever", "claude_worker.py:34", "graph_builder.py:131-160"]
+      "scale_behavior": "LINEAR_IN_TURNS - but coverage claim factually wrong; extending ADDS +1 RT vs synapse_batch",
+      "probe": "author falsification probe ran; confirmed by C1/C2/C4",
+      "checked_against_refuted": true,
+      "seed_evidence": [
+        "report section 2 #1 names this the biggest remaining lever",
+        "claude_worker.py:34",
+        "graph_builder.py:131-160"
+      ],
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
     },
     {
       "id": "H8-perceived-latency",
       "title": "Tool-first turns emit nothing; a silent multi-turn build feels broken at 1ms/op",
       "bin": "T1-perceived",
-      "rung": "L0",
-      "verdict": "pending",
+      "rung": "L1",
+      "verdict": "ux_track",
       "accepted": false,
-      "scale_behavior": null,
-      "probe": null,
-      "checked_against_refuted": false,
-      "seed_evidence": ["synapse_panel.py:1646-1653", "anthropic_provider.py:255-257"]
+      "scale_behavior": "LINEAR_IN_TURNS of silent time; zero measured wall-clock",
+      "probe": "offline probe ran, 4/4 predicted values match; belongs on a UX track with its own acceptance test",
+      "checked_against_refuted": true,
+      "seed_evidence": [
+        "synapse_panel.py:1646-1653",
+        "anthropic_provider.py:255-257"
+      ],
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
     },
     {
       "id": "H9-schema-prefill-tax",
-      "title": "~123 tool schemas are prefilled on every turn — a T1 cost hiding inside a tidiness problem",
+      "title": "~123 tool schemas are prefilled on every turn \u2014 a T1 cost hiding inside a tidiness problem",
       "bin": "T1",
-      "rung": "L0",
-      "verdict": "pending",
+      "rung": "L1",
+      "verdict": "folded_into_H4",
       "accepted": false,
-      "scale_behavior": null,
-      "probe": null,
-      "checked_against_refuted": false,
-      "seed_evidence": ["123 MCP tools registered (CLAUDE.md header)"]
+      "scale_behavior": "CONSTANT per API call",
+      "probe": "static half confirmed; blocked on credentials + usage capture; 123->100 cut prescription killed",
+      "checked_against_refuted": true,
+      "seed_evidence": [
+        "123 MCP tools registered (CLAUDE.md header)"
+      ],
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
+    },
+    {
+      "id": "H10-gate-keys-on-wrong-axis",
+      "title": "The shipped 4x gate keys on prim count; cost is authored ARRAY VOLUME - bypass class measured",
+      "bin": "T4",
+      "rung": "L2",
+      "verdict": "real_and_open",
+      "accepted": false,
+      "scale_behavior": "LINEAR_IN_AUTHORED_ARRAY_VOLUME, not prims: 4-prim PointInstancer @2M instances = 2017.9 ms/op while _stage_exceeds(stage,10000) returns False (16,677x miss); instanceable 101 prims = 5.0 ms",
+      "probe": "C2's live probe, wf_b9c32632-1fc journal - rerunnable standalone pxr",
+      "checked_against_refuted": true,
+      "seed_evidence": [
+        "shared/bridge.py:422 _DEFAULT_STAGE_HASH_PRIM_THRESHOLD=10_000 (the real gate; :427 is a sentinel)",
+        "C2 crucible verdict PREMISE-scale-model: ')re-parameterize, do not loop to Pass 0' severity 4/5"
+      ],
+      "note": "Surfaced by the premise attack AFTER C4 ranked - carries no rank yet; strongest mechanism evidence on the board."
+    },
+    {
+      "id": "H11-honesty-fields-unconsumed",
+      "title": "stage_hash_mode/stage_hash_full_fidelity/composition_checks_reduced are recorded and read by NOTHING - fidelity stays 1.0 on reduced ops",
+      "bin": "integrity",
+      "rung": "L2",
+      "verdict": "real_and_open",
+      "accepted": false,
+      "scale_behavior": "CONSTANT",
+      "probe": "grep consumers: hits only bridge.py, DEPLOYMENT.md, 2 test files; panel/session_integrity.py:66 filters 'no_change' OUT of mutation accounting (G1-pr61-anatomy)",
+      "checked_against_refuted": true,
+      "seed_evidence": [
+        "shared/bridge.py:530-535 recorded",
+        "shared/bridge.py:537-556 anchors_hold/fidelity ignore them",
+        "doc-drift: bridge.py:449-450 + :2137-2139 still describe the pre-98b556f unbounded default"
+      ],
+      "note": "Honest at the point of record, dead at the point of use. Value-only edits above 10k prims record delta_hash='no_change' and session_integrity discards them."
     }
   ],
-
   "instruments": {
-    "_doc": "U1-U4 from the 2026-07-17 report. The 07-27 report claims none landed; the fan-out verifies that against HEAD rather than trusting the snapshot.",
-    "U1_ttft_histogram": {"state": "pending", "locator": null},
-    "U2_turns_per_build": {"state": "pending", "locator": null},
-    "U3_llm_stream_timer": {"state": "pending", "locator": null},
-    "U4_percentiles": {"state": "pending", "locator": null}
+    "_doc": "Verified against HEAD 92d497e by G4 (wf_b9c32632-1fc), not trusted from the report.",
+    "U1_ttft_histogram": {
+      "state": "absent",
+      "locator": "hook exists unused: synapse_panel.py:1944-1947 (_on_token flips _streaming_started), t0 at :1942"
+    },
+    "U2_turns_per_build": {
+      "state": "absent",
+      "locator": "log-only at claude_worker.py:225-229 (report's :190-196 drifted); cap at :35"
+    },
+    "U3_llm_stream_timer": {
+      "state": "absent",
+      "locator": "zero timing in all six providers; only perf_counter under panel/providers/ is probe.py:403-408 (reachability)"
+    },
+    "U4_percentiles": {
+      "state": "absent",
+      "locator": "avg+max only; every histogram saturates at 4000-5000 ms - useless for the T4 regime"
+    },
+    "new_since_report": {
+      "state": "landed",
+      "locator": "main_thread_hold histogram, commit 8239410 (2026-08-01)"
+    }
   },
-
   "ratchet": {
     "_doc": "The missing primitive. The 4x win from 98b556f has NOTHING pinning it - a refactor can silently give it back and no test fails. Floor must be read at merge-base so a branch cannot lower its own bar (same discipline as the suite ratchet).",
     "armed": false,
-    "floor_kind": null,
+    "floor_kind": "counted proxy (full-stage traversals / prims-visited per op) per I2 design - a timer cannot gate: CI has no pxr (ci.yml:53, pyproject has no usd-core)",
     "floor_path": null,
     "human_armed_by": null
+  },
+  "designs": {
+    "I1_scale_bench": {
+      "status": "designed, unbuilt",
+      "where": "wf_b9c32632-1fc journal (I1-scale-bench)",
+      "shape": "extend _benchmark_latency.py (repo root) with --tier offline|live + --mode count + --scale; offline emits NO *_ms keys ever"
+    },
+    "I2_perf_ratchet": {
+      "status": "designed, unbuilt",
+      "where": "wf_b9c32632-1fc journal (I2-perf-ratchet)",
+      "shape": "tests/perf_counters.py + harness/verify/perf_ratchet.py + perf_baseline.json; floor read at merge-base; regression proofs are deleteable-guard tests"
+    }
   }
 }

@@ -418,7 +418,14 @@ def test_memory_resolver_marshals_off_main_when_hou_is_live(monkeypatch, tmp_pat
         calls["thread"] = _threading.current_thread().name
         return tmp_path / ".synapse"
 
-    from synapse.server import main_thread as mt
+    # importlib.import_module, NOT 'from synapse.server import main_thread':
+    # the from-import binds the PACKAGE ATTRIBUTE, while the code under
+    # test's call-time relative import binds the SYS.MODULES entry. Some
+    # test orderings leave those divergent, and a patch on the package
+    # attribute then lands on an object production never reads (this test
+    # failed exactly that way in the full suite, m-group ordering).
+    import importlib
+    mt = importlib.import_module("synapse.server.main_thread")
     monkeypatch.setattr(mt, "run_on_main", fake_run_on_main)
 
     result = {}
@@ -447,7 +454,14 @@ def test_memory_resolver_direct_on_main_thread(monkeypatch, tmp_path):
     def _boom(*_a, **_k):  # pragma: no cover
         raise AssertionError("run_on_main called from the main thread")
 
-    from synapse.server import main_thread as mt
+    # importlib.import_module, NOT 'from synapse.server import main_thread':
+    # the from-import binds the PACKAGE ATTRIBUTE, while the code under
+    # test's call-time relative import binds the SYS.MODULES entry. Some
+    # test orderings leave those divergent, and a patch on the package
+    # attribute then lands on an object production never reads (this test
+    # failed exactly that way in the full suite, m-group ordering).
+    import importlib
+    mt = importlib.import_module("synapse.server.main_thread")
     monkeypatch.setattr(mt, "run_on_main", _boom)
     monkeypatch.setattr(wp, "_resolve_via_doctor", lambda: tmp_path / ".synapse")
 

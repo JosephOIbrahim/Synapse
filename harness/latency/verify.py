@@ -75,25 +75,37 @@ def _open_hypotheses(reg):
 # ── P1 ──────────────────────────────────────────────────────────────────────
 
 def p1_ledger_scaled():
-    prod = f"read {LEDGER.relative_to(REPO).as_posix()}"
+    """Scale-parameterization is a REGISTRY property, checked structurally.
+
+    The first version scanned every LEDGER.md table row for a scale term —
+    wrong artifact shape: the ledger also carries action and verdict tables,
+    which are not cost rows. The binding contract is `_scale_axis` in the
+    registry: every non-dead hypothesis carries a non-null scale_behavior,
+    and the ledger exists to narrate the axis.
+    """
+    prod = "REGISTRY.json hypotheses[].scale_behavior + LEDGER.md exists"
     if not LEDGER.is_file():
         return row("P1", "cost ledger is scale-parameterized", "PENDING",
                    "LEDGER.md not written yet (scout fan-out produces it)", prod)
-    text = LEDGER.read_text(encoding="utf-8", errors="replace")
-    rows = [ln for ln in text.splitlines()
-            if ln.strip().startswith("|") and ln.count("|") >= 3]
-    body = [ln for ln in rows if not re.match(r"^\s*\|[\s\-:|]+\|\s*$", ln)][1:]
-    if not body:
+    reg = _registry()
+    if reg is None:
+        return row("P1", "cost ledger is scale-parameterized", "UNKNOWN",
+                   "REGISTRY.json missing or unparseable", prod)
+    hyps = reg.get("hypotheses") or []
+    if not hyps:
+        return row("P1", "cost ledger is scale-parameterized", "PENDING",
+                   "registry has no hypotheses yet", prod)
+    unscaled = [h["id"] for h in hyps
+                if str(h.get("verdict", "")).lower() not in
+                ("refuted", "killed", "not_applicable")
+                and not (h.get("scale_behavior") or "").strip()]
+    if unscaled:
         return row("P1", "cost ledger is scale-parameterized", "FAIL",
-                   "LEDGER.md exists but contains no cost table rows", prod)
-    missing = [ln.split("|")[1].strip()[:28] for ln in body
-               if not any(t in ln.upper() for t in SCALE_TERMS)]
-    if missing:
-        return row("P1", "cost ledger is scale-parameterized", "FAIL",
-                   f"{len(missing)} cost row(s) carry no scale term: "
-                   f"{', '.join(missing[:4])}", prod)
+                   f"{len(unscaled)} live entr(ies) carry no scale term: "
+                   f"{', '.join(unscaled[:4])}", prod)
     return row("P1", "cost ledger is scale-parameterized", "PASS",
-               f"all {len(body)} cost rows carry a scale term", prod)
+               f"LEDGER.md present; all {len(hyps)} registry entries carry "
+               f"a scale term", prod)
 
 
 # ── P2 ──────────────────────────────────────────────────────────────────────
@@ -270,27 +282,50 @@ def p8_law2():
     Scoped to LEDGER.md — the artifact that exists to state numbers. SPEC.md
     quotes numbers from the report it cites inline, and a checker that flagged
     those would be measuring prose, not provenance.
+
+    Granularity is the PARAGRAPH (blank-line-delimited block), except table
+    rows, which are their own unit. The first version checked physical lines
+    and flagged 4 wrapped bullets whose producer sat one line below the
+    number — measuring line-wrapping, not provenance. Law 2 binds the claim,
+    and the claim is the block.
     """
-    prod = "regex scan of LEDGER.md lines containing a magnitude"
+    prod = "regex scan of LEDGER.md blocks (paragraphs + table rows) with a magnitude"
     if not LEDGER.is_file():
         return row("P8", "Law 2 — every number names its producer", "PENDING",
                    "LEDGER.md not written yet", prod)
-    bare = []
-    for i, ln in enumerate(LEDGER.read_text(encoding="utf-8",
-                                            errors="replace").splitlines(), 1):
-        if not _NUM.search(ln):
+    text = LEDGER.read_text(encoding="utf-8", errors="replace")
+    has_producer = re.compile(
+        r"[\w/\\.-]+\.(?:py|md|json|ts|ps1):\d+|`[^`]+`|\b[0-9a-f]{7,40}\b"
+        r"|REQUIRES LIVE BRIDGE|PRIOR|COMMITTED|wf_[a-z0-9-]+|\[(?:C\d|G\d|H\d+|I\d)[^\]]*\]")
+    blocks: list = []   # (first_line_no, block_text)
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        if not ln.strip():
+            i += 1
             continue
-        # A producer is a file:line, a sha, a command, or an explicit marker.
-        if re.search(r"[\w/\\.-]+\.(?:py|md|json|ts|ps1):\d+|`[^`]+`|\b[0-9a-f]{7,40}\b"
-                     r"|REQUIRES LIVE BRIDGE|PRIOR|COMMITTED", ln):
+        if ln.lstrip().startswith("|"):
+            blocks.append((i + 1, ln))         # table row = its own unit
+            i += 1
             continue
-        bare.append(i)
+        start = i
+        buf = [ln]
+        while i + 1 < len(lines) and lines[i + 1].strip() \
+                and not lines[i + 1].lstrip().startswith("|"):
+            i += 1
+            buf.append(lines[i])
+        blocks.append((start + 1, "\n".join(buf)))
+        i += 1
+    bare = [str(n) for n, blk in blocks
+            if _NUM.search(blk) and not has_producer.search(blk)]
     if bare:
         return row("P8", "Law 2 — every number names its producer", "FAIL",
-                   f"{len(bare)} line(s) state a magnitude with no producer "
-                   f"(lines {', '.join(map(str, bare[:6]))})", prod)
+                   f"{len(bare)} block(s) state a magnitude with no producer "
+                   f"(starting at lines {', '.join(bare[:6])})", prod)
     return row("P8", "Law 2 — every number names its producer", "PASS",
-               "every magnitude in LEDGER.md carries a producer", prod)
+               f"all {sum(1 for _, b in blocks if _NUM.search(b))} "
+               f"magnitude-bearing blocks carry a producer", prod)
 
 
 CHECKS = [p1_ledger_scaled, p2_probes, p3_no_refuted_rework, p4_instrument_state,
