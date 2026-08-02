@@ -1658,6 +1658,14 @@ class LosslessExecutionBridge:
             operation_type=operation.operation_type,
             timestamp=datetime.now().isoformat(),
         )
+        # K4 (R302 crucible): default-DENY the composition anchor. Now that
+        # composition_valid carries a real verdict, the dataclass default
+        # (valid=True, applicable=True) reads "validation ran and passed" on
+        # every path that fails BEFORE validation — consent-denied, and any op
+        # whose fn raises. Applicability is asserted only where the check
+        # actually runs; every early exit therefore says N/A honestly instead
+        # of claiming a pass it never earned.
+        integrity.composition_applicable = False
 
         consent_ok = self._check_consent(operation)
         integrity.consent_verified = consent_ok
@@ -1753,6 +1761,7 @@ class LosslessExecutionBridge:
                     # passed; False = ran and failed (recorded BEFORE the
                     # raise so the failed op's block carries it).
                     integrity.composition_valid = comp_ok
+                    integrity.composition_applicable = True  # K4: it ran
                     integrity.composition_checks_reduced = getattr(
                         self._stage_hash_tl, "comp_reduced", False)
                     if not comp_ok:
@@ -1815,6 +1824,14 @@ class LosslessExecutionBridge:
             operation_type=operation.operation_type,
             timestamp=datetime.now().isoformat(),
         )
+        # K4 (R302 crucible): default-DENY the composition anchor. Now that
+        # composition_valid carries a real verdict, the dataclass default
+        # (valid=True, applicable=True) reads "validation ran and passed" on
+        # every path that fails BEFORE validation — consent-denied, and any op
+        # whose fn raises. Applicability is asserted only where the check
+        # actually runs; every early exit therefore says N/A honestly instead
+        # of claiming a pass it never earned.
+        integrity.composition_applicable = False
 
         consent_ok = await self._check_consent_async(operation)
         integrity.consent_verified = consent_ok
@@ -1875,6 +1892,7 @@ class LosslessExecutionBridge:
                         # H3 honesty (parity with _execute_houdini): record
                         # the anchor's actual outcome, before the raise.
                         integrity.composition_valid = comp_ok
+                        integrity.composition_applicable = True  # K4: it ran
                         integrity.composition_checks_reduced = getattr(
                             self._stage_hash_tl, "comp_reduced", False)
                         if not comp_ok:

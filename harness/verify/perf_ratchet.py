@@ -181,24 +181,37 @@ def read_floor(repo: Path = REPO, rel: str = FLOOR_RELPATH):
     """Read the floor at the ratchet anchor. Returns (raw_or_None,
     anchor_used, note). anchor_used is ALWAYS meaningful — printed by every
     caller in every pass and every failure; there is no silent fallback."""
-    rc_master, _ = _git(repo, "rev-parse", "--verify", "--quiet", "master")
-    if rc_master != 0:
-        # Tier 2: master absent entirely (tag checkout, fork) — HEAD-committed,
-        # never the worktree. Weaker guarantee, said out loud.
+    # Tier 1 candidates, in order. origin/master is NOT optional politeness:
+    # the standard GitHub PR checkout (actions/checkout) fetches the PR ref and
+    # leaves NO local master, so a local-only lookup silently degraded to
+    # HEAD-committed and a branch's own doctored floor became its bar — a
+    # demonstrated hole (R304 crucible, severity 3/5). A ratchet whose anchor
+    # weakens exactly in CI is not a ratchet.
+    baseline_ref = None
+    for cand in ("master", "origin/master", "refs/remotes/origin/master"):
+        rc_c, _ = _git(repo, "rev-parse", "--verify", "--quiet", cand)
+        if rc_c == 0:
+            baseline_ref = cand
+            break
+    if baseline_ref is None:
+        # Tier 2: no baseline ref anywhere (tag checkout, fork with no remote) —
+        # HEAD-committed, never the worktree. Weaker guarantee, said out loud.
         rc, raw = _git(repo, "show", f"HEAD:{rel}")
-        note = ("anchor=HEAD-committed (master unresolvable — weaker: blocks "
-                "only an uncommitted lowering)")
+        note = ("anchor=HEAD-committed (no master/origin-master ref — weaker: "
+                "blocks only an uncommitted lowering)")
         return (raw if rc == 0 and raw.strip() else None, "HEAD-committed", note)
-    rc_mb, anchor = _git(repo, "merge-base", "master", "HEAD")
+    rc_mb, anchor = _git(repo, "merge-base", baseline_ref, "HEAD")
     if rc_mb != 0 or not anchor:
-        # Tier 3: master exists but merge-base failed.
+        # Tier 3: a baseline ref exists but merge-base failed.
         raise RatchetAnchorError(
-            "git merge-base master HEAD failed with master present — a guard "
-            "that cannot resolve its own baseline is not guarding")
+            f"git merge-base {baseline_ref} HEAD failed with {baseline_ref} "
+            f"present — a guard that cannot resolve its own baseline is not "
+            f"guarding")
     rc, raw = _git(repo, "show", f"{anchor}:{rel}")
     if rc != 0 or not raw.strip():
-        return None, anchor, f"floor absent at anchor {anchor[:12]}"
-    return raw, anchor, f"anchor=merge-base {anchor[:12]}"
+        return None, anchor, (f"floor absent at anchor {anchor[:12]} "
+                             f"(via {baseline_ref})")
+    return raw, anchor, f"anchor=merge-base({baseline_ref}) {anchor[:12]}"
 
 
 # ── pinned shipped-default constants ────────────────────────────────────────

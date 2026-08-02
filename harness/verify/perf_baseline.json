@@ -4,7 +4,7 @@
   "promoted": null,
   "promoted_by": null,
   "human_armed_by": null,
-  "_governance": "COUNTED PROXY, NOT WALL-CLOCK (I2 design, wf_b9c32632-1fc journal; R304). Advance ONLY in a human-promoted commit. The gate reads this file at merge-base(master, HEAD), never the worktree, so a branch cannot lower its own bar (harness/verify/perf_ratchet.py::read_floor). Counts may FALL freely; they may only RISE via promotion carrying a per-cell _why or an unexpired waiver. PROPOSED means: measured by the R304 lane agent, NOT yet a floor — arming (REGISTRY.json ratchet.armed=true + human_armed_by) is a HUMAN gate (harness/latency/SPEC.md) and includes deny-listing this file in harness/agent-settings.json. A count is not a second: this file HOLDS the 98b556f/H10 win, it does not MEASURE one — seconds claims need Tier B (ratio) or Tier C (live).",
+  "_governance": "COUNTED PROXY, NOT WALL-CLOCK (I2 design, wf_b9c32632-1fc journal; R304). Advance ONLY in a human-promoted commit. The gate reads this file at merge-base(master, HEAD), never the worktree, so a branch cannot lower its own bar (harness/verify/perf_ratchet.py::read_floor). Counts may FALL freely; they may only RISE via promotion carrying a per-cell _why or an unexpired waiver. PROPOSED means: measured by the R304 lane agent, NOT yet a floor \u2014 arming (REGISTRY.json ratchet.armed=true + human_armed_by) is a HUMAN gate (harness/latency/SPEC.md) and includes deny-listing this file in harness/agent-settings.json. A count is not a second: this file HOLDS the 98b556f/H10 win, it does not MEASURE one \u2014 seconds claims need Tier B (ratio) or Tier C (live).",
   "_fidelity_limit": "The counters measure the CALL PATTERN the bridge makes through the counting fakes (tests/perf_counters.py), not the cost pxr pays. The pxr-gated cross-check in tests/test_perf_ratchet.py is the only guard against fake/pxr drift and it SKIPS in CI.",
   "measured": {
     "date": "2026-08-02",
@@ -33,26 +33,29 @@
       },
       "scale_term": "LINEAR_IN_PRIMS",
       "intercept": {
-        "at": { "prims": 100, "threshold": 1000 },
+        "at": {
+          "prims": 100,
+          "threshold": 1000
+        },
         "counters": {
-          "scene_hash_calls": 2,
-          "stage_traversals": 4,
-          "prim_visits": 400,
-          "flatten_exports": 2,
-          "value_reads": 0,
-          "attrs_examined": 100,
-          "prop_name_reads": 0,
-          "rel_target_reads": 0,
-          "prim_state_reads": 200,
           "arc_queries": 400,
-          "node_children_reads": 2,
+          "attrs_examined": 100,
+          "dependents_calls": 0,
+          "flatten_exports": 2,
           "geometry_accessor_calls": 2,
           "geometry_intrinsic_reads": 0,
-          "dependents_calls": 0,
-          "node_visits": 0
+          "node_children_reads": 2,
+          "node_visits": 0,
+          "prim_state_reads": 200,
+          "prim_visits": 300,
+          "prop_name_reads": 0,
+          "rel_target_reads": 0,
+          "scene_hash_calls": 2,
+          "stage_traversals": 3,
+          "value_reads": 0
         }
       },
-      "_why": "BELOW-GATE ENVELOPE: mode full, Flatten x2, full-fidelity sweep (4 arc_queries/prim). 4 traversals = prim probe + H10 volume probe + composition probe + composition Traverse (the design derived 3; H10's volume probe landed after its HEAD - run wins). attrs_examined 100 = the volume probe's type peek, 1 scalar attr/prim, zero value_reads."
+      "_why": "R302 lane I's per-op _stage_exceeds cache removed one redundant stage walk per op (one traversal + one prim-visit pass); measured by harness/verify/perf_ratchet.py as 'improved', refreshed while the floor is still PROPOSED/unarmed. Direction rule: counts fell, so this LOWERS the bar in the safe direction."
     },
     "mcp_lop_op_above_gate": {
       "_what": "S-B: THE 98b556f CELL. Same op shape, stage ABOVE the prim gate (5000 prims, threshold 1000): mode reduced, flatten_exports == 0 IS the 4x win; value_reads == 0 is the C2/H10 axis (authored array volume) that nothing asserted before this floor.",
@@ -65,28 +68,34 @@
       },
       "scale_term": "LINEAR_IN_PRIMS",
       "intercept": {
-        "at": { "prims": 5000, "threshold": 1000 },
+        "at": {
+          "prims": 5000,
+          "threshold": 1000
+        },
         "counters": {
-          "scene_hash_calls": 2,
-          "stage_traversals": 5,
-          "prim_visits": 17002,
-          "flatten_exports": 0,
-          "value_reads": 0,
-          "attrs_examined": 0,
-          "prop_name_reads": 10000,
-          "rel_target_reads": 10000,
-          "prim_state_reads": 40000,
           "arc_queries": 10000,
-          "node_children_reads": 2,
+          "attrs_examined": 0,
+          "dependents_calls": 0,
+          "flatten_exports": 0,
           "geometry_accessor_calls": 2,
           "geometry_intrinsic_reads": 0,
-          "dependents_calls": 0,
-          "node_visits": 0
+          "node_children_reads": 2,
+          "node_visits": 0,
+          "prim_state_reads": 40000,
+          "prim_visits": 16001,
+          "prop_name_reads": 10000,
+          "rel_target_reads": 10000,
+          "scene_hash_calls": 2,
+          "stage_traversals": 4,
+          "value_reads": 0
         }
       },
       "slope": {
         "pair": "mcp_lop_op_above_gate_2x",
-        "measured_at": [5000, 10000],
+        "measured_at": [
+          5000,
+          10000
+        ],
         "per_unit": {
           "prim_visits": 3.0,
           "flatten_exports": 0.0,
@@ -101,7 +110,7 @@
         }
       },
       "passes_per_op": 3,
-      "_why": "BRIDGE-FLOOR 98b556f + H10. flatten_exports=0 IS the 4x win (producer: shared/bridge.py:1012 gated by _stage_exceeds/_stage_volume_exceeds). prim_visits 17002 = 1001 (bounded before-probe) + 5000 (reduced before) + 5000 (reduced after) + 1001 (bounded composition probe) + 5000 (composition Traverse). stage_traversals slope 0.0 PROVES the two probes are bounded - nothing asserted that before this floor. passes_per_op = round(prim_visits slope) = 3 per the I2 SS4 formula (the design's prose examples say 5, conflating traversal STARTS - pinned separately by the stage_traversals intercept - with SCALING passes; the formula governs, both regressions still trip)."
+      "_why": "R302 lane I's per-op _stage_exceeds cache removed one redundant stage walk per op (one traversal + one prim-visit pass); measured by harness/verify/perf_ratchet.py as 'improved', refreshed while the floor is still PROPOSED/unarmed. Direction rule: counts fell, so this LOWERS the bar in the safe direction."
     },
     "mcp_lop_op_above_gate_2x": {
       "_what": "S-B2: the slope cell's 2N arm (10000 prims, same env). Its intercept is pinned too - more instrument, same price.",
@@ -114,26 +123,29 @@
       },
       "scale_term": "LINEAR_IN_PRIMS",
       "intercept": {
-        "at": { "prims": 10000, "threshold": 1000 },
+        "at": {
+          "prims": 10000,
+          "threshold": 1000
+        },
         "counters": {
-          "scene_hash_calls": 2,
-          "stage_traversals": 5,
-          "prim_visits": 32002,
-          "flatten_exports": 0,
-          "value_reads": 0,
-          "attrs_examined": 0,
-          "prop_name_reads": 20000,
-          "rel_target_reads": 20000,
-          "prim_state_reads": 80000,
           "arc_queries": 20000,
-          "node_children_reads": 2,
+          "attrs_examined": 0,
+          "dependents_calls": 0,
+          "flatten_exports": 0,
           "geometry_accessor_calls": 2,
           "geometry_intrinsic_reads": 0,
-          "dependents_calls": 0,
-          "node_visits": 0
+          "node_children_reads": 2,
+          "node_visits": 0,
+          "prim_state_reads": 80000,
+          "prim_visits": 31001,
+          "prop_name_reads": 20000,
+          "rel_target_reads": 20000,
+          "scene_hash_calls": 2,
+          "stage_traversals": 4,
+          "value_reads": 0
         }
       },
-      "_why": "The 2N arm of the S-B slope. 32002 = 1001 + 10000 + 10000 + 1001 + 10000: the two probe terms are IDENTICAL to the N arm - the slope cell's whole point."
+      "_why": "R302 lane I's per-op _stage_exceeds cache removed one redundant stage walk per op (one traversal + one prim-visit pass); measured by harness/verify/perf_ratchet.py as 'improved', refreshed while the floor is still PROPOSED/unarmed. Direction rule: counts fell, so this LOWERS the bar in the safe direction."
     },
     "live_ws_op": {
       "_what": "S-C: the live-envelope hash shape - two _compute_scene_hash(target, include_stage=False) calls (integrity_envelope.py:219 before/after) on a node carrying BOTH geometry and a REACHABLE stage(). Pins structurally that the live /synapse path can NEVER hit stage.Flatten() (shared/bridge.py:825-827 promise, previously a comment) and ratchets the H1 geometry residue (bridge.py:880-884).",
@@ -146,7 +158,9 @@
       },
       "scale_term": "CONSTANT",
       "intercept": {
-        "at": { "hash_calls": 2 },
+        "at": {
+          "hash_calls": 2
+        },
         "counters": {
           "scene_hash_calls": 2,
           "stage_traversals": 0,
@@ -178,7 +192,11 @@
       },
       "scale_term": "LINEAR_IN_PRIMS",
       "intercept": {
-        "at": { "prims": 5000, "threshold": 1000, "mutation": "+1 prim, then raise" },
+        "at": {
+          "prims": 5000,
+          "threshold": 1000,
+          "mutation": "+1 prim, then raise"
+        },
         "counters": {
           "scene_hash_calls": 3,
           "stage_traversals": 4,
@@ -210,7 +228,9 @@
       },
       "scale_term": "LINEAR_IN_NODES",
       "intercept": {
-        "at": { "fanout": 8 },
+        "at": {
+          "fanout": 8
+        },
         "counters": {
           "scene_hash_calls": 2,
           "stage_traversals": 0,
@@ -231,7 +251,10 @@
       },
       "slope": {
         "pair": "blast_radius_trace_2x",
-        "measured_at": [8, 16],
+        "measured_at": [
+          8,
+          16
+        ],
         "per_unit": {
           "node_visits": 1.0,
           "dependents_calls": 2.0,
@@ -252,7 +275,9 @@
       },
       "scale_term": "LINEAR_IN_NODES",
       "intercept": {
-        "at": { "fanout": 16 },
+        "at": {
+          "fanout": 16
+        },
         "counters": {
           "scene_hash_calls": 2,
           "stage_traversals": 0,

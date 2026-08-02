@@ -121,15 +121,21 @@ class TestHeadlineInvariants:
         assert got["flatten_exports"] == 0, (
             "flatten_exports != 0 above the gate — the 4x win IS this zero")
         assert got["value_reads"] == 0
-        assert got["stage_traversals"] == 5
-        assert got["prim_visits"] == 17002  # 1001+5000+5000+1001+5000
+        # -1 traversal / -1001 prim_visits vs the pre-R302 figures
+        # (5 / 17002): lane I's per-op _stage_exceeds cache made the
+        # sweep gate reuse the hash gate's verdict, so the op walks the
+        # stage once where it used to walk twice. Confirmed three ways:
+        # lane I's own call-count test, its crucible's large->small and
+        # small->large attack, and this ratchet reporting 'improved'.
+        assert got["stage_traversals"] == 4
+        assert got["prim_visits"] == 16001
 
     def test_slope_and_bounded_probes(self, measured):
         """The two bounded probes contribute ZERO to the slope — the property
         no test asserted before this file (I2 §4)."""
         n, n2 = measured["mcp_lop_op_above_gate"], \
             measured["mcp_lop_op_above_gate_2x"]
-        assert n2["stage_traversals"] == n["stage_traversals"] == 5
+        assert n2["stage_traversals"] == n["stage_traversals"] == 4  # R302 cache
         assert (n2["prim_visits"] - n["prim_visits"]) == 3 * 5000
         assert n2["flatten_exports"] == n["flatten_exports"] == 0
 
@@ -148,7 +154,7 @@ class TestHeadlineInvariants:
         (authored at 48bf572) derived three — the run wins, and this pin
         makes the H10 probe's boundedness part of the floor."""
         got = measured["mcp_lop_op_below_gate"]
-        assert got["stage_traversals"] == 4
+        assert got["stage_traversals"] == 3  # was 4 pre-R302 cache
         assert got["flatten_exports"] == 2   # full mode: Flatten before+after
         assert got["attrs_examined"] == 100  # volume probe type peeks
         assert got["value_reads"] == 0       # scalar attrs: peek never reads
@@ -423,8 +429,10 @@ class TestRegressionProofs:
     def test_proof2_deleting_short_circuit_trips_prim_visits(self, floor_doc,
                                                              monkeypatch):
         """Deleting the _stage_exceeds short-circuit (bridge.py:1085) makes
-        both bounded probes consume the whole stage: prim_visits 17002 ->
-        25000 at the S-B cell."""
+        both bounded probes consume the whole stage: prim_visits 16001 ->
+        20000 at the S-B cell (4 full passes of 5000 -- one pass fewer than
+        the pre-R302 figure, because the per-op _stage_exceeds cache removed
+        a walk; the PROOF is that the gate still trips, asserted below)."""
         def _no_short_circuit(stage, threshold):
             n = 0
             for _ in stage.TraverseAll():
@@ -434,7 +442,7 @@ class TestRegressionProofs:
         monkeypatch.setattr(LosslessExecutionBridge, "_stage_exceeds",
                             staticmethod(_no_short_circuit))
         got = pc.measure("mcp_lop_op_above_gate")
-        assert got["prim_visits"] == 25000  # 5 full passes of 5000
+        assert got["prim_visits"] == 20000  # 4 full passes of 5000
         measured = pc.measure_all()
         verdict = pr.compare(measured, floor_doc)
         assert not verdict.ok
@@ -460,7 +468,7 @@ class TestRegressionProofs:
                             staticmethod(_with_extra_pass))
         measured = pc.measure_all()
         got = measured["mcp_lop_op_above_gate"]
-        assert got["stage_traversals"] == 7
+        assert got["stage_traversals"] == 6  # was 7 pre-R302 cache
 
         verdict = pr.compare(measured, floor_doc)
         assert not verdict.ok  # intercept trips
@@ -617,3 +625,45 @@ class TestPxrFidelity:
             assert pc.counters_digest(real) == pc.counters_digest(fake), (
                 f"{scenario}: the counting fake has drifted from the real "
                 f"pxr call pattern — the ratchet is counting a fiction")
+
+
+# ---------------------------------------------------------------------------
+# R304 crucible follow-up — the anchor must not weaken on a PR checkout
+# ---------------------------------------------------------------------------
+
+def test_anchor_resolves_via_origin_master_when_no_local_master(tmp_path):
+    """The GitHub PR checkout shape: origin/master exists, local master does not.
+
+    The crucible's landed attack (severity 3/5): read_floor looked up only a
+    LOCAL `master`, so on actions/checkout — which fetches the PR ref and
+    leaves no local master — it silently fell through to HEAD-committed, and a
+    branch's own committed doctored floor became its bar. A ratchet whose
+    anchor weakens exactly in CI is not a ratchet.
+    """
+    import subprocess
+    src = Path(__file__).resolve().parent.parent
+    clone = tmp_path / "pr-checkout"
+
+    def git(*args, cwd):
+        return subprocess.run(["git", *args], cwd=str(cwd), capture_output=True,
+                              text=True, encoding="utf-8", errors="replace")
+
+    rc = git("clone", "--no-local", "--quiet", str(src), str(clone), cwd=src)
+    if rc.returncode != 0:
+        pytest.skip(f"clone unavailable in this environment: {rc.stderr[:120]}")
+    # Reproduce the PR shape: a feature branch, no local master at all.
+    git("checkout", "--quiet", "-b", "pr-branch", cwd=clone)
+    git("branch", "-D", "master", cwd=clone)
+
+    assert git("rev-parse", "--verify", "--quiet", "master",
+               cwd=clone).returncode != 0, "fixture must have NO local master"
+    assert git("rev-parse", "--verify", "--quiet", "origin/master",
+               cwd=clone).returncode == 0, "fixture must have origin/master"
+
+    _raw, anchor, note = _load_perf_ratchet().read_floor(clone)
+    assert "merge-base" in note, (
+        f"anchor degraded on a PR checkout — the branch would gate against its "
+        f"own floor. note={note!r}")
+    assert anchor and anchor != "HEAD-committed"
+    # And it must say WHICH ref it used, so the weaker tier is never silent.
+    assert "origin/master" in note, f"anchor note must name the ref: {note!r}"

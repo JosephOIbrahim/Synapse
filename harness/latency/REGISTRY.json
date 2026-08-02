@@ -9,40 +9,42 @@
       "id": "H1-double-topo-hash",
       "title": "Every bridge mutation pays two full topology walks (scene_hash_before + after)",
       "bin": "T4",
-      "rung": "L1",
-      "verdict": "downgraded_residue",
+      "rung": "L3",
+      "verdict": "refuted_as_cost",
       "accepted": false,
-      "scale_behavior": "OTHER - three terms; 3/4 parts self-refuted",
-      "probe": "hython one-liner (C4 rank 7)",
+      "scale_behavior": "CONSTANT per op for the hash reads themselves; the cook is node-dependent",
+      "probe": "scripts/probe_h1_topo_hash_cook.py (hython 22.0.397, committed producer)",
       "checked_against_refuted": true,
       "seed_evidence": [
         "CLAUDE.md 1.3 IntegrityBlock",
         "CLAUDE.md 1.4 _topo_hash",
         "shared/bridge.py:427"
       ],
-      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)",
+      "note": "MEASURED, hypothesis dies as a cost item: cookCount() itself NEVER cooks (0.005 ms, cookCount 1->1, cooked=False). node.geometry() is what forces a cook on a dirty node (12.908 ms vs 0.238 ms clean, ~54x on a 1M-pt grid) - attribution shift, not the claimed double-walk cost. 2x ~13ms/op sits under the 70ms T4 ceiling; a heavy SOP could still exceed it, so BOUNDED not zero."
     },
     {
       "id": "H2-blast-radius-traversal",
       "title": "R7 _infer_stage_touch traces node.dependents() forward on every execution",
       "bin": "T4",
-      "rung": "L1",
-      "verdict": "blocked_on_instrument",
+      "rung": "L3",
+      "verdict": "refuted",
       "accepted": false,
-      "scale_behavior": "LINEAR_IN_NODES (subtree)",
-      "probe": "hython one-liner (C4 rank 7); cost claim needs the rank-6 timers",
+      "scale_behavior": "LINEAR_IN_NODES at ~0.17us/node - the depth-3 cap bounds chain traces to 4 visited nodes",
+      "probe": "scripts/probe_h2_dependents_trace.py (hython 22.0.397, committed producer)",
       "checked_against_refuted": true,
       "seed_evidence": [
         "CLAUDE.md 1.6",
         "shared/bridge.py"
       ],
-      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)",
+      "note": "MEASURED AND REFUTED: C4's explicit 1-10us/descendant bracket is wrong LOW by 1-2 orders. N=500 chain: dependents() 0.086 ms, bridge-shaped depth-3 trace 0.039 ms (4 nodes visited). Linear extrapolation puts the 70ms T4 ceiling at ~400k+ children. Not a latency problem. Caveat: probe used trivial nulls (no parm-ref fan-out); wired links appear in outputs() not dependents()."
     },
     {
       "id": "H3-composition-validation",
       "title": "USD composition validation after mutation may be a second ungated stage traversal",
       "bin": "T4",
-      "rung": "L2",
+      "rung": "L2+free-half-landed",
       "verdict": "real_and_open",
       "accepted": false,
       "scale_behavior": "LINEAR_IN_PRIMS - O(P) default-prims traverse per mutation, ungated, inside the open undo group",
@@ -51,7 +53,8 @@
       "seed_evidence": [
         "CLAUDE.md 1.1 Scene Integrity anchor"
       ],
-      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)",
+      "note": "Free half LANDED (R302): per-op _stage_exceeds cache = exactly one stage walk per op both sides of the gate (independently confirmed by the perf ratchet reporting stage_traversals 5->4, prim_visits 17002->16001), and composition_valid now carries a REAL verdict - it previously had ZERO assignment sites, a constant True the anchor conjunction could never falsify. GATING half still deferred behind its probe (C4 rank 9)."
     },
     {
       "id": "H4-observation-payload",
@@ -89,7 +92,7 @@
       "id": "H6-mainthread-queue",
       "title": "Serial per-connection WS loop makes cancel unreachable; queue wait under a busy main thread",
       "bin": "T3",
-      "rung": "L2",
+      "rung": "L2-pinned",
       "verdict": "real_and_open",
       "accepted": false,
       "scale_behavior": "OTHER - linear in duration of the in-flight op ahead of you",
@@ -99,7 +102,8 @@
         "websocket.py:471",
         "main_thread.py:20,204,311"
       ],
-      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)"
+      "adjudicated_by": "4 crucibles, run wf_b9c32632-1fc (C1 refuted-check, C2 scale-attack, C3 measurability, C4 rank)",
+      "note": "Defect CONFIRMED and PINNED with the real _handle_message (not the :157 stub that hid it): tests/test_websocket_cancel_inflight_known_defect.py - a cancel frame is not even read off the socket while an op is in flight, and the P3.3 cancel event is observed only at frame boundaries. Runnable reproduction now exists for the R303 reopen decision. FIX still deferred (C4 rank 10)."
     },
     {
       "id": "H7-declarative-coverage",
@@ -205,15 +209,21 @@
     "new_since_report": {
       "state": "landed",
       "locator": "main_thread_hold histogram, commit 8239410 (2026-08-01)"
+    },
+    "T4_phase_timers": {
+      "state": "landed",
+      "locator": "shared/bridge.py _BRIDGE_PHASE_BUCKETS_MS (0.1ms..60s, +Inf terminal); composition_stats()/stage_touch_stats(); prometheus synapse_composition_ms + synapse_stage_touch_ms",
+      "note": "Non-saturating by construction - the G4 defect class (every prior histogram topped out at 4000-5000 ms) cannot recur: a 7s sample lands in a finite bucket, 100s in +Inf."
     }
   },
   "ratchet": {
     "_doc": "The missing primitive. The 4x win from 98b556f has NOTHING pinning it - a refactor can silently give it back and no test fails. Floor must be read at merge-base so a branch cannot lower its own bar (same discipline as the suite ratchet). BUILT 2026-08-02 (R304 lane R): floor PROPOSED (perf_baseline.json proposed=true), gate + regression proofs live in tests/test_perf_ratchet.py. ARMING IS THE HUMAN GATE: set armed=true + human_armed_by, promote the floor (fill promoted/promoted_by, drop proposed), and add Edit(harness/verify/perf_baseline.json) to the harness/agent-settings.json deny list.",
     "armed": false,
-    "floor_kind": "counted_work_units (full-stage traversals / prims-visited / attrs-examined / serialize-calls per op) per I2 design - a timer cannot gate: CI has no pxr (ci.yml:53, pyproject has no usd-core)",
+    "floor_kind": "counted proxy (stage traversals / prim visits / attrs examined per gated-op scenario)",
     "floor_path": "harness/verify/perf_baseline.json",
     "floor_reader": "harness/verify/perf_ratchet.py",
-    "human_armed_by": null
+    "human_armed_by": null,
+    "_arming_note": "BUILT and crucible-verified (R304, SOUND-WITH-NITS). Gate runs on a zero-pxr interpreter (41 passed + 1 skipped with pxr import-blocked). Anchor hole found by the crucible and CLOSED: read_floor now resolves origin/master, so a GitHub PR checkout with no local master can no longer gate a branch against its own floor (pinned by test_anchor_resolves_via_origin_master_when_no_local_master). Arming = a human flip of armed/human_armed_by; P6/P7 go PASS with the keys as committed."
   },
   "designs": {
     "I1_scale_bench": {

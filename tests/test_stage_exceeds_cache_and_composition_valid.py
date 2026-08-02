@@ -321,3 +321,48 @@ def test_pdg_path_records_not_applicable(monkeypatch):
     res = asyncio.run(bridge._execute_pdg_deferred(op, integrity))
     assert res.success
     assert res.integrity.composition_applicable is False
+
+
+# ---------------------------------------------------------------------------
+# K4 (R302 crucible) — an op that fails BEFORE validation must not claim a pass
+# ---------------------------------------------------------------------------
+
+def test_consent_denied_op_does_not_claim_composition_ran(env):
+    """Consent-denied returns before any validation — the block must say N/A.
+
+    Before the K4 fix the dataclass defaults (valid=True, applicable=True)
+    made a consent-denied block read "validation ran and passed", which under
+    the new honest semantics is a false receipt for an op whose stage was
+    never inspected.
+    """
+    stage = _stage(10)
+    env(stage)
+    bridge = LosslessExecutionBridge()
+    # The consent MACHINERY has its own tests (three-tier fallback, gate
+    # levels). What is under test here is only what the block records when
+    # the denial happens, so the verdict is forced at the seam.
+    bridge._check_consent = lambda _op: False
+    res = bridge.execute(
+        _op(lambda: stage.DefinePrim("/root/new", "Cube"),
+            touches_stage=True, stage_path="/stage"))
+    assert res.success is False, "consent was denied; the op must not succeed"
+    assert res.integrity.composition_applicable is False, (
+        "a consent-denied op never ran composition validation; the block must "
+        "record composition_applicable=False, not inherit a default that "
+        "reads 'ran and passed'")
+
+
+def test_raising_op_does_not_claim_composition_ran(env):
+    """An op whose fn raises before the anchor must also say N/A."""
+    stage = _stage(10)
+    env(stage)
+    bridge = LosslessExecutionBridge()
+
+    def _boom():
+        raise RuntimeError("op exploded before the anchor")
+
+    res = bridge.execute(_op(_boom, touches_stage=True, stage_path="/stage"))
+    assert res.success is False
+    assert res.integrity.composition_applicable is False, (
+        "the op raised before composition validation ran; the block must not "
+        "claim the anchor passed")
