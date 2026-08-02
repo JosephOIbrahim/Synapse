@@ -165,8 +165,27 @@ class TestHeadlineInvariants:
 class TestFloorShape:
     def test_worktree_floor_parses(self, floor_doc):
         assert floor_doc["schema"] == "perf_baseline/counts-v1"
-        assert floor_doc["proposed"] is True
-        assert floor_doc["human_armed_by"] is None
+
+    def test_floor_is_promoted_and_human_armed(self, floor_doc):
+        """ARMED 2026-08-02. This test previously pinned the PROPOSED state
+        (proposed is True / human_armed_by is None); it now pins the armed one.
+
+        The point of the assertion never was which state the floor is in — it
+        is that the floor cannot be in NEITHER state, i.e. that a floor always
+        carries provenance. A floor promoted by nobody is not a floor, and
+        arming by the thing being measured is exactly what the human gate
+        exists to prevent.
+        """
+        assert floor_doc["proposed"] is False, (
+            "the floor is armed; it must no longer advertise itself as a "
+            "proposal")
+        armed_by = (floor_doc.get("human_armed_by") or "").strip()
+        promoted_by = (floor_doc.get("promoted_by") or "").strip()
+        assert armed_by and promoted_by, (
+            "an armed floor must name the human who armed and promoted it")
+        assert armed_by == promoted_by, (
+            "promotion and arming are one human act; two different names means "
+            "one of them was not a human decision")
 
     def test_not_json_raises(self):
         with pytest.raises(pr.PerfBaselineShapeError):

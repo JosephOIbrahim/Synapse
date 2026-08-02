@@ -1,9 +1,9 @@
 {
   "schema": "perf_baseline/counts-v1",
-  "proposed": true,
-  "promoted": null,
-  "promoted_by": null,
-  "human_armed_by": null,
+  "proposed": false,
+  "promoted": true,
+  "promoted_by": "Joe (2026-08-02, 'Flip it & go' \u2014 after the R304 crucible cleared and both followups landed)",
+  "human_armed_by": "Joe (2026-08-02, 'Flip it & go' \u2014 after the R304 crucible cleared and both followups landed)",
   "_governance": "COUNTED PROXY, NOT WALL-CLOCK (I2 design, wf_b9c32632-1fc journal; R304). Advance ONLY in a human-promoted commit. The gate reads this file at merge-base(master, HEAD), never the worktree, so a branch cannot lower its own bar (harness/verify/perf_ratchet.py::read_floor). Counts may FALL freely; they may only RISE via promotion carrying a per-cell _why or an unexpired waiver. PROPOSED means: measured by the R304 lane agent, NOT yet a floor \u2014 arming (REGISTRY.json ratchet.armed=true + human_armed_by) is a HUMAN gate (harness/latency/SPEC.md) and includes deny-listing this file in harness/agent-settings.json. A count is not a second: this file HOLDS the 98b556f/H10 win, it does not MEASURE one \u2014 seconds claims need Tier B (ratio) or Tier C (live).",
   "_fidelity_limit": "The counters measure the CALL PATTERN the bridge makes through the counting fakes (tests/perf_counters.py), not the cost pxr pays. The pxr-gated cross-check in tests/test_perf_ratchet.py is the only guard against fake/pxr drift and it SKIPS in CI.",
   "measured": {

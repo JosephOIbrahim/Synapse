@@ -218,12 +218,12 @@
   },
   "ratchet": {
     "_doc": "The missing primitive. The 4x win from 98b556f has NOTHING pinning it - a refactor can silently give it back and no test fails. Floor must be read at merge-base so a branch cannot lower its own bar (same discipline as the suite ratchet). BUILT 2026-08-02 (R304 lane R): floor PROPOSED (perf_baseline.json proposed=true), gate + regression proofs live in tests/test_perf_ratchet.py. ARMING IS THE HUMAN GATE: set armed=true + human_armed_by, promote the floor (fill promoted/promoted_by, drop proposed), and add Edit(harness/verify/perf_baseline.json) to the harness/agent-settings.json deny list.",
-    "armed": false,
+    "armed": true,
     "floor_kind": "counted proxy (stage traversals / prim visits / attrs examined per gated-op scenario)",
     "floor_path": "harness/verify/perf_baseline.json",
     "floor_reader": "harness/verify/perf_ratchet.py",
-    "human_armed_by": null,
-    "_arming_note": "BUILT and crucible-verified (R304, SOUND-WITH-NITS). Gate runs on a zero-pxr interpreter (41 passed + 1 skipped with pxr import-blocked). Anchor hole found by the crucible and CLOSED: read_floor now resolves origin/master, so a GitHub PR checkout with no local master can no longer gate a branch against its own floor (pinned by test_anchor_resolves_via_origin_master_when_no_local_master). Arming = a human flip of armed/human_armed_by; P6/P7 go PASS with the keys as committed."
+    "human_armed_by": "Joe (2026-08-02, 'Flip it & go' \u2014 after the R304 crucible cleared and both followups landed)",
+    "_arming_note": "BUILT and crucible-verified (R304, SOUND-WITH-NITS). Gate runs on a zero-pxr interpreter (41 passed + 1 skipped with pxr import-blocked). Anchor hole found by the crucible and CLOSED: read_floor now resolves origin/master, so a GitHub PR checkout with no local master can no longer gate a branch against its own floor (pinned by test_anchor_resolves_via_origin_master_when_no_local_master). Arming = a human flip of armed/human_armed_by; P6/P7 go PASS with the keys as committed. ARMED 2026-08-02 by Joe. The floor now gates: counts may FALL freely, may only RISE via a human-promoted floor with a changed _why, or an unexpired waiver."
   },
   "designs": {
     "I1_scale_bench": {
