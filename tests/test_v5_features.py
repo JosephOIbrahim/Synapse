@@ -53,7 +53,6 @@ for mod_name, mod_path in [
     ("synapse.routing", _PKG / "synapse" / "routing"),
     ("synapse.ui", _PKG / "synapse" / "ui"),
     ("synapse.ui.tabs", _PKG / "synapse" / "ui" / "tabs"),
-    ("synapse.agent", _PKG / "synapse" / "agent"),
 ]:
     if mod_name not in sys.modules:
         pkg = types.ModuleType(mod_name)

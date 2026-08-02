@@ -66,7 +66,6 @@ for mod_name, mod_path in [
     ("synapse.session", Path(__file__).resolve().parent.parent / "python" / "synapse" / "session"),
     ("synapse.memory", Path(__file__).resolve().parent.parent / "python" / "synapse" / "memory"),
     ("synapse.routing", Path(__file__).resolve().parent.parent / "python" / "synapse" / "routing"),
-    ("synapse.agent", Path(__file__).resolve().parent.parent / "python" / "synapse" / "agent"),
 ]:
     if mod_name not in sys.modules:
         pkg = types.ModuleType(mod_name)
