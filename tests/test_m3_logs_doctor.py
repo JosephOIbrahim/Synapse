@@ -76,6 +76,37 @@ def _fake_server(with_bridge=True):
 
 
 @pytest.fixture(autouse=True)
+def _redirect_freeze_dumps(monkeypatch, tmp_path):
+    """Keep escalation dumps out of the REAL ~/.synapse/logs.
+
+    Two tests here drive a real _escalate with the real flush_telemetry and
+    set no $SYNAPSE_LOG_DIR, so their freeze dumps landed in the production
+    log dir — where _prune_freeze_dumps keeps only the newest 5 and therefore
+    EVICTS real freeze evidence (dev seat == production seat). The sibling
+    tests/test_freeze_chain.py has had this fixture since M3-C; this file
+    never got it. Sub-directory, so no test's own tmp_path assertions move;
+    any test that sets or clears the var in its body still wins.
+    """
+    monkeypatch.setenv("SYNAPSE_LOG_DIR", str(tmp_path / "freeze_logs"))
+
+
+def _wait_until(predicate, timeout=10.0, interval=0.01):
+    """Spin until predicate() holds, or timeout. Returns its final value.
+
+    Anchors on the state actually being asserted rather than on a proxy.
+    `chain.escalated` is published at freeze_chain.py:150 BEFORE the acting
+    half runs (log, telemetry dump, breaker.force_open at :174) — it is a
+    "this episode is claimed" latch, not a "the actions landed" signal. A
+    poller that treats it as done can win the race and assert against a
+    breaker that has not been touched yet.
+    """
+    deadline = time.time() + timeout
+    while time.time() < deadline and not predicate():
+        time.sleep(interval)
+    return predicate()
+
+
+@pytest.fixture(autouse=True)
 def _clean_state():
     """Logger state is process-global: detach + close anything this file
     attached to the 'synapse' logger and restore its level, clear the live
@@ -193,9 +224,9 @@ def test_escalate_dumps_evidence(tmp_path, monkeypatch):
     chain = _chain()
     try:
         chain.heartbeat()                       # arm monitoring
-        deadline = time.time() + 10
-        while time.time() < deadline and not chain.escalated:
-            time.sleep(0.01)                    # bounded poll, never a bare sleep
+        # Wait for the DUMP, not for the `escalated` latch that precedes it.
+        assert _wait_until(lambda: bool(list(tmp_path.glob("freeze_dump_*.json")))), \
+            "no freeze dump appeared"
         assert chain.escalated is True
         dumps = list(tmp_path.glob("freeze_dump_*.json"))
         assert len(dumps) == 1
@@ -216,9 +247,9 @@ def test_dump_failure_never_blocks_escalation(monkeypatch):
     chain = _chain()
     try:
         chain.heartbeat()
-        deadline = time.time() + 10
-        while time.time() < deadline and not chain.escalated:
-            time.sleep(0.01)
+        # Wait for the ACT, not for the `escalated` latch that precedes it.
+        assert _wait_until(lambda: breaker.force_open.call_count > 0), \
+            "escalation never reached the breaker"
         assert chain.escalated is True
         breaker.force_open.assert_called_once()  # the breaker still ACTED
     finally:
@@ -264,9 +295,10 @@ def test_escalation_is_idempotent_per_episode(monkeypatch):
     chain = _chain()
     try:
         chain.heartbeat()
-        deadline = time.time() + 10
-        while time.time() < deadline and not chain.escalated:
-            time.sleep(0.01)
+        # Wait for the first ACT to land before provoking the second, so the
+        # "acted twice?" question is asked of a settled episode.
+        assert _wait_until(lambda: breaker.force_open.call_count > 0), \
+            "escalation never reached the breaker"
         assert chain.escalated is True
         chain._escalate()    # a duplicate/zombie timer firing again
         breaker.force_open.assert_called_once()

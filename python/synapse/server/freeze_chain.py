@@ -96,6 +96,20 @@ class FreezeChain:
 
     @property
     def escalated(self) -> bool:
+        """This freeze episode has been CLAIMED — not that its actions landed.
+
+        ``_escalate`` sets the latch (:150) before it acts (dump :164, breaker
+        :174, halt :188) so a duplicate timer can never act twice. So there is
+        a real window — measured 0.5-9.3 ms, R310a — in which ``escalated`` is
+        True and the breaker is still shut. Do not read this as "the breaker
+        is open"; wait on the outcome you actually care about.
+
+        This is also why the sustained-freeze dump ``_escalate`` writes at :164
+        ALWAYS records ``freeze.escalated: true`` while the breaker is provably
+        not yet open: the dump is taken from inside the window. Honest fix is a
+        separate completion signal (see the R310a followup); not folded into
+        the zombie fix, which is a different defect.
+        """
         return self._escalated
 
     def stats(self) -> dict:
@@ -252,6 +266,47 @@ def get_freeze_chain() -> FreezeChain:
         if _chain is None:
             _chain = FreezeChain()
         return _chain
+
+
+def shutdown_freeze_chain() -> bool:
+    """Stop the process-wide chain and clear the singleton.
+
+    Returns True if a chain was running, False if there was nothing to stop.
+    Idempotent and safe to call when no chain was ever built.
+
+    This is the counterpart ``get_freeze_chain()`` never had, and its absence
+    was a live defect. ``get_freeze_chain()`` starts a Watchdog thread plus the
+    acting escalation policy at PRODUCTION thresholds; when whatever was
+    beating it goes away, ``_last_heartbeat`` simply stops advancing. Nothing
+    marks the chain done, so ~``freeze_threshold`` seconds later the orphan
+    "detects" a freeze and ~``ESCALATION_S`` seconds after that it ESCALATES —
+    ``breaker.force_open()`` on the live server plus a full
+    ``EmergencyProtocol.trigger_emergency_halt`` on whatever bridge is active
+    AT THAT MOMENT. That is exactly the zombie ``FreezeChain.stop()`` documents,
+    one level up at the singleton, where no caller could reach ``stop()``.
+
+    Not hypothetical on either side:
+
+    * **Production** — closing the SYNAPSE panel ends its 1 s beat but left the
+      chain running, so a still-live bridge could be halted ~30 s after a panel
+      close the artist had already moved on from. ``panel.closeEvent`` now
+      calls this.
+    * **Tests** — one ``fc.beat()`` in
+      ``test_beat_singleton_is_stable_and_cheap`` armed an escalation that
+      fired 30.0 s later into an unrelated test's mock breaker, turning
+      ``force_open.assert_called_once()`` into "Called 2 times" in whichever
+      test happened to be running then. That is the R310a flake in
+      ``tests/test_m3_logs_doctor.py`` — a different test each run, in a file
+      nobody had touched. Reproduced deterministically by padding the gap
+      between the two files to 29.3-29.6 s.
+    """
+    global _chain
+    with _chain_lock:
+        chain, _chain = _chain, None
+    if chain is None:
+        return False
+    chain.stop()
+    return True
 
 
 def beat():

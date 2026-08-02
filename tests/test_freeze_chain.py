@@ -65,6 +65,41 @@ def _clean_registry():
     ws._register_live_server(None)
 
 
+@pytest.fixture(autouse=True)
+def _no_leaked_process_wide_chain():
+    """FAILS the test that leaves the PROCESS-WIDE chain running (R310a).
+
+    ``get_freeze_chain()`` builds a chain at PRODUCTION thresholds
+    (freeze_threshold 5 s, escalate_after 30 s) whose Watchdog thread and
+    escalation Timer outlive the test that built it. Nothing beats it again,
+    so 5 s later it "detects" a freeze and at 30.0 s it escalates into
+    whatever ``ws._register_live_server`` holds THEN — i.e. into some later,
+    unrelated test's mock breaker, plus a stray ``freeze_dump_*.json`` in
+    whatever ``$SYNAPSE_LOG_DIR`` that test owns.
+
+    That was the flake: ``tests/test_m3_logs_doctor.py``'s escalation tests
+    failing ``force_open ... Called 2 times`` (or ``Called 1 times`` against
+    an ``assert_not_called``), a DIFFERENT test each run, in a file the
+    failing lane never touched — because which test is running at t+30 s is
+    pure machine timing. Reproduced deterministically by padding the gap
+    between the two files to 29.3-29.6 s.
+
+    Scope: this file is the only place in the suite that builds the singleton
+    today, so a file-local guard is sufficient AND sound. A suite-wide guard
+    in tests/conftest.py is the followup if a second builder ever appears.
+    """
+    yield
+    leaked = getattr(fc, "_chain", None)
+    if leaked is not None:
+        fc.shutdown_freeze_chain()      # never leave it armed for the next test
+        pytest.fail(
+            "process-wide FreezeChain left running: its escalation timer fires "
+            f"~{leaked._escalate_after:.0f}s from now, into whatever live "
+            "server/bridge is registered at that moment (another test's mock). "
+            "Call fc.shutdown_freeze_chain() before returning."
+        )
+
+
 def test_sustained_freeze_opens_breaker_and_halts_via_active_bridge():
     srv, breaker, bridge = _fake_server(with_bridge=True)
     ws._register_live_server(srv)
@@ -76,7 +111,7 @@ def test_sustained_freeze_opens_breaker_and_halts_via_active_bridge():
         breaker.force_open.assert_called_once() # the breaker ACTED
         bridge.session_report.assert_called()   # real EmergencyProtocol ran the halt
     finally:
-        chain._watchdog.stop()
+        chain.stop()   # whole chain, not just the watchdog (zombie shape)
 
 
 def test_recovery_before_deadline_cancels_escalation():
@@ -102,7 +137,7 @@ def test_recovery_before_deadline_cancels_escalation():
         breaker.force_open.assert_not_called()  # never acted
         breaker.reset.assert_called()           # recovery reset the breaker
     finally:
-        chain._watchdog.stop()
+        chain.stop()   # whole chain, not just the watchdog (zombie shape)
 
 
 def test_no_server_no_bridge_escalates_without_crashing():
@@ -113,7 +148,7 @@ def test_no_server_no_bridge_escalates_without_crashing():
         assert chain.escalated is True          # acted as far as reality allows, no crash
         assert chain.stats()["escalated"] is True
     finally:
-        chain._watchdog.stop()
+        chain.stop()   # whole chain, not just the watchdog (zombie shape)
 
 
 def test_active_bridge_is_peeked_never_constructed():
@@ -135,6 +170,35 @@ def test_live_server_registry_set_clear_and_guard():
 
 
 def test_beat_singleton_is_stable_and_cheap():
-    c1 = fc.get_freeze_chain()
-    fc.beat()
-    assert fc.get_freeze_chain() is c1          # one process-wide chain
+    try:
+        c1 = fc.get_freeze_chain()
+        fc.beat()
+        assert fc.get_freeze_chain() is c1      # one process-wide chain
+    finally:
+        # This ONE beat used to arm a 30 s escalation that outlived the test
+        # (R310a). The chain is process-wide; so was the damage.
+        fc.shutdown_freeze_chain()
+
+
+def test_shutdown_freeze_chain_stops_and_clears():
+    """FAILS IF: the process-wide chain has no way to be stopped.
+
+    ``get_freeze_chain()`` starts a Watchdog thread + the acting escalation
+    policy and had no counterpart, so nothing — not a panel teardown, not a
+    test — could end the episode. Pins the whole contract: stops the chain,
+    joins the monitor, clears the singleton, reports whether one was running,
+    and is idempotent.
+    """
+    chain = fc.get_freeze_chain()
+    fc.beat()                                   # lazy-start the monitor thread
+    assert fc._chain is chain
+    assert chain._watchdog._thread is not None  # really running
+
+    assert fc.shutdown_freeze_chain() is True   # reports it stopped one
+    assert fc._chain is None                    # singleton cleared
+    assert chain._stopped is True               # escalation half disarmed
+    assert chain._watchdog._thread is None      # monitor joined, not orphaned
+    with chain._timer_lock:
+        assert chain._escalation_timer is None  # no timer left to fire
+
+    assert fc.shutdown_freeze_chain() is False  # idempotent, nothing to stop

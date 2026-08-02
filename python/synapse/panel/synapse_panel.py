@@ -2137,6 +2137,31 @@ class SynapsePanel(QtWidgets.QWidget):
             except Exception:
                 pass
             self._sel_cb = None
+
+        # R310a: this panel IS the freeze chain's heartbeat source. The 1 s
+        # QTimer dies with the widget, but the PROCESS-WIDE chain does not —
+        # an unbeaten chain "detects" a freeze ~5 s later and escalates at
+        # ESCALATION_S (30 s): breaker.force_open() plus a full emergency halt
+        # against whatever bridge is still live, long after the artist closed
+        # the panel and moved on. Stop the beat, then stop the chain.
+        timer = getattr(self, "_freeze_timer", None)
+        if timer is not None:
+            try:
+                timer.stop()
+            except Exception:
+                pass
+        try:
+            import threading
+
+            from synapse.server.freeze_chain import shutdown_freeze_chain
+            # Off the UI thread on purpose: Watchdog.stop() joins a monitor
+            # that sleeps in 1 s ticks, and this repo does not add unmeasured
+            # main-thread blocks to a GUI path (see the freeze taxonomy).
+            threading.Thread(target=shutdown_freeze_chain,
+                             name="synapse-freeze-chain-shutdown",
+                             daemon=True).start()
+        except Exception:
+            pass
         super().closeEvent(event)
 
     # ------------------------------------------------------------ drag & drop
