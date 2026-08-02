@@ -7,7 +7,9 @@ set_usd_attribute (which only sets a raw, interpolation-less attribute).
 
 Three things are pinned here:
   * the handler emits the right pythonscript-LOP code (type/interp/optionals),
-  * the gate map (protocol.py) classifies it REVIEW like set_usd_attribute,
+  * the LIVE gate chain (bridge_adapter -> shared/bridge OPERATION_GATES)
+    resolves it to INFORM, same as set_usd_attribute (R202 rewrite -- the old
+    protocol.py REVIEW map was dead code and is deleted),
   * the MCP tool registry exposes houdini_set_usd_primvar -> set_usd_primvar.
 
 Headless. Handler-module globals are patched directly -- sys.modules residency
@@ -258,17 +260,61 @@ def test_cook_error_is_honest(wired):
 
 
 # ---------------------------------------------------------------------------
-# Wiring site 1: gate map (protocol.py)
+# Wiring site 1: gate level (live authority chain)
 # ---------------------------------------------------------------------------
+# History: this leg asserted synapse.agent.protocol.DEFAULT_GATE_LEVELS
+# ("set_usd_primvar" -> REVIEW). That map was consulted by NOTHING at runtime
+# -- the agent subsystem around it went in #59/#61 and protocol.py itself was
+# cut by R202 (2026-08-02). The LIVE gate authority for this tool is the
+# chain: mcp/tools.py dispatch_tool -> panel/bridge_adapter.py
+# execute_through_bridge (_TOOL_TO_OPERATION, absent tools fall back to
+# "set_parameter") -> shared/bridge.py Operation.gate_level ->
+# OPERATION_GATES (shared/constants.py). That chain yields INFORM, not the
+# REVIEW the dead map claimed. Expected values below are LITERALS on purpose
+# -- never read the expectation from the thing under test (repo trap).
 
 
-def test_gate_level_is_review():
-    from synapse.agent.protocol import DEFAULT_GATE_LEVELS, classify_gate_level
-    from synapse.core.gates import GateLevel
+def test_gate_level_live_authority_is_inform():
+    from synapse.panel.bridge_adapter import _TOOL_TO_OPERATION, is_read_only
+    from shared.bridge import OPERATION_GATES, Operation
+    from shared.types import AgentID
 
-    assert DEFAULT_GATE_LEVELS["set_usd_primvar"] == GateLevel.REVIEW
-    # Same level as the sibling it mirrors.
-    assert classify_gate_level("set_usd_primvar") == classify_gate_level("set_usd_attribute")
+    # Not read-only: dispatch_tool routes it through the bridge.
+    assert not is_read_only("houdini_set_usd_primvar")
+
+    # bridge_adapter.execute_through_bridge: absent -> "set_parameter".
+    op_type = _TOOL_TO_OPERATION.get("houdini_set_usd_primvar", "set_parameter")
+    assert op_type == "set_parameter"
+
+    # Same operation type as the sibling it mirrors -> same gate at runtime.
+    sibling = _TOOL_TO_OPERATION.get("houdini_set_usd_attribute", "set_parameter")
+    assert op_type == sibling
+
+    # The enforcement site: Operation.gate_level (shared/bridge.py). GateLevel
+    # is a str-Enum, so the literal string is the expectation.
+    assert OPERATION_GATES[op_type] == "inform"
+    probe = Operation(
+        agent_id=AgentID.HANDS,
+        operation_type=op_type,
+        summary="R202 gate probe",
+        fn=lambda: None,
+        args=(),
+        kwargs={},
+    )
+    assert probe.gate_level == "inform"
+
+
+def test_agent_protocol_is_gone():
+    """R202 tombstone: the dead gate map cannot silently return."""
+    sys.modules.pop("synapse.agent.protocol", None)
+    sys.modules.pop("synapse.agent", None)
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("synapse.agent.protocol")
+
+    import synapse
+    for name in ("DEFAULT_GATE_LEVELS", "classify_gate_level"):
+        with pytest.raises(AttributeError):
+            getattr(synapse, name)
 
 
 # ---------------------------------------------------------------------------

@@ -307,36 +307,14 @@ def __getattr__(name):
         globals().update(_map)
         return _map[name]
 
-    # --- Agent protocol ---
-    # protocol.py only. The executor and the v8-DSA modules (sparse_router,
-    # reasoning_context, specialist_modes, task_synthesizer) were deleted
-    # 2026-08-01 (RL-3, escalated from RSI loop A2's retirement) — no
-    # production consumer existed. See python/synapse/agent/__init__.py.
-    _agent_names = {
-        'AgentTask', 'AgentPlan', 'AgentStep', 'StepStatus', 'PlanStatus',
-        'DEFAULT_GATE_LEVELS', 'classify_gate_level',
-    }
-    if name in _agent_names:
-        from .agent.protocol import (
-            AgentTask as _AgentTask,
-            AgentPlan as _AgentPlan,
-            AgentStep as _AgentStep,
-            StepStatus as _StepStatus,
-            PlanStatus as _PlanStatus,
-            DEFAULT_GATE_LEVELS as _DEFAULT_GATE_LEVELS,
-            classify_gate_level as _classify_gate_level,
-        )
-        _map = {
-            'AgentTask': _AgentTask,
-            'AgentPlan': _AgentPlan,
-            'AgentStep': _AgentStep,
-            'StepStatus': _StepStatus,
-            'PlanStatus': _PlanStatus,
-            'DEFAULT_GATE_LEVELS': _DEFAULT_GATE_LEVELS,
-            'classify_gate_level': _classify_gate_level,
-        }
-        globals().update(_map)
-        return _map[name]
+    # --- Agent protocol: GONE (R202, 2026-08-02) ---
+    # python/synapse/agent/ was deleted in full. The executor and v8-DSA
+    # modules went 2026-08-01 (RL-3); protocol.py survived one day on a
+    # single test import (tests/test_set_usd_primvar.py "wiring site 1"),
+    # whose gate map was consulted by nothing at runtime — the live gate
+    # authority is panel/bridge_adapter._TOOL_TO_OPERATION ->
+    # shared/bridge.OPERATION_GATES. Code lives in git history (last live
+    # at 9d7bd17).
 
     # --- Routing ---
     _routing_names = {
@@ -549,15 +527,6 @@ __all__ = [
     'RecipeRegistry',
     'Recipe',
     'ROUTING_AVAILABLE',
-
-    # Agent
-    'AgentTask',
-    'AgentPlan',
-    'AgentStep',
-    'StepStatus',
-    'PlanStatus',
-    'DEFAULT_GATE_LEVELS',
-    'classify_gate_level',
 
     # Server
     'SynapseServer',

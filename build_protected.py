@@ -28,8 +28,8 @@ PROTECTED_MODULES = [
     "python/synapse/routing/cache.py",
     "python/synapse/memory/store.py",
     "python/synapse/memory/markdown.py",
-    "python/synapse/agent/executor.py",
-    "python/synapse/agent/learning.py",
+    # python/synapse/agent/* entries removed: executor/learning deleted
+    # 2026-08-01 (RL-3/A2), the whole package deleted 2026-08-02 (R202).
     "python/synapse/core/determinism.py",
 ]
 

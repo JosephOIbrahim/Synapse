@@ -55,7 +55,6 @@ for mod_name, mod_path in [
     ("synapse.session", _root / "synapse" / "session"),
     ("synapse.memory", _root / "synapse" / "memory"),
     ("synapse.routing", _root / "synapse" / "routing"),
-    ("synapse.agent", _root / "synapse" / "agent"),
 ]:
     if mod_name not in sys.modules:
         pkg = types.ModuleType(mod_name)
