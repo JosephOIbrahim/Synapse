@@ -3,17 +3,37 @@ Benchmark Synapse apiFunction (HTTP) latency vs WebSocket.
 
 Compares round-trip time for HTTP POST /api vs ws:// for each command type.
 Run after starting both servers in Houdini.
+
+EXTENDED (R305 lane I1, 2026-08-02) with the SAME scale CLI surface as
+_benchmark_latency.py, so both transports carry an identical scale axis and
+the D1 op-set alignment survives. A no-argument run issues byte-for-byte the
+same op sequence it always did (pinned by tests/test_bench_scale.py).
+
+The offline tier here is the same shared core (scripts/bench_scale.py) — it is
+transport-independent by construction, so there is exactly one implementation
+and no chance of the two scripts measuring different things. The LIVE HTTP arm
+is NOT implemented here: see the module note at run_scale() for why that is a
+stated gap rather than a silent one.
 """
 
+import argparse
+import importlib.util
 import json
+import sys
 import time
 import statistics
-import urllib.request
 import urllib.error
+import urllib.parse   # NOT redundant: call_api uses urllib.parse.urlencode
+                      # and only ever worked because importing urllib.request
+                      # binds `parse` on the package as a side effect.
+import urllib.request
+from pathlib import Path
 
 API_URL = "http://localhost:8008/api"
 WARMUP = 5
 ITERATIONS = 50
+
+REPO = Path(__file__).resolve().parent
 
 
 def call_api(function_name, kwargs=None):
@@ -66,7 +86,7 @@ def benchmark(name, function_name, kwargs=None, iterations=ITERATIONS):
     )
 
 
-def main():
+def legacy_main():
     print(f"\n{'='*80}")
     print(f"  Synapse apiFunction (HTTP) Benchmark -- {API_URL}")
     print(f"  {ITERATIONS} iterations per command, {WARMUP} warmup")
@@ -108,5 +128,80 @@ def main():
     print(f"\n{'='*80}\n")
 
 
+# ── SCALE EXTENSION (shared core — see _benchmark_latency.py) ───────────────
+
+def _load_bench_scale():
+    """Import the shared scale core by path (scripts/ is not a package)."""
+    mod = sys.modules.get("bench_scale")
+    if mod is not None:
+        return mod
+    path = REPO / "scripts" / "bench_scale.py"
+    spec = importlib.util.spec_from_file_location("bench_scale", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["bench_scale"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def build_parser():
+    ap = argparse.ArgumentParser(
+        prog="_benchmark_api.py",
+        description="SYNAPSE HTTP apiFunction benchmark. With no arguments it "
+                    "runs the legacy op sequence unchanged. --tier offline "
+                    "runs the shared scale bench with no Houdini, no server "
+                    "and no pxr (counts only, never wall-clock).",
+        epilog="scale axis = AUTHORED ARRAY VOLUME, not prim count "
+               "(harness/latency/LEDGER.md section 1). "
+               "Core: scripts/bench_scale.py")
+    ap.add_argument("--iterations", type=int, default=ITERATIONS)
+    try:
+        _load_bench_scale().add_scale_args(ap)
+    except Exception as exc:                       # noqa: BLE001
+        # --help must never exit non-zero for want of the core.
+        g = ap.add_argument_group("scale bench (CORE UNAVAILABLE)")
+        g.add_argument("--tier", choices=("offline", "live"), default=None)
+        g.add_argument("--axis", default="both")
+        g.add_argument("--scale", default=None, metavar="N,N,N")
+        g.add_argument("--volume", default=None, metavar="N,N,N")
+        g.add_argument("--prim-threshold", type=int, default=10_000)
+        g.add_argument("--volume-threshold", type=int, default=500_000)
+        g.add_argument("--json-out", default=None)
+        g.description = (f"scripts/bench_scale.py did not import "
+                         f"({type(exc).__name__}: {exc}) — --tier is inert")
+    return ap
+
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if not argv:
+        legacy_main()
+        return 0
+    args = build_parser().parse_args(argv)
+    if args.tier is None:
+        legacy_main()
+        return 0
+    if args.tier == "offline":
+        # The offline tier is TRANSPORT-INDEPENDENT: it drives
+        # LosslessExecutionBridge.execute() against a counting fake, with no
+        # socket of any kind. Both scripts therefore share one implementation
+        # and cannot measure different things.
+        bench = _load_bench_scale()
+        try:
+            return bench.run_from_args(
+                args, "python _benchmark_api.py " + " ".join(argv))
+        except bench.BenchScaleError as exc:
+            print(f"\n  REFUSED: {exc}\n", file=sys.stderr)
+            return 1
+    # STATED GAP, not a silent one: there is no LIVE HTTP scale arm. The live
+    # scale arm lives in _benchmark_latency.py (WS). Building a second live
+    # arm here would duplicate the rung builder, and a duplicated builder is
+    # how two transports start describing two different scenes.
+    print("\n  --tier live is not implemented for the HTTP arm.")
+    print("  Use: python _benchmark_latency.py --tier live   (WS transport)")
+    print("  Reason: one rung builder, one scene. A second live builder here "
+          "would fork it.")
+    return 2
+
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

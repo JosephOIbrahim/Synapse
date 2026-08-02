@@ -133,3 +133,118 @@ strongest on the board (16,677× measured miss).
 - **H7 as posed** (this run — see §2).
 - **U5/U6/U7** stay parked behind their numeric reopen-gates; U6's anchor must be
   re-stated before use.
+
+---
+
+## 7. The scale curve, MEASURED (R305 lane I1 — the missing denominator)
+
+Sections 1–6 established that the axis is **authored array volume, not prim
+count**, from live probes. This section is the first *swept* measurement of that
+axis: an offline, deterministic, counted sweep that emits the CURVE (intercept +
+slope + r² per counter) rather than two endpoints.
+
+**Producer for every number in this section:**
+`python scripts/bench_scale.py --json-out -`
+(equivalently `python _benchmark_latency.py --tier offline --json-out -`).
+Instrument `scripts/bench_scale.py::measure_rung`, driving the real
+`LosslessExecutionBridge.execute()` through `tests/perf_counters.py`'s fake-hou
+seam. Interpreter CPython 3.14.2, git `a34d1c3`, builder `bce16327b2f14e0f`.
+
+**These are COUNTS, not milliseconds.** The offline tier emits no wall-clock key
+of any kind — `bench_scale.assert_record_honest` raises on one, and
+`tests/test_bench_scale.py` scans the whole emitted run to prove it. Nothing in
+this section is quotable as a latency figure.
+
+### 7.1 The volume axis, with prim count HELD CONSTANT at 4
+
+The sweep the earlier design could not produce, because it parameterized by prim
+count alone. Four prims is 2,500× below the shipped 10,000-prim gate, so the prim
+term **cannot** fire anywhere on this sweep — every response below is the volume
+term or nothing.
+
+| authored elements | gate mode | `flatten_exports` | `value_reads` | `prim_visits` |
+|---|---|---|---|---|
+| 100,000 | full | 2 | 4 | 12 |
+| 200,000 | full | 2 | 4 | 12 |
+| 500,000 | full | 2 | 4 | 12 |
+| 1,000,000 | **reduced** | **0** | 3 | 19 |
+| 4,000,000 | **reduced** | **0** | 1 | 17 |
+
+- **The gate flips on volume alone.** `flatten_exports` 2 → 0 between 500,000 and
+  1,000,000 authored elements at **four prims** — exactly where a prim-keyed gate
+  answers False. The H10 bypass class, now a swept curve rather than a single
+  repro `[C2]`.
+- **Below the gate every counter is FLAT** (slope 0/element, r² 1.0 across
+  100k–500k) while the *real* cost grows linearly in volume `[section 1: 100k
+  elements = 46.0 ms/hash … 4M = 1361.5 ms/hash]`. That gap is the instrument's
+  stated precision limit, not a finding — §7.4.
+- **`value_reads` 4 → 3 → 1** is the volume probe short-circuiting earlier as
+  arrays get bigger: `_stage_volume_exceeds` accumulates until
+  `total > threshold`, reaching its verdict at attribute 3, then at attribute 1.
+  The probe gets *cheaper* as the stage gets *heavier*.
+
+### 7.2 The prim axis, with authored volume held at ZERO
+
+| prims | gate mode | `flatten_exports` | `prim_visits` | `prim_state_reads` | `attrs_examined` |
+|---|---|---|---|---|---|
+| 100 | full | 2 | 300 | 200 | 100 |
+| 1,000 | full | 2 | 3,000 | 2,000 | 1,000 |
+| 10,000 | full | 2 | 24,097 | 20,000 | 4,096 |
+| 10,001 | **reduced** | **0** | 40,004 | 80,008 | 0 |
+| 20,000 | **reduced** | **0** | 70,001 | 160,000 | 0 |
+
+Per-regime slopes. A single slope across the boundary averages two different
+algorithms and is **not** quotable — the instrument refuses to present one:
+
+| counter | below gate (100→10,000) | above gate (10,001→20,000) |
+|---|---|---|
+| `prim_state_reads` | **2.0** /prim (r² 1.0) | **8.0** /prim (r² 1.0) |
+| `prim_visits` | 2.38 /prim (r² 0.9995) | **3.0** /prim (r² 1.0) |
+| `attrs_examined` | 0.379 /prim (r² 0.982 — SATURATING) | 0 |
+| `flatten_exports` | 2 (constant) | 0 (constant) |
+
+- **The price of the 4× win, in counted units, stated for the first time.**
+  Crossing at 10,000 → 10,001 removes 2 `Flatten` calls *and* quadruples per-prim
+  state reads (2.0 → 8.0/prim), raising prim visits 24,097 → 40,004. The win is
+  real and it is a trade, not a free lunch.
+- **`attrs_examined` saturates at 4,096** — that is
+  `_STAGE_HASH_VOLUME_ATTR_BUDGET` `[shared/bridge.py:596]` visible in a curve.
+  Its r² of 0.982 is the flag: a linear slope on a saturating counter reads as a
+  growth rate it does not have, so fit quality ships beside the fit.
+- **Above the prim gate `attrs_examined` is 0** — the prim probe returns True
+  first, so the volume probe never runs at all.
+
+### 7.3 What the offline tier may NOT claim
+
+- No wall-clock. Not one key. Enforced in the emitter, pinned by a test that
+  feeds it a poisoned row.
+- No share-of-turn / percent-of-wall-clock at ANY tier: there is no
+  absolute-seconds producer for the LLM turn at HEAD, and the bench prints
+  `T1_reference: UNAVAILABLE` rather than omitting it silently.
+- No cross-tier comparison. Live rows carry `cross_tier_comparable: false` and a
+  different `builder_sha256` by construction; `fit_curve` refuses to place rows
+  from two builders on one curve.
+
+### 7.4 The stated precision limit — read this before quoting §7.1
+
+`flatten_exports` counts **calls** to `stage.Flatten().ExportToString()`. It does
+**not** price the bytes that call serializes. On the volume axis the counters
+move because the **gate responds**, not because this instrument timed a Flatten.
+Reading the flat 100k–500k row as "volume is free" would be exactly the error the
+07-27 report made — the real cost over that same span is `46.0 → 232.9 ms/hash`
+`[section 1, C2 probe]`. Pricing volume needs the LIVE tier or a pxr-present
+envelope probe; the counted tier's job is to show WHERE the algorithm changes,
+and it does that deterministically, on any interpreter, with no Houdini present.
+
+### 7.5 What did NOT get measured (stated, not omitted)
+
+- **The LIVE tier is UNEXERCISED.** `_benchmark_latency.py --tier live` was
+  written and never run — no bridge was reachable in this lane. It emits nothing
+  and returns 2 when the socket is absent. No live number from it exists anywhere
+  in this repo, and none may be cited until someone runs it.
+- **The in-process L0b arm is NOT built.** The stage-hash term is ABSENT BY
+  CONSTRUCTION on the live WS path `[python/synapse/server/integrity_envelope.py:219
+  — _compute_scene_hash(target, include_stage=False)]`, so no live WS run can ever
+  price it. Reaching it needs `bridge.execute()` under hython.
+- **No pxr-present envelope probe.** The counted tier cannot rank a Flatten byte
+  against a prim visit; nothing here attempts to.
