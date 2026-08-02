@@ -62,6 +62,35 @@ HEALTH_TAIL_CAP = 1 * 1024 * 1024          # agent_health_history.jsonl tail
 INSTALL_STAMP_FILENAME = "install_stamp.json"  # M3-A's installer stamp
 
 
+def _running_package_repo_root(package_file: Optional[str]) -> Optional[Path]:
+    """Repo root of the RUNNING ``synapse`` package, or None if it does not
+    sit in the repo layout ``<root>/python/synapse/__init__.py``.
+
+    None means "cannot be determined robustly" — callers must NOT infer a
+    repo-direct install from it. A wrong 'ok' is worse than a noisy fail.
+    """
+    if not package_file:
+        return None
+    try:
+        init = Path(package_file).resolve()
+    except Exception:
+        return None
+    parents = init.parents
+    if len(parents) < 3:
+        return None
+    if parents[0].name != "synapse" or parents[1].name != "python":
+        return None
+    return parents[2]
+
+
+def _same_tree(a: Path, b: Path) -> bool:
+    """Path identity, case-insensitively on Windows."""
+    try:
+        return os.path.normcase(str(a.resolve())) == os.path.normcase(str(b.resolve()))
+    except Exception:
+        return False
+
+
 def _resolve_log_dir(home: Path) -> str:
     """The same env-first logic as core/logfile.py, with an injectable home:
     ``$SYNAPSE_LOG_DIR`` else ``<home>/.synapse/logs``."""
@@ -89,6 +118,23 @@ def _check_version(base: Path) -> Dict[str, Any]:
         stamped = json.loads(stamp_file.read_text(encoding="utf-8"))
         stamped_version = stamped.get("synapse_version")
         if stamped_version and stamped_version != running:
+            # G1c: a repo-direct install has no deployed copy to disagree
+            # with — packages/synapse.json puts the repo itself on
+            # PYTHONPATH, so the running code IS the stamped tree and the
+            # stamp's version is just bookkeeping frozen at install time.
+            # Evidence for that, and nothing weaker: the running package
+            # file resolves inside the very root the stamp was written from.
+            stamped_root = stamped.get("repo_root")
+            live_root = _running_package_repo_root(
+                getattr(synapse, "__file__", None))
+            if (stamped_root and live_root is not None
+                    and _same_tree(Path(stamped_root), live_root)):
+                return {"name": name, "status": "ok",
+                        "detail": (f"{detail}; install stamp says {stamped_version} "
+                                   f"but the running package IS the stamped tree "
+                                   f"({live_root.as_posix()}) — repo-direct install, "
+                                   f"stale stamp bookkeeping, not tree drift"),
+                        "install_stamp": "stale_repo_direct"}
             return {"name": name, "status": "fail",
                     "detail": (f"{detail}; install stamp says {stamped_version} "
                                f"— installed tree and stamp disagree")}

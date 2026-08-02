@@ -67,7 +67,7 @@ always carries the reason.
 
 | Check | ok | fail | skipped |
 |-------|----|------|---------|
-| `version` | synapse + protocol versions read; install stamp (`~/.synapse/install_stamp.json`, M3-A) matches or is absent | stamp present and disagrees with the running `synapse.__version__` | probe failed |
+| `version` | synapse + protocol versions read; install stamp (`~/.synapse/install_stamp.json`, M3-A) matches, is absent, or is a **stale repo-direct stamp** (its `repo_root` IS the tree the running `synapse` package resolves inside — nothing is deployed, so nothing can drift; reported with `install_stamp: stale_repo_direct`) | stamp present, versions differ, and the running package resolves outside the stamped `repo_root` (or its location can't be resolved) — installed tree and stamp genuinely disagree | probe failed |
 | `log_file` | `synapse.log` exists (size + mtime reported) | file logging enabled but no file — nothing has logged, or bootstrap failed | `SYNAPSE_FILE_LOG=0` |
 | `telemetry` | `telemetry.json` younger than 2× the flush interval | stale — the flusher thread is not running | file absent, or flush disabled |
 | `memory_key_fingerprint` | active key fingerprint matches the store's `key.fingerprint` sidecar | mismatch — the seat's key is not the store's key (remediation: provision the show key via `SYNAPSE_ENCRYPTION_KEY`; do NOT delete or resave the store) | `no_store_dir` / `no_sidecar` / `no_crypto` / `no_key` |

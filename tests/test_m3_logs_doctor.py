@@ -486,3 +486,88 @@ def test_symbol_table_check_h22_stamp_mismatch_fails_loud(tmp_path, monkeypatch)
     assert check["status"] == "fail"
     assert "regenerate" in check["detail"]
     assert "22.0.368" in check["detail"]    # the h22 table was selected + described
+
+
+# --------------------------------------------------------------------------
+# G1c — the install-stamp false alarm.
+#
+# SYNAPSE installs REPO-DIRECT: scripts/install_synapse_package.py writes a
+# packages/synapse.json whose PYTHONPATH points at the repo itself, so there
+# is no deployed copy. Once the repo advances a version the stamp ("5.23.0")
+# disagrees with the running package ("5.41.0") forever — a permanently-red
+# check that trains the eye to skip the doctor.
+#
+# The check may report ok ONLY on proof of identity: the running synapse
+# package file resolves inside the exact repo_root the stamp was written
+# from. A stamped install running a DIFFERENT tree still fails loud — that
+# is the real signal and it must not be blunted.
+# --------------------------------------------------------------------------
+
+def _write_repo_tree(root: Path) -> Path:
+    """Materialize <root>/python/synapse/__init__.py; return the init file."""
+    pkg = root / "python" / "synapse"
+    pkg.mkdir(parents=True, exist_ok=True)
+    init = pkg / "__init__.py"
+    init.write_text("", encoding="utf-8")
+    return init
+
+
+def _write_install_stamp(base: Path, version: str, repo_root: Path) -> None:
+    base.mkdir(parents=True, exist_ok=True)
+    (base / doctor.INSTALL_STAMP_FILENAME).write_text(
+        json.dumps({"schema": "synapse_install_stamp/v1",
+                    "synapse_version": version,
+                    "repo_root": repo_root.as_posix()}),
+        encoding="utf-8")
+
+
+def test_version_repo_direct_stale_stamp_is_not_a_failure(tmp_path, monkeypatch):
+    import synapse
+    repo = tmp_path / "SYNAPSE"
+    monkeypatch.setattr(synapse, "__file__", str(_write_repo_tree(repo)))
+    _write_install_stamp(tmp_path / ".synapse", "5.23.0", repo)
+
+    check = doctor._check_version(tmp_path / ".synapse")
+    assert check["status"] == "ok"                       # no false FAIL
+    assert check["install_stamp"] == "stale_repo_direct"
+    assert "5.23.0" in check["detail"]                   # still discloses the stamp
+    assert synapse.__version__ in check["detail"]
+
+
+def test_version_stamped_install_running_other_tree_still_fails(tmp_path, monkeypatch):
+    """The real signal survives: stamp written from tree A, code running from
+    tree B -> installed tree and stamp genuinely disagree."""
+    import synapse
+    stamped_repo = tmp_path / "stamped_repo"
+    _write_repo_tree(stamped_repo)
+    monkeypatch.setattr(synapse, "__file__",
+                        str(_write_repo_tree(tmp_path / "other_repo")))
+    _write_install_stamp(tmp_path / ".synapse", "5.23.0", stamped_repo)
+
+    check = doctor._check_version(tmp_path / ".synapse")
+    assert check["status"] == "fail"
+    assert "disagree" in check["detail"]
+
+
+def test_version_unresolvable_layout_prefers_the_noisy_fail(tmp_path, monkeypatch):
+    """No robust repo-direct evidence (package not at <root>/python/synapse)
+    -> fail, never a guessed ok."""
+    import synapse
+    loose = tmp_path / "site-packages" / "synapse" / "__init__.py"
+    loose.parent.mkdir(parents=True)
+    loose.write_text("", encoding="utf-8")
+    monkeypatch.setattr(synapse, "__file__", str(loose))
+    _write_install_stamp(tmp_path / ".synapse", "5.23.0", tmp_path / "site-packages")
+
+    assert doctor._running_package_repo_root(str(loose)) is None
+    assert doctor._check_version(tmp_path / ".synapse")["status"] == "fail"
+
+
+def test_version_absent_and_matching_stamp_unchanged(tmp_path):
+    import synapse
+    base = tmp_path / ".synapse"
+    absent = doctor._check_version(base)
+    assert absent["status"] == "ok" and "no install stamp" in absent["detail"]
+    _write_install_stamp(base, synapse.__version__, tmp_path)
+    matched = doctor._check_version(base)
+    assert matched["status"] == "ok" and "matches" in matched["detail"]
