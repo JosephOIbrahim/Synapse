@@ -91,3 +91,42 @@ is `done`/`held` and whose path no longer exists. **Executor: INLINE.**
 
 The resolution channel (#58) is the only exit, one item at a time, evidence per entry. A bulk sweep would
 recreate the false-open problem in reverse. **Ruling:** standing instruction, no action.
+
+
+---
+
+## FOLLOW-UP RULINGS — surfaced by the R201/R202/R203 crucibles, 2026-08-02
+
+Recorded, not yet executed. None blocked its merge; each is its own next-step.
+
+## R208 — semantic_index.json still teaches usdrender-as-ROP
+The corpus sweep (R201) cleared rag/**/*.md, but `rag/documentation/_metadata/semantic_index.json`
+topic descriptions (karma_rendering, usd_composition_reference, render_farm) still phrase
+usdrender as a ROP, and that text IS folded into embedded searchable_text (checks.py:2331-2332) —
+retrieval-reachable. Out of the sweep's ratified surface. **Ruling: FIX, own ratified row** — edit the
+descriptions, rebuild the index (the digest gate catches the rebuild automatically).
+
+## R209 — rbac.py omits set_usd_primvar from the artist allowlist
+`server/rbac.py _ARTIST_COMMANDS` lists set_usd_attribute but not set_usd_primvar — a studio-mode
+(RBAC-on) gap where an artist can set an attribute but not a primvar. **Ruling: FIX** — add
+set_usd_primvar alongside its sibling; single-line, pin with an rbac test.
+
+## R210 — USD-write tools run INFORM via the set_parameter fallback
+Both set_usd_primvar and set_usd_attribute resolve to INFORM through the set_parameter fallback in
+_TOOL_TO_OPERATION rather than an explicit USD-write gate level. **Ruling: DECIDE** (not a code tweak) —
+is INFORM correct for USD authoring, or should USD writes carry REVIEW like other stage mutations? A
+gate-level question for the panel/consent review, queued with H4 (R204).
+
+## R211 — the symbol-table harvester does not descend module-type hou members
+R203 found all seven capabilities clean BUT flagged hou.undos.group / hou.undos.performUndo as
+UNVERIFIABLE — because host/introspect_runtime.py enumerates hou at depth but does not descend
+module-type members (hou.undos, hou.hipFile, hou.session). Same class as the hipFile blind spot found
+2026-08-02 (C-0 lane). The table undersells its own coverage and yields false UNVERIFIABLE verdicts.
+**Ruling: FIX** — descend module-type hou members in the harvester, regenerate the table, re-probe.
+Highest-leverage of these four: it strengthens the phantom gate itself.
+
+## Also logged (not rulings): statusline linked-worktree blindness
+The 4 test_statusline failures that appear in EVERY linked worktree (`.git` is a file there, so the
+branch/HEAD/registry readers return '?') are an environment class, not a defect — but they make every
+worktree-based lane's suite read "4 failed". Deserves its own ticket: skip-or-adapt those 4 under a
+linked-worktree detection, so worktree lanes get a clean floor.
