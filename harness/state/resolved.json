@@ -1,0 +1,41 @@
+{
+  "_doc": "Resolution channel for the decisions board. Each entry retires ONE board item, identified by item_key() over (kind|source|leg|text). This file NEVER closes a flywheel item - those close only via the human ratified flip in flywheel_queue.json, and collect() refuses to subtract them no matter what this file says. Append via 'python harness/decisions.py --resolve KEY --reason ...' so every entry carries a snapshot and evidence.",
+  "resolutions": [
+    {
+      "key": "cab02af970f7",
+      "resolved_at": "2026-08-01 21:05",
+      "by": "human",
+      "reason": "landed: git ls-files matches 0 of the 8 delete-classed dirs (re-verified 2026-08-01: grep -c ^_solaris_fix/|^SYNAPSE-asm-|^SYNAPSE-fx- -> 0)",
+      "item_snapshot": {
+        "kind": "ruling",
+        "source": "harness/notes/receipts/L0.json",
+        "leg": "L0",
+        "text": "Root hygiene: delete the 8 delete-classed TRACKED dirs (_solaris_fix/, SYNAPSE-asm-* x4, SYNAPSE-fx-* x3 = 11 tracked files, all duplicates)?"
+      }
+    },
+    {
+      "key": "670cbf1c168b",
+      "resolved_at": "2026-08-01 21:05",
+      "by": "human",
+      "reason": "landed: 0 tracked docs/*.txt (git ls-files docs/ | grep -c .txt -> 0) and the ignore rule was broadened (48 ignored, verified in pass-1 review)",
+      "item_snapshot": {
+        "kind": "ruling",
+        "source": "harness/notes/receipts/L0.json",
+        "leg": "L0",
+        "text": "docs/*.txt - 15 untracked scratch files, zero tracked. Remove and broaden the ignore rule?"
+      }
+    },
+    {
+      "key": "4fc934b1e5ac",
+      "resolved_at": "2026-08-01 21:05",
+      "by": "human",
+      "reason": "landed: gate_widget.py guards decision_announced emits (:513-534, :550-562) - the consent-theatre fix the ruling asked for; verified in pass-1 review + re-read 2026-08-01",
+      "item_snapshot": {
+        "kind": "ruling",
+        "source": "harness/notes/receipts/L3.json",
+        "leg": "L3",
+        "text": "Three panel affordances lie to the artist about safety-critical operations: COMMIT-to-/stage claims consent-gate routing that never happens, and gate Approve/Reject report decisions that may never have reached HumanGate. Who lands the fix, and when?"
+      }
+    }
+  ]
+}
