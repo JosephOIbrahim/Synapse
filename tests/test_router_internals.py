@@ -1,16 +1,21 @@
 """
 Conformance + regression tests for shared/router.py.
 
-Covers the seven bug/brittleness fixes:
+Covers the bug/brittleness fixes that survive R20:
   R11 -- route_task() singleton (fast paths actually reachable)
-  R12 -- internal auto-promotion at FAST_PATH_PROMOTION_THRESHOLD
   R13 -- score-based task type extraction (no insertion-order dependency)
   R14 -- complexity classification independent of word count
   R15 -- relative advisory threshold (gap-aware top-K)
-  R16 -- CONSTANTS_HASH stamping for session fast paths
   R17 -- empty domain_signals tuple instead of GEOMETRY fallback
-  R18 -- outcome-vetoed promotion (RSI loop F, L1 HONEST): a failing
-         fingerprint can never be promoted to a session fast path
+
+RETIRED 2026-08-01 (R20, RSI loop F): the auto-promotion suites are deleted
+along with the mechanism they pinned -- TestAutoPromotion (R12),
+TestConstantsHashStamping (R16), TestOutcomeVetoedPromotion (R18),
+TestOutcomeTypeGuard + TestOutcomeConfirmationUpgrade (R19) -- 37 tests. They were
+honest and passing; they tested a mechanism that ran zero times in production.
+Deleting the code deletes its tests. What is asserted below instead is that the
+promotion surface is GONE (TestPromotionRetired) -- a test that fails loudly if
+someone reintroduces it without reopening the registry decision.
 
 Plus a doc-vs-code conformance check that parses CLAUDE.md and asserts the
 mechanisms it claims to have are actually present in router.py.
@@ -93,320 +98,6 @@ class TestRouteTaskSingleton:
 
 
 # ─────────────────────────────────────────────────────────────────
-# R12: Internal auto-promotion
-# ─────────────────────────────────────────────────────────────────
-
-class TestAutoPromotion:
-    def test_fingerprint_promoted_after_threshold(self):
-        router = MOERouter()
-        # Burn calibration so fast path lookups are active
-        warmup = extract_features("orchestrate the pdg render farm pipeline")
-        for _ in range(ROUTER_CALIBRATION_PERIOD + 1):
-            router.route(warmup)
-
-        novel = RoutingFeatures(
-            task_type=TaskType.ARCHITECTURE,
-            complexity=Complexity.MODERATE,
-            domain_signals=(DomainSignal.TESTING,),
-            urgency=Urgency.NORMAL,
-        )
-        fp = novel.fingerprint()
-        assert fp not in FAST_PATHS  # precondition
-
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
-            router.route(novel)
-
-        assert fp in router._session_fast_paths
-        # Stamped with current constants hash
-        assert router._session_fast_paths[fp][2] == CONSTANTS_HASH
-
-    def test_existing_fast_path_not_double_promoted(self):
-        router = MOERouter()
-        for _ in range(ROUTER_CALIBRATION_PERIOD + 1):
-            router.route(extract_features("noop"))
-
-        # Construct a feature vector matching a hand-tuned FAST_PATHS key
-        feat = extract_features("inspect the geometry")
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD + 2):
-            router.route(feat)
-
-        # Should NOT have been added to session paths (already in FAST_PATHS)
-        if feat.fingerprint() in FAST_PATHS:
-            assert feat.fingerprint() not in router._session_fast_paths
-
-
-# ─────────────────────────────────────────────────────────────────
-# R18: Outcome veto — promotion can represent failure (RSI loop F, L1)
-# ─────────────────────────────────────────────────────────────────
-
-def _novel_features() -> RoutingFeatures:
-    """A feature vector guaranteed absent from hand-tuned FAST_PATHS."""
-    feat = RoutingFeatures(
-        task_type=TaskType.ARCHITECTURE,
-        complexity=Complexity.MODERATE,
-        domain_signals=(DomainSignal.TESTING,),
-        urgency=Urgency.NORMAL,
-    )
-    assert feat.fingerprint() not in FAST_PATHS  # precondition
-    return feat
-
-
-def _warmed_router() -> MOERouter:
-    router = MOERouter()
-    warm = extract_features("orchestrate the pdg render farm pipeline")
-    for _ in range(ROUTER_CALIBRATION_PERIOD + 1):
-        router.route(warm)
-    return router
-
-
-class TestOutcomeVetoedPromotion:
-    def test_failing_fingerprint_never_promotes(self):
-        """The defect this fixes: frequency alone promoted a failing route."""
-        router = _warmed_router()
-        feat = _novel_features()
-        fp = feat.fingerprint()
-
-        router.record_outcome(fp, success=False)
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD * 3):
-            router.route(feat)
-
-        assert fp not in router._session_fast_paths
-        # …and frequency was still counted — the veto is the gate, not the count
-        assert router.fingerprint_counts()[fp] >= FAST_PATH_PROMOTION_THRESHOLD
-
-    def test_succeeding_fingerprint_still_promotes_at_threshold(self):
-        router = _warmed_router()
-        feat = _novel_features()
-        fp = feat.fingerprint()
-
-        router.record_outcome(fp, success=True)
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
-            router.route(feat)
-
-        assert fp in router._session_fast_paths
-        assert router._session_fast_paths[fp][2] == CONSTANTS_HASH
-        # observed success -> the entry is marked outcome-confirmed
-        assert router._session_fast_paths[fp][3] is True
-
-    def test_promotion_without_any_outcome_is_marked_unconfirmed(self):
-        """Pre-R18 behaviour preserved, but the entry is visibly unproven.
-
-        This is loop F's L2 gap made legible: nothing calls record_outcome()
-        yet, so today every auto-promotion lands here.
-        """
-        router = _warmed_router()
-        feat = _novel_features()
-        fp = feat.fingerprint()
-
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
-            router.route(feat)
-
-        assert fp in router._session_fast_paths
-        assert router._session_fast_paths[fp][3] is False
-
-    def test_failure_after_promotion_evicts_the_fast_path(self):
-        router = _warmed_router()
-        feat = _novel_features()
-        fp = feat.fingerprint()
-
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
-            router.route(feat)
-        assert fp in router._session_fast_paths
-
-        router.record_outcome(fp, success=False)
-        assert fp not in router._session_fast_paths
-        # and it does not come back
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD * 2):
-            router.route(feat)
-        assert fp not in router._session_fast_paths
-
-    def test_one_failure_vetoes_despite_many_successes(self):
-        """Failure-veto, not majority vote — justified in router.py R18."""
-        router = _warmed_router()
-        feat = _novel_features()
-        fp = feat.fingerprint()
-
-        for _ in range(20):
-            router.record_outcome(fp, success=True)
-        router.record_outcome(fp, success=False)
-
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD * 2):
-            router.route(feat)
-        assert fp not in router._session_fast_paths
-
-    def test_learn_fast_path_honours_the_same_veto(self):
-        """The external door writes the same table — it cannot bypass the veto."""
-        router = MOERouter()
-        fp = "architecture|moderate|testing|normal"
-
-        assert router.learn_fast_path(fp, AgentID.SUBSTRATE, None) is True
-        assert fp in router._session_fast_paths
-
-        router.record_outcome(fp, success=False)   # also evicts
-        assert fp not in router._session_fast_paths
-        assert router.learn_fast_path(fp, AgentID.SUBSTRATE, None) is False
-        assert fp not in router._session_fast_paths
-
-    def test_outcome_counts_is_a_copy(self):
-        router = MOERouter()
-        router.record_outcome("fp", success=True)
-        router.record_outcome("fp", success=False)
-        snapshot = router.outcome_counts()
-        assert snapshot["fp"] == (1, 1)
-        snapshot["fp"] = (99, 99)
-        assert router.outcome_counts()["fp"] == (1, 1)
-
-    def test_outcomes_are_per_fingerprint(self):
-        """A failure on one fingerprint must not veto a different one."""
-        router = _warmed_router()
-        feat = _novel_features()
-        fp = feat.fingerprint()
-
-        router.record_outcome("some|other|fingerprint|normal", success=False)
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
-            router.route(feat)
-        assert fp in router._session_fast_paths
-
-
-# ─────────────────────────────────────────────────────────────────
-# R19a: record_outcome type guard — truthiness must not become success
-# ─────────────────────────────────────────────────────────────────
-
-class TestOutcomeTypeGuard:
-    """The crucible's finding against R18 itself.
-
-    Under the original ``if success:`` a truthy non-bool did not merely fail
-    to veto — it manufactured POSITIVE evidence. ``record_outcome(fp, "FAIL")``
-    incremented the SUCCESS tally and made ``_outcome_confirmed`` return True
-    for a route that had just been reported as failing.
-    """
-
-    # The literal that names the bug, plus the other plausible miswirings.
-    BAD_VALUES = [
-        "FAIL", "fail", "False", "0", "error", "ok", "",
-        0, 1, -1, None, [], ["err"], {}, {"ok": False}, 1.0, 0.0,
-    ]
-
-    @pytest.mark.parametrize("bad", BAD_VALUES)
-    def test_non_bool_raises_and_records_nothing(self, bad):
-        router = MOERouter()
-        with pytest.raises(TypeError):
-            router.record_outcome("fp", bad)
-        # nothing was tallied in EITHER column
-        assert router.outcome_counts() == {}
-
-    def test_the_literal_crucible_case_no_longer_confirms_success(self):
-        """record_outcome(fp, "FAIL") must never read back as a success."""
-        router = MOERouter()
-        with pytest.raises(TypeError):
-            router.record_outcome("fp", "FAIL")
-        assert router.outcome_counts().get("fp", (0, 0))[0] == 0
-        assert router._outcome_confirmed("fp") is False
-
-    def test_rejected_outcome_does_not_promote_or_veto(self):
-        """A refused call leaves the promotion decision exactly as it was."""
-        router = _warmed_router()
-        feat = _novel_features()
-        fp = feat.fingerprint()
-
-        with pytest.raises(TypeError):
-            router.record_outcome(fp, "FAIL")
-
-        # veto untouched (no failure recorded) …
-        assert router._promotion_allowed(fp) is True
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
-            router.route(feat)
-        # … and the entry is stamped unproven, not falsely confirmed
-        assert router._session_fast_paths[fp][3] is False
-
-    def test_real_bools_still_accepted(self):
-        router = MOERouter()
-        router.record_outcome("fp", True)
-        router.record_outcome("fp", False)
-        assert router.outcome_counts()["fp"] == (1, 1)
-
-    def test_numpy_style_bool_lookalike_is_rejected(self):
-        """An object that merely *behaves* boolean is not a bool."""
-        class BoolLike:
-            def __bool__(self):
-                return True
-
-        router = MOERouter()
-        with pytest.raises(TypeError):
-            router.record_outcome("fp", BoolLike())
-        assert router.outcome_counts() == {}
-
-
-# ─────────────────────────────────────────────────────────────────
-# R19b: outcome_confirmed upgrades False -> True on an observed success
-# ─────────────────────────────────────────────────────────────────
-
-class TestOutcomeConfirmationUpgrade:
-    """Promotion fires on the frequency-crossing call, which is necessarily
-    before any outcome for that decision can exist. So every auto-promoted
-    entry is born ``outcome_confirmed=False``; without an upgrade path it
-    stayed False forever, even after real successes were recorded.
-    """
-
-    def test_success_after_promotion_upgrades_the_flag(self):
-        router = _warmed_router()
-        feat = _novel_features()
-        fp = feat.fingerprint()
-
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
-            router.route(feat)
-        assert router._session_fast_paths[fp][3] is False   # born unproven
-
-        router.record_outcome(fp, success=True)
-        assert router._session_fast_paths[fp][3] is True    # now proven
-
-    def test_upgrade_preserves_agents_and_constants_hash(self):
-        router = _warmed_router()
-        feat = _novel_features()
-        fp = feat.fingerprint()
-
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
-            router.route(feat)
-        before = router._session_fast_paths[fp]
-
-        router.record_outcome(fp, success=True)
-        after = router._session_fast_paths[fp]
-        assert after[:3] == before[:3]
-        assert after[2] == CONSTANTS_HASH
-
-    def test_upgrade_never_creates_a_promotion(self):
-        """A success on an unpromoted fingerprint must not write an entry."""
-        router = MOERouter()
-        router.record_outcome("never|routed|at|all", success=True)
-        assert "never|routed|at|all" not in router._session_fast_paths
-
-    def test_upgrade_normalises_a_hand_injected_3_tuple(self):
-        """Older callers/tests inject 3-tuples; the upgrade must not IndexError."""
-        router = MOERouter()
-        fp = "architecture|moderate|testing|normal"
-        router._session_fast_paths[fp] = (AgentID.HANDS, None, CONSTANTS_HASH)
-
-        router.record_outcome(fp, success=True)
-        entry = router._session_fast_paths[fp]
-        assert len(entry) == 4
-        assert entry[3] is True
-
-    def test_failure_still_evicts_rather_than_downgrades(self):
-        """A failure is not a relabel — it removes the frozen decision."""
-        router = _warmed_router()
-        feat = _novel_features()
-        fp = feat.fingerprint()
-
-        for _ in range(FAST_PATH_PROMOTION_THRESHOLD):
-            router.route(feat)
-        router.record_outcome(fp, success=True)
-        assert router._session_fast_paths[fp][3] is True
-
-        router.record_outcome(fp, success=False)
-        assert fp not in router._session_fast_paths
-
-
-# ─────────────────────────────────────────────────────────────────
 # R13: Score-based task type extraction (no insertion-order dependency)
 # ─────────────────────────────────────────────────────────────────
 
@@ -479,31 +170,6 @@ class TestRelativeAdvisory:
 
 
 # ─────────────────────────────────────────────────────────────────
-# R16: CONSTANTS_HASH stamping invalidates stale session fast paths
-# ─────────────────────────────────────────────────────────────────
-
-class TestConstantsHashStamping:
-    def test_stale_hash_skipped(self):
-        router = MOERouter()
-        for _ in range(ROUTER_CALIBRATION_PERIOD + 1):
-            router.route(extract_features("noop"))
-
-        feat = RoutingFeatures(
-            task_type=TaskType.ARCHITECTURE,
-            complexity=Complexity.MODERATE,
-            domain_signals=(DomainSignal.TESTING,),
-            urgency=Urgency.NORMAL,
-        )
-        fp = feat.fingerprint()
-        # Inject a stale entry directly
-        router._session_fast_paths[fp] = (AgentID.HANDS, None, "deadbeefdead")
-
-        decision = router.route(feat)
-        # Stale entry must NOT be used — should fall through to scored
-        assert decision.method != "session_fast_path"
-
-
-# ─────────────────────────────────────────────────────────────────
 # R17: No GEOMETRY fallback for empty keyword prompts
 # ─────────────────────────────────────────────────────────────────
 
@@ -562,6 +228,79 @@ class TestFastPathsReachability:
 
 
 # ─────────────────────────────────────────────────────────────────
+# R20: the promotion surface is RETIRED and must stay retired
+# ─────────────────────────────────────────────────────────────────
+
+class TestPromotionRetired:
+    """The subtraction, pinned.
+
+    RSI loop F was retired 2026-08-01 because its promotion path executed zero
+    times in production: nothing produced outcomes, and route()'s only non-test
+    call site sat inside a function with no references. Reintroducing any of
+    these names silently would restore a self-modifying mechanism without
+    reopening that decision, so it fails here instead.
+    """
+
+    RETIRED_ROUTER_ATTRS = [
+        "learn_fast_path", "record_outcome", "outcome_counts",
+        "_promotion_allowed", "_outcome_confirmed",
+    ]
+
+    @pytest.mark.parametrize("name", RETIRED_ROUTER_ATTRS)
+    def test_retired_method_is_gone(self, name):
+        assert not hasattr(MOERouter, name), (
+            f"MOERouter.{name} was retired with RSI loop F (2026-08-01). "
+            f"If it is genuinely needed again, reopen harness/rsi/REGISTRY.json "
+            f"loop F first — it carries the evidence for why this was deleted."
+        )
+
+    def test_router_keeps_no_session_promotion_state(self):
+        router = MOERouter()
+        assert not hasattr(router, "_session_fast_paths")
+        assert not hasattr(router, "_outcomes")
+
+    def test_routing_never_reports_a_session_fast_path(self):
+        """Only two methods survive: hand-tuned 'fast_path' and 'scored'."""
+        router = MOERouter()
+        feat = RoutingFeatures(
+            task_type=TaskType.ARCHITECTURE,
+            complexity=Complexity.MODERATE,
+            domain_signals=(DomainSignal.TESTING,),
+            urgency=Urgency.NORMAL,
+        )
+        assert feat.fingerprint() not in FAST_PATHS   # precondition
+        # Route far past the old promotion threshold and the calibration window.
+        methods = {
+            router.route(feat).method
+            for _ in range(ROUTER_CALIBRATION_PERIOD + FAST_PATH_PROMOTION_THRESHOLD * 5)
+        }
+        assert methods == {"scored"}
+        assert "session_fast_path" not in methods
+
+    def test_fingerprint_counting_survives_the_cut(self):
+        """The advisor reads this — counting is advice, not self-modification."""
+        router = MOERouter()
+        feat = extract_features("inspect the geometry")
+        for _ in range(3):
+            router.route(feat)
+        assert router.fingerprint_counts()[feat.fingerprint()] == 3
+
+    def test_promotion_writer_is_gone_from_the_panel(self):
+        """RoutingLog was the second writer into the promotion table."""
+        from synapse.panel.routing_log import RoutingLog
+        assert not hasattr(RoutingLog, "apply_learned_fast_paths")
+        # …but its read-only frequency telemetry survives.
+        assert hasattr(RoutingLog, "get_frequent_fingerprints")
+
+    def test_dead_tool_filter_entry_point_is_gone(self):
+        """filter_tools() was the sole non-test caller of MOERouter.route()."""
+        from synapse.panel import tool_filter
+        assert not hasattr(tool_filter, "filter_tools")
+        # classify_tool is what the palette actually imports — it stays.
+        assert callable(tool_filter.classify_tool)
+
+
+# ─────────────────────────────────────────────────────────────────
 # Doc/code conformance — parse CLAUDE.md §2.3 and assert mechanisms
 # named there actually exist in router.py / constants.py
 # ─────────────────────────────────────────────────────────────────
@@ -572,21 +311,31 @@ class TestClaudeMdConformance:
         path = _REPO_ROOT / "CLAUDE.md"
         return path.read_text(encoding="utf-8")
 
-    def test_session_learning_threshold_documented_matches_code(self, claude_md):
-        # CLAUDE.md should reference the FAST_PATH_PROMOTION_THRESHOLD constant
-        # OR the literal default value (3). If neither, doc has drifted.
-        m = re.search(r"FAST_PATH_PROMOTION_THRESHOLD.*?(\d+)", claude_md)
-        if m:
-            assert int(m.group(1)) == FAST_PATH_PROMOTION_THRESHOLD
-        else:
-            # Fall back to checking the default literal appears in §2.3 context
-            assert str(FAST_PATH_PROMOTION_THRESHOLD) in claude_md
+    def test_promotion_threshold_still_has_a_live_consumer(self, claude_md):
+        """FAST_PATH_PROMOTION_THRESHOLD survived R20 — but not in the router.
 
-    def test_constants_hash_documented(self, claude_md):
-        assert "CONSTANTS_HASH" in claude_md, (
-            "CLAUDE.md §2.3 must mention CONSTANTS_HASH-based invalidation "
-            "now that the router enforces it."
+        It is no longer a promotion gate; it is the advisor's threshold for
+        RECOMMENDING a hand-tuned FAST_PATHS entry to a human. The constant
+        stays because that consumer is live; the doc must say which one it is.
+        """
+        import shared.conductor_advisor as advisor
+        assert advisor.FAST_PATH_PROMOTION_THRESHOLD == FAST_PATH_PROMOTION_THRESHOLD
+        assert "FAST_PATH_PROMOTION_THRESHOLD" in claude_md
+        # and the router must NOT be a consumer any more
+        router_src = (_REPO_ROOT / "shared" / "router.py").read_text(encoding="utf-8")
+        assert "FAST_PATH_PROMOTION_THRESHOLD," not in router_src, (
+            "router.py re-imported the promotion threshold — R20 retired that gate."
         )
+
+    def test_constants_hash_survives_but_router_does_not_stamp(self):
+        """CONSTANTS_HASH is a constants-module drift primitive, not F's.
+
+        It outlives the retirement because it is an exported constant in its
+        own right; what went is the router stamping promoted entries with it.
+        """
+        assert isinstance(CONSTANTS_HASH, str) and CONSTANTS_HASH
+        router_src = (_REPO_ROOT / "shared" / "router.py").read_text(encoding="utf-8")
+        assert "self._constants_hash" not in router_src
 
     def test_calibration_period_documented(self, claude_md):
         # CLAUDE.md mentions 'calibration period with dense evaluation'
@@ -596,5 +345,21 @@ class TestClaudeMdConformance:
     def test_route_method_exists(self):
         # The mechanism CLAUDE.md describes must actually be present
         assert hasattr(MOERouter, "route")
-        assert hasattr(MOERouter, "learn_fast_path")
+        assert hasattr(MOERouter, "fingerprint_counts")
         assert callable(get_default_router)
+
+    def test_claude_md_no_longer_teaches_session_promotion(self, claude_md):
+        """Doc drift in the dangerous direction: teaching a deleted feature.
+
+        §2.3 is the section that used to describe auto-promotion as live
+        behaviour. It must now describe the retirement instead.
+        """
+        start = claude_md.index("### 2.3")
+        section = claude_md[start:claude_md.index("### 2.4", start)]
+        assert "RETIRED" in section, (
+            "CLAUDE.md §2.3 must record that session auto-promotion was retired."
+        )
+        for gone in ("_session_fast_paths", "learn_fast_path", "record_outcome"):
+            for line in section.splitlines():
+                if gone in line:
+                    assert "RETIRED" in section, f"{gone} described without the retirement note"

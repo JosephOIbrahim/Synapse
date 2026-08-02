@@ -3,7 +3,7 @@
 *Current best proven rung per loop. A rung is recorded here **only** after evidence gathered at HEAD. Never
 promoted on a carried claim, a memory note, or a prior harness's numbering.*
 
-**Framed 2026-08-01 at `f427320` · SPEC RATIFIED 2026-08-01 · last updated by `RL-3` (A2 retirement)**
+**Framed 2026-08-01 at `f427320` · SPEC RATIFIED 2026-08-01 · last updated by `RL-3` (A2 + F retirements)**
 
 ---
 
@@ -17,9 +17,9 @@ not that anything is closed. The scoreboard below is the closure measure, and it
 
 Both statements are true at once, and conflating them is the failure this file exists to prevent.
 
-**9 registered, 8 live.** `A2` is **RETIRED**, not blocked. Its registry entry survives because `P9` requires
-all nine ids present exactly once — the entry is a tombstone, not a loop. Read denominators as **8** from
-2026-08-01 forward.
+**9 registered, 7 live.** `A2` and `F` are **RETIRED**, not blocked — their mechanisms are deleted;
+the registry entries survive because `P9` requires all nine ids present exactly once, and each carries a
+disposition naming what was deleted, why it was dormant, and what would revive it.
 
 ---
 
@@ -33,7 +33,7 @@ all nine ids present exactly once — the entry is a tombstone, not a loop. Read
 | **R** | render-farm learning | — | L0 | LOW — recording an unverified rung is itself the risk |
 | **O** | §16 observability | — | L0 | LOW — same |
 | **S** | science registry → substrate | — | L0 | UNKNOWN pending RL-1 |
-| **F** | router fast-path promotion | **L1** | L2 | **HIGH** if only persistence is addressed |
+| **F** | ~~router fast-path promotion~~ | **RETIRED-2026-08-01** | — | N/A — the mechanism is deleted from the tree |
 | **E** | FORGE build counters | **L1** | L2 | **HIGH** — would compound unvalidated fixes |
 | **C** | Moneta convergence | — | L0 | MEDIUM — relocates every loop's substrate at once |
 
@@ -41,28 +41,41 @@ all nine ids present exactly once — the entry is a tombstone, not a loop. Read
 `A1` reached **L1 HONEST** on 2026-08-01 (`RL-2`) — its signal can now represent failure. That is one rung,
 not a closure: nothing consumes it and no production traffic has exercised it.
 
-`F` moved `—` → **L1 HONEST** on 2026-08-01 (`RL-2`, R18), then was **hardened in place** the same day by
-`RL-2c` (R19) after the crucible attacked the fix itself. That is the first L1 this harness has *earned by
-fixing code* rather than by re-deriving a claim — and the first rung to survive an attack on its own remedy.
-It changes no closure number.
+### `F` — RETIRED 2026-08-01. The harness's first genuine subtraction.
 
-**What the crucible caught in R18.** The new `record_outcome()` gated on a bare `if success:`, so
-`record_outcome(fp, "FAIL")` did not merely fail to veto — it **manufactured positive evidence**, because
-every non-empty string is truthy. Reproduced at `eca11ef`: after reporting a *failure*, `outcome_counts()`
-read `(1, 0)` and `_outcome_confirmed` read `True`. A signal that upgrades garbage into a success is worse
-than the constant it replaced, because the constant was at least *visibly* a constant. `success` is now
-checked by identity against `True`/`False`; anything else raises and records nothing. Second hole, also
-fixed: `outcome_confirmed` could never go `False → True`, since promotion fires on the frequency-crossing
-call — necessarily before any outcome exists.
+`F` moved `—` → **L1 HONEST** on 2026-08-01 (`RL-2`, R18), was **hardened in place** the same day by `RL-2c`
+(R19) after the crucible attacked the fix itself — and was **deleted from the tree later the same day.** All
+three events belong in the record together, because the middle one is what made the last one answerable.
 
-**F's real blocker is dormancy, not a missing feed.** Say it the harder way, because the two words imply
-different work — *unfed* implies wiring a producer, *dormant* implies deciding whether the loop should exist.
-Nothing calls `record_outcome()`, **and** `filter_tools()` — the sole enclosing function of the sole non-test
-`MOERouter.route()` call site — has **zero references in the entire repository**. The promotion path runs
-zero times in production. That makes L2 a **wire-or-delete** question — the same one `A2` faced and
-**answered by deletion** on 2026-08-01 (`RL-3`, section below) — and answering it comes before any wiring. Two docs written independently of this harness already reached the same verdict
-(`docs/RFC_agent_usd_ledger.md:307` — "the dead `panel/tool_filter.filter_tools` (no caller)";
-`docs/SCIENCE_HARNESS_LEDGER.md:256` — "DORMANT").
+**What went.** `_session_fast_paths` and the whole auto-promotion path in `shared/router.py` (the frequency
+gate, the `CONSTANTS_HASH` stamp, the session-fast-path tier, `learn_fast_path()`, `record_outcome()`,
+`outcome_counts()`, `_promotion_allowed()`, `_outcome_confirmed()`), the second writer
+`RoutingLog.apply_learned_fast_paths()`, and the dead entry point `panel/tool_filter.py::filter_tools()` with
+its private support. 37 honest, passing tests went with the mechanism they pinned.
+
+**Why: dormant, not unfed.** Say it the harder way, because the two words imply different work — *unfed*
+implies wiring a producer, *dormant* implies deciding whether the loop should exist. Nothing called
+`record_outcome()`, **and** `filter_tools()` — the sole enclosing function of the sole non-test
+`MOERouter.route()` call site — had **zero references in the entire repository**. No producer of outcomes and
+no consumer of decisions: the promotion path ran zero times in production, so wiring it would have meant
+inventing a customer for the mechanism rather than serving one. Two docs written independently of this
+harness had already reached the same verdict (`docs/RFC_agent_usd_ledger.md:307` — "the dead
+`panel/tool_filter.filter_tools` (no caller)"; `docs/SCIENCE_HARNESS_LEDGER.md:256` — "DORMANT").
+
+**Deleting the same day's work is the point, not an embarrassment.** R18/R19 shipped hours earlier and were
+good work. What the crucible caught in R18 — `record_outcome(fp, "FAIL")` incrementing the **success** tally,
+because the gate was a bare `if success:` and every non-empty string is truthy — is exactly the kind of
+defect that hides behind an unfed mechanism. A frequency counter with no failure channel can always be
+excused as "not wired up yet." An honest channel with no producer is a mechanism nobody wants. **Making the
+signal honest is what proved the loop was dormant rather than merely unfed**, and the retire-or-keep question
+was only answerable because that work was done first. A ratchet that can only add is not a ratchet.
+
+**The cut was narrow on purpose.** `MOERouter` itself is NOT dead — it is the panel-side classifier
+(`agent_health.py:41`) — and `fingerprint_counts()` survives because `conductor_advisor.py:480` reads it live
+to *recommend* a hand-tuned `FAST_PATHS` entry to a human. Counting is advice; promoting was
+self-modification. Full deleted/kept ledger with the live caller that saved each survivor:
+`REGISTRY.json` → loop `F` → `blocker`. Reintroduction fails loudly at
+`tests/test_router_internals.py::TestPromotionRetired`.
 
 **A third promotion door was found and deliberately NOT fixed here.**
 `ConductorAdvisor._analyze_routing_promotions` (`shared/conductor_advisor.py:296-324`) recommends promotion
@@ -147,14 +160,13 @@ each was corrected the same day after its crucible attacked the remedy itself:
   **`FAST` cannot** — `_try_tier1` executes nothing and only reaches `_record_metric` on its success path;
   its low-confidence exit is a cascade decision, not a tier failure. `FAST`'s 1.0 is definitional, not
   evidence. Documented in code and registry, deliberately not "fixed".
-- **`F`** — ~~promotion is driven by fingerprint **frequency**, not outcome~~. **CONFIRMED at HEAD, then
-  CLOSED by `RL-2` (R18).** The claim was true: `route()` took only `features`, no outcome parameter existed
-  on `MOERouter`, and the promotion block gated on the frequency counter alone. `record_outcome()` now gives
-  it an outcome channel and any recorded failure vetoes promotion — through `route()` *and* through the
-  `learn_fast_path()` side door, which `RL-2` found carried the identical defect. **Hardened by `RL-2c`
-  (R19)** after the crucible showed the remedy had its own hole: `record_outcome(fp, "FAIL")` was counted as
-  a *success*. **F is at L1, blocked at L2:** nothing calls `record_outcome()` yet, so every entry written
-  today is stamped `outcome_confirmed=False`. Honest, and **dormant** — not merely unfed.
+- **`F`** — ~~promotion is driven by fingerprint **frequency**, not outcome~~. **CONFIRMED at HEAD, CLOSED by
+  `RL-2` (R18), hardened by `RL-2c` (R19) — then RETIRED the same day.** The claim was true and the fix was
+  real: `record_outcome()` gave promotion an outcome channel, any recorded failure vetoed it, and the
+  `learn_fast_path()` side door carried the identical defect and was closed too. Then the honest signal
+  revealed there was no producer *and* no consumer, and the mechanism was deleted rather than fed. **This
+  L1 is withdrawn — not because it was wrong, but because the code it described no longer exists.** See the
+  `F` section above; the ladder does not apply to a retired loop.
 - **`E`** — ~~`fixes_validated` hardcoded `0`, `fixes_applied` incremented on classification~~ **CLOSED
   2026-08-01 (`RL-2`).** The first question decided the shape: **no verification phase exists** in
   `forge/engine` — `FORGE.md` Phase 5 is a human/Claude-Code procedure, not a module — so the `:214` comment
@@ -238,13 +250,10 @@ the whole of what this rung claims. The rest needs the real verifier that also b
    survive the `P6` activity blacklist.
 6. **Demotion is normal and carries no stigma.** If evidence stops supporting a rung, drop it and log it.
    A champion board that only goes up is a champion board that is lying.
-7. **Retirement is a valid outcome, and it is a human call.** A dormant loop may be deleted rather than
-   wired. When it is: `rungs_proven` goes to `[]` (a retired loop sits at no rung), `blocked_at` to `L0`,
-   `disposition` to `RETIRED-<date>`, and the **entry stays** — `P9` needs the id. The blocker is rewritten
-   to say what was deleted, why it was dormant, and what would have to be true to revive it, keeping the
-   evidence that established dormancy. Deleting the entry instead of the code is the failure mode here: it
-   makes the registry shorter without making the codebase smaller.
-8. **Cut precisely or not at all.** Grep for live callers before deleting any symbol; anything with a
-   non-test caller survives and the cut narrows around it. Over-deleting is worse than under-deleting —
-   it breaks working software to tidy a registry. If scoping shows the real cut is bigger than the one
-   ratified, **stop and escalate**; an agent does not widen its own mandate.
+7. **Retirement is a legitimate outcome, and it outranks wiring.** A loop whose mechanism executes zero times
+   in production is answering a *wire-or-delete* question, not a *wire* question. Delete is the right answer
+   when there is no producer **and** no consumer — wiring one then means inventing a customer for the
+   mechanism rather than serving one. A retired loop keeps its registry entry (`disposition: RETIRED-<date>`,
+   `rungs_proven: []`, `blocked_at: L0`) with the evidence that established dormancy and a plain statement of
+   what would have to be true to revive it. **Deleting your own recent work is not waste** — making a signal
+   honest is often precisely what proves the loop should not exist, and that finding is the return on it.

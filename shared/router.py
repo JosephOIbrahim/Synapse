@@ -6,43 +6,49 @@ Revisions:
   R5  -- Precise lexical boundary routing (\b word boundaries)
   R11 -- Module-level singleton for route_task() so calibration / fast paths
          are not reset on every call
-  R12 -- Internal auto-promotion: fingerprints seen FAST_PATH_PROMOTION_THRESHOLD
-         times are promoted to session fast paths from inside route()
   R13 -- Score-based task type extraction (no insertion-order dependency)
   R14 -- Complexity classification by domain count + COMPLEX_SOLO_DOMAINS;
          word count of an LLM-rewritten prompt no longer drives complexity
   R15 -- Relative advisory threshold via ADVISORY_GAP_RATIO (gap-aware top-K)
-  R16 -- CONSTANTS_HASH stamping: session fast paths invalidated on
-         constants drift; loud failure rather than silent miss
   R17 -- Empty domain_signals tuple instead of GEOMETRY fallback (no
          silent OBSERVER/HANDS bias on keyword-less prompts)
-  R18 -- Outcome-vetoed promotion (RSI loop F, L1 HONEST). Frequency alone
-         cannot represent failure: before R18 a fingerprint that failed every
-         single time was promoted to a session fast path identically to one
-         that always succeeded. record_outcome() gives the promotion an
-         outcome channel, and ANY recorded failure vetoes promotion for that
-         fingerprint -- through route()'s auto-promotion AND through the
-         external learn_fast_path() door, since both write the same table.
-         Entries carry outcome_confirmed (index 3): True only when at least
-         one success was actually observed. An entry promoted with no
-         outcomes recorded at all is legal but is stamped False, so a
-         never-observed fast path is distinguishable from a proven one.
-         NOTHING CALLS record_outcome() YET -- that is loop F's L2 REACHABLE
-         gap, deliberately left open. The signal is honest before it is wired,
-         and the table is still in-memory only (L4 is not attempted: persisting
-         a promotion table before its signal is honest is the exact hazard
-         REGISTRY.json flags for this loop).
-  R19 -- Two holes the crucible found in R18 itself (RSI loop F, corrective).
-         (a) TYPE GUARD: record_outcome() gated on `if success:`, so a truthy
-         non-bool -- record_outcome(fp, "FAIL"), the obvious miswiring --
-         did not merely fail to veto, it MANUFACTURED POSITIVE EVIDENCE by
-         incrementing the success tally. Now a strict identity check against
-         True/False; anything else raises TypeError and records nothing.
-         (b) STALE CONFIRMATION: outcome_confirmed could never go False ->
-         True, because promotion fires on the frequency-crossing call, which
-         is necessarily before any outcome exists. A recorded success now
-         relabels an existing entry. Neither change can create a promotion;
-         (a) can only refuse to record, (b) can only relabel.
+
+  R20 -- RETIRED 2026-08-01: the session auto-promotion machinery (R12, R16,
+         R18, R19) is DELETED. This router is now a pure classifier: features
+         in, agent pair out, hand-tuned FAST_PATHS honoured, nothing learned.
+
+         What went: _session_fast_paths, the FAST_PATH_PROMOTION_THRESHOLD
+         frequency gate inside route(), the CONSTANTS_HASH stamp on promoted
+         entries, learn_fast_path(), record_outcome(), outcome_counts(),
+         _promotion_allowed(), _outcome_confirmed(), the _outcomes tally and
+         the outcome_confirmed tuple slot.
+
+         Why: the promotion path executed ZERO times in production. Nothing
+         called record_outcome(), and route()'s only non-test call site lived
+         inside panel/tool_filter.py::filter_tools() -- a function with no
+         references anywhere in the repository. Dormant, not unfed: there was
+         no producer of outcomes AND no consumer of decisions, so wiring one
+         would have been building a customer for the mechanism rather than
+         serving one.
+
+         R18/R19 (the outcome channel and its type guard) were built and
+         merged earlier the same day and are deleted here deliberately, not
+         by accident. Making the signal honest is what PROVED the loop was
+         dormant rather than merely unfed -- a frequency counter with no
+         failure channel can always be excused as "not wired yet", while an
+         honest channel with no producer is a mechanism nobody wants. The
+         retire/keep question was only answerable because that work was done.
+
+         What survives, and why: fingerprint_counts() (read live by
+         shared/conductor_advisor.py:480 via advise_from_bridge, which
+         RECOMMENDS hand-tuned FAST_PATHS entries to a human -- advice, not
+         self-modification), the hand-tuned FAST_PATHS table, and the
+         ROUTER_CALIBRATION_PERIOD dense-evaluation window that gates it.
+
+         To revive: a production caller of MOERouter.route() must exist first,
+         and it must be able to observe and report the outcome of the turn it
+         routed. Absent both, this is a promotion table nothing writes to and
+         nothing reads.
 """
 
 from __future__ import annotations
@@ -66,11 +72,9 @@ from shared.constants import (
     BLOCKING_URGENCY_BOOST,
     COMPLEX_SCORE_MULTIPLIER,
     COMPLEX_SOLO_DOMAINS,
-    CONSTANTS_HASH,
     DOMAIN_AFFINITY,
     DOMAIN_KEYWORDS,
     FAST_PATHS,
-    FAST_PATH_PROMOTION_THRESHOLD,
     RESEARCH_INTEGRATOR_FLOOR,
     ROUTER_CALIBRATION_PERIOD,
     TASK_TYPE_BOOST,
@@ -98,37 +102,27 @@ class MOERouter:
         self.k = k
         self._call_count = 0
         self._dense_threshold = ROUTER_CALIBRATION_PERIOD
-        # R16: stamp constants hash so session fast paths are invalidated
-        # if the keyword tables drift between hot reloads.
-        self._constants_hash = CONSTANTS_HASH
-        # R12: fingerprint frequency counter feeds auto-promotion.
+        # Fingerprint frequency counter. R20 retired the auto-promotion that
+        # used to consume this; it survives because fingerprint_counts() is
+        # read live by shared/conductor_advisor.py, which turns hot
+        # fingerprints into a RECOMMENDATION that a human add a hand-tuned
+        # FAST_PATHS entry. Counting is advice here, not self-modification.
         self._fingerprint_counts: dict[str, int] = {}
-        # Session fast paths stored as
-        # {fingerprint: (primary, advisory, hash, outcome_confirmed)}
-        # R18 appended index 3. Readers index rather than unpack, so a
-        # hand-injected 3-tuple (older callers, tests) still resolves.
-        self._session_fast_paths: dict[
-            str, tuple[AgentID, AgentID | None, str, bool]
-        ] = {}
-        # R18: per-fingerprint outcome tally {fingerprint: [successes, failures]}.
-        # Written only by record_outcome(); read by the promotion veto.
-        self._outcomes: dict[str, list[int]] = {}
 
     def route(self, features: RoutingFeatures) -> RoutingDecision:
         """Route a task to primary + optional advisory agent.
 
         Decision hierarchy (first match wins):
           1. Hand-tuned FAST_PATHS (after calibration period)
-          2. Session-learned fast paths (R12 auto-promoted, R16 hash-validated)
-          3. Full scoring across all 6 agents
+          2. Full scoring across all 6 agents
 
         Advisory selection (R15): second-highest agent must clear both an
         absolute score floor (ADVISORY_SCORE_THRESHOLD) and a relative gap
         ratio (ADVISORY_GAP_RATIO * primary_score) to be included.
 
-        Auto-promotion (R12): fingerprints hitting FAST_PATH_PROMOTION_THRESHOLD
-        are promoted to session fast paths, stamped with CONSTANTS_HASH so
-        they auto-invalidate if the keyword tables change.
+        R20: there is no third tier. Session auto-promotion is retired — this
+        router learns nothing across calls. The only cross-call state is the
+        fingerprint counter (read by the advisor) and the calibration count.
 
         Args:
             features: 4-dimension feature vector (task_type, complexity,
@@ -137,8 +131,7 @@ class MOERouter:
 
         Returns:
             RoutingDecision with primary agent, optional advisory, scores,
-            method ('fast_path', 'session_fast_path', or 'scored'), and
-            the input features for audit.
+            method ('fast_path' or 'scored'), and the input features for audit.
         """
         self._call_count += 1
         fingerprint = features.fingerprint()
@@ -152,12 +145,6 @@ class MOERouter:
                 primary, advisory = FAST_PATHS[fingerprint]
                 return self._fast_path_decision(
                     primary, advisory, features, "fast_path"
-                )
-            entry = self._session_fast_paths.get(fingerprint)
-            # R16: skip stale entries from a different constants snapshot
-            if entry is not None and entry[2] == self._constants_hash:
-                return self._fast_path_decision(
-                    entry[0], entry[1], features, "session_fast_path"
                 )
 
         # Full scoring
@@ -173,115 +160,10 @@ class MOERouter:
             if adv_score >= ADVISORY_SCORE_THRESHOLD and adv_score >= min_relative:
                 advisory = adv_agent
 
-        decision = RoutingDecision(
+        return RoutingDecision(
             primary=primary_agent, advisory=advisory,
             scores=scores, method="scored", features=features
         )
-
-        # R12: auto-promote frequent fingerprints from inside route().
-        # Cheap O(1) check; promotion happens on the call that crosses the
-        # threshold so the next request hits the fast path immediately.
-        # R18: frequency is necessary but no longer sufficient — a fingerprint
-        # with ANY recorded failure is vetoed.
-        if (
-            self._fingerprint_counts[fingerprint] >= FAST_PATH_PROMOTION_THRESHOLD
-            and fingerprint not in FAST_PATHS
-            and fingerprint not in self._session_fast_paths
-            and self._promotion_allowed(fingerprint)
-        ):
-            self._session_fast_paths[fingerprint] = (
-                primary_agent, advisory, self._constants_hash,
-                self._outcome_confirmed(fingerprint),
-            )
-
-        return decision
-
-    # ── R18: outcome channel ─────────────────────────────────────
-
-    def _promotion_allowed(self, fingerprint: str) -> bool:
-        """Veto: any recorded failure blocks promotion of this fingerprint.
-
-        Failure-veto rather than majority-vote, deliberately. At
-        FAST_PATH_PROMOTION_THRESHOLD (3) a majority rule is reading noise,
-        and a fast path is a *frozen* routing decision — one observed failure
-        of that decision is reason enough not to freeze it. The veto also errs
-        in the safe direction: it can only ever withhold a promotion, never
-        create one.
-
-        No outcomes recorded at all -> allowed, and stamped
-        outcome_confirmed=False by _outcome_confirmed(). That preserves
-        pre-R18 behaviour for the (currently universal) case where nothing
-        reports outcomes, while making the entry visibly unproven.
-        """
-        return self._outcomes.get(fingerprint, [0, 0])[1] == 0
-
-    def _outcome_confirmed(self, fingerprint: str) -> bool:
-        """True only if at least one success was actually observed."""
-        return self._outcomes.get(fingerprint, [0, 0])[0] > 0
-
-    def record_outcome(self, fingerprint: str, success: bool) -> None:
-        """Record the observed outcome of a routing decision.
-
-        This is the channel that makes fast-path promotion able to represent
-        failure. Callers pass the fingerprint of the RoutingDecision whose
-        result they observed (``decision.features.fingerprint()``).
-
-        A recorded failure both (a) vetoes any future promotion of that
-        fingerprint and (b) evicts an already-promoted session fast path for
-        it — otherwise a decision promoted before its first failure would be
-        frozen in past the evidence that refutes it.
-
-        R19a — ``success`` MUST be a real ``bool``; anything else raises
-        ``TypeError`` and records nothing. Under the original ``if success:``
-        this method did not merely fail to veto on a bad argument, it
-        MANUFACTURED POSITIVE EVIDENCE: ``record_outcome(fp, "FAIL")`` — the
-        obvious way to miswire a producer — incremented the SUCCESS tally,
-        because every non-empty string is truthy. The same held for ``"0"``,
-        ``[]``-vs-``["err"]``, and any status object. A signal that upgrades
-        garbage into a success is strictly worse than the hardcoded constant
-        it replaced: the constant was at least *visibly* a constant.
-
-        Raise rather than log-and-ignore, deliberately. Silently dropping a
-        malformed outcome is safe for the veto (nothing is promoted on it)
-        but it reproduces loop A1's defect one level up — a producer that
-        believes it is reporting outcomes while reporting none. A tri-state
-        producer (success / failure / never-observed) must resolve the third
-        state itself by NOT CALLING, not by handing this method something
-        that is neither True nor False.
-
-        R19b — a recorded success also upgrades an existing session entry's
-        ``outcome_confirmed`` flag False → True. Promotion fires on the call
-        that crosses the frequency threshold, which is necessarily before any
-        outcome for that decision can exist, so without this an entry stamped
-        "never observed" at promotion time stayed "never observed" forever —
-        a lie in the opposite direction from the one R18 fixed. Upgrading
-        cannot create a promotion; it only relabels one that already exists.
-        """
-        if success is not True and success is not False:
-            raise TypeError(
-                "record_outcome(fingerprint, success) requires a bool; got "
-                f"{type(success).__name__!r} ({success!r}). Truthiness is not "
-                "accepted: a non-bool would be silently counted as a SUCCESS "
-                "and would manufacture positive evidence for a route that may "
-                "have failed. If the outcome is genuinely unknown, do not call."
-            )
-        tally = self._outcomes.setdefault(fingerprint, [0, 0])
-        if success:
-            tally[0] += 1
-            # R19b: relabel an already-promoted entry now that a success exists.
-            # Indexed, not unpacked, so a hand-injected 3-tuple normalises to 4.
-            entry = self._session_fast_paths.get(fingerprint)
-            if entry is not None:
-                self._session_fast_paths[fingerprint] = (
-                    entry[0], entry[1], entry[2], True,
-                )
-        else:
-            tally[1] += 1
-            self._session_fast_paths.pop(fingerprint, None)
-
-    def outcome_counts(self) -> dict[str, tuple[int, int]]:
-        """Snapshot of fingerprint → (successes, failures). Copy; not live."""
-        return {fp: (t[0], t[1]) for fp, t in self._outcomes.items()}
 
     def _fast_path_decision(
         self,
@@ -322,26 +204,6 @@ class MOERouter:
             scores[AgentID.BRAINSTEM] += BLOCKING_URGENCY_BOOST
 
         return scores
-
-    def learn_fast_path(
-        self, fingerprint: str, primary: AgentID, advisory: AgentID | None
-    ) -> bool:
-        """External fast-path injection (used by panel/RoutingLog).
-
-        R18: honours the same failure veto as auto-promotion. RoutingLog's
-        get_frequent_fingerprints() is itself frequency-driven, so leaving
-        this door ungated would let a known-failing fingerprint be promoted
-        around the back of route(). Returns True if the entry was written,
-        False if the veto refused it — previously returned None, so callers
-        that ignore the result are unaffected.
-        """
-        if not self._promotion_allowed(fingerprint):
-            return False
-        self._session_fast_paths[fingerprint] = (
-            primary, advisory, self._constants_hash,
-            self._outcome_confirmed(fingerprint),
-        )
-        return True
 
     # Pass 8: public accessor so the ConductorAdvisor can read fingerprint
     # frequency without poking private state. Returns a copy — caller cannot
