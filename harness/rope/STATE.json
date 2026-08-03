@@ -94,7 +94,7 @@
      "min": 1
     }
    ],
-   "status": "pending",
+   "status": "in_progress",
    "attempts": 0
   },
   {
@@ -117,7 +117,7 @@
      "min": 1
     }
    ],
-   "status": "pending",
+   "status": "verified",
    "attempts": 0
   },
   {

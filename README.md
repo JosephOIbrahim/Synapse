@@ -157,6 +157,8 @@ Consent prompts on the /mcp path belong to the MCP host (e.g. Claude Desktop's t
 
 Connect on `ws://localhost:9999/synapse` — the path matters, a bare `host:port` returns HTTP 400.
 
+**Security posture, stated plainly.** RBAC is inactive in local mode by default. The live surface is a localhost WebSocket; origin validation is fail-safe — a connection with an unrecognized `Origin` is rejected, never waved through. No auth key is required or checked unless one is configured. The enable path: set `SYNAPSE_DEPLOY_MODE` to a non-local mode and configure an auth key — that turns RBAC enforcement and key checking on.
+
 The cost asymmetry on the right is **measured, both sides**: the `/mcp` path's stage hashing is where scene-scale cost lives (and where the gate below operates); the live path skips that term by construction (`integrity_envelope.py:219`) and stays flat — ping ~0.4 ms, `set_parm` ~3.7 ms whether the stage holds 100k or 4M authored elements. *Producer: `python _benchmark_latency.py --tier live`, first live rows 2026-08-02, `.claude/live_rows_v5420.json`, measured on 22.0.397.*
 
 **One wire-contract wart worth knowing on the live path:** `execute_python` results come back **stringified** — a dict arrives as its Python repr, not JSON (`handlers.py`, `"result": str(result)`). Parse with `ast.literal_eval` client-side, never `eval`.
