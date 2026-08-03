@@ -42,6 +42,9 @@ def git(*a, timeout=120):
     return sh(["git", *a], timeout=timeout)
 
 def claude_cmd(model):
+    if os.environ.get("SYNAPSE_ROPE_ENGINE", "claude") == "ollama":
+        return [sys.executable, os.path.join(ROPE, "exec_ollama.py"),
+                "--task", os.environ.get("SYNAPSE_ROPE_TASK", ""), "--model", model]
     base = ["claude", "-p", "--model", model] + EXTRA_FLAGS
     return (["cmd", "/c"] + base) if os.name == "nt" else base
 
@@ -133,6 +136,7 @@ def build_prompt(task):
             " DONE:%s and a one-line receipt; do NOT commit.\n" % task["id"])
 
 def run_executor(task, model):
+    os.environ["SYNAPSE_ROPE_TASK"] = task["id"]   # engine=ollama reads this
     with open(PROMPT_P, "w", encoding="utf-8") as f:
         f.write(build_prompt(task))
     t0 = time.time()

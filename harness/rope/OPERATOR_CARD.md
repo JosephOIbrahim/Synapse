@@ -100,3 +100,20 @@ Outbound only, two jobs:
 It executes nothing FROM the repo -- no inbound command channel exists. If you
 ever want one (edit a file on GitHub -> machine obeys), that's a deliberate
 security decision to define together first, not a default.
+
+### Token-limit mode: run the rope on YOUR local models (zero API tokens)
+
+    $env:SYNAPSE_ROPE_ENGINE = "ollama"
+    python harness\rope\runner.py run --model qwen2.5-coder:32b --confirm-model --live-seat-ok
+
+Any model `ollama list` shows works as --model. Same accepts, same commits,
+same ledger -- the judge doesn't care who edited. Honest scope: local models
+handle small files well (docs, manifests, qss, tests); leave 2000-line
+synapse_panel.py surgery for a frontier model when your limit resets.
+Out-of-scope writes are refused by the executor itself.
+Unset to return to Claude:   Remove-Item Env:SYNAPSE_ROPE_ENGINE
+
+### PR the branch (review surface for integration)
+
+    gh pr create --base master --head rope/gate-a --fill
+    # no gh? open: https://github.com/JosephOIbrahim/Synapse/compare/master...rope/gate-a
