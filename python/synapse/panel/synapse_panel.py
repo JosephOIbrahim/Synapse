@@ -681,7 +681,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._observe.setObjectName("DsRailMeter")
         self._observe.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._observe.setFixedHeight(3)
-        self._observe.setStyleSheet("background:%s; border-radius:2px;" % t.SIGNAL_TINT)
+        # No radius token fits a 3px strip (RADIUS_SM=4 is the floor; qss.py's
+        # own #DsCookBar hardcodes the same 2px-on-3px). Listed in
+        # docs/PROFILES.md "Design gaps for human decision" — conform, don't
+        # invent (L5-11).
+        self._observe.setStyleSheet(
+            "background:%s; border-radius:2px;"  # DESIGN-GAP(L5-11)
+            % t.SIGNAL_TINT)
         bot.addWidget(self._foot_dot)
         bot.addWidget(self._foot_label)
         bot.addWidget(self._connect_btn)
@@ -2210,7 +2216,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._stop_btn.setEnabled(busy)
         self._stop_btn.setVisible(busy)   # Stop is state-gated to working only
         self._observe.setStyleSheet(
-            "background:%s; border-radius:2px;" % (t.WARM if busy else t.SIGNAL_TINT)
+            "background:%s; border-radius:2px;"  # DESIGN-GAP(L5-11)
+            % (t.WARM if busy else t.SIGNAL_TINT)
         )
         # state→Work-sub-state edges. Quiet state never moves the visible face
         # (v9.1 · only an ACTIONABLE consent gate auto-surfaces — see

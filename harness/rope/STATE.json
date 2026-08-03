@@ -678,7 +678,7 @@
      "note": "DESIGN REVIEW BY JOE -- token conformance is machine-checked, but visual judgement is not delegable"
     }
    ],
-   "status": "pending",
+   "status": "needs_review",
    "attempts": 0
   }
  ]
