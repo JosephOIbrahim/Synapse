@@ -43,6 +43,7 @@ load-bearing, never self-propelling.
 
 - The rail meter radius derives from `#DsCookBar` (`designsystem/qss.py`) because the vendored source of truth already establishes 2px-on-3px for the identical widget shape.
 - Hero/quiet prominence derived from the `tokens.py` emphasis ladder (up: `TEXT_BRIGHT` and the `SIGNAL` slots a widget already reserves; down: `TEXT_TERTIARY`, then `TEXT_DISABLED` where standard already sits at tertiary) because the ladder already encodes emphasis — stepping it changes colour weight only, leaves every standard rule untouched, and so keeps expert == v5.42.0 exactly (L5-5).
+- Hero takes the accent derived from the comp's DIRECT/WORK left rules and the tokens' recorded WARM=human / SIGNAL=technical split (amending the ladder line above: an ID-qualified hero now lifts to its role's accent — orientation/action widgets to `WARM`, meter/economic/connectivity widgets to `SIGNAL`; quiet and the bare roleless fallback keep the ladder), because the two-accent ceiling forbids a per-profile colour, so profiles are distinguished by WHERE the accent lands, not by owning one.
 
 `tests/test_rope_design_conformance.py` scans the panel modules the L5-11 pass touched
 for hardcoded hex colours and bare px values; a site may be waived only by a

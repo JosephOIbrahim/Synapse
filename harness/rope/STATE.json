@@ -767,6 +767,51 @@
    ],
    "status": "needs_review",
    "attempts": 0
+  },
+  {
+   "id": "L5-14",
+   "was": "new",
+   "title": "Hero takes the accent -- semantic two-accent prominence (WARM human / SIGNAL technical)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-13"
+   ],
+   "files": [
+    "python/synapse/panel/designsystem/qss.py",
+    "tests/test_rope_prominence_visible.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "AMEND L5-13, do not redo it. L5-13 made prominence real but expressed hero as a brightness step only (text climbs toward TEXT_BRIGHT), which reads as a whisper at the seat. Joe ruled: hero should TAKE THE ACCENT. Stylesheet only -- do not touch the compositor, the manifests, or synapse_panel.py; the manifests already declare exactly the right hero widgets and need no change. THE CEILING IS LAW: tokens.py records that SIGNAL + WARM are the two-accent ceiling (see the MUSHROOM comment -- the tertiary grey is warmed specifically to avoid becoming a third accent). Introduce NO third accent, no new colour, no CONIFEROUS/HOU_* promotion for this purpose. SEMANTIC ASSIGNMENT, read off the tokens' own recorded intent: WARM (#FF7759, documented in tokens.py as Cohere's 'Bittersweet' coral, the warm human accent, explicitly NOT for connectivity/links) is the accent for HUMAN/ORIENTATION widgets -- in practice the widgets the curious manifest sends hero (connect, corpus). SIGNAL (#8FB3D9, acrylic blue, the technical/connectivity accent) is the accent for TECHNICAL/ECONOMIC widgets -- in practice the widgets the ml manifest sends hero (token_pill, activity/rail meter). Express this generically in QSS, not per-profile: the stylesheet has no profile knowledge and must not gain any. Give each widget's existing #Ds* rule a [prominence=\"hero\"] companion that lifts it to the accent that widget's own role already calls for -- orientation/action widgets to WARM, meter/economic/connectivity widgets to SIGNAL -- reusing the exact hover/press companions already defined for that accent (SIGNAL_HOVER/SIGNAL_PRESS, WARM_HOVER/WARM_PRESS) so hero widgets keep live interaction feedback. Keep every L5-13 quiet rule exactly as written. Preserve L5-13's cascade placement discipline: prominence rules stay before :disabled and after the tone rows. STANDARD MUST NOT MOVE -- L5-5 pins expert to v5.42.0 and every expert widget is standard; a diff that changes any standard-state rule is a failure. No size, weight, font, radius, spacing or layout changes: accent and existing state companions only. Extend tests/test_rope_prominence_visible.py: assert at least one hero rule references the WARM family and at least one references the SIGNAL family, and assert no rule introduces a hex colour absent from tokens.py. Record the derivation in docs/PROFILES.md under 'Derived design decisions' as one line in the form 'X derived from Y because Z' -- hero takes the accent derived from the comp's DIRECT/WORK left rules and the tokens' recorded WARM=human / SIGNAL=technical split, because the two-accent ceiling forbids a per-profile colour, so profiles are distinguished by WHERE the accent lands, not by owning one.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_prominence_visible.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/designsystem/qss.py",
+     "pattern": "prominence=\"hero\"",
+     "min": 3
+    },
+    {
+     "kind": "grep_min",
+     "path": "docs/PROFILES.md",
+     "pattern": "Derived design decisions",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: Curious lifts Connect+Corpus in coral, ML lifts TOKEN+rail meter in blue, Expert identical to v5.42.0"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
   }
  ]
 }

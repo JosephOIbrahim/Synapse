@@ -70,10 +70,15 @@ QPushButton#DsButton[variant="danger"] {{
     background: transparent; color: {t.ERROR}; border: 1px solid {t.ERROR};
 }}
 QPushButton#DsButton[variant="danger"]:hover  {{ background: {t.STATE_TINTS["error"]}; }}
-/* prominence (L5-13): hero lights the border slot every variant already
-   reserves (1px transparent) with SIGNAL; quiet steps the type down the
-   ladder. Placed before :disabled so the disabled state still wins. */
-QPushButton#DsButton[prominence="hero"]  {{ border-color: {t.SIGNAL}; }}
+/* prominence (L5-14 amends L5-13): hero TAKES THE ACCENT. Buttons are
+   orientation/action widgets, so the border slot every variant already
+   reserves (1px transparent) lights WARM -- the human accent -- and the
+   hover/press companions ride WARM_HOVER/WARM_PRESS so hero keeps live
+   feedback. Quiet steps the type down the ladder. Placed before
+   :disabled so the disabled state still wins. */
+QPushButton#DsButton[prominence="hero"]  {{ border-color: {t.WARM}; }}
+QPushButton#DsButton[prominence="hero"]:hover   {{ border-color: {t.WARM_HOVER}; }}
+QPushButton#DsButton[prominence="hero"]:pressed {{ border-color: {t.WARM_PRESS}; }}
 QPushButton#DsButton[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 QPushButton#DsButton:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: transparent; }}
 
@@ -114,12 +119,13 @@ QLabel#DsKHint {{
     border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
     padding: 3px 7px;
 }}
-/* prominence (L5-13): standard sits at TEXT_TERTIARY, so hero climbs to
-   TEXT_BRIGHT and quiet takes the one rung left below (TEXT_DISABLED);
-   the hint's box quiets to the HAIR rule. */
-QLabel#DsMeter[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
+/* prominence (L5-14 amends L5-13): hero takes the accent its role calls
+   for -- the token meter is economic, so SIGNAL; the ⌘K chip is an
+   action affordance, so WARM. Quiet keeps the L5-13 rung below standard
+   (TEXT_DISABLED); the hint's box quiets to the HAIR rule. */
+QLabel#DsMeter[prominence="hero"]  {{ color: {t.SIGNAL}; }}
 QLabel#DsMeter[prominence="quiet"] {{ color: {t.TEXT_DISABLED}; }}
-QLabel#DsKHint[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
+QLabel#DsKHint[prominence="hero"]  {{ color: {t.WARM}; }}
 QLabel#DsKHint[prominence="quiet"] {{ color: {t.TEXT_DISABLED}; border-color: {t.HAIR}; }}
 
 /* ---- type-set verbs (Direct act bar + Review actions) — Mile 7 --- */
@@ -133,10 +139,12 @@ QPushButton#DsVerb:hover {{ color: {t.TEXT_ACCENT}; }}
 QPushButton#DsVerb[tone="ok"]     {{ color: {t.CONIFEROUS}; }}
 QPushButton#DsVerb[tone="hot"]    {{ color: {t.HOT_SOFT}; }}
 QPushButton#DsVerb[tone="accent"] {{ color: {t.TEXT_ACCENT}; }}
-/* prominence (L5-13): after the tone rows so hero outranks a tone at
-   rest; the :hover companion keeps hover feedback alive on hero verbs. */
-QPushButton#DsVerb[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
-QPushButton#DsVerb[prominence="hero"]:hover {{ color: {t.TEXT_ACCENT}; }}
+/* prominence (L5-14 amends L5-13): verbs are actions, so hero takes
+   WARM, the human accent; after the tone rows so hero outranks a tone
+   at rest. The :hover companion rides WARM_HOVER so hover feedback
+   stays alive on hero verbs. */
+QPushButton#DsVerb[prominence="hero"]  {{ color: {t.WARM}; }}
+QPushButton#DsVerb[prominence="hero"]:hover {{ color: {t.WARM_HOVER}; }}
 QPushButton#DsVerb[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 
 /* ---- two-axis palette chips (⌘K · DO × WHERE) ---------------- */
@@ -184,8 +192,9 @@ QLabel#DsBadge[kind="grow"]  {{ color: {t.GROW};  background: {t.STATE_TINTS["gr
 QLabel#DsBadge[kind="warn"]  {{ color: {t.WARN};  background: {t.STATE_TINTS["warn"]}; }}
 QLabel#DsBadge[kind="error"] {{ color: {t.ERROR}; background: {t.STATE_TINTS["error"]}; }}
 QLabel#DsBadge[kind="signal"]{{ color: {t.SIGNAL};background: {t.STATE_TINTS["signal"]}; }}
-/* prominence (L5-13): type steps the ladder; kind backgrounds keep. */
-QLabel#DsBadge[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
+/* prominence (L5-14 amends L5-13): badges report technical status, so
+   hero takes SIGNAL; type only -- kind backgrounds keep. */
+QLabel#DsBadge[prominence="hero"]  {{ color: {t.SIGNAL}; }}
 QLabel#DsBadge[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 
 /* ---- text inputs (v9 call 2: darker field-inset grey) -------- */
@@ -214,14 +223,20 @@ QLabel[role="caption"] {{ color: {t.TEXT_TERTIARY}; }}
 QLabel[role="label"]   {{ color: {t.TEXT_SECONDARY}; }}
 QLabel[role="accent"]  {{ color: {t.TEXT_ACCENT}; }}
 
-/* ---- prominence (set by the profile compositor) -- L5-13 ------ */
-/* Hero steps UP the tokens.py emphasis ladder (toward TEXT_BRIGHT /
-   SIGNAL), quiet steps DOWN it (toward TEXT_TERTIARY) -- colour emphasis
-   only, never size, font, or layout. Standard prominence has NO rule on
-   purpose: expert == v5.42.0 exactly (L5-5), so unmarked widgets must
-   render exactly as today. ID-qualified variants live beside their
-   components above -- a bare attribute selector loses the QSS
-   specificity contest against the `#Ds*` rules. */
+/* ---- prominence (set by the profile compositor) -- L5-13/L5-14 -- */
+/* Hero TAKES THE ACCENT (L5-14): each ID-qualified rule above lifts its
+   widget to the accent its own role already calls for -- WARM for
+   human/orientation widgets, SIGNAL for technical/economic ones, per
+   the roles tokens.py records for the two accents. SIGNAL + WARM are
+   the two-accent ceiling: never a third. Quiet steps DOWN the emphasis
+   ladder (toward TEXT_TERTIARY) -- colour emphasis only, never size,
+   font, or layout. Standard prominence has NO rule on purpose: expert
+   == v5.42.0 exactly (L5-5), so unmarked widgets must render exactly
+   as today. The bare selectors below are the roleless fallback: with
+   no role to read they step to TEXT_BRIGHT -- an accent here would
+   pick a side the stylesheet has no basis for. ID-qualified variants
+   live beside their components above -- a bare attribute selector
+   loses the QSS specificity contest against the `#Ds*` rules. */
 *[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
 *[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 QLabel[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
