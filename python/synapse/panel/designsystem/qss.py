@@ -89,6 +89,27 @@ QPushButton#DsButton[prominence="hero"]:pressed {{ background: {t.SIGNAL_PRESS};
 QPushButton#DsButton[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 QPushButton#DsButton:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: transparent; }}
 
+/* ---- STOP — the mark's second surface (L5-20, Joe's seat call) --
+   MarkDot.set_halt_handler binds the loading mark to this button: one
+   control, two surfaces. The mark's rule is "always in the one warm
+   note (WARM)", so Stop takes the same coral as a knockout -- WARM
+   fill, TEXT_ON_ACCENT ink (6.42:1 on WARM, past AA) -- instead of
+   the danger red that made the two surfaces read unrelated. Hover and
+   press ride the WARM companions; disabled matches its filled
+   siblings (the button ships disabled + hidden until work is in
+   flight). Metrics mirror #DsButton so only the paint changes. The
+   danger variant itself is untouched: other widgets may rely on it.
+   Not profile-conditional -- Stop looks identical in all three. */
+QPushButton#DsStop {{
+    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};
+    border: none; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_SM}px {t.SPACE_MD}px;
+    font-size: {s(t.SIZE_UI)}px; font-weight: 600;
+}}
+QPushButton#DsStop:hover   {{ background: {t.WARM_HOVER}; }}
+QPushButton#DsStop:pressed {{ background: {t.WARM_PRESS}; }}
+QPushButton#DsStop:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}
+
 /* ---- tabs: underline on a baseline track (v9 call 1) --------- */
 /* Retires the filled-pill active state: tabs read as text on a shared 2px
    baseline; the active tab lights its rule + text (TEXT_BRIGHT per comp).

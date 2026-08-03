@@ -1037,6 +1037,50 @@
    ],
    "status": "needs_review",
    "attempts": 0
+  },
+  {
+   "id": "L5-20",
+   "was": "new",
+   "title": "STOP reads as the mark's second surface -- WARM knockout, not danger red",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/designsystem/qss.py",
+    "python/synapse/panel/synapse_panel.py",
+    "tests/test_rope_prominence_visible.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "JOE'S SEAT CALL: the Stop button should be a knockout on a muted orange matching the SYNAPSE loading circle. DERIVE, DO NOT PICK A COLOUR. The loading circle is components.MarkDot, and its own docstring states the rule: 'Always in the one warm note (WARM), and because it never borrows Houdini's own orange, SYNAPSE keeps a distinct presence in the host. (Pentagram pass - P1.)' So the muted orange Joe means is tokens.WARM (#FF7759, Cohere's Bittersweet coral) with its existing WARM_HOVER / WARM_PRESS companions. Use those tokens; introduce NO new colour and NO new token, and do not reach for FIRE, HOU_ORANGE or any Houdini orange -- the docstring forbids exactly that. THE DEEPER REASON THIS IS CORRECT: MarkDot.set_halt_handler binds the mark to the panel's existing Stop -- 'one control with two surfaces, never a second Stop with its own idea of what stopping means' - the mark fires the same _on_stop the rail button fires. Today the rail button is built as c.Button('Stop', variant='danger') (synapse_panel.py ~line 635), so the two surfaces of one control read as unrelated: the mark is warm, the button is error red. This task makes them read as one control. IMPLEMENTATION: give the Stop button its own identity rather than overloading the danger variant -- set an objectName (e.g. DsStop) on self._stop_btn in synapse_panel.py and add a matching QPushButton#DsStop rule set in qss.py constructed the way the existing filled buttons already are (see QPushButton#DsButton[variant=\"primary\"] and QPushButton#DsSend): WARM background, TEXT_ON_ACCENT ink (contrast-verified at 6.42:1 on WARM, past WCAG AA), border: none, the same border-radius those siblings use, WARM_HOVER on :hover, WARM_PRESS on :pressed, and a :disabled companion matching the DISABLED_BG / TEXT_DISABLED pattern its siblings use -- the button ships disabled and hidden until work is in flight, so the disabled state must not be forgotten. Leave the danger variant itself untouched: other widgets may rely on it. Do not change the button's size, minimum width, visibility gating, or click wiring, and do not touch MarkDot. Do not alter any [prominence] rule; Stop is not profile-conditional and must look identical in all three profiles. Extend tests/test_rope_prominence_visible.py: assert the stylesheet contains a DsStop rule using WARM and TEXT_ON_ACCENT, assert it defines hover, pressed and disabled states, and assert no new hex absent from tokens.py appears. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z' -- Stop takes WARM derived from MarkDot's documented one-warm-note rule because the mark and the button are two surfaces of a single control and must read as one.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_prominence_visible.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/designsystem/qss.py",
+     "pattern": "DsStop",
+     "min": 4
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "DsStop",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: trigger work -- Stop appears as warm-orange knockout matching the mark, in all three profiles"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
   }
  ]
 }

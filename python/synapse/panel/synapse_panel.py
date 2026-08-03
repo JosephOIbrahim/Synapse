@@ -633,6 +633,10 @@ class SynapsePanel(QtWidgets.QWidget):
         overflow.setFixedWidth(32)
         overflow.clicked.connect(self._show_overflow)
         self._stop_btn = c.Button("Stop", variant="danger")
+        # L5-20: the mark (MarkDot.set_halt_handler) and this button are two
+        # surfaces of ONE Stop -- #DsStop paints it in the mark's warm note,
+        # not the danger outline, so the pair reads as a single control.
+        self._stop_btn.setObjectName("DsStop")
         self._stop_btn.setMinimumWidth(64)
         self._stop_btn.clicked.connect(self._on_stop)
         self._stop_btn.setEnabled(False)
