@@ -39,6 +39,25 @@ defined on first use — is the `system_prompt_overlay` string in `curious.py`.
 It paces the same capability; it builds with you and explains as it goes,
 load-bearing, never self-propelling.
 
+## Design gaps for human decision
+
+Found by the L5-11 conformance pass. `tests/test_rope_design_conformance.py` scans the
+panel modules the pass touched for hardcoded hex colours and bare px values; a site may
+be waived only by a `DESIGN-GAP(L5-11)` marker on the offending line, and every marker
+must be registered here. Nothing below is fixed — conform, don't invent.
+
+- **Rail activity meter radius — `synapse_panel.py`, `DsRailMeter`, 2 sites
+  (`_build_rail`, `_set_busy`).** The 3px meter strip rounds at `border-radius:2px`.
+  Colours are tokenized (`SIGNAL_TINT` idle / `WARM` busy); the radius is not — the
+  smallest radius token is `RADIUS_SM = 4`, and a 4px radius on a 3px-high widget
+  mis-renders in QSS. The designsystem's own cook bar (`#DsCookBar`,
+  `designsystem/qss.py`) hardcodes the same 2px-on-3px inside the vendored source of
+  truth, so the value is established design intent without a name. Decide one:
+  **(a)** add a `#DsRailMeter` rule beside `#DsCookBar` in `qss.py` (the busy/idle
+  colour swap becomes a dynamic property + `repolish`, the `_set_face` idiom), or
+  **(b)** name the token (e.g. `RADIUS_METER = 2` in `tokens.py`) and consume it at
+  both sites. Until ruled, the literal stays put and the sites stay marked.
+
 ## The hand-me-the-pen gradient
 
 ```
