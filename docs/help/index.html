@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>SYNAPSE — Help</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#0A0A0A; --panel:#111111; --carbon:#1A1A1A; --graphite:#2A2A2A;
+  --bone:#CCCCCC; --silver:#999999; --slate:#555555; --white:#F0F0F0;
+  --signal:#8FB3D9; --deep:#627A93; --ink:#0F1F2B; --warm:#FF7759;
+  --sans:"Space Grotesk",-apple-system,"Segoe UI",Inter,sans-serif;
+  --mono:"Space Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--void);color:var(--bone);font-family:var(--sans);
+     font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;padding:96px 32px 160px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:80px}
+.mark{width:15px;height:15px;border:2px solid var(--warm);border-radius:50%;
+      border-right-color:transparent;transform:rotate(-30deg)}
+.word{font-weight:600;letter-spacing:.22em;font-size:19px;color:var(--white)}
+h2{font-size:12px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;
+   color:var(--slate);font-family:var(--mono);margin:88px 0 22px}
+h3{font-size:19px;font-weight:600;color:var(--white);margin:38px 0 10px;letter-spacing:-.01em}
+p{margin:0 0 18px}
+.lede{font-size:23px;line-height:1.5;color:var(--white);letter-spacing:-.015em;margin-bottom:28px}
+.quiet{color:var(--silver)}
+code{font-family:var(--mono);font-size:.88em;color:var(--signal)}
+a{color:var(--signal);text-decoration:none;border-bottom:1px solid var(--graphite)}
+a:hover{border-bottom-color:var(--signal)}
+</style>
+<body><div class="wrap">
+<header><div class="mark"></div><div class="word">SYNAPSE</div></header>
+
+<p class="lede">Synapse is a rope, not an elevator. It gives you reach you
+haven't earned yet and safety while you earn it — but you're still the one
+climbing.</p>
+
+<p class="quiet">Everything below assumes you know Houdini and don't know
+Synapse. If a section tells you something you already knew, skip it; nothing
+here builds on what came before.</p>
+
+<h2>Your first prompt</h2>
+
+<p>Open the Synapse pane, type what you want in plain English, press
+<code>Enter</code>. That's the whole interface.</p>
+
+<p>Start with something small and verifiable, so you can see what it did:</p>
+
+<h3 class="quiet" style="font-family:var(--mono);font-size:15px;font-weight:400;color:var(--signal);margin:22px 0">
+make a grid, scatter 500 points on it, copy spheres to the points</h3>
+
+<p>You'll watch nodes appear in your network as it works. When it finishes,
+look at the network — not at the chat. The nodes are the deliverable; the
+conversation is just how you asked for them.</p>
+
+<h3>If nothing happens</h3>
+
+<p>Press <strong>Connect</strong> in the panel header. The bridge doesn't start
+by itself. If Connect is already showing <code>Bridge ✓</code>, the connection
+is fine and the problem is elsewhere — check the status line under the wordmark
+for what Houdini is reporting.</p>
+
+<h2>The three profiles</h2>
+
+<p>The tabs on the right — <strong>Curious</strong>, <strong>Expert</strong>,
+<strong>ML</strong> — change how much the panel explains and how densely it
+packs the screen. They do <em>not</em> change what Synapse can do. Every
+profile has identical capability; switching adds no tools and removes none.</p>
+
+<h3>Curious</h3>
+<p>For finding your footing. More air between things, the readouts you can't
+act on yet folded away, and the agent narrates each decision in plain language
+— errors translated, jargon defined the first time it appears.</p>
+
+<h3>Expert</h3>
+<p>The panel at full density. Every widget visible, no narration, no
+explanation you didn't ask for. More of the conversation fits on screen.</p>
+
+<h3>ML</h3>
+<p>Expert's density with the economics surfaced — token counts and model
+choice readable without a click, replies terse and technical.</p>
+
+<p class="quiet">Synapse never switches profiles for you. It may tell you a
+different pace exists; moving there is your call.</p>
+
+<h2>What it's good at</h2>
+
+<p>Procedural setup and scene assembly — building networks, wiring parameters,
+scattering, instancing, layout. Solaris and USD stage work. Reading your scene
+and answering questions about it. Turning a working network into a digital
+asset.</p>
+
+<p>It runs inside Houdini's own Python, so it isn't guessing at your scene —
+it's reading it.</p>
+
+<h2>What it isn't</h2>
+
+<p>Synapse is early software with an agent inside it. Read this part properly
+— it's the part that saves you an afternoon.</p>
+
+<h3>Undo is scene-level</h3>
+<p><strong>Save before a large request.</strong> Undo reverses changes to your
+scene, but anything that touched disk — files written, caches, renders — stays
+written. Treat a big prompt like you'd treat someone else's HDA: save first.</p>
+
+<h3>It can be confidently wrong</h3>
+<p>The agent will sometimes build something plausible that isn't what you
+asked for, and describe it as if it were. <strong>Look at the network, not the
+summary.</strong> The nodes are the truth.</p>
+
+<h3>Licence limits are real</h3>
+<p>Some render paths are unavailable on Indie and Apprentice licences. If a
+render silently does nothing, that's usually why, not Synapse.</p>
+
+<h3>It runs on your machine, for you</h3>
+<p>Synapse assumes a single user on localhost. It isn't hardened for a shared
+or networked seat, and access control is off in local mode.</p>
+
+<h2>When something goes wrong</h2>
+
+<p>Run <code>synapse_doctor</code> first. It checks the things that are
+usually broken — connection, licence, environment, model access — and tells
+you which one it is. Most sessions that feel broken are one line of its output.</p>
+
+<p>If the doctor is clean and the behaviour is still wrong, that's worth
+reporting: <a href="https://github.com/JosephOIbrahim/Synapse/issues">open an
+issue</a> and paste the doctor output with it.</p>
+
+<h2>The measure</h2>
+
+<p>Synapse is measured by what you can do <em>without</em> it. If it's building
+things you couldn't build alone and you're learning nothing, it's failing at
+its job — however impressive the output looks.</p>
+
+<p class="quiet">A rope is load-bearing. It is never self-propelling. The
+gradient runs one way: it builds while you watch, then builds with pauses so
+you can follow and object, then explains the move and you make it yourself.
+Explanation rises at your pace. Automation never does.</p>
+
+<h2>More</h2>
+
+<p><a href="https://github.com/JosephOIbrahim/Synapse">Repository and
+README</a> — installation, requirements, the full known-limitations list.</p>
+
+</div></body>

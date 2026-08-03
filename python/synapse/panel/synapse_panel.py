@@ -2369,14 +2369,11 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_help(self):
         """Context-sensitive help, the way Houdini's own F1 behaves.
 
-        Normally the README — the artist's entry point: first prompt, install
-        order, known limitations. But while the phantom-API gate is stale that
-        IS the artist's live problem, so Help goes straight to the upgrade
-        note instead of making them hunt for it.
+        Opens the artist help document (docs/help/index.html) — written for
+        someone who knows Houdini and does not know Synapse. The engineering
+        docs under docs/ are a different audience and are not what Help is for.
         """
-        rel = ("docs/studio/UPGRADE.md" if getattr(self, "_gate_stale_reason", None)
-               else "README.md")
-        self._open_doc(rel)
+        self._open_doc("docs/help/index.html")
 
     def _open_doc(self, rel):
         """Open a repo doc in the browser — the Houdini-help convention: a doc
