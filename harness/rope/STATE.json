@@ -94,7 +94,7 @@
      "min": 1
     }
    ],
-   "status": "in_progress",
+   "status": "pending",
    "attempts": 0
   },
   {
@@ -639,6 +639,43 @@
     {
      "kind": "manual",
      "note": "copy reviewed against the axiom and L6"
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L5-11",
+   "was": "new",
+   "title": "Design conformance pass on all new panel UI",
+   "law": "L5",
+   "type": "agent",
+   "effort": "medium",
+   "deps": [
+    "L5-4"
+   ],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/manifests/curious.py",
+    "python/synapse/panel/manifests/expert.py",
+    "python/synapse/panel/manifests/ml.py",
+    "tests/test_rope_design_conformance.py"
+   ],
+   "change": "CONFORM, DO NOT INVENT. python/synapse/panel/designsystem/ is the single vendored source of truth (tokens.py 533 lines: SURFACE-ELEVATION roles VOID/CARBON/GRAPHITE, INTERACTION-STATE ramp hover/press/disabled/focus, TYPE ROLES, MOTION tokens, one STATUS grammar; plus components.py, qss.py, motion.py, fontload.py). Its docstring records that a redesign audit already found THREE divergent token sources and reconciled them -- do not create a fourth. Audit every widget added by L5-4 (profile tab strip) and any new Curious surface: replace every hardcoded colour, px size, font, radius, and transition with the corresponding token or component. Reuse components.py primitives instead of raw QWidget subclasses where one fits. Motion via motion.py only. If a needed token genuinely does not exist, DO NOT hardcode and DO NOT add one -- list it in docs/PROFILES.md under 'Design gaps for human decision' and leave the site marked. Add tests/test_rope_design_conformance.py: scan the new/edited panel modules for hardcoded hex colours (#RRGGBB) and bare px values outside designsystem/, and fail on any found in files this task touched.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "designsystem",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "DESIGN REVIEW BY JOE -- token conformance is machine-checked, but visual judgement is not delegable"
     }
    ],
    "status": "pending",

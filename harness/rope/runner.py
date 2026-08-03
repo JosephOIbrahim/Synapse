@@ -240,8 +240,15 @@ def cmd_run(args):
             ledger(t["id"], args.model, "keep", t["attempts"] + 1, dur,
                    ("manual pending: " + "; ".join(manual)) if manual else "clean")
         else:
-            t["attempts"] += 1
             git("reset", "--hard", "HEAD")   # tracked only; NEVER git clean here
+            low = tail_log(8).lower()
+            if any(k in low for k in ("session limit", "usage limit", "rate limit")):
+                t["status"] = "pending"      # not the task's fault; no attempt consumed
+                ledger(t["id"], args.model, "quota-pause", t["attempts"], dur,
+                       "usage limit hit; loop paused cleanly, task unharmed")
+                save(st)
+                break   # token-saver law: NEVER retry a usage-limit failure
+            t["attempts"] += 1
             t["status"] = "blocked" if t["attempts"] >= 2 else "pending"
             ledger(t["id"], args.model, "discard", t["attempts"], dur,
                    "fails: " + ", ".join(fails) + " | " + tail_log())
