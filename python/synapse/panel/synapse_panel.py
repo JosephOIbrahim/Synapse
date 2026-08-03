@@ -687,6 +687,15 @@ class SynapsePanel(QtWidgets.QWidget):
         # panel's chat runs in-process, but tools + external tools need this up,
         # and it does NOT auto-start — this button is the one-click way to force
         # it without dropping into Houdini's Python Shell.
+        # Houdini-help convention: the doc is a control, not a path to go
+        # find. Ghost so it reads as chrome; opens in the OS browser.
+        self._help_btn = c.Button("?", variant="ghost")
+        self._help_btn.setFixedWidth(22)
+        self._help_btn.setToolTip("Open docs/studio/UPGRADE.md")
+        self._help_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._help_btn.clicked.connect(
+            lambda: self._open_doc("docs/studio/UPGRADE.md"))
+        self._help_btn.setVisible(False)   # only while the gate is stale
         self._connect_btn = c.Button("Connect", variant="primary")
         self._connect_btn.setToolTip(
             "Start the Synapse bridge server (port 9999) so external / MCP tools "
@@ -712,6 +721,7 @@ class SynapsePanel(QtWidgets.QWidget):
         c.repolish(self._observe)
         bot.addWidget(self._foot_dot)
         bot.addWidget(self._foot_label)
+        bot.addWidget(self._help_btn)
         bot.addWidget(self._connect_btn)
         bot.addWidget(self._corpus_btn)
         bot.addWidget(self._observe, 1)
@@ -2347,16 +2357,49 @@ class SynapsePanel(QtWidgets.QWidget):
                 # M3-A: a disarmed phantom-API gate must be LOUD, not a
                 # one-line console warning the week API drift peaks.
                 self._foot_dot.set_status("warning")
+                self._help_btn.setVisible(True)
                 self._foot_label.setText(
-                    "Houdini · API gate stale — see docs/studio/UPGRADE.md"
+                    "Houdini · API gate stale"
                 )
             else:
                 self._foot_dot.set_status("connected")
+                self._help_btn.setVisible(False)
                 self._foot_label.setText("Houdini")
             if self._header_status.text() in ("Standing by", ""):
                 self._set_header("idle", "Ready")
         except Exception:
             pass
+
+    def _open_doc(self, rel):
+        """Open a repo doc in the browser — the Houdini-help convention: a doc
+        is a control, never a path the artist has to go find.
+
+        Order is deliberate. hou.ui.showHelp is tried first so a registered
+        help path renders in Houdini's own browser and the artist never leaves
+        the host; QDesktopServices is the honest fallback (the doc is a real
+        file on disk and every desktop can open it). Never raises: a failed
+        help click must not disturb a working session.
+        """
+        import os
+        root = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))))
+        path = os.path.join(root, rel.replace("/", os.sep))
+        try:
+            import hou
+            if hasattr(hou.ui, "showHelp"):
+                hou.ui.showHelp(path)
+                return
+        except Exception:
+            pass
+        try:
+            from qtpy import QtGui, QtCore as _QtCore
+            QtGui.QDesktopServices.openUrl(_QtCore.QUrl.fromLocalFile(path))
+        except Exception:
+            try:
+                import webbrowser
+                webbrowser.open("file:///" + path.replace(os.sep, "/"))
+            except Exception:
+                pass
 
     def _register_selection_cb(self):
         """Update the context line on selection change. hou.ui is graphical-only
