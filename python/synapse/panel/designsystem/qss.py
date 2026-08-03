@@ -70,15 +70,21 @@ QPushButton#DsButton[variant="danger"] {{
     background: transparent; color: {t.ERROR}; border: 1px solid {t.ERROR};
 }}
 QPushButton#DsButton[variant="danger"]:hover  {{ background: {t.STATE_TINTS["error"]}; }}
-/* prominence (L5-14 amends L5-13): hero TAKES THE ACCENT. Buttons are
-   orientation/action widgets, so the border slot every variant already
-   reserves (1px transparent) lights WARM -- the human accent -- and the
-   hover/press companions ride WARM_HOVER/WARM_PRESS so hero keeps live
-   feedback. Quiet steps the type down the ladder. Placed before
-   :disabled so the disabled state still wins. */
-QPushButton#DsButton[prominence="hero"]  {{ border-color: {t.WARM}; }}
-QPushButton#DsButton[prominence="hero"]:hover   {{ border-color: {t.WARM_HOVER}; }}
-QPushButton#DsButton[prominence="hero"]:pressed {{ border-color: {t.WARM_PRESS}; }}
+/* prominence (L5-15 amends L5-14): hero buttons read as KNOCKOUT, not
+   outline. A border tint left the type reading as outline, so hero
+   promotes the button to the SAME construction [variant="primary"]
+   already uses -- accent fill, TEXT_ON_ACCENT ink -- rather than
+   inventing a new emphasis. The accent stays as L5-14 assigned it:
+   WARM, the human accent, with its existing WARM_HOVER/WARM_PRESS
+   companions carrying live feedback on the fill. TEXT_ON_ACCENT is the
+   one sanctioned ink (6.42:1 on WARM -- AA). Quiet steps the type down
+   the ladder. Placed before :disabled so the disabled state still
+   wins and a hero button greys correctly. */
+QPushButton#DsButton[prominence="hero"] {{
+    background: {t.WARM}; color: {t.TEXT_ON_ACCENT}; border-color: transparent;
+}}
+QPushButton#DsButton[prominence="hero"]:hover   {{ background: {t.WARM_HOVER}; color: {t.TEXT_ON_ACCENT}; border-color: transparent; }}
+QPushButton#DsButton[prominence="hero"]:pressed {{ background: {t.WARM_PRESS}; border-color: transparent; }}
 QPushButton#DsButton[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 QPushButton#DsButton:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: transparent; }}
 

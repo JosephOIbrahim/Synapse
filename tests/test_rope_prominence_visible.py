@@ -60,6 +60,30 @@ def test_hero_takes_the_signal_accent():
     assert _hexes(hero) & signal_family, "no hero rule references the SIGNAL accent family"
 
 
+def test_hero_button_reads_as_knockout():
+    """L5-15: a hero button promotes to the construction [variant="primary"]
+    already uses -- accent fill + TEXT_ON_ACCENT ink (knockout) -- rather
+    than tinting the outline, and paints only hexes tokens.py sanctions
+    for it (the assigned WARM accent family + the one reversed ink)."""
+    qss = stylesheet()
+    rules = [r for r in _rules(qss, "hero") if r.startswith("QPushButton#DsButton")]
+    assert rules, 'no QSS rule selects QPushButton#DsButton[prominence="hero"]'
+    base = [r for r in rules if ":hover" not in r and ":pressed" not in r]
+    assert base, 'no base QPushButton#DsButton[prominence="hero"] rule'
+    assert re.search(r"background\s*:", base[0]), (
+        "hero button rule sets no fill -- it still reads as outline"
+    )
+    assert _hexes(t.TEXT_ON_ACCENT) & _hexes(base[0]), (
+        "hero button ink is not TEXT_ON_ACCENT -- not a knockout"
+    )
+    sanctioned = (
+        _hexes(t.WARM) | _hexes(t.WARM_HOVER) | _hexes(t.WARM_PRESS)
+        | _hexes(t.TEXT_ON_ACCENT)
+    )
+    rogue = _hexes("\n".join(rules)) - sanctioned
+    assert not rogue, f"hero button rules paint hexes outside the assigned accent + ink: {sorted(rogue)}"
+
+
 def test_no_rule_introduces_a_hex_absent_from_tokens():
     """Two-accent ceiling: every hex the sheet paints exists in tokens.py --
     a token value, or a stop of tokens.py's own atmosphere() root ramp.

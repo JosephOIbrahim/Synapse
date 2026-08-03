@@ -812,6 +812,51 @@
    ],
    "status": "needs_review",
    "attempts": 0
+  },
+  {
+   "id": "L5-15",
+   "was": "new",
+   "title": "Hero buttons read as knockout, not outline (promote to the existing primary treatment)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-14"
+   ],
+   "files": [
+    "python/synapse/panel/designsystem/qss.py",
+    "tests/test_rope_prominence_visible.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "JOE'S SEAT CALL, amending how L5-13/L5-14 express hero on BUTTONS only. Today a hero button keeps the outline (secondary) treatment and only its border/text colour moves, so the type still reads as outline. Joe wants hero buttons to read as KNOCKOUT: filled with the accent, type reversed out of the fill. DO NOT INVENT THIS TREATMENT -- it already exists. qss.py already defines QPushButton#DsButton[variant=\"primary\"] as 'background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT};' with SIGNAL_HOVER/SIGNAL_PRESS companions. Hero on a button therefore means: promote that button to the SAME construction the primary variant already uses -- accent fill, TEXT_ON_ACCENT ink, the accent's existing hover and press companions -- rather than tinting an outline. Which accent fills it stays exactly as L5-14 assigned it (WARM for human/orientation widgets such as connect and corpus; SIGNAL for technical/economic widgets), and the two-accent ceiling still holds: no third accent, no new colour, no new token. INK: TEXT_ON_ACCENT (#0F1F2B) is the only sanctioned ink and it is contrast-verified on BOTH accents -- 6.42:1 on WARM (#FF7759), which passes WCAG AA for normal text; use it on both fills and do not introduce a second ink. Stylesheet only: do not touch the compositor, the manifests, or synapse_panel.py, and do not change any widget's variant attribute in Python -- express this purely as [prominence=\"hero\"] rules on QPushButton#DsButton that override the outline construction. Keep every quiet rule from L5-13 as written. Keep the cascade discipline: prominence rules before :disabled, after the tone/variant rows, so a hero button still greys correctly when disabled. STANDARD MUST NOT MOVE -- L5-5 pins expert to v5.42.0 and every expert widget is standard; any diff touching a standard-state or variant-default rule is a failure. No size, weight, font, radius, spacing or layout changes: fill, ink and existing state companions only. Extend tests/test_rope_prominence_visible.py: assert a hero button rule sets both a background and TEXT_ON_ACCENT (proving knockout rather than outline), and that no new hex absent from tokens.py appears. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z' -- hero buttons knock out derived from the existing primary variant because the fill+TEXT_ON_ACCENT construction is already the system's sanctioned way to say 'this is the action', so hero promotes to it rather than inventing an emphasis.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_prominence_visible.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/designsystem/qss.py",
+     "pattern": "TEXT_ON_ACCENT",
+     "min": 3
+    },
+    {
+     "kind": "grep_min",
+     "path": "docs/PROFILES.md",
+     "pattern": "Derived design decisions",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: on Curious, CONNECT and CORPUS read as filled coral with reversed type -- not outlines; Expert identical to v5.42.0"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
   }
  ]
 }
