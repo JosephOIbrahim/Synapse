@@ -345,9 +345,18 @@ class SynapsePanel(QtWidgets.QWidget):
                     "Saved engine %r is unavailable — using Claude." % pid)
             self._model_by_provider = _pset.merged_model_picks(
                 st, self._model_by_provider)
+            # L5-4: restore the saved profile tab — _build_ui composes this
+            # profile's manifest; the mode bar marks its pill active.
+            self._profile_state = _pset.SwitcherState()
+            self._layout_profile = self._profile_state.profile
         except Exception:
             pass
 
+        # L5-4: build-once cache for the region builders. A live recompose
+        # (profile tab switch) re-sequences these same widgets rather than
+        # rebuilding them, so chat history and an in-flight turn survive.
+        self._region_cache = {}
+        self._recompose_hidden = set()
         self.setAcceptDrops(True)
         self._build_ui()
         if self._boot_note:
@@ -445,6 +454,99 @@ class SynapsePanel(QtWidgets.QWidget):
             root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
         self._set_face("direct")                    # rest on the CHAT surface
 
+    # ------------------------------------------------- profile switcher (L5-4)
+    def _select_profile(self, profile):
+        """A profile-tab click: persist through settings, then recompose LIVE.
+
+        ``SwitcherState`` (Qt-free, tested headless) owns selection → settings
+        write → restore; this method owns the Qt half. A failed save still
+        switches the session — and says so in chat, never silently.
+        """
+        if profile == getattr(self, "_layout_profile", DEFAULT_PROFILE):
+            return
+        state = getattr(self, "_profile_state", None)
+        if state is not None:
+            state.select(profile)
+            if not state.persist_ok:
+                try:
+                    self._chat.append_system_message(
+                        "Profile switched to %s for this session — the pick "
+                        "could not be saved." % profile)
+                except Exception:
+                    pass
+        self._layout_profile = profile
+        self._mark_profile_pill(profile)
+        self._recompose(profile)
+
+    def _mark_profile_pill(self, profile):
+        """Active-mark the selected profile pill (the _set_face idiom)."""
+        for pid, pill in getattr(self, "_profile_pills", {}).items():
+            pill.setProperty("active", pid == profile)
+            c.repolish(pill)
+
+    def _recompose(self, profile):
+        """Re-run the compositor for ``profile`` on the LIVE panel.
+
+        Recompose, never reconstruct: the root layout is stripped WITHOUT
+        deleting anything — the region widgets stay children of the panel
+        (same parent, so no reparent, no hide, no state loss) and the region
+        builders are build-once (``_region_cache``), so ``compose()``
+        re-sequences the SAME widgets. Chat history, an in-flight worker
+        turn, and every face's state ride across untouched. A region the new
+        manifest drops is hidden, never destroyed; any compose failure
+        restores the previous sequence.
+        """
+        if compose is None or get_manifest is None:
+            return      # import-guard wiring — nothing manifest-driven here
+        root = self.layout()
+        if root is None:
+            return
+        try:
+            manifest = get_manifest(profile)
+        except Exception:
+            logger.exception(
+                "layout manifest %r unavailable — keeping the current layout",
+                profile)
+            return
+        # Widgets a prior recompose hid get their pre-hide state back FIRST,
+        # so the compositor's own visibility attrs win for managed regions
+        # (they apply after this show).
+        for wdg in getattr(self, "_recompose_hidden", ()):
+            try:
+                wdg.show()
+            except RuntimeError:  # pragma: no cover - C++ side already gone
+                pass
+        prev = []               # (item, widget, stretch) — the restore point
+        while root.count():
+            stretch = root.stretch(0)
+            item = root.takeAt(0)
+            prev.append((item, item.widget(), stretch))
+        try:
+            compose(self, root, manifest)
+        except Exception:
+            logger.exception(
+                "recompose to %r failed — restoring the previous layout",
+                profile)
+            while root.count():     # drop whatever the partial pass added
+                root.takeAt(0)
+            for item, _wdg, _stretch in prev:
+                root.addItem(item)
+            for i, (_item, _wdg, stretch) in enumerate(prev):
+                root.setStretch(i, stretch)
+            for wdg in getattr(self, "_recompose_hidden", ()):
+                try:
+                    wdg.hide()
+                except RuntimeError:  # pragma: no cover
+                    pass
+            return
+        managed = {root.itemAt(i).widget() for i in range(root.count())}
+        hidden = set()
+        for _item, wdg, _stretch in prev:
+            if wdg is not None and wdg not in managed:
+                wdg.hide()  # dropped by the new manifest — hidden, not deleted
+                hidden.add(wdg)
+        self._recompose_hidden = hidden
+
     def _build_rail(self):
         """The persistent rail (Pentagram pass, Mile 1).
 
@@ -452,6 +554,9 @@ class SynapsePanel(QtWidgets.QWidget):
         wordmark + state phrase on top; connection, an activity meter, and Stop
         beneath. Termination and live state never scroll away.
         """
+        cached = self._region_cache.get("_build_rail")
+        if cached is not None:                     # L5-4: recompose reuse
+            return cached
         w = self._section()
         w.setObjectName("DsHeader")          # flat PANEL + 1px HAIR bottom rule
         col = QtWidgets.QVBoxLayout(w)
@@ -583,6 +688,7 @@ class SynapsePanel(QtWidgets.QWidget):
         bot.addWidget(self._corpus_btn)
         bot.addWidget(self._observe, 1)
         col.addLayout(bot)
+        self._region_cache["_build_rail"] = w
         return w
 
     def _format_tokens(self, n):
@@ -722,12 +828,16 @@ class SynapsePanel(QtWidgets.QWidget):
                 pass
 
     def _build_context_ribbon(self):
+        cached = self._region_cache.get("_build_context_ribbon")
+        if cached is not None:                     # L5-4: recompose reuse
+            return cached
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
         lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
         self._ctx_label = c.label("no scene context", role="label", scale=self._chrome_scale)
         lay.addWidget(self._ctx_label)
         lay.addStretch(1)
+        self._region_cache["_build_context_ribbon"] = w
         return w
 
     def _build_converse(self):
@@ -776,6 +886,9 @@ class SynapsePanel(QtWidgets.QWidget):
         accept/revert hands back). Clicking CHAT is the manual way back to the
         conversation. `#DsTabRow` still carries the 1px BORDER rule; the internal
         face keys stay "direct"/"work" — the invariants key on those, not the label."""
+        cached = self._region_cache.get("_build_mode_bar")
+        if cached is not None:                     # L5-4: recompose reuse
+            return cached
         w = self._section()
         w.setObjectName("DsTabRow")
         lay = QtWidgets.QHBoxLayout(w)
@@ -803,6 +916,25 @@ class SynapsePanel(QtWidgets.QWidget):
         lay.addWidget(tok)
 
         lay.addStretch(1)
+
+        # L5-4: the profile tab strip — CURIOUS · EXPERT · ML select the layout
+        # manifest (L5-2). A click writes through settings (SwitcherState) and
+        # recomposes LIVE; boot restores the saved tab. Right-aligned: profile
+        # is chrome, the faces are the surface.
+        try:
+            from synapse.panel.settings import PROFILES as _profiles
+        except Exception:  # pragma: no cover - settings ships with the panel
+            _profiles = ("curious", "expert", "ml")
+        self._profile_pills = {}
+        for pid in _profiles:
+            p = c.Pill(pid.upper())
+            p.setFont(fontload.tracked_font(
+                "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+            p.clicked.connect(lambda _=False, pid=pid: self._select_profile(pid))
+            self._profile_pills[pid] = p
+            lay.addWidget(p)
+        self._mark_profile_pill(getattr(self, "_layout_profile", DEFAULT_PROFILE))
+        self._region_cache["_build_mode_bar"] = w
         return w
 
     def _show_token_face(self):
@@ -847,6 +979,9 @@ class SynapsePanel(QtWidgets.QWidget):
         is the working glance AND the payoff (its done sub-state folds in the old
         Review). Only an actionable consent gate auto-surfaces Work (v9.1 · Option
         A); quiet agent state never does."""
+        cached = self._region_cache.get("_build_faces")
+        if cached is not None:                     # L5-4: recompose reuse
+            return cached
         self._faces = QtWidgets.QStackedWidget()
         self._faces.addWidget(self._build_direct_face())   # 0 · idle / converse
         self._faces.addWidget(self._build_work_face())     # 1 · glance → done payoff
@@ -858,6 +993,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # the panel taller than a short pane and clips the Send row. The chat's
         # stretch keeps it dominant at normal heights.
         self._faces.setMinimumHeight(160)
+        self._region_cache["_build_faces"] = self._faces
         return self._faces
 
     def _build_direct_face(self):

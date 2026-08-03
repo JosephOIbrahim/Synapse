@@ -28,6 +28,9 @@ active provider's ``model_by_provider`` pick carries over as an ``exact``
 never raises and never blocks boot (the ``_load_dotenv`` posture).
 ``save_settings`` writes atomically (tmp + ``os.replace``), best-effort.
 Qt-free, hou-free.
+
+``SwitcherState`` (L5-4) is the Qt-free state core of the panel's profile
+tab strip: restore-on-construct, validated write-through select.
 """
 from __future__ import annotations
 
@@ -194,6 +197,37 @@ def resolve_model_choice(settings: dict,
     if want == "best":
         return ranked[-1].id
     return ranked[len(ranked) // 2].id    # balanced — the median-size entry
+
+
+class SwitcherState:
+    """State core of the panel's profile tab strip (L5-4).
+
+    Qt-free on purpose: the tab strip delegates selection + persistence here
+    so the logic tests headless; the panel owns the Qt recompose half.
+
+    * **restore** — construction reads the persisted profile
+      (missing/corrupt file → ``expert``, the ``load_settings`` posture).
+    * **select** — validates against ``PROFILES``, persists write-through
+      (read-modify-write, so sibling keys survive), and returns ``True``
+      only when the selection changed — the caller's cue to recompose.
+      Persistence stays best-effort (``save_settings``): a failed write
+      still switches the live session, and ``persist_ok`` records the
+      failure so the panel can say so instead of pretending it saved.
+    """
+
+    def __init__(self, path: Path | None = None):
+        self._path = path
+        self.profile = load_settings(path)["profile"]
+        self.persist_ok = True
+
+    def select(self, profile: str) -> bool:
+        if profile not in PROFILES or profile == self.profile:
+            return False
+        st = load_settings(self._path)
+        st["profile"] = profile
+        self.persist_ok = save_settings(st, self._path)
+        self.profile = profile
+        return True
 
 
 def merged_model_picks(settings: dict, defaults: dict) -> dict:

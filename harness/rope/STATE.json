@@ -609,7 +609,7 @@
      "note": "seat: switch tabs, close panel, reopen -> same tab, history intact"
     }
    ],
-   "status": "pending",
+   "status": "needs_review",
    "attempts": 0
   },
   {
