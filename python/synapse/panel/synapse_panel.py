@@ -692,8 +692,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._help_btn = c.Button("Help", variant="primary")
         self._help_btn.setToolTip("Open docs/studio/UPGRADE.md")
         self._help_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._help_btn.clicked.connect(
-            lambda: self._open_doc("docs/studio/UPGRADE.md"))
+        self._help_btn.clicked.connect(self._on_help)
         self._connect_btn = c.Button("Connect", variant="primary")
         self._connect_btn.setToolTip(
             "Start the Synapse bridge server (port 9999) so external / MCP tools "
@@ -2366,6 +2365,18 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._set_header("idle", "Ready")
         except Exception:
             pass
+
+    def _on_help(self):
+        """Context-sensitive help, the way Houdini's own F1 behaves.
+
+        Normally the README — the artist's entry point: first prompt, install
+        order, known limitations. But while the phantom-API gate is stale that
+        IS the artist's live problem, so Help goes straight to the upgrade
+        note instead of making them hunt for it.
+        """
+        rel = ("docs/studio/UPGRADE.md" if getattr(self, "_gate_stale_reason", None)
+               else "README.md")
+        self._open_doc(rel)
 
     def _open_doc(self, rel):
         """Open a repo doc in the browser — the Houdini-help convention: a doc
