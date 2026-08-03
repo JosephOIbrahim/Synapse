@@ -140,7 +140,7 @@ Verified end-to-end on Houdini 22.0.368.
 
 ## Install
 
-Three steps. The third is the one people miss.
+Four steps. The third is the one people miss.
 
 **1 — Clone**
 
@@ -165,6 +165,10 @@ python scripts/install_synapse_package.py --verify
 ```
 
 Read-only. Prints pass/fail per requirement.
+
+**4 — Doctor**
+
+With the server up, run the `synapse_doctor` tool — ask the panel, or call it from any connected MCP client. Diagnostics plus a support bundle (see Studio operability, above). Registered in `mcp_server.py`; implemented in `python/synapse/server/doctor.py`.
 
 <details>
 <summary><strong>Manual install</strong> — write the package file by hand</summary>
@@ -224,6 +228,18 @@ This prompt maps to a recipe the panel ships with — `mountain_displace` in `py
 **What you'll see:** a terrain-like displaced surface in the viewport. That visible bump-scape is the proof the install worked — no test suite required.
 
 Looking for the full staged walkthrough instead? That's `demo/README.md` — the staged demo, which *does* carry pipeline prerequisites (OCIO, the demo hip).
+
+---
+
+## Troubleshooting
+
+**The panel didn't appear.**
+
+Run the doctor first: the `synapse_doctor` tool, callable from any connected MCP client — no panel required (registered in `mcp_server.py`, implemented in `python/synapse/server/doctor.py`).
+
+Why there's no error message to read: get the package file wrong — a BOM, `path` instead of `hpath`, a missing `PYTHONPATH` entry — and `import synapse` still succeeds, the version still prints, and **the panel never appears.** No error. Just absence.
+
+So work it from the file, not the console: re-run step 3 (`python scripts/install_synapse_package.py --verify`), then check **Three things that bite** under Manual install.
 
 ---
 
