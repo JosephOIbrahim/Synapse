@@ -719,9 +719,10 @@ class SynapsePanel(QtWidgets.QWidget):
         bot.addWidget(self._foot_dot)
         bot.addWidget(self._foot_label)
         bot.addSpacing(t.SPACE_MD)
-        bot.addWidget(self._help_btn)
+        # Order is task order: connect, then ground the corpus, then read up.
         bot.addWidget(self._connect_btn)
         bot.addWidget(self._corpus_btn)
+        bot.addWidget(self._help_btn)
         # The rail meter is retired from the header: the mark already fills
         # and rotates, the status reads "Working on it", and Stop is present
         # — a full-width warm rule was a fourth signal for one state (Joe).
