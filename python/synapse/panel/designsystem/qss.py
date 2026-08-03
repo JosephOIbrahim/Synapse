@@ -58,9 +58,9 @@ QPushButton#DsButton[variant="primary"] {{
 QPushButton#DsButton[variant="primary"]:hover  {{ background: {t.SIGNAL_HOVER}; }}
 QPushButton#DsButton[variant="primary"]:pressed {{ background: {t.SIGNAL_PRESS}; }}
 QPushButton#DsButton[variant="secondary"] {{
-    background: {t.SURFACE}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.BORDER};
+    background: {t.SURFACE}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.BORDER_STRONG};
 }}
-QPushButton#DsButton[variant="secondary"]:hover  {{ background: {t.RAISED}; border-color: {t.BORDER_STRONG}; }}
+QPushButton#DsButton[variant="secondary"]:hover  {{ background: {t.RAISED}; border-color: {t.TEXT_TERTIARY}; }}
 QPushButton#DsButton[variant="secondary"]:pressed {{ background: {t.PRESS_BG}; }}
 QPushButton#DsButton[variant="ghost"] {{
     background: transparent; color: {t.TEXT_SECONDARY}; border: 1px solid transparent;
