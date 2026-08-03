@@ -8,7 +8,9 @@ work is shown and paced — never what the agent can do. Switching profiles adds
 nothing: no tools, no gates, no permissions. Verbatim from `harness/rope/program.md`:
 
 - **L5 Pays out at your pace** — 3 designs, 1 widget library + manifests + compositor;
-  identical capability in every profile; expert == v5.42.0 exactly.
+  identical capability in every profile; expert == v5.42.0 in capability and
+  layout, with one deliberate change: Connect and Corpus render as buttons
+  (secondary), not bare text, so their affordance is visible (Joe, L5-23).
 - **L6 Never climbs for you** — explanation may rise, automation may not; notify on change,
   switch only on user action.
 
@@ -21,7 +23,7 @@ in all three — only the altitude of explanation differs. Producers:
 | Tab label | Built for | What the screen shows |
 |---|---|---|
 | **Curious** | finding your footing | orientation steps forward (Connect / Corpus go hero), diagnostic chrome goes quiet; the overlay narrates each decision, translates errors into plain language, and defines jargon on first use |
-| **Expert** | the panel as it ships (== v5.42.0 exactly) | every widget at standard prominence, no overlay, no added narration |
+| **Expert** | the panel as it ships (v5.42.0 capability + layout; Connect/Corpus as visible buttons per L5-23) | every widget at standard prominence, no overlay, no added narration |
 | **ML** | the economist's read | token economics step forward (TOKEN pill + rail meter go hero); replies terse and technical |
 
 Two presentation axes distinguish them (L5-18): **prominence** — where the accent lands,

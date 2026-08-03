@@ -2,7 +2,7 @@
  "version": 1,
  "gate": "A",
  "branch": "rope/gate-a",
- "executor_model": "claude-fable-5",
+ "executor_model": "gpt-oss:20b",
  "note": "executor_model set at runtime via --model + --confirm-model. Statuses: pending|in_progress|needs_review|verified|blocked|blocked_human|blocked_seat.",
  "tasks": [
   {
@@ -1157,6 +1157,47 @@
     {
      "kind": "manual",
      "note": "SEAT: fresh panel opens with the divider centred; drag it, reopen, it stays where you left it"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  },
+  {
+   "id": "L5-23",
+   "was": "new",
+   "title": "Connect/Corpus read as buttons in every profile -- and the v5.42.0 claim is corrected",
+   "law": "L1",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "docs/PROFILES.md",
+    "README.md",
+    "tests/test_rope_prominence_visible.py"
+   ],
+   "change": "JOE'S RULING, and it deliberately retires a constraint. THE DEFECT: connect and corpus are built as c.Button('Connect', variant='ghost') and c.Button('Corpus', variant='ghost') (synapse_panel.py ~lines 664 and 673). Ghost is transparent, borderless, text-only. On curious they now carry a hero fill so they read as actions; on expert and ml they render as bare text with no button chrome at all, so a new artist has no way to know they are clickable. That is an affordance failure, not a profile distinction. THE FIX: change BOTH from variant='ghost' to variant='secondary' so their STANDARD state is a visible, outlined, unaccented button in every profile. Do not change their labels, their order, their placement, their click wiring, their state gating, or their size. Hero must keep working exactly as it does: on curious the manifest still sends them hero and the existing [prominence=\"hero\"] rules must still fill them with SIGNAL_DEEP knockout over this new secondary base -- verify the cascade still resolves that way and adjust ONLY if the hero rule no longer wins, never by weakening hero. WHAT THIS RETIRES, STATED PLAINLY: L5-5 pinned expert to 'v5.42.0 exactly' and this changes expert's appearance. That pin was scaffolding to stop agent drift during the profile build; the build is done and Joe has ruled. The pin's CAPABILITY guarantee is untouched and remains absolute -- expert still shows every widget at standard prominence with no overlay and no added narration, and every profile still exposes an identical agent capability set. But any claim of PIXEL identity is now false and must not survive this commit. Search docs/PROFILES.md and README.md for every statement that expert is identical to, exactly, or unchanged from v5.42.0 and rewrite each one truthfully: expert is the panel as it ships, every widget at standard prominence, no overlay, no added narration -- identical to v5.42.0 in capability and layout, with the single deliberate change that connect and corpus render as buttons rather than bare text so their affordance is visible. Do not delete the pin's capability language and do not overstate the change. If any test asserts pixel or style identity for expert (as opposed to widget set, order, or capability), update it to assert the capability invariant instead and comment why. Extend tests/test_rope_prominence_visible.py: assert neither connect nor corpus is constructed as ghost, and assert a hero rule still fills them with SIGNAL_DEEP and TEXT_ON_ACCENT. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z'.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_prominence_visible.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_profile_composition.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_absent",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "c.Button(\"Connect\", variant=\"ghost\")"
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: Connect and Corpus are visibly buttons on EXPERT and ML, and still fill blue on CURIOUS"
     }
    ],
    "status": "needs_review",
