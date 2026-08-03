@@ -157,6 +157,11 @@ def preflight(st, args):
     if not (args.model and args.confirm_model):
         sys.exit("refusing to run: pass --model <id> --confirm-model "
                  "(model choice is confirmed by the human, by design)")
+    if os.name == "nt" and not getattr(args, "live_seat_ok", False):
+        tl = sh(["tasklist"]).stdout.lower()
+        if any(k in tl for k in ("houdini", "hindie")):
+            sys.exit("a Houdini process is running and this loop edits the tree "
+                     "Houdini serves; close Houdini or pass --live-seat-ok")
     cur = git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
     if cur != st["branch"]:
         if git("rev-parse", "--verify", st["branch"]).returncode == 0:
@@ -258,6 +263,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run"); r.add_argument("--model"); r.add_argument("--confirm-model", action="store_true")
     r.add_argument("--max", type=int); r.add_argument("--task"); r.add_argument("--allow-dirty", action="store_true")
+    r.add_argument("--live-seat-ok", action="store_true")
     sub.add_parser("status"); sub.add_parser("gate")
     h = sub.add_parser("human"); h.add_argument("id"); h.add_argument("--done")
     v = sub.add_parser("verify"); v.add_argument("id")

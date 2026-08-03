@@ -53,3 +53,12 @@ Add `--max 1` to watch a single task first (recommended for run one).
 Live dashboard in its own window: runner alive? · gate · non-pending tasks ·
 ledger tail · the current agent's output · stderr if any. Refreshes every 5s.
 Closing the window never stops the marathon -- it's a separate process.
+
+### Relaunch-proof watch (use this from now on)
+
+    double-click  harness\rope\watch.cmd
+
+Windows terminal-restore can mangle a saved powershell command line into one
+unfindable filename (error 0x80070002). The .cmd resolves its own folder, so
+that failure class is dead. Also: the runner now refuses to start while a
+Houdini process is alive -- close Houdini or pass --live-seat-ok consciously.
