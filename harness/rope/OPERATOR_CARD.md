@@ -85,3 +85,18 @@ with you at the desk:
 
 It machine-checks token conformance (no raw hex, no bare px) and ends at
 needs_review, because visual judgement is not delegable.
+
+### /remote-control (rc.cmd) -- steer from your phone
+
+    double-click  harness\rope\rc.cmd        (or it may already be running)
+
+Outbound only, two jobs:
+1. BEACON -- pushes STATUS.md (gate + ledger + runner state) to branch
+   rope/beacon every ~5 min. Read it anywhere:
+   https://github.com/JosephOIbrahim/Synapse/blob/rope/beacon/STATUS.md
+2. SENTINEL -- if the runner quota-paused with tasks pending, relaunches it
+   automatically (max 6 times). Uses ledger evidence, not process guesswork.
+
+It executes nothing FROM the repo -- no inbound command channel exists. If you
+ever want one (edit a file on GitHub -> machine obeys), that's a deliberate
+security decision to define together first, not a default.
