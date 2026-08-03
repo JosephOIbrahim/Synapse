@@ -150,6 +150,25 @@ git clone https://github.com/JosephOIbrahim/Synapse.git
 
 **2 — Package file**
 
+```
+python scripts/install_synapse_package.py
+```
+
+Writes the package file — `Documents/houdini22.0/packages/synapse.json` — for you, correctly encoded.
+
+SYNAPSE ships **two installers**, and the split matters: `scripts/install_synapse_package.py` installs the package file (this step); `install.py` installs the shelf, panel, and icons. Order: package file first, then `install.py`.
+
+**3 — Verify**
+
+```
+python scripts/install_synapse_package.py --verify
+```
+
+Read-only. Prints pass/fail per requirement.
+
+<details>
+<summary><strong>Manual install</strong> — write the package file by hand</summary>
+
 At `Documents/houdini22.0/packages/synapse.json`:
 
 ```json
@@ -168,14 +187,6 @@ At `Documents/houdini22.0/packages/synapse.json`:
 }
 ```
 
-**3 — Verify**
-
-```
-python scripts/install_synapse_package.py --verify
-```
-
-Read-only. Prints pass/fail per requirement.
-
 ### Three things that bite
 
 **Save the JSON without a BOM.** PowerShell's `Set-Content -Encoding utf8` writes one. Houdini's parser rejects it **silently**.
@@ -193,6 +204,8 @@ Set-Content synapse.json $text -Encoding utf8
 **`PYTHONPATH` needs both entries.** `shared/` lives at the repo root, not under `python/`.
 
 Get any of these wrong and `import synapse` still succeeds, the version still prints, and **the panel never appears.** No error. Just absence.
+
+</details>
 
 ---
 
