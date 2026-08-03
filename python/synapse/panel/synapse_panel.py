@@ -1677,7 +1677,10 @@ class SynapsePanel(QtWidgets.QWidget):
         # face carries GUTTER/24; L5-17: top steps SPACE_SM→SPACE_MD (next rung
         # on the tokens scale) — air between the verbs and the rule above them.
         lay.setContentsMargins(0, t.SPACE_MD, 0, t.SPACE_SM)
-        lay.setSpacing(t.SPACE_MD)
+        # L5-21: inter-verb gap steps SPACE_MD→SPACE_LG (one rung = the ladder's
+        # double) so EXPLAIN / FIX / OPTIMIZE / BUILD HDA read as four controls,
+        # not one phrase.
+        lay.setSpacing(t.SPACE_LG)
         for label_text, prompt in _QUICK_ACTIONS:
             lay.addWidget(self._verb(
                 label_text.upper(), lambda _=False, p=prompt: self._send(p)))

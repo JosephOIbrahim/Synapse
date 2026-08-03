@@ -1081,6 +1081,43 @@
    ],
    "status": "needs_review",
    "attempts": 0
+  },
+  {
+   "id": "L5-21",
+   "was": "new",
+   "title": "Verb rail: double the gap so the four verbs read as four controls",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "JOE'S SEAT CALL: 'EXPLAIN FIX OPTIMIZE BUILD HDA' currently reads as one continuous phrase rather than four separate controls -- and at that spacing it is not even clear whether BUILD HDA is one verb or two. Double the horizontal gap between the verb buttons. DERIVE, DO NOT HARDCODE: tokens.py defines a doubling ladder -- SPACE_XS=4, SPACE_SM=8, SPACE_MD=16, SPACE_LG=24, SPACE_XL=40 -- so 'double' is exactly ONE STEP UP that ladder. Find the spacing the verb row currently applies in SynapsePanel._build_act (the row of QPushButton#DsVerb controls built via self._verb: EXPLAIN, FIX, OPTIMIZE, BUILD HDA), identify which SPACE token it corresponds to, and move it to the next token up (SPACE_XS -> SPACE_SM, or SPACE_SM -> SPACE_MD). If the current value is a bare literal rather than a token, replace it with the correctly-derived token -- never leave a literal behind and never invent a number. Change the INTER-BUTTON gap only: do not change the row's own margins, the space above its rule (L5-17 already set that and Joe approved it), the button padding, the type, the tracking, the colours, or the order of the verbs. Do not touch any [prominence] or [density] rule -- this is one spacing value. Note that L5-18 made density a panel-wide lever with airy/standard/tight variants; this change is to the BASE spacing, so all three profiles shift together and their relative rhythm is preserved. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z' -- the verb gap doubles derived from the SPACE ladder's own doubling steps because the four verbs were reading as a single phrase.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_absent",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "setSpacing(6)"
+    },
+    {
+     "kind": "grep_min",
+     "path": "docs/PROFILES.md",
+     "pattern": "Derived design decisions",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: EXPLAIN / FIX / OPTIMIZE / BUILD HDA read as four distinct controls, BUILD HDA obviously one"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
   }
  ]
 }
