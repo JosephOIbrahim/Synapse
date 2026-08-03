@@ -57,7 +57,7 @@
      "args": "tests/test_moneta_substrate_truth.py -q"
     }
    ],
-   "status": "pending",
+   "status": "verified",
    "attempts": 0
   },
   {

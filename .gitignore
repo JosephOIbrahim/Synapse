@@ -187,3 +187,5 @@ $HOUDINI_TEMP_DIR/
 harness/rope/results.tsv
 harness/rope/.prompt.txt
 harness/rope/last_run.log
+harness/rope/runner_console.log
+harness/rope/runner_console.err.log

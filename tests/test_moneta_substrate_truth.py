@@ -477,6 +477,7 @@ def test_make_store_falls_back_to_jsonl_when_moneta_is_installed_but_broken(
     def broken(*_a, **_k):
         raise RuntimeError("adapter drift")
 
+    monkeypatch.setattr(mr, "moneta_available", lambda: True)
     monkeypatch.setattr(moneta_store.MonetaBackedStore, "from_storage_dir",
                         staticmethod(broken))
     monkeypatch.setenv("SYNAPSE_MEMORY_BACKEND", "moneta")
