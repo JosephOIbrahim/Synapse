@@ -689,8 +689,13 @@ class SynapsePanel(QtWidgets.QWidget):
         # it without dropping into Houdini's Python Shell.
         # Houdini-help convention: the doc is a control, not a path to go
         # find. Ghost so it reads as chrome; opens in the OS browser.
-        self._help_btn = c.Button("?", variant="ghost")
-        self._help_btn.setFixedWidth(22)
+        self._help_btn = c.Button("DOCS", variant="ghost")
+        self._help_btn.setFixedWidth(52)
+        # reads as a link, not chrome: TEXT_ACCENT is the token reserved for
+        # links and accent labels (tokens.py), and the foot row already styles
+        # inline this way (see _foot_label).
+        self._help_btn.setStyleSheet(
+            "color:%s; font-weight:600;" % t.TEXT_ACCENT)
         self._help_btn.setToolTip("Open docs/studio/UPGRADE.md")
         self._help_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._help_btn.clicked.connect(
