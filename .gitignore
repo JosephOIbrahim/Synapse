@@ -183,3 +183,7 @@ $HOUDINI_TEMP_DIR/
 .claude/cm_*.txt
 .claude/commit_*.txt
 .token-saver/
+
+harness/rope/results.tsv
+harness/rope/.prompt.txt
+harness/rope/last_run.log
