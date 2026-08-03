@@ -689,18 +689,11 @@ class SynapsePanel(QtWidgets.QWidget):
         # it without dropping into Houdini's Python Shell.
         # Houdini-help convention: the doc is a control, not a path to go
         # find. Ghost so it reads as chrome; opens in the OS browser.
-        self._help_btn = c.Button("DOCS", variant="ghost")
-        self._help_btn.setFixedWidth(52)
-        # reads as a link, not chrome: TEXT_ACCENT is the token reserved for
-        # links and accent labels (tokens.py), and the foot row already styles
-        # inline this way (see _foot_label).
-        self._help_btn.setStyleSheet(
-            "color:%s; font-weight:600;" % t.TEXT_ACCENT)
+        self._help_btn = c.Button("Help", variant="primary")
         self._help_btn.setToolTip("Open docs/studio/UPGRADE.md")
         self._help_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._help_btn.clicked.connect(
             lambda: self._open_doc("docs/studio/UPGRADE.md"))
-        self._help_btn.setVisible(False)   # only while the gate is stale
         self._connect_btn = c.Button("Connect", variant="primary")
         self._connect_btn.setToolTip(
             "Start the Synapse bridge server (port 9999) so external / MCP tools "
@@ -726,6 +719,7 @@ class SynapsePanel(QtWidgets.QWidget):
         c.repolish(self._observe)
         bot.addWidget(self._foot_dot)
         bot.addWidget(self._foot_label)
+        bot.addSpacing(t.SPACE_MD)
         bot.addWidget(self._help_btn)
         bot.addWidget(self._connect_btn)
         bot.addWidget(self._corpus_btn)
@@ -2362,13 +2356,11 @@ class SynapsePanel(QtWidgets.QWidget):
                 # M3-A: a disarmed phantom-API gate must be LOUD, not a
                 # one-line console warning the week API drift peaks.
                 self._foot_dot.set_status("warning")
-                self._help_btn.setVisible(True)
                 self._foot_label.setText(
                     "Houdini · API gate stale"
                 )
             else:
                 self._foot_dot.set_status("connected")
-                self._help_btn.setVisible(False)
                 self._foot_label.setText("Houdini")
             if self._header_status.text() in ("Standing by", ""):
                 self._set_header("idle", "Ready")
