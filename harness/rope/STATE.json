@@ -554,7 +554,7 @@
      "args": "tests/test_rope_expert_pin.py -q"
     }
    ],
-   "status": "pending",
+   "status": "verified",
    "attempts": 0
   },
   {
