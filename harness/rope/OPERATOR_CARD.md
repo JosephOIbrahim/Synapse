@@ -71,3 +71,17 @@ Every 20 min: a Windows toast + one digest line in its ticker window and in
 harness\rope\PROGRESS.md (runner alive? · done this interval · gate · in
 flight). First digest fires the moment you launch it. Read-only; close anytime.
 For a full narrated read with receipts: ping Claude with anything at all.
+
+### Design conformance (L5-11) -- staged, NOT auto-running
+
+New panel UI (the L5-4 tab strip especially) is built structurally, not
+designed. `python/synapse/panel/designsystem/` is the source of truth and its
+own docstring records that an audit already found THREE divergent token
+sources. L5-11 is a CONFORM-DO-NOT-INVENT pass, staged deliberately so it runs
+with you at the desk:
+
+    python harness\rope\merge_pending.py     (only when no runner is looping)
+    python harness\rope\runner.py run --model claude-fable-5 --confirm-model --live-seat-ok --task L5-11
+
+It machine-checks token conformance (no raw hex, no bare px) and ends at
+needs_review, because visual judgement is not delegable.
