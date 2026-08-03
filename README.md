@@ -10,6 +10,16 @@ SYNAPSE lives in Houdini's own Python interpreter and calls `hou.*` directly. No
 
 ---
 
+## Runs your model
+
+Five engines behind one seam. The roster and the producer path are the same thing: `python/synapse/panel/providers/`.
+
+**Ollama needs no API key, and nothing leaves the machine.** SYNAPSE talks to your local server at its default address, `http://localhost:11434`.
+
+**Your pick persists.** Engine choice is saved to `.synapse/panel_settings.json` and survives restarts.
+
+---
+
 ## The one design choice
 
 Everything else follows from where the agent lives.
