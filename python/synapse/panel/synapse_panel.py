@@ -687,7 +687,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # panel's chat runs in-process, but tools + external tools need this up,
         # and it does NOT auto-start — this button is the one-click way to force
         # it without dropping into Houdini's Python Shell.
-        self._connect_btn = c.Button("Connect", variant="secondary")
+        self._connect_btn = c.Button("Connect", variant="primary")
         self._connect_btn.setToolTip(
             "Start the Synapse bridge server (port 9999) so external / MCP tools "
             "can reach Houdini. Safe to click anytime — idempotent."
@@ -696,7 +696,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # Activate the H21 documentation corpus so Solaris assembly grounds in
         # real Houdini-21 docs (verified node types / parm names) instead of
         # phantom APIs. Mirrors the Connect button; idempotent.
-        self._corpus_btn = c.Button("Corpus", variant="secondary")
+        self._corpus_btn = c.Button("Corpus", variant="primary")
         self._corpus_btn.setToolTip(
             "Connect the Houdini-21 documentation corpus so Solaris assembly "
             "grounds in real H21 docs (not phantom parms). Safe to click anytime "
@@ -1787,8 +1787,8 @@ class SynapsePanel(QtWidgets.QWidget):
         # has no pictographs → a paperclip codepoint renders as an unreadable tofu box).
         attach = c.Button("", variant="ghost")
         attach.setIcon(_image_icon())
-        attach.setIconSize(QtCore.QSize(18, 18))
-        attach.setFixedWidth(32)
+        attach.setIconSize(QtCore.QSize(36, 36))
+        attach.setFixedWidth(52)
         attach.setToolTip("Attach image / file as context")
         attach.clicked.connect(self._on_attach)
         # v9 comp: SEND rides bottom-right INSIDE the composer (the attr name

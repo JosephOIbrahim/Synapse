@@ -85,8 +85,8 @@ MANIFEST = {
                 "palette_hint",
                 "stop",
                 "connection_dot", "connection_label",
-                {"id": "connect", "prominence": "hero"},
-                {"id": "corpus", "prominence": "hero"},
+                "connect",
+                "corpus",
                 # Telemetry fold (L5-19): activity chrome, same treatment as
                 # the economics pair.
                 {"id": "activity_meter", "collapsed": True,
