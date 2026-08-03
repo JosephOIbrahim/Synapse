@@ -101,12 +101,12 @@ QPushButton#DsButton:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DIS
    danger variant itself is untouched: other widgets may rely on it.
    Not profile-conditional -- Stop looks identical in all three. */
 QPushButton#DsStop {{
-    background: {t.WARM}; color: {t.TEXT_ON_ACCENT};
+    background: {t.HOT_SOFT}; color: {t.TEXT_ON_ACCENT};
     border: none; border-radius: {t.RADIUS_SM}px;
     padding: {t.SPACE_SM}px {t.SPACE_MD}px;
     font-size: {s(t.SIZE_UI)}px; font-weight: 600;
 }}
-QPushButton#DsStop:hover   {{ background: {t.WARM_HOVER}; }}
+QPushButton#DsStop:hover   {{ background: {t.WARM}; }}
 QPushButton#DsStop:pressed {{ background: {t.WARM_PRESS}; }}
 QPushButton#DsStop:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}
 
