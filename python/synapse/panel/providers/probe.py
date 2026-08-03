@@ -591,6 +591,17 @@ def _ollama_base() -> tuple[str, str, str]:
             parts.path.rstrip("/"))
 
 
+def ollama_endpoint() -> str:
+    """The resolved Ollama base URL — ``OLLAMA_HOST`` or the localhost default.
+
+    Public because the cached catalog (``catalog.py``) records, per entry, the
+    endpoint a model was discovered on. One resolver serving both probe and
+    catalog means the two can never disagree about which host "ollama" is.
+    """
+    scheme, netloc, path = _ollama_base()
+    return "%s://%s%s" % (scheme, netloc, path)
+
+
 def probe_ollama(*, now: Optional[float] = None,
                  timeout: float = _HTTP_TIMEOUT_LOCAL) -> list[ProbeResult]:
     """``GET {OLLAMA_HOST}/api/tags`` — free, local, no quota to consume.

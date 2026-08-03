@@ -453,7 +453,7 @@
      "args": "tests/test_rope_catalog.py -q"
     }
    ],
-   "status": "pending",
+   "status": "verified",
    "attempts": 0
   },
   {
