@@ -45,3 +45,11 @@ Add `--max 1` to watch a single task first (recommended for run one).
 - .claude\agents\rope-executor.md (Mode 2 subagent)
 - Branch: rope/gate-a · one commit per verified task · your untracked files
   are never touched (reset --hard only, no git clean, ever)
+
+## Watch it live
+
+    powershell -ExecutionPolicy Bypass -File harness\rope\watch.ps1
+
+Live dashboard in its own window: runner alive? · gate · non-pending tasks ·
+ledger tail · the current agent's output · stderr if any. Refreshes every 5s.
+Closing the window never stops the marathon -- it's a separate process.
