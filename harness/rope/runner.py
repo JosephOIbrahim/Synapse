@@ -154,6 +154,22 @@ def tail_log(n=3):
 
 def preflight(st, args):
     assert os.path.exists(os.path.join(ROOT, "pyproject.toml")), "not the repo root"
+    lock = os.path.join(ROPE, ".runner.lock")
+    if os.path.exists(lock):
+        try:
+            opid = open(lock).read().strip()
+        except OSError:
+            opid = ""
+        if os.name == "nt":
+            alive = opid and "python" in sh(["tasklist", "/FI", "PID eq %s" % opid]).stdout.lower()
+        else:
+            try:
+                os.kill(int(opid), 0); alive = True
+            except (OSError, ValueError):
+                alive = False
+        if alive:
+            sys.exit("another runner is already looping (pid %s); one rope at a time" % opid)
+    open(lock, "w").write(str(os.getpid()))
     if subprocess.run((["cmd", "/c"] if os.name == "nt" else []) + ["claude", "--version"],
                       capture_output=True).returncode != 0:
         sys.exit("claude CLI not found on PATH -- install Claude Code first")
@@ -195,6 +211,14 @@ def preflight(st, args):
 def cmd_run(args):
     st = load()
     preflight(st, args)
+    revived = [z["id"] for z in st["tasks"] if z["status"] == "in_progress"]
+    for z in st["tasks"]:              # raise the dead: a killed runner leaves
+        if z["status"] == "in_progress":   # in_progress orphans behind it
+            z["status"] = "pending"
+    if revived:
+        save(st)
+        ledger(",".join(revived), "-", "revive", 0, 0,
+               "orphaned in_progress reset to pending at startup")
     done = 0
     while True:
         t = eligible(st, args.task)
@@ -224,6 +248,10 @@ def cmd_run(args):
         done += 1
         if args.task:
             break
+    try:
+        os.remove(os.path.join(ROPE, ".runner.lock"))
+    except OSError:
+        pass
     cmd_gate(args)
 
 def cmd_status(args):
