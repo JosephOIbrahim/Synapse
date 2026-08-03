@@ -193,3 +193,6 @@ harness/rope/finisher.log
 harness/rope/AFTERNOON_REPORT.md
 harness/rope/pass*.log
 harness/rope/pass*.err.log
+
+harness/rope/PROGRESS.md
+harness/rope/.runner.lock
