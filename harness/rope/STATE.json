@@ -579,7 +579,7 @@
      "args": "tests/test_rope_curious_manifest.py -q"
     }
    ],
-   "status": "pending",
+   "status": "verified",
    "attempts": 0
   },
   {

@@ -189,3 +189,7 @@ harness/rope/.prompt.txt
 harness/rope/last_run.log
 harness/rope/runner_console.log
 harness/rope/runner_console.err.log
+harness/rope/finisher.log
+harness/rope/AFTERNOON_REPORT.md
+harness/rope/pass*.log
+harness/rope/pass*.err.log
