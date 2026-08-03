@@ -29,6 +29,16 @@ from synapse.panel.designsystem import motion
 from synapse.panel.designsystem import fontload
 from synapse.panel.gate_stamp import phantom_gate_status
 
+# L5-2: layout manifests + compositor — the region sequence is data-driven.
+# Pure-stdlib modules, but guarded like the rest of the runtime imports so the
+# panel always instantiates; _build_ui falls back to the v5.42.0 wiring.
+try:
+    from synapse.panel.manifests import ManifestError, get_manifest, DEFAULT_PROFILE
+    from synapse.panel.compositor import compose
+except Exception:  # pragma: no cover
+    ManifestError = get_manifest = compose = None
+    DEFAULT_PROFILE = "expert"
+
 # This module had no logger. Its guarded runtime paths therefore had nowhere to
 # leave a trail even if they wanted one — which is how `_wire_gate` ended up
 # swallowing a consent-relay wiring failure in silence.
@@ -411,10 +421,28 @@ class SynapsePanel(QtWidgets.QWidget):
         # v9: the ENGINE pill bar left the chrome — the rail author token is the
         # engine+model click target now (its menu machinery is reused). The
         # rail's bottom rule is the #DsHeader HAIR border (no divider widget).
-        root.addWidget(self._build_rail())          # mark · brand · author · Stop
-        root.addWidget(self._build_context_ribbon())
-        root.addWidget(self._build_mode_bar())      # the CHAT surface label (v9.1)
-        root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
+        #
+        # L5-2: the sequence is manifest-driven — the profile manifest names
+        # the regions in order and the compositor maps each onto the same
+        # _build_* calls below. "expert" is the v5.42.0 wiring exactly; an
+        # invalid manifest falls back to that wiring hard-coded (the panel
+        # always builds).
+        profile = getattr(self, "_layout_profile", DEFAULT_PROFILE)
+        built = False
+        if compose is not None:
+            try:
+                compose(self, root, get_manifest(profile))
+                built = True
+            except ManifestError:
+                logger.exception(
+                    "layout manifest %r invalid — using the v5.42.0 wiring",
+                    profile,
+                )
+        if not built:
+            root.addWidget(self._build_rail())          # mark · brand · author · Stop
+            root.addWidget(self._build_context_ribbon())
+            root.addWidget(self._build_mode_bar())      # the CHAT surface label (v9.1)
+            root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
         self._set_face("direct")                    # rest on the CHAT surface
 
     def _build_rail(self):
@@ -1880,10 +1908,11 @@ class SynapsePanel(QtWidgets.QWidget):
         model EXPLAINS build requests instead of executing them (the artist
         sees 'processing… text, no nodes'). Reads live scene context on the
         main thread (this runs from the send handler), all best-effort."""
+        overlay = getattr(self, "_system_prompt_overlay", "") or ""
         try:
             from synapse.panel.system_prompt import build_system_prompt
         except Exception:
-            return ""
+            return overlay
         ctx = {}
         try:
             import hou
@@ -1903,9 +1932,12 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             ctx = {}
         try:
-            return build_system_prompt(ctx)
+            base = build_system_prompt(ctx)
         except Exception:
-            return ""
+            return overlay
+        # L5-2: the active profile's overlay rides on top of the built prompt —
+        # tone/pacing only, never capability (L5/L6).
+        return (base + "\n\n" + overlay) if overlay else base
 
     def _start_worker(self):
         if ClaudeWorker is None:

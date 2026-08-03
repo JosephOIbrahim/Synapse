@@ -507,7 +507,7 @@
      "args": "tests/test_rope_manifests.py -q"
     }
    ],
-   "status": "pending",
+   "status": "verified",
    "attempts": 0
   },
   {
