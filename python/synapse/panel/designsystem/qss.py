@@ -70,21 +70,22 @@ QPushButton#DsButton[variant="danger"] {{
     background: transparent; color: {t.ERROR}; border: 1px solid {t.ERROR};
 }}
 QPushButton#DsButton[variant="danger"]:hover  {{ background: {t.STATE_TINTS["error"]}; }}
-/* prominence (L5-15 amends L5-14): hero buttons read as KNOCKOUT, not
-   outline. A border tint left the type reading as outline, so hero
-   promotes the button to the SAME construction [variant="primary"]
-   already uses -- accent fill, TEXT_ON_ACCENT ink -- rather than
-   inventing a new emphasis. The accent stays as L5-14 assigned it:
-   WARM, the human accent, with its existing WARM_HOVER/WARM_PRESS
-   companions carrying live feedback on the fill. TEXT_ON_ACCENT is the
-   one sanctioned ink (6.42:1 on WARM -- AA). Quiet steps the type down
-   the ladder. Placed before :disabled so the disabled state still
+/* prominence (L5-16 amends L5-15): hero buttons keep the KNOCKOUT
+   construction [variant="primary"] already uses -- accent fill,
+   TEXT_ON_ACCENT ink -- but the fill is now SIGNAL_DEEP, the one deep
+   blue SEND also takes (Joe's seat call: the coral read too loud on
+   buttons; WARM keeps its non-button hero rules). Darkening the rest
+   state is what frees the ramp: hover steps UP to SIGNAL (the old
+   rest) and press steps DOWN to SIGNAL_PRESS, so the fill still
+   responds to touch. TEXT_ON_ACCENT is the one sanctioned ink
+   (5.60:1 on SIGNAL_DEEP -- AA). Quiet steps the type down the
+   ladder. Placed before :disabled so the disabled state still
    wins and a hero button greys correctly. */
 QPushButton#DsButton[prominence="hero"] {{
-    background: {t.WARM}; color: {t.TEXT_ON_ACCENT}; border-color: transparent;
+    background: {t.SIGNAL_DEEP}; color: {t.TEXT_ON_ACCENT}; border-color: transparent;
 }}
-QPushButton#DsButton[prominence="hero"]:hover   {{ background: {t.WARM_HOVER}; color: {t.TEXT_ON_ACCENT}; border-color: transparent; }}
-QPushButton#DsButton[prominence="hero"]:pressed {{ background: {t.WARM_PRESS}; border-color: transparent; }}
+QPushButton#DsButton[prominence="hero"]:hover   {{ background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT}; border-color: transparent; }}
+QPushButton#DsButton[prominence="hero"]:pressed {{ background: {t.SIGNAL_PRESS}; border-color: transparent; }}
 QPushButton#DsButton[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 QPushButton#DsButton:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: transparent; }}
 
@@ -213,12 +214,15 @@ QTextEdit#DsInput, QLineEdit#DsField {{
 QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}
 
 /* ---- SEND — embedded bottom-right inside the composer (comp) --- */
+/* L5-16 (Joe's seat call): rest darkens to SIGNAL_DEEP so SEND and hero
+   buttons read as the same deep blue knockout; hover rises to SIGNAL
+   (the old rest) and press keeps SIGNAL_PRESS -- the ramp still moves. */
 QPushButton#DsSend {{
-    background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT};
+    background: {t.SIGNAL_DEEP}; color: {t.TEXT_ON_ACCENT};
     border: none; border-radius: {t.RADIUS_SM}px;
     padding: 9px 15px;
 }}
-QPushButton#DsSend:hover   {{ background: {t.SIGNAL_HOVER}; }}
+QPushButton#DsSend:hover   {{ background: {t.SIGNAL}; }}
 QPushButton#DsSend:pressed {{ background: {t.SIGNAL_PRESS}; }}
 QPushButton#DsSend:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}
 

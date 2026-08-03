@@ -9,6 +9,12 @@ L5-14 amends the hero rung: ID-qualified hero rules lift to the accent
 the widget's role calls for -- WARM (human/orientation) or SIGNAL
 (technical/economic) -- and never a hex tokens.py doesn't define
 (SIGNAL + WARM are the two-accent ceiling).
+
+L5-16 amends BUTTONS only (Joe's seat call: coral too loud): hero
+buttons and SEND share one deep blue -- SIGNAL_DEEP at rest, SIGNAL on
+hover, SIGNAL_PRESS pressed. WARM leaves hero BUTTON rules entirely;
+non-button hero rules (meters, labels, verbs) keep their L5-14 accents.
+SIGNAL_DEEP is a shade within SIGNAL (x0.85), not a third accent.
 """
 
 import re
@@ -61,10 +67,11 @@ def test_hero_takes_the_signal_accent():
 
 
 def test_hero_button_reads_as_knockout():
-    """L5-15: a hero button promotes to the construction [variant="primary"]
-    already uses -- accent fill + TEXT_ON_ACCENT ink (knockout) -- rather
-    than tinting the outline, and paints only hexes tokens.py sanctions
-    for it (the assigned WARM accent family + the one reversed ink)."""
+    """L5-15/L5-16: a hero button promotes to the construction
+    [variant="primary"] already uses -- accent fill + TEXT_ON_ACCENT ink
+    (knockout) -- rather than tinting the outline, and paints only hexes
+    tokens.py sanctions for it (the deep-blue rest/hover/press triple +
+    the one reversed ink)."""
     qss = stylesheet()
     rules = [r for r in _rules(qss, "hero") if r.startswith("QPushButton#DsButton")]
     assert rules, 'no QSS rule selects QPushButton#DsButton[prominence="hero"]'
@@ -77,11 +84,38 @@ def test_hero_button_reads_as_knockout():
         "hero button ink is not TEXT_ON_ACCENT -- not a knockout"
     )
     sanctioned = (
-        _hexes(t.WARM) | _hexes(t.WARM_HOVER) | _hexes(t.WARM_PRESS)
+        _hexes(t.SIGNAL_DEEP) | _hexes(t.SIGNAL) | _hexes(t.SIGNAL_PRESS)
         | _hexes(t.TEXT_ON_ACCENT)
     )
     rogue = _hexes("\n".join(rules)) - sanctioned
     assert not rogue, f"hero button rules paint hexes outside the assigned accent + ink: {sorted(rogue)}"
+
+
+def test_deep_blue_shared_by_send_and_hero_buttons():
+    """L5-16: SIGNAL_DEEP fills BOTH the SEND rest state and at least one
+    hero button rule -- CONNECT/CORPUS/SEND read as one deep blue."""
+    qss = stylesheet()
+    send = re.search(r'QPushButton#DsSend\s*\{[^{}]*\}', qss)
+    assert send, "no QPushButton#DsSend rest rule"
+    assert _hexes(t.SIGNAL_DEEP) & _hexes(send.group(0)), (
+        "DsSend rest fill is not SIGNAL_DEEP"
+    )
+    hero_buttons = [r for r in _rules(qss, "hero") if r.startswith("QPushButton#DsButton")]
+    assert any(_hexes(t.SIGNAL_DEEP) & _hexes(r) for r in hero_buttons), (
+        "no hero button rule consumes SIGNAL_DEEP"
+    )
+
+
+def test_no_hero_button_rule_references_warm():
+    """L5-16: WARM leaves hero BUTTON rules entirely (non-button hero
+    rules -- meters, labels, verbs -- keep their L5-14 accents)."""
+    qss = stylesheet()
+    hero_buttons = [r for r in _rules(qss, "hero") if r.startswith("QPushButton#DsButton")]
+    warm_family = _hexes(t.WARM) | _hexes(t.WARM_HOVER) | _hexes(t.WARM_PRESS)
+    for rule in hero_buttons:
+        assert not (_hexes(rule) & warm_family), (
+            f"hero button rule still references WARM: {rule}"
+        )
 
 
 def test_no_rule_introduces_a_hex_absent_from_tokens():
