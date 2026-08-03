@@ -79,6 +79,28 @@ flowchart TD
 
 **Refuses to boot on a render node** — *narrowly.* `hou.isUIAvailable()` gates the daemon, the Fork Bomb guard. But it protects a component with no production callers today while other surfaces boot headless. A guard that exists, not a guarantee that holds.
 
+### The full claim, unpacked
+
+This is the package description in long form — everything the one-liner compresses.
+
+**115 tools, two paths.** The full safety set (undo-wrapped, reversible, provenance-recorded) rides the audited `/mcp` bridge path. The direct `/synapse` path is RBAC-gated, main-thread-marshalled execution with observe-only provenance.
+
+**A registry-wide truth contract.** A result may not claim an outcome the handler did not observe.
+
+**A self-improving utility flywheel.** Proposed node-graphs are validated against probe-verified Houdini truth — node wiring plus Solaris/LOP context — *before* they build.
+
+**A five-engine chat panel.** Switch between Claude, Google Gemini, NVIDIA Nemotron, local Ollama, and any custom OpenAI-compatible endpoint. Raw-stdlib providers, no vendor SDK.
+
+**Pipeline citizenship.** Tokens stay raw, per-frame render paths, OCIO color-managed previews, per-show config.
+
+**Studio operability.** Rotating logs, `synapse_doctor` diagnostics + bundle, env-var conformance, bounded autonomy with a stop control that takes effect between operations, an upgrade runbook, egress + key-provisioning docs.
+
+**A two-tier audit trail.** Tier-0 Floor hook + the agent.usd Ledger.
+
+**Crash-atomic escrowed memory.** And a process-wide stall-detection chain (detect → breaker → emergency-halt report) that reports and degrades rather than unblocking a parked session.
+
+Verified end-to-end on Houdini 22.0.368.
+
 ---
 
 ## Install
