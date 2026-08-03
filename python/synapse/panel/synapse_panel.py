@@ -722,7 +722,13 @@ class SynapsePanel(QtWidgets.QWidget):
         bot.addWidget(self._help_btn)
         bot.addWidget(self._connect_btn)
         bot.addWidget(self._corpus_btn)
-        bot.addWidget(self._observe, 1)
+        # The rail meter is retired from the header: the mark already fills
+        # and rotates, the status reads "Working on it", and Stop is present
+        # — a full-width warm rule was a fourth signal for one state (Joe).
+        # The widget stays constructed so _set_busy and the compositor keep
+        # their referent; it is simply never shown.
+        self._observe.setVisible(False)
+        bot.addStretch(1)
         col.addLayout(bot)
         self._region_cache["_build_rail"] = w
         return w
