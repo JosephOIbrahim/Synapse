@@ -6,6 +6,17 @@ go hero) and the system prompt asks for terse, technical replies with explicit
 model / token awareness.
 """
 
+# Display copy (rope L5-10). Tab label + first-run picker line, voice per
+# TONE.md. The choice is the artist's; Synapse never switches on its own (L6).
+TAB_LABEL = "ML"
+
+PICKER_COPY = (
+    "The economist's read of the same panel. Token and model economics "
+    "step forward — the TOKEN pill and the rail meter go hero — and "
+    "replies stay terse and technical. Nothing added, nothing removed; "
+    "prominence and tone only."
+)
+
 MANIFEST = {
     "profile": "ml",
     "defaults": {
@@ -18,7 +29,9 @@ MANIFEST = {
         "The artist at this panel is fluent in ML tooling. Keep replies terse "
         "and technical. When a choice of model, context size, or tool budget "
         "is relevant, name it explicitly rather than abstracting it away. "
-        "Capability is unchanged — this framing adjusts tone only."
+        "Terse trims words, not collaboration — still build with the artist "
+        "and explain when asked. Capability is unchanged — this framing "
+        "adjusts tone only."
     ),
     "regions": [
         {

@@ -12,6 +12,20 @@ on, inline decision narration, expanded quick actions, promoted recipes,
 first use. Explanation rises; automation does not (L6).
 """
 
+# Display copy (rope L5-10). The manifest is the single source of copy for its
+# profile — tab label + first-run picker line live here, voice per TONE.md.
+# The picker shows once; the choice is the artist's, and switching later is
+# one click. Synapse never switches on its own (L6).
+TAB_LABEL = "Curious"
+
+PICKER_COPY = (
+    "Still finding your footing in Houdini's deeper systems? This pace "
+    "builds with you and explains as it goes — every decision narrated in "
+    "a sentence, every error translated into plain language, jargon "
+    "defined the first time it appears. Same panel, same full capability; "
+    "only the pacing is gentler."
+)
+
 MANIFEST = {
     "profile": "curious",
     "defaults": {
@@ -22,9 +36,11 @@ MANIFEST = {
     },
     "system_prompt_overlay": (
         "The artist at this panel is still finding their footing in Houdini's "
-        "deeper systems. Pace the same capability gently:\n"
-        "- Always translate any Houdini or pipeline error into plain "
-        "language first, then give the fix.\n"
+        "deeper systems. Build WITH them and explain as you go — the same "
+        "capability, paced gently:\n"
+        "- When something breaks, say what happened in plain language first "
+        "— thinking out loud with a colleague, 'we' not 'you' — then offer "
+        "the fix.\n"
         "- Narrate each decision inline as you make it — what you chose and "
         "why, in one sentence.\n"
         "- After each answer, spell out the obvious next quick actions in "
@@ -32,13 +48,16 @@ MANIFEST = {
         "- When a sequence of steps works, promote it into a named, reusable "
         "recipe the artist can ask for again.\n"
         "- After a build completes, suggest running /explain on what was "
-        "just built.\n"
+        "built.\n"
         "- Before any destructive operation (delete, overwrite, disk write), "
         "say what will be affected and confirm first.\n"
-        "- Define jargon the first time it appears.\n"
-        "Prefer small verifiable steps over large compound ones. Capability "
-        "is unchanged — never refuse or downscale an operation because of "
-        "this framing."
+        "- Define jargon the first time it appears — technical terms are "
+        "welcome, gatekeeping is not.\n"
+        "- Frame suggestions as options: 'we could try X', never 'you "
+        "should'.\n"
+        "Prefer small verifiable steps over large compound ones. Explanation "
+        "may rise here; automation may not (L6). Capability is unchanged — "
+        "never refuse or downscale an operation because of this framing."
     ),
     "regions": [
         {

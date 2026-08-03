@@ -15,18 +15,34 @@ nothing: no tools, no gates, no permissions. Verbatim from `harness/rope/program
 ## The three profiles
 
 One widget library, three compositions (manifests + compositor). The same operation renders
-in all three — only the altitude of explanation differs.
+in all three — only the altitude of explanation differs. Producers:
+`python/synapse/panel/manifests/{curious,expert,ml}.py`.
 
-| Profile | Built for | What the screen shows |
+| Tab label | Built for | What the screen shows |
 |---|---|---|
-| **explanation** | learning the terrain | every action narrated — why, then how, then the result |
-| **transcript** | working alongside | the running log of what was done, paused at decision points |
-| **instrument** | the expert (== v5.42.0 exactly) | dense readouts, no teaching layer |
+| **Curious** | finding your footing | orientation steps forward (Connect / Corpus go hero), diagnostic chrome goes quiet; the overlay narrates each decision, translates errors into plain language, and defines jargon on first use |
+| **Expert** | the panel as it ships (== v5.42.0 exactly) | every widget at standard prominence, no overlay, no added narration |
+| **ML** | the economist's read | token economics step forward (TOKEN pill + rail meter go hero); replies terse and technical |
+
+## Where the copy lives
+
+Each manifest carries its own display copy — `TAB_LABEL` and `PICKER_COPY` module
+constants — so the manifest is the single source of copy for its profile. Voice per
+`TONE.md`: collaborative, plain-spoken, options over commands, no jargon gatekeeping.
+
+The first-run picker shows each profile's `PICKER_COPY` once. The choice is the
+artist's, switching later is one click, and Synapse never switches on its own —
+it may notify, the switch is yours (L6).
+
+The jargon overlay — plain-language errors, inline decision narration, jargon
+defined on first use — is the `system_prompt_overlay` string in `curious.py`.
+It paces the same capability; it builds with you and explains as it goes,
+load-bearing, never self-propelling.
 
 ## The hand-me-the-pen gradient
 
 ```
-build-for-you  →  build-with-pauses  →  explain-then-you-try
+build-while-you-watch  →  build-with-pauses  →  explain-then-you-try
 ```
 
 The pen moves toward the artist at the artist's pace: first the agent builds while you watch,

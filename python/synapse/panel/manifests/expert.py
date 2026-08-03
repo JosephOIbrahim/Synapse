@@ -7,6 +7,17 @@ profiles IS the profile system — capability never varies, only prominence and
 the prompt overlay do.
 """
 
+# Display copy (rope L5-10). Tab label + first-run picker line, voice per
+# TONE.md. The choice is the artist's; Synapse never switches on its own (L6).
+TAB_LABEL = "Expert"
+
+PICKER_COPY = (
+    "The panel exactly as it ships in v5.42.0 — every widget at standard "
+    "prominence, no overlay, no added narration. Dense readouts for an "
+    "artist who already thinks in nodes. The other two profiles are "
+    "compositions of this one."
+)
+
 MANIFEST = {
     "profile": "expert",
     "defaults": {
