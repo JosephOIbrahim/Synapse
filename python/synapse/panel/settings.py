@@ -4,15 +4,18 @@ One JSON file at ``<repo>/.synapse/panel_settings.json`` (install-scoped state;
 ``/.synapse/`` is gitignored). Repo root is resolved by package-absolute path
 (the ``host/auth.py`` idiom) — Houdini launches from an unrelated CWD.
 
-Schema v2::
+Schema v3::
 
-    {"version": 2,
+    {"version": 3,
      "profile": "expert",              # curious | expert | ml — exactly three
      "fresh_install": true,            # picker flag; see load_settings
      "provider_id": "claude",
      "model_by_provider": {"claude": "claude-sonnet-4-6", ...},
      "model_choice": {"mode": "exact", "value": "claude-sonnet-4-6"},
-     "custom": {"base_url": "", "model": "", "key_env": ""}}
+     "custom": {"base_url": "", "model": "", "key_env": ""},
+     "composer_height": null}          # int, the artist's dragged composer
+                                       # height; null = never dragged → the
+                                       # panel opens it centred (L5-22)
 
 ``model_choice`` is the profile-aware pick: ``curious`` writes ``semantic``
 (``free_local`` | ``balanced`` | ``best``), ``expert``/``ml`` write ``exact``
@@ -22,7 +25,10 @@ time, so the pick tracks the catalog as it changes.
 
 v1 files (no ``profile`` key) migrate at load: profile ``expert``, and the
 active provider's ``model_by_provider`` pick carries over as an ``exact``
-``model_choice``.
+``model_choice``. v2 files (no ``composer_height`` key) migrate at load the
+same way: the key reads ``None`` — never dragged — so the panel opens the
+composer centred (L5-22); a grip drag persists on release and is restored
+in preference to the centred default thereafter.
 
 ``load_settings`` returns defaults on a missing/corrupt/unshaped file — it
 never raises and never blocks boot (the ``_load_dotenv`` posture).
@@ -43,7 +49,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-SETTINGS_VERSION = 2
+SETTINGS_VERSION = 3    # v3 (L5-22): + composer_height
 
 PROFILES = ("curious", "expert", "ml")
 """Exactly three. The write-side rule the panel enforces: ``curious`` picks
@@ -59,6 +65,7 @@ _DEFAULTS = {
     "model_by_provider": {},
     "model_choice": {"mode": "exact", "value": ""},
     "custom": {"base_url": "", "model": "", "key_env": ""},
+    "composer_height": None,    # None = never dragged → centred (L5-22)
 }
 
 _SIZE_HINT_RE = re.compile(r"(\d+(?:\.\d+)?)\s*b\b", re.IGNORECASE)
@@ -133,6 +140,10 @@ def load_settings(path: Path | None = None) -> dict:
         choice = {"mode": "exact",
                   "value": out["model_by_provider"].get(out["provider_id"], "")}
     out["model_choice"] = choice
+    ch = data.get("composer_height")
+    if isinstance(ch, int) and not isinstance(ch, bool) and ch > 0:
+        out["composer_height"] = ch
+    # else: v2 file or junk value — None keeps the centred first run (L5-22)
     return out
 
 
@@ -150,6 +161,34 @@ def save_settings(settings: dict, path: Path | None = None) -> bool:
     except Exception as exc:
         logger.debug("panel settings save skipped: %s", exc)
         return False
+
+
+COMPOSER_FLOOR = 64
+"""Composer height rails, mirroring the panel's own (the values the resize
+grip already enforces). The panel passes ITS rails into
+:func:`composer_start_height`; these defaults serve headless callers."""
+COMPOSER_MAX = 600
+
+
+def composer_start_height(persisted, shared_h,
+                          floor=COMPOSER_FLOOR, max_h=COMPOSER_MAX):
+    """The height the composer opens at (L5-22).
+
+    The artist's persisted drag (``composer_height``) wins whenever it is a
+    positive int — the panel keeps THEIR answer, never re-imposes its own
+    (L6). Otherwise first run: half of ``shared_h``, the space the chat and
+    the composer share, so the divider lands equidistant between prompt and
+    chat instead of at the old 132 constant. Both answers clamp to
+    ``floor``..``max_h`` so a short pane still leaves room to type and a
+    tall one never swallows the chat. Pure and Qt-free: the panel measures,
+    this decides, the artist overrides.
+    """
+    if (isinstance(persisted, int) and not isinstance(persisted, bool)
+            and persisted > 0):
+        h = persisted
+    else:
+        h = int(shared_h) // 2
+    return max(floor, min(max_h, h))
 
 
 def _size_hint(model_id: str) -> float:

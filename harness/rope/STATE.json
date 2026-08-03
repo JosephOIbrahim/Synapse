@@ -1118,6 +1118,49 @@
    ],
    "status": "needs_review",
    "attempts": 0
+  },
+  {
+   "id": "L5-22",
+   "was": "new",
+   "title": "Composer starts centred and remembers where you drag it",
+   "law": "L6",
+   "type": "agent",
+   "effort": "medium",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/settings.py",
+    "tests/test_rope_composer_height.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "JOE'S SEAT CALL: 'every time I open Synapse I have to reach in and resize the centre bar so it is equidistant between the prompt and the chat. Make equidistant the default, keep the bar for manual resize.' ROOT CAUSE: the composer (_DsInput.__init__, synapse_panel.py ~line 116) hardcodes self._user_h = 132 with self.setFixedHeight(self._user_h). 132 is a constant, so in a tall pane the divider always lands well above centre and the artist re-drags it every session. TWO PARTS, BOTH REQUIRED. (1) START CENTRED: replace the constant first-run height with one computed from the actual available height so the chat area and the composer start equal -- roughly half the space the two of them share, measured at the point the panel knows its own size (a resizeEvent or showEvent, not __init__, where the height is not yet known). CLAMP IT with the values already defined right there: never below self._floor (64) and never above self._max_h (600), so a short pane degrades gracefully instead of producing a composer with no room to type. Keep the existing auto-grow-to-fit-content behaviour and keep _InputResizeGrip working exactly as it does -- the artist must still be able to drag the bar. (2) REMEMBER IT: centred is only the FIRST-RUN answer. When the artist drags the grip, persist the resulting height and restore it on the next launch, so the panel keeps THEIR answer rather than re-imposing ours. Add one key to the settings schema in settings.py -- follow the existing schema-v2 conventions exactly: bump the schema version, extend the documented schema block at the top of the file, add the key to the defaults, and add a migration so files written by the current version load without the key and simply fall back to centred. save_settings is already atomic and best-effort and load_settings already returns defaults on a missing/corrupt/unshaped file and never raises -- preserve both properties; a settings failure must never block boot or lose the artist's session. Persist on drag-release, not on every mouse-move. THIS IS L6, NOT L5: the panel notifies and remembers, it never decides for the artist -- it must never move the divider on its own after first run, and it must never override a height the artist has set. Not profile-conditional: the same behaviour in curious, expert and ml, and no [prominence] or [density] rule may be touched. Add tests/test_rope_composer_height.py: assert the first-run height is computed from available height rather than the 132 constant, assert it clamps to the floor in a short pane and to the max in a very tall one, assert a persisted height is restored in preference to the centred default, and assert a settings file lacking the new key loads cleanly and falls back to centred. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z'.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_composer_height.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_absent",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "self._user_h = 132"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/settings.py",
+     "pattern": "composer",
+     "min": 2
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: fresh panel opens with the divider centred; drag it, reopen, it stays where you left it"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
   }
  ]
 }

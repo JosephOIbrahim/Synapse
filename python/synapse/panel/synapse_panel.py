@@ -107,16 +107,22 @@ class _GrowingInput(QtWidgets.QTextEdit):
     submitted = Signal()
     focus_lost = Signal()      # lets the face controller honor a deferred switch
     slash = Signal()           # "/" on an empty prompt → open the command palette
+    height_committed = Signal(int)   # grip drag released → persist (L5-22)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsInput")
         self.setAcceptRichText(False)
         self.setPlaceholderText("Ask SYNAPSE…    ·    / for commands")
-        # v9 comp: a 132px composer (was 96). The artist can still drag it
-        # taller via the resize grip; it also auto-grows to fit the content.
-        self._user_h = 132
+        # L5-22: no constant first-run height (the v9 132 landed the divider
+        # above centre in every tall pane — Joe re-dragged it each session).
+        # The height settles exactly once, via settle_height: the artist's
+        # persisted drag, or centred from the pane's real size at show.
+        # __init__ holds the floor because the pane's height is unknowable
+        # here. Grip-drag + auto-grow behaviour unchanged.
         self._floor, self._max_h = 64, 600
+        self._user_h = self._floor
+        self._height_settled = False     # flips on settle_height / drag
         self._send_widget = None    # the embedded Send (attach_send)
         self.setFixedHeight(self._user_h)
         self.textChanged.connect(self._autosize)
@@ -125,8 +131,20 @@ class _GrowingInput(QtWidgets.QTextEdit):
         content = int(self.document().size().height()) + 18
         self.setFixedHeight(max(self._user_h, min(self._max_h, content)))
 
+    def settle_height(self, h):
+        """One-shot first-run height (persisted restore or centred — the
+        panel decides which, this widget just clamps). No-op once settled:
+        after first run the divider moves only under the artist's hand,
+        never on the panel's own (L6)."""
+        if self._height_settled:
+            return
+        self._height_settled = True
+        self._user_h = max(self._floor, min(self._max_h, int(h)))
+        self._autosize()
+
     def set_user_height(self, h):
         """Set the artist's preferred input height (driven by the resize grip)."""
+        self._height_settled = True      # the artist decided — never re-centre
         self._user_h = max(self._floor, min(self._max_h, int(h)))
         self._autosize()
 
@@ -200,6 +218,10 @@ class _InputResizeGrip(QtWidgets.QWidget):
             self._target.set_user_height(self._start_h + delta)
 
     def mouseReleaseEvent(self, _event):
+        if self._drag_y is not None and self._target._user_h != self._start_h:
+            # L5-22: persist the artist's answer on release only — one
+            # settings write per drag, never one per mouse-move.
+            self._target.height_committed.emit(self._target._user_h)
         self._drag_y = None
 
     def paintEvent(self, _event):
@@ -1284,6 +1306,54 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
 
+    def _persist_composer_height(self, h):
+        """The artist dragged the composer divider — keep THEIR height for
+        the next launch (L5-22). Read-modify-write so sibling keys survive;
+        best-effort — a failed save never interrupts the session."""
+        try:
+            from synapse.panel import settings as _pset
+            st = _pset.load_settings()
+            st["composer_height"] = int(h)
+            _pset.save_settings(st)
+        except Exception:
+            pass
+
+    def _settle_composer_height(self):
+        """L5-22 first run: the divider opens equidistant between prompt and
+        chat — half the space the two share, measured at show/resize where
+        the pane's height is real (never __init__). A persisted artist drag
+        wins instead. Either way the height settles exactly ONCE per panel:
+        after that the divider moves only under the artist's hand (L6 — the
+        panel remembers their answer, never re-imposes its own). Identical
+        in curious / expert / ml — this is seat comfort, not a profile."""
+        inp = getattr(self, "_input", None)
+        if inp is None or inp._height_settled:
+            return
+        lay = self.layout()
+        if lay is not None:
+            lay.activate()          # geometry must be real before we measure
+        chat = getattr(self, "_converse_stack", None)
+        chat_h = chat.height() if chat is not None else 0
+        if chat_h <= 0:
+            return                  # not laid out yet — the next event retries
+        shared = chat_h + inp.height()
+        try:
+            from synapse.panel import settings as _pset
+            target = _pset.composer_start_height(
+                _pset.load_settings().get("composer_height"),
+                shared, inp._floor, inp._max_h)
+        except Exception:
+            target = max(inp._floor, min(inp._max_h, shared // 2))
+        inp.settle_height(target)
+
+    def showEvent(self, e):
+        super().showEvent(e)
+        self._settle_composer_height()
+
+    def resizeEvent(self, e):
+        super().resizeEvent(e)
+        self._settle_composer_height()
+
     def _author_token(self):
         """Best-effort display signature of the active engine's model, e.g.
         ``claude-sonnet-4-6`` → ``sonnet-4.6``; ``gemini-3.5-flash`` shown as-is.
@@ -1708,6 +1778,8 @@ class SynapsePanel(QtWidgets.QWidget):
                                   % t.scaled(t.SIZE_UI, self._font_scale))
         self._input.submitted.connect(self._on_submit)
         self._input.slash.connect(self._open_palette)   # "/" → command palette
+        # L5-22: a released grip-drag is the artist's answer — remember it
+        self._input.height_committed.connect(self._persist_composer_height)
         col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
         row = QtWidgets.QHBoxLayout()
         row.setSpacing(t.SPACE_SM)
