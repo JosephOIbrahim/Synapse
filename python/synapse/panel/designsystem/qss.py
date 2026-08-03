@@ -70,6 +70,11 @@ QPushButton#DsButton[variant="danger"] {{
     background: transparent; color: {t.ERROR}; border: 1px solid {t.ERROR};
 }}
 QPushButton#DsButton[variant="danger"]:hover  {{ background: {t.STATE_TINTS["error"]}; }}
+/* prominence (L5-13): hero lights the border slot every variant already
+   reserves (1px transparent) with SIGNAL; quiet steps the type down the
+   ladder. Placed before :disabled so the disabled state still wins. */
+QPushButton#DsButton[prominence="hero"]  {{ border-color: {t.SIGNAL}; }}
+QPushButton#DsButton[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 QPushButton#DsButton:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: transparent; }}
 
 /* ---- tabs: underline on a baseline track (v9 call 1) --------- */
@@ -109,6 +114,13 @@ QLabel#DsKHint {{
     border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
     padding: 3px 7px;
 }}
+/* prominence (L5-13): standard sits at TEXT_TERTIARY, so hero climbs to
+   TEXT_BRIGHT and quiet takes the one rung left below (TEXT_DISABLED);
+   the hint's box quiets to the HAIR rule. */
+QLabel#DsMeter[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
+QLabel#DsMeter[prominence="quiet"] {{ color: {t.TEXT_DISABLED}; }}
+QLabel#DsKHint[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
+QLabel#DsKHint[prominence="quiet"] {{ color: {t.TEXT_DISABLED}; border-color: {t.HAIR}; }}
 
 /* ---- type-set verbs (Direct act bar + Review actions) — Mile 7 --- */
 /* Verbs read as type, not buttons: flat, mono, the chrome recedes. */
@@ -121,6 +133,11 @@ QPushButton#DsVerb:hover {{ color: {t.TEXT_ACCENT}; }}
 QPushButton#DsVerb[tone="ok"]     {{ color: {t.CONIFEROUS}; }}
 QPushButton#DsVerb[tone="hot"]    {{ color: {t.HOT_SOFT}; }}
 QPushButton#DsVerb[tone="accent"] {{ color: {t.TEXT_ACCENT}; }}
+/* prominence (L5-13): after the tone rows so hero outranks a tone at
+   rest; the :hover companion keeps hover feedback alive on hero verbs. */
+QPushButton#DsVerb[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
+QPushButton#DsVerb[prominence="hero"]:hover {{ color: {t.TEXT_ACCENT}; }}
+QPushButton#DsVerb[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 
 /* ---- two-axis palette chips (⌘K · DO × WHERE) ---------------- */
 /* Cells, not boxes: the chip is no longer a rounded rectangle floating in the
@@ -167,6 +184,9 @@ QLabel#DsBadge[kind="grow"]  {{ color: {t.GROW};  background: {t.STATE_TINTS["gr
 QLabel#DsBadge[kind="warn"]  {{ color: {t.WARN};  background: {t.STATE_TINTS["warn"]}; }}
 QLabel#DsBadge[kind="error"] {{ color: {t.ERROR}; background: {t.STATE_TINTS["error"]}; }}
 QLabel#DsBadge[kind="signal"]{{ color: {t.SIGNAL};background: {t.STATE_TINTS["signal"]}; }}
+/* prominence (L5-13): type steps the ladder; kind backgrounds keep. */
+QLabel#DsBadge[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
+QLabel#DsBadge[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 
 /* ---- text inputs (v9 call 2: darker field-inset grey) -------- */
 QTextEdit#DsInput, QLineEdit#DsField {{
@@ -194,6 +214,19 @@ QLabel[role="caption"] {{ color: {t.TEXT_TERTIARY}; }}
 QLabel[role="label"]   {{ color: {t.TEXT_SECONDARY}; }}
 QLabel[role="accent"]  {{ color: {t.TEXT_ACCENT}; }}
 
+/* ---- prominence (set by the profile compositor) -- L5-13 ------ */
+/* Hero steps UP the tokens.py emphasis ladder (toward TEXT_BRIGHT /
+   SIGNAL), quiet steps DOWN it (toward TEXT_TERTIARY) -- colour emphasis
+   only, never size, font, or layout. Standard prominence has NO rule on
+   purpose: expert == v5.42.0 exactly (L5-5), so unmarked widgets must
+   render exactly as today. ID-qualified variants live beside their
+   components above -- a bare attribute selector loses the QSS
+   specificity contest against the `#Ds*` rules. */
+*[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
+*[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
+QLabel[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
+QLabel[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
+
 /* ---- progress ------------------------------------------------ */
 QProgressBar#DsProgress {{
     background: {t.SURFACE}; border: none; border-radius: {t.RADIUS_SM}px;
@@ -212,6 +245,10 @@ QProgressBar#DsCookBar::chunk {{ background: {t.RAISED}; border-radius: 2px; }}
 QWidget#DsRailMeter {{
     background: {t.SIGNAL_TINT}; border: none; border-radius: 2px;
 }}
+/* prominence (L5-13): hero lifts the idle tint to full SIGNAL -- the
+   accent this strip already carries in tint form. Placed before [busy]
+   so the busy WARM state still wins the tie. */
+QWidget#DsRailMeter[prominence="hero"] {{ background: {t.SIGNAL}; }}
 QWidget#DsRailMeter[busy="true"] {{ background: {t.WARM}; }}
 
 /* ---- Work-face acts row (comp .acts): quiet HAIR top rule ----- */

@@ -42,6 +42,7 @@ load-bearing, never self-propelling.
 ## Derived design decisions
 
 - The rail meter radius derives from `#DsCookBar` (`designsystem/qss.py`) because the vendored source of truth already establishes 2px-on-3px for the identical widget shape.
+- Hero/quiet prominence derived from the `tokens.py` emphasis ladder (up: `TEXT_BRIGHT` and the `SIGNAL` slots a widget already reserves; down: `TEXT_TERTIARY`, then `TEXT_DISABLED` where standard already sits at tertiary) because the ladder already encodes emphasis — stepping it changes colour weight only, leaves every standard rule untouched, and so keeps expert == v5.42.0 exactly (L5-5).
 
 `tests/test_rope_design_conformance.py` scans the panel modules the L5-11 pass touched
 for hardcoded hex colours and bare px values; a site may be waived only by a
