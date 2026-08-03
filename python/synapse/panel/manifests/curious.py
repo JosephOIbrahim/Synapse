@@ -76,8 +76,7 @@ MANIFEST = {
                 # Economics fold (L5-19): readouts a first-session artist
                 # cannot yet act on. Collapsed, never removed — the full
                 # numbers stay one click away behind the visible TOKEN pill.
-                {"id": "author_token", "collapsed": True,
-                 "prominence": "quiet"},
+                "author_token",
                 {"id": "token_meter", "collapsed": True,
                  "prominence": "quiet"},
                 # Teaching hint (L5-19): the palette hint is how commands are
