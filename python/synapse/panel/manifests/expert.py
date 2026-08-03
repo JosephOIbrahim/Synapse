@@ -3,8 +3,9 @@
 This manifest declares the panel as it ships today: the same four regions in
 the same order, every widget visible at standard prominence, faces dominant
 (stretch 1), no system-prompt overlay. A diff between this file and the other
-profiles IS the profile system — capability never varies, only prominence and
-the prompt overlay do.
+profiles IS the profile system — capability never varies, only prominence,
+density and the prompt overlay do. Density "standard" is the unstyled
+baseline: no QSS rule exists for it, so this profile renders v5.42.0 exactly.
 """
 
 # Display copy (rope L5-10). Tab label + first-run picker line, voice per
@@ -25,6 +26,7 @@ MANIFEST = {
         "collapsed": False,
         "stretch": 0,
         "prominence": "standard",
+        "density": "standard",
     },
     "system_prompt_overlay": "",
     "regions": [

@@ -9,7 +9,9 @@ orientation buttons (Connect / Corpus) step forward, the diagnostic chrome
 the behaviors that have no widget of their own — error translation always
 on, inline decision narration, expanded quick actions, promoted recipes,
 /explain suggested after builds, confirm-on-destructive, jargon defined on
-first use. Explanation rises; automation does not (L6).
+first use. Density is "airy" (L5-18): the one panel-wide rhythm step — replies
+and controls take one rung more air off the existing spacing scale.
+Explanation rises; automation does not (L6).
 """
 
 # Display copy (rope L5-10). The manifest is the single source of copy for its
@@ -33,6 +35,7 @@ MANIFEST = {
         "collapsed": False,
         "stretch": 0,
         "prominence": "standard",
+        "density": "airy",
     },
     "system_prompt_overlay": (
         "The artist at this panel is still finding their footing in Houdini's "

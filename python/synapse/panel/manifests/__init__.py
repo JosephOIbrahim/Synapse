@@ -8,6 +8,7 @@ headless so tests and tooling can validate layouts without PySide:
       "defaults": {                          # folded into every region + widget
           "visible": True, "collapsed": False,
           "stretch": 0, "prominence": "standard",
+          "density": "standard",             # optional; panel-wide, never per-widget
       },
       "system_prompt_overlay": "",           # appended to the built system prompt
       "regions": [                           # ordered — real root-layout order
@@ -20,11 +21,13 @@ A ``widgets`` entry is either a bare id string (all defaults) or a dict
 ``{"id": ..., "visible": ..., "collapsed": ..., "stretch": ..., "prominence": ...}``
 overriding any subset. ``prominence`` (quiet / standard / hero) is styling
 metadata the compositor stamps onto the widget as a Qt dynamic property so QSS
-can key on it.
+can key on it. ``density`` (airy / standard / tight) is defaults-only — ONE
+panel-wide rhythm the compositor stamps on the panel root, never a per-widget
+knob; absent means "standard".
 
-Law L5 (pays out at your pace): the three profiles differ in prominence and
-system-prompt overlay ONLY — identical capability in every profile; ``expert``
-is the v5.42.0 wiring exactly.
+Law L5 (pays out at your pace): the three profiles differ in prominence,
+density and system-prompt overlay ONLY — identical capability in every
+profile; ``expert`` is the v5.42.0 wiring exactly.
 """
 
 import copy
@@ -39,6 +42,11 @@ logger = logging.getLogger(__name__)
 DEFAULT_PROFILE = "expert"
 
 PROMINENCE_LEVELS = ("quiet", "standard", "hero")
+
+# Panel-wide rhythm (L5-18). Defaults-only by design — density is ONE systemic
+# decision per profile, so it is NOT a SPEC_KEYS knob and never valid on a
+# region or widget entry. "standard" is the unstyled v5.42.0 baseline.
+DENSITY_LEVELS = ("airy", "standard", "tight")
 
 # The per-region / per-widget knobs and their required types. ``stretch`` must
 # exclude bool explicitly — bool is an int subclass.
@@ -105,13 +113,18 @@ def validate_manifest(manifest):
     if not isinstance(profile, str) or not profile:
         problems.append("'profile' must be a non-empty string")
     defaults = manifest.get("defaults")
-    if not isinstance(defaults, dict) or set(defaults) != set(SPEC_KEYS):
+    if not isinstance(defaults, dict) or set(defaults) - {"density"} != set(SPEC_KEYS):
         problems.append(
             "'defaults' must be a dict with exactly the keys %s"
-            % sorted(SPEC_KEYS)
+            " (plus optional 'density')" % sorted(SPEC_KEYS)
         )
     else:
-        _check_spec_keys("defaults", defaults, problems)
+        _check_spec_keys("defaults", defaults, problems, skip=("density",))
+        density = defaults.get("density", "standard")
+        if density not in DENSITY_LEVELS:
+            problems.append(
+                "defaults: density %r not in %s" % (density, DENSITY_LEVELS)
+            )
     if not isinstance(manifest.get("system_prompt_overlay"), str):
         problems.append("'system_prompt_overlay' must be a string (may be empty)")
     regions = manifest.get("regions")

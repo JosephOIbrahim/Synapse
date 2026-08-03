@@ -2,8 +2,9 @@
 
 Every region and widget from the expert manifest, same order, all visible.
 What changes: token economics steps forward (the TOKEN pill and the rail meter
-go hero) and the system prompt asks for terse, technical replies with explicit
-model / token awareness.
+go hero), density is "tight" (L5-18: controls give back one rung of air off
+the existing spacing scale), and the system prompt asks for terse, technical
+replies with explicit model / token awareness.
 """
 
 # Display copy (rope L5-10). Tab label + first-run picker line, voice per
@@ -24,6 +25,7 @@ MANIFEST = {
         "collapsed": False,
         "stretch": 0,
         "prominence": "standard",
+        "density": "tight",
     },
     "system_prompt_overlay": (
         "The artist at this panel is fluent in ML tooling. Keep replies terse "

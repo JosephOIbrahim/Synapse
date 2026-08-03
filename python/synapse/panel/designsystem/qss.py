@@ -252,6 +252,48 @@ QLabel[role="accent"]  {{ color: {t.TEXT_ACCENT}; }}
 QLabel[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
 QLabel[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 
+/* ---- density (set by the profile compositor) -- L5-18 -------- */
+/* The second profile axis: ONE panel-wide rhythm, keyed on the root's
+   `density` dynamic property and driving descendants -- never a
+   per-widget spacing spec. Two rules ONLY (airy / tight). Standard has
+   NO rule ON PURPOSE: the unstyled sheet IS the standard rhythm, so
+   expert == v5.42.0 exactly (L5-5) -- an unconditional spacing rule
+   here would move that pin. Every value is a rung of the existing
+   tokens.py scale (SPACE_XS 4 / SPACE_SM 8 / SPACE_MD 16 / SPACE_LG
+   24): airy steps a surface ONE rung up from its rest value, tight ONE
+   rung down. Surfaces resting at zero (the chat viewport, the rail and
+   tab-row shells) have no rung below them, so tight omits them rather
+   than invent a negative; off-scale literals (DsSend 9/15, DsPill 12)
+   do not step -- stepping them would mean inventing a number. Spacing
+   only: no colour, size, weight, font, radius or border may ever
+   appear in this block. */
+/* airy — Curious: one rung more air. The chat surface answers Joe's
+   seat call directly: replies get more vertical room to breathe. */
+#DsRoot[density="airy"] QTextBrowser {{
+    padding-top: {t.SPACE_XS}px; padding-bottom: {t.SPACE_XS}px;
+}}
+#DsRoot[density="airy"] QWidget#DsHeader {{
+    padding-top: {t.SPACE_XS}px; padding-bottom: {t.SPACE_XS}px;
+}}
+#DsRoot[density="airy"] QWidget#DsTabRow {{
+    padding-top: {t.SPACE_XS}px; padding-bottom: {t.SPACE_XS}px;
+}}
+#DsRoot[density="airy"] QPushButton#DsButton {{
+    padding: {t.SPACE_MD}px {t.SPACE_LG}px;
+}}
+#DsRoot[density="airy"] QTextEdit#DsInput,
+#DsRoot[density="airy"] QLineEdit#DsField {{
+    padding-top: {t.SPACE_LG}px; padding-bottom: {t.SPACE_LG}px;
+}}
+/* tight — ML: one rung less. Only surfaces with a rung below rest. */
+#DsRoot[density="tight"] QPushButton#DsButton {{
+    padding: {t.SPACE_XS}px {t.SPACE_SM}px;
+}}
+#DsRoot[density="tight"] QTextEdit#DsInput,
+#DsRoot[density="tight"] QLineEdit#DsField {{
+    padding-top: {t.SPACE_SM}px; padding-bottom: {t.SPACE_SM}px;
+}}
+
 /* ---- progress ------------------------------------------------ */
 QProgressBar#DsProgress {{
     background: {t.SURFACE}; border: none; border-radius: {t.RADIUS_SM}px;

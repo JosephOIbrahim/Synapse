@@ -24,6 +24,11 @@ in all three — only the altitude of explanation differs. Producers:
 | **Expert** | the panel as it ships (== v5.42.0 exactly) | every widget at standard prominence, no overlay, no added narration |
 | **ML** | the economist's read | token economics step forward (TOKEN pill + rail meter go hero); replies terse and technical |
 
+Two presentation axes distinguish them (L5-18): **prominence** — where the accent lands,
+per-widget — and **density** — one panel-wide rhythm (Curious `airy`, Expert `standard`,
+ML `tight`), declared in each manifest's defaults and stamped on the panel root as a
+single Qt property the stylesheet keys on.
+
 ## Where the copy lives
 
 Each manifest carries its own display copy — `TAB_LABEL` and `PICKER_COPY` module
@@ -48,6 +53,7 @@ load-bearing, never self-propelling.
 - The hero/SEND deep blue (`SIGNAL_DEEP`) derived from `SIGNAL` ×0.85 — a shade within the existing accent, like `SIGNAL_HOVER`/`SIGNAL_PRESS` — because Joe's seat call found the coral knockout too loud on buttons, and darkening only the rest state frees `SIGNAL` itself to serve as the hover step, so the fill still responds to touch without adding a third accent (buttons only; non-button hero rules keep their L5-14 accents).
 - The verb rail's type and air derived from the tab row — the same `fontload.tracked_font("LABEL", SIZE_SMALL, mono=True)` call the CHAT/TOKEN pills use, and the `tokens.py` spacing scale stepped one rung (`SPACE_SM`→`SPACE_MD` above the rail's rule) — because the verbs are chrome siblings of the tabs, and stepping an existing scale adds air without inventing a number (L5-17).
 - The context ribbon's left inset derived from `t.GUTTER` — the inset `_build_mode_bar` gives the tab row — because the `.hip` filename's first glyph must sit on the same vertical as the C of CHAT, and reusing the tab row's token aligns them without a nudged pixel (L5-17).
+- The density steps (airy / tight) derived from the `tokens.py` spacing scale (`SPACE_XS`/`SPACE_SM`/`SPACE_MD`/`SPACE_LG`) stepped one rung per surface — airy up from each rest value in `designsystem/qss.py`, tight down, surfaces resting at zero stepping up only — because stepping an existing scale changes rhythm without inventing a number, and writing NO rule for `standard` leaves the unstyled sheet as the baseline, keeping expert == v5.42.0 exactly (L5-5/L5-18).
 
 `tests/test_rope_design_conformance.py` scans the panel modules the L5-11 pass touched
 for hardcoded hex colours and bare px values; a site may be waived only by a

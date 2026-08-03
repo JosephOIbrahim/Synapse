@@ -27,6 +27,12 @@ Spec application (all best-effort, all logged on failure):
   stretch        -> region: root.addWidget(w, stretch); widget: best-effort
                     setStretchFactor on the parent box layout
   prominence     -> Qt dynamic property "prominence" + repolish, for QSS hooks
+
+Density (L5-18) is panel-wide, never per-widget: ``resolve()`` lifts the
+optional ``density`` default out of the fold ("standard" when absent) and
+``compose()`` stamps it ONCE on the panel root as a Qt dynamic property +
+repolish — one property drives the whole panel's rhythm through the QSS
+descendant rules keyed on it.
 """
 
 import logging
@@ -91,6 +97,9 @@ def resolve(manifest, known=None):
     profile = manifest["profile"]
     known = frozenset(known) if known is not None else frozenset(WIDGET_ATTRS)
     defaults = dict(manifest["defaults"])
+    # L5-18: density is ONE panel-wide rhythm, not a per-widget knob — lift it
+    # out of the defaults BEFORE the fold so no region/widget spec carries it.
+    density = defaults.pop("density", "standard")
     regions = []
     for region in manifest["regions"]:
         rid = region["id"]
@@ -119,6 +128,7 @@ def resolve(manifest, known=None):
         "profile": profile,
         "system_prompt_overlay": manifest["system_prompt_overlay"],
         "defaults": defaults,
+        "density": density,
         "regions": regions,
     }
 
@@ -170,9 +180,22 @@ def compose(panel, root, manifest):
     ``root`` with the region's stretch, and every widget spec is applied to
     the attribute that build call created (missing attribute -> logged and
     skipped). Also stamps ``panel._system_prompt_overlay`` for
-    ``_build_system_prompt``. Returns the resolved plan."""
+    ``_build_system_prompt`` and the resolved density on the panel root (one
+    Qt dynamic property — the QSS descendant rules key on it). Returns the
+    resolved plan."""
     resolved = resolve(manifest)
     panel._system_prompt_overlay = resolved["system_prompt_overlay"]
+    # L5-18: one property on the panel root drives the whole panel's rhythm
+    # (the _apply_spec prominence idiom, applied once). Set BEFORE the region
+    # builds so widgets created below polish against the right density.
+    try:
+        panel.setProperty("density", resolved["density"])
+        style = panel.style()
+        style.unpolish(panel)
+        style.polish(panel)
+    except Exception:
+        logger.warning("compositor: could not apply density %r to the panel "
+                       "root", resolved["density"], exc_info=True)
     for region in resolved["regions"]:
         widget = getattr(panel, region["builder"])()
         root.addWidget(widget, region["stretch"])
