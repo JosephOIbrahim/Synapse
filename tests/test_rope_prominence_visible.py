@@ -130,13 +130,14 @@ def _dsstop_rules(qss: str) -> list[str]:
 
 
 def test_stop_is_a_warm_knockout():
-    """L5-20: the #DsStop rest rule paints WARM fill + TEXT_ON_ACCENT ink --
-    the mark's warm note as a knockout, not the danger outline."""
+    """L5-20 as amended at the seat: the #DsStop rest rule paints HOT_SOFT
+    (the muted warm) + TEXT_ON_ACCENT ink -- still the mark's warm family,
+    resting quieter; full WARM is the hover."""
     rules = _dsstop_rules(stylesheet())
     assert rules, "no QPushButton#DsStop rule -- Stop still rides the danger variant"
     base = [r for r in rules if ":" not in r.split("{", 1)[0]]
     assert base, "no rest-state QPushButton#DsStop rule"
-    assert _hexes(t.WARM) & _hexes(base[0]), "DsStop rest fill is not WARM"
+    assert _hexes(t.HOT_SOFT) & _hexes(base[0]), "DsStop rest fill is not HOT_SOFT"
     assert _hexes(t.TEXT_ON_ACCENT) & _hexes(base[0]), (
         "DsStop ink is not TEXT_ON_ACCENT -- not a knockout"
     )
@@ -148,7 +149,7 @@ def test_stop_defines_hover_pressed_and_disabled():
     and hidden until work is in flight -- that state must exist)."""
     qss = stylesheet()
     for state, token, label in (
-        (":hover", t.WARM_HOVER, "WARM_HOVER"),
+        (":hover", t.WARM, "WARM"),
         (":pressed", t.WARM_PRESS, "WARM_PRESS"),
     ):
         rule = re.search(r'QPushButton#DsStop' + state + r'\s*\{[^{}]*\}', qss)
@@ -168,7 +169,7 @@ def test_stop_paints_only_sanctioned_tokens():
     """L5-20: no new hex -- every hex in the DsStop rules is one of the
     tokens the task sanctions (all pre-existing in tokens.py)."""
     sanctioned = (
-        _hexes(t.WARM) | _hexes(t.WARM_HOVER) | _hexes(t.WARM_PRESS)
+        _hexes(t.HOT_SOFT) | _hexes(t.WARM) | _hexes(t.WARM_PRESS)
         | _hexes(t.TEXT_ON_ACCENT) | _hexes(t.DISABLED_BG) | _hexes(t.TEXT_DISABLED)
     )
     rogue = _hexes("\n".join(_dsstop_rules(stylesheet()))) - sanctioned
