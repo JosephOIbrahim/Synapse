@@ -207,6 +207,13 @@ QProgressBar#DsCookBar {{
 }}
 QProgressBar#DsCookBar::chunk {{ background: {t.RAISED}; border-radius: 2px; }}
 
+/* ---- rail meter (rail .observe): 3px strip, 2px-on-3px per the
+   cook bar above; idle SIGNAL_TINT, busy WARM via [busy] -------- */
+QWidget#DsRailMeter {{
+    background: {t.SIGNAL_TINT}; border: none; border-radius: 2px;
+}}
+QWidget#DsRailMeter[busy="true"] {{ background: {t.WARM}; }}
+
 /* ---- Work-face acts row (comp .acts): quiet HAIR top rule ----- */
 QWidget#DsActs {{
     background: {t.PANEL};

@@ -722,7 +722,7 @@
      "note": "seat: rail meter looks unchanged idle and busy"
     }
    ],
-   "status": "pending",
+   "status": "needs_review",
    "attempts": 0
   }
  ]
