@@ -1,15 +1,14 @@
 ﻿# ROPE /remote-control beacon
-**2026-08-03 14:14:13** | runner: ALIVE | sentinel relaunches used: 0/6
+**2026-08-03 14:19:15** | runner: ALIVE | sentinel relaunches used: 0/6
 
 ## Gate
 ```
 GATE A: HOLDING -- open: L2-4, L3-2, L3-5, L5-4, L5-10, L5-11
-tally: {"verified": 18, "blocked_seat": 1, "blocked_human": 2, "in_progress": 1, "pending": 2}
+tally: {"verified": 18, "blocked_seat": 1, "blocked_human": 2, "needs_review": 1, "in_progress": 1, "pending": 1}
 ```
 
 ## Ledger (last 10)
 ```
-2026-08-03 13:02	L5-2	claude-fable-5	keep	1	527	unavailable	clean
 2026-08-03 13:11	L5-3	claude-fable-5	keep	1	490	unavailable	clean
 2026-08-03 13:13	L5-5	claude-fable-5	keep	1	128	unavailable	clean
 2026-08-03 13:18	L5-6	claude-fable-5	keep	1	287	unavailable	clean
@@ -19,6 +18,7 @@ tally: {"verified": 18, "blocked_seat": 1, "blocked_human": 2, "in_progress": 1,
 2026-08-03 13:23	L1-3	claude-fable-5	discard	1	4	unavailable	fails: grep_min:README.md, grep_min:pyproject.toml, grep_min:python/synapse/server/handlers.py | You've hit your session limit Â· resets 1:40pm (America/New_York)
 2026-08-03 13:23	L1-3	claude-fable-5	discard	2	4	unavailable	fails: grep_min:README.md, grep_min:pyproject.toml, grep_min:python/synapse/server/handlers.py | You've hit your session limit Â· resets 1:40pm (America/New_York)
 2026-08-03 14:08	L1-3	claude-fable-5	keep	1	45	unavailable	clean
+2026-08-03 14:17	L5-4	claude-fable-5	keep	1	519	unavailable	manual pending: seat: switch tabs, close panel, reopen -> same tab, history intact
 ```
 
 Refresh this page for updates (~5 min cycle). Read-only: this beacon carries
