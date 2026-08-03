@@ -1,101 +1,648 @@
 {
-  "version": 1,
-  "gate": "A",
-  "branch": "rope/gate-a",
-  "executor_model": null,
-  "note": "executor_model set at runtime via --model + --confirm-model. Statuses: pending|in_progress|needs_review|verified|blocked|blocked_human|blocked_seat.",
-  "tasks": [
-    {"id": "L1-1", "was": "A1", "title": "Remove consent-gated claim", "law": "L1", "type": "agent", "effort": "trivial", "deps": [], "files": ["README.md", "pyproject.toml"],
-     "change": "In README section '## The two paths', mermaid node exact string 'A2[consent-gated]' -> 'A2[provenance-recorded — Tier-0]'. Below the diagram add sentence: 'Consent prompts on the /mcp path belong to the MCP host (e.g. Claude Desktop's tool-approval), not to Synapse; Synapse's guarantee is provenance.' Remove 'consent-gated' from pyproject description.",
-     "accept": [{"kind": "grep_absent", "path": "README.md", "pattern": "consent-gated"}, {"kind": "grep_absent", "path": "pyproject.toml", "pattern": "consent-gated"}, {"kind": "grep_min", "path": "README.md", "pattern": "MCP host", "min": 1}],
-     "status": "pending", "attempts": 0},
-    {"id": "L1-2", "was": "A3", "title": "Fix the one red test", "law": "L1", "type": "agent", "effort": "trivial", "deps": [], "files": ["tests/test_moneta_substrate_truth.py"],
-     "change": "Test test_make_store_falls_back_to_jsonl_when_moneta_is_installed_but_broken: moneta absent means _make_store exits the not-installed branch before the patched from_storage_dir is reachable, so no ERROR exists. Mirror the sibling at ~line 541: add monkeypatch.setattr(mr, 'moneta_available', lambda: True) with the same 'from synapse.memory import moneta_runtime as mr' import, before calling _make_store.",
-     "accept": [{"kind": "pytest", "args": "tests/test_moneta_substrate_truth.py -q"}],
-     "status": "pending", "attempts": 0},
-    {"id": "L1-3", "was": "A9", "title": "Scope reversibility claim (load rating)", "law": "L1", "type": "agent", "effort": "trivial", "deps": [], "files": ["README.md", "pyproject.toml", "python/synapse/server/handlers.py"],
-     "change": "Add this exact sentence in three places — pyproject description, README safety paragraph, _handle_execute_python docstring: 'Scene mutations are undo-wrapped and reversible. Filesystem and network effects of executed code are not.'",
-     "accept": [{"kind": "grep_min", "path": "README.md", "pattern": "Filesystem and network effects", "min": 1}, {"kind": "grep_min", "path": "pyproject.toml", "pattern": "Filesystem and network effects", "min": 1}, {"kind": "grep_min", "path": "python/synapse/server/handlers.py", "pattern": "Filesystem and network effects", "min": 1}],
-     "status": "pending", "attempts": 0},
-    {"id": "L1-4", "was": "A10", "title": "State RBAC default", "law": "L1", "type": "agent", "effort": "trivial", "deps": [], "files": ["README.md"],
-     "change": "README security paragraph must state, with this exact sentence present: 'RBAC is inactive in local mode by default.' Also describe: localhost WebSocket, origin-validated fail-safe reject, no auth key unless configured, and the enable path (SYNAPSE_DEPLOY_MODE, auth key).",
-     "accept": [{"kind": "grep_min", "path": "README.md", "pattern": "RBAC is inactive in local mode by default", "min": 1}],
-     "status": "pending", "attempts": 0},
-    {"id": "L1-5", "was": "A12", "title": "pyproject honesty", "law": "L1", "type": "agent", "effort": "trivial", "deps": [], "files": ["pyproject.toml", "README.md"],
-     "change": "Replace authors email joe@example.com with a real one ONLY if present in git config (git log -1 --format=%ae); otherwise use the GitHub noreply pattern for JosephOIbrahim. Shrink description to <=160 chars (move long text into README). Delete the 'Operating System :: OS Independent' classifier.",
-     "accept": [{"kind": "grep_absent", "path": "pyproject.toml", "pattern": "example.com"}, {"kind": "grep_absent", "path": "pyproject.toml", "pattern": "OS Independent"}, {"kind": "desc_len", "path": "pyproject.toml", "max": 200}],
-     "status": "pending", "attempts": 0},
-    {"id": "L2-1", "was": "A2", "title": "Elevate Known limitations", "law": "L2", "type": "agent", "effort": "trivial", "deps": [], "files": ["README.md"],
-     "change": "Move the entire '## Known limitations' section to directly after '## The one design choice' (before '## What it knows'). Near the tagline add: 'Read [Known limitations](#known-limitations) first — this repo's habit is saying what doesn't work.'",
-     "accept": [{"kind": "order", "path": "README.md", "first": "## Known limitations", "second": "## What it knows"}, {"kind": "grep_min", "path": "README.md", "pattern": "#known-limitations", "min": 1}],
-     "status": "pending", "attempts": 0},
-    {"id": "L2-2", "was": "A13", "title": "SECURITY.md + issue template", "law": "L2", "type": "agent", "effort": "small", "deps": [], "files": ["SECURITY.md", ".github/ISSUE_TEMPLATE/bug.yml", "README.md"],
-     "change": "Create SECURITY.md: report channel (GitHub security advisories), vendored-deps ownership statement (python/synapse/_vendor: anthropic, pydantic, pydantic_core, httpx, httpcore, h11, anyio, certifi, idna, jiter — patching is ours), localhost threat model reusing L1-3/L1-4 sentences. Create .github/ISSUE_TEMPLATE/bug.yml asking for Houdini build, license tier, and synapse_doctor output.",
-     "accept": [{"kind": "exists", "path": "SECURITY.md"}, {"kind": "exists", "path": ".github/ISSUE_TEMPLATE/bug.yml"}, {"kind": "grep_min", "path": ".github/ISSUE_TEMPLATE/bug.yml", "pattern": "doctor", "min": 1}],
-     "status": "pending", "attempts": 0},
-    {"id": "L2-3", "was": "A14", "title": "Suite must not mutate the repo", "law": "L2", "type": "agent", "effort": "small", "deps": [], "files": ["tests/test_retina_t0.py", "tests/test_retina_t1_schema.py", "tests/test_panel_render_receipt.py", ".gitignore"],
-     "change": "A Mock is used as a filesystem path and written outside tmp_path, leaving '<MagicMock ...' litter (a MagicMock/ dir exists at repo root on this seat). Find the producer(s) in the three named test files, route writes through tmp_path. Gitignore belt is secondary and only for the pattern already present.",
-     "accept": [{"kind": "clean_after_pytest"}],
-     "status": "pending", "attempts": 0},
-    {"id": "L2-4", "was": "A15", "title": "Dead PDG rollback kwarg (remove_files->remove_outputs)", "law": "L2", "type": "seat", "effort": "trivial", "deps": [], "files": [],
-     "change": "Per README Known limitations: bridge.py:1718 passes remove_files= where the API keyword is remove_outputs; raises TypeError every time. Verify the PDG signature on the live seat first, then rename and delete the limitation bullet. Optional for GATE A.",
-     "accept": [{"kind": "manual", "note": "seat-verified rename + limitation bullet removed"}],
-     "status": "blocked_seat", "attempts": 0},
-    {"id": "L3-1", "was": "A8", "title": "Zero-prerequisite first prompt", "law": "L3", "type": "agent", "effort": "small", "deps": [], "files": ["README.md", "python/synapse/panel/recipe_book.py", "demo/README.md"],
-     "change": "New '## First prompt' section immediately after Install: one prompt grounded in an existing recipe_book.py recipe, fresh empty scene, no OCIO, no harness runner, visible viewport result. Relabel demo/README.md heading as 'the staged demo (pipeline prerequisites)'.",
-     "accept": [{"kind": "grep_min", "path": "README.md", "pattern": "## First prompt", "min": 1}, {"kind": "grep_min", "path": "demo/README.md", "pattern": "pipeline prerequisites", "min": 1}],
-     "status": "pending", "attempts": 0},
-    {"id": "L3-2", "was": "A4", "title": "Video above the fold", "law": "L3", "type": "human", "effort": "human", "deps": ["L3-1"], "files": ["README.md", "assets/"],
-     "change": "HUMAN: record the L3-1 first prompt, 20-30s — prompt typed, nodes appear, viewport updates, decision credit, tab switch + local model with no key. GIF <10MB inline + MP4 on the release. Reference the orphaned assets/synapse_logo.png in the header.",
-     "accept": [{"kind": "grep_top", "path": "README.md", "pattern": "![", "lines": 30}, {"kind": "manual", "note": "recording embedded and plays"}],
-     "status": "blocked_human", "attempts": 0},
-    {"id": "L3-3", "was": "A5", "title": "Installer is Install step 2", "law": "L3", "type": "agent", "effort": "trivial", "deps": [], "files": ["README.md"],
-     "change": "Install step 2 becomes 'python scripts/install_synapse_package.py'. Manual JSON + the three bite warnings (BOM, hpath, dual PYTHONPATH) move to a collapsed 'Manual install' appendix. State the two-installer split: install.py = shelf/panel/icons; scripts/install_synapse_package.py = the package file; state the order.",
-     "accept": [{"kind": "grep_min", "path": "README.md", "pattern": "install_synapse_package.py", "min": 2}, {"kind": "grep_min", "path": "README.md", "pattern": "Manual install", "min": 1}],
-     "status": "pending", "attempts": 0},
-    {"id": "L3-4", "was": "A6", "title": "Surface synapse_doctor", "law": "L3", "type": "agent", "effort": "small", "deps": [], "files": ["README.md"],
-     "change": "Install step 4 = run doctor. New '## Troubleshooting' section; first entry 'the panel didn't appear' -> doctor + the existing 'No error. Just absence.' explanation. Doctor is registered at mcp_server.py:769, implemented in python/synapse/server/doctor.py.",
-     "accept": [{"kind": "grep_min", "path": "README.md", "pattern": "synapse_doctor", "min": 2}, {"kind": "grep_min", "path": "README.md", "pattern": "## Troubleshooting", "min": 1}],
-     "status": "pending", "attempts": 0},
-    {"id": "L3-5", "was": "A7", "title": "Apprentice verdict + support matrix", "law": "L3", "type": "human", "effort": "human", "deps": [], "files": ["README.md"],
-     "change": "HUMAN: one Apprentice session — doctor + the L3-1 prompt + one render attempt. Publish README support matrix: Commercial/Indie/Apprentice/Education x panel/build/husk/renders. 'Watermarked' and 'unavailable' are answers; 'unknown' is not. Known: Indie blocks husk/Karma (docs/render-freeze-operator-card.md).",
-     "accept": [{"kind": "grep_min", "path": "README.md", "pattern": "Apprentice", "min": 1}, {"kind": "manual", "note": "matrix row completed from a real Apprentice session"}],
-     "status": "blocked_human", "attempts": 0},
-    {"id": "L4-1", "was": "A11", "title": "Ownership documented; stale doc killed", "law": "L4", "type": "agent", "effort": "small", "deps": [], "files": ["README.md", "docs/H22_llm_support.md"],
-     "change": "README 'Runs your model' section near the top: five engines; Ollama = no API key, nothing leaves the machine (default http://localhost:11434); picks persist via .synapse/panel_settings.json. Rewrite docs/H22_llm_support.md from proposal tense to shipped (providers exist at python/synapse/panel/providers/) or replace with a pointer to that package.",
-     "accept": [{"kind": "grep_min", "path": "README.md", "pattern": "llama", "min": 1}, {"kind": "grep_absent", "path": "docs/H22_llm_support.md", "pattern": "roposed"}],
-     "status": "pending", "attempts": 0},
-    {"id": "L4-2a", "was": "B8-lite", "title": "Ollama discovery + cached catalog", "law": "L4", "type": "agent", "effort": "medium", "deps": [], "files": ["python/synapse/panel/providers/probe.py", "python/synapse/panel/providers/registry.py", "python/synapse/panel/providers/catalog.py", "tests/test_rope_catalog.py"],
-     "change": "Extend the probe from are-you-alive to what-do-you-serve, GATE A scope = Ollama only: GET /api/tags via stdlib urllib (providers are SDK-free). New catalog module caches .synapse/model_catalog.json — per entry: id, provider, endpoint, local, first_seen, last_seen, latency_ms, auth_ok. Refresh diffs vs cache -> new/removed events. Failure degrades to cached catalog + stale flag; discovery must NEVER block panel start. Write tests/test_rope_catalog.py with mocked HTTP (no live Ollama needed): N models listed with zero hardcoded names; dead endpoint -> cache + stale.",
-     "accept": [{"kind": "pytest", "args": "tests/test_rope_catalog.py -q"}],
-     "status": "pending", "attempts": 0},
-    {"id": "L5-1", "was": "B0", "title": "docs/PROFILES.md", "law": "L5", "type": "agent", "effort": "trivial", "deps": [], "files": ["docs/PROFILES.md"],
-     "change": "Half a page: the axiom + L5/L6 verbatim from harness/rope/program.md, the three-profile matrix (explanation/transcript/instrument), the capability invariant stated on the first screen with the exact phrase 'identical agent capability', the hand-me-the-pen gradient (build-for-you -> build-with-pauses -> explain-then-you-try).",
-     "accept": [{"kind": "exists", "path": "docs/PROFILES.md"}, {"kind": "grep_min", "path": "docs/PROFILES.md", "pattern": "identical agent capability", "min": 1}],
-     "status": "pending", "attempts": 0},
-    {"id": "L5-2", "was": "B1", "title": "Layout manifest schema + compositor (the spine)", "law": "L5", "type": "agent", "effort": "medium", "deps": [], "files": ["python/synapse/panel/synapse_panel.py", "python/synapse/panel/manifests/__init__.py", "python/synapse/panel/manifests/curious.py", "python/synapse/panel/manifests/expert.py", "python/synapse/panel/manifests/ml.py", "python/synapse/panel/compositor.py", "tests/test_rope_manifests.py"],
-     "change": "SynapsePanel already composes by region (_build_rail/_build_context_ribbon/_build_mode_bar/_build_faces over a QStackedWidget). Make it data-driven: manifest = regions, ordered widget ids, per-widget {visible, collapsed, stretch, prominence}, plus system_prompt_overlay and defaults. Three manifests as py-dicts. Compositor maps manifest -> the existing build calls; unknown widget id -> logged and skipped, never a crash. NO new widgets. The manifest modules and compositor's resolve step must import WITHOUT Qt so tests run headless; only the final Qt assembly may require PySide. tests/test_rope_manifests.py: three manifests validate against the schema, resolve without error, unknown id skip-logs.",
-     "accept": [{"kind": "pytest", "args": "tests/test_rope_manifests.py -q"}],
-     "status": "pending", "attempts": 0},
-    {"id": "L5-3", "was": "B2", "title": "settings schema v2 + migration", "law": "L5", "type": "agent", "effort": "small", "deps": ["L5-2"], "files": ["python/synapse/panel/settings.py", "tests/test_settings_v2.py"],
-     "change": "v2 adds profile: curious|expert|ml (v1 file or missing key -> expert; fresh install flag for a skippable picker, skip=expert; exactly three) and model_choice: {mode: semantic|exact, value} — curious writes semantic (free_local|balanced|best), expert/ml write exact ids; v1 model_by_provider migrates as exact. Semantic->concrete resolution is a compose-time function reading the L4-2a catalog, never done at write time. Keep load_settings defaults-on-corrupt behavior. tests/test_settings_v2.py: v1 loads as expert; corrupt -> defaults; both new keys round-trip.",
-     "accept": [{"kind": "pytest", "args": "tests/test_settings_v2.py -q"}],
-     "status": "pending", "attempts": 0},
-    {"id": "L5-5", "was": "B4", "title": "Expert regression pin (safety net)", "law": "L5", "type": "agent", "effort": "small", "deps": ["L5-2"], "files": ["tests/test_rope_expert_pin.py"],
-     "change": "Snapshot test: the RESOLVED expert manifest (region order, widget ids, visibility, stretch) equals the v5.42.0 structure recorded as a literal in the test. Any drift fails. Pure data, no Qt.",
-     "accept": [{"kind": "pytest", "args": "tests/test_rope_expert_pin.py -q"}],
-     "status": "pending", "attempts": 0},
-    {"id": "L5-6", "was": "new", "title": "Composition-only Curious", "law": "L5", "type": "agent", "effort": "small", "deps": ["L5-2", "L5-5"], "files": ["python/synapse/panel/manifests/curious.py", "tests/test_rope_curious_manifest.py"],
-     "change": "Curious from EXISTING widgets only: error_translator always-on, decision_log narration inline, quick_actions expanded, recipe_book promoted, /explain suggested post-build, confirm-on-destructive, jargon overlay via system_prompt_overlay. Test: diff vs expert manifest touches ONLY those defaults; capability-affecting keys identical.",
-     "accept": [{"kind": "pytest", "args": "tests/test_rope_curious_manifest.py -q"}],
-     "status": "pending", "attempts": 0},
-    {"id": "L5-4", "was": "B3", "title": "Tab switcher + persistence", "law": "L5", "type": "agent", "effort": "small", "deps": ["L5-2", "L5-3"], "files": ["python/synapse/panel/synapse_panel.py", "python/synapse/panel/settings.py", "tests/test_rope_switcher_state.py"],
-     "change": "Tab strip selects profile, writes through settings on change, restores saved tab on reopen. Live recompose — never drop chat history or an in-flight turn (recompose, don't reconstruct). Headless test covers the state logic (selection -> settings write -> restore); the Qt behavior itself is seat-verified via the manual accept.",
-     "accept": [{"kind": "pytest", "args": "tests/test_rope_switcher_state.py -q"}, {"kind": "manual", "note": "seat: switch tabs, close panel, reopen -> same tab, history intact"}],
-     "status": "pending", "attempts": 0},
-    {"id": "L5-10", "was": "B7", "title": "Copy pass (labels, picker, overlay)", "law": "L5", "type": "agent", "effort": "small", "deps": ["L5-4", "L5-6"], "files": ["python/synapse/panel/manifests/curious.py", "python/synapse/panel/manifests/expert.py", "python/synapse/panel/manifests/ml.py", "docs/PROFILES.md"],
-     "change": "Tab labels, first-run picker copy, jargon-overlay prompt text — TONE.md voice. Axiom language throughout: builds WITH you and explains as it goes; never 'does it for you'. No substitution language anywhere in the manifests.",
-     "accept": [{"kind": "grep_absent", "path": "python/synapse/panel/manifests/curious.py", "pattern": "does it for you"}, {"kind": "manual", "note": "copy reviewed against the axiom and L6"}],
-     "status": "pending", "attempts": 0}
-  ]
+ "version": 1,
+ "gate": "A",
+ "branch": "rope/gate-a",
+ "executor_model": "claude-fable-5",
+ "note": "executor_model set at runtime via --model + --confirm-model. Statuses: pending|in_progress|needs_review|verified|blocked|blocked_human|blocked_seat.",
+ "tasks": [
+  {
+   "id": "L1-1",
+   "was": "A1",
+   "title": "Remove consent-gated claim",
+   "law": "L1",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "README.md",
+    "pyproject.toml"
+   ],
+   "change": "In README section '## The two paths', mermaid node exact string 'A2[consent-gated]' -> 'A2[provenance-recorded \u2014 Tier-0]'. Below the diagram add sentence: 'Consent prompts on the /mcp path belong to the MCP host (e.g. Claude Desktop's tool-approval), not to Synapse; Synapse's guarantee is provenance.' Remove 'consent-gated' from pyproject description.",
+   "accept": [
+    {
+     "kind": "grep_absent",
+     "path": "README.md",
+     "pattern": "consent-gated"
+    },
+    {
+     "kind": "grep_absent",
+     "path": "pyproject.toml",
+     "pattern": "consent-gated"
+    },
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "MCP host",
+     "min": 1
+    }
+   ],
+   "status": "in_progress",
+   "attempts": 0
+  },
+  {
+   "id": "L1-2",
+   "was": "A3",
+   "title": "Fix the one red test",
+   "law": "L1",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "tests/test_moneta_substrate_truth.py"
+   ],
+   "change": "Test test_make_store_falls_back_to_jsonl_when_moneta_is_installed_but_broken: moneta absent means _make_store exits the not-installed branch before the patched from_storage_dir is reachable, so no ERROR exists. Mirror the sibling at ~line 541: add monkeypatch.setattr(mr, 'moneta_available', lambda: True) with the same 'from synapse.memory import moneta_runtime as mr' import, before calling _make_store.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_moneta_substrate_truth.py -q"
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L1-3",
+   "was": "A9",
+   "title": "Scope reversibility claim (load rating)",
+   "law": "L1",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "README.md",
+    "pyproject.toml",
+    "python/synapse/server/handlers.py"
+   ],
+   "change": "Add this exact sentence in three places \u2014 pyproject description, README safety paragraph, _handle_execute_python docstring: 'Scene mutations are undo-wrapped and reversible. Filesystem and network effects of executed code are not.'",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "Filesystem and network effects",
+     "min": 1
+    },
+    {
+     "kind": "grep_min",
+     "path": "pyproject.toml",
+     "pattern": "Filesystem and network effects",
+     "min": 1
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/server/handlers.py",
+     "pattern": "Filesystem and network effects",
+     "min": 1
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L1-4",
+   "was": "A10",
+   "title": "State RBAC default",
+   "law": "L1",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "README.md"
+   ],
+   "change": "README security paragraph must state, with this exact sentence present: 'RBAC is inactive in local mode by default.' Also describe: localhost WebSocket, origin-validated fail-safe reject, no auth key unless configured, and the enable path (SYNAPSE_DEPLOY_MODE, auth key).",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "RBAC is inactive in local mode by default",
+     "min": 1
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L1-5",
+   "was": "A12",
+   "title": "pyproject honesty",
+   "law": "L1",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "pyproject.toml",
+    "README.md"
+   ],
+   "change": "Replace authors email joe@example.com with a real one ONLY if present in git config (git log -1 --format=%ae); otherwise use the GitHub noreply pattern for JosephOIbrahim. Shrink description to <=160 chars (move long text into README). Delete the 'Operating System :: OS Independent' classifier.",
+   "accept": [
+    {
+     "kind": "grep_absent",
+     "path": "pyproject.toml",
+     "pattern": "example.com"
+    },
+    {
+     "kind": "grep_absent",
+     "path": "pyproject.toml",
+     "pattern": "OS Independent"
+    },
+    {
+     "kind": "desc_len",
+     "path": "pyproject.toml",
+     "max": 200
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L2-1",
+   "was": "A2",
+   "title": "Elevate Known limitations",
+   "law": "L2",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "README.md"
+   ],
+   "change": "Move the entire '## Known limitations' section to directly after '## The one design choice' (before '## What it knows'). Near the tagline add: 'Read [Known limitations](#known-limitations) first \u2014 this repo's habit is saying what doesn't work.'",
+   "accept": [
+    {
+     "kind": "order",
+     "path": "README.md",
+     "first": "## Known limitations",
+     "second": "## What it knows"
+    },
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "#known-limitations",
+     "min": 1
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L2-2",
+   "was": "A13",
+   "title": "SECURITY.md + issue template",
+   "law": "L2",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "SECURITY.md",
+    ".github/ISSUE_TEMPLATE/bug.yml",
+    "README.md"
+   ],
+   "change": "Create SECURITY.md: report channel (GitHub security advisories), vendored-deps ownership statement (python/synapse/_vendor: anthropic, pydantic, pydantic_core, httpx, httpcore, h11, anyio, certifi, idna, jiter \u2014 patching is ours), localhost threat model reusing L1-3/L1-4 sentences. Create .github/ISSUE_TEMPLATE/bug.yml asking for Houdini build, license tier, and synapse_doctor output.",
+   "accept": [
+    {
+     "kind": "exists",
+     "path": "SECURITY.md"
+    },
+    {
+     "kind": "exists",
+     "path": ".github/ISSUE_TEMPLATE/bug.yml"
+    },
+    {
+     "kind": "grep_min",
+     "path": ".github/ISSUE_TEMPLATE/bug.yml",
+     "pattern": "doctor",
+     "min": 1
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L2-3",
+   "was": "A14",
+   "title": "Suite must not mutate the repo",
+   "law": "L2",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "tests/test_retina_t0.py",
+    "tests/test_retina_t1_schema.py",
+    "tests/test_panel_render_receipt.py",
+    ".gitignore"
+   ],
+   "change": "A Mock is used as a filesystem path and written outside tmp_path, leaving '<MagicMock ...' litter (a MagicMock/ dir exists at repo root on this seat). Find the producer(s) in the three named test files, route writes through tmp_path. Gitignore belt is secondary and only for the pattern already present.",
+   "accept": [
+    {
+     "kind": "clean_after_pytest"
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L2-4",
+   "was": "A15",
+   "title": "Dead PDG rollback kwarg (remove_files->remove_outputs)",
+   "law": "L2",
+   "type": "seat",
+   "effort": "trivial",
+   "deps": [],
+   "files": [],
+   "change": "Per README Known limitations: bridge.py:1718 passes remove_files= where the API keyword is remove_outputs; raises TypeError every time. Verify the PDG signature on the live seat first, then rename and delete the limitation bullet. Optional for GATE A.",
+   "accept": [
+    {
+     "kind": "manual",
+     "note": "seat-verified rename + limitation bullet removed"
+    }
+   ],
+   "status": "blocked_seat",
+   "attempts": 0
+  },
+  {
+   "id": "L3-1",
+   "was": "A8",
+   "title": "Zero-prerequisite first prompt",
+   "law": "L3",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "README.md",
+    "python/synapse/panel/recipe_book.py",
+    "demo/README.md"
+   ],
+   "change": "New '## First prompt' section immediately after Install: one prompt grounded in an existing recipe_book.py recipe, fresh empty scene, no OCIO, no harness runner, visible viewport result. Relabel demo/README.md heading as 'the staged demo (pipeline prerequisites)'.",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "## First prompt",
+     "min": 1
+    },
+    {
+     "kind": "grep_min",
+     "path": "demo/README.md",
+     "pattern": "pipeline prerequisites",
+     "min": 1
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L3-2",
+   "was": "A4",
+   "title": "Video above the fold",
+   "law": "L3",
+   "type": "human",
+   "effort": "human",
+   "deps": [
+    "L3-1"
+   ],
+   "files": [
+    "README.md",
+    "assets/"
+   ],
+   "change": "HUMAN: record the L3-1 first prompt, 20-30s \u2014 prompt typed, nodes appear, viewport updates, decision credit, tab switch + local model with no key. GIF <10MB inline + MP4 on the release. Reference the orphaned assets/synapse_logo.png in the header.",
+   "accept": [
+    {
+     "kind": "grep_top",
+     "path": "README.md",
+     "pattern": "![",
+     "lines": 30
+    },
+    {
+     "kind": "manual",
+     "note": "recording embedded and plays"
+    }
+   ],
+   "status": "blocked_human",
+   "attempts": 0
+  },
+  {
+   "id": "L3-3",
+   "was": "A5",
+   "title": "Installer is Install step 2",
+   "law": "L3",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "README.md"
+   ],
+   "change": "Install step 2 becomes 'python scripts/install_synapse_package.py'. Manual JSON + the three bite warnings (BOM, hpath, dual PYTHONPATH) move to a collapsed 'Manual install' appendix. State the two-installer split: install.py = shelf/panel/icons; scripts/install_synapse_package.py = the package file; state the order.",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "install_synapse_package.py",
+     "min": 2
+    },
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "Manual install",
+     "min": 1
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L3-4",
+   "was": "A6",
+   "title": "Surface synapse_doctor",
+   "law": "L3",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "README.md"
+   ],
+   "change": "Install step 4 = run doctor. New '## Troubleshooting' section; first entry 'the panel didn't appear' -> doctor + the existing 'No error. Just absence.' explanation. Doctor is registered at mcp_server.py:769, implemented in python/synapse/server/doctor.py.",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "synapse_doctor",
+     "min": 2
+    },
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "## Troubleshooting",
+     "min": 1
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L3-5",
+   "was": "A7",
+   "title": "Apprentice verdict + support matrix",
+   "law": "L3",
+   "type": "human",
+   "effort": "human",
+   "deps": [],
+   "files": [
+    "README.md"
+   ],
+   "change": "HUMAN: one Apprentice session \u2014 doctor + the L3-1 prompt + one render attempt. Publish README support matrix: Commercial/Indie/Apprentice/Education x panel/build/husk/renders. 'Watermarked' and 'unavailable' are answers; 'unknown' is not. Known: Indie blocks husk/Karma (docs/render-freeze-operator-card.md).",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "Apprentice",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "matrix row completed from a real Apprentice session"
+    }
+   ],
+   "status": "blocked_human",
+   "attempts": 0
+  },
+  {
+   "id": "L4-1",
+   "was": "A11",
+   "title": "Ownership documented; stale doc killed",
+   "law": "L4",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "README.md",
+    "docs/H22_llm_support.md"
+   ],
+   "change": "README 'Runs your model' section near the top: five engines; Ollama = no API key, nothing leaves the machine (default http://localhost:11434); picks persist via .synapse/panel_settings.json. Rewrite docs/H22_llm_support.md from proposal tense to shipped (providers exist at python/synapse/panel/providers/) or replace with a pointer to that package.",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "llama",
+     "min": 1
+    },
+    {
+     "kind": "grep_absent",
+     "path": "docs/H22_llm_support.md",
+     "pattern": "roposed"
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L4-2a",
+   "was": "B8-lite",
+   "title": "Ollama discovery + cached catalog",
+   "law": "L4",
+   "type": "agent",
+   "effort": "medium",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/providers/probe.py",
+    "python/synapse/panel/providers/registry.py",
+    "python/synapse/panel/providers/catalog.py",
+    "tests/test_rope_catalog.py"
+   ],
+   "change": "Extend the probe from are-you-alive to what-do-you-serve, GATE A scope = Ollama only: GET /api/tags via stdlib urllib (providers are SDK-free). New catalog module caches .synapse/model_catalog.json \u2014 per entry: id, provider, endpoint, local, first_seen, last_seen, latency_ms, auth_ok. Refresh diffs vs cache -> new/removed events. Failure degrades to cached catalog + stale flag; discovery must NEVER block panel start. Write tests/test_rope_catalog.py with mocked HTTP (no live Ollama needed): N models listed with zero hardcoded names; dead endpoint -> cache + stale.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_catalog.py -q"
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L5-1",
+   "was": "B0",
+   "title": "docs/PROFILES.md",
+   "law": "L5",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "docs/PROFILES.md"
+   ],
+   "change": "Half a page: the axiom + L5/L6 verbatim from harness/rope/program.md, the three-profile matrix (explanation/transcript/instrument), the capability invariant stated on the first screen with the exact phrase 'identical agent capability', the hand-me-the-pen gradient (build-for-you -> build-with-pauses -> explain-then-you-try).",
+   "accept": [
+    {
+     "kind": "exists",
+     "path": "docs/PROFILES.md"
+    },
+    {
+     "kind": "grep_min",
+     "path": "docs/PROFILES.md",
+     "pattern": "identical agent capability",
+     "min": 1
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L5-2",
+   "was": "B1",
+   "title": "Layout manifest schema + compositor (the spine)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "medium",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/manifests/__init__.py",
+    "python/synapse/panel/manifests/curious.py",
+    "python/synapse/panel/manifests/expert.py",
+    "python/synapse/panel/manifests/ml.py",
+    "python/synapse/panel/compositor.py",
+    "tests/test_rope_manifests.py"
+   ],
+   "change": "SynapsePanel already composes by region (_build_rail/_build_context_ribbon/_build_mode_bar/_build_faces over a QStackedWidget). Make it data-driven: manifest = regions, ordered widget ids, per-widget {visible, collapsed, stretch, prominence}, plus system_prompt_overlay and defaults. Three manifests as py-dicts. Compositor maps manifest -> the existing build calls; unknown widget id -> logged and skipped, never a crash. NO new widgets. The manifest modules and compositor's resolve step must import WITHOUT Qt so tests run headless; only the final Qt assembly may require PySide. tests/test_rope_manifests.py: three manifests validate against the schema, resolve without error, unknown id skip-logs.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_manifests.py -q"
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L5-3",
+   "was": "B2",
+   "title": "settings schema v2 + migration",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-2"
+   ],
+   "files": [
+    "python/synapse/panel/settings.py",
+    "tests/test_settings_v2.py"
+   ],
+   "change": "v2 adds profile: curious|expert|ml (v1 file or missing key -> expert; fresh install flag for a skippable picker, skip=expert; exactly three) and model_choice: {mode: semantic|exact, value} \u2014 curious writes semantic (free_local|balanced|best), expert/ml write exact ids; v1 model_by_provider migrates as exact. Semantic->concrete resolution is a compose-time function reading the L4-2a catalog, never done at write time. Keep load_settings defaults-on-corrupt behavior. tests/test_settings_v2.py: v1 loads as expert; corrupt -> defaults; both new keys round-trip.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_settings_v2.py -q"
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L5-5",
+   "was": "B4",
+   "title": "Expert regression pin (safety net)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-2"
+   ],
+   "files": [
+    "tests/test_rope_expert_pin.py"
+   ],
+   "change": "Snapshot test: the RESOLVED expert manifest (region order, widget ids, visibility, stretch) equals the v5.42.0 structure recorded as a literal in the test. Any drift fails. Pure data, no Qt.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_expert_pin.py -q"
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L5-6",
+   "was": "new",
+   "title": "Composition-only Curious",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-2",
+    "L5-5"
+   ],
+   "files": [
+    "python/synapse/panel/manifests/curious.py",
+    "tests/test_rope_curious_manifest.py"
+   ],
+   "change": "Curious from EXISTING widgets only: error_translator always-on, decision_log narration inline, quick_actions expanded, recipe_book promoted, /explain suggested post-build, confirm-on-destructive, jargon overlay via system_prompt_overlay. Test: diff vs expert manifest touches ONLY those defaults; capability-affecting keys identical.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_curious_manifest.py -q"
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L5-4",
+   "was": "B3",
+   "title": "Tab switcher + persistence",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-2",
+    "L5-3"
+   ],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/settings.py",
+    "tests/test_rope_switcher_state.py"
+   ],
+   "change": "Tab strip selects profile, writes through settings on change, restores saved tab on reopen. Live recompose \u2014 never drop chat history or an in-flight turn (recompose, don't reconstruct). Headless test covers the state logic (selection -> settings write -> restore); the Qt behavior itself is seat-verified via the manual accept.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_switcher_state.py -q"
+    },
+    {
+     "kind": "manual",
+     "note": "seat: switch tabs, close panel, reopen -> same tab, history intact"
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  },
+  {
+   "id": "L5-10",
+   "was": "B7",
+   "title": "Copy pass (labels, picker, overlay)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-4",
+    "L5-6"
+   ],
+   "files": [
+    "python/synapse/panel/manifests/curious.py",
+    "python/synapse/panel/manifests/expert.py",
+    "python/synapse/panel/manifests/ml.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "Tab labels, first-run picker copy, jargon-overlay prompt text \u2014 TONE.md voice. Axiom language throughout: builds WITH you and explains as it goes; never 'does it for you'. No substitution language anywhere in the manifests.",
+   "accept": [
+    {
+     "kind": "grep_absent",
+     "path": "python/synapse/panel/manifests/curious.py",
+     "pattern": "does it for you"
+    },
+    {
+     "kind": "manual",
+     "note": "copy reviewed against the axiom and L6"
+    }
+   ],
+   "status": "pending",
+   "attempts": 0
+  }
+ ]
 }

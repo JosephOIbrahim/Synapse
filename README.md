@@ -146,12 +146,14 @@ flowchart LR
     T[agent turn] --> M["/mcp — audited"]
     T --> S["/synapse — live"]
     M --> A1[undo-wrapped]
-    M --> A2[consent-gated]
+    M --> A2[provenance-recorded — Tier-0]
     M --> A3["scene-hashed<br/>pays the stage cost — gated"]
     S --> B1[RBAC-gated]
     S --> B2[partial undo]
     S --> B3["no stage term<br/>by construction — flat cost"]
 ```
+
+Consent prompts on the /mcp path belong to the MCP host (e.g. Claude Desktop's tool-approval), not to Synapse; Synapse's guarantee is provenance.
 
 Connect on `ws://localhost:9999/synapse` — the path matters, a bare `host:port` returns HTTP 400.
 
