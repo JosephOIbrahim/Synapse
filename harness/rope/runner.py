@@ -199,7 +199,8 @@ def preflight(st, args):
     ig = open(gi, encoding="utf-8").read() if os.path.exists(gi) else ""
     for line in ["harness/rope/results.tsv", "harness/rope/.prompt.txt",
                  "harness/rope/last_run.log", "harness/rope/runner_console.log",
-                 "harness/rope/runner_console.err.log"]:
+                 "harness/rope/runner_console.err.log", "harness/rope/PROGRESS.md",
+                 "harness/rope/.runner.lock"]:
         if line not in ig:
             open(gi, "a", encoding="utf-8").write("\n" + line)
     if git("ls-files", "--error-unmatch", "harness/rope/runner.py").returncode != 0:

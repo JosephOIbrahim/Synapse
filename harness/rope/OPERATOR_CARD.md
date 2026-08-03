@@ -62,3 +62,12 @@ Windows terminal-restore can mangle a saved powershell command line into one
 unfindable filename (error 0x80070002). The .cmd resolves its own folder, so
 that failure class is dead. Also: the runner now refuses to start while a
 Houdini process is alive -- close Houdini or pass --live-seat-ok consciously.
+
+### 20-minute progress pushes
+
+    double-click  harness\rope\notify.cmd
+
+Every 20 min: a Windows toast + one digest line in its ticker window and in
+harness\rope\PROGRESS.md (runner alive? · done this interval · gate · in
+flight). First digest fires the moment you launch it. Read-only; close anytime.
+For a full narrated read with receipts: ping Claude with anything at all.
