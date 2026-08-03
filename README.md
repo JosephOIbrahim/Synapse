@@ -128,7 +128,7 @@ flowchart TD
 
 This is the package description in long form — everything the one-liner compresses.
 
-**115 tools, two paths.** The full safety set (undo-wrapped, reversible, provenance-recorded) rides the audited `/mcp` bridge path. The direct `/synapse` path is RBAC-gated, main-thread-marshalled execution with observe-only provenance.
+**115 tools, two paths.** The full safety set (undo-wrapped, reversible, provenance-recorded) rides the audited `/mcp` bridge path. The direct `/synapse` path is RBAC-gated, main-thread-marshalled execution with observe-only provenance. Scene mutations are undo-wrapped and reversible. Filesystem and network effects of executed code are not.
 
 **A registry-wide truth contract.** A result may not claim an outcome the handler did not observe.
 

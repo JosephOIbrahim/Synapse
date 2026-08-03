@@ -1225,6 +1225,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         Executes Python code in Houdini's runtime environment.
         This is a standard DCC scripting pattern for automation.
 
+        Scene mutations are undo-wrapped and reversible.
+        Filesystem and network effects of executed code are not.
+
         Options:
             dry_run (bool): Compile-only syntax check -- no execution.
             atomic (bool): Wrap in undo group with rollback (default True).
