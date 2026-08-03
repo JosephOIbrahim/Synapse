@@ -531,7 +531,7 @@
      "args": "tests/test_settings_v2.py -q"
     }
    ],
-   "status": "pending",
+   "status": "verified",
    "attempts": 0
   },
   {
