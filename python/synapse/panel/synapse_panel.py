@@ -668,7 +668,6 @@ class SynapsePanel(QtWidgets.QWidget):
         top.addWidget(word)
         top.addStretch(1)
         top.addWidget(self._header_status)
-        top.addWidget(self._author_lbl)
         top.addWidget(self._meter_lbl)
         top.addWidget(self._palette_hint)
         top.addWidget(overflow)
@@ -730,6 +729,9 @@ class SynapsePanel(QtWidgets.QWidget):
         # their referent; it is simply never shown.
         self._observe.setVisible(False)
         bot.addStretch(1)
+        # Model picker rides the action row, right edge -- same line as
+        # Connect/Corpus/Help, opposite side (Joe): actions left, choice right.
+        bot.addWidget(self._author_lbl)
         col.addLayout(bot)
         self._region_cache["_build_rail"] = w
         return w
