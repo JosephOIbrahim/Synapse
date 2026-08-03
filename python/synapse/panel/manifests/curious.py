@@ -2,16 +2,22 @@
 
 Composition-only (rope L5-6): Curious is assembled from the EXISTING widget
 vocabulary plus the system-prompt overlay — no new widgets, no rewiring.
-Every region and widget from the expert manifest, same order, all visible —
-nothing is withheld. The diff against expert is presentation only: the two
-orientation buttons (Connect / Corpus) step forward, the diagnostic chrome
-(token meter, palette hint, TOKEN pill) steps back, and the overlay carries
-the behaviors that have no widget of their own — error translation always
-on, inline decision narration, expanded quick actions, promoted recipes,
-/explain suggested after builds, confirm-on-destructive, jargon defined on
-first use. Density is "airy" (L5-18): the one panel-wide rhythm step — replies
-and controls take one rung more air off the existing spacing scale.
-Explanation rises; automation does not (L6).
+Every region and widget from the expert manifest is present, same order —
+nothing is removed, and the agent's capability is byte-identical (L5). The
+diff against expert is presentation only, on two moves (L5-19): the things
+that TEACH step forward — the two orientation buttons (Connect / Corpus) go
+hero, the command-palette hint stands at full visibility — and the readouts
+a first-session artist cannot yet act on FOLD: the rail's token economics
+pair (author/token line, token meter) and the activity telemetry are
+collapsed=True — present in the layout at zero height, never withheld. The
+TOKEN pill stays visible (quiet), so the full numbers remain one click away
+behind it, and the profile switcher restores everything in one action. The
+overlay carries the behaviors that have no widget of their own — error
+translation always on, inline decision narration, expanded quick actions,
+promoted recipes, /explain suggested after builds, confirm-on-destructive,
+jargon defined on first use. Density is "airy" (L5-18): the one panel-wide
+rhythm step — replies and controls take one rung more air off the existing
+spacing scale. Explanation rises; automation does not (L6).
 """
 
 # Display copy (rope L5-10). The manifest is the single source of copy for its
@@ -66,14 +72,25 @@ MANIFEST = {
         {
             "id": "rail",
             "widgets": [
-                "mark", "wordmark", "header_status", "author_token",
-                {"id": "token_meter", "prominence": "quiet"},
-                {"id": "palette_hint", "prominence": "quiet"},
+                "mark", "wordmark", "header_status",
+                # Economics fold (L5-19): readouts a first-session artist
+                # cannot yet act on. Collapsed, never removed — the full
+                # numbers stay one click away behind the visible TOKEN pill.
+                {"id": "author_token", "collapsed": True,
+                 "prominence": "quiet"},
+                {"id": "token_meter", "collapsed": True,
+                 "prominence": "quiet"},
+                # Teaching hint (L5-19): the palette hint is how commands are
+                # discovered — full visibility, not quiet chrome.
+                "palette_hint",
                 "stop",
                 "connection_dot", "connection_label",
                 {"id": "connect", "prominence": "hero"},
                 {"id": "corpus", "prominence": "hero"},
-                "activity_meter",
+                # Telemetry fold (L5-19): activity chrome, same treatment as
+                # the economics pair.
+                {"id": "activity_meter", "collapsed": True,
+                 "prominence": "quiet"},
             ],
         },
         {"id": "context_ribbon", "widgets": ["context_label"]},

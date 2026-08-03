@@ -1,9 +1,14 @@
 """ML — the economist's read of the same panel (Law L5: identical capability).
 
-Every region and widget from the expert manifest, same order, all visible.
-What changes: token economics steps forward (the TOKEN pill and the rail meter
-go hero), density is "tight" (L5-18: controls give back one rung of air off
-the existing spacing scale), and the system prompt asks for terse, technical
+Every region and widget from the expert manifest, same order, all visible —
+everything expert shows stays shown, and nothing is added that the widget
+registry does not already carry. What changes (L5-19): the economics come
+OUT of hiding behind the TOKEN tab — the rail's always-visible readout pair
+(author/token line and token meter) is pinned visible and promoted to hero,
+so the model and token numbers read from the rail without a click; the
+TOKEN pill goes hero as the standing invitation to the full breakdown.
+Density is "tight" (L5-18: controls give back one rung of air off the
+existing spacing scale), and the system prompt asks for terse, technical
 replies with explicit model / token awareness.
 """
 
@@ -39,8 +44,14 @@ MANIFEST = {
         {
             "id": "rail",
             "widgets": [
-                "mark", "wordmark", "header_status", "author_token",
-                {"id": "token_meter", "prominence": "hero"},
+                "mark", "wordmark", "header_status",
+                # Economics promotion (L5-19): the rail readout pair is the
+                # always-visible surface the numbers live on — pinned
+                # visible and hero so they read without a click.
+                {"id": "author_token", "visible": True,
+                 "prominence": "hero"},
+                {"id": "token_meter", "visible": True,
+                 "prominence": "hero"},
                 "palette_hint", "stop",
                 "connection_dot", "connection_label", "connect", "corpus",
                 "activity_meter",
@@ -51,7 +62,7 @@ MANIFEST = {
             "id": "mode_bar",
             "widgets": [
                 "chat_pill",
-                {"id": "token_pill", "prominence": "hero"},
+                {"id": "token_pill", "visible": True, "prominence": "hero"},
             ],
         },
         {"id": "faces", "stretch": 1, "widgets": ["faces_stack"]},

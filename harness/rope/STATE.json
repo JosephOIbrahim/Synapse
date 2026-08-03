@@ -1035,7 +1035,7 @@
      "note": "SEAT: Curious does one thing at a time, ML shows the numbers without a click, Expert identical to v5.42.0"
     }
    ],
-   "status": "pending",
+   "status": "needs_review",
    "attempts": 0
   }
  ]
