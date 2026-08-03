@@ -25,7 +25,12 @@ RESULTS = os.path.join(ROPE, "results.tsv")
 PROMPT_P = os.path.join(ROPE, ".prompt.txt")
 RUNLOG = os.path.join(ROPE, "last_run.log")
 TIMEOUT = {"trivial": 480, "small": 1200, "medium": 2400}
-EXTRA_FLAGS = os.environ.get("SYNAPSE_ROPE_FLAGS", "--permission-mode acceptEdits").split()
+EXTRA_FLAGS = os.environ.get(
+    "SYNAPSE_ROPE_FLAGS",
+    "--permission-mode acceptEdits --strict-mcp-config "
+    "--mcp-config harness/rope/no-mcp.json").split()
+# strict empty MCP config: executors edit files; they must NEVER attach to the
+# live Synapse bridge (or any MCP server) as a side effect of session startup.
 
 
 def sh(args, timeout=None, stdin=None, stdout=None):
@@ -201,7 +206,11 @@ def cmd_run(args):
         if ok:
             t["status"] = "needs_review" if manual else "verified"
             save(st)  # state to disk BEFORE the commit, so the commit is truthful
-            git("add", "-A")
+            for f in t.get("files", []):
+                git("add", "--", f)   # scoped: only the task's files —
+            git("add", "--", "harness/rope/STATE.json", ".gitignore")
+            # never `add -A`: the LIVE Synapse session writes files while we
+            # run, and none of them belong in a rope commit.
             git("commit", "-m", "rope:%s %s [%s]" % (t["id"], t["title"], t["law"]))
             ledger(t["id"], args.model, "keep", t["attempts"] + 1, dur,
                    ("manual pending: " + "; ".join(manual)) if manual else "clean")
