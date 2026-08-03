@@ -938,7 +938,7 @@
      "note": "SEAT: verbs are letterspaced like CHAT/TOKEN with air above their rule; .hip filename starts on the same vertical as CHAT"
     }
    ],
-   "status": "pending",
+   "status": "needs_review",
    "attempts": 0
   },
   {

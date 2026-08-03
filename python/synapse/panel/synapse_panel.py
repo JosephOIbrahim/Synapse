@@ -835,7 +835,9 @@ class SynapsePanel(QtWidgets.QWidget):
             return cached
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        # L5-17: left inset = t.GUTTER, the same token the tab row applies, so
+        # the .hip filename's first glyph sits on the same vertical as CHAT.
+        lay.setContentsMargins(t.GUTTER, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
         self._ctx_label = c.label("no scene context", role="label", scale=self._chrome_scale)
         lay.addWidget(self._ctx_label)
         lay.addStretch(1)
@@ -1654,6 +1656,10 @@ class SynapsePanel(QtWidgets.QWidget):
         {None, 'ok', 'hot', 'accent'} selects the semantic color via property."""
         btn = QtWidgets.QPushButton(text)
         btn.setObjectName("DsVerb")
+        # L5-17: verbs carry the tab pills' tracking (same LABEL role, mono)
+        # so they read as chrome siblings of CHAT/TOKEN, not body text.
+        btn.setFont(fontload.tracked_font(
+            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
         btn.setFlat(True)
         if tone:
@@ -1664,7 +1670,9 @@ class SynapsePanel(QtWidgets.QWidget):
     def _build_act(self):
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(0, t.SPACE_SM, 0, t.SPACE_SM)  # face carries GUTTER/24
+        # face carries GUTTER/24; L5-17: top steps SPACE_SM→SPACE_MD (next rung
+        # on the tokens scale) — air between the verbs and the rule above them.
+        lay.setContentsMargins(0, t.SPACE_MD, 0, t.SPACE_SM)
         lay.setSpacing(t.SPACE_MD)
         for label_text, prompt in _QUICK_ACTIONS:
             lay.addWidget(self._verb(
