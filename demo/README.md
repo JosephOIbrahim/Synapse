@@ -1,4 +1,4 @@
-# SYNAPSE demo scaffold
+# SYNAPSE demo scaffold — the staged demo (pipeline prerequisites)
 
 The staged starting point for the H22 demo (see `../DEMO_SCRIPT.md`). The demo builds its
 scene **live from prompts**; this hip is just the clean, Solaris-ready entry point.

@@ -196,6 +196,24 @@ Get any of these wrong and `import synapse` still succeeds, the version still pr
 
 ---
 
+## First prompt
+
+Nothing to set up beyond Install. **Fresh empty scene. No OCIO. No demo scaffold. No harness runner.**
+
+1. Open Houdini — new, empty scene.
+2. Open the SYNAPSE panel.
+3. Type:
+
+> **Make me simple terrain — a grid displaced with mountain noise.**
+
+This prompt maps to a recipe the panel ships with — `mountain_displace` in `python/synapse/panel/recipe_book.py`: a 100×100 `grid` SOP wired into a `mountain` SOP (height 1.5). Two nodes, one connection.
+
+**What you'll see:** a terrain-like displaced surface in the viewport. That visible bump-scape is the proof the install worked — no test suite required.
+
+Looking for the full staged walkthrough instead? That's `demo/README.md` — the staged demo, which *does* carry pipeline prerequisites (OCIO, the demo hip).
+
+---
+
 ## The two paths
 
 ```mermaid
