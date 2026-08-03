@@ -235,7 +235,7 @@
      "kind": "clean_after_pytest"
     }
    ],
-   "status": "pending",
+   "status": "verified",
    "attempts": 0
   },
   {
