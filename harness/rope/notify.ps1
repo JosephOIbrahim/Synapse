@@ -3,7 +3,8 @@
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 Set-Location $root
 $appid = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
-$last = 0
+$last = @(Get-Content harness\rope\results.tsv -ErrorAction SilentlyContinue | Select-Object -Skip 1).Count
+# seed from the current ledger so the first digest reports 0 new, not the whole file
 while ($true) {
   $rows = @(Get-Content harness\rope\results.tsv -ErrorAction SilentlyContinue | Select-Object -Skip 1)
   $new = $rows.Count - $last; $last = $rows.Count
