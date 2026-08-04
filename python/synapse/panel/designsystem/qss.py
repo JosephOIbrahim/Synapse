@@ -134,10 +134,10 @@ QPushButton#DsPill[active="true"] {{
    hand carry discoverability (the comp shows no ▾). */
 QPushButton#DsAuthor {{
     background: transparent; border: none; padding: 0 {t.SPACE_XS}px;
-    color: {t.SIGNAL};
+    color: {t.CONIFEROUS};
 }}
 QPushButton#DsAuthor:hover {{
-    color: {t.SIGNAL_HOVER}; text-decoration: underline;
+    color: {t.GROW}; text-decoration: underline;
 }}
 
 /* ---- rail token meter (tokens only, never $) + ⌘K chip -------- */
