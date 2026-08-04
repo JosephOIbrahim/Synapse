@@ -145,6 +145,44 @@ def _bridge_is_read_only(tool_name: str) -> bool:
     return is_read_only(tool_name)
 
 
+# ── Marshal-bypass evidence ──────────────────────────────────────────────
+# A tool dispatched without the main-thread marshal is a correctness event,
+# not a performance one. Recorded here so synapse_doctor can report it as a
+# CAUSE rather than leaving the reader to infer it from fidelity=0.0.
+_MARSHAL_BYPASS_LOCK = threading.Lock()
+_MARSHAL_BYPASSES: list = []
+
+
+def _note_marshal_bypass(tool_name: str, reason: str) -> None:
+    """Record one unmarshalled dispatch (bounded, newest-wins)."""
+    try:
+        with _MARSHAL_BYPASS_LOCK:
+            _MARSHAL_BYPASSES.append({
+                "tool": tool_name,
+                "reason": reason,
+                "at": time.time(),
+            })
+            del _MARSHAL_BYPASSES[:-64]
+    except Exception:
+        pass
+
+
+def marshal_bypass_report() -> dict:
+    """Diagnostics surface: were any tools run without the main-thread marshal?
+
+    ``count`` 0 means every dispatch this session was marshalled. Any non-zero
+    count is a correctness finding -- hou.* ran off Houdini's main thread.
+    """
+    with _MARSHAL_BYPASS_LOCK:
+        events = list(_MARSHAL_BYPASSES)
+    return {
+        "count": len(events),
+        "tools": sorted({e["tool"] for e in events}),
+        "reason": events[-1]["reason"] if events else "",
+        "healthy": not events,
+    }
+
+
 def is_transport_fast_path(tool_name: str) -> bool:
     """True iff ``tool_name`` is read-only under BOTH gating sets.
 
@@ -626,7 +664,41 @@ class MCPServer:
                 # OCC: attribute the deferred main-thread hold to the tool.
                 label=tool_name,
             )
-        except ImportError:
+        except ImportError as _marshal_exc:
+            # UNMARSHALLED FALLBACK. This branch runs the tool on the CALLING
+            # thread -- an hwebserver worker -- and dispatch_tool routes
+            # mutating tools to bridge.execute -> _execute_houdini, which calls
+            # hou.* directly and assumes it is already on the main thread.
+            # hou is not thread-safe: writes may land and still corrupt state.
+            #
+            # It used to fail SILENTLY. The only evidence was fidelity=0.0
+            # surfacing later with no attribution, which is unreadable at the
+            # seat (observed 2026-08-03). A degradation this consequential must
+            # announce itself, so:
+            #   - dual-mode (no Houdini): expected, logged once at INFO;
+            #   - Houdini present: a real defect, logged at ERROR every time
+            #     with the failing import named.
+            try:
+                import hou  # noqa: F401
+                _houdini_live = True
+            except Exception:
+                _houdini_live = False
+            _reason = "%s: %s" % (type(_marshal_exc).__name__, _marshal_exc)
+            if _houdini_live:
+                logger.error(
+                    "MAIN-THREAD MARSHAL UNAVAILABLE -- running %r on the "
+                    "calling thread. hou.* is not thread-safe; mutating tools "
+                    "will record main_thread_executed=False and may corrupt "
+                    "scene state even when they appear to succeed. Cause: %s",
+                    tool_name, _reason,
+                )
+                _note_marshal_bypass(tool_name, _reason)
+            else:
+                logger.info(
+                    "main-thread marshal unavailable outside Houdini "
+                    "(dual-mode, expected); dispatching %r inline. Cause: %s",
+                    tool_name, _reason,
+                )
             result = dispatch_tool(handler, tool_name, arguments)
 
         elapsed = time.monotonic() - t0
