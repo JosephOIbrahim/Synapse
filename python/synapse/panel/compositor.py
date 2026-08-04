@@ -173,6 +173,34 @@ def _apply_widget_stretch(widget, stretch, what):
                        exc_info=True)
 
 
+def _repolish_tree(widget):
+    """Unpolish/polish a widget AND every descendant.
+
+    A Qt dynamic property set on a parent does not restyle its children, so
+    descendant QSS selectors keyed on that property go unapplied. Anything
+    driving a panel-wide property (density) must repolish the whole tree.
+    """
+    try:
+        from qtpy import QtWidgets as _Q
+    except Exception:
+        return
+    stack = [widget]
+    while stack:
+        w = stack.pop()
+        try:
+            st = w.style()
+            st.unpolish(w)
+            st.polish(w)
+            w.update()
+        except Exception:
+            pass
+        try:
+            stack.extend(w.findChildren(_Q.QWidget))
+            break   # findChildren is already recursive; one pass is enough
+        except Exception:
+            pass
+
+
 def compose(panel, root, manifest):
     """Assemble the panel's root layout from a manifest (the Qt half).
 
@@ -190,9 +218,12 @@ def compose(panel, root, manifest):
     # builds so widgets created below polish against the right density.
     try:
         panel.setProperty("density", resolved["density"])
-        style = panel.style()
-        style.unpolish(panel)
-        style.polish(panel)
+        # Qt does NOT cascade a dynamic-property change to children: the
+        # descendant rules (#DsRoot[density=...] QPushButton#DsButton) match
+        # on paper and never repaint unless every child is repolished too.
+        # That bug made all three profiles render identically. Repolish the
+        # whole subtree, root first.
+        _repolish_tree(panel)
     except Exception:
         logger.warning("compositor: could not apply density %r to the panel "
                        "root", resolved["density"], exc_info=True)
