@@ -186,7 +186,12 @@ def _report(results, args):
     scored = [r for r in results if r["verdict"] in (PASS, FAIL)]
     tw = sum(r["weight"] for r in scored)
     pw = sum(r["weight"] for r in scored if r["verdict"] == PASS)
-    competence = (pw / tw) if tw else 0.0
+    # Zero scored tasks is NOT zero competence -- it is no measurement at all.
+    # Same rule as face_token.py and the doctor's fidelity probe: unobtainable
+    # renders as UNKNOWN, never zero and never an estimate. A 0.0 here lets an
+    # infrastructure failure read as total incompetence and sends the loop
+    # optimising against a number that means nothing.
+    competence = (pw / tw) if tw else None
 
     cats = {}
     for r in scored:
@@ -198,7 +203,8 @@ def _report(results, args):
     n_inc = sum(1 for r in results if r["verdict"] == INC)
     n_static = sum(1 for r in results if "NOT PROCEDURAL" in r["note"])
 
-    out = {"competence": round(competence, 4), "categories": per_cat,
+    out = {"competence": round(competence, 4) if competence is not None
+           else "unknown", "categories": per_cat,
            "scored": len(scored), "inconclusive": n_inc,
            "not_procedural": n_static, "results": results}
 
@@ -206,8 +212,14 @@ def _report(results, args):
         print(json.dumps(out, indent=1))
     else:
         print("")
-        print("competence: %.4f   (%d scored, %d inconclusive)"
-              % (competence, len(scored), n_inc))
+        if competence is None:
+            print("competence: UNKNOWN   (0 scored, %d inconclusive)" % n_inc)
+            print("  Nothing could be measured. This is NOT a score of zero.")
+            print("  The loop must not run against this number -- fix the")
+            print("  harness first, then re-baseline.")
+        else:
+            print("competence: %.4f   (%d scored, %d inconclusive)"
+                  % (competence, len(scored), n_inc))
         for k, v in per_cat.items():
             print("  %-12s %.4f" % (k, v))
         if n_static:
@@ -223,6 +235,11 @@ def _report(results, args):
             print("  Fix the harness before trusting this number.")
 
     if args.baseline:
+        if competence is None:
+            # An unknown incumbent is worse than no incumbent: every later run
+            # would compare against a number that was never measured.
+            print("\nrefusing to record an incumbent: nothing was measured.")
+            return 1
         with open(os.path.join(BENCH, "incumbent.json"), "w",
                   encoding="utf-8") as f:
             json.dump({"competence": out["competence"],
