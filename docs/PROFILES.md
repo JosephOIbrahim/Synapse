@@ -22,9 +22,9 @@ in all three — only the altitude of explanation differs. Producers:
 
 | Tab label | Built for | What the screen shows |
 |---|---|---|
-| **Curious** | finding your footing | orientation steps forward (Connect / Corpus go hero), diagnostic chrome goes quiet; the overlay narrates each decision, translates errors into plain language, and defines jargon on first use |
+| **Curious** | finding your footing | diagnostic and economic chrome goes quiet — the rail's token meter and activity meter fold to zero height, one click away behind the visible TOKEN pill, never withheld — and density steps to airy; the overlay narrates each decision, translates errors into plain language, and defines jargon on first use |
 | **Expert** | the panel as it ships (v5.42.0 capability + layout; Connect/Corpus as visible buttons per L5-23) | every widget at standard prominence, no overlay, no added narration |
-| **ML** | the economist's read | token economics step forward (TOKEN pill + rail meter go hero); replies terse and technical |
+| **ML** | the economist's read | token economics steps forward (TOKEN pill, the rail's token meter and the author token all go hero) and density steps to tight; replies terse and technical |
 
 Two presentation axes distinguish them (L5-18): **prominence** — where the accent lands,
 per-widget — and **density** — one panel-wide rhythm (Curious `airy`, Expert `standard`,
@@ -64,6 +64,18 @@ load-bearing, never self-propelling.
 for hardcoded hex colours and bare px values; a site may be waived only by a
 `DESIGN-GAP(L5-11)` marker on the offending line, and every marker must be registered
 here.
+
+**When a profile difference changes, the pin changes with it — deliberately.**
+`tests/test_rope_curious_manifest.py` and `tests/test_rope_manifests.py` hold the complete
+declared diff between profiles: `EXPECTED_PROMINENCE_DELTAS` for emphasis,
+`EXPECTED_COLLAPSE_DELTAS` and `DECLARED_FOLDS` for folds, `EXPECTED_DENSITY_DELTA` for
+padding. A red test asks exactly one question — *did I mean this difference?* If yes, add
+it to the declared set and record it above; the set exists so a new delta must arrive
+deliberately and can never be smuggled. If no, the manifest is wrong and the test is
+right. The one line that is never edited to make a test pass is
+`assert spec["visible"] is True`: a fold is present at zero height and one click away, a
+hidden widget is a capability removed, and L5 forbids the second (L5-6, re-pinned
+2026-08-04 after the L5-15…L5-23 seat pass retired the Curious hero on Connect/Corpus).
 
 ## The hand-me-the-pen gradient
 
