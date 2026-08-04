@@ -359,13 +359,52 @@ def log_integrity(agent_usd_path: str, operation_type: str, agent_id: str,
         violations_attr = integrity.GetAttribute("synapse:anchor_violations")
         violations_attr.Set((violations_attr.Get() or 0) + 1)
 
-    # Track minimum session fidelity
+    # Track minimum session fidelity.
+    #
+    # This is a LATCHING floor persisted to disk: once an operation records
+    # 0.0 it is never raised again, so every later read -- including
+    # synapse_doctor's -- reports red on a healthy stack until the attribute
+    # is reset. A bare "fidelity=0.0" with no attribution is undiagnosable:
+    # it says something broke, never what or when, which sends the reader
+    # hunting the wrong subsystem (observed 2026-08-03: two independent
+    # investigators blamed the metrics aggregator; the real cause was one
+    # anchor violation earlier in the session).
+    #
+    # So when the floor drops, stamp WHY alongside it. The floor keeps its
+    # meaning as a worst-case indicator; the stamp makes it actionable.
     fidelity_attr = integrity.GetAttribute("synapse:session_fidelity")
     current_fidelity = fidelity_attr.Get()
     if current_fidelity is None or fidelity < current_fidelity:
         fidelity_attr.Set(fidelity)
+        if fidelity < 1.0:
+            _stamp_fidelity_cause(
+                integrity, operation_type, agent_id, anchors_hold, fidelity)
 
     stage.GetRootLayer().Save()
+
+
+def _stamp_fidelity_cause(integrity, operation_type, agent_id,
+                          anchors_hold, fidelity) -> None:
+    """Record WHICH operation dropped the fidelity floor, and when.
+
+    Best-effort and never raising: diagnostics must not be able to break the
+    operation they describe. Attributes are created on demand so an agent USD
+    written by an older build upgrades in place without a migration.
+    """
+    try:
+        for name, value in (
+            ("synapse:fidelity_cause_operation", str(operation_type or "unknown")),
+            ("synapse:fidelity_cause_agent", str(agent_id or "unknown")),
+            ("synapse:fidelity_cause_at", _now()),
+            ("synapse:fidelity_cause_anchors_held", "false" if not anchors_hold else "true"),
+            ("synapse:fidelity_cause_value", "%.3f" % fidelity),
+        ):
+            attr = integrity.GetAttribute(name)
+            if not attr or not attr.IsValid():
+                attr = integrity.CreateAttribute(name, Sdf.ValueTypeNames.String)
+            attr.Set(value)
+    except Exception:
+        logger.debug("could not stamp fidelity cause", exc_info=True)
 
 
 def get_integrity(agent_usd_path: str) -> Dict[str, Any]:
@@ -385,16 +424,66 @@ def get_integrity(agent_usd_path: str) -> Dict[str, Any]:
         if not integrity.IsValid():
             return result
 
-        for key in result:
+        for key in list(result):
             attr = integrity.GetAttribute(f"synapse:{key}")
             if attr:
                 val = attr.Get()
                 if val is not None:
                     result[key] = val
+
+        # Attribution for a dropped floor. session_fidelity is a LATCHING
+        # minimum persisted to disk -- without these fields a reader sees a
+        # bare 0.0 and cannot tell whether the stack is broken now or was
+        # broken once, hours ago. Absent on agent files written before this
+        # existed, and absent on a clean session; both are read as "no cause
+        # recorded", never as a failure.
+        for key in ("fidelity_cause_operation", "fidelity_cause_agent",
+                    "fidelity_cause_at", "fidelity_cause_anchors_held",
+                    "fidelity_cause_value"):
+            attr = integrity.GetAttribute(f"synapse:{key}")
+            if attr:
+                val = attr.Get()
+                if val:
+                    result[key] = val
     except Exception as e:
         logger.warning("Could not read integrity: %s", e)
 
     return result
+
+
+def reset_session_fidelity(agent_usd_path: str) -> bool:
+    """Clear the latched fidelity floor and its cause stamp.
+
+    The floor is a worst-case indicator that never rises on its own, so a
+    single historical anchor violation reports red forever -- including
+    through synapse_doctor, on a stack that is healthy now. This is the
+    supported way to say "I have read the cause and dealt with it".
+
+    Deliberately explicit: nothing calls this automatically, because a floor
+    that clears itself would hide exactly the evidence it exists to preserve.
+    Returns True when the floor was cleared.
+    """
+    if not PXR_AVAILABLE or not os.path.exists(agent_usd_path):
+        return False
+    try:
+        stage = Usd.Stage.Open(agent_usd_path)
+        integrity = stage.GetPrimAtPath("/SYNAPSE/agent/integrity")
+        if not integrity.IsValid():
+            return False
+        attr = integrity.GetAttribute("synapse:session_fidelity")
+        if attr:
+            attr.Set(1.0)
+        for key in ("fidelity_cause_operation", "fidelity_cause_agent",
+                    "fidelity_cause_at", "fidelity_cause_anchors_held",
+                    "fidelity_cause_value"):
+            a = integrity.GetAttribute(f"synapse:{key}")
+            if a and a.IsValid():
+                a.Set("")
+        stage.GetRootLayer().Save()
+        return True
+    except Exception:
+        logger.warning("could not reset session fidelity", exc_info=True)
+        return False
 
 
 # ── Routing Log ─────────────────────────────────────────────────

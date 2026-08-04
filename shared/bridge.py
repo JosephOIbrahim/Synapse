@@ -780,6 +780,45 @@ class Operation:
 
 # ── Lossless Execution Bridge ───────────────────────────────────
 
+
+def _integrity_failure_reason(integrity, fidelity) -> str:
+    """Say WHICH anchor failed, not just that fidelity dropped.
+
+    A bare "fidelity=0.0" is undiagnosable: it reports that something broke
+    without reporting what, so the reader guesses. Observed 2026-08-03 -- two
+    independent investigators read this exact message and both blamed the
+    metrics aggregator, which was not involved.
+
+    Only anchors that APPLY on this execution path are named (the *_applicable
+    flags), so a path with no consent gate never reports a consent failure.
+    Degraded fidelity (anchors held, delta unobservable) is reported as its own
+    case rather than as an anchor violation, because it is not one.
+    """
+    failed = []
+    if integrity.undo_applicable and not integrity.undo_group_active:
+        failed.append("undo_group_active (operation not wrapped in an undo group)")
+    if not integrity.main_thread_executed:
+        failed.append(
+            "main_thread_executed (hou.* ran off Houdini's main thread -- "
+            "a marshalling failure, not a scene problem)")
+    if integrity.consent_applicable and not integrity.consent_verified:
+        failed.append("consent_verified (required consent was not recorded)")
+    if integrity.composition_applicable and not integrity.composition_valid:
+        failed.append("composition_valid (composition validation did not pass)")
+
+    op = getattr(integrity, "operation_type", "") or "operation"
+    if not failed:
+        return (
+            f"Integrity check failed: fidelity={fidelity} on {op} -- all "
+            "applicable anchors held, so this is a DEGRADED delta (the scene "
+            "change could not be observed), not an anchor violation."
+        )
+    return (
+        f"Integrity check failed: fidelity={fidelity} on {op} -- "
+        + "; ".join(failed)
+    )
+
+
 class LosslessExecutionBridge:
     """
     ALL agent operations pass through this bridge.
@@ -2315,7 +2354,7 @@ class LosslessExecutionBridge:
             with self._log_lock:
                 self._anchor_violations += 1
             return self._fail_with_integrity(
-                integrity, f"Integrity check failed: fidelity={fidelity}",
+                integrity, _integrity_failure_reason(integrity, fidelity),
                 "integrity_violation",
             )
 
