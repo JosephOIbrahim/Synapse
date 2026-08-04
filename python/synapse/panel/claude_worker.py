@@ -533,3 +533,93 @@ class ClaudeWorker(QThread):
             self.render_receipt.emit(event)
         except Exception:
             pass
+
+
+# ----------------------------------------------------------------------
+# Headless turn execution (the bench's entry point)
+# ----------------------------------------------------------------------
+
+def run_turn_blocking(prompt: str, timeout: int = 90, system_prompt: str = None,
+                      messages: list[dict] = None, provider=None) -> list[dict]:
+    """Drive ONE full turn synchronously, with no Qt event loop and no panel.
+
+    Built for `harness/bench/run_bench.py`, which scores SYNAPSE by driving the
+    same stack an artist drives. It must be the same path, or the score measures
+    something nobody uses.
+
+    Why this can be synchronous: `ClaudeWorker.run()` is a thin wrapper --
+    resolve the key, call `_conversation_loop`, emit done. `_conversation_loop`
+    is a plain method. We construct the worker, never `start()` it, and call the
+    loop directly on the caller's thread.
+
+    Why tools still work without the panel: `_execute_tool_block` tries the
+    local MCP endpoint first, which is worker-thread safe and needs no Qt
+    wiring. The signal-based main-thread fallback is what the panel provides;
+    headless simply never reaches it. If MCP is down, the tool call fails --
+    loudly, as a tool error in the transcript, not as a silent skip.
+
+    Signals emitted with nothing connected are no-ops, so the worker's
+    `tool_status` / `token_received` chatter costs nothing here.
+
+    Raises rather than returning empty. A missing key or a dead bridge is an
+    INFRASTRUCTURE failure, and the bench must record it as `inconclusive`, not
+    as a competence failure. Returning [] would let the scorer read a broken
+    install as a model that cannot build a sphere -- the exact confusion this
+    whole codebase's UNKNOWN rule exists to prevent.
+
+    Args:
+        prompt:        the artist's message, verbatim.
+        timeout:       hard ceiling in seconds. Fixed budget is the discipline
+                       that makes bench runs comparable; a turn that needs
+                       longer has failed. Enforced by a watchdog that sets the
+                       worker's abort flag -- the loop checks it between API
+                       calls and tool blocks.
+        system_prompt: overrides the default. None builds the shipped prompt.
+        messages:      prior turns, for multi-turn tasks. None starts fresh.
+        provider:      engine override; None takes the Claude floor.
+
+    Returns:
+        The full message list after the turn, Anthropic format -- the same
+        thing `ClaudeWorker.get_messages()` hands the panel.
+    """
+    import threading
+
+    if system_prompt is None:
+        try:
+            from synapse.panel.system_prompt import build_system_prompt
+            system_prompt = build_system_prompt({})
+        except Exception:
+            # An empty system prompt makes the model EXPLAIN build requests
+            # instead of executing them (see _build_system_prompt in
+            # synapse_panel.py). Better to say so than to score the fallout.
+            raise RuntimeError(
+                "headless turn: system prompt unavailable; an empty prompt "
+                "makes the model narrate instead of build, which would score "
+                "as incompetence rather than as the harness fault it is")
+
+    convo = list(messages or [])
+    convo.append({"role": "user", "content": prompt})
+
+    worker = ClaudeWorker(convo, system_prompt=system_prompt,
+                          provider=provider)
+
+    api_key = worker._provider.resolve_key()
+    if not api_key:
+        raise RuntimeError("headless turn: %s"
+                           % worker._provider.key_error_message())
+
+    # Fixed budget. abort() is cooperative -- the loop honours it between API
+    # calls and tool blocks, so a turn wedged inside one long tool call can
+    # overrun. That is a real limit, stated rather than hidden.
+    timer = threading.Timer(timeout, worker.abort)
+    timer.daemon = True
+    timer.start()
+    try:
+        worker._conversation_loop(api_key)
+    finally:
+        timer.cancel()
+
+    if worker._abort:
+        raise TimeoutError("headless turn exceeded its %ss budget" % timeout)
+
+    return worker.get_messages()
