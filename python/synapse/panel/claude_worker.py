@@ -603,6 +603,26 @@ def run_turn_blocking(prompt: str, timeout: int = 90, system_prompt: str = None,
     worker = ClaudeWorker(convo, system_prompt=system_prompt,
                           provider=provider)
 
+    # Headless tool dispatch must NOT go off-main.
+    #
+    # _spawn_off_main_tool_thread exists so the handler's run_on_main calls take
+    # the DEFERRED path -- correct in a graphical Houdini, where the marshal
+    # hands work to the GUI main thread via hdefereval. Headless hython has no
+    # hdefereval and no event loop, so that spawn guarantees the marshal fails:
+    # every mutating tool then records main_thread_executed=False and the
+    # integrity envelope reports hash_unavailable.
+    #
+    # Here the caller IS the main thread, so running the tool inline lands it
+    # exactly where the marshal was trying to put it. Fast path 2 in
+    # main_thread.run_on_main (the ident check) then handles it without ever
+    # importing hdefereval. This is the goal of the deferral, not a bypass of it.
+    #
+    # Scoped to this instance. The panel's dispatch is untouched.
+    def _dispatch_inline(request, _w=worker):
+        _w._get_offmain_executor().execute_tool_off_main(request)
+
+    worker._dispatch_off_main = _dispatch_inline
+
     api_key = worker._provider.resolve_key()
     if not api_key:
         raise RuntimeError("headless turn: %s"
