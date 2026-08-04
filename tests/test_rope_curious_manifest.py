@@ -1,9 +1,10 @@
 """Rope L5-6 — composition-only Curious pin (Law L5).
 
 Curious must be the expert surface exactly, re-paced: same regions, same
-widgets, same order, everything visible and uncollapsed — capability
-identical — with the entire diff confined to presentation defaults (widget
-prominence) and the system-prompt overlay. The behaviors that have no widget
+widgets, same order, everything visible and collapsed only where
+declared — capability identical — with the entire diff confined to
+presentation defaults (widget prominence and collapse) and the
+system-prompt overlay. The behaviors that have no widget
 in the compositor's vocabulary (error translation, decision narration, quick
 actions, recipes, /explain, confirm-on-destructive, jargon) must ride the
 overlay, because composition-only means no new widgets. Pure data through
@@ -22,18 +23,37 @@ from synapse.panel.manifests import get_manifest, validate_manifest
 
 # The complete allowed diff vs expert, besides profile name + overlay:
 # (region id, widget id) -> (expert prominence, curious prominence).
+# Re-pinned after the L5-15..L5-23 seat pass: connect, corpus and
+# palette_hint no longer carry a Curious-only prominence (L5-23 gives them
+# the same button treatment in every profile), and activity_meter joins
+# token_meter as quiet alongside its L5-19 fold.
 EXPECTED_PROMINENCE_DELTAS = {
     ("rail", "token_meter"): ("standard", "quiet"),
-    ("rail", "palette_hint"): ("standard", "quiet"),
-    ("rail", "connect"): ("standard", "hero"),
-    ("rail", "corpus"): ("standard", "hero"),
+    ("rail", "activity_meter"): ("standard", "quiet"),
     ("mode_bar", "token_pill"): ("standard", "quiet"),
 }
+
+# The complete allowed collapse diff vs expert (the L5-19 economics and
+# telemetry folds). Collapsed means present in the layout at zero height,
+# never withheld: `visible` stays strict below. A new fold must be added
+# here deliberately, never smuggled.
+EXPECTED_COLLAPSE_DELTAS = {
+    ("rail", "token_meter"),
+    ("rail", "activity_meter"),
+}
+
+# L5-18: density is a manifest lever (airy / standard / tight) resolved at
+# the top of the plan. Padding is presentation, not capability, so the
+# delta is allowed — but declared here, as (expert, curious), so a new one
+# cannot arrive silently.
+EXPECTED_DENSITY_DELTA = ("standard", "airy")
 
 # One marker per composition-only behavior the task names; each must be
 # carried by the overlay because no widget exists for it.
 OVERLAY_MARKERS = (
-    "error",                    # error_translator always-on
+    "breaks",                   # error_translator always-on: the overlay
+                                # carries this as "when something breaks",
+                                # in the plain prose the behavior asks for
     "plain language",
     "decision",                 # decision_log narration inline
     "inline",
@@ -77,22 +97,34 @@ def test_capability_surface_identical_to_expert():
         r["id"]: [w["id"] for w in r["widgets"]]
         for r in expert["regions"]}
     assert curious["defaults"] == expert["defaults"]
+    collapsed = set()
     for region in curious["regions"]:
         for spec in region["widgets"]:
             assert spec["visible"] is True     # nothing withheld
-            assert spec["collapsed"] is False  # nothing folded away
+            if spec["collapsed"]:
+                collapsed.add((region["id"], spec["id"]))
+    # Folding is pacing, not capability: a collapsed widget is present at
+    # zero height, one click away, never removed. Only declared folds may
+    # collapse; an undeclared one fails here.
+    assert collapsed == EXPECTED_COLLAPSE_DELTAS
 
 
 def _prominence_stripped(plan):
     """The resolved plan minus everything a profile is ALLOWED to change:
-    widget prominence, the overlay, and the profile name itself. Region
-    prominence and the defaults block stay in — they must not drift."""
+    widget prominence, declared collapse, density, the overlay, and the
+    profile name itself. Region prominence and the defaults block stay
+    in — they must not drift."""
     plan = copy.deepcopy(plan)
     plan["profile"] = None
     plan["system_prompt_overlay"] = None
+    plan["density"] = None
     for region in plan["regions"]:
         for spec in region["widgets"]:
             spec["prominence"] = None
+            # Declared folds are an allowed presentation diff. Undeclared
+            # ones are caught strictly in the capability test above.
+            if (region["id"], spec["id"]) in EXPECTED_COLLAPSE_DELTAS:
+                spec["collapsed"] = None
     return plan
 
 
@@ -101,6 +133,9 @@ def test_diff_vs_expert_touches_only_presentation_defaults():
     # Recursive equality of everything outside the allowed diff: order,
     # visibility, collapse, stretch, builders, defaults, region prominence.
     assert _prominence_stripped(curious) == _prominence_stripped(expert)
+    # Density is stripped above because it is an allowed lever; the value
+    # it may take is pinned here so a silent change still fails.
+    assert (expert["density"], curious["density"]) == EXPECTED_DENSITY_DELTA
     # And the widget-prominence diff is EXACTLY the declared set — a new
     # delta must be added here deliberately, never smuggled.
     deltas = {}

@@ -31,6 +31,14 @@ from synapse.panel.manifests import (
 PROFILES = ("curious", "expert", "ml")
 V5420_REGION_ORDER = ["rail", "context_ribbon", "mode_bar", "faces"]
 
+# Declared folds per profile (L5-19). A collapsed widget is present in the
+# layout at zero height and one click away — paced, never withheld. Expert
+# is untouched and declares none. A new fold must be added here
+# deliberately, never smuggled.
+DECLARED_FOLDS = {
+    "curious": {("rail", "token_meter"), ("rail", "activity_meter")},
+}
+
 
 def test_registry_is_exactly_the_three_profiles():
     assert sorted(MANIFESTS) == sorted(PROFILES)
@@ -53,10 +61,15 @@ def test_manifest_resolves(name):
             for key in SPEC_KEYS:
                 assert key in spec, "widget %r missing %r" % (spec["id"], key)
             assert spec["prominence"] in PROMINENCE_LEVELS
-            # L5: identical capability in every profile — prominence and the
-            # prompt overlay may differ, but nothing is hidden or collapsed.
+            # L5: identical capability in every profile — prominence, the
+            # prompt overlay and declared folds may differ, but nothing is
+            # ever hidden. A fold is present at zero height, one click
+            # away; a new one must be declared in DECLARED_FOLDS.
             assert spec["visible"] is True
-            assert spec["collapsed"] is False
+            if spec["collapsed"]:
+                assert (region["id"], spec["id"]) in DECLARED_FOLDS.get(
+                    name, set()), "undeclared fold in %r: %s/%s" % (
+                    name, region["id"], spec["id"])
 
 
 def test_expert_is_the_v5420_wiring():

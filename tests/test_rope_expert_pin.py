@@ -26,6 +26,10 @@ from synapse.panel.manifests import get_manifest
 V5420_EXPERT_RESOLVED = {
     "profile": "expert",
     "system_prompt_overlay": "",
+    # L5-18 added density as a top-level resolved key. Expert is the
+    # baseline and takes "standard"; the lever exists, it just doesn't
+    # move here.
+    "density": "standard",
     "defaults": {
         "visible": True, "collapsed": False, "stretch": 0,
         "prominence": "standard",

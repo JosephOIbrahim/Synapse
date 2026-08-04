@@ -35,7 +35,7 @@ def _entry(mid, local, latency):
 
 def test_v1_file_loads_as_expert(tmp_path):
     st = pset.load_settings(_write(tmp_path / "panel_settings.json", V1_FILE))
-    assert st["version"] == pset.SETTINGS_VERSION == 2
+    assert st["version"] == pset.SETTINGS_VERSION == 3
     assert st["profile"] == "expert"
     assert st["fresh_install"] is False       # a v1 file is a configured install
     # v1 model_by_provider migrates as an exact pick for the active provider

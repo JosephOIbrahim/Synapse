@@ -47,7 +47,8 @@ def test_save_is_atomic_no_tmp_left_behind(tmp_path):
     assert pset.save_settings(pset.default_settings(), path=p)
     files = sorted(f.name for f in tmp_path.iterdir())
     assert files == ["panel_settings.json"]          # tmp replaced, not left
-    assert json.loads(p.read_text(encoding="utf-8"))["version"] == 1
+    assert (json.loads(p.read_text(encoding="utf-8"))["version"]
+            == pset.SETTINGS_VERSION)
 
 
 def test_save_failure_returns_false_not_raise(tmp_path):
