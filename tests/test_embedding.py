@@ -202,3 +202,62 @@ def test_very_long_text_terminates_cheaply():
     v = emb.embed("lorem ipsum dolor sit amet " * 20_000)
     assert len(v) == 256
     assert abs(_norm(v) - 1.0) < 1e-6
+
+
+# --------------------------------------------------------------------------- #
+# SemanticEmbedder
+# --------------------------------------------------------------------------- #
+
+def test_semantic_embedder_id():
+    """SemanticEmbedder.id is always 'minilm-l6-v2-d384' regardless of backend."""
+    from synapse.memory.embedding import SemanticEmbedder
+    emb = SemanticEmbedder()
+    assert emb.id == "minilm-l6-v2-d384"
+
+
+def test_semantic_embedder_imports():
+    """SemanticEmbedder is importable without onnxruntime or tokenizers."""
+    from synapse.memory.embedding import SemanticEmbedder
+    # The class must exist and be constructable.
+    emb = SemanticEmbedder()
+    assert emb.dim == 384
+    assert emb._session is None
+    assert emb._tokenizer is None
+
+
+def test_semantic_embedder_fallback():
+    """When the ONNX model is absent, embed() falls back to HashEmbedder.
+
+    The fallback must produce a valid vector: fixed dim, L2-normalized,
+    deterministic across calls.
+    """
+    from synapse.memory.embedding import SemanticEmbedder
+    emb = SemanticEmbedder()
+    # No model file exists at the default path, so embed() hits the fallback.
+    v = emb.embed("render the karma beauty pass")
+    assert isinstance(v, list)
+    assert len(v) == 384
+    assert all(isinstance(x, float) for x in v)
+    assert abs(_norm(v) - 1.0) < 1e-6
+    # Deterministic across calls.
+    assert emb.embed("render the karma beauty pass") == v
+
+
+def test_semantic_embedder_fallback_empty_string():
+    """Empty string via SemanticEmbedder fallback returns zero vector."""
+    from synapse.memory.embedding import SemanticEmbedder
+    emb = SemanticEmbedder()
+    v = emb.embed("")
+    assert len(v) == 384
+    assert _norm(v) == 0.0
+    assert all(x == 0.0 for x in v)
+
+
+def test_semantic_embedder_fallback_custom_dim():
+    """SemanticEmbedder with non-default dim still falls back correctly."""
+    from synapse.memory.embedding import SemanticEmbedder
+    emb = SemanticEmbedder(dim=128)
+    v = emb.embed("test")
+    assert len(v) == 128
+    assert abs(_norm(v) - 1.0) < 1e-6
+    assert emb.id == "minilm-l6-v2-d128"

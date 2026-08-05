@@ -86,6 +86,69 @@ def backfill_to_moneta(
     return report
 
 
+def re_embed(
+    store_dir: str,
+    new_embedder,
+    *,
+    dry_run: bool = True,
+) -> dict:
+    """Re-embed all memories with a new embedder.
+
+    Reads all memories from the store, re-embeds with the new embedder,
+    and updates the vector index. Old embeddings are preserved for rollback
+    (Moneta's ``deposit`` is append-only, so old rows remain in the ECS).
+
+    The embedder swap is detectable via the returned ``old_embedder_id`` /
+    ``new_embedder_id`` fields. To roll back, call ``re_embed`` again with
+    the original embedder.
+
+    Returns a report dict with counts and embedder provenance.
+    """
+    from .moneta_store import MonetaBackedStore
+
+    store_dir = Path(store_dir)
+    store = MonetaBackedStore.from_storage_dir(store_dir, embedder=new_embedder)
+    try:
+        old_id = store.embedder_id
+        memories = store.all()
+        report = {
+            "store_dir": str(store_dir),
+            "total_memories": len(memories),
+            "old_embedder_id": old_id,
+            "new_embedder_id": getattr(new_embedder, "id", "unknown"),
+            "dry_run": dry_run,
+            "re_embedded": 0,
+            "skipped": 0,
+        }
+
+        if dry_run:
+            report["would_re_embed"] = sum(
+                1 for m in memories if m.content
+            )
+            return report
+
+        re_embedded = 0
+        skipped = 0
+        for m in memories:
+            text = m.content or m.summary or ""
+            if not text:
+                skipped += 1
+                continue
+            new_vec = new_embedder.embed(text)
+            floor = store._protected_floor if store._is_protected(m) else 0.0
+            store._handle.deposit(m.to_json(), new_vec, protected_floor=floor)
+            re_embedded += 1
+
+        store.save()
+        report["re_embedded"] = re_embedded
+        report["skipped"] = skipped
+        report["total_after"] = store.count()
+    finally:
+        store.close()
+
+    return report
+
+
 def main(argv: Optional[list] = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     parser = argparse.ArgumentParser(description="Backfill JSONL memories into Moneta.")

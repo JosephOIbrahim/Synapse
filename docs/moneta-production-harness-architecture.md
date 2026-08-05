@@ -569,3 +569,81 @@ git revert <first-phase-0-commit>..HEAD  # revert all changes since Phase 0 bega
 9. Cosine clamp fix (P2-1)
 10. Periodic save timer (P1-1)
 11. All Phase 0 changes (any order)
+
+---
+
+## 10. MONITORING
+
+This section defines what to watch in production, what the key metrics are, and when to alert. Monitoring is split into three tiers: **logs** (what to grep for), **metrics** (what to measure), and **alerts** (when to page).
+
+### 10.1 Log Signals
+
+| Signal | Log line pattern | Severity | What it means |
+|---|---|---|---|
+| **Backend fallback** | `"MonetaBackedStore init failed, falling back to jsonl"` | ERROR | Moneta is configured but unavailable. Memory operations degrade to jsonl. Immediate investigation. |
+| **Periodic save fired** | `"Periodic save: wrote N entities"` | INFO | Durability timer triggered. Expected every ~30s under write load. Absence for >60s under write load means the timer is stuck. |
+| **Save failure** | `"Periodic save failed: ..."` | WARNING | A save attempt raised. Next add retries. Persistent failures across 3+ consecutive attempts = storage issue. |
+| **Consolidation pruned** | `"Sleep pass pruned N memories"` | INFO | Consolidation ran and removed low-utility memories. Expected every 100 adds when entity count >1000. |
+| **Consolidation failure** | `"Periodic consolidation failed: ..."` | WARNING | `run_sleep_pass` raised. Next add retries. |
+| **Vector recall active** | `"vector recall active (embedder: ...)"` | INFO | Vector recall is live. Expected once at store init. |
+| **Vector recall fallback** | `"Moneta.query() raised, falling back to keyword scan"` | WARNING | Vector query failed. Search degrades to keyword-only. |
+| **Attention signaled** | `"Attention signaled for N memories"` | DEBUG | Utility boost applied on recall. Routine. |
+| **Scene memory deposited** | `"Scene memory deposited to Moneta: ..."` | DEBUG | Scene memory write-through to Moneta. Routine. |
+| **USD schema registered** | `"schema_registered=True"` (in doctor output) | INFO | MonetaMemory schema is registered with USD. Expected after Phase 4. |
+| **USD write failure** | `"USD target path unwritable, falling back to MockUsdTarget"` | WARNING | `use_real_usd` is enabled but the target path is not writable. USD layers are not being authored. |
+| **Memory.id collision** | `"Memory.id collision detected, regenerating"` | INFO | Two deposits produced the same ID. The dedup fix handled it. Rare. |
+
+### 10.2 Key Metrics
+
+| Metric | Source | Healthy range | Warning | Critical | Notes |
+|---|---|---|---|---|---|
+| **Entity count** | `doctor` → `moneta_consolidation.total_entities` | 0–100,000 | >100,000 | >500,000 | Grows with usage. Consolidation should keep it bounded. |
+| **Protected entity count** | `doctor` → `moneta_consolidation.protected_entities` | 10%–50% of total | <10% | <5% | Too few protected = consolidation may prune wanted memories. Too many = decay is ineffective. |
+| **Prune rate** | `doctor` → consolidation logs | 0–100/hr | >500/hr | >2000/hr | Spikes indicate decay parameters are too aggressive or a bulk import created many low-utility entries. |
+| **Query latency (p50)** | Application-level timing | <50ms | >100ms | >500ms | Vector recall adds embedding + similarity search. Keyword-only is slower (full scan). |
+| **Query latency (p99)** | Application-level timing | <200ms | >500ms | >2000ms | Long tail from large entity counts or slow vector index. |
+| **Save interval** | Log timestamps | 25–35s | >60s | >120s | Timer drift or a stuck `save()` call. |
+| **Backend availability** | `doctor` → `moneta_substrate.available` | `true` | — | `false` | Moneta must be available. Fallback to jsonl is a degradation. |
+| **Vector recall active** | `doctor` → `vector_recall.active` | `true` | — | `false` | When vector recall is expected (Phase 2+), it must be active. |
+| **USD authoring active** | `doctor` → `use_real_usd.use_real_usd` | `true` (Phase 4+) | — | `false` (Phase 4+) | When USD substrate is enabled, it must be writing. |
+| **Schema registered** | `doctor` → `moneta_substrate.schema_registered` | `true` (Phase 4+) | — | `false` (Phase 4+) | Schema must be registered for typed USD prims. |
+| **Degraded quarantine count** | `doctor` → `memory_key_fingerprint.degraded_quarantine_count` | 0 | ≥1 | ≥5 | Quarantined files indicate key-mismatch events. Each one is a manual-recovery incident. |
+| **Sleep pass counter** | `doctor` → `moneta_consolidation.sleep_pass_called` | `"not_tracked"` (pre-counter) | — | — | Once a counter is added, track that consolidation is actually running. |
+
+### 10.3 Alert Thresholds
+
+| Alert | Trigger | Response | Escalation |
+|---|---|---|---|
+| **Backend down** | `moneta_substrate.available` is `false` for 2+ consecutive doctor runs | Check Moneta process health, disk space, and permissions. Restart if needed. | 15 min → page on-call |
+| **Backend fallback** | Log line `"falling back to jsonl"` appears | Investigate Moneta init failure. Check `SYNAPSE_MEMORY_BACKEND` env var and Moneta package installation. | Immediate |
+| **Save stuck** | No `"Periodic save"` log line for >90s under write load | Check for a hung `save()` call. Restart the server process. | 30 min → page on-call |
+| **Consolidation spike** | >500 prunes/hr for 2+ consecutive hours | Review decay parameters. Check if a bulk import created many low-utility entries. Adjust `DECAY_HALF_LIFE` or `PROTECTION_FLOOR` in `shared/constants.py`. | 4 hours → review |
+| **Query latency high** | p99 >500ms for 5+ consecutive minutes | Check entity count. If >100k, consider reducing `_save_interval` or increasing consolidation frequency. | 15 min → page on-call |
+| **Key mismatch** | `memory_key_fingerprint.status` is `"mismatch"` | The encryption key changed. All new deposits use a different key than existing ones. Follow the remediation in the doctor output. | Immediate |
+| **Degraded quarantine growth** | `degraded_quarantine_count` increases between doctor runs | Key-mismatch events are accumulating. Each quarantined file represents a manual-recovery incident. Investigate the key rotation or provisioning process. | 1 hour → page on-call |
+| **Schema lost** | `moneta_substrate.schema_registered` flips from `true` to `false` | `PXR_PLUGINPATH_NAME` env var was removed or the schema directory was deleted. Re-apply the package env configuration. | 1 hour → page on-call |
+| **Vector recall lost** | `vector_recall.active` flips from `true` to `false` | The embedder was removed or the store was re-initialized without one. Check `MonetaBackedStore` init. | 2 hours → review |
+| **Entity count unbounded** | Entity count grows >10% per day without consolidation | Consolidation is not keeping up. Check that periodic consolidation is running (every 100 adds when >1000 entities). | 1 day → review |
+
+### 10.4 Monitoring Implementation
+
+| What | How | When |
+|---|---|---|
+| **Doctor run** | `synapse_doctor` tool or `doctor` command | On-demand + scheduled every 15 min in production |
+| **Log aggregation** | Ship `~/.synapse/logs/synapse.log` to the team's log aggregator | Continuous |
+| **Metric collection** | Parse doctor output for numeric metrics; push to a time-series DB (or log-based metrics) | Every doctor run |
+| **Alert evaluation** | Evaluate alert thresholds against doctor output and log patterns | Every doctor run + log ingestion |
+| **Dashboard** | Entity count, prune rate, query latency, backend availability, key fingerprint status | Real-time |
+
+### 10.5 Pre-Flight Checklist
+
+Before declaring the Moneta production harness "live":
+
+- [ ] `synapse_doctor` reports all moneta checks as `ok` (not `skipped`, not `fail`)
+- [ ] Log aggregation is receiving `~/.synapse/logs/synapse.log`
+- [ ] At least one periodic save has fired (check logs for `"Periodic save"`)
+- [ ] Entity count is >0 and growing with usage
+- [ ] Alert thresholds are configured in the monitoring system
+- [ ] On-call knows the rollback procedures (Section 9)
+- [ ] Doctor is scheduled to run every 15 min (cron or equivalent)
+- [ ] Key fingerprint is `"match"` — encryption key is provisioned correctly

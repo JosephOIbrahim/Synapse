@@ -46,6 +46,7 @@ from .markdown import (
 from .embedding import (
     Embedder,
     HashEmbedder,
+    SemanticEmbedder,
 )
 
 __all__ = [
@@ -86,4 +87,5 @@ __all__ = [
     # Embedding
     'Embedder',
     'HashEmbedder',
+    'SemanticEmbedder',
 ]

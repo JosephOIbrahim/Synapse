@@ -233,14 +233,26 @@ class MonetaBackedStore:
         starts fresh, rather than crashing startup or silently abandoning the
         file — Moneta's ``hydrate()`` does a bare ``json.load`` (CRUCIBLE finding).
         """
-        from .embedding import HashEmbedder
+        from .embedding import HashEmbedder, SemanticEmbedder
         from . import moneta_runtime as mr
 
         if not mr.moneta_available():
             raise RuntimeError(
                 f"Moneta backend requested but not importable: {mr.import_error()}"
             )
-        embedder = embedder or HashEmbedder()
+        if embedder is None:
+            try:
+                embedder = SemanticEmbedder()
+                logger.info(
+                    "Using SemanticEmbedder (%s) as default embedder",
+                    embedder.id,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "SemanticEmbedder init failed (%s: %s); falling back to HashEmbedder",
+                    type(exc).__name__, exc,
+                )
+                embedder = HashEmbedder()
         base = Path(storage_dir) / ".moneta"
         base.mkdir(parents=True, exist_ok=True)
         snapshot_path = base / "snapshot.json"
@@ -394,9 +406,21 @@ class MonetaBackedStore:
         # abandoned). Materializing the rows under the lock gives every read an
         # atomic point-in-time view; the expensive JSON deserialization runs
         # lock-free. All read methods inherit safety from this single snapshot.
+        #
+        # Corrupt payloads are skipped with a warning rather than failing the
+        # entire read — one bad entry must never hide every other memory.
         with self._lock:
             rows = list(self._handle.ecs.iter_rows())
-        return [Memory.from_json(row.payload) for row in rows]
+        result: List[Memory] = []
+        for row in rows:
+            try:
+                result.append(Memory.from_json(row.payload))
+            except Exception as exc:
+                logger.warning(
+                    "Skipping corrupt Moneta row %s: %s",
+                    getattr(row, "entity_id", "<unknown>"), exc,
+                )
+        return result
 
     # -- read ---------------------------------------------------------------
 

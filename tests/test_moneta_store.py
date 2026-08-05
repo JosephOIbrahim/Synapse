@@ -254,3 +254,42 @@ def test_vector_recall_fallback():
     # Mixed tags+keywords, still no text — still the full-scan path.
     mixed_results = s.search(MemoryQuery(tags=["render"], keywords=["karma"], limit=5))
     assert len(mixed_results) > 0, "Mixed tags+keywords query returned no results"
+
+
+def test_re_embed_preserves_memory_count():
+    """Re-embedding (creating a new store over the same handle) preserves count.
+
+    A new MonetaBackedStore with a different embedder instance should still
+    see the same memories — the handle owns the ECS, not the store wrapper.
+    """
+    from synapse.memory.moneta_store import MonetaBackedStore
+    from synapse.memory.embedding import HashEmbedder
+
+    handle = mr.make_ephemeral(embedding_dim=DIM)
+    s1 = MonetaBackedStore(handle, HashEmbedder(dim=DIM))
+    for m in _corpus():
+        s1.add(m)
+    assert s1.count() == 4
+
+    # Second store, same handle, different embedder instance.
+    s2 = MonetaBackedStore(handle, HashEmbedder(dim=DIM))
+    assert s2.count() == 4
+    # Payloads must still round-trip.
+    got = s2.get(_corpus()[0].id)
+    assert got is not None
+    assert got.content == _corpus()[0].content
+
+
+def test_embedder_swap_detectable():
+    """embedder_id changes when a different embedder is used, so provenance
+    can detect that a re-embed is needed."""
+    from synapse.memory.moneta_store import MonetaBackedStore
+    from synapse.memory.embedding import HashEmbedder
+
+    handle = mr.make_ephemeral(embedding_dim=256)
+    s1 = MonetaBackedStore(handle, HashEmbedder(dim=256))
+    assert s1.embedder_id == "hash-ngram-v1-d256-n1_3"
+
+    s2 = MonetaBackedStore(handle, HashEmbedder(dim=384))
+    assert s2.embedder_id == "hash-ngram-v1-d384-n1_3"
+    assert s1.embedder_id != s2.embedder_id
