@@ -196,6 +196,55 @@ logger = logging.getLogger("synapse-mcp")
 
 
 # ---------------------------------------------------------------------------
+# Off-loop dispatch — on an executor WE own
+# ---------------------------------------------------------------------------
+# Every tool dispatch used `await _off_loop(...)`, which runs on the
+# event loop's DEFAULT executor. asyncio.run() calls shutdown_default_executor()
+# on the way out. Under CPython that is harmless, because the next asyncio.run()
+# builds a fresh loop with a fresh executor. Houdini ships its own event loop
+# (haio.HoudiniEventLoop) and hands back a PERSISTENT one, so the shutdown is
+# permanent: the first asyncio.run() in a hython process disables to_thread for
+# the entire process.
+#
+# Probed on Houdini 22.0.368 / Python 3.13.10, no SYNAPSE code involved:
+#     run #1: ok:1         loop_id=6234879664
+#     run #2: FAIL RuntimeError: Executor shutdown has been called
+#     run #3: FAIL RuntimeError: Executor shutdown has been called
+# while an EXPLICIT ThreadPoolExecutor kept working across all three.
+#
+# Visible as 20 failures in tests/test_port_wave_scene1.py on the shipping
+# interpreter and zero on the 3.14 gate, because stock asyncio makes a new loop
+# each time and hides it. Depending on a process-global that any library may
+# shut down is the defect; who shut it down is a detail.
+_DISPATCH_EXECUTOR: "concurrent.futures.ThreadPoolExecutor | None" = None
+
+
+def _dispatch_executor():
+    """The executor this module owns. Created once, never handed to asyncio."""
+    global _DISPATCH_EXECUTOR
+    if _DISPATCH_EXECUTOR is None:
+        import concurrent.futures
+        _DISPATCH_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
+            max_workers=4, thread_name_prefix="synapse-mcp-dispatch",
+        )
+    return _DISPATCH_EXECUTOR
+
+
+async def _off_loop(fn, *args, **kwargs):
+    """asyncio.to_thread's contract, on an executor nothing else can shut down.
+
+    Drop-in for `await _off_loop(fn, *args)`. Deliberately does NOT fall
+    back to asyncio.to_thread on error: a silent fallback to the broken path is
+    how this stayed invisible for so long.
+    """
+    import functools
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        _dispatch_executor(), functools.partial(fn, *args, **kwargs)
+    )
+
+
+# ---------------------------------------------------------------------------
 # WebSocket Client
 # ---------------------------------------------------------------------------
 
@@ -615,7 +664,7 @@ async def _inspector_call_tool(arguments: dict) -> list:
 
     try:
         dispatcher = _get_inspector_dispatcher()
-        result = await asyncio.to_thread(
+        result = await _off_loop(
             dispatcher.execute, _INSPECTOR_TOOL_NAME, kwargs,
         )
     except ConnectionError as e:
@@ -716,7 +765,7 @@ async def _scout_call_tool(arguments: dict) -> list:
             kwargs[opt] = arguments[opt]
     try:
         dispatcher = _get_scout_dispatcher()
-        result = await asyncio.to_thread(
+        result = await _off_loop(
             dispatcher.execute, _SCOUT_TOOL_NAME, kwargs,
         )
     except Exception as e:
@@ -857,14 +906,16 @@ def _ported_error_text(err: _AgentToolError) -> str:
 async def _ported_call_tool(name: str, arguments: dict) -> list:
     """Handle a port-wave tool via the cognitive Dispatcher.
 
-    Same shape as _inspector_call_tool: asyncio.to_thread runs the dispatch
-    off the event loop; the transport closure posts the WS round-trip back
-    onto it. Dispatcher never raises — failures return as AgentToolError and
-    are mapped onto the legacy error envelope.
+    Same shape as _inspector_call_tool: _off_loop runs the dispatch off the
+    event loop, on an executor this module owns. NOT asyncio.to_thread — that
+    uses the default executor, which asyncio.run() shuts down permanently under
+    Houdini's persistent loop; see _off_loop. The transport closure posts the WS
+    round-trip back onto it. Dispatcher never raises — failures return as
+    AgentToolError and are mapped onto the legacy error envelope.
     """
     try:
         dispatcher = _get_ported_dispatcher()
-        result = await asyncio.to_thread(dispatcher.execute, name, arguments)
+        result = await _off_loop(dispatcher.execute, name, arguments)
         if isinstance(result, _AgentToolError):
             text = _ported_error_text(result)
             if text.startswith("Something unexpected"):
