@@ -64,21 +64,23 @@ S2 (after S0+S1... S1 is done), S3 (after S2), I1 (after I0).
 
 ---
 
-## Held - human gate, do NOT auto-dispatch
+## Held - RESOLVED 2026-08-06
 
-**H3b (cook-cancel).** The manifest note says both "RELEASED by Joe
-2026-07-28" and "HELD by ruling - human release required." That is a
-contradiction in the record. Re-confirm your own release intent before
-it dispatches - one word from you resolves it; nobody else may.
+**H3b (cook-cancel).** Joe re-confirmed live tonight. `state: ready` is the
+operative field; the stale HELD text in its note is historical. It dispatches
+with the board.
 
 ---
 
 ## Guardrails for the AM (read once)
 
-- Do NOT rewrite existing briefs. 17 exist at harness/prompts/. This
-  file sequences them; it does not replace them.
-- Do NOT fire Wave 2 before reading Wave 1 receipts. Evidence first.
-- Do NOT dispatch H3b without re-confirming the release yourself.
+- Do NOT rewrite existing briefs. 18 exist at harness/prompts/ (M5 now
+  among them). This file sequences them; it does not replace them.
+- ONE-GO MODE (ruled 2026-08-06): the orchestrator dispatches the whole
+  ready board at once. Same-touches writers are serialized IN THE MANIFEST
+  (H6 now deps U1 - the R91 fix), so parallel safety is data, not vigilance.
+  The wave tables above remain as the READING order for receipts.
+- H3b release re-confirmed by Joe 2026-08-06; it dispatches with the board.
 - The autoresearch harness (last night) and the leg orchestrator are
   TWO engines: hython probes vs claude-code worktrees. Each has a lane.
   Use autoresearch for new Houdini-truth questions; use orchestrate.ps1
@@ -86,66 +88,43 @@ it dispatches - one word from you resolves it; nobody else may.
 
 ---
 
-## M5 ARCHITECT BRIEF - the reconciler (BLOCKS)
+## M5 - RULED AND ON THE BOARD (2026-08-06)
 
-Not on the legs board - this is the missing brief. M5 is the engine that
-makes "basic Solaris setup" real: reads fixtures/solaris.basic.json,
-makes /stage match it, no-ops on reask, never touches your nodes.
-Oracle already exists: baseline sha 8bb05761, canonicalizer c2.
+Joe ruled all four decisions as recommended: **D1** box ownership
+(BLOCKS_<fixture>) / **D2** fail-loud collisions / **D3** delete scope =
+box members only / **D4** Dispatcher seam, discovered live. The full ruled
+brief is `harness/prompts/m5.md`; the leg row is in legs.json, state ready,
+deps none. It dispatches WITH the board - no morning decisions remain.
 
-Four decisions need YOUR ruling before FORGE can run. Each has a
-recommendation so ruling is fast - agree or override, then it builds.
+Oracle: fixtures/solaris.basic.json, baseline 8bb05761, canonicalizer c2.
+Invariants F-1..F-5 headless. M6 (phrase routing) is the follow-on leg,
+authored after M5's receipt lands.
 
-**D1 - Ownership mechanism.** How does the reconciler know which nodes
-are its own?
-  a) network box membership (BLOCKS_solaris_basic)   <- RECOMMENDED
-  b) name prefix convention
-  c) spare-parm metadata stamp per node
-Box: flat nodes stay native and editable, membership is queryable,
-one gesture selects-and-deletes, persists in the hip. Note: provenance
-stamping via USD customData is Michael Gold RFC territory - the box
-avoids that zone entirely.
-
-**D2 - Collision policy.** Artist already has a node named `camera`
-in /stage, outside the box. Reconciler should:
-  a) fail loudly with a named-collision report, touch nothing  <- RECOMMENDED
-  b) adopt the artist node into the fixture
-  c) auto-rename the fixture node
-Fail-loud is the only option that never surprises. Adopt and rename
-both silently change meaning.
-
-**D3 - Delete scope.** On re-apply, what may the reconciler delete?
-  a) ONLY nodes inside its own box, nothing else, ever  <- RECOMMENDED
-  b) any node matching fixture names
-This is the safety invariant. (a) makes "your nodes never touched"
-structural rather than behavioral.
-
-**D4 - Integration seam.** Where does apply_fixture mount?
-  a) new tool through the Dispatcher, same port pattern as
-     synapse_inspect_stage  <- RECOMMENDED
-  b) panel-side helper outside the tool surface
-Dispatcher keeps it on the one spine and makes M6 routing trivial:
-the alias table resolves the phrase, calls the same tool, zero tokens.
-
-**After ruling:** FORGE builds reconcile + apply (seed already exists:
-_build_fixture_once in harness/autoresearch/probes.py). CRUCIBLE runs
-F-1 (apply on clean -> 8bb05761), F-2 (apply/delete/apply -> same),
-F-3 (apply on applied -> ops==0, hash unchanged) headless via the
-autoresearch pattern. Then M6: the phrase table.
+The option-by-option architect discussion that produced these rulings is
+preserved in the session of 2026-08-05; the rulings above are the operative
+record.
 
 ---
 
-## AM execute sequence
+## AM execute sequence - ONE COMMAND
+
+All rulings landed 2026-08-06. Nothing left to decide. The morning is:
 
 ```
-0.  (optional) push this plan file if you want it on the remote first
-1.  rule on H3b release + the four M5 decisions above  (~10 min)
-2.  fire Wave 1 through orchestrate.ps1  (7 legs, parallel)
-3.  coffee. protected.
-4.  read the seven receipts
-5.  dispatch Wave 2 in the listed order as evidence allows
-6.  M5 FORGE+CRUCIBLE with the ruled contract
+cd C:\Users\User\SYNAPSE
+.\harness\orchestrate.ps1 -DryRun    # optional 60s preview of the dispatch set
+.\harness\orchestrate.ps1            # THE command. Whole board, one window.
+git push origin rope/gate-a          # puts this plan + rulings on the remote
 ```
 
-State capsule ends here. Everything above is on disk and committed;
+The orchestrator owns everything after that: dependency gating, worktrees,
+launch, receipt monitoring, notification. What fires immediately: the seven
+read-only scouts (H5 H8 V1 RSI0 S0 I0 E0), the writers (RES U1 H4 C1 V2
+H3a H3b), and M5. Gated legs (H1 H6 H7 S2 S3 I1) release themselves as
+receipts land. Merges stay human - Gate C, always.
+
+Coffee is step 2 and it is protected. Read receipts in the Wave order
+above when they arrive. That is the whole morning.
+
+State capsule ends here. Everything is on disk and committed;
 nothing is in anyone's head.

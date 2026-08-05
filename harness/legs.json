@@ -147,7 +147,10 @@
       "branch": "repair/h6-substrate-truth",
       "worktree": ".claude/worktrees/h6-substrate-truth",
       "prompt": "harness/prompts/h6.md",
-      "deps": [],
+      "deps": [
+        "U1"
+      ],
+      "_deps_note": "serialized behind U1 2026-08-06: both touch moneta_runtime.py; parallel dispatch of same-touches writers is the documented R91 failure (LEDGER+H6). U1 authors the five-field function; H6 then measures the REAL substrate.",
       "readonly": false,
       "note": "R64. moneta_available() is one boolean carrying five independent claims: imports / same-module-both-interpreters / schema registered / prims authored typed / round-trips. Only the first is measured. MonetaMemory is concreteTyped and codegen'd, but the brief says prims are still untyped def - expected live state is registered=True in_use=False, the only cell that looks like success. Writes moneta_runtime.py so NOT read-only.",
       "touches": [
@@ -469,6 +472,23 @@
       "note": "Blueprint Mile 4. Routing is probe-derived, never config-declared - and this project has the receipts: hou.ActiveRender documented and absent, EXPECTED_HOUDINI_VERSION declared and never assigned, five Solaris tools registered and unreachable. A model list is the same shape of claim and fails the same way. Returns a structure, no panel work. Colour COMPUTED from probe age and quota, never stored; staleness degrades to GREY, never to green. Zero completion spend - count_tokens is free, completions are not.",
       "closed_note": "state->done 2026-08-02 (bar-truth pass): econ/v3-probe-layer ancestor-merged into master (same cleanup)",
       "worktree_released": ".claude/worktrees/v3-econ"
+    },
+    {
+      "id": "M5",
+      "name": "blocks reconciler",
+      "state": "ready",
+      "receipt": "M5.json",
+      "branch": "blocks/m5-reconciler",
+      "worktree": ".claude/worktrees/m5-reconciler",
+      "prompt": "harness/prompts/m5.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/cognitive/tools/",
+        "fixtures/",
+        "tests/"
+      ],
+      "note": "Ruled by Joe 2026-08-06 (D1 box ownership / D2 fail-loud collisions / D3 delete-inside-box-only / D4 Dispatcher seam). Builds apply_fixture + remove_fixture against the committed oracle: fixtures/solaris.basic.json baseline 8bb05761, canonicalizer c2. Seed exists at harness/autoresearch/probes.py _build_fixture_once. Invariants F-1..F-5 headless. touches is coarse on purpose - the live Dispatcher seam is DISCOVERED, not assumed; the brief requires recording it as found. M6 (phrase routing) explicitly out of scope."
     }
   ]
 }
