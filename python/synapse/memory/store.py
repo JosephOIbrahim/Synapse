@@ -162,7 +162,6 @@ class MemoryStore:
     """
 
     # Throttle evolution checks: at most once per N add() calls
-    _EVOLUTION_CHECK_INTERVAL = 10
 
     def __init__(self, storage_dir: Path, background_load: bool = True):
         self.storage_dir = Path(storage_dir)
@@ -520,31 +519,7 @@ class MemoryStore:
             if len(self._write_buffer) >= self._flush_max:
                 self._flush_event.set()
 
-        # Throttled evolution check (Flat -> Structured)
-        self._add_count += 1
-        if self._add_count % self._EVOLUTION_CHECK_INTERVAL == 0:
-            self._check_evolution()
-
         return memory.id
-
-    def _check_evolution(self):
-        """Check if memory should evolve (e.g., markdown -> USD).
-
-        Runs in the caller thread but is cheap (file stat + line scan).
-        Only triggers when storage_dir looks like a project .synapse/ dir.
-        """
-        try:
-            from .evolution import check_evolution
-            result = check_evolution(str(self.storage_dir))
-            if result.get("should_evolve"):
-                logger.info(
-                    "Memory evolution triggered: %s -> %s (triggers: %s)",
-                    result.get("current", "?"),
-                    result.get("target", "?"),
-                    ", ".join(result.get("triggers_met", [])),
-                )
-        except Exception as e:
-            logger.debug("Evolution check skipped: %s", e)
 
     def get(self, memory_id: str) -> Optional[Memory]:
         """Get a memory by ID."""

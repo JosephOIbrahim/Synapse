@@ -183,3 +183,16 @@ $HOUDINI_TEMP_DIR/
 .claude/cm_*.txt
 .claude/commit_*.txt
 .token-saver/
+
+harness/rope/results.tsv
+harness/rope/.prompt.txt
+harness/rope/last_run.log
+harness/rope/runner_console.log
+harness/rope/runner_console.err.log
+harness/rope/finisher.log
+harness/rope/AFTERNOON_REPORT.md
+harness/rope/pass*.log
+harness/rope/pass*.err.log
+
+harness/rope/PROGRESS.md
+harness/rope/.runner.lock

@@ -1,0 +1,41 @@
+name: Bug report
+description: Something SYNAPSE does that it shouldn't, or doesn't do that it should
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: input
+    id: houdini_build
+    attributes:
+      label: Houdini build
+      description: The exact build (Help → About Houdini). Behavior is build-pinned — "H22" alone is not enough.
+      placeholder: "22.0.368"
+    validations:
+      required: true
+  - type: dropdown
+    id: license_tier
+    attributes:
+      label: License tier
+      description: Tier changes behavior — Indie silently no-ops husk renders, for one.
+      options:
+        - FX / Core (commercial)
+        - Indie
+        - Education
+        - Apprentice
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: doctor_output
+    attributes:
+      label: synapse_doctor output
+      description: Run the `synapse_doctor` diagnostic and paste its full output here (or attach the bundle it writes). This is the fastest path to a fix.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what happened instead. Exact error text beats a paraphrase.
+    validations:
+      required: true

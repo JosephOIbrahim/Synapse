@@ -463,6 +463,133 @@ def _check_moneta_substrate() -> Dict[str, Any]:
 
 # -----------------------------------------------------------------------------
 
+def _check_moneta_consolidation() -> Dict[str, Any]:
+    """Consolidation telemetry: entity counts and sleep-pass evidence.
+
+    Best-effort — skips when the store is not Moneta-backed or unreachable.
+    Reports total entity count, protected entity count (via
+    ``ecs.count_protected()`` when available), and whether
+    ``run_sleep_pass`` has ever been called (no counter exists today, so
+    this reports ``"not_tracked"`` unless a future version adds one).
+    """
+    name = "moneta_consolidation"
+    try:
+        from ..memory import store as _store_mod
+        from ..memory.moneta_store import MonetaBackedStore
+
+        sm = _store_mod.get_synapse_memory()
+        store = sm.store
+        if not isinstance(store, MonetaBackedStore):
+            return {"name": name, "status": "skipped",
+                    "detail": "store is not Moneta-backed"}
+
+        total = store.count()
+        protected = None
+        try:
+            protected = store._handle.ecs.count_protected()
+        except AttributeError:
+            # count_protected not available on this moneta version
+            pass
+
+        # No counter for run_sleep_pass calls exists today; report
+        # not_tracked so a future version that adds one can flip this.
+        result = {
+            "total_entities": total,
+            "protected_entities": protected,
+            "sleep_pass_called": "not_tracked",
+        }
+        return {"name": name, "status": "ok", "result": result,
+                "detail": (f"{total} entities"
+                           + (f", {protected} protected" if protected is not None
+                              else "")
+                           + "; sleep-pass counter not tracked")}
+    except Exception as e:
+        return {"name": name, "status": "skipped",
+                "detail": f"probe failed: {e}"}
+
+
+def _check_vector_recall() -> Dict[str, Any]:
+    """Report whether vector recall is active in the Moneta store.
+
+    Vector recall requires a Moneta-backed store with an embedder. When the
+    store is not Moneta-backed, or the embedder is absent, vector recall is
+    inactive and keyword-only search is used instead.
+    """
+    name = "vector_recall"
+    try:
+        from ..memory import store as _store_mod
+        from ..memory.moneta_store import MonetaBackedStore
+
+        sm = _store_mod.get_synapse_memory()
+        store = sm.store
+        if not isinstance(store, MonetaBackedStore):
+            return {"name": name, "status": "skipped",
+                    "detail": "store is not Moneta-backed; vector recall unavailable"}
+
+        embedder = getattr(store, "_embedder", None)
+        embedder_id = getattr(store, "embedder_id", "unknown")
+        if embedder is None:
+            return {"name": name, "status": "fail",
+                    "detail": "Moneta store has no embedder; vector recall is inactive",
+                    "result": {"active": False, "embedder_id": None}}
+
+        return {"name": name, "status": "ok",
+                "detail": f"vector recall active (embedder: {embedder_id})",
+                "result": {"active": True, "embedder_id": embedder_id}}
+    except Exception as e:
+        return {"name": name, "status": "skipped",
+                "detail": f"probe failed: {e}"}
+
+
+def _check_use_real_usd() -> Dict[str, Any]:
+    """Report whether USD authoring (use_real_usd) is enabled in the Moneta store.
+
+    When use_real_usd is True, the Moneta store authors typed USD prims to
+    sublayers under .moneta/usd/. When False (or when the store is not
+    Moneta-backed), USD sublayers are not written.
+    """
+    name = "use_real_usd"
+    try:
+        from ..memory import store as _store_mod
+        from ..memory.moneta_store import MonetaBackedStore
+
+        sm = _store_mod.get_synapse_memory()
+        store = sm.store
+        if not isinstance(store, MonetaBackedStore):
+            return {"name": name, "status": "skipped",
+                    "detail": "store is not Moneta-backed; USD authoring not applicable"}
+
+        handle = getattr(store, "_handle", None)
+        if handle is None:
+            return {"name": name, "status": "skipped",
+                    "detail": "Moneta handle not available"}
+
+        # Probe the handle's config for use_real_usd. The config may be
+        # accessible via handle.config or handle._config depending on the
+        # Moneta version; probe both.
+        config = getattr(handle, "config", None) or getattr(handle, "_config", None)
+        if config is None:
+            return {"name": name, "status": "skipped",
+                    "detail": "Moneta handle has no accessible config"}
+
+        use_real_usd = getattr(config, "use_real_usd", None)
+        usd_target = getattr(config, "usd_target_path", None)
+        result = {
+            "use_real_usd": use_real_usd,
+            "usd_target_path": str(usd_target) if usd_target else None,
+        }
+        if use_real_usd:
+            return {"name": name, "status": "ok",
+                    "detail": f"USD authoring enabled (target: {usd_target})",
+                    "result": result}
+        return {"name": name, "status": "fail",
+                "detail": "USD authoring is disabled (use_real_usd=False)",
+                "result": result}
+    except Exception as e:
+        return {"name": name, "status": "skipped",
+                "detail": f"probe failed: {e}"}
+
+
 def _check_symbol_table() -> Dict[str, Any]:
     name = "symbol_table"
     try:
@@ -789,6 +916,9 @@ def run_doctor(payload: Dict, handler=None, home: Optional[Path] = None) -> Dict
         _check_telemetry(home),
         _wrap_memory_key_check(home),
         _check_moneta_substrate(),
+        _check_moneta_consolidation(),
+        _check_vector_recall(),
+        _check_use_real_usd(),
         _check_symbol_table(),
         _check_bridge_endpoint(base),
         _check_mcp_coexistence(base),

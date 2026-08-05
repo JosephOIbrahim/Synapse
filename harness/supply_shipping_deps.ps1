@@ -8,12 +8,25 @@
 # measurable on this machine. It does nothing for an artist installing fresh.
 # No release claim may cite a number produced with it unless the number says so.
 #
+# 2026-08-05: R47's list of six is INCOMPLETE. Both remaining collection errors
+# on the shipping interpreter are `ModuleNotFoundError: No module named
+# 'pywintypes'` (tests/test_passthrough_hygiene.py, tests/test_port_wave_scene1.py).
+# pywin32 is a SEVENTH unshipped shipping dependency. Measured, not inferred.
+#
+# UNVERIFIED, and deliberately labelled so: pywin32 does not lay out flat under
+# `pip install --target`. It writes win32\, win32com\, pythonwin\ and
+# pywin32_system32\, and pywintypes.py lands in win32\lib\ -- so $deps alone on
+# PYTHONPATH is NOT expected to resolve it. The extra path emitted at the bottom
+# is the obvious candidate and has NOT been probed on this box; a live MONETA
+# harness held the interpreter when this line was written. Do not cite pywin32
+# as resolved until -Verify prints OK for pywintypes.
+#
 # Houdini's own site-packages is never touched. Reverted by deleting .hython_deps.
 param([switch]$Verify)
 
 $hy   = "C:\Program Files\Side Effects Software\Houdini 22.0.368\bin\hython3.13.exe"
 $deps = "C:\Users\User\SYNAPSE\.hython_deps"
-$pkgs = @('websockets','mcp','pytest-asyncio','orjson','xxhash','filelock')
+$pkgs = @('websockets','mcp','pytest-asyncio','orjson','xxhash','filelock','pywin32')
 
 if (-not (Test-Path $hy)) { Write-Host "hython3.13 not found: $hy" -ForegroundColor Red; exit 2 }
 
@@ -24,12 +37,12 @@ if (-not $Verify) {
         Select-String -Pattern 'Successfully|ERROR' | Select-Object -Last 3
 }
 
-$env:PYTHONPATH = "$deps;" + $env:PYTHONPATH
+$env:PYTHONPATH = "$deps;$deps\win32;$deps\win32\lib;" + $env:PYTHONPATH
 Write-Host ""
 Write-Host "resolution under hython3.13:" -ForegroundColor Cyan
 & $hy -c @"
 import importlib
-for m in ['websockets','mcp','pytest_asyncio','orjson','xxhash','filelock']:
+for m in ['websockets','mcp','pytest_asyncio','orjson','xxhash','filelock','pywintypes']:
     try:
         importlib.import_module(m); print('  OK   ' + m)
     except Exception as e:

@@ -29,6 +29,16 @@ from synapse.panel.designsystem import motion
 from synapse.panel.designsystem import fontload
 from synapse.panel.gate_stamp import phantom_gate_status
 
+# L5-2: layout manifests + compositor — the region sequence is data-driven.
+# Pure-stdlib modules, but guarded like the rest of the runtime imports so the
+# panel always instantiates; _build_ui falls back to the v5.42.0 wiring.
+try:
+    from synapse.panel.manifests import ManifestError, get_manifest, DEFAULT_PROFILE
+    from synapse.panel.compositor import compose
+except Exception:  # pragma: no cover
+    ManifestError = get_manifest = compose = None
+    DEFAULT_PROFILE = "expert"
+
 # This module had no logger. Its guarded runtime paths therefore had nowhere to
 # leave a trail even if they wanted one — which is how `_wire_gate` ended up
 # swallowing a consent-relay wiring failure in silence.
@@ -97,16 +107,22 @@ class _GrowingInput(QtWidgets.QTextEdit):
     submitted = Signal()
     focus_lost = Signal()      # lets the face controller honor a deferred switch
     slash = Signal()           # "/" on an empty prompt → open the command palette
+    height_committed = Signal(int)   # grip drag released → persist (L5-22)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsInput")
         self.setAcceptRichText(False)
         self.setPlaceholderText("Ask SYNAPSE…    ·    / for commands")
-        # v9 comp: a 132px composer (was 96). The artist can still drag it
-        # taller via the resize grip; it also auto-grows to fit the content.
-        self._user_h = 132
+        # L5-22: no constant first-run height (the v9 132 landed the divider
+        # above centre in every tall pane — Joe re-dragged it each session).
+        # The height settles exactly once, via settle_height: the artist's
+        # persisted drag, or centred from the pane's real size at show.
+        # __init__ holds the floor because the pane's height is unknowable
+        # here. Grip-drag + auto-grow behaviour unchanged.
         self._floor, self._max_h = 64, 600
+        self._user_h = self._floor
+        self._height_settled = False     # flips on settle_height / drag
         self._send_widget = None    # the embedded Send (attach_send)
         self.setFixedHeight(self._user_h)
         self.textChanged.connect(self._autosize)
@@ -115,8 +131,20 @@ class _GrowingInput(QtWidgets.QTextEdit):
         content = int(self.document().size().height()) + 18
         self.setFixedHeight(max(self._user_h, min(self._max_h, content)))
 
+    def settle_height(self, h):
+        """One-shot first-run height (persisted restore or centred — the
+        panel decides which, this widget just clamps). No-op once settled:
+        after first run the divider moves only under the artist's hand,
+        never on the panel's own (L6)."""
+        if self._height_settled:
+            return
+        self._height_settled = True
+        self._user_h = max(self._floor, min(self._max_h, int(h)))
+        self._autosize()
+
     def set_user_height(self, h):
         """Set the artist's preferred input height (driven by the resize grip)."""
+        self._height_settled = True      # the artist decided — never re-centre
         self._user_h = max(self._floor, min(self._max_h, int(h)))
         self._autosize()
 
@@ -190,6 +218,10 @@ class _InputResizeGrip(QtWidgets.QWidget):
             self._target.set_user_height(self._start_h + delta)
 
     def mouseReleaseEvent(self, _event):
+        if self._drag_y is not None and self._target._user_h != self._start_h:
+            # L5-22: persist the artist's answer on release only — one
+            # settings write per drag, never one per mouse-move.
+            self._target.height_committed.emit(self._target._user_h)
         self._drag_y = None
 
     def paintEvent(self, _event):
@@ -335,9 +367,18 @@ class SynapsePanel(QtWidgets.QWidget):
                     "Saved engine %r is unavailable — using Claude." % pid)
             self._model_by_provider = _pset.merged_model_picks(
                 st, self._model_by_provider)
+            # L5-4: restore the saved profile tab — _build_ui composes this
+            # profile's manifest; the mode bar marks its pill active.
+            self._profile_state = _pset.SwitcherState()
+            self._layout_profile = self._profile_state.profile
         except Exception:
             pass
 
+        # L5-4: build-once cache for the region builders. A live recompose
+        # (profile tab switch) re-sequences these same widgets rather than
+        # rebuilding them, so chat history and an in-flight turn survive.
+        self._region_cache = {}
+        self._recompose_hidden = set()
         self.setAcceptDrops(True)
         self._build_ui()
         if self._boot_note:
@@ -411,11 +452,122 @@ class SynapsePanel(QtWidgets.QWidget):
         # v9: the ENGINE pill bar left the chrome — the rail author token is the
         # engine+model click target now (its menu machinery is reused). The
         # rail's bottom rule is the #DsHeader HAIR border (no divider widget).
-        root.addWidget(self._build_rail())          # mark · brand · author · Stop
-        root.addWidget(self._build_context_ribbon())
-        root.addWidget(self._build_mode_bar())      # the CHAT surface label (v9.1)
-        root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
+        #
+        # L5-2: the sequence is manifest-driven — the profile manifest names
+        # the regions in order and the compositor maps each onto the same
+        # _build_* calls below. "expert" is the v5.42.0 wiring exactly; an
+        # invalid manifest falls back to that wiring hard-coded (the panel
+        # always builds).
+        profile = getattr(self, "_layout_profile", DEFAULT_PROFILE)
+        built = False
+        if compose is not None:
+            try:
+                compose(self, root, get_manifest(profile))
+                built = True
+            except ManifestError:
+                logger.exception(
+                    "layout manifest %r invalid — using the v5.42.0 wiring",
+                    profile,
+                )
+        if not built:
+            root.addWidget(self._build_rail())          # mark · brand · author · Stop
+            root.addWidget(self._build_context_ribbon())
+            root.addWidget(self._build_mode_bar())      # the CHAT surface label (v9.1)
+            root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
         self._set_face("direct")                    # rest on the CHAT surface
+
+    # ------------------------------------------------- profile switcher (L5-4)
+    def _select_profile(self, profile):
+        """A profile-tab click: persist through settings, then recompose LIVE.
+
+        ``SwitcherState`` (Qt-free, tested headless) owns selection → settings
+        write → restore; this method owns the Qt half. A failed save still
+        switches the session — and says so in chat, never silently.
+        """
+        if profile == getattr(self, "_layout_profile", DEFAULT_PROFILE):
+            return
+        state = getattr(self, "_profile_state", None)
+        if state is not None:
+            state.select(profile)
+            if not state.persist_ok:
+                try:
+                    self._chat.append_system_message(
+                        "Profile switched to %s for this session — the pick "
+                        "could not be saved." % profile)
+                except Exception:
+                    pass
+        self._layout_profile = profile
+        self._mark_profile_pill(profile)
+        self._recompose(profile)
+
+    def _mark_profile_pill(self, profile):
+        """Active-mark the selected profile pill (the _set_face idiom)."""
+        for pid, pill in getattr(self, "_profile_pills", {}).items():
+            pill.setProperty("active", pid == profile)
+            c.repolish(pill)
+
+    def _recompose(self, profile):
+        """Re-run the compositor for ``profile`` on the LIVE panel.
+
+        Recompose, never reconstruct: the root layout is stripped WITHOUT
+        deleting anything — the region widgets stay children of the panel
+        (same parent, so no reparent, no hide, no state loss) and the region
+        builders are build-once (``_region_cache``), so ``compose()``
+        re-sequences the SAME widgets. Chat history, an in-flight worker
+        turn, and every face's state ride across untouched. A region the new
+        manifest drops is hidden, never destroyed; any compose failure
+        restores the previous sequence.
+        """
+        if compose is None or get_manifest is None:
+            return      # import-guard wiring — nothing manifest-driven here
+        root = self.layout()
+        if root is None:
+            return
+        try:
+            manifest = get_manifest(profile)
+        except Exception:
+            logger.exception(
+                "layout manifest %r unavailable — keeping the current layout",
+                profile)
+            return
+        # Widgets a prior recompose hid get their pre-hide state back FIRST,
+        # so the compositor's own visibility attrs win for managed regions
+        # (they apply after this show).
+        for wdg in getattr(self, "_recompose_hidden", ()):
+            try:
+                wdg.show()
+            except RuntimeError:  # pragma: no cover - C++ side already gone
+                pass
+        prev = []               # (item, widget, stretch) — the restore point
+        while root.count():
+            stretch = root.stretch(0)
+            item = root.takeAt(0)
+            prev.append((item, item.widget(), stretch))
+        try:
+            compose(self, root, manifest)
+        except Exception:
+            logger.exception(
+                "recompose to %r failed — restoring the previous layout",
+                profile)
+            while root.count():     # drop whatever the partial pass added
+                root.takeAt(0)
+            for item, _wdg, _stretch in prev:
+                root.addItem(item)
+            for i, (_item, _wdg, stretch) in enumerate(prev):
+                root.setStretch(i, stretch)
+            for wdg in getattr(self, "_recompose_hidden", ()):
+                try:
+                    wdg.hide()
+                except RuntimeError:  # pragma: no cover
+                    pass
+            return
+        managed = {root.itemAt(i).widget() for i in range(root.count())}
+        hidden = set()
+        for _item, wdg, _stretch in prev:
+            if wdg is not None and wdg not in managed:
+                wdg.hide()  # dropped by the new manifest — hidden, not deleted
+                hidden.add(wdg)
+        self._recompose_hidden = hidden
 
     def _build_rail(self):
         """The persistent rail (Pentagram pass, Mile 1).
@@ -424,6 +576,9 @@ class SynapsePanel(QtWidgets.QWidget):
         wordmark + state phrase on top; connection, an activity meter, and Stop
         beneath. Termination and live state never scroll away.
         """
+        cached = self._region_cache.get("_build_rail")
+        if cached is not None:                     # L5-4: recompose reuse
+            return cached
         w = self._section()
         w.setObjectName("DsHeader")          # flat PANEL + 1px HAIR bottom rule
         col = QtWidgets.QVBoxLayout(w)
@@ -500,6 +655,10 @@ class SynapsePanel(QtWidgets.QWidget):
         overflow.setFixedWidth(32)
         overflow.clicked.connect(self._show_overflow)
         self._stop_btn = c.Button("Stop", variant="danger")
+        # L5-20: the mark (MarkDot.set_halt_handler) and this button are two
+        # surfaces of ONE Stop -- #DsStop paints it in the mark's warm note,
+        # not the danger outline, so the pair reads as a single control.
+        self._stop_btn.setObjectName("DsStop")
         self._stop_btn.setMinimumWidth(64)
         self._stop_btn.clicked.connect(self._on_stop)
         self._stop_btn.setEnabled(False)
@@ -509,7 +668,6 @@ class SynapsePanel(QtWidgets.QWidget):
         top.addWidget(word)
         top.addStretch(1)
         top.addWidget(self._header_status)
-        top.addWidget(self._author_lbl)
         top.addWidget(self._meter_lbl)
         top.addWidget(self._palette_hint)
         top.addWidget(overflow)
@@ -528,7 +686,13 @@ class SynapsePanel(QtWidgets.QWidget):
         # panel's chat runs in-process, but tools + external tools need this up,
         # and it does NOT auto-start — this button is the one-click way to force
         # it without dropping into Houdini's Python Shell.
-        self._connect_btn = c.Button("Connect", variant="ghost")
+        # Houdini-help convention: the doc is a control, not a path to go
+        # find. Ghost so it reads as chrome; opens in the OS browser.
+        self._help_btn = c.Button("Help", variant="primary")
+        self._help_btn.setToolTip("Open docs/studio/UPGRADE.md")
+        self._help_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._help_btn.clicked.connect(self._on_help)
+        self._connect_btn = c.Button("Connect", variant="primary")
         self._connect_btn.setToolTip(
             "Start the Synapse bridge server (port 9999) so external / MCP tools "
             "can reach Houdini. Safe to click anytime — idempotent."
@@ -537,7 +701,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # Activate the H21 documentation corpus so Solaris assembly grounds in
         # real Houdini-21 docs (verified node types / parm names) instead of
         # phantom APIs. Mirrors the Connect button; idempotent.
-        self._corpus_btn = c.Button("Corpus", variant="ghost")
+        self._corpus_btn = c.Button("Corpus", variant="primary")
         self._corpus_btn.setToolTip(
             "Connect the Houdini-21 documentation corpus so Solaris assembly "
             "grounds in real H21 docs (not phantom parms). Safe to click anytime "
@@ -548,13 +712,28 @@ class SynapsePanel(QtWidgets.QWidget):
         self._observe.setObjectName("DsRailMeter")
         self._observe.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._observe.setFixedHeight(3)
-        self._observe.setStyleSheet("background:%s; border-radius:2px;" % t.SIGNAL_TINT)
+        # Idle/busy styling lives in qss.py (#DsRailMeter, the [busy] property).
+        self._observe.setProperty("busy", False)
+        c.repolish(self._observe)
         bot.addWidget(self._foot_dot)
         bot.addWidget(self._foot_label)
+        bot.addSpacing(t.SPACE_MD)
+        # Order is task order: connect, then ground the corpus, then read up.
         bot.addWidget(self._connect_btn)
         bot.addWidget(self._corpus_btn)
-        bot.addWidget(self._observe, 1)
+        bot.addWidget(self._help_btn)
+        # The rail meter is retired from the header: the mark already fills
+        # and rotates, the status reads "Working on it", and Stop is present
+        # — a full-width warm rule was a fourth signal for one state (Joe).
+        # The widget stays constructed so _set_busy and the compositor keep
+        # their referent; it is simply never shown.
+        self._observe.setVisible(False)
+        bot.addStretch(1)
+        # Model picker rides the action row, right edge -- same line as
+        # Connect/Corpus/Help, opposite side (Joe): actions left, choice right.
+        bot.addWidget(self._author_lbl)
         col.addLayout(bot)
+        self._region_cache["_build_rail"] = w
         return w
 
     def _format_tokens(self, n):
@@ -694,12 +873,18 @@ class SynapsePanel(QtWidgets.QWidget):
                 pass
 
     def _build_context_ribbon(self):
+        cached = self._region_cache.get("_build_context_ribbon")
+        if cached is not None:                     # L5-4: recompose reuse
+            return cached
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        # L5-17: left inset = t.GUTTER, the same token the tab row applies, so
+        # the .hip filename's first glyph sits on the same vertical as CHAT.
+        lay.setContentsMargins(t.GUTTER, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
         self._ctx_label = c.label("no scene context", role="label", scale=self._chrome_scale)
         lay.addWidget(self._ctx_label)
         lay.addStretch(1)
+        self._region_cache["_build_context_ribbon"] = w
         return w
 
     def _build_converse(self):
@@ -748,6 +933,9 @@ class SynapsePanel(QtWidgets.QWidget):
         accept/revert hands back). Clicking CHAT is the manual way back to the
         conversation. `#DsTabRow` still carries the 1px BORDER rule; the internal
         face keys stay "direct"/"work" — the invariants key on those, not the label."""
+        cached = self._region_cache.get("_build_mode_bar")
+        if cached is not None:                     # L5-4: recompose reuse
+            return cached
         w = self._section()
         w.setObjectName("DsTabRow")
         lay = QtWidgets.QHBoxLayout(w)
@@ -775,6 +963,25 @@ class SynapsePanel(QtWidgets.QWidget):
         lay.addWidget(tok)
 
         lay.addStretch(1)
+
+        # L5-4: the profile tab strip — CURIOUS · EXPERT · ML select the layout
+        # manifest (L5-2). A click writes through settings (SwitcherState) and
+        # recomposes LIVE; boot restores the saved tab. Right-aligned: profile
+        # is chrome, the faces are the surface.
+        try:
+            from synapse.panel.settings import PROFILES as _profiles
+        except Exception:  # pragma: no cover - settings ships with the panel
+            _profiles = ("curious", "expert", "ml")
+        self._profile_pills = {}
+        for pid in _profiles:
+            p = c.Pill(pid.upper())
+            p.setFont(fontload.tracked_font(
+                "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+            p.clicked.connect(lambda _=False, pid=pid: self._select_profile(pid))
+            self._profile_pills[pid] = p
+            lay.addWidget(p)
+        self._mark_profile_pill(getattr(self, "_layout_profile", DEFAULT_PROFILE))
+        self._region_cache["_build_mode_bar"] = w
         return w
 
     def _show_token_face(self):
@@ -819,6 +1026,9 @@ class SynapsePanel(QtWidgets.QWidget):
         is the working glance AND the payoff (its done sub-state folds in the old
         Review). Only an actionable consent gate auto-surfaces Work (v9.1 · Option
         A); quiet agent state never does."""
+        cached = self._region_cache.get("_build_faces")
+        if cached is not None:                     # L5-4: recompose reuse
+            return cached
         self._faces = QtWidgets.QStackedWidget()
         self._faces.addWidget(self._build_direct_face())   # 0 · idle / converse
         self._faces.addWidget(self._build_work_face())     # 1 · glance → done payoff
@@ -830,6 +1040,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # the panel taller than a short pane and clips the Send row. The chat's
         # stretch keeps it dominant at normal heights.
         self._faces.setMinimumHeight(160)
+        self._region_cache["_build_faces"] = self._faces
         return self._faces
 
     def _build_direct_face(self):
@@ -1111,6 +1322,54 @@ class SynapsePanel(QtWidgets.QWidget):
             _pset.save_settings(st)
         except Exception:
             pass
+
+    def _persist_composer_height(self, h):
+        """The artist dragged the composer divider — keep THEIR height for
+        the next launch (L5-22). Read-modify-write so sibling keys survive;
+        best-effort — a failed save never interrupts the session."""
+        try:
+            from synapse.panel import settings as _pset
+            st = _pset.load_settings()
+            st["composer_height"] = int(h)
+            _pset.save_settings(st)
+        except Exception:
+            pass
+
+    def _settle_composer_height(self):
+        """L5-22 first run: the divider opens equidistant between prompt and
+        chat — half the space the two share, measured at show/resize where
+        the pane's height is real (never __init__). A persisted artist drag
+        wins instead. Either way the height settles exactly ONCE per panel:
+        after that the divider moves only under the artist's hand (L6 — the
+        panel remembers their answer, never re-imposes its own). Identical
+        in curious / expert / ml — this is seat comfort, not a profile."""
+        inp = getattr(self, "_input", None)
+        if inp is None or inp._height_settled:
+            return
+        lay = self.layout()
+        if lay is not None:
+            lay.activate()          # geometry must be real before we measure
+        chat = getattr(self, "_converse_stack", None)
+        chat_h = chat.height() if chat is not None else 0
+        if chat_h <= 0:
+            return                  # not laid out yet — the next event retries
+        shared = chat_h + inp.height()
+        try:
+            from synapse.panel import settings as _pset
+            target = _pset.composer_start_height(
+                _pset.load_settings().get("composer_height"),
+                shared, inp._floor, inp._max_h)
+        except Exception:
+            target = max(inp._floor, min(inp._max_h, shared // 2))
+        inp.settle_height(target)
+
+    def showEvent(self, e):
+        super().showEvent(e)
+        self._settle_composer_height()
+
+    def resizeEvent(self, e):
+        super().resizeEvent(e)
+        self._settle_composer_height()
 
     def _author_token(self):
         """Best-effort display signature of the active engine's model, e.g.
@@ -1488,6 +1747,10 @@ class SynapsePanel(QtWidgets.QWidget):
         {None, 'ok', 'hot', 'accent'} selects the semantic color via property."""
         btn = QtWidgets.QPushButton(text)
         btn.setObjectName("DsVerb")
+        # L5-17: verbs carry the tab pills' tracking (same LABEL role, mono)
+        # so they read as chrome siblings of CHAT/TOKEN, not body text.
+        btn.setFont(fontload.tracked_font(
+            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
         btn.setFlat(True)
         if tone:
@@ -1498,8 +1761,13 @@ class SynapsePanel(QtWidgets.QWidget):
     def _build_act(self):
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(0, t.SPACE_SM, 0, t.SPACE_SM)  # face carries GUTTER/24
-        lay.setSpacing(t.SPACE_MD)
+        # face carries GUTTER/24; L5-17: top steps SPACE_SM→SPACE_MD (next rung
+        # on the tokens scale) — air between the verbs and the rule above them.
+        lay.setContentsMargins(0, t.SPACE_MD, 0, t.SPACE_SM)
+        # L5-21: inter-verb gap steps SPACE_MD→SPACE_LG (one rung = the ladder's
+        # double) so EXPLAIN / FIX / OPTIMIZE / BUILD HDA read as four controls,
+        # not one phrase.
+        lay.setSpacing(t.SPACE_LG)
         for label_text, prompt in _QUICK_ACTIONS:
             lay.addWidget(self._verb(
                 label_text.upper(), lambda _=False, p=prompt: self._send(p)))
@@ -1527,6 +1795,8 @@ class SynapsePanel(QtWidgets.QWidget):
                                   % t.scaled(t.SIZE_UI, self._font_scale))
         self._input.submitted.connect(self._on_submit)
         self._input.slash.connect(self._open_palette)   # "/" → command palette
+        # L5-22: a released grip-drag is the artist's answer — remember it
+        self._input.height_committed.connect(self._persist_composer_height)
         col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
         row = QtWidgets.QHBoxLayout()
         row.setSpacing(t.SPACE_SM)
@@ -1534,8 +1804,8 @@ class SynapsePanel(QtWidgets.QWidget):
         # has no pictographs → a paperclip codepoint renders as an unreadable tofu box).
         attach = c.Button("", variant="ghost")
         attach.setIcon(_image_icon())
-        attach.setIconSize(QtCore.QSize(18, 18))
-        attach.setFixedWidth(32)
+        attach.setIconSize(QtCore.QSize(36, 36))
+        attach.setFixedWidth(52)
         attach.setToolTip("Attach image / file as context")
         attach.clicked.connect(self._on_attach)
         # v9 comp: SEND rides bottom-right INSIDE the composer (the attr name
@@ -1880,10 +2150,11 @@ class SynapsePanel(QtWidgets.QWidget):
         model EXPLAINS build requests instead of executing them (the artist
         sees 'processing… text, no nodes'). Reads live scene context on the
         main thread (this runs from the send handler), all best-effort."""
+        overlay = getattr(self, "_system_prompt_overlay", "") or ""
         try:
             from synapse.panel.system_prompt import build_system_prompt
         except Exception:
-            return ""
+            return overlay
         ctx = {}
         try:
             import hou
@@ -1903,9 +2174,12 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             ctx = {}
         try:
-            return build_system_prompt(ctx)
+            base = build_system_prompt(ctx)
         except Exception:
-            return ""
+            return overlay
+        # L5-2: the active profile's overlay rides on top of the built prompt —
+        # tone/pacing only, never capability (L5/L6).
+        return (base + "\n\n" + overlay) if overlay else base
 
     def _start_worker(self):
         if ClaudeWorker is None:
@@ -2041,9 +2315,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._send_btn.setEnabled(not busy)
         self._stop_btn.setEnabled(busy)
         self._stop_btn.setVisible(busy)   # Stop is state-gated to working only
-        self._observe.setStyleSheet(
-            "background:%s; border-radius:2px;" % (t.WARM if busy else t.SIGNAL_TINT)
-        )
+        self._observe.setProperty("busy", busy)
+        c.repolish(self._observe)
         # state→Work-sub-state edges. Quiet state never moves the visible face
         # (v9.1 · only an ACTIONABLE consent gate auto-surfaces — see
         # _on_gate_raised). A new work cycle shows the cook sub-state; finishing
@@ -2092,7 +2365,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 # one-line console warning the week API drift peaks.
                 self._foot_dot.set_status("warning")
                 self._foot_label.setText(
-                    "Houdini · API gate stale — see docs/studio/UPGRADE.md"
+                    "Houdini · API gate stale"
                 )
             else:
                 self._foot_dot.set_status("connected")
@@ -2101,6 +2374,46 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._set_header("idle", "Ready")
         except Exception:
             pass
+
+    def _on_help(self):
+        """Context-sensitive help, the way Houdini's own F1 behaves.
+
+        Opens the artist help document (docs/help/index.html) — written for
+        someone who knows Houdini and does not know Synapse. The engineering
+        docs under docs/ are a different audience and are not what Help is for.
+        """
+        self._open_doc("docs/help/index.html")
+
+    def _open_doc(self, rel):
+        """Open a repo doc in the browser — the Houdini-help convention: a doc
+        is a control, never a path the artist has to go find.
+
+        Order is deliberate. hou.ui.showHelp is tried first so a registered
+        help path renders in Houdini's own browser and the artist never leaves
+        the host; QDesktopServices is the honest fallback (the doc is a real
+        file on disk and every desktop can open it). Never raises: a failed
+        help click must not disturb a working session.
+        """
+        import os
+        root = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))))
+        path = os.path.join(root, rel.replace("/", os.sep))
+        try:
+            import hou
+            if hasattr(hou.ui, "showHelp"):
+                hou.ui.showHelp(path)
+                return
+        except Exception:
+            pass
+        try:
+            from qtpy import QtGui, QtCore as _QtCore
+            QtGui.QDesktopServices.openUrl(_QtCore.QUrl.fromLocalFile(path))
+        except Exception:
+            try:
+                import webbrowser
+                webbrowser.open("file:///" + path.replace(os.sep, "/"))
+            except Exception:
+                pass
 
     def _register_selection_cb(self):
         """Update the context line on selection change. hou.ui is graphical-only

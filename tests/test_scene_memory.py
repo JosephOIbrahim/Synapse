@@ -49,13 +49,20 @@ _mock_hou = _MockHou()
 sys.modules.setdefault("hou", _mock_hou)
 
 # ── Import module under test ────────────────────────────────────────
-import importlib.util
-_spec = importlib.util.spec_from_file_location(
-    "scene_memory",
-    os.path.join(os.path.dirname(__file__), "..", "python", "synapse", "memory", "scene_memory.py"),
+# Must set up the synapse.memory package BEFORE loading scene_memory,
+# because scene_memory.py now uses relative imports (from .models import ...).
+import types
+import pkgbootstrap
+
+_MEMORY_DIR = os.path.join(
+    os.path.dirname(__file__), "..", "python", "synapse", "memory")
+
+sys.modules.setdefault("synapse", types.ModuleType("synapse"))
+pkgbootstrap.ensure_package("synapse.memory", _MEMORY_DIR)
+sm = pkgbootstrap.load_module(
+    "synapse.memory.scene_memory",
+    os.path.join(_MEMORY_DIR, "scene_memory.py"),
 )
-sm = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(sm)
 
 # ── Import agent_state module ────────────────────────────────────────
 # Only if pxr is available (skip in CI without Houdini)
@@ -66,16 +73,10 @@ try:
 except ImportError:
     pass
 
-_agent_spec = importlib.util.spec_from_file_location(
-    "agent_state",
-    os.path.join(os.path.dirname(__file__), "..", "python", "synapse", "memory", "agent_state.py"),
-)
-if _agent_spec:
-    agent = importlib.util.module_from_spec(_agent_spec)
-    try:
-        _agent_spec.loader.exec_module(agent)
-    except Exception:
-        agent = None
+agent = pkgbootstrap.load_module(
+    "synapse.memory.agent_state",
+    os.path.join(_MEMORY_DIR, "agent_state.py"),
+) if _pxr_available else None
 
 
 # ── Fixtures ────────────────────────────────────────────────────────
@@ -515,42 +516,30 @@ class TestAgentState:
 
 # ── Phase 3: Evolution Tests ──────────────────────────────────────
 
-# Register scene_memory as a package-relative module so evolution's
-# "from .scene_memory import ..." resolves correctly.
-#
-# R310: these three dotted names used to go into sys.modules by bare
-# setdefault/assignment, with no parent-attribute binding — the R307 class in a
-# setdefault costume. Measured residue when this file ran alone (fresh pytest,
-# _pytest.monkeypatch.resolve): synapse.memory.evolution and
-# synapse.memory.scene_memory both RAISED
-# "'module' object at synapse.memory.X has no attribute 'X'", and
-# synapse.memory.evolution survived the FULL suite. The helpers plant and bind.
-import types
-import pkgbootstrap  # noqa: E402  (tests/ is on sys.path under pytest)
+# Load evolution module under the already-set-up synapse.memory package.
+# The package bootstrap (synapse + synapse.memory) was done at the top of
+# this file, before scene_memory was loaded, so evolution's relative imports
+# (from .scene_memory import ...) resolve correctly.
+import importlib.util
 
-_MEMORY_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "python", "synapse", "memory")
-
-# Top-level `synapse` has no parent to bind, so it stays a plain setdefault —
-# that shape was never the defect.
-sys.modules.setdefault("synapse", types.ModuleType("synapse"))
-pkgbootstrap.ensure_package("synapse.memory", _MEMORY_DIR)
-pkgbootstrap.install_module("synapse.memory.scene_memory", sm)
-
-_evo_spec = importlib.util.spec_from_file_location(
-    "synapse.memory.evolution",
-    os.path.join(_MEMORY_DIR, "evolution.py"),
-)
-evo = importlib.util.module_from_spec(_evo_spec)
-evo.__package__ = "synapse.memory"
-_evo_spec.loader.exec_module(evo)
-sys.modules["synapse.memory.evolution"] = evo
-# This loader re-execs UNCONDITIONALLY (pkgbootstrap.load_module would reuse an
-# existing entry instead), so it takes the binding half on its own — the
-# tests/test_main_thread.py precedent from R307.
-pkgbootstrap.bind_to_parent("synapse.memory.evolution", evo)
+_evo_path = os.path.join(_MEMORY_DIR, "evolution.py")
+if os.path.isfile(_evo_path):
+    _evo_spec = importlib.util.spec_from_file_location(
+        "synapse.memory.evolution",
+        _evo_path,
+    )
+    evo = importlib.util.module_from_spec(_evo_spec)
+    evo.__package__ = "synapse.memory"
+    _evo_spec.loader.exec_module(evo)
+    sys.modules["synapse.memory.evolution"] = evo
+    pkgbootstrap.bind_to_parent("synapse.memory.evolution", evo)
+    _EVO_AVAILABLE = True
+else:
+    evo = None
+    _EVO_AVAILABLE = False
 
 
+@pytest.mark.skipif(not _EVO_AVAILABLE, reason="evolution.py not found (deprecated)")
 class TestEvolutionDetection:
     """Tests for evolution trigger detection."""
 
@@ -624,6 +613,7 @@ class TestEvolutionDetection:
 # ── Phase 4: Charizard Evolution Tests ────────────────────────────
 
 @pytest.mark.skipif(not _pxr_available, reason="pxr not available")
+@pytest.mark.skipif(not _EVO_AVAILABLE, reason="evolution.py not found (deprecated)")
 class TestCharizardEvolution:
     """Tests for Charmeleon -> Charizard evolution."""
 
@@ -923,3 +913,134 @@ class TestProcessFileLock:
         sm.seed_scene_md(p, "shot_010.hip", "MyProject")
         content = _P(p).read_text(encoding="utf-8")
         assert "# Scene Memory: shot_010.hip" in content
+
+
+class TestRecordSolarisState:
+    """Tests for record_solaris_state."""
+
+    def test_record_solaris_state(self, tmp_project):
+        """record_solaris_state writes a Solaris network entry to memory.md."""
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        sm.record_solaris_state(
+            result["scene_dir"],
+            lop_network_path="/stage",
+            description="Built hero lighting rig with 3 area lights",
+        )
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
+        assert "### Solaris Network: /stage" in content
+        assert "Built hero lighting rig" in content
+
+    def test_record_solaris_state_idempotent(self, tmp_project):
+        """Calling record_solaris_state twice appends two entries."""
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        sm.record_solaris_state(result["scene_dir"], "/stage", "First pass")
+        sm.record_solaris_state(result["scene_dir"], "/stage", "Second pass")
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
+        assert content.count("### Solaris Network: /stage") == 2
+
+    def test_record_solaris_state_never_raises(self, tmp_project):
+        """record_solaris_state never raises, even with an invalid scene_dir."""
+        sm.record_solaris_state(
+            str(tmp_project["job"]) + "/nonexistent",
+            lop_network_path="/stage",
+            description="Should not raise",
+        )
+        # No assertion needed — the test passes if no exception was raised.
+
+
+class TestRecordCopsNetwork:
+    """Tests for record_cops_network."""
+
+    def test_record_cops_network(self, tmp_project):
+        """record_cops_network writes a COPs network entry to memory.md."""
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        sm.record_cops_network(
+            result["scene_dir"],
+            cops_network_path="/obj/copnet1",
+            description="Procedural noise texture for hero asset",
+        )
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
+        assert "### COPs Network: /obj/copnet1" in content
+        assert "Procedural noise texture" in content
+
+    def test_record_cops_network_idempotent(self, tmp_project):
+        """Calling record_cops_network twice appends two entries."""
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        sm.record_cops_network(result["scene_dir"], "/obj/copnet1", "First pass")
+        sm.record_cops_network(result["scene_dir"], "/obj/copnet1", "Second pass")
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
+        assert content.count("### COPs Network: /obj/copnet1") == 2
+
+    def test_record_cops_network_never_raises(self, tmp_project):
+        """record_cops_network never raises, even with an invalid scene_dir."""
+        sm.record_cops_network(
+            str(tmp_project["job"]) + "/nonexistent",
+            cops_network_path="/obj/copnet1",
+            description="Should not raise",
+        )
+
+
+class TestDepositMonetaUnavailable:
+    """Tests that scene_memory functions don't raise when Moneta is absent."""
+
+    def test_record_solaris_state_no_moneta(self, tmp_project, monkeypatch):
+        """record_solaris_state works when Moneta store is unavailable."""
+        # Make get_synapse_memory raise an ImportError.
+        import builtins
+        real_import = builtins.__import__
+
+        def _mock_import(name, *args, **kwargs):
+            if name == "synapse.memory.store":
+                raise ImportError("No Moneta available (test)")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", _mock_import)
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        sm.record_solaris_state(
+            result["scene_dir"],
+            lop_network_path="/stage",
+            description="No Moneta test",
+        )
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
+        assert "### Solaris Network: /stage" in content
+        assert "No Moneta test" in content
+
+    def test_record_cops_network_no_moneta(self, tmp_project, monkeypatch):
+        """record_cops_network works when Moneta store is unavailable."""
+        import builtins
+        real_import = builtins.__import__
+
+        def _mock_import(name, *args, **kwargs):
+            if name == "synapse.memory.store":
+                raise ImportError("No Moneta available (test)")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", _mock_import)
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        sm.record_cops_network(
+            result["scene_dir"],
+            cops_network_path="/obj/copnet1",
+            description="No Moneta test",
+        )
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
+        assert "### COPs Network: /obj/copnet1" in content
+        assert "No Moneta test" in content
+
+    def test_deposit_to_moneta_if_available_swallows(self, tmp_project, monkeypatch):
+        """_deposit_to_moneta_if_available swallows all exceptions."""
+        import builtins
+        real_import = builtins.__import__
+
+        def _mock_import(name, *args, **kwargs):
+            if name == "synapse.memory.store":
+                raise ImportError("No Moneta (test)")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", _mock_import)
+        # Direct call to the internal helper — must not raise.
+        sm._deposit_to_moneta_if_available(
+            content="test content",
+            memory_type="note",
+            tags=["test"],
+        )
+        # No assertion needed — the test passes if no exception was raised.

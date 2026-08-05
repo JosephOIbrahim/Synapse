@@ -1,0 +1,199 @@
+{
+ "_comment": "SYNAPSE competence bench v3. NOT EDITABLE BY THE LOOP. Houdini 22.0.400. Tests BEHAVIOUR, not structure: build the network, perturb an upstream parameter, assert downstream changed. A literal-wired graph passes structure and fails perturbation -- exactly the failure we are hunting. Weights follow the 2026-08-03 capability audit: expression absent (highest), SOP C+ (high), USD A- (low). 'inconclusive' when an assertion cannot run -- never scored 0.",
+ "version": 3,
+ "houdini": "22.0.400",
+ "timeout_seconds": 90,
+ "tasks": [
+  {
+   "id": "exp-01",
+   "category": "expression",
+   "weight": 6,
+   "prompt": "make a box whose size follows the radius of a sphere in the same network",
+   "structure": [
+    "boxes = [n for n in hou.node('/obj').allSubChildren() if n.type().name() == 'box']",
+    "len(boxes) == 1"
+   ],
+   "perturb": {
+    "target_type": "sphere",
+    "parm": "rad",
+    "delta": 2.0,
+    "observe_type": "box",
+    "observe_parm": "sizex"
+   },
+   "why": "THE T4 test. A literal-wired box does not move when the sphere changes; only a ch() reference does. This one task is the ceiling of the whole product."
+  },
+  {
+   "id": "exp-02",
+   "category": "expression",
+   "weight": 5,
+   "prompt": "drive a copy count from the number of points in the scatter above it",
+   "structure": [
+    "nodes = [n.type().name() for n in hou.node('/obj').allSubChildren()]",
+    "'scatter' in nodes"
+   ],
+   "perturb": {
+    "target_type": "scatter",
+    "parm": "npts",
+    "delta": 500,
+    "observe_display": true,
+    "observe_metric": "point_count"
+   },
+   "why": "Change the scatter count; downstream point count must follow. Hardcoded copies do not move."
+  },
+  {
+   "id": "exp-03",
+   "category": "expression",
+   "weight": 4,
+   "prompt": "link a transform's rotation to the frame so it spins over time",
+   "structure": [
+    "nodes = [n for n in hou.node('/obj').allSubChildren()]",
+    "len(nodes) >= 1"
+   ],
+   "perturb": {
+    "target_frame": true,
+    "delta": 24,
+    "observe_display": true,
+    "observe_metric": "bbox"
+   },
+   "why": "Advance time; geometry must move. Keyframe-free time dependence is an expression."
+  },
+  {
+   "id": "top-01",
+   "category": "topology",
+   "weight": 5,
+   "prompt": "scatter 200 points on a grid and copy spheres to those points",
+   "structure": [
+    "cp = [n for n in hou.node('/obj').allSubChildren() if n.type().name() == 'copytopoints']",
+    "len(cp) == 1",
+    "cp[0].inputs()[0] is not None and cp[0].inputs()[1] is not None",
+    "src = cp[0].inputs()[0]",
+    "pts = cp[0].inputs()[1]",
+    "'sphere' in src.type().name() or any('sphere' in a.type().name() for a in src.inputAncestors())",
+    "'scatter' in pts.type().name() or any('scatter' in a.type().name() for a in pts.inputAncestors())"
+   ],
+   "perturb": {
+    "target_type": "scatter",
+    "parm": "npts",
+    "delta": 300,
+    "observe_display": true,
+    "observe_metric": "point_count"
+   },
+   "why": "copytopoints: geometry in input 0, points in input 1. Reversed it cooks fine and produces garbage -- invisible to every error check. Structure catches the swap; perturbation catches a frozen graph."
+  },
+  {
+   "id": "sop-01",
+   "category": "sop",
+   "weight": 5,
+   "prompt": "scatter points on a grid and copy spheres with per-point random scale",
+   "structure": [
+    "disp = [n for n in hou.node('/obj').allSubChildren() if n.isDisplayFlagSet()]",
+    "len(disp) == 1",
+    "disp[0].geometry().findPointAttrib('pscale') is not None"
+   ],
+   "perturb": {
+    "target_type": "grid",
+    "parm": "sizex",
+    "delta": 5.0,
+    "observe_display": true,
+    "observe_metric": "bbox"
+   },
+   "why": "The canonical SOP chain. Audit graded SOP C+ -- no builder matching solaris_build_graph."
+  },
+  {
+   "id": "sop-02",
+   "category": "sop",
+   "weight": 4,
+   "prompt": "transfer colour from a sphere onto a nearby grid",
+   "structure": [
+    "at = [n for n in hou.node('/obj').allSubChildren() if n.type().name() == 'attribtransfer']",
+    "len(at) == 1",
+    "at[0].inputs()[0] is not None and at[0].inputs()[1] is not None",
+    "disp = [n for n in hou.node('/obj').allSubChildren() if n.isDisplayFlagSet()]",
+    "disp[0].geometry().findPointAttrib('Cd') is not None"
+   ],
+   "perturb": null,
+   "why": "Order-dependent: input 0 receives, input 1 donates. Reversed it cooks and does nothing."
+  },
+  {
+   "id": "sop-03",
+   "category": "sop",
+   "weight": 4,
+   "prompt": "build a heightfield terrain with noise",
+   "structure": [
+    "nodes = [n.type().name() for n in hou.node('/obj').allSubChildren()]",
+    "any('heightfield' in n for n in nodes)",
+    "any('noise' in n for n in nodes)"
+   ],
+   "perturb": {
+    "target_type": "heightfield",
+    "parm": "gridsamplesx",
+    "delta": 50,
+    "observe_display": true,
+    "observe_metric": "point_count"
+   },
+   "why": "Named SOP-template gap in the audit."
+  },
+  {
+   "id": "ari-01",
+   "category": "arity",
+   "weight": 5,
+   "prompt": "create an area light in Solaris",
+   "structure": [
+    "lights = [n for n in hou.node('/stage').allSubChildren() if 'light' in n.type().name().lower()]",
+    "len(lights) == 1"
+   ],
+   "perturb": null,
+   "why": "Observed 2026-08-03: this exact prompt produced three lights and reported success."
+  },
+  {
+   "id": "ari-02",
+   "category": "arity",
+   "weight": 3,
+   "prompt": "add three point lights to the stage",
+   "structure": [
+    "lights = [n for n in hou.node('/stage').allSubChildren() if 'light' in n.type().name().lower()]",
+    "len(lights) == 3"
+   ],
+   "perturb": null,
+   "why": "Arity tracks both directions. Under-delivery is the same bug."
+  },
+  {
+   "id": "ctx-01",
+   "category": "context",
+   "weight": 4,
+   "prompt": "add a sphere to the stage in Solaris",
+   "structure": [
+    "lops = [n for n in hou.node('/stage').children() if n.type().category().name() == 'Lop']",
+    "len(lops) >= 1",
+    "not any(n.type().name() == 'sphere' and n.type().category().name() == 'Sop' for n in hou.node('/stage').allSubChildren())"
+   ],
+   "perturb": null,
+   "why": "A sphere SOP inside /stage is the classic context error."
+  },
+  {
+   "id": "usd-01",
+   "category": "usd",
+   "weight": 2,
+   "prompt": "reference an external usd asset into the stage",
+   "structure": [
+    "refs = [n for n in hou.node('/stage').allSubChildren() if n.type().name() in ('reference','sublayer')]",
+    "len(refs) == 1 and refs[0].type().name() == 'reference'"
+   ],
+   "perturb": null,
+   "why": "Reference vs sublayer are different arcs. Low weight -- USD graded A-, little headroom."
+  },
+  {
+   "id": "mem-01",
+   "category": "memory",
+   "weight": 3,
+   "prompt": "what did we build in this scene and why",
+   "structure": [
+    "import subprocess",
+    "True"
+   ],
+   "perturb": null,
+   "manual": "Does the answer cite a real decision from memory, or is it re-derived from the scene? Audit graded memory C+ -- infrastructure without intelligence.",
+   "why": "Continuity is a capability. Scored manually until a machine check exists."
+  }
+ ]
+}

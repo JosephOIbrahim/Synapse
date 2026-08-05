@@ -15,6 +15,8 @@ import threading
 import time
 from typing import Dict, List, Optional, Any
 
+from .models import Memory, MemoryType
+
 try:
     import hou
     HOU_AVAILABLE = True
@@ -340,7 +342,14 @@ def ensure_scene_structure(hip_path: str, job_path: str) -> Dict[str, str]:
             from .agent_state import initialize_agent_usd
             initialize_agent_usd(agent_usd)
         except ImportError:
-            _seed_agent_usd_stub(agent_usd)
+            try:
+                _seed_agent_usd_stub(agent_usd)
+            except OSError as exc:
+                logger.warning(
+                    "Could not seed agent.usd stub at %s (%s); continuing without it",
+                    agent_usd, exc,
+                )
+                agent_usd = ""
 
     paths = {
         "project_dir": project_dir,
@@ -685,26 +694,246 @@ def write_memory_entry(scene_dir: str, entry: Dict[str, Any], entry_type: str) -
     writer = writers.get(entry_type)
     if writer:
         writer()
-        # Check evolution in background thread (avoids ~100ms file scan on hot path)
-        import threading
-        def _bg_evolution_check():
-            try:
-                from .evolution import check_evolution
-                evo_status = check_evolution(scene_dir)
-                if evo_status.get("should_evolve"):
-                    logger.info(
-                        "Memory evolution recommended: %s -> %s (triggers: %s). "
-                        "Call synapse_evolve_memory to upgrade.",
-                        evo_status["current"], evo_status["target"],
-                        evo_status["triggers_met"],
-                    )
-            except ImportError:
-                pass
-            except Exception as e:
-                logger.warning("Evolution check failed: %s", e)
-        threading.Thread(target=_bg_evolution_check, daemon=True, name="Synapse-EvoCheck").start()
+
+        # Also deposit into the Moneta store for unified recall
+        try:
+            from .store import get_synapse_memory, MemoryStore
+            syn = get_synapse_memory()
+            if hasattr(syn.store, 'add') and not isinstance(syn.store, MemoryStore):
+                syn.store.add(Memory(
+                    content=entry.get("content", ""),
+                    memory_type=MemoryType.NOTE,
+                    tags=entry.get("tags", []) or [],
+                    source="auto",
+                ))
+                logger.debug(
+                    "Moneta deposit from scene_memory succeeded: type=%s, tags=%s",
+                    entry_type, entry.get("tags", []),
+                )
+        except Exception as exc:
+            logger.debug("Moneta deposit from scene_memory failed (non-critical): %s", exc)
+
     else:
         logger.warning("Unknown entry type: %s", entry_type)
+
+
+# =============================================================================
+# SOLARIS / LOP MEMORY
+# =============================================================================
+
+
+def _deposit_to_moneta_if_available(
+    content: str,
+    memory_type: str = "note",
+    tags: Optional[List[str]] = None,
+) -> None:
+    """Best-effort deposit into the Moneta store for unified recall.
+
+    Swallows all exceptions so callers never break from a Moneta failure.
+    The markdown write is the primary path; Moneta is a secondary index.
+    """
+    try:
+        from .store import get_synapse_memory, MemoryStore
+        from .models import Memory, MemoryType as MT
+
+        type_map = {
+            "reference": MT.REFERENCE,
+            "note": MT.NOTE,
+            "decision": MT.DECISION,
+            "task": MT.TASK,
+        }
+        mapped_type = type_map.get(memory_type, MT.NOTE)
+
+        syn = get_synapse_memory()
+        if hasattr(syn.store, "add") and not isinstance(syn.store, MemoryStore):
+            syn.store.add(Memory(
+                content=content,
+                memory_type=mapped_type,
+                tags=tags or [],
+                source="auto",
+            ))
+            logger.debug(
+                "Moneta deposit succeeded: type=%s, tags=%s",
+                memory_type, tags,
+            )
+    except Exception as exc:
+        logger.debug("Moneta deposit failed (non-critical): %s", exc)
+
+
+def record_solaris_state(
+    scene_dir: str,
+    lop_network_path: str,
+    description: str,
+) -> None:
+    """Record the current state of a Solaris LOP network as a memory entry.
+
+    This captures what was built, what nodes are in the network, and any
+    notable parameter values. The entry is written to both the markdown
+    living memory AND the Moneta store for unified recall.
+
+    Best-effort: never raises, never breaks the caller. Logs on failure.
+
+    Args:
+        scene_dir: Path to the scene's ``claude/`` directory.
+        lop_network_path: USD prim path of the LOP network (e.g. ``/stage``).
+        description: Free-text description of what was built or changed.
+    """
+    try:
+        entry = (
+            f"### Solaris Network: {lop_network_path}\n"
+            f"- **Description:** {description}\n"
+            f"- **Recorded:** {_now()}\n\n"
+        )
+        _append_to_md(os.path.join(scene_dir, "memory.md"), entry)
+
+        _deposit_to_moneta_if_available(
+            content=entry,
+            memory_type="reference",
+            tags=["solaris", "lop", "network"],
+        )
+        logger.info(
+            "Recorded Solaris state: %s — %s", lop_network_path, description,
+        )
+    except Exception as exc:
+        logger.warning(
+            "Failed to record Solaris state (non-critical): %s", exc,
+        )
+
+
+def record_render_settings(
+    scene_dir: str,
+    settings: Dict[str, Any],
+) -> None:
+    """Record Karma render settings as a memory entry.
+
+    Captures the render resolution, samples, engine, and any other
+    notable settings. Written to both markdown living memory and the
+    Moneta store for unified recall.
+
+    Best-effort: never raises, never breaks the caller. Logs on failure.
+
+    Args:
+        scene_dir: Path to the scene's ``claude/`` directory.
+        settings: Dict of render setting names to values. Common keys
+            include ``resolution``, ``pixel_samples``, ``engine``,
+            ``max_diffuse_bounces``, ``volume_limit``, etc.
+    """
+    try:
+        import json
+
+        lines = [f"### Render Settings\n- **Recorded:** {_now()}\n"]
+        for key, value in settings.items():
+            if isinstance(value, (list, tuple)):
+                formatted = "x".join(str(v) for v in value)
+            elif isinstance(value, float):
+                formatted = f"{value:.4g}"
+            else:
+                formatted = str(value)
+            lines.append(f"- **{key}:** {formatted}")
+        lines.append("")
+        entry = "\n".join(lines)
+
+        _append_to_md(os.path.join(scene_dir, "memory.md"), entry)
+
+        _deposit_to_moneta_if_available(
+            content=entry,
+            memory_type="reference",
+            tags=["render", "karma", "settings"],
+        )
+        logger.info(
+            "Recorded render settings: %d keys", len(settings),
+        )
+    except Exception as exc:
+        logger.warning(
+            "Failed to record render settings (non-critical): %s", exc,
+        )
+
+
+# =============================================================================
+# COPS / TEXTURE MEMORY
+# =============================================================================
+
+
+def record_cops_network(
+    scene_dir: str,
+    cops_network_path: str,
+    description: str,
+) -> None:
+    """Record the current state of a COPs network as a memory entry.
+
+    Captures texture processing setups, compositing graphs, and image
+    processing parameters for later recall.
+
+    Best-effort: never raises, never breaks the caller. Logs on failure.
+
+    Args:
+        scene_dir: Path to the scene's ``claude/`` directory.
+        cops_network_path: Path to the COPs network (e.g. ``/obj/copnet1``).
+        description: Free-text description of what was built or changed.
+    """
+    try:
+        entry = (
+            f"### COPs Network: {cops_network_path}\n"
+            f"- **Description:** {description}\n"
+            f"- **Recorded:** {_now()}\n\n"
+        )
+        _append_to_md(os.path.join(scene_dir, "memory.md"), entry)
+
+        _deposit_to_moneta_if_available(
+            content=entry,
+            memory_type="reference",
+            tags=["cops", "texture", "compositing", "image"],
+        )
+        logger.info(
+            "Recorded COPs network: %s — %s", cops_network_path, description,
+        )
+    except Exception as exc:
+        logger.warning(
+            "Failed to record COPs network (non-critical): %s", exc,
+        )
+
+
+def record_texture_bake(
+    scene_dir: str,
+    high_res: str,
+    low_res: str,
+    maps: List[str],
+) -> None:
+    """Record a texture baking operation as a memory entry.
+
+    Captures the high-res source, low-res target, and the map types that
+    were baked. Written to both markdown living memory and the Moneta store
+    for unified recall.
+
+    Best-effort: never raises, never breaks the caller. Logs on failure.
+
+    Args:
+        scene_dir: Path to the scene's ``claude/`` directory.
+        high_res: Path or name of the high-resolution source geometry.
+        low_res: Path or name of the low-resolution target geometry.
+        maps: List of baked map types (e.g. ``["diffuse", "normal", "roughness"]``).
+    """
+    try:
+        entry = (
+            f"### Texture Bake: {high_res} -> {low_res}\n"
+            f"- **Maps:** {', '.join(maps)}\n"
+            f"- **Recorded:** {_now()}\n\n"
+        )
+        _append_to_md(os.path.join(scene_dir, "memory.md"), entry)
+
+        _deposit_to_moneta_if_available(
+            content=entry,
+            memory_type="reference",
+            tags=["cops", "texture", "bake"],
+        )
+        logger.info(
+            "Recorded texture bake: %s -> %s (%d maps)",
+            high_res, low_res, len(maps),
+        )
+    except Exception as exc:
+        logger.warning(
+            "Failed to record texture bake (non-critical): %s", exc,
+        )
 
 
 def load_full_context(hip_dir: str, job_dir: str) -> Dict[str, Any]:
@@ -785,9 +1014,19 @@ def load_full_context(hip_dir: str, job_dir: str) -> Dict[str, Any]:
 # =============================================================================
 
 def _read_file(path: str) -> str:
-    """Read a file with UTF-8 encoding."""
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
+    """Read a file with UTF-8 encoding.
+
+    Returns empty string on encoding errors (binary file, corrupt data)
+    rather than propagating :class:`UnicodeDecodeError` to callers that
+    do not expect it. The empty string is a safe sentinel: every caller
+    already handles empty content (``if content:`` / ``if not content:``).
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    except (UnicodeDecodeError, LookupError) as exc:
+        logger.warning("Cannot read %s as UTF-8 text (%s); returning empty", path, exc)
+        return ""
 
 
 def _append_to_md(md_path: str, text: str) -> None:
@@ -813,6 +1052,8 @@ def _write_generic_entry(scene_dir: str, title: str, entry: Dict[str, Any]) -> N
 
 def _find_project_md(scene_dir: str) -> Optional[str]:
     """Walk up from scene claude dir to find project.md."""
+    if not scene_dir:
+        return None
     # scene_dir is $HIP/claude, project is $JOB/claude
     # Walk up: $HIP/claude -> $HIP -> parent -> parent/claude
     current = os.path.dirname(scene_dir)  # $HIP

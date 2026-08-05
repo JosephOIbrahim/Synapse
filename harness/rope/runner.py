@@ -1,0 +1,390 @@
+#!/usr/bin/env python
+"""rope runner -- deterministic orchestrator (Mode 1).
+
+Methodology after karpathy/autoresearch (fetched 2026-08-03): fresh agent per
+task, fixed budget, mechanical verdict, keep-or-discard via git, TSV ledger,
+and the loop never pauses to ask. Orchestrator + verifier are plain Python
+(zero tokens); the only model spend is one headless `claude -p` per task.
+
+Usage:
+  python harness/rope/runner.py status
+  python harness/rope/runner.py run --model <id> --confirm-model [--max N] [--task ID] [--allow-dirty]
+  python harness/rope/runner.py human <ID> --done "note"
+  python harness/rope/runner.py verify <ID> --passed | --failed "why"
+  python harness/rope/runner.py gate
+
+Safety: on a failed attempt this runner does `git reset --hard` ONLY. It never
+runs `git clean` -- this seat has untracked working files that must survive.
+"""
+import argparse, json, os, re, shutil, subprocess, sys, time
+
+ROPE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(ROPE))
+STATE_P = os.path.join(ROPE, "STATE.json")
+RESULTS = os.path.join(ROPE, "results.tsv")
+PROMPT_P = os.path.join(ROPE, ".prompt.txt")
+RUNLOG = os.path.join(ROPE, "last_run.log")
+TIMEOUT = {"trivial": 480, "small": 1200, "medium": 2400}
+EXTRA_FLAGS = os.environ.get(
+    "SYNAPSE_ROPE_FLAGS",
+    "--permission-mode acceptEdits --strict-mcp-config "
+    "--mcp-config harness/rope/no-mcp.json").split()
+# strict empty MCP config: executors edit files; they must NEVER attach to the
+# live Synapse bridge (or any MCP server) as a side effect of session startup.
+
+
+def sh(args, timeout=None, stdin=None, stdout=None):
+    return subprocess.run(args, cwd=ROOT, timeout=timeout, stdin=stdin,
+                          stdout=stdout or subprocess.PIPE,
+                          stderr=subprocess.STDOUT, text=(stdout is None))
+
+def git(*a, timeout=120):
+    return sh(["git", *a], timeout=timeout)
+
+def claude_cmd(model):
+    if os.environ.get("SYNAPSE_ROPE_ENGINE", "claude") == "ollama":
+        return [sys.executable, os.path.join(ROPE, "exec_ollama.py"),
+                "--task", os.environ.get("SYNAPSE_ROPE_TASK", ""), "--model", model]
+    base = ["claude", "-p", "--model", model] + EXTRA_FLAGS
+    return (["cmd", "/c"] + base) if os.name == "nt" else base
+
+def load():
+    with open(STATE_P, encoding="utf-8") as f:
+        return json.load(f)
+
+def save(st):
+    with open(STATE_P, "w", encoding="utf-8") as f:
+        json.dump(st, f, indent=1)
+
+def ledger(tid, model, verdict, attempts, dur, note):
+    new = not os.path.exists(RESULTS)
+    with open(RESULTS, "a", encoding="utf-8") as f:
+        if new:
+            f.write("ts\ttask\tmodel\tverdict\tattempts\tdur_s\ttokens\tnote\n")
+        f.write("%s\t%s\t%s\t%s\t%d\t%.0f\t%s\t%s\n" % (
+            time.strftime("%Y-%m-%d %H:%M"), tid, model, verdict, attempts,
+            dur, "unavailable", note.replace("\t", " ").replace("\n", " ")[:200]))
+
+def _read(rel):
+    with open(os.path.join(ROOT, rel), encoding="utf-8", errors="replace") as f:
+        return f.read()
+
+def _porcelain():
+    return git("status", "--porcelain").stdout.strip().splitlines()
+
+def check(a):
+    """Return (passed: bool|None, manual_note). None = manual, not runnable."""
+    k = a["kind"]
+    try:
+        if k == "grep_min":
+            return _read(a["path"]).count(a["pattern"]) >= a.get("min", 1), ""
+        if k == "grep_absent":
+            return _read(a["path"]).count(a["pattern"]) == 0, ""
+        if k == "grep_top":
+            head = "\n".join(_read(a["path"]).splitlines()[: a.get("lines", 30)])
+            return a["pattern"] in head, ""
+        if k == "order":
+            s = _read(a["path"])
+            i, j = s.find(a["first"]), s.find(a["second"])
+            return i != -1 and j != -1 and i < j, ""
+        if k == "exists":
+            return os.path.exists(os.path.join(ROOT, a["path"])), ""
+        if k == "desc_len":
+            m = re.search(r'description\s*=\s*"(.*?)"', _read(a["path"]), re.S)
+            return bool(m) and len(m.group(1)) <= a["max"], ""
+    except FileNotFoundError:
+        return False, ""
+    if k == "pytest":
+        r = sh([sys.executable, "-m", "pytest"] + a["args"].split(), timeout=1800)
+        return r.returncode == 0, ""
+    if k == "clean_after_pytest":
+        before = set(_porcelain())
+        r = sh([sys.executable, "-m", "pytest", "tests/", "-q"], timeout=5400)
+        grew = [ln for ln in _porcelain() if ln not in before]
+        return r.returncode == 0 and not grew, "; ".join(grew)[:160]
+    if k == "manual":
+        return None, a.get("note", "manual check")
+    return False, "unknown accept kind: %s" % k
+
+def verdict(task):
+    manual, fails = [], []
+    for a in task.get("accept", []):
+        ok, note = check(a)
+        if ok is None:
+            manual.append(note)
+        elif not ok:
+            fails.append(a["kind"] + ":" + a.get("path", a.get("args", "")))
+    return (not fails), manual, fails
+
+def revert(task, existed):
+    """Undo ONE failed task without touching anything the task did not declare.
+
+    The commit path was already scoped, and its own comment says why: "never
+    `add -A`: the LIVE Synapse session writes files while we run." The failure
+    path then called `git reset --hard HEAD`, which reverts EVERY tracked file
+    in the repo. The concurrency the success path defends against was undefended
+    on failure -- careful on the way in, shotgun on the way out.
+
+    A task that declares three files must not be able to destroy a fourth.
+    Measured: a concurrently running MONETA harness holding 545 uncommitted
+    lines was one failed task away from losing all of them, with no stash and no
+    reflog to recover from, because the work had never been committed.
+
+    Tracked files are restored from HEAD. Files this attempt CREATED are removed.
+    Untracked files that already existed are never ours to delete.
+    """
+    for f in task.get("files", []):
+        p = os.path.join(ROOT, f)
+        if git("ls-files", "--error-unmatch", "--", f).returncode == 0:
+            git("checkout", "HEAD", "--", f)
+        elif not existed.get(f) and os.path.exists(p):
+            os.remove(p)
+
+
+def stray_edits(task):
+    """Tracked files dirtied by an attempt that the task never declared.
+
+    Scoped revert cannot undo these -- and must not try, because it cannot tell
+    an out-of-scope agent write from a concurrent process's legitimate work. So
+    it reports instead. L2: it frays visibly. A stray edit left behind is
+    recoverable; an unrelated harness's destroyed work is not. Prefer the
+    recoverable failure, then say so out loud.
+    """
+    declared = {f.replace("\\", "/") for f in task.get("files", [])}
+    out = []
+    for ln in git("status", "--porcelain", "-uno").stdout.splitlines():
+        rel = ln[3:].strip().replace("\\", "/")
+        if rel and rel not in declared and not rel.startswith("harness/rope/"):
+            out.append(rel)
+    return out
+
+
+def eligible(st, only=None):
+    done = {"verified", "needs_review"}
+    for t in st["tasks"]:
+        if only and t["id"] != only:
+            continue
+        if t["type"] == "agent" and t["status"] == "pending" and \
+           all(any(d["id"] == x and d["status"] in done for d in st["tasks"])
+               for x in t.get("deps", [])):
+            return t
+    return None
+
+def build_prompt(task):
+    prog = open(os.path.join(ROPE, "program.md"), encoding="utf-8").read()
+    return (prog + "\n\n=== YOUR TASK (one task, surgical) ===\n"
+            + json.dumps(task, indent=1)
+            + "\n\nRules of engagement: edit only the files listed above; honor"
+            " every rule in program.md; self-check with the accept spec; print"
+            " DONE:%s and a one-line receipt; do NOT commit.\n" % task["id"])
+
+def run_executor(task, model):
+    os.environ["SYNAPSE_ROPE_TASK"] = task["id"]   # engine=ollama reads this
+    with open(PROMPT_P, "w", encoding="utf-8") as f:
+        f.write(build_prompt(task))
+    t0 = time.time()
+    budget = TIMEOUT.get(task.get("effort", "small"), 1200)
+    try:
+        with open(PROMPT_P, encoding="utf-8") as fin, open(RUNLOG, "w", encoding="utf-8") as flog:
+            subprocess.run(claude_cmd(model), cwd=ROOT, stdin=fin, stdout=flog,
+                           stderr=subprocess.STDOUT, timeout=budget)
+    except subprocess.TimeoutExpired:
+        pass  # verdict decides; karpathy: overrun == failure candidate
+    return time.time() - t0
+
+def tail_log(n=3):
+    try:
+        return " | ".join(open(RUNLOG, encoding="utf-8", errors="replace")
+                          .read().splitlines()[-n:])
+    except OSError:
+        return ""
+
+def preflight(st, args):
+    assert os.path.exists(os.path.join(ROOT, "pyproject.toml")), "not the repo root"
+    lock = os.path.join(ROPE, ".runner.lock")
+    if os.path.exists(lock):
+        try:
+            opid = open(lock).read().strip()
+        except OSError:
+            opid = ""
+        if os.name == "nt":
+            alive = opid and "python" in sh(["tasklist", "/FI", "PID eq %s" % opid]).stdout.lower()
+        else:
+            try:
+                os.kill(int(opid), 0); alive = True
+            except (OSError, ValueError):
+                alive = False
+        if alive:
+            sys.exit("another runner is already looping (pid %s); one rope at a time" % opid)
+    open(lock, "w").write(str(os.getpid()))
+    if subprocess.run((["cmd", "/c"] if os.name == "nt" else []) + ["claude", "--version"],
+                      capture_output=True).returncode != 0:
+        sys.exit("claude CLI not found on PATH -- install Claude Code first")
+    if sh([sys.executable, "-m", "pytest", "--version"]).returncode != 0:
+        sys.exit("pytest missing for this interpreter")
+    if not (args.model and args.confirm_model):
+        sys.exit("refusing to run: pass --model <id> --confirm-model "
+                 "(model choice is confirmed by the human, by design)")
+    if os.name == "nt" and not getattr(args, "live_seat_ok", False):
+        tl = sh(["tasklist"]).stdout.lower()
+        if any(k in tl for k in ("houdini", "hindie")):
+            sys.exit("a Houdini process is running and this loop edits the tree "
+                     "Houdini serves; close Houdini or pass --live-seat-ok")
+    cur = git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    if cur != st["branch"]:
+        if git("rev-parse", "--verify", st["branch"]).returncode == 0:
+            git("checkout", st["branch"])
+        else:
+            git("checkout", "-b", st["branch"])
+    dirty = "\n".join(
+        ln for ln in git("status", "--porcelain", "-uno").stdout.splitlines()
+        if "harness/rope/" not in ln.replace("\\", "/")
+    ).strip()  # the runner's own state/card files never block the runner
+    if dirty and not args.allow_dirty:
+        sys.exit("tracked files are dirty; commit/stash or pass --allow-dirty:\n" + dirty)
+    if dirty:
+        # --allow-dirty used to mean "start anyway" while the failure path still
+        # ran `reset --hard`, so the flag quietly authorised destroying exactly
+        # the work it was acknowledging. The revert is scoped now, so carrying
+        # dirt is safe -- but the operator still gets to SEE what they carry.
+        n = len(dirty.splitlines())
+        print("--allow-dirty: carrying %d dirty tracked file(s) through the loop." % n)
+        print(dirty)
+        print("scoped revert is in force: only a task's own declared files are "
+              "reverted, never the whole tree.")
+    gi = os.path.join(ROOT, ".gitignore")
+    ig = open(gi, encoding="utf-8").read() if os.path.exists(gi) else ""
+    for line in ["harness/rope/results.tsv", "harness/rope/.prompt.txt",
+                 "harness/rope/last_run.log", "harness/rope/runner_console.log",
+                 "harness/rope/runner_console.err.log", "harness/rope/PROGRESS.md",
+                 "harness/rope/.runner.lock"]:
+        if line not in ig:
+            open(gi, "a", encoding="utf-8").write("\n" + line)
+    if git("ls-files", "--error-unmatch", "harness/rope/runner.py").returncode != 0:
+        git("add", "harness/rope", ".claude/agents/rope-executor.md", ".gitignore")
+        git("commit", "-m", "rope: harness scaffolding (GATE A)")
+    st["executor_model"] = args.model
+    save(st)
+
+def cmd_run(args):
+    st = load()
+    preflight(st, args)
+    revived = [z["id"] for z in st["tasks"] if z["status"] == "in_progress"]
+    for z in st["tasks"]:              # raise the dead: a killed runner leaves
+        if z["status"] == "in_progress":   # in_progress orphans behind it
+            z["status"] = "pending"
+    if revived:
+        save(st)
+        ledger(",".join(revived), "-", "revive", 0, 0,
+               "orphaned in_progress reset to pending at startup")
+    done = 0
+    while True:
+        t = eligible(st, args.task)
+        if not t or (args.max and done >= args.max):
+            break
+        t["status"] = "in_progress"; save(st)
+        # which of the task's files existed BEFORE the attempt -- so a scoped
+        # revert can tell "this attempt created it" from "it was already here".
+        existed = {f: os.path.exists(os.path.join(ROOT, f))
+                   for f in t.get("files", [])}
+        dur = run_executor(t, args.model)
+        ok, manual, fails = verdict(t)
+        if ok:
+            t["status"] = "needs_review" if manual else "verified"
+            save(st)  # state to disk BEFORE the commit, so the commit is truthful
+            for f in t.get("files", []):
+                git("add", "--", f)   # scoped: only the task's files —
+            git("add", "--", "harness/rope/STATE.json", ".gitignore")
+            # never `add -A`: the LIVE Synapse session writes files while we
+            # run, and none of them belong in a rope commit.
+            git("commit", "-m", "rope:%s %s [%s]" % (t["id"], t["title"], t["law"]))
+            ledger(t["id"], args.model, "keep", t["attempts"] + 1, dur,
+                   ("manual pending: " + "; ".join(manual)) if manual else "clean")
+        else:
+            # Scoped, not `git reset --hard HEAD`. See revert() for why: the
+            # blunt form reverted every tracked file in the repo, including work
+            # belonging to whatever else happened to be running. NEVER git clean.
+            revert(t, existed)
+            stray = stray_edits(t)
+            if stray:
+                ledger(t["id"], args.model, "stray", t["attempts"], 0,
+                       "left in tree, NOT reverted (out of task scope): "
+                       + ", ".join(stray[:6]))
+            low = tail_log(8).lower()
+            if any(k in low for k in ("session limit", "usage limit", "rate limit")):
+                t["status"] = "pending"      # not the task's fault; no attempt consumed
+                ledger(t["id"], args.model, "quota-pause", t["attempts"], dur,
+                       "usage limit hit; loop paused cleanly, task unharmed")
+                save(st)
+                break   # token-saver law: NEVER retry a usage-limit failure
+            t["attempts"] += 1
+            t["status"] = "blocked" if t["attempts"] >= 2 else "pending"
+            ledger(t["id"], args.model, "discard", t["attempts"], dur,
+                   "fails: " + ", ".join(fails) + " | " + tail_log())
+        save(st)
+        done += 1
+        if args.task:
+            break
+    try:
+        os.remove(os.path.join(ROPE, ".runner.lock"))
+    except OSError:
+        pass
+    cmd_gate(args)
+
+def cmd_status(args):
+    st = load()
+    for t in st["tasks"]:
+        print("%-6s %-13s a=%d  %s" % (t["id"], t["status"], t["attempts"], t["title"]))
+
+def cmd_gate(args):
+    st = load()
+    tally = {}
+    for t in st["tasks"]:
+        tally[t["status"]] = tally.get(t["status"], 0) + 1
+    open_ = [t["id"] for t in st["tasks"] if t["status"] != "verified"]
+    print("GATE A:", "GREEN -- post may go up" if not open_ else
+          "HOLDING -- open: " + ", ".join(open_))
+    print("tally:", json.dumps(tally))
+
+def cmd_human(args):
+    st = load()
+    for t in st["tasks"]:
+        if t["id"] == args.id:
+            ok, manual, fails = verdict(t)
+            t["status"] = "verified" if (ok and args.done) else "needs_review"
+            ledger(t["id"], "human", "keep" if ok else "partial", t["attempts"],
+                   0, args.done or "; ".join(fails))
+            save(st)
+            return print(t["id"], "->", t["status"])
+    sys.exit("no such task")
+
+def cmd_verify(args):
+    st = load()
+    for t in st["tasks"]:
+        if t["id"] == args.id:
+            if args.passed:
+                t["status"] = "verified"
+            else:
+                t["status"] = "blocked"
+            ledger(t["id"], "human", "keep" if args.passed else "reject",
+                   t["attempts"], 0, args.failed or "manual review")
+            save(st)
+            return print(t["id"], "->", t["status"])
+    sys.exit("no such task")
+
+def main():
+    ap = argparse.ArgumentParser(prog="rope")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    r = sub.add_parser("run"); r.add_argument("--model"); r.add_argument("--confirm-model", action="store_true")
+    r.add_argument("--max", type=int); r.add_argument("--task"); r.add_argument("--allow-dirty", action="store_true")
+    r.add_argument("--live-seat-ok", action="store_true")
+    sub.add_parser("status"); sub.add_parser("gate")
+    h = sub.add_parser("human"); h.add_argument("id"); h.add_argument("--done")
+    v = sub.add_parser("verify"); v.add_argument("id")
+    v.add_argument("--passed", action="store_true"); v.add_argument("--failed")
+    args = ap.parse_args()
+    {"run": cmd_run, "status": cmd_status, "gate": cmd_gate,
+     "human": cmd_human, "verify": cmd_verify}[args.cmd](args)
+
+if __name__ == "__main__":
+    main()

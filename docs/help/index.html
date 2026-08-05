@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>SYNAPSE help</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--void:#0A0A0A;--panel:#111;--carbon:#1A1A1A;--graphite:#2A2A2A;
+ --bone:#CCC;--silver:#999;--slate:#555;--white:#F0F0F0;
+ --signal:#8FB3D9;--deep:#627A93;--ink:#0F1F2B;--warm:#FF7759;
+ --sans:"Space Grotesk",-apple-system,"Segoe UI",sans-serif;
+ --mono:"Space Mono",ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--void);color:var(--bone);font-family:var(--sans);
+ font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.bar{border-bottom:1px solid var(--graphite);background:var(--panel);
+ position:sticky;top:0;z-index:10}
+.bar .in{max-width:860px;margin:0 auto;padding:0 32px}
+.id{display:flex;align-items:center;gap:13px;padding:26px 0 18px}
+.mark{width:14px;height:14px;border:2px solid var(--warm);border-radius:50%;
+ border-right-color:transparent;transform:rotate(-30deg)}
+.word{font-weight:600;letter-spacing:.22em;font-size:17px;color:var(--white)}
+.ver{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+ color:var(--slate);text-transform:uppercase}
+nav{display:flex;gap:34px}
+nav button{background:none;border:0;padding:0 0 14px;cursor:pointer;
+ font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+ color:var(--slate);border-bottom:2px solid transparent;transition:color .12s}
+nav button:hover{color:var(--silver)}
+nav button[aria-selected="true"]{color:var(--white);border-bottom-color:var(--signal)}
+main{max-width:860px;margin:0 auto;padding:64px 32px 160px}
+section[hidden]{display:none}
+.lede{font-size:22px;line-height:1.5;color:var(--white);letter-spacing:-.015em;
+ margin:0 0 14px;max-width:620px}
+.sub{color:var(--silver);margin:0 0 64px;max-width:620px}
+h2{font-size:11px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;
+ color:var(--slate);font-family:var(--mono);margin:0 0 26px;
+ padding-bottom:12px;border-bottom:1px solid var(--graphite)}
+.topic{margin:0 0 40px;max-width:640px}
+.topic h3{font-size:17px;font-weight:600;color:var(--white);margin:0 0 4px;
+ letter-spacing:-.01em}
+.topic .desc{color:var(--silver);font-size:14px;margin:0 0 12px}
+.topic p{margin:0 0 12px}
+.group{margin-bottom:80px}
+code{font-family:var(--mono);font-size:.87em;color:var(--signal)}
+.cmd{display:block;font-family:var(--mono);font-size:14px;color:var(--signal);
+ background:var(--carbon);border-left:2px solid var(--deep);
+ padding:14px 18px;margin:14px 0;overflow-x:auto}
+a{color:var(--signal);text-decoration:none;border-bottom:1px solid var(--graphite)}
+a:hover{border-bottom-color:var(--signal)}
+strong{color:var(--white);font-weight:600}
+.warn{border-left:2px solid var(--warm);padding-left:18px;margin:16px 0}
+</style>
+
+<div class="bar"><div class="in">
+  <div class="id"><div class="mark"></div><div class="word">SYNAPSE</div>
+    <div class="ver">help &nbsp;·&nbsp; v5.42.0</div></div>
+  <nav id="nav">
+    <button aria-selected="true" data-t="start">Getting started</button>
+    <button data-t="using">Using Synapse</button>
+    <button data-t="ref">Reference</button>
+    <button data-t="limits">Limits</button>
+  </nav>
+</div></div>
+<main>
+
+<section id="start">
+  <p class="lede">Synapse is a rope, not an elevator. It gives you reach you
+  haven't earned yet and safety while you earn it — you're still the one climbing.</p>
+  <p class="sub">Written for someone who knows Houdini and doesn't know Synapse.</p>
+
+  <div class="group"><h2>First session</h2>
+
+    <div class="topic"><h3>Your first prompt</h3>
+      <p class="desc">Type plain English, press Enter, watch nodes appear.</p>
+      <p>Start with something small enough to verify by eye:</p>
+      <span class="cmd">make a grid, scatter 500 points on it, copy spheres to the points</span>
+      <p>When it finishes, look at the <strong>network</strong> — not the chat.
+      The nodes are the deliverable; the conversation is only how you asked.</p></div>
+
+    <div class="topic"><h3>Connect the bridge</h3>
+      <p class="desc">Nothing happens until the bridge is up. It doesn't start itself.</p>
+      <p>Press <strong>Connect</strong> in the panel header. When it reads
+      <code>Bridge ✓</code> you're live. If it already read that and nothing is
+      happening, the problem is elsewhere — check the status line under the wordmark.</p></div>
+
+    <div class="topic"><h3>Install order</h3>
+      <p class="desc">The installer is step two, not step one.</p>
+      <p>Clone or unpack the repository first, then run the installer from inside
+      it. Running the installer against nothing is the most common first-run failure.</p></div>
+  </div>
+
+  <div class="group"><h2>Pace</h2>
+    <div class="topic"><h3>The three profiles</h3>
+      <p class="desc">Curious, Expert, ML — how much is explained, not what is possible.</p>
+      <p><strong>Curious</strong> gives you air: readouts you can't act on yet fold
+      away, and the agent narrates each decision in plain language.
+      <strong>Expert</strong> is full density, no narration, more conversation on
+      screen. <strong>ML</strong> is Expert with the token and model economics
+      surfaced.</p>
+      <p>Capability is identical in all three. Switching adds no tools and removes
+      none — and Synapse never switches for you.</p></div>
+  </div>
+</section>
+
+<section id="using" hidden>
+  <p class="lede">How to ask, and how to check what you got.</p>
+  <p class="sub">Synapse runs inside Houdini's own Python, so it isn't guessing
+  at your scene — it's reading it.</p>
+
+  <div class="group"><h2>Working</h2>
+
+    <div class="topic"><h3>How to ask</h3>
+      <p class="desc">Describe the result, not the node names.</p>
+      <p>"Scatter points on the ground plane and instance the rocks" works better
+      than naming operators. Synapse knows Houdini; it needs to know your intent.
+      When a request is large, ask for it in stages — you'll catch a wrong turn
+      three nodes in rather than thirty.</p></div>
+
+    <div class="topic"><h3>Reading what it did</h3>
+      <p class="desc">Trust the network. The summary is a claim; the nodes are evidence.</p>
+      <p>The agent can be confidently wrong — building something plausible and
+      describing it as if it were what you asked for. Checking the network takes
+      five seconds and is the single habit that makes this tool safe.</p></div>
+
+    <div class="topic"><h3>The verb rail</h3>
+      <p class="desc">EXPLAIN · FIX · OPTIMIZE · BUILD HDA — act on what's selected.</p>
+      <p>Select a node or a subnetwork, then press a verb. Explain describes what
+      the network does. Fix looks for what's broken. Optimize looks for what's slow.
+      Build HDA turns a working network into a digital asset.</p></div>
+
+    <div class="topic"><h3>Commands</h3>
+      <p class="desc">Type <code>/</code> in the prompt for the command list.</p>
+      <p>Commands do the things that aren't conversation — session control, mode
+      switches, diagnostics. The list is discoverable; you don't need to memorise it.</p></div>
+  </div>
+
+  <div class="group"><h2>Models</h2>
+    <div class="topic"><h3>Choosing a model</h3>
+      <p class="desc">Discovered from your machine, not hardcoded by us.</p>
+      <p>Synapse reads what's actually available — local models via Ollama, and
+      hosted providers if you've set their API key in the environment. Local models
+      cost nothing and never leave your machine. Larger hosted models handle bigger
+      scene reasoning. Both do the same job at different quality and price.</p></div>
+  </div>
+</section>
+
+<section id="ref" hidden>
+  <p class="lede">Panel anatomy and the tools for when things go sideways.</p>
+  <p class="sub">Most sessions that feel broken are one line of doctor output.</p>
+
+  <div class="group"><h2>Diagnostics</h2>
+    <div class="topic"><h3>synapse_doctor</h3>
+      <p class="desc">Run this first. Always.</p>
+      <p>It checks connection, licence, environment and model access, and names
+      which one is wrong. If the doctor is clean and the behaviour is still wrong,
+      that's worth reporting — paste its output with the issue.</p></div>
+  </div>
+
+  <div class="group"><h2>The panel</h2>
+    <div class="topic"><h3>Header</h3>
+      <p class="desc">Mark, status, Help · Connect · Corpus.</p>
+      <p>The mark is the status light: an open ring at rest, filling as work
+      completes, closed when done. While work is in flight it's also the halt —
+      the same Stop the rail button fires. <strong>Corpus</strong> loads the
+      Houdini 21 documentation so scene assembly grounds in real node and
+      parameter names rather than plausible-sounding ones.</p></div>
+
+    <div class="topic"><h3>CHAT and TOKEN</h3>
+      <p class="desc">The conversation, and what it cost.</p>
+      <p>TOKEN reports usage as the provider reports it. Where a number can't be
+      obtained honestly it shows UNKNOWN — never a zero, never an estimate.</p></div>
+
+    <div class="topic"><h3>The composer</h3>
+      <p class="desc">Drag the divider; it remembers where you left it.</p>
+      <p><code>Enter</code> sends. <code>Shift+Enter</code> is a newline.
+      <code>Ctrl+K</code> opens the command palette. The image button attaches
+      references to the next request.</p></div>
+  </div>
+
+  <div class="group"><h2>Licences</h2>
+    <div class="topic"><h3>What your licence allows</h3>
+      <p class="desc">Commercial · Indie · Apprentice differ, and it shows up as silence.</p>
+      <p>Some render paths are unavailable on Indie and Apprentice. If a render
+      appears to do nothing, check the licence before assuming Synapse failed.
+      The README carries the current support matrix.</p></div>
+  </div>
+</section>
+
+<section id="limits" hidden>
+  <p class="lede">Early software with an agent inside it. This is the part that
+  saves you an afternoon.</p>
+  <p class="sub">Nothing here is a surprise we're hiding — it's the honest edge
+  of what's built.</p>
+
+  <div class="group"><h2>Before a large request</h2>
+    <div class="topic"><h3>Undo is scene-level</h3>
+      <p class="desc">Save first. Undo reverses the scene, not the disk.</p>
+      <div class="warn"><p>Files written, caches, and renders stay written after an
+      undo. Treat a big prompt the way you'd treat someone else's HDA: save, then
+      run it.</p></div></div>
+
+    <div class="topic"><h3>It can be confidently wrong</h3>
+      <p class="desc">Plausible output, described as if correct.</p>
+      <p>This is the failure mode to expect. The mitigation is cheap and it never
+      changes: read the network, not the summary.</p></div>
+  </div>
+
+  <div class="group"><h2>Posture</h2>
+    <div class="topic"><h3>Single user, localhost</h3>
+      <p class="desc">Not hardened for a shared or networked seat.</p>
+      <p>Synapse assumes one artist on one machine. Access control is off in local
+      mode by design. Don't expose the bridge port on a shared network.</p></div>
+
+    <div class="topic"><h3>Tools run with real reach</h3>
+      <p class="desc">It executes in your session, with your permissions.</p>
+      <p>The agent can run Python inside Houdini. That's what makes it useful and
+      it's also what makes the save-first habit matter.</p></div>
+  </div>
+
+  <div class="group"><h2>The measure</h2>
+    <div class="topic"><h3>What Synapse is for</h3>
+      <p class="desc">Measured by what you can do without it.</p>
+      <p>If it builds things you couldn't build alone and you learn nothing, it's
+      failing at its job however good the output looks. The gradient runs one way:
+      it builds while you watch, then builds with pauses so you can follow and
+      object, then explains the move and you make it yourself. Explanation rises at
+      your pace. Automation never does.</p>
+      <p><a href="https://github.com/JosephOIbrahim/Synapse">Repository, README,
+      and the full known-limitations list</a></p></div>
+  </div>
+</section>
+</main>
+<script>
+const nav=document.getElementById('nav');
+nav.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  nav.querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.querySelectorAll('main section').forEach(s=>s.hidden=(s.id!==b.dataset.t));
+  window.scrollTo(0,0);
+});
+</script>

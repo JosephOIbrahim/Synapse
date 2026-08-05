@@ -544,12 +544,51 @@ class ToolExecutor(QtCore.QObject):
                     execute_through_bridge, is_read_only,
                 )
                 if not is_read_only(request.tool_name):
-                    response = execute_through_bridge(
-                        request.tool_name, handler, command,
-                    )
+                    # MARSHAL. execute_through_bridge -> bridge.execute ->
+                    # _execute_houdini calls hou.* and hou.undos.group()
+                    # DIRECTLY on the calling thread, assuming it is already
+                    # the main thread. When the panel dispatches from a worker
+                    # (the claude_worker turn loop does), that assumption is
+                    # false: hou is not thread-safe, the integrity block
+                    # records main_thread_executed=False + no undo group, and
+                    # every mutating tool fails its fidelity check. Observed
+                    # 2026-08-03: create_node / execute_python / delete_node
+                    # all refused, reads unaffected -- the exact signature.
+                    #
+                    # _on_main is already computed above for the preflight
+                    # advisory; it was measured and never acted on. Act on it.
+                    if _on_main:
+                        response = execute_through_bridge(
+                            request.tool_name, handler, command,
+                        )
+                    else:
+                        from synapse.server.main_thread import run_on_main
+                        from synapse.core.timeouts import timeout_for
+                        response = run_on_main(
+                            lambda: execute_through_bridge(
+                                request.tool_name, handler, command,
+                            ),
+                            timeout=timeout_for(request.tool_name),
+                            label=request.tool_name,
+                        )
                 else:
                     response = handler.handle(command)
-            except ImportError:
+            except ImportError as _marshal_exc:
+                # Unmarshalled fallback -- announce it rather than degrading in
+                # silence (the silence is what made this bug unreadable at the
+                # seat). Outside Houdini this is expected dual-mode behaviour.
+                try:
+                    import hou  # noqa: F401
+                    logger.error(
+                        "MAIN-THREAD MARSHAL UNAVAILABLE -- dispatching %r on "
+                        "the calling thread. hou.* is not thread-safe; "
+                        "mutating tools will record main_thread_executed=False. "
+                        "Cause: %s: %s",
+                        request.tool_name, type(_marshal_exc).__name__,
+                        _marshal_exc,
+                    )
+                except Exception:
+                    pass
                 response = handler.handle(command)
             finally:
                 _elapsed_ms = (time.perf_counter() - _t0) * 1000.0

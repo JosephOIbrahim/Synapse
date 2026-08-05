@@ -77,11 +77,13 @@ def test_rag_corpus_reachable_for_vex(real_ki):
 def test_recall_augments_with_knowledge(real_ki):
     h = _Handler(real_ki, _FakeBridge())
     out = h._handle_memory_recall({"query": "vex attribute promote"})
-    # existing bridge keys preserved (no regression)
-    assert out["found"] is False
-    assert out["count"] == 0
+    # knowledge merged into matches list (unified result set)
+    assert out["found"] is True  # knowledge hit sets found
+    assert out["count"] == 1     # knowledge entry added
     assert "matches" in out
-    # additive knowledge block present
+    assert len(out["matches"]) == 1
+    assert out["matches"][0]["source"] == "knowledge"
+    # backward-compat knowledge key still present
     assert out.get("knowledge_found") is True
     assert out["knowledge"]["answer"]
 
@@ -90,20 +92,27 @@ def test_search_augments_with_knowledge(real_ki):
     h = _Handler(real_ki, _FakeBridge())
     out = h._handle_memory_search({"query": "vex noise pattern"})
     assert "results" in out  # bridge key intact
+    assert len(out["results"]) == 1
+    assert out["results"][0]["source"] == "knowledge"
     assert out.get("knowledge_found") is True
     assert out["knowledge"]["topic"]
 
 
 def test_existing_moneta_results_are_untouched(real_ki):
-    """Augmentation must not mutate the bridge's own result payload."""
+    """Moneta results are preserved; knowledge is merged alongside."""
     bridge = _FakeBridge(search_result={
         "query": "vex", "count": 1,
         "results": [{"id": "m1", "content": "user wrangle", "score": 0.9}],
     })
     h = _Handler(real_ki, bridge)
     out = h._handle_memory_search({"query": "vex"})
-    assert out["count"] == 1
+    # Moneta result preserved
     assert out["results"][0]["id"] == "m1"
+    assert out["results"][0]["content"] == "user wrangle"
+    # knowledge merged in as second result
+    assert out["count"] == 2
+    assert len(out["results"]) == 2
+    assert out["results"][1]["source"] == "knowledge"
 
 
 # --- No-op safety ----------------------------------------------------------

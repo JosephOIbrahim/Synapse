@@ -1,0 +1,1207 @@
+{
+ "version": 1,
+ "gate": "A",
+ "branch": "rope/gate-a",
+ "executor_model": "gpt-oss:20b",
+ "note": "executor_model set at runtime via --model + --confirm-model. Statuses: pending|in_progress|needs_review|verified|blocked|blocked_human|blocked_seat.",
+ "tasks": [
+  {
+   "id": "L1-1",
+   "was": "A1",
+   "title": "Remove consent-gated claim",
+   "law": "L1",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "README.md",
+    "pyproject.toml"
+   ],
+   "change": "In README section '## The two paths', mermaid node exact string 'A2[consent-gated]' -> 'A2[provenance-recorded \u2014 Tier-0]'. Below the diagram add sentence: 'Consent prompts on the /mcp path belong to the MCP host (e.g. Claude Desktop's tool-approval), not to Synapse; Synapse's guarantee is provenance.' Remove 'consent-gated' from pyproject description.",
+   "accept": [
+    {
+     "kind": "grep_absent",
+     "path": "README.md",
+     "pattern": "consent-gated"
+    },
+    {
+     "kind": "grep_absent",
+     "path": "pyproject.toml",
+     "pattern": "consent-gated"
+    },
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "MCP host",
+     "min": 1
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L1-2",
+   "was": "A3",
+   "title": "Fix the one red test",
+   "law": "L1",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "tests/test_moneta_substrate_truth.py"
+   ],
+   "change": "Test test_make_store_falls_back_to_jsonl_when_moneta_is_installed_but_broken: moneta absent means _make_store exits the not-installed branch before the patched from_storage_dir is reachable, so no ERROR exists. Mirror the sibling at ~line 541: add monkeypatch.setattr(mr, 'moneta_available', lambda: True) with the same 'from synapse.memory import moneta_runtime as mr' import, before calling _make_store.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_moneta_substrate_truth.py -q"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L1-3",
+   "was": "A9",
+   "title": "Scope reversibility claim (load rating)",
+   "law": "L1",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "README.md",
+    "pyproject.toml",
+    "python/synapse/server/handlers.py"
+   ],
+   "change": "Add this exact sentence in three places \u2014 pyproject description, README safety paragraph, _handle_execute_python docstring: 'Scene mutations are undo-wrapped and reversible. Filesystem and network effects of executed code are not.'",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "Filesystem and network effects",
+     "min": 1
+    },
+    {
+     "kind": "grep_min",
+     "path": "pyproject.toml",
+     "pattern": "Filesystem and network effects",
+     "min": 1
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/server/handlers.py",
+     "pattern": "Filesystem and network effects",
+     "min": 1
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L1-4",
+   "was": "A10",
+   "title": "State RBAC default",
+   "law": "L1",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "README.md"
+   ],
+   "change": "README security paragraph must state, with this exact sentence present: 'RBAC is inactive in local mode by default.' Also describe: localhost WebSocket, origin-validated fail-safe reject, no auth key unless configured, and the enable path (SYNAPSE_DEPLOY_MODE, auth key).",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "RBAC is inactive in local mode by default",
+     "min": 1
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L1-5",
+   "was": "A12",
+   "title": "pyproject honesty",
+   "law": "L1",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "pyproject.toml",
+    "README.md"
+   ],
+   "change": "Replace authors email joe@example.com with a real one ONLY if present in git config (git log -1 --format=%ae); otherwise use the GitHub noreply pattern for JosephOIbrahim. Shrink description to <=160 chars (move long text into README). Delete the 'Operating System :: OS Independent' classifier.",
+   "accept": [
+    {
+     "kind": "grep_absent",
+     "path": "pyproject.toml",
+     "pattern": "example.com"
+    },
+    {
+     "kind": "grep_absent",
+     "path": "pyproject.toml",
+     "pattern": "OS Independent"
+    },
+    {
+     "kind": "desc_len",
+     "path": "pyproject.toml",
+     "max": 200
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L2-1",
+   "was": "A2",
+   "title": "Elevate Known limitations",
+   "law": "L2",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "README.md"
+   ],
+   "change": "Move the entire '## Known limitations' section to directly after '## The one design choice' (before '## What it knows'). Near the tagline add: 'Read [Known limitations](#known-limitations) first \u2014 this repo's habit is saying what doesn't work.'",
+   "accept": [
+    {
+     "kind": "order",
+     "path": "README.md",
+     "first": "## Known limitations",
+     "second": "## What it knows"
+    },
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "#known-limitations",
+     "min": 1
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L2-2",
+   "was": "A13",
+   "title": "SECURITY.md + issue template",
+   "law": "L2",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "SECURITY.md",
+    ".github/ISSUE_TEMPLATE/bug.yml",
+    "README.md"
+   ],
+   "change": "Create SECURITY.md: report channel (GitHub security advisories), vendored-deps ownership statement (python/synapse/_vendor: anthropic, pydantic, pydantic_core, httpx, httpcore, h11, anyio, certifi, idna, jiter \u2014 patching is ours), localhost threat model reusing L1-3/L1-4 sentences. Create .github/ISSUE_TEMPLATE/bug.yml asking for Houdini build, license tier, and synapse_doctor output.",
+   "accept": [
+    {
+     "kind": "exists",
+     "path": "SECURITY.md"
+    },
+    {
+     "kind": "exists",
+     "path": ".github/ISSUE_TEMPLATE/bug.yml"
+    },
+    {
+     "kind": "grep_min",
+     "path": ".github/ISSUE_TEMPLATE/bug.yml",
+     "pattern": "doctor",
+     "min": 1
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L2-3",
+   "was": "A14",
+   "title": "Suite must not mutate the repo",
+   "law": "L2",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "tests/test_retina_t0.py",
+    "tests/test_retina_t1_schema.py",
+    "tests/test_panel_render_receipt.py",
+    ".gitignore"
+   ],
+   "change": "A Mock is used as a filesystem path and written outside tmp_path, leaving '<MagicMock ...' litter (a MagicMock/ dir exists at repo root on this seat). Find the producer(s) in the three named test files, route writes through tmp_path. Gitignore belt is secondary and only for the pattern already present.",
+   "accept": [
+    {
+     "kind": "clean_after_pytest"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L2-4",
+   "was": "A15",
+   "title": "Dead PDG rollback kwarg (remove_files->remove_outputs)",
+   "law": "L2",
+   "type": "seat",
+   "effort": "trivial",
+   "deps": [],
+   "files": [],
+   "change": "Per README Known limitations: bridge.py:1718 passes remove_files= where the API keyword is remove_outputs; raises TypeError every time. Verify the PDG signature on the live seat first, then rename and delete the limitation bullet. Optional for GATE A.",
+   "accept": [
+    {
+     "kind": "manual",
+     "note": "seat-verified rename + limitation bullet removed"
+    }
+   ],
+   "status": "blocked_seat",
+   "attempts": 0
+  },
+  {
+   "id": "L3-1",
+   "was": "A8",
+   "title": "Zero-prerequisite first prompt",
+   "law": "L3",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "README.md",
+    "python/synapse/panel/recipe_book.py",
+    "demo/README.md"
+   ],
+   "change": "New '## First prompt' section immediately after Install: one prompt grounded in an existing recipe_book.py recipe, fresh empty scene, no OCIO, no harness runner, visible viewport result. Relabel demo/README.md heading as 'the staged demo (pipeline prerequisites)'.",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "## First prompt",
+     "min": 1
+    },
+    {
+     "kind": "grep_min",
+     "path": "demo/README.md",
+     "pattern": "pipeline prerequisites",
+     "min": 1
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L3-2",
+   "was": "A4",
+   "title": "Video above the fold",
+   "law": "L3",
+   "type": "human",
+   "effort": "human",
+   "deps": [
+    "L3-1"
+   ],
+   "files": [
+    "README.md",
+    "assets/"
+   ],
+   "change": "HUMAN: record the L3-1 first prompt, 20-30s \u2014 prompt typed, nodes appear, viewport updates, decision credit, tab switch + local model with no key. GIF <10MB inline + MP4 on the release. Reference the orphaned assets/synapse_logo.png in the header.",
+   "accept": [
+    {
+     "kind": "grep_top",
+     "path": "README.md",
+     "pattern": "![",
+     "lines": 30
+    },
+    {
+     "kind": "manual",
+     "note": "recording embedded and plays"
+    }
+   ],
+   "status": "blocked_human",
+   "attempts": 0
+  },
+  {
+   "id": "L3-3",
+   "was": "A5",
+   "title": "Installer is Install step 2",
+   "law": "L3",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "README.md"
+   ],
+   "change": "Install step 2 becomes 'python scripts/install_synapse_package.py'. Manual JSON + the three bite warnings (BOM, hpath, dual PYTHONPATH) move to a collapsed 'Manual install' appendix. State the two-installer split: install.py = shelf/panel/icons; scripts/install_synapse_package.py = the package file; state the order.",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "install_synapse_package.py",
+     "min": 2
+    },
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "Manual install",
+     "min": 1
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L3-4",
+   "was": "A6",
+   "title": "Surface synapse_doctor",
+   "law": "L3",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "README.md"
+   ],
+   "change": "Install step 4 = run doctor. New '## Troubleshooting' section; first entry 'the panel didn't appear' -> doctor + the existing 'No error. Just absence.' explanation. Doctor is registered at mcp_server.py:769, implemented in python/synapse/server/doctor.py.",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "synapse_doctor",
+     "min": 2
+    },
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "## Troubleshooting",
+     "min": 1
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L3-5",
+   "was": "A7",
+   "title": "Apprentice verdict + support matrix",
+   "law": "L3",
+   "type": "human",
+   "effort": "human",
+   "deps": [],
+   "files": [
+    "README.md"
+   ],
+   "change": "HUMAN: one Apprentice session \u2014 doctor + the L3-1 prompt + one render attempt. Publish README support matrix: Commercial/Indie/Apprentice/Education x panel/build/husk/renders. 'Watermarked' and 'unavailable' are answers; 'unknown' is not. Known: Indie blocks husk/Karma (docs/render-freeze-operator-card.md).",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "Apprentice",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "matrix row completed from a real Apprentice session"
+    }
+   ],
+   "status": "blocked_human",
+   "attempts": 0
+  },
+  {
+   "id": "L4-1",
+   "was": "A11",
+   "title": "Ownership documented; stale doc killed",
+   "law": "L4",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "README.md",
+    "docs/H22_llm_support.md"
+   ],
+   "change": "README 'Runs your model' section near the top: five engines; Ollama = no API key, nothing leaves the machine (default http://localhost:11434); picks persist via .synapse/panel_settings.json. Rewrite docs/H22_llm_support.md from proposal tense to shipped (providers exist at python/synapse/panel/providers/) or replace with a pointer to that package.",
+   "accept": [
+    {
+     "kind": "grep_min",
+     "path": "README.md",
+     "pattern": "llama",
+     "min": 1
+    },
+    {
+     "kind": "grep_absent",
+     "path": "docs/H22_llm_support.md",
+     "pattern": "roposed"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L4-2a",
+   "was": "B8-lite",
+   "title": "Ollama discovery + cached catalog",
+   "law": "L4",
+   "type": "agent",
+   "effort": "medium",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/providers/probe.py",
+    "python/synapse/panel/providers/registry.py",
+    "python/synapse/panel/providers/catalog.py",
+    "tests/test_rope_catalog.py"
+   ],
+   "change": "Extend the probe from are-you-alive to what-do-you-serve, GATE A scope = Ollama only: GET /api/tags via stdlib urllib (providers are SDK-free). New catalog module caches .synapse/model_catalog.json \u2014 per entry: id, provider, endpoint, local, first_seen, last_seen, latency_ms, auth_ok. Refresh diffs vs cache -> new/removed events. Failure degrades to cached catalog + stale flag; discovery must NEVER block panel start. Write tests/test_rope_catalog.py with mocked HTTP (no live Ollama needed): N models listed with zero hardcoded names; dead endpoint -> cache + stale.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_catalog.py -q"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L5-1",
+   "was": "B0",
+   "title": "docs/PROFILES.md",
+   "law": "L5",
+   "type": "agent",
+   "effort": "trivial",
+   "deps": [],
+   "files": [
+    "docs/PROFILES.md"
+   ],
+   "change": "Half a page: the axiom + L5/L6 verbatim from harness/rope/program.md, the three-profile matrix (explanation/transcript/instrument), the capability invariant stated on the first screen with the exact phrase 'identical agent capability', the hand-me-the-pen gradient (build-for-you -> build-with-pauses -> explain-then-you-try).",
+   "accept": [
+    {
+     "kind": "exists",
+     "path": "docs/PROFILES.md"
+    },
+    {
+     "kind": "grep_min",
+     "path": "docs/PROFILES.md",
+     "pattern": "identical agent capability",
+     "min": 1
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L5-2",
+   "was": "B1",
+   "title": "Layout manifest schema + compositor (the spine)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "medium",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/manifests/__init__.py",
+    "python/synapse/panel/manifests/curious.py",
+    "python/synapse/panel/manifests/expert.py",
+    "python/synapse/panel/manifests/ml.py",
+    "python/synapse/panel/compositor.py",
+    "tests/test_rope_manifests.py"
+   ],
+   "change": "SynapsePanel already composes by region (_build_rail/_build_context_ribbon/_build_mode_bar/_build_faces over a QStackedWidget). Make it data-driven: manifest = regions, ordered widget ids, per-widget {visible, collapsed, stretch, prominence}, plus system_prompt_overlay and defaults. Three manifests as py-dicts. Compositor maps manifest -> the existing build calls; unknown widget id -> logged and skipped, never a crash. NO new widgets. The manifest modules and compositor's resolve step must import WITHOUT Qt so tests run headless; only the final Qt assembly may require PySide. tests/test_rope_manifests.py: three manifests validate against the schema, resolve without error, unknown id skip-logs.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_manifests.py -q"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L5-3",
+   "was": "B2",
+   "title": "settings schema v2 + migration",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-2"
+   ],
+   "files": [
+    "python/synapse/panel/settings.py",
+    "tests/test_settings_v2.py"
+   ],
+   "change": "v2 adds profile: curious|expert|ml (v1 file or missing key -> expert; fresh install flag for a skippable picker, skip=expert; exactly three) and model_choice: {mode: semantic|exact, value} \u2014 curious writes semantic (free_local|balanced|best), expert/ml write exact ids; v1 model_by_provider migrates as exact. Semantic->concrete resolution is a compose-time function reading the L4-2a catalog, never done at write time. Keep load_settings defaults-on-corrupt behavior. tests/test_settings_v2.py: v1 loads as expert; corrupt -> defaults; both new keys round-trip.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_settings_v2.py -q"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L5-5",
+   "was": "B4",
+   "title": "Expert regression pin (safety net)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-2"
+   ],
+   "files": [
+    "tests/test_rope_expert_pin.py"
+   ],
+   "change": "Snapshot test: the RESOLVED expert manifest (region order, widget ids, visibility, stretch) equals the v5.42.0 structure recorded as a literal in the test. Any drift fails. Pure data, no Qt.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_expert_pin.py -q"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L5-6",
+   "was": "new",
+   "title": "Composition-only Curious",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-2",
+    "L5-5"
+   ],
+   "files": [
+    "python/synapse/panel/manifests/curious.py",
+    "tests/test_rope_curious_manifest.py"
+   ],
+   "change": "Curious from EXISTING widgets only: error_translator always-on, decision_log narration inline, quick_actions expanded, recipe_book promoted, /explain suggested post-build, confirm-on-destructive, jargon overlay via system_prompt_overlay. Test: diff vs expert manifest touches ONLY those defaults; capability-affecting keys identical.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_curious_manifest.py -q"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L5-4",
+   "was": "B3",
+   "title": "Tab switcher + persistence",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-2",
+    "L5-3"
+   ],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/settings.py",
+    "tests/test_rope_switcher_state.py"
+   ],
+   "change": "Tab strip selects profile, writes through settings on change, restores saved tab on reopen. Live recompose \u2014 never drop chat history or an in-flight turn (recompose, don't reconstruct). Headless test covers the state logic (selection -> settings write -> restore); the Qt behavior itself is seat-verified via the manual accept.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_switcher_state.py -q"
+    },
+    {
+     "kind": "manual",
+     "note": "seat: switch tabs, close panel, reopen -> same tab, history intact"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L5-10",
+   "was": "B7",
+   "title": "Copy pass (labels, picker, overlay)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-4",
+    "L5-6"
+   ],
+   "files": [
+    "python/synapse/panel/manifests/curious.py",
+    "python/synapse/panel/manifests/expert.py",
+    "python/synapse/panel/manifests/ml.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "Tab labels, first-run picker copy, jargon-overlay prompt text \u2014 TONE.md voice. Axiom language throughout: builds WITH you and explains as it goes; never 'does it for you'. No substitution language anywhere in the manifests.",
+   "accept": [
+    {
+     "kind": "grep_absent",
+     "path": "python/synapse/panel/manifests/curious.py",
+     "pattern": "does it for you"
+    },
+    {
+     "kind": "manual",
+     "note": "copy reviewed against the axiom and L6"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L5-11",
+   "was": "new",
+   "title": "Design conformance pass on all new panel UI",
+   "law": "L5",
+   "type": "agent",
+   "effort": "medium",
+   "deps": [
+    "L5-4"
+   ],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/manifests/curious.py",
+    "python/synapse/panel/manifests/expert.py",
+    "python/synapse/panel/manifests/ml.py",
+    "tests/test_rope_design_conformance.py"
+   ],
+   "change": "CONFORM, DO NOT INVENT. python/synapse/panel/designsystem/ is the single vendored source of truth (tokens.py 533 lines: SURFACE-ELEVATION roles VOID/CARBON/GRAPHITE, INTERACTION-STATE ramp hover/press/disabled/focus, TYPE ROLES, MOTION tokens, one STATUS grammar; plus components.py, qss.py, motion.py, fontload.py). Its docstring records that a redesign audit already found THREE divergent token sources and reconciled them -- do not create a fourth. Audit every widget added by L5-4 (profile tab strip) and any new Curious surface: replace every hardcoded colour, px size, font, radius, and transition with the corresponding token or component. Reuse components.py primitives instead of raw QWidget subclasses where one fits. Motion via motion.py only. If a needed token genuinely does not exist, DO NOT hardcode and DO NOT add one -- list it in docs/PROFILES.md under 'Design gaps for human decision' and leave the site marked. Add tests/test_rope_design_conformance.py: scan the new/edited panel modules for hardcoded hex colours (#RRGGBB) and bare px values outside designsystem/, and fail on any found in files this task touched.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "designsystem",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "DESIGN REVIEW BY JOE -- token conformance is machine-checked, but visual judgement is not delegable"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L5-12",
+   "was": "new",
+   "title": "Resolve the rail-meter radius gap -- option (a), QSS rule beside DsCookBar",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/designsystem/qss.py",
+    "python/synapse/panel/synapse_panel.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "Joe ruled option (a) on the one design gap L5-11 logged. Implement exactly that, derive nothing new. (1) In python/synapse/panel/designsystem/qss.py, add a #DsRailMeter rule immediately beside the existing #DsCookBar rule, matching its construction: the same 2px-on-3px radius treatment DsCookBar already establishes as design intent, with idle and busy colours expressed as a dynamic Qt property selector (idle -> SIGNAL_TINT, busy -> WARM) using the tokens already in use at the call sites. (2) In synapse_panel.py, remove the inline stylesheet radius literals at both DsRailMeter sites (_build_rail and _set_busy) and the DESIGN-GAP(L5-11) markers with them; drive the state change by setting the dynamic property and calling designsystem.components.repolish(), following the existing _set_face idiom in the same file. Behaviour must be identical: idle and busy still render as they do now. (3) In docs/PROFILES.md, replace the 'Design gaps for human decision' entry with a short resolved note under the heading 'Derived design decisions' -- one line, in the form 'X derived from Y because Z': the rail meter radius derives from #DsCookBar because the vendored source of truth already establishes 2px-on-3px for the identical widget shape. Keep the paragraph explaining that the conformance test permits waivers only via a registered DESIGN-GAP marker. Add nothing else and change no other copy.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/designsystem/qss.py",
+     "pattern": "DsRailMeter",
+     "min": 1
+    },
+    {
+     "kind": "grep_absent",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "DESIGN-GAP"
+    },
+    {
+     "kind": "grep_min",
+     "path": "docs/PROFILES.md",
+     "pattern": "Derived design decisions",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "seat: rail meter looks unchanged idle and busy"
+    }
+   ],
+   "status": "verified",
+   "attempts": 0
+  },
+  {
+   "id": "L5-13",
+   "was": "new",
+   "title": "Make prominence visible -- QSS rules for hero/quiet (the profiles currently render identically)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/designsystem/qss.py",
+    "tests/test_rope_prominence_visible.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "BUG, VERIFIED AT THE SEAT: all three profiles look identical. compositor._apply_spec sets widget.setProperty('prominence', ...) and repolishes correctly, and the manifests declare hero/quiet on the right widgets (curious: connect+corpus hero, token_meter+palette_hint quiet; ml: token_pill and rail meter hero), but NO QSS rule anywhere selects on that property, so the repolish repaints identically. Fix it in the stylesheet only -- do not touch the compositor, the manifests, or synapse_panel.py; the Python half is already correct. DERIVE, DO NOT INVENT: python/synapse/panel/designsystem/tokens.py is the source of truth and already carries the emphasis ladder this needs -- TEXT_BRIGHT (emphasis/headings), TEXT_PRIMARY (body), TEXT_TERTIARY (captions/hints), TEXT_DISABLED, SIGNAL (accent), RAISED (raised/hover surface), HAIR (quietest rule). In python/synapse/panel/designsystem/qss.py add attribute-selector rules for [prominence=\"hero\"] and [prominence=\"quiet\"] alongside the existing interaction-state rules, following the construction of the rules already in that file. Standard prominence must remain EXACTLY as it renders today -- expert is pinned to v5.42.0 by L5-5 and every widget there is standard, so any change to standard breaks that pin. Derive hero as a step UP the existing ladder (e.g. text moves toward TEXT_BRIGHT, optionally a RAISED surface or SIGNAL accent where the widget already supports one) and quiet as a step DOWN it (toward TEXT_TERTIARY). Change emphasis only: no size changes, no font swaps, no layout shifts, no new colours -- the difference must be legible at a glance without moving anything. Record the derivation in docs/PROFILES.md under the existing 'Design gaps for human decision' section heading, rewritten to 'Derived design decisions', as one line in the form 'X derived from Y because Z'. Add tests/test_rope_prominence_visible.py: assert the generated stylesheet contains a rule selecting prominence=hero and one selecting prominence=quiet, and that the two rules are not byte-identical to each other.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_prominence_visible.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/designsystem/qss.py",
+     "pattern": "prominence",
+     "min": 2
+    },
+    {
+     "kind": "grep_min",
+     "path": "docs/PROFILES.md",
+     "pattern": "Derived design decisions",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: restart panel, switch CURIOUS/EXPERT/ML -- Connect+Corpus visibly lift on Curious, TOKEN lifts on ML, Expert unchanged"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  },
+  {
+   "id": "L5-14",
+   "was": "new",
+   "title": "Hero takes the accent -- semantic two-accent prominence (WARM human / SIGNAL technical)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-13"
+   ],
+   "files": [
+    "python/synapse/panel/designsystem/qss.py",
+    "tests/test_rope_prominence_visible.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "AMEND L5-13, do not redo it. L5-13 made prominence real but expressed hero as a brightness step only (text climbs toward TEXT_BRIGHT), which reads as a whisper at the seat. Joe ruled: hero should TAKE THE ACCENT. Stylesheet only -- do not touch the compositor, the manifests, or synapse_panel.py; the manifests already declare exactly the right hero widgets and need no change. THE CEILING IS LAW: tokens.py records that SIGNAL + WARM are the two-accent ceiling (see the MUSHROOM comment -- the tertiary grey is warmed specifically to avoid becoming a third accent). Introduce NO third accent, no new colour, no CONIFEROUS/HOU_* promotion for this purpose. SEMANTIC ASSIGNMENT, read off the tokens' own recorded intent: WARM (#FF7759, documented in tokens.py as Cohere's 'Bittersweet' coral, the warm human accent, explicitly NOT for connectivity/links) is the accent for HUMAN/ORIENTATION widgets -- in practice the widgets the curious manifest sends hero (connect, corpus). SIGNAL (#8FB3D9, acrylic blue, the technical/connectivity accent) is the accent for TECHNICAL/ECONOMIC widgets -- in practice the widgets the ml manifest sends hero (token_pill, activity/rail meter). Express this generically in QSS, not per-profile: the stylesheet has no profile knowledge and must not gain any. Give each widget's existing #Ds* rule a [prominence=\"hero\"] companion that lifts it to the accent that widget's own role already calls for -- orientation/action widgets to WARM, meter/economic/connectivity widgets to SIGNAL -- reusing the exact hover/press companions already defined for that accent (SIGNAL_HOVER/SIGNAL_PRESS, WARM_HOVER/WARM_PRESS) so hero widgets keep live interaction feedback. Keep every L5-13 quiet rule exactly as written. Preserve L5-13's cascade placement discipline: prominence rules stay before :disabled and after the tone rows. STANDARD MUST NOT MOVE -- L5-5 pins expert to v5.42.0 and every expert widget is standard; a diff that changes any standard-state rule is a failure. No size, weight, font, radius, spacing or layout changes: accent and existing state companions only. Extend tests/test_rope_prominence_visible.py: assert at least one hero rule references the WARM family and at least one references the SIGNAL family, and assert no rule introduces a hex colour absent from tokens.py. Record the derivation in docs/PROFILES.md under 'Derived design decisions' as one line in the form 'X derived from Y because Z' -- hero takes the accent derived from the comp's DIRECT/WORK left rules and the tokens' recorded WARM=human / SIGNAL=technical split, because the two-accent ceiling forbids a per-profile colour, so profiles are distinguished by WHERE the accent lands, not by owning one.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_prominence_visible.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/designsystem/qss.py",
+     "pattern": "prominence=\"hero\"",
+     "min": 3
+    },
+    {
+     "kind": "grep_min",
+     "path": "docs/PROFILES.md",
+     "pattern": "Derived design decisions",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: Curious lifts Connect+Corpus in coral, ML lifts TOKEN+rail meter in blue, Expert identical to v5.42.0"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  },
+  {
+   "id": "L5-15",
+   "was": "new",
+   "title": "Hero buttons read as knockout, not outline (promote to the existing primary treatment)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [
+    "L5-14"
+   ],
+   "files": [
+    "python/synapse/panel/designsystem/qss.py",
+    "tests/test_rope_prominence_visible.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "JOE'S SEAT CALL, amending how L5-13/L5-14 express hero on BUTTONS only. Today a hero button keeps the outline (secondary) treatment and only its border/text colour moves, so the type still reads as outline. Joe wants hero buttons to read as KNOCKOUT: filled with the accent, type reversed out of the fill. DO NOT INVENT THIS TREATMENT -- it already exists. qss.py already defines QPushButton#DsButton[variant=\"primary\"] as 'background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT};' with SIGNAL_HOVER/SIGNAL_PRESS companions. Hero on a button therefore means: promote that button to the SAME construction the primary variant already uses -- accent fill, TEXT_ON_ACCENT ink, the accent's existing hover and press companions -- rather than tinting an outline. Which accent fills it stays exactly as L5-14 assigned it (WARM for human/orientation widgets such as connect and corpus; SIGNAL for technical/economic widgets), and the two-accent ceiling still holds: no third accent, no new colour, no new token. INK: TEXT_ON_ACCENT (#0F1F2B) is the only sanctioned ink and it is contrast-verified on BOTH accents -- 6.42:1 on WARM (#FF7759), which passes WCAG AA for normal text; use it on both fills and do not introduce a second ink. Stylesheet only: do not touch the compositor, the manifests, or synapse_panel.py, and do not change any widget's variant attribute in Python -- express this purely as [prominence=\"hero\"] rules on QPushButton#DsButton that override the outline construction. Keep every quiet rule from L5-13 as written. Keep the cascade discipline: prominence rules before :disabled, after the tone/variant rows, so a hero button still greys correctly when disabled. STANDARD MUST NOT MOVE -- L5-5 pins expert to v5.42.0 and every expert widget is standard; any diff touching a standard-state or variant-default rule is a failure. No size, weight, font, radius, spacing or layout changes: fill, ink and existing state companions only. Extend tests/test_rope_prominence_visible.py: assert a hero button rule sets both a background and TEXT_ON_ACCENT (proving knockout rather than outline), and that no new hex absent from tokens.py appears. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z' -- hero buttons knock out derived from the existing primary variant because the fill+TEXT_ON_ACCENT construction is already the system's sanctioned way to say 'this is the action', so hero promotes to it rather than inventing an emphasis.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_prominence_visible.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/designsystem/qss.py",
+     "pattern": "TEXT_ON_ACCENT",
+     "min": 3
+    },
+    {
+     "kind": "grep_min",
+     "path": "docs/PROFILES.md",
+     "pattern": "Derived design decisions",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: on Curious, CONNECT and CORPUS read as filled coral with reversed type -- not outlines; Expert identical to v5.42.0"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  },
+  {
+   "id": "L5-16",
+   "was": "new",
+   "title": "Hero + SEND take the deep blue (coral was too loud)",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/designsystem/tokens.py",
+    "python/synapse/panel/designsystem/qss.py",
+    "tests/test_rope_prominence_visible.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "JOE'S SEAT CALL, overruling L5-14's WARM-for-human assignment ON BUTTONS ONLY: the coral knockout is too loud. Hero buttons and SEND all take one deep blue. (1) In tokens.py add exactly ONE token beside the existing SIGNAL family: SIGNAL_DEEP = \"#7A98B8\" -- that is SIGNAL (#8FB3D9) multiplied by 0.85, i.e. 15% darker, as Joe specified. It is a shade within the existing accent, exactly like SIGNAL_HOVER and SIGNAL_PRESS; it is NOT a new accent and the two-accent ceiling (SIGNAL + WARM) still holds. Comment it in the same voice as its siblings. (2) In qss.py: QPushButton#DsSend rest becomes SIGNAL_DEEP; and every [prominence=\"hero\"] BUTTON rule L5-14/L5-15 wrote becomes SIGNAL_DEEP fill with TEXT_ON_ACCENT ink -- remove WARM from hero BUTTON rules entirely. (3) PRESERVE THE INTERACTION RAMP, which is the reason the base cannot simply darken in isolation: with SIGNAL_DEEP at rest, hover becomes SIGNAL (today's base -- a step lighter) and pressed stays SIGNAL_PRESS (a step darker). Apply that same rest/hover/press triple to both DsSend and hero buttons so they still respond to touch. (4) Ink stays TEXT_ON_ACCENT everywhere -- contrast-verified at 5.60:1 on SIGNAL_DEEP, past WCAG AA. Introduce no second ink and no other new colour. Non-button hero rules from L5-14 (meters, labels, verbs) keep the accents they already have -- this task changes BUTTONS only. Keep every quiet rule from L5-13. Keep cascade discipline: prominence rules before :disabled, after the tone/variant rows. STANDARD MUST NOT MOVE -- L5-5 pins expert to v5.42.0; the only permitted standard-state change is DsSend's own rest/hover/press, which Joe explicitly asked to darken. No size, weight, font, radius, spacing or layout changes. Extend tests/test_rope_prominence_visible.py: assert SIGNAL_DEEP is consumed by both DsSend and at least one hero button rule, assert no hero BUTTON rule still references WARM, and assert no hex appears that is absent from tokens.py. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z'.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_prominence_visible.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/designsystem/tokens.py",
+     "pattern": "SIGNAL_DEEP",
+     "min": 1
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/designsystem/qss.py",
+     "pattern": "SIGNAL_DEEP",
+     "min": 2
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: CONNECT/CORPUS/SEND all read as the same deep blue knockout, calmer than the coral"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  },
+  {
+   "id": "L5-17",
+   "was": "new",
+   "title": "Chrome rhythm: verb rail tracking + air, .hip label aligns to CHAT",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/designsystem/qss.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "JOE'S SEAT CALL, two alignment/rhythm defects visible in the shipped panel. DERIVE FROM WHAT EXISTS, invent nothing. (1) VERB RAIL: the EXPLAIN / FIX / OPTIMIZE / BUILD HDA row (QPushButton#DsVerb, built via SynapsePanel._verb and placed by _build_act) sits too close to the rule above it and its type is untracked. Give the row more space ABOVE its dividing line, stepping the existing spacing scale in tokens.py (SPACE_XS/SPACE_SM/... and GUTTER) -- take the next step up, do not invent a number. And letterspace the verb type exactly the way the tab row already does it: the mode/profile tabs use fontload.tracked_font with a TYPE_ROLES role and mono=True; apply the SAME call shape and the same role the tabs use so the verbs read as siblings of CHAT/TOKEN rather than as body text. (2) HIP LABEL: the 'untitled.hip - f1' label in the context ribbon (_build_context_ribbon) starts flush against the panel edge while CHAT starts at the tab row's text origin, so the two do not line up vertically. Give the ribbon the same left inset the tab row uses -- read the actual value the tab row applies (the _section/_build_mode_bar construction uses t.GUTTER) and match it, so the first glyph of the .hip filename sits on the same vertical as the C of CHAT. Do not nudge by eye and do not hardcode a pixel: use the same token the tab row uses. Change nothing else in either region: no colour, no size, no weight, no new widgets, no reordering. STANDARD PROMINENCE RULES MUST NOT MOVE and no [prominence] rule may be edited -- this task is spacing and type-role only. L5-5 pins expert to v5.42.0 for CAPABILITY and prominence; these two fixes are alignment corrections Joe has explicitly ordered and apply to all profiles equally. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z' for each of the two fixes.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "tracked_font",
+     "min": 2
+    },
+    {
+     "kind": "grep_min",
+     "path": "docs/PROFILES.md",
+     "pattern": "Derived design decisions",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: verbs are letterspaced like CHAT/TOKEN with air above their rule; .hip filename starts on the same vertical as CHAT"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  },
+  {
+   "id": "L5-18",
+   "was": "new",
+   "title": "Density is a manifest lever (airy / standard / tight) -- the plumbing",
+   "law": "L5",
+   "type": "agent",
+   "effort": "medium",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/manifests/__init__.py",
+    "python/synapse/panel/manifests/curious.py",
+    "python/synapse/panel/manifests/expert.py",
+    "python/synapse/panel/manifests/ml.py",
+    "python/synapse/panel/compositor.py",
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/designsystem/qss.py",
+    "tests/test_rope_density.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "THE PROFILES CURRENTLY DIFFER ONLY BY TEXT COLOUR -- verified: visible=False appears 0 times and collapsed=True 0 times across all three manifests. Joe's ruling: the profiles must differ in HOW THE PANEL ORGANISES INFORMATION, on two axes only -- what is folded away, and how much air sits between what remains. This task builds the SECOND axis as plumbing ONLY; a later task makes the per-profile fold decisions. Pentagram logic governs: ONE systemic decision, not per-widget fiddling; no new components, no new colours, no new type. (1) SCHEMA: add an optional 'density' key to the manifest defaults, accepting exactly 'airy' | 'standard' | 'tight', defaulting to 'standard' when absent. Validate it in the same place and style the existing defaults are validated (manifests/__init__.py), so an invalid value raises ManifestError like any other schema breach. (2) VALUES: curious='airy', expert='standard', ml='tight'. (3) COMPOSITOR: in compose(), read the resolved density and set it as a Qt dynamic property on the PANEL ROOT (one setProperty + unpolish/polish, mirroring how _apply_spec already handles 'prominence'), so a single property drives the whole panel's rhythm. Do not add per-widget spacing specs and do not touch _apply_spec's existing behaviour. (4) QSS: add descendant rules keyed on that root property -- Qt stylesheets support descendant selectors, so rules take the shape #<PanelObjectName>[density=\"airy\"] <Selector> {{ ... }}. Step ONLY spacing/padding/margin/line-height-equivalents, and step them off the EXISTING scale in tokens.py (SPACE_XS, SPACE_SM and siblings, GUTTER) -- airy takes one step up, tight takes one step down, and you must not invent a number, add a spacing token, or change any colour, size, weight, font, radius or border. Cover at minimum the chat reply rhythm (Joe: 'when Curious replies the responses should have more space vertically in their answers'), inter-region gaps, and control padding. (5) THE PIN IS ABSOLUTE: density='standard' must resolve to EXACTLY the spacing the panel renders today -- expert is pinned to v5.42.0 by L5-5. Achieve that by writing NO rule for the standard case at all; standard is the unstyled baseline, and airy/tight are the only rules that exist. A diff that adds or edits any unconditional spacing rule is a failure. (6) Add tests/test_rope_density.py: assert each manifest declares its expected density, assert an invalid density raises ManifestError, assert the generated stylesheet contains airy and tight rules that are not byte-identical, and assert NO rule is emitted for density='standard'. Record the derivation in docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z'.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_density.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_prominence_visible.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/compositor.py",
+     "pattern": "density",
+     "min": 2
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/designsystem/qss.py",
+     "pattern": "density=",
+     "min": 2
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: Curious visibly airier, ML tighter, Expert spacing pixel-identical to v5.42.0"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  },
+  {
+   "id": "L5-19",
+   "was": "new",
+   "title": "Curious folds, ML surfaces economics, Expert untouched -- the composition decisions",
+   "law": "L5",
+   "type": "agent",
+   "effort": "medium",
+   "deps": [
+    "L5-18"
+   ],
+   "files": [
+    "python/synapse/panel/manifests/curious.py",
+    "python/synapse/panel/manifests/ml.py",
+    "tests/test_rope_profile_composition.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "THE FIRST AXIS: what each profile folds away. Manifests only -- do NOT touch the compositor, qss.py, synapse_panel.py, or expert.py. The compositor already supports 'visible' and 'collapsed' per widget and neither has ever been used; this task finally uses them. THE INVARIANT THAT GOVERNS EVERYTHING: identical agent capability in every profile. Folding changes what is SHOWN, never what the agent can DO -- no tool, gate, permission or command may be removed, and anything collapsed must remain reachable by the artist in one action. (1) CURIOUS -- reserved and progressive. Fold the readouts a first-session artist cannot yet act on: diagnostic/telemetry chrome and token/economic readouts become collapsed=True (present, one click away, not competing). Keep hero and fully visible the things that TEACH: the verb rail (EXPLAIN/FIX/OPTIMIZE/BUILD HDA -- it is the discovery mechanism), the command and palette hints, connect and corpus. The result must be a panel doing one thing at a time. (2) ML -- the economist's read. Everything expert shows stays shown; additionally promote the token/cost/model economics OUT of being tab-hidden into always-visible prominence, so the numbers are readable without a click. Add no widget that does not already exist in the widget registry. (3) EXPERT -- change NOTHING. expert.py must not appear in the diff. It is pinned to v5.42.0 by L5-5 and it is also, deliberately, the dense unguided baseline the other two are composed against; Expert reads as expert BY CONTRAST, not by gaining anything. (4) Use only widget ids that already exist in the compositor's registry -- an unknown id must fail resolve(), so verify each against known_widget_ids() rather than guessing a name. (5) Add tests/test_rope_profile_composition.py: assert curious collapses at least one widget and expert collapses none and hides none; assert ml leaves every widget expert shows visible; assert all three manifests still resolve() cleanly; and assert the widget-id SET available to the agent is identical across all three profiles (capability invariant -- composition may reorder, fold or re-emphasise, never remove). Record each decision in docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z', and update the three-profile table so its 'What the screen shows' column describes what the manifests now actually do.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_profile_composition.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_density.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/manifests/curious.py",
+     "pattern": "collapsed",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: Curious does one thing at a time, ML shows the numbers without a click, Expert identical to v5.42.0"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  },
+  {
+   "id": "L5-20",
+   "was": "new",
+   "title": "STOP reads as the mark's second surface -- WARM knockout, not danger red",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/designsystem/qss.py",
+    "python/synapse/panel/synapse_panel.py",
+    "tests/test_rope_prominence_visible.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "JOE'S SEAT CALL: the Stop button should be a knockout on a muted orange matching the SYNAPSE loading circle. DERIVE, DO NOT PICK A COLOUR. The loading circle is components.MarkDot, and its own docstring states the rule: 'Always in the one warm note (WARM), and because it never borrows Houdini's own orange, SYNAPSE keeps a distinct presence in the host. (Pentagram pass - P1.)' So the muted orange Joe means is tokens.WARM (#FF7759, Cohere's Bittersweet coral) with its existing WARM_HOVER / WARM_PRESS companions. Use those tokens; introduce NO new colour and NO new token, and do not reach for FIRE, HOU_ORANGE or any Houdini orange -- the docstring forbids exactly that. THE DEEPER REASON THIS IS CORRECT: MarkDot.set_halt_handler binds the mark to the panel's existing Stop -- 'one control with two surfaces, never a second Stop with its own idea of what stopping means' - the mark fires the same _on_stop the rail button fires. Today the rail button is built as c.Button('Stop', variant='danger') (synapse_panel.py ~line 635), so the two surfaces of one control read as unrelated: the mark is warm, the button is error red. This task makes them read as one control. IMPLEMENTATION: give the Stop button its own identity rather than overloading the danger variant -- set an objectName (e.g. DsStop) on self._stop_btn in synapse_panel.py and add a matching QPushButton#DsStop rule set in qss.py constructed the way the existing filled buttons already are (see QPushButton#DsButton[variant=\"primary\"] and QPushButton#DsSend): WARM background, TEXT_ON_ACCENT ink (contrast-verified at 6.42:1 on WARM, past WCAG AA), border: none, the same border-radius those siblings use, WARM_HOVER on :hover, WARM_PRESS on :pressed, and a :disabled companion matching the DISABLED_BG / TEXT_DISABLED pattern its siblings use -- the button ships disabled and hidden until work is in flight, so the disabled state must not be forgotten. Leave the danger variant itself untouched: other widgets may rely on it. Do not change the button's size, minimum width, visibility gating, or click wiring, and do not touch MarkDot. Do not alter any [prominence] rule; Stop is not profile-conditional and must look identical in all three profiles. Extend tests/test_rope_prominence_visible.py: assert the stylesheet contains a DsStop rule using WARM and TEXT_ON_ACCENT, assert it defines hover, pressed and disabled states, and assert no new hex absent from tokens.py appears. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z' -- Stop takes WARM derived from MarkDot's documented one-warm-note rule because the mark and the button are two surfaces of a single control and must read as one.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_prominence_visible.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/designsystem/qss.py",
+     "pattern": "DsStop",
+     "min": 4
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "DsStop",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: trigger work -- Stop appears as warm-orange knockout matching the mark, in all three profiles"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  },
+  {
+   "id": "L5-21",
+   "was": "new",
+   "title": "Verb rail: double the gap so the four verbs read as four controls",
+   "law": "L5",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "JOE'S SEAT CALL: 'EXPLAIN FIX OPTIMIZE BUILD HDA' currently reads as one continuous phrase rather than four separate controls -- and at that spacing it is not even clear whether BUILD HDA is one verb or two. Double the horizontal gap between the verb buttons. DERIVE, DO NOT HARDCODE: tokens.py defines a doubling ladder -- SPACE_XS=4, SPACE_SM=8, SPACE_MD=16, SPACE_LG=24, SPACE_XL=40 -- so 'double' is exactly ONE STEP UP that ladder. Find the spacing the verb row currently applies in SynapsePanel._build_act (the row of QPushButton#DsVerb controls built via self._verb: EXPLAIN, FIX, OPTIMIZE, BUILD HDA), identify which SPACE token it corresponds to, and move it to the next token up (SPACE_XS -> SPACE_SM, or SPACE_SM -> SPACE_MD). If the current value is a bare literal rather than a token, replace it with the correctly-derived token -- never leave a literal behind and never invent a number. Change the INTER-BUTTON gap only: do not change the row's own margins, the space above its rule (L5-17 already set that and Joe approved it), the button padding, the type, the tracking, the colours, or the order of the verbs. Do not touch any [prominence] or [density] rule -- this is one spacing value. Note that L5-18 made density a panel-wide lever with airy/standard/tight variants; this change is to the BASE spacing, so all three profiles shift together and their relative rhythm is preserved. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z' -- the verb gap doubles derived from the SPACE ladder's own doubling steps because the four verbs were reading as a single phrase.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_absent",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "setSpacing(6)"
+    },
+    {
+     "kind": "grep_min",
+     "path": "docs/PROFILES.md",
+     "pattern": "Derived design decisions",
+     "min": 1
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: EXPLAIN / FIX / OPTIMIZE / BUILD HDA read as four distinct controls, BUILD HDA obviously one"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  },
+  {
+   "id": "L5-22",
+   "was": "new",
+   "title": "Composer starts centred and remembers where you drag it",
+   "law": "L6",
+   "type": "agent",
+   "effort": "medium",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/panel/settings.py",
+    "tests/test_rope_composer_height.py",
+    "docs/PROFILES.md"
+   ],
+   "change": "JOE'S SEAT CALL: 'every time I open Synapse I have to reach in and resize the centre bar so it is equidistant between the prompt and the chat. Make equidistant the default, keep the bar for manual resize.' ROOT CAUSE: the composer (_DsInput.__init__, synapse_panel.py ~line 116) hardcodes self._user_h = 132 with self.setFixedHeight(self._user_h). 132 is a constant, so in a tall pane the divider always lands well above centre and the artist re-drags it every session. TWO PARTS, BOTH REQUIRED. (1) START CENTRED: replace the constant first-run height with one computed from the actual available height so the chat area and the composer start equal -- roughly half the space the two of them share, measured at the point the panel knows its own size (a resizeEvent or showEvent, not __init__, where the height is not yet known). CLAMP IT with the values already defined right there: never below self._floor (64) and never above self._max_h (600), so a short pane degrades gracefully instead of producing a composer with no room to type. Keep the existing auto-grow-to-fit-content behaviour and keep _InputResizeGrip working exactly as it does -- the artist must still be able to drag the bar. (2) REMEMBER IT: centred is only the FIRST-RUN answer. When the artist drags the grip, persist the resulting height and restore it on the next launch, so the panel keeps THEIR answer rather than re-imposing ours. Add one key to the settings schema in settings.py -- follow the existing schema-v2 conventions exactly: bump the schema version, extend the documented schema block at the top of the file, add the key to the defaults, and add a migration so files written by the current version load without the key and simply fall back to centred. save_settings is already atomic and best-effort and load_settings already returns defaults on a missing/corrupt/unshaped file and never raises -- preserve both properties; a settings failure must never block boot or lose the artist's session. Persist on drag-release, not on every mouse-move. THIS IS L6, NOT L5: the panel notifies and remembers, it never decides for the artist -- it must never move the divider on its own after first run, and it must never override a height the artist has set. Not profile-conditional: the same behaviour in curious, expert and ml, and no [prominence] or [density] rule may be touched. Add tests/test_rope_composer_height.py: assert the first-run height is computed from available height rather than the 132 constant, assert it clamps to the floor in a short pane and to the max in a very tall one, assert a persisted height is restored in preference to the centred default, and assert a settings file lacking the new key loads cleanly and falls back to centred. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z'.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_composer_height.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_absent",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "self._user_h = 132"
+    },
+    {
+     "kind": "grep_min",
+     "path": "python/synapse/panel/settings.py",
+     "pattern": "composer",
+     "min": 2
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: fresh panel opens with the divider centred; drag it, reopen, it stays where you left it"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  },
+  {
+   "id": "L5-23",
+   "was": "new",
+   "title": "Connect/Corpus read as buttons in every profile -- and the v5.42.0 claim is corrected",
+   "law": "L1",
+   "type": "agent",
+   "effort": "small",
+   "deps": [],
+   "files": [
+    "python/synapse/panel/synapse_panel.py",
+    "docs/PROFILES.md",
+    "README.md",
+    "tests/test_rope_prominence_visible.py"
+   ],
+   "change": "JOE'S RULING, and it deliberately retires a constraint. THE DEFECT: connect and corpus are built as c.Button('Connect', variant='ghost') and c.Button('Corpus', variant='ghost') (synapse_panel.py ~lines 664 and 673). Ghost is transparent, borderless, text-only. On curious they now carry a hero fill so they read as actions; on expert and ml they render as bare text with no button chrome at all, so a new artist has no way to know they are clickable. That is an affordance failure, not a profile distinction. THE FIX: change BOTH from variant='ghost' to variant='secondary' so their STANDARD state is a visible, outlined, unaccented button in every profile. Do not change their labels, their order, their placement, their click wiring, their state gating, or their size. Hero must keep working exactly as it does: on curious the manifest still sends them hero and the existing [prominence=\"hero\"] rules must still fill them with SIGNAL_DEEP knockout over this new secondary base -- verify the cascade still resolves that way and adjust ONLY if the hero rule no longer wins, never by weakening hero. WHAT THIS RETIRES, STATED PLAINLY: L5-5 pinned expert to 'v5.42.0 exactly' and this changes expert's appearance. That pin was scaffolding to stop agent drift during the profile build; the build is done and Joe has ruled. The pin's CAPABILITY guarantee is untouched and remains absolute -- expert still shows every widget at standard prominence with no overlay and no added narration, and every profile still exposes an identical agent capability set. But any claim of PIXEL identity is now false and must not survive this commit. Search docs/PROFILES.md and README.md for every statement that expert is identical to, exactly, or unchanged from v5.42.0 and rewrite each one truthfully: expert is the panel as it ships, every widget at standard prominence, no overlay, no added narration -- identical to v5.42.0 in capability and layout, with the single deliberate change that connect and corpus render as buttons rather than bare text so their affordance is visible. Do not delete the pin's capability language and do not overstate the change. If any test asserts pixel or style identity for expert (as opposed to widget set, order, or capability), update it to assert the capability invariant instead and comment why. Extend tests/test_rope_prominence_visible.py: assert neither connect nor corpus is constructed as ghost, and assert a hero rule still fills them with SIGNAL_DEEP and TEXT_ON_ACCENT. Add one line to docs/PROFILES.md under 'Derived design decisions' in the form 'X derived from Y because Z'.",
+   "accept": [
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_prominence_visible.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_profile_composition.py -q"
+    },
+    {
+     "kind": "pytest",
+     "args": "tests/test_rope_design_conformance.py -q"
+    },
+    {
+     "kind": "grep_absent",
+     "path": "python/synapse/panel/synapse_panel.py",
+     "pattern": "c.Button(\"Connect\", variant=\"ghost\")"
+    },
+    {
+     "kind": "manual",
+     "note": "SEAT: Connect and Corpus are visibly buttons on EXPERT and ML, and still fill blue on CURIOUS"
+    }
+   ],
+   "status": "needs_review",
+   "attempts": 0
+  }
+ ]
+}

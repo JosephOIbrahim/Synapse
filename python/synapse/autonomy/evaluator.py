@@ -125,13 +125,26 @@ class RenderEvaluator:
                     )
                     return None
                 spec = inp.spec()
-                buf = np.empty(
-                    (spec.height, spec.width, spec.nchannels),
-                    dtype=np.float32,
-                )
-                inp.read_image(0, 0, oiio.FLOAT, buf)
-                inp.close()
-                return buf
+                try:
+                    # Probed against the binding hython 22.0.368 actually ships
+                    # (OpenImageIO 2.5.18.0): read_image has three overloads and
+                    # every one of them RETURNS the pixels. The out-parameter form
+                    # read_image(x, y, format, buf) is the C++ API transliterated
+                    # into Python. It raises TypeError on every call, so this branch
+                    # had never once succeeded on a shipping interpreter -- and the
+                    # np.empty() preallocation it fed was dead code.
+                    buf = inp.read_image(0, 0, 0, spec.nchannels, oiio.FLOAT)
+                finally:
+                    # close() belongs in finally, not after the read. Previously a
+                    # failed read left via the except below WITHOUT closing, so every
+                    # failure leaked a file handle; on Windows that also makes the
+                    # containing directory undeletable (WinError 32). A verification
+                    # loop over a frame sequence leaked one handle per bad frame.
+                    inp.close()
+                if buf is None:
+                    logger.warning("OIIO read returned no pixels: %s", output_path)
+                    return None
+                return np.asarray(buf, dtype=np.float32)
             except Exception as exc:
                 logger.warning("OIIO failed to read %s: %s", output_path, exc)
                 return None

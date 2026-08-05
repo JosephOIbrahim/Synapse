@@ -236,6 +236,7 @@ MUSHROOM = _warm_bias(_TXT["tertiary"])
 
 SIGNAL_HOVER = "#A9C7E6"   # accent hover (lighter)
 SIGNAL_PRESS = "#7398BE"   # accent press (deeper)
+SIGNAL_DEEP  = "#627A93"   # filled-action blue: Connect / Corpus / SEND, one note
 SIGNAL_TINT  = "rgba(143, 179, 217, 0.12)"   # subtle accent wash (focus/selection)
 SIGNAL_TINT_STRONG = "rgba(143, 179, 217, 0.22)"
 HOVER_WASH = "rgba(255, 255, 255, 0.09)"   # native Houdini flat-toolbar hover (white wash)
