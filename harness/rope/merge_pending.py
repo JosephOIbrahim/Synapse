@@ -7,14 +7,37 @@ Staging + an explicit merge between passes is the only safe seam.
 
 Refuses to run while a runner holds the lock. Skips ids already present.
 """
-import json, os, sys
+import json, os, subprocess, sys
 
 ROPE = os.path.dirname(os.path.abspath(__file__))
 STATE = os.path.join(ROPE, "STATE.json")
 PEND = os.path.join(ROPE, "PENDING_TASKS.json")
 
-if os.path.exists(os.path.join(ROPE, ".runner.lock")):
-    sys.exit("a runner is looping; wait for the pass to end, then re-run")
+LOCK = os.path.join(ROPE, ".runner.lock")
+if os.path.exists(LOCK):
+    # Existence is not liveness. A killed runner leaves this file behind and
+    # blocked staging forever, silently -- while runner.py::preflight happily
+    # overwrote the same stale lock. Two readers of one lock disagreeing is the
+    # bug; mirror preflight exactly. tasklist, never os.kill(pid, 0), which on
+    # Windows routes through TerminateProcess.
+    try:
+        opid = open(LOCK).read().strip()
+    except OSError:
+        opid = ""
+    if os.name == "nt":
+        alive = bool(opid) and "python" in subprocess.run(
+            ["tasklist", "/FI", "PID eq %s" % opid],
+            capture_output=True, text=True).stdout.lower()
+    else:
+        try:
+            os.kill(int(opid), 0)
+            alive = True
+        except (OSError, ValueError):
+            alive = False
+    if alive:
+        sys.exit("a runner is looping (pid %s); wait for the pass to end, then re-run" % opid)
+    print("stale lock (pid %s not alive) -- clearing" % (opid or "?"))
+    os.remove(LOCK)
 if not os.path.exists(PEND):
     sys.exit("nothing staged")
 
