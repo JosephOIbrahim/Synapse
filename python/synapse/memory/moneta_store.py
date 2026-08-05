@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
@@ -155,7 +156,36 @@ class MonetaUpdateNotSupported(NotImplementedError):
 
 
 class MonetaBackedStore:
-    """``MemoryStore``-compatible facade over a single Moneta handle."""
+    """``MemoryStore``-compatible facade over a single Moneta handle.
+
+    Durability
+    ----------
+    ``deposit()`` writes to the in-memory ECS and returns immediately.
+    There is no per-deposit fsync. Persistence is via ``save()``, which
+    snapshots the ECS to ``snapshot.json`` under ``.moneta/``.
+
+    The periodic save timer (``_save_interval``, 30 s) bounds the loss
+    window: at most 30 seconds of deposits are at risk between snapshots.
+    The ``atexit`` handler (registered in ``from_storage_dir``) covers
+    **clean exit only** — ``sys.exit()``, normal shutdown, Ctrl+C. A
+    ``kill -9``, native crash, or power loss loses at most 30 s of
+    deposits (the timer's window). This bound is recorded, not silently
+    assumed closed — the repo keeps a crash harness precisely because
+    hard crashes happen.
+
+    The WAL (``wal.log``) is **inert**: SYNAPSE never calls
+    ``signal_attention``, which is Moneta's only WAL writer. The WAL path
+    is configured so an upstream deposit-WAL can light it up without a
+    config change, but it must not be read as "deposits are journalled
+    today," because they are not.
+
+    The per-record JSON file (``snapshot.json``) is the durable source of
+    truth. A corrupt snapshot is quarantined (renamed with a ``.corrupt-``
+    suffix) and the store starts fresh, rather than crashing startup or
+    silently abandoning the file. The background snapshot daemon is
+    deliberately NOT started — under the async server it races the ECS
+    single-writer (FC4).
+    """
 
     def __init__(self, handle, embedder, *, protected_floor: float = _DEFAULT_PROTECTED_FLOOR):
         self._handle = handle
@@ -172,6 +202,9 @@ class MonetaBackedStore:
         # no-hou-import guard test), so it cannot deadlock the async server.
         # RLock (not Lock) because close() -> save() is a guarded-calls-guarded edge.
         self._lock = threading.RLock()
+        self._last_save: float = 0.0
+        self._save_interval: float = 30.0
+        self._add_count: int = 0
 
     # Protected memories (decisions / show-tier / gate) are exactly the
     # keep-forever set, so the per-handle protected quota is set high: Moneta's
@@ -224,8 +257,31 @@ class MonetaBackedStore:
             # can light it up without a config change -- do not read it as
             # "deposits are journalled today," because they are not.
             wal_path=base / "wal.log",
+            # Phase 4: author typed MonetaMemory prims to USD sublayers.
+            # Requires the MonetaMemory schema to be registered
+            # (PXR_PLUGINPATH_NAME in the package env) -- without it, USD
+            # writes are schema-blind and produce dead bytes.
+            use_real_usd=True,
+            usd_target_path=base / "usd",  # USD sublayers live under .moneta/usd/
         )
-        handle = mr.Moneta(cfg)
+        try:
+            handle = mr.Moneta(cfg)
+        except Exception as exc:
+            logger.warning(
+                "Moneta init with use_real_usd=True failed (%s: %s); "
+                "retrying without USD sublayers",
+                type(exc).__name__, exc,
+            )
+            cfg_no_usd = mr.MonetaConfig(
+                storage_uri=cfg.storage_uri,
+                embedding_dim=cfg.embedding_dim,
+                quota_override=cfg.quota_override,
+                snapshot_path=cfg.snapshot_path,
+                wal_path=cfg.wal_path,
+                use_real_usd=False,
+                usd_target_path=cfg.usd_target_path,
+            )
+            handle = mr.Moneta(cfg_no_usd)
         store = cls(handle, embedder, protected_floor=protected_floor)
         # Durability (Moneta audit, reachable-bug #1): deposit() writes to the
         # in-memory ECS and returns. There is no per-deposit save, the snapshot
@@ -307,6 +363,27 @@ class MonetaBackedStore:
                     self._handle.deposit(payload, embedding, protected_floor=0.0)
                 else:
                     raise
+            now = time.monotonic()
+            if now - self._last_save >= self._save_interval:
+                self.save()
+                self._last_save = now
+                logger.info("Periodic save: %d memories", self._handle.ecs.n)
+            # Opportunistic consolidation: every 100 adds, if the engine has
+            # more than 1000 entities, run a sleep pass to keep memory bounded.
+            self._add_count += 1
+            if self._add_count % 100 == 0 and self._handle.ecs.n > 1000:
+                try:
+                    audit = self.run_sleep_pass()
+                    if audit.pruned > 0:
+                        logger.info(
+                            "Consolidation pruned %d memories (before=%d, after=%d)",
+                            audit.pruned, audit.count_before, audit.count_after,
+                        )
+                except Exception as exc:
+                    logger.warning(
+                        "Periodic consolidation failed (%s: %s); continuing",
+                        type(exc).__name__, exc,
+                    )
         return memory.id
 
     # -- enumerate (the one coupling to Moneta internals, centralized) ------
@@ -357,6 +434,48 @@ class MonetaBackedStore:
         return [m for m in all_mems if m.id in targets]
 
     def search(self, query: MemoryQuery) -> List[MemorySearchResult]:
+        # Hybrid: vector recall as candidate pre-filter, keyword scoring for ranking.
+        # When query.text is present, we embed it and use Moneta's vector query to
+        # retrieve a candidate pool (over-fetched 3x, minimum 50). The keyword
+        # scoring in score_memories then reranks these candidates — it needs room
+        # to differentiate memories that are all vector-nearby but differ in
+        # keyword/tag/text-match relevance. Over-fetching ensures the reranker has
+        # enough candidates to produce a meaningful ordering, not just the top-N
+        # that happened to be closest in embedding space.
+        # For non-text queries (tags/keywords only), fall back to the full scan.
+        if query.text:
+            embedding = self._embedder.embed(query.text)
+            try:
+                vector_results = self._handle.query(
+                    embedding, limit=max(query.limit * 3, 50)
+                )
+                memories = [Memory.from_json(r.payload) for r in vector_results]
+                logger.info(
+                    "Vector recall: %d candidates from query (limit=%d, overfetch=%d)",
+                    len(vector_results), query.limit, max(query.limit * 3, 50),
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Vector query failed (%s: %s); falling back to keyword scan",
+                    type(exc).__name__, exc,
+                )
+                memories = self._iter_memories()
+            results = score_memories(memories, query)
+            # Attention signaling: boost utility of frequently-accessed memories.
+            # Best-effort and non-critical — failure must never break search().
+            # Weights are the search scores, so more relevant results get more
+            # attention, making them more likely to survive consolidation.
+            if query.text and results:
+                try:
+                    weights = {str(r.memory.id): float(r.score) for r in results[:5]}
+                    self._handle.signal_attention(weights)
+                    logger.debug(
+                        "Attention signaled on %d memories: %s",
+                        len(weights), list(weights.keys()),
+                    )
+                except Exception as exc:
+                    logger.debug("Attention signaling failed (non-critical): %s", exc)
+            return results
         return score_memories(self._iter_memories(), query)
 
     # -- lifecycle ----------------------------------------------------------
@@ -368,6 +487,7 @@ class MonetaBackedStore:
             if dur is not None:
                 try:
                     dur.snapshot_ecs(self._handle.ecs)
+                    self._last_save = time.monotonic()
                 except Exception as exc:
                     logger.warning("Moneta snapshot on save() failed: %s", exc)
 

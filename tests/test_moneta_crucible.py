@@ -205,19 +205,40 @@ def test_empty_content_is_enumerable_not_lost():
     assert any(r.memory.id == m.id for r in s.search(MemoryQuery()))
 
 
-def test_duplicate_content_id_collision_is_documented():
-    # Upstream models.py: Memory.id hashes content+type (created_at empty at id
-    # time), so same content+type collides. Moneta appends both rows; get()
-    # returns the first. Pinned so a future models.py fix is a deliberate change.
+def test_id_collision_does_not_silently_lose_memories():
+    """INVERTED: two memories with the same ID (identical content+created_at+type)
+    are both stored as separate Moneta entities. The store does not deduplicate
+    by Memory.id — it is append-only at the engine level.
+
+    The original test (``test_duplicate_content_gets_distinct_ids``) verified
+    that same-content memories at different timestamps get distinct IDs, which
+    is the normal case. This inverted test verifies the collision case: when
+    two memories genuinely share an ID, neither is silently dropped.
+    """
     s = _eph()
-    a = Memory(content="dup", memory_type=MemoryType.NOTE)
-    b = Memory(content="dup", memory_type=MemoryType.NOTE)
-    assert a.id == b.id
+    ts = "2026-01-01T00:00:00Z"
+    a = Memory(content="collision test", memory_type=MemoryType.DECISION,
+               created_at=ts)
+    b = Memory(content="collision test", memory_type=MemoryType.DECISION,
+               created_at=ts)
+    assert a.id == b.id, "test precondition: same fields must produce same id"
+
     s.add(a)
     s.add(b)
-    assert s.count() == 2
-    assert len([m for m in s.all() if m.id == a.id]) == 2
-    assert s.get(a.id) is not None
+
+    # Both entities exist in the engine (append-only deposit).
+    assert s.count() == 2, "both memories must be stored despite same id"
+
+    # get() returns the first match — deterministic but not authoritative.
+    first = s.get(a.id)
+    assert first is not None
+
+    # all() enumerates both.
+    all_mems = s.all()
+    matches = [m for m in all_mems if m.id == a.id]
+    assert len(matches) == 2, (
+        "expected 2 memories with id %s, got %d" % (a.id, len(matches))
+    )
 
 
 def test_get_by_tag_is_raw_case_sensitive():

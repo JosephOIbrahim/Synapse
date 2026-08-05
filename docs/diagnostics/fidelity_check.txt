@@ -1,0 +1,17 @@
+SYNAPSE FIDELITY DIAGNOSTIC
+===========================
+Time: 2026-03-04
+Context: doctor/execute_python reporting "Integrity check failed: fidelity=0.0"
+
+Findings:
+- ping: OK (protocol 4.0.0)
+- health: healthy=true, houdini_available=true, write_plane=ok
+- scene_info: OK (untitled.hip, frame 1, 24fps)
+- doctor: fidelity=0.0 integrity failure (bundle mode also failed)
+- execute_python: rejected with same fidelity banner
+- live_metrics: aggregator not running
+
+Hypothesis: metrics/telemetry backend not initialized -> fidelity
+self-check has nothing to score and returns 0.0, gating payload
+responses. Command transport itself appears intact.
+If you can read this file, the write plane works end-to-end.

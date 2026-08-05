@@ -67,18 +67,18 @@ class MemoryHandlerMixin:
         return bridge.handle_memory_context(payload)
 
     def _augment_with_knowledge(self, query: str, result: Dict) -> Dict:
-        """Additively attach a RAG corpus hit to a memory result.
+        """Unify Moneta and RAG corpus results into a single result set.
 
         The recall/search handlers only see Moneta/project memory; the VEX
         corpus and other reference docs live in the RAG ``KnowledgeIndex`` on a
         separate retrieval path (``synapse_knowledge_lookup``). Mid-session VEX
         recall therefore returned nothing. This bridges the seam: after the
-        memory lookup, consult the RAG and attach the top hit under a
-        ``knowledge`` key.
+        memory lookup, consult the RAG and merge the top hit into the main
+        result list, deduped by content hash and labeled by source.
 
-        Purely additive -- existing result keys are never modified, so callers
-        that ignore ``knowledge`` see no behavior change. Best-effort: never
-        raises, and only attaches when the RAG actually found something.
+        Best-effort: never raises, and only attaches when the RAG actually
+        found something. The separate ``knowledge`` key is preserved for
+        backward compatibility.
         """
         if not query:
             return result
@@ -87,16 +87,67 @@ class MemoryHandlerMixin:
             if knowledge is None:
                 return result
             hit = knowledge.lookup(query)
-            if hit.found:
-                result["knowledge_found"] = True
-                result["knowledge"] = {
-                    "answer": hit.answer,
-                    "confidence": hit.confidence,
-                    "topic": hit.topic,
-                    "sources": hit.sources,
-                    "reference_file": hit.reference_file,
-                    "summary": hit.summary,
-                }
+            if not hit.found:
+                return result
+
+            import hashlib
+
+            # Determine which list to merge into (recall uses "matches",
+            # search uses "results")
+            target_key = "matches" if "matches" in result else (
+                "results" if "results" in result else None
+            )
+
+            # Build content hash for dedup
+            content_hash = hashlib.sha256(
+                (hit.answer or "").encode("utf-8")
+            ).hexdigest()[:16]
+
+            # Check for existing entries with same content hash
+            existing_hashes = set()
+            for entry in result.get(target_key, []) if target_key else []:
+                entry_content = entry.get("content") or entry.get("answer") or ""
+                existing_hashes.add(
+                    hashlib.sha256(entry_content.encode("utf-8")).hexdigest()[:16]
+                )
+
+            if target_key and content_hash not in existing_hashes:
+                # Shape the knowledge entry to match the target list
+                if target_key == "matches":
+                    knowledge_entry = {
+                        "id": f"knowledge_{content_hash}",
+                        "summary": hit.summary or hit.answer[:200],
+                        "content": hit.answer,
+                        "date": "",
+                        "source": "knowledge",
+                    }
+                else:
+                    knowledge_entry = {
+                        "id": f"knowledge_{content_hash}",
+                        "type": "knowledge",
+                        "summary": hit.summary or hit.answer[:200],
+                        "content": hit.answer,
+                        "score": hit.confidence,
+                        "tags": hit.sources,
+                        "created_at": "",
+                        "source": "knowledge",
+                    }
+
+                result.setdefault(target_key, []).append(knowledge_entry)
+                result["count"] = result.get("count", 0) + 1
+                if target_key == "matches":
+                    result["found"] = True
+
+            # Preserve the separate knowledge key for backward compat
+            result["knowledge_found"] = True
+            result["knowledge"] = {
+                "answer": hit.answer,
+                "confidence": hit.confidence,
+                "topic": hit.topic,
+                "sources": hit.sources,
+                "reference_file": hit.reference_file,
+                "summary": hit.summary,
+            }
         except Exception:
             pass
         return result
@@ -301,14 +352,44 @@ class MemoryHandlerMixin:
         store = getattr(synapse_mem, "store", None) if synapse_mem is not None else None
         if store is None or not hasattr(store, "run_sleep_pass"):
             return {"ran": False, "reason": "active memory backend is not Moneta-backed"}
-        before = store.count()
-        audit = store.run_sleep_pass()
-        after = store.count()
-        return {
-            "ran": True,
-            "pruned": getattr(audit, "pruned", before - after),
-            "pruned_ids": list(getattr(audit, "pruned_ids", [])),
-            "staged": getattr(audit, "staged", 0),
-            "before": before,
-            "after": after,
-        }
+
+        # Wrap the prune in an Operation so the APPROVE gate fires before
+        # execution.  The LosslessExecutionBridge handles consent, undo
+        # grouping, and integrity verification.
+        def _do_prune() -> Dict:
+            before = store.count()
+            audit = store.run_sleep_pass()
+            after = store.count()
+            return {
+                "ran": True,
+                "pruned": getattr(audit, "pruned", before - after),
+                "pruned_ids": list(getattr(audit, "pruned_ids", [])),
+                "staged": getattr(audit, "staged", 0),
+                "before": before,
+                "after": after,
+            }
+
+        try:
+            from shared.bridge import Operation, get_process_bridge
+            from shared.types import AgentID
+            exec_bridge = get_process_bridge()
+            op = Operation(
+                agent_id=AgentID.CONDUCTOR,
+                operation_type="sleep_pass",
+                summary="Moneta sleep pass: consolidate/decay unprotected memories",
+                fn=_do_prune,
+            )
+            result = exec_bridge.execute(op)
+            if result.success and result.result is not None:
+                return result.result
+            return {"ran": False, "error": result.error or "Bridge execution failed"}
+        except ImportError:
+            # Fallback: direct execution (standalone/test mode, no bridge)
+            return _do_prune()
+        except Exception as exc:
+            logger.warning(
+                "Bridge unavailable for sleep pass (%s: %s); "
+                "falling back to direct execution",
+                type(exc).__name__, exc,
+            )
+            return _do_prune()

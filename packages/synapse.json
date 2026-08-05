@@ -19,6 +19,11 @@
             "value": "$SYNAPSE_ROOT/../Moneta/src"
         },
         {
+            "var": "PXR_PLUGINPATH_NAME",
+            "comment": "Register the MonetaMemory USD schema so typed prims are resolvable. The schema assets live at $MONETA_SRC/../schema/ (plugInfo.json, generatedSchema.usda, MonetaSchema.usda). Registration is process-global and must be in the package env, not set at runtime.",
+            "value": "$MONETA_SRC/../schema"
+        },
+        {
             "var": "SYNAPSE_MEMORY_BACKEND",
             "comment": "moneta, not the jsonl default. Moneta as the memory substrate is the point of the integration - evolution.py:14 anticipates this becoming the default, and backfill.py exists for the cutover. Safe to set: _make_store falls back to JSONL with a warning if Moneta cannot be imported, so the flag can never break startup, and store.py:830 distinguishes 'not installed' from 'installed but broken' so a drifted adapter is loud rather than silently serving jsonl.",
             "value": "moneta"

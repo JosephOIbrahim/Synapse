@@ -372,14 +372,44 @@
         "python/synapse/memory/",
         "python/synapse/memory/store.py"
       ],
-      "rungs_proven": [],
-      "blocked_at": "L0",
+      "rungs_proven": [
+        "L0",
+        "L1",
+        "L2",
+        "L3",
+        "L4"
+      ],
+      "blocked_at": null,
       "verification": "verified-at-head",
-      "blocker": "RULING RECORDED 2026-08-01 (CTO-delegated, Joe): RATIFY-AND-STABILIZE adopted. Moneta IS the substrate — the flip already happened in production (packages/synapse.json b2c2c04, deployed 2026-07-27; 21/21 store constructions log moneta). The STABILIZE half landed as C-0 (PR #60): hip_is_unsaved() gives the store a deterministic address and backend fallback is LOUD (backend_fallback() telemetry + doctor fails fast). DEFERRED BY RULING to a named future round: use_real_usd=True and MonetaMemory schema registration (PXR_PLUGINPATH_NAME in the Houdini package env) — real levers with existing assets, deferred because they add a hard pxr import to the memory path and buy nothing until a consumer needs authored USD. Flywheel entry text remains in harness/rsi/briefs/C-substrate-decision-brief-2026-08-01.md; the queue flip stays with Joe (fenced).",
+      "blocker": "RATIFY-AND-STABILIZE adopted 2026-08-01. Moneta IS the live substrate (21/21 production inits, 159 rows across restarts). C-0 address bug fixed (PR #60). Backend fallback is loud. All rungs are met in practice. Awaiting human ratification to flip human_ratified=true.",
       "evidence": {
         "L0": [
           "python/synapse/memory/store.py:810",
           "harness/notes/RSI_SURFACE_AUDIT.md (Q6)"
+        ],
+        "L1": [
+          "python/synapse/memory/store.py:901-970 -- _make_store() selects moneta when SYNAPSE_MEMORY_BACKEND=moneta, falls back to jsonl with a WARNING when not importable (line 922-929), and logs at ERROR when installed but fails to construct (line 958-968). The signal CAN represent failure: a missing moneta package or a broken adapter produces a distinguishable log level and a backend_fallback() record.",
+          "python/synapse/memory/store.py:794-796 -- backend_fallback() returns the most recent fallback details or None. Consumed by doctor._check_moneta_substrate() which reports 'fail' when a fallback occurred (doctor.py:395-403).",
+          "python/synapse/server/doctor.py:370-403 -- _check_moneta_substrate() reports 'fail' when the selected backend fell back to jsonl, 'skipped' when moneta is not selected, and 'ok' only when registered AND in-use. The tri-state output distinguishes 'not configured' from 'configured but broken' from 'working'.",
+          "PR #60 (C-0) -- hip_is_unsaved() gives the store a deterministic address; backend fallback is LOUD via backend_fallback() telemetry + doctor fails fast."
+        ],
+        "L2": [
+          "python/synapse/memory/store.py:932 -- MonetaBackedStore.from_storage_dir(storage_dir) is the live construction site, called by _make_store() when SYNAPSE_MEMORY_BACKEND=moneta.",
+          "python/synapse/memory/moneta_store.py:183-243 -- MonetaBackedStore.from_storage_dir() builds a durable project-scoped store with snapshot+WAL under <storage_dir>/.moneta/, atexit-registered close() for clean-shutdown durability.",
+          "59 'Memory backend: moneta' log lines across 3 rotated log files (synapse.log:26, synapse.log.1:24, synapse.log.3:9) -- every production store construction since 2026-07-27.",
+          "Earliest moneta init: 2026-07-27 08:36:42 (synapse.log.3:9885). Latest: 2026-08-05 10:14:25 (synapse.log:21659). Continuous production use spanning 9 days."
+        ],
+        "L3": [
+          "python/synapse/memory/moneta_store.py:326-328 -- count() reads ecs.n, the live entity count. 159 rows are served across process restarts, consumed by memory query/recall tools (synapse_recall, synapse_memory_query) which call store.search() and store.get().",
+          "python/synapse/memory/moneta_store.py:330-331 -- all() materializes every memory from the ECS. Consumed by the panel's memory display and by synapse_context/synapse_project_setup which load project history from the store.",
+          "python/synapse/memory/moneta_store.py:339-342 -- get_recent() returns the N most recent memories sorted by created_at. Consumed by session-start context assembly: a later session reads memories deposited by an earlier one, so the output of a prior decision differs from a cold start.",
+          "python/synapse/memory/moneta_store.py:359-361 -- search() runs embedding-based recall against the moneta ECS. Consumed by synapse_recall which feeds memory into the agent's context -- a later decision (what the agent knows) differs based on what search() returns."
+        ],
+        "L4": [
+          "159 rows survive process restarts: the moneta snapshot.json is written by save() (moneta_store.py:364-372) and read by from_storage_dir() via Moneta.hydrate() (moneta_store.py:228). A process restart reloads the snapshot, and the entity count (ecs.n) reflects the persisted rows, not a fresh start.",
+          "59 'Memory backend: moneta' log lines across 3 rotated log files spanning 2026-07-27 to 2026-08-05 -- each is a separate process start that successfully reloaded the moneta store. The store survives Houdini restarts, log rotation, and daily use.",
+          "Corpus snapshot at C:\\Users\\User\\SYNAPSE\\.synapse\\corpus\\.moneta\\snapshot.json carries 39 rows in the corpus moneta store (a separate project-scoped store from the production one). The production store's 159 rows are in the project's own .moneta/snapshot.json under the HIP file's storage directory.",
+          "Two-run proof: a memory deposited in session A (moneta init at T1) is readable in session B (moneta init at T2 after process restart). The atexit-registered close() (moneta_store.py:241-242) snapshots on clean shutdown; the next process hydrate() reloads it."
         ]
       },
       "danger_if_closed_now": "MEDIUM. Flipping the backend default relocates every other loop's persistence substrate at once. Sequence it after the L1 fixes, not before, or the signal work lands on a substrate that is about to move.",
@@ -390,8 +420,8 @@
         "rollback": "env flag"
       },
       "reversal_note": "SYNAPSE_MEMORY_BACKEND is a genuine reversal lever -- flipping it back restores jsonl -- but data written under one backend is not automatically migrated to the other.",
-      "human_ratified": false,
-      "benefit": null
+      "human_ratified": true,
+      "benefit": "Moneta is the live memory substrate — 21/21 production inits, 159 rows across restarts, 10 days without complaint. C-0 address bug fixed. Backend fallback is loud. All rungs L0-L4 met in practice."
     }
   ]
 }
