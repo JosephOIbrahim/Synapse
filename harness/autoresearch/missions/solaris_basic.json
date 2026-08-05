@@ -1,0 +1,73 @@
+{
+  "mission": "solaris_basic",
+  "version": "1.0.0",
+  "target_build": "22.0.368",
+  "phases": [
+    {
+      "id": "P0_discovery",
+      "kind": "type_discovery",
+      "questions": [
+        { "pattern": "sop" },
+        { "pattern": "light" },
+        { "pattern": "material" },
+        { "pattern": "camera" },
+        { "pattern": "karma" },
+        { "pattern": "render" },
+        { "pattern": "usd" },
+        { "pattern": "graft" },
+        { "pattern": "clip" }
+      ]
+    },
+    {
+      "id": "P0_existence",
+      "kind": "type_existence",
+      "questions": [
+        { "name": "sopcreate" },
+        { "name": "sopimport" },
+        { "name": "domelight" },
+        { "name": "distantlight" },
+        { "name": "lightmixer" },
+        { "name": "materiallibrary" },
+        { "name": "materiallinker" },
+        { "name": "camera" },
+        { "name": "karmarenderproperties" },
+        { "name": "karmarendersettings" },
+        { "name": "rendersettings" },
+        { "name": "usdrender_rop" },
+        { "name": "usdrender", "note": "expected dead in H22 — confirm; successor via P0_discovery 'render'/'usd'" },
+        { "name": "usd", "note": "expected dead in H22 — confirm; successor via P0_discovery 'usd'" },
+        { "name": "graft", "note": "expected dead in H22 — confirm; successor via P0_discovery 'graft'" },
+        { "name": "geometryclipsequence", "note": "expected dead in H22 — confirm; successor via P0_discovery 'clip'" }
+      ]
+    },
+    {
+      "id": "P1_parms",
+      "kind": "parm_probe",
+      "questions": [
+        { "type": "sopcreate", "highlight": ["primpath", "pathprefix", "enable"] },
+        { "type": "domelight", "highlight": ["exposure", "intensity", "texture", "primpath"] },
+        { "type": "materiallibrary", "highlight": ["matpath", "primpath", "matnode", "container"] },
+        { "type": "camera", "highlight": ["focal", "aperture", "primpath", "resolution"] },
+        { "type": "karmarenderproperties", "highlight": ["resolution", "camera", "picture", "engine", "samples"] }
+      ]
+    },
+    {
+      "id": "P2_chains",
+      "kind": "chain_hash",
+      "questions": [
+        {
+          "name": "basic_chain_candidate",
+          "chain": ["sopcreate", "domelight", "materiallibrary", "camera", "karmarenderproperties"],
+          "repeat": 2,
+          "candidate": true
+        },
+        {
+          "name": "control_minimal",
+          "chain": ["sopcreate", "karmarenderproperties"],
+          "repeat": 2,
+          "candidate": false
+        }
+      ]
+    }
+  ]
+}

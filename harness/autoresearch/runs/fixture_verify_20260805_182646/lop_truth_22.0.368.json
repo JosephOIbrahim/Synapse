@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "mission": "fixture_verify",
+    "mission_version": "1.0.0",
+    "target_build": "22.0.368",
+    "build": "22.0.368",
+    "target_build_match": true,
+    "runner_version": "1.0.0",
+    "python": "3.13.10",
+    "started": "2026-08-05T22:26:48+00:00",
+    "finished": "2026-08-05T22:26:48+00:00",
+    "canonicalizer": "c2"
+  },
+  "entries": [
+    {
+      "claim": "fixture_stage_hash:solaris_basic",
+      "value": {
+        "fixture": "solaris.basic",
+        "fixture_version": "1.0.0",
+        "path": "fixtures/solaris.basic.json",
+        "repeat": 3,
+        "hashes": [
+          "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+          "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+          "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7"
+        ],
+        "stable": true,
+        "sha256": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+        "line_count": 598,
+        "per_node": [
+          {
+            "requested_type": "sopcreate",
+            "requested_name": "geo",
+            "created_name": "geo"
+          },
+          {
+            "requested_type": "domelight",
+            "requested_name": "dome_light",
+            "created_name": "dome_light"
+          },
+          {
+            "requested_type": "materiallibrary",
+            "requested_name": "materials",
+            "created_name": "materials"
+          },
+          {
+            "requested_type": "camera",
+            "requested_name": "camera",
+            "created_name": "camera"
+          },
+          {
+            "requested_type": "karmarendersettings",
+            "requested_name": "render_settings",
+            "created_name": "render_settings"
+          }
+        ],
+        "name_drift": false,
+        "canonicalizer": "c2",
+        "canonicalizer_rules": [
+          "strip_comment_lines",
+          "strip_iso_timestamp_lines",
+          "strip_anon_identifier_lines",
+          "strip_houdini_node_provenance"
+        ]
+      },
+      "probe": "fixture_hash",
+      "build": "22.0.368",
+      "ts": "2026-08-05T22:26:48+00:00"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "mission": "fixture_verify",
+  "version": "1.0.0",
+  "target_build": "22.0.368",
+  "phases": [
+    {
+      "id": "F0",
+      "kind": "fixture_hash",
+      "questions": [
+        {
+          "name": "solaris_basic",
+          "path": "fixtures/solaris.basic.json",
+          "repeat": 3
+        }
+      ]
+    }
+  ]
+}

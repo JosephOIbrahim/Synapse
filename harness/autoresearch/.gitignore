@@ -1,0 +1,18 @@
+# AUTORESEARCH run artifacts are regenerable session scratch. Keep the tree
+# clean: ignore heartbeats, sentinels, logs, pointers, and per-run output.
+# The evidence files that BACK A FIXTURE BASELINE are force-added explicitly
+# in the commit that bakes the hash (git add -f), so provenance stays auditable
+# without dragging session scratch into history.
+runs/**/state.json
+runs/**/DONE
+runs/**/FAILED
+runs/**/ABANDONED
+runs/**/run.out.log
+runs/**/run.err.log
+runs/**/raw_model_output.json
+runs/LATEST.txt
+runs/_*.txt
+
+# Proposed missions are scout drafts; they become real only when you run them.
+# Ignored by default - promote a keeper by force-adding it.
+missions/proposed/

@@ -1,0 +1,171 @@
+{
+  "mission": "next_solaris_basic_fixture",
+  "version": "0.1.0",
+  "target_build": "22.0.368",
+  "phases": [
+    {
+      "id": "P1",
+      "kind": "type_existence",
+      "questions": [
+        {
+          "name": "usdrender_rop",
+          "note": ""
+        },
+        {
+          "name": "inlineusd",
+          "note": ""
+        },
+        {
+          "name": "usd_rop",
+          "note": ""
+        },
+        {
+          "name": "graftbranches",
+          "note": ""
+        },
+        {
+          "name": "graftstages",
+          "note": ""
+        },
+        {
+          "name": "geoclipsequence",
+          "note": ""
+        },
+        {
+          "name": "valueclip",
+          "note": ""
+        },
+        {
+          "name": "karmarendersettings",
+          "note": ""
+        },
+        {
+          "name": "sopimport",
+          "note": ""
+        },
+        {
+          "name": "distantlight",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "P2",
+      "kind": "parm_probe",
+      "questions": [
+        {
+          "type": "karmarendersettings",
+          "highlight": [
+            "resolution",
+            "camera",
+            "picture",
+            "engine",
+            "samples"
+          ],
+          "skip_if_missing": true
+        },
+        {
+          "type": "sopimport",
+          "highlight": [
+            "primpath",
+            "pathprefix",
+            "enable"
+          ],
+          "skip_if_missing": true
+        },
+        {
+          "type": "distantlight",
+          "highlight": [
+            "exposure",
+            "intensity",
+            "primpath"
+          ],
+          "skip_if_missing": true
+        },
+        {
+          "type": "lightmixer",
+          "highlight": [
+            "primpath"
+          ],
+          "skip_if_missing": true
+        },
+        {
+          "type": "materiallinker",
+          "highlight": [
+            "primpath",
+            "matpath"
+          ],
+          "skip_if_missing": true
+        },
+        {
+          "type": "rendersettings",
+          "highlight": [
+            "resolution",
+            "camera",
+            "picture"
+          ],
+          "skip_if_missing": true
+        },
+        {
+          "type": "usdrender_rop",
+          "highlight": [
+            "primpath",
+            "lopoutput",
+            "trange"
+          ],
+          "skip_if_missing": true
+        },
+        {
+          "type": "inlineusd",
+          "highlight": [
+            "primpath",
+            "usdstring"
+          ],
+          "skip_if_missing": true
+        }
+      ]
+    },
+    {
+      "id": "P3",
+      "kind": "chain_hash",
+      "questions": [
+        {
+          "name": "chain_with_karmarendersettings",
+          "chain": [
+            "sopcreate",
+            "domelight",
+            "materiallibrary",
+            "camera",
+            "karmarendersettings"
+          ],
+          "repeat": 2,
+          "candidate": false
+        },
+        {
+          "name": "chain_with_distantlight",
+          "chain": [
+            "sopcreate",
+            "distantlight",
+            "materiallibrary",
+            "camera",
+            "karmarendersettings"
+          ],
+          "repeat": 2,
+          "candidate": false
+        },
+        {
+          "name": "chain_with_sopimport",
+          "chain": [
+            "sopimport",
+            "domelight",
+            "materiallibrary",
+            "camera",
+            "karmarendersettings"
+          ],
+          "repeat": 2,
+          "candidate": false
+        }
+      ]
+    }
+  ]
+}
