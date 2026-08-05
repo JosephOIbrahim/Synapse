@@ -46,6 +46,27 @@ Add `--max 1` to watch a single task first (recommended for run one).
 - Branch: rope/gate-a · one commit per verified task · your untracked files
   are never touched (reset --hard only, no git clean, ever)
 
+### Scoped revert — what a failed task can and cannot destroy
+
+A failed task reverts **only the files that task declared**. It restores tracked
+ones from HEAD and deletes ones the attempt itself created; anything else in the
+tree it leaves alone and reports to the ledger as `stray`.
+
+This replaced `git reset --hard HEAD`, which reverted every tracked file in the
+repo. The commit path had always been scoped — its own comment said why, "never
+`add -A`: the LIVE Synapse session writes files while we run" — but the failure
+path was not. Careful on the way in, shotgun on the way out.
+
+It is safe to run the rope alongside another harness now. It was not before:
+a concurrently running MONETA harness holding 545 uncommitted lines was one
+failed task away from losing all of them, with no stash and no reflog.
+
+`--allow-dirty` now prints what it is carrying instead of swallowing it.
+
+Guarded by `tests/test_rope_scoped_revert.py` — including one test that runs the
+old blunt revert and asserts it *does* destroy the bystander, so the guarantee
+cannot be quietly simplified away.
+
 ## Watch it live
 
     powershell -ExecutionPolicy Bypass -File harness\rope\watch.ps1

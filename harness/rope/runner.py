@@ -116,6 +116,49 @@ def verdict(task):
             fails.append(a["kind"] + ":" + a.get("path", a.get("args", "")))
     return (not fails), manual, fails
 
+def revert(task, existed):
+    """Undo ONE failed task without touching anything the task did not declare.
+
+    The commit path was already scoped, and its own comment says why: "never
+    `add -A`: the LIVE Synapse session writes files while we run." The failure
+    path then called `git reset --hard HEAD`, which reverts EVERY tracked file
+    in the repo. The concurrency the success path defends against was undefended
+    on failure -- careful on the way in, shotgun on the way out.
+
+    A task that declares three files must not be able to destroy a fourth.
+    Measured: a concurrently running MONETA harness holding 545 uncommitted
+    lines was one failed task away from losing all of them, with no stash and no
+    reflog to recover from, because the work had never been committed.
+
+    Tracked files are restored from HEAD. Files this attempt CREATED are removed.
+    Untracked files that already existed are never ours to delete.
+    """
+    for f in task.get("files", []):
+        p = os.path.join(ROOT, f)
+        if git("ls-files", "--error-unmatch", "--", f).returncode == 0:
+            git("checkout", "HEAD", "--", f)
+        elif not existed.get(f) and os.path.exists(p):
+            os.remove(p)
+
+
+def stray_edits(task):
+    """Tracked files dirtied by an attempt that the task never declared.
+
+    Scoped revert cannot undo these -- and must not try, because it cannot tell
+    an out-of-scope agent write from a concurrent process's legitimate work. So
+    it reports instead. L2: it frays visibly. A stray edit left behind is
+    recoverable; an unrelated harness's destroyed work is not. Prefer the
+    recoverable failure, then say so out loud.
+    """
+    declared = {f.replace("\\", "/") for f in task.get("files", [])}
+    out = []
+    for ln in git("status", "--porcelain", "-uno").stdout.splitlines():
+        rel = ln[3:].strip().replace("\\", "/")
+        if rel and rel not in declared and not rel.startswith("harness/rope/"):
+            out.append(rel)
+    return out
+
+
 def eligible(st, only=None):
     done = {"verified", "needs_review"}
     for t in st["tasks"]:
@@ -199,6 +242,16 @@ def preflight(st, args):
     ).strip()  # the runner's own state/card files never block the runner
     if dirty and not args.allow_dirty:
         sys.exit("tracked files are dirty; commit/stash or pass --allow-dirty:\n" + dirty)
+    if dirty:
+        # --allow-dirty used to mean "start anyway" while the failure path still
+        # ran `reset --hard`, so the flag quietly authorised destroying exactly
+        # the work it was acknowledging. The revert is scoped now, so carrying
+        # dirt is safe -- but the operator still gets to SEE what they carry.
+        n = len(dirty.splitlines())
+        print("--allow-dirty: carrying %d dirty tracked file(s) through the loop." % n)
+        print(dirty)
+        print("scoped revert is in force: only a task's own declared files are "
+              "reverted, never the whole tree.")
     gi = os.path.join(ROOT, ".gitignore")
     ig = open(gi, encoding="utf-8").read() if os.path.exists(gi) else ""
     for line in ["harness/rope/results.tsv", "harness/rope/.prompt.txt",
@@ -230,6 +283,10 @@ def cmd_run(args):
         if not t or (args.max and done >= args.max):
             break
         t["status"] = "in_progress"; save(st)
+        # which of the task's files existed BEFORE the attempt -- so a scoped
+        # revert can tell "this attempt created it" from "it was already here".
+        existed = {f: os.path.exists(os.path.join(ROOT, f))
+                   for f in t.get("files", [])}
         dur = run_executor(t, args.model)
         ok, manual, fails = verdict(t)
         if ok:
@@ -244,7 +301,15 @@ def cmd_run(args):
             ledger(t["id"], args.model, "keep", t["attempts"] + 1, dur,
                    ("manual pending: " + "; ".join(manual)) if manual else "clean")
         else:
-            git("reset", "--hard", "HEAD")   # tracked only; NEVER git clean here
+            # Scoped, not `git reset --hard HEAD`. See revert() for why: the
+            # blunt form reverted every tracked file in the repo, including work
+            # belonging to whatever else happened to be running. NEVER git clean.
+            revert(t, existed)
+            stray = stray_edits(t)
+            if stray:
+                ledger(t["id"], args.model, "stray", t["attempts"], 0,
+                       "left in tree, NOT reverted (out of task scope): "
+                       + ", ".join(stray[:6]))
             low = tail_log(8).lower()
             if any(k in low for k in ("session limit", "usage limit", "rate limit")):
                 t["status"] = "pending"      # not the task's fault; no attempt consumed
