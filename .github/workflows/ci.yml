@@ -41,7 +41,7 @@ jobs:
           # given day, and the ratchet suite baseline (harness/verify/
           # suite_baseline.json) is measured against it. CI pins a specific
           # tag independently of pyproject.toml's version range.
-          ref: v1.2.0-rc2
+          ref: v1.2.0-rc3
           ssh-key: ${{ secrets.MONETA_DEPLOY_KEY }}
           path: _moneta
 
