@@ -7,7 +7,7 @@ made.
 
 Layering
 --------
-``canonical``  pure   the ONE c2 canonicalizer; harness/autoresearch imports it
+``canonical``  pure   the ONE c3 canonicalizer; harness/autoresearch imports it
 ``fixtures``   pure   load + validate a definition
 ``plan``       pure   the reconcile diff -- D2 and D3 live here, testable
                       without Houdini and without a mocked ``hou``
@@ -25,7 +25,9 @@ from __future__ import annotations
 from synapse.blocks.canonical import (
     C1_RULES,
     CANONICALIZER_VERSION,
+    ENV_VARS,
     canonicalize_usda,
+    houdini_env_map,
 )
 from synapse.blocks.fixtures import (
     FixtureError,
@@ -42,7 +44,9 @@ from synapse.blocks.plan import Plan, build_plan, collisions
 __all__ = [
     "C1_RULES",
     "CANONICALIZER_VERSION",
+    "ENV_VARS",
     "canonicalize_usda",
+    "houdini_env_map",
     "FixtureError",
     "FixtureNotFoundError",
     "box_name_for",

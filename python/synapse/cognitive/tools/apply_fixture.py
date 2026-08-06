@@ -115,7 +115,10 @@ APPLY_FIXTURE_SCHEMA: Dict[str, Any] = {
         "applied fixture performs zero operations. If any fixture node name "
         "already exists outside the box, NOTHING is created or deleted and a "
         "named-collision report comes back instead. Nodes outside the box are "
-        "never modified or deleted."
+        "never modified or deleted. A node the artist dragged INTO the box "
+        "that the fixture does not declare is EJECTED from the box and left "
+        "alive in the stage - never deleted - and is reported by name in "
+        "result['ejected']."
     ),
     "input_schema": _COMMON_INPUT_SCHEMA,
 }

@@ -1,0 +1,279 @@
+{
+  "schema": "receipt/v1",
+  "leg": "M5b",
+  "title": "BLOCKS M5b - the four M5 rulings closed: c3 canonicalizer + re-baseline, display kept as shipped, eject-not-delete override, h22 symbol table regenerated and gated",
+  "harness": "BLOCKS",
+  "status": "green",
+  "status_note": "Green means the stated oracle was satisfied: C-1..C-7 controls pass BEFORE any F-*, F-1..F-7 pass in headless hython on 22.0.368 against the NEW c3 baseline, the plain-python suite is green with the 9 failures unchanged in identity from M5's enumerated baseline, and the test count strictly increased (+20). Green does NOT mean nothing was found - three findings below are new runtime facts that shaped the implementation, one is a structural drift about this leg's own dispatch, and one question is escalated in for_ruling[].",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "NONE OF THE HARNESS PROFILES. Interactive session under the project .claude/settings.json, recorded honestly per Constitution Article V rather than claiming a fence that was not applied: this leg ran pytest, wrote product code under python/synapse/, regenerated a committed data file, and edited a fixture baseline - all outside harness/agent-settings.json's grant.",
+  "commit_at_run": "24a3a0d7 (dispatch commit rebased onto M5's 87927076)",
+  "branch": "blocks/m5b-rulings",
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/m5b-rulings",
+  "houdini_build_target": "22.0.368",
+  "houdini_build_observed": "22.0.368",
+  "mode": "WRITES CODE. python/synapse/blocks/{canonical,plan,runtime,__init__}.py, python/synapse/cognitive/tools/{scout.py,apply_fixture.py}, the committed h22 symbol table, fixtures/solaris.basic.json, the invariant harness, the autoresearch canonicalizer seam, and tests. No merge, no push.",
+
+  "base_verification": {
+    "instruction": "the brief's FIRST ACTION - confirm 87927076 is an ancestor of HEAD",
+    "first_result": "FAILED. git merge-base --is-ancestor 87927076 HEAD returned 1. HEAD was e69703a8, whose only content is harness/prompts/m5b.md + a legs.json row - the DISPATCH commit, whose subject describes the leg to be done rather than work done. python/synapse/blocks/ did not exist in the worktree. 87927076 and e69703a8 are siblings off be71cce6 touching disjoint files.",
+    "resolution": "Human-run `git rebase 87927076` (Gate-C-adjacent, see drift D-M5b-1). HEAD became 24a3a0d7; ancestor check returns 0; python/synapse/blocks/ present. No line of code was written before this held.",
+    "why_it_matters": "The brief's own warning was exact: a 'clean' run on that base would have silently reimplemented M5 from scratch."
+  },
+
+  "suite_before": {
+    "producer": "NOT RE-RUN. M5's resume_token forbids re-running the merge-base baseline; the 9 pre-existing failures are enumerated in harness/notes/receipts/M5.json with their producer (python -m pytest tests/ -q -p no:randomly at merge-base(master, HEAD) = 68a6e35e).",
+    "inherited_totals": "5745 passed, 9 failed, 147 skipped (M5 suite_after = this leg's before)",
+    "pre_existing_failures": [
+      "tests/test_moneta_crucible.py::test_moneta_backend_never_fires_evolution",
+      "tests/test_moneta_integration.py::test_hard_exit_loses_the_deposit",
+      "tests/test_pass7_per_agent_and_canonical.py::TestPokemonStageCanonicalPin::test_charmander_referenced_in_all_consumers",
+      "tests/test_pkg_bootstrap_invariant.py::test_r310_shapes_leave_no_runtime_divergence",
+      "tests/test_scene_memory.py::TestValidateMemory::test_validate_healthy_dir",
+      "tests/test_statusline.py::test_branch_read_without_git_matches_git",
+      "tests/test_statusline.py::test_registry_matches_git_worktree_list",
+      "tests/test_statusline.py::test_head_sha_matches_git",
+      "tests/test_statusline.py::test_suite_figure_from_another_commit_is_not_shown_as_fresh"
+    ]
+  },
+  "suite_after": {
+    "producer": "python -m pytest tests/ -q -p no:randomly, in this worktree, Python 3.14.2 on Windows",
+    "passed": 5765,
+    "failed": 9,
+    "skipped": 147,
+    "duration_s": 189.61,
+    "delta": "+20 tests (5901 -> 5921 collected). Failures UNCHANGED in identity and count - all 9 are the enumerated pre-existing set, zero new. Law 6 satisfied: the count strictly increases and no test was skipped, xfailed or weakened. One test was REPLACED under a ruling (see rulings_closed.R-M5-3.test_replacement) and its replacement asserts strictly more.",
+    "delta_breakdown": {
+      "tests/test_blocks_reconciler.py": "52 -> 66 (+14): -1 ruled-away stray-delete test, +6 ejection tests, +9 c3/baseline tests",
+      "tests/test_scout.py": "+6 (R-M5-4 build gate)"
+    }
+  },
+
+  "oracle": {
+    "invariants": {
+      "producer": "hython harness/blocks/invariants_m5.py",
+      "evidence": "harness/blocks/runs/m5_invariants_20260806_214024/invariants_m5.json",
+      "sentinel": "DONE",
+      "result": "pass=15 fail=0",
+      "build": "22.0.368 (target 22.0.368, build_matches_target true)",
+      "canonicalizer": "c3",
+      "baseline_under_test": "762e3a8519ce3e94c9bc5f7c898ab5627f8b4b0b04e2cda6e7ba884a3bc8a297",
+      "ordering": "All SEVEN controls run and pass BEFORE the first F-*, per Law 1 and the brief's oracle.",
+      "entries": {
+        "C-1": "PASS - composed hash CAN disagree (node removed from the chain)",
+        "C-2": "PASS - op count CAN be non-zero (one parm drifted): applied=0, drifted=1",
+        "C-3": "PASS - stage signature CAN change (one node nudged 0.5)",
+        "C-4": "PASS - collision gate is silent when the name is INSIDE the box",
+        "C-5": "PASS - baseline under test is the fixture's committed sha256",
+        "C-6": "PASS (NEW) - two $HIP builds CAN disagree with rule 5 disabled: c2_a=39e126f3... (worktree) vs c2_b=8bb05761... (main tree). This IS M5-F1 reproduced, and it is what makes F-6 evidence rather than an insensitive instrument.",
+        "C-7": "PASS (NEW) - the ejection instruments can disagree: box membership is not vacuously empty ('camera' IS a member) and aliveness is not vacuously true (a destroyed node reads absent)",
+        "F-1": "PASS - apply on a clean stage -> 762e3a85... == the new committed baseline; status=built, box holds exactly the 5 fixture nodes",
+        "F-2": "PASS - apply -> remove -> apply -> same hash; the stage between is empty of both nodes and boxes",
+        "F-3": "PASS - apply on already-applied: ops=0, status=noop, created/deleted/changed all empty, hash unchanged",
+        "F-4": "PASS - artist node outside the box keeps every AUTHORED property",
+        "F-4b": "PASS - display transfer reported by name (display_taken_from='artist_wip_null', from_outside_box=true)",
+        "F-5": "PASS - clash on 'camera' outside the box: status=collision, ops=0, full stage signature byte-identical across the call",
+        "F-6": "PASS (NEW) - CROSS-CWD EQUALITY. $HIP=C:/Users/User/SYNAPSE/.claude/worktrees/m5b-rulings and $HIP=C:/Users/User/SYNAPSE both yield 762e3a85..., identical and equal to the committed baseline. Demonstrated in BOTH directions as the brief required: c3 same (F-6), c2 differs (C-6).",
+        "F-7": "PASS (NEW) - EJECTION SAFETY. A node dragged into the box and not declared is alive in /stage after apply, authored-identical, no longer a box member, reported in result['ejected'], with result['deleted'] empty and residual_ops=0"
+      }
+    },
+    "unit_suite": {
+      "producer": "python -m pytest tests/test_blocks_reconciler.py tests/test_blocks_seam.py -q -p no:randomly",
+      "result": "99 passed (was 85 at M5)",
+      "mock_hou": "NONE. Every host-behaviour claim is proved by the hython harness or by a dedicated probe under harness/notes/. The pure functions are tested directly. houdini_env_map() is exercised with a stub EXPANDER callable, which asserts a pure mapping, not host behaviour - the host behaviour it depends on ($HIP expands, the paths appear in the composed stage) is proved by _m5b_envpath_probe.py and F-6."
+    }
+  },
+
+  "verdict_line": "solaris.basic reconciled in BLOCKS_solaris_basic - 0 created, 0 deleted, 0 changed (1 ops). 1 node(s) not declared by the fixture were ejected from the box and left in the stage: artist_stray_null.",
+  "verdict_line_note": "This is the literal string apply_fixture returned in F-7 and it is the shape R-M5-3 created. The ejection is APPENDED as its own sentence rather than folded into the counts, for two reasons: the artist must be told that a node they put in the box is no longer in it (Law 3), and appending leaves every no-ejection verdict BYTE-IDENTICAL to what M5 shipped, so the F-1..F-5 strings recorded in receipts/M5.json still hold exactly.",
+
+  "rulings_closed": {
+    "R-M5-1": {
+      "ruling": "c3 canonicalizer - strip $HIP-derived output paths, written to the PRINCIPLE (environment is not scene content), not to the karmarendersettings symptom.",
+      "shipped": "CANONICALIZER_VERSION = 'c3'. C1_RULES gains 'normalize_houdini_env_paths'. synapse.blocks.canonical remains the single source; harness/autoresearch/probes.py imports it, and tests/test_blocks_reconciler.py::test_canonicalizer_is_single_sourced_with_autoresearch still pins identity.",
+      "rule_shape": "SUBSTITUTION, not line-stripping, and the evidence forced it. The composed text contains ZERO literal '$' - the variables arrive already expanded (M5b-F1). 242 of 643 lines carry the $HIP expansion, including one INSIDE a query string (&savepath=...&). Stripping those lines would blind the oracle to whether render products are authored at all and could not reach the mid-line case. Rewriting the expansion back to its token leaves every other byte intact, so a fixture that changes its output filename still changes the hash.",
+      "safety_guard": "Only ABSOLUTE-PATH-valued variables are substituted (_is_env_path_value). This is structural, not an optimisation: $HIPNAME expands to the bare word 'untitled' (240 hits in the composed text) and $OS expands to the NODE NAME. Substituting those by value would rewrite genuine scene content - see M5b-F2. The guard makes the dangerous case impossible rather than trusting callers.",
+      "env_map": "canonicalize_usda(text, env=...) where env comes from houdini_env_map(expand). The expander is passed as a CALLABLE so canonical.py never imports hou and stays usable from pytest and the MCP process.",
+      "footgun_closed": "A baseline cut without env is machine-local while wearing a c3 label. tests/test_blocks_reconciler.py::test_every_baseline_producer_passes_env asserts every producer call site passes env=; verified to inspect 3 real call sites (not vacuous).",
+      "rebaseline": {
+        "new_sha256": "762e3a8519ce3e94c9bc5f7c898ab5627f8b4b0b04e2cda6e7ba884a3bc8a297",
+        "canonicalizer": "c3",
+        "producer": "hython harness/blocks/invariants_m5.py --emit-baseline",
+        "evidence": "harness/blocks/runs/m5b_baseline_cut/baseline_c3.json",
+        "how_it_was_cut": "The producer builds the fixture TWICE under two different $HIP values and emits the hash ONLY if both agree; a disagreement exits 1 with nothing to paste. A producer willing to emit a non-portable number under a c3 label is the exact defect R-M5-1 closes, so it refuses instead.",
+        "superseded_recorded": "fixtures/solaris.basic.json now carries superseded_baselines[] holding 8bb05761.../c2 with its verified_run, superseded_by=R-M5-1, and a reason naming the mechanism. History was not overwritten. Pinned by test_superseded_baseline_is_recorded_not_overwritten."
+      },
+      "proof": "F-6 (identical under c3, both builds) paired with C-6 (the same two builds differ under c2). Both directions demonstrated, as the brief required."
+    },
+    "R-M5-2": {
+      "ruling": "Keep exactly what shipped. No code change. Ratify it with a comment naming R-M5-2 and why the two alternatives were rejected.",
+      "shipped": "ZERO behaviour change. The display branch of runtime.apply_fixture carries a comment naming R-M5-2 and stating the defect both alternatives share: 'never take the flag from a node outside the box' and 'take it only when the box is first created' each leave the fixture's declared display PERMANENTLY UNSATISFIABLE when an outsider holds the flag - observe() keeps reporting display=False on the declared tail, build_plan keeps emitting set_display, and the post-mutation self-verification keeps returning residual_ops=1, forever. That breaks idempotence (F-3) and makes apply report status=incomplete on a stage that is as correct as the option permits.",
+      "invariants": "F-4 / F-4b remain SPLIT and both still pass unchanged. The display transfer is still reported by name.",
+      "anchor": "python/synapse/blocks/runtime.py, step 7 of apply_fixture"
+    },
+    "R-M5-3": {
+      "ruling": "OVERRIDE what shipped. Eject, do not delete. A node the artist dragged into the box that the fixture does not declare is REMOVED FROM THE BOX and LEFT ALIVE.",
+      "shipped": "plan.Plan gains eject_nodes. Strays now populate eject_nodes; delete_nodes holds exactly one class - a DECLARED name whose live node is the wrong type, destroyed only so it can be recreated. plan.ops counts ejections (otherwise an eject-only apply would report ops==0 and take the NOOP early-return, so the ejection would never run). runtime.apply_fixture gains an ejection pass that runs BEFORE the destroy pass, so if a later step raises, the node that must survive already has.",
+      "api": "box.removeItem(node). VERIFIED-RUNTIME 22.0.368 via harness/notes/_m5b_eject_probe.py before any code was written against it - see M5b-F4. It RAISES hou.OperationFailed on a non-member, so the pass reads the current membership set BY NAME first (never holding node handles across a mutation, per M5-F8).",
+      "reporting": "result['ejected'] lists the names; per_node carries action='ejected' with detail exactly 'not declared by the fixture - ejected, not deleted'. The verdict line accounts for ejections when any occurred.",
+      "remove_fixture": "UNCHANGED. It still deletes members and then the box. Pinned as a SOURCE property by test_remove_fixture_still_deletes_members_source_shape (asserts node.destroy() present and removeItem absent in that function), because the behaviour itself needs Houdini.",
+      "idempotence": "An ejected stray becomes an ordinary outside node. It can never become a collision, because a stray is by definition a name the fixture does not declare, so it can never match in collisions(). Pinned by test_an_ejected_stray_can_never_become_a_collision and proved live by F-7's residual_ops=0.",
+      "test_replacement": "tests/test_blocks_reconciler.py::test_stray_inside_the_box_is_deleted was REPLACED by ::test_stray_inside_the_box_is_ejected_not_deleted plus five more. This is a ruled behaviour change, not a weakened test: the replacement asserts strictly MORE (delete_nodes must be provably EMPTY where it previously held the name), and the file's test count rose 52 -> 66.",
+      "asymmetry": "Recorded because it is the reason: a wrong delete is recoverable only by Ctrl+Z, a wrong eject by one drag."
+    },
+    "R-M5-4": {
+      "ruling": "Regenerate the h22 symbol table for 22.0.368 and gate it at load; if the table's houdini_version does not match the running build, WARN with both versions.",
+      "regenerated": "YES - it was possible in this environment. hython host/introspect_runtime.py on the installed 22.0.368 host. python/synapse/cognitive/tools/data/h22_symbol_table.json now stamps houdini_version=22.0.368, symbol_count=35903, truncated=false, blake2b=265b433af496... (was 22.0.397 / 35908). No table was fabricated.",
+      "delta_is_the_ruling_s_own_premise": "Five symbols present in the 22.0.397 table do NOT exist on 22.0.368: hou.Color.ocio_bestname, hou.Color.ocio_nanocolorname, hou.Color.ocio_openusdname, hou.GeometryViewportSettings.agentMaxBlendShapeLODLevel, hou.GeometryViewportSettings.setAgentMaxBlendShapeLODLevel. Zero in the other direction. Under the old table scout would have answered exists_in_runtime=True for all five on this machine - exactly the failure class the ruling names.",
+      "gate": "scout._running_build() = host-injected EXPECTED_HOUDINI_VERSION first, then the Houdini ENVIRONMENT (HOUDINI_VERSION, VERIFIED-RUNTIME byte-identical to hou.applicationVersionString() on 22.0.368). Reading an env var is not importing hou, so synapse.cognitive stays inside its zero-hou boundary. On mismatch: symbols -> None (never trusted as authority), status carries running_build, and a RuntimeWarning naming BOTH versions is raised ONCE per (stamp, expected, path).",
+      "bigger_hole_found": "The point-release mismatch was not the worst case - see M5b-F7. The uninjected-process path silently served H21 symbols on an H22 host. Closed by the same change.",
+      "verified": "Three scenarios, three fresh processes: match (22.0.368/22.0.368) -> loaded, 35903 symbols, no warning, gate UP on this host for the first time; mismatch (running 22.0.397) -> refused, warned with both versions; external (no Houdini) -> h21 fallback unchanged. Pinned by six tests in tests/test_scout.py."
+    }
+  },
+
+  "shipped": {
+    "python/synapse/blocks/canonical.py": "c3. New rule normalize_houdini_env_paths + houdini_env_map(expand) + ENV_VARS + the absolute-path guard. Still pure Python, still the single source.",
+    "python/synapse/blocks/plan.py": "Plan.eject_nodes; strays route to it; delete_nodes narrowed to retype only; ops counts ejections; to_dict carries eject_nodes.",
+    "python/synapse/blocks/runtime.py": "Ejection pass (step 2, before deletions) with the membership guard; result['ejected']; _verdict split into _verdict/_verdict_base so the ejection sentence appends without changing existing strings; the R-M5-2 ratification comment; runtime-facts docstring extended with the removeItem and fitAroundContents findings.",
+    "python/synapse/blocks/__init__.py": "Re-exports ENV_VARS and houdini_env_map; c2 -> c3 in the layering note.",
+    "python/synapse/cognitive/tools/scout.py": "_env_running_build / _running_build / _warn_build_mismatch; _running_major consults the environment; _load_symbol_table gates on the RUNNING build and warns once with both versions.",
+    "python/synapse/cognitive/tools/apply_fixture.py": "APPLY_FIXTURE_SCHEMA description now states the ejection behaviour - the tool description is what the model reads, so a ruled behaviour change belongs in it.",
+    "python/synapse/cognitive/tools/data/h22_symbol_table.json": "REGENERATED on 22.0.368 by introspection. 35903 symbols, not truncated.",
+    "fixtures/solaris.basic.json": "baseline re-cut under c3 (762e3a85...), with producer, environment_independent:true, and superseded_baselines[] holding the c2 number and why it moved.",
+    "harness/blocks/invariants_m5.py": "C-6, C-7, F-6, F-7; build_under_hip / hip_pair / restore_hip / live_env / authored_only; composed_hash takes env; --emit-baseline producer that refuses to emit a non-portable number.",
+    "harness/autoresearch/probes.py": "_env_map() helper; both hash producers pass env=; evidence records canonicalizer_env alongside the version and rules (Law 2).",
+    "tests/test_blocks_reconciler.py": "52 -> 66. Six ejection tests, nine c3/baseline tests, one ruled-away test replaced.",
+    "tests/test_scout.py": "+6 R-M5-4 tests; _table_store and the per-major test now clear HOUDINI_VERSION so 'hermetic' is true after the env became a source.",
+    "harness/notes/_m5b_envpath_probe.py": "Probe 1 evidence - the composed text carries EXPANDED paths, zero literal '$'.",
+    "harness/notes/_m5b_eject_probe.py": "Probe 2 evidence - the NetworkBox ejection surface."
+  },
+
+  "findings": [
+    {
+      "id": "M5b-F1",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "The composed stage carries EXPANDED environment paths - zero literal '$' - so the c3 rule cannot match on the token",
+      "anchor": "harness/notes/_m5b_envpath_probe.py",
+      "detail": "karmarendersettings.picture is AUTHORED as '$HIP/render/$HIPNAME.$OS.$F4.exr' (unexpandedString) but reaches the flattened stage as 240 time-sampled absolute paths. lines_with_literal_dollar is EMPTY across all 643 composed lines. $HIP's expansion appears on 242 of them in three shapes: a whole value (HoudiniSavePath), a value MID-LINE inside a query string (HoudiniVolumeFilePaths ...&savepath=...&), and the 240 render-product samples. This is what made substitution-with-a-supplied-environment the only correct rule shape: a text-only rule has nothing to match, and line-stripping would drop 242 lines of real content and still miss the mid-line case."
+    },
+    {
+      "id": "M5b-F2",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "$HIPNAME expands to a bare word and $OS to the node name - substituting them by value would corrupt scene content",
+      "anchor": "harness/notes/_m5b_envpath_probe.py; python/synapse/blocks/canonical.py::_is_env_path_value",
+      "detail": "$HIPNAME -> 'untitled', with 240 hits in the composed text. $OS -> 'render_settings', the node's own name. A naive value->token substitution over the ruling's full variable list would have rewritten every occurrence of those words, including a prim legitimately named 'untitled' and every reference to a node called render_settings - destroying exactly what the hash exists to protect. Neither is machine-local anyway: an unsaved scene is 'untitled' on every host and $OS is fixture-declared. c3 therefore substitutes only values matching an absolute-path shape, which excludes both by construction.",
+      "pinned_by": "tests/test_blocks_reconciler.py::test_c3_refuses_bare_word_env_values"
+    },
+    {
+      "id": "M5b-F3",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "$HIP and $JOB expand to the SAME directory, so substitution order is observable and must be pinned",
+      "anchor": "harness/notes/_m5b_envpath_probe.py; python/synapse/blocks/canonical.py::_env_substitutions",
+      "detail": "Both expand to the process working directory for an unsaved scene. Whichever is applied first is the token that lands in the canonical text, so an unpinned iteration order would let the same stage hash two ways in two processes - a baseline that disagrees with itself. Ordering is sorted by (-len(value), name), which is also the only order that is correct when one path prefixes another (C:/a/b must be consumed before C:/a).",
+      "pinned_by": "tests/test_blocks_reconciler.py::test_c3_substitution_order_is_deterministic + ::test_c3_prefers_the_longer_path_when_one_prefixes_another"
+    },
+    {
+      "id": "M5b-F4",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "NetworkBox.removeItem ejects cleanly but RAISES on a non-member; fitAroundContents does not re-capture",
+      "anchor": "harness/notes/_m5b_eject_probe.py",
+      "detail": "Signature (self, item: NetworkMovableItem) -> void on 22.0.368. After removeItem the node is still a /stage child with every authored property intact (position, comment, type, bypass) and box.nodes(recurse=False) no longer reports it - so apply converges. But removeItem on a NON-member raises hou.OperationFailed, which is why the eject pass reads the membership set by name first. Separately: box.fitAroundContents() does NOT re-capture an ejected node even when it is positioned inside the box's rectangle - membership is explicit, not spatial - so the cosmetic fit at the end of an apply cannot silently undo an ejection. That last one was the adversarial case worth probing; had it been false, R-M5-3 would have been unimplementable without dropping the fit."
+    },
+    {
+      "id": "M5b-F5",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "The old c2 baseline reproduces byte-exact under the main tree's $HIP - M5-F1 independently confirmed and the c2 path provably unchanged",
+      "anchor": "harness/blocks/runs/m5b_baseline_cut/baseline_c3.json, builds.b.c2",
+      "detail": "The c3 producer emits both hashes per build. Under $HIP=C:/Users/User/SYNAPSE the c2 hash is 8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7 - the exact number M5 committed. Two things follow at no extra cost. M5-F1 is confirmed by a second, independent producer rather than taken on trust. And the first four canonicalizer rules are proved UNCHANGED by c3: had any of them shifted, the c2 hash could not still land on M5's committed value. The superseded baseline is therefore not merely recorded, it is reproducible on demand."
+    },
+    {
+      "id": "M5b-F6",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "The 22.0.397-stamped symbol table carried five hou.* symbols that do not exist on 22.0.368",
+      "anchor": "python/synapse/cognitive/tools/data/h22_symbol_table.json (regenerated); diff against git HEAD's copy",
+      "detail": "hou.Color.ocio_bestname, hou.Color.ocio_nanocolorname, hou.Color.ocio_openusdname, hou.GeometryViewportSettings.agentMaxBlendShapeLODLevel, hou.GeometryViewportSettings.setAgentMaxBlendShapeLODLevel. Zero symbols moved the other way (nothing real on 368 was missing from the 397 table). The count went 35908 -> 35903. R-M5-4's premise was not hypothetical: scout would have certified all five as existing on this machine.",
+      "pinned_by": "tests/test_scout.py::test_committed_h22_table_is_stamped_for_the_targeted_build, which asserts the five are absent so re-committing the 397 table fails loudly"
+    },
+    {
+      "id": "M5b-F7",
+      "tier": "VERIFIED-STATIC",
+      "title": "The real silent-trust hole was not the point release - an UNINJECTED in-Houdini process served H21 symbols as authority on an H22 host",
+      "anchor": "python/synapse/cognitive/tools/scout.py::_running_major / _load_symbol_table (as found)",
+      "detail": "EXPECTED_HOUDINI_VERSION is set only by synapse.host.version_injector, called from the daemon (host/daemon.py:301) and the panel (panel/synapse_panel.py:300). In any OTHER in-Houdini process it stayed None, so _running_major() returned '', _pkg_symbol_table_path() fell back to the H21 table, and _load_symbol_table compared that table against _pkg_table_version() - which READS THE SAME FILE. A guaranteed match. 33255 H21 symbols became the membership authority on a 22.0.368 host with no staleness signal at all. Note the shape: with an h22 table selected the gate already refused correctly (M5-F9's case), so the dangerous path was the one where the gate had nothing to compare. Closed by making the Houdini environment a second host-agnostic source of the running build.",
+      "pinned_by": "tests/test_scout.py::test_uninjected_houdini_process_is_no_longer_silently_served_h21"
+    },
+    {
+      "id": "M5b-F8",
+      "tier": "VERIFIED-STATIC",
+      "title": "A genuinely external process still grounds against the H21 table by design - residual, and out of R-M5-4's scope",
+      "anchor": "python/synapse/cognitive/tools/scout.py::_load_symbol_table (the _pkg_table_version fallback)",
+      "detail": "With no Houdini at all (stock python, CI, a farm process), _running_build() returns '' and the expected build falls back to the committed package table's own stamp - so the H21 table loads as authority and reports stale=false. That is the pre-existing posture and R-M5-4 does not touch it: there is no running build for the stamp to disagree with, so there is nothing to warn about. It is recorded because 'the gate is armed' is now true only when a Houdini is actually running. Escalated as a question rather than changed, see for_ruling."
+    },
+    {
+      "id": "M5b-F9",
+      "tier": "VERIFIED-STATIC",
+      "title": "harness/notes/_m5_seam_probe.py still calls canonicalize_usda without env and now yields a c2-shaped hash",
+      "anchor": "harness/notes/_m5_seam_probe.py:71",
+      "detail": "It is M5's committed evidence script, already run and already recorded. env is optional precisely so historical probes keep importing; the consequence is that re-running it produces a machine-local number under a c3 canonicalizer. Left untouched deliberately - rewriting another leg's evidence to look tidy is worse than a footnote - and excluded from test_every_baseline_producer_passes_env because it is a note, not a producer of committed baselines."
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "R-M5b-1",
+      "question": "Should scout's phantom gate REFUSE (or warn) in a genuinely external process - CI, a farm node, stock python - where there is no running Houdini and the committed H21 table currently loads as authority reporting stale=false?",
+      "why_escalated": "Article I - a value judgement about a cost, not a fact provable from the tree. Both readings are defensible. Keeping it is what lets CI and headless tooling ground anything at all, and the H21 table is a real introspected table, merely of another major. Changing it would make the gate honest about 'authority for WHICH build' but would disarm grounding everywhere Houdini is absent, which is most of CI. R-M5-4 asked only about the running build, and outside Houdini there is no running build, so this is outside what was ruled.",
+      "shipped_meanwhile": "Nothing. The fallback is unchanged and now recorded as M5b-F8.",
+      "evidence": "M5b-F8; tests/test_scout.py::test_pkg_table_keyed_on_running_major second branch"
+    }
+  ],
+
+  "not_done": {
+    "M6": "No phrase table, no alias routing, no 'basic solaris setup' string handling. Both tools still take a fixture NAME.",
+    "panel_ui": "None. The verdict line - including the new ejection sentence - is structured data; nothing renders it.",
+    "usd_customdata": "None written. Still RFC-gated with Michael Gold.",
+    "new_fixtures": "None authored. solaris.basic remains the only fixture, so it is also the only one the c3 re-baseline touched.",
+    "seam_drifts": "SD-1 (four Dispatcher singletons), SD-2 (is_testing=True everywhere; main-thread safety is downstream in the WS handler) and SD-3 (the injected script is not inlined) are UNREPAIRED by instruction. This leg touched apply_fixture.py's schema description only; the posture is unchanged and nothing in this receipt claims otherwise.",
+    "merge": "Not merged, not pushed. Gate C is a human act (Constitution Article I)."
+  },
+
+  "drift": [
+    {
+      "id": "D-M5b-1",
+      "doc": "the M5b brief's FIRST ACTION, and Constitution Article V / harness/CLAUDE.md",
+      "expected": "'If 87927076 is NOT an ancestor of HEAD ... Rebase onto blocks/m5-reconciler (or reset your branch to it) before writing a line' - the brief instructs the agent to repair its own base.",
+      "found": "The agent cannot. git reset --hard, git merge and git rebase are ALL denied in this harness - merge explicitly by the relay profile and harness/CLAUDE.md ('Never git push or git merge'), the other two by the auto-mode classifier. The base was wrong exactly as the brief predicted (worktree cut from the manifest-level dispatch commit e69703a8, which has no python/synapse/blocks/), so the instruction and the fence met head-on. Resolved by the human running `git rebase 87927076`; HEAD 24a3a0d7, ancestor check 0. Recorded rather than worked around: a plumbing route to the same effect existed and was not taken, because the fence's intent is that history moves are human.",
+      "structural": true,
+      "consequence": "Any future brief that tells an agent to fix its own base is unexecutable as written. Either the dispatcher must honour a per-leg base field, or base repair must be stated as a human pre-step."
+    },
+    {
+      "id": "D-M5b-2",
+      "doc": "the M5b brief's C-1..C-6 / F-1..F-7 numbering",
+      "expected": "six controls (C-1..C-6) pairing with seven invariants",
+      "found": "SEVEN controls shipped. The brief asked F-7 to be 'paired with a control proving the assertion can fail' but left it unnumbered while numbering C-6 explicitly. It is numbered C-7 here so the ejection control is citable, and it runs with the other controls before any F-*. No invariant was renumbered.",
+      "structural": false
+    }
+  ],
+
+  "resume_token": {
+    "skip": [
+      "Do not re-probe the NetworkBox surface (including removeItem and fitAroundContents-after-eject), display exclusivity, undo-in-hython, parm read-back, node type versioning, or box USD-neutrality - all VERIFIED-RUNTIME on 22.0.368 in harness/notes/_m5_*.py and harness/notes/_m5b_*.py.",
+      "Do not re-derive the $HIP dependence, and do not re-probe the composed text's env-path SHAPE - M5b-F1/F2/F3 settle it with a reproduction.",
+      "Do not re-run the merge-base suite baseline - the 9 pre-existing failures are enumerated here and in receipts/M5.json with their producer.",
+      "Do not re-cut the c3 baseline unless a canonicalizer rule changes; 762e3a85... is portable and F-6 proves it in both directions.",
+      "Do not re-diff the symbol tables - the five 22.0.397-only symbols are named in M5b-F6 and pinned by a test."
+    ],
+    "next": [
+      "Await Joe on R-M5b-1 (the external/no-Houdini grounding fallback).",
+      "M6: the phrase table / alias routing that resolves a noun to a fixture name.",
+      "A panel surface for result['verdict'] is still unbuilt and unruled - it now has an ejection sentence to render.",
+      "Any NEW fixture must be baselined with the c3 producer, not by hand."
+    ],
+    "reproduce": {
+      "invariants": "hython harness/blocks/invariants_m5.py   (writes harness/blocks/runs/<stamp>/ + DONE|FAILED)",
+      "baseline": "hython harness/blocks/invariants_m5.py --emit-baseline",
+      "symbol_table": "hython host/introspect_runtime.py",
+      "suite": "python -m pytest tests/ -q -p no:randomly"
+    }
+  }
+}

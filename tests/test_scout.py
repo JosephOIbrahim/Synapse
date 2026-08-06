@@ -7,6 +7,8 @@ phantom-API check), filters, modes, error paths, and the dispatcher registration
 """
 
 import json
+import warnings
+from pathlib import Path
 
 import pytest
 
@@ -271,6 +273,10 @@ def _table_store(tmp_path, monkeypatch, entries, *, table_symbols=None,
     monkeypatch.setattr(scout, "VEX_ROOT", tmp_path)
     monkeypatch.setattr(scout, "DRIFT_POLICY", policy)
     monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", expected_version)
+    # R-M5-4 made the Houdini ENVIRONMENT a second source of the running build,
+    # so "hermetic" above is only true if it is cleared. Running the suite from
+    # a Houdini shell must not change what these tests measure.
+    monkeypatch.delenv("HOUDINI_VERSION", raising=False)
     monkeypatch.setattr(scout, "_PKG_SYMBOL_TABLE", tmp_path / "no_pkg_table.json")  # neutralize fallback
     for c in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS, scout._TABLE_CACHE):
         c.clear()
@@ -367,7 +373,10 @@ def test_pkg_table_keyed_on_running_major(tmp_path, monkeypatch):
     assert status["stale"] is False and "hou.NewH22" in syms
 
     # No major known (headless/stock python) -> the committed H21 file, unchanged.
+    # R-M5-4: the environment is now a second source, so "no major known" has to
+    # mean the env is clear too, or this branch measures the dev machine.
     monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", None)
+    monkeypatch.delenv("HOUDINI_VERSION", raising=False)
     scout._TABLE_CACHE.clear()
     syms21, status21 = scout._load_symbol_table()
     assert status21["path"].endswith("h21_symbol_table.json")
@@ -379,3 +388,135 @@ def test_pkg_table_keyed_on_running_major(tmp_path, monkeypatch):
     syms23, status23 = scout._load_symbol_table()
     assert syms23 is None and status23["stale"] is True
     assert "23.0.000" in status23["reason"]
+
+
+# ── R-M5-4: the running build gates the table (ruled 2026-08-06) ─────────────
+
+
+def test_uninjected_houdini_process_is_no_longer_silently_served_h21(
+        tmp_path, monkeypatch):
+    """THE hole R-M5-4 closes, stated as the failure it used to produce.
+
+    Injection (``synapse.host.version_injector``) runs only in the daemon and
+    the panel. Any OTHER in-Houdini process left EXPECTED_HOUDINI_VERSION unset,
+    so ``_running_major()`` returned "", the H21 table was selected, and the
+    staleness gate compared that table against ITS OWN stamp -- a guaranteed
+    match. H21 symbols became the membership authority on an H22 host, silently.
+
+    Fails if the environment stops being consulted: the assertion below would
+    get the h21 path back.
+    """
+    pkg = tmp_path / "data"; pkg.mkdir()
+    _write_table(pkg / "h21_symbol_table.json", {"hou.LopNode"}, version="21.0.671")
+    _write_table(pkg / "h22_symbol_table.json",
+                 {"hou.LopNode", "hou.OnlyOn22"}, version="22.0.368")
+    monkeypatch.setattr(scout, "RAG_ROOT", tmp_path / "no_store")
+    monkeypatch.setattr(scout, "_PKG_SYMBOL_TABLE", pkg / "h21_symbol_table.json")
+    monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", None)   # NOT injected
+    monkeypatch.setenv("HOUDINI_VERSION", "22.0.368")              # but IS in Houdini
+    scout._TABLE_CACHE.clear()
+
+    syms, status = scout._load_symbol_table()
+    assert status["path"].endswith("h22_symbol_table.json")
+    assert status["stale"] is False
+    assert "hou.OnlyOn22" in syms
+
+
+def test_a_point_release_mismatch_warns_with_both_versions(tmp_path, monkeypatch):
+    """R-M5-4's literal instruction: WARN with both versions rather than
+    silently trusting a table cut on a different point release.
+
+    The concrete stake, measured 2026-08-06: regenerating the h22 table on
+    22.0.368 dropped five symbols the 22.0.397 table carried, so the old table
+    would have answered exists_in_runtime=True for APIs absent on this machine.
+
+    Fails if the mismatch is ever downgraded to silence, or if the message stops
+    naming both builds -- a warning that does not say which two versions
+    disagree cannot be acted on.
+    """
+    pkg = tmp_path / "data"; pkg.mkdir()
+    _write_table(pkg / "h22_symbol_table.json", {"hou.LopNode"}, version="22.0.397")
+    monkeypatch.setattr(scout, "RAG_ROOT", tmp_path / "no_store")
+    monkeypatch.setattr(scout, "_PKG_SYMBOL_TABLE", pkg / "h21_symbol_table.json")
+    monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", None)
+    monkeypatch.setenv("HOUDINI_VERSION", "22.0.368")
+    scout._TABLE_CACHE.clear()
+    scout._WARNED_BUILD_MISMATCH.clear()
+
+    with pytest.warns(RuntimeWarning) as rec:
+        syms, status = scout._load_symbol_table()
+
+    assert syms is None                      # never trusted as authority
+    assert status["stale"] is True and status["loaded"] is False
+    assert status["running_build"] == "22.0.368"
+    msg = "\n".join(str(w.message) for w in rec)
+    assert "22.0.397" in msg and "22.0.368" in msg
+
+
+def test_the_build_mismatch_warning_fires_once_not_per_query(tmp_path, monkeypatch):
+    """Fails if the warning is emitted per lookup. The gate is consulted for
+    every dotted symbol in every query; a per-symbol warning would bury the one
+    line that matters under its own repetition."""
+    pkg = tmp_path / "data"; pkg.mkdir()
+    _write_table(pkg / "h22_symbol_table.json", {"hou.LopNode"}, version="22.0.397")
+    monkeypatch.setattr(scout, "RAG_ROOT", tmp_path / "no_store")
+    monkeypatch.setattr(scout, "_PKG_SYMBOL_TABLE", pkg / "h21_symbol_table.json")
+    monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", None)
+    monkeypatch.setenv("HOUDINI_VERSION", "22.0.368")
+    scout._TABLE_CACHE.clear()
+    scout._WARNED_BUILD_MISMATCH.clear()
+
+    with warnings.catch_warnings(record=True) as rec:
+        warnings.simplefilter("always")
+        for _ in range(5):
+            scout._load_symbol_table()
+    hits = [w for w in rec if "phantom-API gate is DOWN" in str(w.message)]
+    assert len(hits) == 1
+
+
+def test_env_running_build_ignores_a_malformed_stamp(monkeypatch):
+    """Fails if a junk HOUDINI_VERSION is treated as a real build -- which would
+    turn every table into a mismatch and disarm the gate by accident, the same
+    outcome the ruling exists to prevent, arrived at from the other side."""
+    monkeypatch.setenv("HOUDINI_VERSION", "not-a-build")
+    assert scout._env_running_build() == ""
+    monkeypatch.setenv("HOUDINI_VERSION", "22.0.368")
+    assert scout._env_running_build() == "22.0.368"
+    monkeypatch.delenv("HOUDINI_VERSION", raising=False)
+    assert scout._env_running_build() == ""
+
+
+def test_injection_still_outranks_the_environment(monkeypatch):
+    """The host-side probe is the better source and must win. Fails if the env
+    fallback is consulted first -- a stale shell variable would then override
+    what the live host actually reported."""
+    monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", "22.0.400")
+    monkeypatch.setenv("HOUDINI_VERSION", "22.0.368")
+    assert scout._running_build() == "22.0.400"
+    assert scout._running_major() == "22"
+
+
+def test_committed_h22_table_is_stamped_for_the_targeted_build():
+    """R-M5-4's deliverable, pinned. The committed table must be the one this
+    repo's fixtures target. Fails if a table cut on another point release is
+    ever committed over it -- which is exactly the state M5 shipped in (M5-F9:
+    the table was stamped 22.0.397 while everything targeted 22.0.368)."""
+    path = (Path(scout.__file__).resolve().parent / "data"
+            / "h22_symbol_table.json")
+    meta = json.loads(path.read_text(encoding="utf-8"))
+    assert meta["houdini_version"] == "22.0.368"
+    assert meta["truncated"] is False
+    digest = hashlib.blake2b(
+        "\n".join(sorted(meta["symbols"])).encode("utf-8"),
+        digest_size=16).hexdigest()
+    assert digest == meta["blake2b"]        # the table is self-consistent
+    absent_on_368 = {
+        "hou.Color.ocio_bestname",
+        "hou.Color.ocio_nanocolorname",
+        "hou.Color.ocio_openusdname",
+        "hou.GeometryViewportSettings.agentMaxBlendShapeLODLevel",
+        "hou.GeometryViewportSettings.setAgentMaxBlendShapeLODLevel",
+    }
+    assert absent_on_368.isdisjoint(set(meta["symbols"])), (
+        "these five exist on 22.0.397 but NOT on 22.0.368 -- their presence "
+        "means the 22.0.397 table has been committed back over this one")

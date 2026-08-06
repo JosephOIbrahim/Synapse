@@ -67,6 +67,7 @@ import json
 import sqlite3
 import hashlib
 import tempfile
+import warnings
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, Protocol, runtime_checkable
@@ -422,8 +423,71 @@ def _corpus_symbols(store: Store) -> set[str]:
     return syms
 
 
+_BUILD_RE = re.compile(r"^\d+\.\d+\.\d+")
+
+# (stamp, expected, path) triples already warned about. The gate is consulted
+# per query; the artist needs telling once, not once per symbol.
+_WARNED_BUILD_MISMATCH: set = set()
+
+
+def _env_running_build() -> str:
+    """The running Houdini build read from the ENVIRONMENT (R-M5-4).
+
+    VERIFIED-RUNTIME 22.0.368: hython exports ``HOUDINI_VERSION=22.0.368``,
+    byte-identical to ``hou.applicationVersionString()``. Reading an env var is
+    not importing ``hou``, so this stays inside the ``synapse.cognitive.*``
+    zero-hou boundary that ``tests/test_cognitive_boundary.py`` enforces.
+
+    Why it exists: injection is the BEST source but not a guaranteed one --
+    ``EXPECTED_HOUDINI_VERSION`` is set only by ``synapse.host.version_injector``
+    from the daemon and the panel. Any other in-Houdini process had no running
+    build at all, which is what made the fallback below silently valid.
+
+    Fails when: not running under Houdini (returns ""), or the value is not a
+    build triple -- either way the caller falls through to the next source
+    rather than trusting a malformed stamp.
+    """
+    v = str(os.environ.get("HOUDINI_VERSION") or "").strip()
+    return v if _BUILD_RE.match(v) else ""
+
+
+def _running_build() -> str:
+    """The best available identity of the build this process is running on:
+    host-injected first, then the Houdini environment. "" outside Houdini."""
+    return str(EXPECTED_HOUDINI_VERSION or "").strip() or _env_running_build()
+
+
+def _warn_build_mismatch(stamp, expected, path) -> None:
+    """R-M5-4: WARN with BOTH versions rather than silently trusting the table.
+
+    A phantom-API gate whose authority is a different point release can certify
+    a symbol that does not exist on this machine. That is not hypothetical:
+    regenerating this table on 22.0.368 (2026-08-06) removed five symbols the
+    22.0.397-stamped table carried -- hou.Color.ocio_bestname,
+    .ocio_nanocolorname, .ocio_openusdname,
+    hou.GeometryViewportSettings.agentMaxBlendShapeLODLevel and its setter.
+    Under the old table scout would have answered exists_in_runtime=True for
+    all five on this host.
+    """
+    key = (str(stamp), str(expected), str(path))
+    if key in _WARNED_BUILD_MISMATCH:
+        return
+    _WARNED_BUILD_MISMATCH.add(key)
+    warnings.warn(
+        "SYNAPSE scout phantom-API gate is DOWN: the symbol table at %s is "
+        "stamped for Houdini %s but this process is running Houdini %s. A "
+        "membership verdict cut on a different point release can certify a "
+        "symbol that is absent here, so existence checks will report None "
+        "(unverified) rather than a value that cannot be trusted. Regenerate "
+        "with: hython host/introspect_runtime.py"
+        % (path, stamp, expected),
+        RuntimeWarning, stacklevel=3,
+    )
+
+
 def _running_major() -> str:
-    """The running Houdini major, from injection ONLY.
+    """The running Houdini major -- injected if provided, else from the
+    Houdini environment (R-M5-4).
 
     R99: EXPECTED_HOUDINI_VERSION is declared None and nothing ever assigned it,
     so every session silently loaded the H21 table while running 22.0.368.
@@ -434,9 +498,14 @@ def _running_major() -> str:
     correct response to an architectural boundary, and the only defect was that
     the injector was never built. It is now, in synapse.host.version_injector,
     which is on the host side of that boundary where importing hou is allowed.
+
+    R-M5-4 adds the environment as a SECOND host-agnostic source, because
+    injection happens only in the daemon and the panel. Without it, an
+    uninjected in-Houdini process selected the H21 table AND compared it
+    against its own stamp, so the mismatch gate had nothing to catch.
     """
-    injected = str(EXPECTED_HOUDINI_VERSION or "").split(".", 1)[0]
-    return injected if injected.isdigit() else ""
+    running = _running_build().split(".", 1)[0]
+    return running if running.isdigit() else ""
 
 
 def _pkg_symbol_table_path() -> Path:
@@ -516,11 +585,18 @@ def _load_symbol_table() -> tuple[Optional[set[str]], dict]:
     # table's own stamp as the expected build — so the gate RUNS (catching a
     # drifted store-root override on a mixed fleet) instead of silently skipping.
     if syms is not None:
-        expected = EXPECTED_HOUDINI_VERSION or _pkg_table_version()
-        if expected and meta.get("houdini_version") != expected:
+        # R-M5-4: the RUNNING build outranks the shipped stamp. _running_build()
+        # is injection-then-environment, so an uninjected in-Houdini process no
+        # longer compares a table against its own stamp and calls that a match.
+        # The _pkg_table_version() fallback survives for genuinely external /
+        # farm processes, where there is no running Houdini to disagree with.
+        expected = _running_build() or _pkg_table_version()
+        stamp = meta.get("houdini_version")
+        if expected and stamp != expected:
             status.update(stale=True, loaded=False,
-                          reason=(f"table stamp {meta.get('houdini_version')} != expected "
-                                  f"{expected}"))
+                          reason=f"table stamp {stamp} != expected {expected}")
+            status["running_build"] = _running_build() or None
+            _warn_build_mismatch(stamp, expected, key)
             return None, status
     return syms, status
 

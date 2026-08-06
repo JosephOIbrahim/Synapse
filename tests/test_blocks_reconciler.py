@@ -146,7 +146,7 @@ def test_canonicalizer_is_single_sourced_with_autoresearch():
     assert tuple(probes._C1_RULES) == tuple(canonical.C1_RULES)
 
 
-def test_canonicalizer_strips_exactly_the_four_rules():
+def test_canonicalizer_strips_exactly_the_declared_rules():
     """Fails if a rule stops firing (silent baseline drift) or a new one
     starts eating scene content."""
     text = "\n".join([
@@ -169,6 +169,143 @@ def test_canonicalizer_version_matches_the_committed_fixture_baseline():
     the exact drift that turns a green oracle into a lie."""
     fx = load_fx()
     assert fx["baseline"]["canonicalizer"] == canonical.CANONICALIZER_VERSION
+
+
+# ------------------------------------------------------- c3 / R-M5-1 (env paths)
+
+
+def _env(**kw):
+    return canonical.houdini_env_map(lambda n: kw.get(n, ""))
+
+
+def test_c3_normalizes_an_env_derived_path_back_to_its_token():
+    """R-M5-1. Fails if rule 5 stops firing -- at which point every fixture
+    baseline silently goes back to pinning the directory it was cut in."""
+    a = "C:/Users/User/SYNAPSE/.claude/worktrees/m5b-rulings"
+    b = "C:/Users/User/SYNAPSE"
+    line = '        asset[] f = @%s/render/untitled.render_settings.0001.exr@'
+    ca = canonical.canonicalize_usda(line % a + "\n", env=_env(**{"$HIP": a}))
+    cb = canonical.canonicalize_usda(line % b + "\n", env=_env(**{"$HIP": b}))
+    assert ca == cb
+    assert "$HIP/render/untitled.render_settings.0001.exr" in ca
+    assert "C:/Users" not in ca
+
+
+def test_c3_normalizes_a_path_embedded_mid_line():
+    """VERIFIED-RUNTIME 22.0.368: the $HIP expansion also appears INSIDE a
+    query string (``&savepath=...&``), not only as a whole value. Fails if the
+    rule is ever narrowed to line-leading or whole-value matching, which would
+    leave HoudiniVolumeFilePaths machine-local while every other line looked
+    clean."""
+    a, b = "C:/wt/a", "C:/some/other/root"
+    line = "  asset[] v = [@op:/stage/geo&savepath=%s/usd/geo.usd&t=0@]"
+    ca = canonical.canonicalize_usda(line % a + "\n", env=_env(**{"$HIP": a}))
+    cb = canonical.canonicalize_usda(line % b + "\n", env=_env(**{"$HIP": b}))
+    assert ca == cb
+    assert "savepath=$HIP/usd/geo.usd" in ca
+
+
+def test_c3_refuses_bare_word_env_values():
+    """The guard that keeps rule 5 from being worse than the drift it fixes.
+
+    ``$HIPNAME`` expands to ``untitled`` and ``$OS`` to the NODE NAME. VERIFIED-
+    RUNTIME 22.0.368: ``untitled`` appears 240 times in the composed stage.
+    Substituting those by value would rewrite genuine scene content.
+
+    Fails if the path guard is loosened -- and the second assertion shows the
+    damage that would do: a prim legitimately named ``untitled`` gets rewritten.
+    """
+    env = _env(**{"$HIPNAME": "untitled", "$OS": "render_settings",
+                  "$HIP": "C:/wt/a"})
+    assert "$HIPNAME" not in env
+    assert "$OS" not in env
+    assert "$HIP" in env
+    text = 'def Xform "untitled" { string s = "render_settings" }\n'
+    assert canonical.canonicalize_usda(text, env=env) == text
+
+
+def test_c3_substitution_order_is_deterministic():
+    """VERIFIED-RUNTIME 22.0.368: ``$HIP`` and ``$JOB`` expand to the SAME
+    directory, so whichever is applied first is the token that lands in the
+    canonical text. Fails if the ordering stops being pinned, at which point
+    the same stage could hash two ways in two processes -- a baseline that
+    disagrees with itself."""
+    same = "C:/Users/User/SYNAPSE"
+    env = _env(**{"$HIP": same, "$JOB": same})
+    out = {canonical.canonicalize_usda("  p = %s/render/x.exr\n" % same,
+                                       env=env) for _ in range(8)}
+    assert len(out) == 1
+    assert "$HIP/render/x.exr" in out.pop()
+
+
+def test_c3_prefers_the_longer_path_when_one_prefixes_another():
+    """Fails if substitutions are applied shortest-first: ``C:/a`` would eat
+    the prefix of ``C:/a/b`` and leave ``$JOB/b/render`` -- a token that no
+    longer corresponds to any real variable, and one that differs by machine
+    anyway."""
+    env = _env(**{"$JOB": "C:/a", "$HIP": "C:/a/b"})
+    out = canonical.canonicalize_usda("  p = C:/a/b/render/x.exr\n", env=env)
+    assert "$HIP/render/x.exr" in out
+
+
+def test_c3_without_env_reduces_to_the_c2_result():
+    """The documented footgun, asserted so it stays documented rather than
+    discovered. Fails if omitting ``env`` ever silently starts normalizing --
+    which would make an unportable baseline indistinguishable from a portable
+    one."""
+    a, b = "C:/wt/a", "C:/wt/bbbb"
+    line = "  p = %s/render/x.exr\n"
+    assert (canonical.canonicalize_usda(line % a, env={})
+            != canonical.canonicalize_usda(line % b, env={}))
+
+
+def test_every_baseline_producer_passes_env():
+    """Named in ``canonical.canonicalize_usda``'s docstring; this is it.
+
+    A baseline cut without ``env`` is machine-local while wearing a c3 label.
+    Every call site that turns composed USD into a committed number must pass
+    it. Fails the moment someone adds a producer that forgets -- which is
+    exactly how M5-F1 happened the first time.
+    """
+    producers = [
+        REPO / "harness" / "autoresearch" / "probes.py",
+        REPO / "harness" / "blocks" / "invariants_m5.py",
+    ]
+    for path in producers:
+        src = path.read_text(encoding="utf-8")
+        for chunk in src.split("canonicalize_usda(")[1:]:
+            head = chunk[:200]
+            if head.lstrip().startswith(("text", "\n", '"')):
+                continue        # the def / import line, not a call
+            assert "env=" in head, (
+                "%s calls canonicalize_usda without env= -- that produces a "
+                "machine-local hash under a c3 label" % path.name)
+
+
+def test_superseded_baseline_is_recorded_not_overwritten():
+    """R-M5-1 said: do not silently overwrite history. Fails if a future
+    re-baseline drops the trail, leaving a committed number with no account of
+    what it replaced or why."""
+    fx = load_fx()
+    old = fx.get("superseded_baselines")
+    assert isinstance(old, list) and old
+    prior = old[0]
+    assert prior["canonicalizer"] == "c2"
+    assert prior["sha256"] == (
+        "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7")
+    assert prior["superseded_by"] == "R-M5-1"
+    assert prior["reason"]
+    assert prior["sha256"] != fx["baseline"]["sha256"]
+
+
+def test_the_committed_baseline_declares_itself_environment_independent():
+    """The claim c3 exists to make. Fails if a fixture is re-baselined back to
+    a machine-local number without saying so -- which is the state M5 shipped
+    in and R-M5-1 closed."""
+    fx = load_fx()
+    assert fx["baseline"]["environment_independent"] is True
+    assert fx["baseline"]["canonicalizer"] == "c3"
+    assert fx["baseline"]["producer"]
 
 
 # ---------------------------------------------------------------- planner: build
@@ -268,17 +405,116 @@ def test_delete_scope_is_drawn_from_the_box_source_shape():
     assert "outside_names" in collide
 
 
-def test_stray_inside_the_box_is_deleted():
+def _with_stray(fx, name="leftover", outside=None):
+    snap = applied_snapshot(fx, outside=outside)
+    snap["box_members"][name] = {
+        "type": "null", "type_base": "null", "position": [5.0, 5.0],
+        "display": False, "inputs": {}, "parms": {}, "parms_missing": [],
+    }
+    return snap
+
+
+def test_stray_inside_the_box_is_ejected_not_deleted():
+    """R-M5-3, ruled 2026-08-06 -- OVERRIDES what M5 shipped.
+
+    A member the fixture does not declare was put there by the artist's drag,
+    not by us. It leaves the box and stays alive. This replaces M5's
+    ``test_stray_inside_the_box_is_deleted``: a ruled behaviour change, not a
+    weakened test -- the assertion is strictly more specific, because
+    ``delete_nodes`` must now be provably EMPTY where it used to hold the name.
+
+    Fails if a stray ever re-enters ``delete_nodes`` -- i.e. if the reconciler
+    goes back to destroying artist work it did not create.
+    """
+    fx = load_fx()
+    p = planmod.build_plan(fx, _with_stray(fx),
+                           box_name="BLOCKS_solaris_basic")
+    assert p.eject_nodes == ["leftover"]
+    assert p.delete_nodes == []
+    assert p.create_nodes == []
+    assert p.recreate_nodes == []
+    assert p.ops == 1
+
+
+def test_ejection_is_counted_as_an_op():
+    """Fails if ``ops`` ignores ejections -- which would make an apply that
+    ejects a node report ``ops == 0`` and take the NOOP early-return, so the
+    ejection would never actually run."""
+    fx = load_fx()
+    assert planmod.build_plan(fx, applied_snapshot(fx),
+                              box_name="BLOCKS_solaris_basic").ops == 0
+    p = planmod.build_plan(fx, _with_stray(fx),
+                           box_name="BLOCKS_solaris_basic")
+    assert p.ops == 1
+    assert "eject_nodes" in p.to_dict()
+    assert p.to_dict()["eject_nodes"] == ["leftover"]
+
+
+def test_ejection_converges_on_the_next_apply():
+    """Idempotence, the property M5-F2 was found by losing.
+
+    Once the stray is out of the box it is an ordinary outside node, so the
+    next plan must be empty. Fails if an ejected node is somehow still a
+    deletion or ejection candidate -- which would be a permanent one-op churn
+    and would break F-3 forever.
+    """
+    fx = load_fx()
+    after = applied_snapshot(fx, outside={"leftover": "null"})
+    p = planmod.build_plan(fx, after, box_name="BLOCKS_solaris_basic")
+    assert p.eject_nodes == []
+    assert p.delete_nodes == []
+    assert p.ops == 0
+    assert not p.blocked
+
+
+def test_an_ejected_stray_can_never_become_a_collision():
+    """The safety property that makes ejection idempotent rather than a trap.
+
+    A stray is BY DEFINITION a name the fixture does not declare, so putting it
+    outside the box can never satisfy the collision test. Fails if
+    ``collisions()`` ever starts matching on something other than declared
+    names -- at which point ejecting would hand the very next apply a blocked
+    plan and the reconciler would deadlock itself.
+    """
+    fx = load_fx()
+    declared = {spec["name"] for spec in fx["nodes"]}
+    assert "leftover" not in declared
+    after = applied_snapshot(fx, outside={"leftover": "null"})
+    assert planmod.collisions(fx, after) == []
+
+
+def test_a_wrong_type_member_is_still_deleted_not_ejected():
+    """R-M5-3 narrows the delete scope; it does not empty it.
+
+    A DECLARED node of the wrong type must still be destroyed, because it has
+    to be recreated as the type the fixture asks for. Fails if the eject rule
+    was written too broadly and swallowed the recreate path -- which would
+    leave the wrong node in the box forever with ``residual_ops`` never
+    reaching zero.
+    """
     fx = load_fx()
     snap = applied_snapshot(fx)
-    snap["box_members"]["leftover"] = {
-        "type": "null", "position": [5.0, 5.0], "display": False,
-        "inputs": {}, "parms": {}, "parms_missing": [],
-    }
+    snap["box_members"]["camera"]["type"] = "null"
+    snap["box_members"]["camera"]["type_base"] = "null"
     p = planmod.build_plan(fx, snap, box_name="BLOCKS_solaris_basic")
-    assert p.delete_nodes == ["leftover"]
-    assert p.create_nodes == []
-    assert p.ops == 1
+    assert p.delete_nodes == ["camera"]
+    assert p.eject_nodes == []
+    assert p.recreate_nodes == ["camera"]
+
+
+def test_remove_fixture_still_deletes_members_source_shape():
+    """R-M5-3 explicitly leaves ``remove_fixture`` alone: "remove this fixture"
+    is an instruction from the artist and a different act from reconciling.
+
+    Asserted as a source property because the behaviour itself needs Houdini.
+    Fails if someone "helpfully" makes remove_fixture eject too, at which point
+    ``remove`` would stop removing and F-2 would break.
+    """
+    src = (REPO / "python" / "synapse" / "blocks" / "runtime.py").read_text(
+        encoding="utf-8")
+    body = src.split("def remove_fixture", 1)[1]
+    assert "node.destroy()" in body
+    assert "removeItem" not in body
 
 
 # ---------------------------------------------------------------- planner: drift
