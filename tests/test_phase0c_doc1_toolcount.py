@@ -66,6 +66,13 @@ _STDIO_LOCAL_TOOLS = [
     "synapse_group_tops", "synapse_group_memory", "synapse_group_cops",
     "synapse_inspect_stage",
     "synapse_scout",
+    # BLOCKS reconciler (M5). Same class as the Inspector: local Python that
+    # composes ONE execute_python round-trip, dispatched via its own branch in
+    # call_tool() -- absent from the registry, so stdio-only and never
+    # double-counted. Listed here so the stdio == registry + named-locals
+    # relationship still holds exactly after M5.
+    "synapse_apply_fixture",
+    "synapse_remove_fixture",
 ]
 
 
@@ -84,7 +91,8 @@ def test_stdio_equals_registry_core_plus_named_local_tools():
     (CI-safe)."""
     src = (_ROOT / "mcp_server.py").read_text(encoding="utf-8")
     for token in ("_REGISTRY_TOOL_DEFS", "_GROUP_INFO_TOOLS", "_INSPECTOR_TOOL_NAME",
-                  "_SCOUT_TOOL_NAME"):
+                  "_SCOUT_TOOL_NAME", "_BLOCKS_APPLY_TOOL_NAME",
+                  "_BLOCKS_REMOVE_TOOL_NAME"):
         assert token in src, (
             f"stdio list_tools no longer composes {token} -- the documented "
             "stdio == registry + 6 group + inspector relationship moved."

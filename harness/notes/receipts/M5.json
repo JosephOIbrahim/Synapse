@@ -1,0 +1,295 @@
+{
+  "schema": "receipt/v1",
+  "leg": "M5",
+  "title": "BLOCKS reconciler - apply_fixture / remove_fixture, mounted on the Dispatcher seam",
+  "harness": "BLOCKS",
+  "status": "green",
+  "status_note": "Green means the stated oracle was satisfied: F-1..F-5 pass in headless hython on 22.0.368 with five negative controls proving each instrument can disagree first; the plain-python suite is green under the cognitive/host lint boundary; the Dispatcher seam is documented as found; and this receipt carries the file:line anchors. Green does NOT mean unruled questions were answered - four are in for_ruling[], and one of them (R-M5-2) changed what F-4 asserts.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "NONE OF THE HARNESS PROFILES. Interactive session under the project .claude/settings.json, recorded honestly per Constitution Article V rather than claiming a fence that was not applied: this leg ran pytest, wrote product code under python/synapse/, and edited mcp_server.py - all outside harness/agent-settings.json's grant.",
+  "commit_at_run": "be71cce6",
+  "branch": "blocks/m5-reconciler",
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/m5-reconciler",
+  "houdini_build_target": "22.0.368",
+  "houdini_build_observed": "22.0.368",
+  "mode": "WRITES CODE. Product code under python/synapse/blocks/ + python/synapse/cognitive/tools/, one seam edit to mcp_server.py, the canonicalizer seam in harness/autoresearch/probes.py, tests, and the invariant harness. No merge, no push.",
+
+  "suite_before": {
+    "producer": "python -m pytest tests/ -q -p no:randomly, at merge-base(master, HEAD) = 68a6e35e, in a throwaway linked worktree created and removed during this leg",
+    "note": "The 9 failures below were re-run at 68a6e35e with ZERO M5 code present and all 9 reproduce. The ninth (test_branch_read_without_git_matches_git) does not fail on a DETACHED baseline checkout, so the baseline worktree was switched to a named branch and it then failed there too - it is a linked-worktree property of the statusline module, not an M5 regression.",
+    "pre_existing_failures": [
+      "tests/test_moneta_crucible.py::test_moneta_backend_never_fires_evolution",
+      "tests/test_moneta_integration.py::test_hard_exit_loses_the_deposit",
+      "tests/test_pass7_per_agent_and_canonical.py::TestPokemonStageCanonicalPin::test_charmander_referenced_in_all_consumers",
+      "tests/test_pkg_bootstrap_invariant.py::test_r310_shapes_leave_no_runtime_divergence",
+      "tests/test_scene_memory.py::TestValidateMemory::test_validate_healthy_dir",
+      "tests/test_statusline.py::test_branch_read_without_git_matches_git",
+      "tests/test_statusline.py::test_registry_matches_git_worktree_list",
+      "tests/test_statusline.py::test_head_sha_matches_git",
+      "tests/test_statusline.py::test_suite_figure_from_another_commit_is_not_shown_as_fresh"
+    ]
+  },
+  "suite_after": {
+    "producer": "python -m pytest tests/ -q -p no:randomly, in this worktree, Python 3.14.2 on Windows",
+    "passed": 5745,
+    "failed": 9,
+    "skipped": 147,
+    "duration_s": 178.28,
+    "delta": "+85 tests, all new and passing (tests/test_blocks_reconciler.py 52, tests/test_blocks_seam.py 33). Failures unchanged in identity and count from the baseline. Law 6 satisfied: test count strictly increases; no test was weakened, skipped, xfailed or deleted."
+  },
+
+  "oracle": {
+    "invariants": {
+      "producer": "hython harness/blocks/invariants_m5.py",
+      "evidence": "harness/blocks/runs/m5_invariants_20260806_192322/invariants_m5.json",
+      "sentinel": "DONE",
+      "result": "pass=11 fail=0",
+      "hip_pinned_to": "C:/Users/User/SYNAPSE",
+      "entries": {
+        "C-1": "PASS - composed hash CAN disagree (node removed from the chain)",
+        "C-2": "PASS - op count CAN be non-zero (one parm drifted): applied=0, drifted=1",
+        "C-3": "PASS - stage signature CAN change (one node nudged 0.5)",
+        "C-4": "PASS - collision gate is silent when the name is INSIDE the box",
+        "C-5": "PASS - baseline under test is the fixture's committed sha256",
+        "F-1": "PASS - apply on a clean stage -> 8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7 == committed baseline; status=built, ops=6, box holds exactly the 5 fixture nodes",
+        "F-2": "PASS - apply -> remove -> apply -> same hash; the stage between is empty of both nodes and boxes",
+        "F-3": "PASS - apply on already-applied: ops=0, status=noop, created/deleted/changed all empty, hash unchanged",
+        "F-4": "PASS - artist node outside the box keeps every AUTHORED property (type, position, parms, comment, wiring, bypass); box correct; artist node not a member",
+        "F-4b": "PASS - taking the exclusive display flag is reported by name (display_taken_from='artist_wip_null', from_outside_box=true), not silent",
+        "F-5": "PASS - clash on 'camera' outside the box: status=collision, ops=0, applied=false, zero created, zero deleted, full stage signature byte-identical across the call"
+      },
+      "law_1_note": "The five C-* controls run BEFORE any F-* and exist because Law 1 forbids trusting an instrument that has not been shown to disagree. Four distinct instruments are used by F-1..F-5 - the composed hash, the op count, the stage signature and the collision gate - and each is falsified against a deliberately wrong stage first."
+    },
+    "unit_suite": {
+      "producer": "python -m pytest tests/test_blocks_reconciler.py tests/test_blocks_seam.py -q",
+      "result": "85 passed",
+      "mock_hou": "NONE. Constitution Law 1 bans mock-hou for host-behaviour assertions. The planner is pure functions over plain dicts, so it is tested directly; every host-behaviour claim is proved by the hython harness instead."
+    }
+  },
+
+  "verdict_line": "solaris.basic built in BLOCKS_solaris_basic - 5 node(s), 6 op(s).",
+  "verdict_line_note": "This is the literal string apply_fixture returns in result['verdict'] on a clean build, rendered from structure by runtime._verdict - never from prose. The other shapes: 'solaris.basic already matches BLOCKS_solaris_basic - no changes (0 ops).' (noop); 'solaris.basic NOT applied - 1 name collision(s) outside BLOCKS_solaris_basic: camera. Nothing was created or deleted.' (collision); 'solaris.basic removed - 5 node(s) and the box BLOCKS_solaris_basic deleted.' (removed).",
+
+  "shipped": {
+    "python/synapse/blocks/__init__.py": "Package front door. Deliberately does NOT import runtime, so importing synapse.blocks stays hou-free for the MCP process, pytest and the harness.",
+    "python/synapse/blocks/canonical.py": "The c2 canonicalizer, LIFTED from harness/autoresearch/probes.py. Now the single source of truth.",
+    "python/synapse/blocks/fixtures.py": "Fixture load + strict structural validation + box_name_for (D1). repo_root() derives from __file__, so a worktree loads its own fixtures.",
+    "python/synapse/blocks/plan.py": "The pure reconcile diff. D2 (collisions short-circuit) and D3 (delete candidates come only from enumerated box membership) are control-flow and data-flow properties of this file.",
+    "python/synapse/blocks/transport.py": "BLOCKS transport registry. Own registry, but REUSES wrap_script_base64 from synapse.inspector.transport rather than forking it.",
+    "python/synapse/blocks/runtime.py": "The only module that touches hou. observe / apply_fixture / remove_fixture, undo-grouped, with post-mutation self-verification.",
+    "python/synapse/cognitive/tools/apply_fixture.py": "The cognitive adapter + both schemas. Zero hou. Composes a three-line flat script and ships it through the transport.",
+    "python/synapse/cognitive/tools/__init__.py": "Re-exports the two tools alongside inspect_stage / write_report.",
+    "mcp_server.py": "Dispatcher singleton, transport closure, list_tools entries, call_tool branch.",
+    "harness/autoresearch/probes.py": "Canonicalizer seam only: the local c2 definitions are deleted and imported from synapse.blocks.canonical instead. No probe logic touched.",
+    "harness/blocks/invariants_m5.py": "F-1..F-5 + five negative controls, headless hython, autoresearch run pattern (atomic writes, DONE/FAILED last).",
+    "tests/test_blocks_reconciler.py": "52 tests - fixtures, planner, canonicalizer single-sourcing, comparators, versioned-type regression.",
+    "tests/test_blocks_seam.py": "33 tests - schemas, injection-boundary validation, script flatness, response parsing, mcp_server wiring.",
+    "tests/test_phase0c_doc1_toolcount.py": "EXTENDED (not weakened): the two new stdio-local tools added to _STDIO_LOCAL_TOOLS and to the wiring-token list, so the stdio == registry + named-locals relationship still holds exactly.",
+    "harness/notes/_m5_netbox_probe.py": "Probe 1 evidence - NetworkBox surface.",
+    "harness/notes/_m5_seam_probe.py": "Probe 2 evidence - box USD-neutrality, box enumeration semantics, import layering.",
+    "harness/notes/_m5_baseline_diag.py": "Probe 3 evidence - the $HIP baseline dependence.",
+    "harness/notes/_m5_hip_probe.py": "Probe 4 evidence - $HIP is pinnable, baseline reproduces byte-exact.",
+    "harness/notes/_m5_runtime_probe.py": "Probe 5 evidence - display exclusivity, undo in hython, parm read-back, inputs, member destroy.",
+    "harness/notes/_m5_residual_diag.py": "Probe 6 evidence - the versioned-node-type defect, caught by the harness."
+  },
+
+  "tool_registration": {
+    "seam": "cognitive Dispatcher, same port pattern as synapse_inspect_stage",
+    "anchors": [
+      "mcp_server.py:811 - _BLOCKS_APPLY_TOOL_NAME = \"synapse_apply_fixture\"",
+      "mcp_server.py:812 - _BLOCKS_REMOVE_TOOL_NAME = \"synapse_remove_fixture\"",
+      "mcp_server.py:813 - _BLOCKS_TOOL_NAMES frozenset",
+      "mcp_server.py:825 - def _get_blocks_dispatcher() -> _Dispatcher (singleton build)",
+      "mcp_server.py:851 - _blocks_configure_transport(_sync_transport) (transport injection)",
+      "mcp_server.py:866 - async def _blocks_call_tool(name, arguments) (adapter branch body)",
+      "mcp_server.py:1110 - list_tools() registration of both tools with their schemas",
+      "mcp_server.py:1155 - call_tool() dispatch branch: if name in _BLOCKS_TOOL_NAMES",
+      "python/synapse/cognitive/tools/apply_fixture.py:108 - APPLY_FIXTURE_SCHEMA",
+      "python/synapse/cognitive/tools/apply_fixture.py:123 - REMOVE_FIXTURE_SCHEMA"
+    ],
+    "seam_as_found": "The port pattern described in CLAUDE.md and in inspect_stage.py's docstring is accurate and was followed: pure function under the cognitive layer, schema registered alongside, adapter branch swapped in call_tool(). Three drifts from that description are recorded below rather than silently adapted to.",
+    "seam_drift": [
+      {
+        "id": "SD-1",
+        "claim_in_docs": "'the Dispatcher is the single entry point through which tool calls reach Houdini' (dispatcher.py:3-5)",
+        "as_found": "There is no single Dispatcher. mcp_server.py builds FOUR independent Dispatcher singletons - _inspector_dispatcher (mcp_server.py:596), _scout_dispatcher (:721), _ported_dispatcher (:829) and now _blocks_dispatcher - each with is_testing=True and its own transport closure over the asyncio loop. M5 follows the established four-singleton practice, not the one-Dispatcher prose.",
+        "tier": "VERIFIED-STATIC"
+      },
+      {
+        "id": "SD-2",
+        "claim_in_docs": "Dispatcher's production path marshals to Houdini's main thread via main_thread_executor (dispatcher.py:295-314)",
+        "as_found": "Every dispatcher in mcp_server.py is constructed with is_testing=True and no main_thread_executor; the production _execute_via_main_thread branch is unwired and raises NotImplementedError. Main-thread safety on this path is provided downstream by the WS execute_python handler inside Houdini, not by the Dispatcher. M5 inherits exactly that posture and claims nothing more.",
+        "tier": "VERIFIED-STATIC"
+      },
+      {
+        "id": "SD-3",
+        "claim_in_docs": "Inspector precedent inlines the whole Houdini-side implementation into a template string (tool_inspect_stage.py:119-257)",
+        "as_found": "M5 deliberately does NOT. The injected script is three flat lines calling synapse.blocks.runtime, because the F-1..F-5 harness imports and runs that same module directly under hython. Inlining would mean the harness proved something other than what the tool executes. Recorded as an intentional divergence from the precedent, with the reason.",
+        "tier": "VERIFIED-STATIC"
+      }
+    ],
+    "not_in_the_dispatch_registry": "Both tools are stdio-local (like the Inspector and Scout): absent from synapse.mcp._tool_registry.TOOL_DEFS, so the CLAUDE.md '123 MCP tools registered' banner is unchanged and test_phase0c_doc1_toolcount.py's registry/stdio relationship still holds. Pinned by tests/test_blocks_seam.py::test_blocks_tools_are_not_in_the_dispatch_registry."
+  },
+
+  "rulings_honoured": {
+    "D1": "Ownership = network box. runtime._ensure path creates BLOCKS_solaris_basic and box.addItem() every created node; nodes stay flat in /stage. ZERO USD customData is written - grep synapse/blocks/ for customData returns nothing.",
+    "D2": "Collisions fail loudly. apply_fixture returns at runtime.py's `if plan.blocked:` branch before the mutation block; the undo group is never entered. Proven live by F-5 (full stage signature byte-identical across the call) and in pure form by four planner tests.",
+    "D3": "Delete scope = box members only. Candidates enter the plan from snapshot['box_members'], built by observe() from box.nodes(recurse=False) filtered to direct children of the stage. tests/test_blocks_reconciler.py::test_delete_scope_is_drawn_from_the_box_source_shape asserts the SOURCE property the ruling asked for: the string 'outside_names' does not appear anywhere inside build_plan.",
+    "D4": "Seam = Dispatcher tool, discovered live from the codebase and recorded as found above, including three drifts from the documented description."
+  },
+
+  "findings": [
+    {
+      "id": "M5-F1",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "The committed fixture baseline is cwd-dependent - it embeds $HIP",
+      "anchor": "harness/notes/_m5_baseline_diag.py; fixtures/solaris.basic.json:19",
+      "detail": "karmarendersettings authors $HIP/render/<hipname>.<node>.####.exr into the composed stage, and $HIP resolves to the process working directory for an unsaved scene. probes._build_fixture_once run from this worktree yields 6552415dc1452483380f3a896db3a3a06d1d51cc34b9afe25dafac617e456b2d; run from C:/Users/User/SYNAPSE it yields the committed 8bb05761... byte-exact. The fixture's baseline block records sha256, build, canonicalizer and verified_run but NOT the $HIP or cwd, and harness/autoresearch/runs/fixture_verify_20260805_182646/ records no environment either. The baseline is therefore machine-local and undocumented as such.",
+      "mitigation": "The invariant harness PINS $HIP via hou.putenv rather than depending on launch directory, defaults it to the repository's MAIN working tree (resolved from the .git file/dir without shelling out), refuses to run if the pin did not take, and records hip_before_pin / hip_after_pin / hip_pin_effective in every evidence file.",
+      "escalated_as": "R-M5-1"
+    },
+    {
+      "id": "M5-F2",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "createNode('domelight') produces type name 'domelight::3.0' - naive type comparison never converges",
+      "anchor": "python/synapse/blocks/plan.py::type_matches; harness/notes/_m5_residual_diag.py",
+      "detail": "The fixture declares type 'domelight'. The created node's type().name() is 'domelight::3.0'. Comparing the fixture literal against the raw type name reported a permanent mismatch, so every apply planned delete+recreate of dome_light, apply_fixture never converged (applied=false, status=incomplete, residual_ops=2), and F-3 could never have been green. nodeTypeCategory().nodeType('domelight') does NOT resolve the version - it returns the unversioned entry - so the stable identity is NodeType.nameComponents()[2] == 'domelight', which observe() now records as type_base. A fixture that declares a versioned literal still matches exactly.",
+      "found_by": "the F-1..F-5 harness, via apply_fixture's own post-mutation self-verification returning applied=false rather than a false success",
+      "pinned_by": "tests/test_blocks_reconciler.py::test_versioned_node_type_does_not_plan_an_endless_recreate + ::test_a_fixture_pinning_a_version_still_detects_the_wrong_one"
+    },
+    {
+      "id": "M5-F3",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "createNode and createNetworkBox and setName all auto-rename SILENTLY on a name clash",
+      "anchor": "harness/notes/_m5_netbox_probe.py",
+      "detail": "stage.createNode('null','syn_probe_n1') on a taken name returns a node called 'syn_probe_n3' and raises nothing. createNetworkBox('SYN_PROBE_BOX') on a taken name returns 'SYN_PROBE_BOX1'. box.setName('SYN_PROBE_A') onto a taken name silently yields 'SYN_PROBE_A1'. This is why D2's collision gate MUST run before creation: detecting the clash afterwards is impossible without having already mutated the scene. Both create paths additionally re-assert the resulting name and destroy + raise on drift, as a second line of defence.",
+      "pinned_by": "runtime._create_node and the box branch of apply_fixture; F-5"
+    },
+    {
+      "id": "M5-F4",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "NetworkBox.destroy() defaults to KEEPING its members",
+      "anchor": "harness/notes/_m5_netbox_probe.py",
+      "detail": "Signature is destroy(self, destroy_contents=False). Probed empirically: after box.destroy() both member nodes were still alive in /stage. remove_fixture therefore enumerates members, destroys each explicitly, then destroys the box - which is also the shape D3 wants (enumerate, never pattern-match).",
+      "pinned_by": "F-2 (the stage between remove and re-apply is asserted empty of both nodes AND boxes)"
+    },
+    {
+      "id": "M5-F5",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "A String parm's authored value is unexpandedString(), not eval() - and eval() would have hidden a real bug",
+      "anchor": "harness/notes/_m5_runtime_probe.py; python/synapse/blocks/runtime.py::_read_parm",
+      "detail": "The camera node's DEFAULT primpath is '/cameras/$OS', which EVALUATES to '/cameras/camera' - byte-identical to what the fixture declares. Comparing on eval() would have reported the node already correct and never authored the literal, leaving the fixture's value unset while every check read green. Comparing on unexpandedString() is correct and idempotent. Caveat recorded: unexpandedString() raises hou.OperationFailed('Cannot get unexpanded string for parms with keyframes'), so _read_parm falls back to eval() for keyframed parms - a keyframed parm cannot be authored as a literal anyway.",
+      "pinned_by": "F-1 (the composed hash would differ if the literals were unauthored) + F-3"
+    },
+    {
+      "id": "M5-F6",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "A network box is USD-neutral - D1 and the F-1 oracle are compatible",
+      "anchor": "harness/notes/_m5_seam_probe.py",
+      "detail": "The fixture's baseline was cut by a builder that creates NO box; the reconciler creates one. Building the fixture with and without the box in the same session yields an identical composed hash. Had this been false, D1 and the oracle would have been in direct conflict and F-1 could never have been green. Checked before writing reconciler code, not assumed from the fixture's own note.",
+      "corroborates": "fixtures/solaris.basic.json:8 'boxes have zero effect on composed USD'"
+    },
+    {
+      "id": "M5-F7",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "The LOP display flag is one exclusive network-wide slot",
+      "anchor": "harness/notes/_m5_runtime_probe.py",
+      "detail": "setDisplayFlag(True) on node B clears it on node A. Two consequences. (1) A planner 'clear the display flag on the wrong node' list could never fire usefully, so it was removed rather than shipped as a check that cannot fail - Law 1. (2) A fixture that declares a display node cannot be honoured without taking the slot from whoever holds it, possibly an artist node outside the box. See R-M5-2.",
+      "pinned_by": "tests/test_blocks_reconciler.py::test_display_flag_drift_is_planned_and_there_is_no_clear_list; F-4b"
+    },
+    {
+      "id": "M5-F8",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "Comparing a destroyed hou.Node raises hou.ObjectWasDeleted",
+      "anchor": "harness/notes/_m5_runtime_probe.py",
+      "detail": "list.remove() on a destroyed node raises from Node.__eq__. The reconciler therefore captures member NAMES before any destroy pass and re-resolves each by name inside the loop; it never holds node handles across a destroy.",
+      "pinned_by": "runtime.remove_fixture (member_names captured before the loop) and the delete branch of apply_fixture"
+    },
+    {
+      "id": "M5-F9",
+      "tier": "VERIFIED-STATIC",
+      "title": "The committed h22 symbol table is stamped 22.0.397, not the fixture's target 22.0.368",
+      "anchor": "python/synapse/cognitive/tools/data/h22_symbol_table.json (houdini_version field)",
+      "detail": "The scout's phantom-API authority is a table introspected from a DIFFERENT point release than the one this fixture targets and this leg ran on. Not load-bearing for M5 - every API claim here is VERIFIED-RUNTIME on 22.0.368 by direct probe rather than table lookup - but it is a standing drift for anything that trusts the table on a 22.0.368 host.",
+      "escalated_as": "R-M5-4"
+    },
+    {
+      "id": "M5-F10",
+      "tier": "VERIFIED-RUNTIME",
+      "title": "The canonicalizer seam adds a RuntimeWarning to the autoresearch harness under plain Python",
+      "anchor": "harness/autoresearch/probes.py (the synapse.blocks.canonical import)",
+      "detail": "probes.py now imports from the synapse package, which triggers synapse/__init__.py's vendored-SDK ABI check. On stock Python 3.14 (runner.py --validate-only) that emits a RuntimeWarning to stderr, landing in run.err.log, which Get-AutoResearchState tails when there is no heartbeat yet. Cosmetic and truthful, but new noise in a harness that previously had none. Under hython (3.13) it does not fire. Recorded rather than suppressed - the warning is telling the truth about the environment."
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "R-M5-1",
+      "question": "The solaris.basic baseline embeds $HIP and is therefore machine-local. Re-baseline against a pinned synthetic $HIP, record the $HIP in the fixture, extend the canonicalizer to strip $HIP-derived paths, or leave it and keep pinning in the harness?",
+      "why_escalated": "Article I - a value judgement about what a number should be. Any of the four is defensible and each costs something different: re-baselining invalidates the committed sha256; recording $HIP documents the limit without removing it; a c3 canonicalizer rule is a re-baseline event for every future fixture; leaving it keeps the oracle honest but only on this machine.",
+      "shipped_meanwhile": "The harness pins $HIP, defaults to the repo's main working tree, refuses to run if the pin did not take, and records the pinned value in every evidence file. No fixture was modified.",
+      "evidence": "M5-F1"
+    },
+    {
+      "id": "R-M5-2",
+      "question": "Honouring a fixture's declared display node necessarily moves the network's ONE exclusive display flag, possibly off an artist's node. Keep honouring it (shipped), honour it only when the box is first created, or never take the flag from a node outside the box?",
+      "why_escalated": "This is the one place where 'make /stage match the definition' and 'artist nodes untouched, always' genuinely cannot both hold - they contend for the same single slot. It also changed what F-4 asserts, so it is not a hypothetical.",
+      "shipped_meanwhile": "Honour the fixture, and report the transfer by name: result['display_taken_from'] and ['display_taken_from_outside_box']. The invariant was SPLIT rather than softened - F-4 now pins that every AUTHORED property of the artist node is unchanged, and a NEW F-4b pins that the display transfer is reported instead of silent. Options 2 and 3 were rejected because both make the fixture's declared display permanently unsatisfiable when an outsider holds the flag, which would leave residual_ops=1 forever and break idempotence.",
+      "evidence": "M5-F7, oracle.invariants.entries F-4 / F-4b"
+    },
+    {
+      "id": "R-M5-3",
+      "question": "A node the artist dragged INTO our box, which the fixture does not declare, is currently DELETED on the next apply. Delete it (shipped), or eject it from the box and leave it in /stage?",
+      "why_escalated": "D1 says membership in the box IS ownership and D3 permits deleting box members, so deleting is the direct reading and is consistent with remove_fixture, which deletes members by ruling. But ejecting cannot destroy artist work under any circumstance, and the asymmetry matters: a wrong delete is recoverable only by Ctrl+Z, a wrong eject by dragging.",
+      "shipped_meanwhile": "Delete, chosen for consistency with remove_fixture's ruled behaviour, with every deletion reported in result['deleted'] and per_node carrying the reason 'not declared by the fixture'. No invariant distinguishes the two, so switching to eject is a small, contained change.",
+      "evidence": "python/synapse/blocks/plan.py (strays), tests/test_blocks_reconciler.py::test_stray_inside_the_box_is_deleted"
+    },
+    {
+      "id": "R-M5-4",
+      "question": "The committed h22 symbol table is stamped 22.0.397 while the installed and fixture-targeted build is 22.0.368. Regenerate for 368, accept 397 as the H22 authority, or stamp a build-range?",
+      "why_escalated": "Not M5's to decide and not load-bearing for M5, but it is a standing correctness question for synapse_scout's phantom gate on this host.",
+      "shipped_meanwhile": "Nothing. M5 verified every API claim by direct runtime probe on 22.0.368 rather than by table lookup.",
+      "evidence": "M5-F9"
+    }
+  ],
+
+  "not_done": {
+    "M6": "No phrase table, no alias routing, no 'basic solaris setup' string handling. Both tools take a fixture NAME.",
+    "panel_ui": "None. The verdict line is produced as structured data; nothing renders it yet.",
+    "usd_customdata": "None written. Out of scope per D1 (RFC-gated with Michael Gold).",
+    "new_fixtures": "None authored.",
+    "autoresearch": "Untouched except the canonicalizer seam itself.",
+    "merge": "Not merged, not pushed. Gate C is a human act (Constitution Article I)."
+  },
+
+  "drift": [
+    {
+      "id": "D-M5-1",
+      "doc": "AGENT_CONSTITUTION.md Article IV / synapse/host/__init__.py",
+      "expected": "host-specific code lives in synapse.host.*",
+      "found": "The hou-touching reconciler was placed at python/synapse/blocks/runtime.py, NOT under synapse.host. Reason: synapse/host/__init__.py eagerly imports daemon, transport, agent_loop and the anthropic-dependent chain, so a headless invariant run importing synapse.host.<anything> would drag the entire agent stack in. The enforced lint (tests/test_cognitive_boundary.py) covers synapse.cognitive only, and hou-touching modules already live outside host/ in server/ (31), panel/ (25), mcp/ (7), core/, memory/, inspector/, autonomy/, validation/, session/ and science/. Recorded as a deviation rather than silently adopted.",
+      "structural": false
+    },
+    {
+      "id": "D-M5-2",
+      "doc": "the M5 brief's F-4 as written",
+      "expected": "'artist node byte-untouched'",
+      "found": "Byte-untouched is unachievable for the display flag specifically, because it is one exclusive network-wide slot rather than a property of the node - see R-M5-2. F-4 was split into F-4 (every authored property unchanged) + F-4b (the transfer is reported by name). Test count increased; no assertion was removed.",
+      "structural": true
+    }
+  ],
+
+  "resume_token": {
+    "skip": [
+      "Do not re-probe the NetworkBox surface, display exclusivity, undo-in-hython, parm read-back, node type versioning, or box USD-neutrality - all six are VERIFIED-RUNTIME on 22.0.368 in harness/notes/_m5_*.py.",
+      "Do not re-derive the $HIP baseline dependence - it is M5-F1 with a reproduction in both directions.",
+      "Do not re-run the merge-base suite baseline - the 9 pre-existing failures are enumerated above with their producer."
+    ],
+    "next": [
+      "Await Joe on R-M5-1..R-M5-4.",
+      "Then M6 (the phrase table / alias routing that resolves a noun to a fixture name).",
+      "A panel surface for result['verdict'] is unbuilt and unruled."
+    ],
+    "reproduce": "hython harness/blocks/invariants_m5.py   (writes harness/blocks/runs/<stamp>/ + DONE|FAILED)"
+  }
+}

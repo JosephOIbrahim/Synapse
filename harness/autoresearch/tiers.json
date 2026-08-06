@@ -1,0 +1,4 @@
+{
+  "_note": "Model names live HERE only — code references tiers, never model strings. Swap the model by editing this file; nothing else changes.",
+  "scout": "deepseek-v4-flash:cloud"
+}

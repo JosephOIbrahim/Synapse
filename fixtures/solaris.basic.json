@@ -1,0 +1,69 @@
+{
+  "fixture": "solaris.basic",
+  "version": "1.0.0",
+  "target_build": "22.0.368",
+  "description": "Deterministic basic Solaris setup: geo -> dome light -> materials -> camera -> render settings. Linear chain in /stage, exact names, explicit wires and positions. The noun 'basic Solaris setup' resolves to THIS file.",
+  "ownership": {
+    "network_box": "BLOCKS_solaris_basic",
+    "note": "Reconciler concern. The verify probe does not create the box; boxes have zero effect on composed USD."
+  },
+  "provenance": {
+    "chain_evidence": "harness/autoresearch/runs/proposed_next_solaris_basic_fixture_20260805_181834/lop_truth_22.0.368.json",
+    "parm_evidence": [
+      "harness/autoresearch/runs/solaris_basic_20260805_181235/lop_truth_22.0.368.json",
+      "harness/autoresearch/runs/proposed_next_solaris_basic_fixture_20260805_181834/lop_truth_22.0.368.json"
+    ],
+    "epistemics": "Node types and parm NAMES are probe-verified against build 22.0.368. Parm VALUES and prim path conventions are design choices."
+  },
+  "baseline": {
+    "sha256": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+    "build": "22.0.368",
+    "canonicalizer": "c2",
+    "status": "verified",
+    "verified_run": "harness/autoresearch/runs/fixture_verify_20260805_182646",
+    "repeat": 3
+  },
+  "nodes": [
+    {
+      "type": "sopcreate",
+      "name": "geo",
+      "position": [0.0, 0.0],
+      "parms": { "primpath": "/geo" }
+    },
+    {
+      "type": "domelight",
+      "name": "dome_light",
+      "position": [0.0, -1.0],
+      "parms": { "primpath": "/lights/dome_light" }
+    },
+    {
+      "type": "materiallibrary",
+      "name": "materials",
+      "position": [0.0, -2.0],
+      "parms": {}
+    },
+    {
+      "type": "camera",
+      "name": "camera",
+      "position": [0.0, -3.0],
+      "parms": { "primpath": "/cameras/camera" }
+    },
+    {
+      "type": "karmarendersettings",
+      "name": "render_settings",
+      "position": [0.0, -4.0],
+      "parms": { "camera": "/cameras/camera" }
+    }
+  ],
+  "wires": [
+    ["dome_light", 0, "geo"],
+    ["materials", 0, "dome_light"],
+    ["camera", 0, "materials"],
+    ["render_settings", 0, "camera"]
+  ],
+  "display": "render_settings",
+  "queued_v1_1": {
+    "lighting_law": "intensity stays 1.0; brightness via exposure only. Verified encoded names: xn__inputsexposure_control_wcb (set to 'set'), xn__inputsexposure_vya (stops value).",
+    "resolution_pins": "karmarendersettings resolutionx / resolutiony verified; values are a product decision."
+  }
+}

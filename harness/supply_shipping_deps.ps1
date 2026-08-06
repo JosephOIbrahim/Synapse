@@ -13,13 +13,13 @@
 # 'pywintypes'` (tests/test_passthrough_hygiene.py, tests/test_port_wave_scene1.py).
 # pywin32 is a SEVENTH unshipped shipping dependency. Measured, not inferred.
 #
-# UNVERIFIED, and deliberately labelled so: pywin32 does not lay out flat under
-# `pip install --target`. It writes win32\, win32com\, pythonwin\ and
-# pywin32_system32\, and pywintypes.py lands in win32\lib\ -- so $deps alone on
-# PYTHONPATH is NOT expected to resolve it. The extra path emitted at the bottom
-# is the obvious candidate and has NOT been probed on this box; a live MONETA
-# harness held the interpreter when this line was written. Do not cite pywin32
-# as resolved until -Verify prints OK for pywintypes.
+# VERIFIED 2026-08-05: pywin32 does not lay out flat under `pip install
+# --target`. It writes win32\, win32com\, pythonwin\ and pywin32_system32\, and
+# pywintypes.py lands in win32\lib\ -- so $deps alone on PYTHONPATH does NOT
+# resolve it. The three entries below do; -Verify prints OK for pywintypes.
+# harness\measure_shipping_residual.ps1 carries the identical list. If you
+# change one, change both, or the instrument measures a different environment
+# than the supplier built.
 #
 # Houdini's own site-packages is never touched. Reverted by deleting .hython_deps.
 param([switch]$Verify)

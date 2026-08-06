@@ -21,7 +21,12 @@ if (-not (Test-Path $py))   { "NOT FOUND: $py" | Out-File $log; exit 2 }
 if (-not (Test-Path $deps)) { "NO DEPS: run harness\supply_shipping_deps.ps1 first" | Out-File $log; exit 2 }
 
 Set-Location $root
-$env:PYTHONPATH = "$deps;$root\python;$root"
+# pywin32 does not lay out flat under `pip install --target`: pywintypes.py
+# lands in win32\lib\. VERIFIED 2026-08-05 -- supply_shipping_deps.ps1 -Verify
+# prints OK for pywintypes with exactly these three entries present. Keep this
+# list identical to the one in supply_shipping_deps.ps1 or the instrument
+# measures a different environment than the one the supplier built.
+$env:PYTHONPATH = "$deps;$deps\win32;$deps\win32\lib;$root\python;$root"
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 
 # -rfE is the whole point: f = failed identities, E = errored identities.

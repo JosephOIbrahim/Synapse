@@ -196,6 +196,55 @@ logger = logging.getLogger("synapse-mcp")
 
 
 # ---------------------------------------------------------------------------
+# Off-loop dispatch — on an executor WE own
+# ---------------------------------------------------------------------------
+# Every tool dispatch used `await _off_loop(...)`, which runs on the
+# event loop's DEFAULT executor. asyncio.run() calls shutdown_default_executor()
+# on the way out. Under CPython that is harmless, because the next asyncio.run()
+# builds a fresh loop with a fresh executor. Houdini ships its own event loop
+# (haio.HoudiniEventLoop) and hands back a PERSISTENT one, so the shutdown is
+# permanent: the first asyncio.run() in a hython process disables to_thread for
+# the entire process.
+#
+# Probed on Houdini 22.0.368 / Python 3.13.10, no SYNAPSE code involved:
+#     run #1: ok:1         loop_id=6234879664
+#     run #2: FAIL RuntimeError: Executor shutdown has been called
+#     run #3: FAIL RuntimeError: Executor shutdown has been called
+# while an EXPLICIT ThreadPoolExecutor kept working across all three.
+#
+# Visible as 20 failures in tests/test_port_wave_scene1.py on the shipping
+# interpreter and zero on the 3.14 gate, because stock asyncio makes a new loop
+# each time and hides it. Depending on a process-global that any library may
+# shut down is the defect; who shut it down is a detail.
+_DISPATCH_EXECUTOR: "concurrent.futures.ThreadPoolExecutor | None" = None
+
+
+def _dispatch_executor():
+    """The executor this module owns. Created once, never handed to asyncio."""
+    global _DISPATCH_EXECUTOR
+    if _DISPATCH_EXECUTOR is None:
+        import concurrent.futures
+        _DISPATCH_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
+            max_workers=4, thread_name_prefix="synapse-mcp-dispatch",
+        )
+    return _DISPATCH_EXECUTOR
+
+
+async def _off_loop(fn, *args, **kwargs):
+    """asyncio.to_thread's contract, on an executor nothing else can shut down.
+
+    Drop-in for `await _off_loop(fn, *args)`. Deliberately does NOT fall
+    back to asyncio.to_thread on error: a silent fallback to the broken path is
+    how this stayed invisible for so long.
+    """
+    import functools
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        _dispatch_executor(), functools.partial(fn, *args, **kwargs)
+    )
+
+
+# ---------------------------------------------------------------------------
 # WebSocket Client
 # ---------------------------------------------------------------------------
 
@@ -615,7 +664,7 @@ async def _inspector_call_tool(arguments: dict) -> list:
 
     try:
         dispatcher = _get_inspector_dispatcher()
-        result = await asyncio.to_thread(
+        result = await _off_loop(
             dispatcher.execute, _INSPECTOR_TOOL_NAME, kwargs,
         )
     except ConnectionError as e:
@@ -716,7 +765,7 @@ async def _scout_call_tool(arguments: dict) -> list:
             kwargs[opt] = arguments[opt]
     try:
         dispatcher = _get_scout_dispatcher()
-        result = await asyncio.to_thread(
+        result = await _off_loop(
             dispatcher.execute, _SCOUT_TOOL_NAME, kwargs,
         )
     except Exception as e:
@@ -728,6 +777,123 @@ async def _scout_call_tool(arguments: dict) -> list:
     if isinstance(result, _AgentToolError):
         return [TextContent(type="text", text=_dumps_str({
             "error": result.error_type, "message": result.error_message,
+        }))]
+
+    return [TextContent(type="text", text=_dumps_str(result))]
+
+
+# ---------------------------------------------------------------------------
+# BLOCKS reconciler (M5) -- synapse_apply_fixture / synapse_remove_fixture.
+#
+# Same port pattern as the Inspector above, and for the same reason: the tool
+# is pure Python in the cognitive layer, it composes a script, and ONE
+# execute_python round-trip carries it into the Houdini process. The
+# difference from the Inspector is that the injected script is three lines
+# calling synapse.blocks.runtime -- the reconciler implementation lives in the
+# tree as importable code, not as a template string, because the F-1..F-5
+# invariant harness imports and runs that same module under headless hython.
+# One implementation, two callers.
+#
+# Own Dispatcher singleton + own transport registry, matching the Inspector /
+# Scout / port-wave precedent: each family closes over the asyncio loop
+# independently rather than racing over one global.
+# ---------------------------------------------------------------------------
+from synapse.blocks.transport import (
+    configure_transport as _blocks_configure_transport,
+)
+from synapse.cognitive.tools.apply_fixture import (
+    APPLY_FIXTURE_SCHEMA as _APPLY_FIXTURE_SCHEMA,
+    REMOVE_FIXTURE_SCHEMA as _REMOVE_FIXTURE_SCHEMA,
+    apply_fixture as _apply_fixture_tool,
+    remove_fixture as _remove_fixture_tool,
+)
+
+_BLOCKS_APPLY_TOOL_NAME = "synapse_apply_fixture"
+_BLOCKS_REMOVE_TOOL_NAME = "synapse_remove_fixture"
+_BLOCKS_TOOL_NAMES = frozenset({
+    _BLOCKS_APPLY_TOOL_NAME, _BLOCKS_REMOVE_TOOL_NAME,
+})
+
+# A cold apply creates and cooks LOP nodes; the Inspector only reads. 120s of
+# outer headroom over the tool's own 60s default keeps a slow first cook from
+# being cancelled mid-flight (same reasoning as _transport_outer_budget).
+_BLOCKS_OUTER_HEADROOM = 120.0
+
+_blocks_dispatcher: _Dispatcher | None = None
+
+
+def _get_blocks_dispatcher() -> _Dispatcher:
+    """Build the BLOCKS Dispatcher singleton on first use.
+
+    Must be called from inside a running asyncio event loop: the sync
+    transport closure captures the loop so it can marshal send_command back
+    onto it via run_coroutine_threadsafe.
+    """
+    global _blocks_dispatcher
+    if _blocks_dispatcher is not None:
+        return _blocks_dispatcher
+
+    loop = asyncio.get_running_loop()
+
+    def _sync_transport(code: str, *, timeout=None) -> str:
+        wrapped = _inspector_wrap_stdout_capture(code)
+        fut = asyncio.run_coroutine_threadsafe(
+            send_command("execute_python", {"content": wrapped, "atomic": False}),
+            loop,
+        )
+        effective = (timeout if timeout is not None else 60.0) + _BLOCKS_OUTER_HEADROOM
+        try:
+            data = fut.result(timeout=effective)
+        except Exception as e:
+            raise RuntimeError(f"execute_python transport failed: {e}") from e
+        return (data or {}).get("result", "") or ""
+
+    _blocks_configure_transport(_sync_transport)
+    _blocks_dispatcher = _Dispatcher(
+        is_testing=True,
+        tools={
+            _BLOCKS_APPLY_TOOL_NAME: _apply_fixture_tool,
+            _BLOCKS_REMOVE_TOOL_NAME: _remove_fixture_tool,
+        },
+        schemas={
+            _BLOCKS_APPLY_TOOL_NAME: _APPLY_FIXTURE_SCHEMA,
+            _BLOCKS_REMOVE_TOOL_NAME: _REMOVE_FIXTURE_SCHEMA,
+        },
+    )
+    return _blocks_dispatcher
+
+
+async def _blocks_call_tool(name: str, arguments: dict) -> list:
+    """Handle a BLOCKS tool via the cognitive Dispatcher.
+
+    A name collision is NOT an error path: it comes back as an ordinary
+    result with status == "collision" and ops == 0, and is returned as JSON
+    like any other success. Only transport/fixture/runtime failures become the
+    error envelope.
+    """
+    kwargs: dict = {"fixture": arguments.get("fixture", "")}
+    if arguments.get("stage_path") is not None:
+        kwargs["stage_path"] = arguments["stage_path"]
+    if arguments.get("timeout") is not None:
+        kwargs["timeout"] = float(arguments["timeout"])
+
+    try:
+        dispatcher = _get_blocks_dispatcher()
+        result = await _off_loop(dispatcher.execute, name, kwargs)
+    except ConnectionError as e:
+        return [TextContent(type="text", text=f"Couldn't reach Synapse — {e}")]
+    except Exception as e:
+        logger.exception("Unexpected error dispatching %s", name)
+        return [TextContent(type="text", text=_dumps_str({
+            "error": type(e).__name__, "message": str(e),
+            "fixture": kwargs.get("fixture"),
+        }))]
+
+    if isinstance(result, _AgentToolError):
+        return [TextContent(type="text", text=_dumps_str({
+            "error": result.error_type,
+            "message": result.error_message,
+            "fixture": kwargs.get("fixture"),
         }))]
 
     return [TextContent(type="text", text=_dumps_str(result))]
@@ -857,14 +1023,16 @@ def _ported_error_text(err: _AgentToolError) -> str:
 async def _ported_call_tool(name: str, arguments: dict) -> list:
     """Handle a port-wave tool via the cognitive Dispatcher.
 
-    Same shape as _inspector_call_tool: asyncio.to_thread runs the dispatch
-    off the event loop; the transport closure posts the WS round-trip back
-    onto it. Dispatcher never raises — failures return as AgentToolError and
-    are mapped onto the legacy error envelope.
+    Same shape as _inspector_call_tool: _off_loop runs the dispatch off the
+    event loop, on an executor this module owns. NOT asyncio.to_thread — that
+    uses the default executor, which asyncio.run() shuts down permanently under
+    Houdini's persistent loop; see _off_loop. The transport closure posts the WS
+    round-trip back onto it. Dispatcher never raises — failures return as
+    AgentToolError and are mapped onto the legacy error envelope.
     """
     try:
         dispatcher = _get_ported_dispatcher()
-        result = await asyncio.to_thread(dispatcher.execute, name, arguments)
+        result = await _off_loop(dispatcher.execute, name, arguments)
         if isinstance(result, _AgentToolError):
             text = _ported_error_text(result)
             if text.startswith("Something unexpected"):
@@ -939,6 +1107,19 @@ async def list_tools():
         inputSchema=_SCOUT_TOOL_SCHEMA,
     ))
 
+    # BLOCKS reconciler (M5) -- local Python composing one execute_python
+    # round-trip into synapse.blocks.runtime. Dispatched via a dedicated
+    # branch in call_tool(), same as the Inspector.
+    for _blocks_name, _blocks_schema in (
+        (_BLOCKS_APPLY_TOOL_NAME, _APPLY_FIXTURE_SCHEMA),
+        (_BLOCKS_REMOVE_TOOL_NAME, _REMOVE_FIXTURE_SCHEMA),
+    ):
+        tools.append(Tool(
+            name=_blocks_name,
+            description=_blocks_schema["description"],
+            inputSchema=_blocks_schema["input_schema"],
+        ))
+
     return tools
 
 
@@ -968,6 +1149,11 @@ async def call_tool(name: str, arguments: dict):
     # Scout tool -- pure-Python federated retrieval + phantom-API grounding.
     if name == _SCOUT_TOOL_NAME:
         return await _scout_call_tool(arguments)
+
+    # BLOCKS reconciler (M5) -- fixture apply/remove via the cognitive
+    # Dispatcher and one execute_python round-trip.
+    if name in _BLOCKS_TOOL_NAMES:
+        return await _blocks_call_tool(name, arguments)
 
     # G1 port waves -- ported registry tools route through the cognitive
     # Dispatcher (Strangler Fig). Same command_type + payload + response

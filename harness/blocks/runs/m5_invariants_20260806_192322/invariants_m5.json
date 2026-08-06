@@ -1,0 +1,254 @@
+{
+  "crash": null,
+  "entries": [
+    {
+      "detail": {
+        "with_dome_light": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+        "without": "c61332e63c733a86f573bbf0e595fb58e131c7a8ba18b2f18f24e372262fad91"
+      },
+      "id": "C-1",
+      "status": "PASS",
+      "title": "composed hash CAN disagree (node removed from the chain)",
+      "ts": "2026-08-06T19:23:22+00:00"
+    },
+    {
+      "detail": {
+        "applied_ops": 0,
+        "drifted_ops": 1
+      },
+      "id": "C-2",
+      "status": "PASS",
+      "title": "op count CAN be non-zero (one parm drifted)",
+      "ts": "2026-08-06T19:23:22+00:00"
+    },
+    {
+      "detail": {
+        "after": "b053a2384d793c9797999ec579fc307ec86f5d1ecf06a6ff87e036019154213b",
+        "before": "84002caf6bd60c3c18e2e7890ae511dc97c138d83094ff4aa2367359a59b7402"
+      },
+      "id": "C-3",
+      "status": "PASS",
+      "title": "stage signature CAN change (one node nudged)",
+      "ts": "2026-08-06T19:23:23+00:00"
+    },
+    {
+      "detail": {
+        "blocked": false,
+        "camera_is_member": true
+      },
+      "id": "C-4",
+      "status": "PASS",
+      "title": "collision gate is silent when the name is INSIDE the box",
+      "ts": "2026-08-06T19:23:23+00:00"
+    },
+    {
+      "detail": {
+        "baseline": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+        "canonicalizer": "c2",
+        "fixture_canonicalizer": "c2"
+      },
+      "id": "C-5",
+      "status": "PASS",
+      "title": "baseline under test is the fixture's committed sha256",
+      "ts": "2026-08-06T19:23:23+00:00"
+    },
+    {
+      "detail": {
+        "applied": true,
+        "baseline": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+        "box_members": [
+          "camera",
+          "dome_light",
+          "geo",
+          "materials",
+          "render_settings"
+        ],
+        "hash": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+        "ops": 6,
+        "status": "built",
+        "verdict": "solaris.basic built in BLOCKS_solaris_basic - 5 node(s), 6 op(s)."
+      },
+      "id": "F-1",
+      "status": "PASS",
+      "title": "apply on a clean stage reproduces the committed baseline",
+      "ts": "2026-08-06T19:23:23+00:00"
+    },
+    {
+      "detail": {
+        "baseline": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+        "hash_after_reapply": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+        "reapply_status": "built",
+        "remove_ops": 6,
+        "remove_verdict": "solaris.basic removed - 5 node(s) and the box BLOCKS_solaris_basic deleted.",
+        "removed": [
+          "camera",
+          "dome_light",
+          "geo",
+          "materials",
+          "render_settings"
+        ],
+        "stage_between": {
+          "boxes": {},
+          "nodes": {}
+        }
+      },
+      "id": "F-2",
+      "status": "PASS",
+      "title": "apply -> remove -> apply reproduces the same hash",
+      "ts": "2026-08-06T19:23:23+00:00"
+    },
+    {
+      "detail": {
+        "changed": [],
+        "created": [],
+        "deleted": [],
+        "hash_after": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+        "hash_before": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+        "ops": 0,
+        "status": "noop",
+        "verdict": "solaris.basic already matches BLOCKS_solaris_basic - no changes (0 ops)."
+      },
+      "id": "F-3",
+      "status": "PASS",
+      "title": "apply on an already-applied stage is a true no-op",
+      "ts": "2026-08-06T19:23:23+00:00"
+    },
+    {
+      "detail": {
+        "applied": true,
+        "authored_after": {
+          "bypass": false,
+          "comment": "artist owned - do not touch",
+          "inputs": [],
+          "parms": {},
+          "position": [
+            7.5,
+            3.25
+          ],
+          "type": "null"
+        },
+        "authored_before": {
+          "bypass": false,
+          "comment": "artist owned - do not touch",
+          "inputs": [],
+          "parms": {},
+          "position": [
+            7.5,
+            3.25
+          ],
+          "type": "null"
+        },
+        "authored_unchanged": true,
+        "baseline": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+        "box_members": [
+          "camera",
+          "dome_light",
+          "geo",
+          "materials",
+          "render_settings"
+        ],
+        "composed_hash": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+        "display_after": false,
+        "display_before": true,
+        "hash_matches_baseline_note": "recorded, not gated: a node off the display chain does not reach the composed stage",
+        "status": "built",
+        "verdict": "solaris.basic built in BLOCKS_solaris_basic - 5 node(s), 6 op(s)."
+      },
+      "id": "F-4",
+      "status": "PASS",
+      "title": "an artist node outside the box keeps every authored property",
+      "ts": "2026-08-06T19:23:23+00:00"
+    },
+    {
+      "detail": {
+        "artist_held_display_before": true,
+        "artist_holds_display_after": false,
+        "display_taken_from": "artist_wip_null",
+        "from_outside_box": true,
+        "note": "the display flag is ONE slot per network; honouring the fixture's declared display node necessarily moves it. See for_ruling in receipts/M5.json."
+      },
+      "id": "F-4b",
+      "status": "PASS",
+      "title": "taking the exclusive display flag is reported, not silent",
+      "ts": "2026-08-06T19:23:23+00:00"
+    },
+    {
+      "detail": {
+        "applied": false,
+        "collisions": [
+          {
+            "existing_type": "null",
+            "fixture_type": "camera",
+            "name": "camera",
+            "reason": "name already exists in the stage outside the box"
+          }
+        ],
+        "ops": 0,
+        "signature_after": "11e7077a39386d0ca893c6b3c0689d9980ea7d3fdd0d13f2990668fc0e3fce8a",
+        "signature_before": "11e7077a39386d0ca893c6b3c0689d9980ea7d3fdd0d13f2990668fc0e3fce8a",
+        "signature_unchanged": true,
+        "stage_after": {
+          "boxes": {},
+          "nodes": {
+            "camera": {
+              "bypass": false,
+              "comment": "artist owned - do not touch",
+              "display": true,
+              "inputs": [],
+              "parms": {},
+              "position": [
+                7.5,
+                3.25
+              ],
+              "type": "null"
+            }
+          }
+        },
+        "stage_before": {
+          "boxes": {},
+          "nodes": {
+            "camera": {
+              "bypass": false,
+              "comment": "artist owned - do not touch",
+              "display": true,
+              "inputs": [],
+              "parms": {},
+              "position": [
+                7.5,
+                3.25
+              ],
+              "type": "null"
+            }
+          }
+        },
+        "status": "collision",
+        "verdict": "solaris.basic NOT applied - 1 name collision(s) outside BLOCKS_solaris_basic: camera. Nothing was created or deleted."
+      },
+      "id": "F-5",
+      "status": "PASS",
+      "title": "a name clash outside the box mutates nothing and reports",
+      "ts": "2026-08-06T19:23:23+00:00"
+    }
+  ],
+  "meta": {
+    "baseline": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+    "box": "BLOCKS_solaris_basic",
+    "build": "22.0.368",
+    "build_matches_target": true,
+    "canonicalizer": "c2",
+    "cwd": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\m5-reconciler",
+    "finished": "2026-08-06T19:23:23+00:00",
+    "fixture": "solaris.basic",
+    "fixture_version": "1.0.0",
+    "harness": "m5_invariants",
+    "hip_after_pin": "C:/Users/User/SYNAPSE",
+    "hip_before_pin": "C:/Users/User/SYNAPSE/.claude/worktrees/m5-reconciler",
+    "hip_pin_effective": true,
+    "hip_pinned_to": "C:/Users/User/SYNAPSE",
+    "repo": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\m5-reconciler",
+    "started": "2026-08-06T19:23:22+00:00",
+    "synapse_package": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\m5-reconciler\\python\\synapse",
+    "target_build": "22.0.368",
+    "version": "1.0.0"
+  }
+}
