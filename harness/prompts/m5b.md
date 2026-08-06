@@ -4,12 +4,12 @@ You are ORCHESTRATOR for M5b — closing the four M5 rulings. Read harness/AGENT
 
 === FIRST ACTION — VERIFY YOUR BASE ===
 
-M5b MUST build on M5's code. The orchestrator uses one manifest-level base and does NOT honour a per-leg base field, so your worktree may have been cut from the wrong branch. Before anything else:
+This leg was dispatched once on the WRONG base (2026-08-06, orchestrator manifest base feat/repair-heats-01) and was stopped by hand. The worktree branch blocks/m5b-rulings has since been reset onto 87927076. The orchestrator uses one manifest-level base and does NOT honour a per-leg base field, so verify before anything else:
 
     git log --oneline -1
     git merge-base --is-ancestor 87927076 HEAD ; echo $?
 
-If 87927076 is NOT an ancestor of HEAD, you are on the wrong base. Rebase onto blocks/m5-reconciler (or reset your branch to it) before writing a line, and record what you found in the receipt under drift[]. Do not proceed on a base that lacks python/synapse/blocks/ — a "clean" run there would silently reimplement M5 from scratch.
+If 87927076 is NOT an ancestor of HEAD, or python/synapse/blocks/runtime.py does not exist, STOP. Do not write a line and do not attempt a fix — report it in the receipt under drift[] and halt. A "clean" run on that base would silently reimplement M5 from scratch, which is worse than no run at all.
 
 === HONOUR THE RESUME TOKEN ===
 
