@@ -28,7 +28,7 @@ except ImportError:  # plain Python — validation / unit tests only
 _REPO_ROOT = _Path(__file__).resolve().parents[2]
 
 # ---------------------------------------------------------------- canonicalizer
-# The c2 canonicalizer now lives in the PRODUCT tree, at
+# The c3 canonicalizer now lives in the PRODUCT tree, at
 # synapse/blocks/canonical.py, and this harness imports it. Two copies of the
 # filter list would be two silently different oracles: a fixture's committed
 # baseline sha256 is only meaningful against a named canonicalizer, and the
@@ -45,7 +45,22 @@ from synapse.blocks.canonical import (  # noqa: E402
     C1_RULES as _C1_RULES,
     CANONICALIZER_VERSION,
     canonicalize_usda,
+    houdini_env_map,
 )
+
+
+def _env_map() -> dict:
+    """The c3 environment map for this process, or {} under plain Python.
+
+    R-M5-1: a baseline cut without this is machine-local (finding M5-F1) —
+    $HIP reaches the composed stage already expanded, so rule 5 has nothing to
+    match unless the environment is handed to it. Every hash produced in this
+    module goes through here; there is no second path.
+    """
+    if not HOU_AVAILABLE:
+        return {}
+    return houdini_env_map(hou.text.expandString)
+
 
 _PROBE_NODE = "ar_probe"        # parm-probe scratch node name
 _CHAIN_PREFIX = "arc"           # chain nodes: arc<i>_<type> — exact, never auto-incremented
@@ -181,7 +196,8 @@ def _build_chain_once(chain: list, stage) -> dict:
                     "tail_errors": list(prev.errors()),
                     "per_node": per_node}
 
-        canon = canonicalize_usda(composed.Flatten().ExportToString())
+        canon = canonicalize_usda(composed.Flatten().ExportToString(),
+                                  env=_env_map())
         return {
             "sha256": hashlib.sha256(canon.encode("utf-8")).hexdigest(),
             "line_count": canon.count("\n"),
@@ -238,6 +254,10 @@ def probe_chain_hash(chain: list, name: str, repeat: int) -> dict:
                           for p in passes for pn in p["per_node"]),
         "canonicalizer": CANONICALIZER_VERSION,
         "canonicalizer_rules": list(_C1_RULES),
+        # Law 2: the environment a c3 hash was cut against travels WITH the
+        # hash. A baseline whose env is unrecorded is machine-local and cannot
+        # be told apart from one that is not.
+        "canonicalizer_env": _env_map(),
     }
 
     if not stable:
@@ -306,7 +326,8 @@ def _build_fixture_once(fx: dict, stage) -> dict:
             return {"error": "stage() returned None at fixture tail",
                     "tail_errors": list(tail.errors()), "per_node": per_node}
 
-        canon = canonicalize_usda(composed.Flatten().ExportToString())
+        canon = canonicalize_usda(composed.Flatten().ExportToString(),
+                                  env=_env_map())
         return {"sha256": hashlib.sha256(canon.encode("utf-8")).hexdigest(),
                 "line_count": canon.count("\n"),
                 "per_node": per_node,
@@ -368,6 +389,10 @@ def probe_fixture_hash(path: str, name: str, repeat: int) -> dict:
                           for p in passes for pn in p["per_node"]),
         "canonicalizer": CANONICALIZER_VERSION,
         "canonicalizer_rules": list(_C1_RULES),
+        # Law 2: the environment a c3 hash was cut against travels WITH the
+        # hash. A baseline whose env is unrecorded is machine-local and cannot
+        # be told apart from one that is not.
+        "canonicalizer_env": _env_map(),
     }
 
     if not stable:

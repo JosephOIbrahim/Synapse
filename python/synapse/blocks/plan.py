@@ -40,6 +40,24 @@ The D2 and D3 guarantees are structural properties of this file:
       is ever derived from ``outside_names`` or from a name pattern. Grep
       this file for ``outside_names``: it appears only in collision
       detection, never in ``delete_nodes``.
+
+R-M5-3 (ruled 2026-08-06) -- eject, do not delete
+-------------------------------------------------
+A box member the fixture does NOT declare is a node the artist dragged in. It
+goes to ``eject_nodes``, never to ``delete_nodes``: box membership was
+established by the artist's drag, not by the fixture's declaration, and the
+reconciler must not destroy what it never created. The asymmetry decides it --
+a wrong delete is recoverable only by Ctrl+Z, a wrong eject by one drag.
+
+``delete_nodes`` therefore holds exactly one class now: a DECLARED name whose
+live node is the wrong type, which must be destroyed so it can be recreated
+correctly. ``remove_fixture`` is untouched and still deletes members -- that
+is an explicit "remove this fixture" instruction and a different act.
+
+An ejected node cannot collide on the next apply: ``strays`` are by definition
+names the fixture does not declare, so moving one into ``outside_names`` can
+never match a declared name in ``collisions()``. That is what makes ejection
+idempotent rather than a permanent one-op churn.
 """
 
 from __future__ import annotations
@@ -167,6 +185,7 @@ class Plan:
     create_box: bool = False
     create_nodes: List[str] = field(default_factory=list)
     delete_nodes: List[str] = field(default_factory=list)
+    eject_nodes: List[str] = field(default_factory=list)
     recreate_nodes: List[str] = field(default_factory=list)
     set_parms: List[Dict[str, Any]] = field(default_factory=list)
     set_inputs: List[Dict[str, Any]] = field(default_factory=list)
@@ -188,6 +207,7 @@ class Plan:
             (1 if self.create_box else 0)
             + len(self.create_nodes)
             + len(self.delete_nodes)
+            + len(self.eject_nodes)
             + len(self.set_parms)
             + len(self.set_inputs)
             + len(self.set_positions)
@@ -202,6 +222,7 @@ class Plan:
             "create_box": self.create_box,
             "create_nodes": list(self.create_nodes),
             "delete_nodes": list(self.delete_nodes),
+            "eject_nodes": list(self.eject_nodes),
             "recreate_nodes": list(self.recreate_nodes),
             "set_parms": list(self.set_parms),
             "set_inputs": list(self.set_inputs),
@@ -224,8 +245,9 @@ def build_plan(
     Fails when: the stage drifts from the definition in any dimension the
     fixture pins -- a missing node, a wrong node type inside the box, a parm
     the artist retyped, a wire pulled, a node dragged, the display flag moved,
-    or a stray node inside the box. Each of those produces a specific entry;
-    a stage that matches produces ``ops == 0``.
+    or a stray node inside the box -- the last of which produces an EJECTION,
+    not a delete (R-M5-3). Each of those produces a specific entry; a stage
+    that matches produces ``ops == 0``.
     """
     box = box_name if box_name is not None else snapshot.get("box_name")
     plan = Plan(box_name=box or "")
@@ -256,7 +278,11 @@ def build_plan(
     missing = [n for n in order if n not in members]
 
     plan.recreate_nodes = list(retype)
-    plan.delete_nodes = strays + retype
+    # R-M5-3: strays are EJECTED (membership dropped, node left alive), never
+    # deleted. Only a declared-but-wrong-type node is destroyed, and only so it
+    # can be recreated as the type the fixture asks for.
+    plan.eject_nodes = list(strays)
+    plan.delete_nodes = list(retype)
     plan.create_nodes = [n for n in order if n in missing or n in retype]
 
     # -- reconcile the members that survive in place ------------------------

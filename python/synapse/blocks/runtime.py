@@ -10,8 +10,13 @@ the definition":
     partially applied /  -> reconcile inside the box to match; report
     drifted box contents    what changed
     artist nodes present -> untouched, always (D2/D3)
+    artist node dragged  -> EJECTED from the box and LEFT ALIVE in the stage,
+    into the box            never deleted (R-M5-3)
 
 ``remove_fixture(name)`` deletes the box members and the box. Nothing else.
+That is unchanged by R-M5-3 and deliberately so: "remove this fixture" is an
+explicit instruction from the artist, not the reconciler deciding on its own
+that a node it did not create should stop existing.
 
 The four rulings, and where each one lives in this file
 ------------------------------------------------------
@@ -28,6 +33,8 @@ D3  Delete scope = box members only. Deletion candidates enter the plan from
     ``snapshot["box_members"]``, which ``observe()`` builds by enumerating
     ``box.nodes(recurse=False)`` and keeping only direct children of the
     stage. No name pattern is ever matched against the wider graph.
+    NARROWED by R-M5-3: within that scope, only a DECLARED-but-wrong-type
+    member is destroyed. An UNDECLARED member is ejected instead.
 
 D4  Seam = Dispatcher tool. Mounted by ``synapse.cognitive.tools.apply_fixture``
     (pure, zero-hou) which ships a three-line script into the Houdini process
@@ -42,6 +49,15 @@ probed 2026-08-06 -- see harness/notes/_m5_*.py)
   below re-asserts the resulting name anyway, as a second line of defence.
 * ``NetworkBox.destroy(destroy_contents=False)`` -- the default leaves members
   alive. ``remove_fixture`` destroys members explicitly and then the box.
+* ``NetworkBox.removeItem(item)`` exists on 22.0.368 with the signature
+  ``(self, item: NetworkMovableItem) -> void``. It drops membership and leaves
+  the node alive in the stage with every authored property intact -- but it
+  RAISES ``hou.OperationFailed`` when handed a non-member, so the eject pass
+  reads the current membership set by name first (probed 2026-08-06,
+  ``harness/notes/_m5b_eject_probe.py``).
+* ``box.fitAroundContents()`` does NOT re-capture an ejected node, even one
+  positioned inside the box's rectangle. Membership is explicit, not spatial,
+  so the cosmetic fit at the end of an apply cannot silently undo an ejection.
 * The LOP display flag is EXCLUSIVE: setting it clears every sibling.
 * A String parm's authored value is ``unexpandedString()``, not ``eval()``.
   ``camera``'s default ``primpath`` is ``/cameras/$OS``, which EVALUATES to
@@ -316,8 +332,27 @@ def _apply_position(node, spec: Dict[str, Any]) -> None:
         node.setPosition(hou.Vector2(float(pos[0]), float(pos[1])))
 
 
-def _verdict(status: str, fixture_name: str, plan: Plan, result: Dict[str, Any]) -> str:
-    """The one line the panel renders. Built from structure, never prose."""
+def _verdict(status: str, fixture_name: str, plan: Plan,
+             result: Dict[str, Any]) -> str:
+    """The one line the panel renders. Built from structure, never prose.
+
+    R-M5-3: an ejection is APPENDED as its own sentence rather than folded into
+    the counts. Two reasons. The artist has to be told that a node they put in
+    the box is no longer in it -- silence there is the Law 3 defect wearing a
+    coat. And appending leaves every no-ejection verdict byte-identical to what
+    M5 shipped, so the F-1..F-5 strings recorded in receipts/M5.json still hold.
+    """
+    line = _verdict_base(status, fixture_name, plan, result)
+    ejected = list(result.get("ejected") or [])
+    if ejected:
+        line += (" %d node(s) not declared by the fixture were ejected from "
+                 "the box and left in the stage: %s."
+                 % (len(ejected), ", ".join(ejected)))
+    return line
+
+
+def _verdict_base(status: str, fixture_name: str, plan: Plan,
+                  result: Dict[str, Any]) -> str:
     box = result.get("box", "")
     if status == STATUS_COLLISION:
         names = ", ".join(c["name"] for c in plan.collisions)
@@ -364,6 +399,11 @@ def _base_result(name: str, fx: Dict[str, Any], box_name: str,
         "per_node": [],
         "created": [],
         "deleted": [],
+        # R-M5-3: box members the fixture does not declare. Membership dropped,
+        # node LEFT ALIVE in the stage. Distinct from "deleted" on purpose --
+        # the caller must be able to tell "we destroyed it" from "we let go of
+        # it", because only one of those is recoverable by a drag.
+        "ejected": [],
         "changed": [],
         "unmanaged_inputs": [],
         "missing_parms": [],
@@ -456,8 +496,40 @@ def apply_fixture(
                     % (box_name, actual)
                 )
 
-        # 2. deletions. Candidates were enumerated FROM THE BOX (D3). Handles
-        #    are resolved and dropped inside the loop; none survives it.
+        # 2. EJECTIONS (R-M5-3). A member the fixture does not declare was put
+        #    there by the artist's drag, not by us, so we drop the membership
+        #    and leave the node alive in /stage. Runs BEFORE the destroy pass
+        #    so that if a later step raises, the node that must survive already
+        #    has.
+        #
+        #    VERIFIED-RUNTIME 22.0.368 (harness/notes/_m5b_eject_probe.py):
+        #    box.removeItem(node) leaves the node in the stage with every
+        #    authored property intact and drops it from box.nodes(); but
+        #    removeItem on a NON-member raises hou.OperationFailed. Hence the
+        #    membership set below -- read by NAME, never by holding node
+        #    handles across a mutation (M5-F8).
+        current_members = {n.name() for n in box.nodes(recurse=False)}
+        for stray in plan.eject_nodes:
+            node = stage.node(stray)
+            if node is None:
+                actions[stray] = {"action": "eject_skipped",
+                                  "detail": "already absent"}
+                continue
+            if stray not in current_members:
+                actions[stray] = {"action": "eject_skipped",
+                                  "detail": "not a box member"}
+                continue
+            box.removeItem(node)
+            result["ejected"].append(stray)
+            actions[stray] = {
+                "action": "ejected",
+                "detail": "not declared by the fixture - ejected, not deleted",
+            }
+
+        # 3. deletions. Candidates were enumerated FROM THE BOX (D3) and are
+        #    now exactly the DECLARED-but-wrong-type nodes, which step 4
+        #    recreates. Handles are resolved and dropped inside the loop; none
+        #    survives it.
         for dead in plan.delete_nodes:
             node = stage.node(dead)
             if node is None:
@@ -471,7 +543,7 @@ def apply_fixture(
             result["deleted"].append(dead)
             actions[dead] = {"action": "deleted", "detail": reason}
 
-        # 3. creations, in fixture definition order
+        # 4. creations, in fixture definition order
         created_nodes: Dict[str, Any] = {}
         for cname in plan.create_nodes:
             spec = declared[cname]
@@ -487,7 +559,7 @@ def apply_fixture(
                 "detail": spec["type"],
             }
 
-        # 4. in-place reconcile of surviving members
+        # 5. in-place reconcile of surviving members
         for entry in plan.set_parms:
             node = stage.node(entry["node"])
             parm = node.parm(entry["parm"]) if node is not None else None
@@ -512,7 +584,7 @@ def apply_fixture(
             actions.setdefault(entry["node"], {"action": "reconciled",
                                                "detail": "position"})
 
-        # 5. wiring. Enforced for EVERY declared wire, not only the planned
+        # 6. wiring. Enforced for EVERY declared wire, not only the planned
         #    deltas: a delete in step 2 can sever a connection whose plan entry
         #    said "already correct", and a recreate replaces the object a
         #    surviving node was wired to. setInput to the value already there
@@ -536,7 +608,7 @@ def apply_fixture(
                     actions.setdefault(dst, {"action": "reconciled",
                                              "detail": "wiring"})
 
-        # 6. display flag -- exclusive, so setting it is the whole operation.
+        # 7. display flag -- exclusive, so setting it is the whole operation.
         #
         #    The LOP display flag is a single network-wide slot. A fixture that
         #    declares a display node cannot be honoured without taking that
@@ -544,8 +616,25 @@ def apply_fixture(
         #    outside the box. There is no implementation that both matches the
         #    definition and leaves the flag alone -- they are the same slot.
         #    So: honour the fixture, and REPORT the transfer by name rather
-        #    than letting it happen silently (Law 3). See for_ruling in the M5
-        #    receipt for the alternatives that were not taken.
+        #    than letting it happen silently (Law 3).
+        #
+        #    R-M5-2 (ruled 2026-08-06): KEEP EXACTLY THIS. The fixture's
+        #    declared display node is honoured, the transfer is reported by
+        #    name, and F-4 / F-4b stay split. The two alternatives were put up
+        #    and rejected, both for the same defect:
+        #
+        #      "never take the flag from a node outside the box" and
+        #      "take it only when the box is first created"
+        #
+        #    each leave the fixture's declared display PERMANENTLY
+        #    UNSATISFIABLE whenever an outsider holds the flag. observe() would
+        #    keep reporting display=False on the declared tail, build_plan
+        #    would keep emitting set_display, and the post-mutation
+        #    self-verification below would keep returning residual_ops=1 --
+        #    forever. That breaks idempotence (F-3) and makes apply_fixture
+        #    report status=incomplete on a stage that is, by the fixture's own
+        #    definition, as correct as that option permits. A reconciler that
+        #    can never converge is worse than one that moves a flag and says so.
         display_target = fx.get("display")
         if display_target:
             tail = stage.node(display_target)

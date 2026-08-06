@@ -16,13 +16,27 @@
     "epistemics": "Node types and parm NAMES are probe-verified against build 22.0.368. Parm VALUES and prim path conventions are design choices."
   },
   "baseline": {
-    "sha256": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+    "sha256": "762e3a8519ce3e94c9bc5f7c898ab5627f8b4b0b04e2cda6e7ba884a3bc8a297",
     "build": "22.0.368",
-    "canonicalizer": "c2",
+    "canonicalizer": "c3",
     "status": "verified",
-    "verified_run": "harness/autoresearch/runs/fixture_verify_20260805_182646",
-    "repeat": 3
+    "verified_run": "harness/blocks/runs/m5b_baseline_cut",
+    "producer": "hython harness/blocks/invariants_m5.py --emit-baseline",
+    "repeat": 2,
+    "environment_independent": true,
+    "note": "The two builds behind this hash were made under two DIFFERENT $HIP values (this worktree and the main working tree) and agreed byte-for-byte. That is the point of c3 and it is pinned as invariant F-6, with C-6 showing the same two builds disagreeing under c2. Unlike the c2 baseline below, this number does not pin the machine or the launch directory."
   },
+  "superseded_baselines": [
+    {
+      "sha256": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+      "build": "22.0.368",
+      "canonicalizer": "c2",
+      "verified_run": "harness/autoresearch/runs/fixture_verify_20260805_182646",
+      "superseded_on": "2026-08-06",
+      "superseded_by": "R-M5-1",
+      "reason": "MACHINE-LOCAL. karmarendersettings authors $HIP/render/$HIPNAME.$OS.$F4.exr, which reaches the composed stage already EXPANDED, so this hash pinned the directory it was cut in (C:/Users/User/SYNAPSE) rather than the fixture. Finding M5-F1. c3 adds rule 5, normalize_houdini_env_paths, which rewrites environment-derived absolute paths back to their variable token; a canonicalizer rule change is a re-baseline event for every fixture, so the number moved. Reproducible: this exact sha256 is still emitted by the c3 producer as the 'c2' hash when built under $HIP=C:/Users/User/SYNAPSE - see harness/blocks/runs/m5b_baseline_cut/baseline_c3.json, builds.b.c2."
+    }
+  ],
   "nodes": [
     {
       "type": "sopcreate",

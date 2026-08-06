@@ -1,0 +1,51 @@
+{
+  "build": "22.0.368",
+  "builds": {
+    "a": {
+      "c2": "39e126f35d31701a777b7e0323cadb9832bccc44b9eacf9ae8b7a3be6840c356",
+      "c3": "762e3a8519ce3e94c9bc5f7c898ab5627f8b4b0b04e2cda6e7ba884a3bc8a297",
+      "env": {
+        "$HFS": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.368",
+        "$HIP": "C:/Users/User/SYNAPSE/.claude/worktrees/m5b-rulings",
+        "$HOUDINI_TEMP_DIR": "C:/Users/User/AppData/Local/Temp/houdini_temp",
+        "$JOB": "C:/Users/User/SYNAPSE/.claude/worktrees/m5b-rulings",
+        "$TEMP": "C:\\Users\\User\\AppData\\Local\\Temp"
+      },
+      "hip": "C:/Users/User/SYNAPSE/.claude/worktrees/m5b-rulings",
+      "ops": 6,
+      "status": "built"
+    },
+    "b": {
+      "c2": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7",
+      "c3": "762e3a8519ce3e94c9bc5f7c898ab5627f8b4b0b04e2cda6e7ba884a3bc8a297",
+      "env": {
+        "$HFS": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.368",
+        "$HIP": "C:/Users/User/SYNAPSE",
+        "$HOUDINI_TEMP_DIR": "C:/Users/User/AppData/Local/Temp/houdini_temp",
+        "$JOB": "C:/Users/User/SYNAPSE/.claude/worktrees/m5b-rulings",
+        "$TEMP": "C:\\Users\\User\\AppData\\Local\\Temp"
+      },
+      "hip": "C:/Users/User/SYNAPSE",
+      "ops": 6,
+      "status": "built"
+    }
+  },
+  "c2_pair_differs": true,
+  "canonicalizer": "c3",
+  "canonicalizer_rules": [
+    "strip_comment_lines",
+    "strip_iso_timestamp_lines",
+    "strip_anon_identifier_lines",
+    "strip_houdini_node_provenance",
+    "normalize_houdini_env_paths"
+  ],
+  "fixture": "solaris.basic",
+  "portable_across_hip": true,
+  "produced_at": "2026-08-06T21:39:45+00:00",
+  "produced_by": "harness/blocks/invariants_m5.py --emit-baseline",
+  "sha256": "762e3a8519ce3e94c9bc5f7c898ab5627f8b4b0b04e2cda6e7ba884a3bc8a297",
+  "superseded": {
+    "canonicalizer": "c2",
+    "sha256": "8bb057619efe5cb2e3b7e6b7fb82bcb1bdd8d8a65017eb0f27aba6813b060ee7"
+  }
+}

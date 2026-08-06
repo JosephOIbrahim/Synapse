@@ -59,8 +59,10 @@ if str(REPO / "python") not in sys.path:
     sys.path.insert(0, str(REPO / "python"))
 
 from synapse.blocks.canonical import (           # noqa: E402
+    C1_RULES,
     CANONICALIZER_VERSION,
     canonicalize_usda,
+    houdini_env_map,
 )
 from synapse.blocks.fixtures import (            # noqa: E402
     box_name_for,
@@ -111,6 +113,36 @@ def main_worktree_root() -> Path:
     return REPO
 
 
+# The $HIP this run was launched under. F-6 re-pins $HIP between builds, so it
+# has to be able to put it back -- otherwise every invariant after F-6 would be
+# measured in a different environment than the ones before it.
+PINNED_HIP: str = ""
+
+
+def restore_hip() -> None:
+    if PINNED_HIP:
+        hou.putenv("HIP", PINNED_HIP)
+
+
+def hip_pair() -> tuple:
+    """Two DIFFERENT $HIP values to build the same fixture under (F-6 / C-6).
+
+    This worktree and the repository's main working tree -- two real
+    directories that genuinely differ, which is the drift M5-F1 reported.
+
+    Fails when: they are the same directory (this harness launched from the
+    main checkout). A control whose two inputs are identical cannot fail, so
+    rather than let C-6 pass vacuously the second value is made synthetic and
+    distinct. Law 1: state the condition under which the check fails, and make
+    sure it can.
+    """
+    a = str(REPO).replace("\\", "/")
+    b = str(main_worktree_root()).replace("\\", "/")
+    if a == b:
+        b = a + "/_m5b_alt_hip"     # never written to; only ever expanded
+    return a, b
+
+
 # ------------------------------------------------------------- measurements
 
 
@@ -121,11 +153,28 @@ def stage_node():
     return node
 
 
-def composed_hash(fx) -> str:
+def live_env() -> dict:
+    """The c3 environment map for this process, read fresh every call.
+
+    Read fresh on purpose: F-6 re-pins $HIP between builds, so a cached map
+    would silently canonicalize the second build against the FIRST build's
+    environment and the invariant would pass for the wrong reason.
+    """
+    return houdini_env_map(hou.text.expandString)
+
+
+def composed_hash(fx, env=None) -> str:
     """sha256 of the canonicalized composed USD at the fixture's display node.
 
     This is the instrument the fixture baseline is expressed in -- same
     canonicalizer, same tail, same flatten.
+
+    Args:
+        env: ``None`` (default) canonicalizes against the LIVE environment,
+             which is what a c3 baseline means. An explicit ``{}`` disables
+             rule 5 and reproduces c2 output -- that is not a convenience, it
+             is control C-6, which has to be able to show the two $HIP builds
+             DISAGREEING before F-6's agreement counts as evidence.
     """
     tail = stage_node().node(fx["display"])
     if tail is None:
@@ -135,7 +184,8 @@ def composed_hash(fx) -> str:
     if composed is None:
         raise RuntimeError("stage() returned None at %r: %s"
                            % (fx["display"], list(tail.errors())))
-    canon = canonicalize_usda(composed.Flatten().ExportToString())
+    canon = canonicalize_usda(composed.Flatten().ExportToString(),
+                              env=live_env() if env is None else env)
     return hashlib.sha256(canon.encode("utf-8")).hexdigest()
 
 
@@ -240,6 +290,54 @@ def node_state(name: str):
     return st.get(name)
 
 
+def authored_only(state) -> dict:
+    """A node's state MINUS ``display``.
+
+    ``display`` is deliberately excluded from every "artist node untouched"
+    claim in this harness. VERIFIED-RUNTIME 22.0.368 (M5-F7): the LOP display
+    flag is ONE exclusive network-wide slot, not a property of a node, so
+    honouring a fixture's declared display node necessarily moves it. F-4b
+    pins that the move is REPORTED; F-4 and F-7 pin that nothing the artist
+    actually authored changed.
+    """
+    if state is None:
+        return {}
+    return {k: v for k, v in state.items() if k != "display"}
+
+
+def build_under_hip(fx, hip: str) -> dict:
+    """Pin $HIP, build the fixture from a CLEAN stage, hash it two ways.
+
+    ``c3`` is the hash against the live environment -- what a portable baseline
+    means. ``c2`` is the same bytes with rule 5 disabled (``env={}``), which is
+    what the hash WAS before R-M5-1 and is the only way to show that these two
+    builds genuinely differ in environment.
+
+    Fails when: the $HIP pin does not take. Then both builds would be measured
+    under the same environment and F-6 would pass for the wrong reason, so the
+    pin is verified rather than assumed.
+    """
+    hou.putenv("HIP", hip)
+    effective = hou.text.expandString("$HIP").replace("\\", "/")
+    want = hip.replace("\\", "/")
+    if effective != want:
+        raise RuntimeError(
+            "could not pin $HIP to %r (got %r) -- F-6 would be comparing two "
+            "builds made in the SAME environment" % (want, effective))
+    reset_stage()
+    r = apply_fixture(FIXTURE, STAGE)
+    return {
+        "hip": want,
+        "hip_effective": effective,
+        "status": r["status"],
+        "applied": r["applied"],
+        "ops": r["ops"],
+        "c3": composed_hash(fx),            # live env -> rule 5 active
+        "c2": composed_hash(fx, env={}),    # rule 5 disabled: the M5-F1 shape
+        "env": live_env(),
+    }
+
+
 # ------------------------------------------------------------------- runner
 
 
@@ -324,6 +422,50 @@ def run_controls(fx, box, baseline, res: Results) -> None:
         {"baseline": baseline, "canonicalizer": CANONICALIZER_VERSION,
          "fixture_canonicalizer": fx["baseline"]["canonicalizer"]},
     )
+
+    # C-6: the cross-cwd comparison CAN fail. Two builds under two different
+    #      $HIP values must DISAGREE once rule 5 is switched off -- that
+    #      disagreement is finding M5-F1 itself. Without this, F-6's agreement
+    #      would prove only that the hash is insensitive to something nobody
+    #      showed it was ever sensitive to.
+    hip_a, hip_b = hip_pair()
+    ca = build_under_hip(fx, hip_a)
+    cb = build_under_hip(fx, hip_b)
+    restore_hip()
+    res.record(
+        "C-6", "two $HIP builds CAN disagree when rule 5 is disabled (c2)",
+        (ca["hip_effective"] != cb["hip_effective"] and ca["c2"] != cb["c2"]),
+        {"hip_a": ca["hip_effective"], "hip_b": cb["hip_effective"],
+         "hips_differ": ca["hip_effective"] != cb["hip_effective"],
+         "c2_a": ca["c2"], "c2_b": cb["c2"],
+         "c2_differs": ca["c2"] != cb["c2"],
+         "note": ("this IS M5-F1 reproduced: without normalize_houdini_env_"
+                  "paths the baseline pins the launch directory")},
+    )
+
+    # C-7: the ejection instruments CAN disagree. F-7 asserts a node is ALIVE
+    #      and NOT a member; both would pass vacuously if aliveness were always
+    #      true or membership always empty. Show each one taking the other
+    #      value before F-7 is trusted.
+    reset_stage()
+    apply_fixture(FIXTURE, STAGE)
+    c7box = stage_node().findNetworkBox(box)
+    c7_members = sorted(n.name() for n in c7box.nodes(recurse=False))
+    make_artist_node("syn_c7_victim")
+    c7_alive_before = stage_node().node("syn_c7_victim") is not None
+    stage_node().node("syn_c7_victim").destroy()
+    c7_alive_after = stage_node().node("syn_c7_victim") is not None
+    res.record(
+        "C-7", "membership is not vacuously empty and aliveness is not "
+               "vacuously true",
+        ("camera" in c7_members and c7_alive_before and not c7_alive_after),
+        {"box_members": c7_members,
+         "membership_can_be_nonempty": "camera" in c7_members,
+         "alive_before_destroy": c7_alive_before,
+         "alive_after_destroy": c7_alive_after,
+         "aliveness_can_be_false": not c7_alive_after},
+    )
+    reset_stage()
 
 
 def run_invariants(fx, box, baseline, res: Results) -> None:
@@ -457,14 +599,165 @@ def run_invariants(fx, box, baseline, res: Results) -> None:
     del clash
     reset_stage()
 
+    # -- F-6 ---------------------------------------------------------------
+    #
+    # CROSS-CWD EQUALITY -- the invariant that proves R-M5-1 actually closed.
+    # The same fixture, built twice, under two genuinely different $HIP values,
+    # must produce ONE hash. C-6 has already shown these same two builds
+    # disagreeing with rule 5 switched off, so an agreement here is a property
+    # of the canonicalizer rather than of an insensitive instrument.
+    hip_a, hip_b = hip_pair()
+    a6 = build_under_hip(fx, hip_a)
+    b6 = build_under_hip(fx, hip_b)
+    restore_hip()
+    res.record(
+        "F-6", "the same fixture under two different $HIP values hashes "
+               "identically under c3, and equals the committed baseline",
+        (a6["hip_effective"] != b6["hip_effective"]
+         and a6["c3"] == b6["c3"] == baseline
+         and a6["applied"] and b6["applied"]),
+        {"hip_a": a6["hip_effective"], "hip_b": b6["hip_effective"],
+         "hips_differ": a6["hip_effective"] != b6["hip_effective"],
+         "c3_a": a6["c3"], "c3_b": b6["c3"], "baseline": baseline,
+         "c3_identical": a6["c3"] == b6["c3"],
+         "c3_matches_baseline": a6["c3"] == baseline,
+         "c2_a": a6["c2"], "c2_b": b6["c2"],
+         "c2_differs_see_C6": a6["c2"] != b6["c2"],
+         "env_a": a6["env"], "env_b": b6["env"],
+         "canonicalizer": CANONICALIZER_VERSION},
+    )
+
+    # -- F-7 ---------------------------------------------------------------
+    #
+    # EJECTION SAFETY (R-M5-3). The artist drags a node they made INTO our box.
+    # The fixture does not declare it. After apply it must be: still alive in
+    # /stage, authored-identical, no longer a member, and named in
+    # result['ejected'] -- not deleted, and not silently dropped either.
+    reset_stage()
+    apply_fixture(FIXTURE, STAGE)
+    stray = make_artist_node("artist_stray_null")
+    stray_before = node_state("artist_stray_null")
+    box_obj = stage_node().findNetworkBox(box)
+    box_obj.addItem(stray)                      # <- the drag, in code
+    members_with_stray = sorted(n.name() for n in box_obj.nodes(recurse=False))
+    del stray, box_obj                          # never hold handles across apply
+
+    r7 = apply_fixture(FIXTURE, STAGE)
+
+    stray_after = node_state("artist_stray_null")
+    alive = stage_node().node("artist_stray_null") is not None
+    members_after = sorted(
+        n.name() for n in stage_node().findNetworkBox(box).nodes(recurse=False))
+    declared_names = sorted(n["name"] for n in fx["nodes"])
+    res.record(
+        "F-7", "a node dragged into the box but not declared is EJECTED, not "
+               "deleted: alive, authored-unchanged, no longer a member, "
+               "reported",
+        (alive
+         and authored_only(stray_after) == authored_only(stray_before)
+         and "artist_stray_null" in members_with_stray
+         and "artist_stray_null" not in members_after
+         and members_after == declared_names
+         and r7.get("ejected") == ["artist_stray_null"]
+         and r7.get("deleted") == []
+         and r7["applied"] and r7.get("residual_ops") == 0),
+        {"alive_after_apply": alive,
+         "was_a_member_before": "artist_stray_null" in members_with_stray,
+         "is_a_member_after": "artist_stray_null" in members_after,
+         "members_with_stray": members_with_stray,
+         "members_after": members_after, "declared": declared_names,
+         "ejected": r7.get("ejected"), "deleted": r7.get("deleted"),
+         "authored_before": authored_only(stray_before),
+         "authored_after": authored_only(stray_after),
+         "authored_unchanged": (authored_only(stray_after)
+                                == authored_only(stray_before)),
+         "display_before": (stray_before or {}).get("display"),
+         "display_after": (stray_after or {}).get("display"),
+         "display_note": ("display is excluded from the authored comparison "
+                          "for the F-4 reason: one exclusive network-wide "
+                          "slot, not a node property (M5-F7)"),
+         "status": r7["status"], "residual_ops": r7.get("residual_ops"),
+         "applied": r7["applied"], "verdict": r7["verdict"]},
+    )
+    reset_stage()
+
+
+def emit_baseline(fx, out_dir: Path) -> int:
+    """PRODUCER for a c3 fixture baseline (Law 2: the number names its path).
+
+    Builds the fixture twice, under two different $HIP values, and emits the
+    c3 hash ONLY if both builds agree. A producer that will emit a
+    non-portable number under a c3 label is the exact defect R-M5-1 exists to
+    close, so this refuses instead: exit 1, nothing to paste.
+
+    Asserts nothing about the COMMITTED baseline -- that is F-1's job, and it
+    cannot run until this has been pasted into the fixture.
+
+        hython harness/blocks/invariants_m5.py --emit-baseline
+    """
+    hip_a, hip_b = hip_pair()
+    a = build_under_hip(fx, hip_a)
+    b = build_under_hip(fx, hip_b)
+    restore_hip()
+
+    portable = a["c3"] == b["c3"]
+    payload = {
+        "produced_by": "harness/blocks/invariants_m5.py --emit-baseline",
+        "produced_at": utc_now(),
+        "build": hou.applicationVersionString(),
+        "fixture": FIXTURE,
+        "canonicalizer": CANONICALIZER_VERSION,
+        "canonicalizer_rules": list(C1_RULES),
+        "sha256": a["c3"] if portable else None,
+        "portable_across_hip": portable,
+        "builds": {
+            "a": {"hip": a["hip_effective"], "c3": a["c3"], "c2": a["c2"],
+                  "env": a["env"], "status": a["status"], "ops": a["ops"]},
+            "b": {"hip": b["hip_effective"], "c3": b["c3"], "c2": b["c2"],
+                  "env": b["env"], "status": b["status"], "ops": b["ops"]},
+        },
+        "c2_pair_differs": a["c2"] != b["c2"],
+        "superseded": {"sha256": fx["baseline"]["sha256"],
+                       "canonicalizer": fx["baseline"]["canonicalizer"]},
+    }
+    atomic_write(out_dir / "baseline_c3.json",
+                 json.dumps(payload, indent=2, sort_keys=True, default=str))
+
+    print("\n--- c3 baseline producer ---", flush=True)
+    print("  $HIP a      %s" % a["hip_effective"], flush=True)
+    print("  $HIP b      %s" % b["hip_effective"], flush=True)
+    print("  c3 a        %s" % a["c3"], flush=True)
+    print("  c3 b        %s" % b["c3"], flush=True)
+    print("  c2 a        %s" % a["c2"], flush=True)
+    print("  c2 b        %s" % b["c2"], flush=True)
+    print("  c2 differs  %s   (must be True, else C-6 cannot fail)"
+          % (a["c2"] != b["c2"]), flush=True)
+    print("  superseded  %s (%s)" % (fx["baseline"]["sha256"],
+                                     fx["baseline"]["canonicalizer"]),
+          flush=True)
+    if not portable:
+        print("\nREFUSED  the two $HIP builds do NOT agree under c3 -- the "
+              "rule is wrong or incomplete. Nothing emitted.", flush=True)
+        return 1
+    print("\nBASELINE %s   (canonicalizer %s, build %s)"
+          % (a["c3"], CANONICALIZER_VERSION, hou.applicationVersionString()),
+          flush=True)
+    print("evidence %s" % (out_dir / "baseline_c3.json"), flush=True)
+    return 0
+
 
 def main() -> int:
+    global PINNED_HIP
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=None,
                     help="run directory (default harness/blocks/runs/<stamp>)")
     ap.add_argument("--hip", default=None,
                     help="value to pin $HIP to (default: the repo's MAIN "
                          "working tree, which is where the baseline was cut)")
+    ap.add_argument("--emit-baseline", action="store_true",
+                    help="PRODUCE a c3 baseline (two $HIP builds, emitted "
+                         "only if they agree) and exit. Asserts nothing "
+                         "against the committed baseline.")
     args = ap.parse_args()
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -476,10 +769,16 @@ def main() -> int:
     hip_before = hou.text.expandString("$HIP")
     hou.putenv("HIP", hip)
     hip_after = hou.text.expandString("$HIP")
+    PINNED_HIP = hip_after.replace("\\", "/")
 
     fx = load_fixture(FIXTURE)
     box = box_name_for(fx, FIXTURE)
     baseline = fx["baseline"]["sha256"]
+
+    if args.emit_baseline:
+        print("build   %s" % hou.applicationVersionString(), flush=True)
+        print("run dir %s" % out_dir, flush=True)
+        return emit_baseline(fx, out_dir)
 
     res = Results()
     meta = {
