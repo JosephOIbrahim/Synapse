@@ -25,6 +25,7 @@ Five engines behind one seam. The roster and the producer path are the same thin
 Everything else follows from where the agent lives.
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#F5A05A','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#000000','clusterBkg':'#FBE3CE','clusterBorder':'#000000','edgeLabelBackground':'#FBE3CE','secondaryColor':'#FBE3CE','secondaryTextColor':'#000000','secondaryBorderColor':'#000000','tertiaryColor':'#FBE3CE','tertiaryTextColor':'#000000','tertiaryBorderColor':'#000000'}}}%%
 flowchart LR
     subgraph OUT["outside-in"]
         H1[Houdini] -->|whole scene, every turn| C1[cloud model]
@@ -86,6 +87,7 @@ Read this here rather than discover it mid-shot.
 This matters more than the feature list, and it is the thing to check first.
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#F5A05A','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#000000','clusterBkg':'#FBE3CE','clusterBorder':'#000000','edgeLabelBackground':'#FBE3CE','secondaryColor':'#FBE3CE','secondaryTextColor':'#000000','secondaryBorderColor':'#000000','tertiaryColor':'#FBE3CE','tertiaryTextColor':'#000000','tertiaryBorderColor':'#000000'}}}%%
 flowchart TD
     K[what SYNAPSE knows] --> S[symbols and node types]
     K --> N[H22 node reference]
@@ -145,6 +147,64 @@ This is the package description in long form — everything the one-liner compre
 **Crash-atomic escrowed memory.** And a process-wide stall-detection chain (detect → breaker → emergency-halt report) that reports and degrades rather than unblocking a parked session.
 
 Verified end-to-end on Houdini 22.0.368.
+
+---
+
+## Deterministic setups — BLOCKS
+
+*On `blocks/m5-reconciler`. Not on master yet.*
+
+Ask twice, get the same scene. That is the whole claim, and it is measured rather than asserted.
+
+A **fixture** is a scene setup stored as data — node types, exact names, wires, positions, parm values. Not a prompt. A file.
+
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#F5A05A','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#000000','clusterBkg':'#FBE3CE','clusterBorder':'#000000','edgeLabelBackground':'#FBE3CE','secondaryColor':'#FBE3CE','secondaryTextColor':'#000000','secondaryBorderColor':'#000000','tertiaryColor':'#FBE3CE','tertiaryTextColor':'#000000','tertiaryBorderColor':'#000000'}}}%%
+flowchart LR
+    F[fixture file] --> R[reconcile]
+    S[live /stage] --> R
+    R -->|clean| B[build]
+    R -->|already matches| N[no-op, 0 ops]
+    R -->|name clash outside box| X[refuse, 0 mutations]
+```
+
+**Reconcile, not create.** The call means *make `/stage` match the definition* — so running it twice is a no-op, not a second copy.
+
+**Ownership is a network box.** Every node it creates joins `BLOCKS_<fixture>`. Nodes stay flat in `/stage`, directly editable. Deletion draws only from box membership — never from name matching against your graph.
+
+**A clash refuses.** If a fixture name already exists outside the box, nothing is created and nothing is deleted. The composed stage is byte-identical across the call.
+
+### What is proven
+
+Five invariants, headless on 22.0.368, each preceded by a negative control showing the instrument *can* disagree:
+
+| | claim |
+|---|---|
+| **F-1** | apply on a clean stage reproduces the committed baseline hash |
+| **F-2** | apply → remove → apply gives the same hash |
+| **F-3** | apply on an applied stage does nothing — 0 ops, hash unchanged |
+| **F-4** | an artist node outside the box keeps every authored property |
+| **F-5** | a name clash refuses with zero mutations |
+
+Reproduce: `hython harness/blocks/invariants_m5.py`
+
+### Four things this caught that would have failed silently
+
+**Node types are versioned.** `createNode('domelight')` yields `domelight::3.0`. Comparing against the plain literal never converges — every apply planned a delete-and-recreate, forever.
+
+**Create silently auto-renames.** `createNode`, `createNetworkBox` and `setName` all rename on a clash and raise nothing. That is why the collision gate must run *before* creation: afterwards, the scene is already mutated.
+
+**`NetworkBox.destroy()` keeps its members** by default. Removal would have orphaned every node.
+
+**A parm's authored value is `unexpandedString()`, not `eval()`.** The camera's default primpath `/cameras/$OS` *evaluates* to exactly what the fixture declares — comparing on `eval()` reports "already correct" and never writes the literal.
+
+### Known limits
+
+**The baseline is machine-local.** It embeds `$HIP`, so the same fixture hashes differently from a different working directory. The invariant harness pins `$HIP` and refuses to run if the pin fails. A `c3` canonicalizer that treats environment-derived paths as session-local is ruled and pending.
+
+**The display flag is one exclusive slot.** Honouring a fixture's declared display node takes it from whoever holds it — possibly yours. The transfer is reported by name, never silent. This is the single place where *match the definition* and *never touch artist nodes* cannot both hold.
+
+**No phrase routing yet.** Both tools take a fixture name. Typing "basic Solaris setup" resolves to nothing until M6 lands.
 
 ---
 
@@ -256,6 +316,7 @@ So work it from the file, not the console: re-run step 3 (`python scripts/instal
 ## The two paths
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#F5A05A','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#000000','clusterBkg':'#FBE3CE','clusterBorder':'#000000','edgeLabelBackground':'#FBE3CE','secondaryColor':'#FBE3CE','secondaryTextColor':'#000000','secondaryBorderColor':'#000000','tertiaryColor':'#FBE3CE','tertiaryTextColor':'#000000','tertiaryBorderColor':'#000000'}}}%%
 flowchart LR
     T[agent turn] --> M["/mcp — audited"]
     T --> S["/synapse — live"]
@@ -288,6 +349,7 @@ Three instruments landed 2026-08-02, built on one finding.
 **The finding.** Houdini-side cost was believed to be "1–70 ms per op — the 5%." True on small scenes; at scale, stage hashing on the audited path cost **6.9–7.7 s per op at 100k prims**. And the axis everyone assumed — prim count — was wrong: cost tracks **authored array volume**. A 4-prim PointInstancer at 2M instances cost 2,017.9 ms per op while the prim-keyed gate said the scene was small — a **16,677× miss**. *Producers: `98b556f` (measured floor), `harness/latency/LEDGER.md` §1 (the volume evidence, C2 crucible).*
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#F5A05A','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#000000','clusterBkg':'#FBE3CE','clusterBorder':'#000000','edgeLabelBackground':'#FBE3CE','secondaryColor':'#FBE3CE','secondaryTextColor':'#000000','secondaryBorderColor':'#000000','tertiaryColor':'#FBE3CE','tertiaryTextColor':'#000000','tertiaryBorderColor':'#000000'}}}%%
 flowchart LR
     B["board<br/>harness/latency/verify.py<br/>8 checks"] --> R["ratchet<br/>perf_ratchet.py<br/>ARMED — counts may fall,<br/>never silently rise"]
     R --> F["floor<br/>perf_baseline.json<br/>human-promoted only"]
@@ -312,6 +374,7 @@ A third freeze class — distinct from the render freeze and the marshal self-de
 **The fix (v5.40.1).** Tool calls and the panel's own context-gather now spawn a daemon thread *off* the main thread, so the marshal takes the deferred path — the same path the bridge-up call takes, with a per-call timeout and UI events interleaved. Node selection and the viewport stay live mid-chat.
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#F5A05A','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#000000','clusterBkg':'#FBE3CE','clusterBorder':'#000000','edgeLabelBackground':'#FBE3CE','secondaryColor':'#FBE3CE','secondaryTextColor':'#000000','secondaryBorderColor':'#000000','tertiaryColor':'#FBE3CE','tertiaryTextColor':'#000000','tertiaryBorderColor':'#000000'}}}%%
 flowchart TB
     TURN["agent turn<br/>ClaudeWorker &middot; QThread"]:::panel
     TURN -->|"tool_use block"| BR{"local MCP endpoint<br/>reachable?"}:::obs
