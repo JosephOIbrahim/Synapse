@@ -14,7 +14,9 @@ plain Python. Execution requires hython — require_hou() enforces it.
 from __future__ import annotations
 
 import hashlib
-import re
+import json as _json
+import sys as _sys
+from pathlib import Path as _Path
 
 try:
     import hou  # type: ignore
@@ -23,19 +25,27 @@ except ImportError:  # plain Python — validation / unit tests only
     hou = None
     HOU_AVAILABLE = False
 
-CANONICALIZER_VERSION = "c2"
+_REPO_ROOT = _Path(__file__).resolve().parents[2]
 
-# c1 filter set — documented, versioned. A change here is a re-baseline event.
-#   1. comment lines (leading '#') — headers and tool chatter, never scene content
-#   2. ISO-8601 timestamps — session metadata
-#   3. 'anon:' identifiers — per-process anonymous layer handles
-_TS_RE = re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}")
-# c2 (evidence-driven, run solaris_basic_20260805_181026): Houdini embeds session
-# node IDs as provenance customData (HoudiniCreatorNode, HoudiniEditorNodes,
-# HoudiniPrimEditorNodes). Session state, never scene content - same class as anon:.
-_HOUDINI_PROV_RE = re.compile(r"\bHoudini\w*Nodes?\s*=")
-_C1_RULES = ("strip_comment_lines", "strip_iso_timestamp_lines",
-             "strip_anon_identifier_lines", "strip_houdini_node_provenance")
+# ---------------------------------------------------------------- canonicalizer
+# The c2 canonicalizer now lives in the PRODUCT tree, at
+# synapse/blocks/canonical.py, and this harness imports it. Two copies of the
+# filter list would be two silently different oracles: a fixture's committed
+# baseline sha256 is only meaningful against a named canonicalizer, and the
+# first divergence between harness and reconciler would read as a reconciler
+# bug. tests/test_blocks_reconciler.py pins the single-source relationship.
+#
+# The path is derived from THIS file, so a git worktree's probes.py imports
+# that worktree's canonicalizer — which is what makes a worktree run evidence
+# about the worktree.
+if str(_REPO_ROOT / "python") not in _sys.path:
+    _sys.path.insert(0, str(_REPO_ROOT / "python"))
+
+from synapse.blocks.canonical import (  # noqa: E402
+    C1_RULES as _C1_RULES,
+    CANONICALIZER_VERSION,
+    canonicalize_usda,
+)
 
 _PROBE_NODE = "ar_probe"        # parm-probe scratch node name
 _CHAIN_PREFIX = "arc"           # chain nodes: arc<i>_<type> — exact, never auto-incremented
@@ -147,24 +157,6 @@ def probe_parms(type_name: str, highlight: list) -> dict:
 
 # ---------------------------------------------------------------- P2 probes
 
-def canonicalize_usda(text: str) -> str:
-    """c1 canonicalization — see _C1_RULES. Trailing whitespace stripped,
-    LF-joined. Deterministic scene content in, deterministic bytes out."""
-    keep = []
-    for line in text.splitlines():
-        s = line.strip()
-        if s.startswith("#"):
-            continue
-        if _TS_RE.search(line):
-            continue
-        if "anon:" in line:
-            continue
-        if _HOUDINI_PROV_RE.search(line):
-            continue
-        keep.append(line.rstrip())
-    return "\n".join(keep) + "\n"
-
-
 def _build_chain_once(chain: list, stage) -> dict:
     """One construction pass: create with EXACT names, wire linearly,
     compose, flatten, canonicalize, hash, destroy. Returns pass evidence."""
@@ -264,11 +256,8 @@ def probe_chain_hash(chain: list, name: str, repeat: int) -> dict:
 # fixture_hash: build a BLOCKS fixture from its JSON definition and hash the
 # composed stage. This builder is the seed of the reconciler's build path.
 # ASCII only below (PS-adjacent tooling reads these files).
-
-import json as _json
-from pathlib import Path as _Path
-
-_REPO_ROOT = _Path(__file__).resolve().parents[2]
+# _json / _Path / _REPO_ROOT are established at the top of this module,
+# alongside the canonicalizer import.
 
 
 def _build_fixture_once(fx: dict, stage) -> dict:

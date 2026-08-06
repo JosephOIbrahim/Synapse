@@ -783,6 +783,123 @@ async def _scout_call_tool(arguments: dict) -> list:
 
 
 # ---------------------------------------------------------------------------
+# BLOCKS reconciler (M5) -- synapse_apply_fixture / synapse_remove_fixture.
+#
+# Same port pattern as the Inspector above, and for the same reason: the tool
+# is pure Python in the cognitive layer, it composes a script, and ONE
+# execute_python round-trip carries it into the Houdini process. The
+# difference from the Inspector is that the injected script is three lines
+# calling synapse.blocks.runtime -- the reconciler implementation lives in the
+# tree as importable code, not as a template string, because the F-1..F-5
+# invariant harness imports and runs that same module under headless hython.
+# One implementation, two callers.
+#
+# Own Dispatcher singleton + own transport registry, matching the Inspector /
+# Scout / port-wave precedent: each family closes over the asyncio loop
+# independently rather than racing over one global.
+# ---------------------------------------------------------------------------
+from synapse.blocks.transport import (
+    configure_transport as _blocks_configure_transport,
+)
+from synapse.cognitive.tools.apply_fixture import (
+    APPLY_FIXTURE_SCHEMA as _APPLY_FIXTURE_SCHEMA,
+    REMOVE_FIXTURE_SCHEMA as _REMOVE_FIXTURE_SCHEMA,
+    apply_fixture as _apply_fixture_tool,
+    remove_fixture as _remove_fixture_tool,
+)
+
+_BLOCKS_APPLY_TOOL_NAME = "synapse_apply_fixture"
+_BLOCKS_REMOVE_TOOL_NAME = "synapse_remove_fixture"
+_BLOCKS_TOOL_NAMES = frozenset({
+    _BLOCKS_APPLY_TOOL_NAME, _BLOCKS_REMOVE_TOOL_NAME,
+})
+
+# A cold apply creates and cooks LOP nodes; the Inspector only reads. 120s of
+# outer headroom over the tool's own 60s default keeps a slow first cook from
+# being cancelled mid-flight (same reasoning as _transport_outer_budget).
+_BLOCKS_OUTER_HEADROOM = 120.0
+
+_blocks_dispatcher: _Dispatcher | None = None
+
+
+def _get_blocks_dispatcher() -> _Dispatcher:
+    """Build the BLOCKS Dispatcher singleton on first use.
+
+    Must be called from inside a running asyncio event loop: the sync
+    transport closure captures the loop so it can marshal send_command back
+    onto it via run_coroutine_threadsafe.
+    """
+    global _blocks_dispatcher
+    if _blocks_dispatcher is not None:
+        return _blocks_dispatcher
+
+    loop = asyncio.get_running_loop()
+
+    def _sync_transport(code: str, *, timeout=None) -> str:
+        wrapped = _inspector_wrap_stdout_capture(code)
+        fut = asyncio.run_coroutine_threadsafe(
+            send_command("execute_python", {"content": wrapped, "atomic": False}),
+            loop,
+        )
+        effective = (timeout if timeout is not None else 60.0) + _BLOCKS_OUTER_HEADROOM
+        try:
+            data = fut.result(timeout=effective)
+        except Exception as e:
+            raise RuntimeError(f"execute_python transport failed: {e}") from e
+        return (data or {}).get("result", "") or ""
+
+    _blocks_configure_transport(_sync_transport)
+    _blocks_dispatcher = _Dispatcher(
+        is_testing=True,
+        tools={
+            _BLOCKS_APPLY_TOOL_NAME: _apply_fixture_tool,
+            _BLOCKS_REMOVE_TOOL_NAME: _remove_fixture_tool,
+        },
+        schemas={
+            _BLOCKS_APPLY_TOOL_NAME: _APPLY_FIXTURE_SCHEMA,
+            _BLOCKS_REMOVE_TOOL_NAME: _REMOVE_FIXTURE_SCHEMA,
+        },
+    )
+    return _blocks_dispatcher
+
+
+async def _blocks_call_tool(name: str, arguments: dict) -> list:
+    """Handle a BLOCKS tool via the cognitive Dispatcher.
+
+    A name collision is NOT an error path: it comes back as an ordinary
+    result with status == "collision" and ops == 0, and is returned as JSON
+    like any other success. Only transport/fixture/runtime failures become the
+    error envelope.
+    """
+    kwargs: dict = {"fixture": arguments.get("fixture", "")}
+    if arguments.get("stage_path") is not None:
+        kwargs["stage_path"] = arguments["stage_path"]
+    if arguments.get("timeout") is not None:
+        kwargs["timeout"] = float(arguments["timeout"])
+
+    try:
+        dispatcher = _get_blocks_dispatcher()
+        result = await _off_loop(dispatcher.execute, name, kwargs)
+    except ConnectionError as e:
+        return [TextContent(type="text", text=f"Couldn't reach Synapse — {e}")]
+    except Exception as e:
+        logger.exception("Unexpected error dispatching %s", name)
+        return [TextContent(type="text", text=_dumps_str({
+            "error": type(e).__name__, "message": str(e),
+            "fixture": kwargs.get("fixture"),
+        }))]
+
+    if isinstance(result, _AgentToolError):
+        return [TextContent(type="text", text=_dumps_str({
+            "error": result.error_type,
+            "message": result.error_message,
+            "fixture": kwargs.get("fixture"),
+        }))]
+
+    return [TextContent(type="text", text=_dumps_str(result))]
+
+
+# ---------------------------------------------------------------------------
 # G1 port waves -- legacy WS registry tools routed through the cognitive
 # Dispatcher (Strangler Fig, docs/PORT_WAVE_MANIFEST.md OD-2 = (a) "wrap").
 #
@@ -990,6 +1107,19 @@ async def list_tools():
         inputSchema=_SCOUT_TOOL_SCHEMA,
     ))
 
+    # BLOCKS reconciler (M5) -- local Python composing one execute_python
+    # round-trip into synapse.blocks.runtime. Dispatched via a dedicated
+    # branch in call_tool(), same as the Inspector.
+    for _blocks_name, _blocks_schema in (
+        (_BLOCKS_APPLY_TOOL_NAME, _APPLY_FIXTURE_SCHEMA),
+        (_BLOCKS_REMOVE_TOOL_NAME, _REMOVE_FIXTURE_SCHEMA),
+    ):
+        tools.append(Tool(
+            name=_blocks_name,
+            description=_blocks_schema["description"],
+            inputSchema=_blocks_schema["input_schema"],
+        ))
+
     return tools
 
 
@@ -1019,6 +1149,11 @@ async def call_tool(name: str, arguments: dict):
     # Scout tool -- pure-Python federated retrieval + phantom-API grounding.
     if name == _SCOUT_TOOL_NAME:
         return await _scout_call_tool(arguments)
+
+    # BLOCKS reconciler (M5) -- fixture apply/remove via the cognitive
+    # Dispatcher and one execute_python round-trip.
+    if name in _BLOCKS_TOOL_NAMES:
+        return await _blocks_call_tool(name, arguments)
 
     # G1 port waves -- ported registry tools route through the cognitive
     # Dispatcher (Strangler Fig). Same command_type + payload + response

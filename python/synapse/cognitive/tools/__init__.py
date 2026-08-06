@@ -22,6 +22,14 @@ Registration is the caller's responsibility. Example:
 
 from __future__ import annotations
 
+from synapse.cognitive.tools.apply_fixture import (
+    APPLY_FIXTURE_SCHEMA,
+    REMOVE_FIXTURE_SCHEMA,
+    BlocksHoudiniError,
+    BlocksToolError,
+    apply_fixture,
+    remove_fixture,
+)
 from synapse.cognitive.tools.inspect_stage import (
     INSPECT_STAGE_SCHEMA,
     inspect_stage,
@@ -33,6 +41,12 @@ from synapse.cognitive.tools.write_report import (
 )
 
 __all__ = [
+    "APPLY_FIXTURE_SCHEMA",
+    "REMOVE_FIXTURE_SCHEMA",
+    "BlocksHoudiniError",
+    "BlocksToolError",
+    "apply_fixture",
+    "remove_fixture",
     "INSPECT_STAGE_SCHEMA",
     "inspect_stage",
     "WRITE_REPORT_SCHEMA",
