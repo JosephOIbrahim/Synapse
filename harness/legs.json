@@ -489,6 +489,26 @@
         "tests/"
       ],
       "note": "Ruled by Joe 2026-08-06 (D1 box ownership / D2 fail-loud collisions / D3 delete-inside-box-only / D4 Dispatcher seam). Builds apply_fixture + remove_fixture against the committed oracle: fixtures/solaris.basic.json baseline 8bb05761, canonicalizer c2. Seed exists at harness/autoresearch/probes.py _build_fixture_once. Invariants F-1..F-5 headless. touches is coarse on purpose - the live Dispatcher seam is DISCOVERED, not assumed; the brief requires recording it as found. M6 (phrase routing) explicitly out of scope."
+    },
+    {
+      "id": "M5b",
+      "name": "blocks reconciler - close M5 rulings",
+      "state": "ready",
+      "receipt": "M5b.json",
+      "branch": "blocks/m5b-rulings",
+      "base": "blocks/m5-reconciler",
+      "worktree": ".claude/worktrees/m5b-rulings",
+      "prompt": "harness/prompts/m5b.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/blocks/",
+        "python/synapse/cognitive/tools/",
+        "fixtures/",
+        "harness/blocks/",
+        "tests/"
+      ],
+      "note": "Closes the four escalations from M5.json for_ruling[], ruled by Joe 2026-08-06. R-M5-1 -> c3 canonicalizer (environment-derived paths are session-local, not scene content - third instance of that class) + re-baseline solaris.basic with superseded_baselines[]. R-M5-2 -> ratify as shipped, no behaviour change. R-M5-3 -> OVERRIDE: eject strays, do not delete; remove_fixture unchanged. R-M5-4 -> regenerate h22 symbol table for 22.0.368 + load-time build check. Adds F-6 (cross-cwd hash equality, the proof R-M5-1 closed) and F-7 (ejection safety), each with a negative control. BASE IS blocks/m5-reconciler @ 87927076, not master."
     }
   ]
 }
