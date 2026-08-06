@@ -509,6 +509,25 @@
         "tests/"
       ],
       "note": "Closes the four escalations from M5.json for_ruling[], ruled by Joe 2026-08-06. R-M5-1 -> c3 canonicalizer (environment-derived paths are session-local, not scene content - third instance of that class) + re-baseline solaris.basic with superseded_baselines[]. R-M5-2 -> ratify as shipped, no behaviour change. R-M5-3 -> OVERRIDE: eject strays, do not delete; remove_fixture unchanged. R-M5-4 -> regenerate h22 symbol table for 22.0.368 + load-time build check. Adds F-6 (cross-cwd hash equality, the proof R-M5-1 closed) and F-7 (ejection safety), each with a negative control. BASE IS blocks/m5-reconciler @ 87927076, not master."
+    },
+    {
+      "id": "CI0",
+      "name": "honest green CI",
+      "state": "ready",
+      "receipt": "CI0.json",
+      "branch": "ci/ci0-honest-green",
+      "base": "master",
+      "worktree": ".claude/worktrees/ci0-honest-green",
+      "prompt": "harness/prompts/ci0.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        ".github/workflows/",
+        "tests/conftest.py",
+        "python/synapse/memory/",
+        "tests/"
+      ],
+      "note": "Make master's CI honestly green. Ruled by Joe as CTO 2026-08-06: honesty over a green badge - no weakening, no hiding, skips must be visible with reasons. Three inherited failures triaged: two are REAL ROT (missing synapse.memory.evolution, fix not skip), one is environmental. Introduces needs_houdini marker; CI runs -m 'not needs_houdini'; 23/310 hou/pxr files gated. BLOCKS untouched. BASE IS master @ c4187d01. CI was red at 3fb5d45d BEFORE the M5 merges - this is inherited, not a regression."
     }
   ]
 }
