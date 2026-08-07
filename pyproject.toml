@@ -111,6 +111,13 @@ python_files = ["test_*.py"]
 addopts = "-v --tb=short"
 markers = [
     "live: requires a running Houdini session with SYNAPSE WebSocket server (not collected by default in CI)",
+    # CI0. Applied automatically by tests/conftest.py to modules that cannot be
+    # collected or run without `hou` or `pxr`; CI filters with
+    # `-m \"not needs_houdini\"`. Never hand-applied -- a module earns it only
+    # by already refusing to run without its runtime, which is what makes the
+    # filter incapable of hiding a failure. See the block at the bottom of
+    # tests/conftest.py and tests/test_needs_houdini_marker.py.
+    "needs_houdini: requires a Houdini runtime (hou) or OpenUSD (pxr); auto-applied, never hand-applied",
 ]
 
 [tool.mypy]

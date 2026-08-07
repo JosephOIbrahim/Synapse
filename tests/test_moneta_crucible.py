@@ -275,16 +275,95 @@ def test_search_edge_query_parity_with_jsonl(tmp_path, q):
 # --------------------------------------------------------------------------- #
 
 def test_moneta_backend_never_fires_evolution(tmp_path, monkeypatch):
+    """`synapse.memory.evolution` is retired -- nothing may import it.
+
+    CI0: this test used to `from synapse.memory import evolution` and monkeypatch
+    `check_evolution` to prove the Moneta backend never called it. Commit 7f7bbc39
+    then RETIRED the module (renamed `evolution.py` -> `evolution.py.deprecated`),
+    so the test could no longer import its own subject and failed on CI with
+    `ImportError: cannot import name 'evolution' from 'synapse.memory'`. The
+    module was the stale side of that drift, not the test -- but the test as
+    written could only ever report the retirement, never enforce it.
+
+    So it now asserts the retirement directly, on both halves:
+      1. the module is genuinely gone (the import raises), and
+      2. NO module in the shipped package still reaches for it.
+
+    (2) is the half that has teeth: it fails today-in-reverse -- when written it
+    caught `server/handlers_memory.py::_handle_evolve_memory`, which still did
+    `from ..memory.evolution import check_evolution, evolve_to_charmeleon` and
+    therefore raised ImportError on every invocation of the `evolve_memory`
+    command. Add any such import back and this test goes red again.
+    """
+    import re
+
+    # (1) The module is retired, not merely unused. Asserted against the tree,
+    # not against sys.modules -- tests/test_scene_memory.py plants a
+    # `synapse.memory.evolution` entry when the file is present, so a
+    # sys.modules probe here would be order-dependent. The filesystem is not.
+    mem_dir = _ROOT / "python" / "synapse" / "memory"
+    assert not (mem_dir / "evolution.py").exists(), (
+        "evolution.py is back on disk. It was retired in 7f7bbc39; if that is "
+        "being reversed, this test and CLAUDE.md §6 both need revisiting."
+    )
+    assert (mem_dir / "evolution.py.deprecated").exists(), (
+        "neither evolution.py nor evolution.py.deprecated exists -- the "
+        "retirement marker is gone, so this test can no longer tell a "
+        "deliberate retirement from an accidental deletion."
+    )
+
+    # (2) No shipped module imports the retired name. Vendored third-party code
+    # is excluded -- it is not ours and does not reference synapse.memory.
+    # Match the MODULE reference, never the imported names: `\bevolution\b`
+    # deliberately does not fire inside `check_evolution` or `evolution_stage`
+    # (`_` is a word character, so there is no boundary), which is why the
+    # module path -- not the import list -- is what this pattern anchors on.
+    pattern = re.compile(
+        r"^[ \t]*(?:"
+        r"from\s+\.*(?:synapse\.)?memory\.evolution\s+import\b"       # from ..memory.evolution import X
+        r"|from\s+\.*(?:synapse\.)?memory\s+import\s+[^\n]*\bevolution\b"  # from ..memory import evolution
+        r"|import\s+(?:synapse\.)?memory\.evolution\b"                # import synapse.memory.evolution
+        r")",
+        re.MULTILINE,
+    )
+    # A module INSIDE synapse/memory/ would reach its retired sibling by a bare
+    # `from .evolution import ...`, which the package-qualified pattern above
+    # cannot see. Scoped to that directory so it cannot false-positive on an
+    # unrelated `.evolution` sibling elsewhere in the tree.
+    sibling_pattern = re.compile(
+        r"^[ \t]*(?:from\s+\.evolution\s+import\b"
+        r"|from\s+\.\s+import\s+[^\n]*\bevolution\b)",
+        re.MULTILINE,
+    )
+    offenders = []
+    pkg = _ROOT / "python" / "synapse"
+    for path in pkg.rglob("*.py"):
+        if "_vendor" in path.parts:
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        patterns = [pattern]
+        if path.parent.name == "memory":
+            patterns.append(sibling_pattern)
+        for pat in patterns:
+            for m in pat.finditer(text):
+                line_no = text[: m.start()].count("\n") + 1
+                offenders.append(f"{path.relative_to(_ROOT)}:{line_no}: {m.group(0).strip()}")
+    assert not offenders, (
+        "synapse.memory.evolution was retired in 7f7bbc39 but is still imported "
+        "by shipped code -- these call sites raise ImportError at runtime:\n  "
+        + "\n  ".join(offenders)
+        + "\nUse shared/evolution.py (LosslessEvolution) instead."
+    )
+
+    # The behavioural half of the original test, kept: adds under the Moneta
+    # backend complete without reaching any evolution path.
     monkeypatch.setenv("SYNAPSE_MEMORY_BACKEND", "moneta")
-    from synapse.memory import evolution
-    calls = []
-    monkeypatch.setattr(evolution, "check_evolution", lambda *a, **k: calls.append(1) or {})
     from synapse.memory.store import SynapseMemory
     sm = SynapseMemory(project_path=str(tmp_path / "proj"))
     try:
         for i in range(25):
             sm.add(content=f"m{i}", memory_type=MemoryType.NOTE)
-        assert calls == []  # evolution.py is retired under the Moneta backend
+        assert sm.store.count() == 25
     finally:
         sm.store.close()
 

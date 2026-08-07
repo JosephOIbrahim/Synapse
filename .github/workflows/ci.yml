@@ -61,4 +61,20 @@ jobs:
         run: |
           python -c "import sys; from synapse.memory import moneta_runtime as m; ok = m.moneta_available(); print('Moneta available:', ok, '| import_error:', m.import_error()); sys.exit(0 if ok else 1)"
 
-      - run: python -m pytest tests/ -v --tb=short
+      # CI0. Stock GitHub runners have no Houdini and no OpenUSD, so modules
+      # that cannot be collected or run without `hou`/`pxr` are deselected by
+      # the `needs_houdini` marker (auto-applied in tests/conftest.py — see the
+      # block at the bottom of that file for the rule and why it cannot hide a
+      # failure: a module earns the marker only if it ALREADY skips itself
+      # without its runtime).
+      #
+      # `-rs` prints every skip with its reason, and the conftest prints every
+      # needs_houdini DESELECTION with the runtime it needs, so nothing leaves
+      # this run silently. A green check here means: everything that can run on
+      # a stock runner ran and passed, and everything that cannot is named in
+      # the summary with a reason you can audit.
+      #
+      # Developers are unaffected: `pytest tests/` with no -m filter still
+      # collects and runs the whole suite, which is what the receipts record.
+      # See docs/CI_TWO_WORLDS.md.
+      - run: python -m pytest tests/ -m "not needs_houdini" -v -rs --tb=short

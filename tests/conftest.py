@@ -820,3 +820,177 @@ def _contain_leaked_freeze_chain():
         "the conftest net (R310a zombie class) -- add shutdown_freeze_chain() "
         "to the test's teardown",
         RuntimeWarning, stacklevel=2)
+
+
+# ===========================================================================
+# needs_houdini -- the ONE marker for "cannot run without a Houdini runtime"
+# ---------------------------------------------------------------------------
+# CI0. Stock GitHub runners have neither `hou` (Houdini's Python module, which
+# exists only inside a Houdini/hython interpreter) nor `pxr` (OpenUSD). Some
+# test modules cannot be collected or run without one of them. This marker
+# names that set once, so .github/workflows/ci.yml can say
+# `-m "not needs_houdini"` instead of encoding the list in YAML.
+#
+# THE HONESTY INVARIANT -- why this marker cannot hide a failure:
+#
+#   A module is marked ONLY when it already refuses to run without its runtime
+#   on its own: a module-level `pytest.importorskip("hou"|"pxr")`, an unguarded
+#   module-level import, or a module-level `pytestmark` skipif keyed on the
+#   runtime. The marker is therefore REDUNDANT with a gate the module already
+#   carries -- everything `-m "not needs_houdini"` removes would have skipped
+#   anyway. It cannot deselect a test that would otherwise have run and passed.
+#   tests/test_needs_houdini_marker.py pins that invariant and goes red if a
+#   module is ever marked without its own gate.
+#
+# Detection is deliberately CONSERVATIVE and AST-based, not grep-based:
+#   * a guarded `try: import hou / except ImportError:` is NESTED, not module
+#     level, so it does not mark -- those modules run fine here
+#   * `import hou` inside a function, or inside a string of code shipped over
+#     the wire (tests/test_e2e_tops.py does exactly that), does not mark
+#   * a module gated on something OTHER than the runtime -- e.g.
+#     tests/test_usd_relationship_live.py gates on $SYNAPSE_H22_LIVE -- does not
+#     mark, because "needs a Houdini runtime" would be the wrong reason to show
+#     a reader
+# Under-marking costs nothing (the module's own gate still skips it, visibly);
+# over-marking would hide tests. The bias is set accordingly.
+#
+# For `hou` specifically: this conftest plants a canonical FAKE `hou` in
+# sys.modules, so `import hou` succeeds even on stock Python. The real gate in
+# those modules is a `pytestmark` skipif checking for a REAL hou -- that is what
+# rule 3 detects. The bare import is not the gate.
+# ===========================================================================
+
+_RUNTIME_MODULES = ("hou", "pxr")
+
+# nodeid -> runtime module name, filled during collection and read by the
+# terminal-summary reporter so a `-m` deselection is never silent (Law 3).
+_NEEDS_HOUDINI: dict = {}
+_NEEDS_HOUDINI_DESELECTED: list = []
+_MODULE_REQUIREMENT_CACHE: dict = {}
+
+
+def module_runtime_requirement(source: str):
+    """Return "hou"/"pxr" if this test module cannot run without that runtime.
+
+    Module level ONLY -- see the conservatism note above. Public (no leading
+    underscore) because tests/test_needs_houdini_marker.py drives it with
+    synthetic positive AND negative controls; a detector nothing can disagree
+    with is a decoration, not a check (Law 1).
+    """
+    import ast
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return None
+
+    for node in tree.body:
+        # 1. Unguarded module-level import of the runtime.
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                root = alias.name.split(".")[0]
+                if root in _RUNTIME_MODULES:
+                    return root
+        if isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            root = node.module.split(".")[0]
+            if root in _RUNTIME_MODULES:
+                return root
+
+        # 2. Module-level pytest.importorskip("hou"|"pxr") -- the module skips
+        #    itself at collection time when the runtime is absent.
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
+            call = node.value
+            if (isinstance(call.func, ast.Attribute)
+                    and call.func.attr == "importorskip"
+                    and call.args
+                    and isinstance(call.args[0], ast.Constant)
+                    and call.args[0].value in _RUNTIME_MODULES):
+                return call.args[0].value
+
+        # 3. Module-level `pytestmark = pytest.mark.skipif(<runtime gate>)`.
+        if isinstance(node, ast.Assign):
+            targets = {t.id for t in node.targets if isinstance(t, ast.Name)}
+            if "pytestmark" in targets:
+                segment = ast.get_source_segment(source, node.value) or ""
+                if "skipif" in segment or "importorskip" in segment:
+                    lowered = segment.lower()
+                    for runtime in _RUNTIME_MODULES:
+                        if runtime in lowered:
+                            return runtime
+    return None
+
+
+def _requirement_for_path(path):
+    key = str(path)
+    if key not in _MODULE_REQUIREMENT_CACHE:
+        try:
+            with open(key, encoding="utf-8", errors="replace") as handle:
+                source = handle.read()
+        except OSError:
+            _MODULE_REQUIREMENT_CACHE[key] = None
+        else:
+            _MODULE_REQUIREMENT_CACHE[key] = module_runtime_requirement(source)
+    return _MODULE_REQUIREMENT_CACHE[key]
+
+
+def needs_houdini_reason(runtime: str) -> str:
+    """The skip/deselect reason. Names the missing dependency, always."""
+    where = {
+        "hou": "`hou` (Houdini's Python module -- exists only inside "
+               "Houdini/hython, never on a stock interpreter)",
+        "pxr": "`pxr` (OpenUSD -- not installed on stock CI runners)",
+    }[runtime]
+    return f"needs a Houdini runtime: this module requires {where}"
+
+
+# tryfirst: these marks must exist BEFORE pytest's own `-m` filtering runs in
+# its pytest_collection_modifyitems, or the filter has nothing to match on.
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(session, config, items):
+    for item in items:
+        path = getattr(item, "path", None) or getattr(item, "fspath", None)
+        if path is None:
+            continue
+        runtime = _requirement_for_path(path)
+        if runtime is None:
+            continue
+        _NEEDS_HOUDINI[item.nodeid] = runtime
+        item.add_marker(
+            pytest.mark.needs_houdini(runtime, reason=needs_houdini_reason(runtime))
+        )
+
+
+def pytest_deselected(items):
+    for item in items:
+        runtime = _NEEDS_HOUDINI.get(getattr(item, "nodeid", None))
+        if runtime is not None:
+            _NEEDS_HOUDINI_DESELECTED.append((item.nodeid, runtime))
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    """Report the deselected needs_houdini set.
+
+    `-rs` prints skips and their reasons; nothing prints DESELECTIONS, so a
+    `-m "not needs_houdini"` run would otherwise drop tests out of the summary
+    with no trace at all. That silent hole is exactly what this leg exists to
+    close, so the set is printed here with the runtime each module needs.
+    """
+    if not _NEEDS_HOUDINI_DESELECTED:
+        return
+    by_module: dict = {}
+    for nodeid, runtime in _NEEDS_HOUDINI_DESELECTED:
+        module = nodeid.split("::", 1)[0]
+        entry = by_module.setdefault(module, [runtime, 0])
+        entry[1] += 1
+    total = len(_NEEDS_HOUDINI_DESELECTED)
+    terminalreporter.write_sep(
+        "=", "needs_houdini deselected (NOT silently dropped)", yellow=True)
+    for module in sorted(by_module):
+        runtime, count = by_module[module]
+        terminalreporter.line(
+            f"NEEDS_HOUDINI  {module}  [{count} test(s)]"
+            f"  -- {needs_houdini_reason(runtime)}")
+    terminalreporter.line(
+        f"{total} test(s) in {len(by_module)} module(s) deselected by "
+        f"-m 'not needs_houdini'. Run the full suite under hython "
+        f"(pytest tests/, no -m filter) to execute them.")

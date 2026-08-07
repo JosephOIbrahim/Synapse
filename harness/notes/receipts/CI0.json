@@ -1,0 +1,251 @@
+{
+  "schema": "receipt/v1",
+  "leg": "CI0",
+  "title": "Master's CI made honestly green — three failures fixed as real rot, one needs_houdini marker that provably hides nothing",
+  "harness": "CI0 (harness/prompts/ci0.md)",
+  "ruling": "HONESTY OVER A GREEN BADGE (Joe, as CTO). A green check that hides failures is worse than an honest red one.",
+  "status": "green-with-a-stated-exception",
+  "status_note": "Describes what happened (Law 3). On Python 3.14 the oracle is fully met: `pytest tests/ -m \"not needs_houdini\"` is 0-failed / 5682-passed in a CI-faithful clone with no pxr and no hou, and the unfiltered run has the SAME 5682 passes. On Python 3.11 the three target failures are fixed, but three OTHER tests fail — and they fail identically at the base commit, on Windows only, because they assert `elapsed > 0` against a clock with ~15.6 ms granularity. Both 3.11 legs passed on the last completed green CI run (30772612918, ubuntu + macos), which is the platform CI actually runs, so they are reported rather than fixed: fixing them means changing product timing code, which is a separate judgement (for_ruling #3). Nothing was weakened, xfailed, deleted or marked needs_houdini to reach this. Not merged, not pushed — Gate C is human.",
+
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "interactive orchestrator session (pytest, python, git read/write, gh read available — suite evidence is admissible per Constitution Article V)",
+  "commit_at_run": "ecc55b0f",
+  "merge_base_master_head": "c4187d01",
+  "branch": "ci/ci0-honest-green",
+  "worktree": ".claude/worktrees/ci0-honest-green",
+  "date": "2026-08-06",
+
+  "reproduction_environment": {
+    "why": "The worktree is NOT a faithful CI stand-in: tests/test_statusline.py reads `.git/HEAD` as a file path and in a linked worktree `.git` is a 62-byte FILE, so 4 statusline tests fail there for reasons unrelated to any change. All numbers below come from a real clone.",
+    "path": "C:/Users/User/AppData/Local/Temp/ci0v (short path — the vendored SDK tree hits Windows MAX_PATH under a deep prefix; a deep-path clone aborted with 'Filename too long')",
+    "shape": "git clone --no-hardlinks of the worktree, checkout ci/ci0-honest-green, `git branch master origin/master` (test_d_track + test_perf_ratchet anchor on master; CI gets this from fetch-depth: 0)",
+    "interpreters": ["CPython 3.14.2", "CPython 3.11.15"],
+    "pxr": "ABSENT (verified: ModuleNotFoundError) — matches the runner",
+    "hou": "ABSENT — matches the runner",
+    "moneta": "moneta==1.2.0rc1 installed from the local C:/Users/User/Moneta checkout, which is exactly at tag v1.2.0-rc3, the tag ci.yml pins. `moneta_available()` -> True, matching the workflow's 'Assert Moneta backend is active' step. This is what makes the two Moneta failures reproducible at all — without it they skip."
+  },
+
+  "suite": {
+    "before_py314_unfiltered": {"failed": 3, "passed": 5661, "skipped": 215, "deselected": 0, "producer": "pytest tests/ --tb=no -q on the clone at ecc55b0f"},
+    "after_py314_unfiltered": {"failed": 0, "passed": 5682, "skipped": 215, "deselected": 0, "producer": "pytest tests/ -rs --tb=short -q"},
+    "after_py314_filtered_as_ci_runs_it": {"failed": 0, "passed": 5682, "skipped": 175, "deselected": 40, "producer": "pytest tests/ -m \"not needs_houdini\" -rs --tb=short -q"},
+    "before_py311_unfiltered": {"failed": 6, "passed": 5660, "skipped": 213, "note": "3 target failures + 3 Windows clock-granularity failures"},
+    "after_py311_filtered": {"failed": 5, "passed": 5679, "skipped": 173, "deselected": 40, "note": "all 5 are the Windows clock family; the set flickers run to run (4 in the unfiltered pass), which is itself the flake signature"},
+    "ci_reference_run": {"run_id": 31132046019, "leg": "macos-latest / 3.14", "failed": 3, "passed": 5659, "skipped": 217, "note": "the local clone passes 5661 vs CI's 5659 and skips 215 vs 217 — 2 tests run on Windows that skip on macOS. The FAILED set is identical, which is the number that matters."},
+    "test_count_delta": "+21 passed (5661 -> 5682) = 3 previously-failing now passing + 18 new tests in tests/test_needs_houdini_marker.py. Law 6 holds: strictly increases, nothing removed."
+  },
+
+  "the_three_failures": [
+    {
+      "id": "A-1",
+      "test": "tests/test_moneta_crucible.py::test_moneta_backend_never_fires_evolution",
+      "brief_class": "A (real rot)",
+      "verdict_class": "A — confirmed",
+      "symptom": "ImportError: cannot import name 'evolution' from 'synapse.memory'",
+      "which_side_was_stale": "THE MODULE WAS RETIRED DELIBERATELY; THE TEST AND ONE PRODUCTION CONSUMER WERE THE STALE SIDE.",
+      "evidence": [
+        "VERIFIED-STATIC: commit 7f7bbc39 ('feat(moneta): production harness') renamed python/synapse/memory/evolution.py -> evolution.py.deprecated. Its own commit body says 'Remove evolution.py (-> evolution.py.deprecated)'.",
+        "VERIFIED-STATIC: docs/DEBUT_READINESS.md:120 documents the rename as intentional; docs/moneta-deep-review-2026-08-05.md:244 (B-S12) had already classified the module as dormant dead code.",
+        "VERIFIED-STATIC: tests/test_scene_memory.py:542 was ALREADY adapted to the retirement — it carries `skipif(not _EVO_AVAILABLE, reason='evolution.py not found (deprecated)')`. Two other call sites were missed.",
+        "VERIFIED-STATIC: python/synapse/server/handlers_memory.py:321 (pre-fix) still did `from ..memory.evolution import check_evolution, evolve_to_charmeleon` — so `_handle_evolve_memory` raised ImportError on EVERY invocation. The `evolve_memory` command and the `synapse_evolve_memory` MCP tool were dead on arrival and no test covered it."
+      ],
+      "disposition": "FIXED, not skipped. (a) handlers_memory._handle_evolve_memory rerouted to shared/evolution.py::LosslessEvolution + check_evolution_triggers — a strict superset of the retired evolver (same markdown->USD conversion, plus lossless verify with rollback, an immutable pre-evolution archive, and R10 viewport sync). Stage names match on both sides: shared/constants.py:298 defines EVOLUTION_STAGE_FLAT='charmander', _STRUCTURED='charmeleon', so the reply keys keep their old shape. The import is guarded and an unavailable `shared/` returns status 'unavailable', never a fake success (Law 3). (b) The test now asserts the retirement itself, in two halves: the module is gone from the tree, and NO shipped module imports the retired name.",
+      "law_1_proof": "The offender-scan half was PROVEN able to fail: run against `git show HEAD:python/synapse/server/handlers_memory.py`, the pattern hits line 321. The first pattern written did NOT hit it — `\\bevolution\\b` never matches inside `check_evolution` because `_` is a word character — so the check was toothless and was rewritten to anchor on the MODULE PATH. Positive controls (4 import shapes) and negative controls (shared.evolution, evolution_stage, scene_memory, a commented-out import) were run before the test was trusted."
+    },
+    {
+      "id": "A-2",
+      "test": "tests/test_pass7_per_agent_and_canonical.py::TestPokemonStageCanonicalPin::test_charmander_referenced_in_all_consumers",
+      "brief_class": "A (real rot)",
+      "verdict_class": "A — confirmed",
+      "symptom": "AssertionError: Canonical constant drift detected ... Files not found / unreadable: python/synapse/memory/evolution.py",
+      "which_side_was_stale": "THE TEST. Same retirement as A-1: the pin listed a consumer that no longer exists. The sibling test_charmeleon_referenced_in_all_consumers never listed it, so the two pins had silently diverged.",
+      "evidence": [
+        "VERIFIED-STATIC: tests/_conformance.py:66 reports a missing FILE as drift, which is the pin working exactly as designed — a retired module cannot be a consumer.",
+        "VERIFIED-STATIC: three LIVE charmander consumers were never pinned at all — python/synapse/panel/shot_login.py, panel/agent_health.py, panel/context_bar.py."
+      ],
+      "disposition": "FIXED by replacement, not deletion. python/synapse/memory/evolution.py -> python/synapse/panel/shot_login.py, a live unpinned consumer. Consumer count HOLDS at 5 rather than dropping to 4; coverage moves from a dead file to a live one. The other two live consumers are named in the code comment for whoever widens the pin next."
+    },
+    {
+      "id": "B-1",
+      "test": "tests/test_moneta_integration.py::test_hard_exit_loses_the_deposit (renamed -> test_hard_exit_loses_the_unsnapshotted_deposits)",
+      "brief_class": "B (environmental — mark honestly)",
+      "verdict_class": "NOT ENVIRONMENTAL. The brief's triage is corrected here, with a probe.",
+      "symptom": "AssertionError: hard exit unexpectedly persisted — the durability of the clean-exit test cannot be attributed to atexit (assert 1 == 0)",
+      "why_the_brief_class_is_refuted": "REFUTED-LIVE: the test fails identically on an interpreter WHERE pxr IS PRESENT (system Python 3.14 with usd-core installed): `1 failed, 1 passed`. The pxr ModuleNotFoundError in the CI log is an incidental warning from moneta_store.py:282 falling back off USD sublayers; it is not the cause. The test therefore did NOT earn the needs_houdini marker, and marking it would have been the exact lie the ruling forbids.",
+      "root_cause": "python/synapse/memory/moneta_store.py:205 — `self._last_save: float = 0.0`. add() then checks `now - self._last_save >= self._save_interval` at :379 with `now = time.monotonic()`, which on any process is far above 30.0. So the check is ALWAYS true on the first deposit: the very first add() force-saves, synchronously, every time.",
+      "probe": {
+        "producer": "scratch probe, subprocess deposit -> count rows in .moneta/snapshot.json, moneta v1.2.0-rc3",
+        "table": [
+          {"deposits": 1, "clean_sys_exit_0": 1, "hard_os_exit_0": 1, "note": "negative control could not fail"},
+          {"deposits": 2, "clean_sys_exit_0": 2, "hard_os_exit_0": 1},
+          {"deposits": 3, "clean_sys_exit_0": 3, "hard_os_exit_0": 1}
+        ],
+        "second_probe": "with `_last_save = time.monotonic()` patched in, the 1-deposit hard exit persists 0 rows — i.e. the ORIGINAL assertions pass verbatim under that one-line change."
+      },
+      "the_finding_underneath": "This is Law 1 in the flesh, and the negative control caught it exactly as designed. At 1 deposit the POSITIVE control (test_atexit_snapshots_deposits_on_clean_exit) was passing for the wrong reason — persistence came from the first-add save, not from the atexit hook it claimed to prove. The entire Phase-1 durability fix was unproven. Corroborating evidence that `_last_save = 0.0` is an anomaly and not a design: two other tests in the same file (lines 292, 336) have to reset `_last_save = time.monotonic()` by hand to make the timer testable, and one says so in its docstring.",
+      "disposition": "FIXED IN THE TESTS, NOT IN THE PRODUCT — deliberately. Both controls now deposit 3 memories: clean exit must persist 3 (proving atexit carried #2 and #3), hard exit must persist exactly 1 (proving nothing incidental covers #2 and #3, and that the first-add save is still firing). Both assertions are STRONGER than before — the old pair pinned one number between them, the new pair pins the boundary from both sides — so Law 6 holds. Production durability is deliberately NOT changed by a CI leg: the one-line `_last_save = time.monotonic()` alternative REDUCES first-deposit durability, and that is a posture judgement, escalated as for_ruling #1 rather than taken here.",
+      "test_count": "2 tests before, 2 tests after. One renamed, because the old name asserted a total loss that never happens."
+    }
+  ],
+
+  "marker_mechanism": {
+    "name": "needs_houdini",
+    "registered": "pyproject.toml [tool.pytest.ini_options] markers (alongside the existing `live` marker)",
+    "applied_by": "tests/conftest.py — pytest_collection_modifyitems(tryfirst=True). Auto-collected, never hand-applied. tests/conftest.py was EXTENDED (appended to), not replaced.",
+    "detection_rule": "AST-based, module level ONLY. A module earns the marker if it has (1) an unguarded module-level `import hou` / `from pxr import ...`, (2) a module-level `pytest.importorskip(\"hou\"|\"pxr\")`, or (3) a module-level `pytestmark = ...skipif(...)` whose source names the runtime.",
+    "why_ast_and_not_grep": "The brief's grep `^\\s*(import|from)\\s+(hou|pxr)` reports 17 files. Only 7 of them actually hard-require a runtime. The grep's false positives are instructive: tests/test_e2e_tops.py:97 `import hou` is inside a STRING of code shipped over the wire; tests/test_marshal_hostile.py and tests/test_hou_reimport_guard.py import inside functions against the conftest's canonical FAKE hou and pass fine on a stock runner; tests/test_scene_memory.py and 5 others gate per-test, not per-module. Marking any of those would have deselected currently-passing tests — a green that lies by omission.",
+    "marked_set": {
+      "hou": ["tests/solaris/test_live_wiring.py", "tests/test_h22_cops_solver_live.py", "tests/test_h22_setdressing_live.py", "tests/test_hwebserver_integration.py"],
+      "pxr": ["tests/test_scene_hash_gate.py", "tests/test_stage_exceeds_cache_and_composition_valid.py", "tests/test_stage_hash_honesty.py"],
+      "note": "The 3 pxr modules skip themselves at COLLECTION on a runner without pxr, so the marker never even reaches them there — they appear in the -rs skip block, not the deselect block. All 40 deselections in CI come from the 4 hou modules."
+    },
+    "deliberately_not_marked": {
+      "tests/test_usd_relationship_live.py": "gated on $SYNAPSE_H22_LIVE, not on hou. 'needs a Houdini runtime' would be the wrong reason to show a reader.",
+      "tests/test_live_capture.py": "its importorskip is nested inside a try, so it is not module level. It still skips itself, visibly.",
+      "tests/test_scene_memory.py + 5 others": "gate per-test; most of their tests run and pass on a stock runner."
+    },
+    "the_honesty_invariant": "A module is marked ONLY IF it already refuses to run without its runtime on its own. The marker is therefore REDUNDANT with a gate the module already carries — everything the CI filter removes would have skipped anyway. It is structurally incapable of deselecting a test that would otherwise have run and passed.",
+    "invariant_is_enforced_not_asserted": "tests/test_needs_houdini_marker.py, 18 tests: 5 positive detector controls, 7 negative detector controls (the dangerous direction — over-marking), the redundancy invariant itself, a real-hou-vs-fake-hou check, a 'the marker covers a nonempty set' check (a marker that marks nothing is a decoration that later gets cited as evidence), reason-string checks, and two workflow checks that fail if CI ever drops `not needs_houdini` or `-rs`.",
+    "measured_proof_that_nothing_is_hidden": {
+      "collected_unfiltered": 5892,
+      "collected_filtered": "5852/5892 (40 deselected)",
+      "passed_unfiltered": 5682,
+      "passed_filtered": 5682,
+      "skipped_unfiltered": 215,
+      "skipped_filtered": 175,
+      "reading": "Identical collection, identical pass count. The 40 deselected come straight out of the 215 skipped (215 - 40 = 175). The filter changes SELECTION, never collection, and removes nothing that was passing."
+    },
+    "visibility": {
+      "skips": "`-rs` added to the CI pytest step — prints every skip with its reason.",
+      "deselections": "pytest prints NOTHING for -m deselections, which would have been a real silent hole. tests/conftest.py adds pytest_deselected + pytest_terminal_summary, so the CI summary carries a 'needs_houdini deselected (NOT silently dropped)' block naming each module, its test count, and the runtime it needs.",
+      "exact_reason_string_hou": "needs a Houdini runtime: this module requires `hou` (Houdini's Python module -- exists only inside Houdini/hython, never on a stock interpreter)",
+      "exact_reason_string_pxr": "needs a Houdini runtime: this module requires `pxr` (OpenUSD -- not installed on stock CI runners)"
+    },
+    "local_runs_unaffected": "`pytest tests/` with no -m filter collects and runs everything, exactly as the receipts record. Verified: unfiltered 3.14 run is 5682 passed / 215 skipped / 0 deselected. The marker gates CI, not the developer."
+  },
+
+  "ci_change": {
+    "file": ".github/workflows/ci.yml",
+    "before": "python -m pytest tests/ -v --tb=short",
+    "after": "python -m pytest tests/ -m \"not needs_houdini\" -v -rs --tb=short",
+    "matrix": "UNCHANGED — 2 OS x 2 Python = 4 legs, none removed. No step deleted, no leg dodged.",
+    "note": "The 3.11 legs of runs 31033142402 and 31132046019 were CANCELLED by fail-fast before completing, so master has NO 3.11 evidence at all since it went red. Once the three failures are fixed those legs run to completion again — which is itself part of what this leg buys back."
+  },
+
+  "findings": [
+    {
+      "id": "F1",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/server/handlers_memory.py:321 (at ecc55b0f)",
+      "finding": "`synapse_evolve_memory` / the `evolve_memory` command has been DEAD since 7f7bbc39 — ImportError on every call. Registered in _tool_registry.py:1070, routed in handlers.py:800, RBAC-listed in rbac.py:70, gated REVIEW in test_consent_timeout.py:59 — a fully wired tool with a broken import at the bottom. No test covered it, which is why CI never said so. The two failing tests WERE the only signal, pointing at it from one step away."
+    },
+    {
+      "id": "F2",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/memory/moneta_store.py:205 + :379",
+      "finding": "The first add() to any MonetaBackedStore force-saves synchronously, contradicting the module's own docstring at :162 ('deposit() writes to the in-memory ECS and returns immediately. There is no per-deposit fsync'). Measured, both directions — see B-1's probe table."
+    },
+    {
+      "id": "F3",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "docs/DEBUT_READINESS.md:122",
+      "finding": "DOC DRIFT, not corrected here. The sentence 'Under the jsonl fallback, it still fires' is false — the module is retired, so evolution fires nowhere. CLAUDE.md §6 carries the same stale claim ('live only for the legacy jsonl path'). Both are governing/release documents; per Article VI a structural contradiction escalates rather than being silently amended, so they are recorded here for a human to correct (for_ruling #4)."
+    },
+    {
+      "id": "F4",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "harness/statusline.py:100 / :112 / :127",
+      "finding": "The statusline reads `os.path.join(ROOT, '.git', 'HEAD')`. In a git LINKED WORKTREE `.git` is a 62-byte file, not a directory, so branch() returns '?' and head_sha() returns ''. Every agent worktree therefore shows a '?' branch, and 4 tests in tests/test_statusline.py fail there — in this worktree, at base, unrelated to any change. They pass in a real clone and on CI. Cost: any suite run inside a worktree reports 4 phantom failures, which is exactly the kind of noise that trains a reader to ignore red."
+    },
+    {
+      "id": "F5",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_routing.py:1083, tests/test_sessions.py:140, tests/test_pkg_bootstrap_invariant.py::test_r310_shapes_leave_no_runtime_divergence",
+      "finding": "Three tests assert `elapsed > 0` against a clock whose granularity on Windows is ~15.6 ms, so a fast operation measures exactly 0.0. They fail on Windows + Python 3.11 AT THE BASE COMMIT (6 failed there vs 3 on 3.14), and the failing subset flickers between runs — 4 in one pass, 5 in the next — which is the flake signature. They passed on ubuntu-3.11 and macos-3.11 in the last completed green run (30772612918). Not caused by this leg, not fixed by it, and not marked needs_houdini (they have nothing to do with Houdini)."
+    },
+    {
+      "id": "F6",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "harness/prompts/ci0.md:37",
+      "finding": "BRIEF DRIFT, benign. The brief states '23 of 310 test files import hou or pxr directly'. The grep it names returns 17 files across 309 test files, and only 7 of those hard-require a runtime; the rest already guard themselves. Following the stated number literally would have deselected ~10 modules' worth of currently-passing tests. The brief's own ruling (honesty over a green badge) outranks its own premise, so the marked set was derived from the tree instead."
+    }
+  ],
+
+  "scope_note_vs_legs_json": {
+    "declared_touches": [".github/workflows/", "tests/conftest.py", "python/synapse/memory/", "tests/"],
+    "actually_touched_outside_that": [
+      "python/synapse/server/handlers_memory.py — the manifest anticipated the evolution fix landing in python/synapse/memory/ (i.e. restoring the module). The evidence said otherwise: the module's retirement was deliberate and the STALE side was the consumer, which lives in server/. Fixing it in memory/ would have meant un-retiring a module three documents describe as superseded.",
+      "pyproject.toml — marker registration; there is nowhere else to register a pytest marker.",
+      "docs/CI_TWO_WORLDS.md — the operator note the brief's oracle asks for.",
+      "harness/notes/receipts/CI0.json — this receipt."
+    ],
+    "not_touched_though_declared": "python/synapse/memory/ — nothing in it needed changing.",
+    "why_recorded": "A reader diffing this leg against its manifest row would find the mismatch; naming it is cheaper than being found out by it."
+  },
+
+  "leg_state": {
+    "legs_json_state": "left at 'ready' — NOT flipped by this agent",
+    "why": "The two most recently completed legs (M5, M5b) are both still 'ready' in harness/legs.json despite being merged, so the flip is not the agent's move here. A human should set it when the merge lands."
+  },
+
+  "do_not_list_compliance": {
+    "python/synapse/blocks/ and BLOCKS tests": "UNTOUCHED — verified by `git diff --name-only`, no path under python/synapse/blocks/ or the BLOCKS tests appears.",
+    "no test weakened / xfailed / deleted": "No xfail was added anywhere. No test was deleted. Test count went 5661 -> 5682 passing. The only assertion that CHANGED direction (B-1's negative control) was changed because it asserted something false about the system, and its replacement pins the boundary from both sides — strictly more, not less.",
+    "no class-A failure marked needs_houdini": "None of the three failures carries the marker. B-1 was actively REFUTED as environmental with a pxr-present run before being fixed as rot.",
+    "no merge, no push": "Neither was attempted. Gate C is human."
+  },
+
+  "for_ruling": [
+    {
+      "id": 1,
+      "question": "Should MonetaBackedStore keep force-saving the FIRST deposit?",
+      "context": "`_last_save = 0.0` (moneta_store.py:205) makes add()'s periodic-save check always true on the first deposit. Two defensible readings, and this is a durability-posture call, not a fact.",
+      "option_a": "KEEP IT (what this leg did). No production behaviour change; the first deposit survives a kill -9. Cost: the module docstring's 'there is no per-deposit fsync' stays false for deposit #1, and the tests have to carry the boundary explanation.",
+      "option_b": "SET `_last_save = time.monotonic()` in __init__. One line. Probed: the ORIGINAL single-deposit assertions then pass verbatim. Makes the docstring true and the timer mean what it says. Cost: a lone deposit followed by kill -9 within 30 s is now lost — which the docstring already documents as the bound, but it is still a real reduction.",
+      "why_escalated": "Article I — a value judgement between defensible options, and a CI-greening leg is the wrong place to quietly change durability semantics."
+    },
+    {
+      "id": 2,
+      "question": "Should `synapse_evolve_memory` stay a registered tool at all?",
+      "context": "F1: it was dead since 7f7bbc39 and nobody noticed, which is evidence about how much it is used. This leg rerouted it to shared/evolution.py::LosslessEvolution so it works again. The alternative is deprecating the tool outright, since Moneta consolidation (`sleep_pass`) supersedes markdown->USD evolution.",
+      "why_escalated": "What to deprecate is explicitly a human call (Article I)."
+    },
+    {
+      "id": 3,
+      "question": "Fix the three zero-elapsed-time assertions (F5), or leave them?",
+      "context": "They only fail on Windows dev machines, never on the ubuntu/macos legs CI runs. A real fix means `time.perf_counter()` in the routing/session product code; changing `> 0` to `>= 0` would be weakening a test and was not done.",
+      "why_escalated": "Out of this leg's scope, and it touches product timing code in two subsystems."
+    },
+    {
+      "id": 4,
+      "question": "Correct the two stale evolution sentences (F3)?",
+      "context": "docs/DEBUT_READINESS.md:122 and CLAUDE.md §6 both still say evolution fires under the jsonl path. It fires nowhere. Both are governing/release documents.",
+      "why_escalated": "Article VI — an agent does not silently amend a governing document, even to correct a fact."
+    },
+    {
+      "id": 5,
+      "question": "Make harness/statusline.py worktree-aware (F4)?",
+      "context": "Every agent worktree shows a '?' branch and 4 red statusline tests. The fix is reading the `gitdir:` pointer when `.git` is a file. Small, but it is the bar's own design and the bar was built to be subprocess-free under 100 ms.",
+      "why_escalated": "Not this leg's surface; the tests it breaks are green on CI."
+    }
+  ],
+
+  "files_changed": [
+    {"path": ".github/workflows/ci.yml", "what": "pytest step now runs -m \"not needs_houdini\" -rs; matrix untouched"},
+    {"path": "pyproject.toml", "what": "registers the needs_houdini marker"},
+    {"path": "python/synapse/server/handlers_memory.py", "what": "_handle_evolve_memory rerouted off the retired module to shared/evolution.py; honest 'unavailable' status when shared/ is absent"},
+    {"path": "tests/conftest.py", "what": "APPENDED: AST detector, auto-mark hook, deselection reporter. Nothing existing modified."},
+    {"path": "tests/test_moneta_crucible.py", "what": "A-1 — test now enforces the retirement instead of importing the retired module"},
+    {"path": "tests/test_moneta_integration.py", "what": "B-1 — both durability controls deposit 3, pinning the boundary from both sides"},
+    {"path": "tests/test_pass7_per_agent_and_canonical.py", "what": "A-2 — retired path replaced with a live consumer"},
+    {"path": "tests/test_needs_houdini_marker.py", "what": "NEW — 18 tests pinning the marker mechanism and its honesty invariant"},
+    {"path": "docs/CI_TWO_WORLDS.md", "what": "NEW — operator note: what CI runs vs what you run, and what CI still cannot tell you"},
+    {"path": "harness/notes/receipts/CI0.json", "what": "NEW — this receipt"}
+  ],
+
+  "resume_token": {
+    "skip_on_reentry": "The three failures are fixed and verified on 3.14 filtered + unfiltered; do not re-triage them. The marker set is derived from the tree by AST, so it needs no maintenance — re-derive rather than re-reading this list.",
+    "next": "Human: land on master (Gate C) and confirm the 4 CI legs go green, including the two 3.11 legs that have not completed since 3fb5d45d. Then work for_ruling 1-5 as a batch.",
+    "verification_command": "git clone . <short-path> && git branch master origin/master && uv venv --python 3.14 && uv pip install -e \".[dev,websocket,mcp]\" && uv pip install <Moneta@v1.2.0-rc3> && python -m pytest tests/ -m \"not needs_houdini\" -rs   # expect 0 failed, 5682 passed, 175 skipped, 40 deselected. Do NOT install pxr."
+  }
+}
