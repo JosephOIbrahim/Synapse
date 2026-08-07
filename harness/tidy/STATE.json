@@ -1,0 +1,649 @@
+{
+  "schema_version": 1,
+  "name": "tidy",
+  "created": "2026-08-07",
+  "last_run": "2026-08-07T09:42:12.087061900",
+  "runs": [
+    {
+      "run_at": "2026-08-07T09:19:37.854692",
+      "items": [
+        {
+          "path": "harness/legs.json",
+          "kind": "modified",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/rope/STATE.json",
+          "kind": "modified",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "$null",
+          "kind": "untracked",
+          "disposition": "DROP"
+        },
+        {
+          "path": "docs/pkg_info.json",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "docs/project.md",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/NEXT_SESSION.md",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/autoresearch/runs/fixture_verify_20260805_183316/",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/autoresearch/runs/scout_20260805_181349/",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/autoresearch/runs/solaris_basic_20260805_181026/",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/MONETA_WATCH.txt",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/RELEASE_v5.43.0.md",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/RELEASE_v5.43.0_DRAFT.md",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/_diff_runs.py",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/_extract_reasons.py",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/_probe_double_run.py",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/_probe_oiio.py",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/_probe_oiio_read.py",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/_probe_to_thread.py",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/_route_dispatch.py",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/_why.py",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/notes/watch_moneta.ps1",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/prompts/ci0.md",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "harness/rope/OPERATOR_CARD.md.bak",
+          "kind": "untracked",
+          "disposition": "DROP"
+        },
+        {
+          "path": "harness/tidy/",
+          "kind": "untracked",
+          "disposition": "REVIEW"
+        },
+        {
+          "path": "models/",
+          "kind": "untracked",
+          "disposition": "GITIGNORE"
+        },
+        {
+          "path": "shot_layers/",
+          "kind": "untracked",
+          "disposition": "GITIGNORE"
+        }
+      ],
+      "summary": "26 items: DROP=2, GITIGNORE=2, REVIEW=22"
+    },
+    {
+      "run_at": "2026-08-07T09:42:12.087061900",
+      "items": [
+        {
+          "id": "TIDY-01",
+          "path": "harness/NEXT_SESSION.md",
+          "kind": "untracked",
+          "disposition": "COMMIT",
+          "action": "staged (commit 1)",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "Standing next-session handoff; referenced by every harness"
+        },
+        {
+          "id": "TIDY-02",
+          "path": "harness/prompts/ci0.md",
+          "kind": "untracked",
+          "disposition": "COMMIT",
+          "action": "staged (commit 1)",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "CI0 leg brief; referenced by legs.json"
+        },
+        {
+          "id": "TIDY-03",
+          "path": "harness/notes/RELEASE_v5.43.0.md",
+          "kind": "untracked",
+          "disposition": "COMMIT",
+          "action": "staged (commit 2)",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "THE release note for shipped+tagged v5.43.0"
+        },
+        {
+          "id": "TIDY-04",
+          "path": "harness/rope/STATE.json",
+          "kind": "modified",
+          "disposition": "COMMIT",
+          "action": "staged (commit 3)",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "L5-13 needs_review->blocked; producer's legitimate state write, not stale"
+        },
+        {
+          "id": "TIDY-05",
+          "path": "harness/tidy/",
+          "kind": "untracked",
+          "disposition": "COMMIT",
+          "action": "staged (commit 4)",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "The tidy harness itself (SPEC, STATE, runner, workflow)"
+        },
+        {
+          "id": "TIDY-06",
+          "path": "harness/autoresearch/runs/fixture_verify_20260805_183316/",
+          "kind": "untracked",
+          "disposition": "COMMIT",
+          "action": "staged (commit 5)",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "Completed fixture_verify run (DONE 1/1); LOP truth for H22.0.368"
+        },
+        {
+          "id": "TIDY-07",
+          "path": "harness/autoresearch/runs/scout_20260805_181349/",
+          "kind": "untracked",
+          "disposition": "COMMIT",
+          "action": "staged (commit 5)",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "Completed scout/triage run; dead-literal + successor findings"
+        },
+        {
+          "id": "TIDY-08",
+          "path": "harness/autoresearch/runs/solaris_basic_20260805_181026/",
+          "kind": "untracked",
+          "disposition": "COMMIT",
+          "action": "staged (commit 5)",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "Completed solaris_basic run (DONE 32/32); LOP truth"
+        },
+        {
+          "id": "TIDY-09",
+          "path": "$null",
+          "kind": "untracked",
+          "disposition": "DROP",
+          "action": "proposed: rm $null",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "PowerShell 2>$null redirect artifact; ABI-mismatch signal preserved in notes"
+        },
+        {
+          "id": "TIDY-10",
+          "path": "harness/rope/OPERATOR_CARD.md.bak",
+          "kind": "untracked",
+          "disposition": "DROP",
+          "action": "proposed: rm harness/rope/OPERATOR_CARD.md.bak",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "Superseded backup of a tracked, newer file"
+        },
+        {
+          "id": "TIDY-11",
+          "path": "archive/retina-m2-orphan",
+          "kind": "other",
+          "disposition": "BLOCKED",
+          "action": "proposed drop, NOT recommended; keep ref",
+          "risk": "med",
+          "gate": "human",
+          "rationale": "Rejected-but-kept archive ref; remote ref exists; memory records deliberate keep (Law 4)"
+        },
+        {
+          "id": "TIDY-P1",
+          "path": "harness/notes/MONETA_WATCH.txt",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Scratch watch script output; keep out of main tree"
+        },
+        {
+          "id": "TIDY-P2",
+          "path": "harness/notes/RELEASE_v5.43.0_DRAFT.md",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Superseded draft; final release note committed as TIDY-03"
+        },
+        {
+          "id": "TIDY-P3",
+          "path": "harness/notes/_diff_runs.py",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Probe/scratch script"
+        },
+        {
+          "id": "TIDY-P4",
+          "path": "harness/notes/_extract_reasons.py",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Probe/scratch script"
+        },
+        {
+          "id": "TIDY-P5",
+          "path": "harness/notes/_probe_double_run.py",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Probe/scratch script"
+        },
+        {
+          "id": "TIDY-P6",
+          "path": "harness/notes/_probe_oiio.py",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Probe/scratch script"
+        },
+        {
+          "id": "TIDY-P7",
+          "path": "harness/notes/_probe_oiio_read.py",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Probe/scratch script"
+        },
+        {
+          "id": "TIDY-P8",
+          "path": "harness/notes/_probe_to_thread.py",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Probe/scratch script"
+        },
+        {
+          "id": "TIDY-P9",
+          "path": "harness/notes/_route_dispatch.py",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Probe/scratch script"
+        },
+        {
+          "id": "TIDY-P10",
+          "path": "harness/notes/_why.py",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Probe/scratch script"
+        },
+        {
+          "id": "TIDY-P11",
+          "path": "harness/notes/watch_moneta.ps1",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Scratch watch script"
+        },
+        {
+          "id": "TIDY-P12",
+          "path": "docs/pkg_info.json",
+          "kind": "untracked",
+          "disposition": "PARK",
+          "action": "moved to harness/notes/scratch/pkg_info.json",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Machine-generated diagnostic, not a docs/ document"
+        },
+        {
+          "id": "TIDY-24",
+          "path": "docs/project.md",
+          "kind": "untracked",
+          "disposition": "MOVE",
+          "action": "moved to claude/project.md",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "Moneta project-memory export; canonical location is claude/project.md"
+        },
+        {
+          "id": "TIDY-18",
+          "path": "harness/legs.json",
+          "kind": "modified",
+          "disposition": "FIX",
+          "action": "proposed: human flips M5/M5b state ready->done + closed_note + worktree_released",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "M5/M5b ancestor-merged to master; stale ready risks redundant re-dispatch. CI0 leg correct, untouched"
+        },
+        {
+          "id": "TIDY-19",
+          "path": "models/",
+          "kind": "untracked",
+          "disposition": "GITIGNORE",
+          "action": "proposed: append models/ to .gitignore",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "90MB downloaded ONNX embedder; docs say no model ships with repo"
+        },
+        {
+          "id": "TIDY-20",
+          "path": "shot_layers/",
+          "kind": "untracked",
+          "disposition": "GITIGNORE",
+          "action": "proposed: append shot_layers/ to .gitignore",
+          "risk": "low",
+          "gate": "human",
+          "rationale": "RES-F11/R57 solaris-live-test litter; root cause at solaris_compose_tools.py:133-136"
+        },
+        {
+          "id": "TIDY-21",
+          "path": "mcp_server.py list_tools",
+          "kind": "other",
+          "disposition": "DEFER",
+          "action": "none; pin mcp==1.26.0 already on master (9c8fe878)",
+          "risk": "low",
+          "gate": "none",
+          "rationale": "CI red resolved by the pin; residual CI green folds into the CI0 leg"
+        },
+        {
+          "id": "TIDY-22",
+          "path": "blocks/m5-reconciler",
+          "kind": "other",
+          "disposition": "PRUNE",
+          "action": "proposed: worktree remove + branch -D + push origin --delete",
+          "risk": "med",
+          "gate": "human",
+          "rationale": "Merged ancestor of master (d6b22a4e); destructive, human-executed only"
+        },
+        {
+          "id": "TIDY-23",
+          "path": "blocks/m5b-rulings",
+          "kind": "other",
+          "disposition": "PRUNE",
+          "action": "proposed: worktree remove + branch -D + push origin --delete",
+          "risk": "med",
+          "gate": "human",
+          "rationale": "Merged ancestor of master (c4187d01); destructive, human-executed only"
+        }
+      ],
+      "summary": "30 items resolved: COMMIT=8, PARK=12, MOVE=1, DROP=2, GITIGNORE=2, FIX=1, PRUNE=2, BLOCKED=1, DEFER=1"
+    }
+  ],
+  "items": [
+    {
+      "id": "TIDY-01",
+      "path": "harness/NEXT_SESSION.md",
+      "disposition": "COMMIT",
+      "status": "staged"
+    },
+    {
+      "id": "TIDY-02",
+      "path": "harness/prompts/ci0.md",
+      "disposition": "COMMIT",
+      "status": "staged"
+    },
+    {
+      "id": "TIDY-03",
+      "path": "harness/notes/RELEASE_v5.43.0.md",
+      "disposition": "COMMIT",
+      "status": "staged"
+    },
+    {
+      "id": "TIDY-04",
+      "path": "harness/rope/STATE.json",
+      "disposition": "COMMIT",
+      "status": "staged"
+    },
+    {
+      "id": "TIDY-05",
+      "path": "harness/tidy/",
+      "disposition": "COMMIT",
+      "status": "staged"
+    },
+    {
+      "id": "TIDY-06",
+      "path": "harness/autoresearch/runs/fixture_verify_20260805_183316/",
+      "disposition": "COMMIT",
+      "status": "staged"
+    },
+    {
+      "id": "TIDY-07",
+      "path": "harness/autoresearch/runs/scout_20260805_181349/",
+      "disposition": "COMMIT",
+      "status": "staged"
+    },
+    {
+      "id": "TIDY-08",
+      "path": "harness/autoresearch/runs/solaris_basic_20260805_181026/",
+      "disposition": "COMMIT",
+      "status": "staged"
+    },
+    {
+      "id": "TIDY-09",
+      "path": "$null",
+      "disposition": "DROP",
+      "status": "proposed"
+    },
+    {
+      "id": "TIDY-10",
+      "path": "harness/rope/OPERATOR_CARD.md.bak",
+      "disposition": "DROP",
+      "status": "proposed"
+    },
+    {
+      "id": "TIDY-11",
+      "path": "archive/retina-m2-orphan",
+      "disposition": "BLOCKED",
+      "status": "proposed-not-recommended"
+    },
+    {
+      "id": "TIDY-P1",
+      "path": "harness/notes/MONETA_WATCH.txt",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-P2",
+      "path": "harness/notes/RELEASE_v5.43.0_DRAFT.md",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-P3",
+      "path": "harness/notes/_diff_runs.py",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-P4",
+      "path": "harness/notes/_extract_reasons.py",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-P5",
+      "path": "harness/notes/_probe_double_run.py",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-P6",
+      "path": "harness/notes/_probe_oiio.py",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-P7",
+      "path": "harness/notes/_probe_oiio_read.py",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-P8",
+      "path": "harness/notes/_probe_to_thread.py",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-P9",
+      "path": "harness/notes/_route_dispatch.py",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-P10",
+      "path": "harness/notes/_why.py",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-P11",
+      "path": "harness/notes/watch_moneta.ps1",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-P12",
+      "path": "docs/pkg_info.json",
+      "disposition": "PARK",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-24",
+      "path": "docs/project.md",
+      "disposition": "MOVE",
+      "status": "done"
+    },
+    {
+      "id": "TIDY-18",
+      "path": "harness/legs.json",
+      "disposition": "FIX",
+      "status": "proposed"
+    },
+    {
+      "id": "TIDY-19",
+      "path": "models/",
+      "disposition": "GITIGNORE",
+      "status": "proposed"
+    },
+    {
+      "id": "TIDY-20",
+      "path": "shot_layers/",
+      "disposition": "GITIGNORE",
+      "status": "proposed"
+    },
+    {
+      "id": "TIDY-21",
+      "path": "mcp_server.py list_tools",
+      "disposition": "DEFER",
+      "status": "deferred-to-ci0"
+    },
+    {
+      "id": "TIDY-22",
+      "path": "blocks/m5-reconciler",
+      "disposition": "PRUNE",
+      "status": "proposed"
+    },
+    {
+      "id": "TIDY-23",
+      "path": "blocks/m5b-rulings",
+      "disposition": "PRUNE",
+      "status": "proposed"
+    }
+  ],
+  "gates": [
+    "R-CI0-1..5: rule the five CI0 escalations (moneta first-deposit force-save, evolve_memory deprecation, zero-elapsed-time tests, stale evolution doc sentences, worktree-aware statusline)",
+    "R-M5b-1: commit the warn-not-refuse phantom-gate scout change + decision note",
+    "M6: decide phrase-table design (exact-match vs aliases), then build",
+    "CI0 merge (Gate C): git merge ci/ci0-honest-green with SYNAPSE_GATE_C=1",
+    "CLEAR L1: commit-or-drop the 6 latency-relay files",
+    "PHANTOM SWEEP: ratify SPEC, merge corpus fix branch, populate phantoms.json",
+    "RSI: authorize L3->L4 advances (A3,R,O,E), signal-semantics change (A1), C substrate flip",
+    "ROPE blocked_human: L3-2 video above the fold; L3-5 Apprentice verdict + support matrix",
+    "MONETA: ratify substrate, pin dependency + CI ref, provision MONETA_DEPLOY_KEY",
+    "TIDY: approve the 5 staged commits (TIDY-01..08)",
+    "TIDY: approve drops $null (TIDY-09) and OPERATOR_CARD.md.bak (TIDY-10)",
+    "TIDY: decide archive/retina-m2-orphan (TIDY-11) — keep recommended",
+    "TIDY: apply legs.json FIX (TIDY-18) — M5/M5b to done",
+    "TIDY: append models/ + shot_layers/ to .gitignore (TIDY-19/20)",
+    "TIDY: approve prunes blocks/m5-reconciler (TIDY-22) and blocks/m5b-rulings (TIDY-23)"
+  ]
+}

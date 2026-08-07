@@ -1,0 +1,45 @@
+{
+  "triage": {
+    "dead_literals_confirmed": [
+      "usdrender",
+      "usd",
+      "graft",
+      "geometryclipsequence"
+    ],
+    "successors": {
+      "usdrender": [
+        "usdrender_rop"
+      ],
+      "usd": [
+        "inlineusd",
+        "usd_rop",
+        "usdrender_rop"
+      ],
+      "graft": [
+        "graftbranches",
+        "graftstages"
+      ],
+      "geometryclipsequence": [
+        "geoclipsequence",
+        "valueclip"
+      ]
+    },
+    "chain_verdict": "The candidate chain 'basic_chain_candidate' (sopcreate, domelight, materiallibrary, camera, karmarenderproperties) is stable but uses deprecated karmarenderproperties; karmarendersettings is the non-deprecated alternative and should be tested.",
+    "surprises": [
+      "Decoded parm names for domelight and camera contain corrupted strings (e.g., semicolons inserted), indicating a possible decoder issue or actual parm name encoding quirk."
+    ],
+    "gaps": [
+      "No parm probe for karmarendersettings (non-deprecated render settings).",
+      "No parm probe for sopimport, distantlight, lightmixer, materiallinker, rendersettings, usdrender_rop, inlineusd, graftbranches, geoclipsequence.",
+      "No chain_hash test with karmarendersettings or alternative node choices.",
+      "Existence of successors like inlineusd, usd_rop, graftbranches, graftstages, geoclipsequence, valueclip not yet confirmed."
+    ]
+  },
+  "proposed": [
+    "next_solaris_basic_fixture"
+  ],
+  "rejected_questions": [],
+  "alive_literal_count": 70,
+  "tier": "scout",
+  "evidence": "C:\\Users\\User\\SYNAPSE\\harness\\autoresearch\\runs\\solaris_basic_20260805_181235\\lop_truth_22.0.368.json"
+}

@@ -765,7 +765,7 @@
      "note": "SEAT: restart panel, switch CURIOUS/EXPERT/ML -- Connect+Corpus visibly lift on Curious, TOKEN lifts on ML, Expert unchanged"
     }
    ],
-   "status": "needs_review",
+   "status": "blocked",
    "attempts": 0
   },
   {
