@@ -1,21 +1,57 @@
 # CI and your machine run different suites. Here is the difference.
 
-**Short version:** you run everything. CI runs everything it can, and prints
-the name of everything it can't.
+**Short version:** neither world runs the whole suite. Each is missing something
+the other has. CI runs everything it can and prints the name of everything it
+can't; hython runs the Houdini tests but is missing pip dependencies.
 
 ---
 
 ## The two commands
 
 ```
-# Your machine (and hython). Runs the WHOLE suite. This is what receipts record.
-pytest tests/
-
-# What CI runs. Same suite, minus the tests that need a Houdini runtime.
+# What CI runs. Missing hou and pxr.
 pytest tests/ -m "not needs_houdini" -rs
+
+# What hython runs. Has hou and pxr; missing websockets and mcp.
+hython -m pytest tests/
 ```
 
-Nothing else differs. Same tests, same asserts, same conftest.
+Same tests, same asserts, same conftest. What differs is what's installed.
+
+## Measured, on Houdini 22.0.368 (Python 3.13.10)
+
+| | stock CI runner | hython |
+|---|---|---|
+| `hou`, `pxr` | absent | **present** |
+| `websockets`, `mcp` | present | **absent** |
+| collected | 5892 | 5892 |
+| the 40 `needs_houdini` tests | deselected | **39 pass, 1 fails on `websockets`** |
+| collection errors | 0 | **5** |
+
+The 5 hython collection errors are all the same missing dependency:
+
+```
+tests/test_load.py                                  ModuleNotFoundError: mcp
+tests/test_passthrough_hygiene.py                   ModuleNotFoundError: mcp
+tests/test_port_wave_scene1.py                      ModuleNotFoundError: websockets
+tests/test_websocket_cancel_inflight_known_defect.py ModuleNotFoundError: websockets
+tests/test_websocket_cancel_reachable.py            ModuleNotFoundError: websockets
+```
+
+plus `test_hwebserver_integration.py::test_hwebserver_available`, which needs
+`websockets` at line 91.
+
+`python/synapse/_vendor` does **not** carry `websockets` or `mcp` — it vendors
+pydantic/anthropic and friends. Those two come from pip, and Houdini's bundled
+Python has no pip install of them. To close the gap on your machine, install
+them into Houdini's interpreter:
+
+```
+hython -m pip install websockets "mcp==1.26.0"
+```
+
+Until you do, "I ran the full suite locally" means 5892 collected minus 5
+modules that never got there.
 
 ---
 
@@ -109,8 +145,9 @@ Stated plainly, because a doc that hides a gap is worse than one that names it.
 
 **The 40 deselected tests are the live-Houdini surface.** Karma renders,
 Solaris wiring, COPs solvers, the hwebserver bridge. CI green says nothing
-about them. Only `pytest tests/` under `hython` does, and that has to be run by
-a human on a machine with Houdini.
+about them. Only `hython -m pytest tests/` does, run by a human on a machine
+with Houdini — and 1 of the 40 needs `websockets` on top of that (see the table
+above). Measured 2026-08-07 on 22.0.368: **39 of the 40 pass under real `hou`.**
 
 **The 175 skips are not all Houdini.** Some are PySide, some are
 `SYNAPSE_INTEGRATION=1`, some are `SYNAPSE_H22_LIVE=1`. Read the `-rs` block

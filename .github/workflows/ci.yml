@@ -31,6 +31,35 @@ jobs:
           # its own baseline is not guarding.
           fetch-depth: 0
 
+      - name: Give the git-anchored guards their master ref
+        # CI0. A `pull_request` checkout is a DETACHED HEAD with no local
+        # branches, so `master` does not resolve. fetch-depth: 0 above fetches
+        # all history and the remote-tracking refs, but it creates no local
+        # head — which is why the fix above only got half of this. Two guards
+        # then report an ENVIRONMENT GAP instead of a verdict, on every single
+        # pull request:
+        #
+        #   test_d_track.py::test_tops_path_untouched_green_at_head
+        #     "cannot anchor the quarantine diff — master ref unresolvable;
+        #      fetch/create master before trusting this guard"
+        #     — its own message is the instruction being followed here.
+        #
+        #   test_perf_ratchet.py::test_anchor_resolves_via_origin_master_when_no_local_master
+        #     builds its fixture with `git clone` of this repo. clone copies
+        #     local heads, NOT remote-tracking refs, so with no local master the
+        #     fixture clone has no origin/master and cannot be built. It fails
+        #     at its own setup assertion rather than testing something false,
+        #     which is the honest shape — it just needs a buildable fixture.
+        #
+        # Verified both directions on a detached, no-master checkout: those two
+        # FAIL before this line and PASS after it. This provisions the ref the
+        # guards document as their prerequisite. No assertion is touched.
+        #
+        # Conditional on purpose: a push to master has master checked out, and
+        # `git branch -f` against the current branch is a hard error.
+        run: git rev-parse --verify --quiet master >/dev/null || git branch master origin/master
+        shell: bash
+
       - name: Check out private Moneta backend (when key is configured)
         if: ${{ env.MONETA_DEPLOY_KEY != '' }}
         uses: actions/checkout@v5
