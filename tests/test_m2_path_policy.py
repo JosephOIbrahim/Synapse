@@ -390,3 +390,163 @@ def test_compose_layer_dir_uri_fails_loud(monkeypatch):
         sct.build_karma_xpu_shot(
             MagicMock(), shot="x", layer_dir="asset:/show/layers"
         )
+
+
+# ---------------------------------------------------------------------------
+# 6. GUARD -- the write site must never land department layers in the CWD
+#
+# RES-F11 (VERIFIED-RUNTIME): hython suite runs from the repo root left
+# shot_layers/{animation,fx,...}.usd in the working tree. TIDY-20 gitignored the
+# symptom; this block pins the cause at solaris_compose_tools._resolve_layer_base.
+#
+# WHY isabs() IS NOT THE CHECK -- probed live on 22.0.368 from a foreign CWD
+# (2026-08-08): on an UNSAVED scene hou.hipFile.isNewFile() is True and $HIP
+# expands to the process CWD, *absolutely*. After hipFile.save() isNewFile() is
+# False and $HIP is the saved project dir, decoupled from the CWD. So the
+# saved-state flag is the oracle; anchoring alone would have passed the litter
+# straight through. The fakes below reproduce exactly that probed behaviour.
+#
+# HOW EACH TEST FAILS: delete the _resolve_layer_base call at the write site and
+# every refusal test below goes red on the filesystem assertion -- os.makedirs +
+# Sdf.Layer.CreateNew put five real .usd files under the foreign CWD.
+# ---------------------------------------------------------------------------
+
+
+def _guard_env(monkeypatch, hip, *, is_new_file=None, expand=None):
+    """Plant a compose environment whose disk writes are REAL (via _fake_pxr).
+
+    `hip` is what $HIP expands to; `is_new_file` None omits hou.hipFile entirely
+    (the no-scene-state-oracle branch). `expand` overrides the whole expansion.
+    """
+    _fake_pxr(monkeypatch)
+    monkeypatch.setattr(sct, "HOU_AVAILABLE", True)
+
+    def _mk_node(label):
+        node = MagicMock(name=label)
+        node.path.return_value = "/stage/" + label
+        node.parm.side_effect = lambda pn: None      # every _set() logs + skips
+        return node
+
+    monkeypatch.setattr(sct, "sc", SimpleNamespace(
+        create_lop=lambda stage, type_name, name: _mk_node(name),
+        make_pythonscript_lop=lambda stage, name, code: _mk_node(name),
+        wire=lambda node, src, input_index=0: None,
+        read_stage=lambda n: "STAGE",
+        composition_errors=lambda s: [],
+        ComposeError=scmod.ComposeError,
+    ))
+    fake_hou = SimpleNamespace(
+        expandString=expand or (lambda s: s.replace("$HIP", hip)),
+    )
+    if is_new_file is not None:
+        fake_hou.hipFile = SimpleNamespace(isNewFile=lambda: is_new_file)
+    monkeypatch.setattr(sct, "hou", fake_hou)
+    return fake_hou
+
+
+def test_is_anchored_truth_table():
+    """Pure predicate. Refuses anything the CWD can move -- including a
+    drive-relative Windows path and a token that survived expansion."""
+    import os
+    for good in (os.path.abspath(os.sep + "proj"), os.path.abspath("x")):
+        assert sct._is_anchored(good), good
+    for bad in ("shot_layers", "./shot_layers", "$HIP/shot_layers", "", None):
+        assert not sct._is_anchored(bad), bad
+    if os.name == "nt":
+        # isabs() called this True before Python 3.13; it still resolves
+        # against the CWD's drive, so the guard must refuse it on every version.
+        assert not sct._is_anchored("/shot_layers")
+
+
+def test_compose_unsaved_scene_writes_nothing_to_foreign_cwd(tmp_path, monkeypatch):
+    """THE regression. Default layer_dir + unsaved scene, invoked from a foreign
+    CWD: raises, and the CWD is byte-for-byte untouched.
+
+    Fails if the guard is removed: $HIP == CWD (probed live), so the old code
+    makedirs `<cwd>/shot_layers` and writes five department .usd files there.
+    """
+    monkeypatch.chdir(tmp_path)
+    before = sorted(p.name for p in tmp_path.iterdir())
+    # $HIP == CWD is the live 22.0.368 behaviour for an unsaved scene.
+    _guard_env(monkeypatch, str(tmp_path), is_new_file=True)
+
+    with pytest.raises(scmod.ComposeError, match="scene is unsaved"):
+        sct.build_karma_xpu_shot(MagicMock(), shot="shot", verify=False)
+
+    assert not (tmp_path / "shot_layers").exists()
+    assert sorted(p.name for p in tmp_path.iterdir()) == before
+
+
+def test_compose_saved_scene_still_builds_into_hip(tmp_path, monkeypatch):
+    """Positive control -- the guard must not refuse legitimate work. A SAVED
+    scene's $HIP is the project dir, so the layers land there and not in the CWD.
+
+    Without this, a guard that refused everything would look green above."""
+    cwd, proj = tmp_path / "cwd", tmp_path / "proj"
+    cwd.mkdir()
+    proj.mkdir()
+    monkeypatch.chdir(cwd)
+    _guard_env(monkeypatch, str(proj), is_new_file=False)
+
+    result = sct.build_karma_xpu_shot(MagicMock(), shot="shot", verify=False)
+
+    for d in ("layout", "animation", "lighting", "fx", "render"):
+        assert (proj / "shot_layers" / (d + ".usd")).exists()
+    assert not (cwd / "shot_layers").exists()
+    assert len(result["disk_writes"]) == 5
+
+
+def test_compose_relative_layer_dir_refuses(tmp_path, monkeypatch):
+    """An explicit RELATIVE layer_dir is unsanctioned too -- it would resolve
+    against whatever CWD the process happens to hold."""
+    monkeypatch.chdir(tmp_path)
+    _guard_env(monkeypatch, str(tmp_path), is_new_file=False)
+
+    with pytest.raises(scmod.ComposeError, match="not an absolute path"):
+        sct.build_karma_xpu_shot(
+            MagicMock(), shot="shot", layer_dir="shot_layers", verify=False
+        )
+
+    assert not (tmp_path / "shot_layers").exists()
+
+
+def test_compose_unexpanded_token_refuses(tmp_path, monkeypatch):
+    """expandString that resolves nothing (undefined variable) leaves the raw
+    token. The old code fed that straight to makedirs -- a literal `$HIP`
+    directory in the CWD. Now it is refused as unanchored."""
+    monkeypatch.chdir(tmp_path)
+    _guard_env(monkeypatch, str(tmp_path), is_new_file=False, expand=lambda s: s)
+
+    with pytest.raises(scmod.ComposeError, match="not an absolute path"):
+        sct.build_karma_xpu_shot(MagicMock(), shot="shot", verify=False)
+
+    assert sorted(p.name for p in tmp_path.iterdir()) == []
+
+
+def test_compose_without_scene_state_api_refuses_cwd_base(tmp_path, monkeypatch):
+    """No hou.hipFile oracle: fall back to refusing the litter signature itself
+    -- a default base that lands inside the process CWD."""
+    monkeypatch.chdir(tmp_path)
+    _guard_env(monkeypatch, str(tmp_path), is_new_file=None)
+
+    with pytest.raises(scmod.ComposeError, match="scene is unsaved"):
+        sct.build_karma_xpu_shot(MagicMock(), shot="shot", verify=False)
+
+    assert not (tmp_path / "shot_layers").exists()
+
+
+def test_compose_without_scene_state_api_allows_base_outside_cwd(tmp_path, monkeypatch):
+    """...and only that signature. A default base outside the CWD still builds
+    when no oracle is available -- this is the branch the older
+    test_compose_parms_keep_tokens exercises, pinned explicitly so it is a
+    specified behaviour rather than an accident of where pytest was launched."""
+    cwd, proj = tmp_path / "cwd", tmp_path / "proj"
+    cwd.mkdir()
+    proj.mkdir()
+    monkeypatch.chdir(cwd)
+    _guard_env(monkeypatch, str(proj), is_new_file=None)
+
+    sct.build_karma_xpu_shot(MagicMock(), shot="shot", verify=False)
+
+    assert (proj / "shot_layers" / "render.usd").exists()
+    assert not (cwd / "shot_layers").exists()

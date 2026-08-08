@@ -1,0 +1,39 @@
+{
+  "leg": "VER1",
+  "executed_by": "CTO-session probe (Fable 5), 2026-08-08, read-only",
+  "probe1_doctor": {
+    "verdict": "OPEN-NARROWED",
+    "finding": "Unmeasured fidelity renders a NUMBER, not UNKNOWN - and in the UI it is 1.0, not 0.0: gate_widget.py:388 constructs the label as literal 'Fidelity 1.0' before any measurement. Same claim-without-observation class as the hardcoded success=True. The 0.0 side is a LATCHING persisted floor (agent_state.py:362-374); its attribution gap was already fixed post-08-03 (WHY stamp), and mcp/server.py:148-151 now records marshal bypasses as CAUSE.",
+    "evidence": [
+      "python/synapse/panel/gate_widget.py:388  QLabel('Fidelity 1.0') unmeasured default",
+      "python/synapse/memory/agent_state.py:362-374  latching floor + WHY stamp",
+      "python/synapse/mcp/server.py:148-151  bypass recorded as cause, not inferred from 0.0"
+    ],
+    "open_question": "whether runtime overwrites the 1.0 default before first paint - untraced"
+  },
+  "probe2_router": {
+    "verdict": "UNKNOWN-NARROWED",
+    "finding": "The finder path is sound and the definition exists; whether live panel startup actually constructs the router was not observed.",
+    "evidence": [
+      "shared/router.py:304  def get_default_router",
+      "python/synapse/panel/agent_health.py:74-81  guarded finder, None on unavailable"
+    ],
+    "open_question": "get_default_router body untraced - lazy-construct vs return-existing decides the 08-04 claim"
+  },
+  "followup_legs_proposed": [
+    "FID (small): unmeasured fidelity renders UNKNOWN at gate_widget.py:388 + doctor read path - sites pinned, house-rule fix",
+    "router startup trace: ~10-min CTO-session read of shared/router.py:304 body + one startup grep - too small for a leg"
+  ],
+  "addendum_2026-08-08_cto_session": {
+    "probe1_doctor": {
+      "verdict": "OPEN-CONFIRMED",
+      "evidence_added": "gate_widget.py:598 update path formats 'Fidelity {f:.1f}' unconditionally - no UNKNOWN branch exists anywhere on the render path",
+      "action": "FID leg created (ready) - harness/prompts/fid.md"
+    },
+    "probe2_router": {
+      "verdict": "CLOSED",
+      "evidence_added": "shared/router.py:301-308 - R11 module-level lazy singleton, constructs on first route_task (:317-320); 'not initialized' before first use is design, not defect",
+      "action": "item retired; a health probe before first route truthfully reports uninitialized"
+    }
+  }
+}
