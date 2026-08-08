@@ -30,6 +30,7 @@ def render_prometheus(
     main_thread_holds: Optional[Dict[str, Any]] = None,
     scene_hashes: Optional[Dict[str, Any]] = None,
     panel_inlines: Optional[Dict[str, Any]] = None,
+    panel_results: Optional[Dict[str, Any]] = None,
     live_snapshot: Optional[Dict[str, Any]] = None,
     compositions: Optional[Dict[str, Any]] = None,
     stage_touches: Optional[Dict[str, Any]] = None,
@@ -261,6 +262,35 @@ def render_prometheus(
         lines.append("# TYPE synapse_panel_inline_slow_total counter")
         slowest = panel_inlines.get("slowest_tool") or ""
         lines.append(f'synapse_panel_inline_slow_total{{slowest_tool="{slowest}"}} {panel_inlines.get("slow_count", 0)}')
+
+    # FRZ — result-path phase durations, per phase, labelled. This is the Qt half
+    # of main-thread attribution: panel_inline covers TOOL dispatch, these cover
+    # rendering the REPLY (send / stream / finalize / append / review).
+    #
+    # Deliberately NOT gated on count > 0, unlike the block above. An absent series
+    # is indistinguishable from a dead recorder, and this instrument's whole job is
+    # to let a reader say "the result path was NOT where the time went" — which
+    # requires a zero to be visible. Exporting the zero is the point.
+    if panel_results:
+        lines.append("")
+        lines.append("# HELP synapse_panel_result_ms Main-thread result-path phase duration in milliseconds")
+        lines.append("# TYPE synapse_panel_result_ms summary")
+        for _p in sorted(panel_results):
+            _s = panel_results.get(_p) or {}
+            lines.append(f'synapse_panel_result_ms_sum{{phase="{_p}"}} {round_float(_s.get("sum_ms", 0.0))}')
+            lines.append(f'synapse_panel_result_ms_count{{phase="{_p}"}} {_s.get("count", 0)}')
+            lines.append(f'synapse_panel_result_ms_max{{phase="{_p}"}} {round_float(_s.get("max_ms", 0.0))}')
+        lines.append("# HELP synapse_panel_result_slow_total Result-path phases over the slow threshold")
+        lines.append("# TYPE synapse_panel_result_slow_total counter")
+        for _p in sorted(panel_results):
+            _s = panel_results.get(_p) or {}
+            lines.append(f'synapse_panel_result_slow_total{{phase="{_p}"}} {_s.get("slow_count", 0)}')
+        # Payload size at the worst sample — turns a duration into a scaling law.
+        lines.append("# HELP synapse_panel_result_doc_chars_at_max Document size at the phase's slowest sample")
+        lines.append("# TYPE synapse_panel_result_doc_chars_at_max gauge")
+        for _p in sorted(panel_results):
+            _s = panel_results.get(_p) or {}
+            lines.append(f'synapse_panel_result_doc_chars_at_max{{phase="{_p}"}} {_s.get("doc_chars_at_max_ms", 0)}')
 
     # Live metrics (Sprint E) — scene, session, uptime
     if live_snapshot:

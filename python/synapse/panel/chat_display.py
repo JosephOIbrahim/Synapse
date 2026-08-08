@@ -21,6 +21,15 @@ from synapse.panel.message_formatter import (
     format_timestamp_divider,
 )
 from synapse.panel.styles import get_chat_display_stylesheet
+# FRZ attribution: times the formatter + insertHtml re-layout that this widget does
+# on Houdini's main thread. Measurement only; degrades to a no-op context manager.
+try:
+    from synapse.panel.result_telemetry import timed_phase as _timed_phase
+except Exception:  # pragma: no cover
+    from contextlib import nullcontext as _nullctx
+
+    def _timed_phase(*_a, **_k):
+        return _nullctx()
 from synapse.panel.designsystem import tokens as t
 
 # Grouping window: messages from the same sender within this many seconds
@@ -266,18 +275,30 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self._maybe_insert_timestamp_divider("synapse")
 
         ts = _format_time(time.time())
-        cursor = self.textCursor()
-        cursor.movePosition(QtGui.QTextCursor.End)
-        cursor.insertHtml(
-            format_synapse_message(
+        # FRZ probe 5 (APPEND) — the convergence point of BOTH result paths: the
+        # streaming finalize (end_stream) and the non-streaming direct append both
+        # land here. Two costs are measured as one phase because they are
+        # inseparable at the seat: format_synapse_message (four regex passes over
+        # the whole reply) and insertHtml (Qt rich-text re-layout, O(document)).
+        # doc_chars is captured BEFORE the insert, so the sample records the
+        # document size the layout actually had to walk.
+        with _timed_phase("append") as _frz_append:
+            try:
+                _frz_append.set_sizes(doc_chars=self.document().characterCount())
+            except Exception:
+                pass
+            cursor = self.textCursor()
+            cursor.movePosition(QtGui.QTextCursor.End)
+            _frz_html = format_synapse_message(
                 content, grouped=grouped, timestamp=ts,
                 font_scale=self._font_scale, signed=signed,
             )
-        )
-        cursor.insertBlock()
-        self.setTextCursor(cursor)
-        self._update_sender("synapse")
-        self._scroll_to_bottom()
+            _frz_append.set_sizes(payload_chars=len(_frz_html))
+            cursor.insertHtml(_frz_html)
+            cursor.insertBlock()
+            self.setTextCursor(cursor)
+            self._update_sender("synapse")
+            self._scroll_to_bottom()
 
     def append_system_message(self, text):
         """Append a system/status message to the chat history.
