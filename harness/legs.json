@@ -587,6 +587,20 @@
       "note": "Requested by Joe 08-08: same prompt must reproduce the same remembered network post-restart. Localizes across three seams - save durability (reports under pending R-CI0-1, never changes posture), recall keying (small evidenced fixes allowed), regenerate determinism (design proposal only; the deterministic path is apply_fixture + M6, held)."
     },
     {
+      "id": "MEM",
+      "name": "moneta store fail-loud + reopen",
+      "state": "held",
+      "receipt": "MEM.json",
+      "branch": "finish/moneta-store-open",
+      "base": "master",
+      "worktree": ".claude/worktrees/moneta-store-open",
+      "prompt": "harness/prompts/mem.md",
+      "deps": [],
+      "readonly": false,
+      "touches": ["python/synapse/memory/", "tests/"],
+      "note": "FIRST LEG ON RETURN (held so nothing runs unattended during vacation). Store has silently failed to open since 08-05 (dim mismatch 384/256, 11x, PRST_SEAM_A_REPORT.md). Fail-loud is non-negotiable; preserve deposits or escalate. Flip to ready, dispatch, done."
+    },
+    {
       "id": "STAT",
       "name": "statusline worktree-aware",
       "state": "held",
