@@ -520,3 +520,83 @@ def test_committed_h22_table_is_stamped_for_the_targeted_build():
     assert absent_on_368.isdisjoint(set(meta["symbols"])), (
         "these five exist on 22.0.397 but NOT on 22.0.368 -- their presence "
         "means the 22.0.397 table has been committed back over this one")
+
+
+# ── R-M5b-1: an external process WARNS about its authority (ruled 2026-08-07) ─
+
+
+def test_external_process_warns_that_its_authority_is_unverified(
+        tmp_path, monkeypatch):
+    """R-M5b-1, ruled warn-not-refuse, escalated as M5b-F8.
+
+    With no Houdini running there is no build for the table's stamp to disagree
+    with, so the staleness comparison was the table against ITSELF -- and the
+    status reported stale=false, i.e. fresh. The ruling keeps grounding armed
+    (CI, farm nodes and stock python still get a real introspected authority)
+    and makes the status say what it actually verified.
+
+    Fails if the honest report is dropped and the status goes back to claiming
+    a freshness nothing checked, or if the warning stops naming the stamp -- a
+    warning that does not say WHICH build the verdicts hold for cannot be acted
+    on. The control below fails if this branch ever leaks into a running host.
+    """
+    pkg = tmp_path / "data"; pkg.mkdir()
+    _write_table(pkg / "h21_symbol_table.json", {"hou.LopNode"}, version="21.0.671")
+    monkeypatch.setattr(scout, "RAG_ROOT", tmp_path / "no_store")
+    monkeypatch.setattr(scout, "_PKG_SYMBOL_TABLE", pkg / "h21_symbol_table.json")
+    monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", None)   # not injected
+    monkeypatch.delenv("HOUDINI_VERSION", raising=False)           # and no Houdini
+    scout._TABLE_CACHE.clear()
+    scout._WARNED_EXTERNAL_AUTHORITY.clear()
+    scout._WARN.clear()
+
+    with pytest.warns(RuntimeWarning) as rec:
+        syms, status = scout._load_symbol_table()
+
+    assert syms == {"hou.LopNode"}          # grounding NOT disarmed (the ruling)
+    assert status["loaded"] is True
+    assert status["stale"] is False         # NOT the refuse trigger -- warn, not refuse
+    assert status["verified_against_running_build"] is False
+    assert "21.0.671" in status["reason"]
+    assert "21.0.671" in "\n".join(str(w.message) for w in rec)
+    assert any("no running Houdini" in w for w in scout._WARN)
+
+    # CONTROL -- a running build DOES verify the authority: no warning, no key,
+    # and the in-Houdini status dict keeps exactly the shape it had before.
+    monkeypatch.setenv("HOUDINI_VERSION", "21.0.671")
+    scout._TABLE_CACHE.clear()
+    scout._WARN.clear()
+    with warnings.catch_warnings(record=True) as quiet:
+        warnings.simplefilter("always")
+        syms_live, status_live = scout._load_symbol_table()
+    assert syms_live == {"hou.LopNode"}
+    assert "verified_against_running_build" not in status_live
+    assert status_live["reason"] is None
+    assert not quiet and not scout._WARN
+
+
+def test_external_process_is_not_refused_under_the_fail_closed_policy(
+        tmp_path, monkeypatch):
+    """The ruling in one call: DRIFT_POLICY="refuse" -- the module default --
+    must not turn 'no Houdini running' into a refusal.
+
+    This is why the honest report rides its own field instead of flipping
+    `stale`: `stale` IS the refuse trigger in synapse_scout(). Fails if the
+    report is ever moved onto the stale axis -- this call then raises, and
+    every CI/farm/stock-python scout loses grounding entirely.
+    """
+    _, store = _build_store(tmp_path)
+    _wire(monkeypatch, store, policy="refuse")            # fresh corpus, fail-closed
+    pkg = tmp_path / "data"; pkg.mkdir()
+    _write_table(pkg / "h21_symbol_table.json", {"hou.LopNode"}, version="21.0.671")
+    monkeypatch.setattr(scout, "_PKG_SYMBOL_TABLE", pkg / "h21_symbol_table.json")
+    monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", None)
+    monkeypatch.delenv("HOUDINI_VERSION", raising=False)
+    scout._TABLE_CACHE.clear()
+    scout._WARNED_EXTERNAL_AUTHORITY.clear()
+
+    out = scout.synapse_scout("can I use hou.LopNode", k=3)        # must not raise
+    assert out["gate_armed"] is True                               # authority still loaded
+    assert {s["symbol"]: s for s in out["symbols"]}["hou.LopNode"]["exists_in_runtime"] is True
+    assert out["table"]["verified_against_running_build"] is False
+    assert any("no running Houdini" in w for w in out["warnings"])  # warned, not refused
