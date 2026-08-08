@@ -196,3 +196,5 @@ harness/rope/pass*.err.log
 
 harness/rope/PROGRESS.md
 harness/rope/.runner.lock
+# orchestrator launch marker - runtime junk, never history
+.claude/.orch_launched
