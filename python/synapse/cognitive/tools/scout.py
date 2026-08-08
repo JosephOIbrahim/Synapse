@@ -429,6 +429,10 @@ _BUILD_RE = re.compile(r"^\d+\.\d+\.\d+")
 # per query; the artist needs telling once, not once per symbol.
 _WARNED_BUILD_MISMATCH: set = set()
 
+# R-M5b-1: table paths already warned about as an unverifiable external authority.
+# Same reason as above — once per process, not once per query.
+_WARNED_EXTERNAL_AUTHORITY: set = set()
+
 
 def _env_running_build() -> str:
     """The running Houdini build read from the ENVIRONMENT (R-M5-4).
@@ -570,7 +574,9 @@ def _read_symbol_table(path: Path) -> dict:
 def _load_symbol_table() -> tuple[Optional[set[str]], dict]:
     """Return (symbols | None, status). The file read is cached; the host version
     match is recomputed each call (EXPECTED_HOUDINI_VERSION is live host state).
-    A version-mismatched table is NOT trusted as authority (symbols -> None)."""
+    A version-mismatched table is NOT trusted as authority (symbols -> None).
+    With no Houdini running the table is still served (grounding stays armed) but
+    the status carries verified_against_running_build=False + a reason (R-M5b-1)."""
     path = _symbol_table_path()
     key = str(path)
     if key not in _TABLE_CACHE:
@@ -598,6 +604,26 @@ def _load_symbol_table() -> tuple[Optional[set[str]], dict]:
             status["running_build"] = _running_build() or None
             _warn_build_mismatch(stamp, expected, key)
             return None, status
+        # R-M5b-1 (escalated 2026-08-06 as M5b-F8; ruled warn-not-refuse
+        # 2026-08-07, harness/NEXT_SESSION.md:68): outside
+        # Houdini `expected` above IS this table's own stamp, so the match proved
+        # nothing. Grounding stays armed on purpose — CI, farm nodes and stock
+        # python keep a real introspected authority — but the status may not claim
+        # a freshness nothing checked. `stale` is deliberately NOT flipped: it is
+        # the DRIFT_POLICY="refuse" trigger in synapse_scout(), and the ruling is
+        # WARN, not refuse.
+        elif not _running_build():
+            status["verified_against_running_build"] = False
+            status["reason"] = (
+                f"no running Houdini to verify against - membership authority is "
+                f"the committed Houdini {stamp or 'unstamped'} table; verdicts hold "
+                f"for {stamp or 'that build'}, not for the build you will run on. "
+                f"Regenerate on the target host: hython host/introspect_runtime.py")
+            _WARN.append(f"[scout] {status['reason']}")
+            if key not in _WARNED_EXTERNAL_AUTHORITY:
+                _WARNED_EXTERNAL_AUTHORITY.add(key)
+                warnings.warn(f"SYNAPSE scout: {status['reason']}",
+                              RuntimeWarning, stacklevel=3)
     return syms, status
 
 
@@ -798,6 +824,7 @@ def synapse_scout(
           "query", "mode" ("hybrid" | "semantic_only" | "lexical_only"),
           "domain", "stale" (corpus drifted from its rag/ source — Spike 1),
           "table": {loaded, houdini_version, stale, reason},  # membership authority
+                   # + verified_against_running_build:False outside Houdini (R-M5b-1)
           "hits": [{id, domain, type, source, score, snippet}],
           "symbols": [{symbol, exists_in_runtime, documented}],   # membership + doc hint
           "warnings": [...]

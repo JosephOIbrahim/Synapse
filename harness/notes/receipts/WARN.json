@@ -1,0 +1,116 @@
+{
+  "schema": "receipt/v1",
+  "leg": "WARN",
+  "title": "R-M5b-1 committed - an external / no-Houdini process WARNS about its membership authority instead of reporting it fresh",
+  "harness": "WARN (harness/prompts/warn.md)",
+  "status": "green",
+  "status_note": "Green means the brief's oracle was met: the ruled behaviour is in the tree, pinned by two new tests that state their failure condition and carry a control proving the check can fail; the full suite's failure set is unchanged in identity and count; the in-Houdini path is provably untouched. Green does NOT mean the estimate held - it did not, and estimate_variance below says why in the brief's own terms.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "NONE OF THE HARNESS PROFILES. Interactive session under the project .claude/settings.json, recorded honestly per Constitution Article V: this leg ran pytest and wrote product code under python/synapse/, both outside harness/agent-settings.json's grant.",
+  "branch": "finish/warn-not-refuse",
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/warn-not-refuse",
+  "commit_at_run": "1f18ab46 (TIDY harness; +1 past the M5b merge c4187d01)",
+  "date": "2026-08-08",
+
+  "change_at": "python/synapse/cognitive/tools/scout.py:615",
+  "diff_lines": 29,
+  "diff_lines_note": "scout.py only: +28 / -1 (producer: git diff --numstat). Of the 28 added, 20 are the new elif branch (8 of those comment), 4 the dedupe set + spacing, 4 docstring. Plus tests/test_scout.py +80 / -0 (two new tests). Total across the change: 108 insertions, 1 deletion, 2 files.",
+  "note_path": "harness/notes/R-M5b-1_warn_not_refuse.md",
+  "inhoudini_path_untouched_evidence": "python/synapse/cognitive/tools/scout.py:615 - the new code is one `elif not _running_build():` branch, so it cannot execute when EXPECTED_HOUDINI_VERSION is injected or HOUDINI_VERSION is set. Every pre-existing line of _load_symbol_table is byte-unchanged (git diff shows additions only inside that function), and the new status key is written on the external path ONLY, so the in-Houdini status dict keeps its exact prior shape. Pinned by tests/test_scout.py:566-575, the CONTROL branch of tests/test_scout.py::test_external_process_warns_that_its_authority_is_unverified: with HOUDINI_VERSION=21.0.671 set, no RuntimeWarning fires, _WARN stays empty, status['reason'] is None and 'verified_against_running_build' is absent from the dict.",
+
+  "ruling_closed": {
+    "id": "R-M5b-1",
+    "ruled": "2026-08-07 by Joe Ibrahim, harness/NEXT_SESSION.md:68 (commit 1f18ab46, git blame)",
+    "escalated": "2026-08-06, harness/notes/receipts/M5b.json:221-228 (for_ruling[0]), finding M5b-F8",
+    "ruling_text": "external/no-Houdini process should WARN not refuse on the phantom gate",
+    "implemented_as": "grounding stays armed (symbols still returned, gate_armed stays true, DRIFT_POLICY=refuse still does not raise); the status gains verified_against_running_build=False plus a reason naming the stamp, one line in result['warnings'] per call, and one RuntimeWarning per table path per process."
+  },
+
+  "suite": {
+    "producer": "python -m pytest tests/ -q -p no:randomly, in this worktree, Windows",
+    "before": {
+      "source": "harness/notes/receipts/M5b.json suite_after (this worktree's inherited baseline; the intervening TIDY commit 1f18ab46 added no tests, which the arithmetic below confirms)",
+      "passed": 5765, "failed": 9, "skipped": 147
+    },
+    "after": {"passed": 5767, "failed": 9, "skipped": 147, "duration_s": 197.79},
+    "delta": "+2 passed, 0 new failures. Law 6 satisfied: the count strictly increases, nothing was skipped, xfailed, weakened or deleted.",
+    "failure_identity": "IDENTICAL to the 9 enumerated in M5b.json pre_existing_failures - set difference computed both directions, empty both ways. Four of the nine are the known worktree-awareness bug logged as R-CI0-5 in harness/NEXT_SESSION.md:57.",
+    "targeted_runs": [
+      "tests/test_scout.py: 35 -> 37 passed (+2)",
+      "the 20 scout-referencing test files (grep -l scout tests/*.py): 322 passed",
+      "tests/test_scout.py run 3x with the suite's default random ordering: 37 passed each time (order independence)"
+    ]
+  },
+
+  "findings": [
+    {
+      "id": "WARN-F1",
+      "tier": "VERIFIED-STATIC",
+      "title": "The obvious one-line implementation was the refuse trigger - flipping `stale` would have caused exactly the refusal the ruling rejected",
+      "anchor": "python/synapse/cognitive/tools/scout.py:129 and :850-853",
+      "detail": "DRIFT_POLICY defaults to 'refuse' (fail-closed, :129) and synapse_scout raises ScoutError when table_status['stale'] is true (:850-853). Setting stale=True on the external path - the natural reading of 'report the authority as stale' - would have made every CI run, farm node and stock-python process raise instead of ground, which is both the refusal the ruling ruled against and the disarming the brief forbade. In this module stale=True is also structurally coupled to gate-down: both pre-existing sites that set it also set loaded=False and return None. The honest signal therefore needed its own field on its own axis: verified_against_running_build."
+    },
+    {
+      "id": "WARN-F2",
+      "tier": "VERIFIED-STATIC",
+      "title": "The token 'stale' is reserved for the corpus-drift axis in the warnings channel - a second, independent reason the report needed a different name",
+      "anchor": "tests/test_scout.py:188",
+      "detail": "test_fresh_corpus_not_stale asserts `not any('stale' in w.lower() for w in out['warnings'])` for a fresh corpus. Since the new warning fires on every external call, any message containing the word 'stale' would have failed that test. Found by running the suite, not by reasoning - the message is worded around it (prior-major / unverified against a running build)."
+    },
+    {
+      "id": "WARN-F3",
+      "tier": "VERIFIED-DERIVED",
+      "title": "The warning text is deliberately ASCII - an em dash in a warning written to a redirected stderr under a cp1252 locale is a UnicodeEncodeError on exactly the path this change targets",
+      "anchor": "python/synapse/cognitive/tools/scout.py:617-621",
+      "detail": "The module's prose uses em dashes freely, but _warn_build_mismatch's warning text does not, and warnings.warn writes through sys.stderr, whose encoding on a Windows farm/CI process with redirected output is the locale codec rather than UTF-8. The first draft used an em dash; it was replaced with '-' before commit. Cost: nothing. Producer: the console mangling visible in the first pytest run of this leg."
+    },
+    {
+      "id": "WARN-F4",
+      "tier": "VERIFIED-STATIC",
+      "title": "Observation, not repaired: _WARN accumulates for callers that use _load_symbol_table without going through synapse_scout",
+      "anchor": "python/synapse/cognitive/tools/scout.py:622 (append) vs :833 (_WARN.clear at synapse_scout entry)",
+      "detail": "_WARN is cleared only at synapse_scout entry, so a process calling _load_symbol_table directly in a loop would accumulate lines. The one such caller in the tree, harness/verify/checks.py:548, calls it once per check invocation, and the next synapse_scout call clears the list. This is a pre-existing module pattern (_check_freshness:713 and the semantic-path helpers at :226/:358/:370 append the same way), NOT introduced here. Deliberately not deduped: a per-result warning is the honest choice, because deduping would make the second scout result silently omit a warning the first one carried."
+    }
+  ],
+
+  "estimate_variance": {
+    "handoff_estimate": "one-line change plus a decision note, ~10 minutes (harness/prompts/warn.md:7-8)",
+    "actual": "+28/-1 in scout.py, +80 in tests, plus the note",
+    "why": [
+      "The one-line target was booby-trapped: the single line that would have encoded 'report it as stale' is the DRIFT_POLICY=refuse trigger (WARN-F1). The honest encoding needs its own status field, its own message and a dedupe set.",
+      "The module already runs two warn channels at different cadences (result['warnings'] per call, RuntimeWarning once per process); matching that precedent is the dedupe guard.",
+      "Law 1 owes a test. A ruled behaviour change shipped unpinned is a decoration - so two tests, each stating its failure condition, one carrying a control that proves the check can fail and simultaneously pins the in-Houdini shape."
+    ],
+    "scope_discipline": "Per warn.md:21-23 this stopped at the smallest honest diff. Nothing was refactored, no other caller adjusted, no adjacent finding repaired, and WARN-F4 was recorded rather than fixed."
+  },
+
+  "for_ruling": [
+    {
+      "id": "R-WARN-1",
+      "question": "Should the in-Houdini path also emit verified_against_running_build=True, for symmetry?",
+      "why_escalated": "Article I - a value judgement between two defensible readings of the brief, not a fact. The brief says 'no behavior change for in-Houdini processes', and adding a key to the status dict IS a change to what an in-Houdini caller sees, so it was NOT added. The cost of that choice: absence-means-verified, which a consumer must know to read with .get(). The alternative is a self-describing status on both paths at the price of a (tiny) in-Houdini change.",
+      "shipped_meanwhile": "The key appears on the external path only. In-Houdini output is byte-identical to before."
+    },
+    {
+      "id": "R-WARN-2",
+      "question": "Should python/synapse/panel/gate_stamp.py mirror this signal in the panel footer?",
+      "why_escalated": "Out of the ruled scope (scout only) and structurally unreachable today - gate_stamp returns early unless `import hou` succeeds, so a no-Houdini process never reaches its logic. It is raised because gate_stamp exists precisely to keep panel and tool from disagreeing (its own docstring), and this change makes them disagree about one state the panel can never be in. Cosmetic drift, recorded not worked around."
+    }
+  ],
+
+  "not_done": {
+    "merge": "Not merged, not pushed. Gate C is a human act (Constitution Article I).",
+    "table_regeneration": "The external path still grounds against the committed H21 table. It is now LABELLED, not corrected - closing that gap means an h<major> table for the build the caller will run on, produced by `hython host/introspect_runtime.py` on a host. Not a scout change.",
+    "warn_f4": "The _WARN accumulation observation is recorded, not repaired.",
+    "other_next_session_items": "R-CI0-1..5 and M6 are untouched by this leg."
+  },
+
+  "resume_token": {
+    "skip": [
+      "Re-deriving whether the external path refused - it never did (M5b-F8); the brief's own correction is confirmed at scout.py:593-597.",
+      "Trying `stale=True` as the implementation - it refuses by default (WARN-F1).",
+      "Re-running the full suite to establish the baseline: 9 failures, identities enumerated in M5b.json pre_existing_failures, unchanged here."
+    ],
+    "next": "Human: review the note, merge (Gate C), then rule R-WARN-1/R-WARN-2. NEXT_SESSION.md item 3 is closed by this commit; item 4 (M6 phrase table) is the next work."
+  }
+}
