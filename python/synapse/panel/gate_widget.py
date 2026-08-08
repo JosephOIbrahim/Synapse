@@ -47,6 +47,96 @@ _LEVEL_TIMEOUTS = {
 }
 
 
+# ── Fidelity honesty ─────────────────────────────────────────────
+# UNMEASURED IS NOT 1.0.
+#
+# This row was CONSTRUCTED reading "Fidelity 1.0" against a green dot, before
+# a single operation had been observed — a fabricated perfect score, the same
+# claim-without-observation class as a hardcoded success=True. And the update
+# path defaulted the missing key to 1.0 on the way in, so an integrity report
+# that carried no fidelity at all still painted a green pass.
+#
+# The house rule it broke is stated in panel/face_token.py: "Unobtainable
+# renders as UNKNOWN, never zero and never an estimate." A zero is a claim —
+# and so is a one, in the more dangerous direction, because a fabricated 1.0
+# is indistinguishable from a session that genuinely verified clean. CLAUDE.md
+# §1.3's guarantee is "fidelity = 1.0 or stop"; a widget that invents the 1.0
+# disarms the only instrument that would have said stop.
+#
+# The verdict lives in these pure helpers rather than inline, for the same
+# reason integrity_readout.py factors out `_fidelity_color`: the honesty
+# invariant then sits in ONE place a Qt-free source-pin can prove, instead of
+# being re-decided at each call site.
+FIDELITY_UNKNOWN = "UNKNOWN"
+
+
+def _observed_fidelity(report):
+    """The fidelity this report ACTUALLY carries, or ``None`` for unmeasured.
+
+    No default. ``None`` is returned — never a number — when:
+
+      · the report is not a dict (nothing to read),
+      · ``session_fidelity`` is absent (nobody measured it),
+      · the value is not a real number (an unusable value is not an
+        observation, and formatting it would either crash or invent one),
+      · ``operations_total`` is present and zero.
+
+    That last clause is the one that matters most, and it is not this widget
+    inventing policy — it is the already-ratified `has_data` doctrine from
+    ``session_integrity.summary`` / ``integrity_readout._fidelity_color``
+    applied here. ``shared/bridge.py``'s ``session_fidelity`` property returns
+    a clean 1.0 when ``operations_total == 0``, so the key is ALWAYS present
+    and ALWAYS 1.0 at rest. Removing this widget's ``.get`` default alone would
+    therefore have changed nothing on the live WebSocket path: the fabricated
+    perfect score would simply have arrived from upstream instead of being
+    minted here. A number that is the producer's rest state rather than a
+    measurement is exactly what UNKNOWN is for.
+
+    Absent ``operations_total`` is NOT treated as zero — that would be the same
+    invention wearing the opposite coat. We suppress only what we can
+    positively disqualify.
+    """
+    if not isinstance(report, dict):
+        return None
+    if "session_fidelity" not in report:
+        return None
+    value = report["session_fidelity"]
+    # bool is an int subclass; True would otherwise format as "Fidelity 1.0".
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    total = report.get("operations_total")
+    if (isinstance(total, (int, float)) and not isinstance(total, bool)
+            and total <= 0):
+        return None
+    return float(value)
+
+
+def _fidelity_color(fidelity):
+    """Verdict → dot color. ``None`` (unmeasured) is SLATE — neutral, never
+    the green success token and never the red error one.
+
+    Green is reachable ONLY from an observed value at full fidelity. The
+    thresholds below the guard are unchanged from the original row; the guard
+    is the whole fix.
+    """
+    if fidelity is None:
+        return t.SLATE
+    if fidelity >= 1.0:
+        return t.GROW
+    if fidelity >= 0.5:
+        return t.WARN
+    return t.ERROR
+
+
+def _fidelity_text(fidelity):
+    """The row's one label. Unmeasured says so in words rather than borrowing
+    a number — a formatted float here is a claim that something was observed.
+    """
+    if fidelity is None:
+        return "Fidelity {u}".format(u=FIDELITY_UNKNOWN)
+    return "Fidelity {f:.1f}".format(f=fidelity)
+
+
 class _ProposalCard(QtWidgets.QWidget):
     """Single gate proposal card with level badge and action buttons.
 
@@ -379,13 +469,13 @@ class GateWidget(QtWidgets.QWidget):
         integrity_layout.setContentsMargins(8, 4, 8, 4)
         integrity_layout.setSpacing(8)
 
+        # Neither the dot's color nor the label's text is named here. Both come
+        # from _render_fidelity below, seeded with None \u2014 so the row is born
+        # UNKNOWN and cannot be constructed into a state it never observed.
         self._fidelity_dot = QtWidgets.QLabel("\u25CF")
-        self._fidelity_dot.setStyleSheet(
-            "color: {c}; font-size: 14px; border: none;".format(c=t.GROW)
-        )
         integrity_layout.addWidget(self._fidelity_dot)
 
-        self._fidelity_label = QtWidgets.QLabel("Fidelity 1.0")
+        self._fidelity_label = QtWidgets.QLabel()
         self._fidelity_label.setStyleSheet(
             "color: {fg}; font-family: '{mono}', 'Consolas', monospace; "
             "font-size: {sz}px; border: none;".format(
@@ -393,6 +483,9 @@ class GateWidget(QtWidgets.QWidget):
             )
         )
         integrity_layout.addWidget(self._fidelity_label)
+
+        # Honest resting state: unmeasured until an observation arrives.
+        self._render_fidelity(None)
 
         sep1 = QtWidgets.QLabel("|")
         sep1.setStyleSheet(
@@ -572,30 +665,40 @@ class GateWidget(QtWidgets.QWidget):
             card.mark_decided(decision)
         self._update_header_text()
 
+    def _render_fidelity(self, fidelity):
+        """Paint the dot + label from an observed fidelity, or ``None``.
+
+        The single write point for this row. It names no color token itself —
+        the verdict is delegated to ``_fidelity_color`` so green cannot be
+        reached without passing that guard, the same containment
+        ``IntegrityReadout.set_integrity`` uses.
+        """
+        self._fidelity_dot.setStyleSheet(
+            "color: {c}; font-size: 14px; border: none;".format(
+                c=_fidelity_color(fidelity)
+            )
+        )
+        self._fidelity_label.setText(_fidelity_text(fidelity))
+
     def update_integrity(self, report):
         """Update the integrity status row from a session report dict.
 
         Expected keys: session_fidelity, operations_total, anchor_violations
+
+        Fidelity is read through ``_observed_fidelity``, which has NO default:
+        a report that does not carry a usable measurement leaves the row
+        reading UNKNOWN rather than borrowing a number. A falsy report is not
+        an observation either, so it is ignored outright — the row keeps the
+        last state it can actually account for, which at rest is UNKNOWN.
         """
         if not report:
             return
 
-        fidelity = report.get("session_fidelity", 1.0)
+        fidelity = _observed_fidelity(report)
         ops = report.get("operations_total", 0)
         violations = report.get("anchor_violations", 0)
 
-        # Fidelity dot color
-        if fidelity >= 1.0:
-            dot_color = t.GROW
-        elif fidelity >= 0.5:
-            dot_color = t.WARN
-        else:
-            dot_color = t.ERROR
-
-        self._fidelity_dot.setStyleSheet(
-            "color: {c}; font-size: 14px; border: none;".format(c=dot_color)
-        )
-        self._fidelity_label.setText("Fidelity {f:.1f}".format(f=fidelity))
+        self._render_fidelity(fidelity)
         self._ops_label.setText("{n} ops".format(n=ops))
 
         v_color = t.ERROR if violations > 0 else t.SLATE

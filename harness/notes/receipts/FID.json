@@ -1,0 +1,181 @@
+{
+  "schema": "receipt/v1",
+  "leg": "FID",
+  "title": "Unmeasured fidelity renders UNKNOWN — the panel's integrity row stops claiming a score it never observed",
+
+  "construct_fix": "python/synapse/panel/gate_widget.py:488",
+  "update_fix": "python/synapse/panel/gate_widget.py:701",
+  "feeder_default_removed": "python/synapse/panel/gate_widget.py:697",
+  "tests": [
+    "tests/panel/test_gate_fidelity_unknown.py::test_constructed_widget_reads_unknown_before_any_update",
+    "tests/panel/test_gate_fidelity_unknown.py::test_observed_value_renders_numeric",
+    "tests/panel/test_gate_fidelity_unknown.py::test_missing_session_fidelity_renders_unknown_not_a_default"
+  ],
+
+  "status": "green",
+  "status_note": "Describes what happened (Law 3). All three brief work items were implemented and each is pinned by a test that was DEMONSTRATED failing against the pre-fix source before being demonstrated passing against the fixed one. Two additional tests were added beyond the brief's three because the feeder trace demanded them (see findings FID-F4) and because all three brief tests SKIP on the dev interpreter, which would have left the invariant unenforced in CI (see method.why_two_instruments). Two of my own source-pin assertions were wrong on first run and were corrected in the TEST, never by weakening the code. memory/agent_state.py was not touched. No styling was changed beyond the neutral UNKNOWN state.",
+  "model": "claude-opus-5[1m]",
+  "run_date": "2026-08-08",
+  "worktree": ".claude/worktrees/fidelity-unknown (registered git worktree, branch finish/fidelity-unknown)",
+  "commit_at_run": "STARTED 1f18ab46 — single atomic commit made on this branch; NOT pushed, NOT merged (Gate C is human).",
+  "settings_profile": "RECORDED HONESTLY, NOT CLAIMED: execution was an interactive Claude Code session whose grant is wider than harness/relay-settings.json. The fence was self-enforced — the only product file written is python/synapse/panel/gate_widget.py, plus two new test files and this receipt. shared/bridge.py and harness/state/** were read only, never written; both are deny-listed under the relay profile.",
+
+  "authority": {
+    "brief": "harness/prompts/fid.md",
+    "constitution": "harness/AGENT_CONSTITUTION.md (v1, 2026-07-25)",
+    "governing_law": "python/synapse/panel/face_token.py:32 — \"Unobtainable renders as UNKNOWN, never zero and never an estimate. A zero is a claim (R162).\" Standing house rule, not a new ruling.",
+    "laws_applied": {
+      "Law 1": "Every check must be able to fail — PROVEN, not asserted. The full pre-fix/post-fix matrix is in verification.law1_proof below.",
+      "Law 2": "Every number here names its producer command.",
+      "Law 3": "status describes what happened. The pre-existing panel failure is reported at both baseline and after, not hidden behind a green.",
+      "Law 6": "Fix forward, test count strictly increases — panel suite 64 -> 72 passed, dev suite 5765 -> 5774 passed. No test weakened, skipped, xfailed or deleted."
+    }
+  },
+
+  "suite": {
+    "before": {
+      "dev_interpreter": "9 failed, 5765 passed, 147 skipped (165.34s)",
+      "hython_panel": "1 failed, 64 passed"
+    },
+    "after": {
+      "dev_interpreter": "9 failed, 5774 passed, 155 skipped (164.43s)",
+      "hython_panel": "1 failed, 72 passed"
+    },
+    "delta": "+9 passing on the dev interpreter (the 9 Qt-free source-pins), +8 on hython (the 8 behavioural tests). Failure count UNCHANGED on both instruments, and the failing set is identical name-for-name. Skips 147 -> 155: the 8 behavioural tests skip on the dev interpreter by construction — which is exactly why the Qt-free source-pin exists (method.why_two_instruments).",
+    "producer": "python -m pytest tests/ -q  (Python 3.14.2)  |  QT_QPA_PLATFORM=offscreen hython3.13.exe -m pytest tests/panel/ -q  (Houdini 22.0.368, PySide6 6.8.3, pytest 9.1.1)",
+    "pre_existing_failures_note": "All 9 dev failures and the 1 panel failure were present at BASELINE, before any edit, and are unrelated to this leg: tests/panel/test_failure_trail.py::test_dead_verb_hidden; tests/test_moneta_crucible.py; tests/test_moneta_integration.py; tests/test_pass7_per_agent_and_canonical.py; tests/test_pkg_bootstrap_invariant.py; tests/test_scene_memory.py; tests/test_statusline.py (x4, worktree-shaped). Not fixed — out of this brief's scope, and Law 7 says a red leg is a finding, not a licence to touch it."
+  },
+
+  "method": {
+    "build": "Houdini 22.0.368, hython3.13.exe, PySide6 6.8.3, Python 3.13.10, QT_QPA_PLATFORM=offscreen. Dev interpreter Python 3.14.2 (no PySide6).",
+    "mode": "MODE A — harness/state/drop.json is ABSENT, so per harness/CLAUDE.md the live interpreter is authoritative for the build number. Recorded rather than assumed.",
+    "why_two_instruments": "gate_widget.py hard-imports PySide at module top, so every behavioural test of this row SKIPS on the dev interpreter — and a skip exits 0, which CI reads as passing. That is the Law-1 failure mode: a check that cannot run is a decoration that will be cited as evidence. So the contract is pinned twice: behaviourally under hython (real QWidgets, no stubs) and structurally by a Qt-free ast source-pin that executes on EVERY interpreter. This mirrors the house's existing answer to the same problem, tests/test_panel_fidelity_honesty_sourcepin.py."
+  },
+
+  "findings": [
+    {
+      "id": "FID-F1",
+      "severity": "product-defect (fixed)",
+      "tier": "VERIFIED-STATIC",
+      "claim": "The integrity row was CONSTRUCTED claiming a perfect score. The label was the literal string \"Fidelity 1.0\" and the dot was hardcoded to the green success token, both before a single operation had been observed.",
+      "anchor": "pre-fix python/synapse/panel/gate_widget.py:388 (label) and :383-385 (t.GROW dot), at commit 1f18ab46.",
+      "fix": "python/synapse/panel/gate_widget.py:475-488 — neither the dot colour nor the label text is named at construction; both are seeded by _render_fidelity(None), so the row is born UNKNOWN and cannot be constructed into a state it never observed.",
+      "pinned_by": "tests/panel/test_gate_fidelity_unknown.py::test_constructed_widget_reads_unknown_before_any_update (id-a) + the Qt-free test_no_literal_perfect_score_anywhere_in_the_module."
+    },
+    {
+      "id": "FID-F2",
+      "severity": "product-defect (fixed)",
+      "tier": "VERIFIED-STATIC",
+      "claim": "The update path fabricated a default on the way in and formatted it unconditionally. `report.get(\"session_fidelity\", 1.0)` turned an ABSENT measurement into a perfect one, and there was no UNKNOWN branch anywhere on the update path.",
+      "anchor": "pre-fix python/synapse/panel/gate_widget.py:583 (the defaulted get) and :598 (the unconditional format).",
+      "fix": "The default is gone: :697 reads through _observed_fidelity(report) (:73), which returns None — never a number — when the report is not a dict, when the key is absent, when the value is not a real number, or when operations_total is present and zero. :701 renders through _render_fidelity, which delegates the colour to _fidelity_color (:114) so green cannot be reached without passing the unmeasured guard.",
+      "pinned_by": "id-c + test_no_defaulted_get_on_session_fidelity, which fails on ANY two-argument .get(\"session_fidelity\", ...) — there is no honest default for an unmade measurement, so the pin rejects 0.0 as firmly as 1.0."
+    },
+    {
+      "id": "FID-F3",
+      "severity": "method",
+      "tier": "VERIFIED-STATIC",
+      "claim": "update_integrity had ZERO test coverage before this leg. Not a check that could not fail — no check at all. That is why a fabricated perfect score survived in a widget whose entire job is to report honesty.",
+      "anchor": "Producer: grep -rn \"update_integrity|_fidelity_label|_fidelity_dot\" --include=*.py tests/  ->  no matches at commit 1f18ab46."
+    },
+    {
+      "id": "FID-F4",
+      "severity": "design-input",
+      "tier": "VERIFIED-STATIC",
+      "claim": "THE FIX AS LITERALLY BRIEFED WOULD HAVE CHANGED NOTHING ON THE LIVE PATH. shared/bridge.py:2834's session_fidelity property returns a clean 1.0 when operations_total == 0, and session_report() (:2842) always includes the key. So on the live WebSocket path (chat_panel.py:233 -> ws_bridge.py:322 -> handle_ws_report) the key is never absent — removing this widget's .get default would simply have moved the fabricated perfect score upstream instead of removing it. The visible lie would have been identical.",
+      "anchor": "shared/bridge.py:2833-2838 (property) and :2842-2850 (session_report). Feeder chain: python/synapse/panel/chat_panel.py:233; python/synapse/panel/ws_bridge.py:200,322-323.",
+      "disposition": "Handled inside _observed_fidelity: operations_total == 0 is treated as unmeasured. This is NOT new policy — it is the already-ratified `has_data` doctrine from session_integrity.py:138-142 and integrity_readout.py:47-48, applied to this row. Absent operations_total is deliberately NOT treated as zero; only a positively-disqualifying zero suppresses. Escalated as FID-R1 because the upstream half is not mine to change.",
+      "pinned_by": "test_zero_operations_is_unknown_not_the_bridges_resting_one, with test_a_measured_session_still_reaches_green as its negative control — proving the guard suppresses the rest state without suppressing genuine greens."
+    },
+    {
+      "id": "FID-F5",
+      "severity": "method",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "Two of this leg's own source-pin assertions were WRONG on first run and are recorded rather than quietly fixed. (a) The literal-score detector flagged the legitimate format template \"Fidelity {f:.1f}\" because it contains a digit; the tell is a digit with NO placeholder, since nothing can substitute into it. (b) A vacuity-control assertion tested line ordering rather than the property that actually bites, and would have passed on the bad source it was meant to reject.",
+      "anchor": "First run: 2 failed, 7 passed. Both were corrected IN THE TEST — the code under test was not weakened to accommodate either (Law 6). The corrected controls now include a positive case proving the template is not flagged.",
+      "why_recorded": "The first status was wrong. A receipt that only reports the run where everything worked is the same defect this leg was dispatched to remove."
+    },
+    {
+      "id": "FID-F6",
+      "severity": "out-of-scope (reported, not fixed)",
+      "tier": "VERIFIED-STATIC",
+      "claim": "The same claim-without-observation class survives in the OTHER TWO CELLS of this row. operations_total and anchor_violations still carry fabricated .get(..., 0) defaults, and the row is constructed reading \"0 ops\" / \"0 violations\" before anything is observed. By the governing law's own words — a zero is a claim — those are the identical defect in the quieter direction.",
+      "anchor": "python/synapse/panel/gate_widget.py:403 and :418 (construction), :698-699 (the defaults).",
+      "why_not_fixed": "The brief scopes the work to fidelity and forbids styling redesign beyond the neutral UNKNOWN state. Widening scope is not mine to decide (Article I). Escalated as FID-R2."
+    }
+  ],
+
+  "verification": {
+    "law1_proof": {
+      "note": "Law 1 says state the condition under which each check fails. This leg went further and RAN it: the fix was backed up, the file reverted to pre-fix with `git checkout --`, both instruments re-run, then the fix restored. Every check was observed failing on the defect it names.",
+      "behavioural_vs_pre_fix": "4 failed, 4 passed — FAILED: id-a (construct), id-c (missing key), id-c-wire (unusable value), id-d (zero ops). PASSED: the three parametrised id-b cases and the green-reachable control, which MUST pass in both states because they guard the working path.",
+      "behavioural_vs_fixed": "8 passed, 0 failed.",
+      "sourcepin_vs_pre_fix": "8 failed, 1 passed — the single pass is test_detectors_actually_bite, which parses synthetic sources and must therefore pass in both states.",
+      "sourcepin_vs_fixed": "9 passed, 0 failed.",
+      "producer": "cp gate_widget.py <scratchpad>/gate_widget.FIXED.py ; git checkout -- python/synapse/panel/gate_widget.py ; <both pytest commands> ; cp back"
+    },
+    "scope_discipline": {
+      "did_not": [
+        "touch python/synapse/memory/agent_state.py — the latching floor and its WHY stamp are separate, already attributed, and correct (brief prohibition, honoured)",
+        "redesign styling beyond the neutral UNKNOWN state — the dot's neutral token is t.SLATE, the same token integrity_readout._fidelity_color already returns for its honest empty state; no new token, no new colour, no layout change",
+        "edit shared/bridge.py, harness/state/**, harness/agent-settings.json, harness/relay-settings.json or the constitution",
+        "weaken, skip, xfail or delete any existing test",
+        "fix the pre-existing failures on either instrument",
+        "push, merge or tag"
+      ],
+      "files_written": [
+        "python/synapse/panel/gate_widget.py (120 insertions, 17 deletions)",
+        "tests/panel/test_gate_fidelity_unknown.py (new)",
+        "tests/test_gate_fidelity_honesty_sourcepin.py (new)",
+        "harness/notes/receipts/FID.json (this receipt)"
+      ]
+    }
+  },
+
+  "drift": [
+    {
+      "id": "D1",
+      "class": "cosmetic",
+      "note": "harness/CLAUDE.md keys the pinned Houdini version off harness/state/drop.json, which does not exist in this worktree (MODE A). The documented fallback — the live interpreter is authoritative — was used, giving 22.0.368. Recorded so the build number in this receipt is not mistaken for a drop-record citation."
+    },
+    {
+      "id": "D2",
+      "class": "cosmetic",
+      "note": "The brief pins the violation at gate_widget.py:388 / :598 / :578. All three were confirmed exactly as described at commit 1f18ab46 before any edit. No drift between brief and tree."
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "FID-R1",
+      "question": "shared/bridge.py:2834 returns a fabricated 1.0 at operations_total == 0 and session_report() always emits the key, so the rest state travels to every consumer as if it were a measurement (FID-F4). Does the producer become honest — Optional[float], or an explicit has_data field on session_report() — or is the consumer-side guard the permanent answer?",
+      "why_it_needs_a_human": "Article I. shared/bridge.py is deny-listed from agent edit, and changing a public property's return type is an interface decision with three known consumers, not something provable from the tree.",
+      "evidence_offered": "There are now THREE independent consumer-side re-derivations of the same guard: session_integrity.py:113 (has_data), integrity_readout.py:47 (has_data), and gate_widget.py:73 (operations_total <= 0). Each was written separately, which is the signal that the honesty belongs upstream — but also the signal that the existing house answer has been consumer-side twice already.",
+      "recommendation": "Do not change the property in this leg's wake. Consider a single shared helper so a fourth consumer does not have to rediscover it."
+    },
+    {
+      "id": "FID-R2",
+      "question": "FID-F6 — operations_total and anchor_violations still default to 0 and are constructed as \"0 ops\" / \"0 violations\" before anything is observed. By the governing law (a zero is a claim) that is the same defect. Extend UNKNOWN to those two cells?",
+      "why_it_needs_a_human": "The brief scoped this leg to fidelity and explicitly forbade styling changes beyond the neutral UNKNOWN state. Extending the treatment changes what two more cells say at rest — a product-surface judgement, not a provable fact.",
+      "scope_note": "Cheap if approved: both already route through the same row and the helpers generalise. The pins would be the same shape as id-a/id-c."
+    },
+    {
+      "id": "FID-R3",
+      "question": "update_integrity early-returns on a falsy report (gate_widget.py:694-695), so a None or empty session_report leaves the previously rendered value standing. Is a last-observed value that no longer describes the current payload acceptable, or should a falsy report also reset the row to UNKNOWN?",
+      "why_it_needs_a_human": "Defensible both ways and left UNCHANGED deliberately. I judged a last-observed value to be honest (it was measured, and nothing fabricates it) rather than stale-as-current; at rest the row is UNKNOWN either way, so no fabrication is reachable through this path today. Recording the judgement rather than burying it."
+    }
+  ],
+
+  "resume_token": {
+    "skip": [
+      "The three brief work items — construct, update path, feeder default — are closed and each is pinned twice (behaviourally under hython, structurally by ast on every interpreter). Do not re-derive.",
+      "The feeder trace: chat_panel.py:233 -> ws_bridge.py:200,322 -> gate_widget.handle_ws_report -> update_integrity, fed by shared/bridge.py:2842 session_report(). Mapped; re-walk only if the transport changes."
+    ],
+    "start_here": [
+      "FID-R2 — the ops/violations cells of the same row, if the human widens scope. Smallest next honest increment.",
+      "FID-R1 — whether the bridge property itself should stop returning a rest-state 1.0."
+    ],
+    "environment": "Behavioural tests need PySide: QT_QPA_PLATFORM=offscreen hython3.13.exe -m pytest tests/panel/test_gate_fidelity_unknown.py. The source-pin needs nothing: python -m pytest tests/test_gate_fidelity_honesty_sourcepin.py.",
+    "gate_open": "Gate C — this leg committed to branch finish/fidelity-unknown in its own worktree and did NOT push or merge. Promotion to master is human."
+  }
+}
