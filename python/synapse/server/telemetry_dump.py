@@ -106,6 +106,9 @@ def collect_telemetry() -> dict:
         "synapse_version": None,
         "dispatch_waits": None,
         "main_thread_direct": None,
+        "main_thread_hold": None,
+        "marshal_guard": None,
+        "panel_result_render": None,
         "scene_hash": None,
         "composition": None,
         "stage_touch": None,
@@ -135,6 +138,33 @@ def collect_telemetry() -> dict:
         out["main_thread_direct"] = main_thread_direct_stats()
     except Exception:
         out["main_thread_direct_absent"] = "main_thread stats unavailable"
+
+    # OCC deferred-path HOLD histogram — fn() duration measured ON the main thread
+    # inside _on_main. FRZ: this is the ONE instrument that can see a hold on the
+    # deferred path, which is where the settled findings place the residual freeze
+    # cost — and until now it was absent from every dump, so the artifact a freeze
+    # investigation reads first could not answer the question it exists to answer.
+    try:
+        from .main_thread import main_thread_hold_stats
+        out["main_thread_hold"] = main_thread_hold_stats()
+    except Exception:
+        out["main_thread_hold_absent"] = "main_thread stats unavailable"
+
+    # Marshal-guard ledger — inline-overrun counters + mode. Records whether the
+    # guard was even ARMED, which a post-mortem otherwise has to infer.
+    try:
+        from .marshal_guard import guard_stats
+        out["marshal_guard"] = guard_stats()
+    except Exception:
+        out["marshal_guard_absent"] = "marshal_guard unavailable"
+
+    # FRZ result-path phases — the Qt half. Zero-Qt import by construction, so
+    # unlike panel_inline_stats this stays collectable in a headless server.
+    try:
+        from ..panel.result_telemetry import result_render_stats
+        out["panel_result_render"] = result_render_stats()
+    except Exception:
+        out["panel_result_render_absent"] = "panel result telemetry unavailable"
 
     # R1 stage-integrity hash duration (the Flatten floor on large Solaris stages).
     try:

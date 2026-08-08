@@ -66,6 +66,16 @@ try:
     from synapse.panel.tool_bridge import get_anthropic_tools
 except Exception:  # pragma: no cover
     get_anthropic_tools = None
+# FRZ attribution: times the main-thread result-path slots. Measurement only — it
+# imposes no bound and changes no control flow. Degrades to a zero-cost no-op
+# context manager so an import failure can never break the panel's result path.
+try:
+    from synapse.panel.result_telemetry import timed_phase as _timed_phase
+except Exception:  # pragma: no cover
+    from contextlib import nullcontext as _nullctx
+
+    def _timed_phase(*_a, **_k):
+        return _nullctx()
 try:
     # H3b — off-UI-thread single-tool dispatch for the cancel/halt controls.
     from synapse.panel.direct_tool import (
@@ -2196,15 +2206,29 @@ class SynapsePanel(QtWidgets.QWidget):
         self._last_tool = None       # C8: fresh run — no stale in-flight tool name
         self._set_thinking(True)
         self._set_busy(True)
-        tools = get_anthropic_tools() if get_anthropic_tools else None
-        system = self._build_system_prompt()
-        # Interactive panel = human-in-the-loop: the artist typed the request
-        # and is watching it run, so the worker allowlist gate (autonomous-only)
-        # is disabled here to preserve the existing artist-initiated path.
-        self._worker = ClaudeWorker(self._messages, system_prompt=system,
-                                    tools=tools, parent=self,
-                                    enforce_worker_policy=False,
-                                    provider=self._make_provider())
+        # FRZ probe 1 (SEND). All of this runs on the main thread the instant the
+        # artist presses send: get_anthropic_tools(), _build_system_prompt() (which
+        # does unmarshalled hou.* reads), _make_provider(), and ClaudeWorker.__init__
+        # — whose `copy.deepcopy(messages)` (claude_worker.py:99) deep-copies every
+        # prior tool_result payload of the session on THIS thread. Cost therefore
+        # grows with conversation length, which is the scaling law payload_chars is
+        # here to expose.
+        # SIZE PROXY, deliberately cheap: payload_chars carries the conversation's
+        # MESSAGE COUNT here, not a character count. Summing len(str(m)) over the
+        # history would cost O(conversation) on the very thread being measured —
+        # an instrument that costs as much as the thing it measures corrupts its
+        # own reading. Turn count is O(1) and is the axis deepcopy cost scales on.
+        with _timed_phase("send") as _frz_send:
+            _frz_send.set_sizes(payload_chars=len(self._messages or ()))
+            tools = get_anthropic_tools() if get_anthropic_tools else None
+            system = self._build_system_prompt()
+            # Interactive panel = human-in-the-loop: the artist typed the request
+            # and is watching it run, so the worker allowlist gate (autonomous-only)
+            # is disabled here to preserve the existing artist-initiated path.
+            self._worker = ClaudeWorker(self._messages, system_prompt=system,
+                                        tools=tools, parent=self,
+                                        enforce_worker_policy=False,
+                                        provider=self._make_provider())
         self._worker.token_received.connect(self._on_token)
         self._worker.stream_done.connect(self._on_done)
         self._worker.stream_error.connect(self._on_error)
@@ -2226,7 +2250,12 @@ class SynapsePanel(QtWidgets.QWidget):
                 pass
         self._stream_buf.append(tok)
         try:
-            self._chat.stream_chunk(tok)
+            # FRZ probe 2 (STREAM). Fires once per SSE delta, so this is recorded as
+            # an AGGREGATE — the module accumulates count/sum/max and only logs a
+            # line when a single delta crosses the slow threshold. A per-call log at
+            # token cadence would itself become the freeze.
+            with _timed_phase("stream", payload_chars=len(tok or "")):
+                self._chat.stream_chunk(tok)
         except Exception:
             pass
 
@@ -2236,7 +2265,14 @@ class SynapsePanel(QtWidgets.QWidget):
         if getattr(self, "_streaming_started", False):
             # finalize the live stream → fully formatted (links, code blocks)
             try:
-                self._chat.end_stream(text if text else None, signed=signed)
+                # FRZ probe 3 (FINALIZE) — the fattest single main-thread event on
+                # the result path: removeSelectedText over the whole streamed span,
+                # then the four-regex formatter, then a full insertHtml re-layout.
+                # NOTE: this phase strictly CONTAINS the "append" phase recorded
+                # inside ChatDisplay.append_synapse_message; the two are nested, not
+                # disjoint, and must not be summed.
+                with _timed_phase("finalize", payload_chars=len(text or "")):
+                    self._chat.end_stream(text if text else None, signed=signed)
             except Exception:
                 pass
         else:
@@ -2326,7 +2362,12 @@ class SynapsePanel(QtWidgets.QWidget):
             self._set_header("working", "Working on it")
             self._set_work_substate("cook")
         elif not busy and self._was_busy:
-            self._populate_review()      # fill verdict + provenance for the payoff
+            # FRZ probe 4 (REVIEW). Last main-thread work of the turn and the only
+            # one that destroys and rebuilds widgets (face_review._clear → takeAt +
+            # setParent(None) + deleteLater per row), so it is the natural suspect
+            # for a tail stall that reads as "and then it recovers".
+            with _timed_phase("review"):
+                self._populate_review()  # fill verdict + provenance for the payoff
             self._set_work_substate("done")
             self._set_header("done", "Result ready")
         elif busy:

@@ -1604,6 +1604,15 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         except Exception:
             panel_inlines = None
 
+        # FRZ — main-thread result-path phases (the Qt half of the attribution).
+        # Unlike panel_inline_stats above, this accessor is zero-Qt by construction,
+        # so it stays collectable in a headless server rather than degrading to None.
+        try:
+            from ..panel.result_telemetry import result_render_stats
+            panel_results = result_render_stats()
+        except Exception:
+            panel_results = None
+
         text = render_prometheus(
             router_stats=router_stats,
             circuit_breaker_state=cb_state,
@@ -1614,6 +1623,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             main_thread_holds=main_thread_holds,
             scene_hashes=scene_hashes,
             panel_inlines=panel_inlines,
+            panel_results=panel_results,
             live_snapshot=live_snapshot,
             compositions=compositions,
             stage_touches=stage_touches,

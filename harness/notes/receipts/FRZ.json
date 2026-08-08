@@ -1,0 +1,198 @@
+{
+  "schema": "receipt/v1",
+  "leg": "FRZ",
+  "title": "FRZ - attribute the UI freeze during node operations. Attribution only; fixes nothing.",
+  "harness": "FRZ (harness/prompts/frz.md)",
+  "status": "green-with-structural-drift",
+  "status_note": "Green means the stated oracle was satisfied: the Qt result path is instrumented, convention-matched and warn-mode; the constant hunt closed by exhaustion with every candidate dispositioned and the six band-capable ones adversarially refuted; the repro protocol is written and its probe executed end-to-end in a plain-Python harness; and the suite count strictly increased (+19) with the 9 pre-existing failures unchanged in identity. It does NOT mean the brief was executable as written: its named AUTHORITY does not exist (D-FRZ-1) and one of its settled figures is a misreading (D-FRZ-2). Both are escalated, not worked around silently. It also does NOT mean the freeze is attributed - see not_observed[].",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "NONE OF THE HARNESS PROFILES. Interactive session under the project .claude/settings.json, recorded honestly per Constitution Article V: this leg ran pytest and wrote product code under python/synapse/, which is outside harness/agent-settings.json's grant.",
+  "commit_at_run": "1f18ab46",
+  "branch": "finish/freeze-attribution",
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/freeze-attribution",
+  "houdini_build_target": "22.0.368",
+  "houdini_build_observed": "NONE - headless leg, no Houdini session attached. Every live claim is marked NOT-OBSERVED.",
+  "mode": "WRITES CODE (instrumentation only). New: python/synapse/panel/result_telemetry.py, tests/test_result_telemetry.py, scripts/frz_probe.py, harness/notes/FRZ_REPRO.md. Modified: synapse_panel.py, chat_display.py, telemetry_dump.py, metrics.py, handlers.py. No merge, no push. No fix to the freeze, no change to run_on_main semantics, no guard removed or quieted.",
+
+  "suite_before": {
+    "producer": "python -m pytest tests/ -q -p no:randomly, this worktree, Python 3.14.2 on Windows, at 1f18ab46 before any edit",
+    "passed": 5765,
+    "failed": 9,
+    "skipped": 147,
+    "duration_s": 197.24
+  },
+  "suite_after": {
+    "producer": "python -m pytest tests/ -q -p no:randomly, same worktree and interpreter, after all edits",
+    "passed": 5784,
+    "failed": 9,
+    "skipped": 147,
+    "duration_s": 162.33,
+    "delta": "+19 tests. Failures UNCHANGED in identity and count - all 9 are the pre-existing set enumerated in harness/notes/receipts/M5b.json; zero new. Law 6 satisfied: the count strictly increases and nothing was weakened, skipped or xfailed.",
+    "pre_existing_failures": [
+      "tests/test_moneta_crucible.py::test_moneta_backend_never_fires_evolution",
+      "tests/test_moneta_integration.py::test_hard_exit_loses_the_deposit",
+      "tests/test_pass7_per_agent_and_canonical.py::TestPokemonStageCanonicalPin::test_charmander_referenced_in_all_consumers",
+      "tests/test_pkg_bootstrap_invariant.py::test_r310_shapes_leave_no_runtime_divergence",
+      "tests/test_scene_memory.py::TestValidateMemory::test_validate_healthy_dir",
+      "tests/test_statusline.py::test_branch_read_without_git_matches_git",
+      "tests/test_statusline.py::test_registry_matches_git_worktree_list",
+      "tests/test_statusline.py::test_head_sha_matches_git",
+      "tests/test_statusline.py::test_suite_figure_from_another_commit_is_not_shown_as_fresh"
+    ],
+    "self_caught_defect": "The first post-change run showed 10 failures. The new one was MINE: tests/test_result_telemetry.py::test_module_imports_without_qt asserted 'no Qt in sys.modules' - a property of the whole session's import history rather than of the module under test. It passed in isolation and failed once tests/qt_stub_window.py installed a Qt stub. Fixed forward (Law 6) by re-scoping it to a clean subprocess that imports only result_telemetry. Proven able to fail: pre-installing a fake PySide6 makes the detector fire. Re-verified passing alongside the polluting tests (106 passed co-run)."
+  },
+
+  "queue_items_closed": [
+    {
+      "item": "PRECONDITION - read docs/MAIN_THREAD_FREEZE.md end to end and work its open queue in order",
+      "evidence": "CANNOT BE DONE AS WRITTEN. The file does not exist: absent from disk (filesystem search under C:/Users/User to depth 4), absent from every git ref (git ls-tree over refs/heads + refs/remotes), never committed (git log --all --diff-filter=A returns nothing). harness/prompts/frz.md is its ONLY reference anywhere in the tree, and frz.md is itself untracked. Escalated as D-FRZ-1. The queue was RECONSTRUCTED from the surviving corpus and every item re-verified against HEAD rather than trusted from a document."
+    },
+    {
+      "item": "TIER 0.1 - instrument the deferred path (freeze-class1-recon-2026-08-01.md:46, ordered 'do first, everything else is unrankable without it')",
+      "evidence": "CLOSED BEFORE THIS LEG. VERIFIED-STATIC: main_thread.py:394 calls _record_main_thread_hold(_hold_ms, label, _was_abandoned) inside _on_main's finally, with a perf_counter pair bracketing fn(); histogram defined at :160-208. Commit 8239410a."
+    },
+    {
+      "item": "FOLLOW-ON TO 0.1 (opened by its own fix) - the OCC hold histogram is absent from the freeze dump",
+      "evidence": "CONFIRMED OPEN, THEN CLOSED BY THIS LEG. I read telemetry_dump.py:103-115 myself: the out dict carried dispatch_waits / main_thread_direct / scene_hash / composition / stage_touch / tool_durations / freeze / live_metrics_latest, with NO main_thread_hold and NO marshal_guard key. This is the load-bearing finding of the leg - the one instrument that can see a deferred-path hold, which is where the settled findings place the residual cost, was invisible in the artifact a freeze post-mortem reads first. Now added at telemetry_dump.py:149, :157, :165 and pinned by tests/test_result_telemetry.py::test_telemetry_dump_carries_the_freeze_attribution_sections."
+    },
+    {
+      "item": "Add marshal_guard.guard_stats() to collect_telemetry (synapse-review-2026-08-01.md:649, tagged trivial; the review orders the whole instrument-gap cluster BEFORE any Class 4 remediation)",
+      "evidence": "CLOSED BY THIS LEG at telemetry_dump.py:157. Every freeze dump now records guard mode, inline budget, violations and inline_overruns - i.e. whether the guard was even armed, which a post-mortem previously had to infer."
+    },
+    {
+      "item": "TIER 0.2 - retire the 2026-07-31 tool-attribution numbers as evidence",
+      "evidence": "STILL OPEN, unchanged at HEAD. FREEZE_FORENSICS_20260731.md carries no retraction, no amendment header and no strike-through; :35-37 still cites the corrupted numbers and :41 still describes the defect in the future tense though 13bd541e landed. Left open deliberately: it is human decision D5 and a documentation retraction, not instrumentation."
+    },
+    {
+      "item": "TIER 1.1, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6 and the FORENSICS 5.1 / 5.4 / 5.5 hazards",
+      "evidence": "ALL RE-VERIFIED OPEN at 1f18ab46 by reading each line rather than trusting the doc: bridge_adapter.py:241-248 (capture_viewport absent from _KNOWN_SLOW_TOOLS), handlers_usd.py:957 (bounds RESULTS not VISITS), handlers.py:1500 (no timeout kwarg), handlers_usd.py:905 (bare run_on_main), live_metrics.py:255 (no record_stall=False), shared/bridge.py:2599-2606, mcp/server.py:122-123, handlers.py:672 (only 'render' is bounded), websocket.py:605, websocket.py:480. NONE were actioned - every one is a FIX and this leg is forbidden from fixing. Two anchors had drifted from the source doc and are corrected here (inspect_scene :1486 -> :1500)."
+    },
+    {
+      "item": "FORENSICS 5.2 (stale attribution string) and 5.3 (armed-but-inert class-3 wire)",
+      "evidence": "CLOSED BEFORE THIS LEG. 5.2 by 13bd541e - tool_executor.py:606 emits the on-main string and :612 the off-main string, discriminated by a real thread-identity check at :489. 5.3 via the pin route - tests/test_panel_preflight_h7_guard.py:236 asserts no production emitter of tool_requested. Independently corroborated: grep for 'tool_requested.emit' across the repo returns exactly one hit, and it is prose inside harness/notes/panel_freeze_probe.py:11."
+    },
+    {
+      "item": "Reconcile the brief's own contradiction - 'note_main_thread_inline_overrun has never logged a line' vs the corpus recording 25 such records",
+      "evidence": "RESOLVED BY SCOPING, and it is the leg's sharpest attribution result. Both statements hold: the sink fired 21x on 2026-07-28 and 4x on 2026-07-29, and zero on every date after; PR #50 moved callers off-main in that window. So the silence is NOT a muted instrument - it is positive evidence that the current 5-6s band sits on the DEFERRED path, which only the OCC main_thread_hold histogram can see, and which was absent from the dump until this leg added it. NOT-OBSERVED caveat: the production logs live outside this repo and were not read here."
+    }
+  ],
+
+  "instrumented_at": [
+    "python/synapse/panel/result_telemetry.py:1 (NEW - the sink; zero-Qt and zero-hou at import, verified in a clean subprocess)",
+    "python/synapse/panel/synapse_panel.py:2221 (probe 1 SEND - _start_worker: get_anthropic_tools + _build_system_prompt's unmarshalled hou reads + ClaudeWorker.__init__ deepcopy)",
+    "python/synapse/panel/synapse_panel.py:2257 (probe 2 STREAM - _on_token -> ChatDisplay.stream_chunk, once per SSE delta, recorded as an aggregate)",
+    "python/synapse/panel/synapse_panel.py:2274 (probe 3 FINALIZE - _on_done -> ChatDisplay.end_stream, the fattest single main-thread event)",
+    "python/synapse/panel/synapse_panel.py:2369 (probe 4 REVIEW - _set_busy not-busy edge -> _populate_review widget teardown/rebuild)",
+    "python/synapse/panel/chat_display.py:285 (probe 5 APPEND - format_synapse_message + insertHtml; the convergence point of BOTH the streaming and non-streaming result paths)",
+    "python/synapse/server/telemetry_dump.py:149 (main_thread_hold into the freeze dump)",
+    "python/synapse/server/telemetry_dump.py:157 (marshal_guard guard_stats into the freeze dump)",
+    "python/synapse/server/telemetry_dump.py:165 (panel_result_render into the freeze dump)",
+    "python/synapse/server/metrics.py:274 (Prometheus series per phase, deliberately NOT gated on count>0 so a zero stays visible)",
+    "python/synapse/server/handlers.py:1612 (metrics handler wiring)"
+  ],
+
+  "constants_checked": [
+    "python/synapse/server/marshal_guard.py:129: 5.0  [threshold | on_prompt_path=YES | band=NO]",
+    "python/synapse/server/resilience.py:522: 5.0  [threshold | on_prompt_path=YES | band=NO]",
+    "python/synapse/server/freeze_chain.py:57: 5.0  [threshold | on_prompt_path=YES | band=NO]",
+    "python/synapse/cognitive/tools/scout.py:299: 5.0 (Python sqlite3 implicit default)  [timeout | on_prompt_path=YES | band=YES -> adversarially REFUTED UNREACHABLE]",
+    "python/synapse/memory/sqlite_store.py:165: 5000  [timeout | on_prompt_path=NO | band=YES -> REFUTED UNREACHABLE]",
+    "python/synapse/memory/sqlite_store.py:208: 5.0  [timeout | on_prompt_path=NO | band=MAYBE -> REFUTED UNREACHABLE]",
+    "python/synapse/panel/ws_bridge.py:528: 5000  [timeout, a genuine main-thread QThread.wait of exactly 5.0s | on_prompt_path=NO | band=YES -> REFUTED UNREACHABLE, dead panel surface]",
+    "python/synapse/panel/chat_panel.py:593: 5  [timeout, subprocess.run on main | on_prompt_path=NO | band=YES -> REFUTED UNREACHABLE]",
+    "python/synapse/panel/chat_panel.py:704: 5  [timeout, subprocess.run on main | on_prompt_path=NO | band=YES -> REFUTED UNREACHABLE]",
+    "mcp_server.py:345: 6.05 (computed: MAX_RETRIES 2 x open_timeout 3.0 + RETRY_DELAY 0.05)  [retry backoff | on_prompt_path=NO | band=YES - wrong process]",
+    "mcp_server.py:109: 5.0  [timeout | on_prompt_path=NO | band=YES - wrong process, and async]",
+    "python/synapse/host/daemon.py:80: 5.0  [timeout | on_prompt_path=NO | band=YES - no production caller of SynapseDaemon]",
+    "python/synapse/server/handlers_render.py:469: 5.0  [timeout | on_prompt_path=MAYBE (render prompts only) | band=NO - bounds the CALLER's wait, not main's work]",
+    "python/synapse/routing/router.py:122: 5.0  [timeout | on_prompt_path=NO | band=NO - DEAD CONSTANT, zero readers]",
+    "python/synapse/panel/chat_panel.py:246: 5000  [poll interval | on_prompt_path=NO | band=NO - an interval is a period between wakes, not a hold]",
+    "python/synapse/panel/ws_bridge.py:239: 5000  [retry backoff | on_prompt_path=NO | band=NO - executes on the QThread itself]",
+    "python/synapse/panel/claude_worker.py:45: 5.0 (additive margin)  [budget | on_prompt_path=YES | band=NO - minimum result is 30.0]",
+    "python/synapse/panel/tool_executor.py:275: 5.0 (additive margin)  [budget | on_prompt_path=YES | band=NO - minimum result is 15.0, worker thread]",
+    "python/synapse/server/resilience.py:372: 5.0  [poll interval | on_prompt_path=NO | band=NO - stored and never consumed]",
+    "python/synapse/server/handlers_tops/_common.py:85: 5.0  [threshold | on_prompt_path=MAYBE (TOPS only) | band=NO - post-hoc log threshold]",
+    "python/synapse/server/websocket.py:766: 5.0  [other | on_prompt_path=NO | band=NO - a number in a JSON response body]",
+    "python/synapse/core/protocol.py:288: 2.0 (computed: MAX_PORT_RETRIES 4 x PORT_RETRY_DELAY 0.5)  [retry backoff | on_prompt_path=NO | band=NO - startup only]",
+    "python/synapse/server/handlers_render.py:966: 15.0 (computed: range(60) x sleep(0.25))  [poll interval | on_prompt_path=MAYBE (render only) | band=NO - the only genuine N-polls-at-T loop found]",
+    "python/synapse/server/integrity_envelope.py:170: 1.0 (x2 hops = 2.0)  [timeout | on_prompt_path=YES | band=NO]",
+    "python/synapse/memory/scene_memory.py:999: 6000  [budget | on_prompt_path=YES | band=NO - a CHARACTER budget, not milliseconds]",
+    "python/synapse/panel/chat_panel.py:71: 5000  [other | on_prompt_path=NO | band=NO - _CONTEXT_MAX_AGE_MS, a cache-staleness TTL, not a wait; dead module]",
+    "shared/conductor_advisor.py:105: 5  [threshold | on_prompt_path=NO | band=NO - an occurrence COUNT, dimensionless]"
+  ],
+
+  "constant_found": "NONE-of-listed",
+
+  "constant_found_detail": "No fixed 5-6 second value exists on the main-thread prompt path. 27 candidates were swept and dispositioned; the six that were band-capable were each handed to an independent adversarial verifier instructed to REFUTE and to default to ruled-out under uncertainty, and all six returned UNREACHABLE. The crux the brief flagged is resolved: marshal_guard.py:129 (DEFAULT_INLINE_BUDGET_S=5.0) and freeze_chain.py:57 / resilience.py:522 (freeze_threshold=5.0) are pure OBSERVERS - each is compared against an already-elapsed duration, in a finally block or on a daemon watchdog thread, and main_thread.py:326-330 states outright that no bounding is applied because 'any timeout on this path would be a lie'. They MEASURE the band; they cannot CAUSE it. The most freeze-shaped constructs in the tree - ws_bridge.py:528 self.wait(5000), a genuine main-thread QThread.wait of exactly 5.0s, and chat_panel.py:593/:704 subprocess.run(timeout=5) on main - all live in the UNREGISTERED panel surface: packages/synapse.json exposes only $SYNAPSE_ROOT/houdini, whose sole .pypanel loads synapse.panel.synapse_panel, and chat_panel/ws_bridge have zero non-test importers (independently corroborated by the committed harness/notes/panel_capability_matrix.json:665). The N-polls-at-T shape the brief called most likely was swept for specifically and yields only 2.0s, 15.0s and 2.0s - none in band. CONSEQUENCE: the tight band must be explained by a fixed-COST computation whose size is stable turn to turn, not by a hidden timeout - which is exactly why this leg instrumented the result path rather than continuing to hunt literals.",
+
+  "repro_protocol": "harness/notes/FRZ_REPRO.md",
+
+  "leading_candidate_for_the_tight_band": {
+    "anchor": "python/synapse/panel/agent_health.py:67-71",
+    "claim": "_find_bridge_instance memoizes only a POSITIVE lookup - the miss path returns None at :71 without setting _BRIDGE_REF - so while no LosslessExecutionBridge exists, the 4000ms QTimer at synapse_panel.py:408-411 walks the ENTIRE Python heap via gc.get_objects(), plus an isinstance per object, on Houdini's main thread, forever, with no stop on hide or close.",
+    "tier": "VERIFIED-STATIC (read at :67-71 directly, not relayed)",
+    "why_it_matters": "Heap size is roughly constant within a session, so the walk's DURATION is roughly constant. This is the one mechanism found that produces a tight, repeatable band with no timeout anywhere in it - which is the shape the brief described and the shape the constant hunt just proved cannot come from a literal. It belongs to none of the four known freeze classes and matches the 'Houdini feels sticky while SYNAPSE is open' signature. NOT instrumented by this leg: it is outside the result path the brief scoped. Flagged in FRZ_REPRO.md as a discriminating check to run at the GUI - whether the panel feels sticky WITHOUT sending a prompt separates it from everything on the result path."
+  },
+
+  "not_observed": [
+    "The freeze itself was never reproduced. This leg had no Houdini session; the SessionStart hook reported the SYNAPSE bridge unreachable and it was never pinged.",
+    "Every rung-5 number the new instrument can produce is UNMEASURED. The sample table in FRZ_REPRO.md is explicitly synthetic - two injected durations used to prove the report renders and attributes correctly.",
+    "scripts/frz_probe.py was executed end-to-end (arm -> record -> report -> disarm) in a plain-Python harness only. It has never run inside Houdini.",
+    "The five instrumented Qt call sites were compile-checked, not executed: PySide is absent from this interpreter, so synapse_panel.py and chat_display.py cannot be imported here. Their timing code has never run."
+  ],
+
+  "drift": [
+    {
+      "id": "D-FRZ-1",
+      "severity": "STRUCTURAL",
+      "what": "The brief names docs/MAIN_THREAD_FREEZE.md as THE AUTHORITY - 'read end to end', 'the settled record', and the source of the ordered open queue that is work item 1. The file has never existed in this repository.",
+      "evidence": "Absent from disk (find over C:/Users/User to depth 4), absent from every git ref (git ls-tree over refs/heads and refs/remotes), never added (git log --all --diff-filter=A). harness/prompts/frz.md is the only file in the tree that mentions the path, and frz.md is itself untracked.",
+      "handling": "Per Constitution Article VI a structural contradiction escalates, and per Article I escalation goes to for_ruling[] rather than interrupting mid-run. Work item 1 was executed against a RECONSTRUCTED queue stitched from FREEZE_FORENSICS_20260731.md section 5 and freeze-class1-recon-2026-08-01.md TIER 0-3 - two ladders that partly supersede each other, with both orderings preserved rather than merged into a fiction - and every item re-verified at HEAD. Items 2, 3 and 4 do not depend on the doc and were completed in full."
+    },
+    {
+      "id": "D-FRZ-2",
+      "severity": "COSMETIC-BUT-LOAD-BEARING",
+      "what": "The brief states '13 call sites of marshal_guard.note_main_thread_inline_overrun have never logged a line'. There are 4 call sites, not 13.",
+      "evidence": "Counted directly at HEAD: host/main_thread_executor.py:254, server/handlers.py:318, server/handlers_render.py:551, server/main_thread.py:340. 13 was the raw grep LINE count - 4 calls plus imports, comments, and 3 lines inside marshal_guard.py itself. Separately, forbid_main_thread_block has ZERO production call sites (tests only).",
+      "handling": "Recorded, not worked around. The SUBSTANTIVE half of the brief's claim - that the sink has been silent - survives and was strengthened: see the last queue_items_closed entry, where the silence is scoped to the post-PR-#50 era and becomes positive evidence for the deferred path. The count changes no conclusion; it is logged because a figure travelling without a producer is exactly what Law 2 exists to catch."
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "R-FRZ-1",
+      "question": "docs/MAIN_THREAD_FREEZE.md does not exist and never did. Was it (a) written outside the repo and never committed, (b) renamed - the closest surviving pair is docs/reviews/freeze-class1-recon-2026-08-01.md plus harness/notes/FREEZE_FORENSICS_20260731.md, or (c) a document this leg was expected to CREATE? The reconstruction in this receipt is a faithful stitch of (b), but a reconstruction is not the authority the brief cited, and any future leg told to 'work the freeze queue in its order' will hit the same wall.",
+      "why_human": "Article I - which document is authoritative is a value judgement between defensible options, not something provable from the tree."
+    },
+    {
+      "id": "R-FRZ-2",
+      "question": "Scope check on three hunks that are instrumentation but sit just outside the brief's literal item 2 ('instrument the Qt result path'). I added main_thread_hold + marshal_guard.guard_stats to collect_telemetry (telemetry_dump.py:149/:157) and a Prometheus series (metrics.py:274). Justification: without them the new instrument is born write-only, which is the exact defect this corpus keeps recording, and both were already OPEN queue items tagged trivial. All are additive keys, zero behaviour change, trivially revertible. Confirm in scope, or revert those three hunks and keep only the five result-path probes.",
+      "why_human": "Article I - 'is this cost worth paying' is a scope judgement, and the brief drew a line I chose to read generously."
+    },
+    {
+      "id": "R-FRZ-3",
+      "question": "The leading tight-band candidate (agent_health.py:71 - the uncached negative causing a full-heap gc walk on a 4s main-thread timer) is NOT on the result path and was therefore NOT instrumented. It is a one-line fix (cache the negative) and this leg is forbidden from fixing. Should a follow-on leg instrument it, fix it, or both - and in which order relative to reproducing the band?",
+      "why_human": "It is a fix, and remediation sequencing is not an agent decision."
+    },
+    {
+      "id": "R-FRZ-4",
+      "question": "Human decisions D1-D5 at freeze-class1-recon-2026-08-01.md:116 open with 'HUMAN DECISIONS REQUIRED BEFORE ANY WORK STARTS' and gate the whole freeze queue by their own statement. D1 is de-facto answered (the occupancy timer shipped in 8239410a) but no ruling records it; D2/D3/D4 have no ruling findable in harness/notes/; D5 is verifiably open. This leg proceeded anyway because it is attribution-only and fixes nothing. Confirm that reading, and rule D1-D5 before any remediation leg is dispatched.",
+      "why_human": "The document says so explicitly."
+    }
+  ],
+
+  "open": [
+    "THE FREEZE IS NOT ATTRIBUTED. This leg built the instrument that can attribute it and wrote the protocol to run it; the measurement itself is human-at-GUI and has not happened. Run harness/notes/FRZ_REPRO.md.",
+    "Rung 5 has never executed inside Houdini. PySide is absent from this interpreter, so the five instrumented call sites are compile-verified only. The first live run should confirm the counters move before any conclusion is drawn from them.",
+    "agent_health.py:71 - uncached negative causing a 4s full-heap main-thread gc walk. Leading tight-band candidate; uninstrumented and unfixed (R-FRZ-3).",
+    "synapse_panel.py:2342 - the 2s context timer reads hou.frame() / hou.selectedNodes() / hou.hipFile.basename() inline on main, unmarshalled, while ws_bridge.gather_context_off_main exists to do exactly that read off-main and the live panel does not use it. Uninstrumented, unfixed.",
+    "TIER 0.2 doc retraction (D5) and TIER 1.1, 2.1-2.6, FORENSICS 5.1 / 5.4 / 5.5 all re-verified OPEN at 1f18ab46 and deliberately untouched - every one is a fix.",
+    "metrics.py:252 - the pre-existing 'count > 0' guard still hides the panel_inline series at zero. The new series at :274 deliberately does not inherit that defect, but the old one is unchanged.",
+    "chat_panel.py and ws_bridge.py are dead code reachable by no shipped entrypoint, yet hold the four most freeze-shaped constants in the tree. Not this leg's call to delete (Law 4: classify before you delete), but they will keep drawing future freeze investigations to a surface that cannot run."
+  ],
+
+  "resume_token": {
+    "skip": "Do NOT re-run the constant hunt - 27 candidates are dispositioned with anchors and the six band-capable ones were adversarially refuted UNREACHABLE. Do NOT re-derive the queue - it is reconstructed and HEAD-verified above. Do NOT re-run the suite baseline - 5765/9/147 at 1f18ab46, producer named.",
+    "start_at": "A live Houdini session. Run harness/notes/FRZ_REPRO.md, capture .synapse/frz_report.txt, attach it to the next leg. If rung 5 is quiet and the freeze still reproduces, go straight to agent_health.py:71 (R-FRZ-3) before instrumenting anything further."
+  }
+}
