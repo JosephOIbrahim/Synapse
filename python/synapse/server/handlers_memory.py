@@ -317,26 +317,74 @@ class MemoryHandlerMixin:
         return status
 
     def _handle_evolve_memory(self, payload: Dict) -> Dict:
-        """Manually trigger memory evolution."""
-        from ..memory.evolution import check_evolution, evolve_to_charmeleon
+        """Manually trigger memory evolution (charmander -> charmeleon).
+
+        CI0: this handler used to `from ..memory.evolution import ...`. That
+        module was RETIRED in 7f7bbc39 (renamed `evolution.py.deprecated` when
+        the Moneta backend superseded it) and the import was never updated, so
+        every call to this handler raised ImportError -- a dead MCP tool that
+        no test covered. The surviving implementation is
+        `shared/evolution.py::LosslessEvolution`, a strict superset of the
+        retired evolver: same markdown -> USD conversion, plus lossless
+        verification with rollback, an immutable pre-evolution archive, and the
+        R10 Solaris viewport sync.
+
+        Stage names are identical on both sides -- shared/constants.py defines
+        EVOLUTION_STAGE_FLAT = "charmander" / _STRUCTURED = "charmeleon" -- so
+        the reply keys (`current`, `target`, `should_evolve`, `triggers_met`)
+        keep the shape the retired path returned.
+        """
+        try:
+            from shared.constants import EVOLUTION_STAGE_STRUCTURED
+            from shared.evolution import LosslessEvolution, check_evolution_triggers
+        except ImportError as exc:
+            # Law 3: a path that did nothing does not report success. `shared/`
+            # sits at the repo root and is not part of the installed `synapse`
+            # package, so a partial install can legitimately lack it.
+            return {
+                "status": "unavailable",
+                "evolved": False,
+                "error": "memory evolution unavailable: shared/evolution.py not "
+                         f"importable ({type(exc).__name__}: {exc})",
+            }
 
         sp = self._scene_paths()
         scope = resolve_param_with_default(payload, "scope", "scene")
         dry_run = resolve_param_with_default(payload, "dry_run", True)
 
         claude_dir = os.path.join(sp["hip_dir"], "claude")
-        status = check_evolution(claude_dir)
+        md_path = os.path.join(claude_dir, "memory.md")
+        usd_path = os.path.join(claude_dir, "memory.usd")
+
+        check = check_evolution_triggers(md_path)
+        status = {
+            "should_evolve": check.should_evolve,
+            "triggers_met": check.triggers_met,
+            "triggers_pending": check.triggers_pending,
+            "current": check.current_stage,
+            "target": check.target_stage if check.should_evolve else None,
+        }
 
         if dry_run:
             return {"dry_run": True, **status}
 
-        if status["should_evolve"] and status["target"] == "charmeleon":
-            md_path = os.path.join(claude_dir, "memory.md")
-            usd_path = os.path.join(claude_dir, "memory.usd")
-            result = evolve_to_charmeleon(md_path, usd_path)
-            return {"dry_run": False, "evolved": True, **result}
+        if check.should_evolve and check.target_stage == EVOLUTION_STAGE_STRUCTURED:
+            result = LosslessEvolution().evolve_to_structured(md_path, usd_path)
+            # `evolved` reports what HAPPENED, not what was attempted: the
+            # lossless verify can refuse and roll back, and that must not read
+            # as a success.
+            return {
+                "dry_run": False,
+                "evolved": result.evolved,
+                "stage": result.stage,
+                "fidelity": result.fidelity,
+                "archive": result.archive_path,
+                "reason": result.reason,
+                **status,
+            }
 
-        return {"dry_run": False, "evolved": False, "reason": "No evolution needed"}
+        return {"dry_run": False, "evolved": False, "reason": "No evolution needed",
+                **status}
 
     def _handle_sleep_pass(self, payload: Dict) -> Dict:
         """Trigger Moneta consolidation/decay. DESTRUCTIVE — permanently prunes

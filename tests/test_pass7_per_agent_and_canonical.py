@@ -267,12 +267,21 @@ class TestConformanceHelper:
 
 class TestPokemonStageCanonicalPin:
     def test_charmander_referenced_in_all_consumers(self):
+        # CI0: `python/synapse/memory/evolution.py` was in this list until it was
+        # RETIRED in 7f7bbc39 (renamed evolution.py.deprecated). The pin then
+        # failed on CI with "Files not found / unreadable" -- correctly: it is a
+        # drift detector and the tree had drifted. A retired module is not a
+        # consumer, so it is dropped rather than restored; it is replaced by
+        # `panel/shot_login.py`, a LIVE consumer that reads the stage name and
+        # was never pinned, so the consumer count holds at 5 instead of falling
+        # to 4. (`agent_health.py` and `context_bar.py` are the other two live
+        # consumers -- add them here if this pin ever needs widening.)
         assert_value_in_all_files(
             value="charmander",
             files=[
                 "shared/constants.py",
                 "python/synapse/memory/scene_memory.py",
-                "python/synapse/memory/evolution.py",
+                "python/synapse/panel/shot_login.py",
                 "tests/test_scene_memory.py",
                 "CLAUDE.md",
             ],
