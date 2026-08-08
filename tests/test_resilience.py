@@ -497,10 +497,12 @@ def test_watchdog_freeze_detection():
 
     freeze_called = [False]
     freeze_duration = [0]
+    froze = threading.Event()
 
     def on_freeze(duration):
         freeze_called[0] = True
         freeze_duration[0] = duration
+        froze.set()
 
     watchdog = Watchdog(
         heartbeat_interval=0.05,
@@ -512,8 +514,17 @@ def test_watchdog_freeze_detection():
     watchdog.start()
     watchdog.heartbeat()
 
-    # Wait for freeze detection (no heartbeats)
-    time.sleep(0.25)
+    # Wait for the watchdog's OWN signal rather than sleeping a fixed interval
+    # and hoping its monitor thread was scheduled in time. The loop sleeps
+    # heartbeat_interval (0.05s) per iteration and needs 3 iterations to cross
+    # the 0.1s threshold, so a fixed 0.25s sleep left ~0.1s of margin — which a
+    # loaded shared runner eats. This is a DEADLINE, not a sleep: it returns in
+    # ~0.15s on a healthy machine (the test gets faster, not slower) and only
+    # spends the full 5s when detection is genuinely broken.
+    assert froze.wait(timeout=5.0), (
+        "watchdog never reported a freeze within 5s, with freeze_threshold=0.1s "
+        "and heartbeat_interval=0.05s — detection is broken, not merely slow"
+    )
 
     assert watchdog.is_frozen, "Should detect freeze"
     assert freeze_called[0], "Should call on_freeze callback"
@@ -527,9 +538,10 @@ def test_watchdog_recovery():
     print("\n=== Testing Watchdog: Recovery ===")
 
     recovered = [False]
+    froze = threading.Event()
 
     def on_freeze(duration):
-        pass
+        froze.set()
 
     def on_recover():
         recovered[0] = True
@@ -544,8 +556,19 @@ def test_watchdog_recovery():
     watchdog.start()
     watchdog.heartbeat()
 
-    # Let it freeze
-    time.sleep(0.2)
+    # Let it freeze — and wait on the watchdog SAYING SO, not on a fixed sleep.
+    # This is the line that actually flaked: `time.sleep(0.2)` left ~0.05s of
+    # margin over the 3 monitor iterations needed to cross the threshold, and
+    # macos-3.11 (CI run 31180740874) missed it. A deadline, not a sleep —
+    # ~0.15s on a healthy machine, 5s only when detection is truly broken.
+    #
+    # Ordering is safe: _monitor_loop sets _is_frozen = True and calls
+    # on_freeze() inside the same lock acquisition, so by the time this event
+    # fires, is_frozen is already True.
+    assert froze.wait(timeout=5.0), (
+        "watchdog never reported a freeze within 5s, with freeze_threshold=0.1s "
+        "and heartbeat_interval=0.05s — detection is broken, not merely slow"
+    )
     assert watchdog.is_frozen, "Should be frozen"
 
     # Recover

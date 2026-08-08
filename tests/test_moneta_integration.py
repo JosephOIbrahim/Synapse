@@ -176,25 +176,57 @@ def test_vector_recall_through_facade(tmp_path, monkeypatch):
         sm.store.close()
 
 
-# The subprocess body for the atexit durability tests. Deposits ONE memory and
+# The subprocess body for the atexit durability tests. Deposits N memories and
 # leaves -- deliberately WITHOUT calling save() or close(), exactly as the
 # production SynapseMemory path does. How it exits is the variable.
+#
+# CI0 -- WHY N IS 3 AND NOT 1. These two tests deposited ONE memory, and the
+# negative control asserted a hard exit persisted NOTHING. That assertion was
+# false about the system, and CI was reporting it as a failure honestly:
+# MonetaBackedStore.__init__ sets `_last_save = 0.0`, so add()'s periodic-save
+# check (`now - _last_save >= _save_interval`) is ALWAYS true on the first
+# deposit -- the very first add() force-saves, synchronously, every time.
+#
+# Measured (moneta v1.2.0-rc3, deposits -> rows in .moneta/snapshot.json):
+#
+#     deposits   clean sys.exit(0)   hard os._exit(0)
+#     --------   -----------------   ----------------
+#            1                   1                  1     <- negative control could not fail
+#            2                   2                  1
+#            3                   3                  1
+#
+# So at N=1 the positive test passed for the WRONG REASON: persistence came
+# from that first-add save, not from the atexit hook it claimed to prove --
+# Law 1, a check that could not fail. At N>=2 the split is real and both
+# controls become load-bearing: deposit #1 is covered by the first-add save,
+# deposits #2..N ONLY by atexit. N=3 leaves margin (3 vs 1) so a single
+# off-by-one in either mechanism is visible in the numbers.
+#
+# The first-add save is therefore PINNED here as observed behaviour, not
+# endorsed as design -- moneta_store's own docstring says "there is no
+# per-deposit fsync", which is untrue of the first deposit. Whether to keep it
+# or initialise `_last_save = time.monotonic()` is a durability-posture call
+# and is raised in the CI0 receipt's for_ruling[], not decided here.
+_DEPOSITS = 3
+
 _DEPOSIT_THEN_EXIT = """
 import sys
 sys.path.insert(0, {root!r})
 from synapse.memory.moneta_store import MonetaBackedStore
 from synapse.memory.models import Memory, MemoryType
 s = MonetaBackedStore.from_storage_dir({proj!r})
-s.add(Memory(content="deposited, never explicitly saved", memory_type=MemoryType.DECISION))
+for _i in range({n}):
+    s.add(Memory(content="deposit %d, never explicitly saved" % _i,
+                 memory_type=MemoryType.DECISION))
 {exit_call}
 """
 
 
-def _run_deposit_subprocess(tmp_path, exit_call):
+def _run_deposit_subprocess(tmp_path, exit_call, n=_DEPOSITS):
     import subprocess
     proj = str(tmp_path / "proj")
     code = _DEPOSIT_THEN_EXIT.format(
-        root=str(_ROOT / "python"), proj=proj, exit_call=exit_call)
+        root=str(_ROOT / "python"), proj=proj, exit_call=exit_call, n=n)
     r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     return proj
@@ -203,39 +235,54 @@ def _run_deposit_subprocess(tmp_path, exit_call):
 def test_atexit_snapshots_deposits_on_clean_exit(tmp_path):
     """The reachable Moneta bug: deposit() writes only the in-memory ECS, and
     the production path never calls save(). A clean interpreter exit must still
-    persist the deposit -- via the atexit hook registered in from_storage_dir.
+    persist the deposits -- via the atexit hook registered in from_storage_dir.
 
     Unlike test_durable_reload_across_owners above, this NEVER calls save() or
     close() in the writer: `sys.exit(0)` runs interpreter shutdown, which fires
     atexit. That is the exact production condition (a normal shutdown), and it
     failed before the hook existed.
+
+    Deposits #2 and #3 are the load-bearing ones -- #1 is force-saved by the
+    first-add timer regardless of how the process ends (see _DEPOSITS above).
     """
     from synapse.memory.moneta_store import MonetaBackedStore
     proj = _run_deposit_subprocess(tmp_path, "sys.exit(0)")
 
     s = MonetaBackedStore.from_storage_dir(proj)
     try:
-        assert s.count() == 1, "clean-exit deposit was lost -- atexit did not fire"
-        assert s.get_by_type(MemoryType.DECISION)[0].content == (
-            "deposited, never explicitly saved")
+        assert s.count() == _DEPOSITS, (
+            "clean-exit deposits were lost -- atexit did not fire (deposit #1 "
+            "survives the first-add save on its own, so anything less than "
+            f"{_DEPOSITS} means the hook is not persisting #2..#{_DEPOSITS})")
+        contents = {m.content for m in s.get_by_type(MemoryType.DECISION)}
+        assert contents == {
+            "deposit %d, never explicitly saved" % i for i in range(_DEPOSITS)}
     finally:
         s.close()
 
 
-def test_hard_exit_loses_the_deposit(tmp_path):
-    """FIX_IS_REAL companion: os._exit(0) bypasses atexit, so the deposit is
-    lost. This proves the test above is not vacuous -- persistence there comes
-    from the hook, not from some incidental save -- and documents the bound the
-    atexit fix does NOT close (kill -9 / native crash, the crash-harness class).
+def test_hard_exit_loses_the_unsnapshotted_deposits(tmp_path):
+    """FIX_IS_REAL companion: os._exit(0) bypasses atexit, so every deposit
+    after the first-add save is lost. This proves the test above is not vacuous
+    -- persistence of #2..#N there comes from the hook, not from an incidental
+    save -- and documents the bound the atexit fix does NOT close (kill -9 /
+    native crash, the crash-harness class).
+
+    Renamed from test_hard_exit_loses_the_deposit (singular): the old name
+    asserted a total loss that never happens, because deposit #1 is always
+    snapshotted synchronously.
     """
     from synapse.memory.moneta_store import MonetaBackedStore
     proj = _run_deposit_subprocess(tmp_path, "import os; os._exit(0)")
 
     s = MonetaBackedStore.from_storage_dir(proj)
     try:
-        assert s.count() == 0, (
-            "hard exit unexpectedly persisted -- the durability of the clean-exit "
-            "test cannot be attributed to atexit")
+        assert s.count() == 1, (
+            "hard exit persisted %d of %d deposits, expected exactly 1 (the "
+            "first-add save). More means some incidental save is covering "
+            "#2..#%d, so the clean-exit test's durability cannot be attributed "
+            "to atexit; fewer means the first-add save stopped firing and the "
+            "clean-exit test's baseline moved." % (s.count(), _DEPOSITS, _DEPOSITS))
     finally:
         s.close()
 
