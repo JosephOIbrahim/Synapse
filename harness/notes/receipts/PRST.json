@@ -1,0 +1,434 @@
+{
+  "schema": "receipt/v1",
+  "leg": "PRST",
+  "title": "PRST - a remembered network must reproduce identically after restart: localize across SAVE durability / RECALL keying / REGENERATE determinism",
+  "harness": "PRST",
+  "status": "green-with-findings",
+  "status_note": "Green means the stated oracle was satisfied: the repro was built and RUN as real fresh-OS-process experiments, every seam returned an evidenced verdict that survived an independent adversarial pass, exactly one authorised fix was applied with a demonstrated negative control, and the suite's 9 pre-existing failures are unchanged in identity while the test count strictly increased (+12). Green does NOT mean healthy: all three seams are FAULTY, and the leg surfaced an unreported production-data hazard (355 stranded deposits) that needs a human today.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "NONE OF THE HARNESS PROFILES. Interactive orchestrator session under the project .claude/settings.json, recorded honestly per Constitution Article V rather than claiming a fence that was not applied: this leg ran the full pytest suite and wrote product code under python/synapse/. The 11 dispatched subagents ran under the same session grant.",
+  "commit_at_run": "1f18ab4635d99595bfdfc0bcd3cbe80330901858",
+  "branch": "finish/network-persistence",
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/network-persistence",
+  "houdini_build_target": "22.0.368",
+  "houdini_build_observed": "NOT RUNNING (verified: tasklist shows no houdini.exe / hython.exe). All evidence in this leg is pure-Python or real-subprocess. No mock hou was planted; no hython-gated result was simulated. Every claim about in-Houdini behaviour is explicitly bounded as such.",
+  "mode": "WRITES CODE. One production file (python/synapse/session/tracker.py, +11 lines), one new test file, two notes. No merge, no push.",
+
+  "seam_A": {
+    "verdict": "FAULTY",
+    "one_line": "Not one fault but five, all terminating in the same silent observable: the requested Moneta backend fails to open (or is never written), _make_store swallows the exception, and SYNAPSE serves an empty JSONL store while the panel keeps answering recalls. The live one is on the LOAD path and needs no crash at all.",
+    "evidence": [
+      {
+        "claim": "The operator's production Moneta store has failed to open on EVERY session since 2026-08-05 13:35:47 - eleven consecutive times through 2026-08-07 11:23:28 - always with `ValueError: embedding dim mismatch: expected 384, got 256`. Each failure silently served an empty JSONL store.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "~/.synapse/logs/synapse.log:21968,:24186,:24390,:25601,:25907,:26120,:27612,:27640,:28139,:31064,:31097. Producer: grep -n \"houdini_temp.untitled\" ~/.synapse/logs/synapse.log | grep \"failed to initialize\" -> 12 hits"
+      },
+      {
+        "claim": "The most recent failure is inside a LIVE Houdini panel session, not a test: hwebserver up at 11:22:25, store fails at 11:23:28, session then runs claude_worker turns against a 3-record JSONL store.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "~/.synapse/logs/synapse.log:31092,:31094,:31095,:31097,:31101; the synapse_add_memory call at :31087"
+      },
+      {
+        "claim": "355 real deposits (decision:2, note:33, action:309, summary:9, reference:2) dated 2026-08-02..05 are stranded readable-but-unopenable. The snapshot froze 2026-08-05 13:24:58 at vector dim 256 while the JSONL fallback kept being written to 2026-08-07 11:06.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "C:/Users/User/AppData/Local/Temp/houdini_temp/untitled/.synapse/.moneta/snapshot.json (1,093,359 bytes; rows=355; len(rows[0]['semantic_vector'])==256) vs ../memory.jsonl (7,579 bytes, mtime 2026-08-07 11:06, 3 records). Producer: read-only os.stat + json.load"
+      },
+      {
+        "claim": "RECOVERY IS CHEAP AND PROVEN: opening a COPY of the operator's snapshot under HashEmbedder (dim 256) succeeds with all 355 memories and both DECISIONs intact, raising the byte-identical production error only under the default SemanticEmbedder (dim 384). The bytes are fine; only the opener is wrong.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "crucible copy-and-open experiment this session, run against a scratch copy - the original's mtime and size were left unchanged"
+      },
+      {
+        "claim": "MECHANISM: from_storage_dir derives Moneta's embedding_dim from whichever embedder resolves in THIS process and never reconciles it against the persisted vectors; hydrate rebuilds the index and the dimension check raises. The store's own comment says the embedder id is stamped 'so a future embedder swap can detect entries that need re-embedding' - that detection was never built.",
+        "tier": "VERIFIED-STATIC",
+        "anchor": "python/synapse/memory/moneta_store.py:243-255,:261,:194-196; moneta/vector_index.py:110-113; moneta/api.py:230-234"
+      },
+      {
+        "claim": "The embedder identity genuinely changed underneath the operator: logs show `moneta (hash-ngram-v1-d256-n1_3)` 2026-08-04 08:04 -> 2026-08-05 12:59, then `moneta (minilm-l6-v2-d384)` from 2026-08-05 13:40 onward.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "~/.synapse/logs/synapse.log:20068..21736 and :23834..27264. Dim constants: python/synapse/memory/embedding.py:158 (384), :77 (256)"
+      },
+      {
+        "claim": "SECOND FAULT - WAL poison, permanent and self-inflicted. MonetaBackedStore.search() writes SYNAPSE string ids into Moneta's WAL via signal_attention; the next cold start calls UUID(entity_id) unguarded and raises. Nothing self-heals; deleting wal.log by hand recovers the store intact (count=1), proving the byte survived and only the WAL made it unreachable. Reachable from synapse_search and synapse_knowledge_lookup - ordinary use.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "python/synapse/memory/moneta_store.py:494-495; moneta/durability.py:170; truncation-on-save at durability.py:120-125; swallow at python/synapse/memory/store.py:967. Pinned by tests/test_prst_network_persistence.py::test_store_still_opens_after_a_search_then_abrupt_restart (RED)"
+      },
+      {
+        "claim": "CORRECTION TO THE SEAM MAP: synapse_recall does NOT poison the WAL - handle_memory_recall never touches the vector path. Aim any WAL fix at the SEARCH path, not at recall.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "python/synapse/session/tracker.py:546-581; observed in probe V3 (wal.log appears only after handle_memory_search)"
+      },
+      {
+        "claim": "THIRD FAULT: the SECOND deposit of a session is lost on an abrupt exit while the first survives. Two handle_memory_decide + one handle_memory_search + os._exit(0) left snapshot rows=1 and a poisoned wal.log; the byte-identical sequence with sys.exit(0) left rows=2, no wal.log, count=2, recall found=True. Shutdown shape is the single isolated variable.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "probes V3/V4 this session. Gate: python/synapse/memory/moneta_store.py:205-206,:379,:399. Pinned by tests/test_prst_network_persistence.py::test_second_deposit_of_a_session_survives_abrupt_restart (RED)"
+      },
+      {
+        "claim": "FOURTH FAULT: the in-process 'restart SYNAPSE' path leaks the Moneta URI lock and downgrades to an empty JSONL store with NO crash. reset_synapse_memory calls save(), never close(). It has fired in production once.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "probe V1 this session -> MonetaResourceLockedError; production occurrence at ~/.synapse/logs/synapse.log:21749; python/synapse/session/tracker.py:113"
+      },
+      {
+        "claim": "FIFTH ROUTE: the production store lives at the UNSAVED-SCENE address ($HOUDINI_TEMP_DIR/untitled), so it will move the first time the hip is saved.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "~/.synapse/logs/synapse.log:31094; python/synapse/memory/store.py:978-986,:991-1012"
+      },
+      {
+        "claim": "ADDRESSED TO R-CI0-1: option A (shipped) is not an explicit force-save, it is an ARTEFACT OF THE MONOTONIC CLOCK EPOCH. Measured time.monotonic() at process start on this host = 100701.77 (system uptime). On a process launched within 30 s of boot, option A silently degrades into option B and deposit #1 is not saved either.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer: python -c \"import time; print(time.monotonic())\" -> 100701.7733498. Code: python/synapse/memory/moneta_store.py:205,:379. Ruling text: harness/NEXT_SESSION.md:31-40"
+      },
+      {
+        "claim": "The one guard built for 'bad store on startup' is structurally incapable of catching this: _quarantine_if_corrupt validates only that snapshot.json has eight required keys, and the production snapshot passes perfectly. The fault is dimensional, not structural - and the guard is equally blind to wal.log.",
+        "tier": "VERIFIED-STATIC",
+        "anchor": "python/synapse/memory/moneta_store.py:313-316,:318-349"
+      },
+      {
+        "claim": "THE COMPOUNDING DESIGN CHOICE: _make_store swallows ANY construction failure and returns an empty MemoryStore while the panel keeps accepting 'remember this'. The only signal is one ERROR log line. And the fallback is STRICTLY LESS durable than the path it replaces - deposit then os._exit(0) under jsonl leaves no memory.jsonl at all. So a downgrade also strands the operator on the order-unstable recall backend proven in seam B.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "python/synapse/memory/store.py:906-911,:967"
+      },
+      {
+        "claim": "STALE CONTRACT that explains why nobody looked: docstrings at moneta_store.py:176-180, :265-270 and :302 still assert the WAL is INERT because 'SYNAPSE never calls signal_attention'. Line 495 of the same file calls it on every text search.",
+        "tier": "VERIFIED-STATIC",
+        "anchor": "python/synapse/memory/moneta_store.py:176-180,:265-270,:302 vs :495"
+      },
+      {
+        "claim": "METHOD/SAFETY: the operator's production store was READ ONLY (os.stat, os.listdir, json.load). No MonetaBackedStore was ever constructed against it - doing so would take the URI lock and, via the atexit close, rewrite snapshot.json. Every mutating probe ran in tempfile.mkdtemp dirs.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "python/synapse/memory/moneta_store.py:309-310 (the atexit hook that was deliberately avoided)"
+      }
+    ],
+    "report": "harness/notes/PRST_SEAM_A_REPORT.md",
+    "posture_changes_made": "NONE. Not one line of durability posture was touched. R-CI0-1 remains a pending human ruling under Article I."
+  },
+
+  "seam_B": {
+    "verdict": "FAULTY",
+    "one_line": "Recall truncates to matches[:5] with NO sort of any kind, so which records the same prompt returns is decided by raw backend iteration order - and separately, the two documented 'remember' surfaces do not compose at all: add_memory deposits NOTE, recall reads DECISION exclusively.",
+    "evidence": [
+      {
+        "claim": "THE TRUNCATION HAS NO SORT. handle_memory_recall lowercases the query, substring-tests every DECISION, appends hits in iteration order, returns matches[:5]. No score, no created_at ordering, no id tiebreak anywhere. This is the whole keying mechanism.",
+        "tier": "VERIFIED-STATIC",
+        "anchor": "python/synapse/session/tracker.py:558 (get_decisions), :561-574 (containment), :576-581 (matches[:5] at :580)"
+      },
+      {
+        "claim": "DECISIVE, ON THE PRODUCTION BACKEND: a prune of UNRELATED memories changed the answer to an unchanged prompt. 10 DECISIONs + 20 NOTEs through the real handlers; one sleep pass pruned 20 rows, all type 'note'; every original decision still in store.all(); recall's top-5 changed in 3 of 5 positions with zero relevant data lost.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer /tmp/prstB/p2b.py, SYNAPSE_MEMORY_BACKEND=moneta, this session"
+      },
+      {
+        "claim": "MATCHED NEGATIVE CONTROL: when the sleep pass prunes NOTHING, the order does not move (pruned=0, before==after, order_changed=false). This rules out 'the recall call itself perturbs order' and isolates removal as the cause.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer /tmp/prstB/p2.py, this session"
+      },
+      {
+        "claim": "MECHANISM: Moneta's row removal is swap-and-pop - it moves the LAST row into the removed row's slot - and get_by_type is raw row order. Consolidation calls ecs.remove(eid) once per pruned id.",
+        "tier": "VERIFIED-STATIC",
+        "anchor": "python/synapse/memory/moneta_store.py:445,:403-423 -> moneta/ecs.py:140-148 (iter_rows) + :110-134 (remove) + moneta/consolidation.py:168"
+      },
+      {
+        "claim": "THE PRUNE IS OPERATOR-REACHABLE BY A SINGLE TOOL CALL, and ALSO FIRES BY ITSELF: every 100th add, if the engine holds more than 1000 entities, run_sleep_pass() executes as a side effect of writing an unrelated memory. So recall's answer can change with no read, no restart and no operator action.",
+        "tier": "VERIFIED-STATIC",
+        "anchor": "python/synapse/mcp/_tool_registry.py:1079 + python/synapse/server/handlers.py:801; the automatic gate at python/synapse/memory/moneta_store.py:383-398"
+      },
+      {
+        "claim": "THE FALLBACK BACKEND IS WORSE: six fresh OS processes over a byte-identical 12-record store returned six DIFFERENT id sequences. Mechanism: the jsonl by_type index is a set() iterated directly, and CPython salts str hashing per process.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "tests/test_prst_network_persistence.py::test_recall_is_deterministic_across_fresh_processes[jsonl]; python/synapse/memory/store.py:407-413,:706-711"
+      },
+      {
+        "claim": "THE REPO ALREADY TREATS THIS AS A CORRECTNESS REQUIREMENT EVERYWHERE EXCEPT RECALL. Both search implementations apply a layered stable sort (id asc, then created_at desc, then score desc) with comments naming determinism and cross-backend parity. get_recent sorts too. Only recall's accessor, get_by_type, is unordered.",
+        "tier": "VERIFIED-STATIC",
+        "anchor": "python/synapse/memory/store.py:692-699 + python/synapse/memory/moneta_store.py:143-148,:440-443 vs moneta_store.py:445 / store.py:706-711"
+      },
+      {
+        "claim": "THE TWO 'REMEMBER' SURFACES DO NOT COMPOSE - and this is what the operator actually hit. synapse_add_memory defaults to MemoryType.NOTE; recall reads MemoryType.DECISION exclusively. A memory deposited by the natural reading of 'tell SYNAPSE to remember it' is permanently invisible to recall - no error, no restart needed. Only synapse_decide produces a recallable record.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "tests/test_prst_network_persistence.py::test_a_remembered_note_is_invisible_to_recall (GREEN - pins present behaviour). Mechanism: python/synapse/session/tracker.py:438,445 vs :558"
+      },
+      {
+        "claim": "CONFIRMED ON THE OPERATOR'S SEAT: the record Joe asked SYNAPSE to remember - note `RECIPE: \"Create a Solaris Network\" (verified working result)`, created 2026-08-07T15:06:37Z, one second after the synapse_add_memory call - is on disk, readable today, and was lost by NOTHING. It is unreachable because it is a NOTE. The live store holds 3 records and ZERO decisions, so synapse_recall returns found=False for every query right now, with no crash and no restart. The keying seam is reached BEFORE seam A is ever exercised.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "~/.synapse/logs/synapse.log:31087; read-only load of a COPY of ~/AppData/Local/Temp/houdini_temp/untitled/.synapse/memory.jsonl; python/synapse/session/tracker.py:557 -> python/synapse/memory/store.py:1200-1202"
+      },
+      {
+        "claim": "THE MATCH IS BARE SUBSTRING CONTAINMENT AND IT IS BRITTLE. Against one stored decision, 9 realistic queries: 5 hit, 4 return zero - including 'create solaris network' (one word dropped) and 'Create a Solaris Network.' (trailing period). A full stop is enough to lose the record.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer /tmp/prstB/p6_match.py this session; mechanism python/synapse/session/tracker.py:568"
+      },
+      {
+        "claim": "THE REMEDY WAS VERIFIED BEFORE IT WAS PROPOSED. Sorting by (created_at desc, id asc) before truncation yields the byte-identical top-5 from the raw pre-prune order, the post-prune permuted order, AND a randomly shuffled input, while the unsorted order changed across the same prune. The sort tuple was a total order over the corpus.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer /tmp/prstB/p3_sortkey.py -> {\"sort_tuple_is_total\":true,\"proposed_survives_prune\":true,\"proposed_survives_shuffle\":true}"
+      },
+      {
+        "claim": "HONEST CEILING OF THE FIX: within one wall-clock second created_at does not discriminate (second resolution), so ordering falls through entirely to the id tiebreak - a content hash. The fix buys DETERMINISM (same prompt -> same records), not RELEVANCE (most-useful five). Recall has no score to rank by; giving it one is not a small change.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer /tmp/prstB/p3_sortkey.py -> distinct_created_at_values=1 over 10 decisions; python/synapse/memory/models.py:135,:145-150"
+      },
+      {
+        "claim": "NOTHING IN THE SUITE COULD GO RED WHEN KEYING BROKE. The only pre-existing test touching recall replaces the bridge with a _FakeBridge returning a canned dict, so the real substring match, the DECISION-only scope and the unsorted [:5] were never executed.",
+        "tier": "VERIFIED-STATIC",
+        "anchor": "tests/test_recall_rag_seam.py:34-48"
+      },
+      {
+        "claim": "SEAM-B/C BOUNDARY: recall hands back exactly {id, summary, content, date} and content is a sentence. No node list, no wiring, no parameters. A perfectly deterministic recall still cannot reproduce a network - it can only hand a prose paragraph to a model.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "tests/test_prst_network_persistence.py::test_recall_returns_prose_not_a_network (GREEN); payload built at python/synapse/session/tracker.py:569-574"
+      }
+    ],
+    "fixes": [
+      {
+        "id": "FIX-B1",
+        "applied": true,
+        "what": "Give recall a total order before it truncates. Immediately after `decisions = self._synapse.get_decisions()`, apply the same layered stable sort search already uses: sorted by id asc, then .sort(created_at desc). Everything downstream (containment match, payload shape, the [:5] cap) is untouched, so the pinned payload shape does not move.",
+        "anchor": "python/synapse/session/tracker.py:558-570 (inserted); repairs the unsorted truncation at :576-581",
+        "size": "+11 lines in one production file (2 code lines + 9 comment lines). No file created, nothing deleted, no test weakened.",
+        "why_authorised": "Brief authorises small, evidenced recall/lookup defects in seam B only. Forced by two independent runtime observations WITH a matched negative control, and the remedy itself was verified to determine the answer before being proposed.",
+        "negative_control": "PROVEN, NOT CLAIMED. With FIX-B1 reverted (git stash), both pinning tests go RED: [jsonl] returns six different id sequences across six fresh processes, and test_recall_survives_an_unrelated_prune reports 'pruning 12 UNRELATED notes changed which records the same prompt returns, while every matching decision survived' (before/after top-5 differ in 3 of 5). With FIX-B1 restored, both are GREEN. Producer: python -m pytest tests/test_prst_network_persistence.py -q -p no:cacheprovider -k 'unrelated_prune or deterministic'",
+        "ceiling_stated": "Determinism, not relevance. See the honest-ceiling evidence entry above and for_ruling item 1."
+      }
+    ],
+    "fixes_deliberately_not_made": [
+      "The NOTE-vs-DECISION keying mismatch. Three repairs exist (change add_memory's default type / widen recall's scope / route the operator to synapse_decide) with different blast radii. That is a product decision, not a defect with one obvious repair - escalated, not guessed.",
+      "Ordering get_by_type one layer down in both backends. Closer to the cause and would fix every consumer, but it changes a broadly-consumed accessor's contract across two files and three call sites, and the evidence does not force choosing it over the recall-site fix.",
+      "Relaxing the containment match (punctuation strip, token overlap, embedding). A recall/precision tradeoff that overlaps directly with M6's 'exact-match table first' shape and should be ruled WITH M6, not ahead of it."
+    ]
+  },
+
+  "seam_C": {
+    "verdict": "FAULTY",
+    "one_line": "FAULTY BY CONSTRUCTION. A deterministic replay engine exists and is oracle-pinned, but nothing addresses it from a prompt and nothing can capture a live network into a fixture - so even with seams A and B perfectly green, the second identical prompt cannot be guaranteed to produce the same network. The remedy is DESIGN, not a code repair.",
+    "evidence": [
+      {
+        "claim": "apply_fixture has exactly ONE product call site in the whole tree (mcp_server.py). Nothing in the product routes to it: not the tiered router, not a recipe, not a handler, not any recall consumer. The engine is an island.",
+        "tier": "VERIFIED-STATIC",
+        "anchor": "producer: grep -rn \"apply_fixture\" --include=*.py . (minus _vendor) -> product hits mcp_server.py:804/:807/:811/:855 only; definitions at python/synapse/blocks/runtime.py:418 and python/synapse/cognitive/tools/apply_fixture.py"
+      },
+      {
+        "claim": "synapse_apply_fixture is absent from TOOL_DEFS (123 tools) AND from the panel's Anthropic tool list (129 tools) - it exists only as an external-MCP stdio tool. CONTROL: synapse_solaris_build_graph / synapse_instantiate_graph / synapse_recall ARE present in both, so the membership test is live and not vacuously False.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer this session: len(TOOL_DEFS)==123 with membership False; tool_bridge.get_anthropic_tools() len==129, same membership False. Registration is MCP-only at python/synapse/mcp/mcp_server.py:855"
+      },
+      {
+        "claim": "'Create a Solaris Network' matches NOTHING deterministic: 14 natural phrasings swept through RecipeRegistry.match, CommandParser.parse and WorkflowPlanner.plan returned 0 hits across 62 registered recipes. INSTRUMENT CONTROL: 'create a solaris hda' matches lop_hda_scaffold and 'create a dome light' matches dome_light_environment - the registry demonstrably CAN hit, so the zero is real.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer this session over python/synapse/routing/{recipes,parser,planner}.py; n_recipes=62, TOTAL HITS = 0 of 14, plus two non-None control matches"
+      },
+      {
+        "claim": "The panel path that ACTUALLY builds nodes is a raw model turn: ClaudeWorker._conversation_loop streams from the provider and executes every returned tool_use block. There is nothing between the prompt and hou.createNode except a model sampling tool calls.",
+        "tier": "VERIFIED-STATIC",
+        "anchor": "python/synapse/panel/claude_worker.py:167,:181,:200-208"
+      },
+      {
+        "claim": "No model call anywhere in the product pins sampling: grep for temperature|top_p|top_k|seed across python/synapse/panel/providers/ returns ZERO hits; the request body carries only model, max_tokens, stream, messages, tools (+ optional system).",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer: grep -rniE \"\\btemperature\\b|\\btop_p\\b|\\btop_k\\b|\\bseed\\b\" python/synapse/panel/providers/*.py -> no output; body at python/synapse/panel/providers/anthropic_provider.py:180-186"
+      },
+      {
+        "claim": "NO CAPTURE DIRECTION EXISTS. Nothing in the tree writes a fixture from a live network, so 'remember THIS network keyed to that prompt' has no producer at all. fixtures/ holds exactly one hand-authored file. Even if M6 shipped tomorrow, the only rememberable network is the one a human hand-wrote.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer: grep -rniE \"to_fixture|write_fixture|save_fixture|capture_fixture|emit_fixture|fixture_from|dump_fixture\" --include=*.py --include=*.md --include=*.json . -> only hits are inside the untracked repro file"
+      },
+      {
+        "claim": "M6 (prompt->fixture keying) is NOT implemented - no phrase table, alias table, or prompt->fixture map exists in product code.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer: grep -rniE \"phrase_table|phrase_map|fixture_alias|alias_table|FIXTURE_PHRASES|prompt_to_fixture|phrase_to_fixture\" --include=*.py --include=*.json . -> only hits are the repro file's own tripwire"
+      },
+      {
+        "claim": "The deterministic engine IS real and IS oracle-pinned - the defect is the missing ADDRESS, not a missing engine. F-1..F-7 all PASS against baseline sha256 762e3a85...a297, canonicalizer c3, build 22.0.368, with SEVEN negative controls C-1..C-7 all PASS proving each instrument can disagree.",
+        "tier": "VERIFIED-STATIC",
+        "anchor": "harness/blocks/runs/m5_invariants_20260806_214024/invariants_m5.json + fixtures/solaris.basic.json:22-29. READ, not re-run - Houdini is not running"
+      },
+      {
+        "claim": "The planner half is deterministic AND sensitive in pure Python: build_plan over the same (fixture, clean snapshot) yielded ONE hash across 5 repeats (96f9ab43c7682711, ops=6). CRUCIBLE CORRECTION: the reported parm/position negative controls do NOT reproduce - a clean-stage Plan.to_dict() carries no set_parms/set_positions, so those controls cannot move the hash. The repeat is verified; that particular sensitivity control is retracted.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer this session: sha256(json.dumps(build_plan(fx, clean_snapshot).to_dict(), sort_keys=True))[:16] x5 over python/synapse/blocks/runtime.py"
+      },
+      {
+        "claim": "Every in-session sameness mechanism dies at the restart boundary the problem statement names. ProposalStore is a plain in-memory dict whose own docstring says 'Non-persistent across panel restarts' (probed: same-instance get True, fresh-instance get False); ResponseCache does ZERO file I/O; _tier_pins is an in-process dict.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "python/synapse/host/proposal_store.py:1-2,:13; producer grep over python/synapse/routing/cache.py for any persistence -> no output"
+      },
+      {
+        "claim": "CRUCIBLE CORRECTION, ACCEPTED: the engine is NOT unreachable from the panel as originally worded. houdini_execute_python IS in the panel toolset and maps to the live execute_python command - the exact transport synapse_apply_fixture itself uses. The engine is UNREGISTERED and UNADVERTISED, not unreachable. The verdict stands on addressability, not on impossibility.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "tool_bridge.get_anthropic_tools() membership True for houdini_execute_python; python/synapse/panel/bridge_adapter.py; mcp_server.py _sync_transport"
+      },
+      {
+        "claim": "CRUCIBLE COUNTER-EXAMPLE, ACCEPTED AND VALUABLE: a shipped, wired, model-free prompt->committed-graph->build path already exists in the same panel. _select_recipe(prompt, context) deterministically keyword-scores free text against a committed 5-recipe table with NO model call, then emits exact node types/names/parms/connections to the live handler. Useless for this flow (HDA output, no Solaris recipe, never touches memory) but it means M6's addressing pattern has a working in-tree precedent to COPY rather than a design to invent.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "python/synapse/panel/hda_controller.py:113,:77-95 + python/synapse/routing/hda_recipes.py"
+      },
+      {
+        "claim": "The live route_chat surface builds NOTHING - it is proposal-only. TieredRouter is constructed with config only and never a command_fn, and route() gates all execution on command_fn is not None. NEGATIVE CONTROL: TieredRouter(config=None, command_fn=lambda c: None)._command_fn is None -> False, proving the assertion can fail.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "python/synapse/server/handlers.py:1665 (the only production TieredRouter construction); gate at python/synapse/routing/router.py:410,:481,:546"
+      },
+      {
+        "claim": "The model is never even told the deterministic engine exists: neither panel system prompt nor the agent prompts mention fixtures, apply_fixture, or BLOCKS.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer: grep -rniE \"apply_fixture|BLOCKS|fixture\" python/synapse/panel/system_prompt.py python/synapse/panel/agent_prompts.py -> single banner-comment hit at agent_prompts.py:30"
+      },
+      {
+        "claim": "HONEST COVERAGE GAP: Houdini is not running, so hython harness/blocks/invariants_m5.py SKIPS. Every byte-identity claim about the engine is cited from the committed 2026-08-06 artifact, not from a run this session. This does not change the verdict, which turns on ADDRESSABILITY (probed live, pure-Python) rather than rebuild fidelity.",
+        "tier": "VERIFIED-RUNTIME",
+        "anchor": "producer: tasklist | grep -iE \"houdini|hython\" -> empty"
+      }
+    ],
+    "fix_candidates": [],
+    "why_no_fix": "Brief: 'If the fault is here, the fix is design, not code.' Seam C is two missing MECHANISMS (an address and a capture direction), not a broken one. M6 is HELD; model-in-loop determinism is prohibited; no new fixtures. Design note written, nothing built."
+  },
+
+  "repro_test": "tests/test_prst_network_persistence.py",
+  "repro_test_detail": {
+    "tests": 12,
+    "green": 10,
+    "red": 2,
+    "red_are_findings_not_regressions": true,
+    "red_ids": [
+      "test_second_deposit_of_a_session_survives_abrupt_restart",
+      "test_store_still_opens_after_a_search_then_abrupt_restart"
+    ],
+    "restart_fidelity": "Genuine fresh OS processes via subprocess + sys.executable; process 1 exits before process 2 starts. Both shutdown shapes tested: graceful sys.exit(0) (atexit -> save) and abrupt os._exit(0) (no atexit, the crash class). Two objects in one interpreter is never presented as a restart.",
+    "production_path": "Every deposit and recall goes through the real command handlers the MCP tools bind to (synapse_decide -> handle_memory_decide, synapse_add_memory -> handle_memory_add, synapse_recall -> handle_memory_recall). Only the websocket transport is skipped, and it only marshals the same payload dict.",
+    "safety_interlock": "test_store_address_is_redirected_into_tmp runs FIRST and proves the child's store is inside tmp and NOT under ~/.synapse. If the headless address resolver ever stops honouring CWD, that test goes red before any test writes.",
+    "law_1_note": "One assertion in this leg was caught VACUOUS by its own negative control and fixed forward: test_recall_survives_an_unrelated_prune originally deposited all 12 decisions before any note, so swap-and-pop only ever back-filled notes with notes and the decision order never moved - it passed with FIX-B1 reverted. Interleaving the deposits (note/decision, ending on a decision) made it discriminate. Recorded because the near-miss is the point of Law 1.",
+    "houdini_coverage": "NONE, honestly. Houdini is not running; no hython test was run and no mock hou was planted."
+  },
+
+  "design_note": "harness/notes/PRST_DESIGN.md",
+
+  "suite_before": {
+    "producer": "cd <worktree> && python -m pytest tests/ -q -p no:cacheprovider, Python 3.14.2 on Windows, at HEAD 1f18ab4635d99595bfdfc0bcd3cbe80330901858 (== merge-base(master, HEAD))",
+    "passed": 5765,
+    "failed": 9,
+    "skipped": 147,
+    "collected": 5921,
+    "duration_s": 186.53,
+    "corroboration": "Identical in count AND identity to the committed harness/notes/receipts/M5b.json suite_after, independently re-measured this session.",
+    "pre_existing_failures": [
+      "tests/test_moneta_crucible.py::test_moneta_backend_never_fires_evolution",
+      "tests/test_moneta_integration.py::test_hard_exit_loses_the_deposit",
+      "tests/test_pass7_per_agent_and_canonical.py::TestPokemonStageCanonicalPin::test_charmander_referenced_in_all_consumers",
+      "tests/test_pkg_bootstrap_invariant.py::test_r310_shapes_leave_no_runtime_divergence",
+      "tests/test_scene_memory.py::TestValidateMemory::test_validate_healthy_dir",
+      "tests/test_statusline.py::test_branch_read_without_git_matches_git",
+      "tests/test_statusline.py::test_registry_matches_git_worktree_list",
+      "tests/test_statusline.py::test_head_sha_matches_git",
+      "tests/test_statusline.py::test_suite_figure_from_another_commit_is_not_shown_as_fresh"
+    ]
+  },
+  "suite_after": {
+    "producer": "cd <worktree> && python -m pytest tests/ -q -p no:cacheprovider, same interpreter, with FIX-B1 applied and the repro file present",
+    "passed": 5775,
+    "failed": 11,
+    "skipped": 147,
+    "collected": 5933,
+    "duration_s": 184.65,
+    "delta": "+12 tests (5921 -> 5933), +10 passed, +2 failed. Law 6 satisfied: the count strictly increases; no test was modified, weakened, skipped, xfailed or deleted.",
+    "failure_accounting": "All 9 pre-existing failures UNCHANGED in identity and count. The 2 new failures are both from tests/test_prst_network_persistence.py and are this leg's deliberate seam-A findings (Law 7: a red leg is a finding). ZERO previously-passing tests went red.",
+    "note": "tests/test_moneta_integration.py::test_hard_exit_loses_the_deposit remains red and is NOT this leg's to fix - it asserts count()==0 after os._exit(0) and fails because the deposit SURVIVES, which is the R-CI0-1 option-A artefact described in seam A."
+  },
+
+  "files_changed": {
+    "modified": ["python/synapse/session/tracker.py (+11)"],
+    "created": [
+      "tests/test_prst_network_persistence.py",
+      "harness/notes/PRST_DESIGN.md",
+      "harness/notes/PRST_SEAM_A_REPORT.md",
+      "harness/notes/receipts/PRST.json"
+    ],
+    "deleted": [],
+    "prohibited_surfaces_touched": "NONE. No fsync/durability posture change, no phrase-table implementation, no model-in-loop determinism change, no new fixture, no VERSION edit, no harness/state edit, no governing-doc edit, no push, no merge."
+  },
+
+  "escalations": [
+    {
+      "id": "PRST-E1",
+      "urgency": "TODAY - operational, human-only, time-sensitive",
+      "item": "355 real deposits (including both of the only two DECISION records) are readable-but-unopenable at C:/Users/User/AppData/Local/Temp/houdini_temp/untitled/.synapse/.moneta/snapshot.json. That is inside AppData/Local/Temp, it is one temp sweep from gone, and it is currently the ONLY copy. Decide whether to copy it somewhere durable BEFORE any fix work starts. Recovery is proven cheap: the same bytes open cleanly under HashEmbedder (dim 256) with everything intact. This leg did not move, copy or open the original."
+    },
+    {
+      "id": "PRST-E2",
+      "urgency": "first, before A and before R-CI0-1",
+      "item": "THE NOTE-vs-DECISION KEYING MISMATCH is what the operator actually hit, and it is a product decision with three repairs of different blast radius: (a) change synapse_add_memory's default type, (b) widen recall's scope beyond DECISION, (c) route the operator to synapse_decide. The repro currently PINS present behaviour green, so whichever is chosen turns that pin red deliberately. Not guessed, not fixed."
+    },
+    {
+      "id": "PRST-E3",
+      "urgency": "high",
+      "item": "THE LOAD-PATH DEFECT (embedder dim mismatch). Three SYNAPSE-local remedies, none touching fsync posture: (a) persist embedder id/dim beside the snapshot and refuse-or-re-embed on mismatch; (b) PIN THE EMBEDDER for a store once written - smallest, and demonstrated sufficient to recover all 355 rows; (c) extend _quarantine_if_corrupt from 'is the JSON well-formed' to 'can this store actually be opened'."
+    },
+    {
+      "id": "PRST-E4",
+      "urgency": "the actual R-CI0-1 ruling",
+      "item": "R-CI0-1 A vs B, reframed by two new facts: (i) option A is not a guarantee but an ARTEFACT OF THE MONOTONIC CLOCK EPOCH (measured 100701.77 at process start) - on a process launched within 30 s of boot A silently becomes B; (ii) the loss observed in production is deposit #2, not deposit #1, so choosing B makes the observed loss STRICTLY LARGER while A leaves it where it is. Neither option touches the load-path fault. Posture unchanged by this leg."
+    },
+    {
+      "id": "PRST-E5",
+      "urgency": "posture question, human-only",
+      "item": "SHOULD A FAILED BACKEND BE ALLOWED TO SERVE SILENTLY AT ALL? _make_store swallows any construction failure and returns an empty MemoryStore while the panel keeps accepting 'remember this'. That single choice is what converted FIVE separate defects into one invisible symptom. Options: keep the silent fallback, surface it in the panel, or make an unservable requested backend a hard startup error."
+    },
+    {
+      "id": "PRST-E6",
+      "urgency": "aim before firing",
+      "item": "WAL POISON - three candidate targets with different owners: (a) stop sending non-UUID keys at moneta_store.py:494 (SYNAPSE-local, smallest); (b) harden wal_read at moneta/durability.py:170 (UPSTREAM Moneta, separate release train); (c) extend quarantine to wal.log (SYNAPSE-local). Also: the docstrings at moneta_store.py:176-180/:265-270/:302 still assert the WAL is inert because 'SYNAPSE never calls signal_attention', which line 495 does on every text search. That stale contract is why nobody looked."
+    },
+    {
+      "id": "PRST-E7",
+      "urgency": "blocks any M6 work",
+      "item": "SEAM C FORK - (a) replay the exact network the artist had (needs a capture writer that does not exist anywhere; months) vs (b) re-run the same deterministic build (needs only M6 addressing plus an already-committed fixture; weeks). These are different products, not different sizes of one. Rule BEFORE any M6 line is written. See harness/notes/PRST_DESIGN.md."
+    },
+    {
+      "id": "PRST-E8",
+      "urgency": "must be ruled in the same breath as M6",
+      "item": "REGISTRATION POSTURE. synapse_apply_fixture is absent from TOOL_DEFS (123) and the panel toolset (129). A phrase table alone would still leave it unadvertised. Does the engine enter as a MODEL-CALLABLE TOOL (model may decline - sameness likely, not guaranteed) or as a PRE-MODEL INTERCEPTION (prompt resolved before the model is invoked - sameness guaranteed)? Opposite failure modes; only the second delivers the reported ask."
+    },
+    {
+      "id": "PRST-E9",
+      "urgency": "FIX-B1 authorisation, retrospective",
+      "item": "FIX-B1 buys DETERMINISM, not RELEVANCE: created_at is second-resolution, so within a burst of deposits the ordering falls through entirely to id asc, a content hash. Deterministic, stable across restarts and prunes, and semantically arbitrary. Ranking recall properly means giving it a score, which is not a small change and is not forced by this evidence. Confirm determinism-without-relevance is the right thing to ship now."
+    },
+    {
+      "id": "PRST-E10",
+      "urgency": "alternative fix site, deliberately not taken",
+      "item": "The root cause could instead be fixed one layer down by ordering get_by_type in both backends (store.py:706-711 and moneta_store.py:445). Closer to the cause and fixes every consumer, but it changes a broadly-consumed accessor's contract across three call sites (ui/panel.py:285, ui/tabs/decisions.py:166, memory/shadow_store.py:110-113). The evidence does not force choosing it over the recall-site fix, so the choice is flagged rather than made."
+    },
+    {
+      "id": "PRST-E11",
+      "urgency": "doc drift, Article VI, not corrected",
+      "item": "harness/legs.json:491 cites the M5 oracle as baseline 8bb05761 / canonicalizer c2. That baseline was superseded 2026-08-06 by R-M5-1 as MACHINE-LOCAL; the live oracle is 762e3a85... / c3 (fixtures/solaris.basic.json:22-29, python/synapse/blocks/canonical.py:75). Cosmetic until someone quotes legs.json in an M6 spec - which they will, since it is the leg record. One-line correction, human hand."
+    },
+    {
+      "id": "PRST-E12",
+      "urgency": "posture, flagged and consciously declined",
+      "item": "SAMPLING PIN. No product model call pins temperature/top_p/seed. Pinning would be a partial, honest-but-weak mitigation - it narrows variance without guaranteeing sameness, since tool-call ordering stays unpinned and no provider promises bitwise reproducibility. Recorded so the option is visibly declined rather than overlooked. Brief prohibition #3; not touched."
+    }
+  ],
+
+  "residual_unknowns": [
+    "Does Python's atexit actually fire on a Houdini 22 shutdown? Every 'clean exit persists' green here came from sys.exit(0) in a bare interpreter. EXPERIMENT: deposit through hython, quit once via hou.exit() and once by closing the window, check snapshot.json mtime each time. If atexit does not run, the graceful column collapses into the abrupt one and the 30 s window applies to EVERY deposit, not just #2..n. Does not change any verdict; bounds how much worse seam A gets.",
+    "Which tool Joe actually used to 'remember' - synapse_add_memory (NOTE, unrecallable), synapse_decide (DECISION, recallable), or synapse_memory_write (a different markdown subsystem). The log evidence points at add_memory/NOTE, but his session transcript would settle it. TRAP ON FILE: ~/.synapse/logs/synapse.log contains pytest-authored records; fingerprint them out before trusting the log as production evidence.",
+    "Which surface Joe was on - synapse_chat.pypanel (route_chat, builds nothing), synapse_panel.pypanel (ClaudeWorker, builds via a model turn), or external MCP. Seam C is FAULTY on all three so no verdict is blocked, but the demo, the repro and the eventual fix differ per surface.",
+    "Which embedder Houdini's Python 3.13.10 seat resolves. The children here ran under 3.14.2 where SemanticEmbedder (dim 384) succeeds. If the Houdini seat falls back to HashEmbedder while an out-of-process tool does not (or vice versa), that is another route into the identical silent empty-jsonl fallback.",
+    "Whether Joe's real store has crossed the n>1000 / every-100th-add threshold that fires the automatic sleep pass, or whether he has ever invoked synapse_sleep_pass - decides whether the prune-permutation mode has actually bitten him rather than merely being reachable.",
+    "The M6 tripwire (test_no_prompt_to_fixture_resolution_exists) checks seven plausible resolver names on three modules. M6 could land under a name not in that list, leaving the test green while wrong. It is a smoke alarm, not a proof of absence - and its own docstring says so."
+  ],
+
+  "for_ruling": [
+    "See escalations[] - PRST-E1 (copy the stranded store TODAY) and PRST-E2 (note-vs-decision keying) are the two that gate everything else."
+  ],
+
+  "method": {
+    "shape": "11 subagents in 4 phases: 3 read-only seam cartographers (parallel) -> 1 repro builder+runner (barrier: needed all three maps to design one discriminating test) -> 3 seam verdicts, each immediately attacked by an independent crucible (pipeline, no barrier) -> 1 crucible against the repro test itself.",
+    "adversarial_result": "All three seam verdicts SURVIVED. 4 attacks landed as corrections rather than refutations - the seam-A centrality claim (reordered), the seam-C 'unreachable from both panels' overstatement (retracted), the seam-C build_plan sensitivity control (retracted as unreproducible), and a missed in-tree precedent (hda_controller._select_recipe, folded into the design note). All are reflected above rather than quietly dropped.",
+    "orchestrator_independent_checks": "The orchestrator read moneta_store.py:205-206 and test_hard_exit_loses_the_deposit directly BEFORE dispatch, and independently re-measured the suite baseline against the committed M5b receipt, so agent reports were adjudicated rather than accepted."
+  },
+
+  "resume_token": {
+    "skip_on_reentry": "Do NOT re-run the full suite baseline (recorded above, and it matches the committed M5b receipt). Do NOT re-map the three seams - the maps, verdicts and attacks are complete and archived in the workflow journal. Do NOT re-derive the FIX-B1 negative control; it is proven both directions.",
+    "next_actions_if_resumed": "Everything remaining is a human gate. In order: PRST-E1 (copy the stranded snapshot), PRST-E2 (note-vs-decision ruling), PRST-E3 (load-path remedy), PRST-E4 (R-CI0-1 itself), then PRST-E7/E8 before any M6 work.",
+    "do_not_assume_closed": "The residual_unknowns list is not decoration - in particular the Houdini-atexit question, which is the single most load-bearing untested assumption in seam A."
+  }
+}

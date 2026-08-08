@@ -557,6 +557,17 @@ class SynapseBridge:
         # Search specifically in decisions
         decisions = self._synapse.get_decisions()
 
+        # PRST/FIX-B1: get_by_type returns raw backend order — moneta's ECS is
+        # swap-and-pop (removing any row moves the LAST row into its slot) and the
+        # jsonl index is a per-process-salted set. Both make `matches[:5]` below
+        # answer the SAME prompt with DIFFERENT records after an unrelated prune
+        # or a restart. Impose the same total order search already uses
+        # (store.py:697-699): layered stable sorts, least-significant first,
+        # fresher-first with id asc as the tiebreak. Determinism only — recall has
+        # no score to rank by, so this fixes sameness, not relevance.
+        decisions = sorted(decisions, key=lambda d: d.id)
+        decisions.sort(key=lambda d: d.created_at or "", reverse=True)
+
         # Simple keyword matching
         query_lower = query.lower()
         matches = []
