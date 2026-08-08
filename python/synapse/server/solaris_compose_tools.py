@@ -72,6 +72,106 @@ UsdRender.Product(_rps[0]).CreateProductNameAttr().Set(_pn)
 '''
 
 
+def _is_anchored(path: str) -> bool:
+    """True when `path` is fully anchored -- it names one location regardless of
+    the process CWD.
+
+    Stricter than ``os.path.isabs`` on purpose, and version-independent: a
+    drive-relative Windows path ('/x') and a path still carrying an unexpanded
+    token ('$HIP/shot_layers', which is what expandString returns when the
+    variable is undefined and the caller passed a literal) both resolve against
+    the CWD, and both must be refused. Comparing the normalised input to its own
+    ``abspath`` is exactly the "does the CWD change where this lands" question.
+    """
+    import os
+    p = str(path or "")
+    if not p:
+        return False
+    return os.path.normcase(os.path.normpath(p)) == os.path.normcase(os.path.abspath(p))
+
+
+def _scene_is_unsaved():
+    """Tri-state: True / False / None when the scene-state API is unavailable.
+
+    VERIFIED-RUNTIME 22.0.368 (2026-08-08, foreign-CWD hython probe): on an
+    UNSAVED scene ``hou.hipFile.isNewFile()`` is True and ``$HIP`` expands to the
+    **process CWD** -- absolute, so an isabs-only guard does not see it. After
+    ``hipFile.save()`` isNewFile() is False and $HIP is the saved project dir,
+    decoupled from the CWD. That pair is what makes isNewFile the right oracle.
+    """
+    hf = getattr(hou, "hipFile", None)
+    fn = getattr(hf, "isNewFile", None)
+    if not callable(fn):
+        return None
+    try:
+        return bool(fn())
+    except Exception as e:                      # pragma: no cover -- host quirk
+        _log.debug("hipFile.isNewFile() unavailable: %s", e)
+        return None
+
+
+def _resolve_layer_base(shot: str, layer_dir: Optional[str]) -> Tuple[str, str]:
+    """Resolve the department-layer output dir to an (raw, absolute) pair, or raise.
+
+    The compose tier creates REAL files on disk (`Sdf.Layer.CreateNew` +
+    `os.makedirs`), so the destination must be a sanctioned absolute location
+    BEFORE anything is written. Unsanctioned resolves raise `ComposeError` to the
+    caller -- never a silent redirect to some other directory, which would put
+    the artist's layers somewhere they were never told about.
+
+    Sanctioned means:
+
+    * not a resolver URI -- there is no filesystem dirname to makedirs into;
+    * fully anchored after expansion (see `_is_anchored`);
+    * and, for the DEFAULT `$HIP/<shot>_layers` path only, a scene that has been
+      saved. On an unsaved scene $HIP IS the launch directory, so the default
+      path silently writes department layers wherever the process happened to
+      start. That is the observed defect: hython suite runs from the repo root
+      left `shot_layers/{animation,fx,...}.usd` in the working tree (RES-F11,
+      VERIFIED-RUNTIME; TIDY-20). An explicitly passed `layer_dir` IS the
+      caller's sanction and is not subject to this clause.
+
+    When the scene-state API is unavailable (`_scene_is_unsaved()` is None) the
+    default path falls back to refusing a base that lands inside the process
+    CWD -- the litter signature itself.
+    """
+    import os
+    if layer_dir and _is_resolver_uri(layer_dir):
+        raise sc.ComposeError(
+            "layer_dir can't be a resolver URI -- the compose tier creates "
+            "real layer files on disk; pass a filesystem path or a $-token path"
+        )
+    base_raw = layer_dir or ("$HIP/" + shot + "_layers")
+    base = hou.expandString(base_raw)  # disk ops keep the expanded form
+
+    if not _is_anchored(base):
+        raise sc.ComposeError(
+            "layer_dir %r resolves to %r, which is not an absolute path -- the "
+            "compose tier creates real layer files on disk and would write them "
+            "relative to the process CWD (%s); pass an absolute layer_dir"
+            % (base_raw, base, os.getcwd())
+        )
+
+    if layer_dir is None:
+        unsaved = _scene_is_unsaved()
+        if unsaved is None:
+            # No scene-state oracle: refuse only the litter signature itself.
+            cwd = os.path.abspath(os.getcwd())
+            inside_cwd = os.path.normcase(os.path.abspath(base)).startswith(
+                os.path.normcase(cwd) + os.sep
+            )
+            unsaved = inside_cwd
+        if unsaved:
+            raise sc.ComposeError(
+                "layer_dir unset and the scene is unsaved -- $HIP resolves to the "
+                "launch directory, so the department layers would be written to "
+                "%s, wherever this process happened to start; save the .hip or "
+                "pass an explicit layer_dir" % base
+            )
+
+    return base_raw, base
+
+
 def _set(node, parm_name: str, value) -> bool:
     """Set a parm if present and unlocked. Returns True on success (used to
     detect missing/locked parms so we can fall back -- e.g. productName->picture)."""
@@ -125,13 +225,11 @@ def build_karma_xpu_shot(
     # WEAKEST-FIRST: filepath1=layout ... filepath5=render (render strongest).
     # M2-D: the compose tier creates real files on disk -- a resolver URI has
     # no filesystem dirname to makedirs into. Fail loud, never half-build.
-    if layer_dir and _is_resolver_uri(layer_dir):
-        raise sc.ComposeError(
-            "layer_dir can't be a resolver URI -- the compose tier creates "
-            "real layer files on disk; pass a filesystem path or a $-token path"
-        )
-    base_raw = layer_dir or ("$HIP/" + shot + "_layers")
-    base = hou.expandString(base_raw)  # disk ops keep the expanded form
+    # GUARD: resolve to a sanctioned ABSOLUTE base before the first write; an
+    # unsanctioned resolve raises to the caller rather than silently landing in
+    # the process CWD (RES-F11 / TIDY-20). Runs before any node is created, so a
+    # refusal leaves the scene and the filesystem untouched.
+    base_raw, base = _resolve_layer_base(shot, layer_dir)
     if not os.path.isdir(base):
         os.makedirs(base)
     weakest_first = list(reversed(depts))             # [layout, animation, lighting, fx, render]
