@@ -1,0 +1,33 @@
+{
+  "_comment": "THROWAWAY control manifest for leg BASE - the NEGATIVE half. Byte-identical to manifest_model.json except that no top-level 'model' key exists. This is the cell that proves the model passthrough can be absent: if a --model flag appears in a launch line resolved from this manifest, the passthrough is emitting a default rather than passing through, and the control fails.",
+  "_schema": "legs/v1",
+  "_producer": "harness/notes/base_control/run_control.ps1",
+  "repo": "IGNORED - the control passes -Repo explicitly",
+  "settings": "C:/Users/User/SYNAPSE/harness/relay-settings.json",
+  "effort": "ultracode",
+  "base": "control/never-read",
+  "_base_note": "Top-level 'base' is display-only (orchestrate.ps1 prints it in the banner). It is NOT the per-leg base under test. Set to a nonsense value on purpose: if the per-leg resolution ever fell back to the manifest field, this string would appear in a resolved worktree line and the control would fail loudly.",
+  "legs": [
+    {
+      "id": "CTRLA",
+      "name": "declares base",
+      "state": "ready",
+      "receipt": "CTRLA_NO_SUCH_RECEIPT.json",
+      "branch": "control/ctrla",
+      "worktree": ".claude/worktrees/ctrla",
+      "base": "blocks/m5-reconciler",
+      "prompt": "harness/prompts/base.md",
+      "deps": []
+    },
+    {
+      "id": "CTRLB",
+      "name": "declares no base",
+      "state": "ready",
+      "receipt": "CTRLB_NO_SUCH_RECEIPT.json",
+      "branch": "control/ctrlb",
+      "worktree": ".claude/worktrees/ctrlb",
+      "prompt": "harness/prompts/base.md",
+      "deps": []
+    }
+  ]
+}

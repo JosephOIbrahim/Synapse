@@ -1,0 +1,34 @@
+{
+  "_comment": "THROWAWAY control manifest for leg BASE. Never dispatched for real - it is fed to orchestrate.ps1 -DryRun -ManifestPath against a scratch repo. Pairs with manifest_nomodel.json, which is byte-identical except that it declares no top-level 'model'. Two legs: one declaring 'base', one not. Together the pair covers the four cells (a) leg with base (b) leg without (c) manifest with model (d) without.",
+  "_schema": "legs/v1",
+  "_producer": "harness/notes/base_control/run_control.ps1",
+  "repo": "IGNORED - the control passes -Repo explicitly",
+  "settings": "C:/Users/User/SYNAPSE/harness/relay-settings.json",
+  "effort": "ultracode",
+  "model": "claude-opus-4-8",
+  "base": "control/never-read",
+  "_base_note": "Top-level 'base' is display-only (orchestrate.ps1 prints it in the banner). It is NOT the per-leg base under test. Set to a nonsense value on purpose: if the per-leg resolution ever fell back to the manifest field, this string would appear in a resolved worktree line and the control would fail loudly.",
+  "legs": [
+    {
+      "id": "CTRLA",
+      "name": "declares base",
+      "state": "ready",
+      "receipt": "CTRLA_NO_SUCH_RECEIPT.json",
+      "branch": "control/ctrla",
+      "worktree": ".claude/worktrees/ctrla",
+      "base": "blocks/m5-reconciler",
+      "prompt": "harness/prompts/base.md",
+      "deps": []
+    },
+    {
+      "id": "CTRLB",
+      "name": "declares no base",
+      "state": "ready",
+      "receipt": "CTRLB_NO_SUCH_RECEIPT.json",
+      "branch": "control/ctrlb",
+      "worktree": ".claude/worktrees/ctrlb",
+      "prompt": "harness/prompts/base.md",
+      "deps": []
+    }
+  ]
+}

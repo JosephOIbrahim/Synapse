@@ -1,0 +1,61 @@
+{
+  "receipt": "receipt/v1",
+  "leg": "BASE",
+  "name": "orchestrator base+model passthrough",
+  "executed_by": "worktree agent, dispatched by the live orchestrator into .claude/worktrees/orch-dispatch ~2026-08-08 11:53; implementation + control evidence authored there.",
+  "closed_by": "CTO-session (Opus 4.8), 2026-08-08: verified the worktree implementation parses clean and its DryRun evidence holds, wrote this receipt, and committed the worktree work on finish/orch-dispatch.",
+  "status": "green",
+  "summary": "Both dispatch gaps closed in harness/orchestrate.ps1. A per-leg 'base' now cuts the worktree from that ref (was always HEAD); a top-level manifest 'model' now rides the claude launch as --model. Absent fields = prior behavior byte-for-byte. Verified with the built-in -DryRun -ManifestPath hook against two throwaway control manifests.",
+
+  "base_honored_at": "harness/orchestrate.ps1:295",
+  "model_passthrough_at": "harness/orchestrate.ps1:357",
+
+  "anchors": {
+    "base_resolution": "harness/orchestrate.ps1:220  $base = if ($leg.base) { $leg.base } else { 'HEAD' }",
+    "base_use_real_add": "harness/orchestrate.ps1:295  & git worktree add -b $leg.branch $wt $base 2>&1",
+    "base_realrun_log": "harness/orchestrate.ps1 (real-run branch)  if ($base -ne 'HEAD') { Say '  base: cutting <branch> from leg-declared <base>' }",
+    "model_resolution": "harness/orchestrate.ps1:228  $modelArg = if ($manifest.model) { \" --model $($manifest.model)\" } else { '' }",
+    "model_use_launch": "harness/orchestrate.ps1:357  claude ... --effort $($manifest.effort)$modelArg --name ..."
+  },
+
+  "dryrun_evidence": [
+    "(a) leg WITH base (CTRLA, base=blocks/m5-reconciler): git worktree add -b control/ctrla <inert-repo>/.claude/worktrees/ctrla blocks/m5-reconciler",
+    "(b) leg WITHOUT base (CTRLB): git worktree add -b control/ctrlb <inert-repo>/.claude/worktrees/ctrlb HEAD",
+    "(c) manifest WITH model: claude --settings ...\\relay-settings.json --effort ultracode --model claude-opus-4-8 --name 'SYNAPSE CTRLA declares base' --permission-mode acceptEdits --verbose",
+    "(d) manifest WITHOUT model: claude --settings ...\\relay-settings.json --effort ultracode --name 'SYNAPSE CTRLB declares no base' --permission-mode acceptEdits --verbose   [no --model]"
+  ],
+  "behavior_unchanged_without_fields": true,
+
+  "how_verified": {
+    "tier": "VERIFIED-RUNTIME (2026-08-08, both the worktree agent and the CTO close-out)",
+    "hook": "harness/orchestrate.ps1 -DryRun -ManifestPath <control> against an inert -Repo (a temp dir outside any git tree, so Backup-Branches finds no repo and pushes nothing)",
+    "producers": [
+      "harness/notes/base_control/manifest_model.json    -> lines (a)(b)(c)",
+      "harness/notes/base_control/manifest_nomodel.json  -> line (d)",
+      "harness/notes/base_control/resolved_lines.json    -> the four captured lines above",
+      "harness/notes/base_control/raw_model.log, raw_nomodel.log, run_control.ps1, run_mutation_control.ps1  -> raw run output + runners"
+    ],
+    "cto_close_out_check": "VERIFIED-RUNTIME: [Parser]::ParseFile on the committed worktree orchestrate.ps1 -> 0 errors, 3001 tokens."
+  },
+
+  "reconciliation": {
+    "what": "DUAL-LAUNCH. BASE ran twice on 2026-08-08: (1) this worktree agent, orchestrator-dispatched; (2) a parallel CTO-session effort in the main tree. Both closed both gaps identically and verified via -DryRun.",
+    "ruling": "Joe (CTO), 2026-08-08: keep THIS worktree implementation (it arrived first and sits on the designated branch finish/orch-dispatch). The main-tree duplicate (orchestrate.ps1 edit + harness/notes/base_control_{with,no}_model.json + a main-tree BASE.json) was reverted/deleted and NOT committed.",
+    "difference_noted": "The main-tree version single-sourced the launch string so the dry-run printed the exact real command; this worktree version's dry-run launch line is a hand-reconstruction that omits the prompt text (a minor Law-1 gap in the EVIDENCE line only - the real launch at :357 and the passthrough logic are correct and identical). This worktree version additionally carries a real-run 'base: cutting...' log line the main-tree one lacked.",
+    "lesson": "Third instance of the same-touches / dual-launch class (see R91, harness-dual-launch-collision). The orchestrator saw BASE 'ready' and dispatched it while a CTO session also took it. Check for a live second run before writing; the fix that caught this was inspecting the worktree state instead of committing blind."
+  },
+
+  "scope_discipline": {
+    "changed": "harness/orchestrate.ps1 (two passthroughs + their DryRun evidence) + harness/notes/base_control/ (control manifests, runners, captured evidence).",
+    "not_touched": "TRUST, receipt logic, notification, the dispatch lock (R134), Backup-Branches. No new flags.",
+    "not_committed": ".claude/.orch_launched and .claude/settings.local.json (ephemeral orchestrator/agent bookkeeping, deliberately excluded from the commit)."
+  },
+
+  "permission_note": "relay-settings.json does not allow Edit(harness/orchestrate.ps1); the CTO close-out (verify + receipt + commit) is the brief's named correct dispatch for that surface. guard-edit-targets.py does not fence this file.",
+
+  "for_ruling": [],
+
+  "human_gate_next": "Gate C (merge) remains human. Committed on finish/orch-dispatch (base master), not pushed, not merged. Once merged, per-leg base is honored at worktree cut - this unblocks the HELD legs DOCS/CLOCK/M6 (deps:[BASE]).",
+
+  "resume_token": "BASE closed and committed on finish/orch-dispatch. Skip re-implementing or re-verifying. The main-tree duplicate was discarded. If re-entered: passthroughs at :220/:295 (base) and :228/:357 (model); evidence in harness/notes/base_control/."
+}

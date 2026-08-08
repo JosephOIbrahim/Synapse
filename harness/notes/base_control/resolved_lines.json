@@ -1,0 +1,26 @@
+﻿[
+    {
+        "manifest":  "model",
+        "leg":  "CTRLA",
+        "worktree":  "13:04:51    (dry run) worktree: git worktree add -b control/ctrla C:\\Users\\User\\AppData\\Local\\Temp\\base_control\\repo\\.claude\\worktrees\\ctrla blocks/m5-reconciler",
+        "launch":  "13:04:51    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --model claude-opus-4-8 --name \u0027SYNAPSE CTRLA declares base\u0027 --permission-mode acceptEdits --verbose"
+    },
+    {
+        "manifest":  "model",
+        "leg":  "CTRLB",
+        "worktree":  "13:04:51    (dry run) worktree: git worktree add -b control/ctrlb C:\\Users\\User\\AppData\\Local\\Temp\\base_control\\repo\\.claude\\worktrees\\ctrlb HEAD",
+        "launch":  "13:04:51    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --model claude-opus-4-8 --name \u0027SYNAPSE CTRLB declares no base\u0027 --permission-mode acceptEdits --verbose"
+    },
+    {
+        "manifest":  "nomodel",
+        "leg":  "CTRLA",
+        "worktree":  "13:05:07    (dry run) worktree: git worktree add -b control/ctrla C:\\Users\\User\\AppData\\Local\\Temp\\base_control\\repo\\.claude\\worktrees\\ctrla blocks/m5-reconciler",
+        "launch":  "13:05:07    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --name \u0027SYNAPSE CTRLA declares base\u0027 --permission-mode acceptEdits --verbose"
+    },
+    {
+        "manifest":  "nomodel",
+        "leg":  "CTRLB",
+        "worktree":  "13:05:07    (dry run) worktree: git worktree add -b control/ctrlb C:\\Users\\User\\AppData\\Local\\Temp\\base_control\\repo\\.claude\\worktrees\\ctrlb HEAD",
+        "launch":  "13:05:07    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --name \u0027SYNAPSE CTRLB declares no base\u0027 --permission-mode acceptEdits --verbose"
+    }
+]

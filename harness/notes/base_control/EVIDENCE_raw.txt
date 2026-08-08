@@ -1,0 +1,45 @@
+
+BASE CONTROL
+  orchestrator : C:/Users/User/SYNAPSE/.claude/worktrees/orch-dispatch/harness/orchestrate.ps1
+  scratch repo : C:\Users\User\AppData\Local\Temp\base_control\repo
+
+PART 1  git semantics of the changed call
+  master               = f39d19b3c65b46188538fe5e80e357d6775595a5
+  blocks/m5-reconciler = 3264b9e8c7183cd1c56029dc3a9fda9c71af5e20
+  PASS  refs are distinct                  f39d19b3 vs 3264b9e8
+  PASS  base honoured                      worktree HEAD 3264b9e8c7183cd1c56029dc3a9fda9c71af5e20 (want 3264b9e8c7183cd1c56029dc3a9fda9c71af5e20)
+  PASS  absent base -> HEAD unchanged      worktree HEAD f39d19b3c65b46188538fe5e80e357d6775595a5 (want f39d19b3c65b46188538fe5e80e357d6775595a5)
+  PASS  existing branch still refused      exit 255, directory left behind: False
+        git said: Preparing worktree (new branch 'control/from-base') / fatal: a branch named 'control/from-base' already exists
+  PASS  spliced, base declared             exit 0, HEAD 3264b9e8c7183cd1c56029dc3a9fda9c71af5e20 (want 3264b9e8c7183cd1c56029dc3a9fda9c71af5e20)
+  PASS  spliced, no base field             exit 0, HEAD f39d19b3c65b46188538fe5e80e357d6775595a5 (want f39d19b3c65b46188538fe5e80e357d6775595a5)
+
+PART 2  orchestrator -DryRun -ManifestPath, four cells
+  PASS  log produced (model)               15 lines
+  PASS  model/CTRLA base = blocks/m5-reconciler 13:04:51    (dry run) worktree: git worktree add -b control/ctrla C:\Users\User\AppData\Local\Temp\base_control\repo\.claude\worktrees\ctrla blocks/m5-reconciler
+  PASS  model/CTRLA --model emitted        13:04:51    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --model claude-opus-4-8 --name 'SYNAPSE CTRLA declares base' --permission-mode acceptEdits --verbose
+  PASS  model/CTRLB base = HEAD            13:04:51    (dry run) worktree: git worktree add -b control/ctrlb C:\Users\User\AppData\Local\Temp\base_control\repo\.claude\worktrees\ctrlb HEAD
+  PASS  model/CTRLB --model emitted        13:04:51    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --model claude-opus-4-8 --name 'SYNAPSE CTRLB declares no base' --permission-mode acceptEdits --verbose
+  PASS  model no manifest-base leak        0 leaked lines
+  PASS  log produced (nomodel)             15 lines
+  PASS  nomodel/CTRLA base = blocks/m5-reconciler 13:05:07    (dry run) worktree: git worktree add -b control/ctrla C:\Users\User\AppData\Local\Temp\base_control\repo\.claude\worktrees\ctrla blocks/m5-reconciler
+  PASS  nomodel/CTRLA --model absent       13:05:07    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --name 'SYNAPSE CTRLA declares base' --permission-mode acceptEdits --verbose
+  PASS  nomodel/CTRLB base = HEAD          13:05:07    (dry run) worktree: git worktree add -b control/ctrlb C:\Users\User\AppData\Local\Temp\base_control\repo\.claude\worktrees\ctrlb HEAD
+  PASS  nomodel/CTRLB --model absent       13:05:07    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --name 'SYNAPSE CTRLB declares no base' --permission-mode acceptEdits --verbose
+  PASS  nomodel no manifest-base leak      0 leaked lines
+
+THE FOUR RESOLVED LINES
+  [model/CTRLA]
+     13:04:51    (dry run) worktree: git worktree add -b control/ctrla C:\Users\User\AppData\Local\Temp\base_control\repo\.claude\worktrees\ctrla blocks/m5-reconciler
+     13:04:51    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --model claude-opus-4-8 --name 'SYNAPSE CTRLA declares base' --permission-mode acceptEdits --verbose
+  [model/CTRLB]
+     13:04:51    (dry run) worktree: git worktree add -b control/ctrlb C:\Users\User\AppData\Local\Temp\base_control\repo\.claude\worktrees\ctrlb HEAD
+     13:04:51    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --model claude-opus-4-8 --name 'SYNAPSE CTRLB declares no base' --permission-mode acceptEdits --verbose
+  [nomodel/CTRLA]
+     13:05:07    (dry run) worktree: git worktree add -b control/ctrla C:\Users\User\AppData\Local\Temp\base_control\repo\.claude\worktrees\ctrla blocks/m5-reconciler
+     13:05:07    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --name 'SYNAPSE CTRLA declares base' --permission-mode acceptEdits --verbose
+  [nomodel/CTRLB]
+     13:05:07    (dry run) worktree: git worktree add -b control/ctrlb C:\Users\User\AppData\Local\Temp\base_control\repo\.claude\worktrees\ctrlb HEAD
+     13:05:07    (dry run) launch:   claude --settings C:/Users/User/SYNAPSE/harness/relay-settings.json --effort ultracode --name 'SYNAPSE CTRLB declares no base' --permission-mode acceptEdits --verbose
+
+RESULT  0 failed cell(s)

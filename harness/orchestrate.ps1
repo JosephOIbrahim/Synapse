@@ -209,15 +209,51 @@ function Get-LegState([object]$leg) {
 function Start-Leg([object]$leg) {
     $wt = Join-Path $repo $leg.worktree
     Say "DISPATCH $($leg.id) $($leg.name)  ->  $($leg.branch)" 'Cyan'
+
+    # WRONG-BASE DISPATCH. A leg may declare the ref its worktree is cut from.
+    # The field already existed in the data - M5b carries
+    # "base": "blocks/m5-reconciler", nine legs carry "base": "master" - and
+    # NOTHING READ IT. The add below hardcoded HEAD, so every leg was cut from
+    # the orchestrator's own HEAD and a leg told to build ON another leg's
+    # branch silently started somewhere else. Two legs hit it this month
+    # (M5b, CI0). No "base" -> 'HEAD', which is exactly the previous behaviour.
+    $base = if ($leg.base) { $leg.base } else { 'HEAD' }
+
+    # Model is a MANIFEST-level passthrough, the same shape as effort. legs.json
+    # carried "model": "claude-opus-4-8" and a note conceding it was decorative
+    # until this line existed; without it a leg inherited whatever model the
+    # spawning terminal happened to default to, which is not a dispatch
+    # decision. Absent -> the flag is not emitted at all, i.e. today's
+    # behaviour, not --model with an empty value.
+    $modelArg = if ($manifest.model) { " --model $($manifest.model)" } else { '' }
+
+    # R61: a read-only leg is FENCED, not asked. Read-only was an instruction in
+    # the brief and nothing enforced it - a read-only fleet edited five schema
+    # files and kept writing four minutes past TaskStop. The profile is a
+    # property of the leg, not a promise in prose.
+    # Resolved HERE, above the dry-run return, so a control run prints the same
+    # launch line the live path builds instead of a hand-assembled lookalike.
+    $profile = if ($leg.readonly) {
+        (Join-Path $repo 'harness\readonly-settings.json') -replace '\\','/'
+    } else { $manifest.settings }
+
     if ($DryRun) {
         # A dry run must exercise the SAME state machine as a real run. It used
         # to return here before the launch marker was written, so Get-LegState
         # kept returning 'ready' and the leg re-dispatched every poll - a dry run
         # that reported behaviour a real run would never produce.
+        #
+        # It also printed nothing RESOLVED, so the two facts a control most
+        # needs - which ref the worktree is cut from, which model the leg
+        # launches on - were the two it could not observe. Both lines below are
+        # built from the same variables the live path consumes.
         Say "  (dry run - not launching)" 'DarkGray'
+        Say "  (dry run) worktree: git worktree add -b $($leg.branch) $wt $base" 'DarkGray'
+        Say "  (dry run) launch:   claude --settings $profile --effort $($manifest.effort)$modelArg --name 'SYNAPSE $($leg.id) $($leg.name)' --permission-mode acceptEdits --verbose" 'DarkGray'
         $script:DryDispatched[$leg.id] = $true
         return
     }
+    if ($leg.readonly) { Say "  profile: READ-ONLY (fenced)" 'DarkGray' }
 
     # Refuse to dispatch into a missing brief. Found 2026-07-26 minutes before an
     # unattended afternoon: legs.json referenced h1.md and h2.md, neither of which
@@ -255,7 +291,8 @@ function Start-Leg([object]$leg) {
         #
         # Capture to a variable so the ErrorRecords survive, and branch on the
         # exit code before anything downstream can run.
-        $addOut = & git worktree add -b $leg.branch $wt HEAD 2>&1
+        if ($base -ne 'HEAD') { Say "  base: cutting $($leg.branch) from leg-declared $base" 'DarkGray' }
+        $addOut = & git worktree add -b $leg.branch $wt $base 2>&1
         $addCode = $LASTEXITCODE
         foreach ($l in $addOut) { Say "  $l" 'DarkGray' }
         if ($addCode -ne 0 -or -not (Test-Path $wt)) {
@@ -310,15 +347,6 @@ function Start-Leg([object]$leg) {
     # surface and no length limit.
     $promptPath = (Join-Path $repo $leg.prompt) -replace '\\','/'
 
-    # R61: a read-only leg is FENCED, not asked. Read-only was an instruction in
-    # the brief and nothing enforced it - a read-only fleet edited five schema
-    # files and kept writing four minutes past TaskStop. The profile is a
-    # property of the leg, not a promise in prose.
-    $profile = if ($leg.readonly) {
-        (Join-Path $repo 'harness\readonly-settings.json') -replace '\\','/'
-    } else { $manifest.settings }
-    if ($leg.readonly) { Say "  profile: READ-ONLY (fenced)" 'DarkGray' }
-
     $script = Join-Path $env:TEMP "orch_$($leg.id).ps1"
     @"
 Set-Location '$wt'
@@ -326,7 +354,7 @@ Write-Host ''
 Write-Host '  LEG $($leg.id) - $($leg.name)   branch $($leg.branch)' -ForegroundColor Cyan
 Write-Host '  brief: $promptPath' -ForegroundColor DarkGray
 Write-Host ''
-claude --settings $profile --effort $($manifest.effort) --name 'SYNAPSE $($leg.id) $($leg.name)' --permission-mode acceptEdits --verbose 'Read the file $promptPath in full and execute it end to end. It is your complete brief. If any part of it appears truncated or unreadable, STOP and say so rather than proceeding on a partial instruction.'
+claude --settings $profile --effort $($manifest.effort)$modelArg --name 'SYNAPSE $($leg.id) $($leg.name)' --permission-mode acceptEdits --verbose 'Read the file $promptPath in full and execute it end to end. It is your complete brief. If any part of it appears truncated or unreadable, STOP and say so rather than proceeding on a partial instruction.'
 Write-Host ''
 Write-Host '  Type /rc here to control this leg from your phone.' -ForegroundColor Yellow
 Write-Host '  It appears in claude.ai/code as: SYNAPSE $($leg.id) $($leg.name)' -ForegroundColor DarkGray
