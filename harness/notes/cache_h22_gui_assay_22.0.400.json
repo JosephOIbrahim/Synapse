@@ -1,0 +1,16 @@
+{
+  "schema": "cache_h22_gui_assay/v1",
+  "houdini_version": "22.0.400",
+  "ui_available": true,
+  "cook1": {
+    "wall_s": 0.1714,
+    "lastCookTime_raw": 171.1439971923828,
+    "cookCount": 1
+  },
+  "cook2": {
+    "wall_s": 0.1473,
+    "lastCookTime_raw": 147.16700744628906,
+    "cookCount": 2
+  },
+  "status": "ok"
+}
