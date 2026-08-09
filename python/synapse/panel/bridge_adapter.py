@@ -57,6 +57,9 @@ _READ_ONLY_TOOLS = frozenset({
     "houdini_hda_list",
     "synapse_inspect_node", "synapse_inspect_selection",
     "synapse_inspect_scene", "synapse_knowledge_lookup",
+    # Mile 4 (R-CACHE-1) -- read-only, feature-flagged cache advisor. No forced cook,
+    # no disk write, no node creation anywhere in its call graph.
+    "synapse_assess_cache",
     "synapse_search", "synapse_recall", "synapse_memory_query",
     "synapse_memory_status", "synapse_metrics", "synapse_router_stats",
     "synapse_list_recipes", "synapse_render_farm_status",

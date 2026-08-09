@@ -58,6 +58,10 @@ from .handlers_solaris_graph import SolarisGraphMixin
 from .handlers_solaris_compose import SolarisComposeMixin
 from .handlers_solaris_tools import SolarisToolsMixin
 from .handlers_graph_synth import GraphSynthHandlerMixin
+# Mile 4 (resource-aware-cache Phase 1, R-CACHE-1) -- read-only, feature-flagged
+# synapse_assess_cache. Import-safe standalone (guards hou/cache_host_probe/cache_policy
+# independently); see handlers_cache.py's header for the full architecture.
+from .handlers_cache import CacheHandlerMixin
 # Live-path integrity envelope (observe-only, PATH-QUALIFIED IntegrityBlocks).
 # The module is import-safe standalone; its internals are guarded.
 from . import integrity_envelope as _envelope
@@ -206,6 +210,9 @@ _READ_ONLY_COMMANDS = frozenset({
     "knowledge_lookup",
     "inspect_selection", "inspect_scene", "inspect_node",
     "network_explain",
+    # Mile 4 (R-CACHE-1) -- read-only, feature-flagged cache advisor. No forced cook,
+    # no disk write, no node creation anywhere in its call graph (handlers_cache.py).
+    "assess_cache",
     "read_material",
     "validate_frame",
     "solaris_validate_ordering",
@@ -405,7 +412,7 @@ class CommandHandlerRegistry:
 # SYNAPSE HANDLER
 # =============================================================================
 
-class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, GraphSynthHandlerMixin):
+class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, SolarisToolsMixin, GraphSynthHandlerMixin, CacheHandlerMixin):
     """
     Main command handler for the Synapse server.
 
@@ -772,6 +779,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("inspect_selection", self._handle_inspect_selection)
         reg.register("inspect_scene", self._handle_inspect_scene)
         reg.register("inspect_node", self._handle_inspect_node)
+
+        # Resource-aware cache advisor (Mile 4, Phase 1, R-CACHE-1) -- read-only,
+        # feature-flagged off by default (SYNAPSE_CACHE_ADVISOR_ENABLED).
+        reg.register("assess_cache", self._handle_assess_cache)
 
         # Batch
         reg.register("batch_commands", self._handle_batch_commands)
