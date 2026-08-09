@@ -29,6 +29,14 @@ this project's habit is saying what doesn't work before you find out mid-shot.
 
 ---
 
+## Watch it work
+
+[![SYNAPSE demo — natural language to real Houdini nodes](assets/demo_video_thumb.jpg)](https://vimeo.com/1216840044)
+
+*SYNAPSE in practice: plain English in, undoable nodes out.*
+
+---
+
 ## Runs your model
 
 Five engines behind one seam. The roster and the producer path are the same thing: `python/synapse/panel/providers/`.
