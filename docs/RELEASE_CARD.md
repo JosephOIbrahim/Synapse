@@ -8,6 +8,7 @@ One card per release, every release. Gate: `scripts/tag_release.py`.
 ## The ritual
 
 ```
+0  cd C:\Users\User\Synapse                  all steps run from repo root
 1  edit VERSION                              set X.Y.Z, one line
 2  python scripts\sync_version.py --write    propagate to all six surfaces
 3  git add / commit                          the version files

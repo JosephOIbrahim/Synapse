@@ -14,7 +14,8 @@
 # requires deliberately setting SYNAPSE_GATE_C=1 for that one command. An agent
 # will not do that by accident, and a human doing it has said so out loud.
 #
-#   SYNAPSE_GATE_C=1 git push origin master
+#   SYNAPSE_GATE_C=1 git push origin master                                          (sh)
+#   $env:SYNAPSE_GATE_C=1; git push origin master; Remove-Item Env:SYNAPSE_GATE_C    (PowerShell)
 #
 # Installed via core.hooksPath so it is versioned and survives a fresh clone -
 # .git/hooks is not in the tree and would be lost on the next checkout.
@@ -39,6 +40,8 @@ do
                 echo "" >&2
                 echo "  To push master deliberately:" >&2
                 echo "      SYNAPSE_GATE_C=1 git push origin master" >&2
+                echo "  PowerShell:" >&2
+                echo "      \$env:SYNAPSE_GATE_C=1; git push origin master; Remove-Item Env:SYNAPSE_GATE_C" >&2
                 echo "" >&2
                 exit 1
             fi
