@@ -102,6 +102,7 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_API_KEY` | Shared API key for WS/MCP auth; env beats `~/.synapse/auth.key` | unset (auth off) | `server/auth.py`, `mcp_server.py` | Studio: required for studio-lan/vpn; per-user keys in users.json preferred |
 | `SYNAPSE_AUTOSTART_HWEBSERVER` | `"1"` restores import-time start of the in-Houdini hwebserver endpoint | unset | `server/start_hwebserver.py` | Single-seat convenience |
 | `SYNAPSE_BRIDGE_FILE` | Override path of the self-healing port sidecar | `~/.synapse/bridge.json` | `server/bridge_endpoint.py` | Both |
+| `SYNAPSE_CACHE_ADVISOR_ENABLED` | `1`/`true`/`yes`/`on` enables the read-only resource-aware cache advisor (`synapse_assess_cache`, Mile 4 Phase 1, R-CACHE-1); unset/anything else returns a static disabled card and touches no node | unset (disabled) | `server/handlers_cache.py` | Both: leave unset until Phase 1 is ratified for general use |
 | `SYNAPSE_DEPLOY_CONFIG` | Path to deploy.json | `~/.synapse/deploy.json` | `server/sessions.py` | Studio |
 | `SYNAPSE_DEPLOY_MODE` | `local` / `studio-lan` / `studio-vpn`; != `local` enforces RBAC; the WS server also WRITES this var at startup to propagate deploy.json's mode in-process | `local` | `server/sessions.py`, `server/rbac.py`, `server/hwebserver_adapter.py`, `mcp/server.py`, `server/websocket.py` (write) | Studio |
 | `SYNAPSE_ENCRYPTION_KEY` | Fernet key for memory-at-rest encryption; wrong key = degraded read-only load, save refused | unset (keyfile / auto-gen) | `core/crypto.py` | Studio: escrow it; must match on restore |

@@ -21,6 +21,9 @@ SLOW_COMMANDS = {
     "render_sequence": 600.0,
     "inspect_selection": 30.0, "inspect_scene": 30.0, "inspect_node": 30.0,
     "network_explain": 30.0,
+    # Mile 4 (R-CACHE-1) -- host machine-profile detection includes a bounded 5s
+    # nvidia-smi subprocess call plus disk_usage/psutil reads.
+    "assess_cache": 20.0,
     "batch_commands": 60.0,
     # TOPS/PDG commands -- PDG graph context initialization (getPDGGraphContext,
     # getPDGNode) can block Houdini's main thread for 5-15s on first access.

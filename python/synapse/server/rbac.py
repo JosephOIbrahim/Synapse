@@ -41,6 +41,8 @@ _VIEWER_COMMANDS: FrozenSet[str] = frozenset({
     "inspect_selection", "inspect_scene", "inspect_node",
     "read_material",
     "validate_frame",
+    # Mile 4 (R-CACHE-1) -- read-only, feature-flagged cache advisor.
+    "assess_cache",
     "get_metrics", "router_stats", "list_recipes",
     "tops_get_work_items", "tops_get_dependency_graph", "tops_get_cook_stats",
     "tops_query_items",

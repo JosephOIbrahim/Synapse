@@ -41,6 +41,7 @@ TOOL_NAMES = [
     "synapse_batch",
     "synapse_propose_graph",
     "synapse_instantiate_graph",
+    "synapse_assess_cache",
 ]
 
 # Dispatch entries for this group
@@ -69,4 +70,5 @@ DISPATCH_KEYS = {
     "synapse_batch":            ("batch_commands",    "identity"),
     "synapse_propose_graph":     ("propose_graph",     "identity"),
     "synapse_instantiate_graph": ("instantiate_graph", "identity"),
+    "synapse_assess_cache":      ("assess_cache",      "identity"),
 }

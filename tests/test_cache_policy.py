@@ -397,6 +397,43 @@ def test_sop_solver_result_strategy_supported_and_distinct():
     assert res.strategy_id == "sop_filecache_solver_result_v1"
 
 
+def test_sop_vdb_only_strategy_supported_and_distinct():
+    """Mile 4 task 1 gap-close: §9 row 2 (SOP VDB-only output -> .vdb candidate) had zero
+    test coverage before this mile -- resolve_strategy() implemented it but nothing pinned
+    the strategy_id, so a regression collapsing it back to the generic geometry strategy
+    would have passed green."""
+    res = resolve_strategy(NodeDescriptor(context=Context.SOP.value, data_class="vdb_only"))
+    assert res.supported is True
+    assert res.strategy_id == "sop_filecache_vdb_v1"
+
+
+def test_sop_independent_frames_strategy_supported_and_distinct():
+    """Mile 4 task 1 gap-close: §9 row 4 (independent frames -> Simulation off, can be
+    parallelized) had zero test coverage before this mile."""
+    res = resolve_strategy(NodeDescriptor(context=Context.SOP.value, is_independent_frames=True))
+    assert res.supported is True
+    assert res.strategy_id == "sop_filecache_independent_frames_v1"
+
+
+def test_sop_solver_result_takes_precedence_over_independent_frames_hint():
+    """If a caller (inconsistently) sets both hints, resolve_strategy must not silently
+    pick one at random -- pins the documented evaluation order in strategies.py
+    (is_solver_result checked before is_independent_frames)."""
+    res = resolve_strategy(NodeDescriptor(
+        context=Context.SOP.value, is_solver_result=True, is_independent_frames=True,
+    ))
+    assert res.strategy_id == "sop_filecache_solver_result_v1"
+
+
+def test_lop_context_returns_unsupported_explicit_per_blueprint():
+    """Mile 4 task 1 gap-close: §9 row 6 (Solaris/LOP requires USD-aware path/layer
+    policy) had zero test coverage before this mile -- only DOP/COP/unknown were pinned."""
+    res = resolve_strategy(NodeDescriptor(context=Context.LOP.value))
+    assert res.supported is False
+    assert res.support == StrategySupport.UNSUPPORTED.value
+    assert res.strategy_id != "sop_filecache_geometry_v1"
+
+
 def test_cop_context_returns_unsupported_explicit_per_blueprint():
     """§9: 'Return unsupported until a tested resolver exists' -- COP is the row the
     blueprint states this for explicitly."""
