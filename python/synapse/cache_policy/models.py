@@ -82,6 +82,11 @@ class CacheVerdict(str, Enum):
     NOT_WORTH_IT = "not_worth_it"
     INSUFFICIENT_DISK = "insufficient_disk"
     UNSUPPORTED = "unsupported"
+    # No producer in decision.py's 15 return paths as of M2b: unsafe-or-missing evidence
+    # routes to MEASURE_FIRST (sanctioned by blueprint §2.5), not here. UNKNOWN describes
+    # contradictory evidence, which Phase 0 doesn't detect yet. Kept as the defensive
+    # dataclass default (see CacheDecision below) -- reviewer-flagged known limitation,
+    # not a behavioral risk. Wire a real producer if/when contradiction-detection lands.
     UNKNOWN = "unknown"
 
 
