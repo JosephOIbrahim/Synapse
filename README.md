@@ -10,6 +10,25 @@ SYNAPSE lives in Houdini's own Python interpreter and calls `hou.*` directly. No
 
 ---
 
+## For artists — the one-minute version
+
+**You type what you want. Real nodes appear in your scene — built, wired, and named.**
+"Give me a Vellum cloth setup on this mesh" becomes actual nodes, not a chat answer.
+
+**One Ctrl+Z undoes the whole thing.** Every operation is grouped, so a ten-node
+build reverses in a single undo. You can always get your scene back.
+
+**It asks before anything risky.** Writing files, big changes — a human clicks approve.
+It never bakes gigabytes to disk on its own.
+
+**It says "I don't know" instead of guessing.** Unmeasured things are reported as
+unknown, never invented. When something isn't supported yet, it tells you so.
+
+**It is not magic and not a render button.** Read [Known limitations](#known-limitations) —
+this project's habit is saying what doesn't work before you find out mid-shot.
+
+---
+
 ## Runs your model
 
 Five engines behind one seam. The roster and the producer path are the same thing: `python/synapse/panel/providers/`.
@@ -25,6 +44,7 @@ Five engines behind one seam. The roster and the producer path are the same thin
 Everything else follows from where the agent lives.
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#FF9E2C','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#000000','secondaryColor':'#FFB85C','tertiaryColor':'#FFD9A0','clusterBkg':'#FFE9CC','clusterBorder':'#000000','edgeLabelBackground':'#FFE9CC','nodeTextColor':'#000000'}}}%%
 flowchart LR
     subgraph OUT["outside-in"]
         H1[Houdini] -->|whole scene, every turn| C1[cloud model]
@@ -86,6 +106,7 @@ Read this here rather than discover it mid-shot.
 This matters more than the feature list, and it is the thing to check first.
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#FF9E2C','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#000000','secondaryColor':'#FFB85C','tertiaryColor':'#FFD9A0','clusterBkg':'#FFE9CC','clusterBorder':'#000000','edgeLabelBackground':'#FFE9CC','nodeTextColor':'#000000'}}}%%
 flowchart TD
     K[what SYNAPSE knows] --> S[symbols and node types]
     K --> N[H22 node reference]
@@ -256,6 +277,7 @@ So work it from the file, not the console: re-run step 3 (`python scripts/instal
 ## The two paths
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#FF9E2C','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#000000','secondaryColor':'#FFB85C','tertiaryColor':'#FFD9A0','clusterBkg':'#FFE9CC','clusterBorder':'#000000','edgeLabelBackground':'#FFE9CC','nodeTextColor':'#000000'}}}%%
 flowchart LR
     T[agent turn] --> M["/mcp — audited"]
     T --> S["/synapse — live"]
@@ -288,6 +310,7 @@ Three instruments landed 2026-08-02, built on one finding.
 **The finding.** Houdini-side cost was believed to be "1–70 ms per op — the 5%." True on small scenes; at scale, stage hashing on the audited path cost **6.9–7.7 s per op at 100k prims**. And the axis everyone assumed — prim count — was wrong: cost tracks **authored array volume**. A 4-prim PointInstancer at 2M instances cost 2,017.9 ms per op while the prim-keyed gate said the scene was small — a **16,677× miss**. *Producers: `98b556f` (measured floor), `harness/latency/LEDGER.md` §1 (the volume evidence, C2 crucible).*
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#FF9E2C','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#000000','secondaryColor':'#FFB85C','tertiaryColor':'#FFD9A0','clusterBkg':'#FFE9CC','clusterBorder':'#000000','edgeLabelBackground':'#FFE9CC','nodeTextColor':'#000000'}}}%%
 flowchart LR
     B["board<br/>harness/latency/verify.py<br/>8 checks"] --> R["ratchet<br/>perf_ratchet.py<br/>ARMED — counts may fall,<br/>never silently rise"]
     R --> F["floor<br/>perf_baseline.json<br/>human-promoted only"]
@@ -312,6 +335,7 @@ A third freeze class — distinct from the render freeze and the marshal self-de
 **The fix (v5.40.1).** Tool calls and the panel's own context-gather now spawn a daemon thread *off* the main thread, so the marshal takes the deferred path — the same path the bridge-up call takes, with a per-call timeout and UI events interleaved. Node selection and the viewport stay live mid-chat.
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#FF9E2C','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#000000','secondaryColor':'#FFB85C','tertiaryColor':'#FFD9A0','clusterBkg':'#FFE9CC','clusterBorder':'#000000','edgeLabelBackground':'#FFE9CC','nodeTextColor':'#000000'}}}%%
 flowchart TB
     TURN["agent turn<br/>ClaudeWorker &middot; QThread"]:::panel
     TURN -->|"tool_use block"| BR{"local MCP endpoint<br/>reachable?"}:::obs
