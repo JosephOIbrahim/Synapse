@@ -7,6 +7,15 @@ Absent symbols auto-quarantine: the catalog probe (§2) and the D.5 handler may 
 `confirmed`. The deposit is check_cook_api_confirmed's OWN authority — it is NEVER spliced
 into h21_symbol_table.json (that table's blake2b + dir()-membership invariant are untouchable).
 
+Mile 2 (resource-aware-cache Phase 0, R-CACHE-1 / adjudication c2/c4/c5): two symbols added
+to CANDIDATES — `hou.OpNode.lastCookTime` and `hou.Geometry.intrinsicValue`. Both are already
+confirmed present-as-NAMES on the committed h22_symbol_table.json (dir()-membership only —
+units, kwargs, and intrinsic-string validity are NOT decided by that table and stay V0 until
+a live 22.0.400 hython run separately confirms them; see tests/test_cache_h22_contract.py).
+This file's schema/output-artifact convention is otherwise unchanged — output filename already
+parameterizes by build via hou.applicationVersionString(), so re-running on 22.0.400 deposits
+verified_cook_api_22.0.400.json next to the 21.0.671 file with zero further edits here.
+
 Artifact contract (must match check_cook_api_confirmed byte-for-byte):
   {schema: "cook_api/v1", houdini_version, confirmed: [...], absent: [...], blake2b}
   blake2b = hashlib.blake2b(json.dumps({"confirmed":..., "absent":...}, sort_keys=True,
@@ -56,6 +65,10 @@ CANDIDATES = [
     "hou.expressionGlobals",
     "hou.Parm.expressionLanguage",
     "hou.Parm.evalAsString",
+    # Mile 2 (resource-aware-cache Phase 0): cache-policy host-adapter surface.
+    # Name-membership only — see the docstring above for what this does NOT decide.
+    "hou.OpNode.lastCookTime",
+    "hou.Geometry.intrinsicValue",
 ]
 
 
