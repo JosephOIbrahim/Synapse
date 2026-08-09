@@ -49,6 +49,18 @@ def test_version_single_sourced_and_docs_conform():
         "(DOC-1: update the banner -- or this test if the version changed)."
     )
 
+    # README banner -- the live v5.42.0 leg of the three-way split
+    # (SYN-NEXT-001 adjudication row 1; W0 closes it). Anchored to the banner
+    # line so a historical mention elsewhere in README cannot satisfy it.
+    readme = _read("README.md")
+    assert re.search(
+        rf"^> v{re.escape(canonical)} \u00b7 Houdini", readme, re.M
+    ), (
+        f"README.md banner does not state v{canonical} "
+        "(the '> vX.Y.Z \u00b7 Houdini ...' line is a live surface, not a "
+        "historical receipt; scripts/sync_version.py --write sets it)."
+    )
+
 
 # ─────────────────────────────────────────────────────────────────
 # The drift this file could NOT see: the tree vs the PUBLISHED tag
