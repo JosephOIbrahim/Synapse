@@ -1,0 +1,46 @@
+{
+  "schema": "cache_h22_insert_assay/v1",
+  "houdini_version": "22.0.400",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "command": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe tests/assay_h22_cache_insert.py --out harness/notes/cache_h22_insert_assay_22.0.400.json",
+  "exit_status": "pass",
+  "items": [
+    {
+      "item": 1,
+      "description": "build a real SOP chain (source -> downstream) in a disposable container",
+      "status": "pass",
+      "detail": "container='/obj/cache_h22_insert_assay' source='/obj/cache_h22_insert_assay/src_box' downstream='/obj/cache_h22_insert_assay/DOWNSTREAM_OUT' children=['DOWNSTREAM_OUT', 'src_box']"
+    },
+    {
+      "item": 2,
+      "description": "issue a decision via the real assess_cache_core; verify it is recorded",
+      "status": "pass",
+      "detail": "decision_id='d342ac4982b44309bf021185685371e7' recorded; strategy_id='sop_filecache_solver_result_v1' verdict='measure_first'"
+    },
+    {
+      "item": 3,
+      "description": "insert+wire a live File Cache via insert_cache_core (source->cache->downstream)",
+      "status": "pass",
+      "detail": "created='/obj/cache_h22_insert_assay/src_box_cache' type='filecache::2.0' source->cache->downstream wired; rewired=[{'node': '/obj/cache_h22_insert_assay/DOWNSTREAM_OUT', 'input_index': 0}]"
+    },
+    {
+      "item": 4,
+      "description": "verify File Cache parms set to expected values (Simulation/Time Dependent/format)",
+      "status": "pass",
+      "detail": "parms={'filemethod': 'explicit', 'filetype': '.bgeo.sc', 'trange': 'normal', 'cachesim': 1, 'timedependent': 1, 'file_raw': '$HIP/cache/src_box/src_box.$F4.bgeo.sc'} (solver strategy: bgeo.sc + Simulation ON + Time Dependent ON + Frame Range)"
+    },
+    {
+      "item": 5,
+      "description": "assert no cache files exist on disk (insert never writes/cooks)",
+      "status": "pass",
+      "detail": "resolved file='C:/Users/User/Synapse/.claude/worktrees/cache-ins/cache/src_box/src_box.0001.bgeo.sc'; cache dir does not exist (nothing written), cooked=False path_written=False"
+    },
+    {
+      "item": 6,
+      "description": "hou.undos.performUndo() fully restores the graph (cache gone, wiring back)",
+      "status": "pass",
+      "detail": "undo label=['SYNAPSE insert_cache']; after undo children=['DOWNSTREAM_OUT', 'src_box'] (== pre-insert ['DOWNSTREAM_OUT', 'src_box']); cache node gone; downstream re-wired to source -- fully reversed by one performUndo"
+    }
+  ],
+  "blake2b": "fe3d33bb4193bbed7f4ec9c128a1e054"
+}

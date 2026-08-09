@@ -145,6 +145,11 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     "synapse_evolve_memory": "evolve_memory",
     "synapse_sleep_pass": "sleep_pass",
     "synapse_project_setup": "set_parameter",
+    # R-CACHE-1 insert slice -- undoable graph mutation. Maps to the "insert_cache" op which is
+    # intentionally NOT in shared OPERATION_GATES, so Operation.gate_level resolves to the
+    # REVIEW default (shared/bridge.py:767). NOT read-only, NOT disk-writing (the File Cache is
+    # never cooked/saved here). Pinned by tests/test_cache_insert_gates.py.
+    "synapse_insert_cache": "insert_cache",
     # Undo/redo
     "houdini_undo": "set_parameter",
     "houdini_redo": "set_parameter",

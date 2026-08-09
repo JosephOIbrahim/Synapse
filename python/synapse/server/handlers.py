@@ -783,6 +783,12 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         # Resource-aware cache advisor (Mile 4, Phase 1, R-CACHE-1) -- read-only,
         # feature-flagged off by default (SYNAPSE_CACHE_ADVISOR_ENABLED).
         reg.register("assess_cache", self._handle_assess_cache)
+        # Resource-aware cache INSERTION (R-CACHE-1 Phase 2, buildable half) -- an undoable
+        # graph mutation (create+wire a File Cache SOP; sets the path parm, writes no disk).
+        # Feature-flagged off by default (shares SYNAPSE_CACHE_ADVISOR_ENABLED). NOT read-only:
+        # deliberately absent from _READ_ONLY_COMMANDS so it takes the C5 mutation lock and a
+        # live PATH-QUALIFIED IntegrityBlock envelope like any other mutation.
+        reg.register("insert_cache", self._handle_insert_cache)
 
         # Batch
         reg.register("batch_commands", self._handle_batch_commands)

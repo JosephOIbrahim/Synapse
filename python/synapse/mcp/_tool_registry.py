@@ -1007,6 +1007,30 @@ TOOL_DEFS: list[tuple] = [
      }, "required": []},
      True, False, True),
 
+    # -- Resource-aware cache INSERTION (R-CACHE-1 Phase 2, buildable half) --
+    # Undoable GRAPH MUTATION: creates + wires a File Cache SOP between the assessed source
+    # node and its downstream consumers, inside one hou.undos.group. Sets the output-path
+    # PARAMETER; writes NO disk, never cooks/saves the File Cache. Feature-flagged off by
+    # default (shares SYNAPSE_CACHE_ADVISOR_ENABLED). readOnlyHint=False (mutation),
+    # destructiveHint=False (undoable, non-destructive), idempotentHint=False (each call
+    # creates a new node).
+    ("synapse_insert_cache", "insert_cache", _identity,
+     "Insert and wire a File Cache SOP at the boundary recommended by synapse_assess_cache "
+     "(Phase 2 insertion, undoable). Consumes the decision_id returned by synapse_assess_cache, "
+     "re-resolves the strategy, and inserts the File Cache between the source node and its "
+     "downstream consumers inside a single Houdini undo group -- one Ctrl+Z reverses it. The "
+     "File Cache's output-path parameter is SET but NOTHING is written to disk and the node is "
+     "never cooked or saved (baking is a separate, out-of-scope action). The node type and "
+     "parameters are derived solely from the registry-resolved strategy; a free-text "
+     "explanation cannot alter them. Rejects unknown, expired, drifted, or unsupported "
+     "decisions with a clean structured error and no mutation. Feature-flagged off by default; "
+     "set SYNAPSE_CACHE_ADVISOR_ENABLED=1 to enable.",
+     {"type": "object", "properties": {
+         "decision_id": {"type": "string", "description": "The decision_id returned by synapse_assess_cache for the node to cache."},
+         "explanation": {"type": "string", "description": "Optional free-text note recorded in the receipt/audit trail only. Does NOT affect the boundary plan -- parameters come solely from the registry-resolved strategy."},
+     }, "required": ["decision_id"]},
+     False, False, False),
+
     # -- Network Explain --
     ("houdini_network_explain", "network_explain", _network_explain_payload,
      "Walk a Houdini node network and produce a structured explanation: data flow order, "

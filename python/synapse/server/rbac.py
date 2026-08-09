@@ -54,6 +54,9 @@ _VIEWER_COMMANDS: FrozenSet[str] = frozenset({
 _ARTIST_COMMANDS: FrozenSet[str] = frozenset({
     "create_node", "delete_node", "connect_nodes",
     "set_parm", "set_keyframe",
+    # R-CACHE-1 insert slice -- an undoable graph mutation (creates + wires a File Cache SOP).
+    # Mutation tier, NOT viewer (assess_cache stays viewer/read-only above).
+    "insert_cache",
     "execute_python", "execute_vex",
     "create_usd_prim", "modify_usd_prim", "set_usd_attribute",
     "reference_usd",

@@ -1,16 +1,26 @@
-"""python/synapse/server/handlers_cache.py -- Mile 4 (resource-aware-cache Phase 1), R-CACHE-1.
+"""python/synapse/server/handlers_cache.py -- Mile 4 (Phase 1) + insert slice (Phase 2, buildable half), R-CACHE-1.
 
 Wires the Phase 0 pure policy package (``synapse.cache_policy``) and passive host probe
-(``host/cache_host_probe.py``) into a single read-only, feature-flagged MCP tool:
-``synapse_assess_cache``. Authorized scope: ruling R-CACHE-1
-(docs/reviews/cache-adjudication-ruling.md, Joe/CTO, 2026-08-09) item 4 (the d6 cure --
-this handler + its TOOL_DEFS/bridge_adapter registration IS the "live caller" the
-adjudication required before any cache_policy module could ship).
+(``host/cache_host_probe.py``) into two feature-flagged MCP tools:
+  * ``synapse_assess_cache`` -- Phase 1, read-only advisor (the d6 cure / live caller);
+  * ``synapse_insert_cache`` -- Phase 2 INSERTION ONLY, an undoable graph mutation.
 
-SCOPE (binding, this mile): read-only advisor ONLY. Nothing in this module's call graph
-creates a node, writes a file, or mutates the scene -- there is no ``synapse_insert_cache``
-or ``synapse_bake_cache`` here; Phase 2 is out of scope and additionally REJECTed at HEAD
-(adjudication e3: no cancel API for an in-flight cook on this build).
+Authorized scope: ruling R-CACHE-1 (docs/reviews/cache-adjudication-ruling.md, Joe/CTO,
+2026-08-09) item 4 for assess; the insert slice is authorized by that ruling's Phase 2
+"controlled insertion" clause + explicit team-lead delegation for the LOCAL build of the
+one buildable Phase 2 piece. This handler + its TOOL_DEFS/bridge_adapter registration IS
+the required live caller for both tools.
+
+SCOPE (binding, this mile):
+  * assess: read-only. Nothing in ``assess_cache_core``'s call graph creates a node, writes
+    a file, or mutates the scene.
+  * insert: an undoable GRAPH mutation ONLY -- create the File Cache SOP, wire it between the
+    source and its downstream consumers, and SET (never write) its output-path parameter, all
+    inside a single ``hou.undos.group``. It NEVER writes a byte to disk, NEVER cooks or saves
+    the File Cache, and creates NO manifest. Phase 2's BAKE half (the disk write) is REJECTed
+    at HEAD (adjudication e3: no cancel API for an in-flight cook on this build) and is NOT
+    scaffolded here -- there is no ``synapse_bake_cache``, no manifest writer/reader, and no
+    ``.cook()``/``.save()`` on the File Cache anywhere in this module.
 
 Feature flag: ``SYNAPSE_CACHE_ADVISOR_ENABLED`` (see ``advisor_enabled()``), OFF by
 default. When disabled, ``_handle_assess_cache`` returns a static "disabled" advice card
@@ -46,10 +56,12 @@ constraint (never guess a supported context).
 """
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
+import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.errors import HoudiniUnavailableError, NodeNotFoundError, SynapseUserError
@@ -105,6 +117,47 @@ _DEPENDENCY_ERROR = (
 # persisted. A durable version is a Memory-plane decision deferred beyond this mile
 # (adjudication b12/d6: no new persistence authority here).
 _LAST_OBSERVATION_STORE = _chp.LastObservationStore() if CACHE_HOST_PROBE_AVAILABLE else None
+
+
+# --------------------------------------------------------------------------- issued-decision store (insert slice)
+
+#: How long an issued ``synapse_assess_cache`` decision stays insertable before
+#: ``synapse_insert_cache`` rejects it as ``expired``. Monotonic-clock based
+#: (``time.monotonic()``), so it is immune to wall-clock adjustments. 15 minutes:
+#: long enough for an artist to read an advice card and act on it, short enough that
+#: a stale decision (scene edited, node deleted, upstream changed) is not silently
+#: acted on. This is a per-call FRESHNESS guard, not the §12 upstream-signature
+#: validity check (that is a Phase 2 bake concern, out of scope here).
+INSERT_CACHE_DECISION_TTL_SECONDS = 900.0
+
+
+class IssuedDecisionStore:
+    """In-memory, process-lifetime record of decisions issued by
+    ``synapse_assess_cache``, keyed by ``decision_id``. Mirrors
+    ``host/cache_host_probe.LastObservationStore``'s shape and its posture exactly:
+    NOT a new persistence authority (adjudication b12/d6 -- no new durable store is
+    authorized in this wave), never written to disk, never survives the process.
+    ``synapse_insert_cache`` consumes an entry here to turn a read-only recommendation
+    into an authorized graph mutation; a durable version is a Memory-plane decision for
+    a later mile.
+
+    Recording is a pure dict write -- it does NOT make ``assess`` a mutation: assess
+    still touches no scene and writes no disk.
+    """
+
+    def __init__(self) -> None:
+        self._by_id: Dict[str, Dict[str, Any]] = {}
+
+    def record(self, decision_id: str, entry: Dict[str, Any]) -> None:
+        self._by_id[decision_id] = entry
+
+    def lookup(self, decision_id: str) -> Optional[Dict[str, Any]]:
+        return self._by_id.get(decision_id)
+
+
+#: Process-lifetime issued-decision store shared by assess (writer) and insert
+#: (reader). In-memory only (same posture as ``_LAST_OBSERVATION_STORE``).
+_ISSUED_DECISION_STORE = IssuedDecisionStore()
 
 
 # --------------------------------------------------------------------------- feature flag
@@ -276,6 +329,7 @@ def assess_cache_core(
     data_class: Optional[str] = None,
     policy: Optional["CachePolicy"] = None,
     last_observation_store: Optional[Any] = None,
+    issued_decision_store: Optional[Any] = None,
     evidence_overrides: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Passive observation -> deterministic policy -> CacheDecision -> advice card.
@@ -339,6 +393,33 @@ def assess_cache_core(
     resolved_node_path = observation["node_path"]
     card = _render_advice_card(decision, node_path=resolved_node_path)
 
+    # Record the issued decision so synapse_insert_cache can consume it later
+    # (insert slice, R-CACHE-1 Phase 2). PURE in-memory write -- assess stays
+    # read-only (no disk, no scene mutation). Recorded for EVERY issued decision;
+    # insert re-validates (freshness TTL + strategy-drift + supported context) and
+    # rejects anything not insertable. Never changes assess's returned dict shape.
+    store_issued = (
+        issued_decision_store if issued_decision_store is not None
+        else _ISSUED_DECISION_STORE
+    )
+    time_dependent_observed = None
+    td_ev = observation.get("time_dependent")
+    if isinstance(td_ev, dict):
+        time_dependent_observed = td_ev.get("value")
+    store_issued.record(decision.decision_id, {
+        "strategy_id": strategy.strategy_id,
+        "strategy_supported": strategy.supported,
+        "decision": decision,
+        "evidence_digest": decision.evidence_digest,
+        "descriptor": descriptor,
+        "node_path": resolved_node_path,
+        "node_type": observation["node_type"],
+        "frame_range": frame_range,
+        "proposed_path": decision.proposed_path,
+        "time_dependent_observed": time_dependent_observed,
+        "issued_monotonic": time.monotonic(),
+    })
+
     return {
         "schema": "synapse.cache_assessment_response/v1",
         "status": "ok",
@@ -353,6 +434,366 @@ def assess_cache_core(
         "observation_status": observation["observation_status"],
         "warnings": list(observation.get("warnings", [])),
         "message": card,
+    }
+
+
+# --------------------------------------------------------------------------- insert slice: boundary plan (server-side)
+
+# Strategy_id -> deterministic File Cache SOP parameter plan. This map is the ONE place a
+# strategy becomes concrete Houdini parm names/values -- it lives SERVER-SIDE, never in
+# cache_policy (stdlib-only, must name no Houdini parms; blueprint §13.2 + strategies.py
+# header). Only SOP strategies are supported this slice.
+#
+# Every parm name below was VERIFIED PRESENT on the live ``filecache`` SOP, H22.0.400
+# (hython dir()/parmTemplate probe, 2026-08-09) -- NOT guessed from the blueprint's V0 list:
+#   file          (String, "Geometry File")       -- the output path parameter
+#   filemethod    (Menu,   "File Path")           -- constructed | EXPLICIT (author `file` directly)
+#   filetype      (Menu,   "File Type")           -- token ".bgeo.sc" | ".vdb" (the dotted ext IS the token)
+#   trange        (Menu,   "Evaluate As")         -- "off" (single) | "normal" (frame range)
+#   timedependent (Toggle, "Time Dependent Cache")
+#   cachesim      (Toggle, "Simulation")          -- ON = sequential state; OFF = frames independent
+# ``savetodisk`` from the blueprint's V0 list is a PHANTOM on this build (absent) and is never
+# emitted. Any parm absent at insert time is skipped defensively with a receipt warning, never
+# a crash (File Cache parm names remain build-sensitive; probe-truth over pinned constants).
+
+_FROM_OBSERVATION = object()  # sentinel: timedependent taken from stored observed evidence, not a constant
+
+_INSERT_STRATEGY_PLAN: Dict[str, Dict[str, Any]] = {
+    # SOP particle/mesh geometry: .bgeo.sc, Time Dependent per animated output, Simulation OFF.
+    "sop_filecache_geometry_v1": {"filetype": ".bgeo.sc", "cachesim": 0, "timedependent": _FROM_OBSERVATION},
+    # SOP solver/result: .bgeo.sc, Time Dependent ON, Simulation ON (sequential state).
+    "sop_filecache_solver_result_v1": {"filetype": ".bgeo.sc", "cachesim": 1, "timedependent": 1},
+    # Independent procedural frames: .bgeo.sc, Time Dependent ON, Simulation OFF (parallelizable).
+    "sop_filecache_independent_frames_v1": {"filetype": ".bgeo.sc", "cachesim": 0, "timedependent": 1},
+    # SOP VDB-only output: .vdb, Time Dependent per output.
+    "sop_filecache_vdb_v1": {"filetype": ".vdb", "cachesim": 0, "timedependent": _FROM_OBSERVATION},
+}
+
+FILECACHE_NODE_TYPE = "filecache"  # verified present, H22.0.400 (probe 2026-08-09)
+
+
+def resolve_boundary_plan(
+    strategy_id: str,
+    *,
+    time_dependent_observed: Optional[bool] = None,
+    frame_range: Optional[tuple] = None,
+) -> Optional[Dict[str, Any]]:
+    """Strategy_id -> a deterministic File Cache boundary plan (node type + ordered strategy
+    parms). Returns ``None`` for any strategy_id without a supported SOP plan.
+
+    DETERMINISM / no prose channel (gate test 3): this function's ONLY inputs are the
+    registry-resolved ``strategy_id`` plus STRUCTURED stored evidence (observed time-dependence,
+    frame range). It has NO free-text/explanation parameter -- an LLM-authored explanation cannot
+    reach it, so it cannot alter the node type or the parm set. ``timedependent`` for the
+    geometry/vdb strategies is "per animated output": taken from the stored OBSERVED
+    time-dependence, and left at the node default when that was unmeasured (binding constraint
+    #3: unmeasured is UNKNOWN, never a fabricated value).
+    """
+    spec = _INSERT_STRATEGY_PLAN.get(strategy_id)
+    if spec is None:
+        return None
+    parms: List[Dict[str, Any]] = [
+        {"name": "filetype", "value": spec["filetype"], "meaning": f"File Type = {spec['filetype']}"},
+        {"name": "cachesim", "value": spec["cachesim"],
+         "meaning": ("Simulation ON (sequential state)" if spec["cachesim"]
+                     else "Simulation OFF (frames independent)")},
+    ]
+    td = spec["timedependent"]
+    if td is _FROM_OBSERVATION:
+        if time_dependent_observed is True:
+            parms.append({"name": "timedependent", "value": 1,
+                          "meaning": "Time Dependent ON (observed animated output)"})
+        elif time_dependent_observed is False:
+            parms.append({"name": "timedependent", "value": 0,
+                          "meaning": "Time Dependent OFF (observed static output)"})
+        else:
+            parms.append({"name": "timedependent", "value": None, "set": False,
+                          "meaning": "Time Dependent left at node default (time-dependence unmeasured)"})
+    else:
+        parms.append({"name": "timedependent", "value": td,
+                      "meaning": "Time Dependent ON per strategy"})
+    if frame_range is not None and len(frame_range) >= 2:
+        start, end = frame_range[0], frame_range[1]
+        if isinstance(start, (int, float)) and isinstance(end, (int, float)):
+            if end > start:
+                parms.append({"name": "trange", "value": "normal", "meaning": "Evaluate As = Frame Range"})
+            elif end == start:
+                parms.append({"name": "trange", "value": "off", "meaning": "Evaluate As = Single Frame"})
+    return {
+        "node_type": FILECACHE_NODE_TYPE,
+        "strategy_id": strategy_id,
+        "format": spec["filetype"],
+        "parms": parms,
+    }
+
+
+# --------------------------------------------------------------------------- insert slice: mutation core
+
+_INSERT_RESPONSE_SCHEMA = "synapse.cache_insert_response/v1"
+
+_INSERT_DISABLED_MESSAGE = (
+    "Cache insertion is disabled (feature-flagged off by default).\n"
+    "Set SYNAPSE_CACHE_ADVISOR_ENABLED=1 to enable synapse_insert_cache.\n"
+    "No node was created and the scene was not modified."
+)
+
+
+def _insert_reject(decision_id: str, reason: str, detail: str) -> Dict[str, Any]:
+    """Clean structured rejection -- NEVER a partial mutation. ``reason`` is a stable slug
+    (mismatched | expired | strategy_drift | unsupported | source_missing); ``detail`` explains."""
+    return {
+        "schema": _INSERT_RESPONSE_SCHEMA,
+        "status": "rejected",
+        "reason": reason,
+        "decision_id": decision_id,
+        "message": detail,
+    }
+
+
+def _node_path(node: Any) -> str:
+    try:
+        return node.path()
+    except Exception:
+        return "unknown"
+
+
+def _node_type_name(node: Any) -> str:
+    try:
+        return node.type().name()
+    except Exception:
+        return "unknown"
+
+
+def _node_name(node: Any) -> str:
+    try:
+        return node.name()
+    except Exception:
+        p = _node_path(node)
+        return p.rsplit("/", 1)[-1] if "/" in p else p
+
+
+def _is_real_path(value: Any) -> bool:
+    return isinstance(value, str) and value.strip() != "" and value.strip().lower() != "unknown"
+
+
+def _set_parm_defensive(node, name, value, meaning, parameter_summary, warnings):
+    """Set one parm IF it exists on this build; otherwise record a skipped-absent entry +
+    warning (never crash). File Cache parm names are build-sensitive -- a phantom name degrades
+    to a warning, never a failure."""
+    parm = None
+    try:
+        parm = node.parm(name)
+    except Exception:
+        parm = None
+    if parm is None:
+        parameter_summary.append({"name": name, "value": value, "applied": False,
+                                  "reason": "parm_absent", "meaning": meaning})
+        warnings.append(f"filecache parm {name!r} absent on this build -- skipped (not set)")
+        return
+    try:
+        parm.set(value)
+    except Exception as e:  # noqa: BLE001
+        parameter_summary.append({"name": name, "value": value, "applied": False,
+                                  "reason": f"set_raised:{type(e).__name__}", "meaning": meaning})
+        warnings.append(f"filecache parm {name!r} .set({value!r}) raised {type(e).__name__}: {e}")
+        return
+    parameter_summary.append({"name": name, "value": value, "applied": True, "meaning": meaning})
+
+
+def _render_insert_receipt_card(strategy_id, created_path, source_path, path_value,
+                                parameter_summary, rewired, warnings) -> str:
+    lines = [
+        "CACHE BOUNDARY INSERTED (undoable -- one Ctrl+Z reverses it)",
+        "",
+        f"Strategy: {strategy_id}",
+        f"Source:   {source_path}",
+        f"Created:  {created_path}",
+        f"Output path parameter (SET, not written): {path_value}",
+    ]
+    if rewired:
+        lines.append("")
+        lines.append("Downstream rewired to the cache node:")
+        lines.extend(f"- {r['node']} (input {r['input_index']})" for r in rewired)
+    applied = [p for p in parameter_summary if p.get("applied")]
+    skipped = [p for p in parameter_summary if not p.get("applied")]
+    if applied:
+        lines.append("")
+        lines.append("Parameters set:")
+        lines.extend(f"- {p['name']} = {p['value']}  ({p['meaning']})" for p in applied)
+    if skipped:
+        lines.append("")
+        lines.append("Parameters not set:")
+        lines.extend(f"- {p['name']}: {p.get('reason', 'skipped')} ({p['meaning']})" for p in skipped)
+    if warnings:
+        lines.append("")
+        lines.append("Warnings:")
+        lines.extend(f"- {w}" for w in warnings)
+    lines.append("")
+    lines.append("No bytes were written to disk. Baking the cache (writing frames) is a separate, "
+                 "out-of-scope action; nothing here cooked or saved the File Cache.")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def insert_cache_core(
+    *,
+    decision_id: str,
+    resolve_source_node: Callable[[], Any],
+    store: Optional[Any] = None,
+    explanation: Optional[str] = None,
+    undo_context_factory: Optional[Callable[[], Any]] = None,
+    cache_node_name: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Consume an issued ``synapse_assess_cache`` decision and insert+wire a File Cache SOP
+    between the assessed source node and its downstream consumers, inside a single undo block.
+
+    Contract (blueprint §13.3 + insert slice):
+      * Rejects unknown/mismatched, expired (TTL), strategy-drifted, or unsupported decisions
+        with a CLEAN structured error and ZERO mutation -- ``resolve_source_node`` is not even
+        called on a rejection, so no node is touched.
+      * The boundary plan (node type + parms) is derived DETERMINISTICALLY from the STORED
+        decision's registry-resolved strategy via ``resolve_boundary_plan`` -- never from
+        ``explanation`` (accepted for the receipt/audit trail only; it cannot alter the plan).
+      * Sets the File Cache output-path PARAMETER (``file`` + ``filemethod=explicit``); NOTHING
+        is written to disk and the node is NEVER cooked or saved.
+      * Runs the create+wire+set inside ``undo_context_factory()`` (``hou.undos.group`` on the
+        live path) so one Ctrl+Z reverses the whole op.
+
+    ``resolve_source_node`` is a zero-arg callable so the live caller can marshal ``hou.node``
+    onto the main thread; tests pass a fake-node factory. ``undo_context_factory`` returns a
+    fresh context manager only on the go-path (no empty undo group is created on a rejection).
+    """
+    store = store if store is not None else _ISSUED_DECISION_STORE
+
+    entry = store.lookup(decision_id)
+    if entry is None:
+        return _insert_reject(
+            decision_id, "mismatched",
+            f"decision_id {decision_id!r} is not in the issued-decision store -- it was never "
+            "issued by synapse_assess_cache in this process, or belongs to a different session. "
+            "Run synapse_assess_cache first and use the decision_id it returns.")
+
+    age = time.monotonic() - entry.get("issued_monotonic", 0.0)
+    if age > INSERT_CACHE_DECISION_TTL_SECONDS:
+        return _insert_reject(
+            decision_id, "expired",
+            f"decision {decision_id} was issued {age:.0f}s ago, past the "
+            f"{INSERT_CACHE_DECISION_TTL_SECONDS:.0f}s freshness window -- the scene may have "
+            "changed. Re-run synapse_assess_cache for a fresh decision.")
+
+    descriptor = entry.get("descriptor")
+    stored_strategy_id = entry.get("strategy_id")
+    strategy = resolve_strategy(descriptor)
+    if strategy.strategy_id != stored_strategy_id:
+        return _insert_reject(
+            decision_id, "strategy_drift",
+            f"strategy re-resolved to {strategy.strategy_id!r} but the issued decision was for "
+            f"{stored_strategy_id!r} -- the strategy registry or node classification changed "
+            "since assessment. Re-run synapse_assess_cache.")
+
+    if not strategy.supported or strategy.strategy_id not in _INSERT_STRATEGY_PLAN:
+        return _insert_reject(
+            decision_id, "unsupported",
+            f"strategy {strategy.strategy_id!r} has no supported File Cache insertion boundary in "
+            "this slice (only SOP geometry / solver-result / independent-frames / VDB strategies "
+            "are insertable). Refusing to guess a boundary.")
+
+    plan = resolve_boundary_plan(
+        strategy.strategy_id,
+        time_dependent_observed=entry.get("time_dependent_observed"),
+        frame_range=entry.get("frame_range"),
+    )
+    fmt = plan["format"]
+
+    # --- go-path: resolve the source node (first hou touch) and mutate under undo ---
+    node = resolve_source_node()
+    if node is None:
+        return _insert_reject(
+            decision_id, "source_missing",
+            f"source node {entry.get('node_path')!r} no longer exists -- it was deleted or renamed "
+            "since assessment. Re-run synapse_assess_cache.")
+
+    source_name = _node_name(node)
+    proposed = entry.get("proposed_path")
+    path_value = proposed if _is_real_path(proposed) else \
+        f"$HIP/cache/{source_name}/{source_name}.$F4{fmt}"
+
+    parameter_summary: List[Dict[str, Any]] = []
+    warnings: List[str] = []
+    ctx = undo_context_factory() if undo_context_factory is not None else contextlib.nullcontext()
+
+    with ctx:
+        parent = node.parent()
+        # Capture downstream consumers BEFORE inserting, so we rewire exactly the old edges.
+        downstream: List = []
+        try:
+            for c in node.outputConnections():
+                downstream.append((c.outputNode(), c.inputIndex()))
+        except Exception as e:  # noqa: BLE001
+            warnings.append(f"outputConnections() read failed: {type(e).__name__}: {e}")
+
+        name = cache_node_name or f"{source_name}_cache"
+        cache_node = parent.createNode(plan["node_type"], name)
+        cache_node.setInput(0, node)
+
+        rewired: List[Dict[str, Any]] = []
+        for dnode, in_idx in downstream:
+            try:
+                dnode.setInput(in_idx, cache_node, 0)
+                rewired.append({"node": _node_path(dnode), "input_index": in_idx})
+            except Exception as e:  # noqa: BLE001
+                warnings.append(f"rewire of {_node_path(dnode)} input {in_idx} failed: "
+                                f"{type(e).__name__}: {e}")
+
+        try:
+            cache_node.moveToGoodPosition()
+        except Exception:
+            pass
+
+        # Path parameter: SET (never write). filemethod=explicit makes `file` authoritative.
+        _set_parm_defensive(cache_node, "filemethod", "explicit",
+                            "File Path = Explicit (author `file` directly)",
+                            parameter_summary, warnings)
+        _set_parm_defensive(cache_node, "file", path_value,
+                            "Geometry File output path (SET only -- never written to disk)",
+                            parameter_summary, warnings)
+
+        # Strategy-derived parms (deterministic; explanation cannot reach these).
+        for pm in plan["parms"]:
+            if pm.get("set") is False or pm["value"] is None:
+                parameter_summary.append({"name": pm["name"], "value": None, "applied": False,
+                                          "reason": "unmeasured_left_default", "meaning": pm["meaning"]})
+                continue
+            _set_parm_defensive(cache_node, pm["name"], pm["value"], pm["meaning"],
+                                parameter_summary, warnings)
+
+        created_path = _node_path(cache_node)
+        created_type = _node_type_name(cache_node)
+
+    return {
+        "schema": _INSERT_RESPONSE_SCHEMA,
+        "status": "ok",
+        "decision_id": decision_id,
+        "evidence_digest": entry.get("evidence_digest"),
+        "strategy_id": strategy.strategy_id,
+        "source_node_path": entry.get("node_path"),
+        "created_node_path": created_path,
+        "node_type": created_type,
+        "proposed_path": path_value,
+        "path_written": False,      # invariant: insert NEVER writes to disk
+        "cooked": False,            # invariant: the File Cache is never cooked/saved here
+        "undo_group": "wrapped",    # create+wire+set ran inside one undo group (this fn owns it)
+        "downstream_rewired": rewired,
+        "parameter_summary": parameter_summary,
+        "warnings": warnings,
+        "explanation_recorded": explanation,  # kept for the receipt/audit; DID NOT affect the plan
+        "reasoning": (
+            f"Inserted a File Cache boundary ({strategy.strategy_id}) after {entry.get('node_path')} "
+            f"and rewired {len(rewired)} downstream input(s); output-path parameter set to "
+            f"{path_value} (not written)."
+        ),
+        "message": _render_insert_receipt_card(
+            strategy.strategy_id, created_path, entry.get("node_path"),
+            path_value, parameter_summary, rewired, warnings),
     }
 
 
@@ -458,3 +899,48 @@ class CacheHandlerMixin:
             )
 
         return run_on_main(_observe_and_decide_on_main)
+
+    def _handle_insert_cache(self, payload: Dict) -> Dict:
+        """synapse_insert_cache -- an undoable GRAPH mutation. Feature-flagged off by default
+        (SYNAPSE_CACHE_ADVISOR_ENABLED, shared with assess). Consumes a ``decision_id`` issued by
+        synapse_assess_cache and inserts+wires a File Cache SOP between the assessed source node
+        and its downstream consumers, inside a single ``hou.undos.group`` (one Ctrl+Z reverses
+        it). It SETS the output-path parameter but NEVER writes a byte to disk and NEVER cooks or
+        saves the File Cache -- the bake half is out of scope (adjudication e3).
+
+        Main-thread hygiene: the whole op runs in one ``run_on_main`` closure. The undo group is
+        created via a factory inside ``insert_cache_core`` only on the go-path, so a rejection
+        (mismatched/expired/strategy-drift/unsupported) creates no undo group and touches no node.
+        """
+        if not advisor_enabled():
+            return {"status": "disabled", "message": _INSERT_DISABLED_MESSAGE}
+
+        if not HOU_AVAILABLE:
+            raise HoudiniUnavailableError()
+        if not (CACHE_HOST_PROBE_AVAILABLE and CACHE_POLICY_AVAILABLE):
+            raise RuntimeError(_DEPENDENCY_ERROR)
+
+        decision_id = resolve_param(payload, "decision_id")
+        # ``explanation`` is accepted for the receipt/audit trail ONLY -- it can never alter the
+        # structured boundary plan (that is derived solely from the stored decision's strategy).
+        explanation = resolve_param_with_default(payload, "explanation", None)
+
+        store = _ISSUED_DECISION_STORE
+        entry = store.lookup(decision_id)
+
+        from .main_thread import run_on_main
+
+        def _insert_on_main():
+            def _resolve():
+                node_path = entry.get("node_path") if entry else None
+                return hou.node(node_path) if node_path else None  # type: ignore[union-attr]
+
+            return insert_cache_core(
+                decision_id=decision_id,
+                resolve_source_node=_resolve,
+                store=store,
+                explanation=explanation,
+                undo_context_factory=lambda: hou.undos.group("SYNAPSE insert_cache"),  # type: ignore[union-attr]
+            )
+
+        return run_on_main(_insert_on_main)
