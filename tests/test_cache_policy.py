@@ -113,7 +113,11 @@ def test_decide_cache_handles_real_host_probe_unknown_shaped_machine_profile():
     import cache_host_probe as chp
 
     original_psutil_available = chp.PSUTIL_AVAILABLE
-    chp.PSUTIL_AVAILABLE = False  # force the stdlib-fallback / "unknown" shape
+    original_read_proc_meminfo = chp._read_proc_meminfo
+    chp.PSUTIL_AVAILABLE = False  # kill tier 2 (declared-optional psutil)
+    # Kill tier 1 too: on Linux CI /proc/meminfo delivers REAL bytes via the stdlib
+    # path, so the unknown shape must be FORCED on every platform, never hoped for.
+    chp._read_proc_meminfo = lambda warnings: (None, None)
     try:
         import os
         hip_backup = os.environ.pop("HIP", None)
@@ -124,6 +128,7 @@ def test_decide_cache_handles_real_host_probe_unknown_shaped_machine_profile():
                 os.environ["HIP"] = hip_backup
     finally:
         chp.PSUTIL_AVAILABLE = original_psutil_available
+        chp._read_proc_meminfo = original_read_proc_meminfo
 
     assert profile_dict["ram_available_bytes"] == "unknown", (
         "test setup assumption failed: expected the forced-unknown shape from "
