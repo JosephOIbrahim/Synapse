@@ -1376,6 +1376,28 @@ def get_memory_status(scene_dir: str, project_dir: str) -> Dict[str, Any]:
 # CORRUPTION RECOVERY
 # =============================================================================
 
+def _usd_schema_version() -> str:
+    """Schema version stamped into ``agent.usd`` -- owned by ``agent_state``.
+
+    ``validate_memory`` must compare a USD file against the constant that
+    AUTHORED it. ``agent_state.initialize_agent_usd`` writes
+    ``customLayerData['synapse:version'] = agent_state.SCHEMA_VERSION`` (2.0.0),
+    while this module's ``SCHEMA_VERSION`` (0.1.0) versions the MARKDOWN seeds.
+    Comparing a freshly-seeded, healthy ``agent.usd`` against the markdown
+    constant reported a spurious "Schema version mismatch (file=2.0.0,
+    current=0.1.0)". Resolve the USD version from its owner instead.
+    """
+    try:
+        from .agent_state import SCHEMA_VERSION as _v
+        return _v
+    except Exception:  # noqa: BLE001 -- top-level load (pkgbootstrap) or no pxr
+        try:
+            from synapse.memory.agent_state import SCHEMA_VERSION as _v
+            return _v
+        except Exception:  # noqa: BLE001
+            return SCHEMA_VERSION
+
+
 def validate_memory(claude_dir: str) -> List[str]:
     """Validate memory files and return list of issues found."""
     issues: List[str] = []
@@ -1402,13 +1424,16 @@ def validate_memory(claude_dir: str) -> List[str]:
                 stage = Usd.Stage.Open(path)
                 if not stage.GetPrimAtPath("/SYNAPSE"):
                     issues.append(f"{name}: Missing /SYNAPSE root prim")
-                # Schema version check
+                # Schema version check -- USD files carry the agent_state
+                # schema version (they are authored by initialize_agent_usd),
+                # NOT the markdown SCHEMA_VERSION.
                 layer_data = stage.GetRootLayer().customLayerData
                 file_version = layer_data.get("synapse:version", "0.0.0")
-                if file_version != SCHEMA_VERSION:
+                usd_version = _usd_schema_version()
+                if file_version != usd_version:
                     issues.append(
                         f"{name}: Schema version mismatch "
-                        f"(file={file_version}, current={SCHEMA_VERSION})"
+                        f"(file={file_version}, current={usd_version})"
                     )
             except ImportError:
                 pass  # pxr not available, skip USD validation
