@@ -38,3 +38,22 @@ Re-stamp ritual: run `hython host/introspect_runtime.py` inside the target
 build → commit the table → scout's stamp check does the rest
 (`python/synapse/panel/gate_stamp.py`). Pin of record: `harness/state/drop.json`
 (human file-write, single-writer).
+
+
+## `lastCookTime()` cook-time contract — 2026-08-09 (observed, both contexts)
+
+`hou.OpNode.lastCookTime()` on 22.0.400, live-assayed same day from both sides:
+
+- **GUI session** (`hou.isUIAvailable()` true): returns **milliseconds**, wall-clock-accurate
+  to ~0.2%. Receipt: `harness/notes/cache_h22_gui_assay_22.0.400.json`
+  (wall 0.1714 s → raw 171.14; wall 0.1473 s → raw 147.17; run via `houdini -waitforui`).
+- **Headless hython**: returns **0.0 unconditionally** for real cooks — perfMon on or off
+  (wall 67–96 ms while `cookCount` increments normally). Receipt:
+  `harness/notes/cache_h22_contract_assay_22.0.400.json` item 3, held as a **declared
+  delta**: the assay expects 0.0 headless and fails loudly only if that behavior changes.
+
+Probe consequence (R-CACHE-1 / M3b): `host/cache_host_probe.py` converts ms→s exactly
+once, and classifies any non-positive reading that carries cook evidence as **UNKNOWN**
+with provenance `lastCookTime_unreported` — never a fabricated zero. Farm, test, and
+hbatch contexts therefore report UNKNOWN cook time by design; in-session GUI use is the
+verified measurement path.
