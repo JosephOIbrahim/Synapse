@@ -2,7 +2,7 @@
   "schema": "cache_h22_contract_assay/v1",
   "houdini_version": "22.0.400",
   "platform": "Windows-11-10.0.26200-SP0",
-  "command": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe tests/assay_h22_cache_contract.py",
+  "command": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe tests\\assay_h22_cache_contract.py",
   "exit_status": "pass",
   "items": [
     {
@@ -21,7 +21,7 @@
       "item": 3,
       "description": "verify lastCookTime() units with a known cook",
       "status": "pass",
-      "detail": "ui_available=False (headless): DECLARED DELTA (H22.0.400): lastCookTime()==0.0 for a real cook (wall_seconds=0.099009, cookCount 0->1) matches the original M3 finding recorded at commit ede8d1b8 (git history -- NOT this same artifact file, which this run overwrites; see the FAIL branch above for what a genuine contract change reports) -- EXPECTED, not a failure. Units evidence for the positive-value (GUI) path (milliseconds) lives in harness/notes/cache_h22_gui_assay_22.0.400.json (a headless run cannot self-prove units when the reading is unconditionally 0.0). Confirmed host/cache_host_probe.py's _evidence_last_cook_seconds classifies this exact reading as UNKNOWN with the 'lastCookTime_unreported' warning: last_cook_seconds={'value': None, 'unit': 'seconds', 'source': 'unknown', 'observed_at': '2026-08-09T19:29:13.789343+00:00', 'scope': 'node:/obj/cache_h22_assay/UNIT_CHECK_HEAVY', 'confidence': 'unknown'}, warnings=['lastCookTime_unreported: lastCookTime() resolved to 0.0 despite cookCount()=1 (>0) -- indistinguishable from an unreported cook time (see harness/notes/cache_h22_contract_assay_22.0.400.json item 3 for the observed headless case). \"Resolved to\", not \"returned\": this covers both a real non-positive return AND a lastCookTime() exception that safe_call already degraded to None -- a real exception is recorded as its own, separate warning entry in this same list, never folded into this one. Treating as UNKNOWN, never fabricating a measured 0.0-second cook.']. \"This exact reading\" is earned, not assumed: independent re-reads immediately before/after the probe call were both pre_probe_reread=0.0/post_probe_reread=0.0 (both 0.0) and the probe's own warnings carried no lastCookTime exception (no_exception_warning=True)."
+      "detail": "ui_available=False (headless): DECLARED DELTA (H22.0.400): lastCookTime()==0.0 for a real cook (wall_seconds=0.098833, cookCount 0->1) matches the original M3 finding recorded at commit ede8d1b8 (git history -- NOT this same artifact file, which this run overwrites; see the FAIL branch above for what a genuine contract change reports) -- EXPECTED, not a failure. Units evidence for the positive-value (GUI) path (milliseconds) lives in harness/notes/cache_h22_gui_assay_22.0.400.json (a headless run cannot self-prove units when the reading is unconditionally 0.0). Confirmed host/cache_host_probe.py's _evidence_last_cook_seconds classifies this exact reading as UNKNOWN with the 'lastCookTime_unreported' warning: last_cook_seconds={'value': None, 'unit': 'seconds', 'source': 'unknown', 'observed_at': '2026-08-09T19:55:14.173766+00:00', 'scope': 'node:/obj/cache_h22_assay/UNIT_CHECK_HEAVY', 'confidence': 'unknown'}, warnings=['lastCookTime_unreported: lastCookTime() resolved to 0.0 despite cookCount()=1 (>0) -- indistinguishable from an unreported cook time (see harness/notes/cache_h22_contract_assay_22.0.400.json item 3 for the observed headless case). \"Resolved to\", not \"returned\": this covers both a real non-positive return AND a lastCookTime() exception that safe_call already degraded to None -- a real exception is recorded as its own, separate warning entry in this same list, never folded into this one. Treating as UNKNOWN, never fabricating a measured 0.0-second cook.']. \"This exact reading\" is earned, not assumed: independent re-reads immediately before/after the probe call were both pre_probe_reread=0.0/post_probe_reread=0.0 (both 0.0) and the probe's own warnings carried no lastCookTime exception (no_exception_warning=True)."
     },
     {
       "item": 4,
@@ -48,5 +48,5 @@
       "detail": "cooked-node memoryusage=3716 (positive: OK); never-cooked node observation_status='dirty_not_forced' (expected dirty_not_forced/dirty_unknown -- geometry() never called)"
     }
   ],
-  "blake2b": "5367e11f2e638bd648603fc67b4dc184"
+  "blake2b": "c4229af9c0c5b33126c7ae035480b9ad"
 }
