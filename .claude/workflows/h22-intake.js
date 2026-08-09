@@ -5,17 +5,23 @@ export const meta = {
   phases: [{ title: 'Adjudicate' }, { title: 'Attack' }],
 }
 
-if (!args || !args.artifact || !args.slug) {
+// args arrives as a JSON STRING in this runtime (see synapse-harness memory) —
+// parse defensively so `artifact`/`slug` are never silently dropped.
+const A = (typeof args === 'string')
+  ? (() => { try { return JSON.parse(args) || {} } catch { return {} } })()
+  : (args || {})
+
+if (!A.artifact || !A.slug) {
   throw new Error('h22-intake requires args: { artifact: "<path or URL>", slug: "<kebab-name>" }')
 }
 
 const appendix = await agent(
-  `Run the §10 intake protocol on this artifact: ${args.artifact}\n` +
-  `Write the appendix to docs/intake/adjudication-${args.slug}.md. Your charter has the full protocol; ` +
+  `Run the §10 intake protocol on this artifact: ${A.artifact}\n` +
+  `Write the appendix to docs/intake/adjudication-${A.slug}.md. Your charter has the full protocol; ` +
   `non-negotiables: tier-label every claim, provenance is not evidence, hou./pdg./node-type claims are V0 ` +
   `regardless of letterhead, rigging inclusions are boundary-pressure events rejected without re-litigation, ` +
   `harvest into EXISTING gaps only, escalate (never execute) anything that smells like a version bump.`,
-  { agentType: 'h22-adjudicator', label: `adjudicate:${args.slug}`, phase: 'Adjudicate' }
+  { agentType: 'h22-adjudicator', label: `adjudicate:${A.slug}`, phase: 'Adjudicate' }
 )
 
 const ATTACK = {
@@ -28,17 +34,17 @@ const ATTACK = {
 }
 
 const attack = await agent(
-  `Attack docs/intake/adjudication-${args.slug}.md. You did not write it. Specifically: ` +
+  `Attack docs/intake/adjudication-${A.slug}.md. You did not write it. Specifically: ` +
   `(1) any ADOPT/ADAPT that violates a non-goal (§6) or lacks a tier label, ` +
   `(2) any REJECT that threw away a genuinely harvestable mechanism, ` +
   `(3) missed rigging/scope pressure, (4) any claim credited because of who said it (P1 violation), ` +
   `(5) confabulation leakage — cognitive-state-as-vector-similarity (NOT Moneta-as-memory: Moneta IS the memory backend), H22-has-launched. ` +
   `Adjudicator's summary: ${typeof appendix === 'string' ? appendix.slice(0, 3000) : JSON.stringify(appendix)}`,
-  { agentType: 'crucible', label: `attack:${args.slug}`, phase: 'Attack', schema: ATTACK }
+  { agentType: 'crucible', label: `attack:${A.slug}`, phase: 'Attack', schema: ATTACK }
 )
 
 return {
-  appendix: `docs/intake/adjudication-${args.slug}.md`,
+  appendix: `docs/intake/adjudication-${A.slug}.md`,
   adjudicatorSummary: appendix,
   attack,
   humanNext: attack && attack.verdict === 'RERUN'
