@@ -150,6 +150,8 @@ def question_label(kind: str, q: dict) -> str:
         return f"chain:{q['name']}"
     if kind == "fixture_hash":
         return f"fixture:{q['name']}"
+    if kind == "store_census":
+        return f"census:{len(q['roots'])}roots"
     return kind
 
 
@@ -184,6 +186,10 @@ def execute_question(kind: str, q: dict, probes, run: Run) -> None:
         elif kind == "fixture_hash":
             value = probes.probe_fixture_hash(q["path"], q["name"], q["repeat"])
             run.record(f"fixture_stage_hash:{q['name']}", value, kind, note)
+
+        elif kind == "store_census":
+            value = probes.probe_store_census(q["roots"], q["exclude_globs"])
+            run.record("memory_store_census", value, kind, note)
 
         else:  # unreachable post-validation; recorded, not raised
             run.record(f"unknown_kind:{kind}", {"error": "unknown question kind"}, kind)

@@ -8,6 +8,7 @@ Kinds:
     type_existence   {"name": str, "note": str?}
     parm_probe       {"type": str, "highlight": [str]?, "skip_if_missing": bool?}
     chain_hash       {"name": str, "chain": [str], "repeat": int?, "candidate": bool?}
+    store_census     {"roots": [{"path": str, "max_depth": int?}], "exclude_globs": [str]?}
 
 Validation normalizes defaults into each question dict so the runner
 never guesses. All errors carry phase/question coordinates.
@@ -18,7 +19,8 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-VALID_KINDS = {"type_discovery", "type_existence", "parm_probe", "chain_hash", "fixture_hash"}
+VALID_KINDS = {"type_discovery", "type_existence", "parm_probe", "chain_hash",
+               "fixture_hash", "store_census"}
 
 
 class MissionError(ValueError):
@@ -105,6 +107,29 @@ def _validate_question(kind: str, q: dict, where: str) -> dict:
         rep = q.setdefault("repeat", 2)
         if not isinstance(rep, int) or rep < 1:
             raise MissionError(f"{where}: 'repeat' must be an int >= 1")
+
+    elif kind == "store_census":
+        # A filesystem census question. Pure Python, zero hou — enumerates
+        # candidate memory-store directories under each root, classifies each,
+        # and computes cross-store key overlap. Deterministic: sorted output,
+        # no clock in the answer beyond the runner's per-entry timestamp.
+        roots = _req(q, "roots", list, where)
+        if not roots:
+            raise MissionError(f"{where}: 'roots' must be a non-empty list")
+        for ri, r in enumerate(roots):
+            rw = f"{where} roots[{ri}]"
+            if not isinstance(r, dict):
+                raise MissionError(f"{rw}: each root must be an object")
+            path = _req(r, "path", str, rw)
+            if not path.strip():
+                raise MissionError(f"{rw}: 'path' must be non-empty")
+            md = r.setdefault("max_depth", 6)
+            if not isinstance(md, int) or md < 0:
+                raise MissionError(f"{rw}: 'max_depth' must be an int >= 0")
+            r.setdefault("note", "")
+        ex = q.setdefault("exclude_globs", [])
+        if not isinstance(ex, list) or not all(isinstance(x, str) for x in ex):
+            raise MissionError(f"{where}: 'exclude_globs' must be a list of strings")
 
     return q
 
