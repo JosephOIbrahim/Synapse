@@ -129,11 +129,34 @@ def _assay_item_2(static_out) -> _AssayItem:
 # --------------------------------------------------------------------------- item 3: lastCookTime units
 
 def _assay_item_3(static_out) -> _AssayItem:
+    """§17.4 item 3, re-specified (Mile 3b, R-CACHE-1) as a DECLARED DELTA rather than a
+    hard failure on headless: the M3 live run (ede8d1b8,
+    harness/notes/cache_h22_contract_assay_22.0.400.json item 3) established that
+    lastCookTime() returns 0.0 UNCONDITIONALLY for real cooks on headless hython on this
+    build. That is now the EXPECTED headless reading, not a failure -- but only when BOTH
+    halves hold: (a) the 0.0 contract still holds on THIS live run, corroborated by
+    wall-clock + cookCount evidence of a real cook, AND (b)
+    host/cache_host_probe.py's observe_node_passively actually classifies that exact
+    reading as UNKNOWN with the 'lastCookTime_unreported' warning (host/cache_host_probe.py
+    _evidence_last_cook_seconds, Mile 3b). If lastCookTime() is EVER something other than
+    0.0 on a headless run, this item FAILS LOUDLY -- the headless contract itself would have
+    changed and must be re-litigated, never silently accepted either way.
+    """
     result = _AssayItem(3, "verify lastCookTime() units with a known cook")
+    # Computed FIRST and folded into every detail string below (pass or fail) so the
+    # written receipt itself proves which branch executed -- never inferred after the fact
+    # from prose wording alone.
+    ui_available = hou.isUIAvailable()
+    session = "GUI" if ui_available else "headless"
+
     static_out.cook(force=True)
     raw = static_out.lastCookTime()
     if raw is None:
-        _record_fail(result, "lastCookTime() returned None after an explicit forced cook")
+        _record_fail(
+            result,
+            f"ui_available={ui_available!r} ({session}): lastCookTime() returned None after "
+            f"an explicit forced cook",
+        )
         return result
     # A trivial box+null cook should complete in well under 10 real-world seconds. If the
     # raw value were milliseconds, `raw` for a sub-second cook would plausibly land in the
@@ -144,31 +167,156 @@ def _assay_item_3(static_out) -> _AssayItem:
     import time
     parent = static_out.parent()
     heavy = parent.createNode("grid", "UNIT_CHECK_HEAVY")  # trivial cooks land below timer resolution (0.0); a 4M-pt grid is measurable
-    heavy.parm("rows").set(2000)
-    heavy.parm("cols").set(2000)
-    t0 = time.perf_counter()
-    heavy.cook(force=True)
-    wall_seconds = time.perf_counter() - t0
-    raw2 = heavy.lastCookTime()
-    heavy.destroy()
-    if raw2 is None or raw2 <= 0:
-        _record_fail(result, f"second forced cook produced non-positive lastCookTime(): {raw2!r}")
+    try:
+        heavy.parm("rows").set(2000)
+        heavy.parm("cols").set(2000)
+        count_before = heavy.cookCount()
+        t0 = time.perf_counter()
+        heavy.cook(force=True)
+        wall_seconds = time.perf_counter() - t0
+        raw2 = heavy.lastCookTime()
+        count_after = heavy.cookCount()
+
+        if not ui_available:
+            return _assay_item_3_headless(result, heavy, raw2, wall_seconds,
+                                           count_before, count_after, ui_available)
+            # heavy.destroy() still runs via the outer finally below.
+
+        # --- GUI session: self-verifying wall-clock-vs-raw unit inference (unchanged) ---
+        if raw2 is None or raw2 <= 0:
+            _record_fail(
+                result,
+                f"ui_available={ui_available!r} ({session}): second forced cook produced "
+                f"non-positive lastCookTime(): {raw2!r}",
+            )
+            return result
+        # host/cache_host_probe.py's ms->s conversion: raw / 1000.0
+        as_seconds_if_ms = raw2 / 1000.0
+        as_seconds_if_already_s = raw2
+        ms_error = abs(as_seconds_if_ms - wall_seconds)
+        s_error = abs(as_seconds_if_already_s - wall_seconds)
+        unit = "milliseconds" if ms_error < s_error else "seconds"
+        _record_pass(
+            result,
+            f"ui_available={ui_available!r} ({session}): raw lastCookTime()={raw2!r}, "
+            f"wall-clock cook time~={wall_seconds:.6f}s, "
+            f"ms-interpretation error={ms_error:.6f}, s-interpretation error={s_error:.6f} "
+            f"-> inferred unit: {unit}. Corroborated by "
+            f"harness/notes/cache_h22_gui_assay_22.0.400.json's own two GUI data points "
+            f"(wall 0.1714s -> raw 171.14; wall 0.1473s -> raw 147.17, both consistent with "
+            f"milliseconds). "
+            f"host/cache_host_probe.py assumes milliseconds (§8.1) -- if inferred unit above "
+            f"is NOT 'milliseconds', file a correction against that module's "
+            f"_evidence_last_cook_seconds ms->s conversion before trusting any downstream "
+            f"seconds value.",
+        )
         return result
-    # host/cache_host_probe.py's ms->s conversion: raw / 1000.0
-    as_seconds_if_ms = raw2 / 1000.0
-    as_seconds_if_already_s = raw2
-    ms_error = abs(as_seconds_if_ms - wall_seconds)
-    s_error = abs(as_seconds_if_already_s - wall_seconds)
-    unit = "milliseconds" if ms_error < s_error else "seconds"
+    finally:
+        heavy.destroy()
+
+
+def _assay_item_3_headless(result: "_AssayItem", heavy, raw2, wall_seconds,
+                            count_before, count_after, ui_available: bool) -> "_AssayItem":
+    """Headless half of item 3. Caller (_assay_item_3) still owns `heavy` and destroys it in
+    its own `finally` -- this function only decides pass/fail, never touches node lifecycle.
+    `ui_available` is threaded through purely so every detail string below records the
+    branch that produced it (T6: the receipt must prove which branch ran, not just imply it
+    in prose).
+    """
+    if raw2 != 0.0:
+        _record_fail(
+            result,
+            f"ui_available={ui_available!r} (headless): HEADLESS CONTRACT CHANGED -- "
+            "expected lastCookTime()==0.0 unconditionally on headless hython per "
+            "harness/notes/cache_h22_contract_assay_22.0.400.json item 3 (M3, ede8d1b8), "
+            f"got {raw2!r} instead. Do NOT silently treat this as fine either way -- "
+            "re-litigate the headless 0.0 contract, and host/cache_host_probe.py's "
+            "_evidence_last_cook_seconds guard built against it (Mile 3b), before trusting "
+            "either the old or the new reading.",
+        )
+        return result
+
+    cook_happened = (
+        count_before is not None and count_after is not None
+        and count_after > count_before and wall_seconds > 0.0
+    )
+    if not cook_happened:
+        _record_fail(
+            result,
+            f"ui_available={ui_available!r} (headless): raw2==0.0 as expected, but cook "
+            f"evidence is missing/contradictory: cookCount before={count_before!r} "
+            f"after={count_after!r}, wall_seconds={wall_seconds:.6f} -- cannot confirm a "
+            f"real cook actually happened, so the 0.0-is-expected declared-delta cannot be "
+            f"trusted on this run.",
+        )
+        return result
+
+    # Integration half: confirm host/cache_host_probe.py's guard (Mile 3b) actually
+    # classifies THIS live 0.0 reading as UNKNOWN + lastCookTime_unreported, not as a
+    # fabricated 0.0-second measurement.
+    #
+    # REVIEWER FINDING B5 (do not weaken): a naive check here (value is None, confidence
+    # unknown, lastCookTime_unreported present) can be FALSELY satisfied if
+    # observe_node_passively's OWN internal lastCookTime() re-read happens to raise (a
+    # theoretical heisenbug, not the case under test) -- safe_call would degrade that
+    # exception to None too, and the guard fires for an unrelated reason while this item
+    # still claims "confirmed ... classifies this exact reading". So this check independently
+    # re-reads heavy.lastCookTime() immediately before AND after the probe call (both must
+    # still be exactly 0.0 -- the same reading raw2 already established) AND requires the
+    # probe's own warnings contain NO lastCookTime exception ("this exact reading" is only
+    # true if the probe never saw a raise on its own read).
+    import cache_host_probe as chp  # host/ adapter under real test, same as items 6/7
+    pre_probe_reread = heavy.lastCookTime()
+    observation = chp.observe_node_passively(heavy)
+    post_probe_reread = heavy.lastCookTime()
+    seconds_evidence = observation["last_cook_seconds"]
+    # PREFIX match, not substring: safe_call's own exception warning always begins with
+    # "lastCookTime raised " (see host/cache_host_probe.py::safe_call). A substring check
+    # would also match that phrase if it ever appeared quoted/mentioned INSIDE a different
+    # warning's own explanatory text (a real false-positive this assay hit once already,
+    # see the guard's own docstring note) -- prefix-matching pins this to an actual
+    # separate safe_call exception entry, not incidental wording.
+    no_exception_warning = not any(w.startswith("lastCookTime raised") for w in observation["warnings"])
+    guard_fired = (
+        seconds_evidence["value"] is None
+        and seconds_evidence["confidence"] == "unknown"
+        and any("lastCookTime_unreported" in w for w in observation["warnings"])
+        and no_exception_warning
+        and pre_probe_reread == 0.0
+        and post_probe_reread == 0.0
+    )
+    if not guard_fired:
+        _record_fail(
+            result,
+            f"ui_available={ui_available!r} (headless): raw2==0.0 confirmed as a real cook "
+            f"(wall_seconds={wall_seconds:.6f}, cookCount {count_before!r}->{count_after!r}), "
+            f"pre_probe_reread={pre_probe_reread!r}, post_probe_reread={post_probe_reread!r}, "
+            f"no_exception_warning={no_exception_warning!r}, but "
+            f"cache_host_probe.observe_node_passively did NOT classify it as UNKNOWN + "
+            f"'lastCookTime_unreported' on THIS exact reading -- got "
+            f"last_cook_seconds={seconds_evidence!r}, warnings={observation['warnings']!r}. "
+            f"The Mile 3b guard is not firing against this live reading.",
+        )
+        return result
+
     _record_pass(
         result,
-        f"raw lastCookTime()={raw2!r}, wall-clock cook time~={wall_seconds:.6f}s, "
-        f"ms-interpretation error={ms_error:.6f}, s-interpretation error={s_error:.6f} "
-        f"-> inferred unit: {unit}. "
-        f"host/cache_host_probe.py assumes milliseconds (§8.1) -- if inferred unit above "
-        f"is NOT 'milliseconds', file a correction against that module's "
-        f"_evidence_last_cook_seconds ms->s conversion before trusting any downstream "
-        f"seconds value.",
+        f"ui_available={ui_available!r} (headless): DECLARED DELTA (H22.0.400): "
+        f"lastCookTime()==0.0 for a real cook (wall_seconds={wall_seconds:.6f}, cookCount "
+        f"{count_before!r}->{count_after!r}) matches the original M3 finding recorded at "
+        f"commit ede8d1b8 (git history -- NOT this same artifact file, which this run "
+        f"overwrites; see the FAIL branch above for what a genuine contract change reports) "
+        f"-- EXPECTED, not a failure. Units evidence for the positive-value (GUI) path "
+        f"(milliseconds) lives in harness/notes/cache_h22_gui_assay_22.0.400.json (a "
+        f"headless run cannot self-prove units when the reading is unconditionally 0.0). "
+        f"Confirmed host/cache_host_probe.py's _evidence_last_cook_seconds classifies this "
+        f"exact reading as UNKNOWN with the 'lastCookTime_unreported' warning: "
+        f"last_cook_seconds={seconds_evidence!r}, warnings={observation['warnings']!r}. "
+        f"\"This exact reading\" is earned, not assumed: independent re-reads immediately "
+        f"before/after the probe call were both "
+        f"pre_probe_reread={pre_probe_reread!r}/post_probe_reread={post_probe_reread!r} "
+        f"(both 0.0) and the probe's own warnings carried no lastCookTime exception "
+        f"(no_exception_warning={no_exception_warning!r}).",
     )
     return result
 

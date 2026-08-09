@@ -139,6 +139,87 @@ def _evidence_unknown(unit: Optional[str], scope: str) -> dict:
     return _evidence(None, unit, _UNKNOWN_SOURCE, scope, "unknown")
 
 
+def _evidence_last_cook_seconds(last_cook_ms: Any, cook_count: Any, scope: str,
+                                 warnings: list) -> dict:
+    """The ONE place lastCookTime() ms -> seconds conversion happens (module docstring
+    above). Encodes the H22.0.400 live-observed contract (Mile 3b, R-CACHE-1):
+
+      - GUI session (`hou.isUIAvailable()` True): `lastCookTime()` returns MILLISECONDS,
+        accurate to wall clock within ~0.2%. Receipt:
+        harness/notes/cache_h22_gui_assay_22.0.400.json (wall 0.1714s -> raw 171.14;
+        wall 0.1473s -> raw 147.17).
+      - Headless hython: `lastCookTime()` returns 0.0 UNCONDITIONALLY for real cooks
+        (perfMon on or off; wall 67-96ms; cookCount increments normally). Receipt:
+        harness/notes/cache_h22_contract_assay_22.0.400.json item 3 ("second forced cook
+        produced non-positive lastCookTime(): 0.0").
+
+    Consequence: once cook evidence exists (`cook_count` is a real positive count), a
+    `last_cook_ms` reading of 0.0, None, or negative is INDISTINGUISHABLE from a real
+    instant cook AND from the headless non-report -- it can never again be trusted as a
+    measurement. Reporting it as a fabricated 0.0-second high-confidence measurement is
+    exactly the failure class CLAUDE.md binding constraint #3 forbids ("Unmeasured values
+    are UNKNOWN. Never zero, never a default"). So that case degrades to UNKNOWN and gets
+    a warning carrying the literal substring "lastCookTime_unreported" so callers/tests can
+    distinguish it from an ordinary unmeasured field.
+
+    When there is no cook evidence at all (`cook_count` is None or 0 -- a node that has
+    genuinely never cooked), a 0.0/None/negative reading is NOT a contract violation: it is
+    ordinary "not measured yet", identical to any other unmeasured field, and does NOT
+    carry the special warning.
+
+    Positive `last_cook_ms` values (> 0) are UNCHANGED from the pre-guard behavior: divide
+    by 1000, `confidence="high"`, `source="hou.OpNode.lastCookTime"` -- regardless of what
+    `cook_count` says (a positive reading is itself real measured evidence).
+
+    PREDICATE IS EXPLICIT, NOT TRUTHY: this checks `isinstance(last_cook_ms, (int, float))
+    and not isinstance(last_cook_ms, bool) and last_cook_ms > 0` -- never a bare
+    `if last_cook_ms:` (which would treat a real 0.0 the same as an absent value by
+    accident) and never `>= 0` (which would let 0.0 slip back into the "measured" branch,
+    reintroducing the exact bug this guard exists to close). `bool` is excluded explicitly
+    because it is an `int` subclass in Python (`True > 0` is `True`) and a stray boolean
+    here is never a legitimate millisecond reading.
+
+    THIS FUNCTION HAS NO SESSION KNOWLEDGE: it does not know and must never claim whether
+    it is running headless or in a GUI session -- that distinction belongs to the caller
+    (see tests/assay_h22_cache_contract.py's item 3, which branches on
+    `hou.isUIAvailable()`). The warning text below describes only the observation
+    (lastCookTime() non-positive despite real cook evidence), never an inferred cause.
+    """
+    is_positive_measurement = (
+        isinstance(last_cook_ms, (int, float))
+        and not isinstance(last_cook_ms, bool)
+        and last_cook_ms > 0
+    )
+    if is_positive_measurement:
+        return _evidence(last_cook_ms / 1000.0, "seconds", "hou.OpNode.lastCookTime", scope, "high")
+
+    has_cook_evidence = (
+        isinstance(cook_count, (int, float))
+        and not isinstance(cook_count, bool)
+        and cook_count > 0
+    )
+    if has_cook_evidence:
+        # NOTE: deliberately does not spell out the literal words "lastCookTime raised" in
+        # this message -- that is safe_call's own distinct exception-warning PREFIX (see
+        # `safe_call` above), and a caller (e.g. tests/assay_h22_cache_contract.py) may need
+        # to reliably tell "only this guard fired" apart from "safe_call ALSO recorded a
+        # real exception" by checking for that separate warning's presence. Echoing its
+        # wording here would make that check match this warning's OWN text instead of a
+        # genuinely separate one.
+        warnings.append(
+            "lastCookTime_unreported: lastCookTime() resolved to "
+            f"{last_cook_ms!r} despite cookCount()={cook_count!r} (>0) -- indistinguishable "
+            "from an unreported cook time (see "
+            "harness/notes/cache_h22_contract_assay_22.0.400.json item 3 for the observed "
+            "headless case). \"Resolved to\", not \"returned\": this covers both a real "
+            "non-positive return AND a lastCookTime() exception that safe_call already "
+            "degraded to None -- a real exception is recorded as its own, separate warning "
+            "entry in this same list, never folded into this one. Treating as UNKNOWN, "
+            "never fabricating a measured 0.0-second cook."
+        )
+    return _evidence_unknown("seconds", scope)
+
+
 # --------------------------------------------------------------------------- last-observation store
 
 class LastObservationStore:
@@ -195,15 +276,9 @@ def observe_node_passively(node: Any, last_observation_store: Optional[LastObser
     cook_count = safe_call(node.cookCount, warnings=warnings, label="cookCount") \
         if hasattr(node, "cookCount") else None
 
-    # --- ms -> s conversion happens EXACTLY ONCE, right here, nowhere else in this file ---
-    last_cook_seconds_value = None
-    if last_cook_ms is not None:
-        last_cook_seconds_value = last_cook_ms / 1000.0
-    last_cook_seconds = (
-        _evidence(last_cook_seconds_value, "seconds", "hou.OpNode.lastCookTime", scope, "high")
-        if last_cook_seconds_value is not None
-        else _evidence_unknown("seconds", scope)
-    )
+    # --- ms -> s conversion (+ the H22.0.400 headless 0.0-unreported guard) happens
+    # EXACTLY ONCE, inside _evidence_last_cook_seconds, nowhere else in this file ---
+    last_cook_seconds = _evidence_last_cook_seconds(last_cook_ms, cook_count, scope, warnings)
 
     if dirty is True:
         # --- CRITICAL BRANCH: geometry() is NEVER called here. ---
