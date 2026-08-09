@@ -6,7 +6,7 @@ Read [Known limitations](#known-limitations) first — this repo's habit is sayi
 
 SYNAPSE lives in Houdini's own Python interpreter and calls `hou.*` directly. No external bridge, no RPC hop, no second copy of the scene.
 
-> v5.44.1 · Houdini 22.0.368 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6
+> v5.44.1 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6
 
 ---
 
@@ -144,7 +144,7 @@ This is the package description in long form — everything the one-liner compre
 
 **Crash-atomic escrowed memory.** And a process-wide stall-detection chain (detect → breaker → emergency-halt report) that reports and degrades rather than unblocking a parked session.
 
-Verified end-to-end on Houdini 22.0.368.
+Verified end-to-end on Houdini 22.0.368. 22.0.400: symbol-stamped 2026-08-09 (35,908 symbols, gate armed); e2e re-verification pending — see `docs/SUPPORT_MATRIX.md`.
 
 ---
 
