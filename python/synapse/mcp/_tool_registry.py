@@ -988,8 +988,14 @@ TOOL_DEFS: list[tuple] = [
      "(no forced cook, no disk write, no node creation) and returns a deterministic "
      "cache recommendation -- verdict, confidence, cost estimates -- or "
      "'measure_first'/'unsupported' when evidence is missing or the context has no "
-     "validated strategy yet. An LLM's free text never alters the structured verdict. "
-     "Feature-flagged off by default; set SYNAPSE_CACHE_ADVISOR_ENABLED=1 to enable.",
+     "validated strategy yet. On the live path today, evidence is limited to cook-time/ "
+     "geometry-memory (no calibrated size/RAM/GPU/manifest data yet), so 'measure_first' "
+     "and 'unsupported' dominate real results -- richer verdicts (cache_now, "
+     "optimize_first, use_valid_cache, ...) are reachable once later phases add those "
+     "evidence sources. An LLM's free text never alters the structured verdict, and this "
+     "tool takes no policy/threshold input -- verdicts always use the one project-default "
+     "safety policy. Feature-flagged off by default; set SYNAPSE_CACHE_ADVISOR_ENABLED=1 "
+     "to enable.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "Full node path to assess (e.g. '/obj/geo1/vellumsolver1'). Optional if a node is currently selected in Houdini."},
          "frame_start": {"type": "integer", "description": "Optional target frame range start."},
@@ -998,7 +1004,6 @@ TOOL_DEFS: list[tuple] = [
          "is_solver_result": {"type": "boolean", "description": "Optional hint: is this node the boundary right after a solver/simulation result? Never guessed -- omit if unknown."},
          "is_independent_frames": {"type": "boolean", "description": "Optional hint: are frames independent/parallelizable rather than sequential/stateful? Never guessed -- omit if unknown."},
          "data_class": {"type": "string", "enum": ["geometry_mixed", "vdb_only", "unknown"], "description": "Optional hint: output data class, used for SOP strategy selection."},
-         "policy_overrides": {"type": "object", "description": "Optional project/user CachePolicy field overrides (see synapse.cache_policy.CachePolicy)."},
      }, "required": []},
      True, False, True),
 

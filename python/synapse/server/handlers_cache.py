@@ -401,7 +401,15 @@ class CacheHandlerMixin:
         is_solver_result = resolve_param_with_default(payload, "is_solver_result", None)
         is_independent_frames = resolve_param_with_default(payload, "is_independent_frames", None)
         data_class = resolve_param_with_default(payload, "data_class", None)
-        policy_overrides = resolve_param_with_default(payload, "policy_overrides", None)
+        # NO policy_overrides here (B1 fix, reviewer showstopper on 87e758bc): blueprint
+        # §13.3 declares this tool's input as ONLY node/path/range/expected-reads. §7.4's
+        # policy overrides are project-scoped (§15), never per-MCP-call, and §10.4's
+        # safety-invariant precedence + "receipt should say 'user override'" rule are not
+        # honored by a bare threshold swap with no trace in the response. An LLM caller
+        # could otherwise flip insufficient_disk -> cache_now (or the reverse) by supplying
+        # e.g. cache_size_safety_multiplier=0.001 with zero record that thresholds moved --
+        # exactly the machine-specs+prompt->LLM-opinion->bake shape §5 refuses. Always the
+        # unmodified default policy on the live path.
 
         from .main_thread import run_on_main
 
@@ -426,7 +434,7 @@ class CacheHandlerMixin:
         # OFF the main thread: bounded 5s nvidia-smi subprocess + disk_usage. Never a
         # hou.* call from here down to the machine-profile return.
         machine = _detect_machine_profile(cache_root=hip_dir)
-        policy = load_policy(policy_overrides) if policy_overrides else load_policy()
+        policy = load_policy()
         frame_range = (
             (frame_start, frame_end)
             if frame_start is not None and frame_end is not None

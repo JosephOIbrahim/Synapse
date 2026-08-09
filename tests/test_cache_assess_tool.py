@@ -210,6 +210,55 @@ def test_tool_registered_read_only_in_tool_registry():
     assert tr.TOOL_JSON["synapse_assess_cache"]["annotations"]["destructiveHint"] is False
 
 
+def test_tool_schema_matches_blueprint_declared_input_set():
+    """B1/B2 (reviewer, post-87e758bc): blueprint §13.3 declares this tool's input as ONLY
+    "node path or selected node, optional target path/range, optional expected replays".
+    A prior revision also exposed ``policy_overrides`` -- an LLM caller could flip
+    ``insufficient_disk -> cache_now`` (or the reverse) by supplying e.g.
+    ``cache_size_safety_multiplier=0.001`` with zero trace in the response that thresholds
+    moved (no ``policy_version`` bump, no "user override" note -- exactly the §5
+    machine-specs+prompt->LLM-opinion->bake shape the blueprint refuses, and exactly the
+    §10.4 "receipt should say 'user override' and preserve the original verdict" rule it
+    skipped). ``policy_overrides`` is now removed from the live schema entirely (the tool
+    always uses the one project-default CachePolicy) -- this test pins BOTH the exact
+    property set (so it can't silently creep back under this name) AND, independently and
+    more robustly, that no property name on the schema collides with any real
+    ``CachePolicy`` dataclass field (so it can't creep back under a DIFFERENT name either).
+    """
+    import synapse.mcp._tool_registry as tr
+    from dataclasses import fields as dc_fields
+    from synapse.cache_policy import CachePolicy
+
+    schema = tr.TOOL_JSON["synapse_assess_cache"]["inputSchema"]
+    properties = set(schema["properties"].keys())
+
+    # node/frame_start/frame_end/expected_future_reads are the §13.3-declared set verbatim
+    # (node path, optional target range, optional expected replays). is_solver_result/
+    # is_independent_frames/data_class are NOT policy-threshold levers -- they are §9
+    # strategy-CLASSIFICATION hints ("never guess a strategy"), a different axis entirely
+    # from CachePolicy's safety thresholds, and the reviewer's own B1 finding never flagged
+    # them. Pinned here as the exact current set so ANY addition -- policy-shaped or not --
+    # is a deliberate, reviewed diff, never a silent one.
+    expected = {
+        "node", "frame_start", "frame_end", "expected_future_reads",
+        "is_solver_result", "is_independent_frames", "data_class",
+    }
+    assert properties == expected, (
+        f"synapse_assess_cache inputSchema drifted from the pinned set. "
+        f"Added: {properties - expected}, removed: {expected - properties}"
+    )
+
+    policy_field_names = {f.name for f in dc_fields(CachePolicy)}
+    collision = properties & policy_field_names
+    assert not collision, (
+        f"synapse_assess_cache inputSchema exposes CachePolicy field name(s) {collision} "
+        "-- this is exactly the reintroduced-policy-lever shape B1 removed, even though "
+        "the top-level key is not literally 'policy_overrides'."
+    )
+    assert "policy_overrides" not in properties
+    assert "policy" not in properties
+
+
 def test_tool_registered_read_only_in_bridge_adapter():
     """Task 2: the panel's bridge_adapter has a SEPARATE read-only set -- both must agree,
     or a tool is read-only under one transport and mutation-classified under the other
@@ -493,14 +542,40 @@ def test_exit_gate_2_every_verdict_includes_provenance_confidence_and_missing_ev
         assert response["confidence"] == decision["confidence"]
 
 
-def test_exit_gate_3_restating_prose_after_the_fact_cannot_alter_the_verdict():
+def test_exit_gate_3_no_prose_channel_and_identical_evidence_yields_identical_verdict():
     """"Changing prompt wording without changing graph/evidence does not change the policy
-    verdict" -- assess_cache_core has no "prompt" input to begin with (only structured
-    node/evidence kwargs), so this restates §17.2's guarantee at the response boundary: an
-    LLM restating the card text or reasons after the call cannot retroactively change what
-    was already decided.
+    verdict" (§17.2) -- proven two ways, replacing the ORIGINAL version of this test
+    (reviewer-flagged, post-87e758bc, as vacuous: it mutated a returned dict's
+    ``message``/``decision.reasons`` keys and then asserted the unrelated ``verdict`` key
+    was unchanged -- true by construction for ANY dict, since mutating one key can never
+    change a sibling key. That could never fail, the same class of defect the Mile 2
+    reviewer caught in ``test_insert_boundary_only_does_not_imply_bake``).
+
+    (1) STRUCTURAL: the live tool schema (pinned exactly in
+        ``test_tool_schema_matches_blueprint_declared_input_set``) has NO free-text/prose
+        property at all -- every property is typed (integer/number/boolean) or a
+        structural/enum-constrained string (``node`` = a path, ``data_class`` = a closed
+        enum). There is no field an LLM could stuff restated wording into that reaches
+        ``decide_cache()``, because nothing routes a caller-supplied string into policy
+        math anywhere in this module.
+    (2) BEHAVIORAL: two INDEPENDENT calls (fresh node objects, no shared mutable state)
+        with byte-identical structured evidence produce the identical verdict AND the
+        identical evidence_digest -- restated in a way that cannot be satisfied by
+        comparing two unrelated dict keys.
     """
-    node = FakeNode(needs_to_cook=False, last_cook_ms=6000.0, time_dependent=True)
+    import synapse.mcp._tool_registry as tr
+
+    # (1) structural: no prose channel on the schema.
+    schema_props = tr.TOOL_JSON["synapse_assess_cache"]["inputSchema"]["properties"]
+    for name, spec in schema_props.items():
+        if spec.get("type") == "string":
+            assert name == "node" or "enum" in spec, (
+                f"schema property {name!r} is a free string with no enum constraint -- "
+                "a prose/free-text channel into the tool, which the structured-verdict "
+                "guarantee requires must not exist"
+            )
+
+    # (2) behavioral: independent calls, identical structured evidence -> identical verdict.
     machine = _ample_machine()
     kwargs = dict(
         frame_range=(1001, 1240), expected_future_reads=2,
@@ -513,20 +588,37 @@ def test_exit_gate_3_restating_prose_after_the_fact_cannot_alter_the_verdict():
             peak_working_set_bytes=_ample_peak_ram(),
         ),
     )
-    r1 = hc.assess_cache_core(node, node_path=node.path(), machine=machine, **kwargs)
-    original_verdict = r1["verdict"]
-
-    # "LLM" restates the message / reasons -- a free-text mutation after the fact.
-    r1["message"] = "Totally different friendly wording an LLM might have written instead."
-    r1["decision"]["reasons"] = ["rewritten"]
-    assert r1["verdict"] == original_verdict
-
-    # And a second, independent call with byte-identical structured evidence reproduces
-    # the identical verdict regardless of anything cosmetic done to the first response.
-    node2 = FakeNode(needs_to_cook=False, last_cook_ms=6000.0, time_dependent=True, path=node.path())
+    node1 = FakeNode(needs_to_cook=False, last_cook_ms=6000.0, time_dependent=True, path="/obj/geo1/a")
+    node2 = FakeNode(needs_to_cook=False, last_cook_ms=6000.0, time_dependent=True, path="/obj/geo1/a")
+    r1 = hc.assess_cache_core(node1, node_path=node1.path(), machine=machine, **kwargs)
     r2 = hc.assess_cache_core(node2, node_path=node2.path(), machine=machine, **kwargs)
-    assert r2["verdict"] == original_verdict
-    assert r2["decision"]["verdict"] == original_verdict
+    assert r1["verdict"] == r2["verdict"] == CacheVerdict.CACHE_NOW.value
+    assert r1["decision"]["evidence_digest"] == r2["decision"]["evidence_digest"]
+
+
+def test_card_label_is_driven_by_structured_verdict_never_by_reason_text():
+    """Falsifiable version of the "an LLM's opinion cannot alter the structured verdict"
+    guarantee, applied at the rendering boundary: even when ``headline``/``reasons`` read
+    as the OPPOSITE of ``verdict`` (simulating a hypothetical future where those fields
+    carried model-authored prose contradicting the real decision), the card's lead line
+    must still reflect ``decision.verdict`` -- proving ``_render_advice_card`` derives its
+    label from the structured enum, never by scanning reason text. Fails if the rendering
+    function is ever refactored to infer status from prose instead of the enum field.
+    """
+    from synapse.cache_policy import CacheDecision, Estimates
+
+    contradictory = CacheDecision(
+        verdict=CacheVerdict.NOT_WORTH_IT.value,
+        confidence="high",
+        headline="CACHE STRONGLY RECOMMENDED -- bake this immediately",
+        reasons=["This is an amazing cache opportunity, bake immediately"],
+        estimates=Estimates(),
+    )
+    card = hc._render_advice_card(contradictory, node_path="/obj/geo1/x")
+    lead_line = card.splitlines()[0]
+    assert lead_line.startswith(hc._VERDICT_LABELS[CacheVerdict.NOT_WORTH_IT.value]), lead_line
+    assert "STRONGLY RECOMMENDED" not in lead_line
+    assert "bake immediately" not in lead_line
 
 
 def test_exit_gate_4_optimize_first_for_per_frame_memory_failure():
