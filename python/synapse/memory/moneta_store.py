@@ -257,6 +257,7 @@ class MonetaBackedStore:
         base.mkdir(parents=True, exist_ok=True)
         snapshot_path = base / "snapshot.json"
         cls._quarantine_if_corrupt(snapshot_path)
+        cls._quarantine_wal_if_unreplayable(base / "wal.log")
         cfg = mr.MonetaConfig(
             storage_uri=f"moneta-file://{Path(storage_dir).resolve().as_posix()}",
             embedding_dim=embedder.dim,
@@ -348,6 +349,72 @@ class MonetaBackedStore:
                 except OSError:
                     pass
 
+    @classmethod
+    def _quarantine_wal_if_unreplayable(cls, wal_path) -> None:
+        """Rename aside a WAL Moneta cannot replay, so reopen neither crashes
+        nor silently downgrades to jsonl (PRST SEAM, defense-in-depth).
+
+        Moneta's ``durability.wal_read`` parses each entry's ``entity_id`` as a
+        UUID with NO guard (only ``json.JSONDecodeError`` is caught upstream).
+        A SYNAPSE string id ('mem_...') written there by an EARLIER
+        ``signal_attention`` -- now fixed to signal on entity UUIDs, but already
+        on disk in stores that ran the old code -- makes cold-start ``hydrate``
+        raise, which ``store._make_store`` swallows into a silent empty-jsonl
+        fallback. The WAL holds attention SIGNALS only (deposits live in the
+        snapshot), so quarantining it loses no memory content: deposits are
+        recalled from the snapshot and only a utility nudge is dropped.
+
+        Best-effort; a clean or absent WAL is untouched. A malformed-JSON line
+        is left alone -- Moneta itself skips those.
+        """
+        import json
+        import time as _time
+        import uuid as _uuid
+        wal_path = Path(wal_path)
+        if not wal_path.exists():
+            return
+        poisoned = False
+        try:
+            with open(wal_path, "r", encoding="utf-8") as fp:
+                for raw in fp:
+                    line = raw.strip()
+                    if not line:
+                        continue
+                    try:
+                        d = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue  # Moneta itself skips malformed JSON lines
+                    try:
+                        _uuid.UUID(str(d.get("entity_id", "")))
+                    except (ValueError, AttributeError, TypeError):
+                        poisoned = True
+                        break
+        except OSError as exc:
+            logger.warning(
+                "Could not read Moneta WAL %s (%s); leaving as-is", wal_path, exc
+            )
+            return
+        if not poisoned:
+            return
+        bad = wal_path.with_name(f"{wal_path.name}.unreplayable-{int(_time.time())}")
+        try:
+            wal_path.replace(bad)
+            logger.error(
+                "Quarantined unreplayable Moneta WAL %s -> %s (a non-UUID "
+                "entity_id would crash cold-start replay); deposits are recovered "
+                "from the snapshot, only attention signals are dropped",
+                wal_path, bad,
+            )
+        except OSError as move_err:  # last resort: remove so reopen proceeds
+            logger.error(
+                "Unreplayable WAL %s could not be quarantined (%s); removing",
+                wal_path, move_err,
+            )
+            try:
+                wal_path.unlink()
+            except OSError:
+                pass
+
     # -- write --------------------------------------------------------------
 
     def _is_protected(self, memory: Memory) -> bool:
@@ -375,11 +442,18 @@ class MonetaBackedStore:
                     self._handle.deposit(payload, embedding, protected_floor=0.0)
                 else:
                     raise
-            now = time.monotonic()
-            if now - self._last_save >= self._save_interval:
-                self.save()
-                self._last_save = now
-                logger.info("Periodic save: %d memories", self._handle.ecs.n)
+            # Durability (PRST SEAM A): persist EVERY deposit synchronously
+            # before add() returns. The previous 30s throttle
+            # (now - _last_save >= _save_interval) acknowledged a NON-FIRST
+            # deposit to the caller that never reached disk when the process
+            # died via os._exit (no atexit, the crash class) -- the exact repro
+            # in test_second_deposit_of_a_session_survives_abrupt_restart. save()
+            # is a full atomic snapshot taken under self._lock, so it does not
+            # race the single-writer ECS and can neither lose nor duplicate a
+            # deposit. Cost is O(n) per deposit; the from_storage_dir docstring
+            # already named a per-deposit save as the durability fix, and for
+            # USER MEMORY correctness outranks the write cost.
+            self.save()  # sets self._last_save
             # Opportunistic consolidation: every 100 adds, if the engine has
             # more than 1000 entities, run a sleep pass to keep memory bounded.
             self._add_count += 1
@@ -469,11 +543,19 @@ class MonetaBackedStore:
         # For non-text queries (tags/keywords only), fall back to the full scan.
         if query.text:
             embedding = self._embedder.embed(query.text)
+            # Map SYNAPSE memory id -> Moneta entity_id (UUID). Only the vector
+            # path yields entity ids; the keyword fallback below does not, so it
+            # will not signal attention (correct -- there is nothing to key on).
+            entity_by_syn_id: Dict[str, object] = {}
             try:
                 vector_results = self._handle.query(
                     embedding, limit=max(query.limit * 3, 50)
                 )
-                memories = [Memory.from_json(r.payload) for r in vector_results]
+                memories = []
+                for r in vector_results:
+                    syn = Memory.from_json(r.payload)
+                    memories.append(syn)
+                    entity_by_syn_id[str(syn.id)] = r.entity_id
                 logger.info(
                     "Vector recall: %d candidates from query (limit=%d, overfetch=%d)",
                     len(vector_results), query.limit, max(query.limit * 3, 50),
@@ -486,17 +568,26 @@ class MonetaBackedStore:
                 memories = self._iter_memories()
             results = score_memories(memories, query)
             # Attention signaling: boost utility of frequently-accessed memories.
-            # Best-effort and non-critical — failure must never break search().
-            # Weights are the search scores, so more relevant results get more
-            # attention, making them more likely to survive consolidation.
-            if query.text and results:
+            # Signal on Moneta ENTITY ids (UUIDs), never SYNAPSE string ids
+            # ('mem_...'). Two reasons: (1) those strings are not entities Moneta
+            # indexes, so the old signal was a no-op; (2) PRST SEAM -- Moneta
+            # journals every signal to its WAL, whose cold-start replay parses
+            # entity_id as a UUID with NO guard (durability.wal_read), so a
+            # non-UUID key there crashes the very NEXT reopen, which _make_store
+            # then swallows into a silent empty-jsonl downgrade. Best-effort and
+            # non-critical: failure never breaks search().
+            if results and entity_by_syn_id:
                 try:
-                    weights = {str(r.memory.id): float(r.score) for r in results[:5]}
-                    self._handle.signal_attention(weights)
-                    logger.debug(
-                        "Attention signaled on %d memories: %s",
-                        len(weights), list(weights.keys()),
-                    )
+                    weights = {}
+                    for r in results[:5]:
+                        eid = entity_by_syn_id.get(str(r.memory.id))
+                        if eid is not None:
+                            weights[eid] = float(r.score)
+                    if weights:
+                        self._handle.signal_attention(weights)
+                        logger.debug(
+                            "Attention signaled on %d entities", len(weights),
+                        )
                 except Exception as exc:
                     logger.debug("Attention signaling failed (non-critical): %s", exc)
             return results

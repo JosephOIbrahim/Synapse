@@ -202,11 +202,13 @@ def test_vector_recall_through_facade(tmp_path, monkeypatch):
 # deposits #2..N ONLY by atexit. N=3 leaves margin (3 vs 1) so a single
 # off-by-one in either mechanism is visible in the numbers.
 #
-# The first-add save is therefore PINNED here as observed behaviour, not
-# endorsed as design -- moneta_store's own docstring says "there is no
-# per-deposit fsync", which is untrue of the first deposit. Whether to keep it
-# or initialise `_last_save = time.monotonic()` is a durability-posture call
-# and is raised in the CI0 receipt's for_ruling[], not decided here.
+# DURABILITY POSTURE RESOLVED (W1, fix/memory-store-recovery). The table above
+# is HISTORICAL: it measured the old 30s-throttle model, where a non-first
+# deposit acked to the caller never reached disk on a hard exit (PRST SEAM A).
+# W1 changed add() to snapshot EVERY deposit synchronously before it returns, so
+# the hard os._exit(0) column is now 1,2,3 as well -- every deposit survives both
+# exit shapes. The N=3 margin is kept so the clean-exit test still has room to
+# distinguish a mechanism regression from an off-by-one.
 _DEPOSITS = 3
 
 _DEPOSIT_THEN_EXIT = """
@@ -242,8 +244,10 @@ def test_atexit_snapshots_deposits_on_clean_exit(tmp_path):
     atexit. That is the exact production condition (a normal shutdown), and it
     failed before the hook existed.
 
-    Deposits #2 and #3 are the load-bearing ones -- #1 is force-saved by the
-    first-add timer regardless of how the process ends (see _DEPOSITS above).
+    Since W1, every deposit is snapshotted synchronously in add(), so a clean
+    exit persists all _DEPOSITS via that per-deposit save (the atexit hook is now
+    a redundant backstop, not the sole mechanism). The assertion is unchanged;
+    only its cause is stronger.
     """
     from synapse.memory.moneta_store import MonetaBackedStore
     proj = _run_deposit_subprocess(tmp_path, "sys.exit(0)")
@@ -251,9 +255,8 @@ def test_atexit_snapshots_deposits_on_clean_exit(tmp_path):
     s = MonetaBackedStore.from_storage_dir(proj)
     try:
         assert s.count() == _DEPOSITS, (
-            "clean-exit deposits were lost -- atexit did not fire (deposit #1 "
-            "survives the first-add save on its own, so anything less than "
-            f"{_DEPOSITS} means the hook is not persisting #2..#{_DEPOSITS})")
+            "clean-exit deposits were lost -- per-deposit save did not persist "
+            f"all {_DEPOSITS} deposits")
         contents = {m.content for m in s.get_by_type(MemoryType.DECISION)}
         assert contents == {
             "deposit %d, never explicitly saved" % i for i in range(_DEPOSITS)}
@@ -261,28 +264,29 @@ def test_atexit_snapshots_deposits_on_clean_exit(tmp_path):
         s.close()
 
 
-def test_hard_exit_loses_the_unsnapshotted_deposits(tmp_path):
-    """FIX_IS_REAL companion: os._exit(0) bypasses atexit, so every deposit
-    after the first-add save is lost. This proves the test above is not vacuous
-    -- persistence of #2..#N there comes from the hook, not from an incidental
-    save -- and documents the bound the atexit fix does NOT close (kill -9 /
-    native crash, the crash-harness class).
+def test_hard_exit_preserves_all_deposits(tmp_path):
+    """PRST SEAM A, generalized: os._exit(0) bypasses atexit, yet EVERY deposit
+    survives -- because add() now snapshots synchronously before it returns.
 
-    Renamed from test_hard_exit_loses_the_deposit (singular): the old name
-    asserted a total loss that never happens, because deposit #1 is always
-    snapshotted synchronously.
+    Before W1 this asserted the opposite (only deposit #1, the first-add save,
+    survived a hard exit; #2..#N were acked to the caller but never reached disk
+    -- the exact repro in test_prst_network_persistence). The per-deposit save in
+    moneta_store.add() closes that gap. This still does NOT cover a kill -9 /
+    native crash MID-snapshot, but the tmp+fsync+os.replace snapshot is atomic,
+    so a crash either leaves the prior snapshot or the new one -- never a torn
+    file. Renamed from test_hard_exit_loses_the_unsnapshotted_deposits.
     """
     from synapse.memory.moneta_store import MonetaBackedStore
     proj = _run_deposit_subprocess(tmp_path, "import os; os._exit(0)")
 
     s = MonetaBackedStore.from_storage_dir(proj)
     try:
-        assert s.count() == 1, (
-            "hard exit persisted %d of %d deposits, expected exactly 1 (the "
-            "first-add save). More means some incidental save is covering "
-            "#2..#%d, so the clean-exit test's durability cannot be attributed "
-            "to atexit; fewer means the first-add save stopped firing and the "
-            "clean-exit test's baseline moved." % (s.count(), _DEPOSITS, _DEPOSITS))
+        assert s.count() == _DEPOSITS, (
+            "hard exit persisted %d of %d deposits -- per-deposit save must make "
+            "every deposit survive an os._exit (no atexit)." % (s.count(), _DEPOSITS))
+        contents = {m.content for m in s.get_by_type(MemoryType.DECISION)}
+        assert contents == {
+            "deposit %d, never explicitly saved" % i for i in range(_DEPOSITS)}
     finally:
         s.close()
 
@@ -320,14 +324,15 @@ def test_protected_floor_thresholds_pin_consolidation_coupling():
         "the consolidation posture")
 
 
-def test_save_timer_persists_across_interval(tmp_path):
-    """The periodic save in add() fires when the interval elapses.
+def test_deposits_persist_regardless_of_interval(tmp_path):
+    """Both deposits reach disk. Since W1 add() snapshots every deposit
+    synchronously, durability no longer depends on the _save_interval clock --
+    both memories persist whether or not any interval elapsed between them.
 
-    Mechanism: add() checks ``now - _last_save >= _save_interval`` and calls
-    save() when true.  We reset _last_save to the current monotonic clock so
-    the first add does NOT trigger a save, then wait past the short interval
-    so the second add DOES trigger one.  Reopening the store should see both
-    memories.
+    (Before W1 this test leaned on a 30s throttle: it reset _last_save and slept
+    past a 100ms interval so the SECOND add would trip the periodic save. That
+    timing dance is now irrelevant -- every add saves.)  Renamed from
+    test_save_timer_persists_across_interval.
     """
     import time as _time
     from synapse.memory.moneta_store import MonetaBackedStore
@@ -335,15 +340,11 @@ def test_save_timer_persists_across_interval(tmp_path):
 
     s1 = MonetaBackedStore.from_storage_dir(tmp_path / "proj")
     try:
-        # Reset the timer reference so the first add does not trigger a save.
         s1._last_save = _time.monotonic()
-        s1._save_interval = 0.1  # 100 ms
+        s1._save_interval = 9999.0  # deliberately long: must not gate durability
 
         s1.add(Memory(content="first", memory_type=MemoryType.NOTE))
         assert s1.count() == 1, "first add should succeed"
-
-        # Wait past the interval so the second add triggers a periodic save.
-        _time.sleep(0.2)
         s1.add(Memory(content="second", memory_type=MemoryType.NOTE))
         assert s1.count() == 2, "second add should succeed"
     finally:
@@ -363,16 +364,16 @@ def test_save_timer_persists_across_interval(tmp_path):
         s2.close()
 
 
-def test_save_timer_does_not_fire_with_long_interval(tmp_path):
-    """Negative control: with a long interval the periodic save never fires,
-    so memories are lost on close.  Proves the positive test above is not
-    vacuous -- persistence there comes from the interval-triggered save, not
-    from incidental persistence.
+def test_per_deposit_save_ignores_save_interval(tmp_path):
+    """W1 durability contract: a single deposit is persisted even when close()
+    is prevented from saving AND the _save_interval is effectively infinite.
 
-    NOTE: close() calls save() unconditionally (line 449), so we must
-    prevent save() from running to isolate the timer path.  We set _closed
-    before close() so it returns immediately, then close the handle manually
-    to release the URI lock for the reopen.
+    Before W1 this was the negative control proving the throttle gated
+    durability (with a 9999s interval, a save-suppressed close lost the deposit
+    -> count 0). W1's per-deposit save closes exactly that gap: add() already
+    snapshotted the deposit, so it survives regardless of the interval or of
+    close() saving. Renamed from test_save_timer_does_not_fire_with_long_interval;
+    the assertion flips from 0 to 1 because the bug it documented is fixed.
     """
     import time as _time
     from synapse.memory.moneta_store import MonetaBackedStore
@@ -381,12 +382,13 @@ def test_save_timer_does_not_fire_with_long_interval(tmp_path):
     s1 = MonetaBackedStore.from_storage_dir(tmp_path / "proj")
     try:
         s1._last_save = _time.monotonic()
-        s1._save_interval = 9999.0  # effectively never
+        s1._save_interval = 9999.0  # effectively never -- must not gate durability
 
-        s1.add(Memory(content="orphan", memory_type=MemoryType.NOTE))
+        s1.add(Memory(content="survivor", memory_type=MemoryType.NOTE))
         assert s1.count() == 1
     finally:
-        # Prevent close() from calling save() so the timer path is isolated.
+        # Prevent close() from calling save() to isolate the per-deposit save:
+        # the deposit must already be on disk from add() alone.
         s1._closed = True
         s1.close()  # returns immediately, no save
         # Release the URI lock so s2 can open the same storage dir.
@@ -396,9 +398,10 @@ def test_save_timer_does_not_fire_with_long_interval(tmp_path):
 
     s2 = MonetaBackedStore.from_storage_dir(tmp_path / "proj")
     try:
-        assert s2.count() == 0, (
-            "expected 0 memories (save timer never fired), got %d"
-            % s2.count()
+        assert s2.count() == 1, (
+            "per-deposit save must persist the deposit even with save() "
+            "suppressed on close and a 9999s interval; got %d" % s2.count()
         )
+        assert {m.content for m in s2._iter_memories()} == {"survivor"}
     finally:
         s2.close()
