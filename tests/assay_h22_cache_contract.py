@@ -142,11 +142,15 @@ def _assay_item_3(static_out) -> _AssayItem:
     # trivial box in > 1 "second-unit" too) -- the decisive check is the manual timing
     # comparison below.
     import time
+    parent = static_out.parent()
+    heavy = parent.createNode("grid", "UNIT_CHECK_HEAVY")  # trivial cooks land below timer resolution (0.0); a 4M-pt grid is measurable
+    heavy.parm("rows").set(2000)
+    heavy.parm("cols").set(2000)
     t0 = time.perf_counter()
-    static_out.parm("tx").set(static_out.parm("tx").eval() + 0.001)  # dirty it
-    static_out.cook(force=True)
+    heavy.cook(force=True)
     wall_seconds = time.perf_counter() - t0
-    raw2 = static_out.lastCookTime()
+    raw2 = heavy.lastCookTime()
+    heavy.destroy()
     if raw2 is None or raw2 <= 0:
         _record_fail(result, f"second forced cook produced non-positive lastCookTime(): {raw2!r}")
         return result
@@ -175,7 +179,8 @@ def _assay_item_4(static_out) -> _AssayItem:
     result = _AssayItem(4, "verify needsToCook() state transitions after parameter changes")
     static_out.cook(force=True)
     after_cook = static_out.needsToCook()
-    static_out.parm("tx").set(static_out.parm("tx").eval() + 1.0)
+    _upstream = static_out.inputs()[0]  # null has no tx; dirty via its box
+    _upstream.parm("tx").set(_upstream.parm("tx").eval() + 1.0)
     after_dirty = static_out.needsToCook()
     static_out.cook(force=True)
     after_recook = static_out.needsToCook()
@@ -193,6 +198,8 @@ def _assay_item_4(static_out) -> _AssayItem:
 def _assay_item_5(time_out, static_out) -> _AssayItem:
     result = _AssayItem(5, "verify isTimeDependent(for_last_cook=True) behavior")
     try:
+        time_out.cook(force=True)   # for_last_cook reports on the LAST cook; it must exist
+        static_out.cook(force=True)
         td = time_out.isTimeDependent(for_last_cook=True)
         static_td = static_out.isTimeDependent(for_last_cook=True)
     except TypeError as e:

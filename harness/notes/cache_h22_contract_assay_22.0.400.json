@@ -1,0 +1,52 @@
+{
+  "schema": "cache_h22_contract_assay/v1",
+  "houdini_version": "22.0.400",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "command": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe tests\\assay_h22_cache_contract.py",
+  "exit_status": "fail",
+  "items": [
+    {
+      "item": 1,
+      "description": "build a cheap static SOP and a time-dependent SOP",
+      "status": "pass",
+      "detail": "container='/obj/cache_h22_assay' static='/obj/cache_h22_assay/STATIC_OUT' time_dependent='/obj/cache_h22_assay/TIME_DEPENDENT_OUT'"
+    },
+    {
+      "item": 2,
+      "description": "verify API availability and hou.OpNode ownership",
+      "status": "pass",
+      "detail": "all of ('needsToCook', 'isTimeDependent', 'lastCookTime', 'cookCount') present on hou.OpNode and bound on a live instance"
+    },
+    {
+      "item": 3,
+      "description": "verify lastCookTime() units with a known cook",
+      "status": "fail",
+      "detail": "second forced cook produced non-positive lastCookTime(): 0.0"
+    },
+    {
+      "item": 4,
+      "description": "verify needsToCook() state transitions after parameter changes",
+      "status": "pass",
+      "detail": "after_cook=False after_dirty=True after_recook=False"
+    },
+    {
+      "item": 5,
+      "description": "verify isTimeDependent(for_last_cook=True) behavior",
+      "status": "pass",
+      "detail": "time_dependent_node.isTimeDependent(for_last_cook=True)=True, static_node=False"
+    },
+    {
+      "item": 6,
+      "description": "verify passive assessment does not change cookCount()",
+      "status": "pass",
+      "detail": "cookCount before=5 after two observe_node_passively() calls=5"
+    },
+    {
+      "item": 7,
+      "description": "verify memoryusage is positive and handled when unavailable",
+      "status": "pass",
+      "detail": "cooked-node memoryusage=3716 (positive: OK); never-cooked node observation_status='dirty_not_forced' (expected dirty_not_forced/dirty_unknown -- geometry() never called)"
+    }
+  ],
+  "blake2b": "bbef5fb09a7b0a1464b223c77d4315fb"
+}
