@@ -51,3 +51,52 @@ Agent sessions dispatched on Joe's plan: 14 (2 smoke runs ×3, intake ×3, mile2
 2. M4 CLEAR → **Mile 5 close (Joe's gates):** he reviews the commit series → merge word → push word (Gate C `$env:` form) → then commit the wave docs on master (blueprint, adjudication, ruling, capsule, gui-assay receipt) → SUPPORT_MATRIX row for the lastCookTime contract (GUI=ms verified · headless=0.0 verified, receipts named) → regression sweep on merged master (version conformance, latency harness, ratchet) → debris sweep (scratch runners/logs stay gitignored; delete `~/.claude/teams/default` leftover; drop stale lastfailed) → **full teach-down + Operator's Card** (queued, owed: run the advisor, run a team dispatch, both landmines, assay rerun command).
 3. M4 BLOCKED → verbatim reason to Joe, fork, no loops (bounded-repair budget for M4: one).
 4. Token ledger: +2 agent sessions M3b (forge Sonnet, crucible Opus) + lead; +3 M4 (lead Sonnet, forge Sonnet, crucible Opus); GUI assay = 0 model calls (script + Computer Use). Running total ~20 agent sessions, 1 retry (smoke), 2 in-flight repairs (M2b ceiling relaunch, M3 script fix). Exact tokens: unavailable.
+
+
+---
+
+# WAVE 2 APPEND — 2026-08-09 ~16:15 (pre-vacation push; Joe leaves tomorrow)
+
+## Landed this wave
+- **RELEASE v5.45.0 SHIPPED**: VERSION bump → six surfaces CONFORM → commit 8c41fe18 → tag v5.45.0
+  (pytest pre+post PASS) → master+tag pushed (97dd936a..8c41fe18) → GitHub Release page live with
+  Latest badge → panel verified by observation: hython via the package paths imports
+  synapse.__version__ = 5.45.0. `synapse.json` is a versionless live pointer (SYNAPSE_ROOT) —
+  updates with every release BY DESIGN; per-release check is the doctor stamp (step 8).
+  Note: release commit swept in the morning wave's two record files (three-mile capsule +
+  usdlux json) — flagged to Joe, house convention anyway.
+
+## In flight
+- **W1 Moneta**: PID 21220, launched 16:10:44, Opus lead + Opus forge + Opus crucible on worktree
+  `w1-moneta` / branch `fix/memory-store-recovery` (pre-ruled name). Stages: A evidence via
+  Autoresearch mission w1_moneta_stores → B FULL BACKUP to C:\Users\User\.synapse\backups\w1_2026-08-09\
+  with verified manifest (hard gate before any mutation) → C build (env-var expansion fix, unify
+  stores, conflict policy = keep-both never-delete, un-xfail PRST pair, scene_memory green,
+  full suite r310-only) → D crucible data-safety review. Log scratch/w1_build.log, ticks
+  scratch/w1_progress.log. Final block: W1_STORES_FOUND / W1_BACKUP / W1_COMMITS / W1_PRST /
+  W1_SCENE_MEMORY / W1_FULL_SUITE / W1_REVIEWER. NO push/merge — those are session-3 acts.
+
+## Phase 2 status
+P2-as-written stays REJECTed (R-CACHE-1 e3: no in-flight cook cancel API on this build — Joe's own
+SideFX escalation is the receipt — plus the 250ms boundedness law vs a 22–31min main-thread bake).
+Achievable re-scope offered to Joe: (a) insertion-only (`synapse_insert_cache`, undoable — e3 never
+touched it) buildable tonight in parallel; (b) out-of-process bake (detached hython child = killable
+= cancellation by architecture, main thread never blocks) — designed post-vacation with its own
+adjudication pass. Awaiting his word; do not build rejected scope on momentum.
+
+## Session-3 resume protocol
+1. Read-first: tail w1_build.log; parse W1_ block or confirm PID 21220 alive + tick-watch.
+2. W1 CLEAR → Joe's gates: review series on fix/memory-store-recovery → merge word → push word →
+   consider v5.45.1 or v5.46.0 (memory recovery is user-facing: minor bump likely) via RELEASE_CARD.
+3. W1 BLOCKED → verbatim reason + fork, no loops. Backups at .synapse\backups\w1_2026-08-09\ are
+   the recovery path — verify manifest before ANY retry touches stores.
+4. If insert team was also dispatched: parse its M-INS_ block same pattern, worktree cache-ins.
+5. Joe is ON VACATION — mobile-first: compress, lead with verdicts, board-style summaries.
+
+## Ledger (wave 2)
+Release = 0 agent sessions (instrument acts, recorded: VERSION edit, sync, commit 8c41fe18, tag,
+push branch+tag, gh release). W1 = 3 Opus sessions in flight. Tokens: unavailable.
+
+**16:2x addendum:** insert team DISPATCHED on Joe's word - worktree cache-ins, branch feat/cache-insert, log scratch/ins_build.log, ticks scratch/ins_progress.log, final block INS_*. Two Opus teams now parallel.
+
+**16:5x addendum:** autonomous CLOSER dispatched at Joe's direction (scratch/closer.ps1) - waits for both verdicts, merges CLEAR-only, verifies suite vs allowed-failure set, one Gate C push; refuses loudly on any anomaly leaving merges local. Receipt: scratch/CLOSE_RECEIPT_2026-08-09.log. Session-3 first read = that receipt.
