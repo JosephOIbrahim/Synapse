@@ -876,27 +876,35 @@ def _expand_and_validate(raw: Any) -> Optional[Path]:
 def _safe_unsaved_base() -> Path:
     """Canonical unsaved-scene base, guaranteed free of literal env tokens.
 
-    Delegates to ``scene_memory.unsaved_memory_base`` -- the single source of
-    truth that expands ``$HOUDINI_TEMP_DIR`` and refuses an unexpanded token --
-    then RE-VALIDATES. If the result still carries a literal ``$VAR`` / ``%VAR%``
-    segment (or the delegate is unavailable), fall back to the platform temp
-    dir loudly, never to a literal-env directory on disk.
+    Mirrors ``scene_memory.unsaved_memory_base`` (C-0: both subsystems must
+    address the SAME place -- in production they share the one ``hou`` module,
+    so they land identically), but resolves through store's OWN ``hou`` and
+    RE-VALIDATES. Order: expand ``$HOUDINI_TEMP_DIR`` via ``hou`` -> the
+    ``HOUDINI_TEMP_DIR`` environment variable -> the platform temp dir. A result
+    that still carries a literal ``$VAR`` / ``%VAR%`` segment (the undefined-var
+    case, where ``expandString`` hands the token back) is refused before it can
+    be joined to disk -- fall back to the platform temp dir loudly.
     """
+    _TOKEN = "$HOUDINI_TEMP_DIR"
     base: Optional[str] = None
-    try:
-        from .scene_memory import unsaved_memory_base
-        base = unsaved_memory_base()
-    except Exception as exc:  # noqa: BLE001 -- the resolver must not raise
-        logger.warning(
-            "unsaved_memory_base() unavailable (%s); using platform-temp fallback",
-            exc,
-        )
+    if HOU_AVAILABLE:
+        try:
+            expanded = hou.text.expandString(_TOKEN)
+            if expanded and expanded.strip() != _TOKEN:
+                base = os.path.join(expanded, "untitled")
+        except Exception:  # noqa: BLE001 -- a broken hou is not a crash here
+            pass
+    if base is None:
+        env = os.environ.get("HOUDINI_TEMP_DIR")
+        if env:
+            base = os.path.join(env, "untitled")
     if not base or _has_literal_env_segment(base):
         fallback = os.path.join(tempfile.gettempdir(), "synapse", "untitled")
-        logger.warning(
-            "Unsaved-scene base unresolved or held a literal env token (%r); "
-            "falling back to %s", base, fallback,
-        )
+        if base and _has_literal_env_segment(base):
+            logger.warning(
+                "Unsaved-scene base held a literal env token (%r); falling back "
+                "to %s", base, fallback,
+            )
         base = fallback
     return Path(os.path.normpath(base))
 
