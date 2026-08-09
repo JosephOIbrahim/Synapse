@@ -15,7 +15,8 @@ One card per release, every release. Gate: `scripts/tag_release.py`.
 4  python scripts\tag_release.py --check-only    preflight, no tag
 5  python scripts\tag_release.py             creates vX.Y.Z (annotated)
 6  git push origin <branch> && git push origin vX.Y.Z    operator act
-7  reinstall -> synapse_doctor               install stamp conforms
+7  gh release create vX.Y.Z --title vX.Y.Z --notes-file harness\notes\RELEASE_vX.Y.Z.md    Releases page + Latest badge
+8  reinstall -> synapse_doctor               install stamp conforms
 ```
 
 Success signature: every check prints `OK`, `pytest_pre PASS`,

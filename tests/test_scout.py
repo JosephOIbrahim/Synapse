@@ -500,26 +500,30 @@ def test_committed_h22_table_is_stamped_for_the_targeted_build():
     """R-M5-4's deliverable, pinned. The committed table must be the one this
     repo's fixtures target. Fails if a table cut on another point release is
     ever committed over it -- which is exactly the state M5 shipped in (M5-F9:
-    the table was stamped 22.0.397 while everything targeted 22.0.368)."""
+    the table was stamped 22.0.397 while everything targeted 22.0.368).
+    Re-pinned 2026-08-09 (W9): support target moved to 22.0.400 (SYN-NEXT-001
+    E2, evidence-locked), table re-stamped +5/-0 vs 368, row published in
+    docs/SUPPORT_MATRIX.md."""
     path = (Path(scout.__file__).resolve().parent / "data"
             / "h22_symbol_table.json")
     meta = json.loads(path.read_text(encoding="utf-8"))
-    assert meta["houdini_version"] == "22.0.368"
+    assert meta["houdini_version"] == "22.0.400"
     assert meta["truncated"] is False
     digest = hashlib.blake2b(
         "\n".join(sorted(meta["symbols"])).encode("utf-8"),
         digest_size=16).hexdigest()
     assert digest == meta["blake2b"]        # the table is self-consistent
-    absent_on_368 = {
+    restored_on_400 = {
         "hou.Color.ocio_bestname",
         "hou.Color.ocio_nanocolorname",
         "hou.Color.ocio_openusdname",
         "hou.GeometryViewportSettings.agentMaxBlendShapeLODLevel",
         "hou.GeometryViewportSettings.setAgentMaxBlendShapeLODLevel",
     }
-    assert absent_on_368.isdisjoint(set(meta["symbols"])), (
-        "these five exist on 22.0.397 but NOT on 22.0.368 -- their presence "
-        "means the 22.0.397 table has been committed back over this one")
+    assert restored_on_400 <= set(meta["symbols"]), (
+        "these five are absent on 22.0.368 and present on 22.0.397/22.0.400 "
+        "(the W9 +5, probe 2026-08-09) -- their absence means a pre-400 table "
+        "has been committed back over this one")
 
 
 # ── R-M5b-1: an external process WARNS about its authority (ruled 2026-08-07) ─

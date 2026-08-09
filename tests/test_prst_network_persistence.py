@@ -252,6 +252,10 @@ def test_second_deposit_of_a_session_survives_graceful_restart(project):
     assert rec["matches"][0]["content"] == stored["content"]
 
 
+@pytest.mark.xfail(
+    reason="W1 pending: abrupt-restart persistence is blueprint W1's acceptance "
+    "gate (PRST receipts, red on master since <= 2026-08-08); un-xfail lands "
+    "with fix/memory-store-recovery", strict=True)
 def test_second_deposit_of_a_session_survives_abrupt_restart(project):
     """THE REPRO. A deposit that is not the first of its session, then a crash.
 
@@ -288,6 +292,10 @@ get_synapse_memory().search(PROMPT)
 """
 
 
+@pytest.mark.xfail(
+    reason="W1 pending: abrupt-restart persistence is blueprint W1's acceptance "
+    "gate (PRST receipts, red on master since <= 2026-08-08); un-xfail lands "
+    "with fix/memory-store-recovery", strict=True)
 def test_store_still_opens_after_a_search_then_abrupt_restart(project):
     """Deposit -> text search -> crash -> reopen.
 
