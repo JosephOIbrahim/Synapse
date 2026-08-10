@@ -1,0 +1,20 @@
+{
+  "mission": "w2_moneta_registration",
+  "version": "1.0.0",
+  "target_build": "22.0.400",
+  "phases": [
+    {
+      "id": "R0",
+      "kind": "usd_schema_probe",
+      "questions": [
+        {
+          "name": "moneta_memory",
+          "schema_type": "MonetaMemory",
+          "plugin_name": "moneta",
+          "roundtrip": true,
+          "note": "W2: the four moneta_runtime.py conditions, observed live. pluginpath_set + pluginfo_on_disk = env reached the process; plugin_registered = Plug registry sees the codeless plugin; type_registered/is_concrete = SchemaRegistry resolves MonetaMemory; roundtrip_typed = a typed prim survives author->save->fresh-reopen with IsA(Usd.Typed) and a populated definition. All four true = the deployed package env is doing its job and MonetaBackedStore's use_real_usd=True init has what it needs."
+        }
+      ]
+    }
+  ]
+}
