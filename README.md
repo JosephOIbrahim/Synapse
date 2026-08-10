@@ -361,10 +361,10 @@ flowchart TB
     CTX -->|"_refresh_context_off_main"| GATHER["daemon thread<br/>synapse.panel.ctx.gather<br/>gather_context_off_main"]:::panel
     GATHER --> ROMCTX["run_on_main<br/>2s &middot; observe-only<br/>record_stall=False"]:::obs
     ROMCTX -->|"DEFERRED path"| DEFCTX["hou.selectedNodes / paneTabs<br/>read interleaved &middot;<br/>sheds on busy main thread"]:::ok
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-    classDef hot fill:#334155,stroke:#ef4444,color:#f1f5f9
-    classDef ok fill:#1e293b,stroke:#22c55e,color:#f1f5f9
+    classDef panel fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef obs fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef hot fill:#262626,stroke:#000000,color:#FFFFFF
+    classDef ok fill:#5e5e5e,stroke:#000000,color:#FFFFFF
 ```
 
 **What it does not fix.** The residual in-process render freeze is a separate class (out-of-process husk is Indie-blocked). The websocket read loop's cancel gap is still open. The 2026-07-27 latency report's "Houdini-side is milliseconds" verdict still holds for the bridge-up path but is stale for the bridge-down case this closed. CI is red on an unrelated `mcp`-library drift on the runners, not this fix — the local suite is green.
