@@ -52,3 +52,33 @@
 - `use_real_usd=True` REVIEW gate (architecture doc §1.3) — the store already
   attempts it with loud fallback; with registration live the fallback should stop
   firing. Observe on next session before any further flip.
+
+## Crucible verdict — post-review addendum (2026-08-09)
+
+Verdict: **FINDINGS (16)** — 1 BLOCK · 8 SHOULD · 7 NOTE. Full text:
+`harness/notes/W2_CRUCIBLE_VERDICT.md`.
+
+**B1 (BLOCK) — closed before merge.** The receipt narrated store-level health
+(`MonetaBackedStore ... has what it needs`) from a registration-only probe, and
+mislabeled condition-3 facets as "the four moneta_runtime.py conditions" (there
+are five, per R64). Fix applied: mission note truncated to observed scope,
+receipt of record rebuilt to carry BOTH the negative control (pre-deploy
+all-false run, verbatim) and the corrected pass, SUPPORT_MATRIX row reworded
+("same process" not "fresh", no store claim) and repointed at the committed
+receipt (also closes the receipt half of S9). Evidence regenerated live
+(run `w2_moneta_registration_live3`, all facets true).
+
+**Queued follow-ups (not in this merge — declared, not absorbed):**
+- S1/S3: subprocess re-probe with scrubbed env (provenance: package vs shell)
+  + genuinely fresh reopen. One change closes both.
+- S2: `note_source: "mission"` marker in runner entries (model-text boundary).
+- S4: except-guard the roundtrip block; bank partial observations as UNKNOWN.
+- S5/S6/S7: `check_schema_env` build-targets arg; compare against the observed
+  schema path (not any plugInfo); decouple PXR var from `src` presence.
+- S8: parity test to (var, method) pairs + top-level keys + check_schema_env cases.
+- N1–N7: unconditional roundtrip/IsConcrete, `method: append` on
+  PXR_PLUGINPATH_NAME (both surfaces), plugInfo file-path entry shape,
+  `unknowns` in DONE, mission_schema docstring, plugin_path UNKNOWN shape.
+- B1 second half (recommended next probe): `moneta_provenance_probe` kind
+  reading `moneta_runtime.schema_in_use()` / `moneta_provenance()` verbatim —
+  the probe R64 actually ruled for; natural W1-merge companion.

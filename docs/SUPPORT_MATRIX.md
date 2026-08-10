@@ -62,7 +62,7 @@ verified measurement path.
 
 | Surface | State | Receipt | Dated |
 |---|---|---|---|
-| Schema registration, headless 22.0.400 | **verified** — all four `moneta_runtime.py` conditions observed true: env reached process, `moneta` plugin registered, `MonetaMemory` concrete in SchemaRegistry, typed prim survived author→save→fresh-reopen (`IsA(Usd.Typed)`) | `harness/autoresearch/runs/w2_moneta_registration_live2/lop_truth_22.0.400.json` (mission `w2_moneta_registration`, probe `usd_schema_probe`) | 2026-08-09 |
+| Schema registration, headless 22.0.400 | **verified** — registration observed (R64 condition 3): env reached the process, `moneta` plugin registered, `MonetaMemory` concrete in SchemaRegistry, typed prim authored+saved+reopened **in the same process** reads back `IsA(Usd.Typed)`. R64 conditions 1/2/4 (`schema_in_use`)/5 (real memory round-trips) **not observed** by this probe — no store-level claim. Paired with its negative control (pre-deploy all-false run). | `harness/notes/receipts/W2_registration_22.0.400.json` (mission `w2_moneta_registration`, probe `usd_schema_probe`; crucible B1 closed) | 2026-08-09 |
 | Schema registration, GUI session | **pending** — process-global; requires a fresh Houdini launch after deploy. Panel doctor line is the observation point. Never inferred from the headless pass. | — | — |
 
 Root cause (dated receipt): the tracked `packages/synapse.json` carried
