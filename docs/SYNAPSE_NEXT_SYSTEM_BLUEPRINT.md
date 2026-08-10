@@ -114,6 +114,7 @@ The architecture must therefore convert ambiguity into explicit state before mut
 ## 3. Target architecture
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart TD
     A["Artist request"] --> P["Panel and intent resolver"]
     P --> R{"Deterministic route?"}

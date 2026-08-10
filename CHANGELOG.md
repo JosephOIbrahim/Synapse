@@ -506,7 +506,7 @@ The port pattern is mechanical and documented in `docs/crucible_protocol.md` + t
 Two modes, one switch. **Mode A** (now, on H21) grinds Phase 0 (`0.1`–`0.7`); **Mode B** arms the post-drop `1.x/2.x/3.x` pipeline the instant a human writes `harness/state/drop.json` with H22's three numbers (Python · USD · PySide). Three human gates are never auto-crossed: the **sidecar-vs-abi3** survival architecture (decision brief in `harness/notes/`), the **drop trigger**, and the **merge to main**.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart LR
     DROP{"harness/state/<br/>drop.json?"}:::hot -->|"absent"| AM["Mode A &middot; Phase 0<br/>0.1–0.7 on H21"]:::obs
     DROP -->|"present (3 numbers)"| BM["Mode B &middot; 1.x/2.x/3.x<br/>armed on H22"]:::obs
@@ -520,10 +520,10 @@ flowchart LR
         EVAL -->|"MAX_ROUNDS"| HUM["flagged for a human"]:::hot
     end
     LOOP ~~~ GATES["3 human gates — never auto-crossed:<br/>0.1 sidecar vs abi3 &middot; drop trigger &middot; merge to main"]:::hot
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-    classDef hot fill:#334155,stroke:#ef4444,color:#f1f5f9
-    classDef ok fill:#1e293b,stroke:#22c55e,color:#f1f5f9
+    classDef panel fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef obs fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef hot fill:#262626,stroke:#000000,color:#FFFFFF
+    classDef ok fill:#5e5e5e,stroke:#000000,color:#FFFFFF
 ```
 
 Standing it up surfaced + fixed real product hygiene under full-suite gating: hardcoded `C:\Users\User\SYNAPSE` fallbacks in the panel bootstraps (plus an off-by-one repo-root derivation the hardcode was masking), a single-sourced `VERSION`, and a staged demo scaffold. The `ui/` → `panel/` consolidation is fully mapped and deferred — the live UI source of truth is already `panel/`.
@@ -533,7 +533,7 @@ Standing it up surfaced + fixed real product hygiene under full-suite gating: ha
 A *read-the-handlers* audit (the real dispatch path, not the README's own claims) confirms the truth contract holds: across ~95 tools the scaffolds **self-report** (`"cooked": false` + a note) instead of faking success.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart TB
     A["per-context audit<br/>(traces each tool into its real handler)"]:::obs
     A --> S["SOPs / scene<br/>100% real &middot; every hou.* main-thread-marshaled + undo-wrapped"]:::ok
@@ -541,9 +541,9 @@ flowchart TB
     A --> T["TOPs / PDG<br/>100% real &middot; async event bridge wired"]:::ok
     A --> K["Karma render<br/>real &middot; honest GL-flipbook fallback when husk no-ops on Indie"]:::ok
     A --> C["COPs (Copernicus)<br/>18/21 real &middot; 3 honest, self-flagging scaffolds"]:::warn
-    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-    classDef ok fill:#1e293b,stroke:#22c55e,color:#f1f5f9
-    classDef warn fill:#334155,stroke:#f59e0b,color:#f1f5f9
+    classDef obs fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef ok fill:#5e5e5e,stroke:#000000,color:#FFFFFF
+    classDef warn fill:#3a3a3a,stroke:#000000,color:#FFFFFF
 ```
 
 The honest gaps are small and named: 3 COPs generators are placeholders (`reaction_diffusion`, `pixel_sort`, `bake_textures` — they build the graph but don't cook); everything else cooks for real. Provenance receipts fire at the Tier-0 Floor hook on **every** mutating op (the curated `agent.usd` Ledger is the separate, backfilled tier).
@@ -553,7 +553,7 @@ The honest gaps are small and named: 3 COPs generators are placeholders (`reacti
 M3 closes the hardening report: the engine was already honest (M1) and pipeline-fluent (M2) — this milestone makes it **operable by people who didn't build it**. The recurring theme is evidence: a frozen session dumps its telemetry before dying, a stale phantom-API gate says so in the panel footer instead of one console line, a doctor reports only checks it actually ran, and the docs that answer a studio's first three questions (what leaves the building? whose key? what breaks on upgrade?) are **CI-pinned against drift** — a new env var, egress site, or renamed artifact fails the suite until the doc catches up.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart LR
     subgraph EVID["Evidence survives the crash"]
         BEAT["freeze chain<br/>escalation"]:::hot -->|"best-effort dump<br/>BEFORE breaker/halt"| DUMP[("~/.synapse/logs/<br/>freeze_dump_*.json")]:::ok
@@ -570,10 +570,10 @@ flowchart LR
     end
     EVID ~~~ BOUND
     BOUND ~~~ PIN
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-    classDef hot fill:#334155,stroke:#ef4444,color:#f1f5f9
-    classDef ok fill:#1e293b,stroke:#22c55e,color:#f1f5f9
+    classDef panel fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef obs fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef hot fill:#262626,stroke:#000000,color:#FFFFFF
+    classDef ok fill:#5e5e5e,stroke:#000000,color:#FFFFFF
 ```
 
 Two findings came back sharper than the report wrote them: the kill-switch gap wasn't just missing retention — a naively-registered cancel would have **deadlocked behind the C5 mutation lock** the running render holds for its entire sequence (the cancel rides the read-only fast path for exactly that reason); and seat B on shared storage doesn't see an error — it sees **silent amnesia** (empty recalls, refused saves), which is why the doctor's key-fingerprint check and the show-scoped `SYNAPSE_ENCRYPTION_KEY` provisioning docs exist. The full hardening run: **suite 3,415 → 3,612**, every wave full-suite-gated, ledger in `docs/HARDENING_RUN_2026-06-10.md`. (SEC-1/RBAC remains the explicit gate before any non-local deploy mode — a decision recorded, not work skipped.)
@@ -585,7 +585,7 @@ A VFX-production hardening review (`docs/SYNAPSE_VFX_PRODUCTION_HARDENING_2026-0
 **M1 — stop the fictions:** recipe execution is propose-or-execute (never "Executed" over an untouched scene); the autonomy contract is pinned end-to-end against the live registry (the flagship unattended tool used to die at step 1 *and* evaluate every good render as failed); the compose tier self-marshals + owns its undo groups; `houdini_render` restores the artist's output-path tokens byte-identically; COPs scaffolds say `scaffolded`; the scheduler fails loudly on farm types it can't configure; APEX recipes shed 17 phantom node types for the introspected-catalog names. **M2 — pipeline citizen:** cook-and-verify with stage readback in the last uncooked USD mutators; one `_safe_node_name()`/`_expand_frame_tokens()` for derived names and frame tokens; the flipbook fallback writes a `_glpreview` sidecar, never the beauty path; the render farm restores the artist's settings baseline after every batch; plus the path/color/show-config/display work in the table above.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart LR
     subgraph M1["M1 — the truth contract (every handler result)"]
         OP["mutation runs"]:::panel --> VER{"effect observed?<br/>cooked &middot; stat'd &middot; read back"}:::obs
@@ -602,9 +602,9 @@ flowchart LR
         SHOW -.-> COLOR
     end
     M1 ~~~ M2
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-    classDef ok fill:#1e293b,stroke:#22c55e,color:#f1f5f9
+    classDef panel fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef obs fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef ok fill:#5e5e5e,stroke:#000000,color:#FFFFFF
 ```
 
 The discipline matched the subject: a system being cured of unverified claims shouldn't be hardened on unverified claims. Every [F]-tagged finding was **reproduced before it was fixed** (three were *worse* than reported, one was partially refuted and re-scoped), every fix landed with its pin, and the conformance test enforces the contract on every future handler. Live-verification residuals (per-frame `productName` under husk, display-chain behavior on a real stage) are explicitly ledgered for the next bridge session — recorded as owed, not assumed.
@@ -616,7 +616,7 @@ A two-day adversarial CTO review (8 reviewers → per-finding verification → `
 The headline was **memory durability**: the live store is Fernet-encrypted under one key file, loaded with skip-on-failure, and was rewritten by a truncating save — so one stale key env-var would silently and permanently destroy months of accreted memory on the next write. That chain is dead (degraded-load guard → atomic backed-up saves → key escrow + fingerprint). The rest of the slice: zombie mutations (timed-out main-thread payloads executing *after* the client was told to retry) are abandoned; two concurrent clients can no longer interleave mutation sequences on the shared undo stack; PDG cook failures report real errors instead of a `NameError`; the panel's Stop and timeout messages stopped lying; and the `~2 s` dispatch floor finally has a measurement instrument (`synapse_dispatch_wait_ms`) instead of folklore.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart LR
     subgraph FREEZE["Freeze-safety chain — v5.12.0 (D3: wired, transport-independent)"]
         BEAT["panel QTimer<br/>1s main-thread beat"]:::panel --> WD["process-wide Watchdog<br/>freeze_chain.py"]:::obs
@@ -631,10 +631,10 @@ flowchart LR
         LOAD -->|clean| SAVE["atomic save<br/>tmp+fsync+replace + .bak"]:::ok
         KEY["key escrow<br/>.bak + fingerprint sidecar"]:::ok -.-> LOAD
     end
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-    classDef hot fill:#334155,stroke:#ef4444,color:#f1f5f9
-    classDef ok fill:#1e293b,stroke:#22c55e,color:#f1f5f9
+    classDef panel fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef obs fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef hot fill:#262626,stroke:#000000,color:#FFFFFF
+    classDef ok fill:#5e5e5e,stroke:#000000,color:#FFFFFF
 ```
 
 The wiring is **topology-true, not theater**: the live transport (hwebserver) has no resilience layer and the fallback WS server is built with resilience off — so a literal "panel calls `server.heartbeat()`" would have armed nothing. The chain owns its own process-wide watchdog, opens the breaker *when a resilient server exists* (and says so honestly when one doesn't), and the halt only ever fires through an **already-active** bridge — escalation never constructs one.
@@ -646,7 +646,7 @@ Every action SYNAPSE takes is now recorded, on two tiers, on the path that actua
 This is **audit, not admission control** — Tier-0 records what happened; it never gates. (The bridge's consent / `IntegrityBlock` layer is the `/mcp` audit path; finding §0.8 established it is *not* on the live `/synapse` transport — so the docs no longer claim it is.) Two adjacent landings shipped alongside: an **autonomous-worker tool allowlist** (the panel worker can no longer reach `execute_python` / `execute_vex` / destructive tools by default — fail-closed, env opt-out) and **autonomy task provenance** (`autonomous_render` now feeds the already-live `suspend_all_tasks` consumer, closing a real producer→consumer loop).
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart TB
     subgraph T0 ["Tier-0 &mdash; every mutating op (audit, never gates)"]
         direction TB
@@ -672,7 +672,7 @@ flowchart TB
 The MCP/WS bridge had a recurring failure: a stale Houdini holding `:9999` with a dead server left the live session's WS server failing over to a port the clients couldn't find. The server *already* tracked its real bound port (`_actual_port`); the gap was that every client was hardcoded to 9999. The fix makes the port **discoverable** — on bind, the server atomically publishes `{host, port, pid, ts}` to a home-anchored sidecar (`~/.synapse/bridge.json`, `$SYNAPSE_BRIDGE_FILE` override); every client resolves *that*, freshest-writer-wins, with a hard fallback to `9999` / `$SYNAPSE_PORT` so a no-sidecar environment behaves byte-for-byte as before. A stale-port collision can never silently strand the bridge again.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart LR
     subgraph SRV ["Houdini &mdash; SynapseServer (on bind)"]
         direction TB
@@ -704,16 +704,16 @@ A read-only **SCOUT** recon cross-referenced the Houdini 21.0.671 capability sur
 Plus bridge/panel hardening: read-only tool failures surface as JSON-RPC errors instead of success-with-`isError`, and the panel resolves the Anthropic key through the canonical auth layer with an actionable "set it + relaunch" message.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart LR
     S["SCOUT<br/>read-only recon<br/>RAG + codebase"] -->|7 opportunities<br/>V1-verified on 21.0.671| F["FORGE<br/>MOE agent team<br/>build + unit test"]
     F -->|diff| R["CRUCIBLE<br/>adversarial review"]
     R -->|fix-forward| F
     R -->|108 tools, green| P["PR 4<br/>shipped"]
-    classDef scout fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-    classDef forge fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef cruc fill:#1e293b,stroke:#ef4444,color:#f1f5f9
-    classDef gate fill:#334155,stroke:#22c55e,color:#f1f5f9
+    classDef scout fill:#3a3a3a,stroke:#000000,color:#FFFFFF
+    classDef forge fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef cruc fill:#262626,stroke:#000000,color:#FFFFFF
+    classDef gate fill:#5e5e5e,stroke:#000000,color:#FFFFFF
     class S scout
     class F forge
     class R cruc
@@ -731,7 +731,7 @@ The write/compose counterpart to the read-side inspector. Three MCP tools, every
 - `synapse_assess_render_ready` — read-only render-readiness report (rendersettings, camera, composition errors, materials bound, output path, AOVs, XPU compatibility), naming the offending prim per failed clause.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart LR
     SS["solaris_shotsetup_karma_xpu<br/>dept sublayer stack + camera<br/>Karma engine=xpu + provenance"]:::tool
     MB["matlib_bind<br/>MaterialX to prim set<br/>verify ComputeBoundMaterial"]:::tool
@@ -744,9 +744,9 @@ flowchart LR
     SS -.->|every op| BRIDGE
     MB -.-> BRIDGE
     AR -.-> BRIDGE
-    classDef tool fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef gate fill:#334155,stroke:#22c55e,color:#f1f5f9
-    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
+    classDef tool fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef gate fill:#5e5e5e,stroke:#000000,color:#FFFFFF
+    classDef bridge fill:#3a3a3a,stroke:#000000,color:#FFFFFF
 ```
 
 Five real bugs the SCOUT→FORGE discipline caught (the `usdrender` phantom, `sublayer` strongest-first ordering, `editableStage()`-outside-cook, the `productName` parm not authoring the prim, and an MRO name collision), plus the **BL-007 / BL-008 [REAL] close** — an end-to-end render confirm surfaced that **husk silently no-ops on Houdini Indie**, so the gold-standard EXR is license-blocked and the bound emissive material was verified via a Karma-interactive flipbook (magenta, not gray) instead. 49 standalone tests; see `forge/backlog/human_review.json` (BL-012…BL-017) and `scripts/verify_compose_render.py`.
@@ -760,7 +760,7 @@ The inside-out thesis applied to memory. SYNAPSE's scene/decision memory carried
 It ships **shadow-first and flag-gated, default-off** (`SYNAPSE_MEMORY_BACKEND` = `jsonl` | `moneta` | `shadow`). Each SYNAPSE `Memory` is serialized whole into a Moneta deposit payload (byte-for-byte round-trip); a deterministic, dependency-free `HashEmbedder` (PYTHONHASHSEED-independent, swappable for a semantic model later) embeds the content; decision / show-tier / gate-source memories map to a `protected_floor` so pinned memories resist decay. Keyword search is **bit-identical** to the JSONL store (parity-by-construction); the shadow path dual-writes and diffs reads into a `ParityReport`, so cutover is justified by evidence, not hope.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart TB
     C["Callers &mdash; unchanged<br/>synapse_context / search / recall<br/>session tracker"] --> SM["SynapseMemory facade"]
     SM --> SEL{"SYNAPSE_MEMORY_BACKEND"}
@@ -770,9 +770,9 @@ flowchart TB
     SH -->|"authoritative read"| JS
     SH -.->|"mirror + diff"| MB
     MB --> ENG[("Moneta engine<br/>HashEmbedder &rarr; deposit/query<br/>decay &middot; consolidation &middot; protected_floor")]:::eng
-    classDef def fill:#1e293b,stroke:#22c55e,color:#f1f5f9
-    classDef alt fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-    classDef eng fill:#334155,stroke:#f59e0b,color:#f1f5f9
+    classDef def fill:#5e5e5e,stroke:#000000,color:#FFFFFF
+    classDef alt fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef eng fill:#3a3a3a,stroke:#000000,color:#FFFFFF
 ```
 
 A four-agent **CRUCIBLE** fan-out attacked the backend and found two real defects — a protected-quota silent demotion and a corrupt-snapshot startup-killer — both fixed and pinned. A second ARCHITECT→FORGE→CRUCIBLE pass then closed the **FC4 single-writer gap by construction**: a serialization `RLock` makes the adapter thread-safe (the engine's swap-and-pop index can no longer be corrupted by concurrent deposit/iterate/prune), and because the adapter makes zero `hou.*` calls the lock is never held across the main-thread hop — so it can't deadlock the async server. Proven standalone by a concurrency stress suite; the destructive `run_sleep_pass` is now auditable (returns/logs exactly what it pruned). The production default-on flip is still staged (flag stays `jsonl`), but no longer blocked on live thread-safety verification. Full acceptance/falsifier status and the cutover procedure live in [`docs/MONETA_SYNAPSE_SHIP_REPORT.md`](docs/MONETA_SYNAPSE_SHIP_REPORT.md).
@@ -786,7 +786,7 @@ The memory store's bespoke `python/synapse/memory/evolution.py` (the charmander�
 ### Sprint 3 progress — Mile 4 of 6 closed (Mile 5 prestaged)
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart LR
     M1["Mile 1<br/>Spike 2.4<br/>deadlock close"]:::closed
     M2["Mile 2<br/>Spike 3.0<br/>PDG audit"]:::closed
@@ -797,16 +797,16 @@ flowchart LR
     M1 --> M2 --> M3 --> M4 --> M5 --> M6
     P["Spike 3.3 prestage - design-only<br/>4 scaffold bugs caught A-D<br/>handlers fire on a worker thread"]:::recon
     M5 -.-> P
-    classDef closed fill:#1e293b,stroke:#22c55e,color:#f1f5f9
-    classDef ahead fill:#334155,stroke:#94a3b8,color:#cbd5e1
-    classDef prestaged fill:#3b2f1d,stroke:#f59e0b,color:#fde68a
-    classDef recon fill:#0f172a,stroke:#f59e0b,color:#fbbf24
+    classDef closed fill:#5e5e5e,stroke:#000000,color:#FFFFFF
+    classDef ahead fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef prestaged fill:#3a3a3a,stroke:#000000,color:#FFFFFF
+    classDef recon fill:#3a3a3a,stroke:#000000,color:#FFFFFF
 ```
 
 **Mile 1 — Spike 2.4 deadlock closure.** The live Crucible baseline at end of Sprint 3 Day 1 surfaced a deadlock at the daemon ↔ main-thread boundary: synchronous `submit_turn` parked Houdini's main thread on a result queue while the daemon thread's `hdefereval` dispatch waited for that same main thread to pump Qt events. Spike 2.4 closes it by changing `submit_turn` to return immediately with a `TurnHandle` — a `threading.Event`-backed Future analog. The caller decides when (and on which thread) to wait. Main thread stays free to pump Qt events; daemon thread keeps the agent loop; `hdefereval` lambdas execute because main is responsive.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569','actorBkg':'#1e293b','actorTextColor':'#f1f5f9','actorBorder':'#0f172a','signalColor':'#f59e0b','signalTextColor':'#f1f5f9','noteBkgColor':'#334155','noteTextColor':'#f1f5f9','sequenceNumberColor':'#f1f5f9','labelBoxBkgColor':'#1e293b','labelTextColor':'#f1f5f9','loopTextColor':'#f1f5f9'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 sequenceDiagram
     autonumber
     actor Caller
@@ -840,16 +840,16 @@ sequenceDiagram
 **Workflow — the three-role pattern.** Phase A and Phase B both ran the same MOE shape internally:
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart LR
     A["ARCHITECT<br/>design only<br/>(spec contract)"] -->|design.md| F["FORGE<br/>implementation +<br/>basic tests"]
     F -->|system under test| C["CRUCIBLE<br/>hostile suite<br/>(adversarial posture)"]
     C -->|fix-forward| F
     C -->|all green| G["Phase Gate"]
-    classDef arch fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-    classDef forge fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef cruc fill:#1e293b,stroke:#ef4444,color:#f1f5f9
-    classDef gate fill:#334155,stroke:#22c55e,color:#f1f5f9
+    classDef arch fill:#3a3a3a,stroke:#000000,color:#FFFFFF
+    classDef forge fill:#4d4d4d,stroke:#000000,color:#FFFFFF
+    classDef cruc fill:#262626,stroke:#000000,color:#FFFFFF
+    classDef gate fill:#5e5e5e,stroke:#000000,color:#FFFFFF
     class A arch
     class F forge
     class C cruc
