@@ -405,3 +405,88 @@ def probe_fixture_hash(path: str, name: str, repeat: int) -> dict:
         result["diff_sample"] = diff[:5]
 
     return result
+
+
+# ---------------------------------------------------------------- P4 probes
+# usd_schema_probe: is a codeless USD schema REGISTERED in this runtime, and
+# does a typed prim survive a write->reopen round trip? Answers the four
+# conditions moneta_runtime.py documents (env -> plugin -> type -> prim).
+# Deterministic, zero model, pxr-only (no hou surface needed beyond hython's
+# bundled USD). UNKNOWN posture: every unobservable value is recorded as the
+# string "UNKNOWN", never 0, never a guess.
+
+def probe_usd_schema(schema_type: str, plugin_name: str = "",
+                     roundtrip: bool = True) -> dict:
+    import os as _os
+    import tempfile as _tempfile
+
+    out: dict = {"schema_type": schema_type}
+
+    # Condition 1 -- the env var reached THIS process.
+    raw = _os.environ.get("PXR_PLUGINPATH_NAME") or ""
+    entries = [p for p in raw.replace(";", _os.pathsep).split(_os.pathsep) if p]
+    out["pluginpath_set"] = bool(entries)
+    out["pluginpath_entries"] = entries
+    out["pluginfo_on_disk"] = [
+        p for p in entries
+        if _os.path.isfile(_os.path.join(p, "plugInfo.json"))
+    ] if entries else []
+
+    try:
+        from pxr import Plug, Usd, Sdf  # noqa: F401
+    except Exception as e:  # no pxr in this interpreter: everything below is unknowable
+        out["pxr_import"] = f"FAILED: {type(e).__name__}: {e}"
+        for k in ("plugin_registered", "type_registered", "roundtrip_typed"):
+            out[k] = "UNKNOWN"
+        return out
+    out["pxr_import"] = "ok"
+
+    # Condition 2 -- the plugin registry knows the plugin.
+    if plugin_name:
+        plug = Plug.Registry().GetPluginWithName(plugin_name)
+        out["plugin_registered"] = bool(plug)
+        out["plugin_path"] = plug.path if plug else None
+    else:
+        out["plugin_registered"] = "UNKNOWN"  # not asked; not asserted
+
+    # Condition 3 -- the schema registry resolves the type as concrete typed.
+    reg = Usd.SchemaRegistry()
+    prim_def = reg.FindConcretePrimDefinition(schema_type)
+    out["type_registered"] = prim_def is not None
+    out["is_concrete"] = bool(reg.IsConcrete(schema_type)) if prim_def else False
+
+    # Condition 4 -- a typed prim survives author -> save -> fresh reopen.
+    if not roundtrip:
+        out["roundtrip_typed"] = "UNKNOWN"
+        return out
+    if not out["type_registered"]:
+        out["roundtrip_typed"] = False
+        out["roundtrip_note"] = "type not registered; authored prims would be untyped"
+        return out
+
+    tmp = _tempfile.NamedTemporaryFile(suffix=".usda", delete=False)
+    tmp.close()
+    try:
+        stage = Usd.Stage.CreateNew(tmp.name)
+        prim = stage.DefinePrim("/probe/memory_0", schema_type)
+        write_ok = prim.IsValid() and prim.GetTypeName() == schema_type
+        stage.GetRootLayer().Save()
+        del stage, prim
+
+        stage2 = Usd.Stage.Open(tmp.name)
+        prim2 = stage2.GetPrimAtPath("/probe/memory_0")
+        out["roundtrip_typed"] = bool(
+            write_ok
+            and prim2.IsValid()
+            and prim2.GetTypeName() == schema_type
+            and prim2.IsA(Usd.Typed)
+            and prim2.GetPrimDefinition() is not None
+        )
+        out["reopen_typename"] = str(prim2.GetTypeName()) if prim2.IsValid() else None
+        out["reopen_IsA_UsdTyped"] = bool(prim2.IsValid() and prim2.IsA(Usd.Typed))
+    finally:
+        try:
+            _os.unlink(tmp.name)
+        except OSError:
+            pass
+    return out

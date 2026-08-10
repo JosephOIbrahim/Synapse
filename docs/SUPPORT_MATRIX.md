@@ -57,3 +57,21 @@ once, and classifies any non-positive reading that carries cook evidence as **UN
 with provenance `lastCookTime_unreported` — never a fabricated zero. Farm, test, and
 hbatch contexts therefore report UNKNOWN cook time by design; in-session GUI use is the
 verified measurement path.
+
+## MonetaMemory USD schema registration — 2026-08-09 (W2)
+
+| Surface | State | Receipt | Dated |
+|---|---|---|---|
+| Schema registration, headless 22.0.400 | **verified** — registration observed (R64 condition 3): env reached the process, `moneta` plugin registered, `MonetaMemory` concrete in SchemaRegistry, typed prim authored+saved+reopened **in the same process** reads back `IsA(Usd.Typed)`. R64 conditions 1/2/4 (`schema_in_use`)/5 (real memory round-trips) **not observed** by this probe — no store-level claim. Paired with its negative control (pre-deploy all-false run). | `harness/notes/receipts/W2_registration_22.0.400.json` (mission `w2_moneta_registration`, probe `usd_schema_probe`; crucible B1 closed) | 2026-08-09 |
+| Schema registration, GUI session | **pending** — process-global; requires a fresh Houdini launch after deploy. Panel doctor line is the observation point. Never inferred from the headless pass. | — | — |
+
+Root cause (dated receipt): the tracked `packages/synapse.json` carried
+`PXR_PLUGINPATH_NAME` correctly, but no pref dir ever loaded it —
+`HOUDINI_PACKAGE_DIR` unset, no deployed copy — and the installer's
+`build_package()` had drifted schema-blind (no PXR var, no backend var), so
+even a deploy would not have registered the schema. Fixed 2026-08-09:
+installer parity restored + `schema env` verify row + parity pinned by
+`tests/test_install_package_parity.py`. Live pref dir observed via
+`hou.text.expandString("$HOUDINI_USER_PREF_DIR")` =
+`C:/Users/User/OneDrive/Documents/houdini22.0` (OneDrive known-folder
+redirect); the sibling `C:/Users/User/houdini22.0` is NOT scanned by H22.

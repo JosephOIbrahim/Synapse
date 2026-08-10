@@ -1,0 +1,20 @@
+{
+  "mission": "w2_moneta_registration",
+  "version": "1.0.0",
+  "target_build": "22.0.400",
+  "phases": [
+    {
+      "id": "R0",
+      "kind": "usd_schema_probe",
+      "questions": [
+        {
+          "name": "moneta_memory",
+          "schema_type": "MonetaMemory",
+          "plugin_name": "moneta",
+          "roundtrip": true,
+          "note": "W2: schema REGISTRATION observed live (R64 condition 3 facets). pluginpath_set + pluginfo_on_disk = env reached this process; plugin_registered = Plug registry sees the codeless plugin; type_registered/is_concrete = SchemaRegistry resolves MonetaMemory as concrete; roundtrip_typed = a typed prim authored+saved+reopened in this SAME process reads back IsA(Usd.Typed). Scope limit: this probe observes registration only. R64 conditions 1, 2, 4 (schema_in_use) and 5 (a real memory round-trips typed) are NOT observed here; no claim about MonetaBackedStore is made by this evidence."
+        }
+      ]
+    }
+  ]
+}

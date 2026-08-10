@@ -18,7 +18,8 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-VALID_KINDS = {"type_discovery", "type_existence", "parm_probe", "chain_hash", "fixture_hash"}
+VALID_KINDS = {"type_discovery", "type_existence", "parm_probe", "chain_hash",
+               "fixture_hash", "usd_schema_probe"}
 
 
 class MissionError(ValueError):
@@ -105,6 +106,20 @@ def _validate_question(kind: str, q: dict, where: str) -> dict:
         rep = q.setdefault("repeat", 2)
         if not isinstance(rep, int) or rep < 1:
             raise MissionError(f"{where}: 'repeat' must be an int >= 1")
+
+    elif kind == "usd_schema_probe":
+        name = _req(q, "name", str, where)
+        if not name.strip():
+            raise MissionError(f"{where}: 'name' must be non-empty")
+        st = _req(q, "schema_type", str, where)
+        if not st.strip():
+            raise MissionError(f"{where}: 'schema_type' must be non-empty")
+        pn = q.setdefault("plugin_name", "")
+        if not isinstance(pn, str):
+            raise MissionError(f"{where}: 'plugin_name' must be a string")
+        rt = q.setdefault("roundtrip", True)
+        if not isinstance(rt, bool):
+            raise MissionError(f"{where}: 'roundtrip' must be a bool")
 
     return q
 
