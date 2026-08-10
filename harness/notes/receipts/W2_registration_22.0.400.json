@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "mission": "w2_moneta_registration",
+    "mission_version": "1.0.0",
+    "target_build": "22.0.400",
+    "build": "22.0.400",
+    "target_build_match": true,
+    "runner_version": "1.0.0",
+    "python": "3.13.10",
+    "started": "2026-08-10T00:36:28+00:00",
+    "finished": "2026-08-10T00:36:28+00:00",
+    "canonicalizer": "c3"
+  },
+  "entries": [
+    {
+      "claim": "usd_schema:moneta_memory",
+      "value": {
+        "schema_type": "MonetaMemory",
+        "pluginpath_set": true,
+        "pluginpath_entries": [
+          "C:/Users/User/Moneta/schema"
+        ],
+        "pluginfo_on_disk": [
+          "C:/Users/User/Moneta/schema"
+        ],
+        "pxr_import": "ok",
+        "plugin_registered": true,
+        "plugin_path": "C:/Users/User/Moneta/schema",
+        "type_registered": true,
+        "is_concrete": true,
+        "roundtrip_typed": true,
+        "reopen_typename": "MonetaMemory",
+        "reopen_IsA_UsdTyped": true
+      },
+      "probe": "usd_schema_probe",
+      "build": "22.0.400",
+      "ts": "2026-08-10T00:36:28+00:00",
+      "note": "W2: the four moneta_runtime.py conditions, observed live. pluginpath_set + pluginfo_on_disk = env reached the process; plugin_registered = Plug registry sees the codeless plugin; type_registered/is_concrete = SchemaRegistry resolves MonetaMemory; roundtrip_typed = a typed prim survives author->save->fresh-reopen with IsA(Usd.Typed) and a populated definition. All four true = the deployed package env is doing its job and MonetaBackedStore's use_real_usd=True init has what it needs."
+    }
+  ]
+}
