@@ -40,6 +40,14 @@ def moneta_src_for(repo_root: Path) -> str | None:
     return cand.as_posix() if cand.is_dir() else None
 
 
+def moneta_schema_for(repo_root: Path) -> str | None:
+    """The sibling ``../Moneta/schema`` USD plugin dir, if it actually holds a
+    ``plugInfo.json`` (else None). Observed, not asserted: an empty or missing
+    dir must never become a PXR_PLUGINPATH_NAME entry."""
+    cand = repo_root.parent / "Moneta" / "schema"
+    return cand.as_posix() if (cand / "plugInfo.json").is_file() else None
+
+
 def build_package(repo_root: Path) -> dict:
     """The resolved (absolute-path) package dict. Pure — easy to test."""
     env = [
@@ -55,6 +63,19 @@ def build_package(repo_root: Path) -> dict:
     moneta = moneta_src_for(repo_root)
     if moneta:
         env.append({"var": "MONETA_SRC", "value": moneta})
+        # Parity with packages/synapse.json (the tracked package): the deployed
+        # copy must carry the SAME env surface, or the Moneta memory substrate
+        # silently degrades. Drift here is exactly how the MonetaMemory schema
+        # went unregistered on H22 (2026-08-09): the tracked package set
+        # PXR_PLUGINPATH_NAME, this resolver did not, and only this resolver's
+        # output ever reached a Houdini prefs dir. tests/test_install_package_parity.py
+        # now pins the env-var name sets together.
+        schema = moneta_schema_for(repo_root)
+        if schema:
+            # Registration is process-global and must be in the package env
+            # (set before USD's plugin registry first loads), not at runtime.
+            env.append({"var": "PXR_PLUGINPATH_NAME", "value": schema})
+        env.append({"var": "SYNAPSE_MEMORY_BACKEND", "value": "moneta"})
     return {
         "name": "synapse",
         "enable": True,
@@ -438,6 +459,54 @@ def manual_rows() -> list:
     ]
 
 
+def check_schema_env(repo_root: Path, prefs: list) -> list:
+    """Is the MonetaMemory USD schema registrable from every wired pref dir?
+
+    Three postures, matching the house UNKNOWN rule:
+      * no Moneta sibling on this machine -> reported, never failed (the
+        jsonl backend is a legitimate seat; nothing is broken).
+      * Moneta schema present but a wired synapse.json omits
+        PXR_PLUGINPATH_NAME (or points it at a dir without plugInfo.json)
+        -> FAIL. This is the exact 2026-08-09 drift: schema on disk,
+        tracked package correct, deployed copy schema-blind.
+    """
+    schema = moneta_schema_for(repo_root)
+    if schema is None:
+        return [(MANUAL, "schema env",
+                 "no ../Moneta/schema/plugInfo.json on this machine -- Moneta "
+                 "USD substrate not expected here (jsonl backend unaffected)")]
+    bad = []
+    wired = 0
+    for pref in prefs:
+        target = pref / "packages" / "synapse.json"
+        if not target.is_file():
+            continue
+        try:
+            data = json.loads(target.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not package_points_here(data, repo_root):
+            continue
+        wired += 1
+        vals = [e.get("value") for e in data.get("env", [])
+                if e.get("var") == "PXR_PLUGINPATH_NAME"]
+        ok = any(isinstance(v, str) and (Path(v) / "plugInfo.json").is_file()
+                 for v in vals)
+        if not ok:
+            bad.append(pref.name)
+    if not wired:
+        return [(FAIL, "schema env",
+                 "Moneta schema exists but no wired pref dir to check -- "
+                 "run the installer first")]
+    if bad:
+        return [(FAIL, "schema env",
+                 f"{', '.join(bad)}: deployed synapse.json does not register "
+                 f"{schema} -- MonetaMemory prims will be untyped; re-run the "
+                 f"installer (no --dry-run)")]
+    return [(PASS, "schema env",
+             f"{wired} wired pref dir(s) register the MonetaMemory schema")]
+
+
 def collect_rows(repo_root: Path, prefs: list) -> list:
     # Discover once: the Houdini builds on disk decide WHICH pref dir has to be
     # wired, so the package check and the houdini check share one probe.
@@ -445,6 +514,7 @@ def collect_rows(repo_root: Path, prefs: list) -> list:
     rows: list = []
     rows += check_clone(repo_root)
     rows += check_package_file(repo_root, prefs, pref_names_for(installs))
+    rows += check_schema_env(repo_root, prefs)
     rows += check_vendor(repo_root)
     rows += check_api_key(repo_root)
     rows += check_houdini(installs)
