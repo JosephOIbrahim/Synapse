@@ -1,12 +1,14 @@
-# SYNAPSE
+<p align="center">
+  <img src="assets/SYNAPSE.png" alt="SYNAPSE" width="280">
+</p>
 
-**An AI agent that runs inside Houdini — not beside it.**
+<p align="center"><strong>An AI agent that runs inside Houdini — not beside it.</strong></p>
 
-Read [Known limitations](#known-limitations) first — this repo's habit is saying what doesn't work.
+<p align="center">Read <a href="#known-limitations">Known limitations</a> first — this repo's habit is saying what doesn't work.</p>
 
-SYNAPSE lives in Houdini's own Python interpreter and calls `hou.*` directly. No external bridge, no RPC hop, no second copy of the scene.
+<p align="center">SYNAPSE lives in Houdini's own Python interpreter and calls <code>hou.*</code> directly.<br>No external bridge, no RPC hop, no second copy of the scene.</p>
 
-> v5.45.1 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6
+<p align="center"><sub>v5.45.1 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6</sub></p>
 
 ---
 
