@@ -1,0 +1,66 @@
+{
+  "leg": "W3-MIGRATE",
+  "status": "green_with_findings",
+  "summary": "JSONL->Moneta copy-and-verify migration layer delivered as NEW exclusively-owned files (zero edits to contested moneta_store.py/store.py). Hard backup gate (byte-verified, originals proven untouched), one-shot exporter (ids preserved, keep-both-never-overwrite, idempotent, dim-gated), disk-independent verify (count parity + >=5 field-by-field spot-checks), and a Moneta-active + JSONL-write-through store. 14/14 new tests green + 30/30 neighbor tests green + copy-and-verify run on TWO real user stores (R10, R8) + independent raw-disk recompute. Durable live go-live is human-gated (depends on wave3/dim + wave3/store merges).",
+  "seam_guard": {
+    "fix/memory-store-recovery": "RECONCILED BY CONSTRUCTION — its HEAD is the identical SHA as wave3/migrate HEAD (5e933c13); the store map + nine/thirteen-store unification live in my own history. No BLOCK.",
+    "live_peers": "moneta_store.py held OPEN by W3-STORE (built in-add JSONL dual-write); store.py held OPEN by W3-KIND. Followed the W3-VEC playbook: delivered only new files reading PUBLIC surfaces -> rebase-clean, no overlap. Bus finding 18cb736962fc9220 records the reconciliation."
+  },
+  "acceptance": [
+    {
+      "predicate": "backup of every JSONL source exists and originals are byte-untouched after the full run",
+      "verdict": "pass",
+      "evidence": "check — python/synapse/memory/migrate.py:backup_memory_stores copies each store whole and byte-verifies (sha256(backup)==sha256(source)); verify_sources_untouched re-hashes the recorded baseline. Tests: tests/test_w3_migrate.py::{test_backup_gate_copies_and_byte_verifies, test_backup_gate_proves_sources_untouched_and_detects_drift, test_backup_gate_blocks_on_missing_source, test_backup_gate_dry_run_writes_nothing} all PASS. Real data (harness/notes/W3-MIGRATE_evidence_2026-08-13.json): R10 backup_ok=true (7 files/33241B, byte-verified) copy_untouched_after_run=true; R8 backup_ok=true (7 files/76427B) untouched=true. Live gate DRY-RUN over all 5 memory-bearing live stores: ok=true, nothing_written=true (sha baseline recorded, zero bytes written)."
+    },
+    {
+      "predicate": "count of JSONL memories equals count of USD prims after migration",
+      "verdict": "pass",
+      "evidence": "check — recomputed FROM DISK (.moneta/snapshot.json rows, NOT MonetaBackedStore.count()). Independent raw-json recompute (no migrate.py): R10 rows=21 distinct_ids=21 == loader source_count 21; R8 rows=7 ids=7 == 7. Tests: test_export_fresh_target_count_parity_and_ids (12==12, ids preserved), test_verify_export_count_parity_and_spot_check. MAPPING: 'USD prim' == Moneta snapshot.json ECS row (the durable on-disk source of truth); see finding F4. 'JSONL memory' == the decrypting loader's distinct current memory (finding F3: an append-log jsonl has more lines than memories — R10 39 lines -> 21 memories)."
+    },
+    {
+      "predicate": "5 spot-checked memories match field-for-field across stores",
+      "verdict": "pass",
+      "evidence": "test — tests/test_w3_migrate.py::test_verify_export_count_parity_and_spot_check asserts 5/5 spot_checks matched with no mismatched fields. Real data: R10 and R8 each 5/5 spot-checks matched (evidence artifact). Fields compared (migrate.py:_SPOT_FIELDS): id, content, summary, memory_type, tier, tags, keywords, created_at, source, hip_file, frame — via Memory.to_dict() equality per field."
+    },
+    {
+      "predicate": "post-flip, a new write lands in Moneta AND in JSONL (fallback armed)",
+      "verdict": "pass",
+      "evidence": "probe — python/synapse/memory/writethrough_store.py:WriteThroughStore.add writes the active store (Moneta) then mirrors to the JSONL net (isolated+loud). tests/test_w3_migrate.py::test_writethrough_write_lands_in_moneta_and_jsonl proves, by INDEPENDENT disk read, the id is present in BOTH .moneta/snapshot.json AND memory.jsonl after one add; report.net_armed=true. test_writethrough_net_write_is_isolated_and_loud proves a net failure never breaks the caller and is recorded, never silent."
+    }
+  ],
+  "targets_met": {
+    "1_hard_backup_gate": "migrate.backup_memory_stores — every store file copied + byte-verified before any migration step; sources READ-only; W1 policy (backup-first, never-delete).",
+    "2_one_shot_exporter_ids_preserved": "migrate.export_jsonl_to_moneta — whole Memory.to_json() deposited so the mem_ id round-trips (moneta_store.py:430/491); verified ids identical source<->target on real data.",
+    "3_verify_count_and_spotcheck": "migrate.verify_export — count parity from disk + no-id-dropped + >=5 field-by-field spot-checks.",
+    "4_flip_with_writethrough": "writethrough_store.WriteThroughStore — Moneta active (reads), JSONL automatic write-through net. Composable over public surfaces; production wiring is an INTEGRATOR choice (for_ruling R2).",
+    "5_keep_both_never_delete": "exporter is idempotent + keep-both: exact-payload dup skipped; same-id/different-payload collision keeps BOTH rows, never overwrites (test_keep_both_on_id_collision_never_overwrites: 2 rows, original 'A' survives). No source file is ever deleted or written."
+  },
+  "findings": [
+    {"id": "F1", "claim": "source.doc docs/SYNAPSE-memory-engineering-spec.md is ABSENT from this worktree; executed against the brief-embedded targets/acceptance (self-contained). Corroborated by W3-STORE.", "anchor": "brief mission.source.doc"},
+    {"id": "F2", "claim": "The 2026-08-09 store census is STALE: R2 memory.jsonl grew 4 -> 583 lines by 2026-08-13. verify/backup recount from LIVE disk; the census is used only for the store PATH list, never its counts.", "anchor": "harness/notes/W1_STORE_CENSUS_2026-08-09.json vs live wc -l"},
+    {"id": "F3", "claim": "Raw jsonl line count != memory count. memory.jsonl is an append-log; the decrypting MemoryStore loader collapses lines to the distinct current memory set (R10 39 lines -> 21 memories; R8 19 -> 7). Count parity is measured on MEMORIES (the loader/system definition), with source_jsonl_lines reported alongside for transparency.", "anchor": "python/synapse/memory/migrate.py:verify_export"},
+    {"id": "F4", "claim": "'typed USD prims' is aspirational. Moneta persists as .moneta/snapshot.json (JSON ECS rows) — the store's own 'durable source of truth'. USD sublayer authoring (.moneta/usd/) is DEAD BYTES until the MonetaMemory schema is registered (PXR_PLUGINPATH_NAME unset; separate leg fix/moneta-schema-registration / W3-STORE cortex). Migration is verified on the durable snapshot rows. A literal typed-USD-prim count is therefore UNKNOWN today, not falsely reported as passing.", "anchor": "python/synapse/memory/moneta_store.py:273"},
+    {"id": "F5", "claim": "DIM HAZARD: Moneta default embedder is 384-dim; reopening a 256-dim on-disk snapshot at 384 hard-crashes in hydrate (vector_index dim guard). The exporter detects the on-disk dim (snapshot_dim) and pins a matching embedder BEFORE opening a target with rows (test_export_pins_existing_dim_no_crash). The LIVE seat is currently degraded per W3-DIM (backend moneta falls back to jsonl: expected 384 got 256) — a durable go-live REQUIRES wave3/dim's reconcile merged first.", "anchor": "python/synapse/memory/migrate.py:_pick_embedder"},
+    {"id": "F6", "claim": "SEAM: target #4 write-through overlaps W3-STORE's in-add JSONL dual-write (moneta_store.py:550, OPEN claim). Delivered as a composable WriteThroughStore over public surfaces (rebase-clean, zero edits to moneta_store.py/store.py). INTEGRATOR picks one production path at merge.", "anchor": "python/synapse/memory/writethrough_store.py"}
+  ],
+  "for_ruling": [
+    {"id": "R1", "claim": "DURABLE LIVE GO-LIVE is HUMAN-GATED (it changes Joe's live memory backend on real user data). Reversible runbook: (1) `python -m synapse.memory.migrate backup --census harness/notes/W1_STORE_CENSUS_2026-08-09.json --backup-root <BACKUPS> --execute`; (2) per memory-bearing store `python -m synapse.memory.migrate export <STORE> <STORE> --execute` (in-place: memory.jsonl stays as the write-through net; exporter is idempotent + dim-pinning); (3) flip the active backend in packages/synapse.json. PRECONDITIONS: wave3/dim merged (dim reconcile, else moneta falls back to jsonl) AND wave3/store merged (in-add JSONL net) OR WriteThroughStore wired. REVERSIBILITY: set SYNAPSE_MEMORY_BACKEND=jsonl (store.py:956) — the JSONL store is untouched + authoritative and the .moneta target is purely additive (deletable)."},
+    {"id": "R2", "claim": "Write-through PRODUCTION WIRING is an INTEGRATOR choice: (a) adopt W3-STORE's in-add dual-write on backend==moneta, or (b) wire this leg's WriteThroughStore via a new SYNAPSE_MEMORY_BACKEND value in store.py (store.py is W3-KIND territory). Both satisfy target #4; pick one to avoid a double write-through at merge."}
+  ],
+  "spawn": [
+    {"id": "W3-MIGRATE-S1", "class": "probe", "name": "doctor write-through net-armed probe", "note": "Add a doctor check that reads WriteThroughReport.net_armed / recomputes moneta-rows-vs-jsonl-ids parity from disk on the live active store, so a de-synced safety net is caught live. Within spawn_classes=['probe']."},
+    {"id": "W3-MIGRATE-S2", "class": "integration", "name": "wire WriteThroughStore backend selector", "note": "Once W3-KIND releases store.py, add SYNAPSE_MEMORY_BACKEND=moneta_writethrough -> WriteThroughStore.from_storage_dir in _make_store, with jsonl fallback. HELD for Joe (class outside spawn_classes)."}
+  ],
+  "files": {
+    "added": [
+      "python/synapse/memory/migrate.py",
+      "python/synapse/memory/writethrough_store.py",
+      "tests/test_w3_migrate.py",
+      "harness/notes/W3-MIGRATE_evidence_2026-08-13.json"
+    ],
+    "edited": []
+  },
+  "tests": "14/14 tests/test_w3_migrate.py PASS (6 Moneta-backed acceptance tests ran live, Moneta available); 30/30 neighbor tests PASS (test_moneta_store 20 + test_shadow_store 5 + test_backfill 5). Python 3.14.2, Moneta live.",
+  "deps": {"W3-KIND": "CLEAR (tip==HEAD, contained)", "W3-VEC": "NOTE (independent additive module; exporter/verify does not need it)"},
+  "adversarial_verification": "PENDING — data-loss/double-count/dim-corruption hunt running (workflow w43oubehq); receipt will be updated with confirmed findings before hold."
+}
