@@ -333,7 +333,17 @@ class MemoryHandlerMixin:
         EVOLUTION_STAGE_FLAT = "charmander" / _STRUCTURED = "charmeleon" -- so
         the reply keys (`current`, `target`, `should_evolve`, `triggers_met`)
         keep the shape the retired path returned.
+
+        W3-EVOLVE -- charizard stage: when ``target_stage == "charizard"`` this
+        routes to the store-consolidation path (dry-run prune audit + a
+        structural approval token; protected memories never pruned). That path
+        drives the live store's public surface and does NOT depend on
+        ``shared/evolution.py``, so it runs BEFORE that import guard. The default
+        markdown->USD charmander->charmeleon path below is untouched.
         """
+        if resolve_param_with_default(payload, "target_stage", None) == "charizard":
+            return self._handle_evolve_consolidate(payload)
+
         try:
             from shared.constants import EVOLUTION_STAGE_STRUCTURED
             from shared.evolution import LosslessEvolution, check_evolution_triggers
@@ -385,6 +395,48 @@ class MemoryHandlerMixin:
 
         return {"dry_run": False, "evolved": False, "reason": "No evolution needed",
                 **status}
+
+    def _handle_evolve_consolidate(self, payload: Dict) -> Dict:
+        """charmeleon->charizard store consolidation (W3-EVOLVE, S6 Phase 4).
+
+        Dry-run (the default) returns the full prune audit -- merge list, prune
+        list with ids, before/after counts -- and mutates NOTHING. Apply
+        (``dry_run=False``) requires an explicit ``approval_token`` (obtained from
+        a prior dry-run) and refuses loudly without it. Protected memories are
+        structurally excluded from pruning. Reaches the live store the same way
+        ``_handle_sleep_pass`` does.
+        """
+        from ..memory.consolidation import (
+            apply_consolidation, plan_consolidation,
+            ConsolidationNotApproved, ConsolidationUnsupported,
+        )
+
+        bridge = self._get_bridge()  # type: ignore[attr-defined]
+        synapse_mem = getattr(bridge, "_synapse", None)
+        store = getattr(synapse_mem, "store", None) if synapse_mem is not None else None
+        if store is None or not hasattr(store, "all"):
+            return {"stage": "charizard", "ran": False, "applied": False,
+                    "reason": "no active memory store"}
+
+        dry_run = resolve_param_with_default(payload, "dry_run", True)
+        approval_token = resolve_param_with_default(payload, "approval_token", None)
+
+        if dry_run:
+            # Pure preview over the live corpus -- no mutation, no backup.
+            audit = plan_consolidation(store.all())
+            return {"stage": "charizard", "ran": True, **audit.to_dict()}
+
+        try:
+            audit = apply_consolidation(store, approval_token=approval_token)
+        except ConsolidationNotApproved as exc:
+            # Preview-then-approve is structural: an unapproved apply never mutates.
+            return {"stage": "charizard", "ran": True, "dry_run": False,
+                    "applied": False, "refused": True, "error": str(exc)}
+        except ConsolidationUnsupported as exc:
+            # Honest UNKNOWN on the append/consolidate Moneta backend (W3-HARDEN).
+            return {"stage": "charizard", "ran": True, "dry_run": False,
+                    "applied": False, "supported": False, "error": str(exc)}
+        return {"stage": "charizard", "ran": True, **audit.to_dict()}
 
     def _handle_sleep_pass(self, payload: Dict) -> Dict:
         """Trigger Moneta consolidation/decay. DESTRUCTIVE — permanently prunes
