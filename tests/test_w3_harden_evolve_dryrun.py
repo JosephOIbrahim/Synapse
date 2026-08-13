@@ -200,7 +200,7 @@ def test_dry_run_detects_prunable_without_removing(tmp_path):
 # corpus. Documents that W3-DIM (Phase 0) has not landed in this base.
 # ---------------------------------------------------------------------------
 
-def test_dim_mismatch_is_the_documented_root_cause(tmp_path):
+def test_dim_mismatch_is_the_documented_root_cause(tmp_path, caplog):
     corpus = _find_real_corpus()
     if corpus is None:
         pytest.skip("no on-disk real corpus — cannot demonstrate the dim seam here")
@@ -211,9 +211,22 @@ def test_dim_mismatch_is_the_documented_root_cause(tmp_path):
     shutil.copytree(corpus, work)
 
     wrong_dim = dim + 128  # deterministically not the corpus's stored dim
-    with pytest.raises(Exception) as exc:
-        MonetaBackedStore.from_storage_dir(work, embedder=HashEmbedder(dim=wrong_dim))
-    assert "dim mismatch" in str(exc.value), str(exc.value)
+    # W3-DIM re-pin (2026-08-13): the historical root cause -- init ABORTING on a
+    # persisted-vs-provider dim mismatch and silently falling back to jsonl -- is
+    # FIXED on master. The persisted index is DERIVED data: init reconciles by
+    # re-embedding from source payloads, LOUDLY, with zero memory loss. The old
+    # raise-on-mismatch assert was the pre-DIM seat; re-pinned to the new
+    # contract per house rule (declare the allowed difference, never reverse).
+    import logging
+    with caplog.at_level(logging.WARNING, logger="synapse.memory.moneta_store"):
+        store = MonetaBackedStore.from_storage_dir(
+            work, embedder=HashEmbedder(dim=wrong_dim)
+        )
+    assert store is not None, "init must SUCCEED on dim mismatch (rebuild, not abort)"
+    assert any("dim reconcile" in rec.getMessage() for rec in caplog.records), (
+        "the reconcile must be LOUD in the log (W3-DIM target 4)"
+    )
+    store.close()
 
 
 # ---------------------------------------------------------------------------
