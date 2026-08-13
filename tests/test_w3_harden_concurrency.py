@@ -114,9 +114,17 @@ def test_cross_process_uri_lock_is_process_local(tmp_path):
     # is last-writer-wins, so <2 survivors is the documented clobber; ==2 means
     # the two saves happened to serialize on disk. Either way this pins that the
     # protection does NOT come from a cross-process lock.
-    assert 1 <= len(survivors) <= 2, survivors
-    print(f"CROSS_PROCESS_SURVIVORS={survivors} "
-          f"({'CLOBBER' if len(survivors) < 2 else 'serialized-safe'})")
+    # CI RE-PIN (2026-08-13, macos-3.11): a THIRD observed mode — the two
+    # writers interleave INSIDE one snapshot.json, the reader finds corrupt
+    # JSON ("Extra data"), quarantines it, and starts fresh: ZERO survivors.
+    # Worse than last-writer-wins, and exactly the data-loss class the held
+    # W3-LOCK spawn closes. The invariant this test pins is unchanged (no
+    # cross-process mutual exclusion; recovery never crashes); the survivor
+    # envelope is widened to include the observed corruption→quarantine mode.
+    assert 0 <= len(survivors) <= 2, survivors
+    mode = ("CORRUPT-QUARANTINE" if len(survivors) == 0
+            else "CLOBBER" if len(survivors) == 1 else "serialized-safe")
+    print(f"CROSS_PROCESS_SURVIVORS={survivors} ({mode})")
 
 
 # ---------------------------------------------------------------------------

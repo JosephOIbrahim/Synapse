@@ -33,12 +33,15 @@ from synapse.panel.designsystem import tokens as dt  # noqa: E402
 def _real_pyside_or_skip():
     """Skip unless PySide6 is REAL. ``importorskip`` alone is not enough: some
     CI environments pre-mock ``PySide6`` into ``sys.modules`` so panel imports
-    survive, and a MagicMock 'module' sails through the skip and then explodes
-    on ``QApplication.instance()``. A mocked Qt cannot observe rendering —
-    UNKNOWN discipline says skip loudly, never fail on an unobservable."""
+    survive — and mock shapes vary (MagicMock instance, MagicMock class,
+    ModuleType shim with mocked attrs), so fingerprinting the mock is a losing
+    game. Check the CAPABILITY instead: real PySide6 carries a str
+    ``__version__``; every mock shape yields a non-str (missing / MagicMock).
+    A mocked Qt cannot observe rendering — UNKNOWN discipline: skip loudly,
+    never fail on an unobservable."""
     mod = pytest.importorskip("PySide6")
-    if "mock" in type(mod).__module__.lower():
-        pytest.skip("PySide6 is mocked in this environment — real Qt required")
+    if not isinstance(getattr(mod, "__version__", None), str):
+        pytest.skip("PySide6 present but mocked (no real __version__) — real Qt required")
 
 
 # ======================================================================
