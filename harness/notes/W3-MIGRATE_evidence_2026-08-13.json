@@ -1,0 +1,174 @@
+{
+  "generated": "2026-08-13T15:24:29",
+  "copy_verify": {
+    "R10": {
+      "live_source": "C:\\Users\\User\\Synapse\\untitled.hip\\.synapse",
+      "present": true,
+      "copy_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-w3-migrate\\6e738233-8dd8-449f-9c7f-f09ef3e39995\\scratchpad\\w3run\\R10\\source",
+      "backup_ok": true,
+      "backup_files": 7,
+      "backup_bytes": 33241,
+      "export": {
+        "source_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-w3-migrate\\6e738233-8dd8-449f-9c7f-f09ef3e39995\\scratchpad\\w3run\\R10\\source",
+        "target_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-w3-migrate\\6e738233-8dd8-449f-9c7f-f09ef3e39995\\scratchpad\\w3run\\R10\\moneta_target",
+        "dry_run": false,
+        "embedder_id": "minilm-l6-v2-d384",
+        "embedding_dim": 384,
+        "source_count": 21,
+        "source_jsonl_lines": 39,
+        "added": 21,
+        "kept_both": [],
+        "skipped_identical": 0,
+        "target_count_before": 0,
+        "target_count_after": 21,
+        "error": null
+      },
+      "verify": {
+        "source_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-w3-migrate\\6e738233-8dd8-449f-9c7f-f09ef3e39995\\scratchpad\\w3run\\R10\\source",
+        "target_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-w3-migrate\\6e738233-8dd8-449f-9c7f-f09ef3e39995\\scratchpad\\w3run\\R10\\moneta_target",
+        "source_count": 21,
+        "source_jsonl_lines": 39,
+        "target_rows": 21,
+        "target_distinct_ids": 21,
+        "count_parity": true,
+        "spot_ok": true,
+        "ids_missing_from_target": [],
+        "spot_checks": [
+          {
+            "id": "mem_3565ce339c45",
+            "matched": true,
+            "mismatched_fields": []
+          },
+          {
+            "id": "mem_2f1bc0bbb623",
+            "matched": true,
+            "mismatched_fields": []
+          },
+          {
+            "id": "mem_ba406e5b20fa",
+            "matched": true,
+            "mismatched_fields": []
+          },
+          {
+            "id": "mem_68b3f088aec0",
+            "matched": true,
+            "mismatched_fields": []
+          },
+          {
+            "id": "mem_76b228ba16af",
+            "matched": true,
+            "mismatched_fields": []
+          }
+        ],
+        "error": null
+      },
+      "copy_untouched_after_run": true,
+      "copy_drift": []
+    },
+    "R8": {
+      "live_source": "C:\\Users\\User\\Synapse\\$HOUDINI_TEMP_DIR\\untitled\\.synapse",
+      "present": true,
+      "copy_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-w3-migrate\\6e738233-8dd8-449f-9c7f-f09ef3e39995\\scratchpad\\w3run\\R8\\source",
+      "backup_ok": true,
+      "backup_files": 7,
+      "backup_bytes": 76427,
+      "export": {
+        "source_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-w3-migrate\\6e738233-8dd8-449f-9c7f-f09ef3e39995\\scratchpad\\w3run\\R8\\source",
+        "target_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-w3-migrate\\6e738233-8dd8-449f-9c7f-f09ef3e39995\\scratchpad\\w3run\\R8\\moneta_target",
+        "dry_run": false,
+        "embedder_id": "minilm-l6-v2-d384",
+        "embedding_dim": 384,
+        "source_count": 7,
+        "source_jsonl_lines": 19,
+        "added": 7,
+        "kept_both": [],
+        "skipped_identical": 0,
+        "target_count_before": 0,
+        "target_count_after": 7,
+        "error": null
+      },
+      "verify": {
+        "source_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-w3-migrate\\6e738233-8dd8-449f-9c7f-f09ef3e39995\\scratchpad\\w3run\\R8\\source",
+        "target_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\claude\\C--Users-User-SYNAPSE--claude-worktrees-w3-migrate\\6e738233-8dd8-449f-9c7f-f09ef3e39995\\scratchpad\\w3run\\R8\\moneta_target",
+        "source_count": 7,
+        "source_jsonl_lines": 19,
+        "target_rows": 7,
+        "target_distinct_ids": 7,
+        "count_parity": true,
+        "spot_ok": true,
+        "ids_missing_from_target": [],
+        "spot_checks": [
+          {
+            "id": "mem_9d401838a08d",
+            "matched": true,
+            "mismatched_fields": []
+          },
+          {
+            "id": "mem_fda4d5b681a8",
+            "matched": true,
+            "mismatched_fields": []
+          },
+          {
+            "id": "mem_214d5e6a35ba",
+            "matched": true,
+            "mismatched_fields": []
+          },
+          {
+            "id": "mem_b278ddee1af9",
+            "matched": true,
+            "mismatched_fields": []
+          },
+          {
+            "id": "mem_84c3d3d41e28",
+            "matched": true,
+            "mismatched_fields": []
+          }
+        ],
+        "error": null
+      },
+      "copy_untouched_after_run": true,
+      "copy_drift": []
+    }
+  },
+  "live_backup_dry_run": {
+    "stores": [
+      {
+        "source": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse",
+        "present": true,
+        "files": 19,
+        "bytes": 3290126,
+        "error": null
+      },
+      {
+        "source": "C:\\Users\\User\\Synapse\\$HOUDINI_TEMP_DIR\\untitled\\.synapse",
+        "present": true,
+        "files": 7,
+        "bytes": 76427,
+        "error": null
+      },
+      {
+        "source": "C:\\Users\\User\\SYNAPSE\\.synapse",
+        "present": true,
+        "files": 5127,
+        "bytes": 10410265,
+        "error": null
+      },
+      {
+        "source": "C:\\Users\\User\\Synapse\\untitled.hip\\.synapse",
+        "present": true,
+        "files": 7,
+        "bytes": 33241,
+        "error": null
+      },
+      {
+        "source": "C:\\Users\\User\\untitled.hip\\.synapse",
+        "present": true,
+        "files": 5,
+        "bytes": 911178,
+        "error": null
+      }
+    ],
+    "ok": true,
+    "nothing_written": true
+  }
+}
