@@ -1,0 +1,88 @@
+{
+  "leg": "W3-EVOLVE",
+  "status": "green_with_findings",
+  "summary": "charmeleon->charizard store consolidation: dry-run prune audit that mutates nothing, apply gated by a plan-bound approval token (preview-then-approve, structural), protected memories structurally excluded from pruning, lossless merge with backup-before-mutation. Delivered as a NEW exclusively-owned module (rebase-clean, W3-VEC pattern) + one handler branch + one additive registry param. Zero edits to the contested store files.",
+  "acceptance": [
+    {
+      "predicate": "a dry-run returns the audit with before/after counts and pruned ids, and a store diff shows zero mutation",
+      "verdict": "pass",
+      "evidence": "tests/test_w3_evolve_consolidation.py::test_dry_run_returns_audit_and_zero_mutation (count_before=3, count_after=2, pruned=1; payload+count snapshot byte-identical after plan) + ::test_handler_dry_run_audit (handler surface, snapshot unchanged). plan_consolidation is a pure function over store.all() and never touches the store (python/synapse/memory/consolidation.py:203)."
+    },
+    {
+      "predicate": "apply without the approval token refuses loudly",
+      "verdict": "pass",
+      "evidence": "tests/test_w3_evolve_consolidation.py::test_apply_without_token_refuses (raises ConsolidationNotApproved for token None and '', store unchanged) + ::test_apply_wrong_token_refuses + ::test_handler_apply_without_token_refuses (reply refused=True, applied=False, 'REFUSED' in error, store unchanged). Approval gate is the FIRST gate in apply_consolidation on every backend (consolidation.py:296)."
+    },
+    {
+      "predicate": "a protected memory survives an approved consolidation run",
+      "verdict": "pass",
+      "evidence": "tests/test_w3_evolve_consolidation.py::test_protected_survives_and_count_reduces (gate-sourced convention survives; its unprotected duplicate pruned; protected forced as survivor) + ::test_handler_apply_with_token_reduces_and_protects. Protected predicate (DECISION/SHOW/gate) mirrors MonetaBackedStore._is_protected; protected ids are structurally excluded from pruned_ids AND a defence-in-depth check aborts if a plan ever contains a protected id (consolidation.py:317)."
+    },
+    {
+      "predicate": "an approved run demonstrably reduces count with the audit trail intact",
+      "verdict": "pass",
+      "evidence": "tests/test_w3_evolve_consolidation.py::test_protected_survives_and_count_reduces (store.count() 3->2, audit.applied, backup file exists) + ::test_all_unprotected_duplicates_reduce_by_count (5->2, 3 dups fold to 1 survivor). apply_consolidation backs up ALL memories before mutation and records backup_path + pruned_ids + merges in the audit (consolidation.py:326)."
+    }
+  ],
+  "crucible": [
+    {
+      "criterion": "SEAM GUARD: fix/memory-store-recovery owns the store; rebase-compatibility; drift is a BLOCK",
+      "verdict": "pass",
+      "note": "Verified fix/memory-store-recovery is ALREADY MERGED into my base (HEAD 5e933c13 == its tip == merge-base). Regardless, this leg makes ZERO edits to moneta_store.py/store.py/models.py -- it is a NEW module reading the store PUBLIC surface + one handler branch + one additive registry schema property. Rebase-clean by construction vs the seam and all sibling wave3 branches (DIM/STORE/KIND/VEC), mirroring the W3-VEC pattern."
+    },
+    {
+      "criterion": "THIS TOUCHES USER MEMORY: backup-before-mutation; preview-then-approve is structural, not conventional; any auto-apply path is a BLOCK",
+      "verdict": "pass",
+      "note": "Apply writes a full JSONL snapshot of every memory to <storage_dir>/consolidation_backups/ BEFORE any update/delete (consolidation.py:_backup). Approval is a plan-digest token surfaced only by a prior dry-run; apply refuses without it or on any mismatch (store changed / wrong token). There is no code path that mutates without a matching token -- the refusal is the first gate on every backend."
+    },
+    {
+      "criterion": "information content of merged memories is preserved -- a merge that loses fields is a BLOCK",
+      "verdict": "pass",
+      "note": "Grouping is exact-normalized-content-per-type, so a pruned duplicate's content is identical to its survivor's. Before any delete the survivor absorbs the UNION of every member's tags/keywords/links/node_paths and fills empty scalar fields; the full pre-image (to_json) of every pruned memory is captured in the audit AND the backup. Pinned by ::test_merge_preserves_information (survivor tags/keywords are a superset of both members)."
+    },
+    {
+      "criterion": "the audit is re-attacked: crucible attempts an apply-without-approval and a protected-memory prune",
+      "verdict": "pass",
+      "note": "apply-without-approval: ::test_apply_without_token_refuses + ::test_apply_wrong_token_refuses + handler ::test_handler_apply_without_token_refuses. protected-memory prune: ::test_protected_never_pruned_even_as_duplicate (every pruned id is unprotected; all-protected dup cluster prunes nothing) + ::test_protected_wins_survivor_over_earlier_unprotected (protected forced as survivor despite being later). Defence-in-depth abort at consolidation.py:317 makes a protected prune structurally impossible even under a buggy plan."
+    }
+  ],
+  "tests": {
+    "new_file": "tests/test_w3_evolve_consolidation.py",
+    "new_tests": 17,
+    "new_result": "17 passed, 0 skipped (Moneta importable in-env; both Moneta-backend tests ran, confirming live honest-degradation)",
+    "regression": "477 passed / 12 skipped (needs_houdini only) across the memory domain (-k memory or moneta or store or evolve or consolid or sleep or backfill or scene_memory); sensitive suites all green: test_moneta_crucible, test_consent_timeout, test_sleep_pass_gate, test_moneta_store, test_memory_models, test_w1_consolidate_stores; tool-count conformance test_phase0c_doc1_toolcount green (additive schema change held the count)."
+  },
+  "changed_files": [
+    "python/synapse/memory/consolidation.py (NEW, exclusively owned)",
+    "python/synapse/server/handlers_memory.py (add _handle_evolve_consolidate + target_stage=charizard branch before the shared/evolution import guard)",
+    "python/synapse/mcp/_tool_registry.py (additive: approval_token property + enriched description on synapse_evolve_memory; no tool added/removed)",
+    "tests/test_w3_evolve_consolidation.py (NEW)"
+  ],
+  "findings": [
+    "NAME RECONCILED: charizard already means COMPOSED on the scene-USD axis (shared/constants.py:300 = USD sublayer composition arcs). On the memory-store axis it is the S6 Phase-4 consolidation stage. Same Pokemon, two distinct axes; this leg is the store axis only and never touches USD. Chose to trigger via target_stage='charizard' because that enum value already exists on synapse_evolve_memory (_tool_registry.py) and the handler had no charizard branch to override (the deprecated USD charizard evolver was retired). See for_ruling.",
+    "MONETA HONEST-DEGRADATION (target 1): the consolidation machinery is store-agnostic and its DRY-RUN audit works over the real MonetaBackedStore (verified live, 0 skips). Selective APPLY over Moneta is UNSUPPORTED because the append/consolidate backend has no selective delete (delete/update raise MonetaUpdateNotSupported); apply raises ConsolidationUnsupported with a clear message. Per the mission note, the machinery is proven over the pre-migration JSONL store and the real Moneta corpus apply lands under W3-HARDEN.",
+    "The is_consolidated/consolidated_into Memory fields are native but had NO production writer (read-guard enforced across all 3 stores). This leg hard-prunes exact duplicates (content survives verbatim in the survivor) rather than soft-marking, so it leaves no consolidated ghosts; the field hook remains free for a future near-duplicate soft-merge mode (spawn)."
+  ],
+  "for_ruling": [
+    "charizard overloading: this leg uses target_stage='charizard' on synapse_evolve_memory for STORE consolidation, distinct from the scene-USD COMPOSED meaning (constants.py:300). Ruling requested: accept the two-axis overload, or introduce a distinct stage/mode name for store consolidation.",
+    "gate posture: the apply path is gated by a structural plan-bound approval token (the real preview-then-approve gate) while the bridge op-gate for evolve_memory stays REVIEW (non-blocking, unchanged). Ruling requested on whether to additionally elevate the bridge gate to APPROVE for the charizard apply, given it now mutates user memory (levers documented: constants.py OPERATION_GATES, touches_disk=True R4 elevation, or a nested prune_memory Operation)."
+  ],
+  "spawn": [
+    {
+      "id": "W3-EVOLVE-MONETA-DELETE",
+      "name": "Moneta selective-delete/consolidate so charizard apply runs over the real Moneta backend",
+      "band": "BUILD",
+      "class": "probe",
+      "rationale": "apply_consolidation raises ConsolidationUnsupported on the Moneta store today (no selective delete). A Moneta-side selective removal (or a re-add-survivors + prune-by-plan path that does not rely on decay policy) would let the previewed plan apply losslessly over the live Moneta corpus. Belongs to W3-HARDEN per the mission note.",
+      "held": false
+    },
+    {
+      "id": "W3-EVOLVE-NEARDUP-SOFTMERGE",
+      "name": "Near-duplicate soft-merge mode using the native is_consolidated hook + shared-word-overlap grouping",
+      "band": "BUILD",
+      "class": "probe",
+      "rationale": "The core groups EXACT normalized-content duplicates (provably lossless prune). A near-duplicate mode could summarize-into-one using the unwired Memory.is_consolidated/consolidated_into fields (the read-guard already hides them) and patterns.py shared-word-overlap>=2 grouping, retaining distinct content rather than deleting it. Additive to consolidation.py; no store edits.",
+      "held": false
+    }
+  ]
+}
