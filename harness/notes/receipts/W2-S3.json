@@ -1,0 +1,77 @@
+{
+  "leg": "W2-S3",
+  "name": "working indicator mount from real state",
+  "status": "green_with_findings",
+  "summary": "Busy/stalled/idle indicator built as a new exclusively-owned module (python/synapse/panel/working_indicator.py) + tests (tests/test_working_indicator.py). Acceptance 1/2/3 PASS on real-state pure logic (15 passed, 2 Qt-skipped headless); crucible upheld all 5 claims. The synapse_panel.py MOUNT is HELD, deps-gated behind W2-S5's open bus claim on synapse_panel.py (correct bus discipline, not a stall). Acceptance #4 (gui_required) is UNKNOWN: headless agent, no GUI perception, and nothing is mounted to probe.",
+  "branch": "wave2/s3",
+  "base": "master",
+  "primitives_verified": {
+    "_set_busy_edge_detect": "python/synapse/panel/synapse_panel.py:2366 (+ _was_busy:354,2393) — real busy bool, already edge-detected, not a timer",
+    "stall_state": "python/synapse/server/main_thread.py:223 -> {stalled,consecutive_timeouts,last_timeout_ts}; stalled = consecutive run_on_main timeouts >= _STALL_THRESHOLD(2); no hou at module import (lines 1-40)",
+    "DEFAULT_INLINE_BUDGET_S": "python/synapse/server/marshal_guard.py:129 = 5.0; inline_budget_s() env-overridable at :174",
+    "STATUS_authority": "python/synapse/panel/designsystem/tokens.py:455 — one colour authority (H4); busy->working(FIRE), stalled->warning(WARN)"
+  },
+  "acceptance": [
+    {
+      "predicate": "indicator state transitions driven by the real busy bool and stall_state(), no timer-derived state",
+      "verdict": "pass",
+      "evidence": "tests/test_working_indicator.py::TestNoTimerRealState (6 green). compute_state(busy,stall) is a pure total function (working_indicator.py:95-110); source contains no QTimer(/import QtCore/startTimer(/timerEvent/QBasicTimer. Crucible UPHELD (agent aeed0a2834b88d953): refresh cadence is an EXTERNAL panel tick that decides WHEN to sample, never WHAT state results."
+    },
+    {
+      "predicate": "busy and stalled render distinguishably; idle renders nothing",
+      "verdict": "pass",
+      "evidence": "tests/test_working_indicator.py::TestDistinguishableRender (5 pure green; 2 Qt-widget tests skipped headless). render_spec: busy!=stalled on BOTH label ('Working...' vs 'Tool stalled ...') AND colour (FIRE vs WARN) — never colour-only; idle -> {visible:False,label:'',color:None}. NOTE: proven on render_spec DATA; on-screen paint is the gui_required predicate below."
+    },
+    {
+      "predicate": "indicator adds zero main-thread I/O and zero hou calls",
+      "verdict": "pass",
+      "evidence": "tests/test_working_indicator.py::TestZeroHouZeroIO (hou-tripwire + open()-tripwire green). read_stall_state = lock+dict-copy (main_thread.py:231-236); read_inline_budget = one os.environ read (marshal_guard.py:174-179); no hou reference anywhere; main_thread's hdefereval import is lazy inside run_on_main, off the stall_state() path. Crucible UPHELD tripwire soundness (fake-hou cannot mask; access recorded before raise; open() warmed at import so only refresh I/O could trip it)."
+    },
+    {
+      "predicate": "visible during a live long-running call without stealing focus",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required. This is a headless automated agent with no GUI perception. PySide6/PySide2 are absent in this interpreter, so WorkingIndicator is not even defined here (the 2 Qt tests skip), AND the synapse_panel.py mount is HELD behind W2-S5's open claim so nothing is mounted to probe. Recorded UNKNOWN per constitution — never zero, never assumed. Requires a probe leg at a live Houdini GUI after the mount lands (see spawn)."
+    }
+  ],
+  "crucible_criteria": [
+    {"criterion": "wave-1 crucible #3 re-verified: indicator is real-state, not a timer", "verdict": "UPHELD", "by": "crucible agent aeed0a2834b88d953 + TestNoTimerRealState"},
+    {"criterion": "no new colour/token authority (H4 landed state respected)", "verdict": "UPHELD", "by": "TestNoNewColourAuthority (no hex literal; indexes tokens.STATUS existing keys) + crucible"},
+    {"criterion": "gui_required predicate recorded UNKNOWN if unmeasured - never assumed", "verdict": "HONORED", "by": "acceptance[3].verdict = UNKNOWN"}
+  ],
+  "mount": {
+    "status": "HELD — deps-gated behind W2-S5 (first serialized writer on synapse_panel.py); its claim n=18cb66061adfa40c is OPEN/unreleased as of 2026-08-13T11:41 (no branch commit, no receipt). Bus block posted n=18cb678e180f331c.",
+    "hook_points_when_S5_releases": {
+      "construct": "instantiate WorkingIndicator(self) near the header status (around the MarkDot at synapse_panel.py:603), guarded by try/except -> self._working_indicator=None on failure",
+      "busy_edge": "at the end of _set_busy (synapse_panel.py, after :2393) call self._working_indicator.set_busy(busy) inside a try/except",
+      "refresh": "PREFERRED event-driven: push refresh(stall=..., budget_s=...) from the marshal timeout path (widget API already accepts injected snapshots). FALLBACK: refresh() from an existing tick (_update_health :420 or _update_context :2399) — NOT a new timer."
+    },
+    "reconciliation_required": "Crucible CONFIRMED the busy half already ships (synapse_panel.py:2377-2390 renders 'Working on it' + the _observe busy meter on the real busy edge). The net-new capability is the STALLED state. The mount must NOT double-render busy — either show only stalled, or have the indicator subsume the header's working text. This is a mount-time design call needing the header layout context W2-S5 is editing; the widget supports either resolution."
+  },
+  "findings": [
+    {"claim": "Mount held behind W2-S5 open claim; widget + tests delivered complete in exclusively-owned new files meanwhile. Bus discipline honored (claim n=18cb678e10b37b78, block n=18cb678e180f331c).", "anchor": "harness/autorevise/bus/wave2/bus.jsonl"},
+    {"claim": "CONFIRMED (crucible): busy visual already exists in the panel header; only STALLED is net-new. Mount must reconcile to avoid double 'working' rendering.", "anchor": "python/synapse/panel/synapse_panel.py:2377-2390"},
+    {"claim": "PLAUSIBLE (crucible): a MAIN-THREAD poll refresh can be starved by the same stall it should show, and a successful run_on_main resets the stall counter — so live-stall surfacing is weaker unless refresh is EVENT-DRIVEN from the marshal timeout path. Now named honestly in the module HONEST LIMIT docstring; widget API (injected snapshot) is ready for the event-driven push.", "anchor": "python/synapse/panel/working_indicator.py (HONEST LIMIT) + python/synapse/server/main_thread.py:220"}
+  ],
+  "for_ruling": [
+    "MOUNT design (W2-S5 / orchestrator): where WorkingIndicator mounts in synapse_panel.py and how it reconciles with the existing header busy surface (show only stalled vs subsume the header working text). Widget supports both.",
+    "tests/ claim granularity: claimed tests/test_working_indicator.py at FILE level despite W2-S1's coarse tests/ dir claim (n=18cb656773977678); disjoint from S1's memory/server domain. Same precedent + for_ruling as W2-S5 n=18cb660896b87804."
+  ],
+  "spawn": [
+    {
+      "id": "W2-S3-P1",
+      "name": "gui probe: working/stalled indicator visible during a live long call without stealing focus",
+      "band": "PROBE",
+      "class": "probe",
+      "targets": ["at a live Houdini GUI, after the W2-S3 mount lands, confirm the indicator shows 'working' during a long-running tool call and flips to 'stalled' on an off-main worker-path stall, without stealing focus from the panel/viewport"],
+      "acceptance": [
+        {"predicate": "indicator visible and reads 'tool working' during a live long-running call; never reads as 'Houdini hung'", "evidence": "gui_probe", "gui_required": true},
+        {"predicate": "an off-main worker-path stall flips the indicator to 'stalled' (WARN), not 'error'/crash", "evidence": "gui_probe", "gui_required": true},
+        {"predicate": "indicator never steals keyboard/viewport focus", "evidence": "gui_probe", "gui_required": true}
+      ],
+      "deps": ["W2-S3", "W2-S5"],
+      "readonly": false,
+      "touches": ["python/synapse/panel/synapse_panel.py"],
+      "note": "Closes acceptance #4, recorded UNKNOWN in W2-S3 (headless agent cannot GUI-probe). Needs the mount applied first (deps-gated on W2-S5 release)."
+    }
+  ]
+}
