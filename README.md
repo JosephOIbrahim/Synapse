@@ -12,6 +12,19 @@
 
 ---
 
+## The 15-second version
+
+**You type. Real nodes appear** — built, wired, named, in your open scene.
+**One Ctrl+Z** reverses the whole build.
+**It asks first** before anything risky, and **says UNKNOWN** instead of guessing.
+**It tells you what doesn't work** — [Known limitations](#known-limitations) is the most-read section on purpose.
+
+**New in v5.47.0 — The Memory Wave:** the Moneta USD memory store went production-honest — the silent jsonl-fallback root cause fixed, typed kinds, vector recall, consent-gated consolidation, and a backup-gated migration of real memories. [Release notes →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.47.0)
+
+**Jump to:** [Artists](#for-artists--the-one-minute-version) · [Demo](#watch-it-work) · [Limitations](#known-limitations) · [Install](#install) · [First prompt](#first-prompt) · [Verify it yourself](#verifying-any-of-this)
+
+---
+
 ## For artists — the one-minute version
 
 **You type what you want. Real nodes appear in your scene — built, wired, and named.**
@@ -81,6 +94,10 @@ The mechanism is *bounded depth*. Single-call coverage falls to 10% on the large
 ## Known limitations
 
 Read this here rather than discover it mid-shot.
+
+**The short list — the five most likely to bite:**
+`synapse_inspect_scene` hangs over external MCP (panel path fine) · how-to prose is still H21 · no delta path (every inspect re-reads) · a stopped **mantra** render leaves a valid-looking empty EXR · undo groups, it does not roll back on exceptions.
+Full detail on every item below.
 
 **`synapse_inspect_scene` does not return over the external MCP surface.** It hangs to the idle timeout. The function itself is instantaneous when called directly — 0.08s for the whole of a 5,764-node scene — so the fault is in the main-thread marshal under MCP, not in introspection. **The panel's WebSocket path is unaffected** and is demonstrated working on that same scene.
 
@@ -155,6 +172,9 @@ flowchart TD
 
 **Refuses to boot on a render node** — *narrowly.* `hou.isUIAvailable()` gates the daemon, the Fork Bomb guard. But it protects a component with no production callers today while other surfaces boot headless. A guard that exists, not a guarantee that holds.
 
+<details>
+<summary><strong>The full claim, unpacked</strong> — everything the one-liner compresses (115 tools, truth contract, five engines, audit trail)</summary>
+
 ### The full claim, unpacked
 
 This is the package description in long form — everything the one-liner compresses.
@@ -176,6 +196,8 @@ This is the package description in long form — everything the one-liner compre
 **Crash-atomic escrowed memory.** And a process-wide stall-detection chain (detect → breaker → emergency-halt report) that reports and degrades rather than unblocking a parked session.
 
 Verified end-to-end on Houdini 22.0.368. 22.0.400: symbol-stamped 2026-08-09 (35,908 symbols, gate armed); e2e re-verification pending — see `docs/SUPPORT_MATRIX.md`.
+
+</details>
 
 ---
 
@@ -319,6 +341,9 @@ Three instruments landed 2026-08-02, built on one finding.
 
 **The finding.** Houdini-side cost was believed to be "1–70 ms per op — the 5%." True on small scenes; at scale, stage hashing on the audited path cost **6.9–7.7 s per op at 100k prims**. And the axis everyone assumed — prim count — was wrong: cost tracks **authored array volume**. A 4-prim PointInstancer at 2M instances cost 2,017.9 ms per op while the prim-keyed gate said the scene was small — a **16,677× miss**. *Producers: `98b556f` (measured floor), `harness/latency/LEDGER.md` §1 (the volume evidence, C2 crucible).*
 
+<details>
+<summary><strong>The instruments</strong> — board, ratchet, bench (diagram + producers)</summary>
+
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
 flowchart LR
@@ -332,6 +357,8 @@ flowchart LR
 
 *Producers: board `harness/latency/verify.py` → 8 PASS · ratchet `harness/verify/perf_ratchet.py` → 8 PASS · curve `python scripts/bench_scale.py --axis volume` · all re-runnable.*
 
+</details>
+
 ---
 
 ## The chat freeze, and what fixed it
@@ -343,6 +370,9 @@ A third freeze class — distinct from the render freeze and the marshal self-de
 **The cause.** Chat turns run on a background thread, but every tool call has to reach `hou.*` on the main thread. With the local bridge **up**, the call rides the hwebserver `/mcp` thread and marshals cleanly. With the bridge **down**, the call fell back to a Qt signal that ran the *whole handler inline on the main thread* — so every internal marshal hit the no-timeout inline path and the GUI stalled for the handler's full duration. A lying "connected" SessionStart signal made this fire in ordinary sessions, not just broken ones.
 
 **The fix (v5.40.1).** Tool calls and the panel's own context-gather now spawn a daemon thread *off* the main thread, so the marshal takes the deferred path — the same path the bridge-up call takes, with a per-call timeout and UI events interleaved. Node selection and the viewport stay live mid-chat.
+
+<details>
+<summary><strong>The wiring diagram</strong> — old inline path vs. the deferred path, and what this fix does not cover</summary>
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
@@ -370,6 +400,8 @@ flowchart TB
 **What it does not fix.** The residual in-process render freeze is a separate class (out-of-process husk is Indie-blocked). The websocket read loop's cancel gap is still open. The 2026-07-27 latency report's "Houdini-side is milliseconds" verdict still holds for the bridge-up path but is stale for the bridge-down case this closed. CI is red on an unrelated `mcp`-library drift on the runners, not this fix — the local suite is green.
 
 *Producers: `6f354ae` (tool dispatch off-main) + `bf74ed7` (context-gather off-main) · PR #50, merge `d15d9b2` · pinned by `tests/test_offmain_fallback.py` (8) + `tests/test_context_poll_offmain.py` (6) + `tests/test_chat_panel.py::TestStaleContextGather` (4).*
+
+</details>
 
 ---
 
