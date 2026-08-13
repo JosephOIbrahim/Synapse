@@ -258,9 +258,21 @@ class MonetaBackedStore:
         snapshot_path = base / "snapshot.json"
         cls._quarantine_if_corrupt(snapshot_path)
         cls._quarantine_wal_if_unreplayable(base / "wal.log")
+        # ONE dim authority (W3-DIM target 1): the vector index dimension is
+        # whatever the ACTIVE embedder emits — resolved here, once, and fed to
+        # BOTH construction paths below. Never a hardcoded pin, never a stale
+        # snapshot's value. A provider swap changes embedder.dim and the whole
+        # index follows from this single read.
+        dim = cls._resolve_embedding_dim(embedder)
+        # Stale-snapshot reconcile (W3-DIM target 2): a persisted snapshot whose
+        # vectors were written by a DIFFERENT provider (different dim) is derived
+        # data gone stale. Rebuild those vectors from the source payloads at the
+        # live dim BEFORE Moneta hydrates, so the vendor's upsert dim-guard
+        # (vector_index.py:112) never aborts init into a silent jsonl fallback.
+        cls._reconcile_snapshot_dim(snapshot_path, embedder)
         cfg = mr.MonetaConfig(
             storage_uri=f"moneta-file://{Path(storage_dir).resolve().as_posix()}",
-            embedding_dim=embedder.dim,
+            embedding_dim=dim,
             quota_override=protected_quota,
             snapshot_path=snapshot_path,
             # wal_path is configured but INERT under SYNAPSE: Moneta's only WAL
@@ -287,7 +299,10 @@ class MonetaBackedStore:
             )
             cfg_no_usd = mr.MonetaConfig(
                 storage_uri=cfg.storage_uri,
-                embedding_dim=cfg.embedding_dim,
+                # Same single dim authority as the primary cfg above (target 1):
+                # both construction paths resolve the dimension from the active
+                # embedder, never from a snapshot or a per-config indirection.
+                embedding_dim=dim,
                 quota_override=cfg.quota_override,
                 snapshot_path=cfg.snapshot_path,
                 wal_path=cfg.wal_path,
@@ -414,6 +429,142 @@ class MonetaBackedStore:
                 wal_path.unlink()
             except OSError:
                 pass
+
+    # -- dim contract (W3-DIM) ----------------------------------------------
+
+    @staticmethod
+    def _resolve_embedding_dim(embedder) -> int:
+        """The single embedding-dim authority (W3-DIM target 1).
+
+        The vector index dimension is a property of the ACTIVE embedder, not a
+        constant and not a persisted snapshot. This reads ``embedder.dim`` and
+        validates it is a usable positive int, so a provider that forgot to
+        expose a dim fails loudly HERE rather than surfacing later as a bare
+        vendor ``ValueError`` deep inside Moneta's hydrate. Both construction
+        paths in :meth:`from_storage_dir` feed from this one read, so a provider
+        change can never leave the two configs disagreeing on the dimension.
+        """
+        dim = getattr(embedder, "dim", None)
+        # bool is an int subclass — reject it explicitly so a truthy flag can
+        # never masquerade as a dimension.
+        if isinstance(dim, bool) or not isinstance(dim, int) or dim <= 0:
+            raise ValueError(
+                f"active embedder {getattr(embedder, 'id', embedder)!r} exposes "
+                f"no usable .dim (got {dim!r}); the vector index cannot resolve "
+                f"its dimension from the provider"
+            )
+        return dim
+
+    @classmethod
+    def _reconcile_snapshot_dim(cls, snapshot_path: Path, embedder) -> Optional[dict]:
+        """Rebuild a stale-dim snapshot's vectors from source payloads (target 2).
+
+        Moneta hydrates ``snapshot.json`` and rebuilds its shadow vector index by
+        upserting each row's persisted ``semantic_vector``. That index's dim is
+        set from the live ``embedding_dim`` (the active embedder), so when a
+        snapshot was written by a DIFFERENT provider — e.g. a 384-dim
+        SemanticEmbedder last session, a 256-dim HashEmbedder this session — the
+        first upsert trips the vendor dim-guard (``vector_index.py:112``) and
+        ``Moneta(cfg)`` raises inside its own constructor. Left alone,
+        ``store._make_store`` then degrades the whole seat to jsonl for a
+        condition that is fully recoverable.
+
+        A row's ``payload`` is the SYNAPSE ``Memory`` (round-trips byte-for-byte);
+        its ``semantic_vector`` is DERIVED from that payload by the same embedder
+        path :meth:`add` uses (``content or summary or ""``). So a dim mismatch is
+        repaired by re-embedding every row at the live dim and rewriting the
+        snapshot in place — no memory is dropped, and Moneta then hydrates
+        cleanly. The snapshot has already passed :meth:`_quarantine_if_corrupt`,
+        so every row here carries the required keys.
+
+        Loud, never papering (target 4): a detected mismatch is logged at WARNING
+        and the rebuild announced with counts. A snapshot that is mismatched AND
+        cannot be read or rewritten re-raises, so the failure surfaces and
+        ``_make_store`` falls back to jsonl HONESTLY (recording
+        ``backend_fallback``) rather than swallowing the error. Returns a summary
+        dict when a rebuild happened, else ``None`` (absent snapshot, or already
+        coherent — the fast path rewrites nothing).
+        """
+        import json
+        if not snapshot_path.exists():
+            return None
+        live_dim = cls._resolve_embedding_dim(embedder)
+        try:
+            with open(snapshot_path, "r", encoding="utf-8") as fp:
+                data = json.load(fp)
+        except Exception as exc:
+            # A snapshot that survived _quarantine_if_corrupt but cannot be read
+            # here is a real I/O/format failure — surface it, never paper over it.
+            raise RuntimeError(
+                f"Moneta snapshot at {snapshot_path} is unreadable during dim "
+                f"reconcile ({type(exc).__name__}: {exc})"
+            ) from exc
+        rows = data.get("rows", []) if isinstance(data, dict) else []
+        # Detect a dim mismatch. All rows share the persisted dim in practice, so
+        # the first vector whose length differs from the live dim is decisive.
+        stale_dim: Optional[int] = None
+        for row in rows:
+            vec = row.get("semantic_vector")
+            if isinstance(vec, list) and len(vec) != live_dim:
+                stale_dim = len(vec)
+                break
+        if stale_dim is None:
+            return None  # fast path: snapshot already matches the live provider
+
+        # Rebuild EVERY row's vector at the live dim from its source payload —
+        # a provider change wrote all of them, so all are re-derived uniformly.
+        rebuilt = 0
+        corrupt = 0
+        for row in rows:
+            try:
+                mem = Memory.from_json(row.get("payload"))
+                text = mem.content or mem.summary or ""
+                row["semantic_vector"] = embedder.embed(text)
+            except Exception as exc:
+                # The payload (the durable asset) is preserved; only its derived
+                # vector is neutralized to a correct-dim zero vector so the row
+                # stays structurally valid and Moneta hydrates. That memory is
+                # still keyword-recallable; it simply won't be a vector-recall
+                # candidate until it is re-added under the live provider.
+                corrupt += 1
+                row["semantic_vector"] = [0.0] * live_dim
+                logger.warning(
+                    "Snapshot row %s payload unparseable during dim reconcile "
+                    "(%s: %s); preserving payload with a zero vector",
+                    row.get("entity_id", "<unknown>"), type(exc).__name__, exc,
+                )
+            rebuilt += 1
+
+        logger.warning(
+            "Moneta snapshot dim reconcile: provider changed (persisted dim=%s, "
+            "live embedder=%s dim=%d); re-embedded %d row(s) from source payloads "
+            "(%d unparseable -> zero vector). The stale vectors were DERIVED data; "
+            "no memory was dropped.",
+            stale_dim, getattr(embedder, "id", "unknown"), live_dim, rebuilt, corrupt,
+        )
+
+        # Atomic rewrite (tmp + fsync + replace) — a crash mid-write leaves the
+        # original snapshot intact, mirroring durability.snapshot_ecs.
+        import os
+        tmp_path = snapshot_path.with_name(snapshot_path.name + ".dimtmp")
+        try:
+            with open(tmp_path, "w", encoding="utf-8") as fp:
+                json.dump(data, fp)
+                fp.flush()
+                os.fsync(fp.fileno())
+            os.replace(tmp_path, snapshot_path)
+        except Exception as exc:
+            try:
+                if tmp_path.exists():
+                    tmp_path.unlink()
+            except OSError:
+                pass
+            raise RuntimeError(
+                f"Could not rewrite reconciled Moneta snapshot at "
+                f"{snapshot_path} ({type(exc).__name__}: {exc})"
+            ) from exc
+        return {"rebuilt": rebuilt, "from_dim": stale_dim, "to_dim": live_dim,
+                "corrupt_rows": corrupt}
 
     # -- write --------------------------------------------------------------
 
