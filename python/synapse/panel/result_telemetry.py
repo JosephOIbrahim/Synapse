@@ -258,3 +258,86 @@ def reset_result_render_stats() -> None:
     with _result_lock:
         for p in PHASES:
             _result_stats[p] = _blank()
+
+
+# ---------------------------------------------------------------------------
+# GUI-evidence gate (W1-MTFIX) — headless timing is NOT evidence
+# ---------------------------------------------------------------------------
+#
+# The result-path phase durations, and the deferred-path main-thread hold, mean
+# "the Qt GUI event loop was stalled this long" ONLY in a GUI Houdini session. In a
+# headless session (hython / husk batch) there is no GUI loop to stall, so a 0.0 is
+# "nothing ran", not "nothing stalled" — and a 0.0 read as an improvement is exactly
+# the bug class this repo documents (the lastCookTime vendor contract: a timing the
+# vendor only populates under a GUI is not evidence when measured headless). These
+# helpers let a reader — the FRZ probe, the metrics surface, a receipt — stamp the
+# gui_required metrics UNKNOWN off-GUI instead of reporting a misleading zero.
+#
+# The hou import is LAZY, inside the gate: this module's zero-hou / zero-Qt-at-import
+# property is load-bearing (the headless server imports these accessors) and pinned
+# by test_module_imports_without_qt. Never introduce a module-level hou/Qt import.
+
+#: Result phases whose value is evidence only in a GUI session — the two the
+#: W1-MTFIX acceptance marks gui_required (append, finalize). ``send``/``stream``/
+#: ``review`` are not gated here: the acceptance is specifically about these two.
+GUI_REQUIRED_PHASES = ("append", "finalize")
+
+
+def gui_timing_is_evidence() -> Optional[bool]:
+    """Is result-path / main-thread-hold timing in THIS process valid GUI evidence?
+
+    ``True``  — a GUI Houdini session (``hou.isUIAvailable()``): the Qt loop the
+                result phases stall is real, so their durations mean what the
+                gui_required acceptance predicates read them to mean.
+    ``False`` — a Houdini session with no UI (hython / husk batch): the loop is
+                absent, so a 0.0 is "nothing ran", not "nothing stalled".
+    ``None``  — no ``hou`` at all (standalone / CI / the sidecar brain): GUI timing
+                is not even defined; there is no GUI to stall.
+
+    Lazy ``hou`` import (see section note). Never raises.
+    """
+    try:
+        import hou
+    except Exception:
+        return None
+    try:
+        return bool(hou.isUIAvailable())
+    except Exception:
+        return None
+
+
+def gui_metric_verdict(value: Any) -> Any:
+    """Stamp one gui_required metric: return ``value`` in a GUI session, else the
+    string ``"UNKNOWN"``.
+
+    The single primitive behind the headless-is-not-evidence contract. A headless
+    0.0 is "unmeasured", never "fast", and must never read as a pass — so off-GUI
+    this returns ``"UNKNOWN"`` rather than the raw number (which is typically 0.0
+    because nothing rendered). Used for BOTH the panel phases (below) and the
+    ``main_thread_hold_slowest_ms{synapse_doctor}`` reading, so the two GUI-gated
+    surfaces share one rule.
+    """
+    return value if gui_timing_is_evidence() is True else "UNKNOWN"
+
+
+def result_evidence_verdict(stats: Optional[Dict[str, Dict[str, Any]]] = None
+                            ) -> Dict[str, Dict[str, Any]]:
+    """Per-phase evidence verdict for the gui_required result phases.
+
+    Returns ``{phase: {"gui_evidence": bool, "max_ms": float|"UNKNOWN",
+    "count": int}}``. Off-GUI every ``max_ms`` is ``"UNKNOWN"`` (never 0.0), so a
+    headless reader cannot mistake "unmeasured" for "fast"; in a GUI session it is
+    the recorded number. Pure telemetry: no hou beyond the lazy gate, never raises.
+    """
+    if stats is None:
+        stats = result_render_stats()
+    is_gui = gui_timing_is_evidence() is True
+    out: Dict[str, Dict[str, Any]] = {}
+    for phase in GUI_REQUIRED_PHASES:
+        slot = stats.get(phase) or {}
+        out[phase] = {
+            "gui_evidence": is_gui,
+            "max_ms": gui_metric_verdict(float(slot.get("max_ms", 0.0) or 0.0)),
+            "count": int(slot.get("count", 0) or 0),
+        }
+    return out

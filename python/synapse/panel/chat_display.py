@@ -321,6 +321,31 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.setTextCursor(cursor)
         self._scroll_to_bottom()
 
+    # -- Result-path cost bound (W1-MTFIX) -----------------------------------
+
+    def set_max_result_blocks(self, n):
+        """Bound the QTextDocument to at most ``n`` blocks (oldest trimmed first).
+
+        The append/finalize main-thread cost is dominated by ``insertHtml``'s Qt
+        rich-text re-layout, which is O(document): it grows with conversation length
+        because the document is unbounded. This is the O(1) Qt-native lever that
+        caps it — ``QTextDocument.setMaximumBlockCount`` — so the worst-case
+        re-layout stays flat no matter how long the session runs, which is the
+        architectural fix FRZ_REPRO names for the result path.
+
+        OPT-IN, default unlimited: not called at construction, because trimming is a
+        content decision (a message spans several blocks, so a block cap can clip the
+        oldest message mid-body — whole-message trimming is the follow-up). Enabling
+        it, and picking the cap, is a UX call this leg does not make unilaterally
+        against the 'no result-content regression' bar. ``n <= 0`` restores unlimited.
+
+        Verified present on this build's PySide6 (QTextDocument.setMaximumBlockCount,
+        H22.0.400). Best-effort: never raises."""
+        try:
+            self.document().setMaximumBlockCount(int(n) if n and n > 0 else 0)
+        except Exception:
+            pass
+
     # -- Streaming (token-by-token) ------------------------------------------
 
     def begin_stream(self):
