@@ -152,6 +152,8 @@ def question_label(kind: str, q: dict) -> str:
         return f"fixture:{q['name']}"
     if kind == "usd_schema_probe":
         return f"usd_schema:{q['name']}"
+    if kind == "store_census":
+        return f"census:{len(q['roots'])}roots"
     return kind
 
 
@@ -191,6 +193,9 @@ def execute_question(kind: str, q: dict, probes, run: Run) -> None:
             value = probes.probe_usd_schema(
                 q["schema_type"], q["plugin_name"], q["roundtrip"])
             run.record(f"usd_schema:{q['name']}", value, kind, note)
+        elif kind == "store_census":
+            value = probes.probe_store_census(q["roots"], q["exclude_globs"])
+            run.record("memory_store_census", value, kind, note)
 
         else:  # unreachable post-validation; recorded, not raised
             run.record(f"unknown_kind:{kind}", {"error": "unknown question kind"}, kind)

@@ -18,8 +18,10 @@ import atexit
 import logging
 import os
 import json
+import re
 import time
 import shutil
+import tempfile
 import threading
 from pathlib import Path
 from typing import List, Dict, Optional, Any, Callable
@@ -830,6 +832,84 @@ def _announce_unsaved_relocation(temp_root: Any) -> None:
 
 
 # =============================================================================
+# STORE-PATH SAFETY (W1): never join an UNEXPANDED env token as a path segment
+# =============================================================================
+#
+# The literal ``C:/Users/User/Synapse/$HOUDINI_TEMP_DIR/untitled/.synapse`` store
+# found on disk was born here: ``_resolve_project_path`` joined the raw
+# ``$HOUDINI_TEMP_DIR`` token -- returned UNCHANGED by ``expandString`` when the
+# variable is undefined -- as a RELATIVE segment, so it landed under the process
+# CWD. ``scene_memory.unsaved_memory_base`` already refuses that; these helpers
+# mirror the discipline on every store path store.py builds. A path COMPONENT
+# that still matches ``$VAR`` / ``${VAR}`` / ``%VAR%`` after expansion must NEVER
+# be joined to disk.
+
+#: A path COMPONENT that is still an unexpanded environment reference.
+_LITERAL_ENV_SEG = re.compile(r"^(?:\$\w+|\$\{[^}]+\}|%[^%]+%)$")
+
+
+def _has_literal_env_segment(path: Any) -> bool:
+    """True when any component of *path* is still a literal env-var token."""
+    try:
+        parts = Path(str(path)).parts
+    except Exception:  # noqa: BLE001 -- a path we cannot even split is not ours
+        return False
+    return any(_LITERAL_ENV_SEG.match(seg) for seg in parts)
+
+
+def _expand_and_validate(raw: Any) -> Optional[Path]:
+    """Expand ``$VAR`` / ``${VAR}`` / ``%VAR%`` / ``~`` in *raw*; reject a residual token.
+
+    Returns the expanded ``Path``, or ``None`` when a component is STILL an
+    unexpanded env token after expansion -- the caller then falls back to a
+    resolved, writable base rather than create a literal ``$VAR`` directory.
+    A plain, token-free path is returned unchanged (expansion is a no-op).
+    """
+    if raw is None:
+        return None
+    expanded = os.path.expanduser(os.path.expandvars(str(raw)))
+    if _has_literal_env_segment(expanded):
+        return None
+    return Path(expanded)
+
+
+def _safe_unsaved_base() -> Path:
+    """Canonical unsaved-scene base, guaranteed free of literal env tokens.
+
+    Mirrors ``scene_memory.unsaved_memory_base`` (C-0: both subsystems must
+    address the SAME place -- in production they share the one ``hou`` module,
+    so they land identically), but resolves through store's OWN ``hou`` and
+    RE-VALIDATES. Order: expand ``$HOUDINI_TEMP_DIR`` via ``hou`` -> the
+    ``HOUDINI_TEMP_DIR`` environment variable -> the platform temp dir. A result
+    that still carries a literal ``$VAR`` / ``%VAR%`` segment (the undefined-var
+    case, where ``expandString`` hands the token back) is refused before it can
+    be joined to disk -- fall back to the platform temp dir loudly.
+    """
+    _TOKEN = "$HOUDINI_TEMP_DIR"
+    base: Optional[str] = None
+    if HOU_AVAILABLE:
+        try:
+            expanded = hou.text.expandString(_TOKEN)
+            if expanded and expanded.strip() != _TOKEN:
+                base = os.path.join(expanded, "untitled")
+        except Exception:  # noqa: BLE001 -- a broken hou is not a crash here
+            pass
+    if base is None:
+        env = os.environ.get("HOUDINI_TEMP_DIR")
+        if env:
+            base = os.path.join(env, "untitled")
+    if not base or _has_literal_env_segment(base):
+        fallback = os.path.join(tempfile.gettempdir(), "synapse", "untitled")
+        if base and _has_literal_env_segment(base):
+            logger.warning(
+                "Unsaved-scene base held a literal env token (%r); falling back "
+                "to %s", base, fallback,
+            )
+        base = fallback
+    return Path(os.path.normpath(base))
+
+
+# =============================================================================
 # SYNAPSE MEMORY - HIGH-LEVEL API
 # =============================================================================
 
@@ -969,19 +1049,34 @@ class SynapseMemory:
     def _resolve_project_path(self, path: Optional[str]) -> Path:
         """Resolve the project path."""
         if path:
-            return Path(path)
+            resolved = _expand_and_validate(path)
+            if resolved is not None:
+                return resolved
+            # An explicit path that STILL holds a literal env token after
+            # expansion must not be mkdir'd verbatim -- that is the literal
+            # "$HOUDINI_TEMP_DIR" directory bug in path form. Fall back to the
+            # writable unsaved-scene base instead of creating a "$VAR" dir.
+            logger.warning(
+                "project_path %r still contained an unexpanded env token after "
+                "expansion; using the unsaved-scene base instead", path,
+            )
+            return _safe_unsaved_base()
 
         if HOU_AVAILABLE:
             hip_path = hou.hipFile.path()
             if not hip_is_unsaved(hip_path, hou):
                 return Path(hip_path)
-            # Unsaved scene -> $HOUDINI_TEMP_DIR, the address this branch
-            # always intended. Until 2026-08-01 the guard compared the FULL
-            # path against the bare string "untitled.hip", which never
-            # matched, so this branch was dead code and the store landed at
-            # <process-cwd>/untitled.hip/.synapse — twice logged inside
-            # Program Files, where mkdir raised PermissionError WinError 5.
-            temp_root = Path(hou.text.expandString("$HOUDINI_TEMP_DIR")) / "untitled"
+            # Unsaved scene -> the canonical unsaved base. Until 2026-08-01 the
+            # guard compared the FULL path against the bare string
+            # "untitled.hip", which never matched, so this branch was dead code
+            # and the store landed at <process-cwd>/untitled.hip/.synapse.
+            # After the guard was fixed, this branch joined the RAW
+            # expandString("$HOUDINI_TEMP_DIR") result -- and when that variable
+            # is undefined expandString hands the token straight back, so the
+            # store landed at <cwd>/$HOUDINI_TEMP_DIR/untitled/.synapse (the
+            # literal-env directory this W1 recovery cleaned up). _safe_unsaved_base
+            # expands the token AND refuses to join it unexpanded.
+            temp_root = _safe_unsaved_base()
             _announce_unsaved_relocation(temp_root)
             return temp_root
 

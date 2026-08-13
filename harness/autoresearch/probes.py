@@ -490,3 +490,281 @@ def probe_usd_schema(schema_type: str, plugin_name: str = "",
         except OSError:
             pass
     return out
+# ---------------------------------------------------------------- store census
+# W1 (fix/memory-store-recovery): a pure-Python filesystem census of memory-store
+# locations. Zero hou. The runner still calls require_hou() because it runs under
+# hython, but this probe touches only the filesystem, deterministically. It is the
+# evidence MAP behind the store-recovery fix: every candidate store, its size, its
+# entry counts, the literal unexpanded-env-var segments in its path, and the
+# cross-store key overlap. No mutation: read-only, symlinks never followed.
+import os as _os
+import re as _re
+import fnmatch as _fnmatch
+
+# A SYNAPSE memory store is NAME-defined, not marker-sniffed: a generic
+# "contains a .md" rule swept in Claude Code's own .claude project dirs and
+# harness/state. The precise signatures:
+#   .synapse   SYNAPSE's memory home (jsonl + nested .moneta)
+#   .moneta    the moneta backend dir (normally nested inside .synapse)
+#   claude     SYNAPSE SCENE MEMORY — a *claude* dir (no leading dot) carrying
+#              agent.usd or memory.md. This is what distinguishes it from Claude
+#              Code's .claude config tree, which must NOT be counted as a store.
+_STORE_DIR_NAMES = {".synapse", "claude", ".moneta"}
+_SCENE_SIGNATURE = ("agent.usd", "memory.md")
+# Path-segment globs that mark a store as NOT real user memory (throwaway).
+# MagicMock / mock.path* catch id-mock dirs a test leaked to disk as literal
+# folders (MagicMock/mock.path()/<bignum>/.synapse).
+_TEST_SEGMENT_GLOBS = (".pytest_bt_*", "pytest-of-*", ".pytest_cache", "test_*",
+                       "MagicMock", "mock.path*")
+# A literal, unexpanded environment-variable path segment: $VAR, ${VAR}, %VAR%.
+_LITERAL_ENV_RE = _re.compile(r"^(\$\w+|\$\{[^}]+\}|%[^%]+%)$")
+# Heavy trees that never hold user memory — pruned at the walk, in addition to
+# any exclude_globs the mission passes.
+_ALWAYS_PRUNE = {".git", "node_modules", "__pycache__", ".venv", "venv",
+                 "site-packages", ".mypy_cache", ".idea", ".vscode"}
+
+
+def _seg_is_literal_env(seg: str) -> bool:
+    return bool(_LITERAL_ENV_RE.match(seg))
+
+
+def _norm_key(path: str) -> str:
+    """Case-insensitive canonical key for de-duplicating a path on Windows."""
+    return _os.path.normcase(_os.path.normpath(_os.path.abspath(path)))
+
+
+def _iter_store_dirs(root: str, max_depth: int, exclude: set):
+    """Yield candidate store directories under root (depth-bounded, symlink-safe,
+    pruning exclude + _ALWAYS_PRUNE by basename)."""
+    root = _os.path.abspath(root)
+    if not _os.path.isdir(root):
+        return
+    stack = [(root, 0)]
+    while stack:
+        d, depth = stack.pop()
+        base = _os.path.basename(d.rstrip("\\/")) or d
+        # Is THIS dir a SYNAPSE store? Name-defined (see _STORE_DIR_NAMES).
+        if base in (".synapse", ".moneta"):
+            is_store = True
+        elif base == "claude":
+            # Only a claude dir with the scene-memory signature — never a bare
+            # cache dir named 'claude' and never Claude Code's '.claude'.
+            is_store = any(_os.path.isfile(_os.path.join(d, s))
+                           for s in _SCENE_SIGNATURE)
+        else:
+            is_store = False
+        if is_store:
+            yield d
+        if depth >= max_depth:
+            continue
+        try:
+            entries = list(_os.scandir(d))
+        except (PermissionError, OSError):
+            continue
+        for e in entries:
+            try:
+                if not e.is_dir(follow_symlinks=False):
+                    continue
+            except OSError:
+                continue
+            name = e.name
+            if name in _ALWAYS_PRUNE:
+                continue
+            if any(_fnmatch.fnmatch(name, g) for g in exclude):
+                continue
+            stack.append((e.path, depth + 1))
+
+
+def _classify(norm_path: str):
+    """(classification, reason) for a store path. real | test | test-fixture | backup."""
+    fwd = norm_path.replace("\\", "/")
+    segs = [s for s in fwd.split("/") if s]
+    for s in segs:
+        if any(_fnmatch.fnmatch(s, g) for g in _TEST_SEGMENT_GLOBS):
+            return "test", f"path segment '{s}' matches a pytest/temp glob"
+    low = fwd.lower()
+    if "/tests/fixtures/" in low or low.endswith("/tests/fixtures"):
+        return "test-fixture", "committed test fixture under tests/fixtures"
+    if "backup" in low:
+        return "backup", "under a *backup* path"
+    return "real", ""
+
+
+def _count_entries(store_dir: str):
+    """Walk a store dir; return (file_count, byte_size, entry_counts, mem_ids,
+    per_store_errors). mem_ids are SYNAPSE memory ids (payload 'id') extracted
+    from moneta snapshot.json rows — the only cross-store-stable key available
+    (jsonl lines are Fernet-encrypted; entity_id is a per-store UUID)."""
+    file_count = 0
+    byte_size = 0
+    memory_jsonl_lines = 0
+    log_jsonl_lines = 0
+    md_headers = 0
+    moneta_rows = 0
+    usd_def_count = 0
+    usda_files = 0
+    agent_usd = False
+    mem_ids = []
+    errs = []
+    for dp, dns, fns in _os.walk(store_dir):
+        dns[:] = [d for d in dns if d not in _ALWAYS_PRUNE]
+        for fn in sorted(fns):
+            fp = _os.path.join(dp, fn)
+            try:
+                byte_size += _os.path.getsize(fp)
+            except OSError:
+                pass
+            file_count += 1
+            low = fn.lower()
+            try:
+                if low.endswith(".jsonl"):
+                    with open(fp, "r", encoding="utf-8", errors="replace") as fh:
+                        n = sum(1 for ln in fh if ln.strip())
+                    if fn == "memory.jsonl":
+                        memory_jsonl_lines += n
+                    else:
+                        log_jsonl_lines += n
+                elif fn == "snapshot.json":
+                    with open(fp, "r", encoding="utf-8", errors="replace") as fh:
+                        snap = _json.load(fh)
+                    rows = snap.get("rows", []) if isinstance(snap, dict) else []
+                    moneta_rows += len(rows)
+                    for row in rows:
+                        payload = row.get("payload") if isinstance(row, dict) else None
+                        if isinstance(payload, str):
+                            try:
+                                pj = _json.loads(payload)
+                                mid = pj.get("id")
+                                if mid:
+                                    mem_ids.append(str(mid))
+                            except Exception:
+                                pass
+                elif low.endswith(".md"):
+                    with open(fp, "r", encoding="utf-8", errors="replace") as fh:
+                        md_headers += sum(1 for ln in fh if ln.lstrip().startswith("#"))
+                elif low.endswith((".usd", ".usda", ".usdc")):
+                    if fn == "agent.usd":
+                        agent_usd = True
+                    if low.endswith(".usda"):
+                        usda_files += 1
+                    try:
+                        with open(fp, "r", encoding="utf-8", errors="replace") as fh:
+                            usd_def_count += sum(
+                                1 for ln in fh if _re.match(r"\s*def\s", ln))
+                    except Exception:
+                        pass
+            except Exception as e:  # noqa: BLE001 — a bad file is evidence, not a crash
+                errs.append({"file": fp, "error": f"{type(e).__name__}: {e}"})
+    entry_counts = {
+        "memory_jsonl_lines": memory_jsonl_lines,
+        "log_jsonl_lines": log_jsonl_lines,
+        "moneta_rows": moneta_rows,
+        "md_headers": md_headers,
+        "usd_def_prims": usd_def_count,
+        "usda_files": usda_files,
+        "agent_usd_present": agent_usd,
+        "mem_ids_extracted": len(mem_ids),
+    }
+    return file_count, byte_size, entry_counts, sorted(set(mem_ids)), errs
+
+
+def probe_store_census(roots: list, exclude_globs: list) -> dict:
+    """Enumerate every candidate memory store under the given roots, classify it,
+    size it, count its entries, flag literal unexpanded-env-var path segments, and
+    compute cross-store key overlap. Deterministic and read-only."""
+    exclude = set(exclude_globs or [])
+    found = {}          # norm_key -> real store path (first seen wins)
+    roots_scanned = []
+    for r in roots:
+        path = r["path"]
+        md = r.get("max_depth", 6)
+        exists = _os.path.isdir(path)
+        roots_scanned.append({"path": path, "max_depth": md,
+                              "exists": exists, "note": r.get("note", "")})
+        if not exists:
+            continue
+        for sd in _iter_store_dirs(path, md, exclude):
+            found.setdefault(_norm_key(sd), sd)
+
+    # Drop nested stores subsumed by an ancestor store (e.g. .synapse/.moneta,
+    # .synapse/ledger) — the parent's recursive size already counts them.
+    keys = sorted(found)
+    top = []
+    for k in keys:
+        p = found[k].replace("\\", "/").lower().rstrip("/")
+        parent_is_store = any(
+            k != k2 and (p + "/").startswith(
+                found[k2].replace("\\", "/").lower().rstrip("/") + "/")
+            for k2 in keys)
+        if not parent_is_store:
+            top.append(found[k])
+
+    stores = []
+    store_errors = []
+    mem_id_index = {}   # mem_id -> [real store paths]
+    for sd in sorted(top, key=_norm_key):
+        norm = _os.path.normpath(_os.path.abspath(sd))
+        fwd = norm.replace("\\", "/")
+        segs = [s for s in fwd.split("/") if s]
+        literal_env = [s for s in segs if _seg_is_literal_env(s)]
+        classification, reason = _classify(norm)
+        base = _os.path.basename(norm)
+        store_type = base if base in _STORE_DIR_NAMES else "marker-dir"
+        fc, bs, ec, mem_ids, errs = _count_entries(sd)
+        rec = {
+            "path": fwd,
+            "store_type": store_type,
+            "classification": classification,
+            "classification_reason": reason,
+            "literal_env_segments": literal_env,
+            "has_literal_env_path": bool(literal_env),
+            "file_count": fc,
+            "byte_size": bs,
+            "entry_counts": ec,
+            "mem_ids": mem_ids,
+        }
+        stores.append(rec)
+        for e in errs:
+            store_errors.append({"store": fwd, **e})
+        if classification == "real":
+            for mid in mem_ids:
+                mem_id_index.setdefault(mid, []).append(fwd)
+
+    # Cross-store overlap over REAL stores, by SYNAPSE memory id.
+    overlap_by_mem_id = {mid: paths for mid, paths in sorted(mem_id_index.items())
+                         if len(paths) > 1}
+    pairs = {}
+    for mid, paths in overlap_by_mem_id.items():
+        upaths = sorted(set(paths))
+        for i in range(len(upaths)):
+            for j in range(i + 1, len(upaths)):
+                key = f"{upaths[i]} || {upaths[j]}"
+                pairs[key] = pairs.get(key, 0) + 1
+
+    by_class = {}
+    for s in stores:
+        by_class[s["classification"]] = by_class.get(s["classification"], 0) + 1
+
+    return {
+        "roots_scanned": roots_scanned,
+        "exclude_globs": sorted(exclude),
+        "counts": {
+            "candidate_total": len(stores),
+            "real": by_class.get("real", 0),
+            "test": by_class.get("test", 0),
+            "test_fixture": by_class.get("test-fixture", 0),
+            "backup": by_class.get("backup", 0),
+        },
+        "literal_env_var_stores": sorted(
+            s["path"] for s in stores if s["has_literal_env_path"]),
+        "stores": stores,
+        "overlap": {
+            "note": ("jsonl entries are Fernet-encrypted (ids not extractable); "
+                     "overlap is computed from moneta snapshot.json payload ids "
+                     "over REAL stores only. moneta entity_id is a per-store UUID "
+                     "and is deliberately NOT used for cross-store identity."),
+            "by_mem_id": overlap_by_mem_id,
+            "pairs": pairs,
+        },
+        "store_errors": store_errors,
+    }

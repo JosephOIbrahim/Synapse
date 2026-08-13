@@ -1,0 +1,29 @@
+{
+  "mission": "w1_moneta_stores",
+  "version": "1.0.0",
+  "target_build": "22.0.368",
+  "phases": [
+    {
+      "id": "P0_store_census",
+      "kind": "store_census",
+      "questions": [
+        {
+          "note": "W1 evidence map: enumerate every candidate memory-store location under the operator's known roots, classify real vs test/fixture/backup, size each, count entries (jsonl lines / moneta rows / md headers / usd prims), flag literal unexpanded-env-var path segments ($HOUDINI_TEMP_DIR, %TEMP%, $SYNAPSE_ROOT ...), and compute cross-store overlap by moneta memory id. Read-only. If the count differs from nine, the observed number wins.",
+          "roots": [
+            { "path": "C:/Users/User", "max_depth": 2, "note": "home root - stray literal-env-var dirs + top-level stores" },
+            { "path": "C:/Users/User/.synapse", "max_depth": 3, "note": "production home store" },
+            { "path": "C:/Users/User/untitled.hip", "max_depth": 5, "note": "home unsaved-scene store (real user memory)" },
+            { "path": "C:/Users/User/Desktop", "max_depth": 4, "note": "desktop scene memory" },
+            { "path": "C:/Users/User/Houdini_Camera_Rig_System", "max_depth": 6, "note": "camera-rig project scene memory" },
+            { "path": "C:/Users/User/rope-beacon-wt", "max_depth": 4, "note": "beacon worktree store" },
+            { "path": "C:/Users/User/SYNAPSE-backups", "max_depth": 4, "note": "prior backups - mapped, classified backup" },
+            { "path": "C:/Users/User/Synapse", "max_depth": 8, "note": "repo working tree - the literal $HOUDINI_TEMP_DIR store lives here" },
+            { "path": "C:/Users/User/AppData/Local/Temp/houdini_temp", "max_depth": 4, "note": "resolved $HOUDINI_TEMP_DIR unsaved store (if present)" },
+            { "path": "C:/Users/User/AppData/Local/Temp/synapse", "max_depth": 4, "note": "headless temp store (if present)" }
+          ],
+          "exclude_globs": ["worktrees", "AppData"]
+        }
+      ]
+    }
+  ]
+}
