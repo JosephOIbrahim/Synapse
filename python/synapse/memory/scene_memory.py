@@ -100,6 +100,28 @@ _RELOCATED: Dict[str, str] = {}
 _RELOCATED_LOCK = threading.Lock()
 
 
+def _read_on_main(fn, label="synapse_scene_memory"):
+    """Marshal a ``hou.*`` read onto Houdini's main thread when called off it.
+
+    Mirrors ``store._read_on_main`` (W2-S1). A bare ``hou.*`` call from a worker
+    thread faults the process natively -- a crash no ``try/except`` catches
+    (W1-MTFIX F1). ``run_on_main`` is a DIRECT passthrough on the main thread,
+    so this changes no behaviour on the paths that reach hou today -- only the
+    thread the read runs on, and only off main. An import failure falls back to
+    a direct call (historical behaviour); a ``run_on_main`` timeout raises, which
+    the caller's own ``try/except`` already absorbs as the hou-absent fallback.
+
+    (unsaved_memory_base is NOT on the off-main run_doctor path -- W2-S1 audit
+    proved store.py:984 handles that -- but this site is the same F1 class for
+    scene_memory's own off-main callers, so it is hardened to match the store.)
+    """
+    try:
+        from ..server.main_thread import run_on_main
+    except Exception:  # noqa: BLE001 -- marshal unavailable => historical direct call
+        return fn()
+    return run_on_main(fn, label=label)
+
+
 def unsaved_memory_base() -> str:
     """Where an UNSAVED scene's memory lives: ``$HOUDINI_TEMP_DIR/untitled``.
 
@@ -121,7 +143,7 @@ def unsaved_memory_base() -> str:
     _TOKEN = "$HOUDINI_TEMP_DIR"
     if HOU_AVAILABLE:
         try:
-            expanded = hou.text.expandString(_TOKEN)
+            expanded = _read_on_main(lambda: hou.text.expandString(_TOKEN))
             if expanded and expanded.strip() != _TOKEN:
                 return os.path.normpath(os.path.join(expanded, "untitled"))
         except Exception:

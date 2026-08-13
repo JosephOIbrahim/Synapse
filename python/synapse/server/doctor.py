@@ -68,6 +68,31 @@ HEALTH_TAIL_CAP = 1 * 1024 * 1024          # agent_health_history.jsonl tail
 INSTALL_STAMP_FILENAME = "install_stamp.json"  # M3-A's installer stamp
 
 
+def _read_on_main(fn, label="synapse_doctor"):
+    """Marshal a ``hou.*`` read onto Houdini's main thread when called off it.
+
+    W2-S1: run_doctor is dispatched OFF Houdini's main thread on the hwebserver
+    transport (server.py off-main-safe branch). A bare ``hou.*`` call from that
+    worker thread faults the process natively -- a crash no ``try/except`` can
+    catch (W1-MTFIX finding F1). ``run_on_main`` is a DIRECT passthrough when the
+    caller is already on the main thread (the headless/hython and GUI-main
+    paths), so those paths are byte-unchanged; only an off-main caller hops. The
+    ``label`` attributes the marshalled hold to ``synapse_doctor`` in the OCC
+    main-thread-hold histogram.
+
+    An import failure falls back to a direct call (the only reachable path when
+    ``server.main_thread`` is absent is a no-hou context); a ``run_on_main``
+    timeout raises, which every hou site here already absorbs via its own
+    ``try/except`` -> the check reports 'skipped'. It never falls back to a bare
+    off-main hou call.
+    """
+    try:
+        from .main_thread import run_on_main
+    except Exception:  # noqa: BLE001 -- marshal unavailable => historical direct call
+        return fn()
+    return run_on_main(fn, label=label)
+
+
 def _running_package_repo_root(package_file: Optional[str]) -> Optional[Path]:
     """Repo root of the RUNNING ``synapse`` package, or None if it does not
     sit in the repo layout ``<root>/python/synapse/__init__.py``.
@@ -213,11 +238,18 @@ def _resolve_store_base_dir() -> Path:
         # never matched, so this mirror inspected the wrong directory for
         # every unsaved scene.
         from ..memory.store import hip_is_unsaved
-        hip = hou.hipFile.path()
-        if not hip_is_unsaved(hip, hou):
-            project = Path(hip)
-        else:
-            project = Path(hou.text.expandString("$HOUDINI_TEMP_DIR")) / "untitled"
+
+        # W2-S1: marshal the hou reads to the main thread in ONE hop (hip path
+        # + unsaved verdict + unsaved temp base). This is the FIRST hou.* the
+        # off-main run_doctor dispatch reaches (check #4, before the store
+        # construct), so leaving it bare would crash the worker natively before
+        # any store-side marshalling could help. On-main callers pass through.
+        def _resolve_on_main():
+            hip = hou.hipFile.path()
+            if not hip_is_unsaved(hip, hou):
+                return Path(hip)
+            return Path(hou.text.expandString("$HOUDINI_TEMP_DIR")) / "untitled"
+        project = _read_on_main(_resolve_on_main)
     except Exception:
         project = None
     if project is None:
@@ -600,7 +632,8 @@ def _check_symbol_table() -> Dict[str, Any]:
         running = None
         try:
             import hou
-            running = hou.applicationVersionString()
+            # W2-S1: marshal — off-main run_doctor reaches this on check #9.
+            running = _read_on_main(lambda: hou.applicationVersionString())
         except Exception:
             running = None
         # Per-major table (runway §1.4) — mirror scout's loader rule: prefer

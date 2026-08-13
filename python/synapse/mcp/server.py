@@ -208,6 +208,48 @@ def read_only_set_divergence() -> frozenset:
         return frozenset()
     return frozenset(_READ_ONLY_TOOLS - _BRIDGE_READ_ONLY_TOOLS)
 
+
+def _dispatch_doctor_off_main(handler, tool_name: str, arguments: dict) -> dict:
+    """Off-main-safe dispatch of ``synapse_doctor`` (W2-S1).
+
+    The doctor's cold store-construct + embedder init is the measured ~514 ms
+    main-thread hold when the generic dispatch path marshals the WHOLE call onto
+    Houdini's main thread via ``run_on_main``. ``run_doctor`` now marshals its
+    ENTIRE hou closure internally (store resolver + its own hou sites; it is in
+    the live envelope's skip set so no scene-hash hop fires), so that heavy work
+    is safe to run HERE on the calling hwebserver worker thread -- the
+    main-thread hold collapses to the microsecond hou-read hops.
+
+    We call ``handler.handle()`` directly rather than ``dispatch_tool()``:
+    ``dispatch_tool`` routes the (non-read-only) doctor through
+    ``execute_through_bridge`` -> ``bridge._execute_houdini``, whose scene-hash +
+    ``hou.undos.group()`` calls run UNMARSHALLED on the calling thread and are
+    structurally coupled to the op (the undo group cannot straddle threads) --
+    off main that is the exact W1-MTFIX F1 crash class. The doctor mutates
+    nothing, so the bridge's integrity wrap is pure overhead here.
+    ``handler.handle()`` keeps the C5 mutation lock (engaged because the doctor
+    is mutating AND now off main) and the FloorGate Tier-0 provenance -- both
+    preserved. Command build + result shaping reuse the canonical registry
+    dispatch so there is no drift from ``dispatch_tool``.
+    """
+    from ._tool_registry import TOOL_DISPATCH, _next_call_id, _dumps_str
+    from ..core.protocol import SynapseCommand
+
+    cmd_type, payload_fn = TOOL_DISPATCH[tool_name]
+    command = SynapseCommand(
+        type=cmd_type, id=_next_call_id(tool_name), payload=payload_fn(arguments),
+    )
+    response = handler.handle(command)
+    if response.success:
+        data = response.data
+        text = _dumps_str(data) if isinstance(data, dict) else str(data or "")
+        return {"content": [{"type": "text", "text": text}]}
+    return {
+        "content": [{"type": "text", "text": response.error or "Unknown error"}],
+        "isError": True,
+    }
+
+
 # Synapse version — read from package metadata if available, else hardcoded
 try:
     from synapse import __version__ as _SYNAPSE_VERSION
@@ -647,59 +689,72 @@ class MCPServer:
         # --- Dispatch with latency tracking ---
         t0 = time.monotonic()
 
-        try:
-            # Route through run_on_main so a heavy cook/render holding the busy
-            # main thread fast-fails THIS dispatch at the per-tool budget instead
-            # of hanging the transport forever (L7). The MCP path previously called
-            # executeInMainThreadWithResult directly — bypassing run_on_main — so
-            # the C6 dispatch_wait metric was blind and the stall detector was
-            # consulted but never fed. NB: this bounds the TRANSPORT, not the GUI —
-            # the cook still holds the main thread for its duration; only an
-            # out-of-process render (husk) keeps the GUI responsive.
-            from ..server.main_thread import run_on_main
-            from ..core.timeouts import timeout_for
-            result = run_on_main(
-                lambda: dispatch_tool(handler, tool_name, arguments),
-                timeout=timeout_for(tool_name),
-                # OCC: attribute the deferred main-thread hold to the tool.
-                label=tool_name,
-            )
-        except ImportError as _marshal_exc:
-            # UNMARSHALLED FALLBACK. This branch runs the tool on the CALLING
-            # thread -- an hwebserver worker -- and dispatch_tool routes
-            # mutating tools to bridge.execute -> _execute_houdini, which calls
-            # hou.* directly and assumes it is already on the main thread.
-            # hou is not thread-safe: writes may land and still corrupt state.
-            #
-            # It used to fail SILENTLY. The only evidence was fidelity=0.0
-            # surfacing later with no attribution, which is unreadable at the
-            # seat (observed 2026-08-03). A degradation this consequential must
-            # announce itself, so:
-            #   - dual-mode (no Houdini): expected, logged once at INFO;
-            #   - Houdini present: a real defect, logged at ERROR every time
-            #     with the failing import named.
+        if tool_name == "synapse_doctor":
+            # W2-S1: off-main-safe dispatch. The resilience gates above have
+            # already run; instead of marshalling the doctor's ~514 ms cold
+            # store-construct onto Houdini's main thread (the measured hold on
+            # the in-Houdini hwebserver transport), run it HERE on the calling
+            # worker thread. run_doctor marshals its own hou closure to main
+            # (store resolver + its direct hou sites), so only the microsecond
+            # hou reads hop; the heavy embedder/store work stays off main. The
+            # bridge is bypassed deliberately (its _execute_houdini would run
+            # scene-hash + hou.undos.group off main = the F1 crash). C5 lock +
+            # FloorGate provenance are preserved inside handler.handle().
+            result = _dispatch_doctor_off_main(handler, tool_name, arguments)
+        else:
             try:
-                import hou  # noqa: F401
-                _houdini_live = True
-            except Exception:
-                _houdini_live = False
-            _reason = "%s: %s" % (type(_marshal_exc).__name__, _marshal_exc)
-            if _houdini_live:
-                logger.error(
-                    "MAIN-THREAD MARSHAL UNAVAILABLE -- running %r on the "
-                    "calling thread. hou.* is not thread-safe; mutating tools "
-                    "will record main_thread_executed=False and may corrupt "
-                    "scene state even when they appear to succeed. Cause: %s",
-                    tool_name, _reason,
+                # Route through run_on_main so a heavy cook/render holding the busy
+                # main thread fast-fails THIS dispatch at the per-tool budget instead
+                # of hanging the transport forever (L7). The MCP path previously called
+                # executeInMainThreadWithResult directly — bypassing run_on_main — so
+                # the C6 dispatch_wait metric was blind and the stall detector was
+                # consulted but never fed. NB: this bounds the TRANSPORT, not the GUI —
+                # the cook still holds the main thread for its duration; only an
+                # out-of-process render (husk) keeps the GUI responsive.
+                from ..server.main_thread import run_on_main
+                from ..core.timeouts import timeout_for
+                result = run_on_main(
+                    lambda: dispatch_tool(handler, tool_name, arguments),
+                    timeout=timeout_for(tool_name),
+                    # OCC: attribute the deferred main-thread hold to the tool.
+                    label=tool_name,
                 )
-                _note_marshal_bypass(tool_name, _reason)
-            else:
-                logger.info(
-                    "main-thread marshal unavailable outside Houdini "
-                    "(dual-mode, expected); dispatching %r inline. Cause: %s",
-                    tool_name, _reason,
-                )
-            result = dispatch_tool(handler, tool_name, arguments)
+            except ImportError as _marshal_exc:
+                # UNMARSHALLED FALLBACK. This branch runs the tool on the CALLING
+                # thread -- an hwebserver worker -- and dispatch_tool routes
+                # mutating tools to bridge.execute -> _execute_houdini, which calls
+                # hou.* directly and assumes it is already on the main thread.
+                # hou is not thread-safe: writes may land and still corrupt state.
+                #
+                # It used to fail SILENTLY. The only evidence was fidelity=0.0
+                # surfacing later with no attribution, which is unreadable at the
+                # seat (observed 2026-08-03). A degradation this consequential must
+                # announce itself, so:
+                #   - dual-mode (no Houdini): expected, logged once at INFO;
+                #   - Houdini present: a real defect, logged at ERROR every time
+                #     with the failing import named.
+                try:
+                    import hou  # noqa: F401
+                    _houdini_live = True
+                except Exception:
+                    _houdini_live = False
+                _reason = "%s: %s" % (type(_marshal_exc).__name__, _marshal_exc)
+                if _houdini_live:
+                    logger.error(
+                        "MAIN-THREAD MARSHAL UNAVAILABLE -- running %r on the "
+                        "calling thread. hou.* is not thread-safe; mutating tools "
+                        "will record main_thread_executed=False and may corrupt "
+                        "scene state even when they appear to succeed. Cause: %s",
+                        tool_name, _reason,
+                    )
+                    _note_marshal_bypass(tool_name, _reason)
+                else:
+                    logger.info(
+                        "main-thread marshal unavailable outside Houdini "
+                        "(dual-mode, expected); dispatching %r inline. Cause: %s",
+                        tool_name, _reason,
+                    )
+                result = dispatch_tool(handler, tool_name, arguments)
 
         elapsed = time.monotonic() - t0
         self._avg_latency = (
