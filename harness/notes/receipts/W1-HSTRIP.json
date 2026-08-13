@@ -1,0 +1,153 @@
+{
+  "leg": "W1-HSTRIP",
+  "name": "panel health strip",
+  "schema": "receipt/v1",
+  "band": "BUILD",
+  "status": "green_with_findings",
+  "status_reason": "All three test-evidence predicates PASS on the stock 3.14 gate AND under hython3.13 (H22.0.400). The fourth is a gui_required/live-GUI predicate: its measurable halves (offscreen widget build + won't-stall-paint) are proven, but a live INTERACTIVE Houdini GUI cannot be launched headless, so the focus/paint-in-a-live-session claim is recorded UNKNOWN per the constitution, never faked green. green_with_findings, not green, for that honest UNKNOWN plus two out-of-scope findings surfaced rather than buried (the store-side dedicated 384/256 reason belongs to the MEM leg; 7 pre-existing environment reds in the full suite are not mine and are proven so).",
+
+  "source": {
+    "doc": "docs/SYNAPSE_production_readiness_report_2026.md (committed at 00c5afa2; not on wave1/hstrip — read as wave source)",
+    "anchors": "§4.1 (persistent health/status strip: connection · memory backend · project · active job, amber if degraded, click-through) + §1.2/§2.1 (silent backend degradation: moneta->jsonl on the 384-vs-256 embedding-dim mismatch; doctor honest, panel not) + Roadmap P0 'Panel health/status strip'"
+  },
+
+  "interpreters": {
+    "gate": "system python 3.14.2 (C:/Python314/python.exe) — no PySide; proves the pure-data core",
+    "shipping": "hython3.13 (Houdini 22.0.400, Python 3.13.10) — PySide6 present; proves the widget",
+    "producer_gate": "python -m pytest -q -p no:cacheprovider",
+    "producer_shipping": "QT_QPA_PLATFORM=offscreen hython3.13 -m pytest -q -p no:cacheprovider"
+  },
+
+  "commit_at_run": "ecdf4296 (branch wave1/hstrip; deps BASE + H4 both ancestors of HEAD — H4 92a48eb verified `git merge-base --is-ancestor` = ancestor, so the one-colour token authority is landed and built on, not re-litigated)",
+
+  "changed": {
+    "modified": ["python/synapse/panel/synapse_panel.py (_build_rail mount + _update_context feed + new _update_health_strip; +60/-6)"],
+    "new": ["python/synapse/panel/health_strip.py (the strip: pure-data core + guarded Qt widget)", "tests/panel/test_health_strip.py (15 pins)"],
+    "scope": "Exactly within touches [python/synapse/panel/, tests/]. No memory-store mutation (MEM leg owns store-side fail-loud); zero files under python/synapse/memory/ or server/ changed."
+  },
+
+  "acceptance": [
+    {
+      "predicate": "strip renders connection, memory-backend, project, active-job cells from live health facts",
+      "verdict": "pass",
+      "evidence": "test — tests/panel/test_health_strip.py::test_build_cells_returns_four_keyed_cells + ::test_cells_reflect_supplied_live_facts. build_cells(snapshot) returns exactly the four keyed cells; values are sourced from the snapshot fields the panel gathers, never invented. 13 passed stock 3.14 (2 Qt skip), 15 passed hython3.13.",
+      "producer_path_per_cell": {
+        "connection": "panel's own live derivation in synapse_panel.py:_update_context (hou reachable + gate not stale -> 'ok'; gate stale -> 'warning'), passed into health_strip.gather_snapshot",
+        "memory": "synapse.memory.store.backend_fallback() @ store.py:769 (process-global read) + a NON-constructing peek at store._global_synapse @ store.py:1297 for the live-MonetaBackedStore positive. NEVER synapse_health.healthy (a hardcoded True liveness echo @ handlers.py:899).",
+        "project": "hou.hipFile.basename() already read on the 2s tick (None when untitled)",
+        "job": "synapse.server.render_session.active_session() @ render_session.py:88 (in-process, no hou, no main thread). NEVER render_farm_status['running'] (defaults False, masks live renders @ handlers_render.py:1603)."
+      }
+    },
+    {
+      "predicate": "backend fallback (moneta->jsonl) renders AMBER/RED with the doctor's one-line reason — the 384/256 case must display, not hide",
+      "verdict": "pass",
+      "evidence": "test — ::test_memory_fallback_renders_red_with_reason (verdict RED, color==tokens.ERROR, value shows 'jsonl (fell back)', reason carries '384' and '256') + ::test_fallback_reason_is_inline_not_hidden (the reason is in the rendered markup itself, not only the tooltip — loud without a click) + ::test_amber_or_red_fallback_never_green. The cell displays backend_fallback()['reason'] verbatim; the 384-vs-256 ValueError arrives inside store._make_store's generic 'init failed: ...' string (store.py:943) and therefore shows through unchanged — no hardcoded 384 branch."
+    },
+    {
+      "predicate": "unmeasured/unreachable health facts render UNKNOWN, never green and never 0",
+      "verdict": "pass",
+      "evidence": "test — ::test_unmeasured_snapshot_is_all_unknown_and_grey (every field defaults to the UNMEASURED sentinel -> every cell UNKNOWN, color==tokens.SLATE, != tokens.GROW, value never '0'/'ok'/'0 issues') + ::test_no_cell_is_green_without_a_producing_fact (no OK/GROW cell without a real producer reading) + ::test_memory_absence_of_fallback_is_not_health (no fallback recorded is NOT proof of health -> UNKNOWN) + ::test_connection_unmeasured_is_unknown_not_connected. The UNMEASURED sentinel (distinct from a measured None) is the data-shape guarantee behind this."
+    },
+    {
+      "predicate": "strip visible in a live GUI session without stealing focus or stalling paint",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_probe — the measurable halves are PROVEN: (a) offscreen widget build under hython3.13/H22.0.400 renders 4 visible cells, shows the degraded reason inline, and updates verdict in place — ::test_widget_builds_offscreen_and_shows_visible_cells + ::test_widget_update_in_place_flips_verdict; (b) anti-stall: the full live update loop (gather_snapshot -> build_cells -> widget update -> processEvents) measures 0.2521 ms/update, far under one 16.7 ms paint frame, and the strip's update path calls NO doctor/get_health (structural — it reads only O(1) module state), so it cannot become the next synapse_doctor 648 ms main-thread hold. NOT measurable headless: a live INTERACTIVE Houdini GUI session (focus-stealing, real compositor paint) cannot be launched in this harness, so the predicate as literally written is recorded UNKNOWN, not asserted. Probe: QT_QPA_PLATFORM=offscreen hython3.13 <scratchpad>/hstrip_gui_probe.py -> 'PROBE cells_visible=4 update_ms=0.2521'.",
+      "gui_required": true
+    }
+  ],
+
+  "crucible_criteria_addressed": [
+    "FACT-sourced (producer path per cell) — see acceptance[0].producer_path_per_cell. No cell is green without a real producer reading (pinned by ::test_no_cell_is_green_without_a_producing_fact). The UNMEASURED default makes 'absence' render UNKNOWN, never a default green.",
+    "degraded is loud — amber/red + reason rendered INLINE in the cell markup (health_strip.cell_html), not hidden behind a click; pinned by ::test_fallback_reason_is_inline_not_hidden.",
+    "no main-thread I/O added by the strip — the strip renders a snapshot handed to it by the existing 2s _update_context tick; gather_snapshot reads only process-global state (backend_fallback, _global_synapse peek, render_session.active_session), never the doctor/get_health round-trip. Measured at 0.25 ms/update. It cannot become the 648 ms hold §3.1 flagged for synapse_doctor.",
+    "H4 receipt precedes this leg — H4 (92a48eb) confirmed an ancestor of HEAD; the strip imports colour ONLY from designsystem.tokens.STATUS (H4's single colour authority), declares zero hex literals (grep clean), and the H4 token-authority pins still pass (33 passed) with the new module present. No H4 choice re-litigated."
+  ],
+
+  "suite": {
+    "panel_slice_hython": {
+      "producer": "QT_QPA_PLATFORM=offscreen hython3.13 -m pytest tests/panel/ -q -p no:cacheprovider",
+      "result": "87 passed, 1 failed",
+      "the_one_fail": "tests/panel/test_failure_trail.py::test_dead_verb_hidden — PRE-EXISTING, documented by H4.F14 as red on untouched HEAD (the 'open in render view' verb no-op), explicitly carved out to the ORPHAN-affordance leg. Outside this leg's diff (test_failure_trail.py + FaceReview untouched).",
+      "commandment_7": "HELD for the panel slice: count rose vs H4's 64-passed baseline, the only red is the inherited H4.F14."
+    },
+    "strip_pins": {
+      "stock_3_14": "13 passed, 2 skipped (the 2 Qt-widget pins skip with no PySide — expected)",
+      "hython_3_13": "15 passed (all, incl. both Qt-widget pins)"
+    },
+    "token_authority": {
+      "producer": "python -m pytest tests/panel/test_token_authority.py -q",
+      "result": "33 passed — H4's one-colour-authority pins hold with health_strip.py present (it declares no colour)."
+    },
+    "full_gate_stock_3_14": {
+      "producer": "python -m pytest tests/ -q -p no:cacheprovider",
+      "result": "6013 passed, 7 failed, 157 skipped, 2 xfailed (197s)",
+      "ratchet_floor": "harness/verify/suite_baseline.json @ merge-base = 4875 passed / 0 failed (promoted 2026-07-26, cleaner CI env). passed rose well above the floor; the 7 reds are environment/state drift present on untouched HEAD, NOT introduced here.",
+      "seven_reds_proven_preexisting": "Stashed my only tracked change (synapse_panel.py) back to HEAD and re-ran the exact 7 -> IDENTICAL 7 failed / 9 passed. So my diff causes zero of them. They are: test_statusline.py x4 (branch()=='?' / head_sha()=='' / registered_paths() missing 16 sibling worktrees / suite same_tree False — this machine runs 16 live worktrees and git reads return empty in-invocation), test_scene_memory.py::test_validate_healthy_dir + test_pkg_bootstrap_invariant.py::test_r310_shapes (both 'agent.usd: ...current=0.1.0' schema-version drift), test_phase0c_doc1_version_conformance.py (version/docs regex 'assert None'). None are in python/synapse/panel/ or touched by this leg.",
+      "delta_from_this_leg": "+13 passed (the stock-runnable strip pins), 0 new failures."
+    }
+  },
+
+  "findings": [
+    {
+      "id": "HSTRIP.F1",
+      "claim": "There is no dedicated 384-vs-256 embedding-dim-mismatch branch or reason string anywhere in the memory store. A dim mismatch degrades to the generic 'init failed: {ExcType}: {msg}' string built at store.py:943 — which IS what produced the report's observed 'embedding dim mismatch: expected 384, got 256'. This leg SURFACES that reason verbatim (correct for a surfacing leg); authoring a purpose-built reason is store-side and belongs to the MEM leg (brief note: 'MEM leg owns the store-side fail-loud; this leg owns the SURFACING only').",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "python/synapse/memory/store.py:865-967 (_make_store fallback paths) vs :941-944 (generic init-failed) — no 384/256-specific branch",
+      "severity": "debt",
+      "disposition": "surfaced-not-fixed; out of scope (MEM leg). The strip displays whatever reason the store records, so a future dedicated string flows through with no strip change."
+    },
+    {
+      "id": "HSTRIP.F2",
+      "claim": "Two asserted-green anti-patterns in the health producers were identified and deliberately NOT used as cell sources: synapse_health.healthy is a hardcoded True (handlers.py:899, a liveness echo — a cell wired to it is permanently green), and get_memory_status hardcodes agent:{status:'idle'} (scene_memory.py:1367). The memory cell is sourced from backend_fallback() + a live-store peek instead; the job cell from render_session, not render_farm_status['running'] (which defaults False and masks live renders, handlers_render.py:1603).",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "python/synapse/server/handlers.py:899; python/synapse/memory/scene_memory.py:1367; python/synapse/server/handlers_render.py:1603",
+      "severity": "info",
+      "disposition": "designed around — these are exactly the silent-green traps §2.1 warns of."
+    },
+    {
+      "id": "HSTRIP.F3",
+      "claim": "The full stock-3.14 gate suite shows 7 pre-existing environment/state reds unrelated to this leg (statusline git-reads in a 16-worktree machine; agent.usd schema 0.1.0 drift; version/docs conformance regex). Proven pre-existing by a stash-and-rerun (identical 7 with my diff reverted to HEAD). The ratchet baseline (4875/0) was promoted in a cleaner CI env; locally these fire regardless of commit.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_statusline.py:{43,87,228,251}, tests/test_scene_memory.py::TestValidateMemory::test_validate_healthy_dir, tests/test_pkg_bootstrap_invariant.py:492, tests/test_phase0c_doc1_version_conformance.py:56",
+      "severity": "major",
+      "disposition": "not mine, not fixed. Flagged so the merge reviewer does not mistake environment drift for this leg's regression. Commandment-7 'zero NEW failures' holds; absolute '0 failed' is an environment artifact."
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "HSTRIP.R1",
+      "question": "Predicate 4 (gui_required 'visible in a live GUI session without stealing focus or stalling paint') is recorded UNKNOWN because a live interactive Houdini GUI cannot be launched headless. Its measurable halves — offscreen widget build + 0.25 ms/update anti-stall + zero doctor I/O — are proven. Accept UNKNOWN-with-evidence as the correct constitutional disposition, or require a live-GUI probe on a workstation before this leg is called done?",
+      "options": [
+        "Accept UNKNOWN-with-evidence (constitution: a gui_required acceptance not measurable headless is recorded UNKNOWN)",
+        "Require a live interactive-Houdini focus/paint probe on a workstation before marking predicate 4",
+        "Accept, and file the live-GUI probe as a follow-up spawn"
+      ],
+      "recommendation": "Option 1, which is what shipped. The offscreen build + timing evidence covers the substantive risk (a paint stall / focus theft); the residual is only the interactive-session confirmation, which this harness structurally cannot produce and the constitution says to record UNKNOWN rather than fake.",
+      "unblocks": "the strip's acceptance closure"
+    },
+    {
+      "id": "HSTRIP.R2",
+      "question": "§4.1 also calls for 'click-through to a full health panel'. The strip widget exposes an on_click hook but the mount does not wire it to a full-health surface (the existing health_infographic lives in the Work face). Wire the click-through now, or keep it as a follow-up?",
+      "options": [
+        "Keep as follow-up spawn (surfacing is the mission; click-through is additive)",
+        "Wire on_click to reveal the existing health_infographic now"
+      ],
+      "recommendation": "Option 1. The acceptance predicates and crucible criteria are all about the FACT-sourced surfacing, which is complete; the click-through is a separable enhancement. Left as a clean hook + a spawn so it isn't lost.",
+      "unblocks": "python/synapse/panel/synapse_panel.py (_build_rail on_click wiring)"
+    }
+  ],
+
+  "spawn": [
+    {
+      "id": "W1-HSTRIP-CLICKTHROUGH",
+      "name": "health strip click-through to full health surface",
+      "band": "BUILD",
+      "class": "feature",
+      "note": "§4.1 'click-through to a full health panel'. Wire health_strip's on_click hook (already present) to surface the existing health_infographic / a doctor readout, fetched off-main (ws_bridge.gather_context_off_main template) into a cached snapshot — never a synchronous doctor call. Held for Joe (class 'feature' is outside this leg's spawn_classes=['probe']).",
+      "touches": ["python/synapse/panel/"]
+    }
+  ],
+
+  "resume_token": "W1-HSTRIP complete. Strip = python/synapse/panel/health_strip.py (pure-data core: Verdict/StripCell/StripSnapshot/build_cells + guarded Qt HealthStrip widget), mounted in synapse_panel.py:_build_rail (3rd rail row) and fed by _update_context via the new _update_health_strip, all non-blocking. If re-entered: do NOT re-derive the producer map (backend_fallback/render_session/_global_synapse peek are the sources; synapse_health.healthy is a hardcoded True — never wire it). 3 test predicates green (stock 3.14 + hython3.13); predicate 4 UNKNOWN by constitution (offscreen+anti-stall proven). The 7 full-suite reds are pre-existing environment drift (stash-proven), not this leg. Open: HSTRIP.R1 (accept predicate-4 UNKNOWN), HSTRIP.R2/spawn (click-through), HSTRIP.F1 (store-side 384/256 dedicated reason = MEM leg)."
+}
