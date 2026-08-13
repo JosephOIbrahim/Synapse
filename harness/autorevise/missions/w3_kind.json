@@ -1,0 +1,29 @@
+{
+  "id": "W3-KIND",
+  "name": "typed schema per kind: recall routes on type, not string-match",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/SYNAPSE-memory-engineering-spec.md",
+    "anchor": "S4 Phase 2 - Typed schema, routing on kind: per-kind fields for note/context/reference/task/decision (decision carries reasoning+alternatives, task carries status); synapse_recall/synapse_search accept a kind filter routed on the typed prim"
+  },
+  "targets": [
+    "1) define per-kind schema fields: note, context, reference, task, decision - each with its distinct attribute set per the spec",
+    "2) synapse_recall and synapse_search accept a kind filter and route on typed prims, not free-text scanning",
+    "3) a kind-filtered query no longer slurps the entire store to find one memory"
+  ],
+  "acceptance": [
+    {"predicate": "a kind-filtered query returns ONLY that kind, across all five kinds", "evidence": "test"},
+    {"predicate": "the filtered query path is structurally shown (or measured) to touch only matching typed prims, not the whole store", "evidence": "test"},
+    {"predicate": "per-kind fields match the spec table: decision has reasoning+alternatives, task has status", "evidence": "check"}
+  ],
+  "deps": ["W3-STORE"],
+  "readonly": false,
+  "touches": ["python/synapse/memory/moneta_store.py", "python/synapse/memory/", "tests/"],
+  "crucible_criteria": [
+    "SEAM GUARD: fix/memory-store-recovery is UNMERGED and owns the store - receipt states rebase-compatibility; drift is a BLOCK",
+    "schema additions are additive - no existing memory field is renamed or dropped",
+    "kind routing is tested with a negative control: an unknown kind filter returns empty or a loud error, never a silent full-store scan"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "The real payoff phase - programs route on type. Blueprint P3."
+}

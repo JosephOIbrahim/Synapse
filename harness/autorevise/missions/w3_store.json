@@ -1,0 +1,33 @@
+{
+  "id": "W3-STORE",
+  "name": "materialize cortex_root.usda: typed root, write/query, dual-write armed",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/SYNAPSE-memory-engineering-spec.md",
+    "anchor": "S3 Phase 1 - Materialize the Moneta store: real cortex_root.usda at the resolved usd_root (doctor showed AppData/Local/Temp/houdini_temp/untitled/.synapse/.moneta/cortex_root.usda), MonetaMemory root prim with version attribute, write/query as typed prims keyed (kind,id), dual-write to JSONL for the whole phase"
+  },
+  "targets": [
+    "1) on init, after the dim check passes, create the stage at the resolved usd_root with a MonetaMemory root prim carrying a version attribute",
+    "2) write(kind,id,payload) becomes a typed USD prim under the root keyed by (kind,id); query walks the typed prims",
+    "3) DUAL-WRITE: every write also lands in the JSONL store - the safety net never goes away this wave",
+    "4) memory_key_fingerprint writes its sidecar on first use so the doctor check moves no_sidecar -> ok",
+    "5) usd_root durability: the resolved root currently lives under a Temp dir - record the lifecycle risk (P1 durable) in the receipt with the observed path"
+  ],
+  "acceptance": [
+    {"predicate": "doctor shows moneta_substrate in_use=True and memory_key_fingerprint no longer reports no_sidecar", "evidence": "probe"},
+    {"predicate": "write a memory, the .usda exists non-empty, query returns it (round-trip)", "evidence": "test"},
+    {"predicate": "the same memory is present in the JSONL store byte-for-byte (dual-write verified)", "evidence": "test"},
+    {"predicate": "the JSONL write path is behaviourally unchanged from pre-wave (safety net untouched)", "evidence": "check"}
+  ],
+  "deps": ["W3-DIM"],
+  "readonly": false,
+  "touches": ["python/synapse/memory/moneta_store.py", "python/synapse/memory/moneta_runtime.py", "tests/"],
+  "crucible_criteria": [
+    "SEAM GUARD: fix/memory-store-recovery is UNMERGED and owns the store - receipt states rebase-compatibility; semantics drift is a BLOCK",
+    "any write path where a memory lands ONLY in moneta is a BLOCK - dual-write is the wave's non-negotiable",
+    "the Temp-dir usd_root durability risk is carried as an explicit receipt finding, not silently accepted",
+    "receipt claims observed scope only: a write/query round-trip does not claim store-level production health"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Blueprint Phase 0 honesty items (deterministic in_use, never claim moneta while serving jsonl) are covered by W3-DIM targets 3-4; this leg makes in_use a real True."
+}

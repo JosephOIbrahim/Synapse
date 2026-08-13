@@ -1,0 +1,29 @@
+{
+  "id": "W3-CRUX",
+  "name": "wave-3 crucible: adversarial gate on the memory wave before any merge word",
+  "band": "TRUST",
+  "source": {
+    "doc": "docs/SYNAPSE-memory-engineering-spec.md",
+    "anchor": "S9 Guardrails (non-negotiable) + blueprint S5 verifiable acceptance: dual-write phases 1-4, dry-run everything destructive, non-destructive cut-over, one invariant per change, doctor is the source of truth - a change is not done until the doctor SHOWS it"
+  },
+  "targets": [
+    "1) adversarial review of every W3 builder branch against its own crucible_criteria, verdict per criterion, anchored file:line / receipt path / git fact",
+    "2) verify every acceptance predicate has real evidence in the receipts - a claim without its probe/test/check output is a finding",
+    "3) re-attack the two standing failure classes directly: silent-fallback-claiming-moneta, and any data-loss path in migration/consolidation",
+    "4) durability audit: every leg's product code is COMMITTED on its branch - uncommitted worktree state is a BLOCK (the wave-2 B1 lesson, now standing)"
+  ],
+  "acceptance": [
+    {"predicate": "receipt carries CLEAR or BLOCKED per leg with anchored findings, and a whole-wave verdict", "evidence": "receipt"},
+    {"predicate": "every BUILD receipt claims observed scope only - registration-level evidence never claims store-level health", "evidence": "check"}
+  ],
+  "deps": ["W3-DIM", "W3-STORE", "W3-KIND", "W3-VEC", "W3-EVOLVE", "W3-MIGRATE", "W3-HARDEN"],
+  "readonly": true,
+  "touches": [],
+  "crucible_criteria": [
+    "the crux builds nothing and mutates no git state - review via receipts, diffs, and direct re-execution of probes only",
+    "verdicts cite evidence, never claims; UNKNOWN discipline enforced on every surface",
+    "a green crucible receipt is a precondition for merge, not a permission - merge stays Joe's word",
+    "any bus block raised by a peer during the wave must be answered in the crux receipt before CLEAR"
+  ],
+  "note": "Whole-wave F1-shaped gate. Carries wave-1 B1/B2 and wave-2 uncommitted-state lessons as standing checks."
+}

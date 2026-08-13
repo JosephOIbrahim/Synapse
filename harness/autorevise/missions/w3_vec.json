@@ -1,0 +1,30 @@
+{
+  "id": "W3-VEC",
+  "name": "vector recall: derived index over the store, ranked with scores",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/SYNAPSE-memory-engineering-spec.md",
+    "anchor": "S5 Phase 3 - Vector recall: index built OVER the USD store as derived data (rebuildable from source memories, never the source of truth); synapse_recall returns nearest neighbors by embedding with a confidence score; index embedding_dim read from the provider at init per the Phase 0 fix"
+  },
+  "targets": [
+    "1) build the vector index over the USD store as derived data - deletable and rebuildable from source memories at any time",
+    "2) synapse_recall returns ranked nearest neighbors with confidence scores, not a raw dump",
+    "3) regression guard on W3-DIM: index construction here reads embedding_dim from the active provider - no reintroduced pin"
+  ],
+  "acceptance": [
+    {"predicate": "doctor shows vector_recall ok", "evidence": "probe"},
+    {"predicate": "recall for a seeded query returns ranked results with scores", "evidence": "test"},
+    {"predicate": "derived-data proof: delete the index, rebuild from source memories, recall results reproduce", "evidence": "test"},
+    {"predicate": "no hardcoded dim governs index construction on this leg's diff", "evidence": "check"}
+  ],
+  "deps": ["W3-STORE"],
+  "readonly": false,
+  "touches": ["python/synapse/memory/moneta_store.py", "python/synapse/memory/embedding.py", "tests/"],
+  "crucible_criteria": [
+    "SEAM GUARD: fix/memory-store-recovery is UNMERGED and owns the store - receipt states rebase-compatibility; drift is a BLOCK",
+    "the index is never treated as source of truth anywhere in the diff - a lost index must cost nothing but a rebuild",
+    "scores are real model outputs - a fabricated or constant score is a BLOCK (UNKNOWN discipline)"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Runs parallel to W3-KIND after W3-STORE lands."
+}

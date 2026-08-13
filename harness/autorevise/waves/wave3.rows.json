@@ -1,0 +1,183 @@
+[
+  {
+    "id": "W3-CRUX",
+    "name": "wave-3 crucible: adversarial gate on the memory wave before any merge word",
+    "state": "ready",
+    "receipt": "W3-CRUX.json",
+    "branch": "wave3/crux",
+    "base": "master",
+    "worktree": ".claude/worktrees/w3-crux",
+    "prompt": "harness/autorevise/prompts/W3-CRUX.md",
+    "deps": [
+      "W3-DIM",
+      "W3-STORE",
+      "W3-KIND",
+      "W3-VEC",
+      "W3-EVOLVE",
+      "W3-MIGRATE",
+      "W3-HARDEN"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "AUTOREVISE docs/SYNAPSE-memory-engineering-spec.md :: S9 Guardrails (non-negotiable) + blueprint S5 verifiable acceptance: dual-write phases 1-4, dry-run everything destructive, non-destructive cut-over, one invariant per change, doctor is the source of truth - a change is not done until the doctor SHOWS it. Whole-wave F1-shaped gate. Carries wave-1 B1/B2 and wave-2 uncommitted-state lessons as standing checks."
+  },
+  {
+    "id": "W3-DIM",
+    "name": "embedding dim contract: index reads the provider, loud on mismatch",
+    "state": "ready",
+    "receipt": "W3-DIM.json",
+    "branch": "wave3/dim",
+    "base": "master",
+    "worktree": ".claude/worktrees/w3-dim",
+    "prompt": "harness/autorevise/prompts/W3-DIM.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "python/synapse/memory/moneta_store.py",
+      "python/synapse/memory/moneta_runtime.py",
+      "python/synapse/memory/embedding.py",
+      "C:/Users/User/Moneta/src/moneta/vector_index.py (VENDOR BOUNDARY - findings + held spawn only, see crucible)",
+      "tests/"
+    ],
+    "note": "AUTOREVISE docs/SYNAPSE-memory-engineering-spec.md :: S0 THE ONE ROOT CAUSE + S2 Phase 0: index expects 384, provider emits 256; ValueError at Moneta/src/moneta/vector_index.py:112, snapshot-restored dim at :189; two construction paths in moneta_store.py (:262 passes embedder.dim, :289 passes cfg.embedding_dim); embedding.py fallback embedder dim=256 (:77) vs model embedder dim=384 (:158); init aborts and the store silently falls back to jsonl while claiming moneta (panel/health_strip.py:23 documents the incident class); write_plane degraded. Crux leg of the wave - every other W3 leg gates on this one bug. Base ruling pending Joe's word at arming: master + seam guard vs base fix/memory-store-recovery."
+  },
+  {
+    "id": "W3-EVOLVE",
+    "name": "consolidation: dry-run audit, apply only on approval, protected survive",
+    "state": "ready",
+    "receipt": "W3-EVOLVE.json",
+    "branch": "wave3/evolve",
+    "base": "master",
+    "worktree": ".claude/worktrees/w3-evolve",
+    "prompt": "harness/autorevise/prompts/W3-EVOLVE.md",
+    "deps": [
+      "W3-KIND"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/memory/",
+      "tests/"
+    ],
+    "note": "AUTOREVISE docs/SYNAPSE-memory-engineering-spec.md :: S6 Phase 4 - Consolidation and pruning: charmeleon-to-charizard evolution over the real store; dry-run returns a prune audit (what merges, what prunes, before/after counts); apply only when approved; protected memories are never pruned. Dry-run over the pre-migration store proves the machinery; the real corpus pass lands under W3-HARDEN acceptance."
+  },
+  {
+    "id": "W3-HARDEN",
+    "name": "production hardening: crash recovery, concurrency, store-level write_plane truth",
+    "state": "ready",
+    "receipt": "W3-HARDEN.json",
+    "branch": "wave3/harden",
+    "base": "master",
+    "worktree": ".claude/worktrees/w3-harden",
+    "prompt": "harness/autorevise/prompts/W3-HARDEN.md",
+    "deps": [
+      "W3-MIGRATE",
+      "W3-EVOLVE"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/memory/",
+      "python/synapse/",
+      "tests/"
+    ],
+    "note": "AUTOREVISE docs/SYNAPSE-memory-engineering-spec.md :: S8 Phase 6 - Production hardening: partial stage writes do not corrupt the root; two sessions writing do not clobber (confirm USD layer-merge semantics); doctor reports write_plane for the STORE, not just the bridge; memory section reads all-ok with write-plane independently verified. Last builder. Wave acceptance S5 of the blueprint rides on this receipt plus W3-CRUX."
+  },
+  {
+    "id": "W3-KIND",
+    "name": "typed schema per kind: recall routes on type, not string-match",
+    "state": "ready",
+    "receipt": "W3-KIND.json",
+    "branch": "wave3/kind",
+    "base": "master",
+    "worktree": ".claude/worktrees/w3-kind",
+    "prompt": "harness/autorevise/prompts/W3-KIND.md",
+    "deps": [
+      "W3-STORE"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/memory/moneta_store.py",
+      "python/synapse/memory/",
+      "tests/"
+    ],
+    "note": "AUTOREVISE docs/SYNAPSE-memory-engineering-spec.md :: S4 Phase 2 - Typed schema, routing on kind: per-kind fields for note/context/reference/task/decision (decision carries reasoning+alternatives, task carries status); synapse_recall/synapse_search accept a kind filter routed on the typed prim. The real payoff phase - programs route on type. Blueprint P3."
+  },
+  {
+    "id": "W3-MIGRATE",
+    "name": "JSONL to Moneta: copy-and-verify, ids preserved, flip with fallback armed",
+    "state": "ready",
+    "receipt": "W3-MIGRATE.json",
+    "branch": "wave3/migrate",
+    "base": "master",
+    "worktree": ".claude/worktrees/w3-migrate",
+    "prompt": "harness/autorevise/prompts/W3-MIGRATE.md",
+    "deps": [
+      "W3-KIND",
+      "W3-VEC"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/memory/",
+      "tests/"
+    ],
+    "note": "AUTOREVISE docs/SYNAPSE-memory-engineering-spec.md :: S7 Phase 5 - Migration and cut-over: one-shot exporter JSONL to typed USD prims preserving ids so references survive; verify every JSONL memory has a corresponding USD prim (count + spot-check field fidelity, no prim dropped); flip active backend to Moneta keeping JSONL as automatic write-through. The actual go-live. Blueprint P6: never destroy a memory."
+  },
+  {
+    "id": "W3-PAPER",
+    "name": "durable record: SUPPORT_MATRIX rows, receipts index, wave capsule",
+    "state": "ready",
+    "receipt": "W3-PAPER.json",
+    "branch": "wave3/paper",
+    "base": "master",
+    "worktree": ".claude/worktrees/w3-paper",
+    "prompt": "harness/autorevise/prompts/W3-PAPER.md",
+    "deps": [
+      "W3-CRUX"
+    ],
+    "readonly": false,
+    "touches": [
+      "docs/",
+      "harness/notes/"
+    ],
+    "note": "AUTOREVISE docs/SYNAPSE-memory-blueprint.md :: S5 Verifiable acceptance for the whole effort + S6 Guardrails: a senior reviewer ticks every box with evidence; doctor is the source of truth; ratified surfaces reflect observed scope only. Closes the wave's paper trail. Blueprint P5: honest."
+  },
+  {
+    "id": "W3-STORE",
+    "name": "materialize cortex_root.usda: typed root, write/query, dual-write armed",
+    "state": "ready",
+    "receipt": "W3-STORE.json",
+    "branch": "wave3/store",
+    "base": "master",
+    "worktree": ".claude/worktrees/w3-store",
+    "prompt": "harness/autorevise/prompts/W3-STORE.md",
+    "deps": [
+      "W3-DIM"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/memory/moneta_store.py",
+      "python/synapse/memory/moneta_runtime.py",
+      "tests/"
+    ],
+    "note": "AUTOREVISE docs/SYNAPSE-memory-engineering-spec.md :: S3 Phase 1 - Materialize the Moneta store: real cortex_root.usda at the resolved usd_root (doctor showed AppData/Local/Temp/houdini_temp/untitled/.synapse/.moneta/cortex_root.usda), MonetaMemory root prim with version attribute, write/query as typed prims keyed (kind,id), dual-write to JSONL for the whole phase. Blueprint Phase 0 honesty items (deterministic in_use, never claim moneta while serving jsonl) are covered by W3-DIM targets 3-4; this leg makes in_use a real True."
+  },
+  {
+    "id": "W3-VEC",
+    "name": "vector recall: derived index over the store, ranked with scores",
+    "state": "ready",
+    "receipt": "W3-VEC.json",
+    "branch": "wave3/vec",
+    "base": "master",
+    "worktree": ".claude/worktrees/w3-vec",
+    "prompt": "harness/autorevise/prompts/W3-VEC.md",
+    "deps": [
+      "W3-STORE"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/memory/moneta_store.py",
+      "python/synapse/memory/embedding.py",
+      "tests/"
+    ],
+    "note": "AUTOREVISE docs/SYNAPSE-memory-engineering-spec.md :: S5 Phase 3 - Vector recall: index built OVER the USD store as derived data (rebuildable from source memories, never the source of truth); synapse_recall returns nearest neighbors by embedding with a confidence score; index embedding_dim read from the provider at init per the Phase 0 fix. Runs parallel to W3-KIND after W3-STORE lands."
+  }
+]

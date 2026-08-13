@@ -1,0 +1,26 @@
+{
+  "id": "W3-PAPER",
+  "name": "durable record: SUPPORT_MATRIX rows, receipts index, wave capsule",
+  "band": "PAPER",
+  "source": {
+    "doc": "docs/SYNAPSE-memory-blueprint.md",
+    "anchor": "S5 Verifiable acceptance for the whole effort + S6 Guardrails: a senior reviewer ticks every box with evidence; doctor is the source of truth; ratified surfaces reflect observed scope only"
+  },
+  "targets": [
+    "1) SUPPORT_MATRIX rows for the observed contracts this wave established: dim authority, dual-write, migration parity, concurrency semantics - each row citing its receipt",
+    "2) receipts index for the wave under harness/notes/",
+    "3) wave capsule: position, findings, ruling items, and the L-tasks left for Joe (GUI relaunch confirmation among them)"
+  ],
+  "acceptance": [
+    {"predicate": "every SUPPORT_MATRIX row added cites a committed receipt path and claims observed scope only", "evidence": "check"},
+    {"predicate": "capsule written with position, ruling items, and open L-tasks", "evidence": "receipt"}
+  ],
+  "deps": ["W3-CRUX"],
+  "readonly": false,
+  "touches": ["docs/", "harness/notes/"],
+  "crucible_criteria": [
+    "docs claim observed scope only - no row asserts store-level health from registration-level evidence",
+    "no code paths touched - docs and notes only; any code diff on this branch is a BLOCK"
+  ],
+  "note": "Closes the wave's paper trail. Blueprint P5: honest."
+}

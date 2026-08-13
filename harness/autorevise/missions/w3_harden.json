@@ -1,0 +1,32 @@
+{
+  "id": "W3-HARDEN",
+  "name": "production hardening: crash recovery, concurrency, store-level write_plane truth",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/SYNAPSE-memory-engineering-spec.md",
+    "anchor": "S8 Phase 6 - Production hardening: partial stage writes do not corrupt the root; two sessions writing do not clobber (confirm USD layer-merge semantics); doctor reports write_plane for the STORE, not just the bridge; memory section reads all-ok with write-plane independently verified"
+  },
+  "targets": [
+    "1) crash-recovery: a write interrupted mid-stage leaves the root intact and the last durable state readable",
+    "2) concurrency: two sessions writing concurrently both survive - confirm and receipt the actual USD layer-merge semantics observed",
+    "3) telemetry: write_plane reflects store health, not only bridge health",
+    "4) post-migration consolidation: a dry-run over the migrated corpus produces a sane audit (closes the W3-EVOLVE note)"
+  ],
+  "acceptance": [
+    {"predicate": "kill-mid-write then reopen: root parses, last durable memory readable, no corruption", "evidence": "test"},
+    {"predicate": "two concurrent writers: both memories present afterwards, observed merge semantics receipted", "evidence": "test"},
+    {"predicate": "doctor write_plane ok is demonstrably derived from store-level evidence", "evidence": "probe"},
+    {"predicate": "post-migration evolve dry-run returns a sane audit over the real corpus", "evidence": "test"}
+  ],
+  "deps": ["W3-MIGRATE", "W3-EVOLVE"],
+  "readonly": false,
+  "touches": ["python/synapse/memory/", "python/synapse/", "tests/"],
+  "crucible_criteria": [
+    "SEAM GUARD: fix/memory-store-recovery is UNMERGED - receipt states rebase-compatibility; drift is a BLOCK",
+    "concurrency claims are observed, not asserted from USD documentation - the test output is the receipt",
+    "write_plane truth: a degraded store with a healthy bridge must show degraded - crucible attacks this seam directly",
+    "house rule: unobtainable renders UNKNOWN - any hardening check that cannot run in the assay environment reports UNKNOWN, never a silent pass"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Last builder. Wave acceptance S5 of the blueprint rides on this receipt plus W3-CRUX."
+}
