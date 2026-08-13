@@ -1,0 +1,96 @@
+{
+  "leg": "W1-KPRE",
+  "name": "karma progressive presets + background default",
+  "status": "green_with_findings",
+  "branch": "wave1/kpre",
+  "probed_build": "22.0.400",
+  "source": {
+    "doc": "docs/SYNAPSE_latency_and_karma_rendersettings_2026.md",
+    "ref": "00c5afa2 (feat/autorevise-harness); read from git, not present on wave1/kpre base",
+    "anchor": "Parts 2/3/4 - progressive pipeline, OIDN, background soho_foreground=0 for quality+"
+  },
+  "acceptance": [
+    {
+      "predicate": "presets exist and set pathtracedsamples/resolution/denoise/engine per the addendum table",
+      "verdict": "pass",
+      "evidence": "test",
+      "anchor": "python/synapse/core/render_presets.py:PROGRESSIVE_PRESETS ; tests/test_karma_progressive_presets.py::TestPresetTable (8/8 pass) ; live apply read-back on karma ROP, all 11 overrides applied, missing=[] (scratchpad/probe3.json)"
+    },
+    {
+      "predicate": "parm NAMES probe-verified against the live 22.0.400 build (names probe-verified, values design choices)",
+      "verdict": "pass",
+      "evidence": "probe",
+      "anchor": "hou.applicationVersionString()=='22.0.400' ; node.parm/parmTuple introspection on karmarendersettings+usdrender_rop+karma ROP (scratchpad/probe1.json, probe2.json) ; caught 3 doc-only phantoms (reflectlimit/refractlimit/denoisemode) and shipped live names (reflectionlimit/refractionlimit/denoiser) ; render_presets.py:PARM_NAMES + PROBE_VERIFIED_PARM_NAMES ; tests/test_karma_progressive_presets.py::TestProbeVerifiedNames (7/7 pass)"
+    },
+    {
+      "predicate": "quality and final presets set background mode; layout and lighting stay foreground",
+      "verdict": "pass",
+      "evidence": "test",
+      "anchor": "render_presets.py:PROGRESSIVE_PRESETS background flags ; preset_parm_overrides soho_foreground polarity layout/lighting=1, quality/final=0 ; tests/test_karma_progressive_presets.py::TestBackgroundPolicy (3/3 pass) ; live: quality soho_foreground=0 applied on karma ROP"
+    },
+    {
+      "predicate": "XPU flush-delay note travels with the preset surface (10-15s post-render() is not a hang)",
+      "verdict": "pass",
+      "evidence": "check",
+      "anchor": "render_presets.py:XPU_FLUSH_DELAY_NOTE ; surfaced in handler return key 'xpu_flush_delay_note' (handlers_render.py) ; _tool_registry.py render_progressively description ; docs/karma_render_cheatsheet.md 'XPU flush delay' section ; tests/test_karma_progressive_presets.py::TestXpuFlushNote"
+    }
+  ],
+  "deliverables": [
+    "python/synapse/core/render_presets.py (new) - pure-data preset table + probe-verified parm map + resolver; no hou import (CI-safe)",
+    "python/synapse/server/handlers_render.py (edit) - additive opt-in 'preset'/'stages' path in _handle_render_progressively; unchanged when not invoked",
+    "python/synapse/mcp/_tool_registry.py (edit) - declared 'preset'/'stages' params on synapse_render_progressively",
+    "docs/karma_render_cheatsheet.md (new) - bounce limits, denoise policy, AOV starter set, XPU-vs-CPU rule, camera-is-USD-prim note, provenance",
+    "tests/test_karma_progressive_presets.py (new) - 25 tests, pure-data, collects under 'not needs_houdini'"
+  ],
+  "verification": {
+    "new_suite": "25 passed (tests/test_karma_progressive_presets.py)",
+    "regression": "51 passed (tests/test_forge_render.py + test_render_diagnostics.py + test_render_constants.py) - wiring is non-regressive",
+    "ci_collection": "25 tests collect under -m 'not needs_houdini' (runs on stock CI)",
+    "live_apply": "karma ROP: 11/11 overrides applied+read-back on 22.0.400 (missing=[]); usdrender_rop: only soho_foreground applies (see finding F3)"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "claim": "Addendum prose names reflectlimit/refractlimit (bounces) and denoisemode (denoise) are PHANTOM on 22.0.400; real names are reflectionlimit/refractionlimit/denoiser. Corrected in the shipped preset surface.",
+      "anchor": "scratchpad/probe1.json + probe2.json (build 22.0.400) ; python/synapse/core/render_presets.py:PARM_NAMES"
+    },
+    {
+      "id": "F2",
+      "claim": "Pre-existing tech debt (out of scope, NOT fixed): _apply_karma_advanced_settings._KARMA_PARM_MAP carries phantom candidate names vs 22.0.400 - specular_limit->['specularlimit'] (real reflectionlimit), enable_denoiser->['denoise_enable',...] (real 'denoiser' String menu off|optix|oidn), xform_motionsamples/geo_motionsamples (real xformsamples/geosamples). Any preset routed through this map would silently no-op these; the W1-KPRE presets bypass it and apply probe-verified concrete names directly, so they are unaffected.",
+      "anchor": "python/synapse/server/handlers_render.py:2468-2528"
+    },
+    {
+      "id": "F3",
+      "claim": "Preset apply-surface nuance: overrides fully apply on a 'karma' ROP (probe3 missing=[]); on a 'usdrender_rop' only ROP-level parms apply (soho_foreground) because pathtracedsamples/engine/denoiser/bounces live on the referenced karmarendersettings prim, not the ROP. This matches the existing _handle_render_progressively best-effort-on-rop_path behavior; full usdrender coverage would require applying render settings on the karmarendersettings node.",
+      "anchor": "scratchpad/probe3.json ; python/synapse/server/handlers_render.py:2332"
+    }
+  ],
+  "for_ruling": [
+    "final preset defaults engine=cpu (reference quality for hero finals per addendum 2.1). Design choice - flag if xpu-default is preferred as the shipped default.",
+    "F2: the _KARMA_PARM_MAP phantom candidate names are a real correctness gap for the advanced-karma path but out of this leg's scope. Recommend a follow-up forge leg (spawn S1 below).",
+    "F3: whether the presets should extend to apply render settings on the karmarendersettings node when the ROP is usdrender_rop (fuller coverage), or remain karma-ROP-complete + background-only on usdrender."
+  ],
+  "spawn": [
+    {
+      "id": "W-KPARMMAP-FIX",
+      "name": "correct _KARMA_PARM_MAP phantom candidate names (22.0.400)",
+      "band": "BUILD",
+      "class": "forge",
+      "source": {"doc": "harness/notes/receipts/W1-KPRE.json", "anchor": "finding F2"},
+      "targets": [
+        "replace specular_limit candidate ['specularlimit'] with probe-verified ['reflectionlimit'] and add refraction_limit->['refractionlimit'], volume_limit->['volumelimit']",
+        "replace enable_denoiser boolean map with the real 'denoiser' String menu (off|optix|oidn)",
+        "replace xform_motionsamples/geo_motionsamples candidates with probe-verified xformsamples/geosamples"
+      ],
+      "acceptance": [
+        {"predicate": "every _KARMA_PARM_MAP candidate name exists on the live 22.0.400 karma ROP", "evidence": "probe"},
+        {"predicate": "advanced-karma path sets denoiser/bounces/motion for real (read-back verified)", "evidence": "test"}
+      ],
+      "readonly": false,
+      "touches": ["python/synapse/server/handlers_render.py", "tests/"],
+      "crucible_criteria": ["no candidate name ships un-probed", "existing advanced-karma callers unchanged unless the setting name is passed"],
+      "spawn_classes": ["probe"],
+      "note": "Held for Joe: class 'forge' is outside W1-KPRE spawn_classes (probe only)."
+    }
+  ]
+}

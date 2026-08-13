@@ -1296,12 +1296,19 @@ TOOL_DEFS: list[tuple] = [
      False, True, False),
 
     ("synapse_render_progressively", "render_progressively", _identity,
-     "Progressive 3-pass render: test (256x256, 4 samples) -> preview (720p, 16 samples) "
-     "-> production (user settings). Validates each pass before proceeding.",
+     "Progressive multi-pass render, validating each pass before proceeding. "
+     "Default ladder: test (256x256, 4 samples) -> preview (720p, 16 samples) -> "
+     "production (user settings). Pass 'preset' or 'stages' to use the named "
+     "Karma progressive presets instead (layout 320x240/4 -> lighting 960x540/16-32 "
+     "-> quality 1080p/64 -> final 128-512); quality+ presets render in background "
+     "so the render doesn't fight the panel. XPU has a ~10-15s post-render flush "
+     "(not a hang).",
      {"type": "object", "properties": {
          "rop_path": {"type": "string", "description": "Path to the usdrender ROP node (auto-discovered if omitted)"},
          "resolution": {"type": "array", "items": {"type": "integer"}, "description": "Production resolution [width, height]. Default: [1920, 1080]"},
          "samples": {"type": "integer", "description": "Production pixel samples. Default: 64"},
+         "preset": {"type": "string", "enum": ["layout", "lighting", "quality", "final"], "description": "W1-KPRE: run a single named Karma progressive preset. Opt-in -- replaces the default ladder."},
+         "stages": {"type": "array", "items": {"type": "string", "enum": ["layout", "lighting", "quality", "final"]}, "description": "W1-KPRE: explicit list of named presets, run in canonical low->high order. Overrides 'preset'. Omit both for the default test/preview/production ladder."},
      }, "required": []},
      False, True, False),
 
