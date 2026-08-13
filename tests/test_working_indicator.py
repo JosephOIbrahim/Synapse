@@ -30,6 +30,17 @@ from synapse.panel import working_indicator as wi  # noqa: E402
 from synapse.panel.designsystem import tokens as dt  # noqa: E402
 
 
+def _real_pyside_or_skip():
+    """Skip unless PySide6 is REAL. ``importorskip`` alone is not enough: some
+    CI environments pre-mock ``PySide6`` into ``sys.modules`` so panel imports
+    survive, and a MagicMock 'module' sails through the skip and then explodes
+    on ``QApplication.instance()``. A mocked Qt cannot observe rendering —
+    UNKNOWN discipline says skip loudly, never fail on an unobservable."""
+    mod = pytest.importorskip("PySide6")
+    if "mock" in type(mod).__module__.lower():
+        pytest.skip("PySide6 is mocked in this environment — real Qt required")
+
+
 # ======================================================================
 # Acceptance #1 — real-state transitions, no timer-derived state
 # ======================================================================
@@ -117,7 +128,7 @@ class TestDistinguishableRender:
         assert "5" in label and label != wi.state_label(wi.STATE_BUSY)
 
     def test_widget_visibility_transitions(self):
-        pytest.importorskip("PySide6")
+        _real_pyside_or_skip()
         import os
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         from PySide6 import QtWidgets
@@ -140,7 +151,7 @@ class TestDistinguishableRender:
         assert ind.state() == wi.STATE_IDLE and not ind.isVisible()
 
     def test_widget_constructs_no_qtimer(self):
-        pytest.importorskip("PySide6")
+        _real_pyside_or_skip()
         import os
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         from PySide6 import QtWidgets, QtCore

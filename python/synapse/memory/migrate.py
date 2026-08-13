@@ -57,6 +57,7 @@ import hashlib
 import json
 import logging
 import shutil
+import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -568,19 +569,19 @@ def main(argv: Optional[List[str]] = None) -> int:
         manifest = backup_memory_stores(
             stores, args.backup_root, dry_run=not args.execute
         )
-        print(json.dumps(manifest.to_dict(), indent=2))
+        sys.stdout.write(json.dumps(manifest.to_dict(), indent=2) + "\n")
         return 0 if manifest.ok else 1
 
     if args.cmd == "export":
         report = export_jsonl_to_moneta(
             args.source_dir, args.target_dir, dry_run=not args.execute
         )
-        print(json.dumps(report.to_dict(), indent=2))
+        sys.stdout.write(json.dumps(report.to_dict(), indent=2) + "\n")
         return 0 if report.error is None else 1
 
     if args.cmd == "verify":
         report = verify_export(args.source_dir, args.target_dir, spot_check=args.spot_check)
-        print(json.dumps(report.to_dict(), indent=2))
+        sys.stdout.write(json.dumps(report.to_dict(), indent=2) + "\n")
         ok = report.error is None and report.count_parity and report.spot_ok
         return 0 if ok else 1
 
