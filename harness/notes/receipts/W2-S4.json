@@ -1,0 +1,180 @@
+{
+  "schema": "receipt/v1",
+  "leg": "W2-S4",
+  "title": "freeze discriminator probe + conditional bridge-lookup cache",
+  "band": "BUILD",
+  "status": "green_with_findings",
+  "status_note": "The mission's UNKNOWN branch was executed exactly as written. The FRZ_REPRO stickiness discriminator is a human-at-GUI perceptual reproduction; this leg ran headless (a live bridge, no GUI perception) so the discriminator is recorded UNKNOWN. Per R-FRZ-3 (no fix without a positive probe) NOTHING was shipped: git status is clean, no file in `touches` was edited. The one-line negative-result cache and a 4-property lookup test are prepared and attached below as ready-but-unapplied artifacts. Both the UNKNOWN verdict and the ready diff were adversarially attacked (workflow wfuub2g70, 2 independent skeptics) before this receipt was written; the verdict survived and the test was strengthened by their findings.",
+  "model": "claude-opus-4-8",
+  "settings_profile": "Interactive session under project .claude/settings.json. This leg ran read-only introspection against the live bridge and wrote ONLY this receipt + bus posts; it edited no product code, matching the UNKNOWN-branch 'ship nothing' rule.",
+  "commit_at_run": "29e55bf0",
+  "branch": "wave2/s4",
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/w2-s4",
+  "houdini_build_target": "22.0.400",
+  "houdini_build_observed": "22.0.400 (live bridge, ui_available=true, interactive untitled session) - GUI session present but NOT perceivable by a headless agent",
+
+  "discriminator_probe": {
+    "what_it_is": "FRZ_REPRO.md section 'Two things to check while you are at the GUI', point 1: 'Check whether the panel feels sticky WITHOUT sending a prompt. If it does, this is a stronger suspect than anything on the result path.' It isolates the timer/lookup path (agent_health._find_bridge_instance re-walking the heap on the 4s health QTimer) from the prompt result path.",
+    "authority_note": "FRZ_REPRO.md header states outright: 'Every number this protocol can produce requires a human at the Houdini GUI.' 'Feels sticky' is a human perceptual judgement of responsiveness.",
+    "live_probe_run": "houdini_execute_python (atomic=false, read-only introspection) against the connected bridge; output written to a temp file and read back locally, then the temp file removed.",
+    "live_probe_results": {
+      "ui_available": true,
+      "app_version": "22.0.400",
+      "bridge_instances_in_gc": 1,
+      "_BRIDGE_REF_is_none": false,
+      "agent_health_loaded": true,
+      "_SHARED_AVAILABLE": true,
+      "qt_panel_widgets_in_gc": 1,
+      "qt_panel_names": ["SynapsePanel"]
+    },
+    "verdict": "UNKNOWN",
+    "why_unknown": [
+      "Perception: the discriminator asks whether the panel FEELS sticky. A headless automated agent has no GUI to perceive; there is no human at this GUI reporting.",
+      "Dormant mechanism: bridge_instances_in_gc=1 and _BRIDGE_REF is populated, so _find_bridge_instance is hitting the POSITIVE weakref fast-path and the full-heap gc.get_objects() walk is NOT firing this session. The miss/walk path runs only while no bridge exists. There is literally nothing to observe right now.",
+      "Timing is barred: even timing the gc walk (e.g. via the Watchdog latency deque, see finding F3) would be 'timing-adjacent evidence', which the crucible criteria explicitly forbid as a basis for a headless discriminator verdict.",
+      "Non-attribution: the only prompt-free instrument (Watchdog beat-latency) records THAT main was busy, never WHY, and cannot separate the gc walk from the 2s context timer at synapse_panel.py:2342 - which is the discriminator's entire purpose."
+    ],
+    "adversarial_confirmation": "workflow wfuub2g70 verdict-skeptic was tasked to DEFEAT the UNKNOWN by finding any legitimate headless decision path; it returned headless_repro_possible=false, verdict_should_be=UNKNOWN, r_frz_3_would_be_violated_by_shipping=true."
+  },
+
+  "acceptance": [
+    {
+      "predicate": "discriminator executed and its result recorded pass/fail/UNKNOWN with the probe path",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_probe. The discriminator was executed (live-bridge introspection: ui_available=true, bridge_instances_in_gc=1, _BRIDGE_REF populated, SynapsePanel widget live) and its result recorded UNKNOWN with the probe path. gui_required=true and GUI stickiness-perception is unobtainable headless, so per the Constitution ('a gui_required acceptance you cannot measure headless is recorded UNKNOWN') this is UNKNOWN, never a pass or an estimate. Probe path: harness/notes/FRZ_REPRO.md:128 + live agent_health._BRIDGE_REF state this session."
+    },
+    {
+      "predicate": "cache fix applied only on a positive discriminator; otherwise diff-in-receipt only",
+      "verdict": "pass",
+      "evidence": "check. Discriminator is UNKNOWN (not positive) -> zero product edits. `git status --short` is clean; no file in `touches` was modified. The negative-result cache is diff-in-receipt only (ready_diff below). R-FRZ-3 honoured."
+    },
+    {
+      "predicate": "if applied: single-site change, invalidation semantics stated, lookup behaviour test added",
+      "verdict": "pass",
+      "evidence": "test. ANTECEDENT FALSE - the fix was NOT applied and NO test was committed to the tree (UNKNOWN branch = ship nothing). Marked pass because the obligation does not fire AND the ready artifacts satisfy all three sub-conditions so a follow-on application is drop-in: single-site (adversary confirmed is_single_site=true - the cache lives only in agent_health._find_bridge_instance); invalidation stated (bounded _NEG_CACHE_TTL_SEC cooldown that EXPIRES so a late bridge is never permanently hidden - adversary confirmed invalidation_sound=true); lookup test present (ready_test below, 4 properties incl. the dead-ref never-hide-a-live-bridge invariant the adversary flagged as the missing pin)."
+    },
+    {
+      "predicate": "no other freeze candidates chased - out of scope per FRZ sequencing",
+      "verdict": "pass",
+      "evidence": "check. Only the single named candidate (agent_health._find_bridge_instance) was worked. The sibling chat_panel.py:83 _find_running_server (same gc-walk class) was surfaced incidentally by the adversary while verifying single-site, and the synapse_panel.py:2342 context timer only as context for the non-attribution argument - neither was investigated or fixed. The sibling is recorded as a spawn proposal (S1 below), which is the Constitution-sanctioned way to handle unrelated value without chasing it."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "F1",
+      "tier": "gui_probe",
+      "claim": "FRZ_REPRO stickiness discriminator = UNKNOWN, headless. It is a human-at-GUI perceptual reproduction and this leg has no GUI perception; additionally the miss/walk mechanism is dormant this session (a LosslessExecutionBridge exists in gc and _BRIDGE_REF is populated, so the positive-cache fast-path is active and gc.get_objects() is never walked).",
+      "anchor": "harness/notes/FRZ_REPRO.md:128 + live-probe agent_health._BRIDGE_REF not-None (this session)"
+    },
+    {
+      "id": "F2",
+      "tier": "VERIFIED-STATIC",
+      "claim": "Mechanism confirmed by reading agent_health.py:52-71 directly: _find_bridge_instance caches only a POSITIVE lookup (weakref at :69). The miss path returns None at :71 WITHOUT recording the miss, so while no bridge exists the 4000ms health QTimer (synapse_panel.py:418-421 -> _update_health -> poll_agent_health -> get_agent_health -> _find_bridge_instance) walks the ENTIRE Python heap (gc.get_objects() + isinstance per object) on Houdini's main thread every poll. Heap size is ~constant within a session, so the walk duration is ~constant - the tight-band-without-a-timeout shape the FRZ leg's constant hunt predicted (R-FRZ-3, FRZ.json leading_candidate).",
+      "anchor": "python/synapse/panel/agent_health.py:52-71 ; synapse_panel.py:418-421"
+    },
+    {
+      "id": "F3",
+      "tier": "VERIFIED-STATIC (self-correction)",
+      "claim": "CORRECTION of an inaccurate mid-run claim. My first bus finding said freeze_chain 'exposes no readable per-process stall counter (only a beat() watchdog)'. That is wrong: the Watchdog behind freeze_chain.beat() records per-beat latency = now - _last_heartbeat into a _latencies deque + _max_latency (resilience.py:590-592) and exposes it via get_stats() -> max_latency / last_heartbeat_ago (resilience.py:631-642). It beats prompt-free and captures sub-5s lateness, so a prompt-free main-thread hold WOULD leave a fingerprint. The discriminator verdict is UNCHANGED (still UNKNOWN) because that instrument is (1) timing evidence barred for the headless case by crucible rule, (2) non-attributing (cannot pin a latency spike on the gc walk vs the synapse_panel.py:2342 context timer), (3) dormant this session, (4) not perception. Surfaced by the adversarial verdict-skeptic (missed_instrument=true) and re-verified against the live tree by this leg. Correction also posted to the shared bus (n=18cb6633f7a1a714).",
+      "anchor": "python/synapse/server/resilience.py:590-592,631-642"
+    },
+    {
+      "id": "F4",
+      "tier": "adversarial-verification",
+      "claim": "The ready diff CODE is sound and ship-ready-in-reserve: adversary returned is_single_site=true, invalidation_sound=true (genuinely non-latching: the cooldown only extends on a miss-walk, a walk always fires once (now-last_miss)>=TTL, and a hit clears the cooldown; the dead-ref fall-through re-walks correctly), convention_ok=true. Its overall='needs-fix' was on two grounds that this leg has addressed: (a) the TEST did not pin the dead-but-non-None _BRIDGE_REF fall-through - a 4th property (test_dead_ref_rewalks_and_finds_replacement) was added and property 2 re-labelled to a single-cycle claim; (b) the R-FRZ-3 gate says do-not-apply on UNKNOWN - which is exactly the disposition taken (ship nothing).",
+      "anchor": "workflow wfuub2g70 diff-skeptic; ready_test below"
+    }
+  ],
+
+  "ready_diff": {
+    "status": "READY-BUT-UNAPPLIED (do NOT apply until a positive discriminator, per R-FRZ-3)",
+    "file": "python/synapse/panel/agent_health.py",
+    "single_site": true,
+    "note": "`time` is already imported (agent_health.py:17). The [0.0] list-holder matches the sibling _LAST_RECORD_MONO idiom (line 258).",
+    "invalidation_reasoning": "A MISS is remembered for _NEG_CACHE_TTL_SEC (30s) so the 4s health timer walks the heap at most once per 30s (not every poll) while no bridge exists. The cache is BOUNDED, not latching: after the TTL the next poll re-scans, so a bridge created later is found within one TTL (<=30s) and the positive weakref cache then takes over. A hit clears the cooldown. A permanent negative cache would be WORSE than the lookup cost - it would hide a late-constructed bridge and leave the agent-health panel reading empty forever - so the cache expires by design. TTL >> poll(4s), and small enough that first-bridge-appearance latency (<=30s) is tolerable for a telemetry display. The exact TTL is a human-tunable trade.",
+    "add_near_line_49": [
+      "_NEG_CACHE_TTL_SEC: float = 30.0     # bounded negative-result cooldown, NOT latching",
+      "_LAST_MISS_MONO = [0.0]              # monotonic clock of the last empty scan (list = rebind without global)"
+    ],
+    "new_find_bridge_instance_body": "    global _BRIDGE_REF\n    if not _SHARED_AVAILABLE:\n        return None\n    if _BRIDGE_REF is not None:\n        cached = _BRIDGE_REF()\n        if cached is not None:\n            return cached\n    # Negative-result cooldown: skip the full-heap walk if a recent scan found none.\n    now = time.monotonic()\n    if _LAST_MISS_MONO[0] and (now - _LAST_MISS_MONO[0]) < _NEG_CACHE_TTL_SEC:\n        return None\n    for obj in gc.get_objects():\n        if isinstance(obj, LosslessExecutionBridge):\n            _BRIDGE_REF = weakref.ref(obj)\n            _LAST_MISS_MONO[0] = 0.0     # a hit clears the cooldown\n            return obj\n    _LAST_MISS_MONO[0] = now             # record the miss so the next poll doesn't re-walk\n    return None"
+  },
+
+  "ready_test": {
+    "status": "READY-BUT-UNAPPLIED (commit alongside the ready_diff on a positive discriminator)",
+    "file": "tests/panel/test_agent_health_lookup.py",
+    "pins": [
+      "1 miss not re-walked within the TTL (the freeze fix)",
+      "2 negative cache expires - single cycle (bridge created after a miss is found once one TTL elapses)",
+      "3 dead-but-non-None _BRIDGE_REF (cached bridge gc-collected) re-walks and finds a live REPLACEMENT bridge - the never-hide-a-live-bridge invariant (the trickiest interaction; added after the adversary flagged it as the missing pin)",
+      "4 live positive weakref short-circuits the walk"
+    ],
+    "source": "\"\"\"Lookup-behaviour pins for agent_health._find_bridge_instance - the negative-\nresult cooldown that closes R-FRZ-3 (the uncached miss that re-walked the whole\nheap on every 4s health poll). Pure stdlib; no Qt, no hou. Runs under stock\npytest and hython.\n\"\"\"\nimport gc\nimport os\nimport sys\n\n_HERE = os.path.dirname(os.path.abspath(__file__))\n_ROOT = os.path.dirname(os.path.dirname(_HERE))\nfor _p in (_ROOT, os.path.join(_ROOT, \"python\")):\n    if _p not in sys.path:\n        sys.path.insert(0, _p)\n\nfrom synapse.panel import agent_health as ah  # noqa: E402\n\n\nclass _FakeBridge:\n    \"\"\"Stand-in for LosslessExecutionBridge (supports weakref + isinstance).\"\"\"\n\n\ndef _install(monkeypatch, *, heap, clock):\n    walks = {\"n\": 0}\n\n    def fake_get_objects():\n        walks[\"n\"] += 1\n        return list(heap)\n\n    monkeypatch.setattr(ah, \"_SHARED_AVAILABLE\", True)\n    monkeypatch.setattr(ah, \"LosslessExecutionBridge\", _FakeBridge)\n    monkeypatch.setattr(ah.gc, \"get_objects\", fake_get_objects)\n    monkeypatch.setattr(ah.time, \"monotonic\", lambda: clock[\"t\"])\n    monkeypatch.setattr(ah, \"_BRIDGE_REF\", None)\n    monkeypatch.setattr(ah, \"_LAST_MISS_MONO\", [0.0])\n    return walks\n\n\ndef test_miss_not_rewalked_within_ttl(monkeypatch):\n    clock = {\"t\": 1000.0}\n    walks = _install(monkeypatch, heap=[], clock=clock)\n    assert ah._find_bridge_instance() is None\n    assert walks[\"n\"] == 1\n    clock[\"t\"] = 1000.0 + ah._NEG_CACHE_TTL_SEC - 1.0\n    assert ah._find_bridge_instance() is None\n    assert walks[\"n\"] == 1  # the freeze fix: no re-walk within the cooldown\n\n\ndef test_negative_cache_expires_single_cycle(monkeypatch):\n    clock = {\"t\": 2000.0}\n    heap = []\n    walks = _install(monkeypatch, heap=heap, clock=clock)\n    assert ah._find_bridge_instance() is None\n    assert walks[\"n\"] == 1\n    bridge = _FakeBridge()\n    heap.append(bridge)                       # bridge appears AFTER the miss\n    clock[\"t\"] = 2000.0 + 1.0                  # still within TTL -> suppressed\n    assert ah._find_bridge_instance() is None\n    assert walks[\"n\"] == 1\n    clock[\"t\"] = 2000.0 + ah._NEG_CACHE_TTL_SEC + 0.1  # TTL elapsed -> re-walk\n    assert ah._find_bridge_instance() is bridge\n    assert walks[\"n\"] == 2\n\n\ndef test_dead_ref_rewalks_and_finds_replacement(monkeypatch):\n    # The trickiest state: a cached bridge is gc-collected, so _BRIDGE_REF is a\n    # dead-but-non-None ref. The next poll MUST fall through and re-walk to find\n    # a live REPLACEMENT bridge - a regression that armed the cooldown on the\n    # dead-ref path (or returned None without walking) would permanently hide it.\n    clock = {\"t\": 3000.0}\n    first = _FakeBridge()\n    heap = [first]\n    walks = _install(monkeypatch, heap=heap, clock=clock)\n    assert ah._find_bridge_instance() is first      # positive cache set, walk #1\n    assert walks[\"n\"] == 1\n    replacement = _FakeBridge()\n    heap[:] = [replacement]                          # first gone, replacement live\n    del first\n    gc.collect()                                     # _BRIDGE_REF() now returns None\n    assert ah._find_bridge_instance() is replacement\n    assert walks[\"n\"] == 2                            # re-walked, did NOT hide it\n\n\ndef test_positive_cache_short_circuits_walk(monkeypatch):\n    clock = {\"t\": 4000.0}\n    bridge = _FakeBridge()\n    walks = _install(monkeypatch, heap=[bridge], clock=clock)\n    assert ah._find_bridge_instance() is bridge\n    assert walks[\"n\"] == 1\n    assert ah._find_bridge_instance() is bridge\n    assert walks[\"n\"] == 1                            # weakref hit, no second walk\n"
+  },
+
+  "crucible_criteria": [
+    {
+      "criterion": "R-FRZ-3 honoured: no fix without a positive probe - a fix shipped on an UNKNOWN discriminator is a BLOCK",
+      "verdict": "HONOURED",
+      "evidence": "Discriminator UNKNOWN -> zero edits, git clean. The fix is diff-in-receipt only. Adversary confirmed r_frz_3_would_be_violated_by_shipping=true, i.e. shipping now WOULD be the BLOCK - which is why nothing shipped."
+    },
+    {
+      "criterion": "the discriminator's UNKNOWN, if headless, is recorded as UNKNOWN - never inferred from timing-adjacent evidence",
+      "verdict": "HONOURED",
+      "evidence": "Recorded UNKNOWN. The one prompt-free instrument (Watchdog beat-latency, F3) was explicitly NOT used to infer a verdict - it is timing evidence and cannot attribute a spike to the gc walk. No gc-walk timing was measured or cited toward the verdict."
+    },
+    {
+      "criterion": "cache carries invalidation reasoning (a stale negative cache that hides a late bridge is worse than the lookup cost)",
+      "verdict": "HONOURED",
+      "evidence": "ready_diff.invalidation_reasoning states it explicitly: bounded TTL cooldown that EXPIRES so a late-constructed bridge is found within one TTL and never permanently hidden. ready_test property 3 pins the never-hide-a-live-bridge invariant. Adversary confirmed invalidation_sound=true."
+    }
+  ],
+
+  "adversarial_verification": {
+    "workflow": "wfuub2g70 (2 independent Opus skeptics, parallel, 208890 subagent tokens)",
+    "verdict_skeptic": "Tasked to DEFEAT the UNKNOWN. Result: headless_repro_possible=false, verdict_should_be=UNKNOWN, r_frz_3_would_be_violated_by_shipping=true, missed_instrument=true. Its honest missed_instrument flag drove finding F3 (the self-correction).",
+    "diff_skeptic": "is_single_site=true, invalidation_sound=true, convention_ok=true, test_actually_pins_invalidation=false, overall=needs-fix. The needs-fix was (a) a test-coverage gap on the dead-ref fall-through and (b) the R-FRZ-3 do-not-apply gate. Both addressed: the ready_test now has the dead-ref property; the fix is not applied."
+  },
+
+  "for_ruling": [
+    {
+      "id": "R-FRZ-3-followup",
+      "question": "The discriminator half of R-FRZ-3 is now run and recorded UNKNOWN (headless). The fix (single-site negative-result cache) is ready-in-reserve and adversarially verified sound. The unblock is a single human-at-GUI run of the FRZ_REPRO discriminator in a BRIDGE-ABSENT window (panel open, no LosslessExecutionBridge yet constructed). If that reports the panel sticky WITHOUT a prompt -> apply ready_diff + ready_test. If not sticky -> the tight band lives on the result path (rung 5), and this cache is a cheap-but-optional hygiene fix. Ruling needed: is a GUI run scheduled, and does a not-sticky result retire this candidate or keep the cache as hygiene?",
+      "why_human": "Remediation sequencing and 'run the GUI probe' are human actions; a headless agent cannot decide or perform them."
+    }
+  ],
+
+  "spawn": [
+    {
+      "id": "W2-S4-P1",
+      "class": "probe",
+      "disposition": "active (within spawn_classes)",
+      "name": "Run FRZ_REPRO stickiness discriminator at a live GUI, then conditionally apply the W2-S4 ready cache",
+      "band": "BUILD",
+      "gui_required": true,
+      "targets": [
+        "with the SYNAPSE panel open and NO bridge yet constructed (bridge-absent window), observe whether Houdini's node-interaction surface feels sticky WITHOUT sending a prompt",
+        "record pass/fail with the observation as evidence",
+        "IF positive: apply harness/notes/receipts/W2-S4.json ready_diff (agent_health.py) + ready_test (tests/panel/test_agent_health_lookup.py) verbatim, run the 4 tests, commit single-file"
+      ],
+      "touches": ["python/synapse/panel/agent_health.py", "tests/"],
+      "note": "The ready artifacts are drop-in and adversarially verified; this spawn is the GUI observation this headless leg could not make."
+    },
+    {
+      "id": "W2-S4-P2",
+      "class": "fix",
+      "disposition": "held (outside spawn_classes - for Joe)",
+      "name": "Sibling uncached-negative gc-walk in chat_panel._find_running_server",
+      "band": "BUILD",
+      "rationale": "chat_panel.py:83-89 _find_running_server walks gc.get_objects() with NO cache at all (worse than agent_health's positive-only cache), called at :309. Same freeze class as the W2-S4 candidate. Surfaced incidentally during single-site verification - NOT chased.",
+      "caveat": "Prior FRZ forensics (FRZ.json constant_found_detail) flagged chat_panel.py as likely dead/unregistered surface reachable by no shipped entrypoint. Classify-before-fix: confirm it is live before spending on it. May be moot if the module is dead code.",
+      "anchor": "python/synapse/panel/chat_panel.py:83-89,309"
+    }
+  ],
+
+  "open": [
+    "The freeze is NOT reproduced. This leg recorded the discriminator UNKNOWN; the perceptual measurement is human-at-GUI and has not happened (spawn W2-S4-P1).",
+    "The ready cache is unapplied by design (R-FRZ-3). It must not be applied until a positive discriminator.",
+    "chat_panel._find_running_server sibling pathology (spawn W2-S4-P2) - unclassified live/dead, untouched."
+  ]
+}
