@@ -75,3 +75,86 @@ installer parity restored + `schema env` verify row + parity pinned by
 `hou.text.expandString("$HOUDINI_USER_PREF_DIR")` =
 `C:/Users/User/OneDrive/Documents/houdini22.0` (OneDrive known-folder
 redirect); the sibling `C:/Users/User/houdini22.0` is NOT scanned by H22.
+
+
+## Wave-3 memory-substrate contracts — 2026-08-13 (observed scope; durability-gated)
+
+Wave 3 ("Moneta materialization", blueprint `docs/SYNAPSE-memory-blueprint.md` §4
+phases 0–6) established four observed contracts on the memory substrate. **Scope
+discipline (blueprint P5 *Honest* / S6 "doctor is the source of truth"):** each row
+reports what was observed *at the layer named*, never store-level production health.
+
+The live seat is **not** moneta-backed yet: on 2026-08-13 `synapse_doctor` reports
+`moneta_substrate=fail` with an honest jsonl fallback (`requested=moneta, served=jsonl,
+reason="embedding dim mismatch: expected 384, got 256"`, 473-entry real corpus,
+`evolution=charmander`); downstream `moneta_consolidation`/`vector_recall`/`use_real_usd`
+are **skipped, not faked-ok** (first-party `synapse_doctor` re-probe 2026-08-13:
+`fail=1, ok=8, skipped=4`). All four contracts below cite a **committed** receipt — their
+legs committed at 16:47 on 2026-08-13 — and each reports observed scope only; none asserts
+`moneta_substrate=ok`. Nothing is **merged**, so the live seat still runs base code (fail)
+and the wave is not yet live-doctor-confirmed. Whole-wave adjudication: W3-CRUX (`BLOCKED`
+— the CRUX gate receipt is itself uncommitted and nothing is merged; builder-leg substance
+sound). Full provenance and commit state: `harness/notes/W3_RECEIPTS_INDEX.md`.
+
+### Committed-receipt contracts (observed scope only)
+
+- **Dim authority** — blueprint Phase 0 (harden the honest signal). `from_storage_dir`
+  resolves the embedding dim **once** from the active embedder
+  (`python/synapse/memory/moneta_store.py:266` `_resolve_embedding_dim`); a stale-dim
+  persisted snapshot is re-embedded from its **source payloads** before Moneta hydrates
+  (`_reconcile_snapshot_dim`), so a provider change rebuilds the *derived* vectors instead
+  of aborting into fallback. Both construction paths feed `embedding_dim=dim`
+  (`:275`, `:305`). **Observed scope:** the leg-owned dim contract **passes** — 13/13
+  `tests/test_w3_dim_contract.py`, both `[384→256]` and `[256→384]`; a forced init failure
+  still records `served=jsonl/requested=moneta` and the doctor never shows `in_use moneta`
+  (negative control). The live-seat `moneta_substrate=ok` conjunct is recorded **UNKNOWN**
+  (USD schema registration is a separate lane + observing the flip needs a server restart)
+  — never a fabricated ok. Receipt: **`harness/notes/receipts/W3-DIM.json`** (committed,
+  `wave3/dim @ 16cf1543`). Carried finding: the running seat is degraded by this bug
+  *today*; merge + restart recovers the moneta backend.
+
+The three contracts below committed at 16:47 on 2026-08-13; each cites its committed
+receipt and is substantively proven in standalone tests (independently re-executed by
+W3-CRUX). Each stays bounded to **adapter-level** scope — none claims `moneta_substrate=ok`
+(that stays `fail`, DEAD BYTES) — per blueprint P5 and the matrix rule.
+
+- **Dual-write** — Phase 1 guardrail *("never move pages until the cabinet is proven")*.
+  `MonetaBackedStore.add` mirrors every deposit to a typed cortex (`cortex_root.usda`,
+  `write(kind,id,payload)→/MonetaMemory/{kind}/{id}`) **and** a plain JSONL safety net,
+  byte-for-byte (`loaded.to_json()==m.to_json()`), gated to `backend==moneta` so the
+  shadow path never double-writes; no memory lands only in Moneta. **Observed at the
+  store-adapter level** (write→`.usda`→query; add→`memory.jsonl`), *not* store-level
+  health: `moneta_substrate` overall stays `fail` because `schema_registered=False`
+  (DEAD BYTES — `PXR_PLUGINPATH_NAME` unset, separate lane). Anchor:
+  `python/synapse/memory/moneta_store.py:550`. Receipt:
+  **`harness/notes/receipts/W3-STORE.json`** (committed, `wave3/store @ e8b691de`).
+- **Migration parity** — Phase 5 (no JSONL memory lost: count + field-fidelity). JSONL→Moneta
+  copy-and-verify: hard backup gate (sha256, sources proven byte-untouched), id-preserving
+  keep-both-never-overwrite exporter (idempotent, dim-pinned), disk-independent count parity
+  + ≥5 field-by-field spot-checks. Count is measured on **memories** (the decrypting loader
+  collapses an append-log to distinct current memories — R10 39 lines → 21 memories), with
+  `source_jsonl_lines` reported alongside; "USD prim count" maps to Moneta `snapshot.json`
+  ECS rows — a **literal typed-`.usda`-prim count is UNKNOWN today** (registration-gated),
+  not reported as a pass. Real-data run receipted for stores R10/R8 (backup byte-verified,
+  5/5 spot-checks). Anchor: `python/synapse/memory/migrate.py`. Receipt:
+  **`harness/notes/receipts/W3-MIGRATE.json`** (committed, `wave3/migrate @ 0c87a835`).
+- **Concurrency semantics** — Phase 6 (production hardening). **Observed, not asserted from
+  docs:** an in-process 2nd open on one store URI raises `MonetaResourceLockedError`
+  (single-owner); two USD sublayers compose into `cortex_root` and both prims survive a real
+  `Stage.Traverse()`; two sessions serialized through the single-owner lock keep both
+  deposits. **Carried data-loss risk:** the URI lock is *process-local* — two OS processes on
+  one store dir both open and last-writer-wins on `snapshot.json`, silently CLOBBERING a
+  deposit (observed live, survivors 1 of 2). Acceptable inside the single-user-localhost
+  envelope; a cross-process owner lock is a held spawn (W3-STORE lane). Kill-mid-write reopen
+  is **process-kill-durable** (atomic tmp→fsync→replace) but **not power-loss-durable** (no
+  directory fsync). Anchor: `moneta/api.py:199`; `python/synapse/server/write_plane.py`
+  (store-level `write_plane` truth). Receipt:
+  **`harness/notes/receipts/W3-HARDEN.json`** (committed, `wave3/harden @ 1b8d1e80`).
+
+> **Update (2026-08-13, post-PAPER):** the paragraph above records the board at
+> PAPER's writing time. Since then: all five durability-blocked legs received their
+> named-file commits, the W3-CRUX receipt was committed on `wave3/crux`, and the
+> full wave (dim..harden, crux, paper) merged to `master` with zero code conflicts;
+> the dim root-cause test was re-pinned to the FIXED contract (init succeeds via
+> loud derived-data rebuild). Live-seat `moneta_substrate=ok` remains gated on the
+> next Houdini relaunch + reinstall, per this matrix's own rule.
