@@ -1,0 +1,59 @@
+# compile_wave.py - missions -> legs/v1 rows + prompt briefs.
+# Emits waves/<wave>.rows.json and prompts/<ID>.md. It does NOT touch the live
+# manifest: appending rows to harness/legs.json is a CTO act, done on a word.
+# The shipped orchestrator re-reads its manifest every poll (orchestrate.ps1:484),
+# so an appended row dispatches live - which is exactly why appending is gated.
+import json, sys
+from pathlib import Path
+import mission_schema as ms
+
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parents[1]
+
+def leg_row(m: dict) -> dict:
+    tag = m["id"].split("-", 1)[1].lower()
+    wave = m["id"].split("-", 1)[0].lower().replace("w", "wave")
+    return {
+        "id": m["id"],
+        "name": m["name"],
+        "state": "ready",
+        "receipt": m.get("receipt", f"{m['id']}.json"),
+        "branch": m.get("branch", f"{wave}/{tag}"),
+        "base": "master",
+        "worktree": m.get("worktree", f".claude/worktrees/{m['id'].lower()}"),
+        "prompt": f"harness/autorevise/prompts/{m['id']}.md",
+        "deps": m["deps"],
+        "readonly": m["readonly"],
+        "touches": m["touches"],
+        "note": f"AUTOREVISE {m['source']['doc']} :: {m['source']['anchor']}. {m.get('note','')}".strip(),
+    }
+
+def fill_prompt(m: dict, row: dict) -> str:
+    tpl = (HERE / "prompts" / "_template.md").read_text(encoding="utf-8")
+    wave = m["id"].split("-", 1)[0].lower().replace("w", "wave")
+    body = json.dumps(m, indent=2, ensure_ascii=False)
+    for k, v in {"{ID}": m["id"], "{NAME}": m["name"], "{BRANCH}": row["branch"],
+                 "{WORKTREE}": row["worktree"], "{MISSION_JSON}": body,
+                 "{WAVE}": wave, "{RECEIPT}": row["receipt"]}.items():
+        tpl = tpl.replace(k, v)
+    return tpl
+
+def main() -> int:
+    if ms.validate_all() != 0:
+        print("compile refused: missions failed validation")
+        return 1
+    rows, wave = [], None
+    for f in sorted((HERE / "missions").glob("*.json")):
+        m = json.loads(f.read_text(encoding="utf-8"))
+        row = leg_row(m)
+        rows.append(row)
+        wave = wave or m["id"].split("-", 1)[0].lower().replace("w", "wave")
+        (HERE / "prompts" / f"{m['id']}.md").write_text(fill_prompt(m, row), encoding="utf-8")
+        print(f"wrote prompts/{m['id']}.md")
+    out = HERE / "waves" / f"{wave}.rows.json"
+    out.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"wrote {out.relative_to(REPO)} ({len(rows)} rows) - append to harness/legs.json is a HUMAN-WORD act")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,81 @@
+[
+  {
+    "id": "W1-CRUX",
+    "name": "wave-1 crucible",
+    "state": "ready",
+    "receipt": "W1-CRUX.json",
+    "branch": "wave1/crux",
+    "base": "master",
+    "worktree": ".claude/worktrees/w1-crux",
+    "prompt": "harness/autorevise/prompts/W1-CRUX.md",
+    "deps": [
+      "W1-HSTRIP",
+      "W1-MTFIX",
+      "W1-KPRE"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "AUTOREVISE docs/SYNAPSE_production_readiness_report_2026.md :: whole-wave adversarial review before any merge word. F1-shaped: gated on every evidence-producing wave leg so review never audits a moving picture. Merge stays Joe's word; a green crucible receipt is a precondition, not a permission."
+  },
+  {
+    "id": "W1-HSTRIP",
+    "name": "panel health strip",
+    "state": "ready",
+    "receipt": "W1-HSTRIP.json",
+    "branch": "wave1/hstrip",
+    "base": "master",
+    "worktree": ".claude/worktrees/w1-hstrip",
+    "prompt": "harness/autorevise/prompts/W1-HSTRIP.md",
+    "deps": [
+      "BASE",
+      "H4"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/panel/",
+      "tests/"
+    ],
+    "note": "AUTOREVISE docs/SYNAPSE_production_readiness_report_2026.md :: S4.1 persistent health/status strip + S1.2/S2.1 silent degradation surfacing. P0.3 from the readiness report. The doctor is honest, the panel is not - this closes that gap. MEM leg (held, Joe's flip) owns the store-side fail-loud; this leg owns the SURFACING only. No memory-store mutation here - W1 Moneta recovery holds that seam."
+  },
+  {
+    "id": "W1-KPRE",
+    "name": "karma progressive presets + background default",
+    "state": "ready",
+    "receipt": "W1-KPRE.json",
+    "branch": "wave1/kpre",
+    "base": "master",
+    "worktree": ".claude/worktrees/w1-kpre",
+    "prompt": "harness/autorevise/prompts/W1-KPRE.md",
+    "deps": [
+      "BASE"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/",
+      "docs/",
+      "tests/"
+    ],
+    "note": "AUTOREVISE docs/SYNAPSE_latency_and_karma_rendersettings_2026.md :: Part 2/3/4 - progressive pipeline (layout/lighting/quality/final), OIDN, background soho_foreground=0 for quality+. Part 2-4 of the addendum made executable. Small forge leg by design; the progressive pipeline is also the operational mitigation for panel latency (Part 3), so it ships in the same wave as MTFIX."
+  },
+  {
+    "id": "W1-MTFIX",
+    "name": "main-thread stalls: panel append/finalize + doctor hold",
+    "state": "ready",
+    "receipt": "W1-MTFIX.json",
+    "branch": "wave1/mtfix",
+    "base": "master",
+    "worktree": ".claude/worktrees/w1-mtfix",
+    "prompt": "harness/autorevise/prompts/W1-MTFIX.md",
+    "deps": [
+      "BASE",
+      "FRZ"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/panel/",
+      "python/synapse/",
+      "tests/"
+    ],
+    "note": "AUTOREVISE docs/SYNAPSE_latency_and_karma_rendersettings_2026.md :: Part 1 - 648ms main_thread_hold (synapse_doctor), 780ms panel finalize, 648ms append, 306ms dispatch tail. P1 latency core. FRZ (ready, on the board) attributes; this leg fixes what FRZ pinned to SYNAPSE-side holds. Dispatch wait (306ms tail) is queue physics - document, don't chase, unless FRZ says otherwise."
+  }
+]

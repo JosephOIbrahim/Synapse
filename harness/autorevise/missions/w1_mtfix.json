@@ -1,0 +1,32 @@
+{
+  "id": "W1-MTFIX",
+  "name": "main-thread stalls: panel append/finalize + doctor hold",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/SYNAPSE_latency_and_karma_rendersettings_2026.md",
+    "anchor": "Part 1 - 648ms main_thread_hold (synapse_doctor), 780ms panel finalize, 648ms append, 306ms dispatch tail"
+  },
+  "targets": [
+    "panel result path: append/finalize off the main thread or incremental",
+    "synapse_doctor: defer heavy I/O (log/telemetry/bridge/symbol-table) off the main thread",
+    "main-thread budget + visible working indicator so a wait reads as 'tool working', not 'Houdini hung'"
+  ],
+  "acceptance": [
+    {"predicate": "FRZ receipt consumed first: attribution findings are the map; do not re-derive them", "evidence": "receipt"},
+    {"predicate": "GUI session: main_thread_hold_slowest_ms{synapse_doctor} < 100ms in synapse_metrics after fix", "evidence": "gui_probe", "gui_required": true},
+    {"predicate": "GUI session: panel_result append and finalize phases under slow threshold on the same result volume that measured 648/780", "evidence": "gui_probe", "gui_required": true},
+    {"predicate": "headless run reports these three as UNKNOWN (lastCookTime-class vendor contract: headless timing is not evidence)", "evidence": "check"},
+    {"predicate": "suite ratchet floor holds; no behavioural regression in panel result content", "evidence": "test"}
+  ],
+  "deps": ["BASE", "FRZ"],
+  "readonly": false,
+  "touches": ["python/synapse/panel/", "python/synapse/", "tests/"],
+  "crucible_criteria": [
+    "off-thread work never touches hou.* off the main thread - marshal results back; violating this trades a stall for a crash",
+    "before/after numbers carry probe receipts from the SAME session type; a headless 0.0 claimed as improvement is the exact bug class this repo documents",
+    "the working indicator is driven by real state, not a timer",
+    "if FRZ attributes the ~6s freeze Qt-side, that stays OUT of scope here - spawn proposal only"
+  ],
+  "spawn_classes": ["probe", "mtfix-followup"],
+  "note": "P1 latency core. FRZ (ready, on the board) attributes; this leg fixes what FRZ pinned to SYNAPSE-side holds. Dispatch wait (306ms tail) is queue physics - document, don't chase, unless FRZ says otherwise."
+}

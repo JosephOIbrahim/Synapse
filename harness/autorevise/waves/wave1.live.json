@@ -1,0 +1,146 @@
+{
+  "_comment": "LIVE wave-1 manifest for orchestrate.ps1 -ManifestPath. One window owns the board - never run the default-manifest orchestrator while this wave is up.",
+  "_schema": "legs/v1",
+  "repo": "C:\\Users\\User\\SYNAPSE",
+  "settings": "C:\\Users\\User\\SYNAPSE\\harness\\relay-settings.json",
+  "effort": "ultracode",
+  "base": "master",
+  "model": "claude-opus-4-8",
+  "legs": [
+    {
+      "id": "BASE",
+      "name": "orchestrator base+model passthrough",
+      "state": "done",
+      "receipt": "BASE.json",
+      "branch": "finish/orch-dispatch",
+      "base": "master",
+      "worktree": ".claude/worktrees/orch-dispatch",
+      "prompt": "harness/prompts/base.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "harness/orchestrate.ps1"
+      ],
+      "note": "Kills the wrong-base class (M5b, CI0): honor per-leg 'base' at worktree cut; pass manifest 'model' at launch (:329). Verified via -DryRun -ManifestPath control manifest. Permission: relay-settings lacks Edit(harness/orchestrate.ps1) - CTO session or amended profile.",
+      "closed_note": "state->done 2026-08-12 (bar-truth, CTO wave1 session): content verified LIVE in committed orchestrate.ps1 - per-leg base honored at :220 (fallback HEAD), model passthrough at :228/:357 (dry-run receipts waves/wave1.dryrun.log). Pinned so it cannot re-dispatch; no receipt exists, none needed - the tree is the evidence."
+    },
+    {
+      "id": "FRZ",
+      "name": "freeze attribution",
+      "state": "done",
+      "receipt": "FRZ.json",
+      "branch": "finish/freeze-attribution",
+      "base": "master",
+      "worktree": ".claude/worktrees/freeze-attribution",
+      "prompt": "harness/prompts/frz.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/",
+        "docs/",
+        "harness/notes/"
+      ],
+      "note": "Requested by Joe 08-08. Executes docs/MAIN_THREAD_FREEZE.md's deterministic queue - settled findings are authority (guard_mode warn confirmed; ~6s not in instrumented payloads; Qt-side candidate; band suggests a constant). Attribution + instrumentation only; no fixes this leg; live-panel repro is human-at-GUI.",
+      "closed_note": "state->done 2026-08-12 (bar-truth, CTO wave1 session): receipt EXISTS and is committed - harness/notes/receipts/FRZ.json 25052b, close-out 033f978e (2026-08-08). Row was stale-ready; receipt is the completion signal (R146)."
+    },
+    {
+      "id": "H4",
+      "name": "panel finish",
+      "state": "done",
+      "receipt": "H4.json",
+      "branch": "repair/h4-panel-finish",
+      "worktree": ".claude/worktrees/h4-panel-finish",
+      "prompt": "harness/prompts/h4.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/tokens.py",
+        "python/synapse/panel/designsystem/tokens.py",
+        "python/synapse/panel/synapse_panel.py",
+        "python/synapse/panel/styles.py"
+      ],
+      "note": "Queued 2026-07-25, NEVER DISPATCHED - its brief was written into SYNAPSE_REPAIR_HEATS.md section 8 instead of this manifest, and the orchestrator reads the manifest. The panel renders TWO accent blues: t.SIGNAL #00D4FF at 11 sites, _ds.SIGNAL #8FB3D9 at 21. Mile 7 converted 20 of 31 AT THE CALL SITES, leaving both modules declaring SIGNAL. Resolve at the SOURCE. Now runnable because RES/R30 gave the panel a test surface for the first time. v3 design study explicitly OUT of scope.",
+      "base": "master",
+      "closed_note": "state->done 2026-08-12 (bar-truth, CTO wave1 session): AMBER receipt committed c89cabf7 (2026-07-27) - 'the oracle clause it does not meet' stands on the record. Branch repair/h4-panel-finish absent (consistent with the 2026-08-02 merged-branch cleanup); receipt is in master's tree. Row said NEVER DISPATCHED - stale; receipt-truth wins."
+    },
+    {
+      "id": "W1-CRUX",
+      "name": "wave-1 crucible",
+      "state": "ready",
+      "receipt": "W1-CRUX.json",
+      "branch": "wave1/crux",
+      "base": "master",
+      "worktree": ".claude/worktrees/w1-crux",
+      "prompt": "harness/autorevise/prompts/W1-CRUX.md",
+      "deps": [
+        "W1-HSTRIP",
+        "W1-MTFIX",
+        "W1-KPRE"
+      ],
+      "readonly": true,
+      "touches": [],
+      "note": "AUTOREVISE docs/SYNAPSE_production_readiness_report_2026.md :: whole-wave adversarial review before any merge word. F1-shaped: gated on every evidence-producing wave leg so review never audits a moving picture. Merge stays Joe's word; a green crucible receipt is a precondition, not a permission."
+    },
+    {
+      "id": "W1-HSTRIP",
+      "name": "panel health strip",
+      "state": "ready",
+      "receipt": "W1-HSTRIP.json",
+      "branch": "wave1/hstrip",
+      "base": "master",
+      "worktree": ".claude/worktrees/w1-hstrip",
+      "prompt": "harness/autorevise/prompts/W1-HSTRIP.md",
+      "deps": [
+        "BASE",
+        "H4"
+      ],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/SYNAPSE_production_readiness_report_2026.md :: S4.1 persistent health/status strip + S1.2/S2.1 silent degradation surfacing. P0.3 from the readiness report. The doctor is honest, the panel is not - this closes that gap. MEM leg (held, Joe's flip) owns the store-side fail-loud; this leg owns the SURFACING only. No memory-store mutation here - W1 Moneta recovery holds that seam."
+    },
+    {
+      "id": "W1-KPRE",
+      "name": "karma progressive presets + background default",
+      "state": "ready",
+      "receipt": "W1-KPRE.json",
+      "branch": "wave1/kpre",
+      "base": "master",
+      "worktree": ".claude/worktrees/w1-kpre",
+      "prompt": "harness/autorevise/prompts/W1-KPRE.md",
+      "deps": [
+        "BASE"
+      ],
+      "readonly": false,
+      "touches": [
+        "python/synapse/",
+        "docs/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/SYNAPSE_latency_and_karma_rendersettings_2026.md :: Part 2/3/4 - progressive pipeline (layout/lighting/quality/final), OIDN, background soho_foreground=0 for quality+. Part 2-4 of the addendum made executable. Small forge leg by design; the progressive pipeline is also the operational mitigation for panel latency (Part 3), so it ships in the same wave as MTFIX."
+    },
+    {
+      "id": "W1-MTFIX",
+      "name": "main-thread stalls: panel append/finalize + doctor hold",
+      "state": "ready",
+      "receipt": "W1-MTFIX.json",
+      "branch": "wave1/mtfix",
+      "base": "master",
+      "worktree": ".claude/worktrees/w1-mtfix",
+      "prompt": "harness/autorevise/prompts/W1-MTFIX.md",
+      "deps": [
+        "BASE",
+        "FRZ"
+      ],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/",
+        "python/synapse/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/SYNAPSE_latency_and_karma_rendersettings_2026.md :: Part 1 - 648ms main_thread_hold (synapse_doctor), 780ms panel finalize, 648ms append, 306ms dispatch tail. P1 latency core. FRZ (ready, on the board) attributes; this leg fixes what FRZ pinned to SYNAPSE-side holds. Dispatch wait (306ms tail) is queue physics - document, don't chase, unless FRZ says otherwise."
+    }
+  ]
+}

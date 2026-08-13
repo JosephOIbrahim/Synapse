@@ -1,0 +1,30 @@
+{
+  "id": "W1-HSTRIP",
+  "name": "panel health strip",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/SYNAPSE_production_readiness_report_2026.md",
+    "anchor": "S4.1 persistent health/status strip + S1.2/S2.1 silent degradation surfacing"
+  },
+  "targets": [
+    "python/synapse/panel/ - slim always-visible status strip",
+    "wire to existing health facts (synapse_health / doctor), never to asserted state"
+  ],
+  "acceptance": [
+    {"predicate": "strip renders connection, memory-backend, project, active-job cells from live health facts", "evidence": "test"},
+    {"predicate": "backend fallback (moneta->jsonl) renders AMBER/RED with the doctor's one-line reason - the 384/256 case must display, not hide", "evidence": "test"},
+    {"predicate": "unmeasured/unreachable health facts render UNKNOWN, never green and never 0", "evidence": "test"},
+    {"predicate": "strip visible in a live GUI session without stealing focus or stalling paint", "evidence": "gui_probe", "gui_required": true}
+  ],
+  "deps": ["BASE", "H4"],
+  "readonly": false,
+  "touches": ["python/synapse/panel/", "tests/"],
+  "crucible_criteria": [
+    "strip states are FACT-sourced (producer path per cell) - a green cell without a producer is a BLOCK",
+    "degraded is loud: amber/red + reason, no click required to notice",
+    "no main-thread I/O added by the strip itself (it must not become the next 648ms hold)",
+    "H4 receipt precedes this leg (deps-encoded serialization); build on H4's landed token state, no re-litigating its choices"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "P0.3 from the readiness report. The doctor is honest, the panel is not - this closes that gap. MEM leg (held, Joe's flip) owns the store-side fail-loud; this leg owns the SURFACING only. No memory-store mutation here - W1 Moneta recovery holds that seam."
+}
