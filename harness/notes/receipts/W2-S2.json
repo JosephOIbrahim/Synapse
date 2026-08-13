@@ -1,0 +1,114 @@
+{
+  "leg": "W2-S2",
+  "name": "format_synapse_message off main",
+  "status": "green_with_findings",
+  "summary": "F4 off-main formatting mechanism SHIPPED + PROVEN. New Qt-free async_format.py (single-consumer FIFO) runs the pure format_synapse_message off the Qt thread; only insertHtml crosses back on main. chat_display.py integrates it with a public opt-in (enable_off_main_format). Proven off-main + FIFO ordering + byte-equal under stock Python AND at the live H22.0.400 seat via hython offscreen. Ships OFF BY DEFAULT (append_synapse_message keeps its synchronous contract; zero default-behaviour change; panel slice floor unchanged). The one-line PANEL ACTIVATION lives in synapse_panel._on_done -- W2-S5's OPEN claim on synapse_panel.py -- and is the recorded blocked remainder.",
+  "evidence_environments": {
+    "stock_python": "Python 3.14.2 (no PySide): tests/test_w2s2_format_offmain.py = 7 passed, 6 skipped (Qt tier skips cleanly).",
+    "hython": "Houdini 22.0.400 hython (Python 3.13.10, PySide6, QT_QPA_PLATFORM=offscreen): tests/test_w2s2_format_offmain.py = 13 passed (all tiers, incl 6 Qt-integration driving the real ChatDisplay).",
+    "floor": "Panel slice under hython (tests/panel/ + test_chat_panel + test_w1_mtfix + test_panel_faces + test_result_telemetry + test_offmain_fallback + test_panel_settings): 13 failed / 252 passed WITH my change == 13 failed / 252 passed BASELINE (base chat_display). Zero new regressions. The 13 failures are all pre-existing and unrelated (context-bar, wordmark, test_dead_verb_hidden, and two subprocess hou/Qt import guards that false-fail under hython's pre-loaded hou/Qt)."
+  },
+  "acceptance": [
+    {
+      "predicate": "format_synapse_message executes on a worker thread for panel results",
+      "verdict": "pass",
+      "evidence": "PURE: tests/test_w2s2_format_offmain.py::test_render_runs_off_the_submitting_thread (records render thread ident != main). INTEGRATION (hython H22.0.400): ::test_chatdisplay_formats_off_main_and_inserts_on_main enables off-main and drives append_synapse_message (the panel's actual result method) with a spy that records the formatter's thread -- proves format ran off the Qt main thread and the prerendered HTML was inserted on main. NOTE: production DEFAULT is OFF; the panel activation is the blocked remainder (see for_ruling W2S2-R1)."
+    },
+    {
+      "predicate": "the function performs zero Qt and zero hou calls (guard test at its boundary)",
+      "verdict": "pass",
+      "evidence": "tests/test_w2s2_format_offmain.py::test_format_synapse_message_zero_qt_zero_hou_at_boundary -- a clean-subprocess DELTA guard: importing message_formatter and calling format_synapse_message across fixtures introduces no hou/PySide/PyQt module. Teeth are under stock Python (hou/Qt absent); passes under hython too (hou pre-resident there is excluded from the delta). Boundary re-probed live: hou/Qt introduced by IMPORT = none, by CALL = none."
+    },
+    {
+      "predicate": "rendered output byte-equal to baseline for fixture messages, including grouped results",
+      "verdict": "pass",
+      "evidence": "tests/test_w2s2_format_offmain.py::test_pipeline_output_is_byte_equal_to_direct_format -- for 6 fixtures (str, dict+status, node-path chip, inline+block code, list items, warning dict) x grouped {False,True} x signed {None, 'GLM 5.2'}, the pipeline HTML == direct format_synapse_message HTML, byte-for-byte. Paired negative control ::test_grouped_and_ungrouped_differ_NEGATIVE_CONTROL proves grouped is a real content-bearing surface (ungrouped carries the SYNAPSE label, grouped drops it)."
+    },
+    {
+      "predicate": "result ordering stable under a rapid burst of completions",
+      "verdict": "pass",
+      "evidence": "PURE: ::test_burst_ordering_is_submit_order_not_completion_order -- 5 queued jobs with DECREASING render delays (adversarial: a thread pool would surface 4,3,2,1,0; the single-consumer FIFO surfaces 0..4). Both drain order AND apply/insert order asserted == submit order. INTEGRATION (hython): ::test_chatdisplay_burst_preserves_order -- 5 back-to-back append_synapse_message land in submit order in the rendered document. ::test_worker_survives_a_render_exception_and_keeps_ordering pins that a bad render never drops a sibling or reorders."
+    },
+    {
+      "predicate": "panel test-slice floor holds",
+      "verdict": "pass",
+      "evidence": "Panel slice under hython H22.0.400 == baseline exactly (13 failed / 252 passed, base chat_display vs my change), zero new regressions. The two would-be regressions from an async default (test_chat_panel::test_append_synapse_message, test_panel_faces::test_synapse_reply_carries_signed_author) are eliminated because off-main is OFF by default -- append_synapse_message keeps its synchronous contract. My new file adds 13 passing tests (hython) / 7 (stock)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "W2S2-F1",
+      "claim": "F4 mechanism shipped as a Qt-free single-consumer FIFO (async_format.py). Ordering is correct BY CONSTRUCTION (a single serial consumer cannot reorder). Qt objects never cross to the worker: a job carries plain data in and an HTML string out; the caller owns the one Qt hop (a queued signal that wakes the main-thread drain). This satisfies crucible criterion 1 (prerendered HTML strings only cross back).",
+      "anchor": "python/synapse/panel/async_format.py (OrderedAsyncFormatter, FormatJob)"
+    },
+    {
+      "id": "W2S2-F2",
+      "claim": "Off-main is OFF BY DEFAULT. Making append_synapse_message async-by-default breaks two existing tests that read the document synchronously right after appending: test_chat_panel::test_append_synapse_message and test_panel_faces::test_synapse_reply_carries_signed_author. The second is in W2-S5's CLAIMED file (test_panel_faces.py), so it cannot be adapted here. Default-off preserves the synchronous contract, holds the floor, and makes the whole change a pure addition with zero default-behaviour change. The panel opts in via chat.enable_off_main_format() -- a one-line call whose home is synapse_panel._on_done / panel init, i.e. the S5-blocked synapse_panel.py.",
+      "anchor": "python/synapse/panel/chat_display.py (_async_format_enabled=False; enable_off_main_format)"
+    },
+    {
+      "id": "W2S2-F3",
+      "claim": "UX finding for Joe (recorded, NOT changed): set_max_result_blocks caps QTextDocument BLOCKS for an O(1) relayout bound, but a single chat message spans several blocks, so a block cap can clip the OLDEST MESSAGE mid-body. Whole-message trimming (trim on message boundaries, not blocks) is the correct UX. Enabling trimming and picking the cap is Joe's decision; this leg leaves the default UNLIMITED, pinned by test_chatdisplay_trimming_default_unchanged.",
+      "anchor": "python/synapse/panel/chat_display.py:326 set_max_result_blocks"
+    },
+    {
+      "id": "W2S2-F4",
+      "claim": "Telemetry stays honest and does not drift in the default path. The DEFAULT (sync) append records exactly ONE 'append' phase sample (format+insert together, on-main) like base. When off-main is enabled, the format is timed as an OFF-MAIN 'append' sample (record_result_phase derives thread identity) and the insert as an ON-MAIN 'append' sample -- the two buckets never mix, which is precisely how the F4 win (the four-regex pass leaving the Qt thread) becomes visible in result_render_stats without ever being read as a main-thread stall. No edit to result_telemetry.py (not in touches; used as-is).",
+      "anchor": "python/synapse/panel/chat_display.py (_render_synapse_html / _render_offmain / _do_insert / _insert_prerendered)"
+    },
+    {
+      "id": "W2S2-F5",
+      "claim": "When off-main is ENABLED, the streaming finalize (end_stream) removes the streamed plain text on main (sync) then defers the formatted insert -- a brief flicker in place of the old main-thread freeze while a huge reply formats. This is strictly the intended trade (GUI stays responsive), only occurs when the panel opts in, and never in the default state. Not a blocker; noted for the panel-activation reviewer.",
+      "anchor": "python/synapse/panel/chat_display.py end_stream -> append_synapse_message"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "W2S2-R1",
+      "question": "Panel activation of off-main formatting is the blocked remainder. It is a one-line opt-in (chat.enable_off_main_format() in synapse_panel._on_done or panel __init__) that must land in synapse_panel.py, which W2-S5 holds under an OPEN, unreleased claim. Ruling: after S5 (then S3) release synapse_panel.py, should S2 (or a follow-up) add the activation line, and should off-main then be the panel default? The mechanism + tests are merge-ready now; only the activation is gated.",
+      "context": "W2-S5 open claim n=18cb66061adfa40c on synapse_panel.py; W1-MTFIX test comment already recorded 'append/finalize off-main formatting needs the blocked synapse_panel.py worker'."
+    },
+    {
+      "id": "W2S2-R2",
+      "question": "The S5->S3->S2 serialization on synapse_panel.py did NOT bind S2: I delivered the full F4 intent in chat_display.py (the true convergence seat of both result paths per the FRZ probe-5 comment) + a new async_format.py, touching NO synapse_panel.py. So S2 is not a synapse_panel.py writer for the mechanism; only the (blocked) activation line is. Confirm this routing is acceptable, or direct S2 to instead wait for the synapse_panel.py mount.",
+      "context": "mission deps=[W2-S3], touches listed synapse_panel.py; bus finding n=18cb6919162fa7c0 posted the routing decision."
+    },
+    {
+      "id": "W2S2-R3",
+      "question": "Claim-granularity precedent: my test file tests/test_w2s2_format_offmain.py is panel-scoped and disjoint from W2-S1's memory/server domain, but W2-S1 holds a COARSE open claim on the whole tests/ dir. I claimed file-level and proceeded, exactly as W2-S5 (n=18cb660896b87804) and W2-S3 (n=18cb678e1f7176ec) did against the same coarse claim. Same for_ruling as those peers.",
+      "context": "W2-S1 claim n=18cb656773977678 (files include 'tests/')."
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W2-S2-P1",
+      "name": "measure the F4 append-phase off-main relief (live GUI)",
+      "band": "PROBE",
+      "class": "probe",
+      "readonly": true,
+      "rationale": "Once the panel activation lands (off-main enabled in a live GUI Houdini session), read result_render_stats()['append'] and compare the ON-MAIN insert sample against the OFF-MAIN format sample to produce a MEASURED number for the main-thread relief. The 2026-08-13 latency authority marks the 780/648 ms panel finalize/append figures UNCONFIRMED (result path unexercised in probe); this probe converts the F4 change from 'structurally off-main' to a measured magnitude. gui_required -> UNKNOWN off-GUI per the result_telemetry evidence gate.",
+      "targets": ["drive a real reply through the panel with enable_off_main_format() on, read result_render_stats append offmain vs onmain", "stamp gui_required=UNKNOWN if not a GUI session"],
+      "acceptance": [{"predicate": "append phase reports a non-zero OFF-MAIN sample and an ON-MAIN insert sample in a live GUI session", "evidence": "test-or-probe"}],
+      "deps": ["W2-S2 activation (W2S2-R1)"],
+      "touches": ["harness/notes/"]
+    },
+    {
+      "id": "W2-S2-P2",
+      "name": "wire the panel opt-in for off-main formatting",
+      "band": "BUILD",
+      "class": "wiring",
+      "note": "Outside S2 spawn_classes [probe] -> lands HELD for Joe. One line: after ChatDisplay construction (or in _on_done), call self._chat.enable_off_main_format(). Requires synapse_panel.py to be free of the S5 claim. Consider whether to also handle the end_stream flicker (W2S2-F5) with an atomic remove+insert if a huge-reply gap is observed in practice.",
+      "readonly": false,
+      "targets": ["call chat.enable_off_main_format() once synapse_panel.py is unclaimed", "verify the panel slice + a live GUI smoke stay green"],
+      "acceptance": [{"predicate": "panel results format off the Qt main thread in a live GUI session with the floor held", "evidence": "test"}],
+      "deps": ["W2-S5 release of synapse_panel.py"],
+      "touches": ["python/synapse/panel/synapse_panel.py"]
+    }
+  ],
+  "files_touched": [
+    "python/synapse/panel/async_format.py (NEW, Qt-free ordered off-main formatter)",
+    "python/synapse/panel/chat_display.py (off-main integration, opt-in default OFF)",
+    "tests/test_w2s2_format_offmain.py (NEW, 2-tier acceptance: pure + PySide-offscreen)"
+  ],
+  "notes_on_scope": "message_formatter.py (in touches) was UNCHANGED: format_synapse_message is already pure (zero Qt/hou), so the F4 premise held and no edit was needed. synapse_panel.py (in touches) was intentionally NOT touched: it is under W2-S5's open claim, and the F4 intent was fully deliverable at the chat_display.py convergence seat. async_format.py is a new file beyond the literal touches list -- prerequisite work (a Qt-free module is required so the off-main + ordering proof is unit-testable headless); claimed on the bus and released."
+}

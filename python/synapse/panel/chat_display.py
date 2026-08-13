@@ -20,6 +20,10 @@ from synapse.panel.message_formatter import (
     format_system_message,
     format_timestamp_divider,
 )
+# W2-S2 (F4): the off-main formatting pipeline. Qt-free / hou-free by construction,
+# so importing it never pulls Qt and the ordering/off-main proof is unit-testable
+# headless (see async_format.py's module docstring).
+from synapse.panel.async_format import OrderedAsyncFormatter, FormatJob
 from synapse.panel.styles import get_chat_display_stylesheet
 # FRZ attribution: times the formatter + insertHtml re-layout that this widget does
 # on Houdini's main thread. Measurement only; degrades to a no-op context manager.
@@ -64,6 +68,11 @@ class ChatDisplay(QtWidgets.QTextBrowser):
 
     node_clicked = Signal(str)
 
+    # W2-S2 (F4): emitted from the off-main formatter's WORKER thread when a job
+    # finishes rendering. Connected with a QueuedConnection so the drain (insertHtml)
+    # runs on the Qt main thread -- Qt objects are only ever touched there.
+    _fmt_ready = Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._typing_indicator_active = False
@@ -90,6 +99,20 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.anchorClicked.connect(self._on_anchor_clicked)
         self.setTextInteractionFlags(
             QtCore.Qt.TextInteractionFlag.TextBrowserInteraction | QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+
+        # W2-S2 (F4): off-main formatting pipeline. format_synapse_message (pure, zero
+        # Qt / zero hou) runs on a worker thread; only insertHtml stays on this Qt
+        # thread. Ordering across a burst of results is guaranteed by the pipeline's
+        # single-consumer FIFO. OFF BY DEFAULT so append_synapse_message keeps its
+        # historical synchronous contract (the panel's result path flips this on — a
+        # one-line opt-in that lives in synapse_panel.py; see the W2-S2 receipt). The
+        # worker thread is daemon and started lazily: a ChatDisplay that never runs the
+        # off-main path spawns no thread.
+        self._async_format_enabled = False
+        self._fmt = OrderedAsyncFormatter(on_ready=self._on_fmt_ready)
+        self._fmt_ready.connect(
+            self._drain_fmt, QtCore.Qt.ConnectionType.QueuedConnection
         )
 
     # -- Font scaling --------------------------------------------------------
@@ -239,6 +262,9 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         text : str
             The user's message text.
         """
+        # W2-S2 (F4): land any in-flight off-main synapse format first, so this
+        # synchronous insert never jumps ahead of a still-formatting reply.
+        self._flush_pending_formats()
         grouped = self._should_group("user")
         self._maybe_insert_timestamp_divider("user")
 
@@ -261,6 +287,27 @@ class ChatDisplay(QtWidgets.QTextBrowser):
 
         Automatically hides the typing indicator if visible.
 
+        W2-S2 (F4): the convergence seat of BOTH result paths (the streaming finalize
+        via ``end_stream`` and the non-streaming direct append). The grouping decision
+        and the sender-state advance always happen HERE, on the Qt thread (cheap).
+
+        When the off-main path is ENABLED (``_async_format_enabled``), the pure formatter
+        (``format_synapse_message`` — zero Qt, zero ``hou``) runs OFF the Qt thread on the
+        pipeline's worker and only the prerendered HTML string crosses back for
+        ``insertHtml`` on main; sender state advances at enqueue time so a rapid follow-up
+        groups correctly while this one is still formatting, and a burst inserts in submit
+        order (single-consumer FIFO).
+
+        The off-main path is **OFF BY DEFAULT**, so this method keeps its historical
+        SYNCHRONOUS contract (format + insert inline, on main, in a single ``append``
+        telemetry phase). That is deliberate: many callers and tests read the document
+        right after appending, and the panel's own result path (``synapse_panel._on_done``)
+        is where the F4 design flips the switch — a one-line opt-in that this leg cannot
+        land while ``synapse_panel.py`` is claimed by a peer. Enabling here without that
+        wiring would change a synchronous contract the panel still depends on. See the
+        W2-S2 receipt: mechanism shipped + proven, panel activation is the blocked
+        remainder.
+
         Parameters
         ----------
         content : dict or str
@@ -273,32 +320,136 @@ class ChatDisplay(QtWidgets.QTextBrowser):
 
         grouped = self._should_group("synapse")
         self._maybe_insert_timestamp_divider("synapse")
-
         ts = _format_time(time.time())
-        # FRZ probe 5 (APPEND) — the convergence point of BOTH result paths: the
-        # streaming finalize (end_stream) and the non-streaming direct append both
-        # land here. Two costs are measured as one phase because they are
-        # inseparable at the seat: format_synapse_message (four regex passes over
-        # the whole reply) and insertHtml (Qt rich-text re-layout, O(document)).
-        # doc_chars is captured BEFORE the insert, so the sample records the
-        # document size the layout actually had to walk.
-        with _timed_phase("append") as _frz_append:
+        fs = self._font_scale
+
+        if not getattr(self, "_async_format_enabled", False) or self._fmt is None:
+            # DEFAULT: synchronous — format + insert inline on this (main) thread, in a
+            # SINGLE 'append' phase, exactly as the result path did before this leg.
+            self._update_sender("synapse")
+            with _timed_phase("append") as _ph:
+                html_str = self._render_synapse_html(content, grouped, ts, signed, fs)
+                try:
+                    _ph.set_sizes(doc_chars=self.document().characterCount(),
+                                  payload_chars=len(html_str))
+                except Exception:
+                    pass
+                self._do_insert(html_str)
+            return
+
+        # OFF-MAIN: advance grouping state now (on main) so a rapid follow-up groups
+        # correctly even though this message's HTML is still being formatted off-main.
+        self._update_sender("synapse")
+        job = FormatJob(
+            render=lambda: self._render_offmain(content, grouped, ts, signed, fs),
+            apply=lambda j: self._insert_prerendered(j.html),
+        )
+        self._fmt.submit(job)
+
+    # -- Off-main format / on-main insert (W2-S2, F4) ------------------------
+
+    def _render_synapse_html(self, content, grouped, ts, signed, font_scale):
+        """PURE, off-main-safe render: ``format_synapse_message`` only. Touches NO Qt and
+        NO ``hou`` — ``font_scale`` is passed in, never read off the widget off-main. No
+        telemetry here; the caller owns the phase timing, so the sync path records ONE
+        'append' sample (like base) while the async path times format and insert apart."""
+        return format_synapse_message(
+            content, grouped=grouped, timestamp=ts,
+            font_scale=font_scale, signed=signed,
+        )
+
+    def _render_offmain(self, content, grouped, ts, signed, font_scale):
+        """The worker-thread render: the pure formatter timed under the ``append`` phase.
+        Run off the Qt thread it lands in that phase's OFF-MAIN counters
+        (``record_result_phase`` derives the thread identity itself) — exactly how the F4
+        win (the four-regex pass leaving the Qt thread) becomes visible in the ledger,
+        never confused for a main-thread stall."""
+        with _timed_phase("append") as _ph:
+            html_str = self._render_synapse_html(content, grouped, ts, signed, font_scale)
             try:
-                _frz_append.set_sizes(doc_chars=self.document().characterCount())
+                _ph.set_sizes(payload_chars=len(html_str))
             except Exception:
                 pass
-            cursor = self.textCursor()
-            cursor.movePosition(QtGui.QTextCursor.End)
-            _frz_html = format_synapse_message(
-                content, grouped=grouped, timestamp=ts,
-                font_scale=self._font_scale, signed=signed,
-            )
-            _frz_append.set_sizes(payload_chars=len(_frz_html))
-            cursor.insertHtml(_frz_html)
-            cursor.insertBlock()
-            self.setTextCursor(cursor)
-            self._update_sender("synapse")
-            self._scroll_to_bottom()
+        return html_str
+
+    def _do_insert(self, html_str):
+        """Raw cursor insert at End (no telemetry). The only Qt work in the result path —
+        ``insertHtml``'s O(document) re-layout — and it only ever runs on the Qt main
+        thread (the sync path is on main; the async path routes here via ``_drain_fmt``)."""
+        cursor = self.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.insertHtml(html_str or "")
+        cursor.insertBlock()
+        self.setTextCursor(cursor)
+        self._scroll_to_bottom()
+
+    def _insert_prerendered(self, html_str):
+        """Insert a PRERENDERED HTML string on the Qt main thread, timed as an on-main
+        ``append`` sample. Ordering across a burst is guaranteed upstream by the
+        pipeline's single-consumer FIFO, so this simply appends at End in drain order.
+        ``doc_chars`` is captured BEFORE the insert, recording the document size the
+        layout had to walk."""
+        with _timed_phase("append") as _ph:
+            try:
+                _ph.set_sizes(doc_chars=self.document().characterCount(),
+                              payload_chars=len(html_str or ""))
+            except Exception:
+                pass
+            self._do_insert(html_str)
+
+    def _on_fmt_ready(self):
+        """Called FROM the formatter's worker thread when a job finishes. Marshal the
+        drain onto the Qt main thread via the queued signal — no Qt object is touched
+        here; the actual insert happens in ``_drain_fmt`` / ``_insert_prerendered``."""
+        try:
+            self._fmt_ready.emit()
+        except Exception:
+            pass
+
+    @Slot()
+    def _drain_fmt(self):
+        """Main-thread slot: insert every ready prerendered result, in submit order."""
+        fmt = getattr(self, "_fmt", None)
+        if fmt is None:
+            return
+        try:
+            fmt.drain()
+        except Exception:
+            pass
+
+    def _flush_pending_formats(self, timeout=2.0):
+        """Drain any in-flight off-main synapse formats to the document BEFORE a
+        synchronous same-thread insert (user / system message, stream open), so the
+        GLOBAL insert order equals the call order across senders. Bounded: it waits only
+        for already-submitted formats — pure millisecond string work — and is a no-op in
+        the common case (nothing pending). Call on the main thread."""
+        fmt = getattr(self, "_fmt", None)
+        if fmt is None:
+            return
+        try:
+            fmt.wait_idle(timeout)
+            fmt.drain()
+        except Exception:
+            pass
+
+    def enable_off_main_format(self, enabled=True):
+        """Turn the off-main formatting path on (or off). This is the panel's F4 opt-in:
+        ``synapse_panel`` calls it once (in the result path / at panel construction) so
+        ``format_synapse_message`` runs on the worker thread for panel results. Off by
+        default because it changes ``append_synapse_message`` from synchronous to
+        deferred — safe only where the caller does not read the document synchronously
+        after appending (the live panel, driven by a running Qt event loop, does not)."""
+        self._async_format_enabled = bool(enabled)
+
+    def shutdown(self):
+        """Stop the off-main formatter thread. Optional — the thread is a daemon and
+        dies with the process; call it for a clean teardown (tests, panel close)."""
+        fmt = getattr(self, "_fmt", None)
+        if fmt is not None:
+            try:
+                fmt.stop()
+            except Exception:
+                pass
 
     def append_system_message(self, text):
         """Append a system/status message to the chat history.
@@ -308,6 +459,8 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         text : str
             The system message text.
         """
+        # W2-S2 (F4): land any in-flight off-main synapse format first (call order).
+        self._flush_pending_formats()
         # System messages don't participate in grouping — they break groups
         self._last_sender = "system"
         self._last_message_time = time.time()
@@ -352,6 +505,9 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         """Open a streaming SYNAPSE reply. Tokens append as plain text; a single
         end_stream() replaces them with the fully-formatted message. One removal
         at the end (not per-tick) — no typing-indicator-style accumulation."""
+        # W2-S2 (F4): land any in-flight off-main synapse format before opening a new
+        # stream, so streamed tokens never interleave ahead of a prior reply.
+        self._flush_pending_formats()
         self.hide_typing_indicator()
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
