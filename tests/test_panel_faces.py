@@ -13,6 +13,7 @@ Also collectable by pytest where PySide imports.
 
 import os
 import sys
+from unittest.mock import patch
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
@@ -584,14 +585,20 @@ def test_stop_gated_to_working_state():
 
 
 def test_context_line_reflects_frame_and_selection():
-    # Spike 5 — the selection-context line is built from the confirmed
-    # hou.selectedNodes / hou.frame API; the selection callback funnels to the
-    # same updater (V0-guarded — no phantom call when hou.ui is absent).
+    # Spike 5 / W2-S5 — the selection-context line is built from frame + selection.
+    # The three hou reads now run OFF the Qt/main thread via gather_context_off_main
+    # and marshal back through _context_ready → _apply_context. Drive the render
+    # deterministically with a fixture ctx (what the off-main producer yields) so
+    # the assertion doesn't depend on live scene state or thread timing.
     p = _make_panel()
-    p._update_context()
+    p._apply_context({"selected_nodes": [], "current_network": "",
+                      "scene_file": "untitled.hip", "frame": 1.0})
     assert "f1" in p._ctx_label.text()
-    p._on_selection_changed()
-    assert "f1" in p._ctx_label.text()
+    # The selection-change callback still funnels to the same tick, which now
+    # delegates the reads to the off-main gather (V0-guarded selection callback).
+    with patch("synapse.panel.ws_bridge.gather_context_off_main") as gather:
+        p._on_selection_changed()
+    assert gather.called, "selection change must fire the off-main context refresh"
 
 
 def test_reduced_motion_stops_animations():

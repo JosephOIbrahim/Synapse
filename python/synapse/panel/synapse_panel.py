@@ -289,6 +289,12 @@ def _image_icon(px=18, color=None):
 class SynapsePanel(QtWidgets.QWidget):
     """The redesigned SYNAPSE panel."""
 
+    # W2-S5: off-main context marshal-back. gather_context_off_main invokes its
+    # on_ready callback on a daemon thread; emitting this signal there hands the
+    # dict to _apply_context on the Qt/main thread (queued, AutoConnection), so
+    # no hou read and no Qt widget touch ever happens off its owning thread.
+    _context_ready = Signal(dict)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsRoot")
@@ -406,7 +412,10 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._palette_shortcut.key().toString(QKeySequence.NativeText) or "Ctrl+K")
         except Exception:
             pass
-        # Live context ribbon + connection (main-thread hou reads on a timer).
+        # Live context ribbon + connection. W2-S5: the three hou reads run OFF
+        # the Qt/main thread via gather_context_off_main; _context_ready marshals
+        # the result back to _apply_context here. Cadence (2s) is unchanged.
+        self._context_ready.connect(self._apply_context)
         self._ctx_timer = QTimer(self)
         self._ctx_timer.setInterval(2000)
         self._ctx_timer.timeout.connect(self._update_context)
@@ -2397,12 +2406,51 @@ class SynapsePanel(QtWidgets.QWidget):
         self._header_status.setText(phrase)
 
     def _update_context(self):
-        """Refresh the context ribbon + connection footer from live hou state.
+        """Refresh the context ribbon + connection footer — OFF the Qt/main thread.
 
-        Also feeds the persistent health strip (P0.3): connection + project are
-        derived here from the cheap hou reads this tick already does; the strip's
-        memory-backend and active-job facts are read O(1) inside its gather. No
-        new main-thread I/O, no doctor call.
+        W2-S5: the three live reads (``hou.frame()`` / ``hou.selectedNodes()`` /
+        ``hou.hipFile.basename()``) used to run INLINE here on the Qt/main thread,
+        unmarshalled — the W1-MTFIX crash-path class. They now run via
+        ``ws_bridge.gather_context_off_main`` (a daemon thread → ``run_on_main``
+        DEFERRED path, bounded + interleaved with UI events), and the result is
+        marshalled back to the Qt thread through the ``_context_ready`` queued
+        signal, where ``_apply_context`` renders the ribbon + health strip.
+
+        ``import hou`` below is the availability guard ONLY — it makes no data
+        read; the standalone message is unchanged. Content, cadence (2s), and
+        consumers are identical to before; only the thread the reads run on
+        changed. On a busy main thread the gather sheds and the last-rendered
+        ribbon is kept (advisory), mirroring the poll/send freeze-hardening.
+        """
+        try:
+            from synapse.panel import health_strip as _hs
+            _unmeasured = _hs.UNMEASURED
+        except Exception:
+            _unmeasured = None
+        try:
+            import hou  # noqa: F401 — availability guard only (see docstring);
+            # the three data reads run off-main in gather_context_off_main below.
+        except Exception:
+            self._ctx_label.setText("standalone — no Houdini")
+            self._update_health_strip(_unmeasured, _unmeasured)  # no hou → cells stay UNKNOWN
+            return
+        try:
+            from synapse.panel.ws_bridge import gather_context_off_main
+        except Exception:
+            return  # ws_bridge unavailable → keep the last-rendered ribbon
+        gather_context_off_main(self._context_ready.emit)
+
+    def _apply_context(self, ctx):
+        """Render the ribbon + health strip from an off-main context gather.
+
+        Runs on the Qt/main thread (queued ``_context_ready`` delivery), so this
+        is the ONLY place the tick touches Qt widgets. ``ctx`` is the dict from
+        ``ws_bridge._gather_context_on_main_thread`` — keys ``selected_nodes``
+        (node paths), ``current_network``, ``scene_file`` (full path), ``frame``
+        (float). The ribbon/strip content is byte-identical to the former inline
+        computation: ``scene_file`` basename == ``hipFile.basename()`` and the
+        first selection's parent path == ``sel[0].parent().path()`` were both
+        confirmed on live H22.0.400 (W2-S5 probe).
         """
         try:
             from synapse.panel import health_strip as _hs
@@ -2412,24 +2460,17 @@ class SynapsePanel(QtWidgets.QWidget):
         conn = _unmeasured
         proj = _unmeasured
         try:
-            import hou
-        except Exception:
-            self._ctx_label.setText("standalone — no Houdini")
-            self._update_health_strip(conn, proj)  # no hou → cells stay UNKNOWN
-            return
-        try:
-            frame = int(hou.frame())
-            sel = hou.selectedNodes()
-            try:
-                _hip = hou.hipFile.basename()
-            except Exception:
-                _hip = None
+            frame = int(ctx.get("frame") or 0)
+            sel = ctx.get("selected_nodes") or []
+            scene_file = ctx.get("scene_file") or ""
+            _hip = scene_file.rsplit("/", 1)[-1] if scene_file else None
             # project / show name — the hip basename, or None when the scene is
             # untitled (a MEASURED quiet state, not the same as "not measured").
             proj = None if (not _hip or _hip == "untitled.hip") else _hip
             if sel:
-                parent = sel[0].parent()
-                where = parent.path() if parent else sel[0].path()
+                # parent path of the first selection == sel[0].parent().path()
+                # (string-derived from the node path; W2-S5 live-verified).
+                where = sel[0].rsplit("/", 1)[0] or "/"
                 txt = "%s · %d selected · f%d" % (where, len(sel), frame)
             else:
                 txt = "%s · f%d" % (_hip or "untitled.hip", frame)
