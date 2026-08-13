@@ -930,6 +930,45 @@ def _build_bundle(base: Path, home: Path,
                 "excluded": excluded, "error": str(e)}
 
 
+# -- Write-plane for the STORE (W3-HARDEN target 3) ---------------------------
+
+def _check_write_plane_store() -> Dict[str, Any]:
+    """Surface ``write_plane`` for the STORE in the doctor, not just health.
+
+    Spec §8 Phase-6 telemetry item: *"doctor reports write_plane for the STORE,
+    not just the bridge"*. ``synapse_health`` already carries the ``write_plane``
+    field; the doctor did not. This runs the same non-mutating probe and reports
+    its store-derived verdict, INDEPENDENTLY of ``_check_moneta_substrate`` — the
+    acceptance is that the memory section reads all-ok AND write-plane is
+    independently verified, so the two must be able to disagree.
+
+    Tri-state mapping is honest: ``degraded`` -> ``fail`` (a demonstrated
+    break), ``unknown`` -> ``skipped`` (a legitimate could-not-tell, never a
+    false ok), ``ok`` -> ``ok``.
+    """
+    name = "write_plane_store"
+    try:
+        from .write_plane import write_plane_state
+        wp = write_plane_state()
+    except Exception as e:  # noqa: BLE001
+        return {"name": name, "status": "skipped",
+                "detail": f"write_plane probe failed: {type(e).__name__}: {e}"}
+    status = wp.get("status")
+    store = wp.get("store")
+    doctor_status = {"ok": "ok", "degraded": "fail", "unknown": "skipped"}.get(
+        status, "skipped")
+    if isinstance(store, dict) and store.get("evaluated"):
+        store_note = (f" store: serving={store.get('serving_class')}, "
+                      f"requested={store.get('requested_backend')}, "
+                      f"store_status={store.get('status')}")
+    else:
+        store_note = " store: not evaluated (no live store in this process)"
+    reason = f" {wp.get('reason')}" if wp.get("reason") else ""
+    detail = f"write_plane={status}.{reason}{store_note}"
+    return {"name": name, "status": doctor_status, "detail": detail,
+            "result": {"write_plane": wp}}
+
+
 # =============================================================================
 # ENTRY POINT
 # =============================================================================
@@ -949,6 +988,7 @@ def run_doctor(payload: Dict, handler=None, home: Optional[Path] = None) -> Dict
         _check_telemetry(home),
         _wrap_memory_key_check(home),
         _check_moneta_substrate(),
+        _check_write_plane_store(),
         _check_moneta_consolidation(),
         _check_vector_recall(),
         _check_use_real_usd(),
