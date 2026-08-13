@@ -1,4 +1,4 @@
-﻿"""
+"""
 Synapse - Unified AI-Houdini Bridge with Project Memory
 
 Synapse consolidates communication (WebSocket server), resilience,
@@ -23,30 +23,30 @@ Version: 5.46.0
 # Houdini point releases (21.0.631, 21.0.671, 21.5.x) ship separate Python
 # site-packages directories. A ``pip install anthropic`` into one release's
 # site-packages is invisible to the next. Vendoring the SDK + its deps
-# directly into SYNAPSE's tree fixes this â€” every Houdini install that can
+# directly into SYNAPSE's tree fixes this — every Houdini install that can
 # see ``python/synapse/`` automatically gets anthropic, httpx, pydantic, etc.
 #
 # The prepend MUST run before any ``from .inspector import ...`` or other
 # synapse-internal import that transitively pulls pydantic / httpx /
-# anthropic â€” otherwise an older copy on sys.path wins and the vendor path
+# anthropic — otherwise an older copy on sys.path wins and the vendor path
 # never gets consulted. Hence: top of module, before everything else.
 #
 # ABI lock (win_amd64): _vendor/pydantic_core + jiter each carry native
 # ``.pyd`` binaries built per Houdini Python line. As of the H22 drop
 # (2026-07-15) BOTH ABIs ship side by side at the SAME package versions
 # (pydantic_core 2.46.3, jiter 0.14.0): ``.cp311-win_amd64.pyd`` covers
-# H20.5/21.0/21.5 and ``.cp313-win_amd64.pyd`` covers H22 â€” the running
+# H20.5/21.0/21.5 and ``.cp313-win_amd64.pyd`` covers H22 — the running
 # interpreter loads whichever matches. Prepending _vendor on an interpreter
 # with NO matching binary would break imports (stock Python 3.14 in
-# particular â€” the test suite runs there and resolves pydantic from the user
+# particular — the test suite runs there and resolves pydantic from the user
 # site, untouched by this vendoring). The gate below keeps the vendor active
 # only for a vendored ABI *on Windows*. On non-Windows platforms (Linux CI,
 # macOS) the vendored native binary is unloadable, so we fall through to
 # whatever real pydantic the consumer has installed (pyproject.toml lists it
 # as a hard dependency, so pip install -e installs it cleanly).
 #
-# Widen ``_VENDOR_PYS`` â€” and its lockstep test (tests/conftest.py
-# ``VENDOR_PYS``) â€” in the SAME commit that adds a new ABI's .pyd. See
+# Widen ``_VENDOR_PYS`` — and its lockstep test (tests/conftest.py
+# ``VENDOR_PYS``) — in the SAME commit that adds a new ABI's .pyd. See
 # docs/studio/UPGRADE.md Step 2a + python/synapse/_vendor/README.md.
 import os as _synapse_os
 import sys as _synapse_sys
@@ -72,13 +72,13 @@ if (
 # Vendored-SDK ABI risk detection (H22 / Python 3.12+ legibility)
 # ---------------------------------------------------------------------------
 # The block above prepends _vendor only when the interpreter's ABI is one we
-# vendored a .pyd for (``_VENDOR_PYS`` â€” cp311 + cp313 as of the H22 drop). On
+# vendored a .pyd for (``_VENDOR_PYS`` — cp311 + cp313 as of the H22 drop). On
 # an interpreter OUTSIDE that set (e.g. stock Python 3.14, or a future Houdini
 # line we haven't re-vendored yet) the vendor is skipped and SYNAPSE silently
 # falls back to whatever real pydantic/anthropic the interpreter has installed.
 # That fallback is CORRECT when a real install exists (the test suite is green
 # on stock Python 3.14 precisely because it resolves a pip-installed pydantic)
-# â€” so we must NOT hard-raise here.
+# — so we must NOT hard-raise here.
 #
 # What we DO: when we're on Windows with an interpreter OUTSIDE _VENDOR_PYS and
 # the (always committed) _vendor tree is present, flag the configuration as
@@ -182,7 +182,7 @@ except ImportError:
     CryptoEngine = None  # type: ignore[assignment,misc]
     get_crypto = None  # type: ignore[assignment]
 
-# Inspector (Sprint 2 Week 1) â€” pydantic-only at import time, safe to eager
+# Inspector (Sprint 2 Week 1) — pydantic-only at import time, safe to eager
 # load. Gives scene-awareness via /stage AST extraction.
 try:
     from .inspector import (
@@ -232,8 +232,8 @@ from .memory.store import (
     reset_engram,
 )
 
-# Memory context, markdown, session, agent â€” all deferred to first access via __getattr__
-# Routing, Server, UI â€” all deferred to first access via __getattr__
+# Memory context, markdown, session, agent — all deferred to first access via __getattr__
+# Routing, Server, UI — all deferred to first access via __getattr__
 # This avoids importing ~3,000 lines of code (regex compilation, websockets,
 # Qt widgets) on every `import synapse`, keeping Houdini startup fast.
 
@@ -311,7 +311,7 @@ def __getattr__(name):
     # python/synapse/agent/ was deleted in full. The executor and v8-DSA
     # modules went 2026-08-01 (RL-3); protocol.py survived one day on a
     # single test import (tests/test_set_usd_primvar.py "wiring site 1"),
-    # whose gate map was consulted by nothing at runtime â€” the live gate
+    # whose gate map was consulted by nothing at runtime — the live gate
     # authority is panel/bridge_adapter._TOOL_TO_OPERATION ->
     # shared/bridge.OPERATION_GATES. Code lives in git history (last live
     # at 9d7bd17).
@@ -398,7 +398,7 @@ def __getattr__(name):
             globals().update(_fallback)
             return _fallback.get(name)
 
-    # --- hwebserver (native C++ transport, optional â€” requires Houdini) ---
+    # --- hwebserver (native C++ transport, optional — requires Houdini) ---
     _hwebserver_names = {
         'start_hwebserver', 'stop_hwebserver', 'HWEBSERVER_AVAILABLE',
     }
