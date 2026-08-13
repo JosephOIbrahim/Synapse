@@ -1,0 +1,30 @@
+{
+  "id": "W1-KPRE",
+  "name": "karma progressive presets + background default",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/SYNAPSE_latency_and_karma_rendersettings_2026.md",
+    "anchor": "Part 2/3/4 - progressive pipeline (layout/lighting/quality/final), OIDN, background soho_foreground=0 for quality+"
+  },
+  "targets": [
+    "encode the four-stage progressive pipeline as named presets in SYNAPSE render orchestration (layout 320x240/4, lighting 960x540/16-32, quality 1080p/64, final 128-512)",
+    "quality+ presets default to background render (soho_foreground=0) so renders never fight the panel for the main thread",
+    "cheat-sheet lands in docs/ (bounce limits, denoise policy, AOV starter set, XPU-vs-CPU rule)"
+  ],
+  "acceptance": [
+    {"predicate": "presets exist and set pathtracedsamples/resolution/denoise/engine per the addendum table", "evidence": "test"},
+    {"predicate": "parm NAMES probe-verified against the live 22.0.400 build (autoresearch pattern: names are probe-verified, values are design choices)", "evidence": "probe"},
+    {"predicate": "quality and final presets set background mode; layout and lighting stay foreground", "evidence": "test"},
+    {"predicate": "XPU flush-delay note travels with the preset surface (10-15s post-render() is not a hang)", "evidence": "check"}
+  ],
+  "deps": ["BASE"],
+  "readonly": false,
+  "touches": ["python/synapse/", "docs/", "tests/"],
+  "crucible_criteria": [
+    "presets are additive - no existing render path changes behaviour unless a preset is invoked",
+    "camera stays a USD prim path on usdrender; a preset must not smuggle a node path in",
+    "no parm name ships un-probed; a name asserted from docs alone is a BLOCK (karmarenderproperties precedent)"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Part 2-4 of the addendum made executable. Small forge leg by design; the progressive pipeline is also the operational mitigation for panel latency (Part 3), so it ships in the same wave as MTFIX."
+}
