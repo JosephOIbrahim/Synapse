@@ -50,3 +50,6 @@ Wave LIVE via orchestrate.ps1 -ManifestPath harness/autorevise/waves/wave1.live.
 
 ## M4 EVIDENCE COMPLETE + BLOCKS CLOSED (2026-08-13)
 All 4 receipts landed. CRUX green_with_findings. B1 closed: HSTRIP a5603b6 (897+), MTFIX 8c1003a (471+), receipts in-commit, branches pushed. B2 closed: correction appended to MTFIX receipt (original preserved). OPEN FOR JOE: rulings CRUX-R3 (accept gui_required UNKNOWNs, re-measure at workstation - recommended) and CRUX-R2 (doc authority: uploaded 2026-08-12 papers vs docs/reviews/synapse-latency-report-2026-07-27.md; 648/780ms have no producer path, live probe 0.63ms). Then merge words per branch + spawn word on mtfix-followup.
+
+## M5 CLOSED (2026-08-13, worded: merge/commit/push as CTO)
+Master: 1824601f harness + efdd7bfc KPRE + c493f39f HSTRIP + 58547b4e MTFIX (all --no-ff, receipts in-tree). Merged-tree leg tests 44 passed / 4 skipped (gui/hython - consistent with R3). R3 RULED BY ACTION: UNKNOWNs accepted, re-measure at Joe's live Houdini (same session as the pending Moneta GUI relaunch check). OPEN: R2 doc authority; mtfix-followup spawn awaits its own word; M6 teach-down + Operator's Card next session. Orchestrator stopped, worktrees removed, wave branches deleted local (origin backups retained).
