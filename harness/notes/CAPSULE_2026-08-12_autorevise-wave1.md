@@ -41,3 +41,6 @@ harness/autorevise/{SPEC.md, mission_schema.py, compile_wave.py,
 spawn_compile.py, bus.py, make_control.py, missions/, prompts/, waves/}
 Control smoke: `python make_control.py wave1` then orchestrate `-DryRun
 -Quiet -ManifestPath waves/wave1.control.json` (detached, kill after 1 cycle).
+
+## M2 CLOSED (same session, addendum)
+Verdict green_with_findings: 1 BLOCK + 2 MAJOR fixed and re-proven (template absolute+PS-safe bus commands; HSTRIP deps [BASE,H4] - H4 rides the wave; bus nonce dedup, test 2/2). PS-quoting hardening: bus post falls back to {msg:raw}+WARN on mangled JSON. Control re-smoked: 3 stubs, HSTRIP gated behind H4, CRUX blocked. 5 MINORs remain on receipt for next-session triage.

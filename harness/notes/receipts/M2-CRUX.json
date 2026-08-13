@@ -1,0 +1,121 @@
+{
+  "leg": "M2-CRUX",
+  "status": "green_with_findings",
+  "summary": "Crucible attacked all 7 surfaces of the AUTOREVISE harness read-only at commit 00c5afa. Validation gate, compiler idempotency/fidelity, bus round-trip, spawn gating, SPEC-vs-reality, and the gate audit all hold. One BLOCK (template bus-path wording invites silent bus fragmentation), two MAJOR (unenforced H4/HSTRIP serialization; second-granularity read() dedup collapse), five MINOR. Live board untouched; legs.json unmodified; no push/merge/tag. All synthetic inputs ran under %TEMP% via OS-level Python; bus posts and this receipt are the only writes.",
+  "attack": [
+    {
+      "item": 1,
+      "surface": "mission_schema.py",
+      "verdict": "pass",
+      "anchors": ["harness/autorevise/mission_schema.py:19-61"],
+      "note": "All 7 brief-listed hostile missions REJECTED, valid control PASSED: non-dict acceptance -> acceptance[i] needs predicate+evidence; TRUST+readonly:false -> must be readonly:true; bogus evidence 'magic' -> must be probe|check|test|receipt|gui_probe; gui_probe without gui_required -> requires gui_required:true; missing source doc -> source doc not found; id W1-VERYLONGTAGNAME (tag>12) -> id regex reject; duplicate id -> caught in validate_all. Nothing malformed passed. Latent MINOR: bool fields truthiness-checked not type-checked (see finding MIN-5), but fails safe."
+    },
+    {
+      "item": 2,
+      "surface": "compile_wave.py",
+      "verdict": "pass",
+      "anchors": ["harness/autorevise/compile_wave.py:13-39", "harness/autorevise/compile_wave.py:45-55"],
+      "note": "Ran twice in a %TEMP% copy with CWD=repo: outputs byte-stable across runs (idempotent). Regenerated rows.json + all 4 prompts are byte-identical to the committed artifacts. legs/v1 fidelity: wave-row key set is IDENTICAL to a real full leg (FRZ); every field orchestrate.ps1 consumes (id/name/state/receipt/branch/base/worktree/prompt/deps/readonly) is present with matching name AND type -- no consumer field differs. W12-X derivation correct: branch wave12/x, worktree .claude/worktrees/w12-x, prompt W12-X.md (.replace('w','wave') does not double-substitute on a two-digit wave). MINOR: wave-file name latched to first mission only (see MIN-6)."
+    },
+    {
+      "item": 3,
+      "surface": "bus.py",
+      "verdict": "pass",
+      "anchors": ["harness/autorevise/bus.py:71-82", "harness/autorevise/bus.py:51-57", "harness/autorevise/bus.py:58", "harness/autorevise/bus.py:28"],
+      "note": "Round-trip in an isolated %TEMP% BUS_ROOT: claim/overlapping-claim/partial-release/full-release all correct. PARTIAL release (subset of claimed files) leaves the claim OPEN -- conservative/correct, release key requires EXACT fileset match (bus.py:76-81), NOT a bug. Full release closes exactly the matching claim, leaves the peer's open. Torn half-line appended -> read() skipped it, returned only clean msgs (bus.py:57). Targeted 'to:' copy deduped to exactly one. MAJOR found: same-second identical-(frm,type,body) dedup collapse (see MAJ-3). Windows concurrent-append: plain open(...,'a') with NO lock; multi-worktree concurrent appends rely on OS append atomicity; read() tolerates a torn line by skipping but a torn POST is lost -- honest residual risk, not reproduced as a failure."
+    },
+    {
+      "item": 4,
+      "surface": "spawn_compile.py",
+      "verdict": "pass",
+      "anchors": ["harness/autorevise/spawn_compile.py:15-50", "harness/autorevise/spawn_compile.py:24", "harness/autorevise/spawn_compile.py:32"],
+      "note": "Synthetic receipts in %TEMP% (no --append). leg=W1-MTFIX (playbook probe,mtfix-followup): in-playbook 'probe' -> READY; off-playbook 'architecture' -> HELD with note; malformed spawn -> REJECT (per-spawn, continues). leg=W1-NONEXIST: src mission not found -> allowed set empty -> even a 'probe' spawn lands HELD (held-everything safe default confirmed, spawn_compile.py:24 `(src or {}).get`). MINOR: prompts/<id>.md written even in print-only mode before the --append gate (see MIN-4)."
+    },
+    {
+      "item": 5,
+      "surface": "prompts/_template.md",
+      "verdict": "fail",
+      "anchors": ["harness/autorevise/prompts/_template.md:27-38", "harness/autorevise/bus.py:20"],
+      "note": "BLOCK. The absolute-main-repo-path instruction is NOT prominent or unambiguous enough. The section LEADS with the fragmenting relative command in the primary monospaced span ('python harness/autorevise/bus.py' + 'run from repo root of YOUR worktree -- the bus root resolves inside the worktree'); the corrective absolute path is a trailing 'so always...' parenthetical AFTER the wrong command and is repeated in NONE of the 4 numbered action steps (all use '...'). PROVEN live: a relative call from a simulated worktree wrote to a worktree-local bus and the claim was invisible in the main bus (open_claims==[]). Silently defeats the claim/block coordination. See finding BLK-1."
+    },
+    {
+      "item": 6,
+      "surface": "SPEC.md vs shipped reality",
+      "verdict": "pass",
+      "anchors": ["harness/autorevise/SPEC.md:73-90", "harness/orchestrate.ps1:220", "harness/orchestrate.ps1:228", "harness/orchestrate.ps1:202-206"],
+      "note": "Every S6 claim proven: 4/4 missions validate + compiler emits legs/v1 + prompts generated (item 2); control dry-run = 6 legs parse (BASE/FRZ stubs done + 4 wave rows ready), W1-CRUX blocked on unreceipted deps, build legs dry-dispatch with --model claude-opus-4-8 --settings relay-settings.json, worktree cut from master (dryrun.log); legs.json unmodified + zero W1-* on the live board + no push (git-verified). Every S7 step executable: BASE/FRZ/MEM(held)/FID all present on the live board so 'apply BASE'/'flip MEM ready' are real acts. BASE-first reasoning SOUND: per-leg base is consumed at orchestrate.ps1:220 (falls back to HEAD; top-level manifest base is display-only for the cut), model at :228; wave legs carry base:master so they cut from master; deps gate the wave on BASE.json (BASE on board, unreceipted -> HSTRIP/KPRE/MTFIX blocked until it completes). PRECISION NOTES (not defects): S5 phrases BASE as if per-leg-base+model-passthrough are pending, but the consuming orchestrate.ps1 lines already exist at 00c5afa; S6 says dry-run shows 'manifest base flowing' but the CUT uses per-leg base (:220), indistinguishable here because both are master. MINOR: the cited dryrun.log receipt is gitignored (see MIN-7)."
+    },
+    {
+      "item": 7,
+      "surface": "Gate audit (push/merge/manifest/state)",
+      "verdict": "pass",
+      "anchors": ["harness/autorevise/spawn_compile.py:42-49", "harness/autorevise/spawn_compile.py:56"],
+      "note": "Enumerated every write/exec surface in the folder. The ONLY live-manifest-mutating path is spawn_compile.py:47-48 (manifest['legs'].extend + write_text), reached ONLY via --append <manifest> (guarded at :56) -- the known gate. TESTED for a second path: NONE. compile_wave writes only staging files (waves/<w>.rows.json + prompts/<id>.md, never legs.json); bus.py appends only gitignored bus/*.jsonl; make_control writes only a gitignored control.json. NO git / push / merge / tag / subprocess / os.system / Popen / drop.json / ratified / state-flip surface exists anywhere in harness/autorevise/*.py. Dispatch is entirely via orchestrate.ps1's live re-read of legs.json; the autorevise code never itself launches/pushes/merges. MINOR: control.json carries state:ready rows guarded only by prose + -DryRun (see MIN-8)."
+    }
+  ],
+  "findings": [
+    {
+      "severity": "BLOCK",
+      "anchor": "harness/autorevise/prompts/_template.md:27",
+      "claim": "The bus section leads with the fragmenting relative command 'python harness/autorevise/bus.py' (run from the worktree); the corrective absolute main-repo path appears once in a trailing parenthetical and in none of the 4 numbered action steps (all use '...'). A tired agent copies the first, most-prominent monospaced command.",
+      "evidence": "bus.BUS_ROOT = Path(__file__).resolve().parent/'bus' (bus.py:20). LIVE PROOF: a relative call from a simulated worktree wrote to <wt>/harness/autorevise/bus/wave1/bus.jsonl and the claim was INVISIBLE in the main bus -- open_claims('wave1')==[]. This silently defeats the R91/R134 claim/block coordination the bus exists to enforce, and this wave dispatches parallel legs sharing python/synapse/panel/ touches.",
+      "fix_class": "reword: make the absolute path the ONLY command shown and repeat it verbatim in every numbered step; remove/relegate the relative form. Must be closed before the wave batch."
+    },
+    {
+      "severity": "MAJOR",
+      "anchor": "harness/autorevise/missions/w1_hstrip.json:19",
+      "claim": "SPEC 5's 'H4 shares panel touches with HSTRIP -> serialize, never parallel' is not structurally encoded. HSTRIP's compiled deps are [BASE], not [BASE,H4]. H4 (state=ready, deps=[]) and HSTRIP both write python/synapse/panel/. With no dep edge, once BASE lands both are dispatchable in parallel; the only guard is the bus claim protocol -- the exact mechanism BLK-1 shows can silently fragment.",
+      "evidence": "legs.json:122 H4 deps=[]; legs.json:124-129 H4 touches python/synapse/panel/{synapse_panel,styles,tokens,designsystem/tokens}.py; w1_hstrip.json:19 deps=['BASE']; w1_hstrip.json:26 crucible_criterion demands the H4 collision check but leaves it to runtime discipline; SPEC.md:72.",
+      "fix_class": "add 'H4' to HSTRIP deps to force serialization, OR land the H4 receipt before appending the wave, OR flip H4 off-ready for the wave. Structural, not prose."
+    },
+    {
+      "severity": "MAJOR",
+      "anchor": "harness/autorevise/bus.py:58",
+      "claim": "read()/open_claims dedup key (ts,frm,type,json(body)) uses second-granularity ts (bus.py:28 strftime %H:%M:%S). Two genuinely-distinct posts sharing frm+type+body within one wall-clock second collapse to one in read(), open_claims and agent inboxes. The on-disk JSONL retains both lines (grep recovers them), but the harness's own read tool undercounts -- and the bus is billed as the evidence channel (SPEC 2).",
+      "evidence": "PROVEN: two identical-body findings posted in the same second; bus.read(types='finding') returned 1, not 2.",
+      "fix_class": "add a monotonic sequence field or sub-second/content-hash to the dedup key; or document read() as a lossy view and grep as source of truth."
+    },
+    {
+      "severity": "MINOR",
+      "anchor": "harness/autorevise/spawn_compile.py:35",
+      "claim": "spawn_compile writes prompts/<id>.md for every valid spawn BEFORE the --append gate, so the 'print only' default (spawn_compile.py:5) is not side-effect-free -- it materializes tracked briefs into the repo tree.",
+      "evidence": "spawn_compile.py:35 write_text runs unconditionally for valid spawns; the only guarded block is --append at :42-49. Harmless to the gate (a brief alone cannot dispatch; orchestrate.ps1 dispatches from the manifest), but not read-only.",
+      "fix_class": "gate the prompt write behind --append, or write it to a staging dir."
+    },
+    {
+      "severity": "MINOR",
+      "anchor": "harness/autorevise/mission_schema.py:34",
+      "claim": "Boolean mission fields are truthiness-checked, not type-checked. A TRUST mission with readonly:'false' (truthy string) or readonly:1 satisfies the readonly gate; gui_required:'x' satisfies the gui_probe rule (mission_schema.py:55).",
+      "evidence": "mission_schema.py:34 `not m.get('readonly', False)` and :55 `not a.get('gui_required')` are truthiness tests. All 7 brief-listed malformed cases are still correctly rejected, and the dangerous direction fails safe (a truthy non-bool readonly is treated read-only downstream). Latent robustness gap, not a bypass.",
+      "fix_class": "assert isinstance(bool) on readonly and gui_required."
+    },
+    {
+      "severity": "MINOR",
+      "anchor": "harness/autorevise/compile_wave.py:50",
+      "claim": "compile_wave latches the output wave-file name to the FIRST mission's wave and writes every row into that single {wave}.rows.json. A mixed-wave missions/ dir would silently dump W2-* rows into wave1.rows.json.",
+      "evidence": "compile_wave.py:50 `wave = wave or m['id'].split('-',1)[0]...`; :53-54 single output file. Harmless today (missions/ is all W1-*), but the harness is explicitly multi-wave.",
+      "fix_class": "partition rows by wave, or refuse a missions/ dir spanning multiple waves."
+    },
+    {
+      "severity": "MINOR",
+      "anchor": "harness/autorevise/.gitignore:3",
+      "claim": "SPEC 6 cites waves/wave1.dryrun.log as the receipt for the control-dry-run acceptance, but .gitignore excludes waves/*.dryrun.log and waves/*.control.json; git ls-files shows only wave1.rows.json tracked. On a clean checkout the cited evidence is absent.",
+      "evidence": "git ls-files harness/autorevise/waves/ -> only wave1.rows.json. Regenerable via make_control + orchestrate.ps1 -DryRun (S6 says 'regenerate any time'), so this is a reproducibility caveat, not a lost receipt.",
+      "fix_class": "either commit the dry-run receipt (git add -f) or reword S6 to state the receipt is regenerated, not stored."
+    },
+    {
+      "severity": "MINOR",
+      "anchor": "harness/autorevise/make_control.py:16",
+      "claim": "The control manifest carries the 4 wave rows at state:ready; its only 'never dispatch for real' guard is the _comment string (make_control.py:22) plus the operator's -DryRun flag. Nothing structural stops a non-dry orchestrate.ps1 pointed at the control from dispatching the ready rows.",
+      "evidence": "make_control.py:15 rows carried verbatim (state ready); :22 prose-only guard. Not the autorevise code touching a gate itself (it writes a gitignored file), but a latent foot-gun.",
+      "fix_class": "pin the wave rows to a non-ready state in the control, or have make_control stamp a control-only sentinel orchestrate.ps1 refuses to live-dispatch."
+    }
+  ],
+  "for_ruling": [
+    "BLK-1 (BLOCK, template bus wording) MUST be closed before the wave batch: rewrite prompts/_template.md so the absolute main-repo bus path is the only command shown and is repeated verbatim in every numbered step; the relative form silently fragments the bus (proven live). Then recompile prompts.",
+    "MAJ-2 (H4/HSTRIP serialization) needs a structural decision before dispatch: add 'H4' to HSTRIP deps, OR land H4's receipt before appending the wave, OR take H4 off-ready for the wave. Do not rely on the bus claim protocol alone -- BLK-1 makes it fragile.",
+    "MAJ-3 (bus read() dedup collapse) is a design call: tighten the dedup key (sequence/sub-second/hash) or accept grep-as-truth and document read() as a lossy convenience view.",
+    "MINORs 4-8 are advisory: gate spawn_compile's prompt write behind --append; type-assert bool fields; partition compile_wave output by wave; reconcile the gitignored dry-run receipt with SPEC 6; add a structural guard to the control manifest.",
+    "Confirmed clean: single --append gate path, no second push/merge/manifest/state or git/subprocess surface in the folder; live board untouched; legs.json unmodified; no push. Gate posture is sound."
+  ]
+}

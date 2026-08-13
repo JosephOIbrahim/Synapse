@@ -1,4 +1,4 @@
-# W1-HSTRIP — panel health strip
+﻿# W1-HSTRIP â€” panel health strip
 
 You are a SYNAPSE wave agent on branch `wave1/hstrip` in worktree `.claude/worktrees/w1-hstrip`.
 Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This brief is complete;
@@ -39,7 +39,8 @@ if any part reads truncated, STOP and say so.
     }
   ],
   "deps": [
-    "BASE"
+    "BASE",
+    "H4"
   ],
   "readonly": false,
   "touches": [
@@ -50,7 +51,7 @@ if any part reads truncated, STOP and say so.
     "strip states are FACT-sourced (producer path per cell) - a green cell without a producer is a BLOCK",
     "degraded is loud: amber/red + reason, no click required to notice",
     "no main-thread I/O added by the strip itself (it must not become the next 648ms hold)",
-    "H4 collision check: if panel token files were touched, serialize behind H4 or record the seam"
+    "H4 receipt precedes this leg (deps-encoded serialization); build on H4's landed token state, no re-litigating its choices"
   ],
   "spawn_classes": [
     "probe"
@@ -63,28 +64,33 @@ if any part reads truncated, STOP and say so.
 
 - **NEVER**: `git push`, `git merge`, tag, edit `harness/state/drop.json`, flip
   any `ratified` or any leg `state` in a manifest. Those are human words, per act.
-- **Unobtainable renders UNKNOWN** — never zero, never an estimate, never a pass.
+- **Unobtainable renders UNKNOWN** â€” never zero, never an estimate, never a pass.
   A `gui_required` acceptance you cannot measure headless is recorded UNKNOWN.
-- **Receipts over claims** — every finding carries a file:line, probe path, or
+- **Receipts over claims** â€” every finding carries a file:line, probe path, or
   receipt anchor. No anchor, no claim.
 - Named-file commits only on your branch. Never `git add -A`.
-- Scope is the mission. Prerequisite work is real work — do it. Unrelated value —
+- Scope is the mission. Prerequisite work is real work â€” do it. Unrelated value â€”
   post a `spawn` proposal, don't chase it.
 
 ## The bus (how the team talks)
 
-Shared channel: `python harness/autorevise/bus.py` (run from repo root of YOUR worktree —
-the bus root resolves inside the worktree; the orchestrated wave shares the MAIN repo bus at
-`C:\Users\User\SYNAPSE\harness\autorevise\bus\`, so always call bus.py via its absolute
-main-repo path: `python C:\Users\User\SYNAPSE\harness\autorevise\bus.py ...`).
+ONE bus command. Always this exact absolute path â€” NEVER a relative call. A
+relative `python harness/autorevise/bus.py` from your worktree writes a
+FRAGMENTED bus in the worktree that nobody reads: your claims become invisible
+and two agents will edit one file.
 
-1. **Before touching any file in `touches`** — post a claim:
-   `... post wave1 W1-HSTRIP claim "{{\"files\": [\"<paths>\"]}}"`
-   Then read open claims: `... claims wave1`. If a peer holds an overlapping
-   open claim: STOP, post a `block`, work another target until it releases.
-2. **Findings** as you go: `... post wave1 W1-HSTRIP finding "{{...with anchors}}"`
-3. **Release** when done editing: post `status` with `{{"release": [<same paths>]}}`
-4. **Read before you act** on any shared seam: `... read wave1 W1-HSTRIP`
+1. **Before touching any file in `touches`** â€” post a claim:
+   `python C:\Users\User\SYNAPSE\harness\autorevise\bus.py post wave1 W1-HSTRIP claim '{\"files\": [\"<paths>\"]}'`
+   Then read open claims:
+   `python C:\Users\User\SYNAPSE\harness\autorevise\bus.py claims wave1`
+   If a peer holds an overlapping open claim: STOP, post a `block`, work
+   another target until it releases.
+2. **Findings** as you go:
+   `python C:\Users\User\SYNAPSE\harness\autorevise\bus.py post wave1 W1-HSTRIP finding '{\"claim\": \"...\", \"anchor\": \"file:line\"}'`
+3. **Release** when done editing:
+   `python C:\Users\User\SYNAPSE\harness\autorevise\bus.py post wave1 W1-HSTRIP status '{\"release\": [\"<same paths>\"]}'`
+4. **Read before you act** on any shared seam:
+   `python C:\Users\User\SYNAPSE\harness\autorevise\bus.py read wave1 W1-HSTRIP`
 
 ## Receipt (completion contract)
 
@@ -93,4 +99,4 @@ Write `harness/notes/receipts/W1-HSTRIP.json` **inside your worktree**:
   "acceptance": [{{"predicate", "verdict": "pass|fail|UNKNOWN", "evidence"}}...],
   "findings": [...], "for_ruling": [...], "spawn": [...]}}`
 `spawn[]` entries are mission-schema-shaped proposals; classes outside your
-`spawn_classes` land `held` for Joe. The receipt closes your turn — hold there.
+`spawn_classes` land `held` for Joe. The receipt closes your turn â€” hold there.

@@ -16,14 +16,14 @@
     {"predicate": "unmeasured/unreachable health facts render UNKNOWN, never green and never 0", "evidence": "test"},
     {"predicate": "strip visible in a live GUI session without stealing focus or stalling paint", "evidence": "gui_probe", "gui_required": true}
   ],
-  "deps": ["BASE"],
+  "deps": ["BASE", "H4"],
   "readonly": false,
   "touches": ["python/synapse/panel/", "tests/"],
   "crucible_criteria": [
     "strip states are FACT-sourced (producer path per cell) - a green cell without a producer is a BLOCK",
     "degraded is loud: amber/red + reason, no click required to notice",
     "no main-thread I/O added by the strip itself (it must not become the next 648ms hold)",
-    "H4 collision check: if panel token files were touched, serialize behind H4 or record the seam"
+    "H4 receipt precedes this leg (deps-encoded serialization); build on H4's landed token state, no re-litigating its choices"
   ],
   "spawn_classes": ["probe"],
   "note": "P0.3 from the readiness report. The doctor is honest, the panel is not - this closes that gap. MEM leg (held, Joe's flip) owns the store-side fail-loud; this leg owns the SURFACING only. No memory-store mutation here - W1 Moneta recovery holds that seam."

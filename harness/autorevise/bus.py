@@ -25,8 +25,8 @@ def _wave_dir(wave: str) -> Path:
     return d
 
 def post(wave: str, frm: str, mtype: str, body, to: str = "*") -> dict:
-    msg = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "wave": wave,
-           "frm": frm, "to": to, "type": mtype, "body": body}
+    msg = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "n": f"{time.time_ns():x}",
+           "wave": wave, "frm": frm, "to": to, "type": mtype, "body": body}
     line = json.dumps(msg, ensure_ascii=False)
     d = _wave_dir(wave)
     with open(d / "bus.jsonl", "a", encoding="utf-8") as f:
@@ -55,7 +55,7 @@ def read(wave: str, agent: str = "*", since: str = "", types: str = "") -> list:
                 m = json.loads(line)
             except Exception:
                 continue  # a torn write is skipped, never fatal
-            key = (m.get("ts"), m.get("frm"), m.get("type"), json.dumps(m.get("body")))
+            key = (m.get("n") or m.get("ts"), m.get("frm"), m.get("type"), json.dumps(m.get("body")))
             if key in seen:
                 continue
             seen.add(key)
@@ -90,7 +90,11 @@ if __name__ == "__main__":
         print(__doc__ or "post|read|claims"); sys.exit(2)
     cmd = a[0]
     if cmd == "post" and len(a) >= 5:
-        body = json.loads(a[4])
+        try:
+            body = json.loads(a[4])
+        except Exception:
+            body = {"msg": a[4]}
+            print("WARN: body was not valid JSON after shell quoting; recorded as {'msg': raw}. Use '{\\\"k\\\": ...}' form in PowerShell.", file=sys.stderr)
         to = a[5] if len(a) > 5 else "*"
         print(json.dumps(post(a[1], a[2], a[3], body, to)))
     elif cmd == "read" and len(a) >= 2:

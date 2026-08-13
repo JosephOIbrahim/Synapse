@@ -27,7 +27,8 @@
     "worktree": ".claude/worktrees/w1-hstrip",
     "prompt": "harness/autorevise/prompts/W1-HSTRIP.md",
     "deps": [
-      "BASE"
+      "BASE",
+      "H4"
     ],
     "readonly": false,
     "touches": [
