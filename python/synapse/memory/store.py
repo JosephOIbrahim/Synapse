@@ -1195,7 +1195,11 @@ class SynapseMemory:
         source: str = "user",
         node_paths: List[str] = None,
         links: List[Dict] = None,
-        summary: str = ""
+        summary: str = "",
+        reasoning: str = "",
+        alternatives: List[str] = None,
+        status: str = "",
+        ref_uri: str = "",
     ) -> Memory:
         """
         Add a new memory.
@@ -1212,6 +1216,11 @@ class SynapseMemory:
                 auto-derived from the first content line — which produces
                 duplicate headings for templated content like session summaries
                 (H-4). Pass an explicit summary for such writes.
+            reasoning, alternatives, status, ref_uri: Typed per-kind fields
+                (W3-KIND). Optional and additive -- a decision sets
+                reasoning+alternatives, a task sets status, a reference sets
+                ref_uri; every other kind leaves them at their defaults. See
+                kind_schema.KIND_FIELDS.
 
         Returns:
             The created Memory object
@@ -1245,7 +1254,11 @@ class SynapseMemory:
             hip_version=hip_version,
             frame=frame,
             node_paths=node_paths or [],
-            summary=summary
+            summary=summary,
+            reasoning=reasoning,
+            alternatives=alternatives or [],
+            status=status,
+            ref_uri=ref_uri,
         )
 
         # Add links
@@ -1302,7 +1315,13 @@ class SynapseMemory:
             # Provenance: a decision recorded through this API is the AI/agent's
             # reasoning, not something the user typed. Stamp the real author so a
             # memory's source reflects who authored it (was mislabeled "user").
-            source="ai"
+            source="ai",
+            # W3-KIND: ALSO store reasoning+alternatives as typed per-kind fields
+            # (in addition to the content baking above, which is kept for
+            # back-compat with markdown sync + keyword recall). This is what
+            # makes a decision a typed prim, not just prose.
+            reasoning=reasoning,
+            alternatives=alternatives or [],
         )
 
     def action(
@@ -1331,9 +1350,71 @@ class SynapseMemory:
         """Add a simple note."""
         return self.add(content, MemoryType.NOTE, tags=tags)
 
-    def search(self, query: str, limit: int = 20) -> List[MemorySearchResult]:
-        """Search memories by text."""
-        return self.store.search(MemoryQuery(text=query, limit=limit))
+    def search(
+        self,
+        query: str,
+        limit: int = 20,
+        memory_types: Optional[List[MemoryType]] = None,
+    ) -> List[MemorySearchResult]:
+        """Search memories by text, optionally filtered to specific kind(s).
+
+        W3-KIND: when ``memory_types`` is given, the filter routes on the store's
+        typed ``by_type`` index (store.search narrows candidates by type BEFORE
+        scoring -- store.py:606), so a kind-filtered query touches only that
+        kind's typed prims, not the whole store. ``memory_types=None`` (default)
+        is the unchanged full-text behavior.
+        """
+        return self.store.search(MemoryQuery(
+            text=query,
+            memory_types=list(memory_types) if memory_types else [],
+            limit=limit,
+        ))
+
+    def recall(
+        self,
+        query: str = "",
+        kinds: Optional[List[MemoryType]] = None,
+        limit: int = 5,
+    ) -> List[Memory]:
+        """Recall memories of specific kind(s) that match a query, routed on type.
+
+        W3-KIND: candidates come from ``store.get_by_type(kind)`` -- the by_type
+        index, which resolves only that kind's typed prims (store.py:708), never
+        a full-store scan. Defaults to DECISION (the historical recall surface)
+        when no kind is given. Determinism mirrors the recall handler: id asc,
+        then fresher-first, then a case-insensitive keyword match on
+        content/summary.
+
+        ``kinds`` accepts MemoryType members or their ``.value`` strings; an
+        unknown kind raises ValueError (loud) rather than silently widening the
+        scan -- callers that want a soft negative control should pre-resolve via
+        kind_schema.resolve_kinds.
+        """
+        if kinds:
+            types = [k if isinstance(k, MemoryType) else MemoryType(str(k)) for k in kinds]
+        else:
+            types = [MemoryType.DECISION]
+
+        pool: List[Memory] = []
+        seen = set()
+        for t in types:
+            for m in self.store.get_by_type(t):
+                if m.id not in seen:
+                    seen.add(m.id)
+                    pool.append(m)
+
+        # Deterministic order (matches handle_memory_recall): least-significant
+        # sort first -- id asc, then fresher-first (ISO ts, lexical desc ==
+        # chronological desc).
+        pool.sort(key=lambda m: m.id)
+        pool.sort(key=lambda m: m.created_at or "", reverse=True)
+
+        q = (query or "").lower()
+        matches = [
+            m for m in pool
+            if not q or q in m.content.lower() or q in m.summary.lower()
+        ]
+        return matches[:limit] if limit and limit > 0 else matches
 
     def get_decisions(self) -> List[Memory]:
         """Get all decision memories."""

@@ -394,25 +394,41 @@ class SynapseBridge:
     # =========================================================================
 
     def handle_memory_search(self, payload: Dict) -> Dict:
-        """Handle memory search command."""
+        """Handle memory search command, with a kind filter routed on type.
+
+        W3-KIND: ``types`` (aka ``kinds``) filters to specific memory kinds. The
+        filter routes on the store's typed by_type index, not a free-text scan.
+
+        Negative control: an UNKNOWN kind must fail loud -- if the caller
+        supplied kinds but NONE resolve to a valid MemoryType, return an empty
+        result with ``invalid_kinds``, never silently widen to a full-store scan.
+        """
+        from ..memory.kind_schema import resolve_kinds, typed_fields
+
         if not self._synapse:
             return {"error": "Memory not available", "results": []}
 
         query_text = payload.get("query", "")
         limit = payload.get("limit", 20)
-        memory_types = payload.get("types", [])
+        raw_types = payload.get("types") or payload.get("kinds") or []
 
-        # Convert type strings to enums
-        type_enums = []
-        for t in memory_types:
-            try:
-                type_enums.append(MemoryType(t))
-            except ValueError:
-                pass
+        type_enums, invalid = resolve_kinds(raw_types)
+        # Negative control: kinds were requested but none are valid -> empty +
+        # loud, NOT an unfiltered scan of the whole store.
+        if raw_types and not type_enums:
+            return {
+                "query": query_text,
+                "count": 0,
+                "results": [],
+                "error": f"no valid kind in {list(raw_types)}",
+                "invalid_kinds": invalid,
+            }
 
-        results = self._synapse.search(query_text, limit=limit)
+        results = self._synapse.search(
+            query_text, limit=limit, memory_types=type_enums or None
+        )
 
-        return {
+        out = {
             "query": query_text,
             "count": len(results),
             "results": [
@@ -423,11 +439,17 @@ class SynapseBridge:
                     "content": r.memory.content,
                     "score": r.score,
                     "tags": r.memory.tags,
-                    "created_at": r.memory.created_at
+                    "created_at": r.memory.created_at,
+                    # W3-KIND: surface the typed per-kind fields of the prim
+                    # (decision -> reasoning+alternatives, task -> status, ...).
+                    "fields": typed_fields(r.memory),
                 }
                 for r in results
-            ]
+            ],
         }
+        if invalid:
+            out["invalid_kinds"] = invalid
+        return out
 
     def handle_memory_add(self, payload: Dict) -> Dict:
         """Handle memory add command."""
@@ -548,48 +570,69 @@ class SynapseBridge:
         Handle recall request - check if we've decided on something before.
 
         This is for questions like "Did we already decide on rim light color?"
+
+        W3-KIND: recall now accepts an optional kind filter (``types`` / ``kinds``)
+        and routes on type via the store's by_type index (never a full-store
+        scan). With no kind given it defaults to DECISION -- the historical recall
+        surface -- so existing callers are unchanged.
+
+        Determinism (PRST/FIX-B1) is preserved inside SynapseMemory.recall: the
+        by_type route is re-sorted id asc then fresher-first, so `matches[:5]`
+        answers the SAME prompt with the SAME records after a prune or restart.
+
+        Negative control: kinds supplied but none valid -> empty + ``invalid_kinds``,
+        never a silent widening to the whole store.
+
+        Payload shape: a match stays PROSE-ONLY -- exactly {id, summary, content,
+        date}, no structural keys. This is a deliberate SEAM-C contract pinned by
+        tests/test_prst_network_persistence.py::test_recall_returns_prose_not_a_network
+        (recall hands back text that cannot rebuild a network). The typed per-kind
+        fields (reasoning/alternatives/status) are already baked into a decision's
+        ``content`` prose, and the structured view lives on synapse_search's
+        ``fields`` key -- recall does not widen the contract.
         """
+        from ..memory.kind_schema import resolve_kinds
+
         if not self._synapse:
             return {"error": "Memory not available", "found": False}
 
         query = payload.get("query", "")
+        raw_types = payload.get("types") or payload.get("kinds") or []
 
-        # Search specifically in decisions
-        decisions = self._synapse.get_decisions()
+        type_enums, invalid = resolve_kinds(raw_types)
+        if raw_types and not type_enums:
+            return {
+                "query": query,
+                "found": False,
+                "count": 0,
+                "matches": [],
+                "error": f"no valid kind in {list(raw_types)}",
+                "invalid_kinds": invalid,
+            }
 
-        # PRST/FIX-B1: get_by_type returns raw backend order — moneta's ECS is
-        # swap-and-pop (removing any row moves the LAST row into its slot) and the
-        # jsonl index is a per-process-salted set. Both make `matches[:5]` below
-        # answer the SAME prompt with DIFFERENT records after an unrelated prune
-        # or a restart. Impose the same total order search already uses
-        # (store.py:697-699): layered stable sorts, least-significant first,
-        # fresher-first with id asc as the tiebreak. Determinism only — recall has
-        # no score to rank by, so this fixes sameness, not relevance.
-        decisions = sorted(decisions, key=lambda d: d.id)
-        decisions.sort(key=lambda d: d.created_at or "", reverse=True)
+        # kinds=None -> DECISION default (back-compat). Routed on type inside recall.
+        recalled = self._synapse.recall(query, kinds=type_enums or None, limit=5)
 
-        # Simple keyword matching
-        query_lower = query.lower()
-        matches = []
+        # Prose-only match contract (SEAM-C): exactly {id, summary, content, date}.
+        matches = [
+            {
+                "id": m.id,
+                "summary": m.summary,
+                "content": m.content,
+                "date": m.created_at.split("T")[0] if m.created_at else "",
+            }
+            for m in recalled
+        ]
 
-        for d in decisions:
-            content_lower = d.content.lower()
-            summary_lower = d.summary.lower()
-
-            if query_lower in content_lower or query_lower in summary_lower:
-                matches.append({
-                    "id": d.id,
-                    "summary": d.summary,
-                    "content": d.content,
-                    "date": d.created_at.split("T")[0] if d.created_at else ""
-                })
-
-        return {
+        out = {
             "query": query,
             "found": len(matches) > 0,
             "count": len(matches),
-            "matches": matches[:5]  # Top 5 matches
+            "matches": matches,  # recall() already caps at limit=5
         }
+        if invalid:
+            out["invalid_kinds"] = invalid
+        return out
 
 
 # =============================================================================

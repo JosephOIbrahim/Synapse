@@ -1,0 +1,55 @@
+{
+  "leg": "W3-KIND",
+  "status": "green_with_findings",
+  "summary": "Typed schema per kind + recall/search route on kind via the store's by_type index, not a free-text scan. Additive; does NOT touch moneta_store.py (W3-STORE owns it, open claim). Proven on the default jsonl backend + SynapseMemory + MCP handlers. Adversarial verify (6 lenses) found + fixed one regression; 5/6 CONFIRMED_SOLID.",
+  "acceptance": [
+    {
+      "predicate": "a kind-filtered query returns ONLY that kind, across all five kinds",
+      "verdict": "pass",
+      "evidence": "tests/test_w3_kind_routing.py parametrized over kind_schema.SPEC_KINDS at three levels: store.get_by_type, SynapseMemory.search(memory_types=)/recall(kinds=), and tracker handle_memory_search (test_store_get_by_type_returns_only_that_kind, test_synapse_search_kind_filter_returns_only_that_kind, test_synapse_recall_kind_filter_returns_only_that_kind, test_handler_search_kind_filter_returns_only_that_kind, test_kind_filter_excludes_other_kinds_even_when_text_matches). Adversarial lens p1-leak CONFIRMED_SOLID: 9 same-content kinds, empty query, consolidated members, multi-kind, .value strings -- no leak."
+    },
+    {
+      "predicate": "the filtered query path is structurally shown (or measured) to touch only matching typed prims, not the whole store",
+      "verdict": "pass",
+      "evidence": "tests/test_w3_kind_routing.py CountingDict proxy over MemoryStore._memories: test_get_by_type_touches_only_matching_prims_not_whole_store + test_search_kind_filter_touches_only_matching_prims assert getitem==count(kind), values==0, iter==0 (index route store.py:606-610,708-713); test_control_unfiltered_search_DOES_scan_the_whole_store proves the counter trips on a genuine scan (not vacuous). Adversarial lens p2-scan CONFIRMED_SOLID (measured, non-vacuity mutation test). SCOPE: proven on the DEFAULT jsonl backend; the Moneta backend's get_by_type still full-scans (moneta_store.py:519-520) and is deferred to W3-STORE's typed cortex -- see for_ruling."
+    },
+    {
+      "predicate": "per-kind fields match the spec table: decision has reasoning+alternatives, task has status",
+      "verdict": "pass",
+      "evidence": "python/synapse/memory/kind_schema.py KIND_FIELDS: DECISION==('reasoning','alternatives'), TASK==('status',), REFERENCE==('ref_uri',), note/context base-only; registry total over all 9 MemoryType. tests/test_w3_kind_schema.py (14 tests) pin the table + real round-tripping typed fields on Memory + additivity (old payloads load, no base field dropped, id unchanged). Adversarial lens p3-additive CONFIRMED_SOLID (set-diff on to_dict keys = exactly the 4 added; both backends round-trip losslessly)."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "SEAM RESPECTED: W3-KIND does NOT edit moneta_store.py. W3-STORE (my dep) holds an OPEN bus claim on it (building typed cortex write(kind,id)->/MonetaMemory/{kind}/{id} + dual-write add). Posted a block + released moneta_store.py from my claim; routed kind filtering through the backend-agnostic store.get_by_type / MemoryQuery.memory_types API instead.",
+      "anchor": "python/synapse/memory/store.py:708 (get_by_type index route consumed)"
+    },
+    {
+      "claim": "Adversarial verification (6-lens workflow) found ONE real regression and it was fixed in-scope: enriching the recall payload with type+fields tripped the pre-existing W1 SEAM-C tripwire test_recall_returns_prose_not_a_network (pins recall match == exactly {id,summary,content,date}). Reverted recall to prose-only (kind-filter ROUTING unaffected); the structured typed-field view lives on synapse_search's 'fields' key instead. Tripwire green, W1 test untouched.",
+      "anchor": "python/synapse/session/tracker.py handle_memory_recall (prose-only matches) + tests/test_prst_network_persistence.py:534"
+    },
+    {
+      "claim": "Negative control (crucible criterion 3) implemented and proven: kind_schema.resolve_kinds splits requested kinds into valid/invalid; an all-invalid filter returns empty + error + invalid_kinds and is structurally proven never to scan (CountingDict getitem==0, values==0). A partial-invalid filter keeps the valid kinds and reports the rest. Direct store/SynapseMemory API on a bad kind fails LOUD (ValueError/AttributeError), never a silent scan.",
+      "anchor": "python/synapse/session/tracker.py handle_memory_search/recall + python/synapse/memory/kind_schema.py:93"
+    }
+  ],
+  "for_ruling": [
+    "MONETA-BACKEND NON-SCAN DEFERRED TO W3-STORE: MonetaBackedStore.get_by_type / non-text search full-scan via _iter_memories (moneta_store.py:519-520,594). W3-KIND could not close this without editing moneta_store.py, which W3-STORE holds under an open claim (typed kind-partitioned cortex in flight). Predicate 2 is proven on the DEFAULT (jsonl) backend. Once W3-STORE's cortex lands, its get_by_type should route on the /MonetaMemory/{kind} prims (kind-partitioned), and W3-KIND's routing consumes it unchanged via the same store.get_by_type API. Recommend W3-STORE add the moneta by_type non-scan as part of its cortex leg.",
+    "SCOPE NOTE: python/synapse/session/tracker.py is edited beyond the declared touches (memory/ + tests/). Justified as the consuming edge of target 2 -- synapse_recall/synapse_search are the named deliverables, and handle_memory_search already parsed 'types' into a DEAD type_enums list awaiting wiring. Edits are a minimal pass-through of the kind filter + the negative control; no session logic changed."
+  ],
+  "spawn": [
+    {
+      "id": "W3-KIND-PROBE-MONETA-CORTEX-ROUTE",
+      "name": "probe: moneta-backend kind query routes on cortex prims, not a full ECS scan",
+      "band": "BUILD",
+      "readonly": true,
+      "spawn_class": "probe",
+      "targets": [
+        "after W3-STORE's typed cortex merges, measure that MonetaBackedStore.get_by_type(kind) resolves only the kind-partitioned /MonetaMemory/{kind} prims and does not iterate the whole ECS (_iter_memories)",
+        "extend the CountingDict-style structural proof to the Moneta backend so predicate 2 holds on both backends"
+      ],
+      "deps": ["W3-STORE", "W3-KIND"],
+      "note": "Closes the one gap W3-KIND deferred: predicate 2 is proven on jsonl; this proves it on moneta once the cortex substrate exists."
+    }
+  ]
+}

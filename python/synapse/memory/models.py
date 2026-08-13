@@ -125,6 +125,18 @@ class Memory:
     is_consolidated: bool = False               # Has this been summarized into another?
     consolidated_into: Optional[str] = None     # ID of summary memory
 
+    # Typed per-kind fields (W3-KIND, Blueprint P3). All optional/defaulted so
+    # they are ADDITIVE: a memory that never sets them round-trips unchanged and
+    # no base field is renamed or dropped. Which kind carries which field is
+    # declared in kind_schema.KIND_FIELDS (decision -> reasoning+alternatives;
+    # task -> status; reference -> ref_uri). The id hash is unchanged
+    # (_generate_id hashes content+created_at+type only), so adding these churns
+    # no ids and breaks no existing payload.
+    reasoning: str = ""                                    # decision: why chosen
+    alternatives: List[str] = field(default_factory=list)  # decision: options considered
+    status: str = ""                                       # task: started|completed|blocked
+    ref_uri: str = ""                                      # reference: file / URL / asset
+
     def __post_init__(self):
         # created_at MUST be defaulted before _generate_id(): the id hashes
         # content+created_at+type, so generating the id first (when created_at
@@ -196,7 +208,12 @@ class Memory:
             "confidence": self.confidence,
             "embedding": self.embedding,
             "is_consolidated": self.is_consolidated,
-            "consolidated_into": self.consolidated_into
+            "consolidated_into": self.consolidated_into,
+            # Typed per-kind fields (W3-KIND) -- additive keys.
+            "reasoning": self.reasoning,
+            "alternatives": self.alternatives,
+            "status": self.status,
+            "ref_uri": self.ref_uri,
         }
 
     def to_json(self) -> str:
@@ -230,7 +247,13 @@ class Memory:
             confidence=data.get("confidence", 1.0),
             embedding=data.get("embedding"),
             is_consolidated=data.get("is_consolidated", False),
-            consolidated_into=data.get("consolidated_into")
+            consolidated_into=data.get("consolidated_into"),
+            # Typed per-kind fields (W3-KIND). .get(default) keeps OLD payloads
+            # (written before these fields existed) loading cleanly.
+            reasoning=data.get("reasoning", ""),
+            alternatives=data.get("alternatives", []),
+            status=data.get("status", ""),
+            ref_uri=data.get("ref_uri", ""),
         )
 
     @classmethod
