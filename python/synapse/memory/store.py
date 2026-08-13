@@ -831,6 +831,32 @@ def _announce_unsaved_relocation(temp_root: Any) -> None:
     )
 
 
+def _read_on_main(fn, label="synapse_store_resolve"):
+    """Run *fn* -- which reads ``hou.*`` -- on Houdini's main thread when the
+    caller is OFF it.
+
+    ``hou.*`` is not thread-safe: a bare call from a worker thread (e.g. a cold
+    store construct reached by an off-main ``run_doctor`` dispatch on the
+    hwebserver transport) can fault the process natively -- a crash no
+    ``try/except`` can catch (W1-MTFIX finding F1). This marshals the read
+    through ``server.main_thread.run_on_main``, which is a DIRECT passthrough
+    when the caller is ALREADY on the main thread (the headless/hython and
+    GUI-main cases), so store SEMANTICS are unchanged on every path that reaches
+    ``hou`` today -- only the thread the read runs on changes, and only when off
+    main.
+
+    If the marshal primitive cannot be imported, ``fn()`` runs directly: the
+    historical behaviour, correct on the main thread and the only reachable path
+    outside Houdini. (Lazy import, and never a module-level dependency on
+    ``server`` -- memory must import cleanly with no server package present.)
+    """
+    try:
+        from ..server.main_thread import run_on_main
+    except Exception:  # noqa: BLE001 -- marshal unavailable => historical direct call
+        return fn()
+    return run_on_main(fn, label=label)
+
+
 # =============================================================================
 # STORE-PATH SAFETY (W1): never join an UNEXPANDED env token as a path segment
 # =============================================================================
@@ -1063,8 +1089,19 @@ class SynapseMemory:
             return _safe_unsaved_base()
 
         if HOU_AVAILABLE:
-            hip_path = hou.hipFile.path()
-            if not hip_is_unsaved(hip_path, hou):
+            # W2-S1: marshal the hou reads to Houdini's main thread. On the
+            # off-main run_doctor dispatch (hwebserver worker) a cold construct
+            # reaches here with hou present, and a bare hou.* call off main is a
+            # native crash try/except cannot catch (W1-MTFIX F1). Reading the hip
+            # path AND its unsaved verdict (hip_is_unsaved -> hou.hipFile.isNewFile,
+            # store.py:807) in ONE hop keeps both hou reads on main; on-main
+            # callers pass straight through (run_on_main fast path). Semantics
+            # are byte-identical to the direct reads below. See _read_on_main.
+            def _read_hip():
+                hp = hou.hipFile.path()
+                return hp, hip_is_unsaved(hp, hou)
+            hip_path, _unsaved = _read_on_main(_read_hip)
+            if not _unsaved:
                 return Path(hip_path)
             # Unsaved scene -> the canonical unsaved base. Until 2026-08-01 the
             # guard compared the FULL path against the bare string
@@ -1076,7 +1113,13 @@ class SynapseMemory:
             # store landed at <cwd>/$HOUDINI_TEMP_DIR/untitled/.synapse (the
             # literal-env directory this W1 recovery cleaned up). _safe_unsaved_base
             # expands the token AND refuses to join it unexpanded.
-            temp_root = _safe_unsaved_base()
+            # MERGE COMPOSITION (W1 x W2-S1): _safe_unsaved_base reads hou
+            # internally, so the CALL is marshalled via _read_on_main -- W1's
+            # path semantics on S1's thread discipline; direct passthrough on
+            # main keeps headless/hython behaviour byte-identical.
+            temp_root = _read_on_main(
+                _safe_unsaved_base, label="synapse_store_resolve_unsaved"
+            )
             _announce_unsaved_relocation(temp_root)
             return temp_root
 
