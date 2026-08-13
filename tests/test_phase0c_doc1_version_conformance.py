@@ -54,10 +54,10 @@ def test_version_single_sourced_and_docs_conform():
     # line so a historical mention elsewhere in README cannot satisfy it.
     readme = _read("README.md")
     assert re.search(
-        rf"^> v{re.escape(canonical)} \u00b7 Houdini", readme, re.M
+        rf"<sub>v{re.escape(canonical)} \u00b7 Houdini", readme, re.M
     ), (
         f"README.md banner does not state v{canonical} "
-        "(the '> vX.Y.Z \u00b7 Houdini ...' line is a live surface, not a "
+        "(the '<sub>vX.Y.Z \u00b7 Houdini ...' banner is a live surface, not a "
         "historical receipt; scripts/sync_version.py --write sets it)."
     )
 
