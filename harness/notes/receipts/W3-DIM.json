@@ -1,0 +1,103 @@
+{
+  "leg": "W3-DIM",
+  "name": "embedding dim contract: index reads the provider, loud on mismatch",
+  "status": "green_with_findings",
+  "branch": "wave3/dim",
+  "files_changed": [
+    "python/synapse/memory/moneta_store.py",
+    "tests/test_w3_dim_contract.py"
+  ],
+  "targets_met": {
+    "1_one_dim_authority": "from_storage_dir resolves dim ONCE from the active embedder via _resolve_embedding_dim(embedder) (moneta_store.py:266); both construction paths (:275 primary, :305 no-USD retry) feed embedding_dim=dim. The prior :289 cfg.embedding_dim indirection is gone. cfg.embedding_dim is thus always == embedder.dim by construction.",
+    "2_stale_snapshot_rebuild": "_reconcile_snapshot_dim re-embeds each snapshot row's source payload at the live dim and rewrites snapshot.json atomically BEFORE Moneta hydrates, so a provider change rebuilds the derived vectors instead of aborting into fallback. No memory dropped (payload is the source of truth; only the derived vector is recomputed).",
+    "3_fallback_honesty": "unchanged store.py machinery (_record_backend_fallback/backend_fallback) now fires only when the dim contract genuinely cannot be established; a recoverable mismatch serves moneta, not jsonl. Verified: forced-failure still records requested=moneta/served=jsonl and the doctor reports fail (never in_use moneta).",
+    "4_no_papering": "the reconcile logs a WARNING and re-raises RuntimeError on a genuinely unrewritable snapshot (honest jsonl fallback via _make_store); it never catch-and-continues the ValueError class. Probes confirm no 'embedding dim mismatch' on the fixed reopen path."
+  },
+  "acceptance": [
+    {
+      "predicate": "synapse_doctor on hython shows moneta_substrate ok AND write_plane ok; no 'embedding dim mismatch' anywhere in the init log",
+      "verdict": "UNKNOWN",
+      "evidence": "SPLIT, house-rule honest. PASS conjuncts (probe, hython Python 3.13.10 + isolated worktree-fix process): (a) 'no embedding dim mismatch in init log' on the fixed reopen path -> init_log_has_embedding_dim_mismatch=false, init_log_has_reconcile=true; (b) 'write_plane ok' -> with the fix running from startup via the REAL _make_store over a 256-snapshot/384-live seat, write_plane_status flips from the live seat's 'degraded' to 'ok', backend_fallback_is_none=true, make_store_served=moneta, count preserved, snapshot rebuilt to [384]. UNOBTAINABLE conjunct: 'moneta_substrate ok' -> after the fix it is no longer failing for a DIM reason (the dim-mismatch fallback is removed and moneta serves), but the check still returns fail because MonetaMemory is not registered with the USD runtime (PXR_PLUGINPATH_NAME unset) AND observing the live doctor flip requires restarting the running server with this fix deployed. USD schema registration is fix/moneta-schema-registration's lane, not this leg. Per the house rule, moneta_substrate:ok is recorded UNKNOWN, never a fabricated ok. The whole conjunction is therefore UNKNOWN; the leg-owned portion PASSES.",
+      "probe_artifacts": [
+        "scratchpad/w3dim_hython_probe.json (live hython 3.13.10)",
+        "scratchpad/w3dim_makestore_probe.py output (isolated _make_store recovery: write_plane ok)"
+      ]
+    },
+    {
+      "predicate": "constructing the store with a 256-dim embedder over a persisted 384-dim index snapshot rebuilds the index and init succeeds (and the mirror case 384-over-256)",
+      "verdict": "pass",
+      "evidence": "test: tests/test_w3_dim_contract.py::test_stale_snapshot_dim_is_rebuilt_at_init[384-256] AND [256-384] both PASS (reopen is MonetaBackedStore, count preserved, snapshot dims uniformly at live dim, recall works, no 'embedding dim mismatch' in log, reconcile fired). Corroborated live on hython (384->256) and isolated (256->384 mirroring the production seat)."
+    },
+    {
+      "predicate": "negative control: a forced init failure reports served:jsonl requested:moneta in backend_fallback and doctor never shows in_use moneta",
+      "verdict": "pass",
+      "evidence": "test: test_forced_init_failure_serves_jsonl_and_records_fallback (isinstance MemoryStore; backend_fallback requested=moneta/served=jsonl/reason non-empty) AND test_doctor_never_shows_in_use_moneta_after_fallback (_check_moneta_substrate status=fail, 'fell back to jsonl' in detail, result.schema_in_use is not True). Re-attacked adversarially per crucible criterion."
+    },
+    {
+      "predicate": "dim is resolved in exactly one place; grep shows no remaining hardcoded 384/256 pin governing index construction",
+      "verdict": "pass",
+      "evidence": "check: grep 'embedding_dim=' moneta_store.py -> only :275 and :305, both '=dim'; dim resolved once at :266 via _resolve_embedding_dim (the :491 call is the reconcile reading the SAME active-embedder authority, not a competing pin). No numeric literal or embedding_dim=<int> governs index construction in python/synapse/memory/. The 256/384 in embedding.py are the embedders' OWN vector-space identity (HashEmbedder hashing dim; SemanticEmbedder MiniLM dim) which the authority READS -- not index-construction pins."
+    }
+  ],
+  "seam_guard": {
+    "branch": "fix/memory-store-recovery",
+    "rebase_compatible": true,
+    "statement": "fix/memory-store-recovery is an ANCESTOR of wave3/dim HEAD (git merge-base --is-ancestor = true); the committed base of moneta_store.py is IDENTICAL on both (commit 3ab85e68). This leg's changes are strictly ADDITIVE: two new private methods (_resolve_embedding_dim, _reconcile_snapshot_dim) plus a 3-line insertion + two 1-token edits inside from_storage_dir. No store semantics changed beyond the anchored dim contract; all 112 existing moneta/memory tests pass unchanged (125 total with the 13 new). Rebasing wave3/dim onto any future tip of fix/memory-store-recovery touches only the from_storage_dir hunk and the appended methods."
+  },
+  "findings": [
+    {
+      "claim": "LIVE PRODUCTION SEAT IS CURRENTLY DEGRADED BY THIS BUG. The running Houdini seat's doctor reports moneta_substrate=fail / write_plane=degraded because backend moneta FELL BACK to jsonl with reason 'ValueError: embedding dim mismatch: expected 384, got 256' at houdini_temp/untitled/.synapse. This bug is not hypothetical; it is active now. Merging this fix + restarting the server recovers the moneta backend on that seat.",
+      "anchor": "probe: houdini_execute_python doctor._check_moneta_substrate (live seat)"
+    },
+    {
+      "claim": "VENDOR (Moneta) root cause, boundary respected (NO in-place edit). Moneta.__init__ rebuilds its shadow vector index from hydrated ECS semantic_vectors without validating against config.embedding_dim (api.py:229-236), so a provider change trips the vendor upsert dim-guard (vector_index.py:112) and Moneta(cfg) raises a bare ValueError inside its constructor. The persisted vectors are DERIVED data. See held moneta-side spawn.",
+      "anchor": "C:/Users/User/Moneta/src/moneta/api.py:229"
+    },
+    {
+      "claim": "PROCESS HYGIENE (dual-launch near-miss, recovered). My edits initially landed on the MAIN worktree (C:/Users/User/SYNAPSE, branch master) instead of the wave3/dim worktree, and a CONCURRENT agent was active there (untracked .filemap.json, docs/_filemap_dump.json, docs/_probe_tmp.md). Recovered cleanly: extracted the diff, applied it to the correct worktree, git-restored moneta_store.py + removed only my own test on the main tree, leaving the other agent's files untouched. Main tree verified clean of my changes afterward.",
+      "anchor": "harness/notes/receipts/W3-DIM.json"
+    },
+    {
+      "claim": "BENIGN (not a dim issue). The isolated same-process probe logged one 'use_real_usd=True failed (SdfLayer already exists ...cortex_root.usda); retrying without USD sublayers' -- a pxr layer-identity reuse within one process when a seed store and a reopen share a usd dir. The pre-existing no-USD retry path handled it; moneta still served and count was preserved. Does not occur across real process boundaries and is orthogonal to the dim contract.",
+      "anchor": "python/synapse/memory/moneta_store.py:280"
+    }
+  ],
+  "for_ruling": [
+    "BASE RULING (from mission note): 'master + seam guard vs base fix/memory-store-recovery' -- structurally moot for this leg: fix/memory-store-recovery is already an ancestor of wave3/dim HEAD and shares an identical moneta_store.py base, so the seam guard holds under either base choice. Surfaced for Joe's confirmation.",
+    "DEPLOY: the live seat recovers the moneta backend only after this fix is merged AND the running SYNAPSE server is restarted (backend_fallback is process-local, set at _make_store time). No action this leg -- merge + restart are human gates."
+  ],
+  "spawn": [
+    {
+      "class": "moneta-side",
+      "id": "MONETA-DIM-HYDRATE",
+      "name": "Moneta hydrate: treat dim-mismatched persisted vectors as rebuildable, not fatal",
+      "band": "BUILD",
+      "source": {
+        "repo": "C:/Users/User/Moneta",
+        "anchor": "api.py:229-236 rebuild loop upserts ECS semantic_vector against a config-set index dim; vector_index.py:112 raises a bare ValueError on mismatch"
+      },
+      "targets": [
+        "Moneta.__init__ hydrate loop detects a persisted vector whose len != config.embedding_dim and EITHER skips it (leaving the ECS row, so the owner can re-embed) OR raises a typed EmbeddingDimMismatchError (not a bare ValueError) so callers can distinguish a recoverable dim drift from a real defect",
+        "add a vector_index option to drop/rebuild rather than raise on a restore/upsert dim change"
+      ],
+      "note": "SYNAPSE pre-empts this today via _reconcile_snapshot_dim, but the vendor abort is the true root cause and every non-SYNAPSE Moneta consumer inherits it. Moneta is a separate repo with no harness -> HELD for Joe.",
+      "readonly": false,
+      "touches": ["C:/Users/User/Moneta/src/moneta/api.py", "C:/Users/User/Moneta/src/moneta/vector_index.py"]
+    },
+    {
+      "class": "probe",
+      "id": "W3-DIM-POSTDEPLOY-DOCTOR",
+      "name": "Post-deploy live doctor re-probe: confirm moneta_substrate no longer dim-fails",
+      "band": "BUILD",
+      "source": {
+        "anchor": "after this fix merges + the SYNAPSE server restarts, re-run doctor._check_moneta_substrate + write_plane_state on the live seat"
+      },
+      "targets": [
+        "confirm the live seat no longer records a dim-mismatch backend_fallback (write_plane -> ok, moneta serves)",
+        "confirm the only remaining moneta_substrate failure is USD schema registration (PXR_PLUGINPATH_NAME) -> hands off to fix/moneta-schema-registration"
+      ],
+      "readonly": true,
+      "touches": []
+    }
+  ]
+}
