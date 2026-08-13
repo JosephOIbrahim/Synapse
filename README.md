@@ -8,7 +8,7 @@
 
 <p align="center">SYNAPSE lives in Houdini's own Python interpreter and calls <code>hou.*</code> directly.<br>No external bridge, no RPC hop, no second copy of the scene.</p>
 
-<p align="center"><sub>v5.45.1 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6</sub></p>
+<p align="center"><sub>v5.47.0 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6</sub></p>
 
 ---
 

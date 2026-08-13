@@ -48,7 +48,7 @@ SURFACES = {
                     'python/synapse/__init__.py'),
     'claude_md':   (re.compile(r'SYNAPSE v([0-9]+\.[0-9]+\.[0-9]+)'),
                     'CLAUDE.md'),
-    'readme':      (re.compile(r'^> v([0-9]+\.[0-9]+\.[0-9]+) \u00b7 Houdini', re.M),
+    'readme':      (re.compile(r'<sub>v([0-9]+\.[0-9]+\.[0-9]+) \u00b7 Houdini', re.M),
                     'README.md'),
 }
 
