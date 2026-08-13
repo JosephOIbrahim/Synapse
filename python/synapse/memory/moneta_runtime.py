@@ -80,10 +80,13 @@ deliberately does not register the plugin), so that is the default posture.
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 import sys
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 _MONETA_AVAILABLE = False
 _MONETA_IMPORT_ERROR: Optional[str] = None
@@ -699,3 +702,238 @@ def make_ephemeral(embedding_dim: Optional[int] = None, **overrides: Any):
     if embedding_dim is not None:
         cfg_kwargs["embedding_dim"] = embedding_dim
     return Moneta(MonetaConfig.ephemeral(**cfg_kwargs))
+
+
+# ---------------------------------------------------------------------------
+# SYNAPSE-authored cortex_root.usda  (W3-STORE) -- the WRITE side of the substrate
+# ---------------------------------------------------------------------------
+#
+# Everything ABOVE READS the cortex (``schema_in_use`` opens a stage and looks
+# for a ``MonetaMemory`` prim). :class:`UsdCortexStore` WRITES it: it
+# materializes a real ``cortex_root.usda`` at the resolved usd_root with a typed
+# ``MonetaMemory`` root prim carrying a ``version`` attribute, and lands every
+# memory as a typed prim keyed by ``(kind, id)``. This is what flips
+# ``schema_in_use`` from UNKNOWN ("no stage on disk", condition 4) to True on the
+# seat -- ``server/doctor.py::_check_moneta_substrate`` inspects EXACTLY this
+# file (it hints ``<store_dir>/.moneta`` and ``_resolve_usd_root`` appends
+# ``cortex_root.usda``).
+#
+# SCOPE, stated honestly (R75, and the module docstring): Sdf/Usd authoring is
+# schema-BLIND -- a prim's ``typeName`` is written to disk with or without
+# ``PXR_PLUGINPATH_NAME`` registration. So this makes condition 4
+# (``schema_in_use``) a real True; it does NOT by itself make condition 3
+# (``schema_registered``) True -- that is the separate packages/synapse.json
+# ``PXR_PLUGINPATH_NAME`` wiring (see ``fix/moneta-schema-registration``). Until
+# both hold, the doctor's *overall* moneta_substrate status stays a loud
+# "DEAD BYTES" fail; ``in_use`` alone is the claim this leg makes true.
+
+#: Version stamped on the MonetaMemory root prim's ``version`` attribute.
+CORTEX_STORE_VERSION = "1.0.0"
+
+#: The single typed root prim path. Its typeName is ``MonetaMemory`` so a bare
+#: (memory-free) store already reports ``schema_in_use=True``.
+CORTEX_ROOT_PATH = "/MonetaMemory"
+
+#: Attribute names on each memory prim. ``id`` / ``kind`` hold the RAW key so a
+#: round-trip is exact even after ``Tf.MakeValidIdentifier`` mangles the path
+#: segment; ``payload`` holds ``Memory.to_json()`` verbatim.
+_CORTEX_ATTR_KIND = "kind"
+_CORTEX_ATTR_ID = "id"
+_CORTEX_ATTR_PAYLOAD = "payload"
+
+def _load_usd_author():
+    """Lazily import pxr for AUTHORING. Returns ``(Usd, Sdf, Tf)`` or
+    ``(None, None, None)``.
+
+    Function-scoped exactly like the read-side probes (``_schema_*_detail``):
+    importing ``moneta_runtime`` must stay pxr-free so the ephemeral engine path
+    CI exercises loads no OpenUSD (harness AP9, pinned by
+    ``test_ephemeral_path_is_pxr_free``). pxr loads only when a
+    :class:`UsdCortexStore` is actually constructed.
+    """
+    try:
+        from pxr import Usd, Sdf, Tf
+        return Usd, Sdf, Tf
+    except Exception:  # noqa: BLE001 -- pxr absent is a valid standalone/CI outcome
+        return None, None, None
+
+
+def usd_author_available() -> bool:
+    """True if pxr is importable for AUTHORING the cortex stage.
+
+    Distinct from :func:`moneta_available` (the engine) and from the read-side
+    pxr probes: this gates the WRITE path. When False, :class:`UsdCortexStore`
+    degrades to a no-op (``available=False``) and never raises -- the JSONL
+    dual-write safety net still carries the memory (W3-STORE non-negotiable).
+    Imports pxr on call (lazy); does not load it at module import.
+    """
+    return _load_usd_author()[0] is not None
+
+
+class UsdCortexStore:
+    """SYNAPSE-authored ``cortex_root.usda`` -- typed ``MonetaMemory`` prims.
+
+    Materializes a real USD stage at *usd_root* (a ``cortex_root.usda`` file, or
+    a directory in which case ``cortex_root.usda`` is appended). On construction
+    it authors the typed root prim (:data:`CORTEX_ROOT_PATH`, typeName
+    ``MonetaMemory``) carrying a ``version`` attribute, so an empty store already
+    satisfies the doctor's ``schema_in_use`` condition. :meth:`write` lands a
+    memory as a typed prim keyed by ``(kind, id)``; :meth:`query` walks the typed
+    prims back.
+
+    Pure OpenUSD -- makes ZERO ``hou.*`` calls (mirrors ``agent_state.py``), so
+    it is safe off the Houdini main thread and preserves the store adapter's
+    no-hou invariant. Never raises on an authoring failure: it logs and degrades
+    to ``available=False`` so a broken stage can never break memory writes.
+    """
+
+    ROOT_TYPE_NAME = SCHEMA_TYPE_NAME  # "MonetaMemory"
+
+    def __init__(self, usd_root: Any, *, version: str = CORTEX_STORE_VERSION) -> None:
+        # Resolve to a concrete ``cortex_root.usda`` file. A path already ending
+        # in ``.usda``/``.usd`` is the layer itself; anything else is the
+        # directory that CONTAINS it (append ``cortex_root.usda``). Extension,
+        # not os.path.isdir, so a not-yet-created ``.moneta`` dir still resolves
+        # to the same file the doctor's _resolve_usd_root(dir) reports.
+        p = str(usd_root)
+        if not p.lower().endswith((".usda", ".usd")):
+            p = os.path.join(p, USD_ROOT_FILENAME)
+        self.path = p
+        self.version = version
+        self._stage = None
+        # Lazy pxr resolution -- importing moneta_runtime stays pxr-free.
+        self._Usd, self._Sdf, self._Tf = _load_usd_author()
+        self.available = self._Usd is not None
+        if self.available:
+            try:
+                self._open_or_create()
+            except Exception as exc:  # noqa: BLE001 -- authoring must never break the store
+                logger.warning(
+                    "UsdCortexStore could not open/create %s (%s: %s); "
+                    "cortex authoring disabled, JSONL dual-write still carries memory",
+                    self.path, type(exc).__name__, exc,
+                )
+                self._stage = None
+                self.available = False
+
+    # -- lifecycle ----------------------------------------------------------
+
+    @property
+    def stage(self):
+        return self._stage
+
+    def _open_or_create(self) -> None:
+        parent = os.path.dirname(self.path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        if os.path.exists(self.path):
+            self._stage = self._Usd.Stage.Open(self.path)
+            if self._stage is None:
+                # Corrupt/unreadable stage: do NOT delete the operator's file
+                # (it may be recoverable). Disable authoring loudly instead.
+                logger.warning(
+                    "cortex_root.usda at %s did not open; cortex authoring "
+                    "disabled (file left untouched)", self.path,
+                )
+                self.available = False
+                return
+        else:
+            self._stage = self._Usd.Stage.CreateNew(self.path)
+        self._ensure_root()
+
+    def _ensure_root(self) -> None:
+        stage = self._stage
+        root = stage.GetPrimAtPath(CORTEX_ROOT_PATH)
+        if not root or not root.IsValid():
+            root = stage.DefinePrim(CORTEX_ROOT_PATH, self.ROOT_TYPE_NAME)
+        elif str(root.GetTypeName()) != self.ROOT_TYPE_NAME:
+            root.SetTypeName(self.ROOT_TYPE_NAME)
+        attr = root.GetAttribute("version")
+        if not attr or not attr.IsValid():
+            attr = root.CreateAttribute("version", self._Sdf.ValueTypeNames.String)
+        attr.Set(self.version)
+        try:
+            stage.SetDefaultPrim(root)
+        except Exception:  # noqa: BLE001 -- cosmetic; never fatal
+            pass
+        self._save()
+
+    # -- write --------------------------------------------------------------
+
+    def _child_path(self, kind: str, mem_id: str) -> str:
+        safe_kind = self._Tf.MakeValidIdentifier(str(kind) or "unknown")
+        safe_id = self._Tf.MakeValidIdentifier(str(mem_id) or "unknown")
+        return f"{CORTEX_ROOT_PATH}/{safe_kind}/{safe_id}"
+
+    def write(self, kind: str, mem_id: str, payload: str) -> Optional[str]:
+        """Author (or overwrite) a typed ``MonetaMemory`` prim keyed by ``(kind, id)``.
+
+        Idempotent per key -- re-writing the same ``(kind, id)`` overwrites in
+        place. Returns the authored prim path, or ``None`` when authoring is
+        unavailable (pxr absent / disabled). The intermediate ``{kind}`` prim is
+        left untyped (a plain grouping ``def``), so only the root and the leaves
+        carry the ``MonetaMemory`` typeName.
+        """
+        if not self.available or self._stage is None:
+            return None
+        path = self._child_path(kind, mem_id)
+        vt = self._Sdf.ValueTypeNames.String
+        prim = self._stage.DefinePrim(path, self.ROOT_TYPE_NAME)
+        prim.CreateAttribute(_CORTEX_ATTR_KIND, vt).Set(str(kind))
+        prim.CreateAttribute(_CORTEX_ATTR_ID, vt).Set(str(mem_id))
+        prim.CreateAttribute(_CORTEX_ATTR_PAYLOAD, vt).Set(str(payload))
+        self._save()
+        return str(prim.GetPath())
+
+    # -- read ---------------------------------------------------------------
+
+    def query(self, *, kind: Optional[str] = None,
+              mem_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Walk the typed ``MonetaMemory`` memory prims.
+
+        Returns a list of ``{"kind", "id", "payload", "path"}`` dicts (the root
+        prim itself is skipped). Optional exact filters on ``kind`` / ``mem_id``.
+        """
+        if not self.available or self._stage is None:
+            return []
+        out: List[Dict[str, Any]] = []
+        for prim in self._stage.Traverse():
+            if str(prim.GetTypeName()) != self.ROOT_TYPE_NAME:
+                continue
+            if str(prim.GetPath()) == CORTEX_ROOT_PATH:
+                continue  # the typed root prim is not a memory
+            k_attr = prim.GetAttribute(_CORTEX_ATTR_ID)
+            if not k_attr or not k_attr.IsValid():
+                continue  # a MonetaMemory prim with no id is not one of ours
+            k = prim.GetAttribute(_CORTEX_ATTR_KIND).Get()
+            i = prim.GetAttribute(_CORTEX_ATTR_ID).Get()
+            p_attr = prim.GetAttribute(_CORTEX_ATTR_PAYLOAD)
+            pay = p_attr.Get() if (p_attr and p_attr.IsValid()) else None
+            if kind is not None and k != kind:
+                continue
+            if mem_id is not None and i != mem_id:
+                continue
+            out.append({"kind": k, "id": i, "payload": pay, "path": str(prim.GetPath())})
+        return out
+
+    def get(self, kind: str, mem_id: str) -> Optional[Dict[str, Any]]:
+        rows = self.query(kind=kind, mem_id=mem_id)
+        return rows[0] if rows else None
+
+    def count(self) -> int:
+        """Number of typed memory prims (excludes the root prim)."""
+        return len(self.query())
+
+    def _save(self) -> None:
+        if self._stage is None:
+            return
+        try:
+            self._stage.GetRootLayer().Save()
+        except Exception as exc:  # noqa: BLE001 -- a failed save is logged, never raised
+            logger.warning(
+                "cortex_root.usda save failed at %s (%s: %s)",
+                self.path, type(exc).__name__, exc,
+            )
+
+    def close(self) -> None:
+        self._save()

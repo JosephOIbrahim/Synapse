@@ -1,0 +1,76 @@
+{
+  "leg": "W3-STORE",
+  "status": "green_with_findings",
+  "summary": "Materialized a SYNAPSE-authored cortex_root.usda at the resolved usd_root: a typed MonetaMemory root prim + version attr on init, write(kind,id,payload) as typed prims keyed (kind,id), query walking them back. Wired into MonetaBackedStore.add so every deposit ALSO lands in the typed cortex AND a plain JSONL MemoryStore safety net (dual-write, byte-for-byte, gated to backend==moneta so shadow does not double-write). key.fingerprint sidecar written on first use. Doctor probe: moneta_substrate schema_in_use=True, memory_key_fingerprint status=match (no longer no_sidecar).",
+  "base": "5e933c13 (== tip of fix/memory-store-recovery: that seam is ALREADY MERGED into base; wave builds ON it, zero drift)",
+  "touched": [
+    "python/synapse/memory/moneta_runtime.py",
+    "python/synapse/memory/moneta_store.py",
+    "tests/test_w3_store_contract.py"
+  ],
+  "acceptance": [
+    {
+      "predicate": "doctor shows moneta_substrate in_use=True and memory_key_fingerprint no longer reports no_sidecar",
+      "verdict": "pass",
+      "evidence": "probe: doctor._check_moneta_substrate() -> result.schema_in_use=True, usd_root_inspected=...\\.synapse\\.moneta\\cortex_root.usda; doctor.check_memory_key_fingerprint(storage_dir) -> status=match, reason!=no_sidecar. NOTE: moneta_substrate OVERALL status is still 'fail' because schema_registered=False (DEAD BYTES cell): nothing sets PXR_PLUGINPATH_NAME on this seat. The predicate asks for in_use=True, which this leg makes a real True (per the mission note); registration is a separate leg (see for_ruling)."
+    },
+    {
+      "predicate": "write a memory, the .usda exists non-empty, query returns it (round-trip)",
+      "verdict": "pass",
+      "evidence": "test: tests/test_w3_store_contract.py::test_cortex_write_query_roundtrip + ::test_add_mirrors_to_cortex_moneta_and_jsonl (cortex query returns the memory; payload == Memory.to_json() literal). cortex_root.usda size>0 asserted."
+    },
+    {
+      "predicate": "the same memory is present in the JSONL store byte-for-byte (dual-write verified)",
+      "verdict": "pass",
+      "evidence": "test: ::test_add_mirrors_to_cortex_moneta_and_jsonl asserts MemoryStore(storage).get(m.id).to_json() == m.to_json(); ::test_no_memory_lands_only_in_moneta pins all 5 of a batch recoverable from the JSONL safety net. (Byte-for-byte = the memory round-trips to an identical to_json(); memory.jsonl is per-line encrypted at rest when crypto is present, which is the unchanged pre-wave JSONL behaviour.)"
+    },
+    {
+      "predicate": "the JSONL write path is behaviourally unchanged from pre-wave (safety net untouched)",
+      "verdict": "pass",
+      "evidence": "check: store.py is NOT modified (git diff --stat: only moneta_runtime.py + moneta_store.py). The safety net is an unmodified MemoryStore driven through its own public add()->flush() path (::test_dual_write_is_a_plain_memorystore). Regression: 382 passed / 10 skipped across the full memory/store/doctor/shadow suite incl. every test_store_*.py and test_shadow_store.py, zero failures."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "TARGET 5 (P1 durable) -- the resolved usd_root lives under a Houdini Temp dir. Observed live path from the probe: C:\\Users\\User\\AppData\\Local\\Temp\\<tmp>\\.synapse\\.moneta\\cortex_root.usda; on the real seat it is $HOUDINI_TEMP_DIR/untitled/.synapse/.moneta/cortex_root.usda. LIFECYCLE RISK: a Temp cleanup / reboot wipes the cortex, the Moneta snapshot, AND the JSONL safety net together (they share the store dir). This is the same durability gap the Moneta 'Phase 1 Durability' work names. Recorded, not silently accepted (crucible criterion 3).",
+      "anchor": "python/synapse/memory/moneta_store.py:319"
+    },
+    {
+      "claim": "HONEST SCOPE (crucible criterion 4): the round-trip + dual-write are verified at the STORE-ADAPTER level (write->cortex_root.usda->query; add->memory.jsonl). This does NOT claim store-level production health -- reads are still served from moneta, the cortex is a materialized mirror, and the live seat needs a server restart to reconstruct the store (per W3-DIM's live finding).",
+      "anchor": "tests/test_w3_store_contract.py:1"
+    },
+    {
+      "claim": "DEAD BYTES remains: schema_in_use=True but schema_registered=False, so authoring is schema-blind (Sdf writes the typeName token with or without registration, R75). in_use=True is exactly the claim this leg makes; a working TYPED substrate additionally needs PXR_PLUGINPATH_NAME registration, which nothing in packages/synapse.json sets today.",
+      "anchor": "python/synapse/memory/moneta_runtime.py:718"
+    },
+    {
+      "claim": "PROVENANCE: the brief's source.doc docs/SYNAPSE-memory-engineering-spec.md is ABSENT from this worktree (Glob + Read confirm). The brief is self-contained (embeds full targets/acceptance/crucible_criteria and states 'This brief is complete'); executed against the embedded contract. The 'write(kind,id,payload)/query as typed prims keyed (kind,id)' and 'MonetaMemory root prim with version attribute' phrasings are implemented literally.",
+      "anchor": "docs/"
+    },
+    {
+      "claim": "REBASE-COMPATIBILITY with the in-flight store work (crucible SEAM GUARD). fix/memory-store-recovery is ALREADY MERGED into base (HEAD 5e933c13 == its tip) -> this wave builds ON it, no rebase, no drift. wave3/dim (16cf1543, the only unmerged sibling) edits from_storage_dir's MonetaConfig(embedding_dim=dim) and adds _resolve_embedding_dim/_reconcile_snapshot_dim BEFORE `cfg = MonetaConfig(...)`. This leg's cortex+jsonl init is a contiguous block placed AFTER `handle = mr.Moneta(cfg)` (the post-dim-check region -- handle construction is what the dim gate protects), uses only NEW names (UsdCortexStore, _write_cortex, _dual_write_jsonl, _ensure_keyfp_sidecar, dual_write_jsonl kwarg), and never touches the embedding_dim= lines -> no semantic overlap with the dim contract.",
+      "anchor": "python/synapse/memory/moneta_store.py:305"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "Durable store location (P1 durable). Target 5 asks to RECORD the Temp-dir risk, not fix it. Moving the Moneta/cortex/JSONL store off $HOUDINI_TEMP_DIR onto a durable address is a human call (it changes where every seat's memory lives). Recorded here; no code change made.",
+      "owner": "Joe"
+    },
+    {
+      "item": "Schema registration (PXR_PLUGINPATH_NAME) to move moneta_substrate from in_use=True/registered=False (fail, DEAD BYTES) to registered AND in_use (status=ok). Owned by fix/moneta-schema-registration / packages/synapse.json (install-level env), out of this leg's scope.",
+      "owner": "Joe / INTEGRATOR"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W3-STORE-PROBE-LIVE",
+      "class": "probe",
+      "name": "confirm cortex_root.usda materializes + in_use=True on the LIVE Houdini seat after server restart",
+      "band": "PROBE",
+      "readonly": true,
+      "note": "This leg verified headless/standalone. W3-DIM found the live seat degraded (moneta fell back to jsonl) and needing a restart. After W3-DIM + W3-STORE land and the server restarts, probe the running seat: doctor moneta_substrate.schema_in_use==True with usd_root_inspected under $HOUDINI_TEMP_DIR/untitled/.synapse/.moneta/cortex_root.usda, and memory_key_fingerprint status==match. gui_required parts stay UNKNOWN if unmeasurable headless.",
+      "spawn_classes": ["probe"]
+    }
+  ]
+}

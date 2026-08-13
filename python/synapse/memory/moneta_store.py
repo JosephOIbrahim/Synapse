@@ -187,10 +187,20 @@ class MonetaBackedStore:
     single-writer (FC4).
     """
 
-    def __init__(self, handle, embedder, *, protected_floor: float = _DEFAULT_PROTECTED_FLOOR):
+    def __init__(self, handle, embedder, *, protected_floor: float = _DEFAULT_PROTECTED_FLOOR,
+                 cortex=None, jsonl_net=None):
         self._handle = handle
         self._embedder = embedder
         self._protected_floor = protected_floor
+        # W3-STORE secondary sinks (both optional; None preserves the pure
+        # engine-only adapter that tests inject). ``_cortex`` is a
+        # UsdCortexStore that materializes cortex_root.usda so the doctor sees a
+        # typed substrate; ``_jsonl_net`` is a JSONL MemoryStore safety net so a
+        # memory never lands ONLY in moneta (dual-write, the wave non-negotiable).
+        # Neither is authoritative for reads -- moneta stays the substrate.
+        self._cortex = cortex
+        self._jsonl_net = jsonl_net
+        self._sidecar_ensured = False
         # Stamp the embedder id onto the store so a future embedder swap can
         # detect entries that need re-embedding (handoff capsule PARKED note).
         self.embedder_id = getattr(embedder, "id", "unknown")
@@ -220,6 +230,7 @@ class MonetaBackedStore:
         *,
         protected_floor: float = _DEFAULT_PROTECTED_FLOOR,
         protected_quota: int = _PROTECTED_QUOTA,
+        dual_write_jsonl: Optional[bool] = None,
     ) -> "MonetaBackedStore":
         """Build a durable, project-scoped Moneta-backed store.
 
@@ -295,7 +306,48 @@ class MonetaBackedStore:
                 usd_target_path=cfg.usd_target_path,
             )
             handle = mr.Moneta(cfg_no_usd)
-        store = cls(handle, embedder, protected_floor=protected_floor)
+
+        # W3-STORE: the handle is now built -- i.e. the W3-DIM dim check has
+        # passed (handle construction is exactly what the dim gate protects).
+        # Materialize the SYNAPSE-authored cortex at the resolved usd_root:
+        # base/cortex_root.usda, the EXACT file server/doctor.py inspects (it
+        # hints <store_dir>/.moneta and _resolve_usd_root appends
+        # cortex_root.usda). Isolated -- an authoring failure never breaks store
+        # construction; the JSONL safety net still carries every memory.
+        cortex = None
+        try:
+            cortex = mr.UsdCortexStore(base)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "cortex_root.usda materialization failed (%s: %s); continuing "
+                "without a typed USD substrate (JSONL dual-write unaffected)",
+                type(exc).__name__, exc,
+            )
+
+        # W3-STORE dual-write: when THIS store is the PRIMARY moneta backend,
+        # mirror every add to a JSONL MemoryStore so a memory never lands ONLY
+        # in moneta. In shadow mode the ShadowMemoryStore ALREADY wraps a JSONL
+        # primary, so dual-writing here would double-write memory.jsonl -- gate
+        # it on the selected backend, read from the SAME env store.py::
+        # _make_store reads (no store.py edit needed). Callers/tests may force it.
+        if dual_write_jsonl is None:
+            import os
+            dual_write_jsonl = (
+                os.environ.get("SYNAPSE_MEMORY_BACKEND", "").strip().lower() == "moneta"
+            )
+        jsonl_net = None
+        if dual_write_jsonl:
+            try:
+                from .store import MemoryStore
+                jsonl_net = MemoryStore(storage_dir)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "JSONL safety-net init failed (%s: %s); dual-write disabled "
+                    "for this store", type(exc).__name__, exc,
+                )
+
+        store = cls(handle, embedder, protected_floor=protected_floor,
+                    cortex=cortex, jsonl_net=jsonl_net)
         # Durability (Moneta audit, reachable-bug #1): deposit() writes to the
         # in-memory ECS and returns. There is no per-deposit save, the snapshot
         # daemon is deliberately NOT started (it races the single-writer ECS,
@@ -470,7 +522,71 @@ class MonetaBackedStore:
                         "Periodic consolidation failed (%s: %s); continuing",
                         type(exc).__name__, exc,
                     )
+
+            # W3-STORE secondary sinks (still under the lock so the cortex stage
+            # mutation is serialized against reads). The moneta deposit +
+            # snapshot above are the PRIMARY substrate; these MIRROR it. Both are
+            # isolated -- a sink failure is logged and never breaks the caller or
+            # the moneta write. Order: moneta (durable) -> cortex (typed USD) ->
+            # JSONL safety net.
+            self._write_cortex(memory, payload)
+            self._dual_write_jsonl(memory)
         return memory.id
+
+    # -- W3-STORE secondary sinks (isolated; never break the primary write) --
+
+    def _write_cortex(self, memory: Memory, payload: str) -> None:
+        """Mirror the memory into cortex_root.usda as a typed prim keyed by
+        (kind, id). ``kind`` is the memory type value, ``id`` the SYNAPSE id,
+        ``payload`` the same ``Memory.to_json()`` deposited into moneta."""
+        cortex = self._cortex
+        if cortex is None:
+            return
+        try:
+            cortex.write(memory.memory_type.value, memory.id, payload)
+        except Exception as exc:  # noqa: BLE001 -- typed-USD authoring is best-effort
+            logger.warning("cortex write failed (isolated): %s", exc)
+
+    def _dual_write_jsonl(self, memory: Memory) -> None:
+        """Land the memory in the JSONL MemoryStore safety net via its own,
+        unchanged write path (add -> buffered append -> flush). On first use,
+        ensure the key.fingerprint sidecar exists (W3-STORE target 4)."""
+        net = self._jsonl_net
+        if net is None:
+            return
+        try:
+            net.add(memory)
+            net.flush()  # synchronous append; drains the buffer to memory.jsonl
+            if not self._sidecar_ensured:
+                self._ensure_keyfp_sidecar()
+                self._sidecar_ensured = True
+        except Exception as exc:  # noqa: BLE001 -- the safety net must never break the caller
+            logger.warning("JSONL dual-write failed (isolated): %s", exc)
+
+    def _ensure_keyfp_sidecar(self) -> None:
+        """Write ``<storage_dir>/key.fingerprint`` on first use so the doctor's
+        ``memory_key_fingerprint`` check moves ``no_sidecar`` -> ``match``.
+
+        Mirrors ``MemoryStore.save()``'s C3 stamp EXACTLY -- same file, same
+        content (``crypto.fingerprint()``) -- but WITHOUT a full JSONL rewrite,
+        so the safety net's write path is untouched. Uses the SAME cached
+        CryptoEngine the net's ``add()`` used to encrypt its lines, so the
+        fingerprint describes the key that actually wrote memory.jsonl (and the
+        one the doctor resolves from ~/.synapse/encryption.key). No crypto (no
+        ``cryptography`` / no key) -> no meaningful sidecar to write."""
+        net = self._jsonl_net
+        if net is None:
+            return
+        try:
+            from . import store as _store_mod
+            crypto = _store_mod._get_crypto()
+            if crypto is None:
+                return
+            sidecar = net.storage_dir / "key.fingerprint"
+            if not sidecar.exists():
+                sidecar.write_text(crypto.fingerprint(), encoding="utf-8")
+        except Exception as exc:  # noqa: BLE001 -- non-critical
+            logger.debug("key.fingerprint sidecar ensure failed (non-critical): %s", exc)
 
     # -- enumerate (the one coupling to Moneta internals, centralized) ------
 
@@ -673,6 +789,19 @@ class MonetaBackedStore:
                 return
             self._closed = True
             self.save()
+            # W3-STORE: drain the JSONL safety net and persist the cortex before
+            # releasing the handle. Both isolated -- a sink close must not stop
+            # the handle's URI-lock release.
+            if self._jsonl_net is not None:
+                try:
+                    self._jsonl_net.flush()
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("JSONL safety-net flush on close failed: %s", exc)
+            if self._cortex is not None:
+                try:
+                    self._cortex.close()
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("cortex close failed: %s", exc)
             close = getattr(self._handle, "close", None)
             if callable(close):
                 close()
