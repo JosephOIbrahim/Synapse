@@ -813,6 +813,122 @@
         "tests/"
       ],
       "note": "AUTOREVISE docs/SYNAPSE_latency_and_karma_rendersettings_2026.md :: Part 1 - 648ms main_thread_hold (synapse_doctor), 780ms panel finalize, 648ms append, 306ms dispatch tail. P1 latency core. FRZ (ready, on the board) attributes; this leg fixes what FRZ pinned to SYNAPSE-side holds. Dispatch wait (306ms tail) is queue physics - document, don't chase, unless FRZ says otherwise."
+    },
+    {
+      "id": "W2-CRUX",
+      "name": "wave-2 crucible",
+      "state": "ready",
+      "receipt": "W2-CRUX.json",
+      "branch": "wave2/crux",
+      "base": "master",
+      "worktree": ".claude/worktrees/w2-crux",
+      "prompt": "harness/autorevise/prompts/W2-CRUX.md",
+      "deps": [
+        "W2-S1",
+        "W2-S2",
+        "W2-S3",
+        "W2-S4",
+        "W2-S5"
+      ],
+      "readonly": true,
+      "touches": [],
+      "note": "AUTOREVISE docs/reviews/latency_authority_2026-08-13.md :: whole-wave adversarial review before any merge word; carries the wave-1 B1/B2 lessons as standing checks. F1-shaped gate on the whole wave. Merge stays Joe's word; a green crucible receipt is a precondition, not a permission."
+    },
+    {
+      "id": "W2-S1",
+      "name": "doctor off-main for real: marshal the closure first",
+      "state": "ready",
+      "receipt": "W2-S1.json",
+      "branch": "wave2/s1",
+      "base": "master",
+      "worktree": ".claude/worktrees/w2-s1",
+      "prompt": "harness/autorevise/prompts/W2-S1.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/memory/store.py",
+        "python/synapse/memory/scene_memory.py",
+        "python/synapse/server/",
+        "python/synapse/mcp/server.py",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/reviews/latency_authority_2026-08-13.md :: W1-MTFIX spawn S1 + finding F1: prerequisite marshalling of store._resolve_project_path hou reads (store.py:975,984) and the doctor's transitive hou closure (scene_memory.py:124, embedder) BEFORE any off-main dispatch; target is the MEASURED ~514ms run_doctor hold on the in-Houdini hwebserver transport; reverted design recoverable from origin/wave1/mtfix reflog + receipt F1. Heavyweight lane, parallel to the panel chain. R2 closed by docs/reviews/latency_authority_2026-08-13.md - this leg is gated open."
+    },
+    {
+      "id": "W2-S2",
+      "name": "format_synapse_message off main",
+      "state": "ready",
+      "receipt": "W2-S2.json",
+      "branch": "wave2/s2",
+      "base": "master",
+      "worktree": ".claude/worktrees/w2-s2",
+      "prompt": "harness/autorevise/prompts/W2-S2.md",
+      "deps": [
+        "W2-S3"
+      ],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/synapse_panel.py",
+        "python/synapse/panel/message_formatter.py",
+        "python/synapse/panel/chat_display.py",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/reviews/latency_authority_2026-08-13.md :: W1-MTFIX spawn S2 / F4 design: in _on_done compute grouping on main (cheap), run format_synapse_message (~message_formatter.py:331, pure string, zero Qt/hou) on the worker, insert prerendered HTML on main. Last writer in the synapse_panel.py chain (deps W2-S3). Largest panel-side leg of the wave; stays inside the F4 design."
+    },
+    {
+      "id": "W2-S3",
+      "name": "working indicator mount from real state",
+      "state": "ready",
+      "receipt": "W2-S3.json",
+      "branch": "wave2/s3",
+      "base": "master",
+      "worktree": ".claude/worktrees/w2-s3",
+      "prompt": "harness/autorevise/prompts/W2-S3.md",
+      "deps": [
+        "W2-S5"
+      ],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/synapse_panel.py",
+        "python/synapse/panel/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/reviews/latency_authority_2026-08-13.md :: W1-MTFIX spawn S3: _set_busy is edge-detected on the real busy bool, stall_state() distinguishes stalled-vs-busy, marshal_guard.DEFAULT_INLINE_BUDGET_S exists; only the visual mount is missing. Second writer in the synapse_panel.py chain: deps-gated behind W2-S5, ahead of W2-S2. Bus claim/release still mandatory."
+    },
+    {
+      "id": "W2-S4",
+      "name": "freeze discriminator probe + conditional bridge-lookup cache",
+      "state": "ready",
+      "receipt": "W2-S4.json",
+      "branch": "wave2/s4",
+      "base": "master",
+      "worktree": ".claude/worktrees/w2-s4",
+      "prompt": "harness/autorevise/prompts/W2-S4.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/bridge_adapter.py",
+        "python/synapse/panel/agent_health.py",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/reviews/latency_authority_2026-08-13.md :: W1-MTFIX spawn S4 / FRZ leading candidate: negative _find_bridge_instance lookup (~bridge_adapter.py:204, agent_health.py:52); FRZ_REPRO discriminator = panel sticky WITHOUT sending a prompt; remediation probe-first per R-FRZ-3. Parallel lane - does not touch synapse_panel.py. The one-line fix is cheap; the discipline around it is the mission."
+    },
+    {
+      "id": "W2-S5",
+      "name": "context timer off Houdini-main",
+      "state": "ready",
+      "receipt": "W2-S5.json",
+      "branch": "wave2/s5",
+      "base": "master",
+      "worktree": ".claude/worktrees/w2-s5",
+      "prompt": "harness/autorevise/prompts/W2-S5.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/synapse_panel.py",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/reviews/latency_authority_2026-08-13.md :: W1-MTFIX spawn S5: 2s timer reads hou.frame()/selectedNodes()/hipFile.basename() unmarshalled on main; ws_bridge.gather_context_off_main (~ws_bridge.py:113) exists unused. First writer in the serialized synapse_panel.py chain S5 -> S3 -> S2. Post bus claim before edit, release on receipt."
     }
   ]
 }

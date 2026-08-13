@@ -1,0 +1,33 @@
+{
+  "id": "W2-S1",
+  "name": "doctor off-main for real: marshal the closure first",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/reviews/latency_authority_2026-08-13.md",
+    "anchor": "W1-MTFIX spawn S1 + finding F1: prerequisite marshalling of store._resolve_project_path hou reads (store.py:975,984) and the doctor's transitive hou closure (scene_memory.py:124, embedder) BEFORE any off-main dispatch; target is the MEASURED ~514ms run_doctor hold on the in-Houdini hwebserver transport; reverted design recoverable from origin/wave1/mtfix reflog + receipt F1"
+  },
+  "targets": [
+    "1) marshal the two hou reads in store._resolve_project_path (store.py:975,984) - wrap, do not change store semantics",
+    "2) enumerate and marshal/guard the doctor's full transitive hou closure (scene_memory.py:124, embedder, and anything the audit finds)",
+    "3) off-main-safe dispatch branch in mcp/server.py for run_doctor on the hwebserver transport, preserving resilience + C5 lock/provenance",
+    "4) doctor-internal marshalling of its 2 direct hou sites, labelled synapse_doctor"
+  ],
+  "acceptance": [
+    {"predicate": "transitive hou audit enumerated in the receipt, file:line per site, each marked marshaled/guarded/unreachable", "evidence": "receipt"},
+    {"predicate": "cold-store-construct off main no longer reaches an unmarshalled hou call (the W1-MTFIX F1 crash class, tested directly)", "evidence": "test"},
+    {"predicate": "in-Houdini hwebserver run_doctor main-thread hold < 100ms (baseline: measured ~514ms)", "evidence": "gui_probe", "gui_required": true},
+    {"predicate": "headless run_doctor behaviour unchanged; C5 lock/provenance preserved", "evidence": "test"},
+    {"predicate": "store.py diff confined to the marshalling wrap at the two anchored sites", "evidence": "check"}
+  ],
+  "deps": [],
+  "readonly": false,
+  "touches": ["python/synapse/memory/store.py", "python/synapse/memory/scene_memory.py", "python/synapse/server/", "python/synapse/mcp/server.py", "tests/"],
+  "crucible_criteria": [
+    "SEAM GUARD: fix/memory-store-recovery is UNMERGED and owns the store - store.py changes beyond the two-site wrap are a BLOCK; receipt must state rebase-compatibility with that branch",
+    "the F1 crash class is re-attacked adversarially after the fix, not assumed closed",
+    "the 514ms target is the measured hwebserver figure per the latency authority doc - citing 648ms anywhere is a finding",
+    "if the audit finds the closure too large to marshal safely this leg, STOP at prerequisite (1)+(2), receipt the map, propose (3)+(4) as a spawn - shipping a partial off-main dispatch is the W1 crash path again"
+  ],
+  "spawn_classes": ["probe", "s1-followup"],
+  "note": "Heavyweight lane, parallel to the panel chain. R2 closed by docs/reviews/latency_authority_2026-08-13.md - this leg is gated open."
+}

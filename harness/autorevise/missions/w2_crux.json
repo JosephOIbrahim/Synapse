@@ -1,0 +1,30 @@
+{
+  "id": "W2-CRUX",
+  "name": "wave-2 crucible",
+  "band": "TRUST",
+  "source": {
+    "doc": "docs/reviews/latency_authority_2026-08-13.md",
+    "anchor": "whole-wave adversarial review before any merge word; carries the wave-1 B1/B2 lessons as standing checks"
+  },
+  "targets": [
+    "adversarial review of W2-S1..S5 branches against their crucible_criteria",
+    "verify every acceptance claim against its evidence class; re-run cheap checks; refuse claims without receipts"
+  ],
+  "acceptance": [
+    {"predicate": "every wave leg reviewed against its own crucible_criteria; verdict per criterion", "evidence": "receipt"},
+    {"predicate": "B1 standing check: every leg's branch HEAD is ahead of base with named-file commits - uncommitted worktree state is a BLOCK", "evidence": "check"},
+    {"predicate": "B2 standing check: every receipt's durable-state claims verified against git facts", "evidence": "check"},
+    {"predicate": "gui_required acceptance not yet measured is recorded UNKNOWN, never assumed", "evidence": "check"},
+    {"predicate": "builds nothing, fixes nothing - findings only", "evidence": "check"}
+  ],
+  "deps": ["W2-S1", "W2-S2", "W2-S3", "W2-S4", "W2-S5"],
+  "readonly": true,
+  "touches": [],
+  "crucible_criteria": [
+    "the crucible reviews; it never patches - a fix authored here is itself a BLOCK",
+    "verdicts cite file:line or receipt path; no anchor, no verdict",
+    "the S1 seam guard (fix/memory-store-recovery) is independently re-verified against the actual store.py diff"
+  ],
+  "spawn_classes": [],
+  "note": "F1-shaped gate on the whole wave. Merge stays Joe's word; a green crucible receipt is a precondition, not a permission."
+}

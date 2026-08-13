@@ -1,0 +1,29 @@
+{
+  "id": "W2-S5",
+  "name": "context timer off Houdini-main",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/reviews/latency_authority_2026-08-13.md",
+    "anchor": "W1-MTFIX spawn S5: 2s timer reads hou.frame()/selectedNodes()/hipFile.basename() unmarshalled on main; ws_bridge.gather_context_off_main (~ws_bridge.py:113) exists unused"
+  },
+  "targets": [
+    "python/synapse/panel/synapse_panel.py 2s context tick: route the three hou reads through ws_bridge.gather_context_off_main",
+    "no change to context content, cadence, or consumers"
+  ],
+  "acceptance": [
+    {"predicate": "the 2s tick performs zero direct hou.* calls on the Qt/main path (verified by test hooking the tick)", "evidence": "test"},
+    {"predicate": "gather_context_off_main is the producer; results marshaled back before any Qt use", "evidence": "test"},
+    {"predicate": "context payload byte-equal to baseline for a fixture scene state", "evidence": "test"},
+    {"predicate": "panel test-slice floor holds", "evidence": "test"}
+  ],
+  "deps": [],
+  "readonly": false,
+  "touches": ["python/synapse/panel/synapse_panel.py", "tests/"],
+  "crucible_criteria": [
+    "no hou.* introduced off-main anywhere else in the diff (the W1-MTFIX crash-path class)",
+    "Qt objects never touched off the Qt thread",
+    "diff confined to the tick wiring - this is the smallest leg on the board and must stay that way"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "First writer in the serialized synapse_panel.py chain S5 -> S3 -> S2. Post bus claim before edit, release on receipt."
+}

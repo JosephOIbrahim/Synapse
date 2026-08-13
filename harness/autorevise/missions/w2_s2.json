@@ -1,0 +1,31 @@
+{
+  "id": "W2-S2",
+  "name": "format_synapse_message off main",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/reviews/latency_authority_2026-08-13.md",
+    "anchor": "W1-MTFIX spawn S2 / F4 design: in _on_done compute grouping on main (cheap), run format_synapse_message (~message_formatter.py:331, pure string, zero Qt/hou) on the worker, insert prerendered HTML on main"
+  },
+  "targets": [
+    "move format_synapse_message execution off the main thread per the F4 design",
+    "only insertHtml (and grouping) remain on main; ordering preserved under rapid successive results",
+    "record set_max_result_blocks (~chat_display.py:326) + whole-message trimming as a UX finding for Joe, not a change"
+  ],
+  "acceptance": [
+    {"predicate": "format_synapse_message executes on a worker thread for panel results", "evidence": "test"},
+    {"predicate": "the function performs zero Qt and zero hou calls (guard test at its boundary)", "evidence": "test"},
+    {"predicate": "rendered output byte-equal to baseline for fixture messages, including grouped results", "evidence": "test"},
+    {"predicate": "result ordering stable under a rapid burst of completions", "evidence": "test"},
+    {"predicate": "panel test-slice floor holds", "evidence": "test"}
+  ],
+  "deps": ["W2-S3"],
+  "readonly": false,
+  "touches": ["python/synapse/panel/synapse_panel.py", "python/synapse/panel/message_formatter.py", "python/synapse/panel/chat_display.py", "tests/"],
+  "crucible_criteria": [
+    "Qt objects never constructed or touched off the Qt thread (prerendered HTML strings only cross back)",
+    "no behavioural change to trimming defaults - the UX call is Joe's, recorded as a finding",
+    "burst-ordering test is real (multiple queued completions), not a single-message pass"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Last writer in the synapse_panel.py chain (deps W2-S3). Largest panel-side leg of the wave; stays inside the F4 design."
+}

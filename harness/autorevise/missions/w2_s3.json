@@ -1,0 +1,29 @@
+{
+  "id": "W2-S3",
+  "name": "working indicator mount from real state",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/reviews/latency_authority_2026-08-13.md",
+    "anchor": "W1-MTFIX spawn S3: _set_busy is edge-detected on the real busy bool, stall_state() distinguishes stalled-vs-busy, marshal_guard.DEFAULT_INLINE_BUDGET_S exists; only the visual mount is missing"
+  },
+  "targets": [
+    "mount a slim busy/stalled indicator in the panel fed exclusively by _set_busy edges + stall_state() + the inline budget",
+    "a wait must read as 'tool working', a budget overrun as 'stalled' - never as 'Houdini hung'"
+  ],
+  "acceptance": [
+    {"predicate": "indicator state transitions driven by the real busy bool and stall_state(), no timer-derived state", "evidence": "test"},
+    {"predicate": "busy and stalled render distinguishably; idle renders nothing", "evidence": "test"},
+    {"predicate": "indicator adds zero main-thread I/O and zero hou calls", "evidence": "test"},
+    {"predicate": "visible during a live long-running call without stealing focus", "evidence": "gui_probe", "gui_required": true}
+  ],
+  "deps": ["W2-S5"],
+  "readonly": false,
+  "touches": ["python/synapse/panel/synapse_panel.py", "python/synapse/panel/", "tests/"],
+  "crucible_criteria": [
+    "wave-1 crucible #3 re-verified: indicator is real-state, not a timer",
+    "no new colour/token authority (H4 landed state respected)",
+    "gui_required predicate recorded UNKNOWN if unmeasured - never assumed"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Second writer in the synapse_panel.py chain: deps-gated behind W2-S5, ahead of W2-S2. Bus claim/release still mandatory."
+}
