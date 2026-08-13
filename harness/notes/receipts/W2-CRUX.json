@@ -1,0 +1,195 @@
+{
+  "schema": "receipt/v1",
+  "leg": "W2-CRUX",
+  "title": "wave-2 crucible — whole-wave adversarial gate before any merge word",
+  "band": "TRUST",
+  "status": "blocked",
+  "status_note": "The crux itself executed cleanly and completely: every wave-2 leg (S1..S5) was reviewed against its own crucible_criteria with a verdict per criterion, every verdict is anchored to a file:line / receipt path / git fact, and the crux authored no patch and mutated no git state (readonly, touches=[]). The WAVE VERDICT is BLOCK — not a failure of the crux, a finding ABOUT the wave: three of five legs (S2, S3, S5) have their actual product + test code sitting as UNCOMMITTED worktree state (branch HEAD == base 29e55bf0, 0 commits ahead). Per this mission's own B1 standing check, 'uncommitted worktree state is a BLOCK' — the work is not durably real until committed with named-file commits. The code in those three legs is SOUND (both an independent crux pass and 5 independent crucible sub-reviewers confirm the criteria hold); the remedy is 'commit the named files on each branch', NOT 'fix the code'. S1 is individually clear (code committed in 2fa5ec2e, seam-guard clean); S4 is individually clear (correct R-FRZ-3 ship-nothing on an UNKNOWN gui discriminator). Merge stays Joe's word regardless; a green crucible receipt is the precondition, and that precondition is NOT met while S2/S3/S5 are uncommitted.",
+  "model": "claude-opus-4-8",
+  "branch": "wave2/crux",
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/w2-crux",
+  "base": "29e55bf07810400e9a6df91ebcee49aff20829b4",
+  "source_authority": "docs/reviews/latency_authority_2026-08-13.md (R2): 514ms run_doctor hold MEASURED (wave-2 S1 target); 648ms UNCONFIRMED; ~5-6s stickiness UNREPRODUCED (probe-first per R-FRZ-3, wave-2 S4). This crux carries the wave-1 B1/B2 lessons as standing checks.",
+  "method": {
+    "independent_crux_pass": "The crux itself pulled the raw git facts (worktree list, per-leg HEAD vs base, porcelain, committed + uncommitted diffs), read all 5 leg receipts + the wave2 bus (16 lines), independently re-verified the S1 seam guard via git merge-tree, and re-ran the decisive cheap static checks (648-vs-514, no-timer, Qt-free, sibling gc-walk, burst-test reality, gather_context_off_main marshalling, S5 main-tree cleanliness).",
+    "adversarial_fanout": "workflow wf_8138900c-106 (w2-crux-leg-review): 5 read-only crucible sub-agents, one per leg, each deriving B1/B2 itself and returning a per-criterion + per-acceptance structured verdict with anchors. 5/5 done, 0 errors, 416616 subagent tokens. Their verdicts AGREE with the independent crux pass on every decisive point; the sub-reviewers additionally re-ran the headless-runnable tests (S1 9/9 green, S2 7-pass/6-skip, S3 15 passed) and reproduced the seam merge-tree.",
+    "readonly_conduct": "Only read-only git (status/log/show/diff/rev-parse/merge-base/cat-file) + grep were used against the leg worktrees; no stash/checkout/reset/add/commit/clean touched their UNCOMMITTED state. The crux authored zero source edits and zero fixes. The crux's own worktree is clean apart from this receipt."
+  },
+
+  "acceptance": [
+    {
+      "predicate": "every wave leg reviewed against its own crucible_criteria; verdict per criterion",
+      "verdict": "pass",
+      "evidence": "receipt",
+      "detail": "All 5 legs reviewed twice-independently (crux pass + workflow wf_8138900c-106). Per-criterion verdicts in per_leg below. S1: 4/4 crucible_criteria UPHELD. S2: 3/3 UPHELD. S3: 3/3 UPHELD. S4: 3/3 UPHELD. S5: 3/3 UPHELD. Every verdict carries a file:line or receipt-path anchor (crux crucible criterion #2 satisfied)."
+    },
+    {
+      "predicate": "B1 standing check: every leg's branch HEAD is ahead of base with named-file commits — uncommitted worktree state is a BLOCK",
+      "verdict": "fail",
+      "evidence": "check",
+      "detail": "S1 PASS: HEAD=2fa5ec2e, 1 commit ahead, named files (mcp/server.py, memory/scene_memory.py, memory/store.py, server/doctor.py, tests/test_w2s1_doctor_offmain.py); only its receipt is untracked. S4 nuance-no-code-by-design: 0 ahead but correctly shipped NO code (R-FRZ-3, UNKNOWN discriminator) so there is nothing to commit; only its receipt is untracked. S2 BLOCK: HEAD==base, 0 ahead; async_format.py (NEW), chat_display.py (M +178/-22), tests/test_w2s2_format_offmain.py (NEW) all uncommitted. S3 BLOCK: HEAD==base, 0 ahead; working_indicator.py (NEW), tests/test_working_indicator.py (NEW) uncommitted. S5 BLOCK: HEAD==base, 0 ahead; synapse_panel.py (M), tests/test_panel_faces.py (M), tests/test_w2_s5_context_offmain.py (NEW) uncommitted, and NO bus release posted for the open synapse_panel.py claim. Wave verdict = FAIL: three legs hold uncommitted product/test code. Anchors: `git -C .claude/worktrees/w2-s{2,3,5} log --oneline 29e55bf0..HEAD` => empty; `git status --porcelain` per worktree."
+    },
+    {
+      "predicate": "B2 standing check: every receipt's durable-state claims verified against git facts",
+      "verdict": "fail",
+      "evidence": "check",
+      "detail": "S1 PASS: receipt commit=2fa5ec2e == HEAD; branch=wave2/s1; 1 commit ahead; rebase-compat (1 store.py conflict, scene_memory auto-clean) and seam HEAD 5e933c13 all reproduced — every durable claim matches git. S4 PASS: commit_at_run=29e55bf0==HEAD; 'no file in touches edited' reproduced (git diff --stat empty). S3 PASS: no commit-hash claimed; 'mount HELD / nothing merged' consistent with 0-ahead. S5 PASS: 'main tree left clean of _context_ready' reproduced (main-tree grep=0, worktree=6); no false commit-hash claim. S2 FAIL: the receipt asserts 'F4 off-main formatting mechanism SHIPPED + PROVEN' and 'merge-ready now' / 'floor holds' — a durable-state claim CONTRADICTED by git (HEAD==base, 0 commits, all 4 files uncommitted; no durable shipped state exists). Wave verdict = FAIL on the narrow but real ground that at least one receipt (S2) overstates durable delivery vs git. Note: the S3/S5 uncommitted state is caught by B1, not B2 — those receipts report test runs + hold-status without claiming durable delivery, so they make no false git claim. Anchors: W2-S2.json:4-5,9 vs `git -C w2-s2 status --porcelain`."
+    },
+    {
+      "predicate": "gui_required acceptance not yet measured is recorded UNKNOWN, never assumed",
+      "verdict": "pass",
+      "evidence": "check",
+      "detail": "Every gui_required predicate across the wave is recorded UNKNOWN, never zeroed or estimated. S1 acceptance[2] (in-Houdini hwebserver run_doctor <100ms) = UNKNOWN (only a design argument + the 514ms baseline; no measured after-number; SessionStart bridge runs unfixed main-tree code so it cannot yield a valid after-measurement). S3 acceptance[3] (visible during a live long call) = UNKNOWN (PySide6 absent headless, mount HELD so nothing to probe). S4 acceptance[0] (FRZ_REPRO stickiness discriminator) = UNKNOWN (human-at-GUI perceptual reproduction, unobtainable headless; mechanism additionally dormant this session — bridge present so the gc-walk never fires). S2 and S5 declare no gui_required acceptance predicate. Anchors: W2-S1.json:30, W2-S3.json:32, W2-S4.json:30,44."
+    },
+    {
+      "predicate": "builds nothing, fixes nothing — findings only",
+      "verdict": "pass",
+      "evidence": "check",
+      "detail": "The crux authored only this receipt. It dispatched read-only crucible sub-agents (agentType=crucible — no Write/Edit tool), ran only read-only git + grep, and mutated no git state in any leg worktree. No source edit, no fix, no bus post, no commit/merge/push/tag/ratify. The crux worktree is clean apart from this receipt file. crux crucible criterion #1 ('the crucible reviews; it never patches — a fix authored here is itself a BLOCK') is satisfied."
+    }
+  ],
+
+  "crucible_criteria_addressed": {
+    "never_patches": "UPHELD. No patch, edit, or fix was authored anywhere by the crux or its sub-agents. Read-only throughout.",
+    "every_verdict_anchored": "UPHELD. Every criterion and acceptance verdict below cites a file:line, receipt path, or git fact. No anchor, no verdict.",
+    "s1_seam_guard_independently_reverified": "UPHELD. Independently reproduced against the ACTUAL store.py diff — see seam_guard_independent below."
+  },
+
+  "seam_guard_independent": {
+    "question": "Is wave2/s1's store.py diff confined to the two-site marshalling wrap, and is it rebase-compatible with the UNMERGED fix/memory-store-recovery branch that owns store.py?",
+    "seam_branch_HEAD": "5e933c1306cfc508739c505443d85a368cab4f46 (fix/memory-store-recovery) — confirmed via git rev-parse; matches the S1 receipt claim.",
+    "seam_store_py_delta": "+103/-8 on store.py (git diff 8c41fe18..5e933c13 -- store.py) — substantially rewrites _resolve_project_path; matches the S1 receipt claim.",
+    "merge_tree": "git merge-tree --write-tree 2fa5ec2e fix/memory-store-recovery => merged tree 1beba479. store.py: EXACTLY ONE conflict hunk (grep -c '^<<<<<<<' == 1), confined to the temp_root region (merged store.py:1106-1128): HEAD's `temp_root = Path(_read_on_main(lambda: hou.text.expandString('$HOUDINI_TEMP_DIR')))` vs the seam's `temp_root = _safe_unsaved_base()`. The _read_on_main helper (merged :834) and the _read_hip one-hop closure (merged :1100-1103) AUTO-MERGE clean — outside the conflict markers. scene_memory.py AUTO-MERGES clean (no conflict).",
+    "harness_autoresearch_conflicts": "3 conflicts in harness/autoresearch/{mission_schema,probes,runner}.py are PRE-EXISTING history divergence — the seam branched off older master 8c41fe18 (git merge-base fix/memory-store-recovery master), NOT from this leg's code. Matches the S1 receipt's explanation.",
+    "verdict": "UPHELD. store.py diff confined to the marshalling wrap (45 insertions: the _read_on_main helper + the _read_hip closure at site 975 + the expandString wrap at site 984; no store SEMANTICS change — saved/unsaved/no-hou return paths byte-identical). Rebase-compatible: one trivial, well-understood conflict at temp_root with a one-line resolution (wrap the seam's _safe_unsaved_base expandString read with _read_on_main). The S1 receipt's rebase_compatibility block is accurate against the actual diff.",
+    "anchors": "git merge-tree 2fa5ec2e fix/memory-store-recovery => tree 1beba479 store.py:1106-1128; git show 2fa5ec2e -- python/synapse/memory/store.py; git merge-base fix/memory-store-recovery master => 8c41fe18."
+  },
+
+  "per_leg": [
+    {
+      "leg": "W2-S1",
+      "leg_verdict": "green_with_findings",
+      "b1": "pass — HEAD=2fa5ec2e is 1 commit ahead of base with named-file commits (mcp/server.py, memory/scene_memory.py, memory/store.py, server/doctor.py, tests/test_w2s1_doctor_offmain.py). Only the receipt is untracked.",
+      "b2": "pass — receipt commit/branch/base/seam-HEAD all match git; 9/9 new tests reproduced green headless; rebase-compat reproduced via merge-tree.",
+      "crucible_criteria": [
+        {"criterion": "SEAM GUARD: store.py changes confined to the two-site wrap; receipt states rebase-compat", "verdict": "UPHELD", "anchor": "seam_guard_independent above; git show 2fa5ec2e -- store.py"},
+        {"criterion": "F1 crash class re-attacked adversarially after the fix, not assumed closed", "verdict": "UPHELD", "anchor": "tests/test_w2s1_doctor_offmain.py:132 (positive: fake-hou records read thread; resolve on worker; all 3 reads land on main) + :163 (negative control: marshal disabled => off-main touch occurs, so the positive test can genuinely fail). Non-vacuous; 9/9 reproduced green."},
+        {"criterion": "target is the MEASURED 514ms; citing 648ms as target is a finding", "verdict": "UPHELD", "anchor": "grep '648' over committed diff => 0 hits; over receipt => only disavowals ('648 cited NOWHERE'). Target 514 appears 4x. latency_authority_2026-08-13.md:34 names S1's target as the 514ms MEASURED figure."},
+        {"criterion": "STOP at (1)+(2) if the closure is too large to marshal safely", "verdict": "UPHELD", "anchor": "N/A branch — both audit passes returned MAP_COMPLETE, full (1)-(4) shipped; the out-of-scope shared/bridge.py crash site is closed by BYPASSING the bridge for the zero-mutation doctor (mcp/server.py _dispatch_doctor_off_main -> handler.handle), not by shipping a partial off-main dispatch. Honestly disclosed as F2 + for_ruling R1."}
+      ],
+      "acceptance": [
+        {"predicate": "transitive hou audit enumerated, file:line per site, marked marshaled/guarded/unreachable", "receipt": "pass", "crux": "CONFIRMED (with MINOR anchor-drift finding — see W2-CRUX-F-S1a)"},
+        {"predicate": "cold-store-construct off main no longer reaches an unmarshalled hou call (F1 tested directly)", "receipt": "pass", "crux": "CONFIRMED — tests/test_w2s1_doctor_offmain.py 9/9 reproduced green headless"},
+        {"predicate": "in-Houdini hwebserver run_doctor main-thread hold < 100ms", "receipt": "UNKNOWN", "crux": "UNVERIFIABLE-HEADLESS — no measured after-number; correctly recorded UNKNOWN"},
+        {"predicate": "headless run_doctor behaviour unchanged; C5 lock/provenance preserved", "receipt": "pass", "crux": "CONFIRMED — semantics byte-identical (run_on_main fast-path-2 passthrough); C5 preserved-by-routing (doctor absent from _READ_ONLY_COMMANDS, handle() unchanged)"},
+        {"predicate": "store.py diff confined to the marshalling wrap at the two anchored sites", "receipt": "pass", "crux": "CONFIRMED — see seam_guard_independent"}
+      ]
+    },
+    {
+      "leg": "W2-S2",
+      "leg_verdict": "BLOCK",
+      "b1": "BLOCK — HEAD==base, 0 commits ahead; async_format.py (NEW), chat_display.py (M +178/-22), tests/test_w2s2_format_offmain.py (NEW) all uncommitted. Anchor: git -C w2-s2 log 29e55bf0..HEAD empty; status --porcelain.",
+      "b2": "fail — receipt asserts 'F4 mechanism SHIPPED + PROVEN' / 'merge-ready now' / 'floor holds', durable-state language contradicted by git (nothing committed).",
+      "crucible_criteria": [
+        {"criterion": "Qt objects never constructed or touched off the Qt thread", "verdict": "UPHELD", "anchor": "async_format.py grep-clean of Qt/hou (stdlib threading/queue only); worker returns an HTML string; the only off-thread Qt op is self._fmt_ready.emit() (sanctioned QueuedConnection hop, chat_display.py:405), not a widget touch."},
+        {"criterion": "no behavioural change to trimming defaults", "verdict": "UPHELD", "anchor": "set_max_result_blocks def-only; zero invocations elsewhere in panel/*.py; maximumBlockCount stays 0 (unlimited); recorded as finding W2S2-F3."},
+        {"criterion": "burst-ordering test is real (multiple queued completions), not a single-message pass", "verdict": "UPHELD", "anchor": "tests/test_w2s2_format_offmain.py:85 — 5 jobs, DECREASING delays 0.04*(5-i); a thread pool surfaces 4,3,2,1,0, the single-consumer FIFO surfaces 0..4; asserts drain AND apply order == [0,1,2,3,4]; reproduced green headless."}
+      ],
+      "acceptance": [
+        {"predicate": "format_synapse_message executes on a worker thread", "receipt": "pass", "crux": "CONFIRMED (pure-tier reproduced green)"},
+        {"predicate": "zero Qt / zero hou at the boundary", "receipt": "pass", "crux": "CONFIRMED (delta-guard test + grep)"},
+        {"predicate": "rendered output byte-equal to baseline incl grouped", "receipt": "pass", "crux": "CONFIRMED (6 fixtures x grouped x signed + negative control, reproduced green)"},
+        {"predicate": "ordering stable under a rapid burst", "receipt": "pass", "crux": "CONFIRMED (adversarial burst reproduced green)"},
+        {"predicate": "panel test-slice floor holds", "receipt": "pass", "crux": "UNVERIFIABLE-HEADLESS (13/252 hython-only; default-OFF mechanism verified in code)"}
+      ]
+    },
+    {
+      "leg": "W2-S3",
+      "leg_verdict": "BLOCK",
+      "b1": "BLOCK — HEAD==base, 0 commits ahead; working_indicator.py (NEW), tests/test_working_indicator.py (NEW) uncommitted. The synapse_panel.py MOUNT is legitimately HELD behind W2-S5's open claim (separate concern). Anchor: git -C w2-s3 log 29e55bf0..HEAD empty; status --porcelain 3x '??'.",
+      "b2": "pass — no false commit-hash or git-clean claim; receipt transparent that mount is HELD. 'delivered complete' is a durability wording tension captured by the B1 block, not a fabrication.",
+      "crucible_criteria": [
+        {"criterion": "wave-1 crucible #3 re-verified: indicator is real-state, not a timer", "verdict": "UPHELD", "anchor": "working_indicator.py compute_state is a pure total fn of (busy,stall); grep QTimer/import QtCore/startTimer/timerEvent/QBasicTimer => 0 (only comments stating 'NO QTimer'). 'stalled' traces to the marshal-layer timeout counter (main_thread.py:220), but the INDICATOR owns no stopwatch — exactly what the criterion demands."},
+        {"criterion": "no new colour/token authority (H4 respected)", "verdict": "UPHELD", "anchor": "state_color indexes t.STATUS (busy->working/FIRE, stalled->warning/WARN); grep hex literal => 0; tokens.py:455 is the single STATUS authority."},
+        {"criterion": "gui_required predicate recorded UNKNOWN if unmeasured", "verdict": "UPHELD", "anchor": "W2-S3.json:32 acceptance[3].verdict=UNKNOWN; spawn W2-S3-P1 keeps the GUI probe alive."}
+      ],
+      "acceptance": [
+        {"predicate": "state transitions driven by real busy bool + stall_state(), no timer-derived state", "receipt": "pass", "crux": "CONFIRMED (TestNoTimerRealState reproduced green; 15 passed)"},
+        {"predicate": "busy and stalled render distinguishably; idle renders nothing", "receipt": "pass", "crux": "CONFIRMED on render_spec data (differ on BOTH label AND colour; idle invisible)"},
+        {"predicate": "zero main-thread I/O and zero hou calls", "receipt": "pass", "crux": "CONFIRMED (hou-tripwire + open()-tripwire reproduced green)"},
+        {"predicate": "visible during a live long call without stealing focus", "receipt": "UNKNOWN", "crux": "UNVERIFIABLE-HEADLESS (PySide6 absent, mount not applied)"}
+      ]
+    },
+    {
+      "leg": "W2-S4",
+      "leg_verdict": "green_with_findings",
+      "b1": "nuance-no-code-by-design — HEAD==base, 0 ahead, but the leg CORRECTLY shipped no code (R-FRZ-3: fix on an UNKNOWN discriminator would be a BLOCK). git diff --stat vs base = empty; only the receipt is untracked. Not a code-uncommitted BLOCK; but the probe result is not yet durable until the receipt is committed.",
+      "b2": "pass — commit_at_run=29e55bf0==HEAD; 'no file in touches edited' reproduced (git diff empty). 'git status --short clean' is loosely stated (the untracked receipt is present) but the load-bearing 'no touch edited' claim is exactly true.",
+      "crucible_criteria": [
+        {"criterion": "R-FRZ-3 honoured: no fix without a positive probe", "verdict": "UPHELD", "anchor": "git diff --stat vs base = empty; ready_diff.status='READY-BUT-UNAPPLIED' (W2-S4.json:91). Shipping now WOULD be the BLOCK; shipping nothing is correct."},
+        {"criterion": "discriminator UNKNOWN, if headless, recorded UNKNOWN — never inferred from timing-adjacent evidence", "verdict": "UPHELD", "anchor": "W2-S4.json why_unknown[2] explicitly BARS timing evidence; finding F3 identifies the Watchdog beat-latency instrument (resilience.py:590-592) yet refuses to use it toward the verdict (non-attributing, dormant, not perception)."},
+        {"criterion": "cache carries invalidation reasoning (a stale negative cache is worse than the lookup cost)", "verdict": "UPHELD", "anchor": "ready_diff.invalidation_reasoning + body traced non-latching: miss sets _LAST_MISS_MONO=now; within TTL(30s) walk skipped; after TTL re-walk; a hit clears the cooldown; dead-but-non-None ref falls through and re-walks — a late bridge is found within <=1 TTL, never permanently hidden. ready_test property 3 pins the never-hide-a-live-bridge invariant."}
+      ],
+      "acceptance": [
+        {"predicate": "discriminator executed + result recorded pass/fail/UNKNOWN with probe path", "receipt": "UNKNOWN", "crux": "UNKNOWN — perceptual gui_required, unobtainable headless; correctly recorded, not a hidden fail (open[0]: 'freeze is NOT reproduced')"},
+        {"predicate": "cache fix applied only on a positive discriminator; otherwise diff-in-receipt only", "receipt": "pass", "crux": "CONFIRMED (git clean of product edits; cache is in-receipt only)"},
+        {"predicate": "if applied: single-site, invalidation stated, lookup test added", "receipt": "pass", "crux": "CONFIRMED — antecedent false (not applied); the in-reserve artifacts are single-site + non-latching + 4 genuine test assertions; test file confirmed ABSENT from tree"},
+        {"predicate": "no other freeze candidates chased", "receipt": "pass", "crux": "CONFIRMED — sibling chat_panel.py:83 _find_running_server confirmed present (uncached gc-walk) and UNTOUCHED; surfaced only as held spawn W2-S4-P2"}
+      ]
+    },
+    {
+      "leg": "W2-S5",
+      "leg_verdict": "BLOCK",
+      "b1": "BLOCK — HEAD==base, 0 commits ahead; synapse_panel.py (M), tests/test_panel_faces.py (M), tests/test_w2_s5_context_offmain.py (NEW) uncommitted, and NO bus release ever posted for the open synapse_panel.py claim (n=18cb66061adfa40c). Anchor: git -C w2-s5 log 29e55bf0..HEAD empty; status --porcelain (2 M, 2 ??).",
+      "b2": "pass — 'main tree left clean of _context_ready' reproduced (main-tree grep=0, worktree=6); no false commit-hash claim (status green_with_findings is a test-run claim, not a git-delivery claim).",
+      "crucible_criteria": [
+        {"criterion": "no hou.* introduced off-main anywhere else (W1-MTFIX crash-path class)", "verdict": "UPHELD", "anchor": "git diff synapse_panel.py: the three inline reads (hou.frame/selectedNodes/hipFile.basename) are DELETED from the Qt/main path; _update_context now does a bare `import hou` guard then delegates to the pre-existing ws_bridge.gather_context_off_main, which marshals through run_on_main DEFERRED (ws_bridge.py:113-159) — hou never touched bare off-main. Uses run_on_main, NOT the executeInMainThreadWithResult marshal-deadlock phantom."},
+        {"criterion": "Qt objects never touched off the Qt thread", "verdict": "UPHELD", "anchor": "synapse_panel.py:296 (_context_ready=Signal(dict)), :418 (connect AutoConnection), :2441 (gather_context_off_main(self._context_ready.emit)); daemon-thread emit => QueuedConnection => _apply_context (the only Qt-touching path) runs on the Qt thread; test_gather_is_producer_and_result_marshalled_to_main pins the SENTINEL-until-processEvents behaviour."},
+        {"criterion": "diff confined to the tick wiring (smallest leg on the board)", "verdict": "UPHELD", "anchor": "synapse_panel.py diff all within _update_context/_apply_context/_context_ready; test_panel_faces.py edit is a targeted adaptation of the ONE test whose behaviour changed (render moved from _update_context to _apply_context) — legitimate, not scope creep. Caveat: that shared file is also claimed by S2 — a merge-coordination surface (see for_ruling R2), not a confinement violation."}
+      ],
+      "acceptance": [
+        {"predicate": "2s tick performs zero direct hou.* on the Qt/main path", "receipt": "pass", "crux": "CONFIRMED statically — removed lines were the sole hou reads; new main path has no hou attribute access"},
+        {"predicate": "gather_context_off_main is the producer; results marshaled back before any Qt use", "receipt": "pass", "crux": "CONFIRMED — producer = ws_bridge._gather_context_on_main_thread via run_on_main DEFERRED; emit queued so _apply_context runs after marshal-back"},
+        {"predicate": "context payload byte-equal to baseline for a fixture scene state", "receipt": "pass", "crux": "PLAUSIBLE — string-derivation logic pinned by 5 fixtures; live equivalence rests on forward-slash paths (see MINOR finding W2-CRUX-F-S5a); not headless-re-runnable"},
+        {"predicate": "panel test-slice floor holds", "receipt": "pass", "crux": "PLAUSIBLE — hython-only counts unverifiable headless; the diff does not touch the claimed pre-existing-red test, so 'not introduced by W2-S5' holds statically"}
+      ]
+    }
+  ],
+
+  "findings": [
+    {"id": "W2-CRUX-B1-S2", "severity": "BLOCK", "claim": "S2 product + tests are entirely uncommitted (HEAD==base, 0 commits ahead): async_format.py (NEW), chat_display.py (M +178/-22), tests/test_w2s2_format_offmain.py (NEW). The code is sound and pure-tier tests pass, but the work is not durably real. Remedy = commit the named files on wave2/s2; NOT a code fix.", "anchor": "git -C .claude/worktrees/w2-s2 log --oneline 29e55bf0..HEAD (empty) + status --porcelain"},
+    {"id": "W2-CRUX-B1-S3", "severity": "BLOCK", "claim": "S3 product + tests are entirely uncommitted (HEAD==base, 0 commits ahead): working_indicator.py (NEW), tests/test_working_indicator.py (NEW). Widget + tests are correct/confirmed-green but exist only as untracked worktree files. The synapse_panel.py mount-hold behind S5 is legitimate and separate. Remedy = commit the two named files on wave2/s3.", "anchor": "git -C .claude/worktrees/w2-s3 log --oneline 29e55bf0..HEAD (empty) + status --porcelain 3x '??'"},
+    {"id": "W2-CRUX-B1-S5", "severity": "BLOCK", "claim": "S5 product + tests are entirely uncommitted (HEAD==base, 0 commits ahead): synapse_panel.py (M), tests/test_panel_faces.py (M), tests/test_w2_s5_context_offmain.py (NEW). Additionally NO bus release was ever posted for the open synapse_panel.py claim (n=18cb66061adfa40c) — so S3 (deps-gated behind S5) reads S5 as still holding, and the panel-chain serialization S5->S3->S2 never formally advanced. The off-main fix is sound; the state is fragile (recall the wrong-tree episode in S5's own finding #2). Remedy = commit the named files on wave2/s5 AND post the bus release.", "anchor": "git -C .claude/worktrees/w2-s5 log --oneline 29e55bf0..HEAD (empty) + status --porcelain (2 M, 2 ??); bus/wave2/bus.jsonl (no S5 release line)"},
+    {"id": "W2-CRUX-B2-S2", "severity": "MAJOR", "claim": "S2's receipt asserts durable delivery — 'F4 off-main formatting mechanism SHIPPED + PROVEN', 'merge-ready now', 'floor holds' — while git shows 0 commits and all four files uncommitted. A reader would treat S2 as merge-ready when no durable artifact exists. The B2 fail is narrow (S3/S5 use softer 'delivered'/'floor holds' test-run language that does not claim git delivery), but S2's 'SHIPPED' crosses the line.", "anchor": "harness/notes/receipts/W2-S2.json:4-5 vs git -C w2-s2 status --porcelain"},
+    {"id": "W2-CRUX-F-S1a", "severity": "MINOR", "claim": "S1's audit_map cites PRE-FIX line numbers that no longer resolve to hou reads in the shipped file. doctor.py:216/217/220 (real reads now at 248/249/251), doctor.py:603 (real 636), store.py:975/984 (real 1010/1022), store.py:1087/1096 (real 1126/1135). Opening doctor.py:216 shows a telemetry-staleness check, not hou.hipFile.path(). Only store.py:807 still resolves. The enumeration is substantively correct by function+symbol+marshalling-verdict; only the numeric anchors drifted by the amount the wrap inserted — but it weakens predicate-1's 'file:line per site' promise. Not a code defect.", "anchor": "harness/notes/receipts/W2-S1.json:53-59 vs python/synapse/server/doctor.py:248 (grep confirms reads at 248/249/251/636)"},
+    {"id": "W2-CRUX-F-S1b", "severity": "INFO", "claim": "S1's own F2: shared/bridge.py::_execute_houdini runs scene-hash + hou.undos.group unmarshalled on the calling thread — the same F1 crash class — and S1 closes it FOR THE DOCTOR by bypassing the bridge (mcp/server.py _dispatch_doctor_off_main -> handler.handle). It leaves the bridge crash LATENT for any OTHER non-read-only tool dispatched off-main. Out of scope for S1 (shared/ is INTEGRATOR territory) but a real bounded weakness the wave should track.", "anchor": "harness/notes/receipts/W2-S1.json findings W2-S1-F2; python/synapse/mcp/server.py:692-703; shared/bridge.py::_execute_houdini"},
+    {"id": "W2-CRUX-F-S2a", "severity": "MINOR", "claim": "chat_display.py:400-407 carries a comment 'no Qt object is touched here' while the body calls self._fmt_ready.emit() (touches the Signal off-thread). The mechanism is correct — a sanctioned thread-safe QueuedConnection hop — but the comment is imprecise. Doc-nit, not a defect.", "anchor": "python/synapse/panel/chat_display.py:400-407 + Signal wiring :74,:114-115,:405"},
+    {"id": "W2-CRUX-F-S4a", "severity": "INFO", "claim": "Pre-existing docstring drift (NOT introduced by S4): agent_health.py:9 says the health poll runs 'every 3 seconds' but the real QTimer is 4000ms (synapse_panel.py setInterval(4000)). S4's receipt is MORE accurate than the module (cites 4s throughout). Correct the 3s docstring if S4's ready_diff ever lands.", "anchor": "python/synapse/panel/agent_health.py:9 vs python/synapse/panel/synapse_panel.py:418-420"},
+    {"id": "W2-CRUX-F-S5a", "severity": "MINOR", "claim": "S5 byte-equality depends on Houdini returning FORWARD-SLASH paths from hipFile.path() on Windows: _apply_context does scene_file.rsplit('/',1)[-1]. A backslash path would make rsplit('/') return the whole string instead of the basename, silently drifting the ribbon/project from the old hipFile.basename() output. Mitigated by S5's live H22.0.400 probe but not guarded in code and not headless-verifiable. Worth a code guard (or an explicit note) before this is relied on.", "anchor": "python/synapse/panel/synapse_panel.py _apply_context; python/synapse/panel/ws_bridge.py:96 (scene_file = hou.hipFile.path())"},
+    {"id": "W2-CRUX-F-RCPT", "severity": "INFO", "claim": "All five leg receipts are untracked/uncommitted, including S1 and S4 whose CODE state is fine. This is distinct from (and lesser than) the S2/S3/S5 code-uncommitted BLOCK: for S1/S4 it means only the receipt (the durable record of the disposition) is not yet in git. The harness collection/commit step should persist the receipts. This crux's own receipt is likewise written uncommitted, per its readonly posture and the 'write inside your worktree — hold there' instruction.", "anchor": "git status --porcelain across all six worktrees => each shows only its own W2-*.json untracked (plus the S2/S3/S5 code)"}
+  ],
+
+  "for_ruling": [
+    {"id": "W2-CRUX-R1", "question": "WAVE GATE OUTCOME: this crux is BLOCK because S2, S3, S5 hold uncommitted product/test code (B1). Before any merge word, each of those legs must commit its named files to its branch (and S5 must also post its bus release for synapse_panel.py). Once committed, re-run this crux; the code is already verified sound, so a green crucible receipt should follow. Question for Joe: direct S2/S3/S5 to commit-and-release, or handle the commit via the harness collection step?", "why_human": "Committing on the leg branches (and posting the bus release) are human/agent acts on those legs; the crux is readonly and must not commit another leg's work. This is the decisive precondition for merge."},
+    {"id": "W2-CRUX-R2", "question": "CLAIM-GRANULARITY (recurring wave-wide): W2-S5, W2-S3, and W2-S2 all claimed file-level paths inside tests/ while W2-S1 held a COARSE open claim on the whole tests/ dir (its real domain is memory/server). All three flagged this for_ruling. Does a dir-level bus claim serialize unrelated legs, or is it interpreted at file granularity per the CLAUDE.md 'file ownership is exclusive write' design? Additionally, tests/test_panel_faces.py is now edited by S5 and referenced by S2 — a shared-test-file merge-coordination surface. A standing ruling would end the repeated for_ruling.", "why_human": "Bus-protocol semantics + a shared-file coordination policy — an orchestration design decision, not a code fact."},
+    {"id": "W2-CRUX-R3", "question": "S1 bridge-bypass architecture (S1-R1 + F2): the off-main doctor bypasses execute_through_bridge for a zero-mutation diagnostic — the only in-scope way to make it off-main-safe without editing shared/bridge.py (INTEGRATOR territory). Accept the bypass, or instead declare the doctor bridge-read-only in panel/bridge_adapter._READ_ONLY_TOOLS (a panel-territory change)? And separately: shared/bridge.py::_execute_houdini leaves the same F1 crash class latent for OTHER non-read-only tools dispatched off-main (W2-CRUX-F-S1b) — schedule an INTEGRATOR leg?", "why_human": "Cross-territory routing/ownership decision (panel vs INTEGRATOR); either is defensible; the latent bridge crash is a real bounded weakness needing a scheduling call."},
+    {"id": "W2-CRUX-R4", "question": "S2 panel activation (S2-R1): the off-main formatting mechanism ships OFF by default; the one-line activation (chat.enable_off_main_format()) must land in synapse_panel.py, which S5 holds. After S5 (then S3) release synapse_panel.py, should S2 (or a follow-up) add the activation, and should off-main then be the panel default? Mechanism + tests are merge-ready-once-committed; only the activation is gated.", "why_human": "Sequencing + a default-behaviour (make off-main the panel default) decision that changes live GUI behaviour."},
+    {"id": "W2-CRUX-R5", "question": "S4 GUI probe (S4 R-FRZ-3-followup / spawn W2-S4-P1): the FRZ_REPRO stickiness discriminator needs a single human-at-GUI run in a BRIDGE-ABSENT window (panel open, no LosslessExecutionBridge yet). If it reports sticky WITHOUT a prompt -> apply S4's adversarially-verified ready cache (agent_health.py) + ready_test. If not sticky -> the tight band lives on the result path (rung 5) and the cache is optional hygiene. Schedule the GUI run?", "why_human": "'Run the GUI probe' and the subsequent apply/retire decision are human actions a headless agent cannot perform."}
+  ],
+
+  "spawn": [],
+  "spawn_note": "crux spawn_classes=[] — any spawn proposed here would land 'held' for Joe. No new mission is needed: the decisive remedy (commit S2/S3/S5 named files + S5 bus release) is a for_ruling (R1), not a new build. The legs already carry their own actionable spawns in their receipts: S1P1 (moneta pxr off-main probe) + S1F1 (use_real_usd doc drift); W2-S2-P1 (measure F4 relief) + W2-S2-P2 (panel opt-in, held); W2-S3-P1 (GUI indicator probe); W2-S4-P1 (GUI discriminator run) + W2-S4-P2 (chat_panel sibling, held); W2-S5-SP1 (send-path hou reads off-main probe).",
+
+  "resume_token": {
+    "skip": [
+      "Do NOT re-run the S1 seam-guard merge-tree — reproduced (tree 1beba479: 1 store.py conflict at temp_root, scene_memory auto-clean; seam HEAD 5e933c13).",
+      "Do NOT re-verify S1/S4 code state — S1 committed (2fa5ec2e), S4 correctly shipped nothing (R-FRZ-3).",
+      "Do NOT treat the code as broken — both independent passes confirm the criteria hold; the block is uncommitted-state, not defects."
+    ],
+    "do_first_on_reentry": [
+      "Re-run this crux ONLY after S2/S3/S5 commit their named files on their branches (and S5 posts its bus release). The re-run should flip B1/B2 to pass and yield a green crucible receipt — the precondition for Joe's merge word.",
+      "If merging S1 near fix/memory-store-recovery: apply the one-line rebase resolution (wrap the seam's _safe_unsaved_base expandString read with _read_on_main)."
+    ],
+    "wave_state": "S1 green_with_findings (committed). S4 green_with_findings (correct ship-nothing). S2/S3/S5 BLOCK (uncommitted product code). Wave = BLOCKED from merge until the three commit."
+  }
+}
