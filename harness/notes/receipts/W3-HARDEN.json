@@ -1,0 +1,102 @@
+{
+  "leg": "W3-HARDEN",
+  "status": "green_with_findings",
+  "summary": "Production hardening for the memory substrate: crash-recovery, concurrency, store-level write_plane truth, and a post-migration consolidation dry-run. All four acceptance predicates PASS with observed evidence; every claim was adversarially re-verified by five independent skeptics (all CONFIRMED, 48 independent test re-runs green). Delivered WITHOUT editing any peer-claimed file (W3-STORE/KIND/VEC own moneta_store.py + store.py) by routing store-health via read-only introspection and running the dry-run through Moneta's read-only classify(). SEAM GUARD: HEAD == fix/memory-store-recovery == 5e933c13, zero drift.",
+  "base": "5e933c1306cfc508739c505443d85a368cab4f46",
+  "touched": [
+    "python/synapse/server/write_plane.py (+store_health/_live_store, folded into write_plane_state)",
+    "python/synapse/server/doctor.py (+_check_write_plane_store, wired into run_doctor)",
+    "tests/test_w3_harden_crash_recovery.py",
+    "tests/test_w3_harden_concurrency.py",
+    "tests/test_w3_harden_write_plane_store.py",
+    "tests/test_w3_harden_evolve_dryrun.py"
+  ],
+  "env": "Python 3.14.2, Windows; moneta importable, pxr (OpenUSD 0.26.5) importable — real-USD + real-store hardening is OBTAINABLE, not UNKNOWN.",
+  "acceptance": [
+    {
+      "predicate": "kill-mid-write then reopen: root parses, last durable memory readable, no corruption",
+      "verdict": "pass",
+      "evidence": "test",
+      "anchor": "tests/test_w3_harden_crash_recovery.py (5 tests). test_hard_kill_at_replace_instant_preserves_last_durable spawns a real subprocess that os._exit(137) INSIDE a patched os.replace at the 2nd deposit (returncode==137, banner absent) -> reopen==['mem_A']: root parses, last durable readable, B (interrupted) not corrupting. Mechanism: Moneta durability.snapshot_ecs writes tmp->fsync->os.replace (atomic) [C:/Python314/Lib/site-packages/moneta/durability.py:108-116]; per-deposit save() [moneta_store.py:445-456]; reopen _quarantine_if_corrupt before Moneta's bare json.load hydrate [moneta_store.py:319-350]. Adversarial P1: CONFIRMED (regression to a direct in-place write fails the test).",
+      "limitation": "Process-kill durable, not power-loss durable: snapshot_ecs fsyncs the tmp fd but issues no directory fsync after os.replace. Out of scope for the 'kill-mid-write' predicate; must not be read as power-loss-durable."
+    },
+    {
+      "predicate": "two concurrent writers: both memories present afterwards, observed merge semantics receipted",
+      "verdict": "pass",
+      "evidence": "test",
+      "anchor": "tests/test_w3_harden_concurrency.py (5 tests). OBSERVED, not asserted from USD docs: (a) in-process 2nd handle on same URI -> MonetaResourceLockedError (single-owner) [moneta/api.py:199]; (b) USD layer-merge: two memories in two distinct sublayers compose into cortex_root and BOTH prims survive on real pxr Stage.Traverse() (non-tautological: deleting the subLayerPaths line empties the traverse); (c) two sessions SERIALIZED through the single-owner lock -> survivors==['mem_sessionA','mem_sessionB']; (d) same-file two writers do NOT merge (disk-byte observation). Cross-process boundary receipted (finding F1). Adversarial P2: CONFIRMED, no holes.",
+      "limitation": "'Both present' holds for the store's real single-owner-serialized access pattern and for USD sublayer composition. Genuinely-concurrent cross-process store writers CAN clobber (survivor read is ECS-snapshot last-writer-wins; USD sublayers do not feed it) — see finding F1; fix scoped to W3-STORE."
+    },
+    {
+      "predicate": "doctor write_plane ok is demonstrably derived from store-level evidence",
+      "verdict": "pass",
+      "evidence": "probe",
+      "anchor": "tests/test_w3_harden_write_plane_store.py (10 tests) + probe. write_plane.store_health() reads the LIVE store object (store._global_synapse.store, the same singleton the bridge serves via get_synapse_memory) READ-ONLY — never constructs a store — and derives degraded from: serving CLASS vs requested backend (catches jsonl-serving-while-moneta even when the fallback flag is None/reset), count() reachability, and Moneta durable-layer/engine-handle presence [python/synapse/server/write_plane.py]. Folded into write_plane_state()'s verdict; surfaced in the doctor via _check_write_plane_store() wired into run_doctor [doctor.py]. CRUCIBLE SEAM pinned: test_healthy_bridge_stays_true_when_store_is_degraded proves _handle_get_health returns healthy=True while write_plane.status=degraded (healthy is a liveness answer, not derived from write_plane). Adversarial P3+P5: CONFIRMED (4/5 degraded shapes flag; wired to real Moneta internals _handle:191/.durability:601/count:501).",
+      "limitation": "store_health is NON-MUTATING by module contract (a health probe must not write), so a Moneta store with intact _handle/durability/count() but a silently-failing save() reads ok — the dir-writability probe is the designated write-capability check. Closing this needs a store-side _last_save_ok telemetry flag (spawn S2, W3-STORE)."
+    },
+    {
+      "predicate": "post-migration evolve dry-run returns a sane audit over the real corpus",
+      "verdict": "pass",
+      "evidence": "test",
+      "anchor": "tests/test_w3_harden_evolve_dryrun.py (5 tests). Non-destructive consolidation audit via Moneta's OWN read-only classify() [moneta/consolidation.py:99] — NOT run_pass, which 'still prunes' in dry-run [consolidation.py:143]. test_dry_run_over_real_corpus_is_sane_and_non_mutating opens a copytree copy of the REAL on-disk corpus (.synapse/corpus/.moneta/snapshot.json, 39 rows, dim 256) with a dim-matched HashEmbedder(256), runs the audit -> sane (count_before==39, projected==before-len(prune), lists), ZERO mutation (snapshot bytes byte-identical across the audit, id-set + count unchanged). Non-triviality pinned by test_dry_run_detects_prunable_without_removing. The existing synapse_evolve_memory dry_run branch pinned structurally non-mutating. Adversarial P4: CONFIRMED (classify source-verified read-only).",
+      "limitation": "The audit skips decay to stay non-mutating, so it reports snapshot-time utility, not current-time; on the healthy real corpus this yields prune=0. Non-triviality is covered by the synthetic prunable test. 'sane' = internally consistent + zero-mutation, not 'reflects a fully-decayed pass'."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1-cross-process-clobber",
+      "severity": "finding",
+      "claim": "Moneta's single-owner URI lock is PROCESS-LOCAL (an in-memory _ACTIVE_URIS set; the error says 'in this process'). Two separate OS processes opening the same store dir BOTH open, and the whole-ECS snapshot is last-writer-wins -> a deposit is silently CLOBBERED. Observed live: two subprocesses deposited, reopen showed 1 of 2 survivors.",
+      "anchor": "moneta/api.py:199 (in-process lock only); tests/test_w3_harden_concurrency.py::test_cross_process_uri_lock_is_process_local (CROSS_PROCESS_SURVIVORS observed); probe _w3scratch/probe_xproc.py",
+      "disposition": "Fix (a cross-process owner lock) belongs to W3-STORE, which owns from_storage_dir + the nine-store unification per the SEAM GUARD. W3-HARDEN receipts the observation and spawns the fix (S1). Bus finding posted (nonce 18cb754337319f60). Acceptable single-user-localhost bound today; a prerequisite for any multi-session deployment."
+    },
+    {
+      "id": "F2-dim-mismatch-root-cause-live",
+      "severity": "finding",
+      "claim": "The spec's §0 'ONE ROOT CAUSE' is LIVE in this base: the real corpus stores 256-dim vectors, the default SemanticEmbedder emits 384-dim, and Moneta init eagerly rebuilds the vector index -> ValueError: embedding dim mismatch: expected 384, got 256. So the real corpus CANNOT be opened under the default backend here. This means W3-DIM (Phase 0) has not landed in my base.",
+      "anchor": "moneta/vector_index.py:111; tests/test_w3_harden_evolve_dryrun.py::test_dim_mismatch_is_the_documented_root_cause",
+      "disposition": "Out of W3-HARDEN scope (W3-DIM owns the dim fix). The consolidation dry-run does NOT use vectors (classify reads utility/attended_count/state only), so the real-corpus audit runs by matching the reader dim to the corpus (HashEmbedder(256)) — a legitimate way to read existing data. Once W3-DIM lands, the real corpus opens under the default backend and write_plane goes degraded->ok as the spec predicts."
+    },
+    {
+      "id": "F3-seam-guard-clean",
+      "severity": "info",
+      "claim": "SEAM GUARD satisfied: HEAD == fix/memory-store-recovery == 5e933c13 (identical commit -> zero drift, rebase-compatible by identity; no content diff on python/synapse/memory/). This wave modified ONLY write_plane.py + doctor.py (additive, 0 deletions) + 4 new tests — NO edit to moneta_store.py or store.py (peer-owned W3-STORE/KIND/VEC).",
+      "anchor": "git rev-parse HEAD; git rev-parse fix/memory-store-recovery; git status --short",
+      "disposition": "No drift, no cross-territory edit -> no BLOCK. Adversarial P5: CONFIRMED."
+    }
+  ],
+  "for_ruling": [
+    "Cross-process concurrency posture (F1): accept the single-user-localhost bound (the process-local URI lock is the guard, sufficient for one Houdini seat) OR require a cross-process owner lock before any multi-session use. Decision + owner: W3-STORE / Joe."
+  ],
+  "spawn": [
+    {
+      "id": "W3-STORE-OWNERLOCK",
+      "class": "code",
+      "held_reason": "class 'code' is outside W3-HARDEN spawn_classes (probe) -> lands held for Joe",
+      "name": "cross-process owner lock for the Moneta store (silent clobber -> loud refusal)",
+      "band": "BUILD",
+      "targets": [
+        "from_storage_dir writes a .moneta/OWNER lockfile (pid+host, O_CREAT|O_EXCL); a 2nd LIVE same-host owner is REFUSED loudly instead of clobbering; a dead-pid/stale lock is reclaimed; same-pid reentrant; removed on close(); FAIL-OPEN on any lock-internal error (never block a legitimate single-session open)."
+      ],
+      "owner": "W3-STORE (owns from_storage_dir + store unification)",
+      "rationale": "Converts finding F1's silent deposit clobber into a loud refusal, satisfying 'two sessions writing don't clobber' for the multi-session case. Kept out of W3-HARDEN because moneta_store.py is peer-claimed and USER-MEMORY open-path changes must be owned by the store leg."
+    },
+    {
+      "id": "W3-STORE-SAVE-TELEMETRY",
+      "class": "code",
+      "held_reason": "class 'code' is outside W3-HARDEN spawn_classes (probe) -> lands held for Joe",
+      "name": "MonetaBackedStore records _last_save_ok so write_plane can surface a silently-failing save",
+      "band": "BUILD",
+      "targets": [
+        "save() records success/failure of dur.snapshot_ecs (currently swallowed to a warning at moneta_store.py:606-607); write_plane.store_health() then reads the flag and reports degraded when the last save failed."
+      ],
+      "owner": "W3-STORE",
+      "rationale": "Closes the acceptance-3 limitation: a store whose save() silently fails is degraded, but a non-mutating health probe cannot see it without a store-side flag. write_plane's read-only introspection is already positioned to consume it."
+    }
+  ],
+  "verification": {
+    "adversarial": "5 independent skeptic agents (one per predicate + seam guard) each tried to BREAK the claim and re-ran its test; all returned CONFIRMED; 48 independent test re-runs green. Synthesis verdict: GO / green with disclosed limitations.",
+    "regression": "tests/test_write_plane_health.py 26/26; test_moneta_store/integration/crucible/substrate_truth + test_c0_store_address 132/132; test_doctor_coexistence + test_m3_logs_doctor 30/30; W3-HARDEN suite 25/25.",
+    "seam_guard": "HEAD == fix/memory-store-recovery == 5e933c13 (zero drift); edits confined to write_plane.py + doctor.py + tests."
+  }
+}

@@ -22,8 +22,11 @@ CONTRACT
     selected memory backend is the one serving.
 ``degraded``
     At least one target refused a write, or the memory backend silently fell
-    back to jsonl (``memory.store.backend_fallback()`` is non-None). ``reason``
-    names what and why.
+    back to jsonl (``memory.store.backend_fallback()`` is non-None), or the
+    LIVE store itself is degraded — the serving store class is jsonl while
+    moneta/shadow was selected, ``store.count()`` cannot enumerate it, or a
+    Moneta store has no durability layer (``store_health()``, W3-HARDEN target
+    3). ``reason`` names what and why; the ``store`` field carries the evidence.
 ``unknown``
     The check could not run. This is a legitimate value and it is NOT ``ok`` —
     a false ``ok`` is the exact bug this module exists to remove.
@@ -274,6 +277,124 @@ def _backend_fallback() -> Optional[Dict[str, Any]]:
     return _store_mod.backend_fallback()
 
 
+# ---------------------------------------------------------------------------
+# Store-level evidence (W3-HARDEN target 3) — write_plane for the STORE
+# ---------------------------------------------------------------------------
+#
+# The dir + fallback-flag checks above answer "is the write TARGET reachable".
+# They do NOT answer "is the store that is ACTUALLY serving the one the operator
+# asked for, and can it still enumerate + persist". A degraded store behind a
+# healthy bridge is the exact blind spot the spec's Phase-6 telemetry item
+# closes (docs/SYNAPSE-memory-engineering-spec.md §8): *"doctor reports
+# write_plane for the STORE, not just the bridge"*. The signals below are read
+# from the LIVE store OBJECT, so they survive a fallback flag that lied or was
+# reset — ``store._make_store`` resets ``_BACKEND_FALLBACK`` on every
+# construction, so a later successful reconstruction can blank a real earlier
+# fallback, but the serving CLASS cannot be reset out from under the truth.
+
+# The jsonl store class name (``store.MemoryStore``) and the Moneta adapter's
+# (``moneta_store.MonetaBackedStore``). Matched by name, not import, so this
+# module never drags the memory package's optional deps into a health call.
+_JSONL_STORE_CLASSES = {"MemoryStore"}
+_MONETA_STORE_CLASSES = {"MonetaBackedStore"}
+
+
+def _live_store() -> Any:
+    """The backend store object ALREADY instantiated in this process, or None.
+
+    Read-only by construction: it reads ``store._global_synapse`` directly and
+    NEVER calls ``get_synapse_memory()`` — instantiating a store from inside a
+    health probe would be a mutation (it materializes ``.synapse`` on disk). A
+    process with no store loaded returns None, which the caller records as
+    ``evaluated=False`` — "no store loaded" is not a degradation.
+    """
+    try:
+        from ..memory import store as _store_mod
+        sm = getattr(_store_mod, "_global_synapse", None)
+        if sm is None:
+            return None
+        return getattr(sm, "store", None)
+    except Exception:  # noqa: BLE001 -- health must not raise
+        return None
+
+
+def store_health() -> Dict[str, Any]:
+    """Non-mutating, store-level write evidence read from the live store object.
+
+    Returns ``evaluated=False`` (contributes NOTHING to the verdict) when no
+    store has been instantiated in this process. Otherwise ``status`` is
+    ``ok`` / ``degraded`` / ``unknown`` derived from three store-scoped facts:
+
+    1. **Serving identity** — the live store's CLASS vs the requested backend.
+       A jsonl ``MemoryStore`` serving while ``moneta``/``shadow`` was selected
+       is a degradation even if ``backend_fallback()`` is None (the flag is
+       reset per construction; the class is not).
+    2. **Enumeration reachability** — ``store.count()`` must not raise. A store
+       that cannot be read is degraded regardless of directory writability.
+    3. **Durable persistence** (Moneta only) — a Moneta handle with
+       ``durability=None`` keeps deposits in RAM; a restart loses them. That is
+       a degraded WRITE plane even when the directory probes writable.
+
+    Never raises; never constructs a store.
+    """
+    store = _live_store()
+    if store is None:
+        return {"evaluated": False,
+                "reason": "no memory store instantiated in this process"}
+
+    info: Dict[str, Any] = {"evaluated": True}
+    broken: list = []
+    unclear: list = []
+    requested = os.environ.get("SYNAPSE_MEMORY_BACKEND", "jsonl").strip().lower()
+    cls = type(store).__name__
+    info["requested_backend"] = requested
+    info["serving_class"] = cls
+
+    # (1) Serving-backend identity from the live OBJECT, not the fallback flag.
+    serving_jsonl = cls in _JSONL_STORE_CLASSES
+    info["serving_jsonl"] = serving_jsonl
+    if requested in ("moneta", "shadow") and serving_jsonl:
+        broken.append(
+            f"backend {requested!r} was selected but a jsonl {cls} is the live "
+            f"store — the selected substrate is not the one serving")
+
+    # (2) Enumeration reachability.
+    try:
+        info["count"] = int(store.count())
+    except Exception as exc:  # noqa: BLE001
+        info["count"] = None
+        broken.append(
+            f"store.count() raised ({type(exc).__name__}: {exc}) — the live "
+            f"store cannot be enumerated")
+
+    # (3) Moneta-specific durable persistence layer.
+    if cls in _MONETA_STORE_CLASSES:
+        handle = getattr(store, "_handle", None)
+        durability = getattr(handle, "durability", None) if handle is not None else None
+        info["durable"] = durability is not None
+        if handle is None:
+            # A Moneta-classed store with no engine handle cannot persist OR
+            # read — it is degraded, not merely non-durable. (The live adapter
+            # always sets _handle in __init__, so this is a latent-safety guard,
+            # not a live path; the crucible flagged the earlier guard's blind
+            # spot when handle was None, W3-HARDEN adversarial P3-b.)
+            broken.append(
+                "moneta store has no engine handle — it can neither persist "
+                "nor read")
+        elif durability is None:
+            broken.append(
+                "moneta store has no durability layer — deposits are RAM-only "
+                "and will not survive a restart")
+
+    if broken:
+        info["status"], info["reason"] = "degraded", "; ".join(broken)
+    elif unclear:
+        info["status"], info["reason"] = "unknown", "; ".join(unclear)
+    else:
+        info["status"], info["reason"] = "ok", None
+    return info
+
+
 def write_plane_state() -> Dict[str, Any]:
     """Cheap, non-mutating verdict on whether SYNAPSE can still write.
 
@@ -282,6 +403,7 @@ def write_plane_state() -> Dict[str, Any]:
     """
     targets: Dict[str, Any] = {}
     fallback: Optional[Dict[str, Any]] = None
+    store_info: Optional[Dict[str, Any]] = None
     broken: list = []
     unclear: list = []
 
@@ -326,12 +448,26 @@ def write_plane_state() -> Dict[str, Any]:
                 broken.append(f"{name} dir not writable ({target}): {detail}")
             elif writable is None:
                 unclear.append(f"{name} dir could not be probed ({target}): {detail}")
+
+        # Store-level evidence (target 3): fold a live-store degradation into the
+        # SAME verdict lists. store_health() is self-fenced and never raises, but
+        # it stays inside the outer try so any unexpected escape still lands as
+        # 'unknown', never a false 'ok'. A process with no live store contributes
+        # nothing (evaluated=False) — preserving the existing dir-only verdict.
+        store_info = store_health()
+        if store_info.get("evaluated"):
+            s_status = store_info.get("status")
+            if s_status == "degraded":
+                broken.append(f"store degraded: {store_info.get('reason')}")
+            elif s_status == "unknown":
+                unclear.append(f"store health unclear: {store_info.get('reason')}")
     except Exception as exc:  # noqa: BLE001 -- health must not raise
         return {
             "status": "unknown",
             "reason": f"write-plane check failed: {type(exc).__name__}: {exc}",
             "targets": targets,
             "backend_fallback": fallback,
+            "store": store_info,
         }
 
     if broken:
@@ -346,4 +482,5 @@ def write_plane_state() -> Dict[str, Any]:
         "reason": reason,
         "targets": targets,
         "backend_fallback": fallback,
+        "store": store_info,
     }
