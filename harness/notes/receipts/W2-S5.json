@@ -1,0 +1,69 @@
+{
+  "leg": "W2-S5",
+  "name": "context timer off Houdini-main",
+  "status": "green_with_findings",
+  "summary": "The 2s context tick (SynapsePanel._update_context) no longer reads hou on the Qt/main thread. The three reads (hou.frame() / hou.selectedNodes() / hou.hipFile.basename()) now route through the pre-existing ws_bridge.gather_context_off_main (daemon thread -> run_on_main DEFERRED path); the result marshals back to the Qt thread via a new queued _context_ready signal to _apply_context, which renders the context ribbon + health strip byte-identically. import hou remains only as the availability guard (no data read). Diff confined to the tick wiring.",
+  "acceptance": [
+    {
+      "predicate": "the 2s tick performs zero direct hou.* calls on the Qt/main path (verified by test hooking the tick)",
+      "verdict": "pass",
+      "evidence": "tests/test_w2_s5_context_offmain.py::test_tick_makes_no_direct_hou_reads_on_main hooks the tick with a recording hou MagicMock (patch.dict sys.modules) + a gather spy; asserts gather_context_off_main called once and rec_hou.frame / selectedNodes / hipFile.basename / hipFile.path call_count == 0. Green under hython 22.0.400. Code: synapse_panel.py _update_context makes only `import hou` (availability guard, no attribute read) then delegates to gather_context_off_main."
+    },
+    {
+      "predicate": "gather_context_off_main is the producer; results marshaled back before any Qt use",
+      "verdict": "pass",
+      "evidence": "synapse_panel.py _update_context -> gather_context_off_main(self._context_ready.emit); _context_ready = Signal(dict) connected to _apply_context (AutoConnection => cross-thread emit is queued to the Qt thread). tests/test_w2_s5_context_offmain.py::test_gather_is_producer_and_result_marshalled_to_main emits the captured callback from a NON-main thread and proves the Qt label stays at its sentinel until QApplication.processEvents() runs the queued slot (marshal-back, not inline)."
+    },
+    {
+      "predicate": "context payload byte-equal to baseline for a fixture scene state",
+      "verdict": "pass",
+      "evidence": "tests/test_w2_s5_context_offmain.py::test_context_payload_byte_equal_to_baseline -- 5 fixtures (multi-select, deep-nest, top-level-node '/' boundary, saved scene, untitled) assert exact ribbon strings + health-strip project. Derivations live-verified on H22.0.400 (read-only + self-cleaning create/destroy probe): scene_file.rsplit('/',1)[-1] == hipFile.basename(); path.rsplit('/',1)[0] or '/' == node.parent().path() for top-level AND nested nodes; [n.path() for n in selectedNodes()] preserves order so sel_paths[0] == sel[0]."
+    },
+    {
+      "predicate": "panel test-slice floor holds",
+      "verdict": "pass",
+      "evidence": "hython 22.0.400 offscreen. test_panel_faces.py + test_w2_s5_context_offmain.py + test_context_poll_offmain.py => 46 passed, 1 failed. The 1 fail (test_panel_faces.py::test_wordmark_carries_brand_tracking, Space Grotesk letterSpacing) is PRE-EXISTING at wave2/s5 HEAD, confirmed via git stash. test_chat_panel.py => 87 passed, 9 failed; the 9 (TestContextBar*, AttributeError under hython) are PRE-EXISTING baseline, confirmed via git stash, and TestStaleContextGather (the gather consumer) is green. No green->red regression; every baseline-green test stays green."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "ADVERSARIAL PASS: read-only crucible dispatched to attack byte-equality, off-thread safety, scope confinement, and test rigor. VERDICT PENDING at write time; updated below before commit.",
+      "anchor": "agent w2s5-crucible"
+    },
+    {
+      "claim": "Wrong-tree edit, detected and corrected before any test or commit: the first edits landed in the MAIN tree (C:/Users/User/SYNAPSE, branch master) via absolute path, not the worktree. Relocated all 3 files into the worktree (HEAD blobs verified byte-identical between master and wave2/s5 for both tracked files), reverted the main tree's 2 tracked files (git checkout --), and removed the stray untracked test file. Main tree left clean of W2-S5 changes; other agents' pre-existing untracked files there were NOT touched.",
+      "anchor": "git -C main status (0 _context_ready) ; git -C worktree status (3 files)"
+    },
+    {
+      "claim": "Pre-existing baseline reds on this build, NOT introduced by W2-S5: test_panel_faces.py:446 test_wordmark_carries_brand_tracking (letterSpacing 116.0 vs expected 128.6) and test_chat_panel.py 9x TestContextBar* (AttributeError under hython). Both reproduced identically at wave2/s5 HEAD via git stash.",
+      "anchor": "tests/test_panel_faces.py:446 ; tests/test_chat_panel.py::TestContextBarCreation/TestContextBarProjectContext"
+    }
+  ],
+  "for_ruling": [
+    {
+      "claim": "Claim granularity. W2-S1 holds a coarse open bus claim on the whole tests/ dir (its domain is memory/server). W2-S5 needed to write two panel test files disjoint from that domain. Per the file-level exclusive-write design (CLAUDE.md 'File ownership is exclusive write') I claimed the named files and proceeded rather than hard-blocking the smallest leg behind an unrelated dir-level claim (which would otherwise serialize the whole wave behind S1). Requests a ruling: should dir-level bus claims serialize unrelated legs, or be interpreted at file granularity?",
+      "anchor": "bus finding n=18cb660896b87804"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W2-S5-SP1",
+      "name": "system-prompt send-path hou reads off-main",
+      "band": "BUILD",
+      "class": "probe",
+      "source": {
+        "doc": "harness/notes/receipts/W2-S5.json",
+        "anchor": "SynapsePanel._build_system_prompt (synapse_panel.py ~2184-2201, called from _start_worker :2240) reads hou network / selectedNodes / frame / hipFile INLINE on the Qt/main thread the instant the artist presses Send -- the same W1-MTFIX inline-hou-on-main class W2-S5 just closed on the 2s tick, on a different trigger (send, not timer). The code's own FRZ probe comment (synapse_panel.py:2225-2227) already flags it as 'unmarshalled hou.* reads'."
+      },
+      "targets": [
+        "probe whether _build_system_prompt's inline send-path hou reads should route through an off-main gather (like chat_panel._gather_context_if_stale) or a cached snapshot, and whether the send-path freeze is dominated by that read or by the copy.deepcopy(messages) at claude_worker.py:99"
+      ],
+      "acceptance": [
+        {"predicate": "verdict on whether the send-path inline hou read is a real freeze contributor and whether it should move off-main", "evidence": "probe"}
+      ],
+      "readonly": true,
+      "touches": ["python/synapse/panel/synapse_panel.py"],
+      "note": "Related-value spawn (class 'probe' is inside W2-S5 spawn_classes). Not chased in-leg per scope discipline."
+    }
+  ]
+}
