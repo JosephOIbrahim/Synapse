@@ -1,0 +1,70 @@
+{
+  "leg": "W3-PAPER",
+  "name": "durable record: SUPPORT_MATRIX rows, receipts index, wave capsule",
+  "band": "PAPER",
+  "status": "green_with_findings",
+  "branch": "wave3/paper",
+  "base": "5e933c13",
+  "grounded_at": "2026-08-13",
+  "deps": { "W3-CRUX": "consumed (orientation + whole-wave adjudication); CRUX receipt itself uncommitted at base — noted, not a blocker to this paper leg" },
+  "summary": "Closed the wave-3 paper trail with docs+notes only (zero code diff). SUPPORT_MATRIX gains four committed-receipt contract rows (dim authority / dual-write / migration parity / concurrency semantics), each citing its committed W3-<LEG>.json and bounded to observed scope. Wrote a receipts index (harness/notes/W3_RECEIPTS_INDEX.md) and a wave capsule (harness/notes/CAPSULE_2026-08-13_wave3-memory.md). An adversarial 4-lens verification caught a same-day staleness error (an early draft, mirroring W3-CRUX's pre-commit orientation, recorded 5 legs as uncommitted-at-base); re-derived from git and corrected: 7 builder legs are committed, only the CRUX gate is uncommitted.",
+  "files_written": [
+    "docs/SUPPORT_MATRIX.md",
+    "harness/notes/W3_RECEIPTS_INDEX.md",
+    "harness/notes/CAPSULE_2026-08-13_wave3-memory.md",
+    "harness/notes/receipts/W3-PAPER.json"
+  ],
+  "acceptance": [
+    {
+      "predicate": "every SUPPORT_MATRIX row added cites a committed receipt path and claims observed scope only",
+      "verdict": "pass",
+      "evidence": "Four committed-receipt contract rows added (docs/SUPPORT_MATRIX.md 'Wave-3 memory-substrate contracts — 2026-08-13'): Dim authority -> harness/notes/receipts/W3-DIM.json (wave3/dim @ 16cf1543); Dual-write -> W3-STORE.json (wave3/store @ e8b691de); Migration parity -> W3-MIGRATE.json (wave3/migrate @ 0c87a835); Concurrency semantics -> W3-HARDEN.json (wave3/harden @ 1b8d1e80). Committed state re-derived from git: 'git rev-list --count 5e933c13..wave3/<leg>'=1, 'git cat-file -e wave3/<leg>:harness/notes/receipts/W3-<LEG>.json' succeeds, and each committed blob is byte-identical (sha1) to the sibling worktree receipt. Observed-scope discipline independently confirmed CLEAN by the adversarial observed-scope lens: no row asserts moneta_substrate=ok / store-level health; dual-write is bounded to store-adapter level with 'moneta_substrate stays fail (schema_registered=False, DEAD BYTES)' co-located; the dim live conjunct and the literal typed-.usda-prim count are recorded UNKNOWN, never a fabricated pass."
+    },
+    {
+      "predicate": "capsule written with position, ruling items, and open L-tasks",
+      "verdict": "pass",
+      "evidence": "harness/notes/CAPSULE_2026-08-13_wave3-memory.md carries: Position (paper leg; wave BLOCKED per CRUX; live seat base-code fail); an honest S5 acceptance readout (only the 'fallback, doctor says which honestly' box green live); 8 durable/carried findings; 6 ruling items (merge order, durable location, schema registration, concurrency posture, consolidation fidelity, held spawns) for Joe/INTEGRATOR; and 7 open L-tasks — L3 is the GUI relaunch + live-doctor confirmation (restart the SYNAPSE server, re-run synapse_doctor to confirm moneta_substrate no longer dim-fails), explicitly recorded UNKNOWN-headless."
+    }
+  ],
+  "crucible_criteria": [
+    {
+      "criterion": "docs claim observed scope only — no row asserts store-level health from registration-level evidence",
+      "verdict": "pass",
+      "evidence": "Adversarial observed-scope lens re-derived from the repo and found the axis CLEAN: every health claim explicitly bounded; DEAD BYTES / schema_registered=False stated at every in_use=True mention; live doctor (fail=1/ok=8/skipped=4) faithful; no UNKNOWN dressed as a pass. Field names (schema_registered, schema_in_use) verified real doctor fields."
+    },
+    {
+      "criterion": "no code paths touched — docs and notes only; any code diff on this branch is a BLOCK",
+      "verdict": "pass",
+      "evidence": "git status --short: only 'M docs/SUPPORT_MATRIX.md' + two '?? harness/notes/*' files. 'git diff --stat HEAD' = docs/SUPPORT_MATRIX.md only. Zero python/tests/src/shared paths. Confirmed twice (pre- and post-correction) and independently by the no-code-diff lens."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "SAME-DAY STALENESS CAUGHT + CORRECTED. Five builder legs (STORE/KIND/EVOLVE/MIGRATE/HARDEN) committed their named files at 16:47 on 2026-08-13, AFTER W3-CRUX's orientation recorded them at base. An early W3-PAPER draft mirrored CRUX's snapshot and labeled them uncommitted/pending. A 4-lens adversarial verification (workflow w30rc19po) flagged it as a 'Receipts over claims' violation; re-derived from git and corrected all three docs to current ground truth: 7 of 7 builder legs committed, only the CRUX gate uncommitted.",
+      "anchor": "workflow w30rc19po + git rev-list/cat-file/status (2026-08-13); commit subjects wave3/{store,kind,evolve,migrate,harden} dated 2026-08-13T16:47"
+    },
+    {
+      "claim": "Live doctor re-probed FIRST-PARTY (mcp__synapse__synapse_doctor, bridge pong protocol 4.0.0, 2026-08-13): moneta_substrate=fail, backend moneta fell back to jsonl (init failed: ValueError embedding dim mismatch: expected 384, got 256; storage C:/Users/User/AppData/Local/Temp/houdini_temp/untitled/.synapse; fallback at 2026-08-13 12:27:22), downstream moneta_consolidation/vector_recall/use_real_usd SKIPPED-not-faked, symbol_table 22.0.400 (35908) matches running, summary fail=1/ok=8/skipped=4. Matches W3-CRUX's probe; nothing is merged, so the live seat runs base code and the wave is NOT live-doctor-confirmed (blueprint S9).",
+      "anchor": "probe: mcp__synapse__synapse_ping + mcp__synapse__synapse_doctor 2026-08-13"
+    },
+    {
+      "claim": "The ONLY genuinely-uncommitted leg is the CRUX gate: W3-CRUX.json is untracked ('??') in .claude/worktrees/w3-crux, and wave3/crux is 0 commits past base 5e933c13. W3-CRUX's own status is 'blocked' (a green crux receipt is a precondition for merge, not a permission).",
+      "anchor": "git -C .claude/worktrees/w3-crux status --porcelain; git rev-list --count 5e933c13..wave3/crux == 0"
+    },
+    {
+      "claim": "Whole-wave state (from W3-CRUX, re-grounded): BLOCKED — builder substance sound, both failure classes CLOSED (silent-fallback-claiming-moneta; data-loss-in-migration/consolidation). Carried risks the wave must hold: cross-process snapshot CLOBBER (moneta/api.py:199 process-local lock, survivors 1 of 2 observed live), consolidation _union_into dropping differing non-empty scalars (recoverable via backup), DEAD BYTES (PXR_PLUGINPATH_NAME unset), crash durability process-kill-only (not power-loss).",
+      "anchor": ".claude/worktrees/w3-crux/harness/notes/receipts/W3-CRUX.json whole_wave_verdict + failure_classes"
+    },
+    {
+      "claim": "Provenance: mission source.doc docs/SYNAPSE-memory-blueprint.md (+ engineering-spec) are committed on master 7117a6de but absent from base 5e933c13; the S5/S6 anchor was read from master. Consistent with STORE/MIGRATE/DIM receipts noting the spec absent at base.",
+      "anchor": "git log --all -- docs/SYNAPSE-memory-blueprint.md -> 7117a6de"
+    }
+  ],
+  "for_ruling": [
+    "The 3 newly-promoted SUPPORT_MATRIX contracts (dual-write / migration parity / concurrency) cite committed receipts but are correctly bounded to adapter-level scope. When the legs MERGE and the server restarts, re-probe the live doctor (capsule L3 / W3-DIM-POSTDEPLOY-DOCTOR) and revise the caveats to observed live state.",
+    "Wave ruling items are carried in the capsule (merge order: DIM before/with STORE; pick one dual-write path STORE-in-add vs MIGRATE WriteThroughStore; durable store location off $HOUDINI_TEMP_DIR; PXR_PLUGINPATH_NAME schema registration; cross-process owner-lock posture; consolidation _union_into fidelity) and in each leg's for_ruling. Owner: Joe / INTEGRATOR. Merge/push/tag are Joe's word, per act.",
+    "L1 residual: the CRUX gate receipt (W3-CRUX.json) is uncommitted; its owner commits it so the whole-wave adjudication has a durable home."
+  ],
+  "spawn": [],
+  "constitution_compliance": "No git push/merge/tag; no drop.json edit; no ratified/state flip; no peer-branch or live-corpus mutation. Named-file commit of only this leg's docs+notes on wave3/paper. Zero code diff (crucible BLOCK avoided). Receipts over claims: every commit-state fact re-derived from git; the stale-snapshot error was corrected against ground truth, not left standing. Unobtainable rendered UNKNOWN (dim live conjunct; literal typed-.usda-prim count; L3 GUI-relaunch live-doctor confirmation), never a fabricated pass."
+}
