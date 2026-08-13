@@ -743,6 +743,22 @@ class SynapsePanel(QtWidgets.QWidget):
         # Connect/Corpus/Help, opposite side (Joe): actions left, choice right.
         bot.addWidget(self._author_lbl)
         col.addLayout(bot)
+
+        # line 3 — persistent health strip (P0.3 / readiness §4.1): connection ·
+        # memory backend · project · active job. Every cell is FACT-sourced or
+        # renders UNKNOWN — the doctor is honest and this makes the panel honest
+        # too. Initial cells are all-UNKNOWN (nothing measured yet); the 2 s
+        # _update_context tick fills them from cheap in-process reads. It adds NO
+        # main-thread I/O and never calls the doctor (the 648 ms hold), so it
+        # cannot become the next paint stall.
+        try:
+            from synapse.panel import health_strip as _hs
+            self._health_strip = _hs.build_health_strip_widget(
+                _hs.build_cells(_hs.StripSnapshot()), parent=w)
+            col.addWidget(self._health_strip)
+        except Exception:
+            self._health_strip = None
+
         self._region_cache["_build_rail"] = w
         return w
 
@@ -2381,25 +2397,42 @@ class SynapsePanel(QtWidgets.QWidget):
         self._header_status.setText(phrase)
 
     def _update_context(self):
-        """Refresh the context ribbon + connection footer from live hou state."""
+        """Refresh the context ribbon + connection footer from live hou state.
+
+        Also feeds the persistent health strip (P0.3): connection + project are
+        derived here from the cheap hou reads this tick already does; the strip's
+        memory-backend and active-job facts are read O(1) inside its gather. No
+        new main-thread I/O, no doctor call.
+        """
+        try:
+            from synapse.panel import health_strip as _hs
+            _unmeasured = _hs.UNMEASURED
+        except Exception:
+            _unmeasured = None
+        conn = _unmeasured
+        proj = _unmeasured
         try:
             import hou
         except Exception:
             self._ctx_label.setText("standalone — no Houdini")
+            self._update_health_strip(conn, proj)  # no hou → cells stay UNKNOWN
             return
         try:
             frame = int(hou.frame())
             sel = hou.selectedNodes()
+            try:
+                _hip = hou.hipFile.basename()
+            except Exception:
+                _hip = None
+            # project / show name — the hip basename, or None when the scene is
+            # untitled (a MEASURED quiet state, not the same as "not measured").
+            proj = None if (not _hip or _hip == "untitled.hip") else _hip
             if sel:
                 parent = sel[0].parent()
                 where = parent.path() if parent else sel[0].path()
                 txt = "%s · %d selected · f%d" % (where, len(sel), frame)
             else:
-                try:
-                    hip = hou.hipFile.basename()
-                except Exception:
-                    hip = "untitled.hip"
-                txt = "%s · f%d" % (hip, frame)
+                txt = "%s · f%d" % (_hip or "untitled.hip", frame)
             self._ctx_label.setText(txt)
             if self._gate_stale_reason:
                 # M3-A: a disarmed phantom-API gate must be LOUD, not a
@@ -2408,11 +2441,32 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._foot_label.setText(
                     "Houdini · API gate stale"
                 )
+                conn = "warning"
             else:
                 self._foot_dot.set_status("connected")
                 self._foot_label.setText("Houdini")
+                conn = "ok"
             if self._header_status.text() in ("Standing by", ""):
                 self._set_header("idle", "Ready")
+        except Exception:
+            pass
+        self._update_health_strip(conn, proj)
+
+    def _update_health_strip(self, connection, project):
+        """Refresh the persistent health strip from cheap in-process facts.
+
+        ``connection`` / ``project`` are what ``_update_context`` just derived;
+        memory-backend and active-job are read O(1) inside ``gather_snapshot``.
+        This never calls the doctor or ``get_health`` — the strip must not become
+        a main-thread hold. Best-effort: any failure leaves the last-rendered
+        cells untouched (never a fabricated green)."""
+        strip = getattr(self, "_health_strip", None)
+        if strip is None:
+            return
+        try:
+            from synapse.panel import health_strip as _hs
+            snap = _hs.gather_snapshot(connection=connection, project=project)
+            _hs.update_health_strip_widget(strip, _hs.build_cells(snap))
         except Exception:
             pass
 
