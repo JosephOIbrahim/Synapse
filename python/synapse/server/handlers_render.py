@@ -44,6 +44,11 @@ except ImportError:
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.determinism import round_float, kahan_sum
 from ..core.show_config import get_show_config, resolve_show_dirs, next_version_dir
+from ..core.render_presets import (
+    resolve_stage_chain,
+    preset_parm_overrides,
+    XPU_FLUSH_DELAY_NOTE,
+)
 from .handler_helpers import (
     _suggest_parms, _HOUDINI_UNAVAILABLE, _expand_frame_tokens, _path_warnings,
     _convert_preview,
@@ -2262,9 +2267,19 @@ class RenderHandlerMixin:
             resolution (list[int,int], optional): Production resolution [w, h].
                 Defaults to [1920, 1080].
             samples (int, optional): Production pixel samples. Defaults to 64.
+            preset (str, optional): W1-KPRE. A single named preset
+                (layout|lighting|quality|final). Opt-in: replaces the default
+                ladder with the addendum's progressive chain.
+            stages (list[str], optional): W1-KPRE. An explicit list of named
+                presets; emitted in canonical low->high order. Overrides `preset`.
+                Presets set probe-verified samples/resolution/denoise/engine and
+                default quality+ to background (soho_foreground=0). When neither
+                `preset` nor `stages` is given, behaviour is the unchanged
+                test/preview/production ladder.
 
         Returns:
             dict with 'passes' list and 'final_image' path (or None if failed).
+            On a named-preset run, also 'preset_chain' and 'xpu_flush_delay_note'.
         """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
@@ -2319,6 +2334,32 @@ class RenderHandlerMixin:
             },
         ]
 
+        # W1-KPRE: opt-in named progressive presets. When the payload carries
+        # 'stages' (list) or 'preset' (single name), the ladder becomes the
+        # addendum's layout/lighting/quality/final chain -- probe-verified parm
+        # names (pathtracedsamples/engine/denoiser/reflectionlimit/...), quality+
+        # rendering in background (soho_foreground=0). When neither is supplied,
+        # the test/preview/production ladder above is UNCHANGED (additive).
+        preset_stages = resolve_param_with_default(payload, "stages", None)
+        preset_name = resolve_param_with_default(payload, "preset", None)
+        use_presets = preset_stages is not None or preset_name is not None
+        if use_presets:
+            stage_req = preset_stages if preset_stages is not None else preset_name
+            pass_configs = []
+            for _pname, _pdef in resolve_stage_chain(stage_req):
+                _w, _h = _pdef["resolution"]
+                pass_configs.append({
+                    "name": _pname,
+                    "width": int(_w),
+                    "height": int(_h),
+                    "samples": int(_pdef["pixel_samples"]),
+                    "soho_foreground": 0 if _pdef["background"] else 1,
+                    # Probe-verified parm overrides: engine, denoiser, bounce
+                    # limits, motion samples. Merged into settings_overrides
+                    # below and applied via node.parm(k).set(v).
+                    "preset_overrides": preset_parm_overrides(_pname),
+                })
+
         passes = []
         final_image = None
 
@@ -2334,6 +2375,12 @@ class RenderHandlerMixin:
                 # Try common sample parm names
                 for sample_parm in ("pathtracedsamples", "pixelsamples", "vm_samplesx"):
                     settings_overrides[sample_parm] = samples
+                # W1-KPRE: layer in this preset's probe-verified overrides
+                # (engine/denoiser/bounces/motion). Non-preset ladders have no
+                # preset_overrides key, so this is a no-op for them.
+                _preset_ov = config.get("preset_overrides")
+                if _preset_ov:
+                    settings_overrides.update(_preset_ov)
                 try:
                     self._handle_render_settings({
                         "node": rop_path,
@@ -2413,7 +2460,7 @@ class RenderHandlerMixin:
 
             passes.append(pass_result)
 
-        return {
+        result = {
             "passes": passes,
             "final_image": final_image,
             "completed_passes": len(passes),
@@ -2421,6 +2468,13 @@ class RenderHandlerMixin:
             "success": final_image is not None and len(passes) == len(pass_configs),
             "show_config": {"default_used": _defaults_used},
         }
+        if use_presets:
+            # Named-preset run: report the chain and carry the XPU flush-delay
+            # note (quality/final are XPU-capable; a 10-15s post-render() flush
+            # is not a hang).
+            result["preset_chain"] = [c["name"] for c in pass_configs]
+            result["xpu_flush_delay_note"] = XPU_FLUSH_DELAY_NOTE
+        return result
 
     # =========================================================================
     # KARMA ADVANCED SETTINGS
