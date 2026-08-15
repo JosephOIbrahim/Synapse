@@ -1278,18 +1278,24 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             #   -> auto-rollback, since the script is broken and partial state is bad
             # - Operational errors (render timeout, file not found, hou.OperationFailed)
             #   -> keep mutations, since node creation/wiring may have succeeded
+            # F1 freeze-relief: the update-mode sandwich sits INSIDE the
+            # undo group (the probed nesting — probe item (c) opens
+            # hou.undos.group across the sandwich, never the reverse).
+            # Flag-off/headless = identical behavior to today.
+            from .update_mode import cook_sandwich
             if atomic:
                 _needs_rollback = False
                 _rollback_exc = None
                 with hou.undos.group("synapse_execute"):
-                    try:
-                        _run_compiled(compiled, exec_globals, exec_locals)
-                    except _ROLLBACK_ERRORS as e:
-                        # Don't call performUndo() inside the undo group —
-                        # that raises "Cannot undo within an undo group".
-                        # Instead, flag for rollback after the group closes.
-                        _needs_rollback = True
-                        _rollback_exc = e
+                    with cook_sandwich(label="execute_python"):
+                        try:
+                            _run_compiled(compiled, exec_globals, exec_locals)
+                        except _ROLLBACK_ERRORS as e:
+                            # Don't call performUndo() inside the undo group —
+                            # that raises "Cannot undo within an undo group".
+                            # Instead, flag for rollback after the group closes.
+                            _needs_rollback = True
+                            _rollback_exc = e
                 # Undo group is now closed — safe to roll back
                 if _needs_rollback:
                     try:
@@ -1298,7 +1304,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                         _log.debug("Undo rollback best-effort failed: %s", e)
                     raise _rollback_exc
             else:
-                _run_compiled(compiled, exec_globals, exec_locals)
+                with cook_sandwich(label="execute_python"):
+                    _run_compiled(compiled, exec_globals, exec_locals)
 
             # Try to extract a result variable
             result = exec_locals.get("result", "executed")
@@ -1379,88 +1386,93 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         from .main_thread import _SLOW_TIMEOUT
 
         def _on_main():
-            # Find or create a working SOP context
-            parent = None
-            if input_node:
-                src = hou.node(input_node)
-                if src is not None:
-                    parent = src.parent()
+            # F1 freeze-relief: execute_vex has no undo group of its
+            # own — sandwich wraps the whole create/set/cook payload.
+            # Flag-off/headless = identical behavior to today.
+            from .update_mode import cook_sandwich
+            with cook_sandwich(label="execute_vex"):
+                # Find or create a working SOP context
+                parent = None
+                if input_node:
+                    src = hou.node(input_node)
+                    if src is not None:
+                        parent = src.parent()
 
-            if parent is None:
-                # Default to /obj -- create a temp geo container
-                obj = hou.node("/obj")
-                parent = obj.createNode("geo", "synapse_vex_temp")
+                if parent is None:
+                    # Default to /obj -- create a temp geo container
+                    obj = hou.node("/obj")
+                    parent = obj.createNode("geo", "synapse_vex_temp")
 
-            wrangle = parent.createNode("attribwrangle", "synapse_vex")
-            wrangle.parm("snippet").set(snippet)
+                wrangle = parent.createNode("attribwrangle", "synapse_vex")
+                wrangle.parm("snippet").set(snippet)
 
-            # Map run_over string to class menu value
-            run_over_map = {
-                "detail": 0, "points": 1, "vertices": 2, "primitives": 3,
-            }
-            class_val = run_over_map.get(run_over.lower(), 1)
-            wrangle.parm("class").set(class_val)
+                # Map run_over string to class menu value
+                run_over_map = {
+                    "detail": 0, "points": 1, "vertices": 2, "primitives": 3,
+                }
+                class_val = run_over_map.get(run_over.lower(), 1)
+                wrangle.parm("class").set(class_val)
 
-            # Wire input if provided
-            if input_node:
-                src = hou.node(input_node)
-                if src is not None:
-                    wrangle.setInput(0, src)
+                # Wire input if provided
+                if input_node:
+                    src = hou.node(input_node)
+                    if src is not None:
+                        wrangle.setInput(0, src)
 
-            wrangle.setDisplayFlag(True)
-            wrangle.setRenderFlag(True)
+                wrangle.setDisplayFlag(True)
+                wrangle.setRenderFlag(True)
 
-            # Try to cook and capture any VEX errors
-            cook_errors = []
-            diagnosis_text = ""
-            try:
-                wrangle.cook(force=True)
-            except Exception as cook_exc:
-                error_msg = str(cook_exc)
-                cook_errors.append(error_msg)
-                # Run pattern-based diagnosis
-                diagnoses = diagnose_vex_error(error_msg, snippet, wrangle.path())
-                if diagnoses:
-                    diagnosis_text = format_diagnosis(diagnoses, snippet)
-
-            # Also check node error state (Houdini may set errors without raising)
-            node_errors = []
-            try:
-                if wrangle.errors():
-                    node_errors = list(wrangle.errors())
-                    if not diagnosis_text and node_errors:
-                        all_errors = " | ".join(node_errors)
-                        diagnoses = diagnose_vex_error(all_errors, snippet, wrangle.path())
-                        if diagnoses:
-                            diagnosis_text = format_diagnosis(diagnoses, snippet)
-            except Exception as e:
-                _log.debug("VEX error diagnosis failed: %s", e)
-
-            # Clean up temp nodes on failure when no input was provided
-            if (cook_errors or node_errors) and not input_node:
+                # Try to cook and capture any VEX errors
+                cook_errors = []
+                diagnosis_text = ""
                 try:
-                    temp_parent = wrangle.parent()
-                    if temp_parent and temp_parent.name().startswith("synapse_vex_temp"):
-                        temp_parent.destroy()
-                        wrangle = None  # Node no longer exists
+                    wrangle.cook(force=True)
+                except Exception as cook_exc:
+                    error_msg = str(cook_exc)
+                    cook_errors.append(error_msg)
+                    # Run pattern-based diagnosis
+                    diagnoses = diagnose_vex_error(error_msg, snippet, wrangle.path())
+                    if diagnoses:
+                        diagnosis_text = format_diagnosis(diagnoses, snippet)
+
+                # Also check node error state (Houdini may set errors without raising)
+                node_errors = []
+                try:
+                    if wrangle.errors():
+                        node_errors = list(wrangle.errors())
+                        if not diagnosis_text and node_errors:
+                            all_errors = " | ".join(node_errors)
+                            diagnoses = diagnose_vex_error(all_errors, snippet, wrangle.path())
+                            if diagnoses:
+                                diagnosis_text = format_diagnosis(diagnoses, snippet)
                 except Exception as e:
-                    _log.debug("VEX temp node cleanup failed: %s", e)
+                    _log.debug("VEX error diagnosis failed: %s", e)
 
-            result = {
-                "node": wrangle.path() if wrangle else "(cleaned up)",
-                "snippet": snippet,
-                "run_over": run_over,
-                "class": class_val,
-            }
+                # Clean up temp nodes on failure when no input was provided
+                if (cook_errors or node_errors) and not input_node:
+                    try:
+                        temp_parent = wrangle.parent()
+                        if temp_parent and temp_parent.name().startswith("synapse_vex_temp"):
+                            temp_parent.destroy()
+                            wrangle = None  # Node no longer exists
+                    except Exception as e:
+                        _log.debug("VEX temp node cleanup failed: %s", e)
 
-            if warnings:
-                result["warnings"] = warnings
-            if cook_errors or node_errors:
-                result["errors"] = cook_errors + node_errors
-            if diagnosis_text:
-                result["diagnosis"] = diagnosis_text
+                result = {
+                    "node": wrangle.path() if wrangle else "(cleaned up)",
+                    "snippet": snippet,
+                    "run_over": run_over,
+                    "class": class_val,
+                }
 
-            return result
+                if warnings:
+                    result["warnings"] = warnings
+                if cook_errors or node_errors:
+                    result["errors"] = cook_errors + node_errors
+                if diagnosis_text:
+                    result["diagnosis"] = diagnosis_text
+
+                return result
 
         # TIMEOUT CHOICE: _SLOW_TIMEOUT (30s), UNCHANGED. A wrangle cook is
         # arbitrarily long; 30s is the shipped off-main budget and changing it

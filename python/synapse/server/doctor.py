@@ -758,8 +758,13 @@ def _check_main_thread() -> Dict[str, Any]:
         # OCC: deferred-path payload holds — real main-thread occupancy, the
         # number the freeze investigations previously inferred from proxies.
         holds = main_thread_hold_stats()
+        # F1 (freeze-relief): update-mode sandwich A/B readout — hold duration
+        # + collapsed-cook estimate, gated dev-flag state included so an
+        # "enabled: false" snapshot reads as instrumented-but-off, not broken.
+        from .update_mode import sandwich_stats
         result = {"stall": state, "dispatch_waits": waits,
-                  "main_thread_holds": holds}
+                  "main_thread_holds": holds,
+                  "cook_sandwiches": sandwich_stats()}
         if state["stalled"]:
             return {"name": name, "status": "fail",
                     "detail": (f"main thread stalled "
