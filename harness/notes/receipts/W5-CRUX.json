@@ -1,0 +1,124 @@
+{
+  "leg": "W5-CRUX",
+  "name": "wave-5 crucible: adversarial gate - first live test of the commit-before-receipt mandate",
+  "status": "green_with_findings",
+  "head_sha": "4ae703e3bbc65085167426f0a7367566faa5272e",
+  "branch": "wave5/crux",
+  "base": "b2412b6b",
+  "ahead_of_base": 1,
+  "readonly": true,
+  "arm_master": "b2412b6b",
+  "verdict_master": "3db5b244",
+  "note": "COMMIT BEFORE RECEIPT honored: named product commit 4ae703e3 (harness/notes/receipts/W5-CRUX_verdict.md) exists on wave5/crux, rev-list b2412b6b..HEAD = 1, BEFORE this receipt was written. The receipt lands as the closing commit certifying 4ae703e3. No push/merge/tag, no drop.json edit, no ratified/state flip. Merge + the DELTA wiring flip + the UNDO gui receipt remain Joe's word.",
+
+  "mandate_table": [
+    {"leg": "W5-BASE",  "branch_tip": "20e0a888", "receipt_head": "20e0a888", "sha_exists": true, "ahead": 1, "commit_time": "2026-08-15T15:42:25-04:00", "receipt_mtime": "15:44", "commit_precedes_receipt": true, "mandate": "PASS"},
+    {"leg": "W5-DELTA", "branch_tip": "b4bbb562", "receipt_head": "728d905d (product) / b4bbb562 (receipt-commit)", "sha_exists": true, "ahead": 2, "commit_time": "2026-08-15T15:33:47-04:00", "receipt_mtime": "15:36", "commit_precedes_receipt": true, "mandate": "PASS"},
+    {"leg": "W5-DENSE", "branch_tip": "594d1a68", "receipt_head": "594d1a68", "sha_exists": true, "ahead": 1, "commit_time": "2026-08-15T15:45:42-04:00", "receipt_mtime": "15:47", "commit_precedes_receipt": true, "mandate": "PASS"},
+    {"leg": "W5-UNDO",  "branch_tip": "c938ef0a", "receipt_head": "c938ef0a", "sha_exists": true, "ahead": 1, "commit_time": "2026-08-15T15:26:02-04:00", "receipt_mtime": "15:32", "commit_precedes_receipt": true, "mandate": "PASS"}
+  ],
+
+  "per_leg_verdict": [
+    {"leg": "W5-DENSE", "verdict": "pass_with_findings", "basis": "All 5 bars reproduced exactly, twice (dense worktree + merged .400 tree): hybrid P@1 1.0 (603/603), floor 1.0 (527/527), disamb 1.0 (42/42), served_phantom 0.0 (0/659); lexical 0.9453/0.9962 == W4-CRUX; content_digest 6a683ee6 matches; delete+rebuild byte-identical. FINDING F-CRUX-1: predicate-5 anatomy-rank-2 evidence REFUTED - the anatomy doc is unreachable via scout."},
+    {"leg": "W5-DELTA", "verdict": "pass_with_findings", "basis": "Zero-loss independently confirmed (659, cop358/lop169/cop2132, 0 lost/0 added/0 dropped keys, order + retrieval-surface byte-identical); K.7 corpus_stamp_fresh ok:true; scout_eval .400 floor 0.9526/disamb 1.0/served 0.0/p@1 0.7529; calibration 35/35; 16 tests. FINDING F-CRUX-2 (11/16/18 drift, 18 correct) + F-CRUX-3 (corpus<->ledger coupling: for_ruling R1 required)."},
+    {"leg": "W5-BASE", "verdict": "pass_with_findings", "basis": "Honest-blocked at receipt-time (deny-listed file, settings:null) - escalated via for_ruling+bus, UNKNOWN not laundered, proposal is a valid R31 tuple, zero checks.py edits. MID-VERDICT Joe applied the proposal to master (3db5b244, verified applied==banked). suite_baseline now green on master (6389/0, guardrail_violations=[]); previously-UNKNOWN acceptance now measurably PASS - not laundered (attributable to the human commit, not the branch)."},
+    {"leg": "W5-UNDO", "verdict": "pass_with_findings", "basis": "3 pass (undo-group 11/11 exactly-one-group + exception-propagation; network_explain 19/19; CLAUDE.md honest split) + 1 honest UNKNOWN (live Ctrl+Z, gui_required, no simulation substituted). Scope-honesty confirmed: 3 handlers in handlers_node.py wrapped; set_parm (handlers.py) + set_keyframe (handlers_render.py) unwrapped, out of touches, spawned held."}
+  ],
+
+  "acceptance": [
+    {
+      "predicate": "every builder acceptance re-verified independently or marked UNKNOWN with the exact unobtainable step - none inherited; gui_required items confirmed still UNKNOWN, not laundered to pass",
+      "verdict": "pass",
+      "evidence": "All four legs independently re-run (not read): DENSE scout_eval (fresh ensure_corpus build) reproduced P@1 1.0/floor 1.0/disamb 1.0/served_phantom 0.0 + lexical 0.9453/0.9962 + delete-rebuild identical; DELTA census recomputed from committed .368 vs .400 (zero-loss) + K.7 + scout_eval .400 + 16 tests; BASE R.R + parse_tuple_baseline(proposal accepted / live rejected) + zero checks.py edits; UNDO test_node_undo_grouping 11/11 + network_explain 19/19 + set_parm/set_keyframe location greps. UNKNOWNs confirmed still UNKNOWN, not laundered: UNDO live one-Ctrl+Z stays gui_required UNKNOWN (mocked group tests are NOT substituted for it). BASE's suite_baseline R.R acceptance was honestly UNKNOWN at receipt-time and is now PASS ONLY because Joe human-applied the proposal to master (3db5b244) mid-verdict - green attributed to the human commit, not laundered by the leg."
+    },
+    {
+      "predicate": "ahead-count + receipt-sha table for all builders; every receipt states a HEAD that exists and precedes the receipt write - mandate compliance binary per leg",
+      "verdict": "pass",
+      "evidence": "See mandate_table. BASE tip 20e0a888 (ahead 1), DELTA product 728d905d reachable + receipt-commit b4bbb562 (ahead 2), DENSE tip 594d1a68 (ahead 1), UNDO tip c938ef0a (ahead 1). Every stated HEAD is a real commit reachable on its branch; every product-commit time precedes its receipt-file mtime. No builder at ahead:0; no phantom sha. CRX0 first live enforcement: NO VIOLATION - mandate honored by all four."
+    },
+    {
+      "predicate": "combined-state probe: scout_eval bars met AND R.R guardrail_violations empty AND corpus stamped .400 - or the exact failing surface named",
+      "verdict": "pass",
+      "evidence": "Probed (not estimated) via a throwaway scratch worktree staging all four legs off master, cleaned up. scout_eval bars MET on the merged .400 corpus (P@1 1.0/floor 1.0/disamb 1.0/served_phantom 0.0). corpus stamped .400 (K.7 corpus_stamp_fresh ok:true in the merged tree). R.R guardrail_violations = [] ON MASTER (BASE's tuple applied via 3db5b244; measured by two independent legs) but corpus there is still .368; in the combined WORKTREE tree suite_baseline reddens on 5 tests. EXACT FAILING SURFACE: 3x tests/test_statusline.py (linked-worktree .git-is-a-FILE artifact) + 2x W4-GUARD (test_live_worktree_is_honestly_red: DELTA's .400 corpus flips freshness green, breaking the pinned STALE expectation; test_real_seeded_ledger_never_wires_apex: ledger not co-flipped -> verify mismatch) - the designed .368->.400 handoff surfacing as pinned-test breakage. The all-three-green board is not simultaneously realized in any single context today; it becomes reachable when DELTA's corpus+ledger flip (for_ruling R1) + the two W4-GUARD test updates + the statusline worktree fix (or a .git-dir eval) land coupled."
+    },
+    {
+      "predicate": "bus audit: DELTA and DENSE contract findings exist with coherent timestamps; anatomy cross-reference probes recorded with zero unresolved contradictions or each contradiction filed as a finding",
+      "verdict": "pass",
+      "evidence": "Bus (canonical harness/autorevise/bus/wave5/bus.jsonl): DELTA->DENSE census 15:21:04, DELTA->CRUX anatomy+compliance 15:21:05, DELTA->* scout bug 15:21:05; DENSE->CRUX index stamp 15:45:12 and DENSE->CRUX 'CONSUMED DELTA census (bus 15:21:04)' 15:45:12 - DENSE demonstrably read DELTA (15:21) before its final eval (15:45). Both contract findings exist; timestamps coherent. Anatomy probes recorded across 4 targets (karma material builder / componentgeometry-alternative / instancer->copytopoints / three island paths): ZERO unresolved contradictions (nothing served contradicts the live-verified doc). One coverage gap filed as finding F-CRUX-1 (not a contradiction): the anatomy doc is unreachable via retrieval."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "F-CRUX-1",
+      "severity": "warn",
+      "claim": "W5-DENSE receipt predicate-5 evidence is REFUTED. Receipt/eval claims synapse_scout('componentgeometry') surfaces solaris_compound_node_anatomy at rank-2 ('retrieval brings them together', supplying the H22 'alternative' output). Direct probe in the w5-dense worktree: scout('componentgeometry') -> ['h22:lop/componentgeometry'] ONLY; anatomy absent across 3 phrasings. Root cause: solaris_compound_node_anatomy.md has a rag/semantic_index/meta.jsonl embedding row but NO rag/corpus/ backing entry, so scout's own defensive skip-id-without-corpus-entry logic (the DENSE F2 crash-fix) drops it. Consequence: the CTO-bound reference doc, and its H22 specifics ('alternative' 4th output; the sopnet/geo|edit|extras island paths), are NOT discoverable via the merged retrieval. The no-phantom-karmamaterial* half of predicate-5 holds; the 'doc supplies alternative at rank-2' half is false. This is a retrieval-COVERAGE gap, not a served contradiction (the anatomy cross-reference audit still has zero contradictions).",
+      "anchor": "rag/skills/houdini21-reference/solaris_compound_node_anatomy.md (no rag/corpus entry) ; python/synapse/cognitive/tools/scout.py fused-loop skip ; harness/notes/receipts/W5-DENSE_eval.md pred-5 evidence"
+    },
+    {
+      "id": "F-CRUX-2",
+      "severity": "info",
+      "claim": "W5-DELTA internal-reporting drift on the parameters[]-delta magnitude: bus census (15:21:04) said 11 entries, census artifact w5_delta_census.json says 16, the receipt narrative says 18. Independent full-corpus diff (git show 52f22821:rag/corpus/h22_nodes.json vs the .400 corpus) = 18 entries with a changed parameters[] (16 datasheet-content + 2 runtime-join-metadata: lop/sopimport, lop/sopmodify). The RECEIPT's 18 is correct; the bus 11 was a stale intermediate and the census-artifact 16 omits the 2 runtime-join entries. Load-bearing claims unaffected: zero-loss (0 lost/0 added/0 dropped keys) and byte-identical retrieval surface (0 field diffs) both independently confirmed.",
+      "anchor": "harness/notes/h22/w5_delta_census.json ; bus wave5 18cc10d65a48d110 ; harness/notes/receipts/W5-DELTA.json"
+    },
+    {
+      "id": "F-CRUX-3",
+      "severity": "warn",
+      "claim": "DELTA's .400 corpus and the ingest_ledger flip are COUPLED and must merge together, and two pinned W4-GUARD tests must be updated at that merge. Staging the .400 corpus alone (combined-board probe) reddens tests/test_w4_guard_freshness.py::test_live_worktree_is_honestly_red (it asserts corpus_stamp_fresh is red/STALE - true only while corpus is .368) and tests/test_w4_guard_ledger.py::test_real_seeded_ledger_never_wires_apex (il.verify_ledger(doc, corpus) == [] - fails when corpus is .400 but the ledger stays .368). Same root cause as K.7's ingest_ledger_single_writer red. DELTA touched neither test. => for_ruling R1 (single-writer ledger .368->.400 flip) is REQUIRED for a green board, and the two pinned tests must be updated with it.",
+      "anchor": "tests/test_w4_guard_freshness.py:185 ; tests/test_w4_guard_ledger.py:250 ; harness/notes/receipts/W5-DELTA.json:for_ruling R1"
+    },
+    {
+      "id": "F-CRUX-4",
+      "severity": "info",
+      "claim": "Parallel-writer: master advanced b2412b6b -> 3db5b244 DURING the crux verdict window (16:18:35, Joseph Ibrahim). The window 52f22821..3db5b244 holds exactly two Joe commits: b2412b6b (capsule md) + 3db5b244 (harness/verify/suite_baseline.json). Neither collides with DELTA/DENSE/UNDO touches. 3db5b244 touches suite_baseline.json (BASE's file) but is the AUTHORIZED human completion of BASE's for_ruling (applied file == banked proposal, gate+shipping legs identical), not a competing writer. handlers_node.py seam clean (last writer 0d3a33eb is an ancestor of UNDO's base). No seam collision.",
+      "anchor": "git log 52f22821..3db5b244 ; harness/verify/suite_baseline.json @3db5b244 == W5-BASE_PROPOSED"
+    },
+    {
+      "id": "F-CRUX-5",
+      "severity": "info",
+      "claim": "Two symbol tables, two builds (honest disclosure). scout's membership/phantom authority for run_eval() semantic grounding is the introspected Houdini 21.0.671 dir() table (no committed 22.x table for scout membership, no live Houdini) - scout warns its verdicts hold for 21.0.671, not the .400 build the corpus is stamped for. K.7's corpus_stamp_fresh ratified-build authority is separately h22_symbol_table.json houdini_version=22.0.400. The DENSE type-name bars (P@1/floor/disamb/served_phantom) are computed against the served corpus's own per-context-identical type set and are robust; the 21.0.671 caveat attaches to run_eval()'s semantic grounding, not the type-name bars. DELTA additionally validated served-phantom=0 against a live 22.0.400 runtime harvest. No blocker; flagged so the phantom-clean guarantee's build scope is not overstated.",
+      "anchor": "python/synapse/cognitive/tools/scout_eval.py run_eval grounding ; python/synapse/cognitive/tools/data/h22_symbol_table.json"
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "CRUX-R1",
+      "claim": "The all-green wave-5 board requires THREE human actions to land COUPLED, of which one is already done. (1) DONE: BASE's suite_baseline two-leg-tuple promotion is applied to master (3db5b244). (2) PENDING: DELTA's ingest_ledger .368->.400 single-writer flip (DELTA for_ruling R1) MUST merge together with DELTA's .400 corpus, AND the two pinned W4-GUARD tests (test_live_worktree_is_honestly_red, test_real_seeded_ledger_never_wires_apex) must be updated in the same change, or K.7 ingest_ledger_single_writer + those two tests stay red. (3) PENDING: the statusline linked-worktree gitdir defect (BASE spawn W5-STATUSLINE-WT) must land, OR the all-green R.R must be evaluated in a .git-dir (main-checkout) context - a worktree-context R.R stays red on 3 statusline cases regardless. Merge remains Joe's word.",
+      "anchor": "harness/notes/receipts/W5-CRUX_verdict.md#4 ; harness/notes/receipts/W5-DELTA.json:R1 ; harness/notes/receipts/W5-BASE.json:spawn W5-STATUSLINE-WT"
+    },
+    {
+      "id": "CRUX-R2",
+      "claim": "The mission target text (W5-UNDO) mis-located set_parm as a handlers_node.py handler; only create/connect/delete are there. UNDO correctly refused to claim 'all four wrapped'. Recommend correcting the series work-order phrasing so future legs don't inherit the mis-location (echoes UNDO's own for_ruling). The remaining live-path Ctrl+Z holes (set_parm in handlers.py, set_keyframe in handlers_render.py) + the stale integrity_envelope.py:19-28 docstring ride in UNDO's held spawn W5-UNDO-B (class 'build', outside probe).",
+      "anchor": "harness/notes/receipts/W5-UNDO.json:F1/F2/F3 ; python/synapse/server/handlers.py:1091 ; python/synapse/server/handlers_render.py:1167"
+    }
+  ],
+
+  "spawn": [
+    {
+      "id": "W5-CRUX-S1",
+      "name": "ingest solaris_compound_node_anatomy.md into rag/corpus/ so the CTO-bound reference is retrievable",
+      "band": "BUILD",
+      "class": "probe",
+      "source": {"doc": "harness/notes/receipts/W5-CRUX.json", "anchor": "finding F-CRUX-1"},
+      "rationale": "The anatomy doc the CTO bound to this wave ('consult before any Solaris/VOP-adjacent claim') has a rag/semantic_index embedding row but NO rag/corpus backing entry, so scout's defensive skip logic drops it and it is unreachable via synapse_scout/knowledge_lookup. Its H22 specifics ('alternative' 4th output; the three user-editable island paths) cannot be surfaced. Give it a rag/corpus entry (or reconcile the semantic index against the materialized corpus) so retrieval can bring it together with the componentgeometry datasheet as W5-DENSE's receipt claimed but the retrieval does not yet do.",
+      "targets": [
+        "1) author a rag/corpus/ entry for solaris_compound_node_anatomy (id/type/context/label/summary/searchable_text) so the semantic-index id has a corpus backing and is no longer skipped",
+        "2) regression probe: synapse_scout('componentgeometry') surfaces the anatomy doc (or knowledge_lookup returns it) so the H22 'alternative' output + island paths are discoverable",
+        "3) OR reconcile _dense_ids against the materialized corpus so a doc with an embedding but no corpus entry degrades to honest-empty rather than being silently unreachable"
+      ],
+      "acceptance": [
+        {"predicate": "the anatomy doc is retrievable via synapse_scout or knowledge_lookup, and its H22 'alternative' + island-path facts surface for a componentgeometry / component-builder-internals query", "evidence": "probe"}
+      ],
+      "readonly": false,
+      "touches": ["rag/corpus/", "python/synapse/cognitive/tools/scout.py", "tests/"],
+      "spawn_classes": ["probe"],
+      "note": "class=probe within W5-CRUX spawn_classes; edits shared surfaces (rag/corpus, scout.py) outside this readonly crux's touches -> lands held for Joe."
+    }
+  ],
+
+  "crucible_criteria_status": [
+    {"criterion": "carries wave-4 CRX0 and the wave-1/2 uncommitted-state lessons as standing checks", "status": "honored", "evidence": "mandate_table binary per leg; all four commit-before-receipt compliant, none at ahead:0, every stated HEAD exists and precedes its receipt write; this crux itself committed its product (4ae703e3) before writing this receipt."},
+    {"criterion": "house rule: unobtainable renders UNKNOWN, never zero and never an estimate", "status": "honored", "evidence": "UNDO live one-Ctrl+Z recorded UNKNOWN (gui_required, not simulated). provenance_not_bypassed recorded UNKNOWN (unwired/warn-only), never counted as pass. DENSE full-suite aggregate 6395/170 not re-run per instruction and left UNKNOWN-to-crux (only the 4-statusline characterization was independently confirmed). Combined-state was PROBED via a real scratch tree, not estimated."}
+  ]
+}
