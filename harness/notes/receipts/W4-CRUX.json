@@ -1,0 +1,108 @@
+{
+  "leg": "W4-CRUX",
+  "name": "wave-4 crucible: adversarial gate on retrieval repair before any merge word",
+  "status": "blocked",
+  "summary": "Substance independently re-verifies CLEAN and no leg inflated its numbers - W4-KNOW's hybrid figures reproduce EXACTLY on the committed HEAD (P@1 0.7546, floor-clearing 0.9526, disambiguation 1.00, served_phantom 0.00), its honest predicate-6 self-fail is confirmed not hidden, and all three builder test suites pass under an independent re-run (KNOW 37/37, HELP 15/15 vs real .368+.400 archives, GUARD 28/28). Gate integrity holds: drop.json untouched, zero manifest/state flips, check_no_rigging_drift + authoring_domains.json byte-untouched, Gate B surface stated. BUT merge is BLOCKED on four named preconditions, none of which the crucible can clear: (1) a SYSTEMIC RECEIPT-SENTINEL RACE - all four wave-4 legs closed their receipts at ahead:0 (the standing CRUX block, BLUEPRINT.md:82), asserting commit-state that did not exist at receipt time, and were secured only by a post-hoc driver commit CRUX watched land live (ahead:0 -> ahead:1 mid-run); (2) W4-KNOW's campaign retrieval bars UNMET on the shipped hybrid scout (P@1 0.7546 < 0.98, floor 0.9526 < 1.00), F1-capped by an out-of-scope dense-index surface, fix held as spawn S1; (3) the freshness gate is honestly RED (K.7 FAIL: served corpus .368 != ratified .400), release-blocking by design until a .400 re-ingest; (4) Gate B consumer-fix human review pending. House rule honored: two figures rendered UNKNOWN (exact scout store row-count; the full 239-name disambiguation set) with the exact unobtainable step, never estimated.",
+  "acceptance": [
+    {
+      "predicate": "every W4 builder acceptance re-verified independently or marked UNKNOWN with the exact unobtainable step - none inherited",
+      "verdict": "pass",
+      "evidence": "check: all builder acceptances re-run independently from each leg's worktree with PYTHONPATH pinned to that worktree's python/ (a neutral import resolves to the MAIN repo = master/pre-fix - trap avoided). KNOW: full scout_eval re-run reproduces every number (see finding CRX1), 37/37 pytest, fresh confident-wrong probe re-authored (CRX2). HELP: 15/15 pytest vs REAL .368+.400 archives (both installed on disk - no UNKNOWN), grep-clean re-verified (i1_extract.py 0 literals, helpdoc.py 1 overridable default at :50). GUARD: 28/28 pytest, K.7 dispatch re-run (verdict FAIL by design), rigging-drift/authoring_domains diff re-checked independently. UNKNOWN, exact step named, never estimated: (a) scout store row-count '1565' - CRUX cache-introspection instrument returned a wrong value; the SUBSTANCE (scout sees the corpus) is confirmed by direct visibility probes + served_phantom checked=659; (b) the FULL 239-name disambiguation set - sop/vop/chop/top/dop are not in the shipped corpus (arrive with later ING-<CTX> legs), so only the 42 cross-context collisions present today are measurable."
+    },
+    {
+      "predicate": "fresh 20-question NL set: zero confident-wrong; disambiguation 1.00 on a collision sample; COP/LOP floor-clearing stays 1.00",
+      "verdict": "fail",
+      "evidence": "probe: 2 of 3 sub-bars MET, the third UNMET and F1-capped. (i) zero confident-wrong: PASS - 0/20 fresh sentence-shaped node questions + 0/5 pre-flight = 0/25 served H21 prose as found=True; the node path is exclusive (knowledge.py:_match_h22_node), blur-in-copernicus resolves to cop (current, not legacy cop2), noise-in-copernicus is honest not-found; adversarial over-fire check confirms topic queries carrying type tokens (vex attribute wrangle, light intensity parameter name) are NOT hijacked. (ii) disambiguation 1.00: PASS - 42/42 on the shipped cross-context collision set via the lookup path (bare->full list, ctx-qualified->exact entry). (iii) COP/LOP floor-clearing stays 1.00: FAIL - measured 0.9526 hybrid (502/527), 0.9962 lexical, both < 1.00; independently reproduced to W4-KNOW's exact figure; capped by F1 (nodes absent from the dense semantic index), an out-of-scope surface with a held fix (spawn S1). NOT a CRUX-introduced regression - the original run_eval grounding did not regress."
+    },
+    {
+      "predicate": "ahead-count table for all builder branches in the receipt; ahead:0 on any builder is a recorded BLOCK",
+      "verdict": "pass",
+      "evidence": "check: table recorded below (ahead_count_table). ahead:0 tripped at receipt-close on ALL FOUR wave-4 legs (the standing CRUX block, BLUEPRINT.md:82) - CRUX's FIRST measurement caught every builder at ahead:0 with a dirty working tree (receipt written, no commit). A post-hoc driver commit then moved each to ahead:1 (content unmodified, per each commit subject) DURING this crucible run. The block is recorded (finding CRX0); it was remediated post-hoc, not cleanly at close. Predicate satisfied by recording the table AND the block honestly; the receipt-sentinel race is escalated for Joe's ruling."
+    }
+  ],
+  "ahead_count_table": {
+    "base": "master (96b71d21)",
+    "measured_twice": "ahead:0 at CRUX first-measure (== each leg's receipt-close, dirty worktree) -> ahead:1 after a post-hoc driver commit CRUX observed land mid-run",
+    "branches": {
+      "wave4/know": {"ahead_now": 1, "head": "fb13b3b1", "at_receipt_close": 0, "commit_subject": "notes(w4-know): secure leg artifacts - receipt written but no commit at close (receipt-sentinel race, systemic across wave 4); staged post-hoc by driver, content unmodified", "files": 11},
+      "wave4/help": {"ahead_now": 1, "head": "b1e7cdfa", "at_receipt_close": 0, "commit_subject": "notes(w4-help): secure leg artifacts - receipt written but no commit at close (receipt-sentinel race...)", "files": 4},
+      "wave4/guard": {"ahead_now": 1, "head": "f82f5681", "at_receipt_close": 0, "commit_subject": "notes(w4-guard): secure leg artifacts - receipt written but no commit at close (receipt-sentinel race...)", "files": 7},
+      "wave4/ruling": {"ahead_now": 1, "head": "dfa7862c", "at_receipt_close": 0, "commit_subject": "notes(w4-ruling): ... receipt acceptance-3 claimed a commit that did not exist at receipt time (claim-before-act, receipt-sentinel race); staged post-hoc by driver", "files": 4, "note": "parallel leg, not a W4-CRUX dep; listed because the race is systemic"}
+    }
+  },
+  "per_leg_verdict": [
+    {
+      "leg": "W4-KNOW",
+      "verdict": "pass_with_findings",
+      "detail": "In-scope targets 1-5/7/8 independently PASS; predicate 6 P@1/floor bars UNMET (BLOCK-severity, finding CRX3), F1-capped, spawn S1 held. No inflation: the leg self-reported the predicate-6 fail and it reproduces exactly. 37/37 pytest green under CRUX re-run. Merge-eligibility: BLOCKED at close by the receipt-sentinel race (now ahead:1 post-hoc) + the campaign-bar gap + Gate B pending."
+    },
+    {
+      "leg": "W4-HELP",
+      "verdict": "pass",
+      "detail": "All 3 acceptance independently PASS against REAL 22.0.368 (6505344B) + 22.0.400 (6513350B) archives (both installed - no UNKNOWN needed). 15/15 pytest; grep-clean (i1_extract.py 0 literals; helpdoc.py exactly 1, the overridable _DEFAULT_BUILD at :50); loud SystemExit failure preserved and enriched (names the missing path). Cleanest leg. Merge-eligibility: BLOCKED at close only by the receipt-sentinel race (now ahead:1 post-hoc)."
+    },
+    {
+      "leg": "W4-GUARD",
+      "verdict": "pass_with_findings",
+      "detail": "All 3 acceptance independently PASS; 28/28 pytest (11 freshness + 17 ledger); K.7 dispatch FAIL BY DESIGN (corpus_stamp_fresh ok:false STALE .368!=.400 = the gate working; ingest_ledger_single_writer ok:true); check_no_rigging_drift byte-untouched (checks.py:324) + authoring_domains.json 0-line - independently confirmed, not inherited. Findings: (a) freshness gate honestly RED, release-blocking until a .400 re-ingest (held BUILD leg; probe ING-DELTA proposed); (b) a SEPARATE standing guardrail suite_baseline is RED in the same K.7 run (R31 flat-baseline shape) - PRE-EXISTING master state, not this leg's doing. Merge-eligibility: BLOCKED at close by the receipt-sentinel race (now ahead:1 post-hoc) + the RED freshness gate it correctly raises."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CRX0",
+      "severity": "BLOCK",
+      "claim": "RECEIPT-SENTINEL RACE, systemic across all four wave-4 legs. Each builder wrote its receipt and product code into the working tree but did NOT commit at close - so at receipt-close every leg was ahead:0, the standing CRUX block (BLUEPRINT.md:82), and each receipt asserted a commit-state that did not exist (wave4/ruling's receipt explicitly 'claimed a commit that did not exist at receipt time'). A post-hoc driver then staged+committed the artifacts (content unmodified). CRUX caught the ahead:0->ahead:1 transition live: its first git measurement found all builders at ahead:0 with dirty worktrees; a later measurement found them at ahead:1 with clean worktrees. This is the wave-1 B1/B2 + wave-2 uncommitted-state class recurring. The code is now committed and independently green, but the completion contract was violated and, absent the driver, all wave-4 product would have been an ahead:0 standing BLOCK at risk of loss.",
+      "anchor": "git log -1 wave4/know (fb13b3b1) / wave4/help (b1e7cdfa) / wave4/guard (f82f5681) / wave4/ruling (dfa7862c) commit subjects ; BLUEPRINT.md:82 ; harness/autorevise/prompts/_template.md (hold-turn contract)"
+    },
+    {
+      "id": "CRX1",
+      "severity": "info",
+      "claim": "No inflation. Trusting no leg's own numbers, CRUX re-ran the full scout_eval from the KNOW worktree (torch/dense path live on CPU = hybrid) and reproduced W4-KNOW's figures to the digit: type-name P@1 0.7546 (455/603), cop_lop_floor_clearing 0.9526 (502/527), disambiguation 1.00 (42/42), served_phantom 0.00 (659 checked, 0 leaked); original run_eval grounding unregressed (false_phantom 0.0, true_phantom 1.0, real 12/12, release_blocking False). Serve-size re-measured over 659 raw entries: min 300 / median 4106 / mean 6827 / p95 20779 / max 92829 (lop/karma, 233 params) / 88% over 966B - matches the leg's 650-deduped figures (median 4114 / mean 6865); the +9 delta is same-(context,type) pyro dupes the index collapses (both honest, measured never estimated).",
+      "anchor": "python -m synapse.cognitive.tools.scout_eval (PYTHONPATH=<w4-know>/python) ; knowledge.py:_measure_serve_bytes"
+    },
+    {
+      "id": "CRX2",
+      "severity": "info",
+      "claim": "Confident-wrong class independently killed. A FRESH 20-question sentence-shaped node set (distinct from the 5 pre-flight) + the 5 pre-flight = 0/25 confident-wrong. The node path is exclusive: on node intent it returns a datasheet, a disambiguation list, or honest not-found and never falls through to H21 prose. blur-in-copernicus -> cop (current context, not legacy cop2); noise/atop/aidenoise/border in copernicus -> honest not-found (cop2-only types). The intent-gate is sound in BOTH directions: adversarial topic queries carrying type tokens (vex attribute wrangle -> vex_functions, light intensity parameter name -> solaris_parameter_names) are NOT hijacked to the node path - the recon's 8-test regression guard holds.",
+      "anchor": "knowledge.py:_has_node_intent (241) + _match_h22_node (288, exclusive) ; test contract _is_node_or_notfound + REGRESSION_TOPICS in test_knowledge_retrieval_repair.py"
+    },
+    {
+      "id": "CRX3",
+      "severity": "BLOCK",
+      "claim": "W4-KNOW campaign retrieval bars UNMET on the shipped hybrid scout: P@1 0.7546 < 0.98 and floor-clearing 0.9526 < 1.00 (BLUEPRINT acceptance-bars table, lines 66-73). The in-scope corpus fix (targets 1-5/7/8) all pass and maximise the lexical ceiling (P@1 0.9453 / floor 0.9962), but the hybrid scoring an agent actually hits injects prose above lexical-rank-1 node entries via RRF because the 659 nodes are NOT in the dense semantic index (rag/semantic_index) - which is outside W4-KNOW's declared touches. Independently confirmed miss: scout('karma') returns karma_rendering_guide/rendering/rag_render_karma_lop, not h22:lop/karma. Proven fix = spawn S1 (embed the nodes: hybrid P@1 0.99 / floor 0.998, but conceptual recall regresses 0.8333 -> 0.6667 and it commits a binary artifact) - held for Joe. The campaign's value gate is not fully cleared until S1 lands; this is a documented out-of-scope cap, not a defect or a regression.",
+      "anchor": "scout_eval.py:run_type_name_eval ; rag/semantic_index/manifest.json ; W4-KNOW.json finding F1 + spawn S1 ; BLUEPRINT.md:66-73"
+    },
+    {
+      "id": "CRX4",
+      "severity": "info",
+      "claim": "Gate integrity clean and independently confirmed (not inherited from W4-GUARD). drop.json is human-written (2026-08-09T07:07:31Z, 332B), absent from every forked worktree, and appears in no builder's git status - untouched. Zero manifest/mission state flips: git diff master -- wave4.live.json + missions/ is 0 lines in each builder worktree. check_no_rigging_drift is byte-untouched (present at checks.py:324; absent from the W4-GUARD checks.py diff) and authoring_domains.json is 0-line vs master. Gate B consumer-fix review surface is stated on the W4-KNOW receipt (handlers.py::_handle_knowledge_lookup + mcp/_tool_registry.py synapse_knowledge_lookup schema).",
+      "anchor": "harness/state/drop.json ; git diff master (per worktree) ; harness/verify/checks.py:324 ; W4-KNOW.json for_ruling[GATE B]"
+    },
+    {
+      "id": "CRX5",
+      "severity": "info",
+      "claim": "Freshness gate honestly RED - independently confirmed. K.7 dispatch (checks.py --task K.7 --worktree <w4-guard> --mode A) returns verdict FAIL with corpus_stamp_fresh ok:false ('STALE served corpus: build 22.0.368 != ratified build 22.0.400 via h22_symbol_table.json houdini_version') and ingest_ledger_single_writer ok:true. This is the gate working as designed (W4-GUARD F1) and is release-blocking until rag/corpus/h22_nodes.json is re-ingested/re-stamped to 22.0.400 - a held BUILD leg. Note: the same run also reds a SEPARATE standing guardrail (suite_baseline, R31 flat-baseline shape), which is pre-existing master state, orthogonal to W4-GUARD.",
+      "anchor": "harness/verify/checks.py::check_corpus_stamp_fresh ; K.7 verdict FAIL"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "Receipt-sentinel race (systemic) - Joe's word required before merge",
+      "detail": "All four wave-4 legs closed ahead:0 (no commit at receipt time), the standing CRUX block. A post-hoc driver secured the artifacts (content unmodified) and they now sit ahead:1 on the correct branches, independently green. Joe must rule: (a) accept the post-hoc-committed artifacts as merge-candidates despite the contract violation, and (b) fix the harness so leg receipts commit-then-close (the receipt-sentinel is written before the commit exists). This is the third+ recurrence of the uncommitted-state class (wave-1 B1/B2, wave-2)."
+    },
+    {
+      "item": "W4-KNOW value gate - P@1 0.98 / floor 1.00 unmet until spawn S1",
+      "detail": "The shipped hybrid scout is at P@1 0.7546 / floor 0.9526. The in-scope work is sound; clearing the campaign bars needs the dense-index embed (S1), which is a held BUILD-class spawn carrying a conceptual-recall trade-off (0.83->0.67) and a committed binary artifact. Joe rules whether the wave merges on the lexical-ceiling win now with S1 to follow, or holds for S1."
+    },
+    {
+      "item": "Freshness gate RED / .400 re-ingest",
+      "detail": "K.7 is release-blocking until rag/corpus/h22_nodes.json is re-ingested to 22.0.400. The corpus ships .368-stamped by design (W4-HELP keeps the .368 default per its brief). The re-ingest is a held BUILD leg (W4-GUARD proposed probe ING-DELTA to size it). Merge of the retrieval-repair code and greening the release gate are separable decisions."
+    },
+    {
+      "item": "Gate B consumer-fix human review",
+      "detail": "Per W4-KNOW crucible_criteria, the knowledge.py consumer changes (handlers.py::_handle_knowledge_lookup forwarding context/k + new response fields; _tool_registry.py schema gaining context+k) are a human word before merge. Backward-compatible (all existing .lookup() callers pass query positionally; new params default) - CRUX confirms the surface is stated but does not itself grant the review."
+    }
+  ],
+  "spawn": [],
+  "note": "readonly leg (touches:[]). CRUX wrote only its own receipt and bus posts. No push, no merge, no tag, no drop.json edit, no state flip. Merge remains Joe's word; this receipt + Gate B + a ruling on the receipt-sentinel race + the RED freshness gate are the preconditions. Re-verification method for re-entry: from each builder worktree, PYTHONPATH=<worktree>/python (a neutral import resolves to the MAIN repo = master/pre-fix), then `python -m synapse.cognitive.tools.scout_eval` + the leg's pytest; torch is present on this host so the hybrid path is live."
+}
