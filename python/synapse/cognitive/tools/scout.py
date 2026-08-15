@@ -149,6 +149,36 @@ DEFAULT_MAX_CHARS = 480
 # Dotted Python API symbols — exactly the phantom-API class SYNAPSE cares about.
 _DOTTED_RE = re.compile(r"\b(?:hou|pdg|hdefereval|pxr(?:\.\w+)?)\.[A-Za-z_][\w.]*")
 
+# --------------------------------------------------------------------------- #
+#  Node-dense retrieval (W5-DENSE)                                             #
+# --------------------------------------------------------------------------- #
+# The node corpus entries (rag/corpus/h22_nodes.json → context-bearing entries)
+# are embedded into a SEPARATE dense index, derived at ingest time by
+# scout_ingest._build_node_semantic_index and materialized alongside the prose
+# semantic_index in the ephemeral store. It is consulted ONLY when the query
+# carries node/type intent, so conceptual queries keep hitting the prose index
+# unchanged (a blind merge regressed conceptual recall 0.8333→0.6667, W4-KNOW
+# F1 — this placement is the S1 "separate node-dense index" that does not).
+_NODE_INDEX_DIRNAME = "semantic_index_nodes"
+
+# Node-intent classifier — a faithful mirror of
+# synapse.routing.knowledge.KnowledgeIndex._has_node_intent (kept here rather
+# than imported: synapse.cognitive.* is a zero-`hou`, self-contained layer, and
+# scout already replicates constants like _DOTTED_RE for the same reason). The
+# two must agree on what "wants the node path" means; test_scout_node_dense pins
+# that agreement so drift fails loud.
+_NODE_MARKERS = frozenset({"node", "nodes"})
+_CONTEXT_WORDS = frozenset({
+    "cop", "cops", "copernicus", "sop", "sops", "lop", "lops", "solaris",
+    "vop", "vops", "chop", "chops", "top", "tops", "dop", "dops",
+    "rop", "rops", "out",
+})
+_INTERROGATIVE = frozenset({
+    "how", "what", "which", "where", "why", "when", "who",
+    "does", "do", "is", "are", "can", "should", "will",
+})
+_WORD_RE = re.compile(r"[a-z0-9_]+")
+
 
 @dataclass(frozen=True)
 class Store:
@@ -339,28 +369,36 @@ def _fts5_query(query: str) -> str:
     return " OR ".join(toks)
 
 
-def _dense(store: Store) -> Optional[tuple[Any, list[str], Embedder]]:
-    """Load the semantic index + its embedder. None -> no semantic path.
-    Supports FAISS (index.faiss + meta.jsonl) and a numpy matrix
-    (embeddings.npy + meta.jsonl). Override paths via the manifest if yours
-    differ."""
-    key = str(store.index_dir)
+def _node_index_dir(store: Store) -> Path:
+    """The derived node-dense index dir — sibling of the prose semantic_index in
+    the same store (W5-DENSE). Built at ingest, never committed."""
+    return store.index_dir.parent / _NODE_INDEX_DIRNAME
+
+
+def _dense_dir(index_dir: Path) -> Optional[tuple[Any, list[str], Embedder]]:
+    """Load a semantic index + its embedder from ``index_dir``. None -> no
+    semantic path. Supports FAISS (*.faiss + meta.jsonl) and a numpy matrix
+    (embeddings.npy + meta.jsonl). Cached in ``_DENSE`` keyed by the dir path, so
+    the prose index and the derived node index (W5-DENSE) coexist in one cache —
+    and every existing ``_DENSE.clear()`` site clears both, no new cache to
+    register."""
+    key = str(index_dir)
     if key in _DENSE:
         return _DENSE[key]
-    if not store.index_dir.is_dir():
+    if not index_dir.is_dir():
         return None
-    embedder = _load_embedder(store.index_dir)
+    embedder = _load_embedder(index_dir)
     if embedder is None:
         return None
 
-    meta_fp = store.index_dir / "meta.jsonl"
+    meta_fp = index_dir / "meta.jsonl"
     if not meta_fp.is_file():
-        _WARN.append(f"semantic path disabled: no meta.jsonl in {store.index_dir}.")
+        _WARN.append(f"semantic path disabled: no meta.jsonl in {index_dir}.")
         return None
     ids = [json.loads(l)["id"] for l in meta_fp.read_text(encoding="utf-8").splitlines() if l.strip()]
 
-    faiss_fp = next(iter(store.index_dir.glob("*.faiss")), None)
-    npy_fp = store.index_dir / "embeddings.npy"
+    faiss_fp = next(iter(index_dir.glob("*.faiss")), None)
+    npy_fp = index_dir / "embeddings.npy"
 
     if faiss_fp and _FAISS:
         index = faiss.read_index(str(faiss_fp))
@@ -372,17 +410,20 @@ def _dense(store: Store) -> Optional[tuple[Any, list[str], Embedder]]:
 
     if len(ids) and hasattr(index, "shape") and index.shape[0] != len(ids):
         raise ScoutError(
-            f"[scout] index/meta length mismatch in {store.index_dir}: "
+            f"[scout] index/meta length mismatch in {index_dir}: "
             f"{index.shape[0]} vectors vs {len(ids)} ids."
         )
     _DENSE[key] = (index, ids, embedder)
     return _DENSE[key]
 
 
-def _dense_ids(store: Store, query: str, k: int) -> Optional[list[str]]:
-    loaded = _dense(store)
-    if loaded is None:
-        return None
+def _dense(store: Store) -> Optional[tuple[Any, list[str], Embedder]]:
+    """The store's PROSE semantic index (unchanged behaviour)."""
+    return _dense_dir(store.index_dir)
+
+
+def _search_dense(loaded: tuple[Any, list[str], Embedder], query: str, k: int) -> list[str]:
+    """Ranked ids from a loaded dense index for ``query`` (top-k)."""
     index, ids, embedder = loaded
     q = embedder.encode(query)
     if len(q) != embedder.dim:           # query-side embedding sanity guard
@@ -398,6 +439,19 @@ def _dense_ids(store: Store, query: str, k: int) -> Optional[list[str]]:
     sims = index @ qv
     top = np.argsort(-sims)[:k]
     return [ids[i] for i in top]
+
+
+def _dense_ids(store: Store, query: str, k: int) -> Optional[list[str]]:
+    loaded = _dense(store)
+    return None if loaded is None else _search_dense(loaded, query, k)
+
+
+def _node_dense_ids(store: Store, query: str, k: int) -> Optional[list[str]]:
+    """Ranked node-entry ids from the derived node-dense index (W5-DENSE). None
+    when the index was never built (embedder absent at ingest → lexical-only for
+    nodes, unchanged prior behaviour)."""
+    loaded = _dense_dir(_node_index_dir(store))
+    return None if loaded is None else _search_dense(loaded, query, k)
 
 
 # --------------------------------------------------------------------------- #
@@ -421,6 +475,88 @@ def _corpus_symbols(store: Store) -> set[str]:
         syms.update(_DOTTED_RE.findall(str(e.get(TEXT_FIELD, ""))))
     _SYMS[key] = syms
     return syms
+
+
+def _node_type_universe(stores: list[Store]) -> set[str]:
+    """The set of live node-type names present in the corpus (context-bearing
+    entries — h22 node datasheets carry a ``context``; prose docs do not).
+    Derived from the already-cached ``_load_corpus`` result each call, so there
+    is no separate cache to keep in sync with the ``_DENSE.clear()`` sites."""
+    types: set[str] = set()
+    for store in stores:
+        try:
+            entries, _ = _load_corpus(store)
+        except ScoutError:
+            continue
+        for e in entries:
+            if e.get("context"):
+                t = str(e.get("type") or "").lower()
+                if t:
+                    types.add(t)
+    return types
+
+
+def _has_node_intent(query: str, node_types: set[str]) -> bool:
+    """Does this query WANT the node path? Faithful mirror of
+    KnowledgeIndex._has_node_intent (see the constant block above). Fires only
+    when the query names a live node type AND is type-shaped: a short/bare query
+    (<=2 tokens), the literal word "node"/"nodes", or a context word alongside an
+    interrogative. A multi-word conceptual query that merely contains a type name
+    matches none of these → the node-dense index stays out of its fusion, so
+    conceptual recall is untouched."""
+    if not node_types:
+        return False
+    words = _WORD_RE.findall(query.lower())
+    type_tokens = [w for w in words if w in node_types]
+    if not type_tokens:
+        return False
+    if len(words) <= 2:
+        return True
+    raw_words = set(query.lower().split())
+    if raw_words & _NODE_MARKERS:
+        return True
+    if (raw_words & _CONTEXT_WORDS) and (raw_words & _INTERROGATIVE):
+        return True
+    return False
+
+
+# Context precedence for ordering exact-type matches — current contexts ahead of
+# legacy cop2 (mirrors KnowledgeIndex._CONTEXT_RANK).
+_CTX_RANK = {"cop": 3, "lop": 3, "sop": 3, "out": 2, "top": 2, "cop2": 1}
+
+
+def _exact_type_ids(stores: list[Store], query: str, node_types: set[str]) -> list[str]:
+    """A deterministic exact-node-type retriever (W5-DENSE). Entries whose node
+    ``type`` EXACTLY equals the query (the bare-type case, version suffix included)
+    — or, for a sentence, a type token in it — ordered h22-datasheet-first (the
+    campaign's authoritative node corpus) then current-context-first.
+
+    This is the precision neither BM25 nor an embedding can guarantee for an exact
+    name: ``_fts5_query`` drops the ``2``/``0`` version tokens so ``foo::2.0`` and
+    ``foo`` collide, generic words (``attribute``, ``file``) pull unrelated
+    lexical hits, and RRF ties same-name siblings. Feeding the exact match as one
+    more RRF list makes the queried type win without touching the BM25 path."""
+    q = query.strip().lower()
+    if q in node_types:
+        wanted = {q}                       # bare type, incl versioned "foo::2.0"
+    else:
+        wanted = set(_WORD_RE.findall(q)) & node_types   # a type token in a sentence
+    if not wanted:
+        return []
+    ranked: list[tuple[int, int, str]] = []
+    for store in stores:
+        try:
+            entries, _ = _load_corpus(store)
+        except ScoutError:
+            continue
+        for e in entries:
+            ctx = str(e.get("context") or "")
+            if ctx and str(e.get("type") or "").lower() in wanted:
+                _id = str(e["id"])
+                ranked.append((1 if _id.startswith("h22:") else 0,
+                               _CTX_RANK.get(ctx.lower(), 0), _id))
+    ranked.sort(key=lambda r: (r[0], r[1]), reverse=True)
+    return [i for _, _, i in ranked]
 
 
 _BUILD_RE = re.compile(r"^\d+\.\d+\.\d+")
@@ -859,6 +995,19 @@ def synapse_scout(
     used_dense = False
     used_lexical = False
 
+    # W5-DENSE: the dense retriever is intent-selected, never doubled. On node/type
+    # intent the NODE-dense index REPLACES the prose-dense one — a bare type query
+    # wants its datasheet, and injecting a paraphrase-matched prose doc alongside is
+    # exactly the F1 cap (it competes with the node in RRF and cancels the gain).
+    # Conceptual queries keep the prose-dense index unchanged, so conceptual recall
+    # is untouched. If node intent fires but the derived index was never built
+    # (embedder absent at ingest), fall back to the prose-dense path — never lose
+    # the dense retriever entirely. A query that IS a node type name is itself
+    # decisive node intent, regardless of token count.
+    node_types = _node_type_universe(stores)
+    node_intent = (query.strip().lower() in node_types
+                   or _has_node_intent(query, node_types))
+
     for store in stores:
         _, by_id = _load_corpus(store)
 
@@ -867,12 +1016,24 @@ def synapse_scout(
             used_lexical = True
             per_retriever.append(lex)
 
-        den = _dense_ids(store, query, fanout)
+        if node_intent:
+            den = _node_dense_ids(store, query, fanout)
+            if den is None:
+                den = _dense_ids(store, query, fanout)     # fall back to prose dense
+        else:
+            den = _dense_ids(store, query, fanout)
         if den is not None:
             used_dense = True
             per_retriever.append(den)
 
-        for _id in set(lex) | set(den or []):
+        # Deterministic exact-type retriever — the precision that resolves version
+        # suffixes, generic-word collisions, and same-name RRF ties (never touches
+        # the BM25 path above; it is one more fused list).
+        exact = _exact_type_ids([store], query, node_types) if node_intent else []
+        if exact:
+            per_retriever.append(exact)
+
+        for _id in set(lex) | set(den or []) | set(exact):
             if _id in by_id:
                 id_meta[_id] = (store, by_id[_id])
 
@@ -880,7 +1041,15 @@ def synapse_scout(
 
     hits: list[dict] = []
     for rank, _id in enumerate(fused):
-        store, entry = id_meta[_id]
+        ref = id_meta.get(_id)
+        if ref is None:
+            # A retriever surfaced an id with no corpus entry — e.g. a committed
+            # semantic index whose meta.jsonl drifted from the current corpus
+            # (an id present in the index but not in entries.jsonl). It cannot be
+            # rendered as a hit; skipping it keeps fusion robust instead of
+            # KeyError-crashing the whole scout (W5-DELTA finding, pre-existing).
+            continue
+        store, entry = ref
         dom = _classify(entry, store)
         if domain != "both" and dom != domain:
             continue

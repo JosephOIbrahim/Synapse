@@ -400,6 +400,59 @@ def run_type_name_eval(scout_fn: Callable[..., dict] = synapse_scout,
     )
 
 
+# --------------------------------------------------------------------------- #
+#  W5-DENSE — (context,type) dedup census + retrieval-side dedup probe          #
+#                                                                              #
+#  The node corpus carries same-(context,type) duplicates (the "+9 collapse"    #
+#  W4-CRUX observed: 8 pyro twins + cop2/denoise, each with a "#2" id). Adding  #
+#  the node-dense index MUST NOT silently change how those twins are indexed or  #
+#  retrieved. These are append-only instruments (the Scorecard/run_eval/        #
+#  run_type_name_eval above are untouched) so the dedup behaviour is receiptable #
+#  and pinnable, not asserted from prose.                                        #
+# --------------------------------------------------------------------------- #
+
+
+def dedup_summary(corpus_entries=None) -> dict:
+    """Corpus-level (context, type) duplicate census — pure structure of the
+    served corpus, independent of any index. Reports entries, unique types,
+    unique (context, type) pairs, and every duplicate group with its ids."""
+    from collections import defaultdict
+    entries = corpus_entries if corpus_entries is not None else load_served_node_corpus()
+    groups: dict = defaultdict(list)
+    for e in entries:
+        ctx = str(e.get("context") or "")
+        t = str(e.get("type") or "").lower()
+        if ctx and t:
+            groups[(ctx, t)].append(str(e.get("id")))
+    dup = {"%s/%s" % (c, t): ids for (c, t), ids in groups.items() if len(ids) > 1}
+    return {
+        "entries": len(entries),
+        "unique_types": len({str(e.get("type") or "").lower()
+                             for e in entries if e.get("type")}),
+        "unique_context_type": len(groups),
+        "dup_groups": len(dup),
+        "dup_detail": dict(sorted(dup.items())),
+    }
+
+
+def run_dedup_probe(scout_fn: Callable[..., dict] = synapse_scout,
+                    corpus_entries=None, k: int = 6) -> dict:
+    """Retrieval-side dedup behaviour: for each duplicate (context, type) group,
+    which of its ids surface in scout(type, k). Receipts that the node-dense index
+    neither silently drops nor multiplies a twin (crucible criterion). Compare the
+    output across the lexical-only and hybrid scouts to prove no silent change."""
+    summary = dedup_summary(corpus_entries)
+    per_group: dict = {}
+    for key in summary["dup_detail"]:
+        ctx, t = key.split("/", 1)
+        out = scout_fn(t, k=k)
+        ids = [h.get("id") for h in (out.get("hits") or [])]
+        surfaced = [i for i in ids if _parse_h22_id(i) == (ctx, t)]
+        per_group[key] = {"expected_ids": summary["dup_detail"][key],
+                          "surfaced_in_topk": surfaced}
+    return {"census": summary, "per_group": per_group}
+
+
 if __name__ == "__main__":             # pragma: no cover
     import sys
     # Point the live scout at the materialized canonical corpus (build-if-absent),
