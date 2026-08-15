@@ -96,7 +96,8 @@ def test_manage_collection_node_name_sanitized(monkeypatch):
     monkeypatch.setattr(husd, "hou", fake_hou)
     monkeypatch.setattr(husd, "HOU_AVAILABLE", True)
     mt_live = importlib.import_module("synapse.server.main_thread")
-    monkeypatch.setattr(mt_live, "run_on_main", lambda fn, timeout=None: fn())
+    # F4 re-pin (d625ee61): run_on_main gained label=; fakes take **kw.
+    monkeypatch.setattr(mt_live, "run_on_main", lambda fn, timeout=None, **kw: fn())
     monkeypatch.setattr(
         SynapseHandler,
         "_verify_collection_cooked",
