@@ -202,6 +202,24 @@ def _probe_a_husk_direct(husk_exe: str) -> None:
             reconciliation=reconciliation)
 
 
+def _resolve_parm(node, *candidates):
+    """First existing parm among candidates, else the punycode-encoded USD
+    form — H22 Solaris light/camera LOPs encode ``inputs:*`` parm names as
+    punycode (live-introspected 22.0.400: distantlight intensity is
+    ``xn__inputsintensity_i0a``; plain ``intensity`` does not exist). Skips
+    ``*_control`` switcher parms. Returns None when nothing matches."""
+    for cand in candidates:
+        parm = node.parm(cand)
+        if parm is not None:
+            return parm
+    flat = candidates[0].replace(":", "").replace("inputs", "").lower()
+    for parm in node.parms():
+        name = parm.name()
+        if name.startswith(f"xn__inputs{flat}") and "_control" not in name:
+            return parm
+    return None
+
+
 def _classify_render_semantics(dt_return: float, exr_at_return: bool) -> str:
     if exr_at_return:
         return "BLOCKS_UNTIL_PIXELS (synchronous dispatch)"
@@ -214,7 +232,12 @@ def _probe_b_and_c_render_background(hou, lop_output_dir: Path) -> None:
                                               f"f5a_probe_lopnet_{int(time.time())}")
     sphere = stage_net.createNode("sphere")
     light = stage_net.createNode("distantlight")
-    light.parm("intensity").set(1200)
+    intensity = _resolve_parm(light, "intensity", "inputs:intensity")
+    if intensity is not None:
+        try:
+            intensity.set(1200)
+        except hou.Error:
+            pass  # brightness is cosmetic; a black frame still proves completion
     light.setInput(0, sphere)
     cam = stage_net.createNode("camera")
     cam.setInput(0, light)
@@ -247,9 +270,28 @@ def _probe_b_and_c_render_background(hou, lop_output_dir: Path) -> None:
                 pass
 
     sentinel_script = _write_sentinel_script()
-    out_net = hou.node("/out")
-    rop = out_net.createNode("usdrender_rop",
-                             f"f5a_probe_rop_{int(time.time())}")
+    # H22.0.400 class-placement truth (live-introspected 2026-08-15): the
+    # /out ROP-category husk driver is named "usdrender"; "usdrender_rop" is
+    # the LOP-context name only (creating it in /out raises OperationFailed —
+    # the bug that blocked this probe's first run). Both forms carry identical
+    # loppath/soho_foreground/trange/husk_* parm truth. /out first —
+    # production's documented home — lopnet-internal fallback second.
+    rop_stamp = int(time.time())
+    try:
+        rop = hou.node("/out").createNode("usdrender",
+                                          f"f5a_probe_rop_{rop_stamp}")
+    except hou.OperationFailed:
+        rop = stage_net.createNode("usdrender_rop", f"f5a_probe_rop_{rop_stamp}")
+    missing = [name for name in ("loppath", "soho_foreground")
+               if rop.parm(name) is None]
+    if missing:
+        _record("b_node_render_background", "UNKNOWN",
+                reason=f"driver node type {rop.type().name()!r} lacks required "
+                       f"parm(s) {missing} — probed premise unavailable",
+                invocation=rop.path())
+        _record("c_completion_signal", "UNKNOWN",
+                reason="blocked by (b): driver missing required parms")
+        return
     rop.parm("loppath").set(settings.path())
     rop.parm("soho_foreground").set(0)  # THE probed premise: background mode
     t_parm = rop.parm("trange")
