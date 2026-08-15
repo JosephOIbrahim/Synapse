@@ -95,9 +95,47 @@ def _norm(p):
     return os.path.normcase(os.path.normpath(os.path.abspath(p)))
 
 
-def branch():
+def _gitdirs():
+    """Resolve ROOT/.git for a normal checkout AND a linked worktree.
+
+    A normal checkout has ROOT/.git as a DIRECTORY. A linked worktree has it as
+    a FILE holding 'gitdir: <path>' that points at .git/worktrees/<name>/ - a
+    per-worktree dir whose HEAD is that checkout's own, and whose 'commondir'
+    file points back at the shared .git. Returns (gitdir, commondir):
+
+        gitdir     per-worktree dir - holds THIS checkout's HEAD
+        commondir  shared dir       - holds refs/heads, packed-refs, worktrees/
+
+    In a normal checkout the two are the same path. Reading .git as a directory
+    read ROOT/.git/HEAD directly, which in a worktree is a file that has no HEAD
+    inside it - so branch()/head_sha()/registered_paths() all returned nothing
+    and the bar disagreed with git. Pure file reads, no process spawn, no git.
+    """
+    gitdir = os.path.join(ROOT, ".git")
+    if os.path.isfile(gitdir):
+        try:
+            with open(gitdir, encoding="utf-8") as fh:
+                line = fh.read().strip()
+        except OSError:
+            return gitdir, gitdir
+        if line.startswith("gitdir:"):
+            p = line[len("gitdir:"):].strip()
+            gitdir = p if os.path.isabs(p) else os.path.normpath(os.path.join(ROOT, p))
+    commondir = gitdir
     try:
-        with open(os.path.join(ROOT, ".git", "HEAD"), encoding="utf-8") as fh:
+        with open(os.path.join(gitdir, "commondir"), encoding="utf-8") as fh:
+            c = fh.read().strip()
+        if c:
+            commondir = c if os.path.isabs(c) else os.path.normpath(os.path.join(gitdir, c))
+    except OSError:
+        pass
+    return gitdir, commondir
+
+
+def branch():
+    gitdir, _ = _gitdirs()
+    try:
+        with open(os.path.join(gitdir, "HEAD"), encoding="utf-8") as fh:
             head = fh.read().strip()
     except Exception:
         return "?"
@@ -108,8 +146,13 @@ def branch():
 
 def registered_paths():
     """Worktree paths from git's own on-disk record, without invoking git."""
-    out = {_norm(ROOT)}
-    wt = os.path.join(ROOT, ".git", "worktrees")
+    _, commondir = _gitdirs()
+    # git's porcelain lists the main checkout first, then each linked worktree.
+    # The main checkout is the PARENT of the shared .git and is NOT recorded
+    # under worktrees/ - so seed it from commondir, not from ROOT (which, when
+    # this code runs from inside a linked worktree, is the worktree, not main).
+    out = {_norm(os.path.dirname(commondir))}
+    wt = os.path.join(commondir, "worktrees")
     if not os.path.isdir(wt):
         return out
     for name in os.listdir(wt):
@@ -122,9 +165,14 @@ def registered_paths():
 
 
 def head_sha():
-    """HEAD's commit, without invoking git. Loose ref first, then packed-refs."""
+    """HEAD's commit, without invoking git. Loose ref first, then packed-refs.
+
+    HEAD is per-worktree (gitdir); refs/heads and packed-refs are shared
+    (commondir). A linked worktree splits the two - each is read from its own.
+    """
+    gitdir, commondir = _gitdirs()
     try:
-        with open(os.path.join(ROOT, ".git", "HEAD"), encoding="utf-8") as fh:
+        with open(os.path.join(gitdir, "HEAD"), encoding="utf-8") as fh:
             head = fh.read().strip()
     except Exception:
         return ""
@@ -132,12 +180,12 @@ def head_sha():
         return head
     ref = head[5:].strip()
     try:
-        with open(os.path.join(ROOT, ".git", *ref.split("/")), encoding="utf-8") as fh:
+        with open(os.path.join(commondir, *ref.split("/")), encoding="utf-8") as fh:
             return fh.read().strip()
     except OSError:
         pass
     try:
-        with open(os.path.join(ROOT, ".git", "packed-refs"), encoding="utf-8") as fh:
+        with open(os.path.join(commondir, "packed-refs"), encoding="utf-8") as fh:
             for line in fh:
                 if line.startswith(("#", "^")):
                     continue

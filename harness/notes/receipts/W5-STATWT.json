@@ -1,0 +1,71 @@
+{
+  "leg": "W5-STATWT",
+  "status": "green_with_findings",
+  "branch": "wave5/statwt",
+  "base": "ec1ea8db6a44e2af52283238b663283432652064",
+  "product_head": "2c8d3953cd80aea79db0d15c7f8520fe796a681f",
+  "ahead_at_receipt_time": 1,
+  "commit_before_receipt": "product committed at 2c8d3953 (ahead:1 verified) BEFORE this receipt was written; this receipt is the leg's own closing commit",
+  "acceptance": [
+    {
+      "predicate": "resolve ROOT/.git when it is a file (parse 'gitdir: <path>') so branch()/head_sha()/packed-refs/worktrees enumeration work from inside a linked worktree",
+      "verdict": "pass",
+      "evidence": "_gitdirs() (harness/statusline.py:98) parses the 'gitdir: <path>' file and returns (gitdir, commondir); branch() reads HEAD from gitdir (L135), head_sha() reads HEAD from gitdir and resolves loose-ref+packed-refs from commondir (L167-197), registered_paths() seeds from dirname(commondir) and enumerates commondir/worktrees (L147). Proven by tests/test_statusline_worktree.py (6/6) which builds a real temp main repo + linked worktree and asserts branch/head_sha/registered_paths equal git from BOTH roots, incl. after 'git pack-refs --all' (test_head_sha_reads_packed_refs_from_commondir). Crucible mutation test: reverting _gitdirs to read ROOT/.git directly makes all three named tests FAIL (not decorations); conflating commondir=gitdir makes head_sha+split tests FAIL."
+    },
+    {
+      "predicate": "tests/test_statusline.py: 13/13 in BOTH the main checkout and a linked worktree",
+      "verdict": "pass",
+      "evidence": "Linked worktree (this worktree, .git is a file 'gitdir: C:/Users/User/SYNAPSE/.git/worktrees/w5-statwt'): 'python -m pytest tests/test_statusline.py tests/test_statusline_worktree.py' -> 19 passed (13 original + 6 hermetic). Main checkout: throwaway normal-checkout repo (.git is a DIRECTORY) with the fixed harness/statusline.py -> 'pytest tests/test_statusline.py' -> 13 passed. Live corroboration: crucible measured registered_paths()==git worktree list --porcelain 43==43 on the real main tree; W5-BASE bus finding 18cc11fa9bfbc804 independently measured main-checkout tests/test_statusline.py=13 passed. RED baseline (pre-fix, this worktree) was 4 failed / 9 passed."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "claim": "head_sha() resolves HEAD's symref target from commondir only. A worktree HEAD that symref'd a per-worktree-namespaced ref (refs/bisect/*, refs/worktree/*, refs/rewritten/*) would miss the per-worktree copy and return ''. UNREACHABLE in practice: git detaches HEAD (raw sha) during bisect/rebase, so head_sha returns the raw sha via the non-'ref: ' branch and never enters ref resolution. Strictly better than the pre-fix code, which returned '' for ALL refs in a worktree. Not unit-tested because git cannot produce the precondition without first detaching HEAD.",
+      "anchor": "harness/statusline.py:188",
+      "blocking": false,
+      "source": "crucible N1"
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "claim": "armed_count() (UNCHANGED by this leg) joins a relative leg 'worktree' path to ROOT; legs.json stores paths like '.claude/worktrees/<name>', so run from inside a worktree they resolve against the worktree (nonexistent) and the armed segment reads 0. The registered_paths() fix does NOT change this output: the os.path.isdir(p) gate short-circuits before the registry membership check (crucible: 0/57 legs resolve, armed_count=0), and test_bar_agrees_with_the_authoritative_guard stays green because statusline and worktree_guard share the same ROOT-join and therefore agree. Low practical impact: the configured statusLine invokes the MAIN-tree statusline.py (docstring L6) where ROOT is the main tree and armed_count resolves correctly; the under-report only appears if a worktree copy is run as the bar. Pre-existing and out of this leg's scope (branch/head_sha/registered_paths/worktree enumeration).",
+      "anchor": "harness/statusline.py:168",
+      "blocking": false,
+      "source": "crucible N2"
+    }
+  ],
+  "for_ruling": [
+    {
+      "claim": "F2 (armed_count relative-leg-path resolution from a worktree) is a real but pre-existing, out-of-scope under-report the statusline design doc explicitly warns against ('a bar that under-reports armed legs is worse than no bar'). Proposed as a follow-up build leg (see spawn[0]); no action taken here to honor scope.",
+      "anchor": "harness/statusline.py:168"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W5-STATWT-ARMEDPATH",
+      "name": "armed_count resolves relative leg worktree paths against the main checkout so the armed segment is correct when the bar runs from inside a worktree",
+      "band": "BUILD",
+      "targets": [
+        "resolve relative leg 'worktree' paths against dirname(commondir) (the main checkout), not ROOT, so os.path.isdir()/registry checks in armed_count() are correct when statusline.py runs from a linked worktree",
+        "a test proving armed_count() from a worktree root equals armed_count() from the main root for the same legs.json"
+      ],
+      "touches": ["harness/statusline.py", "tests/"],
+      "readonly": false,
+      "spawn_classes": ["build"],
+      "note": "compiled from W5-STATWT crucible finding F2 (harness/statusline.py:168). armed_count() (unchanged by W5-STATWT) joins relative leg paths to ROOT; from a worktree ROOT=worktree so leg dirs don't exist and the armed segment silently reads 0. registered_paths() already resolves the main tree via dirname(commondir); reuse that as the leg-path base. Keep test_bar_agrees_with_the_authoritative_guard green (worktree_guard has the same ROOT-join and may need the matching change or a shared helper).",
+      "deps": [],
+      "acceptance": [
+        {"predicate": "armed_count relative-leg-path resolution is correct from a linked worktree root", "evidence": "test"}
+      ]
+    }
+  ],
+  "provenance": {
+    "red_baseline": "4 failed / 9 passed (tests/test_statusline.py, this linked worktree, pre-fix)",
+    "green_worktree": "19 passed (tests/test_statusline.py 13 + tests/test_statusline_worktree.py 6)",
+    "green_main_checkout": "13 passed (tests/test_statusline.py, throwaway .git-directory repo, fixed code)",
+    "adversarial": "crucible verdict HOLDS-WITH-NITS: fix correct, all 6 new tests mutation-proven load-bearing, no main-checkout regression (43==43 live), no-subprocess contract held, edge cases graceful",
+    "bus_claim": "18cc1838f93f55c8 (files: harness/statusline.py, tests/test_statusline_worktree.py; no overlapping open peer claim)"
+  }
+}
