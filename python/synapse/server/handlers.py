@@ -1520,11 +1520,18 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         root = resolve_param_with_default(payload, "root", "/")
         max_depth = resolve_param_with_default(payload, "max_depth", 3)
         context_filter = resolve_param_with_default(payload, "context_filter", None)
+        from ..core.timeouts import timeout_for
+        # F6 (2026-08-14): raise this marshal from the 10s default to match the
+        # /mcp 30s budget. OWNERSHIP: core/timeouts.py SLOW_COMMANDS
+        # ["inspect_scene"]=30s is canonical; this site reads it from that
+        # table so marshal and transport stay aligned (a big stage walk is
+        # exactly the command class that false-fails at 10s, and on timeout
+        # the C4 abandoned flag still no-ops the late payload).
         return run_on_main(lambda: inspect_scene(
             root=root,
             max_depth=int(max_depth),
             context_filter=context_filter,
-        ), label="handlers:_handle_inspect_scene")
+        ), timeout=timeout_for("inspect_scene"), label="handlers:_handle_inspect_scene")
 
     def _handle_inspect_node(self, payload: Dict) -> Dict:
         """Deep single-node dump: all parms, expressions, code, geometry, HDA info."""
