@@ -1,0 +1,82 @@
+{
+  "leg": "W5-HYGIENE",
+  "name": "harness hygiene: subagent-aware liveness tracker, receipt-closing-commit template mandate, series work-order fix",
+  "status": "green_with_findings",
+  "branch": "wave5/hygiene",
+  "base": "master",
+  "product_head": "630459ba8a4d93f83ae3877fca82c4fb6562746c",
+  "ahead_of_base_at_receipt_write": 1,
+  "read_gate": {
+    "predicate": "harness/SPEC.md + harness/rsi/SPEC.md read BEFORE any harness edit",
+    "verdict": "honored",
+    "anchors": [
+      "harness/SPEC.md:1 (H22 Gap-Blueprint Harness SPEC; two-engine + human-orchestrator + relay model, S1 L27-59)",
+      "harness/rsi/SPEC.md:1-3 (RSI closure harness SPEC, RATIFIED 2026-08-01; ladder L0-L5+RATCHET L67-79; Human Gates L113-120)"
+    ],
+    "note": "Both read in full at leg start, before the first Edit to any harness file. No harness edit preceded these reads."
+  },
+
+  "mandate_compliance": {
+    "commit_before_receipt": "PASS",
+    "product_commit": "630459ba (fix(harness): W5-HYGIENE ...), 4 named files, git add of exact paths (never -A)",
+    "ahead_at_receipt_write": 1,
+    "receipt_is_own_closing_commit": "this receipt is committed by the leg as its own closing commit (the very mandate this leg adds to _template.md); product HEAD stated above precedes this receipt write",
+    "note": "COMMIT BEFORE RECEIPT honored: product commit 630459ba existed on wave5/hygiene, rev-list master..HEAD = 1, BEFORE this receipt file was written. Receipt lands as the closing commit certifying 630459ba. No push/merge/tag, no drop.json edit, no ratified/state flip - those remain Joe's words per act."
+  },
+
+  "acceptance": [
+    {
+      "predicate": "tracker liveness test: a fixture path under subagents/workflows/ updates the last-write age",
+      "verdict": "pass",
+      "evidence": "tests/test_orchestrate_liveness.py exercises the REAL Get-LastProgress (dot-sourced from orchestrate.ps1 in SYNAPSE_ORCH_LIB library mode, USERPROFILE+repo isolated to tmp). test_subagent_workflow_write_moves_last_write PASSED: a fixture at <profile>/.claude/projects/C--Users-User-SYNAPSE/<sess>/subagents/workflows/wf_probe/agent-abc123.jsonl is detected (returned UTC epoch within 2s of the fixture mtime). test_fresh_subagent_beats_stale_main_transcript PASSED: a 2-min-old subagent write correctly beats a 2h-stale top-level session transcript (the exact false-STALE crucible scenario). Run: 2 passed, 1 skipped, 0 failed (pytest 8.4.2, Python 3.14.2, win32). The OLD filter ($_.Directory.Name -match 'SYNAPSE') would have returned null for the fixture (immediate parent 'wf_probe' never matches SYNAPSE) - so the test discriminates the fix. Fix: orchestrate.ps1 Get-LastProgress matches $_.FullName instead of $_.Directory.Name."
+    },
+    {
+      "predicate": "_template.md contains the receipt-closing-commit mandate with the W5 citation",
+      "verdict": "pass",
+      "evidence": "harness/autorevise/prompts/_template.md:54-63 - 'THE RECEIPT IS ITS OWN CLOSING COMMIT - the leg commits it, not the operator (W5H)'. Cites W5 with anchors: CRUX + three of four builder legs (BASE/DENSE/UNDO) left receipts worktree-only, rescued in-tree by operator commits c7a6a08d (close pass) and 76ca94a0 (CRUX); only W5-DELTA committed its own receipt as its closing commit (b4bbb562 on wave5/delta). Mandate states the full sequence: product commit -> verify ahead>=1 -> write receipt stating product HEAD sha -> commit receipt as closing commit."
+    },
+    {
+      "predicate": "BLUEPRINT.md Series plan no longer locates set_parm in handlers_node.py",
+      "verdict": "pass",
+      "evidence": "harness/notes/h22/BLUEPRINT.md:106-110 (Wave 5 roster, W5-UNDO entry) corrected per CRUX-R2: 'wrap the create/connect/delete mutations in handlers_node.py in undo groups; set_parm lives in handlers.py and set_keyframe in handlers_render.py, NOT handlers_node.py, so those remaining live-path Ctrl+Z holes ride W5-UNDO-B'. grep confirms set_parm is now associated ONLY with handlers.py; the sole handlers_node.py reference remaining (:118 quit-rule) is correctly about the create/connect/delete surface UNDO did wrap, not set_parm."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "F-HYG-1",
+      "severity": "info",
+      "claim": "The mission target #3 citation 'cite W5 (CRUX + all four legs left receipts worktree-only)' is off by one. Git provenance: W5-BASE/W5-DENSE/W5-UNDO receipts first entered the tree in the operator close commit c7a6a08d ('close(w5): leg receipts in-tree'), and W5-CRUX in 76ca94a0 (operator, subject: 'closing commit made by merge operator, receipt was worktree-only') - so those four were worktree-only. But W5-DELTA committed its OWN receipt as its closing commit: b4bbb562 on wave5/delta (116 insertions of W5-DELTA.json), corroborated by the CRUX mandate_table 'receipt-commit b4bbb562 (ahead 2)'. So DELTA is NOT worktree-only; it is the positive exemplar the mandate universalizes. The _template.md mandate was written with the corrected, anchored version (CRUX + BASE/DENSE/UNDO worktree-only; DELTA self-committed) rather than propagating the brief's 'all four' - the control-pinned-to-the-brief's-figure discipline (a claim copied from the doc under test pins its error).",
+      "anchor": "git log --oneline -- harness/notes/receipts/W5-DELTA.json => b4bbb562 (refs=wave5/delta) ; c7a6a08d (BASE/DENSE/UNDO) ; 76ca94a0 (CRUX) ; harness/notes/receipts/W5-CRUX.json:16 mandate_table DELTA"
+    },
+    {
+      "id": "F-HYG-2",
+      "severity": "info",
+      "claim": "The scoping guard test_non_synapse_project_is_not_counted SKIPS on this host because the session temp root itself contains 'SYNAPSE' (pytest tmp_path resolved under C:\\...\\Temp\\...\\C--Users-User-SYNAPSE--claude-worktrees-w5-hygiene\\...), which defeats project-scope isolation - the non-SYNAPSE fixture's FullName would still carry 'SYNAPSE' via the temp root. This is an honest guarded skip, never a false pass; the test runs and proves scoping on a neutral-temp host. The two acceptance-bearing tests both PASS here. SYNAPSE-scoping is otherwise preserved by construction: the fix only moved the match target from $_.Directory.Name to $_.FullName; the $proj recursion root (<USERPROFILE>/.claude/projects) is unchanged, and 'SYNAPSE' still appears only in SYNAPSE project slugs under it.",
+      "anchor": "tests/test_orchestrate_liveness.py:test_non_synapse_project_is_not_counted (skip guard) ; harness/orchestrate.ps1 Get-LastProgress $_.FullName -match 'SYNAPSE'"
+    },
+    {
+      "id": "F-HYG-3",
+      "severity": "info",
+      "claim": "Get-LastProgress is the SOLE subagents-blind liveness consumer. The Python renderers already read the subagents/workflows path shape correctly - harness/progress.py:321-345 documents its producer as '~/.claude/projects/C--Users-User-SYNAPSE/*/subagents/workflows/wf_*' and globs agent-*.jsonl, and harness/statusline.py:249-260 walks sess/subagents/workflows too. So there is NO Python twin sharing this bug (unlike the lock.py/status.py twins of the ps1 lock/board): the fix is correctly ps1-only and there is no code/corpus divergence to chase. The SYNAPSE_ORCH_LIB library-mode guard added to make the ps1-only function honestly testable is inert on any real dispatch (a live orchestrate.ps1 run never sets that env var), so the running orchestrator (pid 55168, main-tree copy) is untouched.",
+      "anchor": "harness/progress.py:321 ; harness/statusline.py:249 ; harness/orchestrate.ps1 (SYNAPSE_ORCH_LIB guard before main loop)"
+    }
+  ],
+
+  "for_ruling": [],
+
+  "spawn": [],
+
+  "crucible_criteria_status": [
+    {"criterion": "SPEC.md + rsi/SPEC.md read before any harness edit - state it in the receipt with anchors", "status": "honored", "evidence": "read_gate block above: both SPECs read in full at leg start with anchors (harness/SPEC.md:1 two-engine+relay model; harness/rsi/SPEC.md:1-3 RATIFIED L0-L5+RATCHET ladder). No Edit preceded these reads."},
+    {"criterion": "the RUNNING orchestrator must not be disturbed: edits happen in the worktree only", "status": "honored", "evidence": "Live orchestrator confirmed: pid 55168 running the MAIN-TREE C:/Users/User/SYNAPSE/harness/orchestrate.ps1 -ManifestPath wave5h.live.json. ALL edits confined to the worktree copy (.claude/worktrees/w5-hygiene/harness/orchestrate.ps1) - main tree untouched. git status --short showed exactly the 4 claimed files. The library-mode guard is env-gated (SYNAPSE_ORCH_LIB) and never fires on a live dispatch."},
+    {"criterion": "house rule: unobtainable renders UNKNOWN, never zero and never an estimate", "status": "honored", "evidence": "No UNKNOWNs required - all three acceptance predicates are measurable headless and were measured (test run + two greps). The one un-runnable case (scoping test in a SYNAPSE-ambient temp root) is recorded as an honest SKIP (F-HYG-2), never counted as a pass and never estimated."},
+    {"criterion": "COMMIT BEFORE RECEIPT, and the receipt is the leg's own closing commit", "status": "honored", "evidence": "mandate_compliance block: product commit 630459ba (ahead 1) existed before this receipt was written; this receipt is committed by the leg as its own closing commit - the exact discipline this leg codifies into _template.md."}
+  ],
+
+  "bus": {
+    "wave": "wave5",
+    "claim": "18cc187dca777000 (files: orchestrate.ps1, _template.md, BLUEPRINT.md, tests/test_orchestrate_liveness.py) - no overlap with W5-UNDOB/W5-CRUXS1/W5-STATWT open claims (all file-scoped, disjoint test files)",
+    "canonical_bus": "harness/autorevise/bus/wave5/bus.jsonl (main tree, via absolute bus.py path)"
+  }
+}
