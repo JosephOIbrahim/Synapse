@@ -1,0 +1,53 @@
+{
+  "probe": "F5a render-offload",
+  "timestamp_utc": "2026-08-15T12:38:24.677164+00:00",
+  "workdir": "C:\\Users\\User\\AppData\\Local\\Temp\\synapse_f5a_probe_x9n1m77g",
+  "results": {
+    "0_environment": {
+      "verdict": "PASS",
+      "build": "22.0.400",
+      "license": "licenseCategoryType.Indie",
+      "python": "3.13.10",
+      "ui_available": "False"
+    },
+    "a_husk_delegate_load": {
+      "verdict": "PASS",
+      "build": "22.0.400",
+      "license": "licenseCategoryType.Indie",
+      "exr_written": true,
+      "variants": {
+        "without_--indie": {
+          "argv": "C:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.400\\bin\\husk.exe C:\\Users\\User\\AppData\\Local\\Temp\\synapse_f5a_probe_x9n1m77g\\f5a_probe_without_indie.usda",
+          "wall_s": 2.1,
+          "exit_code": 0,
+          "plugin_error": false,
+          "exr_written": true,
+          "stderr_tail": ""
+        },
+        "with_--indie": {
+          "argv": "C:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.400\\bin\\husk.exe --indie C:\\Users\\User\\AppData\\Local\\Temp\\synapse_f5a_probe_x9n1m77g\\f5a_probe_with_indie.usda",
+          "wall_s": 2.02,
+          "exit_code": 0,
+          "plugin_error": false,
+          "exr_written": true,
+          "stderr_tail": ""
+        }
+      },
+      "reconciliation": "NO SPLIT \u2014 husk loaded the delegate and wrote pixels with and without --indie on this build/license. The 336-338 2026-07-17 failure does not reproduce on this build \u2014 no flag-dependent split exists here; the argv recorded per variant is the new ground truth."
+    },
+    "b_node_render_background": {
+      "verdict": "PASS",
+      "semantics": "BLOCKS_UNTIL_PIXELS (synchronous dispatch)",
+      "dt_return_s": 2.05,
+      "invocation": "/out/f5a_probe_rop_1786797502.render(frame_range=(1, 1)) with soho_foreground=0, loppath=/stage/f5a_probe_lopnet_1786797497/karmarendersettings1",
+      "implication": "node.render() stays synchronous even in background mode on this build"
+    },
+    "c_completion_signal": {
+      "verdict": "PASS",
+      "exr_landed": "2026-08-15T12:38:23.934740+00:00",
+      "sentinel_landed": "2026-08-15T12:38:23.940485+00:00",
+      "sentinel_minus_exr_s": 0.006,
+      "recommendation": "husk-level husk_postframe sentinel is the pixel-accurate signal (fires after the EXR lands); file-exists poll on return is the acceptable fallback ONLY when soho_foreground makes render() synchronous. Under a true background return, file-exists poll PLUS sentinel (or poll loop) is required \u2014 return-immediately carries no completion guarantee."
+    }
+  }
+}
