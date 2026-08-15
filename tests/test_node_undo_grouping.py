@@ -336,22 +336,25 @@ def test_handler_nests_exactly_one_group_inside_an_outer_group(env, call, label,
 
 # ── scope finding pin: set_parm is elsewhere and still unwrapped ────
 
-def test_set_parm_lives_in_handlers_py_and_is_unwrapped():
-    """W5-UNDO scope finding: set_parm is NOT a handlers_node.py handler; it is
-    handlers.py::_handle_set_parm and remains UNWRAPPED. Pin both so the receipt
-    is test-anchored and a future reader can't assume the quartet is complete."""
+def test_set_parm_now_wraps_in_handlers_py():
+    """W5-UNDOB closed the set_parm Ctrl+Z hole. set_parm still lives in
+    handlers.py (NOT on NodeHandlerMixin), but now wraps its parm.set /
+    parm_tuple.set mutations in hou.undos.group("synapse_set_parm"). This is the
+    flipped successor of W5-UNDO's ...is_unwrapped pin — kept so a regression
+    that DROPS the wrap reddens here too, not only in
+    tests/test_undob_live_undo_grouping.py."""
     import synapse.server.handlers_node as hn
 
     assert not hasattr(hn.NodeHandlerMixin, "_handle_set_parm"), (
-        "set_parm unexpectedly appeared on NodeHandlerMixin — the W5-UNDO scope "
-        "finding (set_parm lives in handlers.py) is stale; re-check the receipt."
+        "set_parm unexpectedly appeared on NodeHandlerMixin — the scope finding "
+        "(set_parm lives in handlers.py) is stale; re-check the receipt."
     )
 
     handlers_py = Path(hn.__file__).with_name("handlers.py")
     text = handlers_py.read_text(encoding="utf-8")
     m = re.search(r"\n    def _handle_set_parm\(.*?(?=\n    def )", text, re.S)
     assert m, "could not locate _handle_set_parm in handlers.py"
-    assert "undos.group" not in m.group(0), (
-        "set_parm now wraps in handlers.py — the Ctrl+Z hole is fully closed; "
-        "update the CLAUDE.md drift note and the W5-UNDO follow-up spawn."
+    assert 'hou.undos.group("synapse_set_parm")' in m.group(0), (
+        "set_parm no longer wraps in handlers.py — W5-UNDOB closed this Ctrl+Z "
+        "hole; a regression dropped the hou.undos.group wrap."
     )

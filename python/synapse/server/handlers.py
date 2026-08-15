@@ -1133,12 +1133,17 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 # If value is a list/tuple but we found a scalar parm, try the
                 # tuple parm instead — this lets callers set color (R,G,B) in one
                 # call using the base name (e.g., "base_color" with [1,0,0]).
+                # W5-UNDOB: one undo group around the parm write so a single
+                # Ctrl+Z reverses it. Grouping only, NOT rollback — an exception
+                # mid-write is not auto-reversed (matches handlers_node.py).
                 if isinstance(value, (list, tuple)):
                     parm_tuple = node.parmTuple(parm_name)
                     if parm_tuple is not None and len(parm_tuple) > 1:
-                        parm_tuple.set(value)
+                        with hou.undos.group("synapse_set_parm"):
+                            parm_tuple.set(value)
                         return {"node": node_path, "parm": parm_name, "value": value}
-                parm.set(value)
+                with hou.undos.group("synapse_set_parm"):
+                    parm.set(value)
                 result = {"node": node_path, "parm": parm_name, "value": value}
                 # Lighting Law: soft warning when intensity > 1.0 on light nodes
                 if ("intensity" in parm_name.lower()
@@ -1162,10 +1167,12 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 if parm_tuple is not None:
                     parm_name = usd_encoded
             if parm_tuple is not None:
-                if isinstance(value, (list, tuple)):
-                    parm_tuple.set(value)
-                else:
-                    parm_tuple.set([value] * len(parm_tuple))
+                # W5-UNDOB: group the tuple write (grouping only, not rollback).
+                with hou.undos.group("synapse_set_parm"):
+                    if isinstance(value, (list, tuple)):
+                        parm_tuple.set(value)
+                    else:
+                        parm_tuple.set([value] * len(parm_tuple))
                 result = {"node": node_path, "parm": parm_name, "value": value}
                 # Lighting Law: soft warning when intensity > 1.0 on light nodes
                 if ("intensity" in parm_name.lower()
