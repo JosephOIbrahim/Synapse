@@ -1,0 +1,74 @@
+{
+  "leg": "W5-CRUXS1",
+  "name": "ingest solaris_compound_node_anatomy.md into rag/corpus/ so the CTO-bound reference is retrievable",
+  "status": "green_with_findings",
+  "branch": "wave5/cruxs1",
+  "base": "ec1ea8db",
+  "head_sha": "c1d7581ba157d124058b2612168ecc09a28f673e",
+  "ahead_of_base": 1,
+  "readonly": false,
+  "commit_before_receipt": {
+    "product_commit": "c1d7581ba157d124058b2612168ecc09a28f673e",
+    "product_file": "tests/test_w5_cruxs1_anatomy_retrieval.py",
+    "rev_list_base_to_head": 1,
+    "attestation": "COMMIT BEFORE RECEIPT honored (CRX0). Named product commit c1d7581b (the regression test) exists on wave5/cruxs1, rev-list ec1ea8db..HEAD = 1, BEFORE this receipt was written. This receipt lands as the closing commit certifying c1d7581b. No push/merge/tag, no drop.json edit, no ratified/state flip. No rag/corpus edit, no scout.py edit (see F-CRUXS1-1 rejection of target 1 + F-CRUXS1-2 deferral of target 3)."
+  },
+
+  "acceptance": [
+    {
+      "predicate": "the anatomy doc is retrievable via synapse_scout or knowledge_lookup, and its H22 'alternative' + island-path facts surface for a componentgeometry / component-builder-internals query",
+      "verdict": "pass",
+      "evidence": "PROBE (live, this worktree, base ec1ea8db, via scout_ingest.activate() = the real MCP path): synapse_scout('componentgeometry') -> solaris_compound_node_anatomy at RANK 2 (score 0.5); 'component builder internals' -> RANK 1; 'componentgeometry inside nodes' -> RANK 3; 'dive inside componentgeometry alternative output' -> RANK 1; 'what is inside a componentgeometry node' -> RANK 4. Lexical-only (no embedder) ranks 1-2 for the first two, so retrieval holds on torch-less CI/hython. Corpus backing present (id in by_id True); prose dense index carries the embedding row (True); node-dense correctly excludes it (False). Retrievable text CONTAINS the CTO-bound H22 facts: 'alternative' (the H22 4th output), 'sopnet/geo' + '<node>/edit' + '<node>/extras' (the three islands), 'isInsideLockedHDA', 'karmamaterial' (phantom warning). Second path: knowledge_lookup('component builder internals') found=True (surfaces solaris_network_blueprint / componentgeometry pattern). PINNED by tests/test_w5_cruxs1_anatomy_retrieval.py (4 tests: corpus-backing+facts, lexical surface, real-shipped-corpus surface, hybrid surface) - all PASS; discrimination-proven (anatomy correctly ABSENT for pyro/vellum/ocean queries). Full retrieval-subsystem sweep green: 246 tests (test_scout*.py + test_knowledge*.py + test_cognitive_boundary + test_router_internals + test_conductor_advisor + the new file), no regression."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "F-CRUXS1-1",
+      "severity": "warn",
+      "claim": "W5-CRUX finding F-CRUX-1's STATED ROOT CAUSE is REFUTED for the real (production) path. F-CRUX-1 said solaris_compound_node_anatomy.md has a semantic_index row but NO rag/corpus backing so scout's skip-id-without-corpus logic drops it and it is unreachable. In fact the scout corpus is MATERIALIZED (not the committed rag/corpus/) by scout_ingest.activate() on first MCP scout use (mcp_server.py:736 _get_scout_dispatcher), and scout_ingest._entries_from_knowledge maps EVERY skills/houdini21-reference/*.md into a {id,type,source,searchable_text} corpus entry keyed by the file stem. So the anatomy .md DOES get a corpus entry (id==solaris_compound_node_anatomy, type houdini21-reference, 9733 chars) and scout surfaces it at rank 1-4. F-CRUX-1's symptom (only the node datasheet returns) is reachable ONLY when scout runs against the un-materialized RAW rag/ root - where rag/corpus/ holds only node JSON so every prose id is orphaned. That is not the production path. W5-DENSE receipt predicate-5 ('retrieval brings them together') is therefore CORRECT for the real path; F-CRUX-1 probed the wrong root (no activate()) or a stale worktree store.",
+      "anchor": "mcp_server.py:736 ; python/synapse/cognitive/tools/scout_ingest.py:103-132 (_entries_from_knowledge) ; harness/notes/receipts/W5-CRUX.json:F-CRUX-1 ; tests/test_w5_cruxs1_anatomy_retrieval.py"
+    },
+    {
+      "id": "F-CRUXS1-2",
+      "severity": "info",
+      "claim": "Target 3's real (conditional) gap: on the raw-root path (activate() never called, OR materialization fails and mcp_server.py:747 logs a warning + falls back to scout's default rag/ root) the prose semantic-index ids are orphaned and SILENTLY skipped at scout.py:1044-1051. W5-DELTA's KeyError guard (bus 18cc10d6) fixed the crash but added no signal, so a materialization failure degrades prose retrieval to node-only with no warning - 'silently unreachable' rather than target 3's 'honest-empty'. FIX (small, low-risk): count fused ids that lack corpus backing and append a scout warning so the operator sees prose-retrieval-dark. NOT done in this leg: scout.py is under W5-DENSE's stale-but-uncleared open claim (bus 18cc10005dec; DENSE merged 3405ca10, an ancestor of this base) on the wave's most-contended surface. Deferred to held spawn W5-CRUXS1-S1 with its own fresh claim.",
+      "anchor": "python/synapse/cognitive/tools/scout.py:1044-1051 ; mcp_server.py:747 ; bus wave5 18cc10d670564c08"
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "CRUXS1-R1",
+      "claim": "Recommend correcting the wave record: W5-CRUX F-CRUX-1 should be re-scoped from 'W5-DENSE predicate-5 REFUTED / anatomy unreachable' to 'anatomy is production-retrievable via the materialized store (rank 1-4); the un-materialized raw-root path is the only place it is unreachable'. The no-phantom-karmamaterial half of DENSE predicate-5 held; this leg shows the 'doc supplies alternative at rank-2' half ALSO holds on the real path - so DENSE predicate-5 stands as originally written. Target 1 of this mission (author a committed rag/corpus entry) is REJECTED as harmful: it duplicates the id AND flips rag/ source_digest, which per DELTA F-CRUX-3 reddens the pinned W4-GUARD freshness tests. Merge remains Joe's word.",
+      "anchor": "harness/notes/receipts/W5-CRUX.json:per_leg_verdict[W5-DENSE] ; harness/notes/receipts/W5-DELTA.json:F-CRUX-3"
+    }
+  ],
+
+  "spawn": [
+    {
+      "id": "W5-CRUXS1-S1",
+      "name": "make scout's orphan-id skip observable (target-3 honest-empty) so a failed corpus materialization surfaces prose-retrieval-dark instead of silently degrading to node-only",
+      "band": "BUILD",
+      "class": "probe",
+      "source": {"doc": "harness/notes/receipts/W5-CRUXS1.json", "anchor": "finding F-CRUXS1-2"},
+      "rationale": "scout.py:1044-1051 silently `continue`s past a fused id that has no corpus backing (W5-DELTA's crash guard). When materialization fails (mcp_server.py:747 fallback) or scout is pointed at an un-materialized rag/ root, every prose id is orphaned and prose retrieval silently goes node-only. Emit a warning naming the count + examples so the operator knows the corpus is un-materialized, honoring target 3's 'degrade to honest-empty rather than silently unreachable'. Extends W5-DELTA bus finding 18cc10d6.",
+      "targets": [
+        "1) in scout.synapse_scout, count fused ids whose id_meta lookup is None and append one _WARN line (e.g. 'N retrieved id(s) had no corpus backing - is the corpus materialized? run scout_ingest.activate()') with a couple of example ids",
+        "2) regression test: an un-materialized/raw-root scout warns (not silent) when the prose semantic index outruns the corpus"
+      ],
+      "acceptance": [
+        {"predicate": "a scout call whose fused list contains an index id with no corpus backing returns a warning naming the orphan(s); the healthy materialized path adds no such warning", "evidence": "probe"}
+      ],
+      "readonly": false,
+      "touches": ["python/synapse/cognitive/tools/scout.py", "tests/"],
+      "spawn_classes": ["probe"],
+      "note": "class=probe. Blocked on W5-DENSE's stale scout.py claim (bus 18cc10005dec) being cleared or a fresh single-writer window - do not co-edit the hot surface. Lands held for Joe."
+    }
+  ],
+
+  "crucible_criteria_status": [
+    {"criterion": "house rule: unobtainable renders UNKNOWN, never zero and never an estimate", "status": "honored", "evidence": "Nothing was estimated. The acceptance is PASS by direct live probe (5 phrasings, measured ranks) reproduced by a committed re-runnable test. The mission premise was REPRODUCED and found false, not assumed. No number was invented; the 'retrievable' claim rests on the probe + the passing test, and the raw-root failure mode is described as conditional, not counted as a pass or a zero."},
+    {"criterion": "COMMIT BEFORE RECEIPT, and the receipt itself is the leg's own closing commit", "status": "honored", "evidence": "Product commit c1d7581b (tests/test_w5_cruxs1_anatomy_retrieval.py) was made FIRST; git rev-list ec1ea8db..HEAD == 1 verified BEFORE this receipt was written; this receipt states that observed HEAD and lands as the closing commit. No leg at ahead:0, no phantom sha."}
+  ]
+}

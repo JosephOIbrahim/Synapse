@@ -1,0 +1,94 @@
+{
+  "leg": "W5-UNDOB",
+  "status": "green_with_findings",
+  "head": "b07e3a08268a88f46ba5c92365cca9f15fdd9a1b",
+  "base": "ec1ea8db6a44e2af52283238b663283432652064",
+  "ahead": 1,
+  "commit_before_receipt": "PASS (ahead:1 observed before this receipt was written; HEAD b07e3a08 stated from git rev-parse)",
+  "acceptance": [
+    {
+      "predicate": "handlers.py:_handle_set_parm wraps its parm.set/parm_tuple.set mutations in one hou.undos.group",
+      "verdict": "pass",
+      "evidence": "handlers.py:_handle_set_parm now wraps all three .set() return paths in `with hou.undos.group(\"synapse_set_parm\")` (scalar parm.set, list-on-scalar parm_tuple.set, dedicated parmTuple set/broadcast). Pinned headless by tests/test_undob_live_undo_grouping.py::test_set_parm_scalar_enters_exactly_one_group / _tuple_via_scalar_name / _tuple_path (recorder: rec.groups==['synapse_set_parm'], mutation at depth 1), ::test_set_parm_propagates_and_closes_group_on_error (grouping != rollback: exception closes group, propagates identically), ::test_set_parm_nests_one_group_inside_an_outer_group (one-level nesting). Source-grep pin: tests/test_node_undo_grouping.py::test_set_parm_now_wraps_in_handlers_py. Non-vacuity PROVEN by a throwaway mutation (removed one wrap -> test reddened `assert [] == ['synapse_set_parm']`; restored). 21/21 undo tests green, HEAD b07e3a08. Live one-Ctrl+Z GUI reversal is UNKNOWN (headless proves the group is ENTERED around the mutation, not the artist-visible reversal)."
+    },
+    {
+      "predicate": "handlers_render.py:_handle_set_keyframe wraps its parm.setKeyframe mutations in one hou.undos.group",
+      "verdict": "pass",
+      "evidence": "handlers_render.py:_handle_set_keyframe now wraps both frame branches in one `with hou.undos.group(\"synapse_set_keyframe\")`; only parm.setKeyframe mutates the scene (hou.Keyframe()/setFrame/setValue touch a local key object, no undo entry). Pinned by tests/test_undob_live_undo_grouping.py::test_set_keyframe_with_frame_enters_one_group / _without_frame_uses_current_frame (recorder: rec.groups==['synapse_set_keyframe'], mutation at depth 1) and ::test_set_keyframe_propagates_and_closes_group_on_error. Live one-Ctrl+Z GUI reversal UNKNOWN (same as predicate 1)."
+    },
+    {
+      "predicate": "integrity_envelope.py:19-28 docstring updated: create/connect/delete now wrap; only set_parm/set_keyframe remain; CLAUDE.md 1 is no longer drift for the three node handlers",
+      "verdict": "pass",
+      "evidence": "integrity_envelope.py L19-28 honesty docstring + CLAUDE.md 1 (/synapse live-path bullet) both updated. Pinned by tests/test_undob_live_undo_grouping.py::test_integrity_envelope_docstring_synced (no 'do NOT'; 'DO wrap inline now'; mentions W5-UNDOB, set_parm, set_keyframe; 'no longer doc drift'; still records undo_applicable=False) and ::test_claude_md_section1_records_wrapped_state ('is UNWRAPPED still' gone; 'synced by W5-UNDOB'; both handler symbols present). The two literally-checkable clauses are TRUE + pinned: create/connect/delete wrap, and CLAUDE.md 1 is no longer drift for the three node handlers. SUPERSESSION NOTE: the sub-clause 'only set_parm/set_keyframe remain [unwrapped]' is contradicted by this leg's own targets 1+2 (which wrap them); resolved toward truth - the docstring + CLAUDE.md 1 record the true end state (all tracked node handlers wrap, grouping only) rather than a knowingly-false 'they remain unwrapped' the honesty docstring exists to forbid. See for_ruling[0]. 124/124 doc-conformance tests still green; no CLAUDE.md pin broken; CLAUDE.md 38577 bytes (< 40k)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "claim": "Targets 1+2 CLOSED - set_parm (handlers.py) and set_keyframe (handlers_render.py) now wrap their scene mutations in one hou.undos.group each (grouping only, not rollback), mirroring the merged W5-UNDO handlers_node.py idiom exactly. All prior logic preserved (NaN guards, Lighting-Law warnings, alias resolution, error routing).",
+      "anchor": "python/synapse/server/handlers.py:1141",
+      "bus": "18cc189e18d36eb4"
+    },
+    {
+      "id": "F2",
+      "claim": "Predicate-3 sub-clause superseded: this leg wraps set_parm+set_keyframe, so 'only set_parm/set_keyframe remain unwrapped' is no longer true. Docstring + CLAUDE.md 1 record the true end state and retract the doc-drift brand for the node handlers; envelope runtime behavior unchanged (still records undo_applicable=False, not-verified).",
+      "anchor": "python/synapse/server/integrity_envelope.py:19",
+      "bus": "18cc189e20cf3d28"
+    },
+    {
+      "id": "F3",
+      "claim": "GUI one-Ctrl+Z reversal is UNKNOWN (no headless proof) - matches W5-UNDO posture. Recorder tests prove the group is ENTERED around the mutation, not that an artist Ctrl+Z reverses the live op. Also: live mutating handlers beyond this tracked set stay un-audited - this leg is not a universal 'every live op wraps' claim.",
+      "anchor": "tests/test_undob_live_undo_grouping.py:1",
+      "bus": "18cc189e28c3e844"
+    }
+  ],
+  "for_ruling": [
+    {
+      "claim": "Mission acceptance predicate 3 is internally self-contradictory: it asks the docstring to state 'only set_parm/set_keyframe remain [unwrapped]' in the SAME leg whose targets 1+2 wrap set_parm and set_keyframe. Both cannot be true after the leg runs. Resolved toward truth (docstring records all tracked node handlers as wrapping, grouping only). Recommend correcting the spawn-authored predicate text in the source mission schema to 'all tracked node handlers now wrap (grouping only)' so a future reader/verifier is not tripped by the stale wording.",
+      "anchor": "harness/autorevise/prompts/W5-UNDOB.md:50"
+    },
+    {
+      "claim": "GUI one-Ctrl+Z reversal recorded UNKNOWN. Acceptance evidence is 'test' and the headless recorder satisfies it (group entered around the mutation), but only an interactive Houdini session can confirm an artist Ctrl+Z reverses the whole op. Deferred as a probe spawn (spawn[0]).",
+      "anchor": "python/synapse/server/handlers_render.py:1164"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W5-UNDOB-P1",
+      "name": "live GUI receipt: one Ctrl+Z reverses a set_parm and a set_keyframe op",
+      "band": "BUILD",
+      "class": "probe",
+      "note": "class 'probe' is inside W5-UNDOB spawn_classes -> a normal spawn (not held). The one-Ctrl+Z reversal the headless recorder cannot produce.",
+      "targets": [
+        "In an interactive Houdini 22 session, run set_parm then Ctrl+Z; confirm the parm returns to its prior value in exactly one undo step",
+        "Run set_keyframe then Ctrl+Z; confirm the keyframe is removed in exactly one undo step"
+      ],
+      "touches": ["harness/notes/receipts/"],
+      "readonly": true,
+      "deps": ["W5-UNDOB"],
+      "acceptance": [
+        {"predicate": "one Ctrl+Z reverses a live set_parm op", "evidence": "gui_receipt"},
+        {"predicate": "one Ctrl+Z reverses a live set_keyframe op", "evidence": "gui_receipt"}
+      ]
+    },
+    {
+      "id": "W5-UNDOB-S1",
+      "name": "audit + wrap remaining un-audited live mutating /synapse handlers",
+      "band": "BUILD",
+      "class": "build",
+      "note": "class 'build' is OUTSIDE W5-UNDOB spawn_classes ([probe]) -> lands HELD for Joe. Closes the integrity_envelope honesty caveat 'live mutating handlers beyond this tracked set stay un-audited'.",
+      "targets": [
+        "Enumerate every registered mutating /synapse command handler (server/handlers*.py registrations)",
+        "Classify each wrapped (hou.undos.group) vs unwrapped",
+        "Wrap the unwrapped holes (grouping only, not rollback) with recorder-pinned tests, following the W5-UNDO/W5-UNDOB idiom",
+        "Update integrity_envelope.py docstring + CLAUDE.md 1 to record the audited-complete set"
+      ],
+      "touches": ["python/synapse/server/", "python/synapse/server/integrity_envelope.py", "CLAUDE.md", "tests/"],
+      "readonly": false,
+      "deps": ["W5-UNDOB"],
+      "crucible_criteria": [
+        "handlers*.py are high-traffic shared surfaces -> bus claim + main-tree seam-guard before any edit"
+      ]
+    }
+  ]
+}
