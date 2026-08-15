@@ -1,0 +1,85 @@
+{
+  "leg": "W4-RULING",
+  "name": "adversarial pass on the bookish-AST source ruling before Gate P",
+  "status": "green_with_findings",
+  "build": "22.0.400",
+  "acceptance": [
+    {
+      "predicate": "every ruling claim carries a verdict reproduced|refuted|UNKNOWN with a probe path or file:line - none carried forward on the original agent's word",
+      "verdict": "pass",
+      "evidence": "harness/notes/h22/crux-ruling.md §2 claim ledger: 20 claims (C1-C8, C3b/C4b/C4c/C5b-f, C6/C6b, C7/C7b, M) each carry a verdict + anchor (regen_result.json fields, on-disk cache measurements, or file:line into live 22.0.400 source). None on the xref agent's word."
+    },
+    {
+      "predicate": "fresh headless regen executed on 22.0.400 with counts and error tally recorded, or the blocker recorded UNKNOWN with the exact failing step",
+      "verdict": "pass",
+      "evidence": "harness/notes/h22/w4_regen_probe.py ran detached under Houdini 22.0.400 hython; harness/notes/h22/w4_regen_result.json: paths_wiki_exists=5481, parsed_ok=5481, parse_errors=0, elapsed_s=199.6, cache_mb=72.1, cache_files_written=5827. No blocker; DONE sentinel written, no FAILED."
+    },
+    {
+      "predicate": "crux-ruling.md exists with the Gate P fork memo; git rev-list shows notes-only changes on the branch",
+      "verdict": "pass",
+      "evidence": "harness/notes/h22/crux-ruling.md exists with §5 Gate P fork memo (branch A i1_extract+4 patches vs branch B bookish adapter, both costed with receipts, multiparm carried on both). Commit touches only harness/notes/** (crux-ruling.md, w4_regen_probe.py, w4_regen_result.json, receipts/W4-RULING.json)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "claim": "The xref bookish-AST ruling REPRODUCES on substance. Fresh 22.0.400 regen matched the headline to the integer: 5,481 /nodes/ pages, 0 errors, 72.1 MB; attrs.id coverage cop 99.4 / top 97.8 / lop 75.8 / sop 64.9 / vop 57.9 / dop 25.0 / chop 3.1 (all within 1% of claimed). sop/xform ids = t,r,s confirmed; APEX 618/594/598/0 exact.",
+      "anchor": "harness/notes/h22/w4_regen_result.json"
+    },
+    {
+      "id": "F2",
+      "claim": "CORRECTION: '6,281 JSON files on disk' does not reproduce. A clean regen writes 5,827 (5,481 /nodes/ pages + 346 include-target fragments). Minor, non-load-bearing, but exactly the unanchored-number class the crucible exists to catch.",
+      "anchor": "harness/notes/h22/w4_regen_result.json:cache_files_written=5827"
+    },
+    {
+      "id": "F3",
+      "claim": "SHARPENING: OneDrive cache 'only 6 top-level keys' is 8 (adds examplefile/examplefor); the 'no version stamp' core holds (0 version fields in 2,266 files). Zip-date inversion is 95.8% of common members, not total (212 .400 members newer, max 2026-08-01). Core 'cache unusable / build-blind' finding stands, mechanism intact (cachedt>=srcdt wikipages.py:200-209 + .400 members backdated to 2026-05-02).",
+      "anchor": "bookish/wiki/wikipages.py:200-209"
+    },
+    {
+      "id": "F4",
+      "claim": "SHARPENING: 'i1_extract reimplements 805 lines' is a ~2x over-attribution. ~400 lines are include+section machinery an AST replaces; the other ~400 (deprecation-union, floor ladder, EOL/BOM guards, contentfrom-follow, label-norm, 161/171 census) an AST does NOT provide.",
+      "anchor": "harness/notes/ingest/i1_extract.py (805 total; parse_text :397-594 + resolve_all :225-284 the reconstruction core)"
+    },
+    {
+      "id": "F5",
+      "claim": "DECISIVE QUALIFIER: the ID-join 'single largest correctness upgrade' is real but CONCENTRATED. attrs.id is dense only in cop/top/lop/sop; in chop(3%)/cop2(8%)/dop(25%)/out(35%)/obj(42%) LABEL and #channels must carry the join. attrs.id COVERAGE != join RESOLUTION: LABEL is present 100% and resolves ~89%, #id resolves ~43-53% today. LABEL/#channels fallback is mandatory on both branches.",
+      "anchor": "harness/notes/h22/crux-ruling.md §3c; i1_build.py:116-124"
+    },
+    {
+      "id": "F6",
+      "claim": "The internal-API risk is REAL and HIGH. bookish/houdinihelp is undocumented, vendored (bookish=Whoosh author BSD), hou-coupled; no __all__/module-docstrings/stability markers. --disablehou dies at hstores.py:178 (AssetStore.list_all needs hou.nodeTypeCategories) -> no plain-CI regen, build-coupled. WikiPages.json signature already carries wcontext/process the ruling's assumed sig omits; AST section vocab (inputs_section/attrs.channels) is not a Python token at all -> silent breakage, undetectable by static check.",
+      "anchor": "houdinihelp/hstores.py:178-201; bookish/wiki/wikipages.py:720; bookish/compat.py"
+    },
+    {
+      "id": "F7",
+      "claim": "The multiparm-semantics question survives BOTH fork branches (confirmed against code). Menu-value vs multiparm-instance is indentation-only in the doc source; neither the i1_extract fold (:575-586) nor a doc-only parameters_item tree distinguishes them. Disambiguation needs a runtime parm-kind lookup no doc source supplies. Also the runtime probe stays mandatory either way (no source carries TYPE/DEFAULT/RANGE/menu).",
+      "anchor": "harness/notes/ingest/i1_extract.py:575-586; harness/notes/h22/crux-ruling.md §4"
+    }
+  ],
+  "for_ruling": [
+    "Gate P fork is a genuine trade, not a clear winner: Branch A (i1_extract + 4 patches) = CI-portable, no license, calibrated 35/35 on COP/COP2/LOP, LABEL join (resolves ~89%). Branch B (bookish adapter) = free include/#contentfrom resolution, typed sections, ID join where dense, richer attrs -- at the cost of an undocumented hou-coupled internal API (HIGH fragility), no plain-CI regen, and a build-blind cache SYNAPSE must self-stamp.",
+    "Crucible advisory (human rules at Gate P): STAGED, not either/or. Ship Branch A's 4 patches now (cheap, localized, calibration-guarded, needed regardless). Adopt Branch B as an opt-in enrichment for cop/top/lop/sop only, gated behind (a) an AST-vocabulary schema-shape assertion, (b) a self-stamped build guard failing on cache.build != hou.applicationVersionString(), (c) a pinned minimal-symbol adapter. Do NOT delete the LABEL/#channels join or the nodes.zip/CI path.",
+    "Do not book Branch B as '805 lines saved' (~400) or 'join solved' (LABEL still resolves better; required in 6 contexts). Multiparm + runtime probe owed on both branches."
+  ],
+  "spawn": [
+    {
+      "id": "W4-RULING-SPAWN-1",
+      "class": "probe",
+      "name": "recount raw #id: baseline to settle the AST +43% param-recovery delta (C6b PARTIAL)",
+      "band": "TRUTH",
+      "rationale": "C6b (12,645 AST ids vs 8,844 raw #id:, +43%) reproduced in magnitude (12,821 AST ids over lop+cop+top) but the raw #id: baseline was not independently recounted from nodes.zip. A small probe counting raw #id: directives per context vs AST parameters_item-with-id would settle the exact resolution gain the AST buys.",
+      "readonly": true,
+      "touches": ["harness/notes/h22/"]
+    },
+    {
+      "id": "W4-RULING-SPAWN-2",
+      "class": "probe",
+      "name": "measure ID-join RESOLUTION rate (not coverage) per context against the live catalogue",
+      "band": "TRUTH",
+      "rationale": "attrs.id COVERAGE is measured (this leg). What Gate P actually needs is the ID-join RESOLUTION rate: of the parameters_item with attrs.id, how many join to a live runtime parm name via i1_runtime's per-context type probe. Quantifies the real correctness delta of branch B over the LABEL join per context, closing finding F5.",
+      "readonly": false,
+      "touches": ["harness/notes/h22/", "harness/notes/ingest/"]
+    }
+  ]
+}
