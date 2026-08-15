@@ -60,6 +60,8 @@ _READ_ONLY_TOOLS = frozenset({
     # Mile 4 (R-CACHE-1) -- read-only, feature-flagged cache advisor. No forced cook,
     # no disk write, no node creation anywhere in its call graph.
     "synapse_assess_cache",
+    # Read-only compose-tier assessment (PRD 7.3); handler does no mutation.
+    "synapse_assess_render_ready",
     "synapse_search", "synapse_recall", "synapse_memory_query",
     "synapse_memory_status", "synapse_metrics", "synapse_router_stats",
     "synapse_list_recipes", "synapse_render_farm_status",
@@ -152,24 +154,23 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     "synapse_batch": "build_from_manifest",
     "synapse_solaris_assemble_chain": "build_from_manifest",
     "synapse_solaris_build_graph": "build_from_manifest",
-    # PROMOTION-STAGED (parity-audit F1, 2026-08-14): the trio below are real
-    # WS handlers (server/handlers.py:741-743) with NO TOOL_DEFS registry
-    # entry — these aliases are unreachable today. They stay as forward
-    # staging: if/when the trio is promoted to the registry, the op-type and
-    # disk classifications apply from day one (pinned by
+    # Compose trio (PRD 7) — promoted into TOOL_DEFS 2026-08-14 (parity-audit
+    # F1/F2): real WS handlers (server/handlers.py:741-743), now registry-live
+    # under these exact names. Shotsetup writes dept layer files → touches_disk
+    # elevation below (pinned by
     # tests/test_compose_offmain_wp3.py::test_bridge_adapter_marks_touches_disk).
     "synapse_solaris_shotsetup_karma_xpu": "build_from_manifest",
     "synapse_matlib_bind": "build_from_manifest",
     "synapse_assess_render_ready": "inspect_geometry",
+    "tops_pause_cook": "set_parameter",
+    "tops_resume_cook": "set_parameter",
 }
 
 # ── Tools that write files to disk ───────────────────────────────
 # R4 (shared/bridge.py Operation.gate_level): touches_disk elevates the
 # gate to APPROVE. These writes happen outside the undo system.
 _DISK_WRITING_TOOLS = frozenset({
-    "synapse_solaris_shotsetup_karma_xpu",  # department .usd layer files;
-    # promotion-staged alias (see _TOOL_TO_OPERATION note above) — the disk
-    # elevation must hold the day the registry entry lands
+    "synapse_solaris_shotsetup_karma_xpu",  # department .usd layer files
 })
 
 # ── Tool name → inferred AgentID ─────────────────────────────────

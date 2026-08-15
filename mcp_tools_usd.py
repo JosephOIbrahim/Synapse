@@ -53,6 +53,10 @@ TOOL_NAMES = [
     "synapse_solaris_create_variants",
     "synapse_solaris_set_purpose",
     "synapse_solaris_import_megascans",
+    # Solaris Compose trio (PRD 7; promoted to the registry 2026-08-14).
+    "synapse_solaris_shotsetup_karma_xpu",
+    "synapse_matlib_bind",
+    "synapse_assess_render_ready",
 ]
 
 # Dispatch entries for this group
@@ -82,4 +86,8 @@ DISPATCH_KEYS = {
     "synapse_solaris_create_variants":   ("solaris_create_variants",   "identity"),
     "synapse_solaris_set_purpose":       ("solaris_set_purpose",       "identity"),
     "synapse_solaris_import_megascans":  ("solaris_import_megascans",  "identity"),
+    # Solaris Compose trio (PRD 7; promoted to the registry 2026-08-14).
+    "synapse_solaris_shotsetup_karma_xpu": ("solaris_shotsetup_karma_xpu", "identity"),
+    "synapse_matlib_bind":               ("matlib_bind",               "identity"),
+    "synapse_assess_render_ready":       ("assess_render_ready",       "identity"),
 }

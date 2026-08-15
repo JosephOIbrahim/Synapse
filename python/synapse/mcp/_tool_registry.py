@@ -437,6 +437,21 @@ TOOL_DEFS: list[tuple] = [
      }, "required": ["node"]},
      False, True, False),
 
+    ("tops_pause_cook", "tops_pause_cook", _identity,
+     "Pause an active cook on a TOP network (in-flight items finish; no new "
+     "items start). Use tops_resume_cook to continue.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP network path (TopNet, not a single TOP node)"},
+     }, "required": ["node"]},
+     False, False, True),
+
+    ("tops_resume_cook", "tops_resume_cook", _identity,
+     "Resume a paused cook on a TOP network.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP network path (TopNet, not a single TOP node)"},
+     }, "required": ["node"]},
+     False, False, True),
+
     ("tops_dirty_node", "tops_dirty_node", _identity,
      "Dirty a TOP node to clear cached results. Optionally dirty upstream nodes too.",
      {"type": "object", "properties": {
@@ -864,6 +879,43 @@ TOOL_DEFS: list[tuple] = [
          "parent": {"type": "string", "description": "Alias for parent_path (accepted; parent_path wins)."},
      }, "required": ["usdc_path", "asset_name"]},
      False, False, False),
+
+    # -- Solaris Compose (PRD 7, promoted 2026-08-14: these were WS-only
+    # handlers forward-staged in panel/bridge_adapter.py; now registry-live) --
+    ("synapse_solaris_shotsetup_karma_xpu", "solaris_shotsetup_karma_xpu", _identity,
+     "Scaffold a render-ready Karma shot (camera, lights, render settings, "
+     "department .usd layer files) in one undoable operation. ",
+     {"type": "object", "properties": {
+         "stage": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "shot": {"type": "string", "description": "Shot name (default: 'shot')"},
+         "engine": {"type": "string", "description": "Karma engine (default: 'xpu')"},
+         "resolution": {"type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2,
+                        "description": "Render resolution [width, height]. If omitted, show-config resolution.render is used."},
+         "layer_dir": {"type": "string", "description": "Directory for department .usd layer files (writes disk; APPROVE gate)"},
+         "reason": {"type": "string", "description": "Reason recorded on the scaffold (e.g. artist request)"},
+         "verify": {"type": "boolean", "description": "Verify with a stage readback cook (default: true; false skips the cold-cook so the GUI can't freeze)"},
+     }},
+     False, False, False),
+
+    ("synapse_matlib_bind", "matlib_bind", _identity,
+     "Bind a USD material to prim targets in a LOP stage.",
+     {"type": "object", "properties": {
+         "material": {"type": "string", "description": "Material prim path (e.g. '/materials/red')"},
+         "targets": {"oneOf": [{"type": "string"}, {"type": "array", "items": {"type": "string"}}],
+                     "description": "Prim target pattern (string) or list of prim paths"},
+         "stage": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "input_node": {"type": "string", "description": "LOP node to wire after (optional)"},
+         "strength": {"type": "number", "description": "Binding strength override (optional)"},
+     }, "required": ["material", "targets"]},
+     False, False, True),
+
+    ("synapse_assess_render_ready", "assess_render_ready", _identity,
+     "Render-readiness report for a LOP stage (camera, products, settings). Read-only.",
+     {"type": "object", "properties": {
+         "stage": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "engine": {"type": "string", "description": "Renderer engine hint (optional, e.g. 'xpu')"},
+     }},
+     True, False, True),
 
     ("houdini_configure_light_linking", "configure_light_linking", _identity,
      "Configure light linking between lights and geometry via USD collections. "

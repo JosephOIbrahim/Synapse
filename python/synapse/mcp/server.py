@@ -109,9 +109,9 @@ _READ_ONLY_TOOLS: frozenset = frozenset(
 
 # ── Read-only reconciliation: TWO sets, not one ──────────────────────────
 # _READ_ONLY_TOOLS (above) is the MCP *transport* annotation set — every tool
-# whose registry entry carries annotations.readOnlyHint=true. F6 refresh
-# (derived live from the registry on 2026-08-14, fix spec
-# docs/reviews/ui-freeze-fix-spec-2026-08-14.md): 40 tools.
+# whose registry entry carries annotations.readOnlyHint=true. Refreshed on
+# 2026-08-14 for the parity-audit F1/F2 promotion (compose trio + tops
+# pause/resume into TOOL_DEFS): 41 tools.
 #
 # dispatch_tool gates on a DIFFERENT set: synapse.panel.bridge_adapter's own
 # _READ_ONLY_TOOLS, consulted via is_read_only() (mcp/tools.py:123). A tool that
@@ -120,7 +120,7 @@ _READ_ONLY_TOOLS: frozenset = frozenset(
 # topological scene hash DIRECTLY on the calling thread — that function assumes
 # it is already on the main thread.
 #
-# The two sets are not equal. As of 2026-08-14 the bridge set is 36 tools; the
+# The two sets are not equal. As of 2026-08-14 the bridge set is 37 tools; the
 # four that are read-only to the transport but MUTATING to the bridge are:
 #     cops_temporal_analysis, synapse_propose_graph, synapse_render_processes,
 #     synapse_validate_frame
