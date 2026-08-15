@@ -248,6 +248,10 @@ _KNOWN_SLOW_TOOLS = frozenset({
     "tops_batch_cook", "tops_cook_and_validate", "tops_multi_shot",
     "tops_render_sequence", "cops_batch_cook",
     "synapse_batch", "synapse_evolve_memory", "synapse_sleep_pass",
+    # F6 (2026-08-14) -- viewport capture is a main-thread GL flipbook grab
+    # (sv.flipbook); already budgeted 30s in core/timeouts ("capture_viewport"),
+    # and its main-thread hold deserves the same up-front heads-up.
+    "houdini_capture_viewport",
 })
 
 # Payload fields that carry inline source / arbitrary code (execute_python builds
