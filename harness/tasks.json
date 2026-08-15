@@ -85,7 +85,9 @@
     "tool_surface_deferred",
     "tool_surface_parity",
     "code_mode_undo_wrapped",
-    "agent_eval_backbone"
+    "agent_eval_backbone",
+    "corpus_stamp_fresh",
+    "ingest_ledger_single_writer"
   ],
   "guardrails": {
     "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger, and no newly-introduced phantom hou.* API (dir()-symbol-table-gated). PLUS the green ratchet (suite_baseline): the full `pytest tests/` result must not regress vs the committed floor in harness/verify/suite_baseline.json — failures only DOWN, passes only UP — so no Generator round can green its target while reddening other tests.",
@@ -1415,6 +1417,30 @@
         "rewire_assessed"
       ],
       "note": "Phase 1 = decision-first MVP: scripts/rewire_assess.py reads vex-corpus/output/corpus/merged_corpus.jsonl (2513 chunks, 2083 with code), chunks to atomic code_blocks, VALIDATES each with the real vcc.exe (Houdini 21.0.671, headless/license-free — the 'dir() is a hard gate' analog for VEX; deterministically rejects the shipped 'vector pts = pts[];' -> Error 1019), exact-dedups, flags redundancy vs existing rag/ embeddings, and writes harness/notes/rewire_assessment.json. Read-only — writes NOTHING to rag/. check_rewire_assessed confirms the scorecard exists + is well-formed and surfaces usable_entries_estimate; it does NOT gate on the number (the re-wire call is the maintainer's, informed by it). Phases 2 (quarantine + flywheel_queue ratify + promote->K.5-refresh) and 3 (section-level embeddings -> redundancy becomes a gate) build only if Phase 1's number justifies it. Two-axis risk posture: validity=strict (vcc deterministic, reject freely), redundancy=admit-then-flag (whole-file cosine measured max 0.901 among distinct files, so a hard reject <=0.90 would nuke net-new content — asymmetric cost). Full contract: spec-K6."
+    },
+    {
+      "id": "K.7",
+      "phase": "knowledge",
+      "mode": "A",
+      "crit": true,
+      "layer": "release-gate",
+      "title": "Knowledge track — release gate: served-corpus build-stamp freshness (vs the ratified build) + per-context ingest ledger, single-writer (W4-GUARD)",
+      "refs": [
+        "docs/reviews/h22-context-knowledge-recon-2026-08-15.md",
+        "harness/verify/checks.py",
+        "harness/ingest_ledger.py",
+        "harness/ingest_ledger.json",
+        "rag/corpus/h22_nodes.json",
+        "python/synapse/cognitive/tools/data/h22_symbol_table.json",
+        "harness/state/drop.json",
+        "tests/test_w4_guard_freshness.py",
+        "tests/test_w4_guard_ledger.py"
+      ],
+      "verify": [
+        "corpus_stamp_fresh",
+        "ingest_ledger_single_writer"
+      ],
+      "note": "RELEASE-BLOCKING, NOT a guardrail (the K.5 ruling: a freshness gate run every sprint fails mid-edit). corpus_stamp_fresh FAILS the release — never WARNs — when rag/corpus/h22_nodes.json's top-level `build` stamp != the ratified build (harness/state/drop.json houdini_build when present, else the committed h<major>_symbol_table.json houdini_version — the same authority W4-KNOW's runtime load-check uses in knowledge.py). This closes the recon's Finding-5 asymmetry: the corpus is guarded at BUILD time (a phantom is never written) and was unguarded at every downstream checkpoint. HONEST EXPECTED RED today: the served corpus is 22.0.368-stamped while the drop ratifies 22.0.400, so this gate is correctly red until the corpus is re-ingested/re-stamped to .400 (the V.5/D.3 'an honest first-round FAIL is the target' precedent). ingest_ledger_single_writer verifies harness/ingest_ledger.json: schema ingest_ledger/v1 + sole authorized writer (harness/ingest_ledger.py AUTHORIZED_WRITER, the gate/orchestrator side; agents read-only) + blake2b integrity (a second writer is rejected at write and detected at verify) + per-context wiring cross-checked against the served corpus; apex stays policy-blocked (D-H22-2), never wired. Consumes the stamp contract W4-KNOW emits (corpus top-level `build`); the runtime half is W4-KNOW target 7."
     },
     {
       "id": "T.0",
