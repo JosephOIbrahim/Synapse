@@ -31,10 +31,9 @@ def _load(hou_mock=None):
     """Load update_mode.py fresh with (or without) a mocked hou."""
     saved = sys.modules.get("hou", None)
     present = "hou" in sys.modules
-    if hou_mock is not None:
-        sys.modules["hou"] = hou_mock
-    elif present:
-        del sys.modules["hou"]
+    # Sanctioned absence pattern (test_hou_reimport_guard): None stand-in,
+    # never del/pop — eviction re-registers the SWIG type map half-built.
+    sys.modules["hou"] = hou_mock if hou_mock is not None else None
     try:
         spec = importlib.util.spec_from_file_location(
             "synapse.server.update_mode", _base / "server" / "update_mode.py"
@@ -42,10 +41,7 @@ def _load(hou_mock=None):
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
     finally:
-        if present:
-            sys.modules["hou"] = saved
-        else:
-            sys.modules.pop("hou", None)
+        sys.modules["hou"] = saved if present else None
     return mod
 
 
