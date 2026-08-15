@@ -1,0 +1,29 @@
+{
+  "id": "W4-CRUX",
+  "name": "wave-4 crucible: adversarial gate on retrieval repair before any merge word",
+  "band": "TRUST",
+  "source": {
+    "doc": "harness/notes/h22/BLUEPRINT.md",
+    "anchor": "Invariant 5 CRUX-before-merge + acceptance bars table; standing block: git rev-list --count BASE..HEAD ahead:0 on a builder = no committed product code = BLOCK"
+  },
+  "targets": [
+    "1) attack each builder receipt claim-by-claim: re-run the extended scout_eval independently, re-measure serve sizes, re-probe scout corpus visibility - trust no leg's own numbers",
+    "2) re-attack the confident-wrong class after the fix: the 5 pre-flight NL questions plus 20 fresh sentence-shaped node questions, zero H21-prose found=True tolerated",
+    "3) verify gate integrity: Gate B review surface stated on the W4-KNOW receipt, rigging-drift untouched, no leg wrote drop.json or flipped any state",
+    "4) verdict per leg: pass | pass_with_findings | BLOCK, with anchors"
+  ],
+  "acceptance": [
+    {"predicate": "every W4 builder acceptance re-verified independently or marked UNKNOWN with the exact unobtainable step - none inherited", "evidence": "check"},
+    {"predicate": "fresh 20-question NL set: zero confident-wrong; disambiguation 1.00 on a collision sample; COP/LOP floor-clearing stays 1.00", "evidence": "probe"},
+    {"predicate": "ahead-count table for all builder branches in the receipt; ahead:0 on any builder is a recorded BLOCK", "evidence": "check"}
+  ],
+  "deps": ["W4-KNOW", "W4-HELP", "W4-GUARD"],
+  "readonly": true,
+  "touches": [],
+  "crucible_criteria": [
+    "carries wave-1 B1/B2 and wave-2 uncommitted-state lessons as standing checks",
+    "house rule: unobtainable renders UNKNOWN, never zero and never an estimate - a crucible that estimates is worse than no crucible"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Merge remains Joe's word. This receipt plus Gate B are the preconditions."
+}

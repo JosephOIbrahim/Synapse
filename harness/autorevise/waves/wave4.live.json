@@ -1,0 +1,103 @@
+{
+  "_comment": "DRAFT wave-4 live manifest - H22 retrieval repair (K1). Establishment by Fable 5, 2026-08-15; leg agents pinned to Opus 4.8 per Joe's model ruling. ARMED 2026-08-15 on Joe's word ('use DC to execute the harness with Opus 4.8') - Gate A ratified for K1 scope by the arm act; docket items non-node-surfaces and wave-2-debt remain open, blocking nothing in W4. Base=master 2ceb68b7 (v5.49.0, CI green). Merge remains Joe's word per act.",
+  "_schema": "legs/v1",
+  "repo": "C:\\Users\\User\\SYNAPSE",
+  "settings": "C:\\Users\\User\\SYNAPSE\\harness\\relay-settings.json",
+  "effort": "ultracode",
+  "base": "master",
+  "model": "claude-opus-4-8",
+  "legs": [
+    {
+      "id": "W4-CRUX",
+      "name": "wave-4 crucible: adversarial gate on retrieval repair before any merge word",
+      "state": "ready",
+      "receipt": "W4-CRUX.json",
+      "branch": "wave4/crux",
+      "base": "master",
+      "worktree": ".claude/worktrees/w4-crux",
+      "prompt": "harness/autorevise/prompts/W4-CRUX.md",
+      "deps": [
+        "W4-KNOW",
+        "W4-HELP",
+        "W4-GUARD"
+      ],
+      "readonly": true,
+      "touches": [],
+      "note": "AUTOREVISE harness/notes/h22/BLUEPRINT.md :: Invariant 5 CRUX-before-merge + acceptance bars table; standing block: git rev-list --count BASE..HEAD ahead:0 on a builder = no committed product code = BLOCK. Merge remains Joe's word. This receipt plus Gate B are the preconditions."
+    },
+    {
+      "id": "W4-GUARD",
+      "name": "release gates: corpus freshness check + per-context ingest ledger, single-writer",
+      "state": "ready",
+      "receipt": "W4-GUARD.json",
+      "branch": "wave4/guard",
+      "base": "master",
+      "worktree": ".claude/worktrees/w4-guard",
+      "prompt": "harness/autorevise/prompts/W4-GUARD.md",
+      "deps": [
+        "W4-KNOW"
+      ],
+      "readonly": false,
+      "touches": [
+        "harness/verify/checks.py",
+        "harness/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/reviews/h22-context-knowledge-recon-2026-08-15.md :: How-this-runs: the only new construction is a per-context ledger over legs.json and a freshness gate in checks.py; Finding 5: corpus guarded at build time, unguarded downstream. Verified: check_no_rigging_drift def at harness/verify/checks.py:324 - HARD PROHIBITION, untouched. Closes the observed-vs-asserted gap at release time; the runtime half lives in W4-KNOW target 8."
+    },
+    {
+      "id": "W4-HELP",
+      "name": "helpdoc build pin parameterized: two attributes, no leg hardcodes a build",
+      "state": "ready",
+      "receipt": "W4-HELP.json",
+      "branch": "wave4/help",
+      "base": "master",
+      "worktree": ".claude/worktrees/w4-help",
+      "prompt": "harness/autorevise/prompts/W4-HELP.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "harness/notes/h9/helpdoc.py",
+        "harness/notes/ingest/i1_extract.py",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/reviews/h22-context-knowledge-recon-2026-08-15.md :: Four parser patches, item repoint-the-pinned-build: harness/notes/h9/helpdoc.py hardcodes BUILD; verified i1_extract.py:59 BUILD = helpdoc.BUILD (pinned, fails loudly); pre-flight proved the .368-to-.400 repoint is two module attributes (helpdoc.BUILD, helpdoc.HELP_DIR) - parameterize, do not mutate. Unblocks every ING-<CTX> leg from the stale pin; survives Gate P on either fork branch (both need a build-addressable doc source)."
+    },
+    {
+      "id": "W4-KNOW",
+      "name": "retrieval repair: scout sees the corpus, keys carry context, answers carry internals, dense path can say not-found",
+      "state": "ready",
+      "receipt": "W4-KNOW.json",
+      "branch": "wave4/know",
+      "base": "master",
+      "worktree": ".claude/worktrees/w4-know",
+      "prompt": "harness/autorevise/prompts/W4-KNOW.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/routing/knowledge.py",
+        "python/synapse/cognitive/tools/scout_ingest.py",
+        "python/synapse/cognitive/tools/scout_eval.py",
+        "harness/notes/rag_promote_h22.py",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/reviews/h22-context-knowledge-recon-2026-08-15.md :: Finding 2 (retrieval broken at 1x) + Recommended sequence step 1; blueprint harness/notes/h22/BLUEPRINT.md Wave K1 LEG-KNOW. Verified anchors: knowledge.py:141 2-token bail to H21 prose (found=True 0.4-0.9 conf, 40/40 wrong); scout serving store shares zero rows with the 659 node entries (no id/searchable_text at promote); type-keyed index, 253/4345 stems destroyed, 239 internal-name collisions; 12-label cap hides 336/659 entries, internal names+channels never returned; :160 hardcodes Houdini 22.0.368 hint; corpus loads with zero build-stamp check. The value gate of the campaign: marginal value of new knowledge is negative until this lands. Every ING-<CTX> leg rides behind this via wave order."
+    },
+    {
+      "id": "W4-RULING",
+      "name": "adversarial pass on the bookish-AST source ruling before Gate P",
+      "state": "ready",
+      "receipt": "W4-RULING.json",
+      "branch": "wave4/ruling",
+      "base": "master",
+      "worktree": ".claude/worktrees/w4-ruling",
+      "prompt": "harness/autorevise/prompts/W4-RULING.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "harness/notes/h22/"
+      ],
+      "note": "AUTOREVISE docs/reviews/h22-context-knowledge-recon-2026-08-15.md :: Open items, RESOLVED entry: xref agent ruling - regenerate help AST headlessly via houdinihelp.hconfig/hpages + bookish into a SYNAPSE-owned cache; claims 5481 /nodes/ pages in 170s with 0 errors; attrs.id coverage cop 99 / top 97 / lop 75 / sop 64 / vop 57; OneDrive cache unusable (30 percent populated, build-mixed, unstamped). Flagged in-report: has NOT been through a crucible; execution claims artifact-corroborated and spot-checked only. Gates nothing inside W4 but blocks Gate P: the parser-fork ruling waits for this receipt. Runs parallel to the builders."
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "W4-RULING",
+  "name": "adversarial pass on the bookish-AST source ruling before Gate P",
+  "band": "TRUTH",
+  "source": {
+    "doc": "docs/reviews/h22-context-knowledge-recon-2026-08-15.md",
+    "anchor": "Open items, RESOLVED entry: xref agent ruling - regenerate help AST headlessly via houdinihelp.hconfig/hpages + bookish into a SYNAPSE-owned cache; claims 5481 /nodes/ pages in 170s with 0 errors; attrs.id coverage cop 99 / top 97 / lop 75 / sop 64 / vop 57; OneDrive cache unusable (30 percent populated, build-mixed, unstamped). Flagged in-report: has NOT been through a crucible; execution claims artifact-corroborated and spot-checked only"
+  },
+  "targets": [
+    "1) re-execute or refute each load-bearing claim with anchors: page count + error tally via fresh headless regen on 22.0.400, attrs.id coverage recount per context, cache-unusable ruling re-derived from the on-disk cache",
+    "2) price the internal-API risk honestly: what breaks on a Houdini major, what hython-coupled regen costs CI, what LABEL-fallback coverage looks like where attrs.id is absent",
+    "3) fork memo for Gate P: i1_extract plus 4 patches vs bookish adapter, both branches costed with receipts, the multiparm-semantics question carried on both",
+    "4) output harness/notes/h22/crux-ruling.md - findings, verdicts, and the memo; no product code"
+  ],
+  "acceptance": [
+    {"predicate": "every ruling claim carries a verdict reproduced|refuted|UNKNOWN with a probe path or file:line - none carried forward on the original agent's word", "evidence": "probe"},
+    {"predicate": "fresh headless regen executed on 22.0.400 with counts and error tally recorded, or the blocker recorded UNKNOWN with the exact failing step", "evidence": "probe"},
+    {"predicate": "crux-ruling.md exists with the Gate P fork memo; git rev-list shows notes-only changes on the branch", "evidence": "check"}
+  ],
+  "deps": [],
+  "readonly": false,
+  "touches": [
+    "harness/notes/h22/"
+  ],
+  "crucible_criteria": [
+    "this leg IS a crucible: its own claims meet the same bar - a claim asserted where nothing was observed is the exact defect class under attack",
+    "hython runs are detached with sentinels; a hung regen is recorded UNKNOWN with PID and log path, never waited into a dead turn"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Gates nothing inside W4 but blocks Gate P: the parser-fork ruling waits for this receipt. Runs parallel to the builders."
+}

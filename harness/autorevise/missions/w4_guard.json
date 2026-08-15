@@ -1,0 +1,32 @@
+{
+  "id": "W4-GUARD",
+  "name": "release gates: corpus freshness check + per-context ingest ledger, single-writer",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/reviews/h22-context-knowledge-recon-2026-08-15.md",
+    "anchor": "How-this-runs: the only new construction is a per-context ledger over legs.json and a freshness gate in checks.py; Finding 5: corpus guarded at build time, unguarded downstream. Verified: check_no_rigging_drift def at harness/verify/checks.py:324 - HARD PROHIBITION, untouched"
+  },
+  "targets": [
+    "1) freshness gate in checks.py: served corpus build stamp matches the ratified build, release-blocking on mismatch - consumes the stamp contract W4-KNOW defines",
+    "2) per-context ingest ledger over legs.json: which contexts are wired, at what build, behind which gate word - ONE writer (the gate/orchestrator side), agents read-only",
+    "3) check_no_rigging_drift and D-H22-2 untouched: apex/rig/kinefx never enter authoring_domains.json"
+  ],
+  "acceptance": [
+    {"predicate": "stale-stamp fixture fails the freshness gate loudly; matching stamp passes", "evidence": "test"},
+    {"predicate": "ledger schema documented; a second-writer attempt is rejected or detectable - single-writer enforced, not assumed", "evidence": "test"},
+    {"predicate": "git diff shows zero edits to check_no_rigging_drift and zero additions to authoring_domains.json", "evidence": "check"}
+  ],
+  "deps": ["W4-KNOW"],
+  "readonly": false,
+  "touches": [
+    "harness/verify/checks.py",
+    "harness/",
+    "tests/"
+  ],
+  "crucible_criteria": [
+    "one writer per surface is a ratified constraint - the ledger design is attacked for write races before acceptance",
+    "the freshness gate must fail the RELEASE, not warn - warn-and-pass is the silent-staleness class this leg exists to kill"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Closes the observed-vs-asserted gap at release time; the runtime half lives in W4-KNOW target 8."
+}

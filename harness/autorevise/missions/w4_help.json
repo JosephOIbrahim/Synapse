@@ -1,0 +1,32 @@
+{
+  "id": "W4-HELP",
+  "name": "helpdoc build pin parameterized: two attributes, no leg hardcodes a build",
+  "band": "BUILD",
+  "source": {
+    "doc": "docs/reviews/h22-context-knowledge-recon-2026-08-15.md",
+    "anchor": "Four parser patches, item repoint-the-pinned-build: harness/notes/h9/helpdoc.py hardcodes BUILD; verified i1_extract.py:59 BUILD = helpdoc.BUILD (pinned, fails loudly); pre-flight proved the .368-to-.400 repoint is two module attributes (helpdoc.BUILD, helpdoc.HELP_DIR) - parameterize, do not mutate"
+  },
+  "targets": [
+    "1) helpdoc resolves BUILD and HELP_DIR from an explicit parameter or environment override, defaulting to the current pin - callers choose the build, nothing mutates the module",
+    "2) importers (i1_extract.py:59 et al) consume the parameterized surface; grep-clean of hardcoded 22.0.368 on ingest code paths",
+    "3) fails loudly when the requested build archive is absent - never silently serves another build's pages"
+  ],
+  "acceptance": [
+    {"predicate": "helpdoc resolves 22.0.368 and 22.0.400 by parameter in one process without module mutation; absent-archive request raises and names the missing path", "evidence": "test"},
+    {"predicate": "i1_extract parses a sample page from each build via the parameterized surface, zero exceptions", "evidence": "test"},
+    {"predicate": "rg shows no hardcoded 22.0.368 governing harness/notes ingest code paths (docs, archive, receipts exempt)", "evidence": "check"}
+  ],
+  "deps": [],
+  "readonly": false,
+  "touches": [
+    "harness/notes/h9/helpdoc.py",
+    "harness/notes/ingest/i1_extract.py",
+    "tests/"
+  ],
+  "crucible_criteria": [
+    "the .368 pin was fails-loudly by design - parameterization must preserve loud failure, not soften it into a fallback",
+    "house rule: unobtainable renders UNKNOWN, never zero and never an estimate"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Unblocks every ING-<CTX> leg from the stale pin; survives Gate P on either fork branch (both need a build-addressable doc source)."
+}
