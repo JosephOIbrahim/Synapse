@@ -152,6 +152,12 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     "synapse_batch": "build_from_manifest",
     "synapse_solaris_assemble_chain": "build_from_manifest",
     "synapse_solaris_build_graph": "build_from_manifest",
+    # PROMOTION-STAGED (parity-audit F1, 2026-08-14): the trio below are real
+    # WS handlers (server/handlers.py:741-743) with NO TOOL_DEFS registry
+    # entry — these aliases are unreachable today. They stay as forward
+    # staging: if/when the trio is promoted to the registry, the op-type and
+    # disk classifications apply from day one (pinned by
+    # tests/test_compose_offmain_wp3.py::test_bridge_adapter_marks_touches_disk).
     "synapse_solaris_shotsetup_karma_xpu": "build_from_manifest",
     "synapse_matlib_bind": "build_from_manifest",
     "synapse_assess_render_ready": "inspect_geometry",
@@ -161,7 +167,9 @@ _TOOL_TO_OPERATION: dict[str, str] = {
 # R4 (shared/bridge.py Operation.gate_level): touches_disk elevates the
 # gate to APPROVE. These writes happen outside the undo system.
 _DISK_WRITING_TOOLS = frozenset({
-    "synapse_solaris_shotsetup_karma_xpu",  # department .usd layer files
+    "synapse_solaris_shotsetup_karma_xpu",  # department .usd layer files;
+    # promotion-staged alias (see _TOOL_TO_OPERATION note above) — the disk
+    # elevation must hold the day the registry entry lands
 })
 
 # ── Tool name → inferred AgentID ─────────────────────────────────

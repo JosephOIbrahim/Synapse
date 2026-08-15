@@ -126,6 +126,24 @@ F2 is a design call for Joe, not a bug.
 
 ---
 
+## Post-release dispositions (v5.48.0 loop closure, 2026-08-14)
+
+- **F3/F4 — closed.** Both stale comments were refreshed in the freeze-relief
+  branches themselves (`mcp/server.py` now states 40/36/4; `tool_bridge.py`
+  header says 124). Nothing left to do.
+- **F1 — resolved as *staged*, not dead.** Deleting the compose-trio aliases
+  failed `test_compose_offmain_wp3.py::test_bridge_adapter_marks_touches_disk`,
+  which pins that the shotsetup tool gets `touches_disk=True` elevation. The
+  test is evidence the entries are intentional forward-staging: WS-side real
+  handlers, registry promotion pending. `bridge_adapter.py` now says that
+  in plain words at both sites (comment-only change, zero behavior delta).
+  The remaining design call — *promote the trio into TOOL_DEFS* — is Joe's.
+- **F2 (pause/resume UI wiring)** and **F5 (nine unmounted-module check)** —
+  open, Joe's calls. F2 needs an overflow-menu decision; F5 needs a live-panel
+  or side-channel import scan before any dead/mount claim.
+
+*Dispositions shipped on branch `chore/parity-dead-aliases`.*
+
 *Evidence: full workflow result at
 `C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE/panel-parity-full.json`;
 journal `panel-capability-parity-wf_63b2002b-40c.journal.jsonl` (3 agents,
