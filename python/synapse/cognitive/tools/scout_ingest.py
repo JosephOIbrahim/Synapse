@@ -35,6 +35,15 @@ from typing import Optional
 CORPUS_MANIFEST_NAME = "manifest.json"
 MANIFEST_SCHEMA = "scout_corpus_manifest/v1"
 
+# W5-DENSE: the derived node-dense index dir, materialized alongside the prose
+# semantic_index in the ephemeral store. MUST match scout._NODE_INDEX_DIRNAME
+# (the reader); test_scout_node_dense pins the two equal so they cannot drift.
+NODE_INDEX_DIRNAME = "semantic_index_nodes"
+# The embedder that must match the prose index (the cardinal RAG rule: query and
+# corpus embed with the SAME model, else the fused vector spaces are garbage).
+NODE_EMBED_MODEL = "all-MiniLM-L6-v2"
+NODE_INDEX_SCHEMA = "scout_node_dense_index/v1"
+
 
 def _repo_root() -> Path:
     # .../python/synapse/cognitive/tools/scout_ingest.py
@@ -183,6 +192,74 @@ def _copy_semantic_index(rag_root: Path, sem_dir: Path) -> None:
         shutil.copy2(npy, sem_dir / "embeddings.npy")
 
 
+def _build_node_semantic_index(node_entries: list[dict], sem_nodes_dir: Path,
+                               src: Path) -> Optional[dict]:
+    """W5-DENSE — derive a dense semantic index over the NODE corpus entries at
+    ingest time. This closes W4-KNOW finding F1: the node datasheets were absent
+    from the dense index, capping hybrid type-name P@1 at the lexical ceiling.
+
+    DERIVED DATA by construction: computed from the corpus node entries,
+    rebuildable, and written ONLY into the gitignored ephemeral store — never
+    committed, never the source of truth (Target 1). A SEPARATE index (not merged
+    into the prose ``semantic_index``) so the prose/conceptual path stays
+    byte-identical and scout can gate node vectors on node/type intent (Target 2 +
+    the S1 "placement that does not regress conceptual recall").
+
+    Determinism (Target 4): entries are embedded in sorted-id order on CPU (no
+    dropout at inference; fixed weights) and stamped with a content digest over
+    the embedded (id, text) plus the rag/ ``source_digest`` — so a delete-and-
+    rebuild reproduces byte-identical vectors and identical retrieval.
+
+    Embedder absent (torch-less CI / hython) → no-op: the index is not written,
+    scout stays lexical for nodes (unchanged prior behaviour). Mirrors
+    ``_copy_semantic_index``'s absent-source tolerance — adds capability, never a
+    new fail-open surface."""
+    node_entries = [e for e in node_entries
+                    if e.get("context") and e.get("searchable_text")]
+    if not node_entries:
+        return None
+    try:
+        from sentence_transformers import SentenceTransformer
+        import numpy as np
+    except ImportError:
+        return None  # graceful: embedder unavailable here → nodes stay lexical
+
+    node_entries = sorted(node_entries, key=lambda e: str(e["id"]))
+    model = SentenceTransformer(NODE_EMBED_MODEL, device="cpu")  # CPU → deterministic rebuild
+    dim = int(model.get_sentence_embedding_dimension())
+    texts = [str(e["searchable_text"]) for e in node_entries]
+    vectors = np.asarray(
+        model.encode(texts, normalize_embeddings=True), dtype="float32")
+    if vectors.shape != (len(node_entries), dim):
+        raise RuntimeError(
+            f"[scout_ingest] node embedding shape {vectors.shape} != "
+            f"({len(node_entries)}, {dim})")
+
+    content_digest = hashlib.blake2b(
+        "\n".join("%s\t%s" % (e["id"], e["searchable_text"]) for e in node_entries)
+        .encode("utf-8"), digest_size=16).hexdigest()
+
+    sem_nodes_dir.mkdir(parents=True, exist_ok=True)
+    (sem_nodes_dir / "manifest.json").write_text(json.dumps({
+        "schema": NODE_INDEX_SCHEMA,
+        "embedder": "sentence-transformers",   # scout._load_embedder key
+        "model": NODE_EMBED_MODEL,
+        "dim": dim,
+        "entries": len(node_entries),
+        "normalized": True,
+        "kind": "node",
+        "derived": True,                        # NOT source of truth (Target 1)
+        "content_digest": content_digest,       # deterministic-rebuild anchor (Target 4)
+        "source_digest": source_digest(src),    # stamped against the corpus build (Target 4)
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    with open(sem_nodes_dir / "meta.jsonl", "w", encoding="utf-8") as f:
+        for e in node_entries:
+            f.write(json.dumps({"id": e["id"]}, ensure_ascii=False) + "\n")
+    np.save(sem_nodes_dir / "embeddings.npy", vectors)
+    return {"entries": len(node_entries), "content_digest": content_digest,
+            "dim": dim}
+
+
 def build_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None) -> dict:
     """Materialize the scout corpus from rag_root → out_root/corpus/entries.jsonl.
 
@@ -191,7 +268,8 @@ def build_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None)
     src = Path(rag_root) if rag_root else rag_source()
     out = Path(out_root) if out_root else corpus_root()
 
-    entries = _entries_from_knowledge(src) + _entries_from_corpus_dir(src)
+    node_entries = _entries_from_corpus_dir(src)
+    entries = _entries_from_knowledge(src) + node_entries
     if not entries:
         raise RuntimeError(
             f"[scout_ingest] no entries from {src} — expected "
@@ -204,6 +282,9 @@ def build_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None)
     sem_dir = out / "semantic_index"
     sem_dir.mkdir(parents=True, exist_ok=True)  # empty → lexical_only unless populated below
     _copy_semantic_index(src, sem_dir)
+    # W5-DENSE: derive the node-dense index from the node corpus entries (no-op
+    # when there are none, e.g. a prose-only fixture rag/, or when torch is absent).
+    node_index = _build_node_semantic_index(node_entries, out / NODE_INDEX_DIRNAME, src)
 
     out_fp = corpus_dir / "entries.jsonl"
     out_fp.write_text(
@@ -219,6 +300,10 @@ def build_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None)
         "source_digest": source_digest(src),
         "source_file_count": len(source_files(src)),
         "entries": len(entries),
+        # W5-DENSE: the derived node-dense index result (dict when built, null when
+        # there were no node entries or the embedder was unavailable). Its PRESENCE
+        # marks a store built by W5-aware code, so ensure_corpus won't thrash-rebuild.
+        "node_index": node_index,
     }
     (out / CORPUS_MANIFEST_NAME).write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -245,6 +330,28 @@ def _manifest_is_fresh(manifest_fp: Path, rag_root: Optional[str]) -> bool:
         return False
 
 
+def _node_index_recorded(manifest_fp: Path) -> bool:
+    """True iff the store manifest carries a ``node_index`` record — i.e. it was
+    built by W5-aware code that already ran the node-dense derivation (whether or
+    not it produced an index). Its presence is the anti-thrash gate: a torch-less
+    store records ``node_index: null`` and is not rebuilt on every call."""
+    try:
+        return "node_index" in json.loads(manifest_fp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return False
+
+
+def _node_index_pending(src: Path) -> bool:
+    """True iff a node-dense index COULD be derived from this source right now:
+    the source carries node entries AND the embedder is installed. Uses
+    ``find_spec`` (never an import) so it costs no torch load and returns False in
+    a torch-less env — no thrash rebuilding an index that cannot be built here."""
+    import importlib.util
+    if importlib.util.find_spec("sentence_transformers") is None:
+        return False
+    return bool(_entries_from_corpus_dir(src))
+
+
 def ensure_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None) -> dict:
     """Build the corpus iff it is absent/empty/STALE (idempotent). The live wiring
     calls this before dispatch so scout never goes live empty — and never serves a
@@ -259,6 +366,15 @@ def ensure_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None
     manifest_fp = out / CORPUS_MANIFEST_NAME
     if (fp.is_file() and fp.stat().st_size > 0 and manifest_fp.is_file()
             and _manifest_is_fresh(manifest_fp, rag_root)):
+        # W5-DENSE self-heal: a fresh store built by PRE-W5 code has no node-dense
+        # index. Rebuild ONCE to derive it (idempotent — after the rebuild the
+        # manifest records node_index, so this never fires again for that store).
+        if not _node_index_recorded(manifest_fp):
+            src = Path(rag_root) if rag_root else Path(
+                json.loads(manifest_fp.read_text(encoding="utf-8")).get("source_root")
+                or rag_source())
+            if _node_index_pending(src):
+                return build_corpus(rag_root, out_root)
         return {"entries": -1, "path": str(fp), "store_root": str(out), "cached": True}
     return build_corpus(rag_root, out_root)
 
