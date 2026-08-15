@@ -1783,8 +1783,16 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
         Queries the Tier 1 knowledge index for parameter names,
         node types, workflow guides, and FX setup instructions.
+
+        W4-KNOW Target 3: ``context`` narrows a node lookup to one context
+        ("cop"/"lop"/...); a bare type that spans several returns a
+        ``disambiguation`` list instead of a silent pick. ``k`` bounds that list.
+        A node answer carries the full ``parameters`` surface (internal names +
+        channels, uncapped - Target 5) and the measured ``serve_bytes``.
         """
         query = resolve_param(payload, "query")
+        context = payload.get("context")
+        k = payload.get("k")
 
         knowledge = self._get_knowledge_index()
         if knowledge is None:
@@ -1797,9 +1805,18 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 "agent_hint": "",
                 "summary": "",
                 "reference_file": "",
+                "context": "",
+                "disambiguation": [],
+                "parameters": [],
+                "serve_bytes": 0,
             }
 
-        result = knowledge.lookup(query)
+        kwargs: Dict = {}
+        if context:
+            kwargs["context"] = context
+        if isinstance(k, int) and k > 0:
+            kwargs["k"] = k
+        result = knowledge.lookup(query, **kwargs)
         return {
             "found": result.found,
             "answer": result.answer,
@@ -1809,6 +1826,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             "agent_hint": result.agent_hint,
             "summary": result.summary,
             "reference_file": result.reference_file,
+            "context": result.context,
+            "disambiguation": result.disambiguation,
+            "parameters": result.parameters,
+            "serve_bytes": result.serve_bytes,
         }
 
     # =========================================================================

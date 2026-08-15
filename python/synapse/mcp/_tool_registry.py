@@ -998,10 +998,15 @@ TOOL_DEFS: list[tuple] = [
 
     # -- Knowledge / RAG --
     ("synapse_knowledge_lookup", "knowledge_lookup",
-     _filter_keys(("query",)),
-     "Look up Houdini knowledge: parameter names, node types, workflow guides.",
+     _filter_keys(("query", "context", "k")),
+     "Look up Houdini knowledge: parameter names, node types, workflow guides. "
+     "Pass context (cop/lop/...) to disambiguate a node type present in more than "
+     "one context; a bare ambiguous type returns a disambiguation list. A node "
+     "answer carries every parameter's internal name(s) and channel(s).",
      {"type": "object", "properties": {
-         "query": {"type": "string", "description": "Natural language query"},
+         "query": {"type": "string", "description": "Natural language query, or a node type to look up"},
+         "context": {"type": "string", "description": "Node context to disambiguate on: cop, lop, cop2, ... (optional)"},
+         "k": {"type": "integer", "description": "Max candidates in a disambiguation list (default 6)", "minimum": 1, "maximum": 25},
      }, "required": ["query"]},
      True, False, True),
 
