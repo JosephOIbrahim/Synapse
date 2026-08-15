@@ -14,7 +14,7 @@ Features:
 Storage: $HIP/.synapse/
 
 Author: Joseph Ibrahim
-Version: 5.49.0
+Version: 5.50.0
 """
 
 # ---------------------------------------------------------------------------

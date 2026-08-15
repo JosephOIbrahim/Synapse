@@ -8,7 +8,7 @@
 
 <p align="center">SYNAPSE lives in Houdini's own Python interpreter and calls <code>hou.*</code> directly.<br>No external bridge, no RPC hop, no second copy of the scene.</p>
 
-<p align="center"><sub>v5.49.0 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6</sub></p>
+<p align="center"><sub>v5.50.0 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6</sub></p>
 
 ---
 
@@ -19,7 +19,7 @@
 **It asks first** before anything risky, and **says UNKNOWN** instead of guessing.
 **It tells you what doesn't work** — [Known limitations](#known-limitations) is the most-read section on purpose.
 
-**New in v5.49.0 — Five tools take the stage:** the Solaris compose trio (shot scaffold, material bind, render-readiness) and TOPS pause/resume are now first-class MCP tools, and the F5a probe delivers measured render-offload ground truth — husk loads the Karma delegate headless on Indie, with and without `--indie`. [Release notes →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.49.0)
+**New in v5.50.0 — the knowledge layer stops guessing:** retrieval repair lands. Scout finally sees the node corpus, ambiguous type names disambiguate by context, datasheets carry real internal parm names + channels, and the dense path can honestly say "not found" — 0/25 confident-wrong on fresh adversarial probes. Under it: a build-freshness release gate, a single-writer ingest ledger, and a parameterized help-archive pin. [Release notes →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.50.0)
 
 **Jump to:** [Artists](#for-artists--the-one-minute-version) · [Demo](#watch-it-work) · [Limitations](#known-limitations) · [Install](#install) · [First prompt](#first-prompt) · [Verify it yourself](#verifying-any-of-this)
 
