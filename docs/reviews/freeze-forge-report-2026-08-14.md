@@ -242,3 +242,16 @@ claims):**
 6. Retry drill: let the panel re-issue the same timed-out command — after 2
    consecutive abandons with a live holder, expect the breaker sentence
    naming the holder and the hold's age.
+
+---
+
+## Ratification addendum (2026-08-14, Joe)
+
+Both VERIFY deviations from the spec are **ratified** as the standing design:
+
+- **F2 breaker requires a LIVE register holder** (stricter than spec).
+  Kills false-fires from offline/stale holders: an abandoned command with
+  nothing on the register is a timeout, not a freeze, and retrying is legal.
+- **F3 halt sweeps PDG OFF the main thread.** The spec's on-main sweep would
+  deadlock in the exact scenario the halt exists for. Off-main reads the F4
+  register as evidence and never waits on the thread it is freeing.
