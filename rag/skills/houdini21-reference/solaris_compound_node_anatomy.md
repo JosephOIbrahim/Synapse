@@ -117,6 +117,34 @@ never edit it.
 5. H22 note: component/proxy/pivot prep can now also start SOP-side before Solaris
    (H22 What's New; workflow detail UNKNOWN — not yet probed live).
 
+## Variants, layers, and consumption (Rydalch SideFX workshop, H19-era, doc-derived)
+
+- **Layer composition of a published component**: the asset layer PAYLOADS the payload
+  layer, which REFERENCES the geometry, material, and extras layers, ordered weakest
+  to strongest. `.usd` extension on purpose (ASCII/binary swappable without re-referencing).
+- **componentgeometryvariants** is multi-input: every input becomes a geometry variant,
+  named from each componentgeometry's Advanced > geo variant name (default: node name).
+  Material variants AFTER the geo-variants node apply across ALL geometry variants when
+  prim paths match (5 geo x 5 mtl = 25 combos in Explore Variants LOP). componentmaterial
+  nodes INSIDE the geo variants instead = nested variants (5, not 25).
+- **Material variant subtlety**: the assignments are part of the variant; the materials
+  themselves are NOT — every input-2 material stays available to every variant. Edits made
+  inside componentmaterial's `edit` dive target are exclusive to that variant.
+- Inside componentgeometry's SOP net, **all SOP Import rules apply**: `name` attribute
+  names prims, primitive groups become geometry subsets.
+- **Procedural variants**: for-each LOP loop, rename its context option, reference it for
+  the variant name + primvars + SOP-side seeds.
+- **Per-variant instancing prototypes**: no direct parm — Explore Variants LOP into an
+  instancer with "only copy specified prototype primitives" OFF.
+- **Scene Import as componentoutput source**: fix the Scene Import material destination
+  path first — componentoutput processes ONE object at a time, so materials must share
+  the geometry's parent prim.
+- **USD rules stated outright**: `class` is a specifier (with `def`/`over`) and class prims
+  are not traversed by default; use `Scope` not `Xform` for organizational prims — on an
+  instanceable reference, transforms only take effect on the top primitive.
+- Full cleaned transcript: `G:\VideoDecoder\Chris Rydalch - Creating USD Assets with
+  Component Builder\`.
+
 ## Sources
 - Live hython probes, Houdini 22.0.400, 2026-08-15 (anatomy, counts, paths, flags)
 - SideFX docs: solaris/component_builder, nodes/lop/componentgeometry (doc-derived)
