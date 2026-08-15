@@ -220,7 +220,7 @@ def capture_scene_hash(payload):
             timeout=_capture_timeout(),
             record_stall=False,
             record_wait=False,
-        )
+        label="envelope:capture_scene_hash")
     except RuntimeError:
         # run_on_main timeout: main thread busy (cook/render). Honest None —
         # the block records the hash_unavailable sentinel.

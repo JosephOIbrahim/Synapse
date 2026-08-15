@@ -252,7 +252,7 @@ class MetricsAggregator:
 
         try:
             from .main_thread import run_on_main
-            return run_on_main(_gather, timeout=_SCENE_COLLECT_TIMEOUT)
+            return run_on_main(_gather, timeout=_SCENE_COLLECT_TIMEOUT, label="live_metrics:_collect_scene")
         except Exception:
             # Timeout (main thread busy), marshaller unavailable, or a failure
             # inside the walk. Never block the daemon — shed this cycle.

@@ -1086,7 +1086,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 "is_tuple": False,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="handlers:_handle_get_parm")
 
     def _handle_set_parm(self, payload: Dict) -> Dict:
         """Handle set_parm command."""
@@ -1183,7 +1183,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             hint = _suggest_parms(node, parm_name)
             raise ParameterError(node_path, parm_name, suggestion=hint.strip() if hint else "")
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="handlers:_handle_set_parm")
 
     # =========================================================================
     # SCENE HANDLERS
@@ -1204,7 +1204,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 "frame_range": [int(hou.playbar.frameRange()[0]), int(hou.playbar.frameRange()[1])],
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="handlers:_handle_get_scene_info")
 
     def _handle_get_selection(self, payload: Dict) -> Dict:
         """Handle get_selection command."""
@@ -1223,7 +1223,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 ],
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="handlers:_handle_get_selection")
 
     # =========================================================================
     # EXECUTION HANDLERS
@@ -1497,7 +1497,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         from .introspection import inspect_selection
         from .main_thread import run_on_main
         depth = resolve_param_with_default(payload, "depth", 1)
-        return run_on_main(lambda: inspect_selection(depth=int(depth)))
+        return run_on_main(lambda: inspect_selection(depth=int(depth)), label="handlers:_handle_inspect_selection")
 
     def _handle_inspect_scene(self, payload: Dict) -> Dict:
         """Hierarchical scene overview with issues and artist notes."""
@@ -1512,7 +1512,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             root=root,
             max_depth=int(max_depth),
             context_filter=context_filter,
-        ))
+        ), label="handlers:_handle_inspect_scene")
 
     def _handle_inspect_node(self, payload: Dict) -> Dict:
         """Deep single-node dump: all parms, expressions, code, geometry, HDA info."""
@@ -1532,7 +1532,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             include_code=bool(include_code),
             include_geometry=bool(include_geometry),
             include_expressions=bool(include_expressions),
-        ))
+        ), label="handlers:_handle_inspect_node")
 
     def _handle_get_metrics(self, payload: Dict) -> Dict:
         """Return Prometheus-format metrics text."""

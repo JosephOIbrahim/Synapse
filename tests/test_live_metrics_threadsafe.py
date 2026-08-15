@@ -84,7 +84,8 @@ def test_collect_scene_marshals_hou_through_run_on_main():
 
     seen_timeout: dict = {}
 
-    def fake_run_on_main(fn, timeout=10.0):
+    def fake_run_on_main(fn, timeout=10.0, label=None):
+        seen_timeout["label"] = label
         # Simulate the real marshaller: fn runs on a DIFFERENT ("main") thread,
         # never the daemon/caller thread. Bounded timeout is respected by join.
         seen_timeout["v"] = timeout
@@ -120,6 +121,8 @@ def test_collect_scene_marshals_hou_through_run_on_main():
     assert seen_timeout.get("v") == 1.0, (
         f"expected the documented 1s marshal timeout, got {seen_timeout.get('v')}"
     )
+    # F4: the gather is labeled so holds attribute to it.
+    assert seen_timeout.get("label") == "live_metrics:_collect_scene"
 
     # EVERY hou access (not just the first per name) happened on the marshalled
     # (main) thread — none leaked onto the calling/daemon thread. Rule #3.

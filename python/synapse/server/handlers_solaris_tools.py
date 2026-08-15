@@ -47,7 +47,7 @@ def _run_tool(module, payload: Dict) -> Dict[str, Any]:
 
     from .main_thread import run_on_main
 
-    return run_on_main(lambda: module.execute(params), timeout=_SOLARIS_TOOL_TIMEOUT)
+    return run_on_main(lambda: module.execute(params), timeout=_SOLARIS_TOOL_TIMEOUT, label="solaris_tools:_run_tool")
 
 
 class SolarisToolsMixin:

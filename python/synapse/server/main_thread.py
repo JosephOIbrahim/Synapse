@@ -182,6 +182,36 @@ def _record_main_thread_hold(ms, label=None, abandoned=False):
             _main_thread_hold["abandoned_count"] += 1
 
 
+# F4 (2026-08-14) — in-flight register. The hold histogram above records
+# COMPLETED holds only: a payload still RUNNING is invisible mid-flight, which
+# is exactly the class behind the 2026-08-13/14 freezes — a mid-freeze dump
+# named a 651ms doctor as slowest while a 179s execute_python was in flight.
+# One register covers BOTH dispatch paths: fast path 2 (inline, caller already
+# on the main thread) and the deferred _on_main payload (set once the C4
+# abandoned-check passes, so deferred zombie renders are named MID-FLIGHT, not
+# only after they complete).
+# Single-writer-safe by construction: both write sites execute only on the
+# main thread, so at most one writer exists at any moment and the writes are
+# bare reference assignments (atomic under the GIL). Readers (freeze chain /
+# telemetry dump on the watchdog thread, panel retry gate) read with no lock.
+# Entry is (label, start_ts); nested payloads save/restore the previous entry
+# so an inner hold never erases the outer one's attribution.
+_in_flight = None  # (label, start_ts) of the payload currently on the main thread, else None
+
+
+def current_main_thread_holder():
+    """(label, start_ts) of the payload currently holding the main thread,
+    or None when the main thread is idle between payloads.
+
+    Lock-free read-over-only: the register is written solely on the main
+    thread (single writer), so a concurrent read sees either the old or the
+    new tuple — never a torn value. ``start_ts`` is a time.time() stamp so
+    callers can age the current hold (``time.time() - start_ts``); the F2
+    retry circuit-breaker and the FreezeChain dump consume exactly that.
+    """
+    return _in_flight
+
+
 def main_thread_hold_stats():
     """Snapshot of the deferred-path main-thread hold histogram (copy — safe
     to serialize). This is real occupancy: fn()'s duration measured on the
@@ -246,7 +276,7 @@ def probe_main_thread(timeout=2.0):
     fast-fails as before. Returns True when the main thread responded.
     """
     try:
-        run_on_main(lambda: True, timeout=timeout)
+        run_on_main(lambda: True, timeout=timeout, label="main_thread:probe_main_thread")
     except Exception:
         return False
     # run_on_main's worker path already reset the counter; the main-thread
@@ -297,9 +327,11 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
     dominate the C6/T1 attribution instrument — that histogram must stay
     a measure of REAL command waits only.
 
-    ``label`` (optional) attributes the deferred payload in the OCC
-    main-thread hold histogram (main_thread_hold_stats). ``None`` records as
-    "unlabeled". Attribution only — it changes no dispatch behaviour.
+    ``label`` (optional) attributes the payload in BOTH the OCC
+    main-thread hold histogram (main_thread_hold_stats, completed holds) and
+    the F4 in-flight register (current_main_thread_holder, the live hold).
+    ``None`` records as "unlabeled". Attribution only — it changes no dispatch
+    behaviour.
     """
     # Fast path 1: reentrant call from within a run_on_main callback
     if getattr(_tls, "on_main", False):
@@ -314,9 +346,18 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
     # one perf_counter pair; record on the way out even if fn() raises.
     if threading.current_thread().ident == _MAIN_THREAD_ID:
         _t_direct = time.perf_counter()
+        # F4: register the inline hold BEFORE fn() runs. Fast path 2 never
+        # reaches _record_main_thread_hold, so without this the in-flight
+        # class that froze the UI twice this week was invisible to every
+        # instrument. Save/restore so a nested fast-path-2 call (main-thread
+        # caller inside a main-thread payload) restores the outer holder.
+        global _in_flight
+        _prev_in_flight = _in_flight
+        _in_flight = (label or "unlabeled", time.time())
         try:
             return fn()
         finally:
+            _in_flight = _prev_in_flight
             _elapsed_ms = (time.perf_counter() - _t_direct) * 1000.0
             # C6 first and unconditionally — the histogram's semantics are
             # unchanged and must not depend on the guard being importable.
@@ -373,6 +414,16 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
             if abandoned[0]:
                 return  # caller already timed out — do not mutate the scene
         _tls.on_main = True
+        # F4: register the hold NOW — after the C4 abandoned-check passes and
+        # before the payload starts. This is what names a deferred zombie
+        # render (the Aug-13 162-177s class) MID-FLIGHT; the hold histogram
+        # below only fires once fn() returns, which for a zombie is "never in
+        # time". Save/restore for the nested-main-thread case, as in fast
+        # path 2. Single-writer-safe: this closure only runs on the main
+        # thread via hdefereval.executeDeferred.
+        global _in_flight
+        _prev_in_flight = _in_flight
+        _in_flight = (label or "unlabeled", time.time())
         # OCC — time the payload itself, ON the main thread. This is the hold
         # the freeze investigations previously inferred from proxies.
         # Measurement only: control flow, C4 semantics, and the result path
@@ -383,6 +434,9 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
         except Exception as e:
             error_holder[0] = e
         finally:
+            # F4: clear the register on exit (restore the previous holder for
+            # the nested case) BEFORE recording the completed hold.
+            _in_flight = _prev_in_flight
             _hold_ms = (time.perf_counter() - _t_hold) * 1000.0
             _tls.on_main = False
             try:

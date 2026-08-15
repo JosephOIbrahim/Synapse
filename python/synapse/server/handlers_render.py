@@ -311,7 +311,7 @@ class RenderHandlerMixin:
         from .main_thread import run_on_main
         actual_path = run_on_main(
             _flipbook_on_main_thread, timeout=_CAPTURE_MAIN_TIMEOUT_S
-        )
+        , label="render:_handle_capture_viewport")
 
         if not Path(actual_path).exists():
             raise RuntimeError(
@@ -471,7 +471,7 @@ class RenderHandlerMixin:
 
         # A busy main thread fails this probe fast (run_on_main timeout) —
         # correct: never queue a render behind an already-stuck main thread.
-        engine, rop_w, rop_h, rop_samples = run_on_main(_guard_probe, timeout=5.0)
+        engine, rop_w, rop_h, rop_samples = run_on_main(_guard_probe, timeout=5.0, label="render:_handle_render_bounded")
 
         eff_w = int(width) if width else rop_w
         eff_h = int(height) if height else rop_h
@@ -961,7 +961,7 @@ class RenderHandlerMixin:
         (used_rop, used_type, engine, cur, render_path_resolved, preview_path,
          hfs, show_cfg_advisory, artist_output_raw, color_cfg) = run_on_main(
             _render_on_main, timeout=_RENDER_MAIN_TIMEOUT_S
-        )
+        , label="render:_handle_render")
 
         # -- Off-main from here (pure file IO / subprocess, zero hou) ---------
         # Karma XPU has a delayed file flush -- poll up to ~15s
@@ -1063,7 +1063,7 @@ class RenderHandlerMixin:
             try:
                 fb_ok, fb_path = run_on_main(
                     _flipbook_on_main, timeout=_FLIPBOOK_FALLBACK_TIMEOUT_S
-                )
+                , label="render:_handle_render")
             except RuntimeError as _fb_marshal_exc:
                 logger.warning(
                     "Flipbook fallback could not reach the main thread: %s",
@@ -1178,7 +1178,7 @@ class RenderHandlerMixin:
                 "frame": float(frame) if frame is not None else float(hou.frame()),
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="render:_handle_set_keyframe")
 
     def _handle_render_settings(self, payload: Dict) -> Dict:
         """Read and optionally modify render settings on a ROP or Karma node."""
@@ -1241,7 +1241,7 @@ class RenderHandlerMixin:
                 "settings": settings,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="render:_handle_render_settings")
 
     def _handle_validate_frame(self, payload: Dict) -> Dict:
         """Validate a rendered frame for common quality issues.
@@ -1548,7 +1548,7 @@ class RenderHandlerMixin:
         if HOU_AVAILABLE:
             try:
                 from .main_thread import run_on_main
-                hip = run_on_main(lambda: hou.text.expandString("$HIP"))
+                hip = run_on_main(lambda: hou.text.expandString("$HIP"), label="render:_handle_render_sequence")
                 if hip and hip != "$HIP":
                     report_dir = os.path.join(hip, ".synapse", "render_reports")
             except Exception:
@@ -1685,7 +1685,7 @@ class RenderHandlerMixin:
         from .main_thread import run_on_main
         from . import render_stop as _rs
 
-        rows = run_on_main(_rs.read_render_processes, timeout=30.0)
+        rows = run_on_main(_rs.read_render_processes, timeout=30.0, label="render:_handle_render_processes")
         live = [r for r in rows if r["alive"]]
         return {
             "renders": rows,
@@ -1731,7 +1731,7 @@ class RenderHandlerMixin:
         result = run_on_main(
             lambda: _rs.stop_render(node_path=node_path, pid=pid),
             timeout=30.0,
-        )
+        label="render:_handle_render_stop")
         try:
             from ..core.audit import audit_log, AuditLevel, AuditCategory
             audit_log().log(
@@ -1792,7 +1792,7 @@ class RenderHandlerMixin:
         report = run_on_main(
             lambda: EmergencyProtocol.trigger_emergency_halt(bridge, reason),
             timeout=60.0,
-        )
+        label="render:_handle_emergency_halt")
 
         cancelled, failed = [], []
         if HOU_AVAILABLE:
@@ -1816,7 +1816,7 @@ class RenderHandlerMixin:
                                         "error": str(exc)[:160]})
                 return done, bad
             try:
-                cancelled, failed = run_on_main(_sweep_topnets, timeout=60.0)
+                cancelled, failed = run_on_main(_sweep_topnets, timeout=60.0, label="render:_handle_emergency_halt")
             except Exception as exc:
                 failed = [{"node": "<sweep>", "error": str(exc)[:160]}]
 
@@ -1824,7 +1824,7 @@ class RenderHandlerMixin:
         if HOU_AVAILABLE:
             try:
                 from . import render_stop as _rs
-                rows = run_on_main(_rs.read_render_processes, timeout=15.0)
+                rows = run_on_main(_rs.read_render_processes, timeout=15.0, label="render:_handle_emergency_halt")
                 still_running = [r for r in rows if r["alive"]]
             except Exception:
                 logger.debug("post-halt render sweep failed (non-blocking)")
@@ -2031,7 +2031,7 @@ class RenderHandlerMixin:
                 "clear_existing": bool(clear_existing),
             }
 
-        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT, label="render:_handle_configure_render_passes")
 
     # =========================================================================
     # SAFE RENDER (pre-flight + auto-background for large renders)
@@ -2290,7 +2290,7 @@ class RenderHandlerMixin:
         # (built-ins are today's 1920x1080 / 1280x720). Off-main handler
         # thread -- marshal the $HIP/$JOB read to the main thread.
         from .main_thread import run_on_main
-        cfg = get_show_config(*run_on_main(resolve_show_dirs))
+        cfg = get_show_config(*run_on_main(resolve_show_dirs, label="render:_handle_render_progressively"))
         _defaults_used = []
         render_res, _render_src = cfg.lookup("resolution.render")
         preview_res, _preview_src = cfg.lookup("resolution.preview")

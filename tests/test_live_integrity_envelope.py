@@ -421,9 +421,10 @@ class TestEnvelopeModule:
         mt_live = importlib.import_module("synapse.server.main_thread")
         seen = {}
 
-        def _fake_run(fn, timeout=None, record_stall=True, record_wait=True):
+        def _fake_run(fn, timeout=None, record_stall=True, record_wait=True,
+                      label=None):
             seen.update(timeout=timeout, record_stall=record_stall,
-                        record_wait=record_wait)
+                        record_wait=record_wait, label=label)
             return "hash"
 
         monkeypatch.setattr(mt_live, "run_on_main", _fake_run)
@@ -434,6 +435,10 @@ class TestEnvelopeModule:
         assert seen["record_wait"] is False
         # fixed short timeout — the C5-lock hold bound per hop
         assert seen["timeout"] == env._CAPTURE_TIMEOUT_DEFAULT_S
+        # F4: the capture is labeled so the in-flight register + hold
+        # histogram attribute it (observe-only, so attribution is its only
+        # instrument footprint).
+        assert seen["label"] == "envelope:capture_scene_hash"
 
     def test_capture_skipped_while_main_thread_stalled(self, monkeypatch):
         # Stall guard (guarantee 8): the detector already knows the main

@@ -911,4 +911,4 @@ class SolarisGraphMixin:
                 "dry_run": False,
             }
 
-        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT, label="solaris_graph:_handle_solaris_build_graph")
