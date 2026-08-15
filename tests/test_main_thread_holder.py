@@ -48,6 +48,20 @@ def _fake_hdefereval():
     return fake
 
 
+def _mt_live():
+    """Resolve the RESIDENT main_thread module — sys.modules, at call time.
+
+    tests/test_main_thread.py replaces
+    ``sys.modules["synapse.server.main_thread"]`` with a fresh twin at
+    COLLECTION import (the F3 leg documented this trap), so a module-top
+    import here would bind the pre-twin object in wide runs while
+    telemetry_dump resolves the current sys.modules entry at call time. Both
+    sides of an assertion must agree on the module object; this is that
+    agreement (same shape as test_f3_emergency_net.py's _mt()).
+    """
+    return sys.modules["synapse.server.main_thread"]
+
+
 def _from_worker(mt, fn, timeout=5.0, label=None):
     """Invoke run_on_main from a worker thread (the deferred path)."""
     out = {}
@@ -257,9 +271,15 @@ def test_freeze_dump_names_current_holder(monkeypatch):
     assert 6.0 < entry["held_s"] < 30.0
 
 
-def test_freeze_dump_holder_none_when_idle():
+def test_freeze_dump_holder_none_when_idle(monkeypatch):
+    # Isolate the register first: in a full-suite run some earlier test may
+    # legitimately leave the RESIDENT module's _in_flight non-None (in-flight
+    # payloads on un-joined daemon threads, twin-module swaps at collection).
+    # What this pin asserts is untouched: dump-time mapping of an idle holder
+    # must be real data (None), never an absence marker or a fabricated entry.
+    mt = _mt_live()
+    monkeypatch.setattr(mt, "_in_flight", None)
     from synapse.server import telemetry_dump as td
     snap = td.collect_telemetry()
-    # Idle is real data (None), not an absence marker.
     assert snap["main_thread_holder"] is None
     assert "main_thread_holder_absent" not in snap
