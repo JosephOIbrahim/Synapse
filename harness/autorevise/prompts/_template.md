@@ -44,6 +44,13 @@ and two agents will edit one file.
 
 ## Receipt (completion contract)
 
+**COMMIT BEFORE RECEIPT — hard order (CRX0, wave 4).** The receipt is written
+LAST, after your named-file commit exists on your branch. Sequence: (1) commit
+your product + notes files (named, never -A); (2) verify `git rev-list --count
+<base>..HEAD` >= 1; (3) only then write the receipt, and state the observed
+HEAD sha in it. A receipt at ahead:0 asserts commit-state that does not exist —
+the exact claim-before-act defect this harness exists to kill.
+
 Write `harness/notes/receipts/{RECEIPT}` **inside your worktree**:
 `{{"leg": "{ID}", "status": "green|green_with_findings|blocked",
   "acceptance": [{{"predicate", "verdict": "pass|fail|UNKNOWN", "evidence"}}...],
