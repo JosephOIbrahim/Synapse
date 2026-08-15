@@ -1,0 +1,88 @@
+{
+  "leg": "W4-GUARD",
+  "name": "release gates: corpus freshness check + per-context ingest ledger, single-writer",
+  "status": "green_with_findings",
+  "branch": "wave4/guard",
+  "summary": "Both release gates built, wired (task K.7), and adversarially hardened. corpus_stamp_fresh FAILS the release (never warns) when the served corpus build stamp != the ratified build; ingest_ledger_single_writer enforces one writer over harness/ingest_ledger.json (rejected-at-write + detected-at-verify + corpus cross-check + gate-side ratified_build cross-check). check_no_rigging_drift and authoring_domains.json are byte-untouched. The freshness gate is HONESTLY RED today (served corpus 22.0.368 vs ratified 22.0.400) — the observed-vs-asserted gap this leg exists to close, working as designed.",
+  "acceptance": [
+    {
+      "predicate": "stale-stamp fixture fails the freshness gate loudly; matching stamp passes",
+      "verdict": "pass",
+      "evidence": "tests/test_w4_guard_freshness.py (11 tests): matching .400 passes; .368 fails loud (names both builds); no-stamp / absent-corpus / no-ratified-authority / authorities-disagree / downgrade-stamped / non-dict-corpus all return ok:False; test asserts ok is NEVER None (the fail-not-warn invariant). check_corpus_stamp_fresh @ harness/verify/checks.py."
+    },
+    {
+      "predicate": "ledger schema documented; a second-writer attempt is rejected or detectable - single-writer enforced, not assumed",
+      "verdict": "pass",
+      "evidence": "tests/test_w4_guard_ledger.py (17 tests): schema ingest_ledger/v1 documented field-by-field in the module docstring; write_ledger REJECTS a non-authorized writer (UnauthorizedWriter); verify_ledger DETECTS an out-of-band tamper (blake2b mismatch), a swapped writer identity (even with a recomputed digest), an apex/POLICY_BLOCKED wired row (case-normalized), and every corpus cross-check lie (over-claim/under-report/entry-count/build); the gate additionally cross-checks the ledger's ratified_build against the resolved authority; concurrent authorized writes are race-safe (unique-temp + bounded os.replace retry, 0/8 crashes)."
+    },
+    {
+      "predicate": "git diff shows zero edits to check_no_rigging_drift and zero additions to authoring_domains.json",
+      "verdict": "pass",
+      "evidence": "git diff vs merge-base(master,HEAD)=96b71d21: python/synapse/server/authoring_domains.json = 0 changed lines (still {\"domains\":[\"cop\",\"lop\",\"sop\",\"karma\",\"usd\"]}); the harness/verify/checks.py diff has two hunks (@@ -2756 functions, @@ -2954 DISPATCH) both far outside check_no_rigging_drift (checks.py:324-369) — byte-untouched. Confirmed live: no_rigging_drift guardrail ok:true 'authoring domains in-scope'. D-H22-2 apex-federation invariant reinforced from the ledger side (test_real_seeded_ledger_never_wires_apex, test_real_authoring_domains_no_drift)."
+    }
+  ],
+  "deliverables": {
+    "new": [
+      "harness/ingest_ledger.py — single-writer ledger module (schema, AUTHORIZED_WRITER, write_ledger, verify_ledger, resolve_ratified_build, contexts_from_corpus, seed_from_repo)",
+      "harness/ingest_ledger.json — seeded ledger (cop/cop2/lop wired @ 22.0.368; sop/top/vop/dop/obj/rop/chop unwired; apex policy-blocked; ratified_build 22.0.400; blake2b stamped)",
+      "tests/test_w4_guard_freshness.py (11 tests)",
+      "tests/test_w4_guard_ledger.py (17 tests)"
+    ],
+    "edited": [
+      "harness/verify/checks.py — check_corpus_stamp_fresh + check_ingest_ledger_single_writer + _load_ingest_ledger_module + _read_corpus; two DISPATCH entries (additive, no existing check touched)",
+      "harness/tasks.json — task K.7 (release gate, verify=[corpus_stamp_fresh, ingest_ledger_single_writer]) + two checks_vocabulary entries"
+    ]
+  },
+  "verification": {
+    "w4_guard_tests": "28 passed (11 freshness + 17 ledger)",
+    "conformance_no_regression": "240 passed (ctx/r/s/d/v6 track + knowledge + phantom_guardrail) — additive changes reddened nothing",
+    "k7_dispatch": "python harness/verify/checks.py --task K.7 --worktree . --mode A -> verdict FAIL (corpus_stamp_fresh ok:false STALE 22.0.368!=22.0.400; ingest_ledger_single_writer ok:true; guardrails phantom_clean ok:true, no_rigging_drift ok:true)",
+    "adversarial_crucible": "4-agent read-only attack (task w4i554z02): 0 BROKEN verdicts, integration/encoding/target-3 facet fully SOUND; 4 WEAK gaps surfaced and ALL FIXED with regression tests (see findings F3)"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "claim": "The freshness gate is HONESTLY RED today: served corpus rag/corpus/h22_nodes.json is 22.0.368-stamped while the ratified build is 22.0.400, so check_corpus_stamp_fresh ok:false (STALE) and K.7 verdict FAIL. This is the observed-vs-asserted gap the leg closes (recon Finding 5: corpus guarded at build time, unguarded downstream), working as designed - not a defect. The release is correctly blocked until the corpus is re-ingested/re-stamped to .400.",
+      "anchor": "harness/verify/checks.py::check_corpus_stamp_fresh + tests/test_w4_guard_freshness.py::test_live_worktree_is_honestly_red"
+    },
+    {
+      "id": "F2",
+      "claim": "harness/state/drop.json is gitignored (present in the main working tree, ABSENT from forked worktrees), so it cannot be the sole in-worktree ratified authority. resolve_ratified_build prefers drop.json when present, else the HIGHEST-major committed symbol table's houdini_version (the same authority W4-KNOW target 7 uses in knowledge.py). Both agree at 22.0.400. The authority is chosen independently of the corpus under test, so a downgrade-stamped corpus cannot self-select an older table (regression-tested).",
+      "anchor": "harness/ingest_ledger.py::resolve_ratified_build / _highest_major_symbol_table"
+    },
+    {
+      "id": "F3",
+      "claim": "Adversarial crucible surfaced 4 WEAK gaps, ALL FIXED with regression tests: (a) concurrent authorized writes crashed on a shared .tmp (Windows PermissionError) -> unique-temp + bounded os.replace retry = last-writer-wins, 0/8 crashes [criterion A]; (b) a non-dict corpus (JSON list/str/num/bool) raised AttributeError -> checks.py verdict:ERROR -> LLM adjudication instead of a deterministic block -> _read_corpus now rejects non-dict, gate returns ok:false [criterion B]; (c) POLICY_BLOCKED was exact-lowercase membership, so 'APEX'/'Apex'/'apex ' wired passed the pure verify -> case-normalized; (d) the ledger's ratified_build/revision/gate were forgeable by a token-holder -> the GATE now cross-checks ratified_build against resolve_ratified_build (verify_ledger stays pure).",
+      "anchor": "harness/ingest_ledger.py::write_ledger,verify_ledger + harness/verify/checks.py::_read_corpus,check_ingest_ledger_single_writer"
+    },
+    {
+      "id": "F4",
+      "claim": "Per-context wiring reality (from the served corpus): cop=358, cop2=132, lop=169 wired @ 22.0.368; sop/top/vop/dop/obj/rop/chop unwired; apex policy-blocked (D-H22-2, never wired locally). The ledger records this honestly and the gate cross-checks it against the corpus so it cannot drift.",
+      "anchor": "harness/ingest_ledger.json"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "R1",
+      "claim": "Ledger revision anti-rollback is out of scope for a stateless single-file gate: write_ledger stamps a monotone `revision`, but verify_ledger cannot detect a replay to an older-but-valid ledger without an external monotonic anchor (an orchestrator-recorded last-seen revision, or a git-history check). The module docstring discloses this boundary honestly (guarantee = sole-sanctioned-API + tamper-evidence + corpus + ratified_build cross-check, NOT unforgeable/anti-rollback). Recommend: accept as a documented limitation for the solo-localhost posture; escalate to an orchestrator-recorded revision anchor only if a multi-writer/rollback threat becomes real.",
+      "recommend": "accept as documented limitation"
+    },
+    {
+      "id": "R2",
+      "claim": "The freshness gate is wired as task K.7's verify (release-blocking), NOT a guardrail (the explicit K.5 ruling: a freshness gate run every sprint fails mid-edit). I left the R.R release capstone untouched (minimal blast radius). If the human wants corpus freshness folded into the aggregate release verdict, add corpus_stamp_fresh (or a K.7 reference) to R.R's inputs — an orchestration/human call, not an agent's.",
+      "recommend": "human decides whether K.7 feeds the R.R capstone"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "ING-DELTA",
+      "name": "probe: measure the .368->.400 corpus re-extract delta to size the K.7-greening re-ingest",
+      "band": "BUILD",
+      "class": "probe",
+      "readonly": true,
+      "rationale": "check_corpus_stamp_fresh is honestly RED until rag/corpus/h22_nodes.json is re-ingested/re-stamped to 22.0.400. A read-only probe that re-extracts the node corpus on the 22.0.400 archive and diffs it against the shipped .368 corpus (per-context entry deltas, added/removed types, param changes) sizes that re-ingest and tells the human exactly what greening K.7 costs. The re-ingest itself is a BUILD leg (held for Joe); this is the probe that scopes it.",
+      "touches": ["harness/notes/ingest"],
+      "note": "class=probe is within W4-GUARD spawn_classes; the downstream re-ingest is BUILD-class and lands held for Joe."
+    }
+  ]
+}

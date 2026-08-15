@@ -1,0 +1,88 @@
+{
+  "schema": "ingest_ledger/v1",
+  "writer": "orchestrate.ps1",
+  "revision": 1,
+  "ratified_build": "22.0.400",
+  "contexts": {
+    "apex": {
+      "wired": false,
+      "build": null,
+      "entries": 0,
+      "gate": null,
+      "leg": null,
+      "blocked_by_policy": "D-H22-2",
+      "note": "federated to the native APEX MCP; SYNAPSE owns no local APEX corpus by decision — never wire this context"
+    },
+    "chop": {
+      "wired": false,
+      "build": null,
+      "entries": 0,
+      "gate": null,
+      "leg": "ING-CHOP"
+    },
+    "cop": {
+      "wired": true,
+      "build": "22.0.368",
+      "entries": 358,
+      "gate": "RULING-175 (INGEST-01 discharged; build-time live_type filter)",
+      "leg": "I1"
+    },
+    "cop2": {
+      "wired": true,
+      "build": "22.0.368",
+      "entries": 132,
+      "gate": "RULING-175 (INGEST-01 discharged; build-time live_type filter)",
+      "leg": "I1"
+    },
+    "dop": {
+      "wired": false,
+      "build": null,
+      "entries": 0,
+      "gate": null,
+      "leg": "ING-DOP"
+    },
+    "lop": {
+      "wired": true,
+      "build": "22.0.368",
+      "entries": 169,
+      "gate": "RULING-175 (INGEST-01 discharged; build-time live_type filter)",
+      "leg": "I1"
+    },
+    "obj": {
+      "wired": false,
+      "build": null,
+      "entries": 0,
+      "gate": null,
+      "leg": "ING-OBJ"
+    },
+    "rop": {
+      "wired": false,
+      "build": null,
+      "entries": 0,
+      "gate": null,
+      "leg": "ING-ROP"
+    },
+    "sop": {
+      "wired": false,
+      "build": null,
+      "entries": 0,
+      "gate": null,
+      "leg": "ING-SOP"
+    },
+    "top": {
+      "wired": false,
+      "build": null,
+      "entries": 0,
+      "gate": null,
+      "leg": "ING-TOP"
+    },
+    "vop": {
+      "wired": false,
+      "build": null,
+      "entries": 0,
+      "gate": null,
+      "leg": "ING-VOP"
+    }
+  },
+  "blake2b": "a2b718d469a7574a5c3b4f717bbbf246"
+}

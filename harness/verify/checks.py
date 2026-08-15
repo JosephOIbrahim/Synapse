@@ -2756,6 +2756,134 @@ def check_no_decay_clock_emission(ctx):
                        f"H5 ledger")[:500]}
 
 
+# ---------- W4 — release gates: served-corpus build-stamp freshness + per-context ingest ledger ----------
+# W4-GUARD, over docs/reviews/h22-context-knowledge-recon-2026-08-15.md ("How this runs":
+# "the only new construction is a per-context ledger over legs.json and a freshness gate in
+# checks.py"; Finding 5: the served corpus is guarded at BUILD time — a phantom is never
+# written — and UNGUARDED at every downstream checkpoint). These are RELEASE gates,
+# deliberately NOT guardrails: a freshness gate run every sprint fails mid-edit (the explicit
+# K.5 ruling, tasks.json). They live on task K.7's verify list and FAIL the release — never
+# WARN — on staleness (the crucible criterion). The runtime half is W4-KNOW target 7 (corpus
+# load-time stamp check in knowledge.py); this is the release-time half over the same stamp.
+
+def _load_ingest_ledger_module(wt):
+    """Import harness/ingest_ledger.py from THIS worktree by file path — pinned like main()'s
+    worktree-package guard, no sys.path pollution. It owns the ledger schema, the single-writer
+    contract, and resolve_ratified_build (the one authority both gates share). None if absent."""
+    import importlib.util
+    fp = Path(wt) / "harness" / "ingest_ledger.py"
+    if not fp.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location("w4guard_ingest_ledger", str(fp))
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None
+    return mod
+
+
+def _read_corpus(wt):
+    """(corpus_dict | None, error_str | None) for the served rag/corpus/h22_nodes.json.
+    A parseable-but-non-dict corpus (JSON list/str/number/bool) returns an error string,
+    never a raw value — so the freshness gate's 'every unverifiable path returns ok:False'
+    contract holds even under a corrupt corpus, instead of raising AttributeError on
+    .get() and crashing the check to a verdict:ERROR (crucible finding, criterion B)."""
+    fp = Path(wt) / "rag" / "corpus" / "h22_nodes.json"
+    if not fp.is_file():
+        return None, "served corpus absent (rag/corpus/h22_nodes.json)"
+    try:
+        doc = json.loads(fp.read_text(encoding="utf-8"))
+    except Exception as e:
+        return None, f"served corpus unreadable: {type(e).__name__}: {str(e)[:160]}"
+    if not isinstance(doc, dict):
+        return None, f"served corpus is not a JSON object (got {type(doc).__name__}) — malformed"
+    return doc, None
+
+
+def check_corpus_stamp_fresh(ctx):
+    # W4-GUARD target 1. The served node corpus carries a top-level `build` stamp — the contract
+    # W4-KNOW's promoter emits (harness/notes/rag_promote_h22.py writes build=src["build"]). This
+    # gate FAILS the release when that stamp != the ratified build: the exact silent-staleness
+    # class the recon named ("the corpus loads with zero build-stamp check ... silent staleness,
+    # where scout is loud on the same mismatch").
+    #
+    # HARD FAIL, NEVER WARN (crucible criterion "fail the RELEASE, not warn"): EVERY unverifiable
+    # path returns ok:False, not ok:None — a release gate that cannot prove freshness must BLOCK.
+    # HONEST EXPECTED RED today: the shipped corpus is .368-stamped while the drop ratifies .400,
+    # so this is correctly red until the corpus is re-ingested/re-stamped to .400 (the V.5/D.3
+    # "an honest first-round FAIL is the target" precedent).
+    wt = ctx["wt"]
+    corpus, cerr = _read_corpus(wt)
+    if corpus is None:
+        return {"ok": False, "detail": cerr}
+    corpus_build = corpus.get("build")
+    if not corpus_build:
+        return {"ok": False, "detail": "served corpus carries NO `build` stamp — the exact "
+                "silent-staleness defect this gate exists to kill (an unstamped corpus loads "
+                "as if current). rag_promote_h22.py must stamp build."}
+    mod = _load_ingest_ledger_module(wt)
+    if mod is None:
+        return {"ok": False, "detail": "harness/ingest_ledger.py absent — cannot resolve the "
+                "ratified build (its resolve_ratified_build is the shared authority)"}
+    r = mod.resolve_ratified_build(wt, corpus_build=corpus_build)
+    if r.get("error") or not r.get("build"):
+        return {"ok": False, "detail": ("cannot verify freshness (block, not warn): "
+                + str(r.get("error") or "no ratified-build authority"))[:500]}
+    ratified = r["build"]
+    if corpus_build != ratified:
+        return {"ok": False, "detail": (f"STALE served corpus: `build` stamp {corpus_build!r} != "
+                f"ratified build {ratified!r} (via {r['source']}). Re-ingest/re-stamp "
+                f"rag/corpus/h22_nodes.json to {ratified} before release — a stale corpus serves "
+                f"confident-wrong answers.")[:500]}
+    return {"ok": True, "detail": (f"served corpus fresh: build {corpus_build} == ratified "
+            f"{ratified} (via {r['source']}); {len(corpus.get('entries') or [])} entries")}
+
+
+def check_ingest_ledger_single_writer(ctx):
+    # W4-GUARD target 2. The per-context ingest ledger (harness/ingest_ledger.json) records which
+    # contexts are wired, at what build, behind which gate word — with ONE writer
+    # (harness/ingest_ledger.py::AUTHORIZED_WRITER, the gate/orchestrator side; agents read-only).
+    # This gate verifies schema + sole-writer identity + blake2b integrity (a second writer's
+    # out-of-band edit is DETECTED — the "hand-edit fails loud" idiom) AND cross-checks every
+    # context claim against the served corpus (a lie about what shipped is CAUGHT). apex stays
+    # policy-blocked (D-H22-2), never wired. Single-writer ENFORCED, not assumed.
+    #
+    # A missing ledger or module is a FAIL, never a pass — deleting the artifact must not silence
+    # the gate (the check_no_decay_clock_emission idiom).
+    wt = ctx["wt"]
+    mod = _load_ingest_ledger_module(wt)
+    if mod is None:
+        return {"ok": False, "detail": "harness/ingest_ledger.py absent — the single-writer "
+                "ledger contract is undefined; cannot verify"}
+    fp = Path(wt) / "harness" / "ingest_ledger.json"
+    if not fp.is_file():
+        return {"ok": False, "detail": "harness/ingest_ledger.json absent — a deleted ledger "
+                "cannot clear this gate (regenerate via `python harness/ingest_ledger.py .`)"}
+    try:
+        doc = mod.load_ledger(str(fp))
+    except Exception as e:
+        return {"ok": False, "detail": f"ledger unreadable/malformed: {type(e).__name__}: {str(e)[:160]}"}
+    corpus, _ = _read_corpus(wt)  # cross-check when present; None -> structural + writer checks only
+    violations = list(mod.verify_ledger(doc, corpus=corpus))
+    # verify_ledger is pure and cannot know the worktree's ratified build; this GATE does.
+    # A forged ratified_build (a second writer holding the plaintext AUTHORIZED_WRITER token
+    # plus a recomputed public digest) is caught here (crucible finding, single-writer facet).
+    r = mod.resolve_ratified_build(wt)
+    if not r.get("error") and r.get("build") and doc.get("ratified_build") != r.get("build"):
+        violations.append("ledger ratified_build %r != resolved ratified build %r (via %s)"
+                          % (doc.get("ratified_build"), r.get("build"), r.get("source")))
+    if violations:
+        return {"ok": False, "detail": (f"ingest ledger REJECTED ({len(violations)} violation(s), "
+                f"single-writer/integrity): {'; '.join(violations[:6])}")[:500]}
+    wired = sorted(c for c, r in (doc.get("contexts") or {}).items()
+                   if isinstance(r, dict) and r.get("wired"))
+    xnote = "" if corpus is not None else " (corpus absent — structural checks only)"
+    return {"ok": True, "detail": (f"ingest ledger sound: schema {mod.LEDGER_SCHEMA}, sole writer "
+            f"{doc.get('writer')!r}, rev {doc.get('revision')}, blake2b verified; "
+            f"wired={wired}; apex policy-blocked{xnote}")}
+
+
 DISPATCH = {
     "no_decay_clock_emission": check_no_decay_clock_emission,
     "import_panel": check_import_panel, "brain_answers": check_brain_answers,
@@ -2840,6 +2968,9 @@ DISPATCH = {
     "knowledge_topic_coverage": check_knowledge_topic_coverage,
     "knowledge_root_canonical": check_knowledge_root_canonical,
     "rewire_assessed": check_rewire_assessed,
+    # W4 — release gates (W4-GUARD): served-corpus build-stamp freshness + ingest ledger
+    "corpus_stamp_fresh": check_corpus_stamp_fresh,
+    "ingest_ledger_single_writer": check_ingest_ledger_single_writer,
 }
 
 def main():
