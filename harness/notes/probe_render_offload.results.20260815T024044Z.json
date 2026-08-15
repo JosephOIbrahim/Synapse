@@ -1,0 +1,47 @@
+{
+  "probe": "F5a render-offload",
+  "timestamp_utc": "2026-08-15T02:40:44.636500+00:00",
+  "workdir": "C:\\Users\\User\\AppData\\Local\\Temp\\synapse_f5a_probe_morsvp6z",
+  "results": {
+    "0_environment": {
+      "verdict": "PASS",
+      "build": "22.0.400",
+      "license": "unknown",
+      "python": "3.13.10",
+      "ui_available": "False"
+    },
+    "a_husk_delegate_load": {
+      "verdict": "FAIL",
+      "build": "standalone (no hou)",
+      "license": "standalone (no hou)",
+      "exr_written": false,
+      "variants": {
+        "without_--indie": {
+          "argv": "C:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.400\\bin\\husk.exe C:\\Users\\User\\AppData\\Local\\Temp\\synapse_f5a_probe_morsvp6z\\f5a_probe_without_indie.usda",
+          "wall_s": 1.27,
+          "exit_code": 1,
+          "plugin_error": false,
+          "exr_written": false,
+          "stderr_tail": "[22:40:43] No orderedVars to specify channels for /Render/product"
+        },
+        "with_--indie": {
+          "argv": "C:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.400\\bin\\husk.exe --indie C:\\Users\\User\\AppData\\Local\\Temp\\synapse_f5a_probe_morsvp6z\\f5a_probe_with_indie.usda",
+          "wall_s": 1.16,
+          "exit_code": 1,
+          "plugin_error": false,
+          "exr_written": false,
+          "stderr_tail": "[22:40:44] No orderedVars to specify channels for /Render/product"
+        }
+      },
+      "reconciliation": "NO SPLIT \u2014 husk loads the delegate with and without --indie on this build/license. The 336-338 2026-07-17 failure was NOT caused by the flag; the argv/env recorded here is the new ground truth."
+    },
+    "b_node_render_background": {
+      "verdict": "UNKNOWN",
+      "reason": "scene-build raised before render: AttributeError: 'NoneType' object has no attribute 'set'"
+    },
+    "c_completion_signal": {
+      "verdict": "UNKNOWN",
+      "reason": "blocked by (b) scene-build failure"
+    }
+  }
+}
