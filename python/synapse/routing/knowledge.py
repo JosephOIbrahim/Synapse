@@ -13,9 +13,30 @@ Degrades gracefully:
 
 import json
 import os
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
+
+# W4-KNOW Target 3: default result count for the node/disambiguation path. Mirrors
+# the MCP tool schema default so lookup(query, k=...) and the tool agree.
+DEFAULT_K = 6
+
+# W4-KNOW Target 6: similarity floor on the fuzzy ("dense") retrieval paths. Below
+# it, a weak section/keyword/memory match is NOT served as a confident answer -
+# lookup returns found=False instead of confident-wrong. The exact-match node path
+# is exempt (it is not a similarity match). Overridable per call via
+# lookup(min_similarity=...). Calibrated so the shipped keyword topics (>=0.55) and
+# the COMMON_QUERIES suite clear it, while single-header section hits (0.45) and
+# weak memory hits do not.
+DENSE_MATCH_FLOOR = 0.5
+
+# W4-KNOW Target 7: the running Houdini build, host-injected when hou is importable
+# (mirrors scout.EXPECTED_HOUDINI_VERSION). None => fall back to the HOUDINI_VERSION
+# environment variable. Used to compare the served corpus build stamp against the
+# build the process is actually running on, and to stamp the agent_hint - so the
+# hint reports the corpus's OWN build, never a hardcoded literal.
+EXPECTED_HOUDINI_VERSION: Optional[str] = None
 
 
 @dataclass
@@ -29,6 +50,19 @@ class KnowledgeLookupResult:
     agent_hint: str = ""
     summary: str = ""
     reference_file: str = ""
+    # W4-KNOW Target 2: bare-type queries that span >1 context return the
+    # candidates here instead of a silent _CONTEXT_RANK pick. Each item is
+    # {"context", "type", "label"}. Empty on an unambiguous answer.
+    disambiguation: List[Dict[str, str]] = field(default_factory=list)
+    # W4-KNOW Target 5: the full, UNCAPPED parameter surface for a node answer -
+    # each item carries the internal name(s) and channel(s) needed to actually set
+    # the parm: {"label", "ids": [...], "channels": [...], "description"}.
+    parameters: List[Dict[str, Any]] = field(default_factory=list)
+    # The corpus context this answer came from ("cop"/"lop"/...); "" for prose.
+    context: str = ""
+    # W4-KNOW Target 5 (serve-size honesty): the measured byte size of this
+    # response's answer + parameters payload. Reported, never estimated.
+    serve_bytes: int = 0
 
 
 class KnowledgeIndex:
@@ -39,10 +73,42 @@ class KnowledgeIndex:
     Provides fast in-memory lookup without LLM calls.
     """
 
-    # Which context wins when one node-type name exists in several.
+    # Which context sorts FIRST when one node-type name exists in several.
     # cop is Copernicus (current); cop2 is the legacy image context it replaced.
-    # Higher wins. Anything unranked is 0 and never displaces a ranked entry.
+    # W4-KNOW Target 2: this rank NO LONGER makes a silent pick. A bare-type query
+    # that spans >1 context returns a DISAMBIGUATION list; the rank only orders
+    # that list so the current context is presented first. Unranked => 0 => last.
     _CONTEXT_RANK = {"cop": 3, "lop": 3, "sop": 3, "out": 2, "top": 2, "cop2": 1}
+
+    # W4-KNOW Target 4: intent markers that promote a longer, sentence-shaped
+    # query to the node path. The 2-token bail this replaces sent every node
+    # QUESTION (>2 tokens) to the H21 prose index, which answered found=True from
+    # five-year-old material (40/40 wrong in the recon). A query routes to the
+    # node path when it names a live node type AND carries node intent: the literal
+    # word "node", or a context word alongside an interrogative. When it does route
+    # and finds nothing, it returns honest not-found - it never falls through to
+    # prose. A bare type name (<=2 tokens) still routes, as before.
+    _NODE_MARKERS = frozenset({"node", "nodes"})
+    _CONTEXT_WORDS = frozenset({
+        "cop", "cops", "copernicus", "sop", "sops", "lop", "lops", "solaris",
+        "vop", "vops", "chop", "chops", "top", "tops", "dop", "dops",
+        "rop", "rops", "out",
+    })
+    # Checked against the RAW (pre-stopword) query words - the tokenizer strips
+    # most of these, and a node QUESTION is exactly what carries them.
+    _INTERROGATIVE = frozenset({
+        "how", "what", "which", "where", "why", "when", "who",
+        "does", "do", "is", "are", "can", "should", "will",
+    })
+    # A context word in the query (or an explicit context= param) resolves to a
+    # corpus context. "copernicus" is the artist's word for the cop context.
+    _CONTEXT_WORD_TO_CTX = {
+        "copernicus": "cop", "cop": "cop", "cops": "cop", "cop2": "cop2",
+        "solaris": "lop", "lop": "lop", "lops": "lop",
+        "sop": "sop", "sops": "sop", "vop": "vop", "vops": "vop",
+        "chop": "chop", "chops": "chop", "top": "top", "tops": "top",
+        "dop": "dop", "dops": "dop", "rop": "rop", "rops": "rop", "out": "out",
+    }
 
     def __init__(
         self,
@@ -64,8 +130,17 @@ class KnowledgeIndex:
         self._agent_relevance: Dict[str, Any] = {}
         # Pre-indexed section headers: word -> [(file_stem, line_index, lines)]
         self._section_index: Dict[str, List[tuple]] = {}
-        # H22 node corpus: live node type -> entry (summary, parameters, label)
-        self._h22_nodes: Dict[str, Any] = {}
+        # H22 node corpus, keyed (context, type) - W4-KNOW Target 2. First entry
+        # wins per pair (9 same-context pyro dupes in the source).
+        self._h22_nodes: Dict[Tuple[str, str], Any] = {}
+        # type name -> [(context, entry), ...] ordered current-context-first, for
+        # bare-type disambiguation and single-context resolution.
+        self._h22_by_type: Dict[str, List[Tuple[str, Any]]] = {}
+        # The build stamp the served node corpus was extracted against (Target 7).
+        self._corpus_build: Optional[str] = None
+        # (corpus_build, live_build) when they disagree; None when they match or
+        # no live build is known. Exposed via stats() for the release gate.
+        self._corpus_build_mismatch: Optional[Tuple[str, str]] = None
 
         if self._rag_root:
             self._load_semantic_index()
@@ -74,25 +149,31 @@ class KnowledgeIndex:
             self._load_h22_nodes()
 
     def _load_h22_nodes(self):
-        """Load the H22 node corpus, keyed on the LIVE node type.
+        """Load the H22 node corpus, keyed (context, type) - W4-KNOW Target 2.
 
         The prose corpus under skills/ is Houdini 21 material (R119) - accurate,
         labelled, and predating Copernicus, which is why COP grounding measured
         6.2% against a subsystem that barely existed then.
 
         This corpus is different in kind. Every entry was extracted from
-        nodes.zip - the reference that SHIPS WITH THE BUILD, version-pinned to
-        22.0.368 by construction - and then validated by probing its documented
-        type against the running catalogue. Only matched entries are written to
-        the artifact, so a phantom type cannot be served because it was never
-        stored (see rag/corpus/h22_nodes.json's `gate` field).
+        nodes.zip - the reference that SHIPS WITH THE BUILD, version-pinned by
+        construction (the `build` field) - and then validated by probing its
+        documented type against the running catalogue. Only matched entries are
+        written to the artifact, so a phantom type cannot be served because it
+        was never stored (see rag/corpus/h22_nodes.json's `gate` field).
 
-        INGEST-01 refused to wire anything without that gate, because U.6 found
-        15 phantom createNode sites already living in the RAG corpus outside the
-        emission gate, re-teaching phantoms through knowledge_lookup. Adding
-        hundreds of ungated entries would have been that defect at scale.
+        The OLD key was the bare type name, deduped by _CONTEXT_RANK so cop won
+        over cop2 - a SILENT pick that hid the legacy entry entirely. 42 types
+        span >1 context. Keying (context, type) keeps every context's entry, and
+        _match_h22_node returns a disambiguation list rather than picking one.
 
-        Never raises: a missing or malformed corpus leaves the dict empty and
+        Target 7: the corpus carries a build stamp; on load we compare it to the
+        build this process is running on and warn LOUDLY on a mismatch (scout is
+        loud on the same drift; this closes the silent-staleness gap). We still
+        load - this is the graceful tier - but the mismatch is recorded and the
+        agent_hint reports the corpus's own build, not a hardcoded literal.
+
+        Never raises: a missing or malformed corpus leaves the maps empty and
         every other retrieval strategy is unaffected.
         """
         path = self._rag_root / "corpus" / "h22_nodes.json"
@@ -103,66 +184,245 @@ class KnowledgeIndex:
                 blob = json.load(fh)
         except (json.JSONDecodeError, OSError):
             return
+
+        self._corpus_build = blob.get("build")
+        self._check_corpus_build_stamp(path)
+
         for entry in blob.get("entries") or []:
             t = entry.get("type")
             if not t:
                 continue
-            key = str(t).lower()
-            # 51 of 659 type names exist in more than one context - `blur`,
-            # `crop`, `chromakey` and `average` are all in BOTH cop and cop2.
-            #
-            # Insertion order would let cop2 (LEGACY) overwrite cop (Copernicus,
-            # the current image context), so an artist asking about `blur` would
-            # be answered from the superseded subsystem. That is precisely the
-            # H21-corpus problem reappearing INSIDE the H22 corpus.
-            #
-            # Rank explicitly: current contexts win, legacy never overwrites.
-            prev = self._h22_nodes.get(key)
-            if prev is None or self._CONTEXT_RANK.get(entry.get("context"), 0) > \
-                              self._CONTEXT_RANK.get(prev.get("context"), 0):
+            ntype = str(t).lower()
+            ctx = str(entry.get("context") or "")
+            key = (ctx, ntype)
+            if key not in self._h22_nodes:            # first wins per (context, type)
                 self._h22_nodes[key] = entry
+                self._h22_by_type.setdefault(ntype, []).append((ctx, entry))
 
-    def _match_h22_node(self, query_words) -> Optional[KnowledgeLookupResult]:
-        """Exact node-type match, and ONLY when the query IS a type.
+        # Order each type's contexts current-first, so a disambiguation list and
+        # a single-context resolution both present the live context ahead of legacy.
+        for ntype, cands in self._h22_by_type.items():
+            cands.sort(key=lambda ce: self._CONTEXT_RANK.get(ce[0], 0), reverse=True)
 
-        First attempt placed this before keyword matching and broke 8 tests:
-        `merge`, `wrangle`, `solver` and `reference` are all live node types, so
-        "vex attribute wrangle" and "scene assembly merge reference" were
-        hijacked away from their topics into a node datasheet.
+    def _check_corpus_build_stamp(self, path) -> None:
+        """W4-KNOW Target 7: warn loudly when the served corpus was extracted
+        against a different build than the one this process is running on.
 
-        The corpus should answer when the query IS a node type - "chromakey",
-        "karmarendersettings" - not when a sentence happens to contain one. So
-        it fires only on a short query (<=2 tokens), and a longer natural
-        language question falls through to the keyword index as before.
+        Defines the build-stamp contract W4-GUARD's release gate consumes: the
+        corpus `build` field vs the live build (host-injected EXPECTED_HOUDINI_VERSION,
+        else the HOUDINI_VERSION env). No live build known (CI / stock python) =>
+        nothing to compare against => silent, never a false alarm. This is the
+        runtime half; the release-blocking half lives in harness/verify/checks.py."""
+        live = self._live_build()
+        stamp = self._corpus_build
+        if not live or not stamp or stamp == live:
+            return
+        self._corpus_build_mismatch = (str(stamp), str(live))
+        warnings.warn(
+            "SYNAPSE knowledge corpus build mismatch: %s was extracted against "
+            "Houdini %s but this process is running Houdini %s. Node datasheets "
+            "may be stale (renamed/removed types, drifted parms). Regenerate the "
+            "corpus on the target build via harness/notes/rag_promote_h22.py."
+            % (path, stamp, live),
+            RuntimeWarning, stacklevel=2,
+        )
 
-        Exact rather than fuzzy on purpose: a near-miss on a node type is worse
-        than no answer - it is the phantom failure with better spelling.
-        """
-        if len(query_words) > 2:
+    @staticmethod
+    def _live_build() -> str:
+        """The running Houdini build: host-injected first, then the HOUDINI_VERSION
+        env (host-agnostic, mirrors scout._env_running_build). "" outside Houdini."""
+        return (str(EXPECTED_HOUDINI_VERSION or "").strip()
+                or str(os.environ.get("HOUDINI_VERSION") or "").strip())
+
+    def _node_type_tokens(self, query_words) -> List[str]:
+        """The query words that name a live node type in the corpus."""
+        return [w for w in query_words if w in self._h22_by_type]
+
+    def _has_node_intent(self, type_tokens, query_words, raw_query,
+                         context) -> bool:
+        """W4-KNOW Target 4: does this query WANT the node path?
+
+        Requires a live type token (else there is nothing to answer from the node
+        corpus). Given one, node intent fires when any hold:
+          * the caller passed an explicit context (they are asking about a node),
+          * the query is short (<=2 meaningful tokens) - the bare-type case,
+          * the literal word "node"/"nodes" appears, or
+          * a context word appears AND the query is interrogative.
+        A keyword-bag topic query that merely CONTAINS a type name ("vex attribute
+        wrangle", "tops wedge parameter sweep") matches none of these and falls
+        through to the topic index unchanged."""
+        if not type_tokens:
+            return False
+        if context:
+            return True
+        if len(query_words) <= 2:
+            return True
+        raw_words = set(raw_query.lower().split())
+        if raw_words & self._NODE_MARKERS:
+            return True
+        if (raw_words & self._CONTEXT_WORDS) and (raw_words & self._INTERROGATIVE):
+            return True
+        return False
+
+    def _normalize_context(self, value) -> Optional[str]:
+        """Normalize a caller-supplied context to a corpus context id, mapping
+        the artist word ("copernicus" -> cop). An unrecognized value passes
+        through lowercased (so a future context filters itself); "" -> None."""
+        v = str(value or "").lower().strip()
+        if not v:
             return None
-        for w in query_words:
-            entry = self._h22_nodes.get(w)
-            if not entry:
+        return self._CONTEXT_WORD_TO_CTX.get(v, v)
+
+    def _infer_context(self, raw_query, type_tokens) -> Optional[str]:
+        """Infer a single context from a context word in the query ("...in
+        copernicus" -> cop). Returns that context even when it does NOT hold the
+        named type - so a Copernicus question about a type that only exists in the
+        legacy cop2 context resolves to honest not-found, NOT to the legacy node
+        (the exact confident-wrong case the recon caught). Zero or >1 distinct
+        context words -> None (bare-type disambiguation)."""
+        raw_words = set(raw_query.lower().split())
+        ctxs = {self._CONTEXT_WORD_TO_CTX[w] for w in raw_words
+                if w in self._CONTEXT_WORD_TO_CTX}
+        return next(iter(ctxs)) if len(ctxs) == 1 else None
+
+    def _match_h22_node(self, query_words, raw_query, context, k):
+        """The node path. Returns:
+          * a datasheet result   - an unambiguous node answer,
+          * a disambiguation result - a bare type spanning >1 context,
+          * a found=False result - node intent fired but nothing matched
+                                    (honest not-found; caller must NOT fall
+                                     through to prose - Target 4), or
+          * None - not a node query; fall through to the topic index.
+        """
+        type_tokens = self._node_type_tokens(query_words)
+        if not self._has_node_intent(type_tokens, query_words, raw_query, context):
+            return None
+
+        # Resolve the context filter: an explicit context= param (normalized -
+        # "copernicus" -> cop) wins; otherwise infer it from a context word in the
+        # query ("...in copernicus" -> cop) so a named node question resolves to
+        # one datasheet instead of a disambiguation. Inference only narrows among
+        # the named type's own contexts and only runs after node intent fired, so
+        # it can never redirect a topic query.
+        ctx = self._normalize_context(context) if context else None
+        if ctx is None:
+            ctx = self._infer_context(raw_query, type_tokens)
+
+        # Gather candidate (context, type, entry) across every named type,
+        # filtered by an explicit/inferred context when one was resolved.
+        matched: List[Tuple[str, str, Any]] = []
+        seen_keys = set()
+        for ntype in type_tokens:
+            for cand_ctx, entry in self._h22_by_type.get(ntype, []):
+                if ctx and cand_ctx != ctx:
+                    continue
+                key = (cand_ctx, ntype)
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                matched.append((cand_ctx, ntype, entry))
+
+        if not matched:
+            # Node intent, but no entry (e.g. context=cop for a cop2-only type,
+            # or a type absent on this build). Honest not-found - do NOT let the
+            # sentence fall through to five-year-old prose (Target 4).
+            return KnowledgeLookupResult(found=False)
+
+        if len(matched) == 1:
+            cand_ctx, ntype, entry = matched[0]
+            return self._node_datasheet(entry, cand_ctx)
+
+        return self._disambiguation_result(matched, k)
+
+    def _node_datasheet(self, entry, ctx) -> KnowledgeLookupResult:
+        """A single node's datasheet with UNCAPPED internal parm names + channels
+        (W4-KNOW Target 5). The old path returned only the first 12 LABELS - 51%
+        of entries exceed 12 params, and a label alone cannot set a parm. Here
+        every parameter carries its internal id(s) and channel(s)."""
+        params: List[Dict[str, Any]] = []
+        for p in (entry.get("parameters") or []):
+            if not isinstance(p, dict):
                 continue
-            parms = entry.get("parameters") or []
-            names = [p.get("label") or p.get("name") for p in parms
-                     if isinstance(p, dict)]
-            names = [n for n in names if n][:12]
-            answer = entry.get("summary") or ""
-            if names:
-                answer = "%s\n\nDocumented parameters: %s" % (answer, ", ".join(names))
-            return KnowledgeLookupResult(
-                found=True,
-                answer=answer,
-                confidence=0.95,
-                topic=entry.get("label") or entry.get("type") or "",
-                sources=[entry.get("source") or entry.get("help_key") or ""],
-                agent_hint="VERIFIED-DOC, Houdini 22.0.368, %s context"
-                           % (entry.get("context") or "?"),
-                summary=entry.get("summary") or "",
-                reference_file=entry.get("help_key") or "",
-            )
-        return None
+            ids = [str(x) for x in (p.get("ids") or []) if x]
+            channels = [str(x) for x in (p.get("channels") or []) if x]
+            params.append({
+                "label": p.get("label") or p.get("name") or "",
+                "ids": ids,
+                "channels": channels,
+                "description": p.get("description") or "",
+            })
+
+        lines = []
+        for p in params:
+            setter = ", ".join(p["ids"]) if p["ids"] else "(no internal name)"
+            line = "- %s -> set: %s" % (p["label"] or "(unlabelled)", setter)
+            if p["channels"]:
+                line += "  channels: %s" % ", ".join(p["channels"])
+            lines.append(line)
+
+        summary = entry.get("summary") or ""
+        answer = summary
+        if params:
+            answer = "%s\n\nParameters (%d) - internal name(s) to set each:\n%s" % (
+                summary, len(params), "\n".join(lines))
+
+        build = self._corpus_build or "?"
+        result = KnowledgeLookupResult(
+            found=True,
+            answer=answer,
+            confidence=0.95,
+            topic=entry.get("label") or entry.get("type") or "",
+            sources=[entry.get("source") or entry.get("help_key") or ""],
+            agent_hint="VERIFIED-DOC, Houdini %s, %s context" % (build, ctx or "?"),
+            summary=summary,
+            reference_file=entry.get("help_key") or "",
+            parameters=params,
+            context=ctx or "",
+        )
+        result.serve_bytes = self._measure_serve_bytes(result)
+        return result
+
+    def _disambiguation_result(self, matched, k) -> KnowledgeLookupResult:
+        """W4-KNOW Target 2: a bare type spanning >1 context returns the candidates
+        to choose from - never a silent pick. Ordered current-context-first."""
+        matched = matched[:max(1, int(k or DEFAULT_K))]
+        disambiguation = [{
+            "context": c,
+            "type": t,
+            "label": str(e.get("label") or t),
+        } for (c, t, e) in matched]
+        ntype = matched[0][1]
+        contexts = ", ".join(d["context"] for d in disambiguation)
+        answer = (
+            "'%s' names a node in more than one context: %s. Re-ask with "
+            "context=<one of these> to get its datasheet. Candidates:\n%s" % (
+                ntype, contexts,
+                "\n".join("- %s/%s  (%s)" % (d["context"], d["type"], d["label"])
+                          for d in disambiguation)))
+        result = KnowledgeLookupResult(
+            found=True,
+            answer=answer,
+            confidence=0.6,
+            topic=ntype,
+            sources=[],
+            agent_hint="DISAMBIGUATION - bare type '%s' spans %d contexts (%s)"
+                       % (ntype, len(disambiguation), contexts),
+            summary=answer.split("\n", 1)[0],
+            disambiguation=disambiguation,
+        )
+        result.serve_bytes = self._measure_serve_bytes(result)
+        return result
+
+    @staticmethod
+    def _measure_serve_bytes(result) -> int:
+        """Measured (not estimated) byte size of the answer + parameters payload
+        this response carries - Target 5 serve-size honesty."""
+        payload = json.dumps({
+            "answer": result.answer,
+            "parameters": result.parameters,
+            "disambiguation": result.disambiguation,
+        }, ensure_ascii=False)
+        return len(payload.encode("utf-8"))
 
     def _load_semantic_index(self):
         """Load semantic_index.json and build inverted keyword index.
@@ -288,51 +548,62 @@ class KnowledgeIndex:
         except (json.JSONDecodeError, OSError):
             pass
 
-    def lookup(self, query: str) -> KnowledgeLookupResult:
+    def lookup(self, query: str, context: Optional[str] = None,
+               k: int = DEFAULT_K,
+               min_similarity: Optional[float] = None) -> KnowledgeLookupResult:
         """
         Look up knowledge for a query.
 
+        Args (W4-KNOW Target 3):
+            query:   natural-language need or a node type to look up.
+            context: restrict the node path to one context ("cop"/"lop"/...). When
+                     given, a bare type resolves to exactly that context's entry.
+            k:       max candidates in a disambiguation list.
+            min_similarity: override the fuzzy-path floor (default DENSE_MATCH_FLOOR).
+
         Strategy (first match wins):
+        0. Node path (exclusive): if the query wants a node (Target 4), answer it
+           from the (context, type) corpus, return a disambiguation list for an
+           ambiguous bare type (Target 2), or return honest not-found - it NEVER
+           falls through to prose.
         1. Keyword match against inverted index → topic → answer
         2. Section header match in reference files
-        3. Memory search fallback
-        4. Not found (escalate)
+        3. VEX symptom diagnosis
+        4. Memory search fallback
+        5. Not found (escalate)
+
+        A fuzzy match below the similarity floor is dropped rather than served as
+        confident-wrong (Target 6): out-of-corpus → found=False, not a weak guess.
         """
         if not query or not query.strip():
             return KnowledgeLookupResult(found=False)
 
         query_lower = query.lower().strip()
         query_words = set(self._tokenize(query_lower))
+        floor = DENSE_MATCH_FLOOR if min_similarity is None else float(min_similarity)
 
-        # Strategy 0: exact H22 node type. FIRST, deliberately.
-        #
-        # This is the only source keyed on types PROBED against the running
-        # 22.0.368 catalogue. Everything below it is H21 prose (R119) - accurate
-        # for H21 and predating Copernicus entirely. When a query names a live
-        # node type, the build-pinned answer must win over a keyword hit in
-        # five-year-old material.
-        result = self._match_h22_node(query_words)
-        if result:
-            return result
+        # Strategy 0: the node path. EXCLUSIVE - when it owns the query it returns
+        # its verdict (answer, disambiguation, or honest not-found) and the
+        # sentence never falls through to H21 prose. None means "not a node query".
+        node = self._match_h22_node(query_words, query_lower, context, k)
+        if node is not None:
+            return node
 
-        # Strategy 1: Keyword index match
+        # Strategies 1-4: fuzzy retrieval, each gated by the similarity floor.
         result = self._match_keywords(query_words)
-        if result:
+        if result and result.confidence >= floor:
             return result
 
-        # Strategy 2: Reference file section match
         result = self._match_reference_sections(query_lower, query_words)
-        if result:
+        if result and result.confidence >= floor:
             return result
 
-        # Strategy 3: VEX symptom diagnosis (natural-language)
         result = self._match_vex_symptoms(query_lower)
-        if result:
+        if result and result.confidence >= floor:
             return result
 
-        # Strategy 4: Memory fallback
         result = self._match_memory(query)
-        if result:
+        if result and result.confidence >= floor:
             return result
 
         return KnowledgeLookupResult(found=False)
@@ -562,11 +833,19 @@ class KnowledgeIndex:
         return len(self._reference_files)
 
     def stats(self) -> Dict[str, Any]:
-        """Return index statistics."""
+        """Return index statistics.
+
+        ``corpus_build`` + ``corpus_build_mismatch`` are the build-stamp contract
+        W4-GUARD's release gate reads (Target 7): mismatch is (corpus_build,
+        live_build) when they disagree, else None."""
         return {
             "topics": self.topic_count,
             "keywords": len(self._keyword_to_topics),
             "references": self.reference_count,
             "has_memory": self._memory is not None,
             "has_rag": self._rag_root is not None,
+            "h22_nodes": len(self._h22_nodes),
+            "h22_types": len(self._h22_by_type),
+            "corpus_build": self._corpus_build,
+            "corpus_build_mismatch": self._corpus_build_mismatch,
         }

@@ -17,63 +17,135 @@ an entry that does not exist cannot.
 
 Writes rag/corpus/h22_nodes.json with only matched, VERIFIED-DOC entries, and
 records what it excluded and why.
+
+W4-KNOW retrieval repair (Target 1): every kept entry now carries an ``id`` and
+a ``searchable_text`` field. Before this, scout_ingest silently DROPPED all 659
+node entries at ingest (``scout_ingest._entries_from_corpus_dir`` skips any entry
+missing ``id``/``searchable_text``), so scout - the tool CLAUDE.md 11.15 tells an
+agent to call BEFORE emitting a node type - shared zero rows with the corpus. The
+id is (context, type) qualified and made unique across the 9 duplicate
+(context, type) pairs; the searchable_text is the node's terse IDENTITY (see
+_searchable_text for why terse).
 """
 import io, json, os
 
 SRC = "harness/notes/ingest/h22_node_corpus.i1-orchestrator.json"
 DST = "rag/corpus/h22_nodes.json"
 
-src = json.load(open(SRC, encoding="utf-8"))
-entries = src.get("entries") or []
 
-kept, dropped = [], []
-for e in entries:
-    if e.get("live_type_matched") and e.get("tier") == "VERIFIED-DOC":
-        kept.append({
-            "type": e.get("live_type"),
-            "context": e.get("context"),
-            "label": e.get("runtime_label"),
-            "summary": e.get("summary"),
-            "parameters": e.get("parameters"),
-            "help_key": e.get("help_key"),
-            "source": e.get("source"),
-        })
-    else:
-        dropped.append({
-            "stem": e.get("stem"),
-            "context": e.get("context"),
-            "why": "live_type_matched=false" if not e.get("live_type_matched")
-                   else "tier=%s" % e.get("tier"),
-        })
+def _entry_id(context, ntype, seen):
+    """Stable, unique, context-qualified id. Nine (context, type) pairs repeat in
+    the source (all pyro_* in cop); a bare (context, type) key would collide in
+    scout's by-id dedup and drop one, so a repeat gets a #<n> discriminator. The
+    ``h22:`` prefix keeps these disjoint from the reference-file-stem ids
+    scout_ingest mints for the H21 prose corpus."""
+    base = "h22:%s/%s" % (context, ntype)
+    if base not in seen:
+        seen[base] = 1
+        return base
+    seen[base] += 1
+    return "%s#%d" % (base, seen[base])
 
-out = {
-    "schema": "h22_node_corpus/v1",
-    "build": src.get("build"),
-    "truth_tier": "VERIFIED-DOC",
-    "gate": ("Entries are filtered AT BUILD TIME on live_type_matched, which I1 "
-             "established by probing each documented type against the running "
-             "catalogue. A phantom is not filtered at read time - it is never "
-             "written here. INGEST-01 required a gate before wiring; this is it."),
-    "source_archive": src.get("source_archive"),
-    "producer": "harness/notes/rag_promote_h22.py",
-    "counts": {"kept": len(kept), "excluded": len(dropped)},
-    "excluded": dropped,
-    "entries": kept,
-}
 
-os.makedirs(os.path.dirname(DST), exist_ok=True)
-with io.open(DST, "w", encoding="utf-8", newline="\n") as f:
-    json.dump(out, f, indent=1)
+def _searchable_text(entry):
+    """Lexical body for scout's FTS index - the node's IDENTITY, deliberately
+    terse.
 
-print("  kept     :", len(kept))
-print("  excluded :", len(dropped))
-for d in dropped:
-    print("     %-10s %-24s %s" % (d["context"], d["stem"], d["why"]))
-print("  written  : %s  (%d KB)" % (DST, os.path.getsize(DST) / 1024))
-print()
-k = kept[0]
-print("  sample entry:")
-for f_ in ("type", "context", "label", "help_key"):
-    print("     %-10s %s" % (f_, str(k.get(f_))[:70]))
-print("     summary    %s" % str(k.get("summary"))[:70])
-print("     parameters %s" % (("%d" % len(k["parameters"])) if isinstance(k.get("parameters"), (list, dict)) else str(k.get("parameters"))[:40]))
+    W4-KNOW measured this: bundling every parameter's names into the body made
+    each node a long document, and BM25 length-normalization then buried the
+    exact-type node under the verbose H21 prose corpus for a bare-type query
+    (type-name P@1 fell to 0.71). An identity-only body - the type (boosted),
+    label, context and summary - restores lexical P@1 to ~0.95. Internal parm
+    names + channels are NOT indexed here; they are SERVED by knowledge.py's node
+    datasheet (Target 5), which reads the `parameters` array directly, so nothing
+    is lost - the searchable body is a findability index, not a copy of the
+    corpus. The type appears twice on purpose: it is the rare, decisive token a
+    grounding query carries, and the small boost helps it win its own name."""
+    t = str(entry.get("live_type") or "")
+    label = str(entry.get("runtime_label") or "")
+    ctx = str(entry.get("context") or "")
+    summary = str(entry.get("summary") or "")
+    return "\n".join(s for s in (
+        "%s (%s)" % (label, t),
+        "%s node - %s context" % (t, ctx),
+        summary,
+    ) if s and s.strip())
+
+
+def promote(src):
+    """Build the served corpus dict from the I1 source. Pure (no I/O) so the
+    contract test can exercise _entry_id/_searchable_text + the gate directly."""
+    entries = src.get("entries") or []
+    kept, dropped = [], []
+    seen_ids = {}
+    for e in entries:
+        if e.get("live_type_matched") and e.get("tier") == "VERIFIED-DOC":
+            context = e.get("context")
+            ntype = e.get("live_type")
+            kept.append({
+                "id": _entry_id(context, ntype, seen_ids),
+                "type": ntype,
+                "context": context,
+                "label": e.get("runtime_label"),
+                "summary": e.get("summary"),
+                "searchable_text": _searchable_text(e),
+                "parameters": e.get("parameters"),
+                "help_key": e.get("help_key"),
+                "source": e.get("source"),
+            })
+        else:
+            dropped.append({
+                "stem": e.get("stem"),
+                "context": e.get("context"),
+                "why": "live_type_matched=false" if not e.get("live_type_matched")
+                       else "tier=%s" % e.get("tier"),
+            })
+
+    return {
+        "schema": "h22_node_corpus/v1",
+        "build": src.get("build"),
+        "truth_tier": "VERIFIED-DOC",
+        "gate": ("Entries are filtered AT BUILD TIME on live_type_matched, which I1 "
+                 "established by probing each documented type against the running "
+                 "catalogue. A phantom is not filtered at read time - it is never "
+                 "written here. INGEST-01 required a gate before wiring; this is it."),
+        "entry_contract": ("Every served entry carries id + searchable_text (scout "
+                           "visibility, W4-KNOW Target 1), type + context (the "
+                           "(context, type) index key, Target 2), label, summary, and "
+                           "a parameters array whose items carry internal ids + "
+                           "channels uncapped (Target 5). Guarded downstream of "
+                           "promote by tests/test_rag_promote_contract.py (Target 8)."),
+        "source_archive": src.get("source_archive"),
+        "producer": "harness/notes/rag_promote_h22.py",
+        "counts": {"kept": len(kept), "excluded": len(dropped)},
+        "excluded": dropped,
+        "entries": kept,
+    }
+
+
+def main():
+    src = json.load(open(SRC, encoding="utf-8"))
+    out = promote(src)
+    kept, dropped = out["entries"], out["excluded"]
+
+    os.makedirs(os.path.dirname(DST), exist_ok=True)
+    with io.open(DST, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(out, f, indent=1)
+
+    print("  kept     :", len(kept))
+    print("  excluded :", len(dropped))
+    for d in dropped:
+        print("     %-10s %-24s %s" % (d["context"], d["stem"], d["why"]))
+    print("  written  : %s  (%d KB)" % (DST, os.path.getsize(DST) / 1024))
+    print()
+    k = kept[0]
+    print("  sample entry:")
+    for f_ in ("id", "type", "context", "label", "help_key"):
+        print("     %-10s %s" % (f_, str(k.get(f_))[:70]))
+    print("     summary    %s" % str(k.get("summary"))[:70])
+    print("     search     %s" % str(k.get("searchable_text"))[:70].replace("\n", " "))
+    print("     parameters %s" % (("%d" % len(k["parameters"])) if isinstance(k.get("parameters"), (list, dict)) else str(k.get("parameters"))[:40]))
+
+
+if __name__ == "__main__":
+    main()

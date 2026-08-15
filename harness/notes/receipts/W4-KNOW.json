@@ -1,0 +1,98 @@
+{
+  "leg": "W4-KNOW",
+  "status": "green_with_findings",
+  "summary": "Retrieval repair landed. scout now SEES the node corpus (was 0 rows); node questions route to the node path or honest not-found instead of confident-wrong H21 prose; bare ambiguous types disambiguate; datasheets carry uncapped internal names + channels; a fuzzy floor and a corpus build-stamp guard are in. 5 of 6 acceptance predicates pass on hard evidence; predicate 6's P@1>=0.98 target is unmet on the SHIPPED HYBRID scout (0.755) and is capped by an out-of-scope surface (node entries are not embedded in the semantic index) - proven fix + trade-off handed off as spawn S1. Full suite: 6343 passed / 170 skipped / 0 failed.",
+  "acceptance": [
+    {
+      "predicate": "scout query for a known node type returns the corpus entry with id and searchable_text populated (today: zero rows visible)",
+      "verdict": "pass",
+      "evidence": "probe: after promote emits id+searchable_text, scout store 906->1565 rows, all 659 node entries visible (was 0). synapse_scout('chromakey')->h22:cop2/chromakey; synapse_scout('adjacency_attribsample')->h22:cop/adjacency_attribsample. Root fix: harness/notes/rag_promote_h22.py:_searchable_text + the id/searchable_text gate at scout_ingest.py:151."
+    },
+    {
+      "predicate": "the 5 pre-flight natural-language questions (incl. the Copernicus blur question) route to the node path or honest not-found - zero H21-prose found=True answers",
+      "verdict": "pass",
+      "evidence": "test: tests/test_knowledge_retrieval_repair.py::test_preflight_questions_never_serve_prose (5 params) + ::test_copernicus_blur_resolves_to_current_cop (resolves cop, not legacy cop2) + ::test_noise_in_copernicus_is_honest_not_found (the exact recon confident-wrong case: 'noise' is cop2-only, so a Copernicus noise question is honest not-found, NOT served legacy cop2). The 2-token bail at knowledge.py:141 is replaced by a type-name intent test (KnowledgeIndex._has_node_intent); the node path is now EXCLUSIVE - it never falls through to prose."
+    },
+    {
+      "predicate": "bare noise query returns a disambiguation list spanning cop/sop/vop/chop; the pair (context=cop, noise) returns exactly the COP entry",
+      "verdict": "pass",
+      "evidence": "test (fixture - the SHIPPED corpus holds only cop/lop/cop2, so noise-across-cop/sop/vop/chop is synthesised): tests/test_knowledge_retrieval_repair.py::test_bare_ambiguous_type_disambiguates (disambiguation contexts == {cop,sop,vop,chop}) + ::test_context_qualified_type_resolves_exactly (context=cop -> exactly the cop entry, no disambiguation). Index is keyed (context,type); the old silent _CONTEXT_RANK pick is gone. On the shipped corpus, disambiguation measured 1.00 on its 42-type cross-context collision set."
+    },
+    {
+      "predicate": "an entry with more than 12 parameters returns all of them with internal names and channels; measured serve size reported per response",
+      "verdict": "pass",
+      "evidence": "test: tests/test_knowledge_retrieval_repair.py::test_uncapped_internal_names_and_channels (17-param fixture: all 17 returned with ids+channels; internal ids in the answer text; serve_bytes MEASURED == payload byte length). Shipped: tests/test_rag_promote_contract.py::test_over_12_param_entries_exist_and_are_whole (max 279 params, pyro_block_end). The 12-label cap at knowledge.py:150 is removed; ids come from p['ids'], channels from p['channels']. MEASURED node-datasheet serve-size distribution across 650 entries: min 300B / median 4114B / mean 6865B / p95 20779B / max 92829B (lop/karma, 233 params); 571/650 (88%) exceed scout's 966B envelope - see finding F2."
+    },
+    {
+      "predicate": "out-of-corpus query under the floor returns found=false; corpus with mismatched build stamp fails loud at load",
+      "verdict": "pass",
+      "evidence": "test: tests/test_knowledge_retrieval_repair.py::test_similarity_floor_drops_weak_match (weak section hit at 0.45 < DENSE_MATCH_FLOOR 0.5 -> found=False; min_similarity=0.0 recovers it, proving the floor, not a missing corpus, suppressed it) + ::test_build_stamp_mismatch_warns_loud (RuntimeWarning + stats corpus_build_mismatch recorded) + ::test_build_stamp_match_is_silent + ::test_no_live_build_no_false_alarm. knowledge.py:160's hardcoded 'Houdini 22.0.368' agent_hint is replaced by the corpus's own build stamp."
+    },
+    {
+      "predicate": "scout_eval extended: P@1 >= 0.98 on type-name queries, disambiguation 1.00 on the 239-name collision set, served phantom 0.00, COP/LOP floor-clearing stays 1.00 - shipped corpus does not regress",
+      "verdict": "fail",
+      "evidence": "check (re-run adversarially by W4-CRUX, not trusted from this leg's numbers). MET: disambiguation 1.00 (42/42 on the shipped cross-context collision set; the FULL 239-name set is UNKNOWN - sop/vop/chop/top/dop are not in the shipped corpus, they arrive with later ING-<CTX> legs); served_phantom 0.00 (659 checked against the live cop/lop/cop2 catalogues, 0 leaked); ORIGINAL scout_eval UNCHANGED (false_phantom 0.0, true_phantom 1.0, release_blocking False) => no regression on shipped grounding. NOT MET: P@1 0.7546 hybrid (455/603) vs the >=0.98 target; COP/LOP floor-clearing 0.9526 hybrid (502/527) vs 1.00. Both are capped by dense-prose RRF injection (finding F1) - the LEXICAL ceiling is P@1 0.9453 / floor 0.9962, and the proven fix (embed the nodes) reaches P@1 0.99 / floor 0.998 but touches an out-of-scope surface and carries a conceptual trade-off => spawn S1. Instrument: python/synapse/cognitive/tools/scout_eval.py::run_type_name_eval; re-run via `python -m synapse.cognitive.tools.scout_eval`."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "claim": "Shipped HYBRID type-name P@1 is capped at 0.755 (lexical ceiling 0.945) because the 659 node entries are NOT in the semantic index. scout fuses lexical BM25 + a prose-only dense index with RRF, and an un-embedded node that is lexical-rank-1 can never beat a prose doc that is dense-rank-1 AND present in lexical: 1/61 < 1/(60+r) + 1/61. So ~32 type queries that lexical resolves correctly are lost to dense-injected prose.",
+      "anchor": "python/synapse/cognitive/tools/scout_eval.py::run_type_name_eval ; rag/semantic_index/manifest.json (103 vectors, all-MiniLM-L6-v2)",
+      "measured": {"p_at_1_hybrid": 0.7546, "p_at_1_lexical": 0.9453, "floor_hybrid": 0.9526, "floor_lexical": 0.9962},
+      "proven_fix": "Embed the 659 node searchable_texts with the same all-MiniLM-L6-v2/dim-384 embedder and add them to rag/semantic_index (1.5s encode, +~1MB embeddings.npy). MEASURED result: hybrid P@1 0.99, floor 0.998, disambiguation 1.0, served_phantom 0.0 - BUT conceptual recall regresses 0.8333 -> 0.6667 (queries 'crowds' and 'build a layered shader network' now surface node entries above the intended concept docs; still above test_gate6's 0.333 release floor). See spawn S1.",
+      "why_not_here": "rag/semantic_index/ + scripts/build_semantic_index.py + scout.py are OUTSIDE W4-KNOW's declared touches; the fix is a committed binary artifact with a conceptual-recall trade-off that merits a human ruling; and the recon sequences semantic/storage work as a later step. Shipped in-scope: the corpus fix maximises the lexical ceiling and makes nodes visible (predicate 1)."
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "claim": "Serve-size envelope shift (disclosed, not silent - crucible criterion). Target 5's uncapping makes knowledge_lookup node datasheets far larger than scout's ~495B mean / 966B max snippet envelope. This is a DIFFERENT surface (a full datasheet, not a truncated scout snippet) and the mission explicitly required uncapping.",
+      "anchor": "python/synapse/routing/knowledge.py::_measure_serve_bytes (KnowledgeLookupResult.serve_bytes)",
+      "measured": {"entries": 650, "min_bytes": 300, "median_bytes": 4114, "mean_bytes": 6865, "p95_bytes": 20779, "max_bytes": 92829, "max_entry": "lop/karma (233 params)", "over_966B_pct": 88},
+      "note": "MEASURED per response and reported via serve_bytes; never estimated. A future storage leg (recon step 3, SQLite+FTS5) can bound the wire size without re-capping the served fields."
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "claim": "The 239-name disambiguation collision set from the recon cannot be fully measured on the shipped corpus, which holds only cop(358)/lop(169)/cop2(132). Disambiguation is measured 1.00 on the 42 cross-context types present today; the full 239-name set is UNKNOWN until sop/vop/chop/top/dop are ingested by later ING-<CTX> legs. Recorded UNKNOWN, never estimated.",
+      "anchor": "rag/corpus/h22_nodes.json (contexts: cop 358, lop 169, cop2 132)"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "GATE B - consumer-fix review",
+      "detail": "The knowledge.py consumer changes needing a human word before merge: python/synapse/server/handlers.py::_handle_knowledge_lookup (now forwards context/k and returns context/disambiguation/parameters/serve_bytes) and python/synapse/mcp/_tool_registry.py synapse_knowledge_lookup schema (adds context + k params, updates the description). All backward-compatible: every existing .lookup() caller (router.py x5, handlers_memory.py) passes query positionally; new params default."
+    },
+    {
+      "item": "Scope note - two files beyond the declared touches",
+      "detail": "Declared touches delivered: python/synapse/routing/knowledge.py, python/synapse/cognitive/tools/scout_ingest.py, python/synapse/cognitive/tools/scout_eval.py, harness/notes/rag_promote_h22.py, tests/. PLUS the regenerated artifact rag/corpus/h22_nodes.json (product output of the promote change) and the Gate-B consumer surfaces python/synapse/server/handlers.py + python/synapse/mcp/_tool_registry.py. The latter two are outside `touches` but ARE the consumer-fix Gate B anticipates - flagged here for that review. No sibling leg holds a claim on them (bus verified: W4-HELP=helpdoc/i1_extract, W4-RULING=harness/notes/h22/)."
+    },
+    {
+      "item": "Target 6 placement",
+      "detail": "The similarity floor is implemented at the knowledge.py serving layer (KnowledgeLookupResult.found=False below DENSE_MATCH_FLOOR - predicate 5), NOT in scout.py's dense vector path. scout.py is outside `touches` and its scout_eval is re-run by W4-CRUX; a floor there would perturb that. The recon's 'dense path can say not-found' language maps to the found=False contract, which knowledge.py owns."
+    },
+    {
+      "item": "Environment note - wrong-tree recovery",
+      "detail": "Mid-build, edits landed in the main tree (on master) via absolute paths rather than the worktree; caught before any commit. All changes were relocated to .claude/worktrees/w4-know (on wave4/know), the main tree restored to master (clean but for the orchestrator's own harness/notes/h22/*w4* files), and the full test slice re-run green from the worktree before committing."
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W4-KNOW-S1",
+      "name": "embed the H22 node corpus into the semantic index so scout's dense path ranks nodes",
+      "band": "BUILD",
+      "class": "build",
+      "held_for": "Joe (build class is outside W4-KNOW spawn_classes=[probe]; also carries a conceptual-recall trade-off + a committed binary artifact that need a human ruling)",
+      "rationale": "The value gate on the SHIPPED HYBRID scout: proven to lift type-name P@1 0.755->0.99 and floor 0.953->0.998. Without it, an agent grounding in the live (torch-present) Houdini session gets 0.755 P@1; the in-scope corpus fix only opens the gate on the lexical-only path (0.945).",
+      "source": {"doc": "harness/notes/receipts/W4-KNOW.json", "anchor": "finding F1"},
+      "targets": [
+        "1) embed the 659 node searchable_texts with the committed embedder (all-MiniLM-L6-v2, dim 384) and extend rag/semantic_index (embeddings.npy + meta.jsonl + manifest entries count + content_digest) via scripts/build_semantic_index.py - reproducibly, not a hand-appended npy",
+        "2) preserve conceptual recall: a blind append regresses it 0.8333->0.6667. Prefer a placement that does not - e.g. a SEPARATE node-dense index consulted only on type/symbol intent, or down-weighting node vectors for conceptual queries in scout.py's RRF",
+        "3) re-run scout_eval (original + run_type_name_eval) + test_gate6; P@1>=0.98 AND conceptual_topk_hitrate does not drop below the pre-embed 0.8333"
+      ],
+      "touches": ["rag/semantic_index/", "scripts/build_semantic_index.py", "python/synapse/cognitive/tools/scout.py"],
+      "measured_preview": {"hybrid_p_at_1": 0.99, "hybrid_floor": 0.998, "conceptual_before": 0.8333, "conceptual_after_blind_append": 0.6667, "encode_seconds": 1.5, "artifact_growth_mb": 1.0}
+    }
+  ]
+}

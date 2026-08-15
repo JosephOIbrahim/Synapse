@@ -149,7 +149,13 @@ def _entries_from_corpus_dir(rag_root: Path) -> list[dict]:
             continue
         for e in raw:
             if isinstance(e, dict) and e.get("id") and e.get("searchable_text"):
-                entries.append(e)
+                # scout indexes only id/type/source/searchable_text; a heavy
+                # ``parameters`` array (the H22 node corpus carries up to 279 per
+                # entry - 97.7% of its bytes) would bloat the resident store for
+                # nothing scout reads. Drop it here; knowledge.py serves the full
+                # parameter surface straight from rag/corpus/ (Target 5), so no
+                # knowledge is lost - only duplicated mass in the ephemeral store.
+                entries.append({k: v for k, v in e.items() if k != "parameters"})
     return entries
 
 

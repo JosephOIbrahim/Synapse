@@ -187,6 +187,219 @@ def run_eval(
     )
 
 
+# --------------------------------------------------------------------------- #
+#  W4-KNOW Target 6 / predicate 6 — the type-name retrieval scorecard          #
+#                                                                              #
+#  The original scorecard above answers "does scout resolve API SYMBOLS?". The #
+#  retrieval-repair leg added the NODE corpus (id + searchable_text at promote #
+#  time), so scout can now be asked "does a bare NODE TYPE query land its       #
+#  corpus entry, and does an ambiguous type disambiguate rather than guess?".   #
+#                                                                              #
+#  This is an INDEPENDENT instrument (append-only — the Scorecard/run_eval      #
+#  above are untouched, so every existing scout_eval test still holds). It is   #
+#  the number W4-CRUX re-runs adversarially; it is not trusted from this leg's  #
+#  own output.                                                                  #
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class TypeNameScorecard:
+    p_at_1: float                          # top-1 hit is an entry OF the queried type
+    disambiguation_rate: Optional[float]   # bare-ambiguous -> full list; ctx-qualified -> exact
+    served_phantom_rate: Optional[float]   # served type absent from the live catalogue -> phantom
+    cop_lop_floor_clearing: float          # a cop/lop entry is retrievable in top-k
+    p_at_1_total: int
+    p_at_1_hits: int
+    disambiguation_total: int
+    disambiguation_ok: int
+    served_phantom_checked: int
+    served_phantom_leaked: tuple           # served types with no live-catalogue backing
+    floor_total: int
+    floor_cleared: int
+
+    def to_dict(self) -> dict:
+        return {
+            "p_at_1": self.p_at_1,
+            "disambiguation_rate": self.disambiguation_rate,
+            "served_phantom_rate": self.served_phantom_rate,
+            "cop_lop_floor_clearing": self.cop_lop_floor_clearing,
+            "p_at_1_detail": {"total": self.p_at_1_total, "hits": self.p_at_1_hits},
+            "disambiguation_detail": {"total": self.disambiguation_total,
+                                      "ok": self.disambiguation_ok},
+            "served_phantom_detail": {"checked": self.served_phantom_checked,
+                                      "leaked": list(self.served_phantom_leaked)},
+            "floor_detail": {"total": self.floor_total, "cleared": self.floor_cleared},
+        }
+
+
+def _parse_h22_id(hit_id: str):
+    """('cop', 'blur') from 'h22:cop/blur' (or 'h22:cop/blur#2'); None if not an
+    h22 node id."""
+    s = str(hit_id or "")
+    if not s.startswith("h22:"):
+        return None
+    body = s[4:].split("#", 1)[0]
+    if "/" not in body:
+        return None
+    ctx, ntype = body.split("/", 1)
+    return ctx, ntype.lower()
+
+
+def load_served_node_corpus(corpus_path=None) -> list:
+    """The served h22 node entries — the artifact promote writes. Defaults to the
+    canonical rag/corpus/h22_nodes.json."""
+    from pathlib import Path
+    if corpus_path is None:
+        corpus_path = (Path(__file__).resolve().parents[4]
+                       / "rag" / "corpus" / "h22_nodes.json")
+    import json as _json
+    blob = _json.loads(Path(corpus_path).read_text(encoding="utf-8"))
+    return blob.get("entries") or []
+
+
+def live_types_by_context(cop_catalog=None, lop_catalog=None) -> dict:
+    """Live node-type name sets per context from the committed live catalogues -
+    the INDEPENDENT authority for served_phantom (promote's build-time gate is one
+    source; this is a second). Missing catalogue => that context is absent from the
+    map => its served types are not phantom-checkable (reported, never faked)."""
+    from pathlib import Path
+    import json as _json
+    root = Path(__file__).resolve().parents[4] / "harness" / "notes"
+    cop_catalog = cop_catalog or (root / "h22_cop_catalog_live_22.0.368.json")
+    lop_catalog = lop_catalog or (root / "h22_lop_catalog_live_22.0.368.json")
+    out: dict = {}
+    try:
+        cop = _json.loads(Path(cop_catalog).read_text(encoding="utf-8"))
+        cats = cop.get("categories") or {}
+        for cat_key, ctx in (("copNodeTypeCategory", "cop"),
+                             ("cop2NodeTypeCategory", "cop2")):
+            types = ((cats.get(cat_key) or {}).get("types")) or []
+            names = types.keys() if isinstance(types, dict) else types
+            out[ctx] = {str(t).lower() for t in names}
+    except (OSError, ValueError, KeyError, AttributeError):
+        pass
+    try:
+        lop = _json.loads(Path(lop_catalog).read_text(encoding="utf-8"))
+        types = lop.get("types") or {}
+        names = types.keys() if isinstance(types, dict) else types
+        out["lop"] = {str(t).lower() for t in names}
+    except (OSError, ValueError, KeyError, AttributeError):
+        pass
+    return out
+
+
+def run_type_name_eval(scout_fn: Callable[..., dict] = synapse_scout,
+                       knowledge_index=None,
+                       corpus_entries=None,
+                       live_types=None,
+                       k: int = 6,
+                       sample: Optional[int] = None,
+                       seed: int = 1234) -> TypeNameScorecard:
+    """Score node-type retrieval + disambiguation on the served corpus.
+
+    * P@1 — for each unique served type, scout(type, k=1) top-1 is an h22 entry OF
+      that type (target >= 0.98).
+    * disambiguation — for each type spanning >1 context, a bare KnowledgeIndex
+      lookup returns a disambiguation listing ALL its contexts, and each
+      context-qualified lookup returns that exact context's datasheet (target 1.00).
+      None when no knowledge_index is available.
+    * served_phantom — served types with no live-catalogue backing (target 0.00);
+      None when no catalogue is available for any served context.
+    * cop/lop floor-clearing — a cop/lop (context, type) entry is retrievable in
+      scout's top-k (target 1.00, must not regress).
+
+    scout_fn / knowledge_index / corpus_entries / live_types are injectable so a
+    test can drive a controlled corpus; the defaults score the shipped artifact."""
+    import random
+    entries = corpus_entries if corpus_entries is not None else load_served_node_corpus()
+
+    by_type: dict = {}
+    for e in entries:
+        t = str(e.get("type") or "").lower()
+        if t:
+            by_type.setdefault(t, set()).add(str(e.get("context") or ""))
+
+    types = sorted(by_type)
+    if sample and sample < len(types):
+        types = random.Random(seed).sample(types, sample)
+
+    # (a) P@1 on bare type-name queries.
+    p_hits = 0
+    for t in types:
+        out = scout_fn(t, k=1)
+        hits = out.get("hits") or []
+        parsed = _parse_h22_id(hits[0].get("id")) if hits else None
+        if parsed and parsed[1] == t:
+            p_hits += 1
+    p_total = len(types)
+
+    # (b) disambiguation on the collision set (types with >1 context).
+    dis_total = dis_ok = 0
+    dis_rate: Optional[float] = None
+    collisions = [t for t in types if len(by_type[t]) > 1]
+    # Auto-build a KnowledgeIndex over the canonical rag/ ONLY when scoring the
+    # shipped artifact (corpus_entries defaulted). An INJECTED corpus_entries is a
+    # controlled fixture the shipped index would not match, so without an explicit
+    # knowledge_index the disambiguation rate is UNKNOWN (None), never faked.
+    if knowledge_index is None and corpus_entries is None:
+        try:
+            from pathlib import Path
+            from synapse.routing.knowledge import KnowledgeIndex
+            knowledge_index = KnowledgeIndex(
+                rag_root=str(Path(__file__).resolve().parents[4] / "rag"))
+        except Exception:
+            knowledge_index = None
+    if knowledge_index is not None:
+        for t in collisions:
+            dis_total += 1
+            bare = knowledge_index.lookup(t)
+            listed = {d.get("context") for d in (bare.disambiguation or [])}
+            ok = bool(bare.disambiguation) and listed == by_type[t]
+            for ctx in by_type[t]:
+                r = knowledge_index.lookup(t, context=ctx)
+                ok = ok and r.found and r.context == ctx and not r.disambiguation
+            dis_ok += 1 if ok else 0
+        dis_rate = round(dis_ok / dis_total, 4) if dis_total else 1.0
+
+    # (c) served_phantom — served type absent from its context's live catalogue.
+    if live_types is None:
+        live_types = live_types_by_context()
+    checked = 0
+    leaked = []
+    for e in entries:
+        ctx = str(e.get("context") or "")
+        t = str(e.get("type") or "").lower()
+        if ctx in live_types:
+            checked += 1
+            if t not in live_types[ctx]:
+                leaked.append("%s/%s" % (ctx, t))
+    phantom_rate: Optional[float] = round(len(leaked) / checked, 4) if checked else None
+
+    # (d) cop/lop floor-clearing — the shipped, non-legacy contexts must not regress.
+    floor_total = floor_cleared = 0
+    for e in entries:
+        ctx = str(e.get("context") or "")
+        t = str(e.get("type") or "").lower()
+        if ctx not in ("cop", "lop"):
+            continue
+        floor_total += 1
+        out = scout_fn(t, k=k)
+        found = any((_parse_h22_id(h.get("id")) == (ctx, t))
+                    for h in (out.get("hits") or []))
+        floor_cleared += 1 if found else 0
+
+    return TypeNameScorecard(
+        p_at_1=round(p_hits / p_total, 4) if p_total else 0.0,
+        disambiguation_rate=dis_rate,
+        served_phantom_rate=phantom_rate,
+        cop_lop_floor_clearing=round(floor_cleared / floor_total, 4) if floor_total else 0.0,
+        p_at_1_total=p_total, p_at_1_hits=p_hits,
+        disambiguation_total=dis_total, disambiguation_ok=dis_ok,
+        served_phantom_checked=checked, served_phantom_leaked=tuple(leaked),
+        floor_total=floor_total, floor_cleared=floor_cleared,
+    )
+
+
 if __name__ == "__main__":             # pragma: no cover
     import sys
     # Point the live scout at the materialized canonical corpus (build-if-absent),
@@ -209,3 +422,10 @@ if __name__ == "__main__":             # pragma: no cover
     w(f"phantom {d['phantom']['flagged']}/{d['phantom']['total']} flagged; leaked={d['phantom']['leaked']}\n")
     w(f"concept {d['conceptual']['hits']}/{d['conceptual']['total']} top-k; misses={d['conceptual']['misses']}\n")
     w(f"VERDICT: {card.verdict()}\n")
+    # W4-KNOW type-name scorecard (Target 6 / predicate 6).
+    tn = run_type_name_eval().to_dict()
+    w("\n=== TYPE-NAME SCORECARD (W4-KNOW) ===\n")
+    w(f"p_at_1                 : {tn['p_at_1']}  (target >= 0.98)  {tn['p_at_1_detail']}\n")
+    w(f"disambiguation_rate    : {tn['disambiguation_rate']}  (target 1.00)  {tn['disambiguation_detail']}\n")
+    w(f"served_phantom_rate    : {tn['served_phantom_rate']}  (target 0.00)  {tn['served_phantom_detail']}\n")
+    w(f"cop_lop_floor_clearing : {tn['cop_lop_floor_clearing']}  (target 1.00)  {tn['floor_detail']}\n")
