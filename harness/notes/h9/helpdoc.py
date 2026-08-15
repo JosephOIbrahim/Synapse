@@ -39,13 +39,77 @@ import zipfile
 from pathlib import Path
 
 # --------------------------------------------------------------------------
-# Locations. Pinned to the build under test; no discovery, no fallback -- a
-# wrong build must fail loudly rather than silently measure the wrong corpus.
+# Locations. A build is ADDRESSED, never discovered: resolution is by explicit
+# parameter or environment override, defaulting to the current pin. Callers
+# choose the build (``HelpCorpus(build=...)``); the module is never mutated to
+# repoint. A wrong or absent build still FAILS LOUDLY in ``HelpCorpus._load``
+# rather than silently measuring another build's corpus -- that loud failure is
+# the whole point of the pin and parameterization preserves it, it does not
+# soften it into a fallback.
 # --------------------------------------------------------------------------
-BUILD = "22.0.368"
-HELP_DIR = Path(
-    r"C:\Program Files\Side Effects Software\Houdini %s\houdini\help" % BUILD
-)
+_DEFAULT_BUILD = "22.0.368"          # the current pin; overridable, never mutated
+
+
+def resolve_build(build: str | None = None) -> str:
+    """The build to address: explicit arg > ``SYNAPSE_HELP_BUILD`` env > default pin.
+
+    Read at CALL time, not import time, so a caller may set the environment and
+    construct a corpus without editing or mutating this module.
+    """
+    if build:
+        return build
+    return os.environ.get("SYNAPSE_HELP_BUILD", _DEFAULT_BUILD)
+
+
+def _install_help_dir(build: str) -> Path:
+    """The STANDARD per-build install help dir -- no environment override.
+
+    An explicitly-named build addresses its OWN standard install path, so two
+    explicit builds never collapse onto a single ``SYNAPSE_HELP_DIR``.
+    """
+    return Path(
+        r"C:\Program Files\Side Effects Software\Houdini %s\houdini\help" % build
+    )
+
+
+def help_dir_for(build: str | None = None) -> Path:
+    """DEFAULT-resolution ``houdini/help`` directory for a build.
+
+    ``SYNAPSE_HELP_DIR`` overrides the location outright, for installs not on the
+    default Windows path; otherwise the path is the standard per-build install
+    for the resolved build. Derivation is NOT discovery: if that build is not
+    installed the archive is absent and loading fails loudly
+    (``HelpCorpus._load``). No fallback to another build -- serving another
+    build's pages silently is the exact defect this pin exists to prevent.
+    """
+    override = os.environ.get("SYNAPSE_HELP_DIR")
+    if override:
+        return Path(override)
+    return _install_help_dir(resolve_build(build))
+
+
+def build_from_path(help_dir) -> str | None:
+    """The build a standard install path encodes, or None if it encodes none.
+
+    ``...\\Houdini 22.0.400\\houdini\\help`` -> ``"22.0.400"``. A custom/synthetic
+    directory encodes no build and returns None. Used to keep a corpus's build
+    LABEL in agreement with the pages it actually loaded whenever the location is
+    overridden -- a label that disagrees with the directory is the silent
+    wrong-build defect, reached via the override instead of the build selector.
+    """
+    m = re.search(r"Houdini\s+(\d+(?:\.\d+)+)", str(help_dir))
+    return m.group(1) if m else None
+
+
+# Module-level defaults -- the back-compatible zero-arg surface every existing
+# importer (coverage.py, harvest.py, i1_extract.py, ...) already reads. FROZEN at
+# the pin: environment overrides (SYNAPSE_HELP_BUILD / SYNAPSE_HELP_DIR) and the
+# build= parameter act only at PER-INSTANCE resolution time (resolve_build /
+# help_dir_for / HelpCorpus), never on this import-time snapshot. So a consumer
+# that asserts against helpdoc.BUILD still sees a stable constant, and setting an
+# override env var never silently repoints the module out from under it.
+BUILD = _DEFAULT_BUILD
+HELP_DIR = _install_help_dir(BUILD)
 NODES_ZIP = HELP_DIR / "nodes.zip"
 
 # Contexts this leg measures. cop == Copernicus (the live `cop` category),
@@ -86,15 +150,67 @@ class HelpCorpus:
     other ``<name>.zip`` is rooted at ``<name>/``.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, build: str | None = None, help_dir=None) -> None:
+        # Resolve THIS corpus's location independently of the module defaults,
+        # so two HelpCorpus instances for different builds can coexist in one
+        # process without either mutating the module or each other. The build
+        # LABEL is kept in agreement with the directory actually loaded -- a
+        # label that disagrees with the pages is the silent wrong-build defect.
+        #
+        #   help_dir=  explicit path wins the LOCATION; label follows the path
+        #              (or the explicit build=, which must not contradict it)
+        #   build=     explicit build -> its STANDARD install path; the
+        #              SYNAPSE_HELP_DIR *default*-location override does NOT
+        #              apply, so two explicit builds never collapse onto one dir
+        #   neither    default resolution; SYNAPSE_HELP_DIR overrides the
+        #              location and the label follows that path
+        if help_dir is not None:
+            self.help_dir = Path(help_dir)
+            self.build = self._label_for(build, self.help_dir)
+        elif build is not None:
+            self.build = resolve_build(build)
+            self.help_dir = _install_help_dir(self.build)
+        else:
+            env_dir = os.environ.get("SYNAPSE_HELP_DIR")
+            if env_dir:
+                self.help_dir = Path(env_dir)
+                self.build = self._label_for(None, self.help_dir)
+            else:
+                self.build = resolve_build(None)
+                self.help_dir = _install_help_dir(self.build)
+        self.nodes_zip = self.help_dir / "nodes.zip"
         self.pages: dict[str, str] = {}
         self.origin: dict[str, str] = {}  # help path -> "<zip>!<entry>"
         self._load()
 
+    @staticmethod
+    def _label_for(build: str | None, help_dir: Path) -> str:
+        """The build label for an overridden LOCATION -- it must match the dir.
+
+        The path's own build wins the label so it can never disagree with the
+        pages loaded. An explicit ``build=`` that CONTRADICTS the path is a caller
+        error and fails loud (never a silent mislabel). When the path encodes no
+        build (a custom dir), the explicit build -- else the default resolution --
+        labels it, since there is nothing to contradict.
+        """
+        derived = build_from_path(help_dir)
+        if build and derived and build != derived:
+            raise SystemExit(
+                "build/help_dir disagree: build=%s but %s is build %s "
+                "-- refusing to mislabel" % (build, help_dir, derived))
+        return build or derived or resolve_build(None)
+
     def _load(self) -> None:
-        if not NODES_ZIP.exists():
-            raise SystemExit("nodes.zip absent for build %s -- refusing to guess" % BUILD)
-        for zp in sorted(HELP_DIR.glob("*.zip")):
+        if not self.nodes_zip.exists():
+            # LOUD by design, and it names the missing path so the caller sees
+            # WHICH build's archive is absent -- never a silent fall-through to
+            # another build's corpus. SystemExit (not a swallowable Exception)
+            # keeps the failure loud even inside a broad ``except Exception``.
+            raise SystemExit(
+                "nodes.zip absent for build %s at %s -- refusing to guess"
+                % (self.build, self.nodes_zip)
+            )
+        for zp in sorted(self.help_dir.glob("*.zip")):
             root = zp.stem  # nodes.zip -> "nodes"
             try:
                 zf = zipfile.ZipFile(zp)
@@ -131,8 +247,8 @@ class HelpCorpus:
         and then reported as a finding about the docs. Loose files lose to zip
         entries on key collision so archive content stays authoritative.
         """
-        for path in HELP_DIR.rglob("*.txt"):
-            rel = path.relative_to(HELP_DIR).as_posix()
+        for path in self.help_dir.rglob("*.txt"):
+            rel = path.relative_to(self.help_dir).as_posix()
             key = rel[:-4]
             if key in self.pages:
                 continue

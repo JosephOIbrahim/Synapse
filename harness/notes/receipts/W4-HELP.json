@@ -1,0 +1,108 @@
+{
+  "leg": "W4-HELP",
+  "name": "helpdoc build pin parameterized: two attributes, no leg hardcodes a build",
+  "status": "green_with_findings",
+  "summary": "helpdoc.BUILD/HELP_DIR are now resolved per-corpus by explicit parameter or environment override, defaulting to the current pin (22.0.368); callers address a build via HelpCorpus(build=)/load_corpus(build=) with zero module mutation. Absent archive still FAILS LOUD and now names the missing path. i1_extract repointed onto the parameterized surface and carries no build literal. Verified against REAL 22.0.368 and 22.0.400 archives (both installed); 15/15 pytest green; back-compat and the 171/161 calibration controls preserved (i1_calibrate 35/35). A crucible pass found 5 bounded weaknesses in the override corners; all 5 were fixed and pinned.",
+  "acceptance": [
+    {
+      "predicate": "helpdoc resolves 22.0.368 and 22.0.400 by parameter in one process without module mutation; absent-archive request raises and names the missing path",
+      "verdict": "pass",
+      "evidence": "tests/test_w4_help_build_param.py::test_two_real_builds_one_process_without_mutation (real archives: 11,709 pages .368 / 11,718 pages .400; helpdoc.BUILD/HELP_DIR/NODES_ZIP byte-identical before/after) + ::test_absent_archive_raises_and_names_path (HelpCorpus(build='99.9.999') raises SystemExit whose message names 'C:\\Program Files\\Side Effects Software\\Houdini 99.9.999\\houdini\\help\\nodes.zip'). helpdoc.py:137-171 (per-instance __init__ + loud _load)."
+    },
+    {
+      "predicate": "i1_extract parses a sample page from each build via the parameterized surface, zero exceptions",
+      "verdict": "pass",
+      "evidence": "::test_i1_parses_sample_page_from_each_real_build[22.0.368] and [22.0.400] (load_corpus(build=)+parse_page over sampled real lop node pages, zero exceptions, >0 parameters asserted on live data) + ::test_i1_parses_the_same_page_from_both_real_builds (181 lop node pages common to both builds; one parsed from each). i1_extract.py:701-712 (load_corpus)."
+    },
+    {
+      "predicate": "rg shows no hardcoded 22.0.368 governing harness/notes ingest code paths (docs, archive, receipts exempt)",
+      "verdict": "pass",
+      "evidence": "::test_ingest_paths_have_no_hardcoded_build. i1_extract.py: 0 literal '22.0.368' (importer fully clean, prose neutralized). helpdoc.py: exactly 1, on '_DEFAULT_BUILD = \"22.0.368\"' (helpdoc.py:50) -- the mission-mandated overridable default ('defaulting to the current pin'), not a governing pin: repointing to .400 now needs ZERO source edits (build= param or SYNAPSE_HELP_BUILD). All et-al importers (coverage.py, harvest.py, _i0_*, i1b_*, i1_build/calibrate) call helpdoc.HelpCorpus() zero-arg + read helpdoc.BUILD; none hold a literal."
+    }
+  ],
+  "crucible_criteria": [
+    {
+      "criterion": "the .368 pin was fails-loudly by design - parameterization must preserve loud failure, not soften it into a fallback",
+      "verdict": "pass",
+      "evidence": "SystemExit (not a swallowable Exception) is preserved and enriched to name the missing path; no code path falls back to another build on an absent/wrong build. Attacked live by the crucible with SYNAPSE_HELP_DIR pointed at a valid archive + HelpCorpus(build='99.9.999'): still raised (explicit-build path is env-immune). helpdoc.py:159-171."
+    },
+    {
+      "criterion": "house rule: unobtainable renders UNKNOWN, never zero and never an estimate",
+      "verdict": "pass",
+      "evidence": "Real-archive tests skip (UNKNOWN) when a build is absent; both builds are installed here so they RUN against real archives. No control is pinned to a brief figure (171/161 live only in the pre-existing i1_calibrate.py, which MEASURES them). The obtainability gate _installed() was hardened (F4) to use env-immune _install_help_dir so a set SYNAPSE_HELP_DIR cannot turn an unobtainable build into a crash instead of a skip."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "fixed",
+      "claim": "Silent build MISLABEL via env divergence: SYNAPSE_HELP_BUILD (label) and SYNAPSE_HELP_DIR (location) resolved independently, so a zero-arg corpus could carry .build='22.0.400' while loading 368 pages -- the exact silent-wrong-build class, reached off the location axis.",
+      "anchor": "harness/notes/h9/helpdoc.py:137",
+      "resolution": "The build LABEL now follows the overridden location: HelpCorpus._label_for + build_from_path derive the build from the loaded directory; the SYNAPSE_HELP_BUILD label can no longer disagree with the pages. Pinned by ::test_env_dir_label_follows_location and a live repro (label==dir==22.0.368)."
+    },
+    {
+      "id": "F2",
+      "severity": "fixed",
+      "claim": "Same mislabel via help_dir= parameter: HelpCorpus(help_dir=<400 dir>) with no build= labelled .build='22.0.368' (default) while loading the 400 dir.",
+      "anchor": "harness/notes/h9/helpdoc.py:148",
+      "resolution": "help_dir= now labels from the path (build_from_path) when no build= is given. Pinned by ::test_label_follows_overridden_location (HelpCorpus(help_dir=real_400).build == '22.0.400')."
+    },
+    {
+      "id": "F3",
+      "severity": "fixed",
+      "claim": "Provenance lie: doc_deprecation(..., build=corpus.build) would stamp the wrong build onto VERIFIED-DOC records under F1/F2.",
+      "anchor": "harness/notes/ingest/i1_extract.py:675",
+      "resolution": "Resolved transitively by F1/F2 -- corpus.build is now guaranteed to match the loaded directory, so the label stamped into records is truthful. An explicit build= that contradicts help_dir= now raises rather than mislabelling."
+    },
+    {
+      "id": "F4",
+      "severity": "fixed",
+      "claim": "Test obtainability gate _installed() used help_dir_for() (env-aware), so with SYNAPSE_HELP_DIR set it could report an uninstalled build as present and then crash (SystemExit) instead of skipping -- a house-rule (UNKNOWN, never crash) violation, masked here because both builds are installed.",
+      "anchor": "tests/test_w4_help_build_param.py:43",
+      "resolution": "_installed() now uses env-immune helpdoc._install_help_dir(build), matching how HelpCorpus(build=) actually resolves."
+    },
+    {
+      "id": "F5",
+      "severity": "fixed",
+      "claim": "New import-time env footgun: module helpdoc.BUILD = resolve_build() read SYNAPSE_HELP_BUILD at import, so setting that override silently repointed the module constant and broke coverage.py's `assert catalogue_build == helpdoc.BUILD` (loud AssertionError).",
+      "anchor": "harness/notes/h9/helpdoc.py:96",
+      "resolution": "Module BUILD/HELP_DIR/NODES_ZIP FROZEN at the pin (_DEFAULT_BUILD / _install_help_dir); env + build= act only at per-instance resolution. Pinned by ::test_module_build_frozen_against_env; coverage.py-class consumers verified via i1_calibrate 35/35."
+    },
+    {
+      "id": "SCOPE",
+      "severity": "info",
+      "claim": "Other legs still hard-pin 22.0.368 in their OWN code (out of this leg's touches): the parallel extractor i1b_* (i1b_reader.py:49/51, i1b_extract/merge/receipt/the161/runtime/calibrate), the _i0_* scout (_i0_reader.py:24/28/31, _i0_calibrate.py, _i0_q2_joinkey.py), and the h9 satellites (build_corpus.py, coverage.py:51/52, harvest_runtime_parms.py, docparse.py, crosscheck_*). The live/probe halves i1_runtime.py:53 and i1_crosscheck.py:85 carry DELIBERATE runtime build-guards ('if build != 22.0.368: REFUSE') asserting the running hython build; those are VERIFIED-RUNTIME assertions, not the doc-ingest path. Committed catalogue/artifact filenames (*_22.0.368.json) are receipts (exempt).",
+      "anchor": "harness/notes/ingest/i1b_reader.py:49"
+    }
+  ],
+  "for_ruling": [
+    "drop.json pins houdini_build=22.0.400 but this leg keeps helpdoc._DEFAULT_BUILD=22.0.368 per the mission brief ('defaulting to the current pin'). When the wave flips ingest MODE to .400, the human decision is: repoint the single _DEFAULT_BUILD literal (helpdoc.py:50) to 22.0.400, OR leave the default at .368 and require callers to pass build='22.0.400'. The parameterization makes either a zero-risk choice; picking one is a human word.",
+    "Whether to extend the parameterized surface to the remaining ingest legs (spawn W4-HELP-EXT below) or leave them pinned. The runtime guards (i1_runtime/i1_crosscheck) are recommended KEEP-as-guards, repointed at drop time, not parameterized."
+  ],
+  "spawn": [
+    {
+      "id": "W4-HELP-EXT",
+      "name": "extend build parameterization to the remaining ingest legs (i1b_*, _i0_*, h9 satellites)",
+      "band": "BUILD",
+      "source": {
+        "doc": "harness/notes/receipts/W4-HELP.json",
+        "anchor": "finding SCOPE + crucible regression (i1_calibrate 35/35 confirms consumers safe to refactor)"
+      },
+      "targets": [
+        "1) i1b_* parallel extractor (i1b_reader.py:49/51 BUILD+HELP path) consumes helpdoc's resolve_build/help_dir_for/HelpCorpus(build=) surface; grep-clean of literal 22.0.368",
+        "2) _i0_* scout (_i0_reader.py:24/28/31) likewise, if the archived leg is still live",
+        "3) h9 satellites that read committed *_22.0.368.json catalogues get a build parameter, deriving the artifact filename from the resolved build",
+        "4) i1_runtime.py / i1_crosscheck.py runtime guards are REVIEWED, not blindly parameterized: their 'if build != X: REFUSE' is a deliberate live-build assertion -- repoint the expected build at drop time rather than softening the guard"
+      ],
+      "acceptance": [
+        {"predicate": "each remaining ingest leg resolves an arbitrary build by parameter/env without editing its own module; grep-clean of governing 22.0.368 in ingest code (receipts/docs/runtime-guards exempt)", "evidence": "test+check"},
+        {"predicate": "runtime guards still REFUSE a mismatched live build (loud), not softened", "evidence": "check"}
+      ],
+      "deps": ["W4-HELP"],
+      "readonly": false,
+      "touches": ["harness/notes/ingest/i1b_*.py", "harness/notes/ingest/_i0_*.py", "harness/notes/h9/*.py"],
+      "spawn_classes": ["probe"],
+      "note": "Class BUILD is outside W4-HELP's spawn_classes (probe) -> lands 'held' for Joe. W4-HELP already unblocks every ING-<CTX> leg that consumes helpdoc; this proposal cleans up the sibling extractors so the whole ingest surface is build-addressable."
+    }
+  ]
+}
