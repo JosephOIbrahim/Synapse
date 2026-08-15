@@ -27,7 +27,7 @@ id is (context, type) qualified and made unique across the 9 duplicate
 (context, type) pairs; the searchable_text is the node's terse IDENTITY (see
 _searchable_text for why terse).
 """
-import io, json, os
+import argparse, io, json, os, sys
 
 SRC = "harness/notes/ingest/h22_node_corpus.i1-orchestrator.json"
 DST = "rag/corpus/h22_nodes.json"
@@ -123,20 +123,45 @@ def promote(src):
     }
 
 
-def main():
-    src = json.load(open(SRC, encoding="utf-8"))
+def _resolve_io(argv):
+    """(src, dst) from CLI/env, defaulting to the committed pin (the .368 orchestrator
+    archive -> served corpus). Back-compat is exact: no args reproduce the historical
+    behaviour byte-for-byte.
+
+    W5-DELTA (ING-DELTA): re-promoting the shipped contexts from the 22.0.400 archive
+    needs ZERO change to the gate here -- promote() already stamps build/source_archive
+    from the src it is handed. Point --src at a .400 I1 archive (produced via i1_extract's
+    parameterized helpdoc surface, load_corpus(build='22.0.400')) and the served corpus is
+    stamped 22.0.400 with the same build-time live_type filter. The archive is chosen, not
+    the machinery changed."""
+    ap = argparse.ArgumentParser(description="Promote an H22 I1 node archive to the served RAG corpus.")
+    ap.add_argument("--src", default=os.environ.get("RAG_PROMOTE_SRC", SRC),
+                    help="I1 source archive (default: the committed .368 orchestrator archive)")
+    ap.add_argument("--dst", default=os.environ.get("RAG_PROMOTE_DST", DST),
+                    help="served corpus path (default: rag/corpus/h22_nodes.json)")
+    a = ap.parse_args(argv)
+    return a.src, a.dst
+
+
+def main(argv=None):
+    src_path, dst_path = _resolve_io(sys.argv[1:] if argv is None else argv)
+    src = json.load(open(src_path, encoding="utf-8"))
     out = promote(src)
     kept, dropped = out["entries"], out["excluded"]
 
-    os.makedirs(os.path.dirname(DST), exist_ok=True)
-    with io.open(DST, "w", encoding="utf-8", newline="\n") as f:
+    dst_dir = os.path.dirname(dst_path)
+    if dst_dir:
+        os.makedirs(dst_dir, exist_ok=True)
+    with io.open(dst_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(out, f, indent=1)
 
+    print("  src      :", src_path)
+    print("  build    :", out.get("build"))
     print("  kept     :", len(kept))
     print("  excluded :", len(dropped))
     for d in dropped:
         print("     %-10s %-24s %s" % (d["context"], d["stem"], d["why"]))
-    print("  written  : %s  (%d KB)" % (DST, os.path.getsize(DST) / 1024))
+    print("  written  : %s  (%d KB)" % (dst_path, os.path.getsize(dst_path) / 1024))
     print()
     k = kept[0]
     print("  sample entry:")

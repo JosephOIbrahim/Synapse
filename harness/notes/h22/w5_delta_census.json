@@ -1,0 +1,217 @@
+{
+ "leg": "W5-DELTA / ING-DELTA",
+ "compared": {
+  "from": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\w5-delta\\harness\\notes\\h22\\h22_nodes.368.backup.json",
+  "to": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\w5-delta\\rag\\corpus\\h22_nodes.json"
+ },
+ "build_368": "22.0.368",
+ "build_400": "22.0.400",
+ "source_archive_368": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\houdini\\help",
+ "source_archive_400": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\houdini\\help",
+ "totals": {
+  "entries_368": 659,
+  "entries_400": 659,
+  "excluded_368": 1,
+  "excluded_400": 1
+ },
+ "per_context": {
+  "cop": {
+   "count_368": 358,
+   "count_400": 358,
+   "delta": 0,
+   "meets_ge": true
+  },
+  "lop": {
+   "count_368": 169,
+   "count_400": 169,
+   "delta": 0,
+   "meets_ge": true
+  },
+  "cop2": {
+   "count_368": 132,
+   "count_400": 132,
+   "delta": 0,
+   "meets_ge": true
+  }
+ },
+ "zero_loss": {
+  "dropped_context_type_keys": {},
+  "lost_ids": [],
+  "verdict": "PASS"
+ },
+ "adds": {
+  "added_context_type_keys": {},
+  "new_only_ids": []
+ },
+ "changes": {
+  "n_changed": 16,
+  "changed": [
+   {
+    "id": "h22:cop/curveanimate3d",
+    "label_368": "Curve Animate 3D",
+    "label_400": "Curve Animate 3D",
+    "nparams_368": 41,
+    "nparams_400": 44,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:cop/heightfield_visualize",
+    "label_368": "HeightField Visualize",
+    "label_400": "HeightField Visualize",
+    "nparams_368": 7,
+    "nparams_400": 8,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:cop/ml_computervisioninference",
+    "label_368": "ML Computer Vision Inference",
+    "label_400": "ML Computer Vision Inference",
+    "nparams_368": 31,
+    "nparams_400": 32,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/assignprototypes",
+    "label_368": "Assign Prototypes",
+    "label_400": "Assign Prototypes",
+    "nparams_368": 13,
+    "nparams_400": 13,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/duplicate",
+    "label_368": "Duplicate",
+    "label_400": "Duplicate",
+    "nparams_368": 24,
+    "nparams_400": 26,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/extractinstances",
+    "label_368": "Extract Instances",
+    "label_400": "Extract Instances",
+    "nparams_368": 17,
+    "nparams_400": 17,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/maskfrombounds",
+    "label_368": "Mask from Bounds",
+    "label_400": "Mask from Bounds",
+    "nparams_368": 29,
+    "nparams_400": 29,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/materialvariation",
+    "label_368": "Material Variation",
+    "label_400": "Material Variation",
+    "nparams_368": 14,
+    "nparams_400": 14,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/mergepointinstancers",
+    "label_368": "Merge PointInstancers",
+    "label_400": "Merge PointInstancers",
+    "nparams_368": 4,
+    "nparams_400": 4,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/modifypointinstances",
+    "label_368": "Modify Point Instances",
+    "label_400": "Modify Point Instances",
+    "nparams_368": 34,
+    "nparams_400": 34,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/retimeinstances",
+    "label_368": "Retime Instances",
+    "label_400": "Retime Instances",
+    "nparams_368": 29,
+    "nparams_400": 29,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/scatterinstances",
+    "label_368": "Scatter Instances",
+    "label_400": "Scatter Instances",
+    "nparams_368": 88,
+    "nparams_400": 87,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/sceneimport::2.0",
+    "label_368": "Scene Import",
+    "label_400": "Scene Import",
+    "nparams_368": 94,
+    "nparams_400": 95,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/sopcreate",
+    "label_368": "SOP Create",
+    "label_400": "SOP Create",
+    "nparams_368": 99,
+    "nparams_400": 100,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/splitpointinstancers",
+    "label_368": "Split PointInstancers",
+    "label_400": "Split PointInstancers",
+    "nparams_368": 11,
+    "nparams_400": 10,
+    "summary_changed": false,
+    "params_changed": true
+   },
+   {
+    "id": "h22:lop/xform",
+    "label_368": "Transform",
+    "label_400": "Transform",
+    "nparams_368": 21,
+    "nparams_400": 21,
+    "summary_changed": false,
+    "params_changed": true
+   }
+  ],
+  "changed_truncated": 0
+ },
+ "collisions_kept_both": {
+  "cop/pyro_activate": 2,
+  "cop/pyro_advect": 2,
+  "cop/pyro_block_begin": 2,
+  "cop/pyro_block_end": 2,
+  "cop/pyro_buildadvectionmap": 2,
+  "cop/pyro_buoyancy": 2,
+  "cop/pyro_configure": 2,
+  "cop/pyro_sourcefromlayer": 2,
+  "cop2/denoise": 2
+ },
+ "anatomy_crosscheck": {
+  "karmamaterial_star_served": [],
+  "instancer_type_served": [],
+  "copytopoints_served": true,
+  "componentgeometry_served": true,
+  "componentgeometry_nparams": 39,
+  "componentgeometry_note": "H22 'alternative' output is internal sopnet/geo topology; the corpus stores summary+parameters, not output-node lists, so no served field can contradict the anatomy doc.",
+  "contradictions": [],
+  "verdict": "PASS"
+ }
+}

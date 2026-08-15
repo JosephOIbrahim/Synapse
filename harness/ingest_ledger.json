@@ -1,7 +1,7 @@
 {
   "schema": "ingest_ledger/v1",
   "writer": "orchestrate.ps1",
-  "revision": 1,
+  "revision": 2,
   "ratified_build": "22.0.400",
   "contexts": {
     "apex": {
@@ -22,14 +22,14 @@
     },
     "cop": {
       "wired": true,
-      "build": "22.0.368",
+      "build": "22.0.400",
       "entries": 358,
       "gate": "RULING-175 (INGEST-01 discharged; build-time live_type filter)",
       "leg": "I1"
     },
     "cop2": {
       "wired": true,
-      "build": "22.0.368",
+      "build": "22.0.400",
       "entries": 132,
       "gate": "RULING-175 (INGEST-01 discharged; build-time live_type filter)",
       "leg": "I1"
@@ -43,7 +43,7 @@
     },
     "lop": {
       "wired": true,
-      "build": "22.0.368",
+      "build": "22.0.400",
       "entries": 169,
       "gate": "RULING-175 (INGEST-01 discharged; build-time live_type filter)",
       "leg": "I1"
@@ -84,5 +84,5 @@
       "leg": "ING-VOP"
     }
   },
-  "blake2b": "a2b718d469a7574a5c3b4f717bbbf246"
+  "blake2b": "38a6b0fb003e24c881ba388b7b61a8c6"
 }

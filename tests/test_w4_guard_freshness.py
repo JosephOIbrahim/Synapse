@@ -182,10 +182,11 @@ def test_gate_never_returns_none(tmp_path):
         assert r["ok"] is not None
 
 
-def test_live_worktree_is_honestly_red():
-    # Sanity against the REAL worktree: the shipped corpus is .368 while the drop
-    # ratifies .400, so the gate is correctly red today (the honest-first-round-FAIL
-    # precedent). Documents the live state; not a synthetic fixture.
+def test_live_worktree_is_honestly_green():
+    # Sanity against the REAL worktree: W5-DELTA re-ingested the corpus at 22.0.400
+    # (== ratified build), so the gate is correctly GREEN now. The synthetic cases
+    # above still pin the honest-red behavior. Documents the live state; not a
+    # synthetic fixture. (Was test_live_worktree_is_honestly_red pre-W5-DELTA.)
     r = checks.check_corpus_stamp_fresh({"wt": str(ROOT), "hython": "", "mode": "A"})
-    assert r["ok"] is False
-    assert "STALE" in r["detail"]
+    assert r["ok"] is True
+    assert "22.0.400" in r["detail"]

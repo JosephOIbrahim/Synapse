@@ -1,0 +1,116 @@
+{
+  "leg": "W5-DELTA",
+  "name": "ING-DELTA: shipped contexts re-promoted from the 22.0.400 archive - freshness gate goes green",
+  "status": "green_with_findings",
+  "branch": "wave5/delta",
+  "commit": {
+    "product_head": "728d905d0d030356114c86358a27c029f156d513",
+    "base": "52f22821563aac4856d2f7f85136d67177a4acf8",
+    "ahead": 1,
+    "files": [
+      "harness/notes/rag_promote_h22.py (main() parameterized --src/--dst + env; promote() body UNTOUCHED)",
+      "rag/corpus/h22_nodes.json (served corpus re-stamped 22.0.400, 659 entries)",
+      "harness/notes/h22/_w5_runtime_400_harvest.py + _w5_runtime_400.json (VERIFIED-RUNTIME 22.0.400 catalogue)",
+      "harness/notes/h22/w5_delta_build_400.py + h22_node_corpus_400.i1.json (.400 I1 src archive)",
+      "harness/notes/h22/w5_delta_census.py + w5_delta_census.json + w5_delta_368_baseline.json",
+      "tests/test_w5_delta_promote_400.py (9 tests)"
+    ],
+    "note": "One atomic product commit; the receipt lands as a follow-up closing commit (it certifies 728d905d, which exists). ingest/ reverted pristine (i1_calibrate.py rewrote _i1_calibration.json as a side effect -> reverted, out of touches). harness/ingest_ledger.json + harness/state/drop.json UNTOUCHED (git diff empty in range)."
+  },
+  "summary": "The freshness gate W4-GUARD built is GREEN. cop/lop/cop2 were genuinely re-promoted from the LIVE 22.0.400 help archive (i1_extract.load_corpus(build='22.0.400') via the W4-HELP parameterized helpdoc surface) joined with a fresh 22.0.400 runtime catalogue (reused i1_runtime.harvest_category verbatim under hython .400 - no new machinery). K.7 corpus_stamp_fresh flips ok:true (build 22.0.400 == ratified 22.0.400 via h22_symbol_table.json). Zero entry loss: 659 entries, per-context 358/169/132 identical to .368, 0 dropped (context,type) keys, 0 lost ids, 9 collisions kept-both; entry order + retrieval surface (id/type/context/label/summary/searchable_text) byte-identical, delta confined to parameters[] of 18 entries (16 datasheet content refresh + 2 runtime-join metadata). Anatomy cross-check PASS on three independent proofs. All 5 acceptance predicates pass; the two findings are the designed single-writer ledger handoff (for_ruling R1) and a pre-existing scout hybrid bug (spawn S1). Adversarially verified: 4 crucible agents, 4 CONFIRMED, 0 refutations.",
+  "acceptance": [
+    {
+      "predicate": "corpus header stamped 22.0.400; checks.py --task K.7 shows corpus_stamp_fresh ok:true in the worktree",
+      "verdict": "pass",
+      "evidence": "check: rag/corpus/h22_nodes.json build=22.0.400, source_archive='C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\houdini\\help'. `python harness/verify/checks.py --task K.7 --worktree . --mode A` -> corpus_stamp_fresh {ok:true, 'served corpus fresh: build 22.0.400 == ratified 22.0.400 (via h22_symbol_table.json (houdini_version)); 659 entries'}. Adversarially re-confirmed (attack:gate-integrity CONFIRMED): drop.json ABSENT in worktree -> authority = highest-major h22_symbol_table.json (22.0.400), which PREDATES this leg (present at base 52f22821, last touched W9 commit 86af98c4); corpus_build is deliberately not used to select the authority (anti-downgrade). Pinned at test level by tests/test_w5_delta_promote_400.py::test_corpus_build_equals_ratified."
+    },
+    {
+      "predicate": "entry census: .400 count >= .368 count per shipped context, zero dropped (context,type) keys, diff receipted",
+      "verdict": "pass",
+      "evidence": "test: tests/test_w5_delta_promote_400.py (9 tests) pins zero-loss vs the slim committed baseline harness/notes/h22/w5_delta_368_baseline.json (context_type_multiset + id set) + freshness + anatomy; `pytest tests/test_w5_delta_promote_400.py tests/test_rag_promote_contract.py -q` = 16 passed. Census receipt harness/notes/h22/w5_delta_census.json: cop 358->358, lop 169->169, cop2 132->132 (all >=, +0), zero_loss verdict PASS (0 dropped keys, 0 lost ids), 9 collisions kept-both (pyro_* x8 + cop2/denoise), 0 adds, 18 entries content-refreshed. Adversarially re-confirmed (attack:zero-loss CONFIRMED): id sets equal both directions, position-by-position order + retrieval surface identical, and served corpus == promote(.400 src) byte-for-byte."
+    },
+    {
+      "predicate": "COP/LOP calibration regression holds on the .400 corpus (the 35/35 class) and served phantom stays 0.00",
+      "verdict": "pass",
+      "evidence": "check: `python harness/notes/ingest/i1_calibrate.py` -> '35/35 controls pass (BLIND 8, CROSS-CHECK 1, NEGATIVE 7, POSITIVE 19)'. The calibration pages cop/chromakey + cop2/emboss are byte-identical .368==.400 (verified via zipfile: 3492/3435 bytes both builds), so the extractor calibration transfers verbatim to the .400 extraction. scout_eval served_phantom_rate 0.0 (checked 659, leaked 0). Adversarially re-confirmed (attack:anatomy-phantom CONFIRMED): every one of the 659 served types exists in the live 22.0.400 catalogue -> 0 served phantom; live counts Cop 385/Cop2 169/Lop 222 are supersets of served 358/132/169."
+    },
+    {
+      "predicate": "scout_eval floor-clearing and disambiguation do not regress vs W4-CRUX figures on the new corpus",
+      "verdict": "pass",
+      "evidence": "check: `python -m synapse.cognitive.tools.scout_eval` (torch hybrid path live, torch present) on the .400 corpus -> cop_lop_floor_clearing 0.9526 (502/527) == W4-CRUX exactly; disambiguation_rate 1.00 (42/42) == W4-CRUX exactly; served_phantom_rate 0.00; false_phantom 0.0 / true_phantom 1.0 / release_blocking False (== W4-CRUX run_eval grounding). type-name p_at_1 0.7529 (454/603) vs W4-CRUX 0.7546 (455/603) = -1 hit of pure hybrid-RRF jitter, NOT a corpus regression: the retrieval surface (id/type/context/label/summary/searchable_text) is BYTE-IDENTICAL across all 659 entries .368->.400 (only parameters[] changed, which scout does not index - rag_promote_h22.py::_searchable_text). Both W4-CRUX-NAMED metrics (floor-clearing + disambiguation) reproduce exactly."
+    },
+    {
+      "predicate": "anatomy cross-check: no .400 corpus entry contradicts the live-verified compound-node anatomy doc; a scout probe for karmamaterialbuilder yields honest not-found or subnet guidance, never a phantom type",
+      "verdict": "pass",
+      "evidence": "check: census anatomy_crosscheck verdict PASS - 0 karmamaterial* served, 0 'instancer'-type served, copytopoints served (real Solaris instancer type), componentgeometry served (39 params; its H22 'alternative' output is internal sopnet/geo topology the corpus does not enumerate, so no served field can contradict the doc). Live-.400 runtime harvest _w5_runtime_400.json anatomy_probe: karmamaterial* types by cat = {Cop:[],Cop2:[],Lop:[]}, lop_has_instancer=false, lop_has_copytopoints=true, lop_has_componentgeometry=true. Production path: synapse_knowledge_lookup('karmamaterialbuilder') -> found:false (honest not-found, never a phantom type); synapse_knowledge_lookup('copytopoints') -> found:true (36-param VERIFIED-DOC lop datasheet). Adversarially re-confirmed (attack:anatomy-phantom CONFIRMED) with EXACT type-field matching (substring 'instancer' has 297 legit hits: pointinstancer/mergepointinstancers/splitpointinstancers - exact type match correctly finds none). Pinned by tests/test_w5_delta_promote_400.py::test_no_karmamaterial_phantom_served / test_no_instancer_type_served / test_real_solaris_types_served."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "claim": "The retrieval surface (id+type+context+label+summary+searchable_text) is BYTE-IDENTICAL across all 659 entries .368->.400; the ONLY delta is inside parameters[] of 18 entries (16 datasheet-content refreshes + 2 runtime-join-metadata-only: lop/sopimport, lop/sopmodify live_id_match/live_label_match). searchable_text is rebuilt from label+type+context+summary and none of those changed, so the semantic-index INPUT is unchanged: a DENSE index built on the .368 searchable_text stays valid on this .400 corpus. Posted to W5-DENSE on the bus.",
+      "anchor": "harness/notes/h22/w5_delta_census.json ; bus wave5 finding->W5-DENSE 18cc10d65a48d110"
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "claim": "The live catalogue grew .368->.400 (Cop 384->385, Lop 218->222, Cop2 169 unchanged; +5 types: labs::uv_grid_texture::1.1, labs::relight_gsplats::1.0/1.1, mergepointinstancers::2.0, splitpointinstancers::2.0) with ZERO removals. 0 new SERVED (context,type) keys resulted: the labs::* are third-party HDAs with no shipped help page, and the versioned pages resolve to already-served base types. Zero removals is why zero-loss is structurally guaranteed at the roster level.",
+      "anchor": "harness/notes/h22/_w5_runtime_400.json vs harness/notes/ingest/_i1_runtime.json"
+    },
+    {
+      "id": "F3",
+      "severity": "warn",
+      "claim": "PRE-EXISTING scout bug, NOT introduced by this leg (reproduces on .368): synapse_scout hybrid path KeyErrors at scout.py:883 (`store, entry = id_meta[_id]`) on karma-family queries. Root cause: _dense_ids (the semantic index) surfaces an H21 PROSE id (karma_rendering_guide) into the RRF fused list, but id_meta is only populated for ids present in a store's by_id (scout.py:875-877); a dense id absent from the lazily-materialized prose corpus is never added -> KeyError. Orthogonal to the node corpus (different store; identical retrieval surface .368/.400). Node datasheets are unaffected - they serve via the exclusive knowledge path (knowledge.py::_match_h22_node), verified honest. Suggested guard: `if _id not in id_meta: continue` at scout.py:882, or reconcile the semantic index against the materialized prose corpus. Posted to the shared bus. -> spawn S1.",
+      "anchor": "python/synapse/cognitive/tools/scout.py:882 ; bus wave5 finding 18cc10d670564c08"
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "claim": "The OVERALL K.7 task verdict is FAIL, but corpus_stamp_fresh (this leg's target) is GREEN. The FAIL is driven by two checks this leg does not own: (a) ingest_ledger_single_writer red = the designed .368->.400 build handoff on harness/ingest_ledger.json, a single-writer file this leg is forbidden to write (see for_ruling R1); (b) suite_baseline guardrail red = PRE-EXISTING master state (R31 flat-baseline shape, W5-BASE's leg per the wave5 board). Neither is this leg's defect; the ledger's own ratified_build (22.0.400) already matches the resolved ratified (no forged-ratified violation).",
+      "anchor": "harness/verify/checks.py::check_ingest_ledger_single_writer ; K.7 dispatch"
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "claim": "Adversarial verification (workflow wf_22ffbaaa-562, 4 read-only crucible agents on committed HEAD): ALL 4 CONFIRMED, 0 refutations. zero-loss (independent id/key/order/surface diff + served==promote(.400) byte-for-byte); anatomy-phantom (0 karmamaterial*/instancer, all 659 served types live in the .400 catalogue); gate-integrity (K.7 corpus_stamp_fresh ok:true honest, no forbidden file touched, ledger red = designed handoff); backcompat-repro (16 tests pass; .368 corpus reproduces byte-identical sha 32fe9e6b..., .400 corpus reproduces byte-identical sha 1b3c5b17..., promote() body zero changed lines). Backcompat agent's provenance-hygiene note (untracked .400 src) was actioned: h22_node_corpus_400.i1.json is now committed, making the .400 audit chain self-contained (mirrors the committed .368 orchestrator archive).",
+      "anchor": "workflow wf_22ffbaaa-562 ; git show 728d905d --stat"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "R1",
+      "claim": "INGEST LEDGER build-flip (single-writer, gate-side): harness/ingest_ledger.json still records contexts cop/cop2/lop @ build 22.0.368 while the served corpus is now 22.0.400, so check_ingest_ledger_single_writer is red (3 per-context build violations). The ledger is single-writer (writer='orchestrate.ps1' == AUTHORIZED_WRITER); this leg PROPOSES the flip and does NOT write the ledger (crucible criterion 'ledger single-writer honored' + constitution). PROPOSED flip for the writer at merge on Joe's word: set contexts.{cop,cop2,lop}.build '22.0.368' -> '22.0.400' (entries UNCHANGED 358/132/169), bump revision 1 -> 2, recompute blake2b; ratified_build already '22.0.400' (matches, no change). Mechanically deterministic: `python harness/ingest_ledger.py .` (seed_from_repo re-derives contexts_from_corpus from the .400 corpus + resolve_ratified_build). Once applied, ingest_ledger_single_writer flips green (the only outstanding violation is the per-context build; writer/integrity/blake2b/ratified checks already pass).",
+      "recommend": "single-writer applies the .368->.400 per-context build flip at merge (re-run seed_from_repo); this leg stays hands-off the ledger"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W5-DELTA-S1",
+      "name": "guard the pre-existing scout hybrid KeyError (dense id absent from id_meta)",
+      "band": "BUILD",
+      "class": "probe",
+      "source": {"doc": "harness/notes/receipts/W5-DELTA.json", "anchor": "finding F3"},
+      "targets": [
+        "1) guard python/synapse/cognitive/tools/scout.py:882 fused loop: `if _id not in id_meta: continue` so a dense-surfaced id absent from any store's by_id degrades gracefully instead of raising KeyError",
+        "2) OR reconcile the semantic index against the lazily-materialized prose corpus so _dense_ids never returns an id absent from by_id",
+        "3) regression test: a karma-family scout query returns hits (or honest empty) and never raises"
+      ],
+      "acceptance": [
+        {"predicate": "synapse_scout('karmamaterialbuilder' / 'karma') returns without raising; node datasheets still served via the knowledge path", "evidence": "test"}
+      ],
+      "readonly": false,
+      "touches": ["python/synapse/cognitive/tools/scout.py", "tests/"],
+      "spawn_classes": ["probe"],
+      "note": "class=probe within W5-DELTA spawn_classes; a small guard, but it edits a shared surface (scout.py) outside this leg's touches -> lands held for Joe. Orthogonal to the corpus (reproduces on .368); node grounding is unaffected."
+    }
+  ],
+  "crucible_criteria_status": [
+    {"criterion": "BUS CONTRACT: post census + contradictions to W5-DENSE and W5-CRUX as soon as .400 promote completes", "status": "honored", "evidence": "bus wave5: finding->W5-DENSE (census + surface-identical, 18cc10d65a48d110), finding->W5-CRUX (anatomy PASS + compliance, 18cc10d665035b84), finding->shared (scout bug, 18cc10d670564c08) - posted immediately after the .400 promote + verification, before the receipt"},
+    {"criterion": "QUIT-RULE: any served entry lost vs .368 -> STOP, keep-both, post for_ruling", "status": "not triggered", "evidence": "zero-loss PASS (0 dropped keys, 0 lost ids); no deletion occurred, nothing to keep-both beyond the 9 pre-existing collisions which are preserved"},
+    {"criterion": "backup-before-mutation: the .368 corpus copied aside before the promote writes, path in the receipt", "status": "honored", "evidence": "harness/notes/h22/h22_nodes.368.backup.json (8,006,407 bytes, build 22.0.368) copied BEFORE the .400 promote wrote rag/corpus/h22_nodes.json. Left untracked (byte-identical to the committed base corpus; recoverable via `git show 52f22821:rag/corpus/h22_nodes.json`). The slim durable baseline w5_delta_368_baseline.json IS committed for the test."},
+    {"criterion": "ledger single-writer honored: the leg proposes, never writes harness/ingest_ledger.json", "status": "honored", "evidence": "git diff 52f22821..HEAD -- harness/ingest_ledger.json = EMPTY; the flip is proposed in for_ruling R1"},
+    {"criterion": "house rule: unobtainable renders UNKNOWN, never zero and never an estimate", "status": "honored", "evidence": "no UNKNOWN needed - both .368 and .400 help archives are installed (real extraction), hython 22.0.400 is live (real runtime harvest), torch present (real hybrid scout_eval); no figure was estimated"}
+  ],
+  "note": "Runs on the current parser - no Branch-A patch (wave-7 material behind Gate P). Constitution honored: no push/merge/tag, no drop.json edit, no ratified/state flip. The receipt is committed as the closing commit certifying product HEAD 728d905d."
+}
