@@ -176,6 +176,12 @@ class NodeHandlerMixin:
         Traverses children in data-flow order, detects common workflow
         patterns, identifies non-default parameters, and optionally suggests
         parameters to promote for HDA interfaces.
+
+        Locked-HDA internals (Solaris compound LOPs like componentoutput
+        carry 90+ machinery nodes) are not descended into by default; the
+        compound node is annotated with is_locked_hda / internal_node_count /
+        edit_entry_points instead. Pass include_locked_internals=True to
+        traverse inside them.
         """
         if not HOU_AVAILABLE:
             raise HoudiniUnavailableError()
@@ -186,6 +192,9 @@ class NodeHandlerMixin:
         detail_level = resolve_param_with_default(payload, "detail_level", "standard")
         include_parameters = resolve_param_with_default(payload, "include_parameters", True)
         include_expressions = resolve_param_with_default(payload, "include_expressions", False)
+        include_locked_internals = resolve_param_with_default(
+            payload, "include_locked_internals", False
+        )
         output_format = resolve_param_with_default(payload, "format", "structured")
 
         from .main_thread import run_on_main
@@ -196,7 +205,9 @@ class NodeHandlerMixin:
                 raise NodeNotFoundError(root_path)
 
             # Collect all nodes with depth-limited traversal
-            all_nodes = _collect_nodes(root, depth)
+            all_nodes = _collect_nodes(
+                root, depth, descend_locked=include_locked_internals
+            )
 
             if not all_nodes:
                 return {
@@ -240,6 +251,23 @@ class NodeHandlerMixin:
                     "inputs_from": sorted(inputs_from),
                     "outputs_to": sorted(outputs_to),
                 }
+
+                if _is_locked_hda(n):
+                    entry["is_locked_hda"] = True
+                    try:
+                        entry["internal_node_count"] = len(n.allSubChildren())
+                    except Exception:
+                        pass
+                    entry_points: List[str] = []
+                    for rel in _COMPOUND_ENTRY_POINTS.get(type_name, ()):
+                        try:
+                            sub = n.node(rel)
+                        except Exception:
+                            sub = None
+                        if sub is not None:
+                            entry_points.append(sub.path())
+                    if entry_points:
+                        entry["edit_entry_points"] = entry_points
 
                 if include_parameters and detail_level != "summary":
                     key_params, expressions = _get_non_default_params(
@@ -354,8 +382,38 @@ _NETWORK_PATTERNS: Dict[str, Dict[str, Any]] = {
 }
 
 
-def _collect_nodes(root, max_depth: int) -> list:
-    """Collect child nodes up to max_depth levels deep."""
+# User-editable islands inside locked Solaris compound LOPs, relative to the
+# compound node. Everything else inside these HDAs is locked machinery that
+# floods a flat traversal (a fresh componentoutput carries 93 internal nodes).
+# Verified live on Houdini 22.0.400 (hython probe, 2026-08-15); documented in
+# rag/skills/houdini21-reference/solaris_compound_node_anatomy.md.
+_COMPOUND_ENTRY_POINTS: Dict[str, Tuple[str, ...]] = {
+    "componentgeometry": ("sopnet/geo",),
+    "componentmaterial": ("edit",),
+    "componentoutput": ("extras",),
+    "sopcreate": ("sopnet/create",),
+}
+
+
+def _is_locked_hda(node) -> bool:
+    """True only when the node is a genuinely locked HDA.
+
+    Strict identity check: hou returns a real bool, while permissive test
+    mocks return truthy MagicMocks that must not read as locked.
+    """
+    try:
+        return node.isLockedHDA() is True
+    except Exception:
+        return False
+
+
+def _collect_nodes(root, max_depth: int, descend_locked: bool = False) -> list:
+    """Collect child nodes up to max_depth levels deep.
+
+    Locked-HDA nodes are collected but their internals are not descended
+    into unless descend_locked=True -- the caller annotates them with their
+    sanctioned edit entry points instead (_COMPOUND_ENTRY_POINTS).
+    """
     result: list = []
     queue: deque = deque()
     # (node, current_depth)
@@ -365,6 +423,8 @@ def _collect_nodes(root, max_depth: int) -> list:
         node, d = queue.popleft()
         result.append(node)
         if d < max_depth:
+            if not descend_locked and _is_locked_hda(node):
+                continue
             try:
                 for child in node.children():
                     queue.append((child, d + 1))

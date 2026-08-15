@@ -419,3 +419,76 @@ class TestExplainComplexityRating:
         with patch.object(_handlers_hou, "node", return_value=root):
             result = handler._handle_network_explain({"node": "/obj/geo1"})
         assert result["complexity"] == "complex"
+
+
+class TestExplainLockedCompoundNodes:
+    """Locked Solaris compound LOPs: internals hidden by default, node
+    annotated with is_locked_hda / internal_node_count / edit_entry_points;
+    include_locked_internals=True opts back into full traversal.
+
+    Verified live on Houdini 22.0.400: a fresh componentoutput carries 93
+    locked internal nodes that flood a flat children() walk.
+    """
+
+    def _make_compound(self, name, type_name, entry_rel, n_internals=5):
+        internals = [
+            _make_mock_node(f"machinery{i}", "null", "Null",
+                            path_prefix=f"/stage/{name}")
+            for i in range(n_internals)
+        ]
+        compound = _make_mock_node(name, type_name, type_name.title(),
+                                   children=internals, path_prefix="/stage")
+        compound.isLockedHDA.return_value = True  # real bool, not a mock
+        compound.allSubChildren.return_value = internals
+        inner = MagicMock()
+        inner.path.return_value = f"/stage/{name}/{entry_rel}"
+        compound.node.return_value = inner
+        return compound
+
+    def test_locked_internals_hidden_by_default(self, handler):
+        compound = self._make_compound(
+            "componentgeometry1", "componentgeometry", "sopnet/geo")
+        root = MagicMock()
+        root.children.return_value = [compound]
+
+        with patch.object(_handlers_hou, "node", return_value=root):
+            result = handler._handle_network_explain(
+                {"node": "/stage", "depth": 3})
+
+        assert result["node_count"] == 1
+        entry = result["data_flow"][0]
+        assert entry["is_locked_hda"] is True
+        assert entry["internal_node_count"] == 5
+        assert entry["edit_entry_points"] == [
+            "/stage/componentgeometry1/sopnet/geo"]
+
+    def test_locked_internals_included_on_opt_in(self, handler):
+        compound = self._make_compound(
+            "componentoutput1", "componentoutput", "extras")
+        root = MagicMock()
+        root.children.return_value = [compound]
+
+        with patch.object(_handlers_hou, "node", return_value=root):
+            result = handler._handle_network_explain(
+                {"node": "/stage", "depth": 3,
+                 "include_locked_internals": True})
+
+        assert result["node_count"] == 6  # compound + 5 internals
+
+    def test_unlocked_subnet_still_descends(self, handler):
+        # Regression guard for the MagicMock-truthy trap: a bare mock's
+        # isLockedHDA() returns a truthy MagicMock; _is_locked_hda must
+        # require a real True, so ordinary subnets keep descending.
+        inner = _make_mock_node("inside1", "null", "Null",
+                                path_prefix="/obj/geo1/subnet1")
+        subnet = _make_mock_node("subnet1", "subnet", "Subnet",
+                                 children=[inner])
+        root = MagicMock()
+        root.children.return_value = [subnet]
+
+        with patch.object(_handlers_hou, "node", return_value=root):
+            result = handler._handle_network_explain(
+                {"node": "/obj/geo1", "depth": 3})
+
+        assert result["node_count"] == 2
+        assert not result["data_flow"][0].get("is_locked_hda")
