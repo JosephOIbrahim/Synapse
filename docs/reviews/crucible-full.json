@@ -1,0 +1,175 @@
+{
+ "threading": {
+  "attacks": [
+   {
+    "claim": "Panel worker can detect the freeze it targets by consulting `main_thread.stall_state()` — 'Same information, one hop' from the WS stall gate.",
+    "evidence": "stall_state() is driven solely by `_record_timeout`, which is only ever called in the DEFERRED branch (python/synapse/server/main_thread.py:401-405). Fast path 2 (the inline path) has no timeout by design (:328-330: 'NO bounding is applied here... Any timeout on this path would be a lie. Pure observation.'). The 179.43s class that froze Joe today — confirmed by the spec's own log cite (synapse.log:43493, 'Main-thread inline payload ... ran 179.43s', observed) — never touches the stall counter. During a pure-inline hold with no concurrent worker traffic, stall_state() returns False: F2's consult instrument is blind to exactly the class this fix exists to police. F2 never names the F4 in-flight register that would supply the missing signal.",
+    "fatal": true,
+    "severity": "fatal",
+    "target": "F2 circuit-breaker"
+   },
+   {
+    "claim": "The surfaced sentence 'a {slowest_label} operation has held the UI for Ns' is computable from stall_state() + main_thread_hold_stats().",
+    "evidence": "stall_state() (main_thread.py:223-236) returns only {stalled, consecutive_timeouts, last_timeout_ts} — no durations, no current label; 'held the UI for Ns' is not derivable (last_timeout_ts is a timestamp of the last timeout, not hold length). main_thread_hold_stats().slowest_label (:165, :177) is the slowest COMPLETED deferred hold, historical and never age-decayed (:200-209 reset only by tests) — during an in-flight hold it names a stale op or None, misattributing the message. Today's freeze would have produced 'a doctor operation has held the UI for [last 1s telemetry timeout ago]' — the 651ms-doctor inversion the spec itself condemns.",
+    "fatal": false,
+    "severity": "major",
+    "target": "F2 circuit-breaker"
+   },
+   {
+    "claim": "'restore triggers one consolidated cook' and 'Explicit cook(force=True) inside payloads still cooks — reads-after-writes keep working.'",
+    "evidence": "Both are behavioral claims asserted as fact against a vendor surface the repo itself flags as unprobed: harness/notes/h3a_symbols.json:54-55 marks hou.updateModeSetting and hou.updateMode as '\"candidate\": true' (probe-pending). Vendor hou.py 22.0.400 (C:/Program Files/Side Effects Software/Houdini 22.0.400/houdini/python3.13libs/hou.py): the setUpdateMode docstring (:118487-118500) says only 'Set Houdini's cook update mode' with NO statement that restoring AutoUpdate recooks dirtied nodes; the documented explicit mechanism is hou.ui.triggerUpdate (:103374-103383, 'Force the viewports to update and perform any cooks necessary. You might call this function when Houdini's Auto Update mode is on Manual') — a symbol the spec never mentions. Node.cook's docstring (:20052-20067) makes no statement about Manual-mode interaction at all. Existence (VERIFIED) is being laundered into behavior (UNVERIFIED). UNKNOWN.",
+    "fatal": false,
+    "severity": "major",
+    "target": "F1 update-mode sandwich"
+   },
+   {
+    "claim": "Adding the register to fast path 2 makes freeze dumps 'name the current holder instead of only the last completed one.'",
+    "evidence": "Placement at main_thread.py:315-348 is single-writer-safe (entry requires current_thread().ident == _MAIN_THREAD_ID, :315; only the process main thread ever writes). But the deferred path _on_main (:365-397) has no in-flight register — it records only post-completion via _record_main_thread_hold (:394). The seven 162-177s render zombies of Aug 13 (the spec's second freeze class) ran via the MCP marshal = deferred path; a mid-freeze dump during a zombie render would still be blind to the in-flight holder. The fix covers today's inline class and silently misses the Aug-13 deferred class — the stated goal fails for exactly the renders.",
+    "fatal": false,
+    "severity": "major",
+    "target": "F4 in-flight register"
+   },
+   {
+    "claim": "Husk background renders work and are killable — 'the H21 Indie refutation is superseded' on H22.0.368+.",
+    "evidence": "The tree carries two contradictory VERIFIED-live claims the spec picks between without reconciling: handlers_render.py:336-338 ('on Indie the out-of-process husk path cannot load the Karma delegate (verified live 2026-07-17, \"Unable to load render plugin: karma\")') vs harness/notes/perception_truth_22.0.368.json ('husk wrote real multi-part EXRs headless on Indie, CPU and XPU'). Which invocation differs (usdrender ROP vs raw husk CLI?) is UNKNOWN; flipping the automation default to background on this contested ground is the riskiest behavior change in the spec. The Joe-sign-off gate mitigates but does not resolve it.",
+    "fatal": false,
+    "severity": "major",
+    "target": "F5 zombie-proof renders"
+   },
+   {
+    "claim": "'Implement SynapseBridge.session_report (or fix the caller)' — the Aug-13 AttributeError is a live small defect.",
+    "evidence": "In-tree, session_report already EXISTS on both plausible targets: LosslessExecutionBridge.session_report() at shared/bridge.py:2841, and session_report as a Qt Signal at python/synapse/panel/ws_bridge.py:200. The spec names no file:line for the failing caller, so the forge step 'implement session_report' may implement something that exists on the wrong class. UNKNOWN defect target; the defect may already be fixed.",
+    "fatal": false,
+    "severity": "major",
+    "target": "F3 emergency net"
+   },
+   {
+    "claim": "'No live SynapseServer breaker' / 'hwebserver has no resilience layer' is a defect to repair; 'emergency_halt must not skip when no /mcp bridge is active.'",
+    "evidence": "The degrade is deliberate and already honest: freeze_chain._escalate logs exactly that sentence and proceeds to the halt check (python/synapse/server/freeze_chain.py:201-204), and the peeks are documented 'NEVER construct; attribute reads only' (:224) — constructing a SynapseServer/bridge from a timer thread mid-freeze is deliberately excluded. The spec recasts this deliberate invariant as 'three small defects' without engaging the reason, and its item 3 would wire EmergencyProtocol.trigger_emergency_halt — whose §1.8 actions (cancel PDG cooks, write agent.usd) require hou/main-thread access — to fire while the main thread is frozen, blocking or timing out inside its own escalation. No analysis of that deadlock-shaped interaction.",
+    "fatal": false,
+    "severity": "major",
+    "target": "F3 emergency net"
+   },
+   {
+    "claim": "hou.interruptRender/abortRender/killRender are 'all absent from the 35,908-symbol H22.0.400 table'.",
+    "evidence": "The 35,908-symbol table (python/synapse/cognitive/tools/data/h22_symbol_table.json, houdini_version 22.0.400) contains hou.IPRViewer.killRender, plus hou.InterruptableOperation and hou.OperationInterrupted. As a plain-string membership claim, 'killRender absent' is falsifiable; the intended claim — no API cancels an in-flight node.render() — survives (IPRViewer is the interactive render panel, not arbitrary renders; marshal_map.md item 22 already documents InterruptableOperation cannot bound node.render()). Wording must be tightened before it propagates into a golden.",
+    "fatal": false,
+    "severity": "minor",
+    "target": "Physical law preamble"
+   },
+   {
+    "claim": "Symbols 'verified EXISTS on 22.0.400 (vendor-pinned in h22_compat_ledger.json:30884-30895, 32123-32134)'.",
+    "evidence": "The cited ledger entries say 'present in introspected dir() table @22.0.368' — the ledger evidence is .368, not .400. The .400 claim is independently true (h22_symbol_table.json, 22.0.400/35,908 symbols, contains hou.setUpdateMode, hou.updateModeSetting, hou.updateMode.Manual, hou.isUIAvailable), so the claim survives materially — but the citation as written does not support the 'on 22.0.400' pin; the correct citation is the symbol table. Minor evidence-routing defect under Law 2.",
+    "fatal": false,
+    "severity": "minor",
+    "target": "F1 citation precision"
+   },
+   {
+    "claim": "The sandwich is safe against payloads that call setUpdateMode themselves, and against the artist toggling update mode during the (UI-responsive) hold.",
+    "evidence": "Unaddressed in the spec. A payload calling hou.setUpdateMode(hou.updateMode.AutoUpdate) silently defeats the sandwich for the remainder of its body (the finally still restores the snapshot, so no leak — but the collapse guarantee is voided with no detection). And the spec's own risk statement says the UI stays responsive during the stale window — a responsive artist who flips the mode from the status bar gets stomped by the restore. Neither is handled or even named.",
+    "fatal": false,
+    "severity": "minor",
+    "target": "F1 update-mode sandwich"
+   },
+   {
+    "claim": "'Zero production call sites exist today.'",
+    "evidence": "VERIFIED: grep of setUpdateMode|updateModeSetting|updateMode.Manual over C:/Users/User/SYNAPSE/python/**/*.py returns no matches (only symbol-table JSON hits under cognitive/tools/data). Claim survives.",
+    "fatal": false,
+    "severity": "minor",
+    "target": "F1 zero-callsites claim"
+   }
+  ],
+  "lens": "THREADING CORRECTNESS",
+  "verdict": "The spec's foundations are real: the physical-law framing checks out against the 35,908-symbol H22.0.400 table and vendor hou.py (no in-flight render cancel exists; InterruptableOperation is already documented as non-bounding), the zero-callsites claim for F1 is verified, the fast-path-2 inline freeze class is confirmed by the spec's own log cite, and F4's register placement is single-writer-safe (fast path 2's ident gate at main_thread.py:315 guarantees main-thread-only writes). But F2 is wired to the wrong instruments: stall_state() is driven only by deferred-path timeouts (main_thread.py:401-405) and is structurally blind to the inline class F2 exists to police, and its user-facing sentence ('held the UI for Ns') is not computable from the signals it consults — fatal to F2 as written unless it is explicitly re-rooted in F4's new register. F1 launders symbol existence into unverified behavior: 'restore triggers one consolidated cook' and 'cook(force=True) still works under Manual' are asserted over symbols the repo itself flags as probe-candidates, and the vendor-documented mechanism (hou.ui.triggerUpdate) goes unmentioned. F4's register covers only fast path 2, leaving the deferred _on_main in-flight holds — the Aug-13 zombie-render class — invisible mid-flight. F3 recasts a deliberate never-construct invariant as a defect and targets a session_report that already exists on both plausible classes. F5's husk-killability lever rests on contested in-tree evidence about Indie support that needs re-probing before the default flip. The sequencing (observe first, then breaker, then net, then sandwich) is sound, but F2 must be redesigned around the F4 register, F1's behavioral claims must be probed before forge, and F4 must also register the deferred path — otherwise the forge builds instruments that cannot see two of the three freeze classes the spec documents."
+ },
+ "anchors": {
+  "lens": "Anchor blast radius + regression: what each fix breaks for the four bridge anchors (undo grouping, thread safety, consent gates, scene integrity) and for existing callers/contracts",
+  "attacks": [
+   {
+    "claim": "The 'policy, not mechanism' flip to default-background breaks _handle_render's file-on-return contract and detonates the GL flipbook fallback on every >15s automation render, converting the zombie-render freeze class into the worst verified hold class plus false failures",
+    "evidence": "python/synapse/server/handlers_render.py:971-975 polls for the output file only 60x0.25s (~15s) after node.render(); :1006-1011 on miss enters the flipbook fallback for usdrender/usdrender_rop ('Render output not found after node.render()'); :1078-1082 raises RuntimeError 'The render finished but the output wasn't created' if that fails. The flipbook grip is the single largest corroborated hold in the corpus: docs/reviews/freeze-class1-recon-2026-08-01.md lines 50/53/98 — max 24,219ms, matched 1:1 by marshal_guard fast_path_2 records. The spec's own evidence line 622 in handlers_render.py admits 'a cold Karma XPU kernel compile alone can take up to ~2 minutes' — so a background render essentially never lands in the 15s poll. Spec F5 text (bullets at spec:136-141) never mentions the poll, the fallback, or the raise. Additionally the spec neither cites nor runs a probe pinning that node.render() with soho_foreground=0 actually returns early via husk — if it blocks, the killability premise is unverified; if it returns early, the return contract breaks. Either way F5 fails its own 'measured numbers only' law (spec:6-7).",
+    "fatal": true,
+    "severity": "fatal",
+    "target": "F5"
+   },
+   {
+    "claim": "Existing callers already assume foreground semantics: render_progressively already defaults its preview/production passes to soho_foreground=0 and then synchronously validates image_path — under a real background render the 'validated frame' is the flipbook GL grab, not the Karma output; the autonomy evaluator fails missing files and loops re-renders, which under F5 becomes a duplicate-husk cascade",
+    "evidence": "handlers_render.py:2258-2261 and :2356 set 'soho_foreground': 0 for preview/production passes; :2411 calls _handle_render then :2425-2432 validates image_path immediately. When the file is absent, the flipbook grab at :1038-1041 is used and the result at :1113 still labels it 'GL viewport flipbook preview, not a render' — validation then passes/fails the viewport, not the render. python/synapse/autonomy/evaluator.py:110 (`if not os.path.exists(output_path)`) and :227-234 return passed=False 'Couldn't find rendered output' → the autonomous loop's retry contract re-renders while husk still writes, i.e. F5 recreates the zombie class out-of-process where callers multiply rather than block.",
+    "fatal": true,
+    "severity": "fatal",
+    "target": "F5"
+   },
+   {
+    "claim": "The sandwich's blast radius on the bridge's R1 scene-hash and Scene Integrity anchor depends on an unprobed behavioral assumption — that restoring update mode synchronously fires 'one consolidated cook' before the bridge computes scene_hash_after and runs composition validation. If restore merely marks dirty/queues, then under Manual every R1 input at shared/bridge.py:1042-1086 (child cookCount, node.cookCount, geo intrinsics, node.stage() signature) digests a stale scene, and R7 composition validation validates the pre-build stage",
+    "evidence": "shared/bridge.py:1049 appends cookCount per child, :1055 node.cookCount(), :1061-1065 geo intrinsics via node.geometry() — the latency ledger (harness/latency/LOG.md:19) measured that geometry() forces a cook on a dirty node, but that probe ran in default update mode; no probe in the spec or ledger establishes cook semantics under hou.updateMode.Manual or on restore. Hash bracket at shared/bridge.py:1777-1782 / :1811-1822. The ledger entries the spec cites (h22_compat_ledger.json hou.setUpdateMode / hou.updateModeSetting / hou.updateMode.Manual) verify SYMBOL EXISTENCE only ('present in introspected dir() table @22.0.368'), never restore-time cook behavior. Spec :61-63 asserts 'restore triggers one consolidated cook' with no producer; its honesty rule says 'measured numbers only ... or says UNKNOWN' — this is asserted, not measured and not marked UNKNOWN. The undo anchor itself is NOT corrupted mid-sandwich: _undo_evidence reads (bridge.py:1656-1668) deliberately treat cookCount/geo shifts as non-authored, so suppressed cooks cannot create false undo violations — the only authored proxy is child.sessionId topology, which is cook-independent. That limits this to major, not fatal.",
+    "fatal": false,
+    "severity": "major",
+    "target": "F1"
+   },
+   {
+    "claim": "The spec never states where the sandwich boundary sits relative to the bridge's hash bracket, and one of its named application sites — batch_commands — is exactly the dangerous shape: a batch runs N sub-ops under ONE undo group (handlers.py:1014 `with hou.undos.group(\"synapse_batch\")`) whose sub-ops bypass per-op handle()/bridge provenance (handlers.py:527-529); if the sandwich wraps the batch outside per-op boundaries, inter-op reads that rely on auto-cook reads-after-writes break and the live envelope's between-op attribution goes stale",
+    "evidence": "python/synapse/server/handlers.py:948-1031 (_handle_batch_commands), :982-1017 (_run_batch inside one undos.group), :527-529 ('its inner sub-ops dispatch through registry.invoke() directly and bypass handle(), so a batch gets ONE envelope block bracketing the whole batch'). Spec :66-69 lists 'batch_commands inline payloads' as a sandwich site with the only mitigation 'Explicit cook(force=True) inside payloads still cooks' — but existing sub-handlers were written against Auto mode and do not carry explicit force-cooks at read points; none is audited. The spec's per-payload guarantee does not extend 'keep reads-after-writes working' across batch sub-op boundaries, and nothing pins sandwich-inside-op-bracket as an invariant for the /mcp bridge path (hash-after at shared/bridge.py:1777 runs after execute's closure returns — safe only if the sandwich's finally-restore is inside that closure).",
+    "fatal": false,
+    "severity": "major",
+    "target": "F1"
+   },
+   {
+    "claim": "The 'no undo-swallow' defense survives the freeze-class1-recon refutation: the recon's killer #2 is specifically about PUMPING the Qt loop between chunks inside an open hou.undos.group, which creates the window where artist edits land in SYNAPSE's undo entry; the sandwich does the opposite — it holds main continuously and suppresses cooks, so no artist-edit window is opened",
+    "evidence": "docs/reviews/freeze-class1-recon-2026-08-01.md lines 29-31 and the blocking fact at line 92: hou.undos.group 'captures ALL changes' (installed hou.py:106531-106534) and the disqualifying condition is 'pumping the Qt loop between chunks is exactly the window in which artist edits get swallowed'. Spec :74 'No UI pumping inside the sandwich (refuted class)' and the physical law at spec:11-16 (main-thread Python cannot be preempted) together mean the artist physically cannot edit during the hold, so the swallow class is not recreated. Residual, unremarked: if the payload raises mid-sandwich, the finally-restore fires the consolidated cook on a half-built network — the pre-existing partial-network-on-exception reality (CLAUDE.md L2 note), not a new anchor break.",
+    "fatal": false,
+    "severity": "minor",
+    "target": "F1"
+   },
+   {
+    "claim": "The 'verified EXISTS on 22.0.400' pin is a one-build overclaim: the cited ledger evidence is introspected on 22.0.368, and the doc authority target is H22.0.400; h3a_symbols.json's own 'candidate' flag is weaker than the spec's phrasing",
+    "evidence": "harness/notes/h22_compat_ledger.json entries read directly: hou.setUpdateMode 'exists_evidence: present in introspected dir() table @22.0.368', truth_tier VERIFIED-RUNTIME (@22.0.368); hou.updateMode.Manual same; hou.updateModeSetting present at :32142 with docs deprecation pointer from hou.ui.updateMode (:31757-31772). Spec :62-65 says 'verified EXISTS on 22.0.400' — no 22.0.400 introspection is cited. Project header targets Houdini 22.0.400 dual-build, and MEMORY notes the rulebook law that a symbol table must be regenerated per build.",
+    "fatal": false,
+    "severity": "minor",
+    "target": "F1"
+   },
+   {
+    "claim": "Item 6's own numbers re-violate the measured-only law: the spec asserts the divergence is '4 tools, sets 40/36' but the checked-in comment it proposes to fix says the bridge set is 35 and names three tools, and the recon's live-verified run says 4 tools with sets 39/35 — three documents, three different counts, and the spec cites no producer for 40/36",
+    "evidence": "python/synapse/mcp/server.py:121-123: 'the bridge set is 35 tools; the three that are read-only to the transport but MUTATING to the bridge are: cops_temporal_analysis, synapse_propose_graph, synapse_validate_frame'. docs/reviews/freeze-class1-recon-2026-08-01.md line 61/110: live read_only_set_divergence() returned four tools (adds synapse_render_processes), transport 39, bridge 35. Spec F6.6 (:156) says 'actual divergence is 4 tools, sets 40/36'. The forge cannot write the correct comment from the spec's number; it must re-derive live (mcp/server.py:196-209 read_only_set_divergence exists for exactly this). Minor because the fix is comment-text, but a comment that hard-codes another hand-maintained count recreates the same drift it documents (the comment's own warning at :129-130).",
+    "fatal": false,
+    "severity": "minor",
+    "target": "F6"
+   },
+   {
+    "claim": "Item 1 (record_stall=False on live_metrics) is orthogonal to gates/RBAC/C5 but silently accepts a new observability hole the spec doesn't name: if the 2s scene gather itself wedges the main thread, its stalls become invisible to the very detector that fast-fails real commands",
+    "evidence": "docs/reviews/freeze-class1-recon-2026-08-01.md line 59/102: live_metrics.py:255 is the ONLY 1.0s marshal leaving record_stall at default True (integrity_envelope.py:221 and ws_bridge.py:143 both pass False), and its timeouts feed _consecutive_timeouts which is_main_thread_stalled() uses to fast-fail REAL commands. Setting record_stall=False fixes the poisoning (good) but the spec never states the flip side: the gather's genuine stalls no longer register, so a degrading scene-collect path becomes undetectable. No consent-gate level, _READ_ONLY_COMMANDS classification, or C5 mutation lock is touched (it remains a read with unchanged classification) — the orthogonality claim holds; the honesty gap is the attack.",
+    "fatal": false,
+    "severity": "minor",
+    "target": "F6"
+   },
+   {
+    "claim": "Item 3's timeout raise for reference_usd is presented as contained, but the abandonment window is governed by multiple layers (run_on_main default 10s at handlers_usd.py:905, core/timeouts.py budget, and the /mcp/WS transport budget) — spec names only two; if any upstream budget still abandons first, the 'a retry adds a second reference LOP' duplicate-mutation class (recon 2.3) survives the fix while the caller now blocks 3x longer",
+    "evidence": "freeze-class1-recon line 58: 'reference_usd (cook at :875) opens a caller-supplied USD layer... On a >10s open the mutation completes, the caller is told it failed, and a retry adds a second reference LOP' and notes the Solaris siblings got a deliberate 30s raise at handlers_solaris_assemble.py:707-709. Spec :150-151 names 'core/timeouts.py + explicit timeout at handlers_usd.py:905' only. The mutation completes regardless of marshal timeout (no API cancels in-flight execution — spec's own physical law, :11-16), so correctness depends on EVERY budget in the chain matching; the spec doesn't enumerate the chain.",
+    "fatal": false,
+    "severity": "minor",
+    "target": "F6"
+   },
+   {
+    "claim": "The flip's 'Gate: Joe's sign-off' is correctly declared, but the foreground-escape hatch ('render_progressively layout pass keeps 256px foreground') only covers render_progressively; safe_render forces background above 512px TODAY (handlers_render.py:2209-2225), meaning the broken return contract (attack #1) is already partially live and F5's 'extends the existing rule' framing hides that the existing rule has been silently routing >512 renders into the 15s-poll/flipbook/raise path",
+    "evidence": "handlers_render.py:2209-2225 forces soho_foreground=0 above 512px when the caller didn't set it, then delegates to the same _handle_render at :2238 with the :971-975 poll and :1006-1042 flipbook fallback. The spec (:137-138) cites this rule as precedent that makes the flip small; the code shows the precedent has been manufacturing the flipbook/raise behavior for large renders already — nobody measured whether it actually offloads or breaks (no probe pinned). UNKNOWN which behavior occurs live, but either branch undermines 'extends an existing working rule.'",
+    "fatal": false,
+    "severity": "major",
+    "target": "F5-gate"
+   },
+   {
+    "claim": "The F3-before-F1 dependency is decorative, not real: nothing in the emergency net (breaker, session_report, halt-on-WS) guards the sandwich's actual failure mode (update mode left Manual after a hard crash), and there is no code dependency between freeze_chain.py / session/tracker.py and the new server/update_mode.py — conversely the spec's own stated mitigation for stuck-Manual is 'Houdini restart recovers', an admission F3 never de-risks F1",
+    "evidence": "Spec :164 'the net must exist before F1 changes hold behavior'. freeze_chain.py:193-202 escalation opens a circuit breaker and calls the emergency halt; the halt (CLAUDE.md §1.8) cancels PDG cooks and writes state — none of it restores hou.setUpdateMode. Spec :73-74 gives the sandwich's recovery as 'mode is non-persisted session state (Houdini restart also recovers)'. tracker.py:73 SynapseBridge (the class whose missing session_report caused the Aug 13 AttributeError the spec quotes) shares no call surface with update mode. The ordering is a defensible risk preference (attribution + net before behavior change) but the stated causal reason is false; the REAL undeclared dependency is a live probe of restore-cook behavior before F1 ships (attack #3).",
+    "fatal": false,
+    "severity": "minor",
+    "target": "Sequencing"
+   },
+   {
+    "claim": "The retry circuit-breaker touches no consent gate, no RBAC classification, and no C5 lock — it only reads stall_state()/slowest_label and stops re-issuing; the anchor surface survives intact. Two small gaps: its correctness depends on F4's labels (slowest_label currently attributes ~40 sites to 'unlabeled'), which the sequencing handles, and the honest sentence it prints ('try again when it finishes') has no completion signal behind it — the artist is told to wait with no way to know when the hold ended",
+    "evidence": "Spec :89-98 — the mechanism is a read of main_thread.stall_state() plus a counter in claude_worker; no write into gates, no classification change (compare recon line 25: the WS stall gate already fast-fails new commands and F2 aligns the panel with it rather than changing it). Label coverage gap: spec :122-125 (~40 unlabeled run_on_main sites across handlers_cops/handlers_usd/TOPS _common.py:82). Completion-signal gap: no mechanism in F2/F3/F4 notifies on hold end; freeze_chain's _on_recover (freeze_chain.py:144-154) fires reset logic internally but produces no artist-visible 'hold cleared' message.",
+    "fatal": false,
+    "severity": "minor",
+    "target": "F2"
+   }
+  ],
+  "verdict": "The spec survives F2, F3, F4, F6, and the undo-swallow defense of F1 — those withstand the anchor-blast-radius attack: no fix touches a consent-gate level, the _READ_ONLY_COMMANDS classification, or the C5 mutation lock, and the sandwich's no-pumping design genuinely avoids the freeze-class1-recon's disqualifying undo-swallow window. It does NOT survive as written on F5 and F1's core assumption. F5 is fatal: flipping automation renders to background/husk is asserted as 'policy, not mechanism,' but _handle_render's contract is synchronous file-on-return (15s output poll at handlers_render.py:971-975 → GL flipbook fallback at :1006-1042, the corpus's worst verified 24s main-thread grip → false RuntimeError at :1078-1082), and render_progressively's already-background passes plus the autonomy evaluator's missing-file fail/re-render loop mean the flip manufactures flipbook freezes, silently viewport-validated 'renders,' and duplicate out-of-process husk cascades — while the node.render()-under-background behavior that the entire premise rests on was never probed. F1 is major: the 'restore triggers one consolidated cook' assertion determines whether the bridge's R1 scene-hash and R7 composition validation read correct or stale scene state, no probe or ledger entry establishes it (the cited ledger pins symbol existence on 22.0.368, one build off the 22.0.400 target), and the spec never pins the sandwich-inside-the-op-hash-bracket invariant that batch_commands' single-undo-group shape can violate. Required before forge: (1) F5 must be rewritten to pin background semantics by live probe and rework the poll/fallback/raise return contract — or explicitly de-scoped; (2) F1 must ship a restore-cook probe result and a stated sandwich-scope rule; (3) F6.6 needs live re-derivation of the divergence counts, which today disagree across three documents (35/3-tools checked-in, 39/35 recon, 40/36 spec). The sequencing rationale for F3-before-F1 is decorative — the net never guards the sandwich's stuck-Manual failure mode — but harmless to keep as a risk preference provided the real dependency (the F1 probe) is added."
+ }
+}
