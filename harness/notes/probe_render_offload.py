@@ -58,7 +58,8 @@ CONTESTED-EVIDENCE RECONCILIATION (the reason this probe exists):
     and per the spec, F5b remains gated on this result AND Joe's sign-off.
 
 COST / SAFETY: builds a throwaway scene in the current HIP (sphere + light +
-camera + karmarendersettings + one usdrender_rop), writes outputs to the
+camera + karmarendersettings + one /out ``usdrender`` driver, lopnet
+``usdrender_rop`` fallback), writes outputs to the
 system temp dir, one trivial frame at low resolution. It never touches the
 production render handlers, defaults, or any existing scene nodes outside the
 nodes it creates. Safe to re-run; each run uses fresh node names.
@@ -127,7 +128,7 @@ def _write_sentinel_script() -> Path:
     return script
 
 
-def _probe_a_husk_direct(husk_exe: str) -> None:
+def _probe_a_husk_direct(husk_exe: str, hou, settings) -> None:
     """(a) direct husk.exe launch, with and without the explicit --indie flag."""
     if not Path(husk_exe).exists():
         _record("a_husk_delegate_load", "UNKNOWN",
@@ -142,7 +143,7 @@ def _probe_a_husk_direct(husk_exe: str) -> None:
     for label, (extra_flags, exr_path) in variants.items():
         # One .usda per variant so each variant's EXR is attributable.
         variant_usda = WORKDIR / f"f5a_probe_{label.replace('-', '')}.usda"
-        if not _author_usda(variant_usda, exr_path):
+        if not _export_stage_usda(settings, variant_usda, exr_path):
             per_variant[label] = {"usda_author": "failed"}
             continue
         argv = [husk_exe] + list(extra_flags) + [str(variant_usda)]
@@ -179,27 +180,64 @@ def _probe_a_husk_direct(husk_exe: str) -> None:
     else:
         verdict = "FAIL"
 
-    if (not no_flag.get("plugin_error")) and no_flag.get("exr_written") \
-            and with_flag.get("plugin_error"):
+    # Success wording requires PIXELS. plugin_error=False alone proves nothing
+    # — the first two runs died on product validation (missing orderedVars)
+    # before any delegate work and still fell into the success-worded branch.
+    def _loaded(rec):
+        return rec.get("exit_code") == 0 and rec.get("exr_written")
+
+    if _loaded(no_flag) and with_flag.get("plugin_error"):
         reconciliation = ("SPLIT — husk loads the Karma delegate WITHOUT the "
                           "explicit --indie flag and FAILS with it ('"
                           + PLUGIN_ERROR_SENTINEL + "'). The differing "
                           "invocation between handlers_render.py:336-338 and "
                           "perception_truth_22.0.368.json is the --indie flag "
                           "itself.")
-    elif not with_flag.get("plugin_error") and not no_flag.get("plugin_error"):
-        reconciliation = ("NO SPLIT — husk loads the delegate with and without "
-                          "--indie on this build/license. The 336-338 2026-07-17 "
-                          "failure was NOT caused by the flag; the argv/env "
-                          "recorded here is the new ground truth.")
+    elif _loaded(no_flag) and _loaded(with_flag):
+        reconciliation = ("NO SPLIT — husk loaded the delegate and wrote pixels "
+                          "with and without --indie on this build/license. The "
+                          "336-338 2026-07-17 failure does not reproduce on "
+                          "this build — no flag-dependent split exists here; "
+                          "the argv recorded per variant is the new ground "
+                          "truth.")
+    elif no_flag.get("plugin_error") and with_flag.get("plugin_error"):
+        reconciliation = ("BOTH variants failed to load the delegate ('"
+                          + PLUGIN_ERROR_SENTINEL + "') — perception_truth's "
+                          "success does not reproduce here.")
     else:
-        reconciliation = ("BOTH variants failed to load the delegate — "
-                          "perception_truth's success does not reproduce here.")
+        failed = [label for label, rec in per_variant.items()
+                  if not _loaded(rec)]
+        reconciliation = ("INCONCLUSIVE — husk produced no pixels on "
+                          f"{failed} without the plugin-error sentinel; the "
+                          "delegate-load question is UNANSWERED by this run "
+                          "(per-variant stderr recorded above). "
+                          + ("No flag-dependent split observed."
+                             if len(failed) == 2 else
+                             "Asymmetric failure — inspect per-variant stderr "
+                             "before drawing any flag conclusion."))
 
     _record("a_husk_delegate_load", verdict,
-            build=_build_stamp(), license=_license_stamp(),
+            build=_build_stamp(hou), license=_license_stamp(hou),
             exr_written=exr_ok, variants=per_variant,
             reconciliation=reconciliation)
+
+
+def _resolve_parm(node, *candidates):
+    """First existing parm among candidates, else the punycode-encoded USD
+    form — H22 Solaris light/camera LOPs encode ``inputs:*`` parm names as
+    punycode (live-introspected 22.0.400: distantlight intensity is
+    ``xn__inputsintensity_i0a``; plain ``intensity`` does not exist). Skips
+    ``*_control`` switcher parms. Returns None when nothing matches."""
+    for cand in candidates:
+        parm = node.parm(cand)
+        if parm is not None:
+            return parm
+    flat = candidates[0].replace(":", "").replace("inputs", "").lower()
+    for parm in node.parms():
+        name = parm.name()
+        if name.startswith(f"xn__inputs{flat}") and "_control" not in name:
+            return parm
+    return None
 
 
 def _classify_render_semantics(dt_return: float, exr_at_return: bool) -> str:
@@ -208,13 +246,20 @@ def _classify_render_semantics(dt_return: float, exr_at_return: bool) -> str:
     return "RETURNS_BEFORE_PIXELS (background launch; caller must poll/sentinel)"
 
 
-def _probe_b_and_c_render_background(hou, lop_output_dir: Path) -> None:
-    """(b) node.render() under soho_foreground=0; (c) completion signal."""
+def _build_probe_scene(hou):
+    """Shared throwaway scene: sphere → light → camera → karmarendersettings.
+    Built ONCE and used by both leg (a) — whose per-variant .usda is exported
+    from this settings node's authored stage — and legs (b)/(c)."""
     stage_net = hou.node("/stage").createNode("lopnet",
                                               f"f5a_probe_lopnet_{int(time.time())}")
     sphere = stage_net.createNode("sphere")
     light = stage_net.createNode("distantlight")
-    light.parm("intensity").set(1200)
+    intensity = _resolve_parm(light, "intensity", "inputs:intensity")
+    if intensity is not None:
+        try:
+            intensity.set(1200)
+        except hou.Error:
+            pass  # brightness is cosmetic; a black frame still proves completion
     light.setInput(0, sphere)
     cam = stage_net.createNode("camera")
     cam.setInput(0, light)
@@ -222,13 +267,12 @@ def _probe_b_and_c_render_background(hou, lop_output_dir: Path) -> None:
         cam.parmTuple("t").set((0, 0, 6))
     settings = stage_net.createNode("karmarendersettings")
     settings.setInput(0, cam)
-
-    exr_path = (lop_output_dir / "f5a_node_render.exr").as_posix()
     cam_prim = cam.parm("primpath")
     for parm_name, value in (
-        ("picture", exr_path),
         ("camera", cam_prim.evalAsString() if cam_prim is not None else "/camera1"),
         ("engine", "cpu"),
+        # Lowest-cost frame: small, 1 sample.
+        ("resolutionx", 240), ("resolutiony", 180), ("pathtracedsamples", 1),
     ):
         parm = settings.parm(parm_name)
         if parm is not None:
@@ -236,20 +280,43 @@ def _probe_b_and_c_render_background(hou, lop_output_dir: Path) -> None:
                 parm.set(value)
             except hou.Error:
                 pass  # probe records, never mutates production
-    # Lowest-cost frame: small, 1 sample, no denoise if the parms exist.
-    for parm_name, value in (("resolutionx", 240), ("resolutiony", 180),
-                             ("pathtracedsamples", 1)):
-        parm = settings.parm(parm_name)
-        if parm is not None:
-            try:
-                parm.set(value)
-            except hou.Error:
-                pass
+    return stage_net, settings
+
+
+def _probe_b_and_c_render_background(hou, lop_output_dir: Path,
+                                     stage_net, settings) -> None:
+    """(b) node.render() under soho_foreground=0; (c) completion signal."""
+    exr_path = (lop_output_dir / "f5a_node_render.exr").as_posix()
+    picture = settings.parm("picture")
+    if picture is not None:
+        try:
+            picture.set(exr_path)
+        except hou.Error:
+            pass
 
     sentinel_script = _write_sentinel_script()
-    out_net = hou.node("/out")
-    rop = out_net.createNode("usdrender_rop",
-                             f"f5a_probe_rop_{int(time.time())}")
+    # H22.0.400 class-placement truth (live-introspected 2026-08-15): the
+    # /out ROP-category husk driver is named "usdrender"; "usdrender_rop" is
+    # the LOP-context name only (creating it in /out raises OperationFailed —
+    # the bug that blocked this probe's first run). Both forms carry identical
+    # loppath/soho_foreground/trange/husk_* parm truth. /out first —
+    # production's documented home — lopnet-internal fallback second.
+    rop_stamp = int(time.time())
+    try:
+        rop = hou.node("/out").createNode("usdrender",
+                                          f"f5a_probe_rop_{rop_stamp}")
+    except hou.OperationFailed:
+        rop = stage_net.createNode("usdrender_rop", f"f5a_probe_rop_{rop_stamp}")
+    missing = [name for name in ("loppath", "soho_foreground")
+               if rop.parm(name) is None]
+    if missing:
+        _record("b_node_render_background", "UNKNOWN",
+                reason=f"driver node type {rop.type().name()!r} lacks required "
+                       f"parm(s) {missing} — probed premise unavailable",
+                invocation=rop.path())
+        _record("c_completion_signal", "UNKNOWN",
+                reason="blocked by (b): driver missing required parms")
+        return
     rop.parm("loppath").set(settings.path())
     rop.parm("soho_foreground").set(0)  # THE probed premise: background mode
     t_parm = rop.parm("trange")
@@ -352,36 +419,26 @@ def mtime_iso(ts):
             datetime.fromtimestamp(ts, timezone.utc).isoformat())
 
 
-def _author_usda(path: Path, exr_path: Path) -> bool:
-    """Author a minimal renderable stage via pxr (inside hython)."""
-    try:
-        from pxr import Gf, Usd, UsdGeom, UsdLux, UsdRender
-    except ImportError:
+def _export_stage_usda(settings, path: Path, exr_path: Path) -> bool:
+    """Export the karmarendersettings-authored stage as the per-variant .usda.
+
+    The first two runs hand-authored a pxr stage whose RenderProduct carried
+    no orderedVars — husk refused it with 'No orderedVars to specify channels
+    for /Render/product' on BOTH variants, before any delegate work, which
+    made leg (a) unanswerable. Houdini's own karmarendersettings authoring
+    (RenderSettings + Products + ordered RenderVars) is the fix: set the
+    variant's output picture, cook the LOP stage, flatten-export it."""
+    picture = settings.parm("picture")
+    if picture is None:
         return False
-    stage = Usd.Stage.CreateNew(str(path))
-    UsdGeom.Xform.Define(stage, "/root")
-    sph = UsdGeom.Sphere.Define(stage, "/root/sphere")
-    sph.CreateRadiusAttr(0.5)
-    light = UsdLux.DistantLight.Define(stage, "/root/light")
-    light.CreateIntensityAttr(1500)
-    light.CreateAngleAttr(0.53)
-    cam = UsdGeom.Camera.Define(stage, "/root/cam")
-    cam.AddTranslateOp().Set(Gf.Vec3d(0, 0, 5))
-    cam.CreateProjectionAttr("perspective")
-    settings = UsdRender.Settings.Define(stage, "/Render/settings")
-    settings.CreateCameraRel().SetTargets(["/root/cam"])
     try:
-        settings.CreateResolutionAttr().Set(Gf.Vec2i(240, 180))
-    except Exception:
-        pass
-    product = UsdRender.Product.Define(stage, "/Render/product")
-    product.CreateProductNameAttr(str(exr_path).replace("\\", "/"))
-    try:
-        settings.CreateProductsRel().SetTargets([product.GetPath().pathString])
-    except Exception:
-        pass
-    stage.GetRootLayer().Save()
-    return True
+        picture.set(str(exr_path).replace("\\", "/"))
+        stage = settings.stage()  # triggers a cook; read-only composed stage
+        if stage is None:
+            return False
+        return bool(stage.Export(str(path)))
+    except Exception:  # noqa: BLE001 — authoring failure is per-variant data
+        return False
 
 
 def _build_stamp(hou_module=None) -> str:
@@ -397,7 +454,10 @@ def _license_stamp(hou_module=None) -> str:
     if hou_module is None:
         return "standalone (no hou)"
     try:
-        return str(hou_module.licenseCategoryType())
+        # licenseCategory() is the QUERY; licenseCategoryType is the enum
+        # TYPE and raises when called — the phantom-class miss that stamped
+        # 'unknown' on the first two runs' load-bearing license axis.
+        return str(hou_module.licenseCategory())
     except Exception:  # noqa: BLE001
         return "unknown"
 
@@ -431,16 +491,28 @@ def main() -> int:
 
     hfs = os.environ.get("HFS", "")
     husk_exe = str(Path(hfs) / "bin" / ("husk.exe" if os.name == "nt" else "husk"))
-    _probe_a_husk_direct(husk_exe)
+
+    # Shared scene FIRST — leg (a)'s per-variant .usda is exported from it.
+    try:
+        stage_net, settings = _build_probe_scene(hou)
+    except Exception as exc:  # noqa: BLE001 — the probe reports, never hides
+        reason = f"scene-build raised: {type(exc).__name__}: {exc}"
+        for item in ("a_husk_delegate_load", "b_node_render_background",
+                     "c_completion_signal"):
+            _record(item, "UNKNOWN", reason=reason)
+        _flush_results()
+        return 0
+
+    _probe_a_husk_direct(husk_exe, hou, settings)
 
     try:
-        _probe_b_and_c_render_background(hou, WORKDIR)
+        _probe_b_and_c_render_background(hou, WORKDIR, stage_net, settings)
     except Exception as exc:  # noqa: BLE001 — the probe reports, never hides
         _record("b_node_render_background", "UNKNOWN",
-                reason=f"scene-build raised before render: "
+                reason=f"render-leg raised before verdict: "
                        f"{type(exc).__name__}: {exc}")
         _record("c_completion_signal", "UNKNOWN",
-                reason="blocked by (b) scene-build failure")
+                reason="blocked by (b) failure")
 
     _flush_results()
     return 0
