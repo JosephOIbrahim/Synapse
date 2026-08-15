@@ -2,7 +2,7 @@
   "embedder": "sentence-transformers",
   "model": "all-MiniLM-L6-v2",
   "dim": 384,
-  "entries": 103,
+  "entries": 104,
   "normalized": true,
-  "content_digest": "d362ef013eff63c74e2ab7eaffd2a79e"
+  "content_digest": "86240de94b7a09c31c49911242ffbf75"
 }
