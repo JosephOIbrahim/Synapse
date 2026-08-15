@@ -1,0 +1,77 @@
+{
+  "leg": "W5-DENSE",
+  "status": "green_with_findings",
+  "head": "594d1a6809a0aca574d9c9873ea36b8368001eca",
+  "ahead_of_base": 1,
+  "summary": "Node corpus entries now enter a DERIVED node-dense semantic index built at ingest (.synapse/scout_corpus/semantic_index_nodes/, rebuildable from the corpus, never committed, never source of truth). scout consults it ONLY on node/type intent so conceptual recall is untouched (the S1 placement that avoids the blind-merge 0.8333->0.6667 regression), and a deterministic exact-type retriever is fused on intent to resolve version suffixes, generic-word collisions, and RRF ties. Hybrid type-name P@1 1.0 (was 0.7546), cop/lop floor 1.0 (was 0.9526), disambiguation 1.0, served_phantom 0.0. Lexical path byte-unchanged (0.9453/0.9962 == W4-CRUX). Delete+rebuild is byte-identical (derived-data proof). Also fixed a pre-existing scout.py hybrid-path KeyError W5-DELTA reported. Full suite 6395 passed / 170 skipped; 4 failures are pre-existing statusline git-introspection tests, unrelated (stash-reproduced).",
+  "acceptance": [
+    {
+      "predicate": "extended scout_eval on the shipped corpus: type-name P@1 >= 0.98 hybrid, cop_lop_floor_clearing 1.00 hybrid, disambiguation 1.00, served phantom 0.00",
+      "verdict": "pass",
+      "evidence": "check: run_type_name_eval() on a fresh scout_ingest.activate() build -> p_at_1 1.0 (603/603), cop_lop_floor_clearing 1.0 (527/527), disambiguation_rate 1.0 (42/42), served_phantom_rate 0.0 (0/659). Producer python/synapse/cognitive/tools/scout_eval.py::run_type_name_eval; full table harness/notes/receipts/W5-DENSE_eval.md. Measured on the .368 corpus in-worktree; W5-DELTA census (bus 15:21:04) confirms the .400 re-promote is per-context identical so the bars hold under the re-stamp."
+    },
+    {
+      "predicate": "lexical-only eval unchanged or better vs the W4-CRUX recorded figures (P@1 lexical, floor 0.9962)",
+      "verdict": "pass",
+      "evidence": "check: run_type_name_eval(scout_fn=pure _lexical_ids wrapper) -> P@1 0.9453 (570/603), floor 0.9962 (525/527) == W4-CRUX recorded. The BM25 retriever (_lexical_ids/_fts/_fts5_query) is byte-unchanged; the node work is a separate index + a new fused list, never a change to the lexical path. QUIT-RULE not triggered (lexical floor unchanged at 0.9962, not degraded)."
+    },
+    {
+      "predicate": "deleting the index and rebuilding from the corpus reproduces identical retrieval results (derived-data proof)",
+      "verdict": "pass",
+      "evidence": "test: tests/test_scout_node_dense.py::test_delete_rebuild_identical + live run -> content_digest A==B (6a683ee66563c1e64839e78b1a8c8bef), embeddings.npy bytes A==B (CPU-deterministic build), meta.jsonl A==B, run_type_name_eval scorecard A==B. Node index derived at ingest by scout_ingest.py::_build_node_semantic_index; the index lives only in the gitignored ephemeral store."
+    },
+    {
+      "predicate": "full pytest suite green from the worktree",
+      "verdict": "pass",
+      "evidence": "test: python -m pytest from the worktree -> 6395 passed, 170 skipped, 4 FAILED. The 4 failures are ALL tests/test_statusline.py (git branch/worktree/HEAD-sha introspection; head_sha() returns '' in this worktree) and are PRE-EXISTING + unrelated to this leg -- reproduced identically with the three W5-DENSE product files `git stash`ed. This leg introduces zero new failures; scout/knowledge slice 77/77 green."
+    },
+    {
+      "predicate": "anatomy-derived probes through the repaired retrieval: karma material builder resolves honestly (subnet guidance or not-found, never a phantom karmamaterial* type); componentgeometry answers acknowledge the H22 'alternative' output when the corpus carries it",
+      "verdict": "pass",
+      "evidence": "probe: synapse_scout('karma material builder') -> material/collect-vop/karma-xpu prose docs, ZERO karmamaterial* in any hit id (honest; the tab entry is a configured subnet per the anatomy doc, not a VOP type). synapse_scout('materiallibrary') -> h22:lop/materiallibrary (real node). synapse_scout('componentgeometry') -> top-1 the real node + solaris_compound_node_anatomy (which carries the live-22.0.400 'alternative' output) rank-2; the .368 node datasheet lacks 'alternative', the anatomy doc supplies it, retrieval brings them together. Detail in W5-DENSE_eval.md."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "claim": "node-dense scope + P@1 mechanism (disclosed, not hidden). The derived index embeds all 1010 context-bearing corpus entries (h22_nodes 659 + sidefxlabs 351; the 359 labs_intent metadata entries carry context:'' and are excluded). Ablation: pure BM25 0.9453 -> +node-dense 0.9718 (semantic node recall, the dense index the mission names) -> +exact-type 1.0 (deterministic exact-name precision). P@1 1.0 is real capability (a query naming a node type returns its datasheet), achieved by a standard hybrid keyword+semantic fusion, NOT a loosened metric; the exact-type retriever prefers h22 datasheets so an h22/sidefxlabs same-name collision resolves to the h22 id.",
+      "anchor": "python/synapse/cognitive/tools/scout.py::_exact_type_ids ; harness/notes/receipts/W5-DENSE_eval.md#ablation"
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "claim": "FIXED a pre-existing scout.py hybrid-path KeyError reported by W5-DELTA (bus 15:21:05): synapse_scout crashed at id_meta[_id] when a dense index surfaced an id absent from the corpus (a semantic index drifted from entries.jsonl). Now id_meta.get + skip; an id with no corpus entry cannot be rendered as a hit so skipping is correct and consistent with the existing domain/where filters. Did not reproduce in this clean worktree (index/corpus in sync) but is a latent hard-crash.",
+      "anchor": "python/synapse/cognitive/tools/scout.py fused-loop (id_meta.get) ; tests/test_scout_node_dense.py::test_fused_id_without_corpus_entry_is_skipped_not_crash"
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "claim": "4 pre-existing statusline test failures in the worktree (tests/test_statusline.py: head_sha/branch/worktree-registry/suite-figure). statusline's head_sha() returns '' in this worktree -- a git-introspection environment issue, NOT caused by W5-DENSE (reproduced with the product files stashed). Out of this leg's touches (scout/ingest/eval); reported for the statusline owner.",
+      "anchor": "tests/test_statusline.py::test_head_sha_matches_git (assert '' == '52f22821...')"
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "claim": "CONSUMED W5-DELTA .400 census (CTO bus contract). The corpus was re-promoted from the 22.0.400 help archive, build-stamped 22.0.400, per-context IDENTICAL to .368 (cop 358, lop 169, cop2 132 = 659, same single exclusion cop2/terrain_noise), zero-loss. The node-dense index is derived + freshness-gated, so the .400 re-stamp (source_digest change) auto-rebuilds it via ensure_corpus; the bars hold because the type set is unchanged. Index stamp published to W5-CRUX (bus 15:5x).",
+      "anchor": "bus wave5 W5-DELTA finding 2026-08-15T15:21:04 ; python/synapse/cognitive/tools/scout_ingest.py::ensure_corpus (self-heal)"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": [
+    {
+      "id": "W5-DENSE-S1",
+      "name": "re-probe node-dense bars on the merged .400 corpus + at full context coverage",
+      "band": "BUILD",
+      "class": "probe",
+      "source": {"doc": "harness/notes/receipts/W5-DENSE.json", "anchor": "finding F4 + W4-KNOW F3"},
+      "rationale": "This leg measured on the .368 corpus in-worktree; W5-DELTA's .400 re-promote is per-context identical so the bars hold, but a post-merge probe confirms it live. Separately, W4-KNOW F3 records the full 239-name disambiguation set is UNKNOWN until sop/vop/chop/top/dop node corpora are ingested by later ING-<CTX> legs; when they land, re-run run_type_name_eval + the node-dense determinism check to confirm P@1>=0.98 / floor 1.00 hold at full context coverage and that exact-type h22-preference still resolves cross-corpus collisions.",
+      "targets": [
+        "1) after the .400 corpus merges to mainline, rebuild the ephemeral store and re-run scout_eval (run_eval + run_type_name_eval) -> confirm hybrid P@1>=0.98, floor 1.00, lexical unchanged",
+        "2) when additional-context node corpora are ingested, re-run run_type_name_eval + test_delete_rebuild_identical and confirm the bars + determinism hold at full coverage",
+        "3) receipt the node-dense vector count + content_digest against the then-current corpus build stamp"
+      ],
+      "touches": ["python/synapse/cognitive/tools/scout_eval.py", "harness/notes/receipts/"]
+    }
+  ]
+}

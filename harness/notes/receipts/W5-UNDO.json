@@ -1,0 +1,98 @@
+{
+  "leg": "W5-UNDO",
+  "status": "green_with_findings",
+  "head": "c938ef0a4e48098df7e2189144151de961f250bb",
+  "branch": "wave5/undo",
+  "base": "52f22821",
+  "ahead": 1,
+  "rebase_compat": "Clean onto master b2412b6b. During this leg master advanced 52f22821 -> b2412b6b (single commit: 'capsule(w4): wave-5 armed state recorded'), which touched NONE of the touched files. handlers_node.py latest commit is still 0d3a33eb (Joe's network_explain work), already an ancestor of my base. No rebase conflict expected on any touched file.",
+  "seam_guard": "PASS. QUIT-RULE did not fire. At claim time and again at commit time: main tree had no uncommitted changes to handlers_node.py and no commit newer than 0d3a33eb on it; my branch base already contained 0d3a33eb. Peer claims posted mid-leg (W5-BASE / W5-DELTA / W5-DENSE) name disjoint files (their tests/ touches are distinct uniquely-named files); none overlaps my actual edit targets (handlers_node.py, CLAUDE.md, tests/test_layout_and_matlib.py, tests/test_node_undo_grouping.py).",
+  "acceptance": [
+    {
+      "predicate": "under mocked hou, each of the four handlers enters exactly one undos.group around its mutations; nested-group behavior matches the wrapped-handler pattern",
+      "verdict": "pass",
+      "evidence": "tests/test_node_undo_grouping.py (11 tests, green): asserts rec.groups == ['synapse_node_<op>'] (exactly one, rules out zero/two), mutations fire at depth 1 (inside the group), nested-under-outer-group opens exactly one nested group and unwinds to 0 (max_depth==2), and exception-path tests prove the group closes AND the identical exception propagates. IMPORTANT SCOPE NOTE: only 3 of the 4 handlers the predicate names are actually IN handlers_node.py (create_node/delete_node/connect_nodes) — all three wrapped + tested. The 4th, set_parm, is NOT in handlers_node.py; it is handlers.py:_handle_set_parm (finding F1), out of this mission's touches. The predicate's 'four handlers in handlers_node.py' premise is factually incorrect; the reachable in-file scope passes fully. set_parm handled via spawn S1 (held)."
+    },
+    {
+      "predicate": "existing handler tests (incl. test_network_explain.py 19/19) stay green - no payload or return-shape drift",
+      "verdict": "pass",
+      "evidence": "test_network_explain.py 19/19 green. Full suite on the committed tree (c938ef0a): 6396 passed, 170 skipped, 4 failed. The 4 failures are ALL tests/test_statusline.py and are PRE-EXISTING worktree-context failures (statusline reads a linked worktree's .git file expecting a directory -> branch()='?', head_sha=''). Proven pre-existing: with my 3 files stashed on a pristine tree the same 4 fail identically; test_statusline.py has zero references to any touched file. Crucible behavior-parity dimension returned CLEAN: return shape identical on every branch, error routing identical, non-mutating lookups correctly outside the group, no variable-scope bug, batch-nesting matches shipped cops handlers."
+    },
+    {
+      "predicate": "CLAUDE.md drift paragraph updated: the four handlers listed as wrapped, wrap-is-not-rollback caveat preserved verbatim in spirit",
+      "verdict": "pass",
+      "evidence": "CLAUDE.md:11 updated in c938ef0a. DELIBERATE HONEST DEVIATION from the literal sub-clause 'four handlers listed as wrapped': I did NOT list all four as wrapped, because set_parm is unwrapped and not in handlers_node.py — asserting 'all four wrapped' is the fabrication class this harness kills. The paragraph now states the honest split (create/connect/delete wrapped as of W5-UNDO; set_parm relocated to handlers.py and still open) and preserves the wrap-is-not-rollback caveat (line 13 untouched; 'grouping only, not rollback' restated inline on line 11). Also added: set_keyframe (2nd unwrapped live handler, F3) and integrity_envelope.py:19-28 now-stale cross-reference (F2)."
+    },
+    {
+      "predicate": "one artist-visible Ctrl+Z reverses a full create+wire+parm build in a live GUI session",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_probe, gui_required. Not measurable headless — recorded UNKNOWN per house rule (unobtainable renders UNKNOWN, never a pass, never simulated), pending a live Houdini session receipt from Joe. The mocked exactly-one-group / nested / exception-path tests are the headless proxy and do NOT substitute for the live one-Ctrl+Z receipt. Proposed as probe spawn S2."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "claim": "set_parm (mission's 4th named handler) is NOT in handlers_node.py; it is handlers.py:_handle_set_parm (registered handlers.py:653), and it is currently UNWRAPPED (parm.set/parm_tuple.set with no hou.undos.group). Mission target text + the CLAUDE.md drift note mis-located it. Left unedited: handlers.py is out of this mission's touches and is the highest-traffic shared surface -> 'two writers on one surface stops the train'.",
+      "anchor": "python/synapse/server/handlers.py:1091"
+    },
+    {
+      "id": "F2",
+      "claim": "integrity_envelope.py:19-28 honesty-contract docstring is now STALE/INVERTED: it lists create_node/connect_nodes/delete_node in handlers_node.py as NOT wrapping and brands CLAUDE.md 1 as 'doc drift'. Post-leg those three DO wrap and CLAUDE.md is correct. Surfaced (CLAUDE.md note + F2 + spawn S1), not edited: out of touches (SUBSTRATE surface).",
+      "anchor": "python/synapse/server/integrity_envelope.py:21"
+    },
+    {
+      "id": "F3",
+      "claim": "set_keyframe is a SECOND unwrapped mutating live handler: _handle_set_keyframe (handlers_render.py:1138, registered handlers.py:746) calls parm.setKeyframe(key) inside run_on_main with no hou.undos.group. The CLAUDE.md 'one hole' claim was scoped to the 4 named handlers precisely because of this. Out of touches; folded into spawn S1.",
+      "anchor": "python/synapse/server/handlers_render.py:1167"
+    }
+  ],
+  "for_ruling": [
+    "The live one-Ctrl+Z GUI acceptance stays UNKNOWN pending Joe's live session receipt (gui_required). A headless proxy exists but does not substitute.",
+    "Out-of-touches follow-up needed (spawn S1, class not in {probe} -> lands HELD for Joe): wrap set_parm (handlers.py) + set_keyframe (handlers_render.py) in hou.undos.group, and sync integrity_envelope.py:19-28 docstring to state the three node handlers now wrap. All three surfaces are outside this mission's touches; a human authorizes the claim + seam-guard on handlers.py/handlers_render.py/integrity_envelope.py.",
+    "The mission target text and CLAUDE.md drift note both mis-located set_parm as a handlers_node.py handler. Recommend correcting the series work-order phrasing so future legs don't inherit the mis-location."
+  ],
+  "spawn": [
+    {
+      "id": "W5-UNDO-B",
+      "name": "close the remaining live-path Ctrl+Z holes: set_parm + set_keyframe wrap, integrity_envelope docstring sync",
+      "band": "BUILD",
+      "class": "build",
+      "note": "class outside W5-UNDO spawn_classes ([probe]) -> lands HELD for Joe.",
+      "targets": [
+        "handlers.py:_handle_set_parm wraps its parm.set/parm_tuple.set mutations in one hou.undos.group",
+        "handlers_render.py:_handle_set_keyframe wraps its parm.setKeyframe mutations in one hou.undos.group",
+        "integrity_envelope.py:19-28 docstring updated: create/connect/delete now wrap; only set_parm/set_keyframe remain; CLAUDE.md 1 is no longer drift for the three node handlers"
+      ],
+      "touches": ["python/synapse/server/handlers.py", "python/synapse/server/handlers_render.py", "python/synapse/server/integrity_envelope.py", "CLAUDE.md", "tests/"],
+      "readonly": false,
+      "deps": ["W5-UNDO"],
+      "crucible_criteria": ["handlers.py + handlers_render.py are high-traffic shared surfaces -> bus claim + main-tree seam-guard BEFORE any edit; two writers on one surface stops the train"],
+      "spawn_classes": ["probe"]
+    },
+    {
+      "id": "W5-UNDO-GUI",
+      "name": "live GUI one-Ctrl+Z probe for the node trio",
+      "band": "BUILD",
+      "class": "probe",
+      "targets": [
+        "in a running Houdini session, via /synapse: create a node, wire it, set a parm (create+wire+parm build), then a SINGLE Ctrl+Z, and confirm the whole build reverses",
+        "record the observed result as a human GUI receipt (never simulated)"
+      ],
+      "acceptance": [{"predicate": "one artist-visible Ctrl+Z reverses a full create+wire+parm build in a live GUI session", "evidence": "gui_probe", "gui_required": true}],
+      "touches": [],
+      "readonly": true,
+      "deps": ["W5-UNDO"],
+      "spawn_classes": ["probe"]
+    }
+  ],
+  "crucible": {
+    "method": "3 independent adversarial reviewers over the finished working-tree diff (behavior-parity / test-rigor / doc-honesty-scope), pre-commit.",
+    "behavior_parity": "CLEAN — no observable behavior change beyond undo grouping.",
+    "issues_found_and_remediated": [
+      "test-rigor minor: happy-path only -> added 3 exception-propagation tests (group closes + exception propagates) closing the 'grouping-not-rollback' false-green.",
+      "test-rigor nit: dead setattr(_HOU_AVAILABLE/_USE_DEFERRED) -> removed; documented that synchronicity comes from run_on_main fast-path-2 + hdefereval stub.",
+      "doc-honesty major: integrity_envelope.py:19-28 now-stale -> surfaced (F2 + CLAUDE.md note + spawn S1); not edited (out of touches).",
+      "doc-honesty minor: CLAUDE.md 'exactly one hole' over-claimed -> reworded to scope to the four named handlers; set_keyframe (F3) surfaced as a 2nd hole."
+    ]
+  }
+}

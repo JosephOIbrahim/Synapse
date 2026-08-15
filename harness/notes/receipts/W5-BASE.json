@@ -1,0 +1,93 @@
+{
+  "leg": "W5-BASE",
+  "name": "suite_baseline promoted to the R31 two-leg tuple - the standing master red dies",
+  "status": "blocked",
+  "head_sha": "20e0a888498ea4f6fea616e7a178a32e780bf878",
+  "branch": "wave5/base",
+  "ahead_of_merge_base": 1,
+  "summary": "The promotion is fully MEASURED, VERIFIED, and READY - but harness/verify/suite_baseline.json is DENY-LISTED from agent edit in every launch profile (Write refused by the permission layer), and W5-BASE was dispatched with settings:null so no edit-granting profile applied. Promotion is a human act by design (parse_tuple_baseline's own error + checks.py:2248). I did NOT circumvent the gate. The ready-to-apply content (fresh 2026-08-15 measured legs) is banked at harness/notes/receipts/W5-BASE_PROPOSED_suite_baseline.json; a human applies it (or re-dispatches under an edit-granting profile). The fix is proven correct: parse_tuple_baseline rejects the live FLAT file and accepts the proposal, and the ratchet holds (6389>=6389, 0<=0 -> ok=True) once it is the merge-base anchor in a .git-dir/CI context.",
+  "acceptance": [
+    {
+      "predicate": "checks.py --task R.R shows suite_baseline ok:true; guardrail_violations no longer lists it; no other guardrail regresses",
+      "verdict": "UNKNOWN",
+      "evidence": "UNOBTAINABLE by an agent: harness/verify/suite_baseline.json is deny-listed, so the live file is unchanged and check_suite_baseline() returns ok:false NOW (verified: 'BASELINE SHAPE: FLAT baseline shape rejected'). It reads the baseline at merge-base(master,HEAD)=52f22821, which still carries the FLAT scalars. The fix is PROVEN to flip it green once applied: parse_tuple_baseline(proposal) succeeds; ratchet passed_now=6389>=gate.passed 6389 AND failed_now=0<=gate.failed 0 -> ok=True (reproduced live). Two gates to a literal green remain, both outside this data-shape leg: (1) a human merge to master (the check reads merge-base, not the worktree - anti-self-lower design); (2) a .git-DIR eval context, because a linked-worktree R.R additionally reddens 4 tests/test_statusline.py cases (separate worktree-gitdir defect, see findings). 'no other guardrail regresses': PASS - my changes are two NEW files (proposal + test); guardrails.checks (tasks.json) is untouched; GUARDRAILS_FROZEN tests stay green."
+    },
+    {
+      "predicate": "the tuple carries two legs, each with interpreter + producer + measured counts traceable to a real run (anchors in the receipt)",
+      "verdict": "pass",
+      "evidence": "The banked tuple carries gate + shipping legs, each naming interpreter + producer with INTEGER measured counts. Pinned by tests/test_suite_baseline_shape.py::test_banked_proposal_is_valid_r31_tuple (PASS, uses the REAL checks.parse_tuple_baseline). Counts traceable to real runs (see measurements[]): gate 6389/0/170 (python 3.14.2, main-checkout CI ctx, 230.61s, HEAD b2412b6b stable); shipping 6193/119/191 err 5 (hython 22.0.368, main-checkout, 432.28s, HEAD b2412b6b stable). The tuple lives in the banked proposal pending human application to the live (deny-listed) file."
+    },
+    {
+      "predicate": "git diff touches suite_baseline.json and tests only - zero checks.py edits",
+      "verdict": "pass",
+      "evidence": "ZERO checks.py edits - VERIFIED (git status: 0 changes to harness/verify/checks.py). No production logic touched; data-shape-only discipline honored. The diff (52f22821..20e0a888) is exactly tests/test_suite_baseline_shape.py + harness/notes/receipts/W5-BASE_PROPOSED_suite_baseline.json (+ this receipt). It does NOT touch harness/verify/suite_baseline.json because that file is DENY-LISTED from agent edit - the data-shape change itself is carried verbatim in the banked proposal, ready to apply. Divergence from the literal 'suite_baseline.json and tests only' is entirely the permission block, not a scope overreach."
+    }
+  ],
+  "measurements": [
+    {
+      "leg": "gate",
+      "interpreter": "python 3.14.2 (C:/Python314/python.exe), vendor INACTIVE",
+      "context": "MAIN checkout C:/Users/User/SYNAPSE (.git is a DIRECTORY = CI context)",
+      "producer": "PYTHONPATH=<root>/python python -m pytest tests/ -q -p no:cacheprovider",
+      "result": "6389 passed, 0 failed, 170 skipped, 0 errors in 230.61s",
+      "commit": "b2412b6b (master tip; tests/ + checks.py byte-identical to branch base 52f22821)",
+      "head_stability": "HEAD b2412b6b before AND after -> no mid-run master move",
+      "note": "The worktree run of the SAME suite was 6385 passed / 4 failed / 170 skipped; the 4 failures are exactly tests/test_statusline.py (worktree .git-file artifact). Proven green in .git-dir ctx: main-checkout pytest tests/test_statusline.py = 13 passed. 6385+4 = 6389."
+    },
+    {
+      "leg": "shipping",
+      "interpreter": "hython 3.13.10 (Houdini 22.0.368), vendor ACTIVE",
+      "context": "MAIN checkout (.git dir)",
+      "producer": "PYTHONPATH=<root>/python;<root> hython -m pytest tests/ -q --continue-on-collection-errors -p no:cacheprovider",
+      "result": "6193 passed, 119 failed, 191 skipped, 5 errors (5 collection errors) in 432.28s",
+      "commit": "b2412b6b",
+      "head_stability": "HEAD b2412b6b before AND after",
+      "note": "Honestly BAD, recorded as measured (RECORDED-NOT-RERUN by the check). 5 collection errors from test-only deps absent under vendored hython (websockets etc.). --continue-on-collection-errors per R39 (--ignore banned). Not a ratchet floor."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "PRE-EXISTING RED ROOT CAUSE: the current committed suite_baseline.json was 'promoted' 2026-07-26 but kept top-level passed/failed/skipped scalars for flat-reader backward-compat (Q2-F6). parse_tuple_baseline rejects ANY file with a top-level 'passed'/'failed' key (checks.py:2283), so the file read as FLAT and the guardrail stayed red. Fix = remove those three scalars (the banked proposal).",
+      "anchor": "harness/verify/checks.py:2283 + harness/verify/suite_baseline.json (top-level passed/failed/skipped)"
+    },
+    {
+      "claim": "Removing the top-level scalars regresses NO live reader. check_suite_baseline reads only the gate/shipping legs; bom_audit.py checks only for a UTF-8 BOM; harness/statusline.py never references suite_baseline.json; the guardrails.checks list is name-only. The sole top-level-scalar reader is harness/state/leg0_baselines.json:105's frozen drop-week evidence_command (already stale at 4118/0/87; deny-listed harness/state/**, not a live check).",
+      "anchor": "harness/state/leg0_baselines.json:105 + harness/verify/bom_audit.py:28"
+    },
+    {
+      "claim": "BLOCKER: harness/verify/suite_baseline.json is deny-listed from agent edit in every profile (agent-settings.json:34, relay-settings.json:61); readonly-settings denies all. W5-BASE's manifest has settings:null, so orchestrate.ps1 (line 236-238) applied no edit-granting profile. The mission's touches/readonly:false cannot be honored by an agent. Design intent is human-only (parse_tuple_baseline error + checks.py:2248). Did NOT circumvent via a bash side-channel.",
+      "anchor": "harness/orchestrate.ps1:236 + harness/autorevise/missions/w5_base.json (settings:null)"
+    },
+    {
+      "claim": "SECOND, INDEPENDENT pre-existing red: tests/test_statusline.py reddens 4 cases (test_branch_read_without_git_matches_git, test_registry_matches_git_worktree_list, test_head_sha_matches_git, test_suite_figure_from_another_commit_is_not_shown_as_fresh) in ANY linked-worktree run. Root cause: statusline.py:100/127 open ROOT/.git/HEAD directly, but in a worktree .git is a FILE (gitdir redirection) -> head_sha()='' , branch()='?'. Proven worktree-only: main-checkout pytest tests/test_statusline.py = 13 passed. Consequence: even after the shape fix, a WORKTREE-context checks.py --task R.R stays red on the suite_baseline ratchet (failed_now=4). This is NOT part of the data-shape promotion.",
+      "anchor": "harness/statusline.py:98-140"
+    }
+  ],
+  "for_ruling": [
+    {
+      "question": "Apply the promotion. Copy harness/notes/receipts/W5-BASE_PROPOSED_suite_baseline.json over harness/verify/suite_baseline.json (drop the _PROPOSAL/_apply metadata keys) and commit; OR re-dispatch W5-BASE under a profile that whitelists that one file (fixing the settings:null manifest gap). The content is measured, verified, and proven-green.",
+      "anchor": "harness/notes/receipts/W5-BASE_PROPOSED_suite_baseline.json"
+    },
+    {
+      "question": "Verification-context ruling: check_suite_baseline reads the baseline at merge-base(master,HEAD), so the green flip lands only AFTER this branch merges to master, AND only when R.R is evaluated where .git is a DIRECTORY (CI/main checkout). If CRUX runs R.R in a linked worktree, suite_baseline stays red on the statusline artifact (4 failures) until the statusline defect is fixed. Decide the eval context for CRUX's 'all-green R.R' demand.",
+      "anchor": "harness/verify/checks.py:2322-2364"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W5-STATUSLINE-WT",
+      "name": "statusline resolves the worktree gitdir so tests/test_statusline.py passes in a linked worktree",
+      "band": "BUILD",
+      "rationale": "harness/statusline.py:100/127 open ROOT/.git/HEAD directly; in a linked worktree .git is a FILE ('gitdir: <path>'), so branch()/head_sha()/registered_paths() fail and 4 tests/test_statusline.py cases redden any worktree-context full-suite run - which blocks the suite_baseline ratchet (and thus a worktree-context all-green R.R) independently of the R31 shape fix.",
+      "targets": [
+        "resolve ROOT/.git when it is a file (parse 'gitdir: <path>') so branch()/head_sha()/packed-refs/worktrees enumeration work from inside a linked worktree",
+        "tests/test_statusline.py: 13/13 in BOTH the main checkout and a linked worktree"
+      ],
+      "touches": ["harness/statusline.py", "tests/"],
+      "readonly": false,
+      "spawn_classes": ["build"],
+      "held_reason": "class 'build' is outside W5-BASE spawn_classes ['probe'] -> lands held for Joe"
+    }
+  ],
+  "notes": "COMMIT BEFORE RECEIPT honored: commit 20e0a888 (proposal + test) exists on wave5/base, rev-list 52f22821..HEAD = 1, before this receipt was written. Bus: claim posted, disjoint-footprint finding vs W5-UNDO's dir-level tests/ claim, 3 findings, release, for_ruling all posted to wave5. Did not push/merge/tag, did not edit any deny-listed file, did not flip any ratified/state. Raw run logs captured in-session (scratchpad gate_run.log / gate_main.log / shipping_main.log); their summary lines are transcribed verbatim in measurements[]."
+}
