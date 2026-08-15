@@ -41,6 +41,25 @@ class _MockVector2:
 
 _mock_hou.Vector2 = _MockVector2
 
+
+# W5-UNDO: handlers_node now wraps every mutation in `hou.undos.group(...)`.
+# The bare ModuleType stub has no `undos`, so the create_node auto-populate
+# tests below would raise AttributeError the moment the handler enters its undo
+# group. Give it a no-op context-manager group. (When `hou` came from conftest
+# as a MagicMock, `undos.group(...)` is already an auto context manager, so the
+# guard below skips this and leaves it untouched.)
+class _NoopUndoGroup:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+if not hasattr(_mock_hou, "undos") or not hasattr(_mock_hou.undos, "group"):
+    _mock_hou.undos = types.SimpleNamespace(group=lambda name="": _NoopUndoGroup())
+
+
 # Ensure handler_helpers sees _HOU_AVAILABLE = True
 import importlib
 from synapse.server import handler_helpers

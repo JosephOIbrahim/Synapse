@@ -57,61 +57,68 @@ class NodeHandlerMixin:
                 hint = _suggest_children(os.path.dirname(parent))
                 raise NodeNotFoundError(parent, suggestion=hint.strip() if hint else "")
 
-            if name:
-                new_node = parent_node.createNode(node_type, name)
-            else:
-                new_node = parent_node.createNode(node_type)
+            # W5-UNDO: wrap every mutation in ONE undo group so a single artist
+            # Ctrl+Z reverses the whole create (the node plus any materiallibrary
+            # MaterialX scaffold). Grouping only — NOT rollback: an exception
+            # mid-block leaves the partial network for the artist to undo
+            # deliberately. Matches the handlers_cops/_usd/_material/batch/execute
+            # inline-wrap pattern; the non-mutating parent lookup stays outside.
+            with hou.undos.group("synapse_node_create"):
+                if name:
+                    new_node = parent_node.createNode(node_type, name)
+                else:
+                    new_node = parent_node.createNode(node_type)
 
-            new_node.moveToGoodPosition()
+                new_node.moveToGoodPosition()
 
-            result = {
-                "path": new_node.path(),
-                "type": node_type,
-                "name": new_node.name(),
-            }
+                result = {
+                    "path": new_node.path(),
+                    "type": node_type,
+                    "name": new_node.name(),
+                }
 
-            # Auto-populate materiallibrary with MaterialX shader nodes.
-            # Professional VFX artists expect a materiallibrary to contain
-            # a ready-to-use MaterialX standard surface shader — creating
-            # an empty materiallibrary is never useful.
-            if node_type in ("materiallibrary",):
-                try:
-                    new_node.cook(force=True)
-                    mat_name = new_node.name()
-                    shader = new_node.createNode(
-                        MTLX_STANDARD_SURFACE, mat_name + "_shader"
-                    )
-                    if shader is not None:
-                        # Create UV coordinate reader (shared across textures)
-                        uv_node = new_node.createNode(
-                            MTLX_GEOMPROPVALUE, "uv_reader"
+                # Auto-populate materiallibrary with MaterialX shader nodes.
+                # Professional VFX artists expect a materiallibrary to contain
+                # a ready-to-use MaterialX standard surface shader — creating
+                # an empty materiallibrary is never useful.
+                if node_type in ("materiallibrary",):
+                    try:
+                        new_node.cook(force=True)
+                        mat_name = new_node.name()
+                        shader = new_node.createNode(
+                            MTLX_STANDARD_SURFACE, mat_name + "_shader"
                         )
-                        if uv_node:
-                            sig_parm = uv_node.parm("signature")
-                            if sig_parm:
-                                sig_parm.set("vector2")
-                            prop_parm = uv_node.parm("geomprop")
-                            if prop_parm:
-                                prop_parm.set("st")
-                        new_node.layoutChildren()
-                        result["shader_path"] = shader.path()
-                        result["shader_type"] = MTLX_STANDARD_SURFACE
-                        if uv_node:
-                            result["uv_reader_path"] = uv_node.path()
-                        result["materialx_ready"] = True
-                except Exception as exc:
-                    _log.warning(
-                        "Auto-populate materiallibrary with MaterialX failed: %s",
-                        exc,
-                    )
-                    result["materialx_ready"] = False
+                        if shader is not None:
+                            # Create UV coordinate reader (shared across textures)
+                            uv_node = new_node.createNode(
+                                MTLX_GEOMPROPVALUE, "uv_reader"
+                            )
+                            if uv_node:
+                                sig_parm = uv_node.parm("signature")
+                                if sig_parm:
+                                    sig_parm.set("vector2")
+                                prop_parm = uv_node.parm("geomprop")
+                                if prop_parm:
+                                    prop_parm.set("st")
+                            new_node.layoutChildren()
+                            result["shader_path"] = shader.path()
+                            result["shader_type"] = MTLX_STANDARD_SURFACE
+                            if uv_node:
+                                result["uv_reader_path"] = uv_node.path()
+                            result["materialx_ready"] = True
+                    except Exception as exc:
+                        _log.warning(
+                            "Auto-populate materiallibrary with MaterialX failed: %s",
+                            exc,
+                        )
+                        result["materialx_ready"] = False
 
-            # Track node in session (logging handled by generic executor in handle())
-            bridge = self._get_bridge()  # type: ignore[attr-defined]
-            if bridge and self._session_id:  # type: ignore[attr-defined]
-                session = bridge.get_session(self._session_id)  # type: ignore[attr-defined]
-                if session:
-                    session.nodes_created.append(new_node.path())
+                # Track node in session (logging handled by generic executor in handle())
+                bridge = self._get_bridge()  # type: ignore[attr-defined]
+                if bridge and self._session_id:  # type: ignore[attr-defined]
+                    session = bridge.get_session(self._session_id)  # type: ignore[attr-defined]
+                    if session:
+                        session.nodes_created.append(new_node.path())
 
             return result
 
@@ -132,7 +139,10 @@ class NodeHandlerMixin:
                 raise NodeNotFoundError(node_path)
 
             node_name = node.name()
-            node.destroy()
+            # W5-UNDO: one undo group around the destroy so a single Ctrl+Z
+            # restores it. Grouping only, not rollback (see create handler).
+            with hou.undos.group("synapse_node_delete"):
+                node.destroy()
 
             return {"deleted": node_path, "name": node_name}
 
@@ -159,7 +169,10 @@ class NodeHandlerMixin:
             if target_node is None:
                 raise NodeNotFoundError(target_path)
 
-            target_node.setInput(int(target_input), source_node, int(source_output))
+            # W5-UNDO: one undo group around the wire so a single Ctrl+Z removes
+            # it. Grouping only, not rollback (see create handler).
+            with hou.undos.group("synapse_node_connect"):
+                target_node.setInput(int(target_input), source_node, int(source_output))
 
             return {
                 "source": source_path,
