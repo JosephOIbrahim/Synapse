@@ -1,0 +1,40 @@
+{
+  "_PROPOSAL": "R31 two-leg tuple, READY TO APPLY to harness/verify/suite_baseline.json. Banked here because that file is DENY-LISTED from agent edit in every launch profile (harness/agent-settings.json:34, harness/relay-settings.json:61); promotion is a HUMAN act by design (parse_tuple_baseline's own error message + checks.py:2248). W5-BASE measured both legs live on 2026-08-15 and prepared this content; a human (or a re-dispatch under an edit-granting profile) must copy it OVER the current file. This SUPERSEDES the 2026-07-25 harness/notes/receipts/Q2_PROPOSED_suite_baseline.json (stale numbers). Apply verbatim MINUS this _PROPOSAL key (the two _PROPOSAL/_apply keys are metadata, harmless if left in - parse_tuple_baseline ignores unknown keys - but cleaner removed).",
+  "_apply": "cp harness/notes/receipts/W5-BASE_PROPOSED_suite_baseline.json harness/verify/suite_baseline.json  (then drop the _PROPOSAL/_apply keys), commit. Verify: python harness/verify/checks.py --task R.R --worktree . --mode A  must be run where .git is a DIRECTORY (CI / main checkout); a linked-worktree run reddens 4 tests/test_statusline.py cases (a SEPARATE worktree-gitdir defect, not this promotion).",
+
+  "_comment": "Ratchet floor for checks.py::check_suite_baseline. R31: a baseline is the TWO-LEG TUPLE {gate, shipping}, never a scalar - a bare integer pins a number whose meaning depends on which interpreter produced it. W5-BASE 2026-08-15 REMOVED the top-level passed/failed/skipped scalars that the 2026-07-26 promotion kept for flat-reader backward-compat (Q2-F6): their mere presence trips parse_tuple_baseline's FLAT rejection (checks.py:2283 tests `'passed' in base or 'failed' in base`), so the file read as FLAT and the guardrail stayed red - the last pre-existing master red (W4-GUARD finding b). Removing them regresses no live reader: check_suite_baseline reads only the gate/shipping legs; bom_audit.py checks only for a BOM; harness/statusline.py never reads this file. The sole scalar reader was harness/state/leg0_baselines.json:105's frozen drop-week evidence_command (already stale at 4118/0/87, deny-listed harness/state/**). New readers use the named legs below. Advance this file ONLY in a human-promoted commit; the ratchet reads it at merge-base(master, HEAD), never the worktree, so a sprint cannot lower its own bar - the green flip therefore lands when this commit merges to master, not in the authoring worktree.",
+  "schema": "suite_baseline/tuple-v1",
+  "promoted": "2026-08-15",
+  "promoted_by": "W5-BASE wave agent, delegated by the human-issued validated work order harness/autorevise/prompts/W5-BASE.md (data-shape promotion only; removes the FLAT-tripping top-level scalars, no checks.py edit)",
+  "supersedes": "the 2026-07-26 promotion (R39/R40) that carried top-level passed/failed/skipped scalars; its shipping_with_deps figure lives in git history at that commit",
+  "gate": {
+    "_what": "What CI enforces. check_suite_baseline re-runs `python -m pytest tests/` under sys.executable every sprint and ratchets against these: failures only DOWN, passes only UP.",
+    "interpreter": "system python 3.14.2 (C:/Python314/python.exe) - vendor tree INACTIVE (_VENDOR_ABI_RISK True; no cp314 wheels), resolves pip-installed pydantic/anthropic",
+    "vendor_tree": "INACTIVE",
+    "passed": 6389,
+    "failed": 0,
+    "skipped": 170,
+    "errors": 0,
+    "collected": 6559,
+    "commit": "b2412b6b (measured on master tip; the suite is byte-identical to this file's branch base 52f22821 - git diff 52f22821..b2412b6b touches only harness/notes/h22/CAPSULE-2026-08-15-w4.md)",
+    "producer": "PYTHONPATH=<root>/python python -m pytest tests/ -q -p no:cacheprovider  (cwd=C:/Users/User/SYNAPSE, the MAIN checkout where .git is a DIRECTORY = the CI context; the exact command check_suite_baseline runs under sys.executable). Raw run: 6389 passed, 170 skipped in 230.61s, rc-of-suite 0, HEAD stable b2412b6b before+after.",
+    "measured": "2026-08-15",
+    "context_note": "Measured in the MAIN checkout so .git is a directory (CI context). A LINKED-WORKTREE run additionally reddens 4 tests/test_statusline.py cases because statusline.py:100/127 open ROOT/.git/HEAD directly and in a worktree .git is a FILE (gitdir redirection) - a worktree-only artifact, NOT a CI failure. Proven green here: `pytest tests/test_statusline.py` in the main checkout = 13 passed; the worktree run of the same suite was 6385 passed / 4 failed / 170 skipped, the 4 being exactly those statusline cases (6385+4=6389). A worktree-context `checks.py --task R.R` will see failed_now=4 until harness/statusline.py resolves the worktree gitdir; that is a SEPARATE defect from this shape promotion (W5-BASE spawn proposal)."
+  },
+  "shipping": {
+    "_what": "What artists actually run - Houdini's embedded python with the vendored wheel tree ACTIVE. The ONLY number a release claim may cite. RECORDED-NOT-RERUN by check_suite_baseline (shape-enforced, never re-run per sprint). Honestly BAD and recorded as measured - it is a measurement, not a green line, and not a ratchet floor.",
+    "interpreter": "hython 3.13.10 (Houdini 22.0.368/bin/hython.exe) - vendor tree ACTIVE (_VENDOR_ABI_RISK False; the vendored wheels artists receive)",
+    "vendor_tree": "ACTIVE",
+    "passed": 6193,
+    "failed": 119,
+    "skipped": 191,
+    "errors": 5,
+    "collection_errors": 5,
+    "collected": 6503,
+    "commit": "b2412b6b (measured on master tip; suite byte-identical to branch base 52f22821 as above)",
+    "producer": "PYTHONPATH=<root>/python;<root> hython -m pytest tests/ -q --continue-on-collection-errors -p no:cacheprovider  (cwd=C:/Users/User/SYNAPSE main checkout, .git-dir context). Raw run: 119 failed, 6193 passed, 191 skipped, 5 errors in 432.28s, HEAD stable b2412b6b before+after.",
+    "measured": "2026-08-15",
+    "context_note": "The 5 errors are collection failures from test-only deps absent in the vendored hython env (websockets etc.: tests/test_passthrough_hygiene.py, tests/test_port_wave_scene1.py, tests/test_websocket_cancel_*). --continue-on-collection-errors records them and proceeds (R39 bans --ignore, which would delete the finding). Measured in the main checkout so the 4 worktree statusline cases are NOT part of this figure - these 119 failures are real hython/vendored-tree failures, dominated by missing-dep and 3.13-vs-3.14 interpreter differences."
+  },
+  "_banned": "--ignore in any measurement runner (R39). A measurement that excludes its own failures is not a measurement. Use --continue-on-collection-errors: it records the error and proceeds."
+}
