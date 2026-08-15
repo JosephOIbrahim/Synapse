@@ -109,7 +109,9 @@ _READ_ONLY_TOOLS: frozenset = frozenset(
 
 # ── Read-only reconciliation: TWO sets, not one ──────────────────────────
 # _READ_ONLY_TOOLS (above) is the MCP *transport* annotation set — every tool
-# whose registry entry carries annotations.readOnlyHint=true (38 tools).
+# whose registry entry carries annotations.readOnlyHint=true. F6 refresh
+# (derived live from the registry on 2026-08-14, fix spec
+# docs/reviews/ui-freeze-fix-spec-2026-08-14.md): 40 tools.
 #
 # dispatch_tool gates on a DIFFERENT set: synapse.panel.bridge_adapter's own
 # _READ_ONLY_TOOLS, consulted via is_read_only() (mcp/tools.py:123). A tool that
@@ -118,9 +120,12 @@ _READ_ONLY_TOOLS: frozenset = frozenset(
 # topological scene hash DIRECTLY on the calling thread — that function assumes
 # it is already on the main thread.
 #
-# The two sets are not equal. As of this writing the bridge set is 35 tools; the
-# three that are read-only to the transport but MUTATING to the bridge are:
-#     cops_temporal_analysis, synapse_propose_graph, synapse_validate_frame
+# The two sets are not equal. As of 2026-08-14 the bridge set is 36 tools; the
+# four that are read-only to the transport but MUTATING to the bridge are:
+#     cops_temporal_analysis, synapse_propose_graph, synapse_render_processes,
+#     synapse_validate_frame
+# (The membership is the live source of truth — read_only_set_divergence()
+# below recomputes it; counts here are a snapshot, not authority.)
 # Letting those take the transport fast path (which no longer marshals) ran
 # hou.* on an hwebserver worker thread → main_thread_executed=False →
 # anchors_hold False → fidelity 0.0 → "Integrity check failed" on 100% of calls.
