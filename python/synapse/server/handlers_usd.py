@@ -952,10 +952,26 @@ class UsdHandlerMixin:
                     name_re = None  # fall back to substring match
 
             results = []
+            # F6 (2026-08-14): bound the walk by VISITS, not only by results.
+            # With filters rejecting almost every prim, a limit=10 query over a
+            # 100k-prim stage visited all 100k prims on Houdini's MAIN thread --
+            # the results cap never fired and the UI froze for the whole
+            # traversal. Any cap is a trade-off: 25k visits is generous for a
+            # discoverability query but bounded enough that a hostile stage
+            # can't pin the main thread indefinitely. The "truncated" flag
+            # below now covers both caps, so callers can tell the answer is
+            # partial rather than empty.
+            _MAX_WALK_VISITS = 25000
+            visits = [0]
 
             def _walk(prim, depth):
-                if depth > max_depth or len(results) >= limit:
+                if (
+                    depth > max_depth
+                    or len(results) >= limit
+                    or visits[0] >= _MAX_WALK_VISITS
+                ):
                     return
+                visits[0] += 1
 
                 prim_type_name = prim.GetTypeName()
 
@@ -1021,7 +1037,9 @@ class UsdHandlerMixin:
                 "root_path": root_path,
                 "prim_count": len(results),
                 "prims": results,
-                "truncated": len(results) >= limit,
+                # Either cap means the answer is partial: the results limit,
+                # or the F6 visit bound (the filter-rejects-everything case).
+                "truncated": len(results) >= limit or visits[0] >= _MAX_WALK_VISITS,
             }
 
         return run_on_main(_on_main, label="usd:_handle_query_prims")
