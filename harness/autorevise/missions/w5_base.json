@@ -1,0 +1,32 @@
+{
+  "id": "W5-BASE",
+  "name": "suite_baseline promoted to the R31 two-leg tuple - the standing master red dies",
+  "band": "BUILD",
+  "source": {
+    "doc": "harness/verify/checks.py",
+    "anchor": "R.R + K.7 guardrail_violations: suite_baseline - 'FLAT baseline shape rejected: top-level passed/failed scalar; R31 requires the two-leg tuple {gate:{...}, shipping:{...}}, each leg naming its interpreter and producer'. Proposal already banked at harness/notes/receipts/Q2_PROPOSED_suite_baseline.json. Pre-existing master state, predates wave 4 (W4-GUARD finding b)."
+  },
+  "targets": [
+    "1) promote harness/verify/suite_baseline.json to the R31 two-leg tuple shape from the banked Q2 proposal, with real measured numbers for both legs (gate interpreter + shipping build), producers named",
+    "2) the suite_baseline guardrail reports ok:true under R.R and K.7",
+    "3) no checks.py logic edits - this is a data-shape promotion only"
+  ],
+  "acceptance": [
+    {"predicate": "checks.py --task R.R shows suite_baseline ok:true; guardrail_violations no longer lists it; no other guardrail regresses", "evidence": "check"},
+    {"predicate": "the tuple carries two legs, each with interpreter + producer + measured counts traceable to a real run (anchors in the receipt)", "evidence": "test"},
+    {"predicate": "git diff touches suite_baseline.json and tests only - zero checks.py edits", "evidence": "check"}
+  ],
+  "deps": [],
+  "readonly": false,
+  "touches": [
+    "harness/verify/suite_baseline.json",
+    "tests/"
+  ],
+  "crucible_criteria": [
+    "QUIT-RULE: if the promotion cannot pass without editing checks.py logic, STOP and post for_ruling - that is a bigger leg, not this one",
+    "numbers in the tuple are OBSERVED from runs the leg executes or cites with anchors - a baseline with invented counts is the defect class R31 exists to kill",
+    "house rule: unobtainable renders UNKNOWN, never zero and never an estimate"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Smallest leg of the wave; clears the last pre-existing red so wave-5 CRUX can demand an all-green R.R. COMMIT BEFORE RECEIPT."
+}

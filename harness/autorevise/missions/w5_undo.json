@@ -1,0 +1,36 @@
+{
+  "id": "W5-UNDO",
+  "name": "hardening shotgun: handlers_node mutations get undo groups - the Ctrl+Z hole closes",
+  "band": "BUILD",
+  "source": {
+    "doc": "CLAUDE.md",
+    "anchor": "Verified drift note 2026-07-10: usd/material/cops/batch/execute handlers wrap in hou.undos.group; the handlers_node.py create/set_parm/connect/delete handlers do NOT - an artist's one-Ctrl+Z contract has a hole on the live WS path. Hardening item 1 of the ratified series (BLUEPRINT.md Series plan)."
+  },
+  "targets": [
+    "1) create/set_parm/connect/delete mutation paths in handlers_node.py wrap their hou mutations in hou.undos.group, matching the established pattern in the wrapped handlers",
+    "2) zero behavior change to payloads, return shapes, or error routing - grouping only",
+    "3) the CLAUDE.md drift note is updated to state the new truth with this leg as the anchor, path-qualified claims kept precise (grouping is not rollback)",
+    "4) live one-Ctrl+Z verification is gui_required and lands as a human receipt - recorded UNKNOWN until Joe's session, never simulated"
+  ],
+  "acceptance": [
+    {"predicate": "under mocked hou, each of the four handlers enters exactly one undos.group around its mutations; nested-group behavior matches the wrapped-handler pattern", "evidence": "test"},
+    {"predicate": "existing handler tests (incl. test_network_explain.py 19/19) stay green - no payload or return-shape drift", "evidence": "test"},
+    {"predicate": "CLAUDE.md drift paragraph updated: the four handlers listed as wrapped, wrap-is-not-rollback caveat preserved verbatim in spirit", "evidence": "check"},
+    {"predicate": "one artist-visible Ctrl+Z reverses a full create+wire+parm build in a live GUI session", "evidence": "gui_probe", "gui_required": true}
+  ],
+  "deps": [],
+  "readonly": false,
+  "touches": [
+    "python/synapse/server/handlers_node.py",
+    "CLAUDE.md",
+    "tests/"
+  ],
+  "crucible_criteria": [
+    "QUIT-RULE + SEAM GUARD: handlers_node.py was shipped-to TODAY by Joe's parallel session (0d3a33eb, network_explain locked-HDA). Before ANY edit: bus claim, then check the MAIN tree for uncommitted changes and newer commits on that file; if either exists, STOP and post a block for Joe - two writers on one surface stops the train",
+    "the gui_required acceptance stays UNKNOWN in the receipt pending Joe's live receipt - a mocked Ctrl+Z claim is the fabrication class this harness kills",
+    "rebase-compatibility with any parallel master movement stated in the receipt",
+    "house rule: unobtainable renders UNKNOWN, never zero and never an estimate"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Practice 5: pay the safety mortgage monthly. Stale knowledge annoys an artist; a broken Ctrl+Z burns one. COMMIT BEFORE RECEIPT."
+}

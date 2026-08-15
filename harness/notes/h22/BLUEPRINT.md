@@ -93,3 +93,24 @@ source; collapse to one resident index. Backup gate on migration. **Lands before
 - bookish adapter maintenance cost across a Houdini major — unpriced
 
 *Assembled by Fable 5 from the 2026-08-15 recon under Joe's direction; leg execution pinned to Opus 4.8 at arm.*
+
+## Series plan — waves 5–9 (ratified 2026-08-15, post-v5.50.0)
+
+**Shape:** 5 = trust the gauges · 6 = build capacity (SQLite+FTS5, before mass) ·
+7–9 = ingest ladder (CHOP → TOP → DOP → OBJ/ROP → VOP → SOP) · one hardening leg
+rides every wave (undo drift → provenance guardrail → execute_python builtins).
+One wave in flight at a time, 3–5 legs each, crucible in every wave, words stay human.
+
+**Wave 5 roster:** W5-DENSE (S1: node entries into the dense index → P@1 bar) ·
+W5-DELTA (.400 re-ingest of shipped contexts → freshness gate green) ·
+W5-BASE (suite_baseline R31 tuple promotion) · W5-UNDO (hardening: wrap
+handlers_node mutations in undo groups) · W5-CRUX (gate).
+Gate P ruling is Joe's word, not a leg; Branch-A parser patches enter at wave 7
+only after that ruling.
+
+**Quit-rules (escalate, don't grind):**
+- DENSE: embedding nodes degrades COP/LOP lexical floor below 1.00 → STOP, ruling.
+- DELTA: any served entry lost vs the .368 corpus → STOP, keep-both, ruling.
+- BASE: fix requires checks.py logic edits (not just the baseline file) → STOP, bigger leg.
+- UNDO: handlers_node.py shows parallel-session activity at leg start → STOP, escalate;
+  live Ctrl+Z verification is gui_required → UNKNOWN pending Joe's receipt, never faked.

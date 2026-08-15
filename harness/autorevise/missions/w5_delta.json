@@ -1,0 +1,37 @@
+{
+  "id": "W5-DELTA",
+  "name": "ING-DELTA: shipped contexts re-promoted from the 22.0.400 archive - freshness gate goes green",
+  "band": "BUILD",
+  "source": {
+    "doc": "harness/notes/receipts/W4-GUARD.json",
+    "anchor": "Freshness gate honestly RED: served corpus stamped .368 != ratified .400 (drop.json), release-blocking by design; W4-GUARD proposed probe ING-DELTA. Promote path already emits id/searchable_text (W4-KNOW); helpdoc is build-parameterized (W4-HELP) - re-promotion of the SHIPPED contexts (cop/lop/cop2) from the .400 archive needs no new machinery."
+  },
+  "targets": [
+    "1) re-run rag_promote_h22 for the shipped contexts against the 22.0.400 archive via the parameterized helpdoc surface; corpus stamped 22.0.400",
+    "2) zero entry loss vs the .368 corpus: every currently-served (context,type) survives; collisions keep both, deletions forbidden; adds/changes receipted with counts",
+    "3) K.7 corpus_stamp_fresh flips ok:true on the leg's worktree",
+    "4) the ledger entry for this flip is PROPOSED in the receipt, not written - the ingest ledger is single-writer (gate side); the wiring flip lands at merge on Joe's word"
+  ],
+  "acceptance": [
+    {"predicate": "corpus header stamped 22.0.400; checks.py --task K.7 shows corpus_stamp_fresh ok:true in the worktree", "evidence": "check"},
+    {"predicate": "entry census: .400 count >= .368 count per shipped context, zero dropped (context,type) keys, diff receipted", "evidence": "test"},
+    {"predicate": "COP/LOP calibration regression holds on the .400 corpus (the 35/35 class) and served phantom stays 0.00", "evidence": "check"},
+    {"predicate": "scout_eval floor-clearing and disambiguation do not regress vs W4-CRUX figures on the new corpus", "evidence": "check"}
+  ],
+  "deps": [],
+  "readonly": false,
+  "touches": [
+    "harness/notes/rag_promote_h22.py",
+    "rag/corpus/h22_nodes.json",
+    "harness/notes/h22/",
+    "tests/"
+  ],
+  "crucible_criteria": [
+    "QUIT-RULE: any served entry lost vs .368 -> STOP, keep-both, post for_ruling; a re-ingest never deletes",
+    "backup-before-mutation: the .368 corpus file is copied aside before the promote writes, path in the receipt",
+    "ledger single-writer honored: the leg proposes, never writes harness/ingest_ledger.json",
+    "house rule: unobtainable renders UNKNOWN, never zero and never an estimate"
+  ],
+  "spawn_classes": ["probe"],
+  "note": "Greens the gate GUARD built. Runs on current parser - Branch-A patches are wave-7 material behind Gate P. COMMIT BEFORE RECEIPT."
+}
