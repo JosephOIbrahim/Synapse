@@ -1160,16 +1160,21 @@ class RenderHandlerMixin:
                     f"Couldn't find parameter '{parm_name}' on {node_path}.{hint}"
                 )
 
-            if frame is not None:
-                key = hou.Keyframe()
-                key.setFrame(float(frame))
-                key.setValue(float(value))
-                parm.setKeyframe(key)
-            else:
-                key = hou.Keyframe()
-                key.setFrame(float(hou.frame()))
-                key.setValue(float(value))
-                parm.setKeyframe(key)
+            # W5-UNDOB: one undo group around the keyframe write so a single
+            # Ctrl+Z removes it. Grouping only, NOT rollback (see handlers_node.py).
+            # hou.Keyframe()/setFrame/setValue touch a local key object (no undo
+            # entry); only parm.setKeyframe mutates the scene.
+            with hou.undos.group("synapse_set_keyframe"):
+                if frame is not None:
+                    key = hou.Keyframe()
+                    key.setFrame(float(frame))
+                    key.setValue(float(value))
+                    parm.setKeyframe(key)
+                else:
+                    key = hou.Keyframe()
+                    key.setFrame(float(hou.frame()))
+                    key.setValue(float(value))
+                    parm.setKeyframe(key)
 
             return {
                 "node": node_path,

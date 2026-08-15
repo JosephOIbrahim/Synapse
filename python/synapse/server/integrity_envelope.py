@@ -16,16 +16,18 @@ HONESTY CONTRACT (per-path anchor semantics, CLAUDE.md §1.3):
     stage (``include_stage=False`` on every capture — the Finding 3 floor).
   - consent / composition: no gate ran, no validation ran — recorded False
     with ``*_applicable=False`` (anchor N/A), never faked True.
-  - undo: recorded False with ``undo_applicable=False``. SOME live handlers
-    do wrap inline (hou.undos.group in handlers_usd/_material/_cops/batch/
-    execute), but the highest-traffic ones (create_node / set_parm /
-    connect_nodes / delete_node in handlers_node.py) do NOT, and per-op
-    verification would need ``hou.undos`` member APIs that are not in the
+  - undo: recorded False with ``undo_applicable=False``. The live mutating
+    handlers DO wrap inline now (hou.undos.group in handlers_usd/_material/
+    _cops/batch/execute; create_node/connect_nodes/delete_node in
+    handlers_node.py per W5-UNDO; set_parm in handlers.py and set_keyframe in
+    handlers_render.py per W5-UNDOB) — grouping only, not rollback. But per-op
+    verification would still need ``hou.undos`` member APIs that are not in the
     introspected symbol table (the same reason H2 rejected undo-stack
-    inspection) — so the anchor is recorded as not-verified rather than
-    asserted from a contract the code falsifies. (This exposes CLAUDE.md §1's
-    "inline hou.undos.group(...)" live-path claim as doc drift — surfaced
-    there, not re-asserted here.)
+    inspection) — so THIS envelope records the anchor as not-verified rather
+    than asserting an undo it cannot check at runtime. (CLAUDE.md §1's "inline
+    hou.undos.group(...)" live-path claim is therefore no longer doc drift for
+    these node handlers — the code now matches it; live mutating handlers
+    beyond this tracked set stay un-audited, so this is not a universal claim.)
   - ``main_thread_executed=True`` IS asserted: every hou-touching live
     handler marshals through ``server.main_thread.run_on_main``
     (code-verified), and the envelope's own captures ride the same mechanism.
