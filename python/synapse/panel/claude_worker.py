@@ -26,6 +26,7 @@ from .providers.registry import (
     ANTHROPIC_MAX_TOKENS as _MAX_TOKENS,
     build_provider as _build_provider,
 )
+from .retry_breaker import ABANDON_THRESHOLD, breaker_message
 from .tool_bridge import get_anthropic_tools_for_worker
 from .tool_executor import ToolRequest, try_mcp_tool_call
 from .worker_policy import denial_tool_result, is_tool_allowed_for_worker
@@ -115,6 +116,11 @@ class ClaudeWorker(QThread):
         # and handler.handle's hou.* work routes through run_on_main regardless
         # of which ToolExecutor instance owns the handler.
         self._offmain_executor = None
+        # F2 (2026-08-14): consecutive abandoned (main-thread timeout) attempts,
+        # keyed by (tool_name, canonical input). Retries are new tool-use
+        # iterations, so they bypass the WS stall gate's judgment — this is the
+        # one hop that carries that information back into the retry path.
+        self._retry_abandons: dict = {}
         # The engine for this turn. Defaults to the Claude floor; the panel
         # passes a selected provider for the multi-provider switch. Transport +
         # request/response translation live in the provider — the loop below is
@@ -263,6 +269,18 @@ class ClaudeWorker(QThread):
                 self.tool_status.emit(tool_name, "error", reason)
                 return denial_tool_result(tool_use_id, tool_name, reason)
 
+        # --- F2 retry circuit-breaker ---
+        cmd_key = (tool_name, json.dumps(tool_input, sort_keys=True, default=str))
+        breaker_msg = self._check_retry_breaker(cmd_key)
+        if breaker_msg is not None:
+            self.tool_status.emit(tool_name, "error", breaker_msg)
+            return {
+                "type": "tool_result",
+                "tool_use_id": tool_use_id,
+                "content": breaker_msg,
+                "is_error": True,
+            }
+
         summary = json.dumps(tool_input, default=str)[:120] if tool_input else ""
         self.tool_status.emit(tool_name, "running", summary)
 
@@ -277,6 +295,7 @@ class ClaudeWorker(QThread):
         try:
             mcp_result = try_mcp_tool_call(tool_name, tool_input)
             if mcp_result is not None:
+                self._retry_abandons.pop(cmd_key, None)  # F2: success clears
                 # Extract integrity block if present in result
                 self._track_integrity(mcp_result)
                 # RETINA T0: run the render's file-truth receipt off the Qt
@@ -334,7 +353,12 @@ class ClaudeWorker(QThread):
                     pass
                 return result
         except RuntimeError as exc:
-            # MCP returned a JSON-RPC error — tool-level failure
+            # MCP returned a JSON-RPC error — tool-level failure. The
+            # main-thread-timeout variant ("...may STILL be running inside
+            # Houdini...") is an ABANDON: the tool may still be executing, so
+            # it counts toward the F2 retry circuit-breaker.
+            if "STILL be running inside Houdini" in str(exc):
+                self._note_abandon(cmd_key)
             self.tool_status.emit(tool_name, "error", summary)
             return {
                 "type": "tool_result",
@@ -377,6 +401,7 @@ class ClaudeWorker(QThread):
         budget = _wait_budget(tool_name)
         completed = request.done.wait(timeout=budget)
         if not completed:
+            self._note_abandon(cmd_key)  # F2: worker-level abandon
             request.error = (
                 f"Tool {tool_name!r} did not finish within {budget:.0f}s — it may "
                 "STILL be running inside Houdini. Do not retry; check the scene/"
@@ -390,6 +415,7 @@ class ClaudeWorker(QThread):
             is_error = True
         else:
             self.tool_status.emit(tool_name, "done", summary)
+            self._retry_abandons.pop(cmd_key, None)  # F2: success clears
             if isinstance(request.result, dict):
                 self._track_integrity(request.result)
                 # RETINA T0 receipt on the fallback (Qt executor) path too.
@@ -459,6 +485,38 @@ class ClaudeWorker(QThread):
         """
         executor = self._get_offmain_executor()
         _spawn_off_main_tool_thread(executor, request)
+
+    # ------------------------------------------------------------------
+    # F2 retry circuit-breaker (pure decision: panel/retry_breaker.py)
+    # ------------------------------------------------------------------
+
+    def _note_abandon(self, cmd_key) -> None:
+        self._retry_abandons[cmd_key] = self._retry_abandons.get(cmd_key, 0) + 1
+
+    def _check_retry_breaker(self, cmd_key):
+        """Return the breaker sentence to stop this re-issue, or None.
+
+        Opens only after ABANDON_THRESHOLD consecutive abandoned attempts of
+        the SAME command AND with the F4 in-flight register
+        (current_main_thread_holder — NEVER stall_state(), which is
+        deferred-path-only and blind to the inline class this polices) showing
+        a live holder. A cleared register means the prior hold finished
+        between iterations, so the retry is safe and history resets.
+        """
+        abandons = self._retry_abandons.get(cmd_key, 0)
+        if abandons < ABANDON_THRESHOLD:
+            return None
+        try:
+            from synapse.server.main_thread import current_main_thread_holder
+            holder = current_main_thread_holder()
+        except Exception:
+            holder = None
+        msg = breaker_message(holder, abandons)
+        if msg is not None:
+            return msg
+        if holder is None:
+            self._retry_abandons.pop(cmd_key, None)
+        return None
 
     # ------------------------------------------------------------------
     # Integrity tracking (best-effort)
