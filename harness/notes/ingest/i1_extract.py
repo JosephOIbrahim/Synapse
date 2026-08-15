@@ -1,4 +1,4 @@
-"""I1 -- the extractor for ``$HFS/houdini/help/nodes.zip`` (Houdini 22.0.368).
+"""I1 -- the extractor for ``$HFS/houdini/help/nodes.zip`` (the pinned Houdini build).
 
 WHAT THIS IS
 ------------
@@ -24,8 +24,8 @@ The nine things I0 said to build against, and where each lives here:
 
 TRUTH TIER
 ----------
-Everything this module produces is **VERIFIED-DOC** at build 22.0.368: read from
-the shipped reference of the running build. It is NOT VERIFIED-RUNTIME.
+Everything this module produces is **VERIFIED-DOC** at the pinned build: read from
+the shipped reference of that build. It is NOT VERIFIED-RUNTIME.
 Documentation says what a node is FOR; only a probe says what it DOES. Per-entry
 provenance, never per-corpus (R119) -- and never summed with probe-derived
 grounding into one number.
@@ -56,7 +56,11 @@ _REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(_REPO / "harness" / "notes" / "h9"))
 import helpdoc  # noqa: E402  (committed at harness/notes/h9/helpdoc.py)
 
-BUILD = helpdoc.BUILD                     # "22.0.368" -- pinned, fails loudly
+# These mirror helpdoc's DEFAULT surface (the current pin), for the zero-arg
+# callers that want it. helpdoc.resolve_build is the single place the default
+# pin lives -- nothing here restates it. Callers that want another build pass
+# build=/help_dir= to load_corpus() and never mutate these module attributes.
+BUILD = helpdoc.BUILD                     # default pin, resolved by helpdoc; overridable
 HELP_DIR = helpdoc.HELP_DIR
 NEWS_ZIP = HELP_DIR / "news.zip"
 
@@ -632,12 +636,16 @@ def parse_page(help_key: str, corpus: helpdoc.HelpCorpus) -> Page:
 
 # ---------------------------------------------------------------- verdicts
 def doc_deprecation(raw: str, directives: dict, includes: list,
-                    colon_directives: list) -> dict:
+                    colon_directives: list, build: str | None = None) -> dict:
     """The DOC side of the deprecation union. STRONG signals only.
 
     R72 / I0-F10: deprecation is the union of runtime ``deprecationInfo()`` and
     authored help, and the two disagree on 195 node types. This function is one
     half. It never returns the runtime's opinion and never merges with it.
+
+    ``build`` labels the record with the build actually parsed (pass
+    ``corpus.build``); omitted, it defaults to the module pin. A page parsed
+    from a non-default corpus must not be stamped with the default build.
     """
     signals: list[str] = []
     status = (directives.get("status") or "").strip().lower()
@@ -658,7 +666,7 @@ def doc_deprecation(raw: str, directives: dict, includes: list,
         "signals": signals,
         "weak_mention": bool(RE_WEAK_DEPRECATION.search(raw)),
         "tier": "VERIFIED-DOC",
-        "build": BUILD,
+        "build": build or BUILD,
     }
 
 
@@ -690,18 +698,23 @@ def clears_floor(r: str) -> bool:
 
 
 # ---------------------------------------------------------------- corpus IO
-def load_corpus() -> helpdoc.HelpCorpus:
+def load_corpus(build: str | None = None, help_dir=None) -> helpdoc.HelpCorpus:
     """All shipped help, every ``*.zip`` plus the loose directories.
 
     NOT nodes.zip alone. ``:include /composite/_old_cops_deprecated:`` appears on
     145 pages and its target lives in ``composite.zip`` -- a nodes.zip-only
     reader cannot resolve it and reproduces H5's defect exactly, reading an
     entire vendor-deprecated subsystem as current (I0-F9 / H7-F4).
+
+    ``build`` (or ``help_dir``) selects the archive through helpdoc's
+    parameterized surface; omitted, it defaults to the current pin. The caller
+    chooses the build -- nothing here mutates helpdoc -- and an absent archive
+    fails loudly (``HelpCorpus._load``), never falls back to another build.
     """
-    return helpdoc.HelpCorpus()
+    return helpdoc.HelpCorpus(build=build, help_dir=help_dir)
 
 
-def bom_keys() -> set:
+def bom_keys(help_dir=None) -> set:
     """Help keys whose shipped bytes begin with a UTF-8 BOM.
 
     Recorded because the corpus loader decodes ``utf-8-sig``, which STRIPS the
@@ -710,10 +723,14 @@ def bom_keys() -> set:
     also SUCCEEDS, leaves U+FEFF at offset 0, and eats the page's first
     directive (I0's defect D2: 32 pages lose a directive, 26 lose their title;
     cop2/emboss loses ``#type: node`` and stops being a node page).
+
+    ``help_dir`` (e.g. ``corpus.help_dir``) selects the build; omitted, it uses
+    the default pin.
     """
     import zipfile
+    hd = Path(help_dir) if help_dir is not None else HELP_DIR
     out = set()
-    for zp in sorted(HELP_DIR.glob("*.zip")):
+    for zp in sorted(hd.glob("*.zip")):
         root = zp.stem
         try:
             zf = zipfile.ZipFile(zp)
@@ -774,17 +791,22 @@ def type_candidates(help_key: str, directives: dict) -> list:
 RE_NODE_LINK = re.compile(r"Node:/?cop/([A-Za-z0-9_:.\-]+)")
 
 
-def new_copernicus_nodes() -> list:
+def _news_zip(help_dir=None) -> Path:
+    return (Path(help_dir) if help_dir is not None else HELP_DIR) / "news.zip"
+
+
+def new_copernicus_nodes(help_dir=None) -> list:
     """Every new Copernicus node named in the SHIPPED what's-new page.
 
     ``news.zip!22/copernicus.txt``, not the browsing help cache: the shipped
     page is version-pinned by construction while the cache is a reading history
     that records only what somebody happened to open (I0-F5).
 
-    Returns **171** on 22.0.368, both link forms counted.
+    Returns **171** on the default pin, both link forms counted; the count is a
+    property of the build, so ``help_dir`` (e.g. ``corpus.help_dir``) selects it.
     """
     import zipfile
-    with zipfile.ZipFile(NEWS_ZIP) as z:
+    with zipfile.ZipFile(_news_zip(help_dir)) as z:
         text = z.read("22/copernicus.txt").decode("utf-8-sig")
     names = []
     for m in RE_NODE_LINK.finditer(text):
@@ -794,12 +816,12 @@ def new_copernicus_nodes() -> list:
     return sorted(names)
 
 
-def new_copernicus_nodes_slash_only() -> list:
+def new_copernicus_nodes_slash_only(help_dir=None) -> list:
     """The 161 a leading-slash-only pattern returns. Kept as a NEGATIVE
     instrument: the calibration proves this undercounts, so the defect cannot
     silently return."""
     import zipfile
-    with zipfile.ZipFile(NEWS_ZIP) as z:
+    with zipfile.ZipFile(_news_zip(help_dir)) as z:
         text = z.read("22/copernicus.txt").decode("utf-8-sig")
     return sorted({m.group(1).rstrip("].,")
                    for m in re.finditer(r"Node:/cop/([A-Za-z0-9_:.\-]+)", text)})
