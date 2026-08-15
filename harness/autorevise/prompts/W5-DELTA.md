@@ -19,7 +19,8 @@ if any part reads truncated, STOP and say so.
     "1) re-run rag_promote_h22 for the shipped contexts against the 22.0.400 archive via the parameterized helpdoc surface; corpus stamped 22.0.400",
     "2) zero entry loss vs the .368 corpus: every currently-served (context,type) survives; collisions keep both, deletions forbidden; adds/changes receipted with counts",
     "3) K.7 corpus_stamp_fresh flips ok:true on the leg's worktree",
-    "4) the ledger entry for this flip is PROPOSED in the receipt, not written - the ingest ledger is single-writer (gate side); the wiring flip lands at merge on Joe's word"
+    "4) the ledger entry for this flip is PROPOSED in the receipt, not written - the ingest ledger is single-writer (gate side); the wiring flip lands at merge on Joe's word",
+    "5) CROSS-REFERENCE (rag/skills/houdini21-reference/solaris_compound_node_anatomy.md, live-verified 22.0.400): the .400 corpus must not contradict the live-verified anatomy - especially: NO karmamaterial* VOP type exists (the tab entry is a configured subnet), componentgeometry gains an 'alternative' output in H22, instancer tab resolves to type copytopoints. Post the census AND any corpus-vs-anatomy contradictions to the bus as findings addressed to W5-DENSE and W5-CRUX"
   ],
   "acceptance": [
     {
@@ -37,6 +38,10 @@ if any part reads truncated, STOP and say so.
     {
       "predicate": "scout_eval floor-clearing and disambiguation do not regress vs W4-CRUX figures on the new corpus",
       "evidence": "check"
+    },
+    {
+      "predicate": "anatomy cross-check: no .400 corpus entry contradicts the live-verified compound-node anatomy doc; a scout probe for karmamaterialbuilder yields honest not-found or subnet guidance, never a phantom type",
+      "evidence": "check"
     }
   ],
   "deps": [],
@@ -48,6 +53,7 @@ if any part reads truncated, STOP and say so.
     "tests/"
   ],
   "crucible_criteria": [
+    "BUS CONTRACT: post the census and any corpus-vs-anatomy contradictions as findings addressed to W5-DENSE and W5-CRUX as soon as the .400 promote completes - peers eval against your corpus; silence past a re-stamp is a receipt-level violation",
     "QUIT-RULE: any served entry lost vs .368 -> STOP, keep-both, post for_ruling; a re-ingest never deletes",
     "backup-before-mutation: the .368 corpus file is copied aside before the promote writes, path in the receipt",
     "ledger single-writer honored: the leg proposes, never writes harness/ingest_ledger.json",

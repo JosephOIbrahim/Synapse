@@ -37,6 +37,10 @@ if any part reads truncated, STOP and say so.
     {
       "predicate": "full pytest suite green from the worktree",
       "evidence": "test"
+    },
+    {
+      "predicate": "anatomy-derived probes through the repaired retrieval: karma material builder resolves honestly (subnet guidance or not-found, never a phantom karmamaterial* type); componentgeometry answers acknowledge the H22 'alternative' output when the corpus carries it",
+      "evidence": "probe"
     }
   ],
   "deps": [],
@@ -48,6 +52,7 @@ if any part reads truncated, STOP and say so.
     "tests/"
   ],
   "crucible_criteria": [
+    "BUS CONTRACT: before final eval, READ the bus and consume W5-DELTA's census + contradiction findings (the corpus may be re-stamped .400 under you); PUBLISH your index stamp + vector count as a finding addressed to W5-CRUX. Working blind past a peer's posted finding is a receipt-level violation",
     "QUIT-RULE: if embedding node entries degrades the COP/LOP lexical floor below 1.00, STOP and post for_ruling - the trade-off is Joe's call, not the leg's",
     "the +9 same-(context,type) pyro duplicate collapse observed by W4-CRUX must not silently change under the new index - dedupe behavior receipted",
     "house rule: unobtainable renders UNKNOWN, never zero and never an estimate"

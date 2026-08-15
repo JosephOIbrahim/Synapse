@@ -11,12 +11,14 @@
     "2) enforce the mandate: any receipt whose stated HEAD sha does not exist on its branch at first measurement, or any builder at ahead:0, is a hard BLOCK - CRX0 does not get a second post-hoc pass",
     "3) parallel-writer audit: diff master's HEAD at arm vs at verdict; any commits landed mid-wave are listed with authors and checked against leg touches for seam collisions (W5-UNDO's handlers_node seam especially)",
     "4) target end-state check: with all four builders staged, R.R reports zero guardrail_violations and K.7 corpus_stamp_fresh ok:true - the all-green board wave 5 exists to produce",
-    "5) verdict per leg: pass | pass_with_findings | BLOCK, with anchors; quit-rule invocations verified as escalations, not silent grinds"
+    "5) verdict per leg: pass | pass_with_findings | BLOCK, with anchors; quit-rule invocations verified as escalations, not silent grinds",
+    "6) CROSS-REFERENCE AUDIT: probe the merged retrieval with anatomy-derived questions from rag/skills/houdini21-reference/solaris_compound_node_anatomy.md (karma material builder, componentgeometry outputs incl. H22 'alternative', instancer type resolution, the three user-editable island paths) - any answer contradicting the live-verified doc is a finding; verify the BUS CONTRACT was honored: DELTA posted census+contradictions, DENSE posted index stamp and demonstrably consumed DELTA's findings before its final eval (bus timestamps are the evidence)"
   ],
   "acceptance": [
     {"predicate": "every builder acceptance re-verified independently or marked UNKNOWN with the exact unobtainable step - none inherited; gui_required items confirmed still UNKNOWN, not laundered to pass", "evidence": "check"},
     {"predicate": "ahead-count + receipt-sha table for all builders; every receipt states a HEAD that exists and precedes the receipt write - mandate compliance binary per leg", "evidence": "check"},
-    {"predicate": "combined-state probe: scout_eval bars met AND R.R guardrail_violations empty AND corpus stamped .400 - or the exact failing surface named", "evidence": "probe"}
+    {"predicate": "combined-state probe: scout_eval bars met AND R.R guardrail_violations empty AND corpus stamped .400 - or the exact failing surface named", "evidence": "probe"},
+    {"predicate": "bus audit: DELTA and DENSE contract findings exist with coherent timestamps; anatomy cross-reference probes recorded with zero unresolved contradictions or each contradiction filed as a finding", "evidence": "check"}
   ],
   "deps": ["W5-DENSE", "W5-DELTA", "W5-BASE", "W5-UNDO"],
   "readonly": true,

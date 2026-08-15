@@ -16,7 +16,8 @@
     {"predicate": "extended scout_eval on the shipped corpus: type-name P@1 >= 0.98 hybrid, cop_lop_floor_clearing 1.00 hybrid, disambiguation 1.00, served phantom 0.00", "evidence": "check"},
     {"predicate": "lexical-only eval unchanged or better vs the W4-CRUX recorded figures (P@1 lexical, floor 0.9962)", "evidence": "check"},
     {"predicate": "deleting the index and rebuilding from the corpus reproduces identical retrieval results (derived-data proof)", "evidence": "test"},
-    {"predicate": "full pytest suite green from the worktree", "evidence": "test"}
+    {"predicate": "full pytest suite green from the worktree", "evidence": "test"},
+    {"predicate": "anatomy-derived probes through the repaired retrieval: karma material builder resolves honestly (subnet guidance or not-found, never a phantom karmamaterial* type); componentgeometry answers acknowledge the H22 'alternative' output when the corpus carries it", "evidence": "probe"}
   ],
   "deps": [],
   "readonly": false,
@@ -27,6 +28,7 @@
     "tests/"
   ],
   "crucible_criteria": [
+    "BUS CONTRACT: before final eval, READ the bus and consume W5-DELTA's census + contradiction findings (the corpus may be re-stamped .400 under you); PUBLISH your index stamp + vector count as a finding addressed to W5-CRUX. Working blind past a peer's posted finding is a receipt-level violation",
     "QUIT-RULE: if embedding node entries degrades the COP/LOP lexical floor below 1.00, STOP and post for_ruling - the trade-off is Joe's call, not the leg's",
     "the +9 same-(context,type) pyro duplicate collapse observed by W4-CRUX must not silently change under the new index - dedupe behavior receipted",
     "house rule: unobtainable renders UNKNOWN, never zero and never an estimate"
