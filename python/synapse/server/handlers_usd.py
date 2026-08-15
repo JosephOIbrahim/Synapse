@@ -902,7 +902,21 @@ class UsdHandlerMixin:
                 result.update(_wire_display(_tip, chain_anchor, set_display))
                 return result
 
-        return run_on_main(_on_main, label="usd:_handle_reference_usd")
+        from ..core.timeouts import timeout_for
+        # TIMEOUT OWNERSHIP (F6, crucible item-3 note): the 30s budget is
+        # OWNED by core/timeouts.py SLOW_COMMANDS["reference_usd"] -- this
+        # marshal reads it from that table, and the MCP transport budgets the
+        # same value via timeout_for, so the two layers agree. The raise from
+        # the 10s default to 30s therefore does NOT open a new "transport
+        # reports failure while the op still runs" window (the F5 zombie
+        # class): both layers fire at the same boundary, and on marshal
+        # timeout run_on_main's C4 abandoned flag no-ops the payload when it
+        # eventually wakes.
+        return run_on_main(
+            _on_main,
+            timeout=timeout_for("reference_usd"),
+            label="usd:_handle_reference_usd",
+        )
 
     def _handle_query_prims(self, payload: Dict) -> Dict:
         """Query USD stage prims with filtering by type, purpose, name pattern.
