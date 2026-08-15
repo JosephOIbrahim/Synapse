@@ -51,6 +51,18 @@ your product + notes files (named, never -A); (2) verify `git rev-list --count
 HEAD sha in it. A receipt at ahead:0 asserts commit-state that does not exist —
 the exact claim-before-act defect this harness exists to kill.
 
+**THE RECEIPT IS ITS OWN CLOSING COMMIT - the leg commits it, not the operator
+(W5H).** Commit-before-receipt is only the first half. The second half is that
+the receipt file must itself land as your branch's LAST commit (named, never
+`-A`): writing it into the worktree is not finishing, committing it is.
+Operator rescue is a failure mode, not the plan. In wave 5, W5-CRUX and three of
+the four builder legs (W5-BASE, W5-DENSE, W5-UNDO) left their receipts
+worktree-only, and a human had to bring them in-tree afterward (the close pass
+`c7a6a08d`; `76ca94a0` for CRUX). Only W5-DELTA committed its own receipt as its
+closing commit (`b4bbb562` on `wave5/delta`) - that is the rule now, for every
+leg. Full sequence: product commit -> verify ahead >= 1 -> write the receipt
+stating the product HEAD sha -> commit the receipt as your closing commit.
+
 Write `harness/notes/receipts/{RECEIPT}` **inside your worktree**:
 `{{"leg": "{ID}", "status": "green|green_with_findings|blocked",
   "acceptance": [{{"predicate", "verdict": "pass|fail|UNKNOWN", "evidence"}}...],

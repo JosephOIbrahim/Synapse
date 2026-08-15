@@ -103,8 +103,11 @@ One wave in flight at a time, 3–5 legs each, crucible in every wave, words sta
 
 **Wave 5 roster:** W5-DENSE (S1: node entries into the dense index → P@1 bar) ·
 W5-DELTA (.400 re-ingest of shipped contexts → freshness gate green) ·
-W5-BASE (suite_baseline R31 tuple promotion) · W5-UNDO (hardening: wrap
-handlers_node mutations in undo groups) · W5-CRUX (gate).
+W5-BASE (suite_baseline R31 tuple promotion) · W5-UNDO (hardening: wrap the
+create/connect/delete mutations in handlers_node.py in undo groups; set_parm
+lives in handlers.py and set_keyframe in handlers_render.py, NOT
+handlers_node.py, so those remaining live-path Ctrl+Z holes ride W5-UNDO-B —
+corrected per CRUX-R2) · W5-CRUX (gate).
 Gate P ruling is Joe's word, not a leg; Branch-A parser patches enter at wave 7
 only after that ruling.
 

@@ -446,8 +446,22 @@ function Get-LastProgress {
     # honest signal: they are written by the agent and by nothing else.
     $newest = $null
     $proj = Join-Path $env:USERPROFILE '.claude\projects'
+    # Match the FULL PATH, not the file's immediate parent name. A leg's own
+    # session transcript sits at ...\<SYNAPSE-slug>\<session>.jsonl - parent
+    # name carries 'SYNAPSE' - but a crucible deep in subagent probes, or any
+    # ultracode workflow, writes ONLY to the subagent/workflow transcripts one
+    # or more levels down:
+    #   ...\<SYNAPSE-slug>\<session>\subagents\*.jsonl
+    #   ...\<SYNAPSE-slug>\<session>\subagents\workflows\wf_*\agent-*.jsonl
+    # whose parent names are 'subagents' / 'wf_*'. The old $_.Directory.Name
+    # filter never matched those, so a busy subagent fan-out read as dead after
+    # StaleMinutes - the exact false-STALE this detector exists to avoid.
+    # FullName still carries 'SYNAPSE' at every depth (and still excludes other
+    # projects), so subagent + workflow activity now counts as the liveness it
+    # is. harness\progress.py and harness\statusline.py already read this path
+    # shape; this brings the ps1 tracker in line with them.
     $f = Get-ChildItem $proj -Recurse -Filter *.jsonl -EA SilentlyContinue |
-         Where-Object { $_.Directory.Name -match 'SYNAPSE' } |
+         Where-Object { $_.FullName -match 'SYNAPSE' } |
          Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($f) { $newest = $f.LastWriteTime }
 
@@ -460,6 +474,14 @@ function Get-LastProgress {
 }
 
 # --- main loop ---------------------------------------------------------------
+
+# Library mode. Tests dot-source this file to reach ONE function - e.g.
+# Get-LastProgress - without launching the board. A real dispatch never sets
+# this env var, so the running orchestrator is untouched; `return` from a
+# dot-sourced script stops here yet keeps every function defined above in the
+# caller's scope. Get-LastProgress has no Python twin (unlike lock.py /
+# status.py), so dot-sourcing the real ps1 function is the only honest test.
+if ($env:SYNAPSE_ORCH_LIB) { return }
 
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
 Say "SYNAPSE ORCHESTRATOR" 'Cyan'
