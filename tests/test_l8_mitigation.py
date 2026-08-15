@@ -34,7 +34,10 @@ def test_mcp_dispatch_routes_through_run_on_main():
 
 def test_tops_pdg_dispatch_enforces_timeout():
     s = _src("server", "handlers_tops", "_common.py")
-    assert "run_on_main(func, timeout=effective_timeout)" in s
+    # F4 added label= to every run_on_main call site — pin the routing with
+    # the label-tolerant shape (regex), not a literal of the whole call.
+    import re
+    assert re.search(r"run_on_main\(func, timeout=effective_timeout\b", s)
 
 
 def test_canonical_timeout_table_has_render_budgets():

@@ -429,7 +429,7 @@ class CacheHandlerMixin:
             hip_dir = hou.getenv("HIP")  # type: ignore[union-attr]
             return node, node.path(), node.type().name(), hip_dir
 
-        node, resolved_path, resolved_type, hip_dir = run_on_main(_resolve_node_on_main)
+        node, resolved_path, resolved_type, hip_dir = run_on_main(_resolve_node_on_main, label="cache:_handle_assess_cache")
 
         # OFF the main thread: bounded 5s nvidia-smi subprocess + disk_usage. Never a
         # hou.* call from here down to the machine-profile return.
@@ -457,4 +457,4 @@ class CacheHandlerMixin:
                 policy=policy,
             )
 
-        return run_on_main(_observe_and_decide_on_main)
+        return run_on_main(_observe_and_decide_on_main, label="cache:_handle_assess_cache")

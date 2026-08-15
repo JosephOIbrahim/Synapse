@@ -115,7 +115,7 @@ class NodeHandlerMixin:
 
             return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="node:_handle_create_node")
 
     def _handle_delete_node(self, payload: Dict) -> Dict:
         """Handle delete_node command."""
@@ -136,7 +136,7 @@ class NodeHandlerMixin:
 
             return {"deleted": node_path, "name": node_name}
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="node:_handle_delete_node")
 
     def _handle_connect_nodes(self, payload: Dict) -> Dict:
         """Handle connect_nodes command."""
@@ -168,7 +168,7 @@ class NodeHandlerMixin:
                 "target_input": target_input,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="node:_handle_connect_nodes")
 
     def _handle_network_explain(self, payload: Dict) -> Dict:
         """Walk a Houdini node network and produce a structured explanation.
@@ -310,7 +310,7 @@ class NodeHandlerMixin:
 
             return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="node:_handle_network_explain")
 
 
 # =============================================================================

@@ -94,7 +94,7 @@ class SolarisComposeMixin:
                     )
                 raise
 
-        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT, label="solaris_compose:_handle_solaris_shotsetup_karma_xpu")
 
     def _handle_matlib_bind(self, payload: Dict) -> Dict:
         """Bind a material to a prim set (PRD 7.2 / GAP-2 / BL-008)."""
@@ -131,7 +131,7 @@ class SolarisComposeMixin:
                     )
                 raise
 
-        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT, label="solaris_compose:_handle_matlib_bind")
 
     def _handle_assess_render_ready(self, payload: Dict) -> Dict:
         """Render-readiness report over E3 (PRD 7.3 / GAP-3). Read-only.
@@ -153,4 +153,4 @@ class SolarisComposeMixin:
             lambda: _tools.assess_render_ready(
                 _sc.resolve_stage(stage_path), engine_hint=engine,
             )
-        )
+        , label="solaris_compose:_handle_assess_render_ready")

@@ -117,7 +117,7 @@ class HdaHandlerMixin:
                 "save_path": save_path,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="hda:_handle_hda_create")
 
     def _handle_hda_promote_parm(self, payload: Dict) -> Dict:
         """Promote an internal node parameter to the HDA interface.
@@ -241,7 +241,7 @@ class HdaHandlerMixin:
                 "folder": folder or "(root)",
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="hda:_handle_hda_promote_parm")
 
     def _handle_hda_set_help(self, payload: Dict) -> Dict:
         """Set help documentation on an HDA.
@@ -333,7 +333,7 @@ class HdaHandlerMixin:
                 "help_set": True,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="hda:_handle_hda_set_help")
 
     def _handle_hda_package(self, payload: Dict) -> Dict:
         """High-level orchestrator: create subnet, build HDA, promote params, set help.
@@ -604,7 +604,7 @@ class HdaHandlerMixin:
                 "warnings": warnings,
             }
 
-        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT, label="hda:_handle_hda_package")
 
     def _handle_hda_list(self, payload: Dict) -> Dict:
         """List all Synapse-authored HDAs currently loaded in Houdini.
@@ -657,4 +657,4 @@ class HdaHandlerMixin:
                 "count": len(results),
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="hda:_handle_hda_list")

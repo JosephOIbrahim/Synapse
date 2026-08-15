@@ -66,7 +66,7 @@ class GraphSynthHandlerMixin:
 
             return propose_graph.synapse_propose_graph(proposal)
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="graph_synth:_handle_propose_graph")
 
     def _handle_instantiate_graph(self, payload: Dict) -> Dict[str, Any]:
         """Instantiate a previously-VALIDATED graph proposal by id.
@@ -90,4 +90,4 @@ class GraphSynthHandlerMixin:
             result = graph_synth_runtime.instantiate(proposal_id)
             return graph_synth_runtime.result_to_dict(result)
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="graph_synth:_handle_instantiate_graph")

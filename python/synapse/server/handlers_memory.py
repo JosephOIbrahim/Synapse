@@ -59,7 +59,7 @@ class MemoryHandlerMixin:
             return {"hip_path": hip_path, "hip_dir": hip_dir,
                     "job_path": job_path, "job_root": job_root}
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="memory:_scene_paths")
 
     def _handle_memory_context(self, payload: Dict) -> Dict:
         """Handle context/engram_context command."""

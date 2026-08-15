@@ -1361,6 +1361,17 @@ def check_cook_golden_cop(ctx):
 def check_cook_golden_dop(ctx):
     return _cook_golden(ctx, "dop")
 
+def _strip_run_on_main_labels(text):
+    # F4 label-tolerance (freeze-relief, d625ee61): run_on_main gained an
+    # observability-only label= kwarg; the quarantine's invariant is "TOPs
+    # BEHAVIOR unchanged", not "bytes unchanged". Strip label= kwargs from
+    # both sides so a label-only diff still honors the intent.
+    import re
+    t = re.sub(r',\s*label\s*=\s*(?:"[^"]*"|\'[^\']*\')', '', text)
+    t = re.sub(r'\blabel\s*=\s*(?:"[^"]*"|\'[^\']*\')\s*,\s*', '', t)
+    return t
+
+
 def check_tops_path_untouched(ctx):
     # Structural quarantine (spec: the TOPs dirty/cook surface is SHIPPED — D generalizes the
     # pattern WITHOUT touching the path; hou.pdg.* stays dead). Diff guard anchored at
@@ -1379,8 +1390,32 @@ def check_tops_path_untouched(ctx):
     rc_u, untracked, _ = sh(["git", "ls-files", "--others", "--exclude-standard", "--", guard_dir], cwd=ctx["wt"])
     touched = [l for l in (diff_out + "\n" + (untracked if rc_u == 0 else "")).splitlines() if l.strip()]
     if touched:
-        return {"ok": False, "detail": f"TOPs path touched ({len(touched)} file(s)): {', '.join(touched[:4])} — "
-                                       "the shipped TOPs surface is quarantined; D generalizes the pattern elsewhere"}
+        # F4 re-pin (freeze-relief, d625ee61): tolerate label-only kwargs; every
+        # other touch is still a breach. New files (no anchor blob) cannot be
+        # label-only, so they stay breaches by construction.
+        real_breach = []
+        for path in touched:
+            # bytes-level show: sh() decodes with the system codepage, which
+            # mangles this tree's UTF-8 em-dashes on Windows and would report
+            # phantom breaches on files it never semantically touched.
+            p = subprocess.run(["git", "show", f"{anchor}:{path}"], cwd=ctx["wt"],
+                               capture_output=True, shell=(os.name == "nt"))
+            if p.returncode != 0:
+                real_breach.append(path)
+                continue
+            anchor_text = p.stdout.decode("utf-8", errors="replace")
+            try:
+                head_text = (Path(ctx["wt"]) / path).read_text(encoding="utf-8")
+            except Exception:
+                real_breach.append(path)
+                continue
+            if _strip_run_on_main_labels(anchor_text) != _strip_run_on_main_labels(head_text):
+                real_breach.append(path)
+        if real_breach:
+            return {"ok": False, "detail": f"TOPs path touched ({len(real_breach)} file(s)): {', '.join(real_breach[:4])} — "
+                                           "the shipped TOPs surface is quarantined; D generalizes the pattern elsewhere"}
+        return {"ok": True, "detail": f"handlers_tops/ touched only by run_on_main label= kwargs "
+                                      f"({len(touched)} file(s)) — behavior unchanged, quarantine holds"}
     return {"ok": True, "detail": "handlers_tops/ untouched vs the promoted line"}
 
 

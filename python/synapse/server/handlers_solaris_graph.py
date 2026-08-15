@@ -620,237 +620,251 @@ class SolarisGraphMixin:
 
             try:
                 with hou.undos.group("SYNAPSE: build_graph"):
-                    # 1. Create all nodes in topo order
-                    for nid in sorted_ids:
-                        spec = node_map[nid]
-                        if spec.get("existing"):
-                            # Resolve the artist's live node -- never create,
-                            # and exclude it from stamp/layout/section below.
-                            node = _resolve_existing_node(parent_node, spec)
-                            id_to_hou[nid] = node
-                            existing_nids.add(nid)
-                            continue
-                        node_type = spec["type"]
-                        node_name = spec.get("name", nid) or nid
-                        node, created = _ensure_node(
-                            parent_node, node_type, node_name)
-                        id_to_hou[nid] = node
-                        entry = {"id": nid, "path": node.path()}
-                        if created:
-                            nodes_created.append(entry)
-                        else:
-                            nodes_reused.append(entry)
+                    # F1 freeze-relief: update-mode sandwich INSIDE the
+                    # undo group (the probed nesting) — collapses the
+                    # per-create/per-parm auto-cook flood across create,
+                    # parm-set, wiring, layout, and display-flag phases.
+                    # Flag-off/headless = identical behavior to today.
+                    from .update_mode import cook_sandwich
+                    with cook_sandwich(
+                            label="solaris_build_graph") as _sandwich:
+                        # Heuristic collapsed-cook estimate for the A/B
+                        # histogram: one auto-cook per spec node plus the
+                        # display-flag cook. A stated upper bound, not a
+                        # measured count.
+                        _sandwich.note_estimate(len(node_map) + 1)
 
-                    # 2. Set parameters (new nodes only -- an existing node's
-                    # parms are the artist's; build_graph never touches them).
-                    for nid in sorted_ids:
-                        if nid in existing_nids:
-                            continue
-                        spec = node_map[nid]
-                        parms = spec.get("parms", {})
-                        node = id_to_hou[nid]
-                        for parm_name, parm_value in parms.items():
-                            # M4: this was a bare `if p is not None` -- an
-                            # unresolvable name was dropped and success still
-                            # returned, so a light rig reported as dialed in
-                            # sat at its defaults. USD light parms carry
-                            # punycode-encoded names on the LOP interface
-                            # (`intensity` -> `xn__inputsintensity_i0a`), which
-                            # is exactly the case that silently vanished.
-                            # Resolve, then parmTuple, then REPORT the miss.
-                            landed, changed = _set_parm(node, parm_name, parm_value)
-                            if landed:
-                                if changed:
-                                    parms_changed = True
+                        # 1. Create all nodes in topo order
+                        for nid in sorted_ids:
+                            spec = node_map[nid]
+                            if spec.get("existing"):
+                                # Resolve the artist's live node -- never create,
+                                # and exclude it from stamp/layout/section below.
+                                node = _resolve_existing_node(parent_node, spec)
+                                id_to_hou[nid] = node
+                                existing_nids.add(nid)
                                 continue
-                            parms_missed.append({
-                                "node": node.path(),
-                                "parm": parm_name,
-                                "value": repr(parm_value)[:80],
+                            node_type = spec["type"]
+                            node_name = spec.get("name", nid) or nid
+                            node, created = _ensure_node(
+                                parent_node, node_type, node_name)
+                            id_to_hou[nid] = node
+                            entry = {"id": nid, "path": node.path()}
+                            if created:
+                                nodes_created.append(entry)
+                            else:
+                                nodes_reused.append(entry)
+
+                        # 2. Set parameters (new nodes only -- an existing node's
+                        # parms are the artist's; build_graph never touches them).
+                        for nid in sorted_ids:
+                            if nid in existing_nids:
+                                continue
+                            spec = node_map[nid]
+                            parms = spec.get("parms", {})
+                            node = id_to_hou[nid]
+                            for parm_name, parm_value in parms.items():
+                                # M4: this was a bare `if p is not None` -- an
+                                # unresolvable name was dropped and success still
+                                # returned, so a light rig reported as dialed in
+                                # sat at its defaults. USD light parms carry
+                                # punycode-encoded names on the LOP interface
+                                # (`intensity` -> `xn__inputsintensity_i0a`), which
+                                # is exactly the case that silently vanished.
+                                # Resolve, then parmTuple, then REPORT the miss.
+                                landed, changed = _set_parm(node, parm_name, parm_value)
+                                if landed:
+                                    if changed:
+                                        parms_changed = True
+                                    continue
+                                parms_missed.append({
+                                    "node": node.path(),
+                                    "parm": parm_name,
+                                    "value": repr(parm_value)[:80],
+                                })
+
+                        # 3. Wire connections
+                        #
+                        # B4 seam: reuse-by-name is safe for a true rebuild (the
+                        # reused node's inputs already match the spec, so setInput is
+                        # a no-op), but it must NOT silently clobber a DIFFERENT
+                        # existing connection. Two independent networks in one /stage
+                        # that happen to share a node name (every template has an
+                        # "OUTPUT" null) would otherwise cross-wire: building the
+                        # second silently rewired the first. Refuse on a real
+                        # conflict -- the undo group rolls this build back, leaving
+                        # the existing network intact.
+                        reused_ids = {e["id"] for e in nodes_reused}
+                        for conn in raw_connections:
+                            source = id_to_hou[conn["from"]]
+                            target = id_to_hou[conn["to"]]
+                            to_id = conn["to"]
+                            output_idx = conn.get("output", 0)
+                            explicit_input = conn.get("input")   # None if omitted
+
+                            # Wiring a NEW source into a node the artist already owns
+                            # must APPEND to the next free input, never clobber
+                            # input 0. Reuse assemble's _next_free_input. An EXPLICIT
+                            # index is honoured verbatim and guarded just below.
+                            # Live-verified on 22.0.368: merge[a,b] + asset_c at the
+                            # next free index 2 -> [a,b,c], first two untouched.
+                            if to_id in existing_nids and explicit_input is None:
+                                # IDEMPOTENT APPEND (seam fix): if this source already
+                                # feeds the target, do NOT re-append it on a rebuild.
+                                # Without this, build->look->rebuild grows the merge
+                                # unboundedly ([a,b,c] -> [a,b,c,c] -> ...), corrupting
+                                # the artist's network -- the exact loop item 2 exists
+                                # to make safe. _next_free_input always returns a fresh
+                                # index, so the guard must live here.
+                                if source in target.inputs():
+                                    connections_made.append({
+                                        "from": source.path(),
+                                        "to": target.path(),
+                                        "input": list(target.inputs()).index(source),
+                                    })
+                                    continue                 # already wired -- no-op
+                                input_idx = _next_free_input(target)
+                            else:
+                                input_idx = (explicit_input
+                                             if explicit_input is not None else 0)
+
+                            if to_id in reused_ids:
+                                cur = target.inputs()
+                                occupied = (cur[input_idx]
+                                            if input_idx < len(cur) else None)
+                                if occupied is not None and occupied != source:
+                                    raise SynapseUserError(
+                                        "'%s' already exists wired to '%s' on input "
+                                        "%d, but this build wires it to '%s' -- a "
+                                        "name collision with a different network."
+                                        % (target.name(), occupied.name(),
+                                           input_idx, source.name()),
+                                        suggestion=(
+                                            "Nothing was changed. Rename the node in "
+                                            "your graph, or build into a fresh LOP "
+                                            "network -- build_graph reuses a node of "
+                                            "the same name+type, so two networks in "
+                                            "one /stage must not share node names."),
+                                    )
+
+                            # An EXPLICIT index into an artist-owned existing node
+                            # that would overwrite a DIFFERENT source is refused
+                            # (append never trips this -- _next_free_input returns an
+                            # unoccupied index; same-source is an idempotent no-op).
+                            if to_id in existing_nids and explicit_input is not None:
+                                cur = target.inputs()
+                                occupied = (cur[input_idx]
+                                            if input_idx < len(cur) else None)
+                                if occupied is not None and occupied != source:
+                                    raise SynapseUserError(
+                                        "existing node '%s' already has '%s' on input "
+                                        "%d, but this build wires '%s' there -- "
+                                        "refusing to overwrite the artist's wiring."
+                                        % (target.name(), occupied.name(),
+                                           input_idx, source.name()),
+                                        suggestion=(
+                                            "Nothing was changed. Drop the explicit "
+                                            "'input' to append to the next free "
+                                            "input, or choose an unused index."),
+                                    )
+                            # A wire is only a CHANGE if the slot did not already
+                            # hold this exact source -- so a true rebuild (re-setting
+                            # identical connections) stays 'unchanged', while an added
+                            # or rewired input flips status to 'updated' (seam fix:
+                            # status must not report 'unchanged' after a topology
+                            # change).
+                            cur = target.inputs()
+                            prior = cur[input_idx] if input_idx < len(cur) else None
+                            # `!=`, not `is not`: two hou.Node wrappers for the SAME
+                            # node fail identity but compare equal, so an identical
+                            # rebuild (re-setting the same connection) must read as
+                            # NO change -- otherwise it falsely reports 'updated'.
+                            if prior != source:
+                                connections_changed = True
+                            target.setInput(input_idx, source, output_idx)
+                            connections_made.append({
+                                "from": source.path(),
+                                "to": target.path(),
+                                "input": input_idx,
                             })
 
-                    # 3. Wire connections
-                    #
-                    # B4 seam: reuse-by-name is safe for a true rebuild (the
-                    # reused node's inputs already match the spec, so setInput is
-                    # a no-op), but it must NOT silently clobber a DIFFERENT
-                    # existing connection. Two independent networks in one /stage
-                    # that happen to share a node name (every template has an
-                    # "OUTPUT" null) would otherwise cross-wire: building the
-                    # second silently rewired the first. Refuse on a real
-                    # conflict -- the undo group rolls this build back, leaving
-                    # the existing network intact.
-                    reused_ids = {e["id"] for e in nodes_reused}
-                    for conn in raw_connections:
-                        source = id_to_hou[conn["from"]]
-                        target = id_to_hou[conn["to"]]
-                        to_id = conn["to"]
-                        output_idx = conn.get("output", 0)
-                        explicit_input = conn.get("input")   # None if omitted
+                        # 4. Stamp provenance -- new nodes only; an existing node is
+                        # the artist's and must not be re-commented or re-flagged.
+                        for nid, node in id_to_hou.items():
+                            if nid in existing_nids:
+                                continue
+                            node.setComment("SYNAPSE: build_graph")
+                            node.setGenericFlag(hou.nodeFlag.DisplayComment, True)
 
-                        # Wiring a NEW source into a node the artist already owns
-                        # must APPEND to the next free input, never clobber
-                        # input 0. Reuse assemble's _next_free_input. An EXPLICIT
-                        # index is honoured verbatim and guarded just below.
-                        # Live-verified on 22.0.368: merge[a,b] + asset_c at the
-                        # next free index 2 -> [a,b,c], first two untouched.
-                        if to_id in existing_nids and explicit_input is None:
-                            # IDEMPOTENT APPEND (seam fix): if this source already
-                            # feeds the target, do NOT re-append it on a rebuild.
-                            # Without this, build->look->rebuild grows the merge
-                            # unboundedly ([a,b,c] -> [a,b,c,c] -> ...), corrupting
-                            # the artist's network -- the exact loop item 2 exists
-                            # to make safe. _next_free_input always returns a fresh
-                            # index, so the guard must live here.
-                            if source in target.inputs():
-                                connections_made.append({
-                                    "from": source.path(),
-                                    "to": target.path(),
-                                    "input": list(target.inputs()).index(source),
-                                })
-                                continue                 # already wired -- no-op
-                            input_idx = _next_free_input(target)
+                        # 5. Layout BEFORE display flag — position nodes in clean
+                        # vertical columns instead of Houdini's black-box
+                        # layoutChildren(). Professional VFX artists use top-to-
+                        # bottom vertical chains. This also avoids the GPU context
+                        # init race condition that layoutChildren() can trigger
+                        # with Karma nodes (CUDA double-init → segfault).
+                        # M7: origin below existing content so a build into a
+                        # populated stage reads as its own column instead of landing
+                        # on top of what's already there. New nodes are excluded so
+                        # only pre-existing children move the origin.
+                        # Existing (artist-owned) nodes are resolved for wiring
+                        # only: never moved, and never counted as this build's
+                        # content. Everything below operates on the NEW nodes.
+                        new_id_to_hou = {nid: n for nid, n in id_to_hou.items()
+                                         if nid not in existing_nids}
+                        new_sorted_ids = [nid for nid in sorted_ids
+                                          if nid not in existing_nids]
+                        new_paths = {n.path() for n in new_id_to_hou.values()}
+                        ox, oy = _free_origin(parent_node, new_paths)
+                        if topology == "linear":
+                            # Simple vertical column for linear chains
+                            ordered_nodes = [new_id_to_hou[nid]
+                                             for nid in new_sorted_ids]
+                            _layout_vertical_chain(ordered_nodes, ox, oy)
                         else:
-                            input_idx = (explicit_input
-                                         if explicit_input is not None else 0)
+                            # Layered vertical DAG for merge/fan-out topologies.
+                            # raw_connections may reference existing ids; the DAG
+                            # layout only positions ids present in new_id_to_hou, so
+                            # an edge into an existing node leaves that node untouched
+                            # (_compute_dag_positions filters parents not in depth).
+                            _layout_dag_vertical(
+                                new_sorted_ids, raw_connections, new_id_to_hou,
+                                start_x=ox, start_y=oy,
+                            )
 
-                        if to_id in reused_ids:
-                            cur = target.inputs()
-                            occupied = (cur[input_idx]
-                                        if input_idx < len(cur) else None)
-                            if occupied is not None and occupied != source:
-                                raise SynapseUserError(
-                                    "'%s' already exists wired to '%s' on input "
-                                    "%d, but this build wires it to '%s' -- a "
-                                    "name collision with a different network."
-                                    % (target.name(), occupied.name(),
-                                       input_idx, source.name()),
-                                    suggestion=(
-                                        "Nothing was changed. Rename the node in "
-                                        "your graph, or build into a fresh LOP "
-                                        "network -- build_graph reuses a node of "
-                                        "the same name+type, so two networks in "
-                                        "one /stage must not share node names."),
-                                )
+                        # 5b. Section boxes (M10) — after layout so fitAroundContents
+                        # reads final positions; idempotent so a rebuild refreshes
+                        # rather than stacks. Cosmetic + best-effort: never fails the
+                        # build. Ranks come from the same table assemble_chain wires by.
+                        # New nodes only. node_map has no 'type' for existing specs,
+                        # so keying ranks off new_id_to_hou also avoids a KeyError,
+                        # and an existing node keeps whatever box the artist gave it.
+                        # Namespace the boxes by the build's display-node name so a
+                        # second network into the same /stage keeps its own boxes
+                        # (per-network identity; M10 fast-follow).
+                        node_ranks = {
+                            nid: _SOLARIS_NODE_ORDER.get(
+                                str(node_map[nid]["type"]).split("::")[0].lower(),
+                                _UNRANKED_RANK)
+                            for nid in new_id_to_hou
+                        }
+                        sections = _apply_section_boxes(
+                            parent_node, new_id_to_hou, node_ranks,
+                            namespace=id_to_hou[display_node_id].name())
 
-                        # An EXPLICIT index into an artist-owned existing node
-                        # that would overwrite a DIFFERENT source is refused
-                        # (append never trips this -- _next_free_input returns an
-                        # unoccupied index; same-source is an idempotent no-op).
-                        if to_id in existing_nids and explicit_input is not None:
-                            cur = target.inputs()
-                            occupied = (cur[input_idx]
-                                        if input_idx < len(cur) else None)
-                            if occupied is not None and occupied != source:
-                                raise SynapseUserError(
-                                    "existing node '%s' already has '%s' on input "
-                                    "%d, but this build wires '%s' there -- "
-                                    "refusing to overwrite the artist's wiring."
-                                    % (target.name(), occupied.name(),
-                                       input_idx, source.name()),
-                                    suggestion=(
-                                        "Nothing was changed. Drop the explicit "
-                                        "'input' to append to the next free "
-                                        "input, or choose an unused index."),
-                                )
-                        # A wire is only a CHANGE if the slot did not already
-                        # hold this exact source -- so a true rebuild (re-setting
-                        # identical connections) stays 'unchanged', while an added
-                        # or rewired input flips status to 'updated' (seam fix:
-                        # status must not report 'unchanged' after a topology
-                        # change).
-                        cur = target.inputs()
-                        prior = cur[input_idx] if input_idx < len(cur) else None
-                        # `!=`, not `is not`: two hou.Node wrappers for the SAME
-                        # node fail identity but compare equal, so an identical
-                        # rebuild (re-setting the same connection) must read as
-                        # NO change -- otherwise it falsely reports 'updated'.
-                        if prior != source:
-                            connections_changed = True
-                        target.setInput(input_idx, source, output_idx)
-                        connections_made.append({
-                            "from": source.path(),
-                            "to": target.path(),
-                            "input": input_idx,
-                        })
-
-                    # 4. Stamp provenance -- new nodes only; an existing node is
-                    # the artist's and must not be re-commented or re-flagged.
-                    for nid, node in id_to_hou.items():
-                        if nid in existing_nids:
-                            continue
-                        node.setComment("SYNAPSE: build_graph")
-                        node.setGenericFlag(hou.nodeFlag.DisplayComment, True)
-
-                    # 5. Layout BEFORE display flag — position nodes in clean
-                    # vertical columns instead of Houdini's black-box
-                    # layoutChildren(). Professional VFX artists use top-to-
-                    # bottom vertical chains. This also avoids the GPU context
-                    # init race condition that layoutChildren() can trigger
-                    # with Karma nodes (CUDA double-init → segfault).
-                    # M7: origin below existing content so a build into a
-                    # populated stage reads as its own column instead of landing
-                    # on top of what's already there. New nodes are excluded so
-                    # only pre-existing children move the origin.
-                    # Existing (artist-owned) nodes are resolved for wiring
-                    # only: never moved, and never counted as this build's
-                    # content. Everything below operates on the NEW nodes.
-                    new_id_to_hou = {nid: n for nid, n in id_to_hou.items()
-                                     if nid not in existing_nids}
-                    new_sorted_ids = [nid for nid in sorted_ids
-                                      if nid not in existing_nids]
-                    new_paths = {n.path() for n in new_id_to_hou.values()}
-                    ox, oy = _free_origin(parent_node, new_paths)
-                    if topology == "linear":
-                        # Simple vertical column for linear chains
-                        ordered_nodes = [new_id_to_hou[nid]
-                                         for nid in new_sorted_ids]
-                        _layout_vertical_chain(ordered_nodes, ox, oy)
-                    else:
-                        # Layered vertical DAG for merge/fan-out topologies.
-                        # raw_connections may reference existing ids; the DAG
-                        # layout only positions ids present in new_id_to_hou, so
-                        # an edge into an existing node leaves that node untouched
-                        # (_compute_dag_positions filters parents not in depth).
-                        _layout_dag_vertical(
-                            new_sorted_ids, raw_connections, new_id_to_hou,
-                            start_x=ox, start_y=oy,
-                        )
-
-                    # 5b. Section boxes (M10) — after layout so fitAroundContents
-                    # reads final positions; idempotent so a rebuild refreshes
-                    # rather than stacks. Cosmetic + best-effort: never fails the
-                    # build. Ranks come from the same table assemble_chain wires by.
-                    # New nodes only. node_map has no 'type' for existing specs,
-                    # so keying ranks off new_id_to_hou also avoids a KeyError,
-                    # and an existing node keeps whatever box the artist gave it.
-                    # Namespace the boxes by the build's display-node name so a
-                    # second network into the same /stage keeps its own boxes
-                    # (per-network identity; M10 fast-follow).
-                    node_ranks = {
-                        nid: _SOLARIS_NODE_ORDER.get(
-                            str(node_map[nid]["type"]).split("::")[0].lower(),
-                            _UNRANKED_RANK)
-                        for nid in new_id_to_hou
-                    }
-                    sections = _apply_section_boxes(
-                        parent_node, new_id_to_hou, node_ranks,
-                        namespace=id_to_hou[display_node_id].name())
-
-                    # 6. Display flag AFTER layout — now the cook triggered
-                    # by setDisplayFlag runs on a fully-laid-out, wired
-                    # network with no concurrent layout evaluation.
-                    display_hou = id_to_hou[display_node_id]
-                    # Never move the display flag onto an existing (artist-owned)
-                    # node -- it may already sit upstream of its own downstream
-                    # chain (merge -> rendersettings -> rop), and stealing the
-                    # flag would blank the viewport/export the artist set up.
-                    if (display_node_id not in existing_nids
-                            and hasattr(display_hou, "setDisplayFlag")):
-                        try:
-                            display_hou.setDisplayFlag(True)
-                        except AttributeError:
-                            pass  # RopNode — no display flag
+                        # 6. Display flag AFTER layout — now the cook triggered
+                        # by setDisplayFlag runs on a fully-laid-out, wired
+                        # network with no concurrent layout evaluation.
+                        display_hou = id_to_hou[display_node_id]
+                        # Never move the display flag onto an existing (artist-owned)
+                        # node -- it may already sit upstream of its own downstream
+                        # chain (merge -> rendersettings -> rop), and stealing the
+                        # flag would blank the viewport/export the artist set up.
+                        if (display_node_id not in existing_nids
+                                and hasattr(display_hou, "setDisplayFlag")):
+                            try:
+                                display_hou.setDisplayFlag(True)
+                            except AttributeError:
+                                pass  # RopNode — no display flag
 
             except Exception:
                 # Safe undo fallback — the C++ undo layer for LOP nodes
@@ -911,4 +925,4 @@ class SolarisGraphMixin:
                 "dry_run": False,
             }
 
-        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT, label="solaris_graph:_handle_solaris_build_graph")

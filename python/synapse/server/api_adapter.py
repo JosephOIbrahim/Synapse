@@ -153,7 +153,7 @@ def _on_main_thread(fn):
     """
     if HDEFEREVAL_AVAILABLE:
         from .main_thread import run_on_main
-        return run_on_main(fn, timeout=_MAIN_THREAD_TIMEOUT)
+        return run_on_main(fn, timeout=_MAIN_THREAD_TIMEOUT, label="api:_on_main_thread")
     return fn()
 
 

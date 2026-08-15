@@ -117,7 +117,8 @@ class _Prim:
 def _handler_reading(monkeypatch, prim):
     """A SynapseHandler whose resolved LOP exposes `prim` on its stage."""
     mt = importlib.import_module("synapse.server.main_thread")
-    monkeypatch.setattr(mt, "run_on_main", lambda fn, timeout=None: fn())
+    # F4 re-pin (d625ee61): run_on_main gained label=; fakes take **kw.
+    monkeypatch.setattr(mt, "run_on_main", lambda fn, timeout=None, **kw: fn())
     stage = SimpleNamespace(GetPrimAtPath=lambda p: prim)
     lop = SimpleNamespace(stage=lambda: stage, path=lambda: "/stage/krs")
     monkeypatch.setattr(
@@ -266,7 +267,8 @@ def writing(monkeypatch):
     monkeypatch.setattr(husd, "HOU_AVAILABLE", True, raising=False)
     monkeypatch.setattr(husd, "_wire_display", lambda *a, **k: {})
     mt = importlib.import_module("synapse.server.main_thread")
-    monkeypatch.setattr(mt, "run_on_main", lambda fn, timeout=None: fn())
+    # F4 re-pin (d625ee61): run_on_main gained label=; fakes take **kw.
+    monkeypatch.setattr(mt, "run_on_main", lambda fn, timeout=None, **kw: fn())
 
     store = {}
     py_lop = MagicMock(name="py_lop")

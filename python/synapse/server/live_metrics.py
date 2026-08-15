@@ -252,7 +252,19 @@ class MetricsAggregator:
 
         try:
             from .main_thread import run_on_main
-            return run_on_main(_gather, timeout=_SCENE_COLLECT_TIMEOUT)
+            # F6 (2026-08-14): record_stall=False -- a 2s telemetry TIMEOUT
+            # currently counts toward the stall detector that fast-fails real
+            # commands (the measured live-burn). Crucible-accepted trade: if
+            # the gather itself wedges mid-flight, this opt-out hides THAT
+            # stall too; the F4 in-flight register still records the gather's
+            # hold via this call's label, so the observation survives on a
+            # different instrument.
+            return run_on_main(
+                _gather,
+                timeout=_SCENE_COLLECT_TIMEOUT,
+                record_stall=False,
+                label="live_metrics:_collect_scene",
+            )
         except Exception:
             # Timeout (main thread busy), marshaller unavailable, or a failure
             # inside the walk. Never block the daemon — shed this cycle.

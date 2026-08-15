@@ -385,7 +385,7 @@ class CopsHandlerMixin:
                 "initial_nodes": created_nodes,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_create_network")
 
     def _handle_cops_create_copnet(self, payload: Dict) -> Dict:
         """Create a modern Copernicus 'copnet' network container.
@@ -461,7 +461,7 @@ class CopsHandlerMixin:
                 "starter_node": starter_path,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_create_copnet")
 
     def _handle_cops_create_node(self, payload: Dict) -> Dict:
         """Create a COP node inside a COP network.
@@ -510,7 +510,7 @@ class CopsHandlerMixin:
                 "name": node.name(),
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_create_node")
 
     def _handle_cops_connect(self, payload: Dict) -> Dict:
         """Connect two COP nodes together.
@@ -553,7 +553,7 @@ class CopsHandlerMixin:
                 "connected": True,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_connect")
 
     def _handle_cops_set_opencl(self, payload: Dict) -> Dict:
         """Set OpenCL kernel code on a COP node.
@@ -608,7 +608,7 @@ class CopsHandlerMixin:
                 "kernel_length": len(kernel_code),
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_set_opencl")
 
     def _handle_cops_read_layer_info(self, payload: Dict) -> Dict:
         """Read layer information from a COP node (read-only).
@@ -726,7 +726,7 @@ class CopsHandlerMixin:
 
             return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_read_layer_info")
 
     # =========================================================================
     # PHASE 2: Pipeline Integration
@@ -793,7 +793,7 @@ class CopsHandlerMixin:
                 "op_path": op_path,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_to_materialx")
 
     def _handle_cops_composite_aovs(self, payload: Dict) -> Dict:
         """Build a COP network to composite Karma AOV layers.
@@ -893,7 +893,7 @@ class CopsHandlerMixin:
                 "exr_path": exr_path,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_composite_aovs")
 
     def _handle_cops_analyze_render(self, payload: Dict) -> Dict:
         """Analyze a rendered image for quality issues using COP processing.
@@ -999,7 +999,7 @@ class CopsHandlerMixin:
 
             return report
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_analyze_render")
 
     def _handle_cops_slap_comp(self, payload: Dict) -> Dict:
         """Configure a live viewport compositing overlay using COPs.
@@ -1057,7 +1057,7 @@ class CopsHandlerMixin:
 
             return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_slap_comp")
 
     # =========================================================================
     # PHASE 3: Procedural & Motion Design
@@ -1159,7 +1159,7 @@ class CopsHandlerMixin:
                 "bound": bound,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_create_solver")
 
     def _handle_cops_procedural_texture(self, payload: Dict) -> Dict:
         """Generate a procedural texture using COP noise nodes.
@@ -1244,7 +1244,7 @@ class CopsHandlerMixin:
                 "resolution": resolution,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_procedural_texture")
 
     def _handle_cops_growth_propagation(self, payload: Dict) -> Dict:
         """Create a growth propagation solver using dilate/blur/threshold.
@@ -1376,7 +1376,7 @@ class CopsHandlerMixin:
                 "bound": bound,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_growth_propagation")
 
     def _handle_cops_reaction_diffusion(self, payload: Dict) -> Dict:
         """Create a Gray-Scott reaction-diffusion solver via OpenCL.
@@ -1502,7 +1502,7 @@ class CopsHandlerMixin:
                 ),
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_reaction_diffusion")
 
     def _handle_cops_pixel_sort(self, payload: Dict) -> Dict:
         """Configure OpenCL-based pixel sorting on a COP node.
@@ -1590,7 +1590,7 @@ class CopsHandlerMixin:
                 ),
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_pixel_sort")
 
     def _handle_cops_stylize(self, payload: Dict) -> Dict:
         """Apply NPR stylization effects to COP images.
@@ -1722,7 +1722,7 @@ class CopsHandlerMixin:
                 "nodes": [n.path() for n in all_nodes if n is not None],
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_stylize")
 
     # =========================================================================
     # PHASE 4: Advanced
@@ -1836,7 +1836,7 @@ class CopsHandlerMixin:
                 "resolution": resolution,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_wetmap")
 
     def _handle_cops_bake_textures(self, payload: Dict) -> Dict:
         """Scaffold a UV-space texture-baking node setup (placeholder nodes
@@ -1928,7 +1928,7 @@ class CopsHandlerMixin:
                 ),
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_bake_textures")
 
     def _handle_cops_temporal_analysis(self, payload: Dict) -> Dict:
         """Analyze temporal coherence across frames.
@@ -2006,7 +2006,7 @@ class CopsHandlerMixin:
 
             return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_temporal_analysis")
 
     def _handle_cops_stamp_scatter(self, payload: Dict) -> Dict:
         """Scatter stamp images with randomized transforms.
@@ -2080,7 +2080,7 @@ class CopsHandlerMixin:
                 "seed": seed,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="cops:_handle_cops_stamp_scatter")
 
     def _handle_cops_batch_cook(self, payload: Dict) -> Dict:
         """Batch-cook COP nodes, optionally via TOPS for parallelism.
@@ -2149,4 +2149,4 @@ class CopsHandlerMixin:
                 "results": results,
             }
 
-        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT, label="cops:_handle_cops_batch_cook")

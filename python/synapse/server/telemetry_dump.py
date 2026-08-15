@@ -115,6 +115,7 @@ def collect_telemetry() -> dict:
         "tool_durations": None,
         "freeze": None,
         "live_metrics_latest": None,
+        "main_thread_holder": None,
     }
     try:
         import synapse
@@ -188,6 +189,25 @@ def collect_telemetry() -> dict:
         out["stage_touch"] = stage_touch_stats()
     except Exception:
         out["stage_touch_absent"] = "bridge stage_touch stats unavailable"
+
+    # F4 in-flight register — the CURRENT main-thread holder, sampled at dump
+    # time. The hold histogram above names the last COMPLETED hold; a freeze
+    # dump taken mid-flight needs the live one (the Aug-14 dump named a 651ms
+    # doctor while a 179s execute_python was in flight — that inversion is the
+    # defect this fixes). ``None`` here is real data: the main thread was idle
+    # between payloads at sample time. ``held_s`` = time.time() - start_ts.
+    try:
+        from .main_thread import current_main_thread_holder
+        holder = current_main_thread_holder()
+        if holder is not None:
+            label_, start_ts = holder
+            out["main_thread_holder"] = {
+                "label": label_,
+                "start_ts": start_ts,
+                "held_s": round(max(0.0, time.time() - start_ts), 3),
+            }
+    except Exception:
+        out["main_thread_holder_absent"] = "main_thread register unavailable"
 
     # Per-tool duration histogram — lives on the live handler instance.
     try:

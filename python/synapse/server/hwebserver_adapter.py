@@ -53,8 +53,8 @@ from ..core.protocol import (
     PROTOCOL_VERSION,
 )
 from .auth import get_auth_key, authenticate, validate_origin, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
-from .handlers import SynapseHandler
-from .resilience import RateLimiter, BackpressureController
+from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
+from .resilience import RateLimiter, BackpressureController, CircuitBreaker
 from ..session.tracker import get_bridge
 from .bridge_endpoint import publish_endpoint, clear_endpoint
 
@@ -68,6 +68,16 @@ _handler: Optional[SynapseHandler] = None
 _rate_limiter: Optional[RateLimiter] = None
 _backpressure: Optional[BackpressureController] = None
 _metrics_aggregator = None  # live MetricsAggregator (Sprint E) — None until start
+# F3 (2026-08-14) — the freeze-relief breaker. Constructed AT STARTUP here and
+# REGISTERED with the process-wide FreezeChain (register_transport_breaker) so
+# a sustained-freeze escalation has something to open on the live transport.
+# The FreezeChain's never-construct invariant is honored: freeze_chain only
+# READS this; construction happens here, at startup, never in the freeze
+# handler. This breaker opens only through explicit force_open/reset (the
+# freeze escalation + recovery) or its timeout → half-open probe cycle —
+# handler errors are NOT recorded as failures (attributing an op error to the
+# transport is an unprobed policy the WS failover path never ran either).
+_circuit_breaker: Optional[CircuitBreaker] = None
 _client_counter = 0
 _client_lock = threading.Lock()
 _client_sessions: Dict[int, str] = {}  # counter -> session_id
@@ -222,6 +232,28 @@ if HWEBSERVER_AVAILABLE:
                         ).to_json(), is_binary=False)
                         return
 
+                # F3 breaker gate (2026-08-14): when the freeze chain has opened
+                # the transport breaker (sustained main-thread freeze), fast-fail
+                # NEW mutating commands instead of queueing them behind the
+                # frozen main thread. Read-only commands bypass (their whole job
+                # is observability during a freeze — same bypass as the websocket
+                # path). The "frozen" sentence is honest about WHY: a human reads
+                # this when the UI comes back.
+                if _circuit_breaker is not None and command.type not in _READ_ONLY_COMMANDS:
+                    can_exec, cb_info = _circuit_breaker.can_execute()
+                    if not can_exec:
+                        await self.send(SynapseResponse(
+                            id=command.id,
+                            success=False,
+                            error=("Houdini's main thread was unresponsive, so Synapse "
+                                   "paused new commands while it recovers — try again "
+                                   "shortly"),
+                            data={"retry_after": cb_info.get("retry_after", 30.0),
+                                  "state": cb_info.get("state", "open")},
+                            sequence=command.sequence
+                        ).to_json(), is_binary=False)
+                        return
+
                 # Lazy session creation
                 if self._session_id is None:
                     bridge = get_bridge()
@@ -232,6 +264,13 @@ if HWEBSERVER_AVAILABLE:
                 # Dispatch to handler
                 handler = _get_handler()
                 response = handler.handle(command)
+                # F3: record successes so a HALF_OPEN breaker (post-timeout
+                # probe cycle) can close again after the main thread recovers.
+                # Failures are deliberately NOT recorded as breaker failures —
+                # see the _circuit_breaker declaration comment.
+                if (_circuit_breaker is not None and response.success
+                        and command.type not in _READ_ONLY_COMMANDS):
+                    _circuit_breaker.record_success()
                 await self.send(response.to_json(), is_binary=False)
 
             except json.JSONDecodeError as e:
@@ -291,7 +330,7 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
         raise ImportError("hwebserver not available — must run inside Houdini")
 
     global _rate_limiter, _backpressure, _running, _handler, _port
-    global _metrics_aggregator
+    global _metrics_aggregator, _circuit_breaker
 
     if _running:
         logger.info("Already running")
@@ -304,6 +343,24 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
     if enable_rate_limiter:
         _rate_limiter = RateLimiter()
         _backpressure = BackpressureController()
+
+    # F3 (2026-08-14) — the transport breaker the FreezeChain's escalation opens
+    # on a sustained freeze. hwebserver shipped with NO resilience layer, so all
+    # five on-disk freeze dumps read "No live SynapseServer breaker to open
+    # (hwebserver transport has no resilience layer)" and the escalation acted on
+    # nothing. Construct it HERE, at transport startup, and REGISTER it with the
+    # freeze chain — the chain reads it, never constructs it (its never-construct
+    # invariant is intact). Best-effort: a registration failure must not block
+    # the transport from starting (the breaker would just be un-escalatable,
+    # which is the pre-F3 status quo, not a new failure mode).
+    try:
+        _circuit_breaker = CircuitBreaker(name="hwebserver-transport")
+        from . import freeze_chain as _fc
+        _fc.register_transport_breaker(_circuit_breaker)
+    except Exception:
+        logger.debug("Freeze-chain breaker registration failed (best-effort)",
+                     exc_info=True)
+        _circuit_breaker = None
 
     # Live metrics aggregator (Sprint E). The legacy websocket.py builds + feeds
     # one; this dominant hwebserver path never did, so telemetry always stamped
@@ -349,6 +406,14 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
         _handler = None
         _rate_limiter = None
         _backpressure = None
+        # F3: unhook the breaker registered above, else the freeze chain would
+        # open a breaker for a transport that never came up.
+        try:
+            from . import freeze_chain as _fc
+            _fc.unregister_transport_breaker(_circuit_breaker)
+        except Exception:
+            pass
+        _circuit_breaker = None
         raise
 
     _running = True
@@ -365,15 +430,25 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
         pass
 
     logger.info("Running on ws://localhost:%s/synapse", port)
-    logger.info("Native C++ server -- no watchdog, no circuit breaker")
+    logger.info("Native C++ server -- no watchdog; freeze-chain breaker registered")
 
 
 def stop_hwebserver():
     """Stop the Synapse hwebserver."""
     global _running, _handler, _rate_limiter, _backpressure, _metrics_aggregator
+    global _circuit_breaker
 
     if not _running:
         return
+
+    # F3: unhook the transport breaker first — a stopped transport must not
+    # leave the freeze chain holding a breaker for a server that is gone.
+    try:
+        from . import freeze_chain as _fc
+        _fc.unregister_transport_breaker(_circuit_breaker)
+    except Exception:
+        pass
+    _circuit_breaker = None
 
     # Stop the live metrics collector (best-effort — never block shutdown).
     if _metrics_aggregator is not None:
@@ -409,10 +484,27 @@ def is_running() -> bool:
 
 def get_health() -> Dict:
     """Get health status for the hwebserver backend."""
-    return {
+    health = {
         "backend": "hwebserver",
         "running": _running,
         "port": _port,
         "clients": len(_client_sessions),
         "rate_limiter": _rate_limiter is not None,
     }
+    # F3: surface breaker state + the last WS-path halt so a recovering panel's
+    # normal health read can see (and say) what happened while the UI was frozen.
+    health["circuit_breaker"] = (
+        _circuit_breaker.state.value if _circuit_breaker is not None else None
+    )
+    try:
+        from .emergency_live import last_live_halt_report
+        halt = last_live_halt_report()
+        health["last_emergency_halt"] = (
+            {"reason": halt.get("emergency_reason"),
+             "timestamp": halt.get("emergency_timestamp"),
+             "holder": halt.get("main_thread_holder")}
+            if halt is not None else None
+        )
+    except Exception:
+        health["last_emergency_halt"] = None
+    return health

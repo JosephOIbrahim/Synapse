@@ -194,7 +194,8 @@ def _patch_main_thread(monkeypatch):
     # Patch the LIVE main_thread entry (test_main_thread.py swaps in a private
     # instance at collection; the handlers resolve it at call time).
     mt_live = importlib.import_module("synapse.server.main_thread")
-    monkeypatch.setattr(mt_live, "run_on_main", lambda fn, timeout=None: fn())
+    # F4 re-pin (d625ee61): run_on_main gained label=; fakes take **kw.
+    monkeypatch.setattr(mt_live, "run_on_main", lambda fn, timeout=None, **kw: fn())
 
 
 @pytest.fixture()

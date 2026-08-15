@@ -71,7 +71,8 @@ def _wire(monkeypatch, events, node=None):
         events.append(("hou.node", path, in_main["active"]))
         return node
 
-    def spy_run_on_main(fn, timeout=None):
+    # F4 re-pin (d625ee61): run_on_main gained label=; fakes take **kw.
+    def spy_run_on_main(fn, timeout=None, **kw):
         calls.append({"timeout": timeout})
         in_main["active"] = True
         try:

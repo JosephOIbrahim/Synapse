@@ -182,6 +182,36 @@ def _record_main_thread_hold(ms, label=None, abandoned=False):
             _main_thread_hold["abandoned_count"] += 1
 
 
+# F4 (2026-08-14) — in-flight register. The hold histogram above records
+# COMPLETED holds only: a payload still RUNNING is invisible mid-flight, which
+# is exactly the class behind the 2026-08-13/14 freezes — a mid-freeze dump
+# named a 651ms doctor as slowest while a 179s execute_python was in flight.
+# One register covers BOTH dispatch paths: fast path 2 (inline, caller already
+# on the main thread) and the deferred _on_main payload (set once the C4
+# abandoned-check passes, so deferred zombie renders are named MID-FLIGHT, not
+# only after they complete).
+# Single-writer-safe by construction: both write sites execute only on the
+# main thread, so at most one writer exists at any moment and the writes are
+# bare reference assignments (atomic under the GIL). Readers (freeze chain /
+# telemetry dump on the watchdog thread, panel retry gate) read with no lock.
+# Entry is (label, start_ts); nested payloads save/restore the previous entry
+# so an inner hold never erases the outer one's attribution.
+_in_flight = None  # (label, start_ts) of the payload currently on the main thread, else None
+
+
+def current_main_thread_holder():
+    """(label, start_ts) of the payload currently holding the main thread,
+    or None when the main thread is idle between payloads.
+
+    Lock-free read-over-only: the register is written solely on the main
+    thread (single writer), so a concurrent read sees either the old or the
+    new tuple — never a torn value. ``start_ts`` is a time.time() stamp so
+    callers can age the current hold (``time.time() - start_ts``); the F2
+    retry circuit-breaker and the FreezeChain dump consume exactly that.
+    """
+    return _in_flight
+
+
 def main_thread_hold_stats():
     """Snapshot of the deferred-path main-thread hold histogram (copy — safe
     to serialize). This is real occupancy: fn()'s duration measured on the
@@ -207,6 +237,58 @@ def reset_main_thread_hold_stats():
             _main_thread_hold["buckets"][b] = 0
         _main_thread_hold["slowest_label"] = None
         _main_thread_hold["abandoned_count"] = 0
+
+
+# F3 (2026-08-14) — pending-dispatch registry. The C4 abandoned flag lives in
+# a per-call closure, so nothing OUTSIDE the timed-out caller could cancel a
+# dispatch still sitting in the hdefereval queue. During a sustained main-
+# thread freeze that is exactly the pile-up pattern: every queued payload
+# wakes AFTER the runaway hold clears and mutates the scene anyway. The
+# freeze-chain WS-path halt (server/emergency_live.py) flips the SAME C4 flag
+# through this registry instead — a cancelled payload wakes into
+# `if abandoned[0]: return` inside _on_main, no-oping the mutation. Only
+# entries whose payloads have NOT started are flipped safely: an in-flight
+# payload reads the flag only before fn() runs (the C4 check), so setting it
+# mid-flight changes telemetry attribution, not the running payload. The halt
+# never waits on the frozen main thread — flipping is pure lock+bool work.
+# Entries deregister when their caller's wait ends (finally-block below), so
+# the registry holds only live dispatches.
+_pending_lock = threading.Lock()
+_pending_dispatches = {}  # token -> (state_lock, abandoned_list, label, enqueue_ts)
+
+
+def cancel_pending_dispatches(reason: str = "emergency_halt") -> int:
+    """Flip the C4 abandoned flag on every pending (unstarted) dispatch.
+
+    Safe to call from ANY thread, notably the freeze-chain escalation timer
+    thread while the main thread is frozen — it acquires only per-dispatch
+    state locks and the registry lock, never the main thread and never
+    hdefereval. Returns the number of dispatches abandoned. A dispatch whose
+    caller already timed out is gone from the registry (its own finally
+    deregistered it), so this only reaches dispatches a caller still awaits.
+    """
+    with _pending_lock:
+        entries = list(_pending_dispatches.values())
+    flipped = 0
+    for state_lock, abandoned, label, enqueue_ts in entries:
+        try:
+            with state_lock:
+                if not abandoned[0]:
+                    abandoned[0] = True
+                    flipped += 1
+        except Exception:
+            pass  # a payload that raced out must not break the halt
+    if flipped:
+        logger.warning(
+            "Abandoned %d pending main-thread dispatch(es) (%s)", flipped, reason
+        )
+    return flipped
+
+
+def pending_dispatch_count() -> int:
+    """Live count of main-thread dispatches waiting on hdefereval to wake."""
+    with _pending_lock:
+        return len(_pending_dispatches)
 
 
 def is_main_thread_stalled():
@@ -246,7 +328,7 @@ def probe_main_thread(timeout=2.0):
     fast-fails as before. Returns True when the main thread responded.
     """
     try:
-        run_on_main(lambda: True, timeout=timeout)
+        run_on_main(lambda: True, timeout=timeout, label="main_thread:probe_main_thread")
     except Exception:
         return False
     # run_on_main's worker path already reset the counter; the main-thread
@@ -297,9 +379,11 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
     dominate the C6/T1 attribution instrument — that histogram must stay
     a measure of REAL command waits only.
 
-    ``label`` (optional) attributes the deferred payload in the OCC
-    main-thread hold histogram (main_thread_hold_stats). ``None`` records as
-    "unlabeled". Attribution only — it changes no dispatch behaviour.
+    ``label`` (optional) attributes the payload in BOTH the OCC
+    main-thread hold histogram (main_thread_hold_stats, completed holds) and
+    the F4 in-flight register (current_main_thread_holder, the live hold).
+    ``None`` records as "unlabeled". Attribution only — it changes no dispatch
+    behaviour.
     """
     # Fast path 1: reentrant call from within a run_on_main callback
     if getattr(_tls, "on_main", False):
@@ -314,9 +398,18 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
     # one perf_counter pair; record on the way out even if fn() raises.
     if threading.current_thread().ident == _MAIN_THREAD_ID:
         _t_direct = time.perf_counter()
+        # F4: register the inline hold BEFORE fn() runs. Fast path 2 never
+        # reaches _record_main_thread_hold, so without this the in-flight
+        # class that froze the UI twice this week was invisible to every
+        # instrument. Save/restore so a nested fast-path-2 call (main-thread
+        # caller inside a main-thread payload) restores the outer holder.
+        global _in_flight
+        _prev_in_flight = _in_flight
+        _in_flight = (label or "unlabeled", time.time())
         try:
             return fn()
         finally:
+            _in_flight = _prev_in_flight
             _elapsed_ms = (time.perf_counter() - _t_direct) * 1000.0
             # C6 first and unconditionally — the histogram's semantics are
             # unchanged and must not depend on the guard being importable.
@@ -373,6 +466,16 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
             if abandoned[0]:
                 return  # caller already timed out — do not mutate the scene
         _tls.on_main = True
+        # F4: register the hold NOW — after the C4 abandoned-check passes and
+        # before the payload starts. This is what names a deferred zombie
+        # render (the Aug-13 162-177s class) MID-FLIGHT; the hold histogram
+        # below only fires once fn() returns, which for a zombie is "never in
+        # time". Save/restore for the nested-main-thread case, as in fast
+        # path 2. Single-writer-safe: this closure only runs on the main
+        # thread via hdefereval.executeDeferred.
+        global _in_flight
+        _prev_in_flight = _in_flight
+        _in_flight = (label or "unlabeled", time.time())
         # OCC — time the payload itself, ON the main thread. This is the hold
         # the freeze investigations previously inferred from proxies.
         # Measurement only: control flow, C4 semantics, and the result path
@@ -383,6 +486,9 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
         except Exception as e:
             error_holder[0] = e
         finally:
+            # F4: clear the register on exit (restore the previous holder for
+            # the nested case) BEFORE recording the completed hold.
+            _in_flight = _prev_in_flight
             _hold_ms = (time.perf_counter() - _t_hold) * 1000.0
             _tls.on_main = False
             try:
@@ -396,23 +502,36 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
                 pass  # telemetry must never break the result path
             done.set()
 
-    hdefereval.executeDeferred(_on_main)
-
-    if not done.wait(timeout=timeout):
-        with state_lock:
-            abandoned[0] = True
-        if record_stall:
-            _record_timeout(timeout)
-        raise RuntimeError(
-            "Houdini's main thread didn't respond in time -- "
-            "it may be busy cooking or rendering. "
-            "Try again in a moment."
+    # F3: register in the pending-dispatch registry BEFORE enqueueing so the
+    # WS-path emergency halt (server/emergency_live.py) can flip this call's
+    # C4 abandoned flag from off-main-thread during a sustained freeze.
+    token = id(abandoned)
+    with _pending_lock:
+        _pending_dispatches[token] = (
+            state_lock, abandoned, label or "unlabeled", time.time()
         )
 
-    # Success — reset the stall counter
-    _record_success()
+    hdefereval.executeDeferred(_on_main)
 
-    if error_holder[0] is not None:
-        raise error_holder[0]
+    try:
+        if not done.wait(timeout=timeout):
+            with state_lock:
+                abandoned[0] = True
+            if record_stall:
+                _record_timeout(timeout)
+            raise RuntimeError(
+                "Houdini's main thread didn't respond in time -- "
+                "it may be busy cooking or rendering. "
+                "Try again in a moment."
+            )
 
-    return result_holder[0]
+        # Success — reset the stall counter
+        _record_success()
+
+        if error_holder[0] is not None:
+            raise error_holder[0]
+
+        return result_holder[0]
+    finally:
+        with _pending_lock:
+            _pending_dispatches.pop(token, None)

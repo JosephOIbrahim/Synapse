@@ -84,7 +84,13 @@ def test_collect_scene_marshals_hou_through_run_on_main():
 
     seen_timeout: dict = {}
 
-    def fake_run_on_main(fn, timeout=10.0):
+    # F6 (2026-08-14): _collect_scene now passes record_stall=False so a 2s
+    # telemetry timeout never feeds the stall detector that fast-fails real
+    # commands. Fake signature re-pinned forward; the flag is asserted below.
+    def fake_run_on_main(fn, timeout=10.0, record_stall=True, record_wait=True,
+                         label=None):
+        seen_timeout["record_stall"] = record_stall
+        seen_timeout["label"] = label
         # Simulate the real marshaller: fn runs on a DIFFERENT ("main") thread,
         # never the daemon/caller thread. Bounded timeout is respected by join.
         seen_timeout["v"] = timeout
@@ -120,6 +126,11 @@ def test_collect_scene_marshals_hou_through_run_on_main():
     assert seen_timeout.get("v") == 1.0, (
         f"expected the documented 1s marshal timeout, got {seen_timeout.get('v')}"
     )
+    # F4: the gather is labeled so holds attribute to it.
+    assert seen_timeout.get("label") == "live_metrics:_collect_scene"
+    # F6: telemetry timeouts never feed the stall detector (the F4 register
+    # still observes the gather's hold via the label above).
+    assert seen_timeout.get("record_stall") is False
 
     # EVERY hou access (not just the first per name) happened on the marshalled
     # (main) thread — none leaked onto the calling/daemon thread. Rule #3.

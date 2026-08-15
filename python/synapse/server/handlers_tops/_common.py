@@ -79,7 +79,7 @@ def _run_in_main_thread_pdg(func, timeout=None):
         # never ENFORCED the timeout (the docstring admits this). One edit covers
         # all 28 TOPS call sites. (GUI still cooks; the transport is freed.)
         from ..main_thread import run_on_main
-        result = run_on_main(func, timeout=effective_timeout)
+        result = run_on_main(func, timeout=effective_timeout, label="tops_common:_run_in_main_thread_pdg")
     except Exception:
         elapsed = time.monotonic() - t0
         if elapsed > 5.0:

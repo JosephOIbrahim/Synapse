@@ -1,0 +1,551 @@
+{
+ "diff": {
+  "rows": [
+   {
+    "evidence": "python/synapse/server/main_thread.py:160-167 (histogram shape: count/sum/max/buckets/slowest_label/abandoned_count), :170-182 _record_main_thread_hold, :185-197 main_thread_hold_stats; label threaded from run_on_main(label=...) :274-275; commit 8239410a confirmed ancestor of HEAD (b6eb4da4)",
+    "item": "Recon 0.1 deferred-path occupancy timer (_record_main_thread_hold at deferred exit)",
+    "note": "Labels DO distinguish producers on every path: /mcp outer marshal mcp/server.py:720 (label=tool_name), WS handler marshals handlers.py:346/350/1031/1318/1469, panel fallback tool_executor.py:572, memory/store store.py:834/857, doctor doctor.py:71/93. Sinks: Prometheus histogram + per-label slowest gauge metrics.py:171-194, freeze dump telemetry_dump.py:148-151, doctor output doctor.py:754-762.",
+    "status": "LANDED"
+   },
+   {
+    "evidence": "harness/notes/FREEZE_FORENSICS_20260731.md header :1-30 unchanged; repo grep for retir/supersede in that file finds only :41 and :87 (both future-tense descriptions of the defect itself); FRZ receipt harness/notes/receipts/FRZ.json:63-65 records 'STILL OPEN, unchanged at HEAD... left open deliberately: it is human decision D5'",
+    "item": "Recon 0.2 retirement of 2026-07-31 FREEZE_FORENSICS numbers",
+    "note": "Ruling R2 (docs/reviews/latency_authority_2026-08-13.md:7-43, 'measured numbers are authoritative') superseded every 07-31/wave-1 magnitude at the authority layer, but the paper itself was never retracted or amended in-tree - a reader who finds the file first reads un-flagged numbers.",
+    "status": "OPEN"
+   },
+   {
+    "evidence": "python/synapse/panel/bridge_adapter.py:244-251 lists 13 slow tools (render/tops/cops/evolve/sleep families); houdini_capture_viewport not among them; it instead sits in _READ_ONLY_TOOLS :51-71 (entry :55)",
+    "item": "Recon 1.1 houdini_capture_viewport membership in the slow-tool preflight list",
+    "note": "Mechanism alive and its home matches the recon citation (bridge_adapter._KNOWN_SLOW_TOOLS + estimate_inline_cost :264-306 + h7 inline guard tool_executor.py:489-504). capture_viewport IS in the budget layer (core/timeouts.py:19, 30.0s) but the preflight advisory never gained it as a member - the recon's OPEN finding stands.",
+    "status": "OPEN"
+   },
+   {
+    "evidence": "python/synapse/server/handlers_usd.py _walk at :956-1018: guard ':957 if depth > max_depth or len(results) >= limit: return'; filter-reject branches :963-967, :970-977, :980-990 recurse without appending to results",
+    "item": "Recon 2.1 handlers_usd.py query_prims visit counter",
+    "note": "Still results-bound, not visit-bound: a limit=10 walk over 100k filter-rejecting prims walks all 100k on the main thread. Unchanged at HEAD.",
+    "status": "OPEN"
+   },
+   {
+    "evidence": "/mcp path: core/timeouts.py:22 'inspect_scene': 30.0 + outer marshal mcp/server.py:715-718 timeout_for(tool_name); WS path: handlers.py:1511 _handle_inspect_scene calls run_on_main(...) with no timeout argument (default 10.0s)",
+    "item": "Recon 2.2 handlers.py inspect_scene timeout 10s->30s",
+    "note": "The 30s budget was added to the /mcp marshalling layer, not to the live /synapse WS handler marshal. On the WS path the inner run_on_main can still 10s-timeout while the outer budget thinks it has 30s. The recon fix was applied one layer up from where the recon pointed.",
+    "status": "PARTIAL"
+   },
+   {
+    "evidence": "python/synapse/server/handlers_usd.py:905 '_handle_reference_usd' ends 'return run_on_main(_on_main)' (bare, default timeout); core/timeouts.py:18-66 SLOW_COMMANDS contains no 'reference_usd' entry",
+    "item": "Recon 2.3 handlers_usd.py reference_usd timeout",
+    "note": "No timeout entry at either layer. Unchanged at HEAD.",
+    "status": "OPEN"
+   },
+   {
+    "evidence": "python/synapse/server/live_metrics.py:98 _SCENE_COLLECT_TIMEOUT=1.0, :255 'return run_on_main(_gather, timeout=_SCENE_COLLECT_TIMEOUT)' with record_stall defaulting True; the only record_stall=False call sites in the repo are integrity_envelope.py:221 and ws_bridge.py:143; stall gating of real commands unchanged at main_thread.py:212-220 (_consecutive_timeouts>=2 -> is_main_thread_stalled fast-fail)",
+    "item": "Recon 2.4 live_metrics record_stall poisoning",
+    "note": "Scene-gather polls on ~2s interval against a 1.0s main-thread timeout, each miss still increments the detector and counts toward fast-failing real commands. record_stall=False was applied only to the envelope and bridge paths, not here. Unchanged at HEAD.",
+    "status": "OPEN"
+   },
+   {
+    "evidence": "shared/bridge.py:2598-2606 References arc called unguarded by design (comment: broken References API should keep 'failing CLOSED through the outer except'); :2614-2624 Payloads arc hasattr-guarded skip; outer except :2700-2710 logs and returns False; caller :1833-1844 records comp_ok and raises RuntimeError :1851; 'except Exception' :1867-1868 routes to _guarded_rollback (:1581), the single rollback after the group closes",
+    "item": "Recon 2.5 pxr GetAddedOrExplicitItems phantom / fail-closed crash path",
+    "note": "The fail-closed crash path is CLOSED and verified end-to-end at HEAD: a References AttributeError is caught at :2700, composition reports False, the RuntimeError triggers one _guarded_rollback on the outer except - no half-applied material op survives. Remaining asymmetry (by design, recon-aware): a broken Payloads API silently skips rather than failing closed. Verdict PARTIAL only for that asymmetry, not for the crash path.",
+    "status": "PARTIAL"
+   },
+   {
+    "evidence": "python/synapse/mcp/server.py:121-123 comment still says bridge set 35 / three diverging tools; live read_only_set_divergence() at HEAD returns FOUR ['cops_temporal_analysis', 'synapse_propose_graph', 'synapse_render_processes', 'synapse_validate_frame'] with transport=40 / bridge=36",
+    "item": "Recon 2.6 read_only dual-set divergence",
+    "note": "Mechanism itself is correct (registry-derived :105-108; both-sets AND at is_transport_fast_path :186-192; divergence helper :195ff computed live), but the stale comment undercounts the divergence and predates the fourth tool. The sets still diverge; the documentation of the divergence is wrong.",
+    "status": "OPEN"
+   },
+   {
+    "evidence": "FRZ.json R-FRZ-4 block (:63-65 and :177-181) is the only record: 'D1 de-facto answered but unrecorded; D2/D3/D4 no ruling findable in harness/notes or CTO_RULINGS_01.md; D5 verifiably open'. Independent grep of harness/ and docs/CTO_RULINGS_01.md found no later D1-D5 disposition postdating FRZ",
+    "item": "D1-D5 dispositions from the recon",
+    "note": "D1 (ship the occupancy timer) is de-facto answered by merged commit 8239410a but no ruling was recorded; D5 is verifiably OPEN (it IS recon row 0.2 above); D2, D3, D4 have no findable disposition at HEAD.",
+    "status": "OPEN"
+   },
+   {
+    "evidence": "Master ancestry verified for all five product commits (2fa5ec2e/6259f551/66e39678/97ebff92/1f5a441c) and their merges (d984058f/60646181/7eba9321/2ab9af13/f406ab2c) plus CRUX receipt merge 8c78cd5f/57e10c55",
+    "item": "Wave-2 receipts: what S1/S2/S3/S4/S5 actually changed",
+    "note": "Actually changed: S1 = _dispatch_doctor_off_main (mcp/server.py:212, wired :703) + store.py two-site memory marshalling (:834/:857) + scene_memory :103/:122 - the 514ms run_doctor hold now runs off-main on the /mcp path; S2 = NEW module panel/async_format.py (Qt-free FIFO formatter) + tests/test_w2s2_format_offmain.py, shipped OFF BY DEFAULT and its one-line panel activation is NOT in synapse_panel.py at HEAD (grep for enable_off_main_format/async_format/WorkingIndicator returns zero) - merged but inactive; S3 = NEW module panel/working_indicator.py + tests/test_working_indicator.py, mount held and indeed absent from synapse_panel.py at HEAD - merged but unmounted; S4 = probe-first, correctly shipped NOTHING (R-FRZ-3): discriminator stays UNKNOWN (headless, needs human-at-GUI), ready_diff (_NEG_CACHE_TTL_SEC=30.0 non-latching negative cache) remains READY-BUT-UNAPPLIED (agent_health.py:49-71 unchanged); S5 = LANDED and WIRED: synapse_panel.py:2438-2441 gather_context_off_main(self._context_ready.emit), _context_ready Signal :296 connected :418, tick via _ctx_timer :421 -> _update_context :2408 - context reads moved off the Qt/Houdini main thread. Receipt weaknesses: W2-S1.json is ABSENT from harness/notes/receipts/ (ls shows W2-CRUX, W2-S2..S5 and W2_registration only; later receipts reference 'W2-S1.json findings W2-S1-F2' so it existed) - its evidence survives via harness/autorevise/bus/_runs/resolve_s1_seam.py; W2-CRUX receipt status='blocked' (wave verdict BLOCK: S2/S3/S5 uncommitted at crux time, S2 receipt B2-failed for the 'SHIPPED + PROVEN' overstatement contradicted by git) and no second green crux run was ever receipted after the merges - the wave is product-merged but receipt-cleared-only-at-BLOCK.",
+    "status": "PARTIAL"
+   },
+   {
+    "evidence": "python/synapse/server/freeze_chain.py:47 ESCALATION_S=30.0, :64-69 Watchdog(heartbeat_interval=1.0, freeze_threshold=5.0), :72-74 heartbeat(), :76-91 stop() killing the escalation zombie (R310a, commits 64f8486e/c9203a51 in master), :93-121 latch-before-act escalation (measured 0.79-6.50ms arming window), :130-142 _on_freeze warn+arm, :144-149 _on_recover reset",
+    "item": "freeze_chain.py status in master",
+    "note": "Exists and is ARMED at HEAD - not activation theater: the panel wires a 1s QTimer -> _beat_freeze_chain (synapse_panel.py:452-454, immediate first beat :454; :1757-1761 imports and calls freeze_chain.beat(); clean shutdown :2605-2609). Policy: 5s main-thread stillness -> WARNING + escalation arming, sustained 30s -> telemetry dump -> process breaker force_open -> emergency halt.",
+    "status": "LANDED"
+   },
+   {
+    "evidence": "python/synapse/server/websocket.py:93-122 P3.3 block (CANCEL_POLL_INTERVAL=0.1 :100, iter_messages cancel-aware polling :103-122); per-connection cancel_event allocation :435-440, deregistration finally :568-570; request_cancel :343-352, request_cancel_all :356-359; main loop 'for message in iter_messages(websocket, cancel_event):' :546",
+    "item": "websocket.py P3.3 cancel-aware recv loop",
+    "note": "LANDED for the recv-parked class: a client cancel now reaches the loop between messages (~0.1s granularity) instead of being unreachable. Residual gap, not addressed by P3.3 and matching the known marshal-deadlock class: _handle_message runs each handler inline and serially at :559, so a cancel cannot preempt a handler that is already running - only a loop waiting on recv. Cancel reachability is partial by design of this leg.",
+    "status": "LANDED"
+   }
+  ],
+  "open_items": [
+   "1. Recon 2.4 (highest live-burn risk): apply record_stall=False to live_metrics scene-gather at python/synapse/server/live_metrics.py:255, or exempt the stall detector from 1s-budget polls - current state lets 2s-interval telemetry fast-fail real commands",
+   "2. Recon 2.6 doc drift: update the comment at python/synapse/mcp/server.py:121-123 to the live FOUR-tool divergence; decide whether synapse_render_processes/synapse_validate_frame/cops_temporal_analysis/synapse_propose_graph belong in the bridge read-only set at panel/bridge_adapter.py:51-71",
+   "3. Recon 2.3: add 'reference_usd': 30.0 to core/timeouts.py SLOW_COMMANDS (:18-66) and pass an explicit timeout at handlers_usd.py:905",
+   "4. Recon 1.1: add 'houdini_capture_viewport' to panel/bridge_adapter.py:244-251 _KNOWN_SLOW_TOOLS (already budgeted 30s in timeouts.py:19)",
+   "5. Recon 2.1: convert handlers_usd.py:956-1018 _walk from results-limit to an incrementing visit counter so filter-rejecting walks terminate on budget, not on results",
+   "6. Recon 0.2 / D5 (human decision): retire or banner-mark harness/notes/FREEZE_FORENSICS_20260731.md; R2 in docs/reviews/latency_authority_2026-08-13.md supersedes its numbers but the file reads un-flagged",
+   "7. Recon 2.2 second half: raise the WS-path handler marshal timeout at handlers.py:1511 (or route _handle_inspect_scene through its own 30s marshal) to match the /mcp budget",
+   "8. D-rulings: record D1 as answered (8239410a), rule on D2/D3/D4 (no disposition exists anywhere checked: harness/notes, FRZ.json R-FRZ-4, CTO_RULINGS_01.md)",
+   "9. Wave-2 receipt gaps: commit or regenerate W2-S1.json (absent from harness/notes/receipts/); re-run the crux green now that all five merges are in master - the only crux on record is status='blocked'",
+   "10. S2/S3 activation seam: apply the one-line enable_off_main_format activation in synapse_panel._on_done (:2287) and the working_indicator mount once the synapse_panel.py bus claim clears - both modules are merged inert at HEAD",
+   "11. W2-S4-P1 probe: run the ready-but-unapplied negative-cache diff under a human-at-GUI session to resolve the 5-6s stickiness discriminator (R-FRZ-3: still UNKNOWN, no fix licensed)",
+   "12. Recon 2.5 asymmetry (by design, confirm intent is still wanted): Payloads arc at bridge.py:2614-2624 silently skips on a broken API where References fails closed"
+  ],
+  "receipts_summary": [
+   "FRZ (feeder, green): occupancy timer 0.1 CLOSED BEFORE at main_thread.py:394 (8239410a, in master); 0.2 left open as human decision D5; Tier 1.1/2.1-2.6 all RE-VERIFIED OPEN at 1f18ab46, none actioned (confirmed here: every one still OPEN at b6eb4da4); follow-on hold-histogram-in-freeze-dump closed at telemetry_dump.py:148-151",
+   "W2-S1 (doctor off-main): product LANDED and wired (mcp/server.py:212/:703 + store.py:834/:857 + scene_memory.py:103/:122) against the MEASURED 514ms hold; receipt WEAK: W2-S1.json absent from harness/notes/receipts/ at HEAD, evidence survives via harness/autorevise/bus/_runs/resolve_s1_seam.py",
+   "W2-S2 (formatter offload, green_with_findings): async_format.py + tests merged into master; shipped OFF BY DEFAULT and its one-line panel activation is ABSENT from synapse_panel.py at HEAD (grep: zero hits) - receipt's 'SHIPPED + PROVEN' phrasing was B2-failed by CRUX for overstating; mechanism real, panel effect nil at HEAD",
+   "W2-S3 (busy visual mount, green_with_findings): working_indicator.py + tests merged; synapse_panel.py mount HELD behind the S5 bus claim and indeed absent at HEAD - module inert; acceptance #4 (gui_required) remains UNKNOWN (headless)",
+   "W2-S4 (FRZ discriminator probe, READY): discriminator UNKNOWN (needs human-at-GUI); ui_available=true probe found _BRIDGE_ref mechanism dormant (1 gc weakref, positive-only cache at agent_health.py:49-71); ready_diff (30s non-latching negative cache) + 4-property test remain unapplied - ship-nothing was CORRECT per R-FRZ-3",
+   "W2-S5 (context gather off-main, green_with_findings): LANDED and WIRED at HEAD - synapse_panel.py:2438-2441 routes context reads through ws_bridge.gather_context_off_main, results marshal back via _context_ready (:296/:418/:421/:2408); the one wave-2 leg whose panel effect is live today",
+   "W2-CRUX: receipt status='blocked' - wave verdict BLOCK (S2/S3/S5 uncommitted at crux time; S2 overstatement contradicted by git) with remediation annotation; all three merges subsequently landed but NO second crux run was receipted, so the wave is merged-without-green-crux; all gui_required predicates remain UNKNOWN"
+  ]
+ },
+ "surface": {
+  "cancel_state": "NO — a cancel control message cannot preempt a queued or in-flight command today; the mechanisms that exist are all coarser. (1) P3.3 per-connection cancel_event: created per connection (websocket.py:435-440) and consulted ONLY inside iter_messages between recv ticks (websocket.py:103-124, checks at l.116/l.122) — but the recv loop is SERIAL: `self._handle_message(websocket, message, client_id)` at websocket.py:559 blocks until `self._handler.handle(command)` returns (l.664/689/775), so a cancel frame arriving mid-command waits behind it and cancel_event's only effect is ending the recv loop afterward. The event backs connection teardown (request_cancel l.343, request_cancel_all l.356, invoked by stop() at l.317), not per-command preemption. (2) Command-level kill verbs: render_farm_cancel/render_stop/render_processes/emergency_halt are classified read-only (handlers.py _READ_ONLY_COMMANDS, cited by the bypass at websocket.py:686-693) so on a SECOND connection (websockets sync serve: per-connection threads; accept-loop daemon thread websocket.py:298-300, per-conn _handle_client l.424) they skip the C5 _MUTATION_LOCK (handlers.py:518-520) and the resilience gates and can be received while another command is in flight — but render_stop itself marshals onto the main thread (handlers_render.py:1731-1733, 30s), and tops_cancel_cook goes through _run_in_main_thread_pdg (handlers_tops/_common.py:82, 60s), so even kill verbs queue behind a frozen main thread. (3) Stall gate: is_main_thread_stalled + probe_main_thread (websocket.py:732-771; main_thread.py:212/239) fast-fail NEW commands after 2 consecutive marshal timeouts (render poll + render_farm_status exempt, websocket.py:741-746) — rejection of fresh work, not preemption of the running one. (4) C4 zombie-abandon (main_thread.py:371-394 per verified context) makes a deferred payload a no-op ONLY if it hasn't started; a payload mid-fn() (including node.render) runs to completion. Nothing can kill code already executing on the main thread.",
+  "gaps": [
+   "UNLABELLED HOLDS: nearly every handler calls plain run_on_main(_on_main) with no label= kwarg (all 32 handlers_cops sites, all handlers_usd sites, handlers_node, handlers_material, handlers_tops via _run_in_main_thread_pdg l.82, handlers_graph_synth l.69/93, handlers_memory l.62, handlers_cache l.414/432/460) — _record_main_thread_hold files them all as 'unlabeled' (main_thread.py:170-171), so main_thread_hold_stats can't attribute a hold past slowest_label. The OCC labels exist as a parameter (l.274) but are unused outside run_on_main_observed paths (execute_python/execute_vex/batch_commands).",
+   "FAST PATH 1 (reentrant, _tls.on_main set): executes fn() directly with no visible timing instrumentation in greps — comment main_thread.py:24-25; whether the reentrant inline leg feeds any histogram is UNKNOWN (gap candidate; the deferred wrapper timing at l.394 does not cover it).",
+   "node.render() INLINE (panel-inline / /mcp main-thread caller): its full-render duration lands only in the generic direct-path histogram + the marshal_guard inline note (main_thread.py:334-340; handlers_render.py:114-121); there is no render-specific hold record, and what note_main_thread_inline_overrun does beyond recording (log? rate-limit?) was not captured this sweep (marshal_guard.py not fully read).",
+   "PDG/TOPS hold granularity: the marshal wait is bounded (60s, _common.py:82) but the abandoned-zombie cook continues on the main thread with NO telemetry beyond the generic abandoned_count (_common.py:76-80 comment 'GUI still cooks; the transport is freed'); no per-work-item or per-cook hold record.",
+   "INTEGRITY ENVELOPE captures are unlabelled run_on_main calls too (integrity_envelope.py:218-221) — record_wait excludes them from the dispatch-wait histogram, but their main-thread occupancy has no dedicated metric; only the 1.0s TimeoutError path (l.225) is observable.",
+   "_SOLARIS_TOOL_TIMEOUT numeric value not captured (handlers_solaris_tools.py:32-40 comment block + l.50 usage); same for _FLIPBOOK_FALLBACK_TIMEOUT_S (handlers_render.py:146-151 def vs usage at 1064-1065) and CANCEL_POLL_INTERVAL (websocket.py:103 default) — names and bound-classes verified, magnitudes not.",
+   "marshal_guard.py content beyond its invocation site (main_thread.py:334-340) not read this sweep: forbid_main_thread_block / note_main_thread_inline_overrun / inline_budget_s semantics and SYNAPSE_MARSHAL_GUARD modes are cited from the verified pre-compaction context, not re-derived.",
+   "heartbeat/stall legacy surface: whether ANY live caller still invokes the superseded watchdog module (vs the freeze_chain panel-beats-beat() path, freeze_chain.py:320-323) was not verified — the dead-classification rests on freeze_chain.py:4-10's own audit statement."
+  ],
+  "hold_inventory": [
+   {
+    "evidence": "handlers_render.py:904-907 inside _render_on_main; marshalled at l.962-963 with _RENDER_MAIN_TIMEOUT_S (l.138); l.951-956 comment on the marshal",
+    "hold_class": "ATOMIC_CPP",
+    "note": "The canonical freeze. Off-main WS callers get a 3600s (1-hour) run_on_main bound — bounded in name, useless in practice. On fast path 2 (panel Qt slot, /mcp inline) it runs INLINE on the main thread with NO bound at all (l.926-928, 'It does not make the main thread free during that window'), freezing the entire UI for the whole frame render. Post-C11 the file-poll and iconvert legs moved outside the closure (l.919-922) but node.render() itself cannot move.",
+    "site": "node.render(frame_range=(cur,cur)) — whole-frame ROP render"
+   },
+   {
+    "evidence": "handlers_render.py:297 (sv.flipbook) marshalled l.311-313 timeout=_CAPTURE_MAIN_TIMEOUT_S=30.0 (l.144); l.308 comment",
+    "hold_class": "ATOMIC_CPP",
+    "note": "GL flipbook capture; 30s bound off-main, inline-unbounded for main-thread callers.",
+    "site": "sv.flipbook(viewport=vp, settings=settings) — capture_viewport GL pass"
+   },
+   {
+    "evidence": "handlers_render.py:1038 (sv.flipbook) marshalled l.1064-1065 with _FLIPBOOK_FALLBACK_TIMEOUT_S (defined near l.146-151)",
+    "hold_class": "ATOMIC_CPP",
+    "note": "Second GL pass attempted when node.render() produced no output; can chain a further uninterruptible hold after the render.",
+    "site": "flipbook fallback inside _handle_render when render output missing (husk may not support Indie)"
+   },
+   {
+    "evidence": "handlers_node.py:79 (materiallibrary cook) + layoutChildren l.96; run_on_main default timeout — pre-compaction full-file read",
+    "hold_class": "ATOMIC_CPP",
+    "note": "Nominal 10s marshal bound (run_on_main default) for off-main callers; inline-unbounded on fast path 2. A heavy materiallibrary cook exceeds 10s and burns the default budget.",
+    "site": "create_node: new_node.cook(force=True) for materiallibrary"
+   },
+   {
+    "evidence": "handlers_material.py:90, :246, :508 (pre-compaction full-file reads); run_on_main sites at l.290, l.460, l.661 all default timeout",
+    "hold_class": "ATOMIC_CPP",
+    "note": "Each material op force-cooks the materiallibrary then walks /materials on the USD stage — C++ cook + stage traversal inside a 10s default marshal; inline-unbounded for main-thread callers.",
+    "site": "matlib.cook(force=True) in _query_material_usd_path / create_material / create_textured_material"
+   },
+   {
+    "evidence": "handlers_usd.py:875 (cook site, pre-compaction read of 750-1118); surrounding marshal run_on_main at l.785 (default timeout)",
+    "hold_class": "ATOMIC_CPP",
+    "note": "The exact site the task named; karma-visible setup force-cooks a pythonscript LOP inside the default-10s marshal.",
+    "site": "reference_usd karma_visible path: kv_lop.cook(force=True)"
+   },
+   {
+    "evidence": "handlers.py:1417 (pre-compaction read 1352-1488); run_on_main_observed timeout=_SLOW_TIMEOUT",
+    "hold_class": "ATOMIC_CPP",
+    "note": "Labeled ('execute_vex'), 30s marshal bound off-main; inline-unbounded via fast path 2.",
+    "site": "execute_vex: wrangle.cook(force=True) after attribwrangle creation"
+   },
+   {
+    "evidence": "handlers_render.py:2019 (cook), run_on_main timeout=_SLOW_TIMEOUT at l.2034 (import l.1930)",
+    "hold_class": "ATOMIC_CPP",
+    "note": "Force-cook validates generated pxr code inline; 30s bound off-main.",
+    "site": "configure render passes: py_lop.cook(force=True) on pythonscript LOP"
+   },
+   {
+    "evidence": "handlers_tops/wedge.py:53,59; cook.py:67,467; render_sequence.py:296,507; diagnostics.py:68 — all via _run_in_main_thread_pdg (_common.py:82), timeout=_PDG_DEFER_TIMEOUT=60.0 (_common.py:41-44)",
+    "hold_class": "ATOMIC_CPP",
+    "note": "PDG graph-context init alone is 5-15s cold (_common.py:51-53). The 60s marshal timeouts free the TRANSPORT but the cook continues on the main thread as an abandoned zombie — _common.py:76-80: 'GUI still cooks; the transport is freed.' Cancel verbs (tops_cancel_cook, cook.py:218) must themselves marshal onto that same thread.",
+    "site": "TOPS/PDG cooks: node.cook(block=True)"
+   },
+   {
+    "evidence": "python/synapse/server/main_thread.py:274 (signature with default _DEFAULT_TIMEOUT), l.312-341 fast-path-2 branch, marshal_guard inline-overrun note l.334-340",
+    "hold_class": "UNBOUNDED",
+    "note": "PRIORITY TARGET. When the caller IS Houdini's main thread (panel Qt slots, /mcp WS-passthrough main-thread reads) every one of the payloads above executes inline with NO enforceable bound — the timeout kwarg is discarded. Comment l.325-326: 'a long inline payload still freezes the GUI for its duration.' Telemetry was added (direct-duration histogram + overrun note) but nothing shortens the hold.",
+    "site": "run_on_main fast path 2 — caller already on main thread → fn() inline"
+   },
+   {
+    "evidence": "main_thread.py:24-25 module comment ('inside a run_on_main callback, nested calls execute directly'), def at l.274",
+    "hold_class": "UNBOUNDED",
+    "note": "Nested run_on_main inside a marshalled payload runs inline; combined with fast path 2 this makes every inner hop (e.g. envelope capture inside a handler) land on the same unbounded inline execution.",
+    "site": "run_on_main fast path 1 — reentrant _tls.on_main"
+   },
+   {
+    "evidence": "handlers_render.py:138 (definition), l.962-963 usage",
+    "hold_class": "UNBOUNDED",
+    "note": "A 1-hour 'bound' around an ATOMIC_CPP render is not a bound. C4 zombie-abandon applies at expiry but node.render() continues; retry double-render hazard documented at l.121-132.",
+    "site": "render marshal timeout _RENDER_MAIN_TIMEOUT_S = 3600.0"
+   },
+   {
+    "evidence": "handlers.py:_MUTATION_LOCK at l.257 region; _serialize decision l.518-519 (mutating and caller not main thread); entered l.535",
+    "hold_class": "UNBOUNDED",
+    "note": "Not a main-thread hold itself, but while the holder blocks on run_on_main behind a frozen main thread, every other off-main mutation queues with no timeout on the lock acquisition — amplifies one frozen main thread into a full mutation queue. Kill verbs are exempt (read-only list) but they then marshal onto the frozen thread anyway.",
+    "site": "C5 _MUTATION_LOCK serialization of mutating commands"
+   },
+   {
+    "evidence": "call sites handlers.py:537 (before) and l.547-548 (after; skipped when before is None). Capture impl integrity_envelope.py:218-221 → bridge._compute_scene_hash(include_stage=False); timeout kwarg default 1.0s (l.170, l.187); record_stall=False (l.221). Hash cost: bridge.py:1038-1067 = hou.node(target) + loop over node.children() (sessionId+cookCount each) + own cookCount + geo intrinsics — O(direct children of target), default target /obj; include_stage=False skip confirmed bridge.py:1006-1008",
+    "hold_class": "BOUNDED_PY",
+    "note": "CRITICAL task question answered: YES, each capture runs ON the main thread (run_on_main at integrity_envelope.py:218), TWICE per mutating op, both inside the C5 lock. Cost order: one node lookup + iteration over that node's immediate children (no scene-wide recursion in the include_stage=False path). 1.0s bounded wait; on the main-thread fast path the hash instead runs inline with no bound.",
+    "site": "Live integrity envelope capture_scene_hash — per-op topological hash"
+   },
+   {
+    "evidence": "live_metrics.py:254-255 run_on_main(_gather, timeout=_SCENE_COLLECT_TIMEOUT) (timeout const ~l.98); shed-on-timeout comment l.208",
+    "hold_class": "BOUNDED_PY",
+    "note": "Recurring main-thread wake every ~2s with a 1.0s bounded wait; O(scene) walk with no explicit node cap. Off-main callers only — a main-thread-blocked scene makes these shed.",
+    "site": "Metrics scene collector: hou.node('/').allSubChildren() on the main thread, 2s daemon cadence"
+   },
+   {
+    "evidence": "handlers_render.py:474",
+    "hold_class": "BOUNDED_PY",
+    "note": "Cheap engine/res/samples read; bounded 5.0s, used to fail fast before committing a render.",
+    "site": "render guard probe: run_on_main(_guard_probe, timeout=5.0)"
+   },
+   {
+    "evidence": "handlers_render.py:1731-1734",
+    "hold_class": "BOUNDED_PY",
+    "note": "Read-only classified (skips C5 lock and resilience) but still marshals onto the main thread to verify the kill.",
+    "site": "render_stop: run_on_main timeout=30.0 around render_stop.stop_render"
+   },
+   {
+    "evidence": "handlers_render.py:1792-1795, 1819, 1827, 1688",
+    "hold_class": "BOUNDED_PY",
+    "note": "Emergency halt is read-only classified so it dispatches during a stall, but its actual work still marshals onto the (possibly frozen) main thread.",
+    "site": "emergency_halt: bridge trigger timeout=60.0; topnet sweep timeout=60.0 (_sweep_topnets); render_processes 15.0 / 30.0"
+   },
+   {
+    "evidence": "handlers_solaris_graph.py:914 (run_on_main timeout=_SLOW_TIMEOUT, imports l.598); handlers_solaris_assemble.py:710 (timeout=30.0, import l.348); handlers_solaris_compose.py:97,134,152",
+    "hold_class": "BOUNDED_PY",
+    "note": "Whole-graph builds: many createNode/setInput calls (each dirtying downstream under auto-update) inside one 30s marshal. Bounded for off-main; inline-unbounded via fast path 2.",
+    "site": "solaris_build_graph / solaris_assemble_chain / solaris_compose_* build chains"
+   },
+   {
+    "evidence": "handlers_solaris_tools.py:50 run_on_main(lambda: module.execute(params), timeout=_SOLARIS_TOOL_TIMEOUT); l.32-40 comment 'These tools build whole component graphs'; handlers l.56-72",
+    "hold_class": "BOUNDED_PY",
+    "note": "Constant _SOLARIS_TOOL_TIMEOUT defined near l.32-40; numeric value not captured this sweep. Builds entire component-builder graphs in one marshal.",
+    "site": "solaris tools: component_builder, scene_template, create_variants, set_purpose, import_megascans"
+   },
+   {
+    "evidence": "pre-compaction full read of handlers_node.py (depth cap ≤5) and handlers_usd.py:907-1027 (max_depth/limit, marshal l.1027 default)",
+    "hold_class": "BOUNDED_PY",
+    "note": "Bounded by explicit depth/limit params but node*parms product is uncapped; large subnets produce long inline holds within the default 10s marshal.",
+    "site": "network_explain parm-walk and query_prims stage walk"
+   },
+   {
+    "evidence": "handlers_render.py:608 worker.join(timeout=wait_budget); _RENDER_WAIT_BUDGET_S at l.62",
+    "hold_class": "BOUNDED_PY",
+    "note": "Render runs in a session worker thread; handler returns a poll token after the budget. husk/mantra subprocess work is fully off-main except short setup/flush marshal legs.",
+    "site": "background render session: worker.join(wait_budget) then render-in-progress token"
+   },
+   {
+    "evidence": "handlers.py:551-556; envelope record assembly on _log_executor thread",
+    "hold_class": "OFF_MAIN",
+    "note": "Async logging after response path.",
+    "site": "_submit_logs / FloorGate provenance — submitted to executor, not on main thread"
+   },
+   {
+    "evidence": "handlers_render.py:919-922 (comment), l.934-949 ($HFS + show_config resolved), l.966-969 (poll)",
+    "hold_class": "OFF_MAIN",
+    "note": "Explicit C11 split: 'ONLY hou.* work stays on the main thread.' On the main-thread fast-path caller these still run inline but outside the undo group/marshal, so they don't extend the undo scope.",
+    "site": "C11 post-render legs: output-file poll and iconvert subprocess outside the marshal closure"
+   },
+   {
+    "evidence": "mcp_server.py:972-985; websocket.py:298-300 (daemon accept thread), l.424 (per-connection _handle_client)",
+    "hold_class": "OFF_MAIN",
+    "note": "All transport threads are off Houdini's main thread by construction; main-thread contact happens only via run_on_main hops.",
+    "site": "MCP asyncio loop / WS accept+dispatch threads"
+   },
+   {
+    "evidence": "freeze_chain.py:4-15 — 'the v9 panel never called server.heartbeat(), so the Watchdog never armed... Wiring the panel to server.heartbeat() alone would arm nothing: activation theater. So the live freeze authority moves HERE: one process-wide Watchdog + the escalation policy' — panel beats freeze_chain.beat() (l.320-323) on its QTimer",
+    "hold_class": "DEAD",
+    "note": "The live detector is freeze_chain (_on_freeze l.130, escalation timer l.137-142, breaker force_open + EmergencyProtocol halt l.192-216). The old module is superseded for the live path.",
+    "site": "legacy heartbeat→Watchdog _on_freeze wiring (superseded by freeze_chain.py)"
+   }
+  ],
+  "marshal_chain": [
+   "LIVE /synapse WS: client frame → websockets sync_serve accept loop on daemon thread (python/synapse/server/websocket.py:298-300) → per-connection _handle_client (websocket.py:424)",
+   "auth handshake websocket.recv() (websocket.py:480)",
+   "P3.3 cancel-aware recv loop: iter_messages(websocket, cancel_event) (websocket.py:546; iter_messages def l.103-124, polls recv with bounded timeout, checks cancel_event each tick at l.116/l.122)",
+   "lazy session creation (websocket.py:547-557) → self._handle_message(websocket, message, client_id) (websocket.py:559) — SERIAL: one message fully dispatched before the next recv",
+   "_handle_message (websocket.py:640): heartbeat fast-path answers {\"pong\": true} without registry (l.645-656); ping/get_health direct handle (l.663-666); RBAC (l.668-684); _READ_ONLY_COMMANDS bypass resilience+latency (l.686-693); rate-limit/circuit-breaker/backpressure (l.695-730); stall gate fast-fail with probe_main_thread, exempt render_farm_status + render-poll (l.732-771)",
+   "self._handler.handle(command) (websocket.py:775) → SynapseHandler.handle (python/synapse/server/handlers.py:478): registry lookup (l.491-495); C5 _MUTATION_LOCK decision — _serialize = mutating AND caller not main thread (l.518-519), entered l.535",
+   "envelope BEFORE capture _envelope.capture_scene_hash(payload) INSIDE the C5 lock (handlers.py:536-537) → run_on_main(timeout=1.0s, include_stage=False) (python/synapse/server/integrity_envelope.py:218-221; _CAPTURE_TIMEOUT_DEFAULT_S=1.0 at l.170/l.187; stalled fast-path at l.208) → bridge._compute_scene_hash (shared/bridge.py:996-1019) → _compute_scene_hash_impl (bridge.py:1021-1095): O(#direct children of target node) sessionId+cookCount loop (l.1044-1051), own cookCount (l.1055), geo intrinsics (l.1060-1067); stage.Flatten structural skip via include_stage=False (bridge.py:1006-1008,1081-1084)",
+   "registry.invoke(cmd_type, payload, ctx=FloorContext(...)) (handlers.py:538-542) → FloorGate.wrap (python/synapse/core/floor_gate.py:297) → handler mixin method(payload)",
+   "handler builds _on_main closure and calls run_on_main(_on_main, timeout=...) — e.g. handlers.py:1089 (get_parm default timeout), handlers_tops via _run_in_main_thread_pdg (handlers_tops/_common.py:81-82, _PDG_DEFER_TIMEOUT=60.0 at l.41-44)",
+   "run_on_main (python/synapse/server/main_thread.py:274): fast path 1 reentrant (_tls.on_main) → fn() inline; fast path 2 caller IS main thread → fn() inline, timed into direct-duration histogram + marshal_guard note_main_thread_inline_overrun (l.312-341, comment 'a long inline payload still freezes the GUI for its duration' l.325-326); off-main → hdefereval.executeDeferred(_on_main) (main_thread.py:371-394 region: dispatch-wait record l.371, hold record l.394), wait_event.wait(timeout) then RuntimeError + C4 zombie-abandon flag on timeout",
+   "return up the stack; envelope AFTER capture (handlers.py:547-548; skipped when before-miss, halving stuck-main worst case per l.543-546 comment) → _submit_logs async on executor (handlers.py:551-556) → SynapseResponse → websocket.send(response.to_json()) (websocket.py:665/692 and post-l.775)",
+   "/mcp hop ABOVE the WS chain: mcp_server.py port-wave transport _sync_transport(cmd_type, payload) (mcp_server.py:963-993) posts send_command onto the MCP asyncio loop via asyncio.run_coroutine_threadsafe (l.972-974) → fut.result(timeout=outer) with outer=_transport_outer_budget(cmd_type)=2*timeout_for+75s (l.983-985; python/synapse/core/timeouts.py:107-122) → send_command opens a WS to the SAME live server → the full WS chain above. Inspector dispatcher variant: _sync_transport at mcp_server.py:612-629 (execute_python, 30.0 default at l.624); blocks dispatcher at l.838. Scout needs NO Houdini hop (mcp_server.py:701-706 comment)"
+  ],
+  "timeout_table": [
+   "Client/MCP budgets (python/synapse/core/timeouts.py): COMMAND_TIMEOUT=10.0 default (l.16); SLOW_COMMANDS (l.18-66): execute_python/execute_vex/capture_viewport/validate_frame/inspect_*/network_explain=30.0, render/wedge/safe_render/render_progressively=120.0, render_sequence/tops_cook_and_validate/tops_render_sequence/tops_multi_shot/autonomous_render=600.0, batch_commands=60.0, assess_cache=20.0, tops_batch_cook=300.0, solaris_build_graph/solaris_assemble_chain=30.0, c hda_package=120.0, tops_*=30-60.0, cops_*=60.0/120.0; timeout_for() lookup exact→alias→prefix-strip (l.77-94); transport_outer_budget=2*timeout_for+75.0 (l.107-122, mcp_server.py:983)",
+   "run_on_main marshal layer (python/synapse/server/main_thread.py): _DEFAULT_TIMEOUT=10.0 and _SLOW_TIMEOUT=30.0 module constants; run_on_main(fn, timeout=_DEFAULT_TIMEOUT) at l.274; probe_main_thread default 2.0 (l.239)",
+   "Render (handlers_render.py): inner marshal _RENDER_MAIN_TIMEOUT_S=3600.0 (l.138, applied l.962-963); background-session wait _RENDER_WAIT_BUDGET_S=60.0 (l.62, worker.join l.608); capture flipbook _CAPTURE_MAIN_TIMEOUT_S=30.0 (l.144, l.311-313); flipbook fallback _FLIPBOOK_FALLBACK_TIMEOUT_S (l.146-151 def, l.1064-1065 use); guard probe 5.0 (l.474); render_stop 30.0 (l.1731-1733); emergency_halt trigger 60.0 (l.1792-1794); topnet sweep 60.0 (l.1819); render_processes 15.0/30.0 (l.1827/l.1688)",
+   "Envelope capture: 1.0s per capture, 2 per mutating op (integrity_envelope.py:170/l.187, l.218-221)",
+   "Metrics scene walk: _SCENE_COLLECT_TIMEOUT ~1.0s wait per 2s tick (live_metrics.py:254-255, const ~l.98)",
+   "TOPS marshal: _PDG_DEFER_TIMEOUT=60.0 (handlers_tops/_common.py:41-44, applied l.82)",
+   "Solaris: build_graph/assemble 30.0 marshal (handlers_solaris_graph.py:914; handlers_solaris_assemble.py:710); solaris tools _SOLARIS_TOOL_TIMEOUT (handlers_solaris_tools.py:50; value not captured — UNKNOWN magnitude)",
+   "API adapter: _MAIN_THREAD_TIMEOUT=10.0 (api_adapter.py:106,156)",
+   "Write plane resolve: _RESOLVE_TIMEOUT_S (write_plane.py:182-184)",
+   "CRITICAL property: every timeout in this table is enforced ONLY for off-main callers at the run_on_main wait; on fast paths 1/2 (main-thread callers) the bound is discarded and execution is unbounded (main_thread.py:312-341)",
+   "Fast-fail rather than timeout: stall gate after 2 consecutive marshal timeouts — websocket.py:732-771 with probe; exemptions l.741-746"
+  ]
+ },
+ "substrate": {
+  "offload": [
+   {
+    "blockers": "Foreground/small renders still run node.render() in-process on main (L8: 256s freeze recorded, LATENCY_SOLARIS_REVIEW); shot_render_ready chains create-then-render into the blocking path on an empty stage (LATENCY_SOLARIS_REVIEW trap §); NO API cancels an in-flight foreground ROP render — hou.interruptRender/abortRender/killRender all ABSENT in h22_symbol_table.json (verified against 35,908-symbol introspection of 22.0.400); rkill of a MANTRA background render leaves structurally-valid pixel-empty .exr + orphan checkpoint (synapse_render_stop partial_output warning); renders still excluded from headless goldens (Indie honesty, harness/notes/spec-C-context-capability.md:27).",
+    "evidence": "handlers_render.py:65-132 (module header: run_on_main-only, deliberate budgets, C4 abandon), :1665-1708, :2209-2216, :2258-2260; mcp/_tool_registry.py:1249,:1255,:1295,:1304; harness/notes/V1_CAPTURE_PROBE.md 'Works on Indie on this build — note an older H21 finding recorded husk silently no-opping on Indie; that is superseded on 22.0.368, verified by 11 renders that wrote real pixels' (near line 344)",
+    "feasibility": "REAL and partially shipped today: >512px renders auto-background; render_processes/render_stop (R73) give list+kill of husk subprocesses; background = true off-main offload (husk is a separate OS process). Husk-on-Indie H21 refutation is SUPERSEDED on H22.0.368+.",
+    "mechanism": "_handle_render marshals node.render() via run_on_main with bounded timeout + C4 'abandoned' flag (bounded-render migration; header contract at python/synapse/server/handlers_render.py:65-132, vendored-defect note :66-77). 'Background' = soho_foreground=0: for usdrender_rop/Karma this spawns a husk subprocess; synapse_render_processes lists 'background render processes, husk rows resolved to their ROP' (:1678) and render_stop kills by usdrender_rop path or pid (:1701-1746). synapse_safe_render registers (mcp/_tool_registry.py:1295) and force-sets soho_foreground=0 when resolution >512px and caller didn't choose (handlers_render.py:2209-2216, :2197 'Safety: force background render for large resolutions'); render_progressively keeps test-pass foreground (256px) but background for preview/production (:2258-2260).",
+    "target": "renders"
+   },
+   {
+    "blockers": "Requires hou.ui.curDesktop() + a visible active SceneViewer pane + on-screen GL context; fails on minimized/headless (raises ValueError, handlers_render.py docstring region). sv.flipbook is itself a mini-render occupying main. QWidget.grab() returns black for GL surfaces, so no Qt-side shortcut exists. Karma-render substitute is not viewport what-you-see (no wires/handles/selection), costs ~2.2-2.5s, and V1 probe found NO viable mask path (no int32 render-var, colliding primid, broken idcover filter) — cryptomatte leg explicitly UN-PROBED.",
+    "evidence": "python/synapse/server/handlers_render.py:233-313 (:297 sv.flipbook, :308-312 run_on_main fast-path-2 inline note); harness/notes/V1_CAPTURE_PROBE.md Recommendation block ('For pixels: usdrender_rop.render() → multi-part EXR → OIIO', 'For the mask: NO VIABLE PATH FOUND')",
+    "feasibility": "NO off-main viewport path exists. Only mitigations: keep capture single-frame/small, run it through the bounded run_on_main (already shipped, _CAPTURE_MAIN_TIMEOUT_S), or substitute a Karma render for pixel needs. Verdict: none — say none.",
+    "mechanism": "houdini_capture_viewport (mcp/_tool_registry.py:308, readOnlyHint=true) → _handle_capture_viewport (handlers_render.py:233) uses sv.flipbook(viewport, settings, open_dialog=False) at :297 — an OpenGL framebuffer readback, MUST run on Houdini's main thread (handler docstring: 'This correctly reads the OpenGL framebuffer (QWidget.grab() returns black for GL surfaces). Must run on Houdini's main thread'); run_on_main fast-path-2 runs it INLINE when caller is already main (the /mcp read-only dispatch marshals the whole dispatch to main, mcp/server.py:435-440 referenced at handlers_render.py:308-312). Nearest surrogate (not viewport): usdrender_rop.render() → EXR → OIIO at ~2.2-2.5s/capture per V1_CAPTURE_PROBE.md — deterministic but it is a Karma render of the scene, not the artist's GL viewport.",
+    "target": "viewport_capture"
+   },
+   {
+    "blockers": "Manual mode does NOTHING for one atomic long cook (C++) — it only collapses N redundant intermediate cooks; it is global session state, not scoped to SYNAPSE mutations; combining it with any UI-pumping between chunks re-opens the undo-swallow class refuted by freeze-class1 recon; no in-tree implementation, no finally-restore helper, no live measurement of the win (C1 explicitly: 'Number: needs-live-measurement'); hou.ui.setUpdateMode is deprecated (use module-level hou.setUpdateMode — h22_compat_ledger.json:48316-48317).",
+    "evidence": "docs/LATENCY_SOLARIS_REVIEW.md (C1 lever block); harness/notes/h3a_symbols.json:53; python/synapse/server/handlers_solaris_graph.py:387-392 (single terminal setDisplayFlag) and :332-338 (create loop); python/synapse/panel/ws_bridge.py:113-159 (off-main advisory-read precedent — thread discipline pattern, different lever); h22 table: hou.setUpdateMode/hou.updateMode.AutoUpdate/hou.updateMode.Manual/hou.updateModeSetting all present",
+    "feasibility": "Feasible as a NEW mechanism — symbols all EXISTS on 22.0.400. Realistic shape: read hou.updateModeSetting(), setUpdateMode(Manual), mutate, finally-restore prior mode (restore triggers one consolidated cook). Zero production call sites today: docs/LATENCY_SOLARIS_REVIEW.md C1: 'Grepped the whole python/ tree: zero setUpdateMode / updateMode.Manual / cook-suspend'. Proposal exists as the C1 'missed floor lever': wrap _on_main in Manual to guarantee the single-cook that build_graph currently only asserts via a terminal setDisplayFlag (handlers_solaris_graph.py:387-392) while Solaris createNode auto-displays each new node so the create loop (:332-338) can cook per-node against the live /stage viewport.",
+    "mechanism": "Performance sandwich: hou.setUpdateMode(hou.updateMode.Manual) → run the node-build flood unsuppressed → restore → a single consolidated cook. Semantics evidence: harness/notes/h3a/live_gui.json:572-575 + h3a/reconciled.json:479-487 captured the resolved symbol live in a GUI session (vendor __doc__ mentions the cook update mode 'Auto Update/On Mouse Up/Manual ... displayed in the status bar'); side-effect authority = SideFX Hom docs pinned in harness/notes/h22_compat_ledger.json:30884-30895 (hou.setUpdateMode) and :32123-32134 (hou.updateMode.Manual). Candidate flagged in harness/notes/h3a_symbols.json:53: 'manual-update is a real, blunt lever for stopping further cooking.'",
+    "target": "cook_heavy_build_floods"
+   }
+  ],
+  "primitives": [
+   {
+    "evidence": "Vendor source on the installed build: C:/Program Files/Side Effects Software/Houdini 22.0.400/houdini/python3.13libs/hdefereval.py:21 `def executeDeferred(code, *args, **kwargs)` (block=False enqueue into _queueDeferred). Servicing: hdefereval.py:105 `def _processDeferred(): 'Run the queued Python code... This function is called from Houdini\\'s event loop callback.'` In-tree call sites: python/synapse/server/main_thread.py:399 (confirms the brief's reference) and python/synapse/host/main_thread_executor.py:290; repo-wide grep verifies these are the only two live hdefereval.*() call sites (docs/reviews/synapse-review-2026-08-01.md:2684,:2772). Vendor-pinned in harness/verify/checks.py:410. ABSENT from h22_symbol_table.json only because the table was built headless and hdefereval.py:241-242 raises ImportError when `not hou.isUIAvailable()` — the known 6th-headless-blind-module false-phantom class (not an H22 absence).",
+    "mechanism": "Non-blocking post of a Python callable to Houdini's main thread; the payload runs at the next event-loop callback, interleaved with normal UI events — the UI keeps processing between queued items.",
+    "symbol": "hdefereval.executeDeferred",
+    "verdict": "EXISTS"
+   },
+   {
+    "evidence": "Vendor hdefereval.py:43 exists on H22.0.400, and harness/verify/checks.py:412 marks it 'real (vendor :43); banned by marshal lint'. Defect: no thread check — called FROM main it parks forever in _condition.wait() (docs/sprint_freeze/marshal_map.md:267 CONFIRMED_DEADLOCK; docs/reviews/h22-qt-smoke.md + gate_log.md vendor-stack evidence). Banned by policy: docs/sprint_freeze/OPERATOR_CARD.md:147 'Never reintroduce hdefereval.executeInMainThreadWithResult. The lint will...'. SYNAPSE replacement: run_on_main (executeDeferred + own threading.Event + timeout), per headers in python/synapse/server/main_thread.py:5 and handlers_render.py:65-77.",
+    "mechanism": "Blocking marshal onto main thread with result return — but with no caller-thread test, so any main-thread caller self-deadlocks; SYNAPSE wraps the non-blocking executeDeferred + threading.Event + explicit timeout instead.",
+    "symbol": "hdefereval.executeInMainThreadWithResult",
+    "verdict": "EXISTS"
+   },
+   {
+    "evidence": "Complete enumeration of the vendor file Houdini 22.0.400 hdefereval.py (242 lines total) shows only: executeDeferred (:21), executeDeferredAfterWaiting (:32), executeInMainThreadWithResult (:43), _queueDeferred (:49), _processDeferred (:105), in_separate_thread (:176), do_work_in_background_thread (:210) — executeInMainThread does not exist. Live confirmed on 22.0.368: CHANGELOG.md:81 'a function that **does not exist on H22.0.368**, confirmed against the live runtime (hd_has_phantom_executeInMainThread : false)... three marshals were failing silently'; docs/sprint_freeze/marshal_map.md:533; docs/SIDEFX_ASK_H22_DRAFT.md:97; harness/verify/checks.py:403 deliberately excludes it from the vendor-pinned allowlist. Also absent from h22_symbol_table.json (but that is headless-blind for this module — vendor source is the load-bearing evidence).",
+    "mechanism": "None — the symbol simply does not exist; any `hdefereval.executeInMainThread` call raises AttributeError at runtime (the silent-marshal CHANGELOG incident).",
+    "symbol": "hdefereval.executeInMainThread",
+    "verdict": "PHANTOM"
+   },
+   {
+    "evidence": "Vendor hdefereval.py H22.0.400 full enumeration (242 lines): no public flush/pump symbol. The queue is drained ONLY by _processDeferred (:105), registered via hou.ui.addEventLoopCallback (docstring :107-109), i.e. driven by Houdini's own event loop when it returns to it. 'hou.ui.processEvents() does NOT exist in H21.0.631' is pinned in docs/verification_ledger.md:26, and no replacement is documented anywhere in-tree. docs/reviews/synapse-review-2026-08-01.md:472,:878 raise as OPEN ACTION ITEMS whether executeDeferred is serviced by a fixed-interval pump — unanswered, so the pump timing itself is UNKNOWN.",
+    "mechanism": "The only way deferred payloads run is by yielding back to Houdini's event loop — there is no API to force-drain the queue from within busy main-thread work.",
+    "symbol": "hdefereval flush/pump primitive",
+    "verdict": "PHANTOM"
+   },
+   {
+    "evidence": "h22_symbol_table.json (schema scout_symbol_table/v1, houdini_version '22.0.400', 35,908 symbols, truncated:false, blake2b-pinned): hou.setUpdateMode, hou.updateMode, hou.updateMode.AutoUpdate, hou.updateMode.Manual all present; getter hou.updateModeSetting present. Live GUI receipt: harness/notes/h3a/live_gui.json:572-575 and h3a/reconciled.json:479-487 — resolved through hou.setUpdateMode with vendor __doc__ capture ('Return Houdini\\'s cook update mode (Auto Update/On Mouse Up/Manual) that is displayed in the status bar' — note the captured docstring is getter-phrased; treat the capture as a membership receipt, semantics via SideFX docs). Deprecation wiring: harness/notes/h22_compat_ledger.json:48301-48317 — hou.ui.setUpdateMode is deprecated, vendor-stated replacement hou.setUpdateMode; doc pages pinned at :30884-30895 (hom/hou/setUpdateMode.html) and :32123-32134 (hom/hou/updateMode.html#Manual).",
+    "mechanism": "Session-wide cook-update mode: Auto Update cooks on every edit; Manual defers all cooking until the mode is switched back (restore triggers the deferred cooks). Set with hou.setUpdateMode(hou.updateMode.Manual), read prior state with hou.updateModeSetting().",
+    "symbol": "hou.setUpdateMode / hou.updateMode (AutoUpdate/Manual)",
+    "verdict": "EXISTS"
+   },
+   {
+    "evidence": "Vendor H22.0.400 hou.py:106527 `def group(self, label, editor=None) -> 'HOM_UndosGroup *'` and :106530; class UndosGroup at :106735 with SWIG __enter__ (:106769) and __exit__ (:106773) — so manual enter/exit across scopes is mechanically possible. h22_symbol_table.json shows only 'hou.undos' (enumeration gap for this member; vendor source is authoritative). Widely used in-tree as a with-statement: python/synapse/host/graph_builder.py:131, python/synapse/mcp/tool_impls/solaris/component_builder.py:263, python/synapse/server/handlers.py:1014,:1284, handlers_cops.py:354+:433+:494 etc. Cross-callback spanning: NO PROBE anywhere. The recon's disqualifier: docs/reviews/freeze-class1-recon-2026-08-01.md:31 and :92 quote the installed docstring (22.0.397 hou.py:106531-106534) 'within which ALL changes to Houdini are recorded as a single action on the undo stack' — an open group spanning pumped event-loop windows swallows the artist's own edits into SYNAPSE's undo entry, a single-Ctrl+Z break.",
+    "mechanism": "hou.undos.group(label) returns a context manager recording ALL scene changes (not just the calling code's) as one undo entry; __enter__/__exit__ exist so it can in principle be opened in one defer-queue callback and closed in a later one — but every UI event in that window (artist edits included) lands inside the same undo record.",
+    "symbol": "hou.undos.group manual enter/exit across defer-queue callbacks",
+    "verdict": "EXISTS"
+   },
+   {
+    "evidence": "h22_symbol_table.json: hou.InterruptableOperation, .updateProgress, .updateLongProgress present; companion hou.OperationInterrupted and hou.updateProgressAndCheckForInterrupt present. Vendor hou.py:69945/:69948 — context-manager __enter__/__exit__ on HOM_InterruptableOperation (with-statement usable). Harness probe referenced it as a candidate in harness/notes/h3a/indep_rop-interrupt_bridge.py:20 (InterruptableOperation/updateProgressAndCheckForInterrupt in the hasattr list).",
+    "mechanism": "With-statement wrapper around a long-running main-thread operation that shows a progress/progress-bar surface and lets the artist interrupt (raising hou.OperationInterrupted); pairs with hou.updateProgressAndCheckForInterrupt for explicit interrupt polling.",
+    "symbol": "hou.InterruptableOperation",
+    "verdict": "EXISTS"
+   },
+   {
+    "evidence": "hou.ui.isUIAvailable absent from h22_symbol_table.json (all 20 hou.*ui* entries are hou.uiEventReason/hou.uiEventValueType enums; hou.ui module absent) — this is the KNOWN FALSE PHANTOM class: the table is introspected headless where GUI submodules (hou.ui, hou.qt) don't import (hdefereval.py:241-242 raise; docs/reviews/h22-per-context-postmortem-2026-07-17.md:408; docs/studio/DEPLOYMENT.md:170-182). Module-level hou.isUIAvailable IS present in the table and is what hdefereval.py:242 actually calls. hou.qt absent from table (same false-phantom class). Verdict applies as: hou.isUIAvailable proven; hou.ui.isUIAvailable unverifiable by table — treat as UNKNOWN pending a GUI-session probe.",
+    "mechanism": "Module-level hou.isUIAvailable() returns whether the session is graphical; vendor hdefereval itself gates on it (:241-242, ImportError headless).",
+    "symbol": "hou.ui.isUIAvailable (vs hou.isUIAvailable)",
+    "verdict": "UNVERIFIED"
+   },
+   {
+    "evidence": "'hou.ui.processEvents() does NOT exist in H21.0.631' is pinned in docs/verification_ledger.md:26; surfaced again as a stale-build footnote in docs/reviews/synapse-review-2026-08-01.md:2305. Only in-tree Qt precedent is harness/notes/panel_shot.py:238,:260 `app.processEvents()` — a standalone harness-owned QApplication, NOT pumping Houdini's own loop. The only pumping primitive Houdini gives is yielding back to the event loop (split work into executeDeferred-posted chunks, drained by _processDeferred, vendor hdefereval.py:105-109) — and that chunking pattern is explicitly refuted for mutating handlers in docs/reviews/freeze-class1-recon-2026-08-01.md:128 on three independent grounds (outer-marshal inline collapse via _tls.on_main, undo-group swallow of artist edits, cooks are atomic C++).",
+    "mechanism": "No sanctioned way to pump Qt events from inside busy main-thread Python in Houdini; the defer queue only drains when main returns to the event loop.",
+    "symbol": "Qt processEvents-style pumping from Houdini main thread",
+    "verdict": "PHANTOM"
+   }
+  ],
+  "sandwich": {
+   "precedents": [
+    "harness/notes/h3a_symbols.json:53 — hou.setUpdateMode flagged 'candidate: true ... manual-update is a real, blunt lever for stopping further cooking' (design note, unimplemented)",
+    "docs/LATENCY_SOLARIS_REVIEW.md (C1 lever) — proposes wrapping _on_main in hou.setUpdateMode(hou.updateMode.Manual); same section confirms via whole-tree grep that python/ has ZERO setUpdateMode/Manual call sites today; identifies build_graph's '1 cook' as asserted-not-enforced (terminal setDisplayFlag at handlers_solaris_graph.py:387-392 vs Solaris createNode auto-display per-node cooks at :332-338)",
+    "harness/notes/h3a/live_gui.json:572-575 + h3a/reconciled.json:479-487 — live GUI-session membership receipt for hou.setUpdateMode with vendor docstring capture",
+    "python/synapse/panel/ws_bridge.py:113-159 (gather_context_off_main) — in-tree precedent for the thread-discipline half of the pattern: advisory reads run on a daemon thread via run_on_main with a 2s shed budget so a busy main thread never stalls the panel (this is about READS, orthogonal to the cook-suppression half)",
+    "docs/reviews/freeze-class1-recon-2026-08-01.md:128 (option E) — negative precedent: chunking handlers across run_on_main hops to pump the UI is refuted on three grounds; any sandwich design that relies on pumping between chunks lands in that refuted class, so the sandwich must be a straight Manual→mutate→restore with NO event-loop yield in the middle (which also means the UI stays frozen for the build's duration — Manual only stops redundant cooks, it does not make the build non-blocking)"
+   ],
+   "risks": [
+    "Global scope: while Manual is on, the ARTIST's own interactive edits also stop cooking — everything dirties silently and a cook burst fires at restore (mechanism inherent to hou.updateMode, per SideFX Hom docs pinned at harness/notes/h22_compat_ledger.json:32123-32134). Worse, the user sees a stale viewport during the build: UI responsive, scene frozen — an 'interactivity illusion' that can read as a bug.",
+    "Leave-behind hazard: an exception or crash between set and restore without a finally leaves the WHOLE SESSION in Manual — silent 'my scene stopped cooking' state. Escape hatches: try/finally restore, snapshot prior mode via hou.updateModeSetting() first (both symbols verified EXISTS), mode is non-persisted session state so a Houdini restart also recovers it.",
+    "Undo-group interleave: if the sandwich is ever combined with event-loop pumping between chunks (to keep the UI responsive mid-build), any artist edit in that window lands inside an open hou.undos.group — vendor docstring 'ALL changes to Houdini are recorded as a single action on the undo stack' (22.0.397 hou.py:106531-106534, quoted in freeze-class1-recon-2026-08-01.md:31/:92) → one artist Ctrl+Z wipes SYNAPSE's build or vice versa; the recon disqualified exactly this pattern under its rule 3.",
+    "Does not fix the atomic case: a single long cook (Mantra/SOP cook, Karma render) is indivisible C++ — Manual mode only collapses N redundant INTERMEDIATE cooks during a build flood; recon E's third ground (freeze-class1-recon-2026-08-01.md:128) applies: 'the cooks themselves are atomic C++ with no sub-unit'.",
+    "Undo-scope asymmetry with chunking: the refuted alternative (chunking) collapsed on the /mcp path because the outer marshal sets _tls.on_main=True and inner hops run inline (main_thread.py:230-231 Fast path 1, per recon E) — the sandwich avoids this by making NO hops, but that also means one long main-thread occupation for the whole build; UI freeze duration is sum-of-mutations, not sum-of-cooks, so the win is bounded by how much of the flood time was redundant cooking (C1: 'needs-live-measurement')."
+   ],
+   "verdict": "Viable-behind-flag — the primitives are REAL and verified on the installed H22.0.400 (hou.setUpdateMode/hou.updateMode.Manual/hou.updateModeSetting all present in the introspected symbol table + live-GUI receipts; zero in-tree use today), and the shaped form is narrow: snapshot mode, setUpdateMode(Manual), mutate in the existing single undo-wrapped marshal, finally-restore, single consolidated cook. It must ship flag-gated (panel/mcp env or per-tool opt-in) because it is global session state with a real leave-behind hazard and an artist-visible stale-viewport illusion; it must NOT be combined with mid-build event-loop pumping (undo-swallow class the freeze-class1 recon disqualified); and it must be honestly scoped as a build-flood-cook reducer — renders offload to husk/background (already shipped via safe_render's >512px force + render_stop), viewport capture has NO off-main path (flipbook is main-thread-GL-bound), and atomic long cooks are untouched. Live-measure the win before widening."
+  },
+  "scout_tool_status": "dead (degraded): 3 calls made — 2 aborted at the 1800s idle timeout with no response, 1 returned an internal SQLite cross-thread ProgrammingError ('SQLite objects created in a thread can only be used in that same thread'). No exists_in_runtime verdicts were obtainable. Fallback used instead: python/synapse/cognitive/tools/data/h22_symbol_table.json (scout's own membership authority — schema scout_symbol_table/v1, houdini_version 22.0.400, 35,908 symbols, blake2b-pinned, truncated:false), direct vendor source on the installed build at C:/Program Files/Side Effects Software/Houdini 22.0.400/houdini/python3.13libs/ (hdefereval.py fully enumerated, 242 lines; hou.py UndosGroup/group/disabler sections), and harness receipts (h22_compat_ledger, h3a live_gui/reconciled captures)."
+ },
+ "logs": {
+  "instrument_present": true,
+  "hold_distribution": {
+   "count": 1168,
+   "max_ms": 143686.2,
+   "note": "Aggregated from per-process in-memory histogram snapshots in 5 real-session artifacts (pid 816 Aug 12, pid 31880 Aug 13 x2 dumps, pid 58064 Aug 13, pid 54400 Aug 14, pid 37324 live telemetry.json — 50+492+411+143+72 samples; pid 31880's two dumps counted once). >=85% of samples <=1ms; p95 <=10ms in every session; the instrument is histogram-only (no per-sample records) so exact percentiles above p95 are bucket-censored. CRITICAL CENSORSHIP: this distribution does NOT contain the worst offenders — today's 179.43s hold and seven 162-177s render holds executed INLINE on the main thread and are invisible to _record_main_thread_hold (records only in the deferred _on_main path, main_thread.py:365-397). They appear only in marshal_guard log lines.",
+   "p50_ms": 1,
+   "p95_ms": 10,
+   "worst_labels": [
+    "houdini_execute_python (143686.2ms max, deferred, abandoned-zombie, 2026-08-13 11:12 pid 31880 — freeze_dump_20260813_151225.json:1)",
+    "houdini_execute_python (25459.2ms, same session 11:09 — freeze_dump_20260813_150958.json:1)",
+    "synapse_doctor (651.9ms today pid 54400 / 625.0ms pid 58064 / 510.9ms pid 816 — worst label in 3 of 5 sessions)",
+    "synapse_project_setup (162.7ms, current session pid 37324 — telemetry.json:1)"
+   ]
+  },
+  "long_holds": [
+   {
+    "abandoned": false,
+    "evidence": "synapse.log:43493 (marshal_guard inline overrun) + synapse.log:43494 (resilience: recovered, frozen 180.6s) + C:/Users/User/.synapse/logs/freeze_dump_20260814_190151.json:1 (mid-freeze snapshot, NOT in its hold histogram)",
+    "label": "handlers.execute_python:inline — execute_python run inline on the main thread (handlers.py:303-305 fast-path) during a panel ClaudeWorker session that had just issued synapse_batch + hit a composition-validation AttributeError on /stage/component_hero_chair (synapse.log:43347-43348); 5 worker-thread execute_python retries abandoned at 30s each while it held (synapse.log:43366,43392,43417,43447,43473); conversation hit 25-iteration cap with 36 tool calls (synapse.log:43487)",
+    "ms": 179430,
+    "ts": "2026-08-14 15:01:21 - 15:04:21 local (TODAY — the user's symptom)"
+   },
+   {
+    "abandoned": true,
+    "evidence": "C:/Users/User/.synapse/logs/freeze_dump_20260813_151225.json:1 (hold max_ms 143686.216, slowest_label houdini_execute_python, abandoned_count 1) + synapse.log:41283 (marshal_guard inline 143.66s) + synapse.log:41285 (recovered, frozen 144.7s)",
+    "label": "houdini_execute_python (deferred hold, completed after caller abandoned) + handlers.execute_python:inline 143.66s — same cascade",
+    "ms": 143686,
+    "ts": "2026-08-13 11:09:29 - 11:11:52 local, pid 31880"
+   },
+   {
+    "abandoned": false,
+    "evidence": "synapse.log:41479 (marshal_guard inline 143.67s) + synapse.log:41481 (freeze_chain post-escalation recovery)",
+    "label": "handlers.execute_python:inline — second back-to-back inline execute_python, same session",
+    "ms": 143670,
+    "ts": "2026-08-13 11:11:53 - 11:14:19 local, pid 31880"
+   },
+   {
+    "abandoned": false,
+    "evidence": "C:/Users/User/.synapse/logs/freeze_dump_20260813_150958.json:1 (hold max_ms 25459.2, slowest_label houdini_execute_python) + synapse.log around 2026-08-13 11:07:47 ('Off-main tool houdini_execute_python ran 25518ms') + resilience 'was frozen for 26.4s'",
+    "label": "houdini_execute_python (deferred)",
+    "ms": 25459,
+    "ts": "2026-08-13 11:07:21 - 11:07:47 local, pid 31880"
+   },
+   {
+    "abandoned": false,
+    "evidence": "synapse.log:42579, 42656, 42733, 42842, 42934, 43030, 43109 (marshal_guard, budget 120s, extra={'hazard':'mcp_transport_already_reported_failure','rop':'/stage/render'})",
+    "label": "handlers_render._handle_render_bounded:inline_abandoned_window x7 — MCP caller had already timed out (reported failure); each render zombie-ran to completion on the main thread with the GUI unresponsive the whole window. Freeze chain saw only ~5-6s blips (synapse.log:42578-42582) — no SUSTAINED escalation fired for any of the seven.",
+    "ms": 167530,
+    "ts": "2026-08-13 15:35:55 - 15:55:55 local (seven back-to-back windows of 162.46s-177.46s)"
+   },
+   {
+    "abandoned": false,
+    "evidence": "synapse.log:41794+41796 (12:21:50), 41906+41908 (12:25:21), 42035+42037 (12:31:38) — extra={'payload_chars':10,'doc_chars':123456}",
+    "label": "panel.result_telemetry:append + finalize — 123,456-char result document rendered into the Qt chat view on the main thread",
+    "ms": 6000,
+    "ts": "2026-08-13 12:21-12:31 local (3 append + 3 finalize hits, 6.0s each)"
+   },
+   {
+    "abandoned": false,
+    "evidence": "C:/Users/User/.synapse/logs/freeze_dump_20260814_190151.json:1 (hold max_ms 651.92, slowest_label synapse_doctor, taken DURING the 180s freeze — not the offender)",
+    "label": "synapse_doctor (deferred)",
+    "ms": 651.9,
+    "ts": "2026-08-14 before 15:01:51, pid 54400"
+   },
+   {
+    "abandoned": false,
+    "evidence": "C:/Users/User/.synapse/logs/freeze_dump_20260813_164049.json:1 (hold max_ms 625.02) + synapse.log:42070-42071 (SUSTAINED FREEZE 12:40:49, preceeded by a 9.8s freeze 12:40:14 and dispatch_waits max 9820ms)",
+    "label": "synapse_doctor (deferred)",
+    "ms": 625,
+    "ts": "2026-08-13 before 12:40:49, pid 58064"
+   },
+   {
+    "abandoned": false,
+    "evidence": "C:/Users/User/.synapse/logs/freeze_dump_20260813_001035.json:1 (hold max_ms 510.9) — the 30s+ freeze itself remains unattributed",
+    "label": "synapse_doctor (deferred)",
+    "ms": 510.9,
+    "ts": "2026-08-12 20:10, pid 816"
+   },
+   {
+    "abandoned": false,
+    "evidence": "synapse.log.3:308,319,345,358,1014 and 1037-1038 (the 48.35s one is double-stamped fast_path_2 + handlers.execute_python:inline)",
+    "label": "main_thread.run_on_main:fast_path_2 inline payloads (historical, rolled log)",
+    "ms": 48350,
+    "ts": "2026-07-28 10:51-12:17 (13.7s-48.4s each)"
+   }
+  ],
+  "stall_events": {
+   "count": 2149,
+   "evidence": "grep -c 'Main thread timeout': 1127 in C:/Users/User/.synapse/logs/synapse.log, 875 in synapse.log.1, 147 in synapse.log.3",
+   "pattern": "'Main thread timeout (N consecutive, 1s limit)' lines are liveness probes that walk the counter up (~1 every 3s) for the entire duration of any main-thread hold; '(N consecutive, 30s limit)' lines are real tool calls (panel houdini_execute_python / synapse_health) dying against a held main thread. Peaks: 67+ consecutive today 15:01:23→15:04:23 (synapse.log:43440-43496, last observed 67, more beyond tail grep); 10 consecutive 2026-08-13 22:30:43→22:31:10 then total session silence until next morning (synapse.log:43304-43313, preceded by a socket TimeoutError traceback — session death, unattributed). Each stall window ends with 'Main thread recovered (was frozen for Xs)' from synapse.resilience. During holds, the panel retries houdini_execute_python every ~30s, each abandoned zombie-style — the retry cascade compounds one hold into a multi-minute lockup."
+  },
+  "freeze_dumps": [
+   {
+    "file": "C:/Users/User/.synapse/logs/freeze_dump_20260814_190151.json",
+    "heartbeats": 117,
+    "noteworthy": "TODAY 15:01:51 local (filename is UTC). Single-line JSON. Dump fired mid-freeze, 30s into the 180.6s handlers.execute_python:inline hold — its main_thread_hold max (651.9ms synapse_doctor) does NOT contain the freeze in progress because the holder executed inline. escalated=true, breaker/halt both inert ('No live SynapseServer breaker... No ACTIVE bridge', synapse.log:43363-43364). pid 54400, v5.47.0.",
+    "reason": "sustained_freeze"
+   },
+   {
+    "file": "C:/Users/User/.synapse/logs/freeze_dump_20260813_001035.json",
+    "heartbeats": 92,
+    "noteworthy": "2026-08-12 20:10 local, pid 816, v5.45.1 — NOT startup-artifact shaped (92 heartbeats, real panel stream traffic) but single freeze in a ~90s-old session; hold max 510.9ms synapse_doctor, dispatch max 86.9ms — the 30s heartbeat gap is NOT attributable to any instrumented hold.",
+    "reason": "sustained_freeze"
+   },
+   {
+    "file": "C:/Users/User/.synapse/logs/freeze_dump_20260813_150958.json",
+    "heartbeats": 972,
+    "noteworthy": "TOOL-ATTRIBUTED: hold max_ms 25459.2 slowest_label houdini_execute_python matches heartbeat max_latency 26.397s and the 'frozen for 26.4s' recovery line; tool_durations shows 5 execute_python calls. pid 31880, v5.46.0.",
+    "reason": "sustained_freeze"
+   },
+   {
+    "file": "C:/Users/User/.synapse/logs/freeze_dump_20260813_151225.json",
+    "heartbeats": 976,
+    "noteworthy": "TOOL-ATTRIBUTED, the record-holder: hold max_ms 143686.2 houdini_execute_python, abandoned_count=1 (zombie hold — caller timed out, payload ran on), heartbeat max_latency 144.678s matches; marshal_guard ledger_size=1/inline_overruns=1. Same pid 31880, 147s after the previous dump — one session, two sustained freezes from consecutive execute_python payloads.",
+    "reason": "sustained_freeze"
+   },
+   {
+    "file": "C:/Users/User/.synapse/logs/freeze_dump_20260813_164049.json",
+    "heartbeats": 794,
+    "noteworthy": "PARTIALLY ATTRIBUTED: pid 58064. Hold max only 625ms (synapse_doctor) but dispatch_waits max 9820ms matches the 'frozen for 9.8s' recovery (synapse.log:42053-42057) — ~9.8s of main-thread work reached no instrument. Standing context: panel.result_telemetry append/finalize rendering a 123,456-char doc at 6.0s GUI stall each (synapse.log:41794-42037); houdini_render advisory at 12:31:38; watchdog stopped 12:33:06 (synapse.log:42053) then an MCP client connected 12:35:26. The 30s window at 12:40:19-49 has no instrument record.",
+    "reason": "sustained_freeze"
+   },
+   {
+    "file": "C:/Users/User/.synapse/logs/ (absent)",
+    "heartbeats": 0,
+    "noteworthy": "Referenced in logs but files no longer exist: freeze_dump_20260802_222338.json (synapse.log:15745) and four 2026-08-09 dumps (synapse.log:33726,33778,33793,33858 — freeze_dump_20260809_141200/141306/141404/141524). Rolled/cleaned; their contents are unrecoverable. The five pytest freeze dumps went to Temp\\pytest_shipping_* dirs (synapse.log:22976,22990,24516,24530,26239,26253 — all 'unresponsive ≥0s', excluded as test traffic).",
+    "reason": "sustained_freeze (historical, missing)"
+   }
+  ],
+  "correlations": [
+   "TODAY 2026-08-14 15:01:21→15:04:21 (the user's lockup): panel ClaudeWorker conversation building /stage/component_hero_chair imperatively (synapse_batch advisory 15:00:50, synapse.log:43347; composition validation FAILED-CLOSED AttributeError 'References' object has no attribute 'GetAddedOrExplicitItems' 15:01:04, synapse.log:43348) → execute_python ran inline on the main thread 179.43s (synapse.log:43493) → resilience confirms frozen 180.6s (synapse.log:43494) → 5 panel execute_python retries abandoned at 30s each during the hold (synapse.log:43366,43392,43417,43447,43473) → conversation killed at 25-iteration cap with 36 tool calls (synapse.log:43487) → session restarted ~15:20 (watchdog line at 15:20:25; new telemetry pid 37324). Freeze dump 190151 fired mid-hold at 15:01:51.",
+   "2026-08-13 11:07→11:14, pid 31880: execute_python cascade — 25.5s deferred hold (dump 150958), then TWO consecutive 143.66s/143.67s inline execute_python payloads (synapse.log:41283,41479) while panel workers piled up seven 30s-abandoned execute_python calls (11:09:59→11:12:01); dump 151225 caught the deferred 143.686s hold marked abandoned. Heartbeat max_latency (26.4s/144.7s) matches hold maxes almost exactly — instrument self-consistent.",
+   "2026-08-13 15:35:55→15:55:55: seven houdini_render attempts on /stage/render, each zombie-running 162-177s on the main thread after its MCP caller had already been told it failed (hazard='mcp_transport_already_reported_failure', synapse.log:42579-43109) — ~19 minutes of aggregate GUI unresponsiveness with ZERO sustained-freeze escalations (freeze_chain logged only 5-6s blips, synapse.log:42578-42763). Detector blind spot proven.",
+   "2026-08-13 12:21→12:40: panel result rendering of a 123,456-char document stalled the Qt main thread 6.0s six times (append+finalize, synapse.log:41794-42037), then an MCP client connect (12:35:26) and a 9.8s dispatch-queued freeze culminating in dump 164049.",
+   "Emergency-halt safety net is inert across ALL five on-disk dumps and both dates: 'No live SynapseServer breaker to open (hwebserver transport has no resilience layer)' every time, plus on Aug 13 'Emergency halt failed (best-effort) / AttributeError: SynapseBridge object has no attribute session_report' (synapse.log:41144-41145+) and today 'No ACTIVE bridge — emergency halt skipped' (synapse.log:43364). Nothing ever interrupts a runaway hold.",
+   "2026-08-13 22:30:43→22:31:10: 10 consecutive timeouts after a socket TimeoutError traceback (synapse.log:43304-43313 and preceding lines), then complete log silence until 2026-08-14 14:44 — a session-death stall with no freeze chain event and no attribution possible."
+  ],
+  "caveats": [
+   "The hold instrument cannot see today's culprit class at all: _record_main_thread_hold fires only inside the deferred _on_main() closure (C:/Users/User/SYNAPSE/python/synapse/server/main_thread.py:365-397). Payloads executed inline via the on-main fast paths (handlers.py:303-305) bypass it — proven empirically: today's 180.6s freeze is absent from both the mid-freeze dump (max 651.9ms) and the surviving telemetry.json (max 162.7ms). The hold histogram UNDERSTATES the true worst case; marshal_guard log lines are the only record for inline holds, and they capture handler name but NOT the execute_python payload content — what the 179s of code actually did is UNKNOWN from logs.",
+   "Histograms are per-process, in-memory, and only persist via freeze dumps (mid-freeze, always censored below the in-flight hold) or the single rolling telemetry.json snapshot (current process pid 37324 only, written 15:21). pid 54400's post-freeze histogram — which likely contains the deferred record of today's batch — died with the process; no per-sample log exists, so the identity of every >200ms hold other than each session's slowest_label is UNKNOWN.",
+   "The freeze detector under-reports: seven consecutive 162-177s inline render windows on Aug 13 produced no SUSTAINED FREEZE escalation (only 5-6s warnings at each completion, synapse.log:42578-42763 vs marshal_guard 42579-43109). Whether Karma cooking pumps the event source the heartbeat relies on, or the watchdog was down (watchdog stopped 12:33:06, synapse.log:42053), is unresolvable from these logs — either way, freeze_count/dumps are a LOWER bound on real UI lockups.",
+   "Coverage gaps: synapse.log.2 is missing (only .1/.3/current exist); the Aug 2 and four Aug 9 freeze dumps referenced in logs are gone from disk; the window Aug 13 22:31 → Aug 14 14:44 has no data; and the current-log pytest pollution this period is memory-store DEGRADED LOAD errors with Temp\\pytest-of-User paths (e.g. synapse.log:13) and Aug 5 pytest-authored SUSTAINED FREEZE lines whose dumps live in Temp\\pytest_shipping_* ('unresponsive ≥0s' — synapse.log:22975-26253). All excluded. The five on-disk dumps are real sessions (Houdini pids 816/31880/58064/54400, heartbeats 92-976, versions 5.45.1-5.47.0).",
+   "Log timestamps are local (UTC-4) while freeze_dump FILENAMES are UTC (e.g. freeze_dump_20260814_190151.json == 15:01:51 local, matching synapse.log:43362); internal 'ts' fields are epoch seconds. I cross-checked each dump's ts/pid/version against its log lines before attributing.",
+   "headline: the trap HAS caught the offender class, but not in the hold histogram — the two worst measured holds (179.43s today, 143.7s x2 on Aug 13) and all seven render zombies are INLINE main-thread executions visible only in marshal_guard WARNING lines. Ranked real offenders: (1) handlers.execute_python:inline from panel ClaudeWorker imperative builds — 179.4s/143.7s/143.7s; (2) handlers_render._handle_render_bounded:inline_abandoned_window — 7x ~162-177s after MCP client abandonment; (3) houdini_execute_python on the deferred path — 143.7s zombie + 25.5s; (4) panel.result_telemetry appending 123KB documents — 6.0s x6; (5) synapse_doctor — 0.5-0.7s recurring."
+  ]
+ }
+}

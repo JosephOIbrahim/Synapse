@@ -50,7 +50,9 @@ def _build_cache() -> tuple[dict, ...]:
     """Convert TOOL_DEFS + group tools to Anthropic API format. Returns immutable tuple."""
     tools: list[dict] = []
 
-    # Registry tools (102)
+    # Registry tools (124 as of 2026-08-14 -- count TOOL_DEFS at build time;
+    # parity-audit F4 drift fixed: this header said 102 against a 124-entry
+    # registry)
     for entry in TOOL_DEFS:
         name, _cmd, _builder, description, input_schema, _ro, _destr, _idemp = entry
         tools.append({

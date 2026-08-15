@@ -17,6 +17,12 @@ COMMAND_TIMEOUT = 10.0
 
 SLOW_COMMANDS = {
     "execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0,
+    # F6 (2026-08-14) -- reference_usd walks/cooks a file-backed stage import
+    # and routinely exceeded the 10s default on real assets; the WS marshal
+    # (handlers_usd._handle_reference_usd) budgets from THIS entry, keeping
+    # marshal and transport aligned so neither layer reports failure while
+    # the other still considers the op live.
+    "reference_usd": 30.0,
     "render": 120.0, "wedge": 120.0, "validate_frame": 30.0,
     "render_sequence": 600.0,
     "inspect_selection": 30.0, "inspect_scene": 30.0, "inspect_node": 30.0,

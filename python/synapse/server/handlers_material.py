@@ -287,7 +287,7 @@ class MaterialHandlerMixin:
                     result["preset"] = preset_name
                 return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="material:_handle_create_material")
 
     def _handle_assign_material(self, payload: Dict) -> Dict:
         """Create an assignmaterial LOP to bind a material to geometry prims."""
@@ -336,7 +336,7 @@ class MaterialHandlerMixin:
 
             return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="material:_handle_assign_material")
 
     def _handle_read_material(self, payload: Dict) -> Dict:
         """Read material binding and shader parameters from a USD prim.
@@ -457,7 +457,7 @@ class MaterialHandlerMixin:
                 "shader_params": shader_params,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="material:_handle_read_material")
 
     def _handle_create_textured_material(self, payload: Dict) -> Dict:
         """Create a MaterialX standard surface with texture file inputs.
@@ -658,4 +658,4 @@ class MaterialHandlerMixin:
                 result.update(_wire_display(_tip, node, set_display))
                 return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="material:_handle_create_textured_material")

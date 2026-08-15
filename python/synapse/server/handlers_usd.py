@@ -335,7 +335,7 @@ class UsdHandlerMixin:
                 "truncated": len(prims) >= limit,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_get_stage_info")
 
     def _handle_get_usd_attribute(self, payload: Dict) -> Dict:
         """Handle get_usd_attribute command -- read a USD attribute from a prim."""
@@ -408,7 +408,7 @@ class UsdHandlerMixin:
                 f"{hint}"
             )
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_get_usd_attribute")
 
     def _handle_set_usd_attribute(self, payload: Dict) -> Dict:
         """Handle set_usd_attribute command -- set a USD attribute via Python LOP."""
@@ -491,7 +491,7 @@ class UsdHandlerMixin:
                     )
                 return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_set_usd_attribute")
 
     def _handle_set_usd_primvar(self, payload: Dict) -> Dict:
         """Handle set_usd_primvar -- author a UsdGeom primvar via a Python LOP.
@@ -604,7 +604,7 @@ class UsdHandlerMixin:
                     )
                 return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_set_usd_primvar")
 
     def _handle_create_usd_prim(self, payload: Dict) -> Dict:
         """Handle create_usd_prim command -- define a USD prim via Python LOP."""
@@ -655,7 +655,7 @@ class UsdHandlerMixin:
                     **_wire_display(py_lop, node, set_display),
                 }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_create_usd_prim")
 
     def _handle_modify_usd_prim(self, payload: Dict) -> Dict:
         """Handle modify_usd_prim command -- set metadata/properties on a prim."""
@@ -740,7 +740,7 @@ class UsdHandlerMixin:
                     **_wire_display(py_lop, node, set_display),
                 }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_modify_usd_prim")
 
     def _handle_reference_usd(self, payload: Dict) -> Dict:
         """Import a USD file into the stage via reference, payload, or sublayer.
@@ -902,7 +902,21 @@ class UsdHandlerMixin:
                 result.update(_wire_display(_tip, chain_anchor, set_display))
                 return result
 
-        return run_on_main(_on_main)
+        from ..core.timeouts import timeout_for
+        # TIMEOUT OWNERSHIP (F6, crucible item-3 note): the 30s budget is
+        # OWNED by core/timeouts.py SLOW_COMMANDS["reference_usd"] -- this
+        # marshal reads it from that table, and the MCP transport budgets the
+        # same value via timeout_for, so the two layers agree. The raise from
+        # the 10s default to 30s therefore does NOT open a new "transport
+        # reports failure while the op still runs" window (the F5 zombie
+        # class): both layers fire at the same boundary, and on marshal
+        # timeout run_on_main's C4 abandoned flag no-ops the payload when it
+        # eventually wakes.
+        return run_on_main(
+            _on_main,
+            timeout=timeout_for("reference_usd"),
+            label="usd:_handle_reference_usd",
+        )
 
     def _handle_query_prims(self, payload: Dict) -> Dict:
         """Query USD stage prims with filtering by type, purpose, name pattern.
@@ -952,10 +966,26 @@ class UsdHandlerMixin:
                     name_re = None  # fall back to substring match
 
             results = []
+            # F6 (2026-08-14): bound the walk by VISITS, not only by results.
+            # With filters rejecting almost every prim, a limit=10 query over a
+            # 100k-prim stage visited all 100k prims on Houdini's MAIN thread --
+            # the results cap never fired and the UI froze for the whole
+            # traversal. Any cap is a trade-off: 25k visits is generous for a
+            # discoverability query but bounded enough that a hostile stage
+            # can't pin the main thread indefinitely. The "truncated" flag
+            # below now covers both caps, so callers can tell the answer is
+            # partial rather than empty.
+            _MAX_WALK_VISITS = 25000
+            visits = [0]
 
             def _walk(prim, depth):
-                if depth > max_depth or len(results) >= limit:
+                if (
+                    depth > max_depth
+                    or len(results) >= limit
+                    or visits[0] >= _MAX_WALK_VISITS
+                ):
                     return
+                visits[0] += 1
 
                 prim_type_name = prim.GetTypeName()
 
@@ -1021,10 +1051,12 @@ class UsdHandlerMixin:
                 "root_path": root_path,
                 "prim_count": len(results),
                 "prims": results,
-                "truncated": len(results) >= limit,
+                # Either cap means the answer is partial: the results limit,
+                # or the F6 visit bound (the filter-rejects-everything case).
+                "truncated": len(results) >= limit or visits[0] >= _MAX_WALK_VISITS,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_query_prims")
 
     def _handle_manage_variant_set(self, payload: Dict) -> Dict:
         """Manage USD variant sets: create, list, or select variants.
@@ -1174,7 +1206,7 @@ class UsdHandlerMixin:
                     **_wire_display(py_lop, node, set_display),
                 }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_manage_variant_set")
 
     @staticmethod
     def _verify_collection_cooked(py_lop, prim_path, collection_name,
@@ -1434,7 +1466,7 @@ class UsdHandlerMixin:
                         **_wire_display(py_lop, node, set_display),
                     }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_manage_collection")
 
     def _handle_configure_light_linking(self, payload: Dict) -> Dict:
         """Configure light linking between lights and geometry via USD collections.
@@ -1590,7 +1622,7 @@ class UsdHandlerMixin:
                     result["geo_paths"] = geo_paths
                 return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_configure_light_linking")
 
     # -- Solaris ordering validation ----------------------------------------
 
@@ -1755,7 +1787,7 @@ class UsdHandlerMixin:
                 "clean": len(issues) == 0,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_solaris_validate_ordering")
 
     def _handle_set_payload_loadstate(self, payload: Dict) -> Dict:
         """Control USD payload load state and/or prim activation (BL-008).
@@ -1844,7 +1876,7 @@ class UsdHandlerMixin:
                 result.update(_wire_display(py_lop, node, set_display))
                 return result
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_set_payload_loadstate")
 
     def _handle_create_point_instancer(self, payload: Dict) -> Dict:
         """Author a minimal-but-valid UsdGeom.PointInstancer.
@@ -1940,7 +1972,7 @@ class UsdHandlerMixin:
                     **_wire_display(py_lop, node, set_display),
                 }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, label="usd:_handle_create_point_instancer")
 
     def _handle_shot_render_ready(self, payload: Dict) -> Dict:
         """Composite orchestrator: get a shot render-ready in one call.
