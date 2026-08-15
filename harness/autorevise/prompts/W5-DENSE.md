@@ -39,7 +39,7 @@ if any part reads truncated, STOP and say so.
       "evidence": "test"
     },
     {
-      "predicate": "anatomy-derived probes through the repaired retrieval: karma material builder resolves honestly (subnet guidance or not-found, never a phantom karmamaterial* type); componentgeometry answers acknowledge the H22 'alternative' output when the corpus carries it",
+      "predicate": "anatomy-derived probes (rag/skills/houdini21-reference/solaris_compound_node_anatomy.md, live-verified 22.0.400) through the repaired retrieval: karma material builder resolves honestly (subnet guidance or not-found, never a phantom karmamaterial* type); componentgeometry answers acknowledge the H22 'alternative' output when the corpus carries it",
       "evidence": "probe"
     }
   ],
