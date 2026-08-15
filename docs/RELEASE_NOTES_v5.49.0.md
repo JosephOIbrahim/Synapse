@@ -40,3 +40,9 @@ F5b design and the F1 flag decision remain human-gated — but they now gate on 
 
 - The CHANGELOG deep record still ends at v5.41.0 — v5.42.0 through v5.49.0 live in their release commits and `docs/RELEASE_NOTES_*` files; backfill is queued housekeeping.
 - Leg (b)'s synchrony verdict is one trivial frame on one build; a long-render control would make it airtight. The claim is scoped accordingly.
+
+---
+
+## Post-release verification (2026-08-15T12:45Z)
+
+The F5a ground truth was **independently reproduced by hand** minutes after release — Joe's own PowerShell run of the probe, all four items PASS, every delta vs the committed baseline within timing noise (husk 2.09/2.03s exit 0 + pixels both variants, `render()` blocks 2.19s, sentinel +0.005s). Receipt: `harness/notes/probe_render_offload.results.20260815T124545Z.json` (master `9680a69e`).
