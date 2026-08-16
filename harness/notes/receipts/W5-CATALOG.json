@@ -1,0 +1,82 @@
+{
+  "leg": "W5-CATALOG",
+  "status": "green_with_findings",
+  "build": "22.0.400",
+  "product_head": "8682afef90e5a087c3d28c4d4e81b03cf0d305a9",
+  "product_head_note": "product committed BEFORE this receipt (rev-list df8c9ef3..HEAD = 1); this receipt is the closing commit per W5H.",
+  "acceptance": [
+    {
+      "predicate": "catalog files exist for every category hou.nodeTypeCategories() returns, build-keyed under rag/catalog/h22.0.400/",
+      "verdict": "pass",
+      "evidence": "probe: rag/catalog/h22.0.400/_manifest.json (build=22.0.400, category_count=18); 18 category files present incl empty Director.json/Manager.json + apex_callbacks.json; 5576 node types, 0 probe_errors. Pinned by tests/test_node_catalog.py::test_a_file_exists_for_every_category (+ test_empty_categories_still_have_files). Live dump receipt: rag/catalog/h22.0.400/dump_receipt.txt (hython stdout)."
+    },
+    {
+      "predicate": "spot-audit 20 nodes per weak domain vs live session: zero mismatches, anchored receipts",
+      "verdict": "pass",
+      "evidence": "probe: rag/catalog/h22.0.400/_audit.json verdict=pass, total_mismatches=0; dop/vop/chop/cop/apex 20 each = 100/100 matched; anchored receipts (e.g. Vop/CVEX_shader, apex/Abs<Float>, cop parm_anchor name=signature type=String default=[auto] diverged=[]). Audit proven a REAL gate: a live tamper (edit one sampled default in a copy, run audit_node_catalog.py --dir <copy>) flips verdict=fail, exit 1 (crucible probe bltlywlzs). Pinned by test_live_spot_audit_verdict_is_pass."
+    },
+    {
+      "predicate": "VOP wire signatures and APEX callback ports present with typed entries",
+      "verdict": "pass",
+      "evidence": "test: tests/test_node_catalog.py::test_vop_wire_signatures_present_with_typed_entries (Vop.json vop_signatures.instantiated=1297/1305; typed input/output_data_types lists per instantiated row) + ::test_apex_callback_ports_present_with_typed_entries (apex_callbacks.json count=2286; every port carries name+type; >1000 callbacks with typed in+out ports)."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "Crucible found ONE real defect and it was FIXED (not just documented): _lookup's two namespace-dropping fallback tiers let 5 Labs nodes (labs::karma::1.0/2.0 -> nodes/lop/karma.json, labs::filecache::1.0/2.0 -> nodes/sop/filecache-.json, labs::wedge::1.0 -> nodes/top/wedge.json) borrow the NATIVE node's help page (different nodes: native karma=306 parms vs labs::karma::1.0=408). Fixed by refusing namespace-relaxed matches when a bare same-base sibling owns the page; each doc now records its 'match' tier. Docs joined 1003 -> 998 (exactly the 5 removed); the 2 benign Object/muscle relaxations + 109 version-relaxed joins preserved.",
+      "anchor": "scripts/catalog_docs_join.py:_lookup (namespace-relaxed guard) + tests/test_node_catalog.py::test_no_help_page_cross_attributed_to_different_nodes"
+    },
+    {
+      "claim": "8 of 1305 VOP types do not instantiate in a throwaway matnet (context-global VOPs: furguideglobal, furguideoutput, furskinglobal, geometryvopglobal[::2.0], geometryvopoutput, volumevopglobal, vopforceglobal) -> MatchDefinitionError. Recorded honestly with instantiated:false + note; NOT hidden, NOT faked.",
+      "anchor": "rag/catalog/h22.0.400/Vop.json vop_signatures.instantiated=1297"
+    },
+    {
+      "claim": "apex.getRegistries() returns a single unified Registry on 22.0.400 (registry_count=1), not the separate component/constraint/control/brush registries the mission target text implied. The full typed-callback surface (2286 defs, 175 subgraphs) is dumped from apex.callbackRegistry(); getRegistries() length is recorded, not asserted.",
+      "anchor": "rag/catalog/h22.0.400/apex_callbacks.json registry_count=1"
+    },
+    {
+      "claim": "Determinism proven: two independent full hython dumps are byte-identical across all category files + apex + manifest + docs_report (diff -rq empty; crucible sha256 probe b4ci7xtd5). Sorted keys, no wall-clock stamp. The COP 'sidefx_transform2d' stderr lines during phase A are benign Houdini viewport-handle warnings (0 probe_errors, Cop=385 dumped clean); stderr is not committed.",
+      "anchor": "rag/catalog/h22.0.400/_manifest.json + dump_receipt.txt"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "SOURCE DOC ABSENT: the mission source.doc 'docs/BLUEPRINT_WEAK_DOMAINS.md' (section 2 - Substrate Phase 1) does not exist anywhere in this worktree. The brief was self-contained so I executed from its explicit targets, but the dangling source anchor should be reconciled (create the doc, or repoint the anchor).",
+      "why": "traceability: the exit-criteria Mile 1-2 reference cannot be verified against a missing doc."
+    },
+    {
+      "item": "CATALOG SIZE: rag/catalog/h22.0.400/ is ~49MB / 2.5M insertions in one commit (Sop.json alone 14.8MB). The brief specifies plaintext <category>.json (not gzip/LFS), so it is committed as-is. Ruling wanted on whether the served-corpus refresh (K.5) should gzip or LFS these before ingest.",
+      "why": "repo weight; RAG ingest ergonomics."
+    },
+    {
+      "item": "K.5 REFRESH is NOT done here (per crucible criterion: rag/ingest_ledger is SINGLE-WRITER R1; this leg wrote rag/catalog/ ONLY and never touched harness/ingest_ledger.* or the served corpus rag/{corpus,documentation,semantic_index}). Wiring this catalog into scout/knowledge_lookup retrieval is a separate ledger-writing leg for a human to gate.",
+      "why": "R1 single-writer discipline; the substrate exists but is not yet served."
+    },
+    {
+      "item": "AUDIT COVERAGE: the spot-audit samples 20 types/domain (deterministic stride) per the brief's '20 nodes'. A tampered NON-sampled row would pass unnoticed. Not rigging (proven real gate on sampled rows), but a coverage ceiling; widen if a stronger guarantee is wanted.",
+      "why": "the brief bounds the audit at 20/domain; stating the ceiling plainly."
+    },
+    {
+      "item": "blake2b SEMANTICS: each category file's blake2b is the binary parm-surface stamp computed by build_node_catalog BEFORE docs_join adds the annotation-layer 'doc' fields, so it is intentionally NOT a re-hash of the docs-enriched 'types'. dump_receipt.txt is named to dodge .gitignore's '_*.txt' rule (was _dump_log.txt).",
+      "why": "a future reader re-hashing types-with-docs would see a mismatch; documenting the intended contract."
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W5-CATALOG-SERVE",
+      "name": "K.5: serve the build-keyed catalog into scout/knowledge_lookup retrieval",
+      "band": "BUILD",
+      "class": "build",
+      "note": "Ingest rag/catalog/h22.0.400/ into the retrieval layer so scout answers parm/wire/callback queries from the verified-by-construction substrate instead of model memory. WRITES the single-writer rag/ingest_ledger (R1) -> human-gated; lands held for Joe (class outside spawn_classes=[probe]).",
+      "deps": ["W5-CATALOG"]
+    },
+    {
+      "id": "W5-CATALOG-REPROBE",
+      "name": "probe: re-dump the catalog on the next Houdini build drop",
+      "band": "BUILD",
+      "class": "probe",
+      "note": "scripts/build_node_catalog.py + catalog_docs_join.py + audit_node_catalog.py are build-agnostic; on a new major run all three -> rag/catalog/h<newbuild>/. Staleness-by-construction: the old h22.0.400/ tree stays valid for 22.0.400 only.",
+      "deps": ["W5-CATALOG"]
+    }
+  ]
+}
