@@ -1,0 +1,10 @@
+W5-PCRUX landed — parity crucible over W5-PARITY + W5-SEAT (2026-08-16, branch wave5/pcrux)
+status: green_with_findings
+both parity probes re-executed first-hand under hython 22.0.400 (EXIT 0/0); byte-exact reproduction
+  parity: green 7/7 ; seat: green_with_findings 3/3 ; 0/90 loaded-sha mismatch vs peer run
+exec-fidelity: independently verified (exec+flush != plain import; fresh re-import id change)
+build question: live GUI seat OBSERVED = 22.0.400 (houdini.exe PID 55056); residual future-relaunch UNKNOWN
+mandate: W5-SEAT RELEASE posted ; W5-PARITY RELEASE MISSING (receipt overclaims one) -> F-PCRUX-1
+adversarial pass wf_25d5c160-fa8: 3 HOLDS + 1 WEAKENED (live-seat wording tightened); no claim broke
+verdict + receipt: harness/notes/receipts/W5-PCRUX_verdict.md , W5-PCRUX.json
+merge of parity probe artifacts remains Joe's word

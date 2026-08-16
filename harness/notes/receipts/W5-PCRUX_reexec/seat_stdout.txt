@@ -1,0 +1,100 @@
+################################################################
+# W5-SEAT seat-resolution probe (first-hand, live hython)
+#   python     : 3.13.10
+#   executable : c:/program files/side effects software/houdini 22.0.400/bin/hython.exe
+#   prefs dir  : C:/Users/User/OneDrive/Documents/houdini22.0
+#   expect repo: c:/users/user/synapse
+################################################################
+
+== T1  package + hpath (live seat) ==
+  SYNAPSE_ROOT (env)      : C:/Users/User/SYNAPSE
+  expect repo             : c:/users/user/synapse
+  root matches repo       : True
+  <repo>/houdini on HPATH : True
+  producer (synapse.json) : c:/users/user/onedrive/documents/houdini22.0/packages/synapse.json (present=True)
+  HOUDINI_PATH entries    : 17
+      c:/program files/side effects software/sidefx_packages/sidefxlabs22.0/platform_specific/windows
+      c:/program files/side effects software/sidefx_packages/sidefxlabs22.0
+      c:/progra~1/sideef~1/houdin~1.400/packages/texturepaint
+      c:/progra~1/sideef~1/houdin~1.400/packages/shotbuilder
+      c:/progra~1/sideef~1/houdin~1.400/packages/sculpt
+      c:/progra~1/sideef~1/houdin~1.400/packages/kinefx
+      c:/progra~1/sideef~1/houdin~1.400/packages/apex_cop
+      c:/progra~1/sideef~1/houdin~1.400/packages/apex
+      c:/users/user/synapse/houdini   <== repo
+      c:/program files/moonray/houdini
+      g:/wolfhard/houdini
+      c:/users/user/onedrive/documents/houdini22.0/packages/mops_plus
+      c:/users/user/synapse/.claude/worktrees/w5-pcrux
+      c:/users/user/onedrive/documents/houdini22.0
+      c:/progra~1/sideef~1/houdin~1.400/houdini
+      c:/progra~1/sideef~1/houdin~1.400/bin
+      c:/users/user/onedrive/documents/houdini22.0/packages/jltools
+  T1 verdict              : PASS
+
+== T2  resources via hou.findFile (into the repo) ==
+  icons on disk           : 7 (expected 7)  ok=True
+  SYNAPSE_synapse.png     : True
+  findFile('toolbar/synapse.shelf')
+      -> C:/Users/User/SYNAPSE/houdini/toolbar/synapse.shelf
+  findFile('config/Icons/SYNAPSE_generate_docs.png')
+      -> C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_generate_docs.png
+  findFile('config/Icons/SYNAPSE_health_check.png')
+      -> C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_health_check.png
+  findFile('config/Icons/SYNAPSE_inspect_scene.png')
+      -> C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_inspect_scene.png
+  findFile('config/Icons/SYNAPSE_inspect_selection.png')
+      -> C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_inspect_selection.png
+  findFile('config/Icons/SYNAPSE_last_result.png')
+      -> C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_last_result.png
+  findFile('config/Icons/SYNAPSE_project_setup.png')
+      -> C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_project_setup.png
+  findFile('config/Icons/SYNAPSE_synapse.png')
+      -> C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_synapse.png
+  T2 verdict              : PASS
+
+== T3  shadow-install sweep (order proven with indices) ==
+  repo/python             : c:/users/user/synapse/python
+  repo/python sys.path idx: 7  (lowest-index IMPORTABLE provider)
+  `synapse`-named entries : 3 (1 importable, 2 namespace-portion)
+      [idx 5] c:/users/user/synapse/.claude/worktrees/w5-pcrux/synapse  (namespace_portion)   namespace-portion (no __init__.py; NOT a provider)
+      [idx 6] c:/users/user/synapse/synapse  (namespace_portion)   namespace-portion (no __init__.py; NOT a provider)
+      [idx 7] c:/users/user/synapse/python/synapse/__init__.py  (regular_package)   <== repo (importable)
+  note: 2 lower-index namespace dir(s) exist but provide no importable
+        `synapse` - a regular package at idx 7 wins the import (proven by find_spec)
+  import synapse resolves : c:/users/user/synapse/python/synapse/__init__.py  (repo=True)
+  order repo-first        : True  (no importable synapse earlier on sys.path)
+  metadata dists (synapse): 2 total = 2 repo-own + 0 shadow
+      repo-own: synapse 5.2.0 @ c:/users/user/synapse/python
+      repo-own: synapse-houdini 5.8.0 @ c:/users/user/synapse/python
+  SHADOW COUNT (code+dist): 0
+  T3 verdict              : PASS
+
+== T4  multi-build audit ==
+  installed 22.x builds   : 5
+      22.0.368   -> prefs houdini22.0   c:/program files/side effects software/houdini 22.0.368
+      22.0.397   -> prefs houdini22.0   c:/program files/side effects software/houdini 22.0.397
+      22.0.400   -> prefs houdini22.0   c:/program files/side effects software/houdini 22.0.400
+      22.0.406   -> prefs houdini22.0   c:/program files/side effects software/houdini 22.0.406
+      22.0.413   -> prefs houdini22.0   c:/program files/side effects software/houdini 22.0.413
+  all 22.x -> one prefs   : True (['houdini22.0'])
+  probe ran under build   : 22.0.400  (proven: this hython)
+  Joe's GUI launch build  : UNKNOWN  (no prefs/log artifact binds the GUI launch to a specific 22.0.x build; all 22.0.x map to the single houdini22.0 prefs dir and overwrite it on launch)
+  seat synapse *.json     : ['synapse.json']  (Houdini scans these)
+  seat synapse sidecars   : ['synapse.json.bak-115750', 'synapse.json.bom-bak']  (non-json, NOT loaded)
+
+== T5  pypanel hot-flush pin ==
+  findFile('python_panels/synapse_panel.pypanel')
+      -> C:/Users/User/SYNAPSE/houdini/python_panels/synapse_panel.pypanel
+  shadow pypanels on HPATH: 0 
+      L37: del sys.modules[_m]
+      L38: sys.modules.pop("synapse", None)
+  T5 verdict              : PASS
+
+== ACCEPTANCE ==
+  [PASS] package + hpath resolve to the repo under hython with the live prefs dir, first-hand
+  [PASS] all 7 icons + shelf file resolve via hou.findFile into the repo; count asserted
+  [PASS] zero shadow synapse installs; sys.path order proven with indices
+  T5 pypanel flush (mission target): PASS
+== VERDICT: green_with_findings ==
+wrote c:/users/user/synapse/.claude/worktrees/w5-pcrux/harness/probes/parity_seat/results.json
