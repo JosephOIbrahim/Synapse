@@ -1,0 +1,526 @@
+{
+ "blake2b": "36c4b682cfd1bd84fe2d3c6156126641",
+ "build": "22.0.400",
+ "category": "CopNet",
+ "count": 3,
+ "docs_join": {
+  "cache_root": "C:/Users/User/OneDrive/Documents/houdini22.0/config/Help/cache",
+  "context": null,
+  "joined": 0,
+  "note": "visited-pages-only; absent docs stay absent, never synthesized; each doc records its join tier ('match'); a namespaced node never borrows a bare sibling's page. Binary blake2b above is unchanged by this join.",
+  "tiers": {
+   "exact": 0,
+   "namespace_relaxed": 0,
+   "version_relaxed": 0
+  },
+  "total": 3
+ },
+ "generated": {
+  "by": "scripts/build_node_catalog.py (phase A)",
+  "note": "deterministic: sorted keys, no wall-clock stamp"
+ },
+ "probe_errors": [],
+ "schema": "node_catalog_live/v1",
+ "types": {
+  "copnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "COP Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "Int",
+     "default": 0,
+     "label": "Resolution and Properties",
+     "name": "folder0",
+     "num_components": 1,
+     "type": "Folder"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "folder": [
+      "Resolution and Properties"
+     ],
+     "label": "Set Default Resolution",
+     "name": "setres",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      1024,
+      1024
+     ],
+     "folder": [
+      "Resolution and Properties"
+     ],
+     "label": "Default Resolution",
+     "max": 10,
+     "max_strict": false,
+     "min": 0,
+     "min_strict": false,
+     "name": "res",
+     "num_components": 2,
+     "type": "Int"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "folder": [
+      "Resolution and Properties"
+     ],
+     "label": "Resolution Menu",
+     "name": "resmenu",
+     "num_components": 1,
+     "type": "Menu"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "folder": [
+      "Resolution and Properties"
+     ],
+     "label": "Set Default Pixel Scale",
+     "name": "setpixelscale",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Float",
+     "default": [
+      2.0
+     ],
+     "folder": [
+      "Resolution and Properties"
+     ],
+     "label": "Default Pixel Scale",
+     "max": 16.0,
+     "max_strict": false,
+     "min": 1.0,
+     "min_strict": false,
+     "name": "pixelscale",
+     "num_components": 1,
+     "type": "Float"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "folder": [
+      "Resolution and Properties"
+     ],
+     "label": "Set Default Border",
+     "name": "setborder",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": 3,
+     "folder": [
+      "Resolution and Properties"
+     ],
+     "label": "Default Border",
+     "menu_labels": [
+      "Constant",
+      "Clamp",
+      "Mirror",
+      "Wrap"
+     ],
+     "menu_tokens": [
+      "constant",
+      "clamp",
+      "mirror",
+      "wrap"
+     ],
+     "name": "border",
+     "num_components": 1,
+     "type": "Menu"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "folder": [
+      "Resolution and Properties"
+     ],
+     "label": "Set Default Precision",
+     "name": "setprecision",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": 1,
+     "folder": [
+      "Resolution and Properties"
+     ],
+     "label": "Default Precision",
+     "menu_labels": [
+      "16-bit",
+      "32-bit"
+     ],
+     "menu_tokens": [
+      "b16",
+      "b32"
+     ],
+     "name": "precision",
+     "num_components": 1,
+     "type": "Menu"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "label": "Canvas",
+     "name": "folder1",
+     "num_components": 1,
+     "type": "Folder"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "folder": [
+      "Canvas"
+     ],
+     "label": "Set Default Canvas",
+     "name": "setcanvas",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "folder": [
+      "Canvas"
+     ],
+     "label": "Default Canvas",
+     "menu_labels": [
+      "from Camera Path",
+      "from Image Plane"
+     ],
+     "menu_tokens": [
+      "camera",
+      "plane"
+     ],
+     "name": "canvassource",
+     "num_components": 1,
+     "type": "Menu"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      ""
+     ],
+     "folder": [
+      "Canvas"
+     ],
+     "label": "Camera",
+     "name": "camera",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "folder": [
+      "Canvas"
+     ],
+     "label": "Orientation",
+     "menu_labels": [
+      "XY Plane",
+      "YZ Plane",
+      "ZX Plane"
+     ],
+     "menu_tokens": [
+      "xy",
+      "yz",
+      "zx"
+     ],
+     "name": "plane_orient",
+     "num_components": 1,
+     "type": "Menu"
+    },
+    {
+     "data_type": "Float",
+     "default": [
+      1.0,
+      1.0
+     ],
+     "folder": [
+      "Canvas"
+     ],
+     "label": "Size",
+     "max": 1.0,
+     "max_strict": false,
+     "min": -1.0,
+     "min_strict": false,
+     "name": "plane_size",
+     "num_components": 2,
+     "type": "Float"
+    },
+    {
+     "data_type": "Float",
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "folder": [
+      "Canvas"
+     ],
+     "label": "Center",
+     "max": 1.0,
+     "max_strict": false,
+     "min": -1.0,
+     "min_strict": false,
+     "name": "plane_t",
+     "num_components": 3,
+     "type": "Float"
+    },
+    {
+     "data_type": "Float",
+     "default": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "folder": [
+      "Canvas"
+     ],
+     "label": "Rotate",
+     "max": 360.0,
+     "max_strict": false,
+     "min": 0.0,
+     "min_strict": false,
+     "name": "plane_r",
+     "num_components": 3,
+     "type": "Float"
+    },
+    {
+     "data_type": "Float",
+     "default": [
+      1.0
+     ],
+     "folder": [
+      "Canvas"
+     ],
+     "label": "Uniform Scale",
+     "max": 10.0,
+     "max_strict": false,
+     "min": 0.0,
+     "min_strict": false,
+     "name": "plane_scale",
+     "num_components": 1,
+     "type": "Float"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "folder": [
+      "Canvas"
+     ],
+     "label": "Set Tile Visualization",
+     "name": "setvistile",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      3
+     ],
+     "folder": [
+      "Canvas"
+     ],
+     "label": "Tile Visualization",
+     "max": 16,
+     "max_strict": false,
+     "min": 1,
+     "min_strict": false,
+     "name": "vistile",
+     "num_components": 1,
+     "type": "Int"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "label": "UDIM",
+     "name": "folder2",
+     "num_components": 1,
+     "type": "Folder"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "folder": [
+      "UDIM"
+     ],
+     "label": "Set Default UDIM",
+     "name": "setudim",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      1001
+     ],
+     "folder": [
+      "UDIM"
+     ],
+     "label": "Default UDIM",
+     "max": 1051,
+     "max_strict": false,
+     "min": 1001,
+     "min_strict": false,
+     "name": "udim",
+     "num_components": 1,
+     "type": "Int"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "folder": [
+      "UDIM"
+     ],
+     "label": "Set Default UDIM List",
+     "name": "setudimlist",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "folder": [
+      "UDIM"
+     ],
+     "label": "Default UDIM List",
+     "menu_labels": [
+      "from Parameter",
+      "from Geometry"
+     ],
+     "menu_tokens": [
+      "explicit",
+      "geometry"
+     ],
+     "name": "udimlistsource",
+     "num_components": 1,
+     "type": "Menu"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      "1001"
+     ],
+     "folder": [
+      "UDIM"
+     ],
+     "label": "UDIM List Parameter",
+     "name": "udimlist",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      ""
+     ],
+     "folder": [
+      "UDIM"
+     ],
+     "label": "Geometry Path",
+     "name": "udimlistgeo",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      "UDIM_list"
+     ],
+     "folder": [
+      "UDIM"
+     ],
+     "label": "UDIM List Attribute",
+     "name": "udimlistattrib",
+     "num_components": 1,
+     "type": "String"
+    }
+   ]
+  },
+  "copnet_filterlist": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "COP Image Filter List",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "C color"
+     ],
+     "label": "Primary Layer Scope",
+     "name": "primaryscope",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      "depth"
+     ],
+     "label": "Depth Layer Scope",
+     "name": "depthscope",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      "albedo"
+     ],
+     "label": "Albedo Layer Scope",
+     "name": "albedoscope",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      "N"
+     ],
+     "label": "Normal Layer Scope",
+     "name": "normalscope",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      "Filters/Post/*"
+     ],
+     "label": "Tab Menu Filter",
+     "name": "tabmenufilter",
+     "num_components": 1,
+     "type": "String"
+    }
+   ]
+  },
+  "img": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Image Network - Old",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": []
+  }
+ }
+}

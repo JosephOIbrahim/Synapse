@@ -1,0 +1,25 @@
+{
+ "blake2b": "2afb9b83f9314e5d029766197f539792",
+ "build": "22.0.400",
+ "category": "Director",
+ "count": 0,
+ "docs_join": {
+  "cache_root": "C:/Users/User/OneDrive/Documents/houdini22.0/config/Help/cache",
+  "context": null,
+  "joined": 0,
+  "note": "visited-pages-only; absent docs stay absent, never synthesized; each doc records its join tier ('match'); a namespaced node never borrows a bare sibling's page. Binary blake2b above is unchanged by this join.",
+  "tiers": {
+   "exact": 0,
+   "namespace_relaxed": 0,
+   "version_relaxed": 0
+  },
+  "total": 0
+ },
+ "generated": {
+  "by": "scripts/build_node_catalog.py (phase A)",
+  "note": "deterministic: sorted keys, no wall-clock stamp"
+ },
+ "probe_errors": [],
+ "schema": "node_catalog_live/v1",
+ "types": {}
+}

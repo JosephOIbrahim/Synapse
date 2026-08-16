@@ -1,0 +1,35 @@
+NODE CATALOG DUMP: build=22.0.400 categories=18 -> C:\Users\User\SYNAPSE\.claude\worktrees\w5-catalog\rag\catalog\h22.0.400
+  [phase A] Chop: 149 types, 0 errors -> Chop.json
+  [phase A] ChopNet: 1 types, 0 errors -> ChopNet.json
+  [phase A] Cop: 385 types, 0 errors -> Cop.json
+  [phase A] Cop2: 169 types, 0 errors -> Cop2.json
+  [phase A] CopNet: 3 types, 0 errors -> CopNet.json
+  [phase A] Data: 450 types, 0 errors -> Data.json
+  [phase A] Director: 0 types, 0 errors -> Director.json
+  [phase A] Dop: 505 types, 0 errors -> Dop.json
+  [phase A] Driver: 90 types, 0 errors -> Driver.json
+  [phase A] Lop: 222 types, 0 errors -> Lop.json
+  [phase A] Manager: 0 types, 0 errors -> Manager.json
+  [phase A] Object: 186 types, 0 errors -> Object.json
+  [phase A] Shop: 219 types, 0 errors -> Shop.json
+  [phase A] Sop: 1690 types, 0 errors -> Sop.json
+  [phase A] Top: 183 types, 0 errors -> Top.json
+  [phase A] TopNet: 2 types, 0 errors -> TopNet.json
+  [phase A] Vop: 1305 types, 0 errors -> Vop.json
+  [phase A] VopNet: 17 types, 0 errors -> VopNet.json
+  [phase B] instantiating Vop types for wire signatures...
+    [phase B] vop 200/1305 instantiated=200
+    [phase B] vop 400/1305 instantiated=394
+    [phase B] vop 600/1305 instantiated=594
+    [phase B] vop 800/1305 instantiated=794
+    [phase B] vop 1000/1305 instantiated=994
+    [phase B] vop 1200/1305 instantiated=1194
+    [phase B] vop done: 1297/1305 instantiated
+  [phase B] merged signatures into Vop.json (1297 instantiated)
+  [phase C] dumping apex callback registry...
+    [phase C] apex callbacks 500/2286
+    [phase C] apex callbacks 1000/2286
+    [phase C] apex callbacks 1500/2286
+    [phase C] apex callbacks 2000/2286
+    [phase C] apex done: 2286 callbacks, 175 subgraphs
+DONE: build=22.0.400 category_files=18 node_types=5576 probe_errors=0 -> C:\Users\User\SYNAPSE\.claude\worktrees\w5-catalog\rag\catalog\h22.0.400

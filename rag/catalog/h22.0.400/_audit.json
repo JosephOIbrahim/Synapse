@@ -1,0 +1,1474 @@
+{
+ "build": "22.0.400",
+ "domains": {
+  "apex": {
+   "audited": 20,
+   "domain": "apex",
+   "matched": 20,
+   "mismatched": 0,
+   "receipts": [
+    {
+     "anchor": "apex/Abs<Float>",
+     "input_ports": [
+      "Float"
+     ],
+     "match": true,
+     "output_ports": [
+      "Float"
+     ]
+    },
+    {
+     "anchor": "apex/ForEachEnd<ApexPortID>",
+     "input_ports": [
+      "undefined",
+      "ApexPortIDArray",
+      "ApexPortID",
+      "undefined"
+     ],
+     "match": true,
+     "output_ports": [
+      "ApexPortIDArray",
+      "undefined"
+     ]
+    },
+    {
+     "anchor": "apex/Null<DynamicPathArray>",
+     "input_ports": [
+      "DynamicPathArray"
+     ],
+     "match": true,
+     "output_ports": [
+      "DynamicPathArray"
+     ]
+    },
+    {
+     "anchor": "apex/SwitchByName<ColorRamp>",
+     "input_ports": [
+      "VariadicArg<ColorRamp>",
+      "String"
+     ],
+     "match": true,
+     "output_ports": [
+      "ColorRamp"
+     ]
+    },
+    {
+     "anchor": "apex/Value<Vector2Array>",
+     "input_ports": [
+      "Vector2Array"
+     ],
+     "match": true,
+     "output_ports": [
+      "Vector2Array"
+     ]
+    },
+    {
+     "anchor": "apex/array::Get<FBIKSolver>",
+     "input_ports": [
+      "FBIKSolverArray",
+      "Int",
+      "FBIKSolver"
+     ],
+     "match": true,
+     "output_ports": [
+      "FBIKSolver",
+      "Bool"
+     ]
+    },
+    {
+     "anchor": "apex/array::Scale<Vector3>",
+     "input_ports": [
+      "Vector3Array",
+      "Vector3"
+     ],
+     "match": true,
+     "output_ports": [
+      "Vector3Array"
+     ]
+    },
+    {
+     "anchor": "apex/cop::attribextract",
+     "input_ports": [
+      "Geometry",
+      "StringArray",
+      "String",
+      "IntArray",
+      "Dict",
+      "IntArray",
+      "IntArray",
+      "IntArray",
+      "IntArray",
+      "VerbContext"
+     ],
+     "match": true,
+     "output_ports": [
+      "VariadicArg<Geometry>",
+      "VariadicArg<ImageLayer>",
+      "VariadicArg<NanoVDB>",
+      "VariadicArg<DetachedAttribute>"
+     ]
+    },
+    {
+     "anchor": "apex/cop::monotorgb<2>",
+     "input_ports": [
+      "DetachedAttribute",
+      "ImageLayer",
+      "StringArray",
+      "String",
+      "IntArray",
+      "Dict",
+      "VerbContext"
+     ],
+     "match": true,
+     "output_ports": [
+      "DetachedAttribute"
+     ]
+    },
+    {
+     "anchor": "apex/dict::Get<DynamicPathArray>",
+     "input_ports": [
+      "Dict",
+      "String",
+      "DynamicPathArray"
+     ],
+     "match": true,
+     "output_ports": [
+      "DynamicPathArray",
+      "Bool"
+     ]
+    },
+    {
+     "anchor": "apex/dict::SetNested<DynamicPath>",
+     "input_ports": [
+      "Dict",
+      "StringArray",
+      "DynamicPath"
+     ],
+     "match": true,
+     "output_ports": [
+      "Dict"
+     ]
+    },
+    {
+     "anchor": "apex/geo::NumPrims",
+     "input_ports": [
+      "Geometry"
+     ],
+     "match": true,
+     "output_ports": [
+      "Int"
+     ]
+    },
+    {
+     "anchor": "apex/geo::SetAgentTransforms",
+     "input_ports": [
+      "Geometry",
+      "Int",
+      "VariadicArg<Matrix4>"
+     ],
+     "match": true,
+     "output_ports": [
+      "Geometry"
+     ]
+    },
+    {
+     "anchor": "apex/geo::SetPrimAttribValues<String>",
+     "input_ports": [
+      "Geometry",
+      "String",
+      "String",
+      "String"
+     ],
+     "match": true,
+     "output_ports": [
+      "Geometry",
+      "Bool"
+     ]
+    },
+    {
+     "anchor": "apex/geo::VertexAttribValue<String>",
+     "input_ports": [
+      "Geometry",
+      "Int",
+      "String"
+     ],
+     "match": true,
+     "output_ports": [
+      "String",
+      "Bool"
+     ]
+    },
+    {
+     "anchor": "apex/graph::Merge",
+     "input_ports": [
+      "ApexGraphHandle",
+      "ApexGraphHandle"
+     ],
+     "match": true,
+     "output_ports": [
+      "ApexGraphHandle"
+     ]
+    },
+    {
+     "anchor": "apex/skel::DeleteJoint",
+     "input_ports": [
+      "Geometry",
+      "Int",
+      "Bool"
+     ],
+     "match": true,
+     "output_ports": [
+      "Geometry"
+     ]
+    },
+    {
+     "anchor": "apex/sop::extracttransform",
+     "input_ports": [
+      "Geometry",
+      "Geometry",
+      "Int",
+      "String",
+      "Int",
+      "Int",
+      "Int",
+      "Int",
+      "String"
+     ],
+     "match": true,
+     "output_ports": [
+      "Geometry"
+     ]
+    },
+    {
+     "anchor": "apex/sop::pointgenerate",
+     "input_ports": [
+      "Geometry",
+      "String",
+      "Int",
+      "Int",
+      "Int",
+      "Float",
+      "Int",
+      "String",
+      "Float",
+      "Int",
+      "String",
+      "Int",
+      "String",
+      "Int",
+      "String",
+      "Int",
+      "String",
+      "String"
+     ],
+     "match": true,
+     "output_ports": [
+      "Geometry"
+     ]
+    },
+    {
+     "anchor": "apex/sop::vdbsmoothsdf",
+     "input_ports": [
+      "Geometry",
+      "Geometry",
+      "String",
+      "Int",
+      "String",
+      "String",
+      "Int",
+      "Int",
+      "Int",
+      "Float",
+      "Int",
+      "Int",
+      "Float",
+      "Float",
+      "String",
+      "Int",
+      "Float",
+      "Float",
+      "String"
+     ],
+     "match": true,
+     "output_ports": [
+      "Geometry"
+     ]
+    }
+   ]
+  },
+  "chop": {
+   "audited": 20,
+   "category": "Chop",
+   "domain": "chop",
+   "matched": 20,
+   "mismatched": 0,
+   "receipts": [
+    {
+     "anchor": "Chop/acoustic",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 23
+    },
+    {
+     "anchor": "Chop/blend",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 15
+    },
+    {
+     "anchor": "Chop/constraintbegin",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher4",
+      "type": "Folder"
+     },
+     "parm_count": 26
+    },
+    {
+     "anchor": "Chop/constraintobjectoffset",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher4",
+      "type": "Folder"
+     },
+     "parm_count": 29
+    },
+    {
+     "anchor": "Chop/constraintpoints",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher4",
+      "type": "Folder"
+     },
+     "parm_count": 38
+    },
+    {
+     "anchor": "Chop/count",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 24
+    },
+    {
+     "anchor": "Chop/dynamicwarp",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "dynamicwarpfolder",
+      "type": "Folder"
+     },
+     "parm_count": 36
+    },
+    {
+     "anchor": "Chop/extractlocomotion",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 25
+    },
+    {
+     "anchor": "Chop/file",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 19
+    },
+    {
+     "anchor": "Chop/gesture",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 17
+    },
+    {
+     "anchor": "Chop/inversekin",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 32
+    },
+    {
+     "anchor": "Chop/logic",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 23
+    },
+    {
+     "anchor": "Chop/mouse",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 24
+    },
+    {
+     "anchor": "Chop/objectchain",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 28
+    },
+    {
+     "anchor": "Chop/pipeout",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 17
+    },
+    {
+     "anchor": "Chop/rename",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 12
+    },
+    {
+     "anchor": "Chop/shuffle",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 12
+    },
+    {
+     "anchor": "Chop/stash",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 12
+    },
+    {
+     "anchor": "Chop/transform",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 24
+    },
+    {
+     "anchor": "Chop/voicesplit",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 14
+    }
+   ]
+  },
+  "cop": {
+   "audited": 20,
+   "category": "Cop",
+   "domain": "cop",
+   "matched": 20,
+   "mismatched": 0,
+   "receipts": [
+    {
+     "anchor": "Cop/adjacency_attribsample",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "auto"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 4
+    },
+    {
+     "anchor": "Cop/blocktogeo",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       ""
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "blockpath",
+      "type": "String"
+     },
+     "parm_count": 2
+    },
+    {
+     "anchor": "Cop/cameraproperties",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": true,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "setprojection",
+      "type": "Toggle"
+     },
+     "parm_count": 21
+    },
+    {
+     "anchor": "Cop/configurestamps",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "seed",
+      "type": "Int"
+     },
+     "parm_count": 60
+    },
+    {
+     "anchor": "Cop/curlnoise3d",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "auto"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 14
+    },
+    {
+     "anchor": "Cop/eikonal",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       1.0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "speed",
+      "type": "Float"
+     },
+     "parm_count": 3
+    },
+    {
+     "anchor": "Cop/function",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "auto"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 12
+    },
+    {
+     "anchor": "Cop/grunge_sheets",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "folder1",
+      "type": "Folder"
+     },
+     "parm_count": 31
+    },
+    {
+     "anchor": "Cop/histogram",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "auto"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 10
+    },
+    {
+     "anchor": "Cop/latticedeform",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "auto"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 11
+    },
+    {
+     "anchor": "Cop/maskfromcurves",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "folder1",
+      "type": "Folder"
+     },
+     "parm_count": 12
+    },
+    {
+     "anchor": "Cop/objnet",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "stdswitcher",
+      "type": "Folder"
+     },
+     "parm_count": 38
+    },
+    {
+     "anchor": "Cop/prefixsum",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "auto"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 4
+    },
+    {
+     "anchor": "Cop/pyro_collisionfromshape",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "note": "no value parm to anchor"
+     },
+     "parm_count": 0
+    },
+    {
+     "anchor": "Cop/pyro_uniformforce",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "auto"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 37
+    },
+    {
+     "anchor": "Cop/remap",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "auto"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 15
+    },
+    {
+     "anchor": "Cop/shapescatter",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "default"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 86
+    },
+    {
+     "anchor": "Cop/streakblur",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       1.0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "mask",
+      "type": "Float"
+     },
+     "parm_count": 13
+    },
+    {
+     "anchor": "Cop/tonemap",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "auto"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 20
+    },
+    {
+     "anchor": "Cop/vdbleafpoints",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": true,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "setpos",
+      "type": "Toggle"
+     },
+     "parm_count": 6
+    }
+   ]
+  },
+  "dop": {
+   "audited": 20,
+   "category": "Dop",
+   "domain": "dop",
+   "matched": 20,
+   "mismatched": 0,
+   "receipts": [
+    {
+     "anchor": "Dop/activevalue",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 3,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "parmop_active",
+      "type": "Menu"
+     },
+     "parm_count": 9
+    },
+    {
+     "anchor": "Dop/anchorobjsurfacepos",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 3,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "parmop_object",
+      "type": "Menu"
+     },
+     "parm_count": 61
+    },
+    {
+     "anchor": "Dop/constraintnetwork",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "folder0",
+      "type": "Folder"
+     },
+     "parm_count": 15
+    },
+    {
+     "anchor": "Dop/delete",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       1
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "activation",
+      "type": "Int"
+     },
+     "parm_count": 6
+    },
+    {
+     "anchor": "Dop/file",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       1
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "activation",
+      "type": "Int"
+     },
+     "parm_count": 9
+    },
+    {
+     "anchor": "Dop/gasbuildcollisionmaskfrompieces",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "collision"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "collision",
+      "type": "String"
+     },
+     "parm_count": 20
+    },
+    {
+     "anchor": "Dop/gaseachdatasolver",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 3,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "parmop_data",
+      "type": "Menu"
+     },
+     "parm_count": 14
+    },
+    {
+     "anchor": "Dop/gaslimit",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 3,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "parmop_dstfield",
+      "type": "Menu"
+     },
+     "parm_count": 30
+    },
+    {
+     "anchor": "Dop/gasprojectnondivergentadaptive",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 3,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "parmop_velocity",
+      "type": "Menu"
+     },
+     "parm_count": 71
+    },
+    {
+     "anchor": "Dop/gasstrainintegrate",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 3,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "parmop_strain",
+      "type": "Menu"
+     },
+     "parm_count": 20
+    },
+    {
+     "anchor": "Dop/geometrywrangle",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "folder1",
+      "type": "Folder"
+     },
+     "parm_count": 45
+    },
+    {
+     "anchor": "Dop/motion",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 3,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "parmop_t",
+      "type": "Menu"
+     },
+     "parm_count": 17
+    },
+    {
+     "anchor": "Dop/popadvectbyvolumes",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       1
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "activate",
+      "type": "Int"
+     },
+     "parm_count": 31
+    },
+    {
+     "anchor": "Dop/popkill",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       1.0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "activate",
+      "type": "Float"
+     },
+     "parm_count": 26
+    },
+    {
+     "anchor": "Dop/popsteerobstacle",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       1.0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "activate",
+      "type": "Float"
+     },
+     "parm_count": 26
+    },
+    {
+     "anchor": "Dop/rbdcarfollowpath",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       1
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "enable",
+      "type": "Int"
+     },
+     "parm_count": 14
+    },
+    {
+     "anchor": "Dop/rop_dop",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "trange",
+      "type": "Menu"
+     },
+     "parm_count": 25
+    },
+    {
+     "anchor": "Dop/softbodycollisionproperties",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 3,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "parmop_collideexternal",
+      "type": "Menu"
+     },
+     "parm_count": 23
+    },
+    {
+     "anchor": "Dop/staticvisualization",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": false,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "thicknessenable",
+      "type": "Toggle"
+     },
+     "parm_count": 11
+    },
+    {
+     "anchor": "Dop/volumeinstancesource",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": true,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "createmissing",
+      "type": "Toggle"
+     },
+     "parm_count": 17
+    }
+   ]
+  },
+  "vop": {
+   "audited": 20,
+   "category": "Vop",
+   "domain": "vop",
+   "matched": 20,
+   "mismatched": 0,
+   "receipts": [
+    {
+     "anchor": "Vop/CVEX_shader",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "note": "no value parm to anchor"
+     },
+     "parm_count": 0,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/boxtile",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       1.0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "swidth",
+      "type": "Float"
+     },
+     "parm_count": 6,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/crackle::2.0",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       100.0,
+       100.0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "freq",
+      "type": "Float"
+     },
+     "parm_count": 4,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/fire",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       6.0,
+       1.0,
+       1.0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "freq",
+      "type": "Float"
+     },
+     "parm_count": 11,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/hairdiff",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       1.0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "Kd",
+      "type": "Float"
+     },
+     "parm_count": 2,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/intersect3d",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "box"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "filter",
+      "type": "String"
+     },
+     "parm_count": 7,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/kma_fur::2.0",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "Ncortex",
+      "type": "Float"
+     },
+     "parm_count": 44,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/lerpbsdf",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       0.5
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "bias",
+      "type": "Float"
+     },
+     "parm_count": 1,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/mtlxUsdTransform2d",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       0.0,
+       0.0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "in",
+      "type": "Float"
+     },
+     "parm_count": 4,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/mtlxfacingratio",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "viewdirection",
+      "type": "Float"
+     },
+     "parm_count": 4,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/mtlxnormalize",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "default"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 4,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/mtlxswizzle",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "default"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 32,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/osd_lookuppatch",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "default"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "signature",
+      "type": "String"
+     },
+     "parm_count": 7,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/principledshadercore",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "surface",
+      "type": "Folder"
+     },
+     "parm_count": 42,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/pxrgobolightfilter",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": 0,
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "map_group",
+      "type": "Folder"
+     },
+     "parm_count": 18,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/pxrtexture",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       ""
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "filename",
+      "type": "String"
+     },
+     "parm_count": 11,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/regex_findall",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       "unrestricted"
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "regex_findalltype",
+      "type": "String"
+     },
+     "parm_count": 5,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/setagenttransforms",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       0
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "handle",
+      "type": "Int"
+     },
+     "parm_count": 3,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/suboutput",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "default": [
+       ""
+      ],
+      "diverged": [],
+      "live_matches_catalog": true,
+      "name": "name1",
+      "type": "String"
+     },
+     "parm_count": 128,
+     "wire_signature_match": true
+    },
+    {
+     "anchor": "Vop/uvcoords",
+     "base_match": true,
+     "match": true,
+     "parm_anchor": {
+      "note": "no value parm to anchor"
+     },
+     "parm_count": 0,
+     "wire_signature_match": true
+    }
+   ]
+  }
+ },
+ "generated": {
+  "by": "scripts/audit_node_catalog.py",
+  "note": "deterministic sample; live re-read vs committed catalog"
+ },
+ "sample_n": 20,
+ "schema": "node_catalog_audit/v1",
+ "total_mismatches": 0,
+ "verdict": "pass"
+}

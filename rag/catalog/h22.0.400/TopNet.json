@@ -1,0 +1,433 @@
+{
+ "blake2b": "9866ad92d10c602de36d7a01302709c5",
+ "build": "22.0.400",
+ "category": "TopNet",
+ "count": 2,
+ "docs_join": {
+  "cache_root": "C:/Users/User/OneDrive/Documents/houdini22.0/config/Help/cache",
+  "context": null,
+  "joined": 0,
+  "note": "visited-pages-only; absent docs stay absent, never synthesized; each doc records its join tier ('match'); a namespaced node never borrows a bare sibling's page. Binary blake2b above is unchanged by this join.",
+  "tiers": {
+   "exact": 0,
+   "namespace_relaxed": 0,
+   "version_relaxed": 0
+  },
+  "total": 2
+ },
+ "generated": {
+  "by": "scripts/build_node_catalog.py (phase A)",
+  "note": "deterministic: sorted keys, no wall-clock stamp"
+ },
+ "probe_errors": [],
+ "schema": "node_catalog_live/v1",
+ "types": {
+  "remotegraph": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": true,
+   "label": "Remote Graph",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "Int",
+     "default": 0,
+     "label": "Client Type",
+     "name": "clienttype",
+     "num_components": 1,
+     "type": "Menu"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      ""
+     ],
+     "label": "Host URL",
+     "name": "host",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "label": "Connect",
+     "name": "connectbutton",
+     "num_components": 1,
+     "type": "Button"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "label": "Remote Graph",
+     "name": "remotegraph",
+     "num_components": 1,
+     "type": "Menu"
+    }
+   ]
+  },
+  "topnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "TOP Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "Int",
+     "default": 0,
+     "label": "Cook Controls",
+     "name": "cookcontrolssection",
+     "num_components": 1,
+     "type": "Folder"
+    },
+    {
+     "data_type": "String",
+     "folder": [
+      "Cook Controls"
+     ],
+     "label": "Generate Static Work Items",
+     "name": "generatestatic",
+     "num_components": 1,
+     "type": "Button"
+    },
+    {
+     "data_type": "String",
+     "folder": [
+      "Cook Controls"
+     ],
+     "label": "Cook Output Node",
+     "name": "cookbutton",
+     "num_components": 1,
+     "type": "Button"
+    },
+    {
+     "data_type": "String",
+     "folder": [
+      "Cook Controls"
+     ],
+     "label": "Dirty All",
+     "name": "dirtybutton",
+     "num_components": 1,
+     "type": "Button"
+    },
+    {
+     "data_type": "String",
+     "folder": [
+      "Cook Controls"
+     ],
+     "label": "Cancel Cook",
+     "name": "cancelbutton",
+     "num_components": 1,
+     "type": "Button"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "label": "Attributes and Checkpointing",
+     "name": "taskgraphsection",
+     "num_components": 1,
+     "type": "Folder"
+    },
+    {
+     "data_type": "Int",
+     "default": 1,
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Checkpoint Format",
+     "menu_labels": [
+      "Python (Deprecated)",
+      "JSON"
+     ],
+     "menu_tokens": [
+      "0",
+      "1"
+     ],
+     "name": "checkpointformat",
+     "num_components": 1,
+     "type": "Menu"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      "$HIP/$HIPNAME.taskgraph.$F.py"
+     ],
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Checkpoint File",
+     "name": "taskgraphfile",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Save Checkpoint",
+     "name": "savetaskgraph",
+     "num_components": 1,
+     "type": "Button"
+    },
+    {
+     "data_type": "String",
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Load Checkpoint",
+     "name": "loadtaskgraph",
+     "num_components": 1,
+     "type": "Button"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Auto-Save",
+     "name": "taskgraphautosave",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      10
+     ],
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Checkpoint Rate",
+     "max": 100,
+     "max_strict": false,
+     "min": 1,
+     "min_strict": true,
+     "name": "taskgraphsaverate",
+     "num_components": 1,
+     "type": "Int"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      "$HIP/$HIPNAME.checkpoint.json"
+     ],
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Checkpoint File",
+     "name": "checkpointfile",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Load Checkpoint",
+     "name": "loadcheckpoint",
+     "num_components": 1,
+     "type": "Button"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Load Checkpoint",
+     "menu_labels": [
+      "Never",
+      "On Scene Load"
+     ],
+     "menu_tokens": [
+      "0",
+      "1"
+     ],
+     "name": "checkpointload",
+     "num_components": 1,
+     "type": "Menu"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Checkpoint Enabled",
+     "name": "checkpointenabled",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      10
+     ],
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Checkpoint Rate",
+     "max": 100,
+     "max_strict": false,
+     "min": 1,
+     "min_strict": true,
+     "name": "checkpointrate",
+     "num_components": 1,
+     "type": "Int"
+    },
+    {
+     "data_type": "String",
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "",
+     "name": "sep2",
+     "num_components": 0,
+     "type": "Separator"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "folder": [
+      "Attributes and Checkpointing"
+     ],
+     "label": "Save Graph Attributes to .hip",
+     "name": "savegraphattribs",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "label": "Work Items and Scheduling",
+     "name": "schedulersection",
+     "num_components": 1,
+     "type": "Folder"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      ""
+     ],
+     "folder": [
+      "Work Items and Scheduling"
+     ],
+     "label": "Default Scheduler",
+     "name": "topscheduler",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "folder": [
+      "Work Items and Scheduling"
+     ],
+     "label": "Use Default Label",
+     "name": "usedefaultlabel",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      "$OS.`@pdg_index`"
+     ],
+     "folder": [
+      "Work Items and Scheduling"
+     ],
+     "label": "Default Item Label",
+     "name": "defaultlabel",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "folder": [
+      "Work Items and Scheduling"
+     ],
+     "label": "",
+     "name": "sep1",
+     "num_components": 0,
+     "type": "Separator"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "folder": [
+      "Work Items and Scheduling"
+     ],
+     "label": "On Node Recook",
+     "menu_labels": [
+      "Update Work Items and Invalidate Caches",
+      "Update Work Items Only",
+      "Ignore Changes"
+     ],
+     "menu_tokens": [
+      "0",
+      "1",
+      "2"
+     ],
+     "name": "regenerationtype",
+     "num_components": 1,
+     "type": "Menu"
+    },
+    {
+     "data_type": "Int",
+     "default": 0,
+     "folder": [
+      "Work Items and Scheduling"
+     ],
+     "label": "Evaluation Time",
+     "menu_labels": [
+      "Network Cook Time",
+      "Global Start Time",
+      "Custom"
+     ],
+     "menu_tokens": [
+      "0",
+      "1",
+      "2"
+     ],
+     "name": "evaluationtime",
+     "num_components": 1,
+     "type": "Menu"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      0
+     ],
+     "folder": [
+      "Work Items and Scheduling"
+     ],
+     "label": "Custom Time",
+     "max": 10,
+     "max_strict": false,
+     "min": 0,
+     "min_strict": false,
+     "name": "customtime",
+     "num_components": 1,
+     "type": "Int"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "folder": [
+      "Work Items and Scheduling"
+     ],
+     "label": "Save Scene File if Required",
+     "name": "savescenefile",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  }
+ }
+}

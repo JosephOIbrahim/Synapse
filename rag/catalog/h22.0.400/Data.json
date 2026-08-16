@@ -1,0 +1,4526 @@
+{
+ "blake2b": "41bbd82a2d1555ebbe966c9db6315859",
+ "build": "22.0.400",
+ "category": "Data",
+ "count": 450,
+ "docs_join": {
+  "cache_root": "C:/Users/User/OneDrive/Documents/houdini22.0/config/Help/cache",
+  "context": null,
+  "joined": 0,
+  "note": "visited-pages-only; absent docs stay absent, never synthesized; each doc records its join tier ('match'); a namespaced node never borrows a bare sibling's page. Binary blake2b above is unchanged by this join.",
+  "tiers": {
+   "exact": 0,
+   "namespace_relaxed": 0,
+   "version_relaxed": 0
+  },
+  "total": 450
+ },
+ "generated": {
+  "by": "scripts/build_node_catalog.py (phase A)",
+  "note": "deterministic: sorted keys, no wall-clock stamp"
+ },
+ "probe_errors": [],
+ "schema": "node_catalog_live/v1",
+ "types": {
+  "apex_retargettorig": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "APEX Retarget to Rig",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/file::sidefx::recipe::test_image_droplets": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Droplets",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/file::sidefx::recipe::test_image_hdri_lenong": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: HDRI Lenong",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/file::sidefx::recipe::test_image_latte_fern": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Latte Fern",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/file::sidefx::recipe::test_image_magnolias": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Magnolias",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/file::sidefx::recipe::test_image_railroad_crossing": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Railroad Crossing",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/file::sidefx::recipe::test_image_stump": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Stump",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/file::sidefx::recipe::test_image_tree_winter": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Winter Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/file::sidefx::recipe::test_video_nevada_tule_fossil_grounds": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Video: Nevada Tule Fossil Grounds",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/filterfrequencies::highpass": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "High Pass Filter",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/filterfrequencies::horsmear": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Horizontal Smear",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/filterfrequencies::lowpass": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Low Pass Filter",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "cop/filterfrequencies::vertsmear": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Vertical Smear",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::biome_configure::1.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Labs Biome Configure",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::biome_configure_multibiomes::1.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Labs Biome Configure Multibiomes",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::ml_cv_configure::1.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Labs ML CV Configure",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_define::1.0::boreal_forest": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Forest",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_define::1.0::subtropical_desert": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Subtropical Desert",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_define::1.0::temperate_forest": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Forest",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_define::1.0::temperate_grassland_desert": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Grassland Desert",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_define::1.0::temperate_rain_forest": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Rain Forest",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_define::1.0::tropical_forest_savanna": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tropical Forest Savanna",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_define::1.0::tropical_rain_forest": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tropical Rain Forest",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_define::1.0::tundra": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_define::1.0::woodland_shrubland": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Woodland Shrubland",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::boreal_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::boreal_shrub_1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Shrub 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::boreal_shrub_2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Shrub 2",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::boreal_snow_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Snow Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::desert_cactus": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Cactus",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::desert_prickly_pear": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Prickly Pear",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::desert_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::grassland_desert_shrub_1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Grassland Desert Shrub 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::grassland_desert_shrub_2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Grassland Desert Shrub 2",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::savanna_bush": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Savanna Bush",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::savanna_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Savanna Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::temperate_deciduous_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Deciduous Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::temperate_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.0::temperate_shrub": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Shrub",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::boreal_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::boreal_shrub_1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Shrub 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::boreal_shrub_2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Shrub 2",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::boreal_snow_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Snow Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::desert_cactus": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Cactus",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::desert_prickly_pear": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Prickly Pear",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::desert_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::grassland_desert_shrub_1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Grassland Desert Shrub 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::grassland_desert_shrub_2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Grassland Desert Shrub 2",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::savanna_bush": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Savanna Bush",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::savanna_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Savanna Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::temperate_deciduous_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Deciduous Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::temperate_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.1::labs::temperate_shrub": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Shrub",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::boreal_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::boreal_shrub_1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Shrub 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::boreal_shrub_2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Shrub 2",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::boreal_snow_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Snow Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::desert_cactus": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Cactus",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::desert_prickly_pear": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Prickly Pear",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::desert_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::grassland_desert_shrub_1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Grassland Desert Shrub 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::grassland_desert_shrub_2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Grassland Desert Shrub 2",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::savanna_bush": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Savanna Bush",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::savanna_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Savanna Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::temperate_deciduous_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Deciduous Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::temperate_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.2::labs::temperate_shrub": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Shrub",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::boreal_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::boreal_shrub_1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Shrub 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::boreal_shrub_2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Shrub 2",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::boreal_snow_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Boreal Snow Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::desert_cactus": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Cactus",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::desert_prickly_pear": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Prickly Pear",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::desert_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::grassland_desert_shrub_1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Grassland Desert Shrub 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::grassland_desert_shrub_2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Grassland Desert Shrub 2",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::savanna_bush": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Savanna Bush",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::savanna_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Savanna Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::shrubland_creosote_bush": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Shrubland Creosote Bush",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::shrubland_manzanita_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Shrubland Manzanita Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::shrubland_scrub_oak": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Shrubland Scrub Oak",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::temperate_deciduous_tree": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Deciduous Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::temperate_pine": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Pine",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::temperate_rainforest_bigleaf_maple": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Rainforest Bigleaf Maple",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::temperate_rainforest_sitka_spruce": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Rainforest Sitka Spruce",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::temperate_rainforest_sword_fern": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Rainforest Sword Fern",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::temperate_shrub": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Temperate Shrub",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::tropical_rainforest_bromeliad": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tropical Rainforest Bromeliad",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::tropical_rainforest_kapok": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tropical Rainforest Kapok",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::tropical_rainforest_monstera": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tropical Rainforest Monstera",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::tropical_rainforest_palm": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tropical Rainforest Palm",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::tropical_rainforest_philodendron": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tropical Rainforest Philodendron",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "labs::sop/biome_plant_define::1.3::labs::tundra_shrub_1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra Shrub 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "shotrender": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Shot Render (Beta)",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::apex::autorigcomponentfusegraph": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "APEX AutoRig Fuse Graph",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::apex::configureragdoll": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "APEX Configure Ragdoll",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::apex::examplescene": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "APEX Example Scene",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::apex::fbxcharacterimport": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "APEX FBX Character Import",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::apex::fbxsimplebiped": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "APEX FBX Biped",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::apex::sceneevaluate": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "APEX Scene Evaluate",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::apex::setdrivenkey": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "APEX SetDrivenKey",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::apex::simplebiped": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "APEX Biped",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::color_palette::cool": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Cool",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::color_palette::neutral": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Neutral",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::color_palette::purple": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Purple",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::color_palette::warm": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Warm",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/backgroundplate::samplecompnetwork": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sample Compositing Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/backgroundplate::samplecompnetwork_oldcops": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sample Compositing Network (Old COPs)",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::blur": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Blur",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::box_blur": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Box Blur",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::dilate": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Dilate",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::emboss": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Emboss",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::erode": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Erode",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::feather_inwards": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Feather Inwards",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::feather_outwards": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Feather Outwards",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::outline": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Outline",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::sharpen": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sharpen",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::sobel_bottom": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sobel Bottom",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::sobel_left": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sobel Left",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::sobel_right": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sobel Right",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/convolve3::sobel_top": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sobel Top",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::knit_alternating": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Knit - Alternating",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::knit_chains": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Knit - Chains",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::knit_complex": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Knit - Complex",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::knit_crosses": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Knit - Crosses",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::knit_helixes": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Knit - Helixes",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::knit_loose": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Knit - Loose",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::knit_stitch": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Knit - Stitch",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::knit_stretched": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Knit - Stretched",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::knit_wavy": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Knit - Wavy",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::knit_weave": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Knit - Weave",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::purl_basic": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Purl - Basic",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::purl_basket": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Purl - Basket",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::purl_braids": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Purl - Braids",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::purl_carpet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Purl - Carpet",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::purl_ropes": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Purl - Ropes",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::purl_tight": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Purl - Tight",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/knit::purl_twisted": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Purl - Twisted",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/neural_cellularautomatacore::model_denim": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Denim",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/opencl::writevdbfloat": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Write VDB Float",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/opencl::writevdbvector": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Write VDB Vector",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::alpha_broken_dash_strokes": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Broken Dash Strokes",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::alpha_dry_brush_streak": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Dry Brush Streak",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::alpha_fine_dust_specks": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Fine Dust Specks",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::alpha_inkblot_drip": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Inkblot Drip",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::alpha_radial_sunburst_splat": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Radial Sunburst Splat",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::alpha_soft_cloud": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Soft Cloud",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::alpha_splatter_spray": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Splatter Spray",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::alpha_splattered_burst": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Splattered Burst",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::alpha_torn_paint_fragments": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Torn Paint Fragments",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::alpha_vertical_scratch_streaks": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Vertical Scratch Streaks",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::circle_alpha_hard": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Circle Alpha (Hard)",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::circle_alpha_medium": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Circle Alpha (Medium)",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::circle_alpha_soft": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Circle Alpha (Soft)",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::square_alpha_hard": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Square Alpha (Hard)",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::square_alpha_medium": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Square Alpha (Medium)",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/paint::square_alpha_soft": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Square Alpha (Soft)",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/pyro_blockend::pathtrace2d": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Path Trace 2D",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/rasterizecurves::addalpha": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Add Alpha",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/rasterizecurves::adddepthfromeye": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Add Depth from Eye",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/rasterizecurves::addnormal": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Add Normal",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/rasterizecurves::addposition": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Add Position",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/rasterizecurves::adduv": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Add UV",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/sdfshape::sdftomono": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "SDF to Mono",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/sdfshape::sdftorgb": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "SDF to RGB",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/sdfshape::sdftorgba": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "SDF to RGBA",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/spacevisualization::crop": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Crop (WIP)",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/tilepattern::fishscale": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Fishscale",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop/tilepattern::octagondot": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Octagon-Dot",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::bakesetup": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Bake Setup",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::block": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Block",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::cableofbutterflies": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Cable of Butterflies",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::crossslopedir": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Cross Slope Direction",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::flowblock": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Flow Block",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::ml_trainneuralcellularautomata": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "ML Train Neural Cellular Automata",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::neural_cellularautomata": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Neural Cellular Automata",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::neural_cellularautomata_block": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Neural Cellular Automata Block",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::ocean": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Ocean",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::rasterizeuvs": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rasterize UVs",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::reactiondiffusionblock": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Reaction-Diffusion Block",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::rippleblock": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Ripple Block",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::sdfrebuild": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "SDF Rebuild",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::slapcompblock": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Slap Comp Block",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::cop::stampsprites": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Stamp Sprites",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::coppyro::billowysmoke": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Billowy Smoke",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::coppyro::candleflame": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Candle Flame",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::coppyro::cigarettesmoke": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Cigarette Smoke",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::coppyro::dryice": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Dry Ice",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::coppyro::fire": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Fire",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::coppyro::fireball": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Fireball",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::coppyro::largesmokeplume": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Large Smoke Plume",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::coppyro::pyro_block": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Block",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::copterrain::cobblestone": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Terrain Cobblestone",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::copterrain::sandyrock": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Terrain Sandy Rock",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::groom::capybarasimdeform": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Capybara Sim and Deform",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop/configureapexrig::createsimulationproxy": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Create Simulation Proxy",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop/karmarendersettings::optimizationaovs": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Optimization AOVs",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop/materiallibrary::custommaterialcatalog": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Custom Material Catalog",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop/materiallibrary::reusablenodegraphs": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Reusable NodeGraphs",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop/sublayer::cornellbox": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Cornell Box",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop/sublayer::materiallookdev": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Material Lookdev",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop/sublayer::noisesampler": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Noise Sampler",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop/sublayer::standardshaderball": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Standard Shader Ball",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop/sublayer::veachmisplanks": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Veach Mis Planks",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop::sopimportapexscene": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "SOP Import APEX Character (Beta)",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop::testscene_cornellbox": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Scene: Cornell Box",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop::testscene_materiallookdev": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Scene: Material Lookdev",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop::testscene_noisesampler": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Scene: Noise Sampler",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop::testscene_standardshaderball": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Scene: Standard Shader Ball",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::lop::testscene_veachmisplanks": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Scene: Veach Mis Planks",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ml::traindeformer": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "ML Train Deformer",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ml::traingsplatsfromkarma": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "ML Train GSplats from Karma",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ml::trainvolumeupres": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "ML Train Volume Upres",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::mpm::buildingcollapse": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "MPM Building Collapse",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::mpm::configure": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "MPM Configure",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::mpm::jelloparty": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "MPM Jello Party",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::mpm::landslide": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "MPM Landslide",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::mpm::metaltearing": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "MPM Metal Tearing",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::mpm::pancakes": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "MPM Pancakes",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::mpm::rollingsnowball": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "MPM Rolling Snowball",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::mpm::sandinstances": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "MPM Sand Instances",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::mpm::softbody": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "MPM Softbody",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::mpm::spinning_tire": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "MPM Spinning Tire",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::mpm::waterglass": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "MPM Water Glass",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::muscles::otismuscleandtissue": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Otis Muscle and Tissue Simulation",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::muscles::testgeometry_otto_muscleandtissuesim": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Geometry: Otto Muscle and Tissue Simulation",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::muscles::testgeometry_otto_muscletransfer": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Geometry: Otto Muscle Transfer",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::openinmplay": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Open in Mplay",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::periodic_cycle": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Periodic Cycle",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pop::fireportal": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "POP Fire Portal",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pop::fireworks": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Fireworks",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pop::fireworks_brocade": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Firework Brocade",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pop::fireworks_chrysanthemum": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Firework Chrysanthemum",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pop::fireworks_peony": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Firework Peony",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pop::magictraila": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Magic Trail A",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pop::magictrailb": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Magic Trail B",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pop::magictrailc": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Magic Trail c",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::aerialbarrage": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Aerial Barrage",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::aerialexplosion": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Aerial Explosion",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::aerialgroundbarrage": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Aerial Ground Barrage",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::billowysmoke": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Billowy Smoke",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::bonfire": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Bonfire",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::bullethits": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Bullet Hits",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::candleflame": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Candle Flame",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::debrisdust": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Debris Dust",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::dryice": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Dry Ice",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::dustfireball": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Dust Fireball",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::fireball": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Fireball",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::fireballwithtrails": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Fireball with Trails",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::gpugroundexplosion": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro GPU Ground Explosion",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::gputorch": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro GPU Torch",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::groundexplosion": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Ground Explosion",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::groundexplosiona": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Ground Explosion A",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::groundexplosionb": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Ground Explosion B",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::groundshockwave": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Ground Shockwave",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::muzzleflash": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Muzzle Flash",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::rendersetup": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Render Setup",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::shockwavefireball": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Shockwave Fireball",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::smokelessflame": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Smokeless Flame",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::spreadingfire": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Spreading Fire",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::staggeredgroundshockwaves": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Staggered Ground Shockwaves",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::stylizedfire": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Stylized Fire",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::synchronizedgroundshockwaves": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Synchronized Ground Shockwaves",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::thrusterexhaust": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Thruster Exhaust",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::wispysmokea": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Wispy Smoke A",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::pyro::wispysmokeb": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Pyro Wispy Smoke B",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_float::flat": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Flat",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_float::hill": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Hill",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_float::linear": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Linear",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_float::round": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Round",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_float::sharp": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sharp",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_float::smooth": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Smooth",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_float::steps": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Steps",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_float::valley": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Valley",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::blackbody": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Blackbody",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::blacktoorange": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Black to Orange",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::cividis": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Cividis",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::grayscale": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Grayscale",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::inferno": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Inferno",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::infrared": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Infra-Red",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::magma": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Magma",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::plasma": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Plasma",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::sand": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sand",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::twilight": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Twilight",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::twilightshifted": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Twilight Shifted",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::twotone": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Two-Tone",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::viridis": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Viridis",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::whitetored": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "White to Red",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_rgb::whitewater": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Whitewater",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 001",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert10": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 010",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert11": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 011",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert12": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 012",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert13": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 013",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 002",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert3": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 003",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert4": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 004",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert5": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 005",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert6": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 006",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert7": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 007",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert8": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 008",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::desert9": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Desert 009",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::elevation1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Elevation 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::elevation2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Elevation 2",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::elevation3": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Elevation 3",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::elevation4": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Elevation 4",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 001",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest10": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 010",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest11": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 011",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest12": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 012",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest13": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 013",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 002",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest3": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 003",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest4": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 004",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest5": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 005",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest6": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 006",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest7": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 007",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest8": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 008",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::forest9": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Forest 009",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 001",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain10": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 010",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain11": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 011",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain12": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 012",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain13": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 013",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 002",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain3": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 003",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain4": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 004",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain5": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 005",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain6": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 006",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain7": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 007",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain8": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 008",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::mountain9": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mountain 009",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 001",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky10": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 010",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky11": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 011",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky12": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 012",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky13": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 013",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 002",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky3": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 003",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky4": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 004",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky5": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 005",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky6": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 006",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky7": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 007",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky8": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 008",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::rocky9": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rocky 009",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 001",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra10": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 010",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra11": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 011",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra12": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 012",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra13": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 013",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 002",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra3": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 003",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra4": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 004",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra5": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 005",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra6": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 006",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra7": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 007",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra8": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 008",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::ramp_terrain::tundra9": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Tundra 009",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::random_cycle": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Randomized Cycle",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::randomseed": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Random Seed",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::recipebuilder::availablepostscriptkeys": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Available Kwargs Keys",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::recipebuilder::availableprescriptkeys": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Available Kwargs Keys",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::recipebuilder::avoidduplicateinstances": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Avoid Duplicate Instances",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::recipebuilder::disableavoidoverlap": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Disable Overlap Avoidance",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::recipebuilder::disableclicktoplace": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Disable Click to Place",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::recipebuilder::disabledroponwire": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Disable Drop on Wire",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::recipebuilder::getcreateditem": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Get Created Item",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::recipebuilder::hierarchicalrecipes": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Hierarchical Recipes",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::recipebuilder::invokelocations": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Invoke Locations for Tool Recipe ",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::recipebuilder::mergedecorations": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Merge Decorations",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::recipebuilder::randomseed": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Random Seed",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/agentcollisionlayer::2.0::mocapbiped1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mocap Biped 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/agentcollisionlayer::2.0::mocapbiped2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mocap Biped 2",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/agentcollisionlayer::2.0::mocapbiped3": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mocap Biped 3",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/agentconfigurejoints::2.0::mocapbiped1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mocap Biped 1",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/agentconfigurejoints::2.0::mocapbiped2": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mocap Biped 2",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/agentconfigurejoints::2.0::mocapbiped3": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mocap Biped 3",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/attribwrangle::createlinebetweenpoints": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Create Line Between Points",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/attribwrangle::removepointonlines": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Remove Fist/Last Points on Lines",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/box::sizefrominput": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Size From Input",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/curve::2.0::resample": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Resample",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/lsystem::branch": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Branch",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/lsystem::crack": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Crack",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/mpmsource::material_concrete": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Concrete",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/mpmsource::material_honey": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Honey",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/mpmsource::material_jello": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Jello",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/mpmsource::material_metal": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Metal",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/mpmsource::material_mud": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mud",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/mpmsource::material_rubber": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Rubber",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/mpmsource::material_sand": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sand",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/mpmsource::material_snow": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Snow",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/mpmsource::material_soil": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Soil",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/mpmsource::material_water": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Water",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/neuralterraingenerate::metamorphicsetup": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Metamorphic Setup",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/neuralterraingenerate::modeltrainingsetup": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Model Training Setup",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrobakevolume::blackbodyflame": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Blackbody Flame",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrobakevolume::breakmaterialreferences": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Brake Material References",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrobakevolume::createkarmapyromaterial": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Create Karma Pyro Material",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrobakevolume::createrenderstage": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Create Render Stage",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrobakevolume::edgescattering": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Edge Scattering",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyroburstsource:::useattribs": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Use Incoming Attributes",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyroburstsource::blastwavewithrings": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Blastwave With Rings",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyroburstsource::colorbystartframe": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Color by Start Frame",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyroburstsource::cullvelocity": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Cull Velocity",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyroburstsource::explosionsim": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Explosion Simulation",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyroburstsource::forceuniform": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Force Uniform Properties",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyroburstsource::singleinputpoint": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Single Input Point",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyroburstsource::sourcevolume": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Source Volume",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosolver::addcolorsource": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Add Color Source",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosolver::initexplosion": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Initialize Explosion",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosolver::initfire": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Initialize Fire",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosolver::initsmoke": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Initialize Smoke",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosolver::optimizeexports": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Optimize Exports",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosolver::refbound": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Reference Bound",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosolver::sdfcollision": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Setup SDF Collision",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosolver::sharpen": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sharpen",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosource::sourceburn": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Source Burn",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosource::sourcecolor": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Source Color",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosource::sourcefuel": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Source Fuel",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosource::sourcesmoke": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Source Smoke",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrosource::sourcevolume": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Source Volume",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrotrailpath::createpyrotrailsource": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Create Pyro Trail Source",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrotrailsource::cullvelocity": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Cull Velocity",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/pyrotrailsource::sourcevolume": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Source Volume",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/rbdcarrig::dynamicfollowpath": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Dynamic Follow Path",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/rbdcarrig::rbdsolver": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "RBD Solver",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop/xform::live_pivot": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Live Pivot",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop::usdcreatesubcomponent": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "USD Create Subcomponent",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop::whitewaterconfigure": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Whitewater Configure",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::sop_cameraedit::constraintogeometry": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Constrain Camera to Geometry",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::subnet::recipe_builder": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Recipe Builder",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::test_image_droplets": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Droplets",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::test_image_hdri_lenong": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: HDRI Lenong",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::test_image_latte_fern": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Latte Fern",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::test_image_magnolias": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Magnolias",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::test_image_railroad_crossing": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Railroad Crossing",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::test_image_stump": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Stump",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::test_image_tree_winter": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Image: Winter Tree",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::test_video_nevada_tule_fossil_grounds": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Test Video: Nevada Tule Fossil Grounds",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::vop/mtlximage::kma_texturecontrols": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Texture Controls",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::vop/mtlxnormalmap::karma_mikkt_normal_map": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma MikkT Normal Map",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::vop::houdini_viewportmaterialoutput": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Houdini Viewport Material Output",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::vop::kma_bakedcloudmaterial": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Baked Cloud Material",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::vop::kma_cloudmaterial": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Cloud Material",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::vop::kma_pyroexplosionmaterial": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Pyro Explosion Material",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::vop::kma_pyrofirematerial": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Pyro Fire Material",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::vop::kma_pyromaterial": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Pyro Material",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::vop::kma_pyrosmokematerial": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Pyro Smoke Material",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::vop::kma_uniformvolumematerial": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Uniform Volume Material",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "sidefx::recipe::vop::kma_whitewatermaterial": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Whitewater Material",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0,
+   "parms": []
+  }
+ }
+}
