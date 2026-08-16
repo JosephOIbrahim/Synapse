@@ -208,14 +208,16 @@ def test_shutdown_freeze_chain_stops_and_clears():
 # attack-F followup 1 — the production half of the R310a fix, pinned
 # ---------------------------------------------------------------------------
 
-def test_panel_close_shuts_the_process_wide_chain_sourcepin():
-    """The crucible DELETED the entire closeEvent shutdown block and no test
-    failed — the production half of the zombie fix was unpinned. The panel's
-    Qt tests skip on stock CPython, so this is a SOURCE pin (the house
-    pattern: tests/test_panel_fidelity_honesty_sourcepin.py): closeEvent must
-    stop the beat timer and shut the process-wide chain down, or a closed
-    panel leaves an unbeaten chain that escalates ~30s later against a
-    still-live bridge."""
+def test_panel_close_deliberately_detaches_the_process_lifetime_beat_sourcepin():
+    """R.2 SUPERSEDES the old 'closeEvent shuts the chain down' pin.
+
+    The freeze beat is now owned by a process-lifetime source
+    (server/runtime_beat.py); its parentless timer survives panel close, so the
+    chain is NEVER left unbeaten and the R310a zombie cannot arise. closeEvent
+    must therefore perform a DELIBERATE detach (runtime_beat.detach_panel) and
+    must NOT shut the chain down — shutting it down would trade the old zombie
+    for zero freeze protection after close (the g5 lifecycle regression). Same
+    house SOURCE-pin pattern (the panel's Qt tests skip on stock CPython)."""
     from pathlib import Path
     src = (Path(__file__).resolve().parent.parent
            / "python" / "synapse" / "panel" / "synapse_panel.py"
@@ -226,8 +228,10 @@ def test_panel_close_shuts_the_process_wide_chain_sourcepin():
     import re
     m = re.search(r"\n    def \w+", src[start + 10:])
     body = src[start:start + 10 + (m.start() if m else len(src))]
-    assert "shutdown_freeze_chain" in body, (
-        "closeEvent no longer shuts the process-wide FreezeChain down — "
-        "deleting that block revives the R310a zombie: a closed panel leaves "
-        "an unbeaten chain whose escalation fires ~30s later (force_open + "
-        "emergency halt) against a still-live bridge")
+    assert "detach_panel" in body, (
+        "closeEvent no longer performs the deliberate beat-source detach — the "
+        "process-lifetime beat must be detached, not the chain shut down")
+    assert "shutdown_freeze_chain" not in body, (
+        "closeEvent shuts the process-wide chain down — R.2 removed that: the "
+        "process-lifetime beat stays alive so the chain is never left unbeaten, "
+        "and shutting it down here leaves headless ops with zero protection")

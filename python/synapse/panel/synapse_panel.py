@@ -332,7 +332,15 @@ class SynapsePanel(QtWidgets.QWidget):
         self._font_scale = self._chrome_scale      # content scale (Aa-driven)
         self.setStyleSheet(qss.stylesheet(self._chrome_scale))
 
-        self._messages = []          # Anthropic-format conversation
+        # Session survival (R.2): restore this scene's prior conversation from
+        # the process- and reopen-durable store so a reopen continues the SAME
+        # session instead of a blank one (the g5 "no chat history" fail).
+        # Best-effort; a missing/corrupt store degrades to an empty conversation.
+        try:
+            from synapse.server import session_store as _session_store
+            self._messages = _session_store.load_conversation()
+        except Exception:
+            self._messages = []          # Anthropic-format conversation
         self._stream_buf = []        # accumulates streamed tokens
         # P2: what the agent actually DID this turn, in order. The result
         # surface has always been able to render credit/flags/paths; before
@@ -432,14 +440,9 @@ class SynapsePanel(QtWidgets.QWidget):
         # Selection-change callback (V0-guarded) → instant context updates; the
         # 2s timer above remains the proven fallback.
         self._register_selection_cb()
-        # D3 — freeze-safety heartbeat. The panel runs on Houdini's main thread,
-        # so this 1s beat IS the main-thread liveness signal: it arms the
-        # process-wide Watchdog (freeze_chain), whose sustained-freeze escalation
-        # opens the live breaker + triggers the emergency halt. The panel rebuild
-        # had removed the only heartbeat source — this restores it.
-        # M3-C: the panel is the beat source, so its forensic trail must be
-        # durable even when no server was started. Idempotent; guarded so a
-        # packaging gap can never break panel construction.
+        # Freeze-safety forensic trail: keep the telemetry flush running so a
+        # sustained-freeze dump is durable even when no server was started.
+        # Idempotent; guarded so a packaging gap can never break construction.
         try:
             from synapse.core.logfile import ensure_file_logging
             from synapse.server.telemetry_dump import start_periodic_flush
@@ -447,11 +450,19 @@ class SynapsePanel(QtWidgets.QWidget):
             start_periodic_flush()
         except ImportError:
             pass
-        self._freeze_timer = QTimer(self)
-        self._freeze_timer.setInterval(1000)
-        self._freeze_timer.timeout.connect(self._beat_freeze_chain)
-        self._freeze_timer.start()
-        self._beat_freeze_chain()
+        # R.2 — the 1s main-thread freeze beat is now owned by a PROCESS-
+        # LIFETIME source (server/runtime_beat.py), NOT this widget. Its
+        # parentless QTimer survives panel close, so closing the panel no longer
+        # kills the runtime heartbeat and the Watchdog never false-freezes a
+        # healthy runtime the artist merely closed (the g5 lifecycle fail).
+        # ensure_beat_started is idempotent: reopen re-marks attachment without
+        # arming a second timer. Best-effort — a packaging gap must never break
+        # panel construction.
+        try:
+            from synapse.server.runtime_beat import ensure_beat_started
+            ensure_beat_started()
+        except Exception:
+            pass
 
     # ---------------------------------------------------------------- UI
     def _section(self):
@@ -1754,15 +1765,6 @@ class SynapsePanel(QtWidgets.QWidget):
         if wf is not None:
             wf.set_thinking(on)
 
-    def _beat_freeze_chain(self):
-        """1s main-thread liveness beat → process-wide freeze chain (D3).
-        Best-effort: a missing/old server package must never break the panel."""
-        try:
-            from synapse.server.freeze_chain import beat
-            beat()
-        except Exception:
-            pass
-
     def _update_health(self):
         """Timer-driven: poll the bridge, persist recommendations + run the
         meta-recursion analyzer, paint the infographic. Best-effort — a missing
@@ -2313,6 +2315,14 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._messages = self._worker.get_messages()
             except Exception:
                 pass
+        # Session survival (R.2): persist the completed transcript so a reopen —
+        # even one after the panel was closed while this turn finished headless —
+        # restores the full conversation. Best-effort; disk-keyed by HIP.
+        try:
+            from synapse.server import session_store as _session_store
+            _session_store.save_conversation(self._messages)
+        except Exception:
+            pass
         self._set_busy(False)
 
     def _on_error(self, msg):
@@ -2587,28 +2597,25 @@ class SynapsePanel(QtWidgets.QWidget):
                 pass
             self._sel_cb = None
 
-        # R310a: this panel IS the freeze chain's heartbeat source. The 1 s
-        # QTimer dies with the widget, but the PROCESS-WIDE chain does not —
-        # an unbeaten chain "detects" a freeze ~5 s later and escalates at
-        # ESCALATION_S (30 s): breaker.force_open() plus a full emergency halt
-        # against whatever bridge is still live, long after the artist closed
-        # the panel and moved on. Stop the beat, then stop the chain.
-        timer = getattr(self, "_freeze_timer", None)
-        if timer is not None:
-            try:
-                timer.stop()
-            except Exception:
-                pass
+        # R.2: the freeze beat is owned by a PROCESS-LIFETIME source
+        # (server/runtime_beat.py), not this widget — so panel close is a
+        # DELIBERATE DETACH, not a chain shutdown. Leaving the beat running is
+        # what keeps the Watchdog seeing a live main thread (no false freeze on
+        # the healthy runtime the artist just closed) AND keeps freeze
+        # protection armed for any operation still finishing headless. The old
+        # path shut the whole chain down here — that traded the R310a zombie for
+        # zero protection after close. detach_panel never shuts the chain down;
+        # it freshens the beat and records the detach.
         try:
-            import threading
-
-            from synapse.server.freeze_chain import shutdown_freeze_chain
-            # Off the UI thread on purpose: Watchdog.stop() joins a monitor
-            # that sleeps in 1 s ticks, and this repo does not add unmeasured
-            # main-thread blocks to a GUI path (see the freeze taxonomy).
-            threading.Thread(target=shutdown_freeze_chain,
-                             name="synapse-freeze-chain-shutdown",
-                             daemon=True).start()
+            from synapse.server.runtime_beat import detach_panel
+            detach_panel()
+        except Exception:
+            pass
+        # Session survival (R.2): persist the current conversation so a reopen
+        # restores it. Best-effort; disk-keyed by HIP.
+        try:
+            from synapse.server import session_store as _session_store
+            _session_store.save_conversation(self._messages)
         except Exception:
             pass
         super().closeEvent(event)

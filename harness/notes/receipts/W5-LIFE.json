@@ -1,0 +1,55 @@
+{
+  "leg": "W5-LIFE",
+  "title": "R.2: process-lifetime heartbeat owner + session survival",
+  "status": "green_with_findings",
+  "product_head": "8d97f993",
+  "base": "df8c9ef38e909e1423b1c0a5e7249b75dcb96bb7",
+  "commits": [
+    "af806191 — server side: runtime_beat.py (# RUNTIME_BEAT_SOURCE / ensure_beat_started) + session_store.py (disk, HIP-keyed) + 2 headless test files",
+    "8d97f993 — panel: hands the beat to the process-lifetime owner, deliberate closeEvent detach, session restore/persist wiring + 4 test reconciliations"
+  ],
+  "machine_gate": {
+    "invocation": "python harness/verify/checks.py --task R.2 --worktree . --mode A",
+    "verdict": "PASS",
+    "runtime_owns_heartbeat": {"ok": true, "detail": "freeze beat owned by a process-lifetime service (RUNTIME_BEAT_SOURCE under server/); panel no longer constructs the beat timer"},
+    "guardrail_violations": [],
+    "guardrail_unwired": ["provenance_not_bypassed (pre-existing ADAPT/warn-only, not this leg)"],
+    "suite_baseline": "passed 6464 (base 6389), failed 0 (base 0); ratchet holds",
+    "phantom_clean": "8 changed .py clean of table-proven phantom hou/pdg/pxr APIs @ 21.0.671"
+  },
+  "suite": "full suite headless (python 3.14.2): 6464 passed, 171 skipped, 0 failed",
+  "acceptance": [
+    {
+      "predicate": "runtime_owns_heartbeat GREEN, both legs: panel-parented literal gone AND a server-side process-lifetime owner present",
+      "verdict": "pass",
+      "evidence": "check: checks.py --task R.2 -> verdict PASS, checks.runtime_owns_heartbeat.ok=true. Leg1: self._freeze_timer = QTimer(self) removed from python/synapse/panel/synapse_panel.py (grep-clean; py_compile OK). Leg2: # RUNTIME_BEAT_SOURCE + def ensure_beat_started in python/synapse/server/runtime_beat.py. Direct check + CLI both GREEN; test_r_track.py gate pins (RED-literal / RED-deleted-no-owner / GREEN-with-owner) all pass."
+    },
+    {
+      "predicate": "deliberate detach: panel close produces no false freeze escalation; stalled main thread still escalates (RED/GREEN pair)",
+      "verdict": "pass",
+      "evidence": "test: tests/test_w5_life_heartbeat.py. GREEN = a continuously-beaten (healthy) runtime never escalates past the deadline (test_GREEN_deliberate_detach... + test_owner_beat_after_detach_drives_the_chain_and_stays_healthy). RED = a stalled/unbeaten main thread escalates and reaches the acting half (test_RED_stalled_main_thread_still_escalates), polling on real state (freeze_chain.py + resilience.Watchdog semantics). detach_panel never calls shutdown_freeze_chain (negative pin). Source pins: test_freeze_chain.py + test_panel_freeze_beat.py assert closeEvent uses detach_panel and NOT shutdown_freeze_chain."
+    },
+    {
+      "predicate": "session survival: reconnect-to-same-runtime with history restored - headless-simulatable parts tested, gui-required parts recorded UNKNOWN",
+      "verdict": "pass",
+      "evidence": "test (headless slice): tests/test_w5_life_session_survival.py — save/restore round-trip survives a SIMULATED sys.modules[synapse.*] flush (the exact reopen mechanism), per-scene HIP keying, fresh-scene emptiness, corrupt/non-list tolerance, atomic-write hygiene. Panel wiring present: __init__ restores from session_store.load_conversation(); _on_done + closeEvent persist via save_conversation(). UNKNOWN (gui-required, NOT simulated): live Houdini close->reopen reconnect, in-flight ClaudeWorker rebind, and visible chat-bubble repaint — Joe's live g5 re-run on the fixed build."
+    }
+  ],
+  "findings": [
+    {"id": "F1", "claim": "g5 root cause: chat history is self._messages on the SynapsePanel QWidget (dies on close), runtime is a per-send ClaudeWorker QThread parent=self (not rebound on reopen), no save/restore; COMPOUNDED by the pypanel loader flushing sys.modules[synapse.*] on every reopen (resets any module singleton). Fix: disk-backed store outside the synapse.* namespace.", "anchor": "python/synapse/panel/synapse_panel.py:335 ; houdini/python_panels/synapse_panel.pypanel:36-38"},
+    {"id": "F2", "claim": "R.3 dependency (out of scope): the pypanel sys.modules[synapse.*] flush also resets runtime_beat._timer on reopen, so a post-flush ensure_beat_started() arms a SECOND parentless QTimer while the old one keeps beating — harmless for freeze detection (more liveness, never fewer) but leaks one timer per reopen. runtime_beat stays hou-free + idempotent within a module lifetime; the disk store is flush-proof by construction. Perfect reopen idempotency of the beat needs R.3 (gate the purge).", "anchor": "harness/verify/checks.py:1878 check_hot_reload_gated"},
+    {"id": "F3", "claim": "Restoring self._messages at __init__ restores the MODEL's conversation (the next turn continues the same session), but does NOT repaint the visible chat bubbles on reopen — that is deeper GUI wiring (rebuild the transcript view from restored messages), hard to verify headless. Session STATE survives; the visible restore is a follow-up (spawn).", "anchor": "python/synapse/panel/synapse_panel.py:335"},
+    {"id": "F4", "claim": "Test contracts SUPERSEDED (not weakened) by R.2's validated design: test_freeze_chain.py closeEvent source-pin now asserts detach_panel present + shutdown_freeze_chain absent; test_r_track.py moves runtime_owns_heartbeat from the RED-on-live tuple to the GREEN-exceptions list (deps_isolated precedent); test_panel_freeze_beat.py repointed from panel-owns-_freeze_timer to the owner contract. The old 'closeEvent must shut the chain down' invariant is exactly what R.2 replaces with a live process-lifetime beat.", "anchor": "tests/test_freeze_chain.py:211 ; tests/test_r_track.py:610"},
+    {"id": "F5", "claim": "SHARED reconciliation point flagged for peers: tests/test_r_track.py::test_live_tree_gates_read_red_now lists every unresolved P0 gate as RED-on-live. Any leg that RESOLVES a gate (e.g. W5-SHELF resolving shelf_current) must move it out of the SAME tuple hunk -> serialize on this file via the bus or merge-conflict on that hunk.", "anchor": "tests/test_r_track.py:610"},
+    {"id": "F6", "claim": "Test isolation: runtime_beat._QT_AVAILABLE is set at import; under the full suite a sibling test's Qt stub is in sys.modules when runtime_beat first imports, flipping it True. The headless heartbeat test now pins _qapp_instance -> None in an autouse fixture and no longer asserts the ambient _QT_AVAILABLE flag, so it is order-independent.", "anchor": "tests/test_w5_life_heartbeat.py"}
+  ],
+  "for_ruling": [
+    {"claim": "The gui-required parts of session survival — live Houdini close/reopen reconnect, in-flight ClaudeWorker rebind, and visible transcript repaint — are UNKNOWN and require Joe's live g5 re-run on this fixed build (mission note + crucible criterion 3: never simulated into a pass). g5 halted at this leg; it re-runs on the fixed build, Joe's hands.", "anchor": "harness/state/release_receipts.json g5_lifecycle"},
+    {"claim": "R.3 interaction (F2): perfect reopen idempotency of the process-lifetime beat depends on gating the pypanel sys.modules[synapse.*] purge (R.3, a separate gate + out-of-touches file). Ruling: land R.3, or accept the benign one-extra-timer-per-reopen (never a freeze-safety regression).", "anchor": "harness/verify/checks.py:1878"}
+  ],
+  "spawn": [
+    {"id": "W5-LIFE-S1", "class": "probe", "name": "live g5 lifecycle probe: close-panel -> op-finishes-headless -> reopen", "note": "On the LIVE Houdini build, verify the three gui-only claims recorded UNKNOWN here: (a) reopen reconnects to the SAME runtime (beat still live, not a fresh chain), (b) chat history restored, (c) NO false-freeze escalation ~35s after a healthy panel close. This is the GUI verification the headless slice cannot reach.", "band": "BUILD", "spawn_classes": ["probe"]},
+    {"id": "W5-LIFE-S2", "class": "build", "name": "visible transcript repaint on reopen", "note": "Rebuild the chat bubbles from restored self._messages so the artist SEES the restored history on reopen, not just the model (F3). Class build -> lands held for Joe.", "band": "BUILD"},
+    {"id": "W5-LIFE-S3", "class": "build", "name": "in-flight ClaudeWorker rebind across reopen", "note": "Beyond disk-restore: persist/rebind a ClaudeWorker that finishes after the panel closed so reopen shows the completed result live, and abort/handoff cleanly on close. Class build -> lands held for Joe.", "band": "BUILD"}
+  ]
+}
