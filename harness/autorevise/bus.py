@@ -81,10 +81,27 @@ def open_claims(wave: str) -> list:
             claims.append(m)
     return claims
 
+def has_release(wave: str, frm: str) -> bool:
+    """True if <frm> has posted an explicit RELEASE line on <wave> - a status
+    message with a non-empty body.release. The close-side twin of a claim:
+    open_claims() above treats a matching release as CLOSING a claim; the
+    orchestrator close gate (W6-GATE, orchestrate.ps1 Get-LegState) treats the
+    PRESENCE of a release as a required completion signal, so a leg that never
+    posts one holds at 'closing' instead of reading 'done'. open_claims() had no
+    such consumer (HARDENING-SPEC S5); this is it."""
+    for m in read(wave, types="status"):
+        if m.get("frm") != frm:
+            continue
+        body = m.get("body")
+        if isinstance(body, dict) and body.get("release"):
+            return True
+    return False
+
 if __name__ == "__main__":
     # bus.py post <wave> <frm> <type> <json-body> [to]
     # bus.py read <wave> [agent] [--types a,b] [--since ISO]
     # bus.py claims <wave>
+    # bus.py released <wave> <frm>     -> exit 0 if <frm> posted a RELEASE line
     a = sys.argv[1:]
     if not a:
         print(__doc__ or "post|read|claims"); sys.exit(2)
@@ -108,6 +125,13 @@ if __name__ == "__main__":
     elif cmd == "claims" and len(a) >= 2:
         for m in open_claims(a[1]):
             print(json.dumps(m, ensure_ascii=False))
+    elif cmd == "released" and len(a) >= 3:
+        # Close-gate probe. Exit 0 if <frm> posted an explicit RELEASE line on
+        # <wave>, else 1. A shell `if` reads the EXIT CODE; stdout is a human hint
+        # only. Consumed by orchestrate.ps1's Test-CloseGate.
+        ok = has_release(a[1], a[2])
+        print("released" if ok else "no-release")
+        sys.exit(0 if ok else 1)
     else:
-        print("usage: post <wave> <frm> <type> <json-body> [to] | read <wave> [agent] | claims <wave>")
+        print("usage: post <wave> <frm> <type> <json-body> [to] | read <wave> [agent] | claims <wave> | released <wave> <frm>")
         sys.exit(2)

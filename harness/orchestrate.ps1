@@ -69,6 +69,13 @@ function Notify([string]$title, [string]$body) {
 # Dry-run bookkeeping so a dry run exercises the same state machine as a real one.
 $script:DryDispatched = @{}
 
+# W6-GATE close-gate bookkeeping. CloseGateReason holds the exact missing
+# condition for a leg currently held at 'closing'; CloseGateNotified remembers
+# the reason already surfaced so an unchanged reason is not re-notified every
+# poll (it is cleared when the leg leaves 'closing').
+$script:CloseGateReason   = @{}
+$script:CloseGateNotified = @{}
+
 function Get-ReceiptPath([object]$leg) {
     # A leg writes its receipt into ITS OWN worktree, not the main tree.
     # 2026-07-26: the orchestrator watched only $repo\harness\notes\receipts and
@@ -145,6 +152,70 @@ function Release-LegLock([string]$legId) {
     Remove-Item (Join-Path (Get-LockDir) "$legId.lock") -Force -EA SilentlyContinue
 }
 
+function Short8([string]$s) { if ($s -and $s.Length -ge 8) { $s.Substring(0, 8) } else { $s } }
+
+# W6-GATE CLOSE GATE (HARDENING-SPEC Part A, S4 + S5).
+#
+# A receipt FILE existing is not completion. Four waves of receipts asserted
+# 'done' while their commit-state did not exist (S4/CRX0), and legs posted a
+# `claim` on the bus but never the matching `status {release}` (S5). This gate
+# makes the state machine refuse both: a leg self-closes only when its receipt
+# is committed as the branch's LAST commit (receipt==HEAD - the W5H rule) AND an
+# explicit RELEASE line for its claim is on the bus. Otherwise it returns
+# done=$false with the exact missing condition named, and Get-LegState holds the
+# leg at 'closing'.
+#
+# SCOPE / R135 (CTO_RULINGS_01.md:3895-3907). The gate binds ONLY a receipt that
+# lives in the leg's OWN worktree. R135's standing answer - when a leg cannot
+# safely preserve its own work, the operator harvests the receipt from OUTSIDE
+# the contended tree, committing it from the MAIN tree - resolves via
+# Get-ReceiptPath's main-tree fallback, for which this returns done=$true and
+# never refuses. Manifest-pinned state:done (Get-LegState, next function) is the
+# other escape valve. So this closes M11's worktree-draft half and defuses M20
+# WITHOUT contradicting R135.
+function Test-CloseGate([object]$leg) {
+    # No worktree, or no receipt IN the worktree => legacy / in-place / operator-
+    # harvested. Presence is 'done', exactly as before the gate (R135, M20).
+    if (-not $leg.worktree) { return @{ done = $true; reason = '' } }
+    $wt        = Join-Path $repo $leg.worktree
+    $wtReceipt = Join-Path $wt "harness\notes\receipts\$($leg.receipt)"
+    if (-not (Test-Path $wtReceipt)) { return @{ done = $true; reason = '' } }
+
+    $branch     = if ($leg.branch) { $leg.branch } else { 'its branch' }
+    $receiptRel = "harness/notes/receipts/$($leg.receipt)"
+
+    # Conditions 1 + 2: the receipt is committed on the branch AND is the branch
+    # HEAD. `git log -1` of the receipt path is the last commit that touched it:
+    # empty => never committed; an ancestor => a later commit followed it; HEAD
+    # => it IS the closing commit.
+    $head          = (& git -C $wt rev-parse HEAD 2>$null)
+    $receiptCommit = (& git -C $wt log -1 --format=%H -- $receiptRel 2>$null)
+    if (-not $receiptCommit) {
+        return @{ done = $false; reason =
+            "receipt $($leg.receipt) exists in the worktree but is not committed on $branch - writing the receipt is not finishing, committing it is (W5H)" }
+    }
+    if ($receiptCommit -ne $head) {
+        return @{ done = $false; reason =
+            "receipt $($leg.receipt) is committed ($(Short8 $receiptCommit)) but is not the branch HEAD ($(Short8 $head)) - the receipt must land as the branch's closing commit (W5H)" }
+    }
+
+    # Condition 3: an explicit RELEASE line for this leg's claim on the bus. The
+    # wave is derived from the leg id exactly as compile_wave.py does
+    # (W6-GATE -> wave6); the bus `frm` is the leg id. bus.py exit 0 == released.
+    $wave  = ($leg.id -split '-', 2)[0].ToLower() -replace '^w', 'wave'
+    $busPy = Join-Path $repo 'harness\autorevise\bus.py'
+    if (-not (Test-Path $busPy)) {
+        return @{ done = $false; reason =
+            "cannot verify RELEASE - bus.py not found at $busPy" }
+    }
+    & python $busPy released $wave $leg.id 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        return @{ done = $false; reason =
+            "receipt is the closing commit but no RELEASE line for $($leg.id) is on the bus ($wave) - post an explicit release at close (S5)" }
+    }
+    return @{ done = $true; reason = '' }
+}
+
 function Get-LegState([object]$leg) {
     if ($leg.state -eq 'held') { return 'held' }
 
@@ -159,7 +230,20 @@ function Get-LegState([object]$leg) {
     # The receipts are lost. The findings survive as rulings with anchors. This
     # flag stops the harness spending tokens re-deriving them.
     if ($leg.state -eq 'done') { return 'done' }
-    if ($leg.receipt -and (Get-ReceiptPath $leg)) { return 'done' }
+
+    # W6-GATE (S4 + S5): a receipt file existing is NO LONGER 'done' on its own.
+    # A worktree receipt must clear the close gate - committed as the branch HEAD
+    # AND released on the bus - or the leg holds at 'closing' with the exact
+    # missing condition recorded for the main loop to surface. The main-tree
+    # fallback (in-place / operator-harvested per R135) still greens: Test-CloseGate
+    # returns done there. This runs BEFORE the DryRun short-circuit below, so a
+    # dry run exercises the identical checks a real run does.
+    if ($leg.receipt -and (Get-ReceiptPath $leg)) {
+        $gate = Test-CloseGate $leg
+        if ($gate.done) { return 'done' }
+        $script:CloseGateReason[$leg.id] = $gate.reason
+        return 'closing'
+    }
     if ($DryRun -and $script:DryDispatched[$leg.id]) { return 'running' }
 
     # R156: A LIVE LOCK MEANS RUNNING. Ask the lock before the filesystem.
@@ -591,6 +675,22 @@ while ((Get-Date) -lt $deadline) {
             }
         }
 
+        # W6-GATE: a leg that produced a receipt but has not cleared the close
+        # gate holds at 'closing'. Surface the exact missing condition the first
+        # time it appears and again each time it ADVANCES (receipt not committed
+        # -> not HEAD -> no RELEASE), but never re-notify an unchanged reason.
+        # Self-clears when the leg leaves 'closing' (to 'done' on a clean close).
+        if ($now -eq 'closing') {
+            $why = $script:CloseGateReason[$leg.id]
+            if ($script:CloseGateNotified[$leg.id] -ne $why) {
+                $script:CloseGateNotified[$leg.id] = $why
+                Say "  $($leg.id) held at closing: $why" 'Yellow'
+                Notify "$($leg.id) held at closing" $why
+            }
+        } elseif ($script:CloseGateNotified.ContainsKey($leg.id)) {
+            $script:CloseGateNotified.Remove($leg.id) | Out-Null
+        }
+
         # dispatch anything whose deps are now met. 'held' is held by RULING.
         if ($now -eq 'ready' -and $leg.prompt) { Start-Leg $leg; $known[$leg.id] = 'launched' }
 
@@ -643,7 +743,10 @@ while ((Get-Date) -lt $deadline) {
     # The manifest is re-read every poll, so a new leg is dispatchable the moment
     # it lands. Idling instead of exiting costs one file read per interval and
     # buys the property that adding a row to legs.json is always sufficient.
-    $live = @($manifest.legs | Where-Object { $known[$_.id] -in @('running','launched','ready','blocked') })
+    # W6-GATE: 'closing' counts as live. A leg whose close gate is unmet needs a
+    # human/agent to commit its receipt as HEAD or post its RELEASE - the board
+    # is NOT complete, so it must not enter idle watch and report otherwise.
+    $live = @($manifest.legs | Where-Object { $known[$_.id] -in @('running','launched','ready','blocked','closing') })
 
     if ($live.Count -eq 0) {
         if (-not $idle) {
