@@ -1,0 +1,243 @@
+<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+##############################################################################
+# W6-FLOWRIG journey rig - hython 22.0.400 / 3.13.10 / Qt PySide6(offscreen)
+# repo=C:/Users/User/SYNAPSE  product_head=8e278b654996215096cace1be9a028f4a1abc1d9
+# hou.undos.areEnabled()=True
+##############################################################################
+
+==============================================================================
+JOURNEY J1 - First-node build
+==============================================================================
+  [J1.1] PASS   git-blob           63.1ms  SYNAPSE_synapse.png icon blob exists under houdini/config/Ic  (DIVERGENCE: expected-red measured PASS)
+        blob                   = 23149fd8c16564ec61e60270e01d4cbbab9518d9
+        present                = True
+        map_expected           = FAIL/absent
+        note: DIVERGENCE: icon PRESENT at HEAD (blob 23149fd8c16564ec61e60270e01d4cbbab9518d9) - map today-FAIL is stale
+  [J1.2] PASS   live-exec         208.0ms  onCreateInterface() returns an error QWidget (never raises) 
+        view_type              = QPlainTextEdit
+        read_only              = True
+        prefix_ok              = True
+        carries_traceback      = True
+        never_raised           = True
+        note: load-fault view intentionally carries the traceback (triage); runtime bad-prompt path does not
+  [J1.3] PASS   chat-layout         3.0ms  leaded 12-line chat block grows document height vs stripped
+        leading_px             = 1.0
+        carries_leading        = True
+        doc_h_with             = 221.0
+        doc_h_without          = 207.0
+        delta_px               = 14.0
+        lines                  = 12
+        non_inert              = True
+        feedback               = {'present': True, 'non_traceback': True, 'chars': 295}
+        note: delta magnitude ~1px/line (receipt reported 176->188 for its 12-line block)
+  [J1.4] PASS   real-node-undo    219.6ms  create handler enters exactly one hou.undos.group(synapse_no
+        node_path              = /obj/flowrig_j1/first_box
+        node_exists            = True
+        node_name              = first_box
+        node_type              = box
+        undo_group             = synapse_node_create
+        undo_group_descriptive = True
+        one_group              = True
+        one_ctrlz_reverses     = True
+        note: LIVE /synapse handler path (hou.undos.areEnabled()==True)
+  [J1.spine] PASS   panel-spine       346.1ms  TARGET#1 panel instantiated offscreen builds a real node thr
+        panel_type             = SynapsePanel
+        node_built_through_panel = True
+        tool_result_present    = True
+        tool_error             = None
+        panel_drive_ms         = 24.551
+        panel_feedback         = {'present': True, 'non_traceback': True, 'chars': 28}
+        llm_narration          = UNKNOWN (provider stage bypassed by the deterministic tool seam; target #4)
+        note: target #1: panel widget instantiated offscreen, real node built through the panel's ToolExecutor
+  [J1.5] PASS   usage-fold          0.4ms  per-task spend == sum(provider.last_usage), None->UNKNOWN ne
+        folded_input_tokens    = 150
+        expected_fold          = 150
+        unreported_field_is_none = True
+        non_metering_is_none_not_zero = True
+        live_seat_counter      = UNKNOWN (gui_required)
+        note: headless-proxy: fold mechanism proven; visible per-task counter render is gui_required->UNKNOWN
+  [J1.6] PASS   shelf-parse         0.3ms  synapse_last_result tool has one-sentence helpText + copy_la
+        present                = True
+        helpText               = Copy the most recent Synapse execution result to the clipboard.
+        help_len               = 63
+        calls_copy_last_result = True
+        help_needles_ok        = True
+        try_except_displayMessage_Error = True
+
+==============================================================================
+JOURNEY J2 - Multi-node rig
+==============================================================================
+  [J2.1] PASS   recorder+real       3.8ms  nested create opens one nested group, unwinds to 0 (max_dept
+        groups                 = ['outer_batch', 'synapse_node_create']
+        max_depth              = 2
+        unwound_to             = 0
+        mutations_inside_nested = True
+        real_nested_built      = True
+        one_ctrlz_collapses_nested = True
+        note: recorder pins max_depth==2; real nested create collapses under one outer group
+  [J2.2] PASS   real-node-undo      6.5ms  connect handler enters exactly one hou.undos.group(synapse_n
+        node_count             = 3
+        node_names             = ['src', 'move', 'OUT']
+        wired_chain            = True
+        undo_group             = synapse_node_connect
+        one_group_per_connect  = True
+        layout_bbox            = {'count': 3, 'w': 0.0, 'h': 2.259, 'stacked': False}
+        stacked_at_origin      = False
+        note: real multi-node rig built + wired; layout spread proves no stacked-at-origin spaghetti
+  [J2.3] PASS   real-node-undo      0.2ms  _handle_set_parm wraps its mutations in one hou.undos.group(
+        node                   = /obj/flowrig_rig/move
+        parm                   = tx
+        value_applied          = True
+        eval                   = 2.5
+        undo_group             = synapse_set_parm
+        one_group              = True
+        note: W5-UNDOB stayed closed: set_parm wraps its mutation on the live path
+  [J2.4] PASS   recorder            0.7ms  exception-path group closes + identical exception propagates
+        exception_propagated   = True
+        group_closed_depth0    = True
+        group_opened           = ['synapse_node_create']
+        partial_mutation_survives = True
+        note: headless-proxy: one-Ctrl+Z-reverses-full-rig is gui_required->UNKNOWN (grouping is not rollback)
+  [J2.5] PASS   shelf-parse         0.0ms  synapse_inspect_selection tool present + helpText + inspect_
+        present                = True
+        helpText               = Copy a structured summary of the selected nodes to the clipboard for pasting into Claude.
+        help_len               = 89
+        calls_inspect_selection = True
+        help_needles_ok        = True
+        try_except_displayMessage_Error = True
+
+==============================================================================
+JOURNEY J3 - Error recovery
+==============================================================================
+  [J3.1] PASS   shelf-parse         0.0ms  all 7 shelf scripts guard with try/except -> hou.ui.displayM
+        tool_count             = 7
+        all_guarded            = True
+        unguarded              = []
+  [J3.2] PASS   static-parse        0.1ms  panel fallback view is read-only and contains the traceback 
+        setReadOnly_True       = True
+        traceback_format_exc   = True
+        anchor                 = synapse_panel.pypanel:55-56
+        note: corroborated live in J1.2 (the exec'd loader returned a read-only view carrying the traceback)
+  [J3.3] PASS   recorder            0.1ms  exception-path mutations fire at depth>=1 and are not remove
+        mutation_at_depth      = 1
+        mutation_survives_group_close = True
+        raised                 = True
+        note: the partial node built before the raise remains; only a deliberate performUndo removes it
+  [J3.4] PASS   red/green        1761.2ms  beaten runtime never escalates; stalled main thread does (RE
+        green_escalated        = False
+        green_frozen           = False
+        red_escalated          = True
+        red_frozen             = True
+        red_reached_acting_half = True
+        note: close must not trip a false freeze; a genuine stall still must escalate
+  [J3.5] PASS   shelf-parse         0.0ms  synapse_health_check tool present, helpText names errors/war
+        present                = True
+        helpText               = Scan the scene for node errors, warnings, and setup issues, then copy the report to the clipboard.
+        help_len               = 98
+        calls_health_check     = True
+        help_needles_ok        = True
+        try_except_displayMessage_Error = True
+  [J3.bad-prompt] PASS   live-panel         52.2ms  bad-prompt journey: readable in-panel error, no traceback, s
+        unknown_tool_error     = Unknown tool: make_me_a_sandwich_please
+        tool_error_no_traceback = True
+        on_error_human_text    = True
+        chat_has_no_traceback  = True
+        session_alive_after_fault = True
+        chat_feedback          = {'present': True, 'non_traceback': True, 'chars': 68}
+        note: acceptance #2: bad prompt -> readable in-panel error, no traceback, session survives
+
+==============================================================================
+JOURNEY J4 - Mode switch
+==============================================================================
+  [J4.1] PASS   source-pin          0.4ms  pill.clicked wired to _select_profile
+        pill_clicked_wired     = True
+        anchor                 = synapse_panel.py ~:1026
+  [J4.2] PASS   live-panel         58.0ms  each profile selection changes the active composed profile, 
+        sequence               = ['curious', 'expert', 'ml', 'expert', 'curious', 'expert']
+        densities              = ['airy', 'standard', 'tight', 'standard', 'airy', 'standard']
+        layout_profiles        = ['curious', 'expert', 'ml', 'expert', 'curious', 'expert']
+        per_step_consistent    = True
+        forward_and_back       = True
+        expert_overlay_empty   = True
+        note: drove _select_profile on the LIVE panel; density stamp read from the real Qt property
+  [J4.3] FAIL   source-pin          2.3ms  _repolish_tree reaches every descendant via the panel Qt bin  (expected-red: friction confirmed)
+        imports_qtpy_defectA   = True
+        premature_break_defectB = True
+        qtpy_importable_in_seat = False
+        dominant_defect        = qtpy-early-return (no repolish at all)
+        note: today-FAIL friction: two independent defects; density QSS never reaches child widgets
+  [J4.4] FAIL   source-pin+probe    1.0ms  _apply_spec collapsed/visible is two-way (switch-back restor  (expected-red: friction confirmed)
+        collapse_sets_maxheight0 = True
+        has_restore_branch     = False
+        probe_maxh_after_collapse = 0
+        probe_maxh_after_uncollapse = 0
+        one_way_confirmed      = True
+        note: today-FAIL code-asymmetry: collapse applied one-way, prominence resets two-way
+
+==============================================================================
+JOURNEY J5 - Palette tool use
+==============================================================================
+  [J5.1] PASS   git-blob          376.0ms  six distinct committed shelf icon blobs (visible render UNKN
+        action_icons_present   = True
+        distinct_hashes        = True
+        count                  = 6
+        note: visible render is gui_required->UNKNOWN (W5-SHELF F1)
+  [J5.2] PASS   shelf-parse         0.0ms  six one-sentence helpText tooltips (>=15 chars, sentence-ter
+        count                  = 6
+        min_len                = 63
+        all_sentence_terminated = True
+  [J5.3] PASS   static-parse        0.2ms  _copy_to_clipboard PySide6-first with PySide2 fallback kept
+        pyside6_present        = True
+        pyside2_fallback_kept  = True
+        pyside6_before_pyside2 = True
+        note: gated by harness/verify/checks.py:1989 check_shelf_current
+  [J5.4] PASS   static+registry     0.2ms  pypanel help names the / command palette (substring present)
+        palette_substring_present = True
+        advertised_count       = 115
+        registry_TOOL_DEFS     = 129
+        advisory_count_drift   = True
+        note: ADVISORY (doc-fix flag): help says 115, registry TOOL_DEFS==129
+  [J5.5] PASS   shelf-parse         0.0ms  synapse_project_setup tool present + helpText + project_setu
+        present                = True
+        helpText               = Set up SYNAPSE memory folders for this scene and copy a project handshake to the clipboard.
+        help_len               = 91
+        calls_project_setup    = True
+        help_needles_ok        = True
+        try_except_displayMessage_Error = True
+
+==============================================================================
+JOURNEY J6 - Close -> reopen continuity
+==============================================================================
+  [J6.1] PASS   source-pin          0.2ms  closeEvent persists via save_conversation() + uses detach_pa
+        save_conversation      = True
+        uses_detach_panel      = True
+        no_shutdown_freeze_chain_in_module = True
+        note: live closeEvent-firing leg is gui_required->UNKNOWN
+  [J6.2] PASS   round-trip          1.8ms  on-disk session data survives a sys.modules[synapse.*] flush
+        saved                  = True
+        survives_module_flush  = True
+        roundtrip_len          = 2
+        note: disk store outlives the .pypanel loader's synapse.* flush
+  [J6.3] PASS   round-trip          2.3ms  save/restore is HIP-keyed, fresh-scene empty, corrupt-tolera
+        atomic_no_tmp_sidecar  = True
+        fresh_scene_empty      = True
+        corrupt_tolerated      = True
+        nonlist_tolerated      = True
+        hip_key                = temp-dir fallback headless; live $HIP/claude keying is gui-UNKNOWN
+  [J6.4] PASS   source-pin          0.5ms  freeze beat owned process-lifetime under server/; panel QTim
+        runtime_beat_markers   = True
+        owner_under_server     = True
+        panel_freeze_timer_gone = True
+        note: matches checks.py --task runtime_owns_heartbeat (R.2), runtime_owns_heartbeat.ok==True
+  [J6.5] PASS   round-trip          1.0ms  restored self._messages round-trips headlessly (model contin
+        messages_roundtrip     = True
+        restored_len           = 2
+        visible_repaint        = UNKNOWN (gui_required)
+        note: headless-proxy: model-conversation continues; visible transcript repaint is gui_required->UNKNOWN
+
+##############################################################################
+# SUMMARY  predicates=30  PASS=28  FAIL=2  UNKNOWN=0
+# expected-red confirmed (friction): ['J4.3', 'J4.4']
+# divergences from map: ['J1.1']
+# wrote C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-w6-fcrx/e40ad918-089f-4bdc-a1d3-c5afc5040b70/scratchpad/w6fcrx/flow_results.json
+##############################################################################

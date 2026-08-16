@@ -1,0 +1,38 @@
+######################################################################
+# W6-FCRX adversarial journeys - hython 22.0.400 / Qt PySide6(offscreen)
+######################################################################
+
+[SURVIVED] A1 garbage-prompt-mid-build
+    good_before_built          = True
+    garbage_errored            = True
+    garbage_no_traceback       = True
+    garbage_error              = Unknown tool: make_me_a_sandwich_please
+    provider_fault_human       = True
+    chat_no_traceback          = True
+    good_after_built           = True
+    session_alive              = True
+
+[SURVIVED] A2 panel-close-mid-journey(P0.3)
+    beat_armed_pre             = True
+    closeEvent_no_raise        = True
+    closeEvent_raise           = False
+    beat_survives_close        = True
+    panel_detached             = True
+    detach_recorded            = True
+    beat_freshened             = True
+    inflight_work_finished     = True
+    conversation_persisted     = True
+
+[SURVIVED] A3 rapid-mode-switch-mid-exec
+    switch_count               = 12
+    switch_errors              = []
+    no_switch_exception        = True
+    inflight_build_survived    = True
+    final_profile              = expert
+    final_density              = standard
+    final_density_consistent   = True
+    session_alive              = True
+
+######################################################################
+# ADVERSARIAL SUMMARY  all_survived=True  (3/3)
+######################################################################

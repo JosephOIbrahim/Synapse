@@ -1,0 +1,33 @@
+{
+  "mode_expected": "green",
+  "expected_verdict_each": "PASS",
+  "pyroot": "C:/Users/User/SYNAPSE/.claude/worktrees/w6-flowfix/python",
+  "compositor_loaded": "C:/Users/User/SYNAPSE/.claude/worktrees/w6-flowfix/python/synapse/panel/compositor.py",
+  "src_sha256_16": "36800adf6aa03dac",
+  "loaded_from_pyroot": true,
+  "results": {
+    "J4.3": {
+      "verdict": "PASS",
+      "measure": {
+        "imports_qtpy_defectA": false,
+        "premature_break_defectB": false,
+        "live_tree_reached": 5,
+        "live_tree_total": 5,
+        "reaches_every_descendant": true,
+        "return_value": 5
+      }
+    },
+    "J4.4": {
+      "verdict": "PASS",
+      "measure": {
+        "collapse_sets_maxheight0": false,
+        "has_restore_branch": true,
+        "probe_maxh_after_collapse": 0,
+        "probe_maxh_after_uncollapse": 16777215,
+        "one_way_confirmed": false
+      }
+    }
+  },
+  "all_as_expected": true,
+  "signature_attribution_ok": true
+}

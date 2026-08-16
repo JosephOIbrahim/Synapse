@@ -1,0 +1,728 @@
+{
+  "leg": "W6-FLOWRIG",
+  "status_hint": "green_with_findings",
+  "runtime": {
+    "hython": "22.0.400",
+    "python": "3.13.10",
+    "qt_binding": "PySide6",
+    "qt_platform": "offscreen",
+    "undo_enabled": true
+  },
+  "repo_root": "C:/Users/User/SYNAPSE",
+  "product_head": "8e278b654996215096cace1be9a028f4a1abc1d9",
+  "generated_by": "harness/probes/flow/probe_flow.py",
+  "source": {
+    "doc": "docs/USER-FLOW-MAP.md",
+    "product_head": "10d3746f",
+    "bus": "n=18cc62114a72930c (JRNY predicate list)"
+  },
+  "seat_recipe": "env -u SYNAPSE_ROOT -u HOUDINI_PACKAGE_DIR HOUDINI_USER_PREF_DIR=\"C:/Users/User/OneDrive/Documents/houdini22.0\" hython.exe harness/probes/flow/probe_flow.py",
+  "predicate_counts": {
+    "total": 30,
+    "pass": 28,
+    "fail": 2,
+    "unknown": 0
+  },
+  "expected_red_confirmed": [
+    "J4.3",
+    "J4.4"
+  ],
+  "divergences_from_map": [
+    {
+      "id": "J1.1",
+      "predicate": "SYNAPSE_synapse.png icon blob exists under houdini/config/Icons/",
+      "note": "DIVERGENCE: icon PRESENT at HEAD (blob 23149fd8c16564ec61e60270e01d4cbbab9518d9) - map today-FAIL is stale"
+    }
+  ],
+  "llm_note": "No journey required a live model call. Builds are driven through the deterministic ToolExecutor/handler seam (the provider/LLM stage is bypassed by construction), so every number is reproducible from committed hython stdout. Per target #4 no generation is looped; the LLM-narration half of panel feedback is recorded UNKNOWN honestly.",
+  "unmeasurable_reported_to_jrny": [],
+  "journeys": [
+    {
+      "id": "J1",
+      "name": "First-node build",
+      "seam_arc": "input->feedback->feedback->execution->feedback->feedback",
+      "steps": [
+        {
+          "id": "J1.1",
+          "predicate": "SYNAPSE_synapse.png icon blob exists under houdini/config/Icons/",
+          "tag": "[headless]",
+          "seam": "input",
+          "verdict": "PASS",
+          "evidence_method": "git-blob",
+          "wall_latency_ms": 63.065,
+          "expected": "red",
+          "measure": {
+            "blob": "23149fd8c16564ec61e60270e01d4cbbab9518d9",
+            "present": true,
+            "map_expected": "FAIL/absent"
+          },
+          "note": "DIVERGENCE: icon PRESENT at HEAD (blob 23149fd8c16564ec61e60270e01d4cbbab9518d9) - map today-FAIL is stale",
+          "error": null
+        },
+        {
+          "id": "J1.2",
+          "predicate": "onCreateInterface() returns an error QWidget (never raises) on import failure",
+          "tag": "[headless]",
+          "seam": "feedback",
+          "verdict": "PASS",
+          "evidence_method": "live-exec",
+          "wall_latency_ms": 208.039,
+          "expected": "green",
+          "measure": {
+            "view_type": "QPlainTextEdit",
+            "read_only": true,
+            "prefix_ok": true,
+            "carries_traceback": true,
+            "never_raised": true
+          },
+          "note": "load-fault view intentionally carries the traceback (triage); runtime bad-prompt path does not",
+          "error": null
+        },
+        {
+          "id": "J1.3",
+          "predicate": "leaded 12-line chat block grows document height vs stripped",
+          "tag": "[headless]",
+          "seam": "feedback",
+          "verdict": "PASS",
+          "evidence_method": "chat-layout",
+          "wall_latency_ms": 2.956,
+          "expected": "green",
+          "measure": {
+            "leading_px": 1.0,
+            "carries_leading": true,
+            "doc_h_with": 221.0,
+            "doc_h_without": 207.0,
+            "delta_px": 14.0,
+            "lines": 12,
+            "non_inert": true,
+            "feedback": {
+              "present": true,
+              "non_traceback": true,
+              "chars": 295
+            }
+          },
+          "note": "delta magnitude ~1px/line (receipt reported 176->188 for its 12-line block)",
+          "error": null
+        },
+        {
+          "id": "J1.4",
+          "predicate": "create handler enters exactly one hou.undos.group(synapse_node_create)",
+          "tag": "[headless]",
+          "seam": "execution",
+          "verdict": "PASS",
+          "evidence_method": "real-node-undo",
+          "wall_latency_ms": 219.6,
+          "expected": "green",
+          "measure": {
+            "node_path": "/obj/flowrig_j1/first_box",
+            "node_exists": true,
+            "node_name": "first_box",
+            "node_type": "box",
+            "undo_group": "synapse_node_create",
+            "undo_group_descriptive": true,
+            "one_group": true,
+            "one_ctrlz_reverses": true
+          },
+          "note": "LIVE /synapse handler path (hou.undos.areEnabled()==True)",
+          "error": null
+        },
+        {
+          "id": "J1.spine",
+          "predicate": "TARGET#1 panel instantiated offscreen builds a real node through its ToolExecutor",
+          "tag": "[headless]",
+          "seam": "execution",
+          "verdict": "PASS",
+          "evidence_method": "panel-spine",
+          "wall_latency_ms": 346.132,
+          "expected": "green",
+          "measure": {
+            "panel_type": "SynapsePanel",
+            "node_built_through_panel": true,
+            "tool_result_present": true,
+            "tool_error": null,
+            "panel_drive_ms": 24.551,
+            "panel_feedback": {
+              "present": true,
+              "non_traceback": true,
+              "chars": 28
+            },
+            "llm_narration": "UNKNOWN (provider stage bypassed by the deterministic tool seam; target #4)"
+          },
+          "note": "target #1: panel widget instantiated offscreen, real node built through the panel's ToolExecutor",
+          "error": null
+        },
+        {
+          "id": "J1.5",
+          "predicate": "per-task spend == sum(provider.last_usage), None->UNKNOWN never 0",
+          "tag": "[headless-proxy]",
+          "seam": "feedback",
+          "verdict": "PASS",
+          "evidence_method": "usage-fold",
+          "wall_latency_ms": 0.442,
+          "expected": "green",
+          "measure": {
+            "folded_input_tokens": 150,
+            "expected_fold": 150,
+            "unreported_field_is_none": true,
+            "non_metering_is_none_not_zero": true,
+            "live_seat_counter": "UNKNOWN (gui_required)"
+          },
+          "note": "headless-proxy: fold mechanism proven; visible per-task counter render is gui_required->UNKNOWN",
+          "error": null
+        },
+        {
+          "id": "J1.6",
+          "predicate": "synapse_last_result tool has one-sentence helpText + copy_last_result script",
+          "tag": "[headless]",
+          "seam": "feedback",
+          "verdict": "PASS",
+          "evidence_method": "shelf-parse",
+          "wall_latency_ms": 0.272,
+          "expected": "green",
+          "measure": {
+            "present": true,
+            "helpText": "Copy the most recent Synapse execution result to the clipboard.",
+            "help_len": 63,
+            "calls_copy_last_result": true,
+            "help_needles_ok": true,
+            "try_except_displayMessage_Error": true
+          },
+          "note": "",
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "J2",
+      "name": "Multi-node rig",
+      "seam_arc": "execution->execution->execution->recovery->feedback",
+      "steps": [
+        {
+          "id": "J2.1",
+          "predicate": "nested create opens one nested group, unwinds to 0 (max_depth==2)",
+          "tag": "[headless]",
+          "seam": "execution",
+          "verdict": "PASS",
+          "evidence_method": "recorder+real",
+          "wall_latency_ms": 3.751,
+          "expected": "green",
+          "measure": {
+            "groups": [
+              "outer_batch",
+              "synapse_node_create"
+            ],
+            "max_depth": 2,
+            "unwound_to": 0,
+            "mutations_inside_nested": true,
+            "real_nested_built": true,
+            "one_ctrlz_collapses_nested": true
+          },
+          "note": "recorder pins max_depth==2; real nested create collapses under one outer group",
+          "error": null
+        },
+        {
+          "id": "J2.2",
+          "predicate": "connect handler enters exactly one hou.undos.group(synapse_node_connect)",
+          "tag": "[headless]",
+          "seam": "execution",
+          "verdict": "PASS",
+          "evidence_method": "real-node-undo",
+          "wall_latency_ms": 6.541,
+          "expected": "green",
+          "measure": {
+            "node_count": 3,
+            "node_names": [
+              "src",
+              "move",
+              "OUT"
+            ],
+            "wired_chain": true,
+            "undo_group": "synapse_node_connect",
+            "one_group_per_connect": true,
+            "layout_bbox": {
+              "count": 3,
+              "w": 0.0,
+              "h": 2.259,
+              "stacked": false
+            },
+            "stacked_at_origin": false
+          },
+          "note": "real multi-node rig built + wired; layout spread proves no stacked-at-origin spaghetti",
+          "error": null
+        },
+        {
+          "id": "J2.3",
+          "predicate": "_handle_set_parm wraps its mutations in one hou.undos.group(synapse_set_parm)",
+          "tag": "[headless]",
+          "seam": "execution",
+          "verdict": "PASS",
+          "evidence_method": "real-node-undo",
+          "wall_latency_ms": 0.182,
+          "expected": "green",
+          "measure": {
+            "node": "/obj/flowrig_rig/move",
+            "parm": "tx",
+            "value_applied": true,
+            "eval": 2.5,
+            "undo_group": "synapse_set_parm",
+            "one_group": true
+          },
+          "note": "W5-UNDOB stayed closed: set_parm wraps its mutation on the live path",
+          "error": null
+        },
+        {
+          "id": "J2.4",
+          "predicate": "exception-path group closes + identical exception propagates (partial left)",
+          "tag": "[headless-proxy]",
+          "seam": "recovery",
+          "verdict": "PASS",
+          "evidence_method": "recorder",
+          "wall_latency_ms": 0.652,
+          "expected": "green",
+          "measure": {
+            "exception_propagated": true,
+            "group_closed_depth0": true,
+            "group_opened": [
+              "synapse_node_create"
+            ],
+            "partial_mutation_survives": true
+          },
+          "note": "headless-proxy: one-Ctrl+Z-reverses-full-rig is gui_required->UNKNOWN (grouping is not rollback)",
+          "error": null
+        },
+        {
+          "id": "J2.5",
+          "predicate": "synapse_inspect_selection tool present + helpText + inspect_selection script",
+          "tag": "[headless]",
+          "seam": "feedback",
+          "verdict": "PASS",
+          "evidence_method": "shelf-parse",
+          "wall_latency_ms": 0.008,
+          "expected": "green",
+          "measure": {
+            "present": true,
+            "helpText": "Copy a structured summary of the selected nodes to the clipboard for pasting into Claude.",
+            "help_len": 89,
+            "calls_inspect_selection": true,
+            "help_needles_ok": true,
+            "try_except_displayMessage_Error": true
+          },
+          "note": "",
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "J3",
+      "name": "Error recovery",
+      "seam_arc": "feedback->feedback->recovery->recovery->recovery",
+      "steps": [
+        {
+          "id": "J3.1",
+          "predicate": "all 7 shelf scripts guard with try/except -> hou.ui.displayMessage(Error)",
+          "tag": "[headless]",
+          "seam": "feedback",
+          "verdict": "PASS",
+          "evidence_method": "shelf-parse",
+          "wall_latency_ms": 0.008,
+          "expected": "green",
+          "measure": {
+            "tool_count": 7,
+            "all_guarded": true,
+            "unguarded": []
+          },
+          "note": "",
+          "error": null
+        },
+        {
+          "id": "J3.2",
+          "predicate": "panel fallback view is read-only and contains the traceback text",
+          "tag": "[headless]",
+          "seam": "feedback",
+          "verdict": "PASS",
+          "evidence_method": "static-parse",
+          "wall_latency_ms": 0.145,
+          "expected": "green",
+          "measure": {
+            "setReadOnly_True": true,
+            "traceback_format_exc": true,
+            "anchor": "synapse_panel.pypanel:55-56"
+          },
+          "note": "corroborated live in J1.2 (the exec'd loader returned a read-only view carrying the traceback)",
+          "error": null
+        },
+        {
+          "id": "J3.3",
+          "predicate": "exception-path mutations fire at depth>=1 and are not removed by group close",
+          "tag": "[headless]",
+          "seam": "recovery",
+          "verdict": "PASS",
+          "evidence_method": "recorder",
+          "wall_latency_ms": 0.137,
+          "expected": "green",
+          "measure": {
+            "mutation_at_depth": 1,
+            "mutation_survives_group_close": true,
+            "raised": true
+          },
+          "note": "the partial node built before the raise remains; only a deliberate performUndo removes it",
+          "error": null
+        },
+        {
+          "id": "J3.4",
+          "predicate": "beaten runtime never escalates; stalled main thread does (RED/GREEN pair)",
+          "tag": "[headless]",
+          "seam": "recovery",
+          "verdict": "PASS",
+          "evidence_method": "red/green",
+          "wall_latency_ms": 1761.247,
+          "expected": "green",
+          "measure": {
+            "green_escalated": false,
+            "green_frozen": false,
+            "red_escalated": true,
+            "red_frozen": true,
+            "red_reached_acting_half": true
+          },
+          "note": "close must not trip a false freeze; a genuine stall still must escalate",
+          "error": null
+        },
+        {
+          "id": "J3.5",
+          "predicate": "synapse_health_check tool present, helpText names errors/warnings, calls health_check",
+          "tag": "[headless]",
+          "seam": "recovery",
+          "verdict": "PASS",
+          "evidence_method": "shelf-parse",
+          "wall_latency_ms": 0.013,
+          "expected": "green",
+          "measure": {
+            "present": true,
+            "helpText": "Scan the scene for node errors, warnings, and setup issues, then copy the report to the clipboard.",
+            "help_len": 98,
+            "calls_health_check": true,
+            "help_needles_ok": true,
+            "try_except_displayMessage_Error": true
+          },
+          "note": "",
+          "error": null
+        },
+        {
+          "id": "J3.bad-prompt",
+          "predicate": "bad-prompt journey: readable in-panel error, no traceback, session alive",
+          "tag": "[headless]",
+          "seam": "recovery",
+          "verdict": "PASS",
+          "evidence_method": "live-panel",
+          "wall_latency_ms": 52.151,
+          "expected": "green",
+          "measure": {
+            "unknown_tool_error": "Unknown tool: make_me_a_sandwich_please",
+            "tool_error_no_traceback": true,
+            "on_error_human_text": true,
+            "chat_has_no_traceback": true,
+            "session_alive_after_fault": true,
+            "chat_feedback": {
+              "present": true,
+              "non_traceback": true,
+              "chars": 68
+            }
+          },
+          "note": "acceptance #2: bad prompt -> readable in-panel error, no traceback, session survives",
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "J4",
+      "name": "Mode switch",
+      "seam_arc": "input->execution->feedback->feedback",
+      "steps": [
+        {
+          "id": "J4.1",
+          "predicate": "pill.clicked wired to _select_profile",
+          "tag": "[headless]",
+          "seam": "input",
+          "verdict": "PASS",
+          "evidence_method": "source-pin",
+          "wall_latency_ms": 0.385,
+          "expected": "green",
+          "measure": {
+            "pill_clicked_wired": true,
+            "anchor": "synapse_panel.py ~:1026"
+          },
+          "note": "",
+          "error": null
+        },
+        {
+          "id": "J4.2",
+          "predicate": "each profile selection changes the active composed profile, forward and back",
+          "tag": "[headless]",
+          "seam": "execution",
+          "verdict": "PASS",
+          "evidence_method": "live-panel",
+          "wall_latency_ms": 57.961,
+          "expected": "green",
+          "measure": {
+            "sequence": [
+              "curious",
+              "expert",
+              "ml",
+              "expert",
+              "curious",
+              "expert"
+            ],
+            "densities": [
+              "airy",
+              "standard",
+              "tight",
+              "standard",
+              "airy",
+              "standard"
+            ],
+            "layout_profiles": [
+              "curious",
+              "expert",
+              "ml",
+              "expert",
+              "curious",
+              "expert"
+            ],
+            "per_step_consistent": true,
+            "forward_and_back": true,
+            "expert_overlay_empty": true
+          },
+          "note": "drove _select_profile on the LIVE panel; density stamp read from the real Qt property",
+          "error": null
+        },
+        {
+          "id": "J4.3",
+          "predicate": "_repolish_tree reaches every descendant via the panel Qt binding, no qtpy",
+          "tag": "[headless-proxy]",
+          "seam": "feedback",
+          "verdict": "FAIL",
+          "evidence_method": "source-pin",
+          "wall_latency_ms": 2.296,
+          "expected": "red",
+          "measure": {
+            "imports_qtpy_defectA": true,
+            "premature_break_defectB": true,
+            "qtpy_importable_in_seat": false,
+            "dominant_defect": "qtpy-early-return (no repolish at all)"
+          },
+          "note": "today-FAIL friction: two independent defects; density QSS never reaches child widgets",
+          "error": null
+        },
+        {
+          "id": "J4.4",
+          "predicate": "_apply_spec collapsed/visible is two-way (switch-back restores)",
+          "tag": "[headless]",
+          "seam": "feedback",
+          "verdict": "FAIL",
+          "evidence_method": "source-pin+probe",
+          "wall_latency_ms": 0.978,
+          "expected": "red",
+          "measure": {
+            "collapse_sets_maxheight0": true,
+            "has_restore_branch": false,
+            "probe_maxh_after_collapse": 0,
+            "probe_maxh_after_uncollapse": 0,
+            "one_way_confirmed": true
+          },
+          "note": "today-FAIL code-asymmetry: collapse applied one-way, prominence resets two-way",
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "J5",
+      "name": "Palette tool use",
+      "seam_arc": "input->input->input->input->input",
+      "steps": [
+        {
+          "id": "J5.1",
+          "predicate": "six distinct committed shelf icon blobs (visible render UNKNOWN)",
+          "tag": "[headless]",
+          "seam": "input",
+          "verdict": "PASS",
+          "evidence_method": "git-blob",
+          "wall_latency_ms": 376.009,
+          "expected": "green",
+          "measure": {
+            "action_icons_present": true,
+            "distinct_hashes": true,
+            "count": 6
+          },
+          "note": "visible render is gui_required->UNKNOWN (W5-SHELF F1)",
+          "error": null
+        },
+        {
+          "id": "J5.2",
+          "predicate": "six one-sentence helpText tooltips (>=15 chars, sentence-terminated)",
+          "tag": "[headless]",
+          "seam": "input",
+          "verdict": "PASS",
+          "evidence_method": "shelf-parse",
+          "wall_latency_ms": 0.017,
+          "expected": "green",
+          "measure": {
+            "count": 6,
+            "min_len": 63,
+            "all_sentence_terminated": true
+          },
+          "note": "",
+          "error": null
+        },
+        {
+          "id": "J5.3",
+          "predicate": "_copy_to_clipboard PySide6-first with PySide2 fallback kept",
+          "tag": "[headless]",
+          "seam": "input",
+          "verdict": "PASS",
+          "evidence_method": "static-parse",
+          "wall_latency_ms": 0.196,
+          "expected": "green",
+          "measure": {
+            "pyside6_present": true,
+            "pyside2_fallback_kept": true,
+            "pyside6_before_pyside2": true
+          },
+          "note": "gated by harness/verify/checks.py:1989 check_shelf_current",
+          "error": null
+        },
+        {
+          "id": "J5.4",
+          "predicate": "pypanel help names the / command palette (substring present)",
+          "tag": "[headless]",
+          "seam": "input",
+          "verdict": "PASS",
+          "evidence_method": "static+registry",
+          "wall_latency_ms": 0.248,
+          "expected": "green",
+          "measure": {
+            "palette_substring_present": true,
+            "advertised_count": 115,
+            "registry_TOOL_DEFS": 129,
+            "advisory_count_drift": true
+          },
+          "note": "ADVISORY (doc-fix flag): help says 115, registry TOOL_DEFS==129",
+          "error": null
+        },
+        {
+          "id": "J5.5",
+          "predicate": "synapse_project_setup tool present + helpText + project_setup script",
+          "tag": "[headless]",
+          "seam": "input",
+          "verdict": "PASS",
+          "evidence_method": "shelf-parse",
+          "wall_latency_ms": 0.007,
+          "expected": "green",
+          "measure": {
+            "present": true,
+            "helpText": "Set up SYNAPSE memory folders for this scene and copy a project handshake to the clipboard.",
+            "help_len": 91,
+            "calls_project_setup": true,
+            "help_needles_ok": true,
+            "try_except_displayMessage_Error": true
+          },
+          "note": "",
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "J6",
+      "name": "Close -> reopen continuity",
+      "seam_arc": "recovery->recovery->recovery->recovery->feedback",
+      "steps": [
+        {
+          "id": "J6.1",
+          "predicate": "closeEvent persists via save_conversation() + uses detach_panel",
+          "tag": "[headless]",
+          "seam": "recovery",
+          "verdict": "PASS",
+          "evidence_method": "source-pin",
+          "wall_latency_ms": 0.245,
+          "expected": "green",
+          "measure": {
+            "save_conversation": true,
+            "uses_detach_panel": true,
+            "no_shutdown_freeze_chain_in_module": true
+          },
+          "note": "live closeEvent-firing leg is gui_required->UNKNOWN",
+          "error": null
+        },
+        {
+          "id": "J6.2",
+          "predicate": "on-disk session data survives a sys.modules[synapse.*] flush (round-trip)",
+          "tag": "[headless]",
+          "seam": "recovery",
+          "verdict": "PASS",
+          "evidence_method": "round-trip",
+          "wall_latency_ms": 1.764,
+          "expected": "green",
+          "measure": {
+            "saved": true,
+            "survives_module_flush": true,
+            "roundtrip_len": 2
+          },
+          "note": "disk store outlives the .pypanel loader's synapse.* flush",
+          "error": null
+        },
+        {
+          "id": "J6.3",
+          "predicate": "save/restore is HIP-keyed, fresh-scene empty, corrupt-tolerant, atomic",
+          "tag": "[headless]",
+          "seam": "recovery",
+          "verdict": "PASS",
+          "evidence_method": "round-trip",
+          "wall_latency_ms": 2.259,
+          "expected": "green",
+          "measure": {
+            "atomic_no_tmp_sidecar": true,
+            "fresh_scene_empty": true,
+            "corrupt_tolerated": true,
+            "nonlist_tolerated": true,
+            "hip_key": "temp-dir fallback headless; live $HIP/claude keying is gui-UNKNOWN"
+          },
+          "note": "",
+          "error": null
+        },
+        {
+          "id": "J6.4",
+          "predicate": "freeze beat owned process-lifetime under server/; panel QTimer gone",
+          "tag": "[headless]",
+          "seam": "recovery",
+          "verdict": "PASS",
+          "evidence_method": "source-pin",
+          "wall_latency_ms": 0.462,
+          "expected": "green",
+          "measure": {
+            "runtime_beat_markers": true,
+            "owner_under_server": true,
+            "panel_freeze_timer_gone": true
+          },
+          "note": "matches checks.py --task runtime_owns_heartbeat (R.2), runtime_owns_heartbeat.ok==True",
+          "error": null
+        },
+        {
+          "id": "J6.5",
+          "predicate": "restored self._messages round-trips headlessly (model continues)",
+          "tag": "[headless-proxy]",
+          "seam": "feedback",
+          "verdict": "PASS",
+          "evidence_method": "round-trip",
+          "wall_latency_ms": 1.036,
+          "expected": "green",
+          "measure": {
+            "messages_roundtrip": true,
+            "restored_len": 2,
+            "visible_repaint": "UNKNOWN (gui_required)"
+          },
+          "note": "headless-proxy: model-conversation continues; visible transcript repaint is gui_required->UNKNOWN",
+          "error": null
+        }
+      ]
+    }
+  ]
+}
