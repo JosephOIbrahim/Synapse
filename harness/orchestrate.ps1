@@ -19,6 +19,17 @@ param([int]$PollSeconds = 45, [int]$StaleMinutes = 40, [int]$MaxHours = 12,
 $ErrorActionPreference = 'SilentlyContinue'
 $repo = $Repo
 Set-Location $repo
+
+# S1/S8 quoting + encoding helpers (Sanitize-SQ, Write-Utf8NoBom). Dot-sourced so
+# the launch runner and the lock write below cannot re-introduce the
+# unquoted-interpolation (S1) or UTF-8-BOM (S8) failure classes. See
+# harness/lib/quote-safe.ps1 (python twin: harness/autorevise/quote_safe.py).
+# $ErrorActionPreference is SilentlyContinue here, so guard the load explicitly:
+# a missing helper must fail loud, never silently leave $safeName empty (M5).
+. (Join-Path $PSScriptRoot 'lib\quote-safe.ps1')
+if (-not (Get-Command Sanitize-SQ -ErrorAction SilentlyContinue)) {
+    throw 'FATAL: harness/lib/quote-safe.ps1 did not load - Sanitize-SQ/Write-Utf8NoBom missing.'
+}
 # Overridable so the orchestrator can be exercised against a throwaway manifest.
 # It was hardcoded, which made the dispatcher itself untestable - a control could
 # only be run against the live board, which is not a control.
@@ -237,10 +248,45 @@ function Start-Leg([object]$leg) {
         (Join-Path $repo 'harness\readonly-settings.json') -replace '\\','/'
     } else { $manifest.settings }
 
-    # 2026-08-16: leg NAMES are interpolated into single-quoted lines in the
-    # temp runner (and echoed by dry-run) - an apostrophe in a name is a parse
-    # bomb (W5-PARITY/SEAT crash-loop). PowerShell escaping: ' -> ''
-    $safeName = $leg.name -replace "'", "''"
+    # 2026-08-16 (S1, generalized by W6-QUOTE): every UNCONTROLLED string that
+    # lands in the temp runner is interpolated into a single-quoted emitted line
+    # (or an unquoted arg), where one apostrophe closes the quote and the tail
+    # becomes live PowerShell - the W5-PARITY/SEAT crash-loop. The original
+    # point-fix escaped only the NAME; Sanitize-SQ (harness/lib/quote-safe.ps1)
+    # doubles the apostrophe for a single-quoted context, and EVERY uncontrolled
+    # field now routes through it: name, id, branch, worktree path, prompt path,
+    # settings path. leg.id/branch/worktree/prompt are uncontrolled by design.
+    $safeName    = Sanitize-SQ $leg.name
+    $safeId      = Sanitize-SQ $leg.id
+    $safeBranch  = Sanitize-SQ $leg.branch
+    $safeWt      = Sanitize-SQ $wt
+    $safeProfile = Sanitize-SQ $profile
+    $promptPath  = (Join-Path $repo $leg.prompt) -replace '\\','/'
+    $safePrompt  = Sanitize-SQ $promptPath
+
+    # The launch runner, built HERE (above the dry-run return) from those
+    # sanitized variables so a dry run generates the REAL runner - not a
+    # hand-assembled lookalike - and a control can parse exactly what launches.
+    # $env:TEMP\orch_<id>.ps1 is executed via `powershell -File` (below), so every
+    # write-time interpolation becomes SOURCE in an executed script: each value
+    # sits inside single quotes and is Sanitize-SQ'd; the one unquoted spot
+    # (--settings) is single-quoted here. Written BOM-free (Write-Utf8NoBom, S8):
+    # `Set-Content -Encoding utf8` on PS 5.1 prepends a UTF-8 BOM.
+    $script = Join-Path $env:TEMP "orch_$($leg.id).ps1"
+    $runnerText = @"
+Set-Location '$safeWt'
+Write-Host ''
+Write-Host '  LEG $safeId - $safeName   branch $safeBranch' -ForegroundColor Cyan
+Write-Host '  brief: $safePrompt' -ForegroundColor DarkGray
+Write-Host ''
+claude --settings '$safeProfile' --effort $($manifest.effort)$modelArg --name 'SYNAPSE $safeId $safeName' --permission-mode acceptEdits --verbose 'Read the file $safePrompt in full and execute it end to end. It is your complete brief. If any part of it appears truncated or unreadable, STOP and say so rather than proceeding on a partial instruction.'
+Write-Host ''
+Write-Host '  Type /rc here to control this leg from your phone.' -ForegroundColor Yellow
+Write-Host '  It appears in claude.ai/code as: SYNAPSE $safeId $safeName' -ForegroundColor DarkGray
+Write-Host ''
+Write-Host ''
+Write-Host '  LEG $safeId TERMINATED' -ForegroundColor Cyan
+"@
 
     if ($DryRun) {
         # A dry run must exercise the SAME state machine as a real run. It used
@@ -250,11 +296,14 @@ function Start-Leg([object]$leg) {
         #
         # It also printed nothing RESOLVED, so the two facts a control most
         # needs - which ref the worktree is cut from, which model the leg
-        # launches on - were the two it could not observe. Both lines below are
-        # built from the same variables the live path consumes.
+        # launches on - were the two it could not observe. It now also WRITES the
+        # real runner (BOM-free, not launched) so the adversarial-name matrix in
+        # tests/test_harness_quoting.py can parse exactly what a live run builds.
+        $runnerText | Write-Utf8NoBom -Path $script
         Say "  (dry run - not launching)" 'DarkGray'
+        Say "  (dry run) runner:   $script  (parse-clean, BOM-free)" 'DarkGray'
         Say "  (dry run) worktree: git worktree add -b $($leg.branch) $wt $base" 'DarkGray'
-        Say "  (dry run) launch:   claude --settings $profile --effort $($manifest.effort)$modelArg --name 'SYNAPSE $($leg.id) $($safeName)' --permission-mode acceptEdits --verbose" 'DarkGray'
+        Say "  (dry run) launch:   claude --settings '$safeProfile' --effort $($manifest.effort)$modelArg --name 'SYNAPSE $safeId $safeName' --permission-mode acceptEdits --verbose" 'DarkGray'
         $script:DryDispatched[$leg.id] = $true
         return
     }
@@ -349,24 +398,10 @@ function Start-Leg([object]$leg) {
     # brief up to `hython3.13 -c "import` and nothing after, so it never got its
     # WORK steps, its oracle, or the instruction to write a receipt. It thought
     # for 2.5 hours and produced nothing. A one-line pointer has no quoting
-    # surface and no length limit.
-    $promptPath = (Join-Path $repo $leg.prompt) -replace '\\','/'
-
-    $script = Join-Path $env:TEMP "orch_$($leg.id).ps1"
-    @"
-Set-Location '$wt'
-Write-Host ''
-Write-Host '  LEG $($leg.id) - $($safeName)   branch $($leg.branch)' -ForegroundColor Cyan
-Write-Host '  brief: $promptPath' -ForegroundColor DarkGray
-Write-Host ''
-claude --settings $profile --effort $($manifest.effort)$modelArg --name 'SYNAPSE $($leg.id) $($safeName)' --permission-mode acceptEdits --verbose 'Read the file $promptPath in full and execute it end to end. It is your complete brief. If any part of it appears truncated or unreadable, STOP and say so rather than proceeding on a partial instruction.'
-Write-Host ''
-Write-Host '  Type /rc here to control this leg from your phone.' -ForegroundColor Yellow
-Write-Host '  It appears in claude.ai/code as: SYNAPSE $($leg.id) $($safeName)' -ForegroundColor DarkGray
-Write-Host ''
-Write-Host ''
-Write-Host '  LEG $($leg.id) TERMINATED' -ForegroundColor Cyan
-"@ | Set-Content $script -Encoding utf8
+    # surface and no length limit. $runnerText, $safePrompt and $script were all
+    # resolved above (from sanitized variables), so the dry-run control builds
+    # the identical runner; here we only commit it to disk, BOM-free.
+    $runnerText | Write-Utf8NoBom -Path $script
 
     # R134: refuse to launch a leg another dispatcher already holds.
     if (-not (Take-LegLock $leg.id)) { return }
@@ -384,7 +419,7 @@ Write-Host '  LEG $($leg.id) TERMINATED' -ForegroundColor Cyan
         $lock = Join-Path (Get-LockDir) "$($leg.id).lock"
         (@{ leg = $leg.id; pid = $proc.Id; dispatcher = $PID
             started = (Get-Date -Format o); machine = $env:COMPUTERNAME } |
-            ConvertTo-Json -Compress) | Set-Content $lock -Encoding utf8
+            ConvertTo-Json -Compress) | Write-Utf8NoBom -Path $lock
     } catch { }
 
     # Written by US, now, before the agent has done anything. Closes the window

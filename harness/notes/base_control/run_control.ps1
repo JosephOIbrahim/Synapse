@@ -29,6 +29,11 @@ param(
 
 $ErrorActionPreference = 'Continue'
 $here = Split-Path -Parent $PSCommandPath
+
+# S8: write resolved_lines.json BOM-free. PS 5.1 `Set-Content -Encoding utf8`
+# prepends a UTF-8 BOM, which made this file's own resolved_lines.json fail
+# json.load ("Unexpected UTF-8 BOM"). See harness/lib/quote-safe.ps1.
+. (Join-Path $here '..\..\lib\quote-safe.ps1')
 $root = Join-Path $env:TEMP 'base_control'
 $repo = Join-Path $root 'repo'
 
@@ -191,7 +196,7 @@ foreach ($c in $cells) {
     Write-Host ("     {0}" -f $c.launch.Trim())
 }
 
-$cells | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $here 'resolved_lines.json') -Encoding utf8
+$cells | ConvertTo-Json -Depth 4 | Write-Utf8NoBom -Path (Join-Path $here 'resolved_lines.json')
 
 Write-Host ""
 Write-Host ("RESULT  {0} failed cell(s)" -f $script:fails)
