@@ -1,0 +1,67 @@
+{
+  "leg": "W5-ROPE",
+  "status": "green_with_findings",
+  "product_head": "661ad3690338365472318cccb96742fb6e274053",
+  "summary": "The CURIOUS/EXPERT/ML switcher IS wired to rope profile composition and DOES change the active composed profile per selection - now proven by a new headless observable test that was previously only a manual seat accept. The live-seat 'does nothing' is a SEPARATE rendering bug in compositor._repolish_tree, filed as a held spawn (wiring-only scope). No product code changed; the deliverable is the missing machine test + the adjudicated diagnosis. Rope ratified state untouched.",
+  "acceptance": [
+    {
+      "predicate": "selecting CURIOUS / EXPERT / ML composes and applies the corresponding rope profile (observed via test, per selection)",
+      "verdict": "pass",
+      "evidence": "test: tests/test_rope_switcher_wires_profile.py (6 cases green). Drives the REAL SynapsePanel._select_profile -> _recompose -> compositor.compose chain (unbound on a fake self, tests/test_panel_stop_honest.py idiom) headless via qt_stub_window, and OBSERVES per selection that the active composed profile changes: _layout_profile, panel-wide density stamp (curious=airy / expert=standard / ml=tight), _system_prompt_overlay (curious narration / expert '' / ml terse), persisted SwitcherState.profile, and per-widget prominence (token_pill/token_meter quiet/standard/hero). Forward AND back transitions covered; a static pin fixes the pill.clicked -> _select_profile wire (synapse_panel.py:1015). Rides ON compositor.compose/resolve - only Qt leaves are faked, no fork."
+    },
+    {
+      "predicate": "rope ratified state files byte-identical before/after the leg",
+      "verdict": "pass",
+      "evidence": "probe: sha256 captured before any edit and re-verified after commit. harness/rope/STATE.json = 78193b805ac32de677c082355c663c70f2ac70d861423699a75fd5042572161f (unchanged); harness/rope/PENDING_TASKS.json = ac9b014d454a771b71b4152ecb9b053aa1dfdc05227a4e31e8dc24cf0a83e40e (unchanged). git status showed only the new test file added; no rope-state file touched. The pending L5-13 ruling stays untouched."
+    },
+    {
+      "predicate": "all existing tests/test_rope_*.py remain green",
+      "verdict": "pass",
+      "evidence": "test: pytest over all 10 existing test_rope_*.py plus the new file -> 101 passed, 0 failed (2 benign warnings: vendored-SDK ABI mismatch on Python 3.14, pytest-asyncio deprecation). test_rope_design_conformance.py (AST scan for raw hex/px in the panel + manifests) stayed green - the new test adds no token violations. test_rope_expert_pin.py (byte-identical expert resolve()) stayed green - the composer output is untouched."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "The switcher wiring was NOT missing - it already exists and is correct. Pill click (synapse_panel.py:1015) -> _select_profile (:499) persists via SwitcherState + sets _layout_profile (:518) + _recompose (:520) -> compositor.compose(self, root, get_manifest(profile)) (:566). The gap the seat-walk exposed is that this live half was delegated to a manual seat accept (test_rope_switcher_state.py docstring L4-6) and never machine-observed, so a contradiction (code says wired, seat says dead) sat unresolved. This leg resolves it: the wiring works; the perceived failure is a rendering bug (next finding).",
+      "anchor": "python/synapse/panel/synapse_panel.py:499"
+    },
+    {
+      "claim": "ROOT CAUSE of the live-seat 'does nothing': compositor._repolish_tree is dead. (a) It does 'from qtpy import QtWidgets' - qtpy is not installed in this env, so it returns early and repolishes nothing. (b) Even with qtpy present, the 'break' after the first stack.extend pops only the root and never repolishes the descendants it just queued. Every density QSS rule is a descendant selector (#DsRoot[density=...] QPushButton#DsButton etc.), so density never reaches child widgets and airy/standard/tight render identically - the strongest visible switch lever is inert. The compositor comment at :222-226 claims this bug was already fixed; it was not. Separate rendering defect, headless-unverifiable (no Qt here), NOT switcher wiring - filed as spawn W5-ROPE-DENSITY-REPAINT.",
+      "anchor": "python/synapse/panel/compositor.py:184"
+    },
+    {
+      "claim": "Secondary defect (context for the spawn): compositor._apply_spec applies 'collapsed' one-way (setMaximumHeight(0) only, never restored), so curious's folded readouts (token_meter/activity_meter) never un-collapse when switching back to expert/ml. Moot at the seat today because those widgets are already invisible (activity_meter setVisible(False) at build; token_meter has no text writer), but it is a real asymmetry a density fix should address alongside.",
+      "anchor": "python/synapse/panel/compositor.py:151"
+    }
+  ],
+  "for_ruling": [
+    {
+      "topic": "L5-13 seat-walk adjudication (this leg is the finding that pending ruling waited on)",
+      "claim": "Evidence for L5-13: the CURIOUS/EXPERT/ML switcher IS correctly wired to rope profile composition and DOES change the active composed profile on every selection (now machine-proven headless, per selection). L5-13 need not treat the switcher as unwired. The remaining user-visible defect is compositor._repolish_tree (density repaint), a rendering bug distinct from the switcher, captured as spawn W5-ROPE-DENSITY-REPAINT. Rope ratified state (STATE.json / PENDING_TASKS.json) was left byte-identical; no ratified field was touched.",
+      "needs": "human decision on L5-13 in light of this evidence"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W5-ROPE-DENSITY-REPAINT",
+      "name": "fix compositor._repolish_tree so profile density (airy/standard/tight) visibly re-applies on switch",
+      "band": "BUILD",
+      "class": "build",
+      "note": "Root cause of the 2026-08-16 seat-walk 'switcher does nothing'. The wiring works (W5-ROPE proved it) but _repolish_tree is dead: it imports qtpy (uninstalled -> early return) and, even with qtpy, breaks after popping only the root so density QSS descendant rules never reach children. Fix: use the panel's own Qt binding (mirror synapse_panel.py:15-23 try PySide6 except PySide2) instead of qtpy, and drop the premature break so findChildren(QWidget) descendants all repolish. Also make _apply_spec 'collapsed'/'visible' two-way so a switch-back restores (see finding 3). Verifiable at logic level headless (traversal reaches every node; no qtpy dep); final Qt repaint stays seat-verified. Held for Joe: class 'build' is outside W5-ROPE spawn_classes ['probe'].",
+      "targets": [
+        "python/synapse/panel/compositor.py:176 (_repolish_tree): swap qtpy import for the panel's PySide6/PySide2 binding; remove the premature break so all descendants repolish",
+        "python/synapse/panel/compositor.py:146 (_apply_spec): make collapsed/visible two-way so switch-back restores",
+        "tests/: add a headless test asserting the repolish traversal reaches every descendant and that collapse/visible reset on switch-back"
+      ],
+      "touches": ["python/synapse/panel/compositor.py", "tests/"],
+      "readonly": false,
+      "deps": [],
+      "acceptance": [
+        {"predicate": "_repolish_tree repolishes the root AND every descendant using the panel's real Qt binding, with no qtpy dependency", "evidence": "test"},
+        {"predicate": "_apply_spec collapsed/visible reset when a later profile does not set them, so switching back restores the widget", "evidence": "test"},
+        {"predicate": "switching profile visibly changes density spacing at the seat", "evidence": "gui_required"},
+        {"predicate": "all existing tests/test_rope_*.py remain green", "evidence": "test"}
+      ]
+    }
+  ]
+}
