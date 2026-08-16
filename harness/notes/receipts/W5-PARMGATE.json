@@ -1,0 +1,89 @@
+{
+  "leg": "W5-PARMGATE",
+  "status": "green_with_findings",
+  "product_head": "816826ca13b38ad93b80716351188025dce74b45",
+  "base": "df8c9ef38e909e1423b1c0a5e7249b75dcb96bb7",
+  "summary": "The Parm Gate: gated_set() validates parm NAMES against the build-keyed catalog before any mutation; a hallucinated name raises a catchable ParmGateError with catalog nearest-match suggestions. reaction_diffusion + pixel_sort kernelcode writes route through it and the parm('kernelcode') or parm('code') phantom hedge is deleted. Runtime lookup API (catalog.parms / catalog.signature) is cheap-exact, embedding-free, degrade-safe. Gate opens no undo path of its own; a gated write lands in the caller's single undo group; rejects only known-bad and degrades to a permissive, observable safe-set otherwise.",
+  "acceptance": [
+    {
+      "predicate": "gated_set rejects a deliberately wrong parm name with a nearest-match suggestion (RED/GREEN pair)",
+      "verdict": "pass",
+      "evidence": "tests/test_parm_gate.py::TestRejectionRedGreen::test_red_phantom_name_rejected_with_suggestion ('code' -> ParmGateError, suggestion 'kernelcode'), ::test_green_valid_name_sets ('kernelcode' -> set), ::TestSuggestionQuality (substring + typo ranking, honest-empty on wild miss). Gated against the committed faithful fixture. 25/25 gate tests pass."
+    },
+    {
+      "predicate": "weak-domain handlers route parm writes through the gate; the kernelcode/code hedge is gone",
+      "verdict": "pass",
+      "evidence": "python/synapse/server/handlers_cops.py:1470 (reaction_diffusion) + :1585 (pixel_sort) call gated_set; the `parm(\"kernelcode\") or parm(\"code\")` hedge is deleted (only comments/var remain). Pinned by tests/test_cops_parmgate_routing.py::TestHedgeDeletedAndGateWired (source pins) + TestReactionDiffusionRoutesThroughGate (behavioral). tests/test_cops.py 90/90 = no regression."
+    },
+    {
+      "predicate": "a gated set still wraps in exactly one undo group",
+      "verdict": "pass",
+      "evidence": "tests/test_parm_gate.py::TestUndoDiscipline::test_bare_gated_set_opens_no_group (gate opens none), ::test_set_lands_in_the_single_caller_group (one caller group, set at depth 1), ::test_source_never_touches_undo_or_hou (AST: no hou import, no .undos). tests/test_cops_parmgate_routing.py::test_kernelcode_written_through_gate_in_one_undo_group + ::test_gate_did_not_open_a_second_group (real undo recorder, handler end-to-end). GROUPING ONLY, not rollback; live artist one-Ctrl+Z REVERSAL is UNKNOWN (headless, see F5)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "minor",
+      "status": "FIXED",
+      "claim": "Both COP handlers originally discarded gated_set's return, so in DEGRADED mode a dropped kernelcode write (node lacks the parm) was a silent no-op at the handler boundary - violating crucible criterion 3. Surfaced by the adversarial 'silent' lens (CONFIRMED).",
+      "fix": "handlers_cops.py now captures the gate result and surfaces kernel_written (bool) + kernel_skipped (list) in both handler return dicts. Pinned by tests/test_cops_parmgate_routing.py::test_dropped_kernel_write_is_observable_not_silent.",
+      "anchor": "python/synapse/server/handlers_cops.py:1470,1585"
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "status": "BY-DESIGN",
+      "claim": "_handle_cops_set_opencl (:587-598) keeps its multi-name fallback search (kernelcode -> opencl_code/code/snippet) with a terminal 'no kernel parm' error. That is a legitimate arbitrary-node affordance (reached only when kernelcode is absent) covered by test_set_opencl_no_parm; routing it through the strict gate would break that error contract. Left unchanged; out of the named scope (the two scaffolding handlers).",
+      "anchor": "python/synapse/server/handlers_cops.py:587"
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "status": "SCOPE",
+      "claim": "~14 other `parm(X) or parm(Y)` hedges in handlers_cops.py (operation/compop, blursize/size, type/noise_type, size/radius, bright/gain, ...) are REAL cross-version parm-name alternates, not phantom hedges. Gating them needs catalog authority and a multi-candidate gate to avoid false-rejects. Left unrouted this leg; proposed as a follow-up spawn.",
+      "anchor": "python/synapse/server/handlers_cops.py:1049"
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "status": "WATCH (W5-CATALOG merge)",
+      "claim": "reaction_diffusion/pixel_sort's vopcop2gen FALLBACK node (used only if createNode('opencl') returns None) is also routed through the gate. If a FUTURE full catalog knows vopcop2gen WITHOUT a kernelcode parm, gated_set would RAISE where the old hedge silently skipped - turning a degraded scaffold into a hard failure. Cannot bite today (degraded catalog => permissive; fixture lacks vopcop2gen). Re-verify after W5-CATALOG merges. Surfaced by the 'regression' lens as a REFUTED watch item.",
+      "anchor": "python/synapse/server/handlers_cops.py:1445"
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "status": "UNKNOWN",
+      "claim": "Live GUI proof that an artist's single Ctrl+Z REVERSES a gated reaction_diffusion op is UNKNOWN - headless tests prove the undo GROUP is entered around the write, not that the group reverses live. Matches the W5-UNDO/W5-UNDOB posture (grouping only, no rollback). Deferred as a probe-class spawn.",
+      "anchor": "tests/test_cops_parmgate_routing.py:1"
+    },
+    {
+      "id": "F6",
+      "severity": "process",
+      "status": "RECOVERED",
+      "claim": "Product files were first written to the MAIN checkout (C:/Users/User/SYNAPSE, on master) via absolute paths instead of the branch worktree. Caught before commit: the 6 changes were relocated into the worktree and master's working tree restored to pristine (only the orchestrator's own uncommitted state remains). No contamination shipped. Recorded to operator memory.",
+      "anchor": "harness/notes/receipts/W5-PARMGATE.json"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "R1",
+      "claim": "The gate is degraded (permissive) on this branch because the W5-CATALOG data (rag/catalog/) is unmerged. It becomes live-authoritative for cataloged types only after W5-CATALOG merges to master alongside this leg. Merge ordering note for the human: W5-CATALOG should land with or before W5-PARMGATE for the gate to reject live; the leg is correct either way (safe-degrade), but its rejection power is dormant until the data is in-tree. Re-verify F4 (vopcop2gen) at that merge."
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W5-PARMGATE-S1",
+      "class": "build",
+      "name": "multi-candidate catalog gate for the remaining handlers_cops hedges + generic set_parm",
+      "note": "Add a gated_set variant that accepts a candidate name list and resolves the one the catalog confirms, replacing the ~14 legitimate `parm(X) or parm(Y)` cross-version hedges (F3) and, separately, evaluate routing the generic handlers.py::_handle_set_parm through the gate (system-wide parm-name validation). High value, high blast radius - its own leg. Lands HELD (build class outside this leg's spawn_classes=[probe])."
+    },
+    {
+      "id": "W5-PARMGATE-S2",
+      "class": "probe",
+      "name": "live GUI one-Ctrl+Z reversal of a gated reaction_diffusion op",
+      "note": "Confirm on a live H22 GUI that a single artist Ctrl+Z reverses the whole gated scaffold in one step (F5). Headless proves group entry, not live reversal."
+    }
+  ]
+}
