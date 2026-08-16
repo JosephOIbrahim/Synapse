@@ -368,14 +368,115 @@ def check_no_rigging_drift(ctx):
             return {"ok": False, "detail": f"authoring_domains.json unreadable: {str(e)[:200]}"}
     return {"ok": None, "detail": "authoring-domain allowlist not declared yet (python/synapse/server/authoring_domains.json missing)"}
 
+def _method_body(src, sig_prefix):
+    """Source of the def whose stripped line starts with *sig_prefix*, from that line to the next
+    sibling def/class at the same-or-shallower indent (or EOF). None if not found. Scopes a
+    fingerprint to ONE method instead of the whole file — the get-and-call bypass must be judged
+    inside handle(), not against the batch/autonomy invoke sites elsewhere in the file."""
+    lines = src.splitlines()
+    start = indent = None
+    for i, l in enumerate(lines):
+        s = l.lstrip()
+        if s.startswith(sig_prefix):
+            start, indent = i, (len(l) - len(s))
+            break
+    if start is None:
+        return None
+    body = [lines[start]]
+    for l in lines[start + 1:]:
+        s = l.strip()
+        if s.startswith(("def ", "class ")) and (len(l) - len(l.lstrip())) <= indent:
+            break
+        body.append(l)
+    return "\n".join(body)
+
 def check_provenance_not_bypassed(ctx):
-    # Non-goal: not a commodity hou.* passthrough. Every scene/stage mutation routes through the
-    # provenance gateway and lands in agent.usd. The rigorous form is a RUNTIME sentinel (perform
-    # a sandboxed mutation, assert the ledger grew by one). Until that's wired this WARNS — it
-    # neither fake-passes nor blocks every sprint.
-    # ADAPT: name the provenance gateway + either a mutation-capable-module manifest (static) or
-    # the sandbox sentinel (runtime, Mode B).
-    return {"ok": None, "detail": "ADAPT: wire the provenance-gateway manifest or the runtime ledger-grew sentinel. Warn-only until then."}
+    # BOUNDARY non-goal (SYNAPSE_H22_BOUNDARY.md §8 "No mutation that bypasses the ledger"): every
+    # scene/stage mutation routes through provenance. WIRED FAIL-CLOSED here (W6-PROV). It was a
+    # 0a'-track warn-only ADAPT stub returning ok:None across the whole R-track: the real gateway
+    # it needed to anchor to (the FloorGate) was built on the SAME 0a'-prime track but the
+    # guardrail was never pointed at it (DROP_DAY.md "provenance_not_bypassed stays warn-only by
+    # design (0a' track)"). This wires it.
+    #
+    # THE GATEWAY (verified first-hand, not agent.usd — that writer is dormant on the live path,
+    # fires only for graph-synth builds): the FloorGate (python/synapse/core/floor_gate.py) is the
+    # Tier-0 provenance hook. The server CommandHandlerRegistry funnels EVERY dispatch through
+    # invoke() -> self._floor_gate.wrap(), which writes one durable provenance record per MUTATING
+    # op ("provenance or it did not happen", floor_gate.py). The only ways to bypass it: dispatch a
+    # registered handler OUTSIDE invoke() (skips the wrap), or gut the gateway itself. Three static
+    # legs over the product surface (stock python, no hython, reads ctx['wt']) — GREEN when the
+    # chokepoint is intact, RED (deterministic guardrail FAIL) the moment a mutation can reach hou.*
+    # with no provenance record.
+    #
+    # SCOPE / explicit non-overlap (legitimate exceptions, made explicit not implicit-via-unwired):
+    #   - This is the FloorGate PROVENANCE anchor, NOT the undo-group anchor. hda_promote_parm /
+    #     hda_set_help / render_settings / cops_temporal_analysis legitimately mutate WITHOUT
+    #     hou.undos.group; they are FloorGate-recorded but not undo-grouped (a separate anchor), so
+    #     fingerprinting "not inside hou.undos.group" would false-RED the clean tree. Not done here.
+    #   - NOT the /mcp bridge-audit envelope: that fail-OPEN is R.1 (check_mutation_fail_closed).
+    #     Those fallbacks still route through handle() -> FloorGate, so they lose the bridge
+    #     IntegrityBlock, not the FloorGate receipt — a different bypass.
+    import re
+    live = []
+
+    # Leg 1 - the server command registry constructs + routes every dispatch through the FloorGate.
+    h_src, h_path = _read_src(ctx, "python/synapse/server/handlers.py")
+    if h_src is None:
+        return {"ok": False, "detail": f"provenance dispatch surface unreadable (fail-closed): {h_path}"}
+    miss1 = []
+    if "self._floor_gate = FloorGate()" not in h_src:
+        miss1.append("registry no longer constructs the FloorGate (self._floor_gate = FloorGate())")
+    if "self._floor_gate.wrap(" not in h_src:
+        miss1.append("invoke() no longer delegates to self._floor_gate.wrap(...)")
+    if miss1:
+        live.append("registry gateway wiring gone (handlers.py): " + "; ".join(miss1))
+
+    # Leg 2 - the FloorGate actually EMITS and DURABLY PERSISTS a record for mutating ops.
+    fg_src, fg_path = _read_src(ctx, "python/synapse/core/floor_gate.py")
+    if fg_src is None:
+        return {"ok": False, "detail": f"provenance gateway module unreadable (fail-closed): {fg_path}"}
+    miss2 = []
+    if "self._record(" not in fg_src:
+        miss2.append("wrap() records nothing (self._record(...) gone)")
+    if "write_report(" not in fg_src:
+        miss2.append("_record() no longer persists via the durable write_report(...) path")
+    if miss2:
+        live.append("gateway is a passthrough (floor_gate.py): " + "; ".join(miss2))
+
+    # Leg 3 - no side-door dispatch: a registered handler must never execute OUTSIDE invoke().
+    #   (a) the pre-FloorGate get-and-call idiom registry.get(...)(...) ANYWHERE under server/
+    #       (cartographer-verified count 0 today), and
+    #   (b) the live handle() chokepoint must dispatch via self._registry.invoke(...), never a
+    #       bound `handler(...)` / handler.handle(...) call that skips the gate.
+    side = []
+    get_call = re.compile(r"_registry\.get\([^()]*\)\s*\(")
+    server_dir = Path(ctx["wt"]) / "python" / "synapse" / "server"
+    if server_dir.is_dir():
+        for f in sorted(server_dir.rglob("*.py")):
+            if "__pycache__" in f.parts:
+                continue
+            try:
+                s = f.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                continue
+            if get_call.search(s):
+                side.append(f"{f.relative_to(Path(ctx['wt'])).as_posix()}: registry.get(...)(...) direct dispatch")
+    handle_body = _method_body(h_src, "def handle(self, command")
+    if handle_body is not None:
+        if "self._registry.invoke(" not in handle_body:
+            side.append("handlers.py handle(): mutating dispatch no longer routes through self._registry.invoke(...)")
+        if re.search(r"=\s*handler\(", handle_body) or "handler.handle(" in handle_body:
+            side.append("handlers.py handle(): dispatches a bound handler directly (skips invoke() -> FloorGate)")
+    if side:
+        live.append("mutation dispatched outside the FloorGate: " + "; ".join(side))
+
+    if live:
+        return {"ok": False, "detail": ("scene/stage mutation can bypass provenance: " + " | ".join(live)
+                + " -- every mutating command must dispatch through registry.invoke() -> "
+                "FloorGate.wrap (core/floor_gate.py)")[:500]}
+    return {"ok": True, "detail": "every mutating command routes through the FloorGate Tier-0 "
+            "provenance hook: handlers.py invoke() -> self._floor_gate.wrap; floor_gate.py records "
+            "+ durably persists (write_report); no side-door dispatch under server/"}
 
 # ---------- phantom guardrail (Upgrade 3 / P2): the orphaned gate, wired into the loop ----------
 # forge_evaluator_gate.py::gate_phantom scanned a fixed file list and was never called by the
