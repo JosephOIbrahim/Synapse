@@ -1,0 +1,45 @@
+{
+  "id": "W5-PCRUX",
+  "band": "TRUTH",
+  "name": "parity crucible: adversarial gate over the two parity probes - no verdict inherited",
+  "source": {
+    "doc": "houdini/python_panels/synapse_panel.pypanel",
+    "anchor": "house rule: CRUX before any verdict reaches Joe; the audit lens is claim-without-observation"
+  },
+  "targets": [
+    "1) re-execute BOTH probes from scratch in this worktree - fresh hython runs, own stdout; never trust peer receipts",
+    "2) attack exhaustiveness: independent glob of python/synapse/panel/**/*.py, compare to W5-PARITY's row count; a missed module is a failed audit",
+    "3) attack the build question: did the probes exercise the hython the GUI seat launches? cross-examine W5-SEAT's multi-build audit; if unprovable it stays UNKNOWN and is said out loud in the verdict",
+    "4) attack exec fidelity: the pypanel runs via exec in Houdini's panel context - verify the probe's exec reproduced that (no __file__, module flush) rather than a plain import that would mask loader differences",
+    "5) mandate table, binary per leg: receipt HEAD exists and precedes receipt write; receipt is the leg's own closing commit; RELEASE posted (the wave5l F2/F3 check)",
+    "6) verdict: harness/notes/receipts/W5-PCRUX_verdict.md + W5-PCRUX.json committed on this leg's branch as its own closing commit; drop flag file harness/notes/h22/w5p-landed.flag"
+  ],
+  "acceptance": [
+    {
+      "predicate": "both probes independently re-executed with first-hand evidence; divergences enumerated",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "mandate table binary per leg incl. bus RELEASE check",
+      "evidence": "check"
+    },
+    {
+      "predicate": "verdict names every UNKNOWN and exactly what Joe's seat must observe to close each",
+      "evidence": "check"
+    }
+  ],
+  "deps": [
+    "W5-PARITY",
+    "W5-SEAT"
+  ],
+  "readonly": true,
+  "touches": [],
+  "crucible_criteria": [
+    "carries CRX0 + the wave5l precedents as standing checks",
+    "unobtainable renders UNKNOWN, never zero and never an estimate"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "note": "Scope frozen to the parity pair. W5-WCRUX keeps the substrate trio. Merge of parity probe artifacts remains Joe's word."
+}

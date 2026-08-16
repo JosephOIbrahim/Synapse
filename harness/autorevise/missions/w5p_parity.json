@@ -1,0 +1,46 @@
+{
+  "id": "W5-PARITY",
+  "band": "BUILD",
+  "class": "build",
+  "name": "panel parity 1/2: prove every module the panel executes is the repo's, byte-for-byte, under the real hython",
+  "source": {
+    "doc": "houdini/python_panels/synapse_panel.pypanel",
+    "anchor": "Joe word 2026-08-16: verify design panel is 1:1 with the repo; panel reported stale after relaunch"
+  },
+  "targets": [
+    "1) harness/probes/parity_modules/probe_parity.py run under C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe with HOUDINI_USER_PREF_DIR=C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 so packages/synapse.json loads for real; if that hython is absent, enumerate Houdini* under Program Files, record the exact invocation tried, and proceed with the newest 22.0 - never silently substitute",
+    "2) module provenance, EXHAUSTIVE: glob python/synapse/panel/**/*.py in the worktree, import every one under hython, assert module.__file__ resolves inside C:\\Users\\User\\SYNAPSE, and sha256(source on disk) == sha256(inspect.getsource(module)) - emit per-module rows {module, file, in_repo, sha_match} to harness/probes/parity_modules/results.json",
+    "3) pypanel shim fidelity: parse the .pypanel CDATA, exec it under an offscreen QApplication (the W5-PANEL hython pattern), call onCreateInterface(); assert the returned widget's class comes from a repo file and that the shim's sys.modules flush actually ran (plant a sentinel module before exec, assert evicted)",
+    "4) behavior pins on the LIVE built widget, master da6d2b33: source-inspect synapse_panel.py for next_font_scale at BOTH R1 sites (the Larger text action and _cycle_font_scale, commit 4c1134d8); tokens.next_font_scale first step from host 1.3 is >= 1.3; chat leading on 12 inserted lines grows document height by 12px +/- 0.5 (the W5-PANEL measured-effective method)",
+    "5) every claim carries first-hand hython stdout committed alongside results.json; anything unmeasurable renders UNKNOWN with the exact blocked step; GUI pixel render is explicitly out of scope (Joe's seat)",
+    "6) BUS MANDATE (Joe word: teams that communicate): post your claim at start, post a findings message addressed to your peer leg when you resolve shared facts (hython path, env recipe), and post an explicit RELEASE at close - the wave5l F2/F3 no-release debt does not repeat here."
+  ],
+  "acceptance": [
+    {
+      "predicate": "every python/synapse/panel module imports under hython with __file__ in the repo and disk==imported sha, exhaustively (glob count == row count)",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "pypanel shim exec builds the widget from repo modules offscreen; flush sentinel evicted",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "R1 double-site wiring + font-floor step + leading delta measured on the live widget",
+      "evidence": "test"
+    }
+  ],
+  "deps": [],
+  "readonly": false,
+  "touches": [
+    "harness/probes/parity_modules/"
+  ],
+  "crucible_criteria": [
+    "no claim without observation (face_token house rule) - a parity row without its hython stdout is a laundered claim",
+    "exhaustiveness is a measured number: glob count asserted equal to results row count",
+    "receipt is this leg's own closing commit; RELEASE posted on the bus"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "note": "Answers Joe's stale report mechanically. Collision guard: touches harness/probes/ only - MEASURES owns validation/ and tests/."
+}

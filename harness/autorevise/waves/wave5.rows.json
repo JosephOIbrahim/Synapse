@@ -1,5 +1,97 @@
 [
   {
+    "id": "W5-BASE",
+    "name": "suite_baseline promoted to the R31 two-leg tuple - the standing master red dies",
+    "state": "ready",
+    "receipt": "W5-BASE.json",
+    "branch": "wave5/base",
+    "base": "master",
+    "worktree": ".claude/worktrees/w5-base",
+    "prompt": "harness/autorevise/prompts/W5-BASE.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/verify/suite_baseline.json",
+      "tests/"
+    ],
+    "note": "AUTOREVISE harness/verify/checks.py :: R.R + K.7 guardrail_violations: suite_baseline - 'FLAT baseline shape rejected: top-level passed/failed scalar; R31 requires the two-leg tuple {gate:{...}, shipping:{...}}, each leg naming its interpreter and producer'. Proposal already banked at harness/notes/receipts/Q2_PROPOSED_suite_baseline.json. Pre-existing master state, predates wave 4 (W4-GUARD finding b).. Smallest leg of the wave; clears the last pre-existing red so wave-5 CRUX can demand an all-green R.R. COMMIT BEFORE RECEIPT."
+  },
+  {
+    "id": "W5-CRUX",
+    "name": "wave-5 crucible: adversarial gate - first live test of the commit-before-receipt mandate",
+    "state": "ready",
+    "receipt": "W5-CRUX.json",
+    "branch": "wave5/crux",
+    "base": "master",
+    "worktree": ".claude/worktrees/w5-crux",
+    "prompt": "harness/autorevise/prompts/W5-CRUX.md",
+    "deps": [
+      "W5-DENSE",
+      "W5-DELTA",
+      "W5-BASE",
+      "W5-UNDO"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "AUTOREVISE harness/notes/h22/BLUEPRINT.md :: Series plan quit-rules + Invariant 5 CRUX-before-merge; CRX0 lineage: the amended _template.md commit-before-receipt mandate gets its first enforcement here. Standing block: ahead:0 at receipt-close on any builder = BLOCK, no post-hoc driver rescue this time - the mandate exists now.. Merge remains Joe's word; the DELTA wiring flip and the UNDO gui receipt ride with it."
+  },
+  {
+    "id": "W5-DELTA",
+    "name": "ING-DELTA: shipped contexts re-promoted from the 22.0.400 archive - freshness gate goes green",
+    "state": "ready",
+    "receipt": "W5-DELTA.json",
+    "branch": "wave5/delta",
+    "base": "master",
+    "worktree": ".claude/worktrees/w5-delta",
+    "prompt": "harness/autorevise/prompts/W5-DELTA.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/notes/rag_promote_h22.py",
+      "rag/corpus/h22_nodes.json",
+      "harness/notes/h22/",
+      "tests/"
+    ],
+    "note": "AUTOREVISE harness/notes/receipts/W4-GUARD.json :: Freshness gate honestly RED: served corpus stamped .368 != ratified .400 (drop.json), release-blocking by design; W4-GUARD proposed probe ING-DELTA. Promote path already emits id/searchable_text (W4-KNOW); helpdoc is build-parameterized (W4-HELP) - re-promotion of the SHIPPED contexts (cop/lop/cop2) from the .400 archive needs no new machinery.. Greens the gate GUARD built. Runs on current parser - Branch-A patches are wave-7 material behind Gate P. COMMIT BEFORE RECEIPT."
+  },
+  {
+    "id": "W5-DENSE",
+    "name": "S1: node corpus entries enter the dense semantic index - P@1 reaches the bar",
+    "state": "ready",
+    "receipt": "W5-DENSE.json",
+    "branch": "wave5/dense",
+    "base": "master",
+    "worktree": ".claude/worktrees/w5-dense",
+    "prompt": "harness/autorevise/prompts/W5-DENSE.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "python/synapse/cognitive/tools/scout_ingest.py",
+      "python/synapse/cognitive/",
+      "python/synapse/cognitive/tools/scout_eval.py",
+      "tests/"
+    ],
+    "note": "AUTOREVISE harness/notes/receipts/W4-KNOW.json :: Spawn S1 + finding F1: type-name P@1 0.7546 and hybrid floor-clearing 0.9526 are capped by node entries being ABSENT from the dense semantic index (103 vectors, prose-era); lexical path is already 0.9962. W4-CRUX independently reproduced both figures. Fix = embed node entries (id + searchable_text now exist since W4-KNOW) at ingest as derived data.. Closes the campaign-bar gap CRX3 left open. COMMIT BEFORE RECEIPT per the amended _template - this wave is the mandate's first live test."
+  },
+  {
+    "id": "W5-UNDO",
+    "name": "hardening shotgun: handlers_node mutations get undo groups - the Ctrl+Z hole closes",
+    "state": "ready",
+    "receipt": "W5-UNDO.json",
+    "branch": "wave5/undo",
+    "base": "master",
+    "worktree": ".claude/worktrees/w5-undo",
+    "prompt": "harness/autorevise/prompts/W5-UNDO.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "python/synapse/server/handlers_node.py",
+      "CLAUDE.md",
+      "tests/"
+    ],
+    "note": "AUTOREVISE CLAUDE.md :: Verified drift note 2026-07-10: usd/material/cops/batch/execute handlers wrap in hou.undos.group; the handlers_node.py create/set_parm/connect/delete handlers do NOT - an artist's one-Ctrl+Z contract has a hole on the live WS path. Hardening item 1 of the ratified series (BLUEPRINT.md Series plan).. Practice 5: pay the safety mortgage monthly. Stale knowledge annoys an artist; a broken Ctrl+Z burns one. COMMIT BEFORE RECEIPT."
+  },
+  {
     "id": "W5-LCRUX",
     "name": "lifecycle-wave crucible: adversarial gate over the W5L legs before any merge word",
     "state": "ready",
@@ -161,5 +253,54 @@
     "readonly": true,
     "touches": [],
     "note": "AUTOREVISE docs/BLUEPRINT_WEAK_DOMAINS.md :: house rule: CRUX before merge - applies to every merged product; blueprint FP1/FP2 are the audit lens. Gates the substrate trio only - W5-LCRUX's scope stays frozen on the lifecycle four. Merge remains Joe's word, per leg. Domain waves A-E author only after this substrate merges."
+  },
+  {
+    "id": "W5-PCRUX",
+    "name": "parity crucible: adversarial gate over the two parity probes - no verdict inherited",
+    "state": "ready",
+    "receipt": "W5-PCRUX.json",
+    "branch": "wave5/pcrux",
+    "base": "master",
+    "worktree": ".claude/worktrees/w5-pcrux",
+    "prompt": "harness/autorevise/prompts/W5-PCRUX.md",
+    "deps": [
+      "W5-PARITY",
+      "W5-SEAT"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "AUTOREVISE houdini/python_panels/synapse_panel.pypanel :: house rule: CRUX before any verdict reaches Joe; the audit lens is claim-without-observation. Scope frozen to the parity pair. W5-WCRUX keeps the substrate trio. Merge of parity probe artifacts remains Joe's word."
+  },
+  {
+    "id": "W5-PARITY",
+    "name": "panel parity 1/2: prove every module the panel executes is the repo's, byte-for-byte, under the real hython",
+    "state": "ready",
+    "receipt": "W5-PARITY.json",
+    "branch": "wave5/parity",
+    "base": "master",
+    "worktree": ".claude/worktrees/w5-parity",
+    "prompt": "harness/autorevise/prompts/W5-PARITY.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/probes/parity_modules/"
+    ],
+    "note": "AUTOREVISE houdini/python_panels/synapse_panel.pypanel :: Joe word 2026-08-16: verify design panel is 1:1 with the repo; panel reported stale after relaunch. Answers Joe's stale report mechanically. Collision guard: touches harness/probes/ only - MEASURES owns validation/ and tests/."
+  },
+  {
+    "id": "W5-SEAT",
+    "name": "panel parity 2/2: prove the seat's resolution order - package, hpath, icons, and zero shadow installs",
+    "state": "ready",
+    "receipt": "W5-SEAT.json",
+    "branch": "wave5/seat",
+    "base": "master",
+    "worktree": ".claude/worktrees/w5-seat",
+    "prompt": "harness/autorevise/prompts/W5-SEAT.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/probes/parity_seat/"
+    ],
+    "note": "AUTOREVISE harness/notes/h22/panel-observations-2026-08-16.md :: Joe word 2026-08-16: verify 1:1 with repo; the load path must be proven, not assumed. Disjoint claim from W5-PARITY (parity_seat/ vs parity_modules/). Together they define '1:1 with repo' as: repo-sourced modules, byte-equal, resolved first, no shadows, resources from hpath."
   }
 ]

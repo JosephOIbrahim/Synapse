@@ -1,0 +1,46 @@
+{
+  "id": "W5-SEAT",
+  "band": "BUILD",
+  "class": "build",
+  "name": "panel parity 2/2: prove the seat's resolution order - package, hpath, icons, and zero shadow installs",
+  "source": {
+    "doc": "harness/notes/h22/panel-observations-2026-08-16.md",
+    "anchor": "Joe word 2026-08-16: verify 1:1 with repo; the load path must be proven, not assumed"
+  },
+  "targets": [
+    "1) harness/probes/parity_seat/probe_seat.py under C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe with HOUDINI_USER_PREF_DIR=C:\\Users\\User\\OneDrive\\Documents\\houdini22.0: FIRST verify the synapse package actually loaded (hou.houdiniPath() contains C:/Users/User/SYNAPSE/houdini AND os.environ SYNAPSE_ROOT == the repo) - if it did not load, that IS the finding: diagnose why (pref-dir token, package scan), never fake a pass",
+    "2) resource resolution via hou.findFile, receipts committed: houdini/toolbar/synapse.shelf and ALL config/Icons/SYNAPSE_*.png (assert count == 7 including SYNAPSE_synapse.png @2dd6bab6) resolve to paths inside the repo",
+    "3) shadow-install sweep: importlib.metadata distributions + a walk of every sys.path entry and all site-packages for ANY other provider of a 'synapse' package; prove ORDER: index of repo/python in sys.path is lower than any other candidate; zero shadows is a counted claim",
+    "4) multi-build audit: enumerate 'C:/Program Files/Side Effects Software/Houdini*'; if more than one 22.x exists, record each and which prefs dir it maps to; whether Joe's GUI launch used 22.0.400 renders UNKNOWN unless a prefs/log artifact proves it - never guessed",
+    "5) pypanel hot-flush pin: parse houdini/python_panels/synapse_panel.pypanel, assert the sys.modules flush block is present (panel-reopen == hot reload; restart only for icons/shelf)",
+    "6) BUS MANDATE (Joe word: teams that communicate): post your claim at start, post a findings message addressed to your peer leg when you resolve shared facts (hython path, env recipe), and post an explicit RELEASE at close - the wave5l F2/F3 no-release debt does not repeat here. Consume W5-PARITY's hython/env findings from the bus if posted first; otherwise resolve independently and post yours."
+  ],
+  "acceptance": [
+    {
+      "predicate": "package + hpath resolve to the repo under hython with the live prefs dir, first-hand",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "all 7 icons + shelf file resolve via hou.findFile into the repo; count asserted",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "zero shadow synapse installs; sys.path order proven with indices",
+      "evidence": "probe"
+    }
+  ],
+  "deps": [],
+  "readonly": false,
+  "touches": [
+    "harness/probes/parity_seat/"
+  ],
+  "crucible_criteria": [
+    "no claim without observation; every resolution claim carries hou.findFile stdout",
+    "the multi-build question stays UNKNOWN if unprovable - the honest gap Joe closes at his seat",
+    "receipt is this leg's own closing commit; RELEASE posted on the bus"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "note": "Disjoint claim from W5-PARITY (parity_seat/ vs parity_modules/). Together they define '1:1 with repo' as: repo-sourced modules, byte-equal, resolved first, no shadows, resources from hpath."
+}
