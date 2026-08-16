@@ -1,0 +1,27 @@
+{
+  "leg": "W5-PCRUX",
+  "attack": "exec_fidelity",
+  "checks": {
+    "cdata_parsed": true,
+    "flush_del_present": true,
+    "flush_pop_present": true,
+    "plain_import_is_cached_same_id": true,
+    "ns_has_no_file_before": true,
+    "ns_has_no_file_after": true,
+    "flush_evicted_synapse_dot": true,
+    "flush_popped_bare_synapse": true,
+    "control_survived": true,
+    "onCreateInterface_callable": true,
+    "createInterface_alias": true,
+    "widget_from_repo": true,
+    "exec_flush_forced_fresh_reimport_id_changed": true
+  },
+  "hou_version": "22.0.400",
+  "pypanel_resolved": "C:/Users/User/SYNAPSE/houdini/python_panels/synapse_panel.pypanel",
+  "pypanel_inside_repo": true,
+  "qt_platform_runtime": "offscreen",
+  "widget_class": "SynapsePanel",
+  "widget_module": "synapse.panel.synapse_panel",
+  "widget_file": "C:/Users/User/SYNAPSE/python/synapse/panel/synapse_panel.py",
+  "exec_fidelity_verdict": "pass"
+}

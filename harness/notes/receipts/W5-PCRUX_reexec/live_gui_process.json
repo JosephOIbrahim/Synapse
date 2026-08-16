@@ -1,0 +1,23 @@
+[
+    {
+        "Name":  "houdini_launcher.exe",
+        "ProcessId":  24636,
+        "ExecutablePath":  "C:\\Program Files\\Side Effects Software\\Launcher\\22.0.368\\bin\\houdini_launcher.exe",
+        "CreationDate":  "\/Date(1786902949350)\/",
+        "CommandLine":  "\"C:\\Program Files\\Side Effects Software\\Launcher\\22.0.368\\bin\\houdini_launcher.exe\" "
+    },
+    {
+        "Name":  "houdini_installer.exe",
+        "ProcessId":  66452,
+        "ExecutablePath":  null,
+        "CreationDate":  "\/Date(1786902957286)\/",
+        "CommandLine":  null
+    },
+    {
+        "Name":  "houdini.exe",
+        "ProcessId":  55056,
+        "ExecutablePath":  "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\houdini.exe",
+        "CreationDate":  "\/Date(1786904735932)\/",
+        "CommandLine":  "\"C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\houdini.exe\" "
+    }
+]

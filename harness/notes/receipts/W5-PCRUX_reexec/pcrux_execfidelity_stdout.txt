@@ -1,0 +1,12 @@
+hou 22.0.400 ; pypanel -> C:/Users/User/SYNAPSE/houdini/python_panels/synapse_panel.pypanel (in repo=True)
+Qt platform: offscreen
+<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+plain import twice -> same object id: True (import is cached; masks reload)
+ns has __file__ (before/after exec): False / True (both False = panel-context faithful)
+flush evicted synapse.* sentinel : True
+flush popped bare 'synapse'       : True
+non-synapse control survived      : True
+widget SynapsePanel / synapse.panel.synapse_panel <- C:/Users/User/SYNAPSE/python/synapse/panel/synapse_panel.py
+widget from repo file             : True
+exec+flush forced fresh re-import (id changed): True
+== EXEC-FIDELITY VERDICT: pass ==

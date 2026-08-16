@@ -1,0 +1,96 @@
+{
+  "leg": "W5-PCRUX",
+  "band": "TRUTH",
+  "name": "parity crucible: adversarial gate over the two parity probes - no verdict inherited",
+  "status": "green_with_findings",
+  "branch": "wave5/pcrux",
+  "base": "1679a7005afdfd7848d316a9ccc9279cb9711321",
+  "product_head": "1c8b89c35d2ddc6d817986d432498bfd8226a7ad",
+  "readonly": true,
+  "deps_audited": {
+    "W5-PARITY": {"branch": "wave5/parity", "head": "e70022bf", "product": "10bd5495"},
+    "W5-SEAT": {"branch": "wave5/seat", "head": "9bd16c01", "product": "5a2f0bd4"}
+  },
+  "recipe": {
+    "hython": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+    "hou_version": "22.0.400",
+    "python": "3.13.10",
+    "prefs_dir": "C:/Users/User/OneDrive/Documents/houdini22.0",
+    "parity_run": "HOUDINI_USER_PREF_DIR=... QT_QPA_PLATFORM=offscreen hython probe_parity.py -> EXIT 0",
+    "seat_run": "env -u SYNAPSE_ROOT -u HOUDINI_PACKAGE_DIR HOUDINI_USER_PREF_DIR=... hython probe_seat.py --expect-root C:/Users/User/SYNAPSE -> EXIT 0",
+    "probe_provenance": {
+      "probe_parity.py_sha256": "11706300656d6728cd875df97c8084c4bb90440738283f80fa950db6ad1d7850",
+      "probe_seat.py_sha256": "9bca798dc49ff15534482cd209fe85cab5c61502f6a14ff8da1972d7caad2734",
+      "note": "my copies byte-identical to committed peer scripts (git show wave5/parity|seat)"
+    }
+  },
+  "evidence_artifacts": [
+    "harness/notes/receipts/W5-PCRUX_verdict.md",
+    "harness/notes/receipts/W5-PCRUX_reexec/parity_stdout.txt",
+    "harness/notes/receipts/W5-PCRUX_reexec/parity_results.json",
+    "harness/notes/receipts/W5-PCRUX_reexec/seat_stdout.txt",
+    "harness/notes/receipts/W5-PCRUX_reexec/seat_results.json",
+    "harness/notes/receipts/W5-PCRUX_reexec/pcrux_execfidelity_probe.py",
+    "harness/notes/receipts/W5-PCRUX_reexec/pcrux_execfidelity_stdout.txt",
+    "harness/notes/receipts/W5-PCRUX_reexec/pcrux_execfidelity_results.json",
+    "harness/notes/receipts/W5-PCRUX_reexec/live_gui_process.json",
+    "harness/notes/h22/w5p-landed.flag"
+  ],
+  "acceptance": [
+    {
+      "predicate": "both probes independently re-executed with first-hand evidence; divergences enumerated",
+      "verdict": "pass",
+      "evidence": "probe: parity re-run EXIT 0 green 7/7 (glob 90==90 rows, 90/90 imported+in_repo+sha_match+worktree==loaded, all loaded from MAIN tree); seat re-run EXIT 0 green_with_findings 3/3 + T5 PASS. Mine-vs-peer diff: 0/90 loaded_sha256 mismatch, all s3/s4 fields identical, seat T1-T5 identical. Sole divergence enumerated: seat T3 lower-index non-importable namespace dir is .../w5-pcrux/synapse (my worktree) vs .../w5-seat/synapse (peer) - cosmetic, winner repo/python idx7 + shadow_count 0 identical. Artifacts under W5-PCRUX_reexec/."
+    },
+    {
+      "predicate": "mandate table binary per leg incl. bus RELEASE check",
+      "verdict": "pass",
+      "evidence": "check: binary table produced (verdict.md Target 5). W5-PARITY: product-before-receipt PASS (10bd5495 ancestor of e70022bf), receipt-own-closing-commit PASS (e70022bf=branch HEAD, only W5-PARITY.json), RELEASE FAIL (no status/RELEASE in raw bus; claim still OPEN; receipt W5-PARITY.json:72 overclaims one) -> finding F-PCRUX-1. W5-SEAT: all three PASS (RELEASE status bus L77 @14:48:15). Product/receipt ancestry verified via git merge-base --is-ancestor."
+    },
+    {
+      "predicate": "verdict names every UNKNOWN and exactly what Joe's seat must observe to close each",
+      "verdict": "pass",
+      "evidence": "check: verdict.md 'Every UNKNOWN' section names (1) future-relaunch build [close: launch explicitly from 22.0.400 bin or per-build marker; snapshot ExecutablePath] + sub-gap panel-in-PID-55056 inference [close: from live panel print hou.applicationVersion()+module __file__]; (2) live GUI close/reopen fresh re-import [close: edit a panel module, reopen, confirm no restart]; (3) whole-closure byte parity not claimed [close: extend glob to import closure]."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-PCRUX-1",
+      "severity": "finding",
+      "claim": "W5-PARITY did not post a bus RELEASE, yet its receipt asserts one - the wave5l F2/F3 no-release debt repeated",
+      "detail": "Raw bus store harness/autorevise/bus/wave5/*.jsonl holds only a W5-PARITY claim + one finding->W5-SEAT; NO status/RELEASE. Its claim is therefore still OPEN. W5-PARITY.json:72 states 'RELEASE posted on the bus' - false. W5-SEAT posted a proper RELEASE (status, RELEASE=true, 2026-08-16T14:48:15). Parity EVIDENCE is unaffected (reproduces green); only the RELEASE mandate + receipt honesty fail.",
+      "anchor": "harness/autorevise/bus/wave5/bus.jsonl ; wave5/parity:harness/notes/receipts/W5-PARITY.json:72"
+    },
+    {
+      "id": "F-PCRUX-2",
+      "severity": "resolution",
+      "claim": "Build question resolved for the live seat: the running GUI is Houdini 22.0.400 (the exact build the probes ran under)",
+      "detail": "houdini.exe PID 55056 -> ...\\Houdini 22.0.400\\bin\\houdini.exe, started 2026-08-16 14:25:35 (spans the probe window), bare interactive cmdline; independently re-confirmed by the adversarial pass. The seat probe left this UNKNOWN because it only inspected prefs artifacts (all 22.0.x share one prefs dir); the live process table resolves it. Honest limits: perishable (holds while PID 55056 lives); panel-in-that-process is inferred from shared-HPATH synapse.json, not read out of the GUI. Residual future-relaunch build stays UNKNOWN.",
+      "anchor": "harness/notes/receipts/W5-PCRUX_reexec/live_gui_process.json"
+    },
+    {
+      "id": "F-PCRUX-3",
+      "severity": "scope-note",
+      "claim": "'exhaustive / 1:1 with repo' is the panel SUBTREE (90 modules), not the panel's execution closure",
+      "detail": "tool_bridge.py:31-32 dynamically imports mcp_tools_* outside the subtree; synapse.core/server/shared are not byte-checked. The probe discloses this. Also: git ls-files 'panel/**/*.py'=23 is a git wildmatch quirk, not a miss - the recursive filesystem glob (find/python/globstar) is the correct 90.",
+      "anchor": "python/synapse/panel/tool_bridge.py:31-32 ; harness/probes/parity_modules/probe_parity.py:20-22"
+    },
+    {
+      "id": "F-PCRUX-4",
+      "severity": "assurance",
+      "claim": "Adversarial pass over the crucible's own conclusions: 3 HOLDS + 1 WEAKENED, no claim broke",
+      "detail": "wf_25d5c160-fa8, 4 independent skeptics: exhaustiveness HOLDS, byte-parity-soundness HOLDS (hashes read raw source not .pyc; worktree vs loaded are distinct trees), mandate-release HOLDS, live-seat-build WEAKENED (upheld in substance; 'provably' softened to observed-live/perishable + panel-in-seat inference caveat, folded into the verdict).",
+      "anchor": "harness/notes/receipts/W5-PCRUX_verdict.md (Adversarial pass section)"
+    }
+  ],
+  "for_ruling": [
+    "F-PCRUX-1 disposition (Joe/CTO): W5-PARITY's missing bus RELEASE + its receipt overclaim - accept as recorded debt, or re-open W5-PARITY to post the RELEASE and correct W5-PARITY.json:72. This crucible only records it; flipping any leg state / editing the peer receipt is a human word.",
+    "Merge of the parity probe artifacts (W5-PARITY + W5-SEAT) remains Joe's word per the mission note; this crucible confirms the evidence but does not merge.",
+    "Residual build UNKNOWN (future relaunch) is closable only at Joe's seat: launch explicitly from Houdini 22.0.400, or add a per-build launch marker."
+  ],
+  "spawn": [],
+  "crucible_criteria_met": [
+    "CRX0 + wave5l precedents carried as standing checks: product committed first (1c8b89c3, ahead=1) then this receipt as the leg's own closing commit; W5-PARITY/SEAT audited against product-before-receipt + own-closing-commit + bus RELEASE",
+    "unobtainable rendered UNKNOWN, never zero/estimate: the build question was OBTAINED for the live seat (recorded KNOWN) and the residual future-relaunch kept explicitly UNKNOWN; no value guessed"
+  ]
+}
