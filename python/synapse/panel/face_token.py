@@ -577,28 +577,68 @@ class FaceToken(QtWidgets.QWidget):
                 else getattr(t, "CONIFEROUS", "#6E8F72")))
 
     def refresh_from_probe(self):
-        """Best-effort pull from the probe layer, plus the two static segments.
+        """Best-effort pull from the probe layer, plus the two static segments,
+        plus the LAST task's real token spend (W5-PANEL item 3).
 
-        Never raises: a face that cannot reach a probe shows unknown, which is
-        the honest state."""
+        Never raises: a face that cannot reach a probe — or a task — shows unknown,
+        which is the honest state."""
         self.measure_static()
-        if probe_all is None:
-            return
+        if probe_all is not None:
+            try:
+                results = probe_all()
+            except Exception:
+                results = None
+            for r in (results or []):
+                if not getattr(r, "available", False):
+                    continue
+                host = getattr(r, "remote_host", None)
+                self.set_engine(
+                    model=getattr(r, "model", None),
+                    runs=("metered by %s" % host) if host else "local",
+                    cost=getattr(r, "cost_per_1k_in", None),   # None -> unknown
+                    probed=getattr(r, "probed_at", None),
+                )
+                break
+        # Real per-task spend has the LAST word: the model that actually spent
+        # (the selected engine) and the measured cache split override the probe's
+        # advertised model. Runs regardless of whether a probe was reachable.
+        self._refresh_usage()
+
+    def _refresh_usage(self):
+        """Feed the CACHE block and the ENGINE model from the LAST task's REAL
+        per-task token usage (usage_sink).
+
+        Every number here traces to ``provider.last_usage`` — an Anthropic API
+        receipt captured by AnthropicProvider and folded across the task's tool
+        loop by claude_worker. This is the wiring that turns the dead counter live.
+
+        Honesty (R162): a field the API never reported is ``None`` and renders
+        UNKNOWN via set_row, never zero. A task that never ran, or a non-Anthropic
+        engine that reports no usage, leaves these rows UNKNOWN — the counter's
+        honest resting state, not a fabricated number. A genuinely API-reported 0
+        (a real cache miss) is a measured claim and shows as 0.
+
+          cache_read     -> CACHE 'prefix'    (cached prefix reused this task)
+          cache_creation -> CACHE 'last turn' (cache written this task, paid 1.25x)
+          model          -> ENGINE 'model'    (the SELECTED model that did the spending)
+
+        The four THIS-TURN composition rows (system/tools/grounding/conversation)
+        are NOT fed here: the API reports totals plus the cache split, never the
+        4-way input breakdown, so inventing it would be exactly the estimate this
+        face refuses. They stay measure_static/UNKNOWN. Cost stays UNKNOWN too — no
+        provider exposes per-token price (V3-F5)."""
         try:
-            results = probe_all()
+            from synapse.panel.usage_sink import USAGE_SINK
+            snap = USAGE_SINK.snapshot()
         except Exception:
+            snap = None
+        if not snap:
             return
-        for r in (results or []):
-            if not getattr(r, "available", False):
-                continue
-            host = getattr(r, "remote_host", None)
-            self.set_engine(
-                model=getattr(r, "model", None),
-                runs=("metered by %s" % host) if host else "local",
-                cost=getattr(r, "cost_per_1k_in", None),   # None -> unknown
-                probed=getattr(r, "probed_at", None),
-            )
-            return
+        self.set_cache(prefix=snap.get("cache_read"),
+                       last_turn=snap.get("cache_creation"))
+        model = snap.get("model")
+        if model:
+            self.set_row("model", model)
 
     @staticmethod
     def _ago(stamp):

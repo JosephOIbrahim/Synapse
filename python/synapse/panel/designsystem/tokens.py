@@ -374,6 +374,56 @@ def tracking_px(role: str, px: float) -> float:
 FONT_SCALE_STEPS = (1.0, 1.15, 1.25, 1.4, 1.6)
 FONT_SCALE_DEFAULT = 1.0
 
+
+def host_floored_steps(host_scale=1.0):
+    """The Aa font-scale ladder with the HOST default as its FLOOR (W5-PANEL 2/4).
+
+    The switcher's job is to scale the reading size UP from the Houdini UI
+    default, never below it: "minimum font size must be the Houdini default; the
+    switcher only shrinks today" (Joe, live seat). The raw ``FONT_SCALE_STEPS``
+    are anchored at ``1.0 = SIZE_BODY`` (12px), which equals the host default ONLY
+    when the host UI font is 12px. On a host whose UI font is larger, ``1.0`` is
+    BELOW the host default, and cycling the raw ladder drops the text under the
+    floor — the reported defect.
+
+    Returns a monotonic ladder whose FIRST entry equals ``host_scale`` (the floor)
+    and every entry is ``>= host_scale``: raw steps at or above the floor are kept,
+    and any raw step below the floor is lifted into the floor (deduped). So the
+    minimum selectable scale is always the host default and the artist scales UP.
+
+    Pure — no Qt, no ``hou``. The caller supplies the measured host scale
+    (``host_font_px / SIZE_BODY``); ``synapse_panel._host_font_scale`` already
+    computes exactly that. A non-positive ``host_scale`` falls back to the 1.0
+    default so a bad read never produces an empty or inverted ladder.
+    """
+    floor = float(host_scale) if host_scale and host_scale > 0 else FONT_SCALE_DEFAULT
+    steps = [floor]
+    for s in FONT_SCALE_STEPS:
+        if float(s) > floor + 1e-9:
+            steps.append(float(s))
+    return tuple(steps)
+
+
+def next_font_scale(current, host_scale=1.0):
+    """The next Aa step UP from ``current``, floored at the host default.
+
+    Cycles :func:`host_floored_steps`: each press moves to the next larger step,
+    and the wrap at the top goes back to the FLOOR (host default) — never below
+    it. This is the pure decision the live switcher
+    (``synapse_panel._cycle_font_scale``) needs in place of cycling the raw,
+    host-agnostic ``FONT_SCALE_STEPS``. A base that sits between steps picks the
+    first step strictly greater; at or above the top it wraps to the floor.
+
+    Guarantee under test (test_font_floor.py): for any starting scale, repeated
+    application never yields a value ``< host_scale`` — no state below the floor
+    is reachable.
+    """
+    ladder = host_floored_steps(host_scale)
+    for s in ladder:
+        if s > float(current) + 1e-9:
+            return s
+    return ladder[0]
+
 # ─────────────────────────────────────────────────────────────
 # 6. SPACING / RADIUS — load-bearing scale
 # ─────────────────────────────────────────────────────────────
@@ -383,6 +433,27 @@ SPACE_SM = 8
 SPACE_MD = 16
 SPACE_LG = 24
 SPACE_XL = 40
+
+# Chat dialogue leading (W5-PANEL item 5). +0.75pt of ABSOLUTE leading added
+# between wrapped chat lines — Joe's "the chat reads tight" on the live seat.
+# Applied in chat_display as a QTextBlockFormat LineDistanceHeight: the one
+# line-spacing mechanism the QTextDocument HTML subset does NOT drop (CSS
+# line-height and ProportionalHeight were both measured inert here — see
+# message_formatter.py:43). Expressed in POINTS to match the request; converted
+# to the device-independent px the QTextDocument lays out in at Qt's 96-DPI
+# logical default (1pt = 96/72 px), so +0.75pt = +1.0px of leading per line.
+CHAT_LEADING_PT = 0.75
+
+
+def chat_leading_px(pt=None):
+    """``pt`` of leading in the device-independent px a QTextDocument lays out in.
+
+    Qt's default logical resolution is 96 DPI, so 1pt = 96/72 px. Pure — the
+    QTextBlockFormat application lives in chat_display._apply_leading. Defaults to
+    :data:`CHAT_LEADING_PT` (0.75pt → 1.0px).
+    """
+    p = CHAT_LEADING_PT if pt is None else float(pt)
+    return p * 96.0 / 72.0
 
 RADIUS_SM = 4
 RADIUS_MD = 8

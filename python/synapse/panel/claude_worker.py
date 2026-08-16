@@ -31,6 +31,14 @@ from .tool_bridge import get_anthropic_tools_for_worker
 from .tool_executor import ToolRequest, try_mcp_tool_call
 from .worker_policy import denial_tool_result, is_tool_allowed_for_worker
 
+# W5-PANEL item 3: fold each API call's real token usage into the per-task sink
+# so the Token tab (face_token) can read a receipt instead of a dead counter.
+# Import-guarded — a sink that fails to load must never break a turn.
+try:
+    from .usage_sink import USAGE_SINK
+except Exception:  # pragma: no cover
+    USAGE_SINK = None
+
 logger = logging.getLogger(__name__)
 
 _MAX_TOOL_ITERATIONS = 25
@@ -180,6 +188,14 @@ class ClaudeWorker(QThread):
           3. If stop_reason is "end_turn" or "max_tokens", return.
         """
         tool_calls_total = 0   # L9: tool calls across the whole turn-loop
+        # W5-PANEL item 3: open a fresh per-task usage receipt keyed to the
+        # SELECTED model, so the Token tab shows THIS task's spend, not a lifetime
+        # total. model_identity is the provider's own name for the engine.
+        if USAGE_SINK is not None:
+            try:
+                USAGE_SINK.begin_task(getattr(self._provider, "model_identity", None))
+            except Exception:
+                pass
         for iteration in range(_MAX_TOOL_ITERATIONS):
             if self._abort:
                 return
@@ -192,6 +208,17 @@ class ClaudeWorker(QThread):
                 emit_token=self.token_received.emit,
                 should_abort=lambda: self._abort,
             )
+
+            # Fold this call's real usage into the task total BEFORE the abort
+            # check — those tokens were billed even if the turn is aborting, and
+            # the provider publishes last_usage on abort too (anthropic_provider
+            # finally). None (no usage reported) counts the run but invents no
+            # field, so a non-Anthropic engine stays honestly UNKNOWN.
+            if USAGE_SINK is not None:
+                try:
+                    USAGE_SINK.add(getattr(self._provider, "last_usage", None))
+                except Exception:
+                    pass
 
             if self._abort:
                 return
