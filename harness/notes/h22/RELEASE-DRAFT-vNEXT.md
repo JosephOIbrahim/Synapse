@@ -1,27 +1,40 @@
 # RELEASE DRAFT - vNEXT (v5.51.0 proposed - number is Joe's call at ritual)
 # Status: DRAFT. Tag + GitHub Release happen ONLY via the release ritual (g-receipts + drop.json are Joe's).
+# Updated 2026-08-16: post-W5L merge train (5 legs), R1 flip, shelf icon. Ritual HALTED at g5; resumes on this build.
 
 ## Headline
-Undo everything. Trust the gauges. And a harness that catches its own agents lying.
+Close the tab, keep the session. Undo everything. A panel that stops lying about spend.
 
 ## For artists
-- **Ctrl+Z now reverses everything SYNAPSE builds** - node creation, deletion, wiring, parameter
-  changes, and keyframes all wrap in named undo groups (one Ctrl+Z, whole build reverses).
-- **Type-name retrieval at P@1 1.0** (603/603, was 0.75) - scout answers "what node is X" exactly,
-  on a corpus stamped fresh at 22.0.400 with a ledger that agrees.
-- Solaris compound-node anatomy is retrievable in scout (karmamaterial* confirmed non-existent -
-  honest not-found instead of hallucinated VOPs).
+- **Closing the SYNAPSE panel no longer kills the runtime** - heartbeat moved off the panel into
+  the runtime (P0.3 fixed, W5-LIFE). Close the tab mid-operation: work finishes, session and chat
+  history are there when you reopen. (g5 re-run on this build confirms live.)
+- **Ctrl+Z reverses everything SYNAPSE builds** - named undo groups wrap creation, deletion,
+  wiring, parms, keyframes.
+- **Font scale respects the host** - floor equals Houdini's UI font; the Aa cycle and "Larger text"
+  can never shrink below it (R1 wired live today, 4c1134d8).
+- **Token tab tells the truth** - spend traces to real API usage receipts; unmetered engines read
+  UNKNOWN, never a fake 0. Chat leading +0.75pt, proven effective not inert.
+- **Shelf grown up** - six distinct committed icons + one-sentence tooltips per tool; panel-open
+  tool has its icon (2dd6bab6). Visual render = live-seat check at relaunch.
+- Type-name retrieval P@1 1.0 (603/603) on a corpus stamped fresh at 22.0.400.
 
 ## For the harness
-- First live enforcement of **commit-before-receipt: 4/4 PASS** (wave 5).
-- New mandate: **the receipt is the leg's own closing commit** - codified, then violated twice in the
-  same wave, then CAUGHT by the crucible via direct git interrogation, including one receipt that
-  narrated a commit that never existed. Operator rescue recorded loudly (362d5755). Held spawn
-  W5-HCRUX-GATE turns the mandate into an enforced close gate.
-- suite_baseline promoted to two-leg tuple (R31); ratchet green at 6424/0. Last pre-existing master red dead.
-- Statusline green in linked worktrees; orchestrator liveness tracker sees subagent workflows.
+- **First fully-clean wave**: 4/4 legs' receipts are their own closing commits, zero operator
+  rescues (W5-LCRUX mandate table). Commit-before-receipt is now lived, not just codified.
+- Substrate fold in flight: per-build **Schema Catalog** (386 Cop types, APEX registries) and
+  **gated_set() parm API** legs DONE; **Cook-Verify measures** running; all three merge only on
+  the W5-WCRUX verdict - not in this tag unless merged before ritual resume.
+- suite_baseline ratchet holds through the 5-leg train (6508/0); hosted CI green on push.
 
-## Ritual checklist (unchanged from v5.50.0; ~20-30 min, Joe-present)
-g1 clean install · g5 lifecycle · g9 rollback · remaining g-receipts · drop.json (Joe-only write) ·
-version bump across six surfaces · R.R Mode A full green · tag · GitHub Release.
-Also natural to fold in: W5-UNDO-GUI live Ctrl+Z receipt - it doubles as the release's marquee demo.
+## Honest state (ships declared, not hidden)
+- 4 machine gates still RED: mutation_fail_closed, hot_reload_gated, installer_host_targeted,
+  ci_covers_shipping_surface. Shipping red-declared per v5.50.0 precedent.
+- G3 pending-drop: h22 symbol table not regenerated since Aug 9 (drop.json is Joe-only).
+- provenance guardrail warn-only/unwired (standing hardening debt).
+- gui_required UNKNOWNs close only at Joe's live seat: g5 re-run, icon render, font floor feel.
+
+## Ritual checklist (resume point: g5 on THIS build)
+g5 lifecycle re-run (Joe's hands) . g6-g9 . W5-UNDO-GUI live Ctrl+Z receipt (doubles as marquee
+demo) . drop.json (Joe-only write) . version bump across six surfaces . R.R Mode A . tag .
+GitHub Release.
