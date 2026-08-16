@@ -1,0 +1,40 @@
+{
+  "id": "W6-JRNY",
+  "band": "BUILD",
+  "name": "flow 1/4: map the canonical user journeys, panel to network, from lived evidence",
+  "source": {
+    "doc": "harness/notes/h22/panel-observations-2026-08-16.md",
+    "anchor": "Joe word 2026-08-16: agent team for user flow, panel to networks - usability measured, not opined"
+  },
+  "targets": [
+    "1) evidence base, anchored: harness/notes/h22/panel-observations-2026-08-16.md, the W5-ROPE seat-walk receipt, houdini/python_panels/synapse_panel.pypanel help text, the tool palette surface, W5-PANEL/W5-LIFE receipts. No invented personas - every journey step cites where a real seam or friction was observed or coded",
+    "2) docs/USER-FLOW-MAP.md, capped at the TOP 6 journeys (first-node build, multi-node rig, error recovery, mode switch, palette tool use, close-reopen continuity). Each journey: numbered steps, seam classification (input/execution/feedback/recovery), current friction with anchor, and ONE measurable predicate per step a rig can assert",
+    "3) publish the journey+predicate list to the bus addressed to W6-FLOWRIG; iterate when FLOWRIG reports a predicate unmeasurable - refine, never drop silently",
+    "4) TOKEN DISCIPLINE (Joe word: token-saver + budget-advisor apply to this team): read anchored files only, never repo-wide trawls; externalize state to your artifact files early so context pressure never loses work; receipts cite line anchors, not file dumps.",
+    "5) BUS MANDATE - this team exists to talk: post claim at start, thread findings to your peers as you resolve them, explicit RELEASE at close."
+  ],
+  "touches": [
+    "docs/USER-FLOW-MAP.md"
+  ],
+  "deps": [],
+  "readonly": false,
+  "crucible_criteria": [
+    "a journey step without an evidence anchor is a laundered persona - the crucible will hunt these",
+    "receipt is own closing commit; RELEASE posted"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "USER-FLOW-MAP.md: 6 journeys, every step anchored + one measurable predicate",
+      "evidence": "check"
+    },
+    {
+      "predicate": "bus thread with FLOWRIG shows at least one refine round-trip or an explicit none-needed",
+      "evidence": "probe"
+    }
+  ],
+  "note": "",
+  "class": "build"
+}

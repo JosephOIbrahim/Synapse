@@ -1,0 +1,47 @@
+{
+  "id": "W6-FLOWFIX",
+  "band": "BUILD",
+  "name": "flow 3/4: fix only what the rig measured red - max five, each pinned red to green",
+  "source": {
+    "doc": "harness/notes/h22/panel-observations-2026-08-16.md",
+    "anchor": "Joe word 2026-08-16: agent team for user flow, panel to networks - usability measured, not opined"
+  },
+  "targets": [
+    "1) rank the red measurements from flow_results.json by user pain x fix risk (JRNY friction anchors are the pain evidence); pick at most FIVE panel-side flow affordances - candidates the evidence already points at: post-build focus/frame affordance in the network editor, undo group name surfaced in the chat receipt line, connect-state clarity, error humanization, feedback latency on long builds",
+    "2) scope fence: python/synapse/panel/** flow affordances only - no runtime, handler-core, or tool rewrites; wrap, never rebuild shipped code",
+    "3) each fix lands with the rig assertion that was red now green - rerun the touched journeys first-hand; a fix without its formerly-red measurement is speculative polish and gets dropped",
+    "4) fixes enumerated in the receipt as a table: friction anchor, fix anchor, red measurement, green measurement",
+    "5) TOKEN DISCIPLINE (Joe word: token-saver + budget-advisor apply to this team): read anchored files only, never repo-wide trawls; externalize state to your artifact files early so context pressure never loses work; receipts cite line anchors, not file dumps.",
+    "6) BUS MANDATE - this team exists to talk: post claim at start, thread findings to your peers as you resolve them, explicit RELEASE at close."
+  ],
+  "touches": [
+    "python/synapse/panel/",
+    "harness/probes/flow/",
+    "tests/panel/"
+  ],
+  "deps": [
+    "W6-JRNY",
+    "W6-FLOWRIG"
+  ],
+  "readonly": false,
+  "crucible_criteria": [
+    "five-fix cap is hard; every fix maps to a formerly-red rig measurement or it does not ship",
+    "no collision: W6-QUOTE owns harness/ scripts, W6-BEAT owns server/ - panel and flow probes only",
+    "receipt is own closing commit; RELEASE posted"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "each shipped fix shows red-then-green rig measurements, first-hand",
+      "evidence": "test"
+    },
+    {
+      "predicate": "fix table complete with four anchors per row; cap respected",
+      "evidence": "check"
+    }
+  ],
+  "note": "",
+  "class": "build"
+}

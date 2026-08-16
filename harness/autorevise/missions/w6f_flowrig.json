@@ -1,0 +1,43 @@
+{
+  "id": "W6-FLOWRIG",
+  "band": "BUILD",
+  "name": "flow 2/4: build the journey rig - hython drives real panel-to-network flows and measures every step",
+  "source": {
+    "doc": "harness/notes/h22/panel-observations-2026-08-16.md",
+    "anchor": "Joe word 2026-08-16: agent team for user flow, panel to networks - usability measured, not opined"
+  },
+  "targets": [
+    "1) harness/probes/flow/: a journey runner under the real hython 22.0.400 (W5-PARITY env recipe is on the bus and in its receipt - HOUDINI_USER_PREF_DIR so the package loads) using the proven offscreen-Qt pattern from W5-PANEL: instantiate the live panel widget, drive prompts programmatically, let handlers build real nodes in a scratch hip",
+    "2) per journey step measure into flow_results.json: wall latency, panel feedback text presence and readability (non-empty, non-traceback), node count + names + network layout bbox sanity (no stacked-at-origin spaghetti), undo group name present and descriptive, error-path humanity for the bad-prompt journey (readable in-panel error, session survives)",
+    "3) consume the JRNY predicate list from the bus; anything unmeasurable goes BACK to JRNY as a bus finding with the exact blocked step - never silently skipped; true pixel rendering stays UNKNOWN (Joe seat)",
+    "4) LLM-dependent steps: if a journey needs a live model call, use the cheapest configured engine once per journey, cache the transcript into the probe dir, and mark variability honestly - never loop generations",
+    "5) TOKEN DISCIPLINE (Joe word: token-saver + budget-advisor apply to this team): read anchored files only, never repo-wide trawls; externalize state to your artifact files early so context pressure never loses work; receipts cite line anchors, not file dumps.",
+    "6) BUS MANDATE - this team exists to talk: post claim at start, thread findings to your peers as you resolve them, explicit RELEASE at close."
+  ],
+  "touches": [
+    "harness/probes/flow/"
+  ],
+  "deps": [
+    "W6-JRNY"
+  ],
+  "readonly": false,
+  "crucible_criteria": [
+    "every number in flow_results.json traces to first-hand hython stdout committed alongside; unmeasured renders UNKNOWN",
+    "receipt is own closing commit; RELEASE posted"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "rig runs all 6 journeys end to end under hython; flow_results.json with per-step measurements",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "bad-prompt journey: readable in-panel error, no traceback, session alive",
+      "evidence": "test"
+    }
+  ],
+  "note": "",
+  "class": "build"
+}

@@ -1,0 +1,46 @@
+{
+  "id": "W6-FCRX",
+  "band": "TRUTH",
+  "name": "flow crucible: hunt invented journeys, re-run the rig, verify every fix earned its green",
+  "source": {
+    "doc": "harness/SPEC.md",
+    "anchor": "house rule: CRUX before merge; attack lens = laundered personas and speculative polish"
+  },
+  "targets": [
+    "1) journey audit: every USER-FLOW-MAP step traced to its evidence anchor yourself; an unanchored step fails the map",
+    "2) re-run the full rig first-hand in this worktree - your own hython stdout; diff your flow_results.json against FLOWRIG - divergence enumerated",
+    "3) fix audit: for each FLOWFIX row, revert-simulate (stash the fix or run the pre-fix ref) and confirm the measurement goes red again - a green that never reds under revert is a fake pin",
+    "4) adversarial journeys the builders did not run: garbage prompt mid-build, panel close mid-journey (P0.3 interplay), rapid mode-switch during execution - session must survive all three",
+    "5) mandate table binary per leg incl. bus RELEASE; token-discipline spot-check: receipts cite anchors not dumps",
+    "6) verdict harness/notes/receipts/W6-FCRX_verdict.md + W6-FCRX.json as own closing commit; drop flag harness/notes/h22/w6f-landed.flag"
+  ],
+  "acceptance": [
+    {
+      "predicate": "per-leg verdicts with independent re-execution; revert-simulation proves every fix pin",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "three adversarial journeys survive, first-hand",
+      "evidence": "test"
+    },
+    {
+      "predicate": "mandate table binary; UNKNOWNs named with what Joe seat must observe",
+      "evidence": "check"
+    }
+  ],
+  "deps": [
+    "W6-JRNY",
+    "W6-FLOWRIG",
+    "W6-FLOWFIX"
+  ],
+  "readonly": true,
+  "touches": [],
+  "spawn_classes": [
+    "probe"
+  ],
+  "crucible_criteria": [
+    "carries CRX0 + wave precedents",
+    "unobtainable renders UNKNOWN, never zero, never estimate"
+  ],
+  "note": "Merge remains Joe word per leg. Flow = measured usability; the map, the rig, and the fixes rise or fall on observation."
+}

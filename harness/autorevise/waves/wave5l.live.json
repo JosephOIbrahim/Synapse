@@ -1,5 +1,5 @@
 {
-  "_comment": "W5L lifecycle wave - compiled from Joe live-seat findings 2026-08-16 (g5 fail + panel observations 1-7). Base=master df8c9ef3. ARMED on Joe word: \"fold these as changes into the harness and execute the harness\". Merge/flip/gui-receipt remain Joe words per act. Ritual halted at g5; resumes on the fixed build. | FOLDED 2026-08-16 on Joe word 'fold this blueprint into the currently running harness': substrate legs W5-CATALOG, W5-PARMGATE (dep CATALOG), W5-MEASURES + crucible W5-WCRUX from docs/BLUEPRINT_WEAK_DOMAINS.md M1-M3. Domain waves A-E gated behind substrate merge. | FOLDED 2026-08-16 on Joe word 'use agent teams that have communication between agents to verify design panel is 1:1 with the repo': W5-PARITY + W5-SEAT (bus-communicating probes) + crucible W5-PCRUX. | 2026-08-16 name fix: apostrophes broke the temp-runner quoting (parse crash); rows replaced in place. | FOLDED 2026-08-16 Joe word hardening-from-first-principles: W6 ledger->gates->crucible; held spawns S1+HCRUX-GATE folded, flagged.",
+  "_comment": "W5L lifecycle wave - compiled from Joe live-seat findings 2026-08-16 (g5 fail + panel observations 1-7). Base=master df8c9ef3. ARMED on Joe word: \"fold these as changes into the harness and execute the harness\". Merge/flip/gui-receipt remain Joe words per act. Ritual halted at g5; resumes on the fixed build. | FOLDED 2026-08-16 on Joe word 'fold this blueprint into the currently running harness': substrate legs W5-CATALOG, W5-PARMGATE (dep CATALOG), W5-MEASURES + crucible W5-WCRUX from docs/BLUEPRINT_WEAK_DOMAINS.md M1-M3. Domain waves A-E gated behind substrate merge. | FOLDED 2026-08-16 on Joe word 'use agent teams that have communication between agents to verify design panel is 1:1 with the repo': W5-PARITY + W5-SEAT (bus-communicating probes) + crucible W5-PCRUX. | 2026-08-16 name fix: apostrophes broke the temp-runner quoting (parse crash); rows replaced in place. | FOLDED 2026-08-16 Joe word hardening-from-first-principles: W6 ledger->gates->crucible; held spawns S1+HCRUX-GATE folded, flagged. | FOLDED 2026-08-16 Joe word user-flow team: JRNY->FLOWRIG<->bus->FLOWFIX->FCRX, token-discipline clauses baked in.",
   "_schema": "legs/v1",
   "repo": "C:\\Users\\User\\SYNAPSE",
   "settings": "C:\\Users\\User\\SYNAPSE\\harness\\relay-settings.json",
@@ -331,6 +331,79 @@
       "readonly": true,
       "touches": [],
       "note": "AUTOREVISE harness/SPEC.md :: house rule: CRUX before merge; the attack list is the FORGE ledger (harness/HARDENING-SPEC.md, produced in-wave by W6-FORGE). Merge remains Joe word per leg. This wave IS the production-standard pass: history -> ledger -> gates -> attack."
+    },
+    {
+      "id": "W6-JRNY",
+      "name": "flow 1/4: map the canonical user journeys, panel to network, from lived evidence",
+      "state": "ready",
+      "receipt": "W6-JRNY.json",
+      "branch": "wave6/jrny",
+      "base": "master",
+      "worktree": ".claude/worktrees/w6-jrny",
+      "prompt": "harness/autorevise/prompts/W6-JRNY.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "docs/USER-FLOW-MAP.md"
+      ],
+      "note": "AUTOREVISE harness/notes/h22/panel-observations-2026-08-16.md :: Joe word 2026-08-16: agent team for user flow, panel to networks - usability measured, not opined."
+    },
+    {
+      "id": "W6-FLOWRIG",
+      "name": "flow 2/4: build the journey rig - hython drives real panel-to-network flows and measures every step",
+      "state": "ready",
+      "receipt": "W6-FLOWRIG.json",
+      "branch": "wave6/flowrig",
+      "base": "master",
+      "worktree": ".claude/worktrees/w6-flowrig",
+      "prompt": "harness/autorevise/prompts/W6-FLOWRIG.md",
+      "deps": [
+        "W6-JRNY"
+      ],
+      "readonly": false,
+      "touches": [
+        "harness/probes/flow/"
+      ],
+      "note": "AUTOREVISE harness/notes/h22/panel-observations-2026-08-16.md :: Joe word 2026-08-16: agent team for user flow, panel to networks - usability measured, not opined."
+    },
+    {
+      "id": "W6-FLOWFIX",
+      "name": "flow 3/4: fix only what the rig measured red - max five, each pinned red to green",
+      "state": "ready",
+      "receipt": "W6-FLOWFIX.json",
+      "branch": "wave6/flowfix",
+      "base": "master",
+      "worktree": ".claude/worktrees/w6-flowfix",
+      "prompt": "harness/autorevise/prompts/W6-FLOWFIX.md",
+      "deps": [
+        "W6-JRNY",
+        "W6-FLOWRIG"
+      ],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/",
+        "harness/probes/flow/",
+        "tests/panel/"
+      ],
+      "note": "AUTOREVISE harness/notes/h22/panel-observations-2026-08-16.md :: Joe word 2026-08-16: agent team for user flow, panel to networks - usability measured, not opined."
+    },
+    {
+      "id": "W6-FCRX",
+      "name": "flow crucible: hunt invented journeys, re-run the rig, verify every fix earned its green",
+      "state": "ready",
+      "receipt": "W6-FCRX.json",
+      "branch": "wave6/fcrx",
+      "base": "master",
+      "worktree": ".claude/worktrees/w6-fcrx",
+      "prompt": "harness/autorevise/prompts/W6-FCRX.md",
+      "deps": [
+        "W6-JRNY",
+        "W6-FLOWRIG",
+        "W6-FLOWFIX"
+      ],
+      "readonly": true,
+      "touches": [],
+      "note": "AUTOREVISE harness/SPEC.md :: house rule: CRUX before merge; attack lens = laundered personas and speculative polish. Merge remains Joe word per leg. Flow = measured usability; the map, the rig, and the fixes rise or fall on observation."
     }
   ]
 }
