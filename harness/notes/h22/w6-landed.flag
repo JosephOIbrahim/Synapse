@@ -1,0 +1,25 @@
+W6 HARDENING WAVE — CRUCIBLE LANDED
+====================================
+
+leg:      W6-HCRX (hardening crucible, band TRUTH)
+branch:   wave6/hcrx
+verdict:  green_with_findings
+date:     2026-08-16
+
+WHAT LANDED
+  The four W6 gates (QUOTE S1/S8 · PROV S2 · BEAT S3 · GATE S4/S5) were re-attacked
+  first-hand on a single COMBINED scratch tree (all four products 3-way merged clean,
+  zero conflicts). Every gate fails closed on its target defect; 108/108 builder
+  acceptances re-pass; ratchet held (base 6505 -> combined 6572, +67, 0 regressions);
+  product-caused guardrail_violations = none; HARDENING-SPEC rows fully mapped, none
+  laundered.
+
+FINDINGS (none verdict-blocking; all for_ruling — see W6-HCRX_verdict.md §8)
+  F-QUOTE  id lands raw in the runner PATH (orchestrate.ps1:359) -> write+exec outside TEMP
+  F-PROV   mutating cmd misfiled into _READ_ONLY_COMMANDS -> provenance false-green (broadest)
+  F-BEAT   behavioural proof's INCONCLUSIVE fallback is code-triggerable -> hollow beat greens
+  F-GATE   S5 checks release PRESENCE, not release-to-claim MATCH
+  F-MAND   W6-BEAT (no bus RELEASE) + W6-GATE (own receipt uncommitted) not yet closed per mandate
+
+MERGE REMAINS JOE'S WORD PER LEG.
+Evidence: harness/notes/receipts/W6-HCRX_verdict.md + W6-HCRX.json + W6-HCRX_probes/

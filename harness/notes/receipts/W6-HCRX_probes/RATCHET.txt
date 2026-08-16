@@ -1,0 +1,18 @@
+W6-HCRX ratchet vs base — full pytest tests/ on identical stable-git contexts
+(fresh git-init, single commit on master, .git a DIRECTORY = CI context).
+
+base     (master archive, no products):   6505 passed, 0 failed, 0 errors, 181 skipped
+combined (+QUOTE+PROV+BEAT+GATE 3-way):   6572 passed, 0 failed, 0 errors, 181 skipped
+delta:                                    +67 passed, 0 new failures, 0 new errors
+
+Committed ratchet floor (harness/verify/suite_baseline.json gate leg, b2412b6b, 2026-08-15):
+  6389 passed / 0 failed / 170 skipped  (system python 3.14.2).
+base > floor because master grew since; passes only UP, failures held at 0 => ratchet holds.
+
+The two shared files 3-way merged clean (git merge-file, exit 0, zero conflict markers):
+  harness/orchestrate.ps1  (QUOTE runner region + GATE close-state region)
+  harness/verify/checks.py (PROV check_provenance_not_bypassed + BEAT check_runtime_owns_heartbeat)
+
+guardrail_violations on the combined tree (product-caused): NONE
+  scout_no_apex_corpus=True  no_rigging_drift=True  provenance_not_bypassed=True  phantom_clean=True
+  suite_baseline = the ratchet above.
