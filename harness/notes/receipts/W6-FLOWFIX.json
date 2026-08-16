@@ -1,0 +1,92 @@
+{
+  "leg": "W6-FLOWFIX",
+  "status": "green_with_findings",
+  "base": "8e278b65",
+  "product_head": "2880bace49925962533f77b4a6f68df64ef7408b",
+  "runtime": {
+    "rig_gold_standard": "hython 22.0.400 / PySide6 offscreen (the W6-FLOWRIG seat recipe), full 30-predicate rig re-run first-hand against the fixed compositor",
+    "probe_and_pytest": "stock CPython 3.14.2 (source-pin + fake-widget; no Qt required, CI-safe)"
+  },
+  "summary": "The W6-FLOWRIG rig measured exactly 2 reds across 30 predicates (J4.3, J4.4), both in python/synapse/panel/compositor.py, journey J4 (mode switch). Both fixed by wrapping the existing best-effort idiom - no rebuild, no new widgets, no rewiring. Both flipped red->green first-hand; the full rig re-run against the fix is 30/30 PASS (was 28/30), 0 regression, 0 UNKNOWN. The five-fix cap held at the honest floor of 2: the other candidate affordances the brief named (post-build focus/frame, undo-name-in-receipt, error humanization, feedback latency) all measured PASS in the rig, so shipping them would be the speculative polish target 3 forbids.",
+  "acceptance": [
+    {
+      "predicate": "each shipped fix shows red-then-green rig measurements, first-hand",
+      "verdict": "pass",
+      "evidence": "RED (unfixed code): harness/probes/flow/j4_red.txt - J4.3 FAIL (imports_qtpy_defectA=true, premature_break_defectB=true, live_tree_reached 0/5), J4.4 FAIL (has_restore_branch=false, probe_maxh_after_uncollapse=0, one_way_confirmed=true). GREEN (fixed): harness/probes/flow/j4_green.txt both PASS. GOLD STANDARD: harness/probes/flow/j4_fullrig_green.json - the unmodified W6-FLOWRIG rig (probe_flow.py) re-run under hython 22.0.400 against this fix -> 30/30 PASS, J4.3+J4.4 flipped, repo_root=the w6-flowfix worktree (main tree is unfixed, so the PASS proves the fixed module loaded). Regression fence: tests/panel/test_flowfix_j4.py 5/5 PASS; rope+panel suites 144 passed / 24 skipped / 0 failed."
+    },
+    {
+      "predicate": "fix table complete with four anchors per row; cap respected",
+      "verdict": "pass",
+      "evidence": "fix_table below carries 2 rows, each with friction_anchor / fix_anchor / red_measurement / green_measurement. Cap: 2 shipped <= 5; every shipped fix maps to a formerly-red rig measurement (J4.3, J4.4). No row without a red measurement."
+    }
+  ],
+  "fix_table": [
+    {
+      "friction_anchor": "docs/USER-FLOW-MAP.md:119 (J4.3) - the density change should be visible but the seat 'does nothing'; harness/notes/h22/panel-observations-2026-08-16.md:6-9 (obs 1: CURIOUS/EXPERT/ML settings do nothing). Root cause: _repolish_tree dead via qtpy early-return + premature break.",
+      "fix_anchor": "python/synapse/panel/compositor.py:188 _repolish_tree - now walks the live tree by duck-typed QObject.children() (no qtpy import, no premature break), reaches root + every descendant, returns a repolish count.",
+      "red_measurement": "harness/probes/flow/flow_results.json (W6-FLOWRIG @9a78ad30) J4.3 FAIL: imports_qtpy_defectA=true, premature_break_defectB=true, qtpy_importable_in_seat=false, dominant_defect='qtpy-early-return (no repolish at all)'. Reproduced first-hand: harness/probes/flow/j4_red.txt J4.3 FAIL, live_tree_reached 0/5.",
+      "green_measurement": "harness/probes/flow/j4_green.txt J4.3 PASS: imports_qtpy_defectA=false, premature_break_defectB=false, live_tree_reached 5/5, reaches_every_descendant=true. Full rig j4_fullrig_green.json J4.3 PASS."
+    },
+    {
+      "friction_anchor": "docs/USER-FLOW-MAP.md:120 (J4.4) - switch back (EXPERT->CURIOUS->EXPERT) should restore folded readouts; _apply_spec applied collapsed one-way (setMaximumHeight(0), never restored), a real code-asymmetry.",
+      "fix_anchor": "python/synapse/panel/compositor.py:152 _apply_spec + module constant :84 _QWIDGETSIZE_MAX - collapse is now two-way (maxHeight toggles 0 <-> _QWIDGETSIZE_MAX); visible toggles both ways too.",
+      "red_measurement": "harness/probes/flow/flow_results.json (W6-FLOWRIG @9a78ad30) J4.4 FAIL: has_restore_branch=false, probe_maxh_after_collapse=0, probe_maxh_after_uncollapse=0, one_way_confirmed=true. Reproduced first-hand: harness/probes/flow/j4_red.txt J4.4 FAIL.",
+      "green_measurement": "harness/probes/flow/j4_green.txt J4.4 PASS: has_restore_branch=true, probe_maxh_after_collapse=0, probe_maxh_after_uncollapse=16777215, one_way_confirmed=false. Full rig j4_fullrig_green.json J4.4 PASS."
+    }
+  ],
+  "cap_discipline": {
+    "cap": 5,
+    "shipped": 2,
+    "reds_in_rig": 2,
+    "note": "Every red the rig measured is fixed; no fix ships without a formerly-red measurement.",
+    "dropped_candidates": [
+      "post-build focus/frame affordance in the network editor - not a rig predicate that measured red; no red to flip -> dropped (target 3).",
+      "undo group name surfaced in the chat receipt line - J1.4/J2.2/J2.3 already measured PASS (undo_group=synapse_node_create/connect/set_parm, descriptive); nothing red -> dropped.",
+      "connect-state clarity - J2.2 connect handler measured PASS -> dropped.",
+      "error humanization - J1.2/J3.bad-prompt measured PASS (readable in-panel error, no traceback, session survives) -> dropped.",
+      "feedback latency on long builds - no red latency predicate; the LLM/provider half is UNKNOWN by construction (deterministic tool seam), not red -> dropped."
+    ]
+  },
+  "findings": [
+    {
+      "id": "F1-J54-ADVISORY",
+      "severity": "info",
+      "claim": "J5.4 doc-drift (NOT shipped - measured PASS, no red to flip): pypanel help advertises 115 tools; live registry synapse.mcp._tool_registry.TOOL_DEFS == 129. The substring predicate PASSED, so it is not a formerly-red measurement and is out of this leg's fix scope; surfaced as a spawn for a human-gated doc-fix.",
+      "anchor": "harness/probes/flow/flow_results.json J5.4 (advertised_count=115, registry_TOOL_DEFS=129)"
+    },
+    {
+      "id": "F2-DEP-UNMERGED",
+      "severity": "info",
+      "claim": "Process note: both deps (W6-JRNY @6270bce4, W6-FLOWRIG @9261e7ff) were CLOSED+RELEASED but not merged into this leg's base (8e278b65) at dispatch. I built first-hand against them cross-worktree (read the map + rig, ran FLOWRIG's unmodified probe under hython with synapse forced to this worktree). My committed evidence is self-standing: probe_j4_flowfix.py and test_flowfix_j4.py do NOT import FLOWRIG's probe_flow.py, so they run on this branch alone and coexist when the orchestrator merges the deps + this leg.",
+      "anchor": "git worktree list; harness/probes/flow/j4_fullrig_green.json repo_root"
+    },
+    {
+      "id": "F3-J41-J43-MEASURED-GREEN",
+      "severity": "info",
+      "claim": "Confirmed the wiring/composition half of the mode switch was never the bug (J4.1 pill.clicked->_select_profile PASS, J4.2 forward-and-back profile composition PASS). Only the feedback half (J4.3 repaint, J4.4 restore) was red. The fix is scoped to exactly that.",
+      "anchor": "harness/probes/flow/j4_fullrig_green.json all_30_verdicts"
+    }
+  ],
+  "for_ruling": [
+    "F2-DEP-UNMERGED is a scheduling observation, not a request: the harness normally merges deps before a dependent runs; here the dep legs closed in parallel. No action needed from this leg - flagged only so the integrator knows this branch's tests stand alone."
+  ],
+  "spawn": [
+    {
+      "id": "W6-FLOWFIX-DOC-TOOLCOUNT",
+      "class": "docfix",
+      "band": "SEA",
+      "name": "reconcile pypanel help tool count (115 advertised vs 129 registry TOOL_DEFS)",
+      "rationale": "J5.4 advisory doc-drift. NOT a formerly-red flow measurement (predicate PASSED on the substring), so out of W6-FLOWFIX's fix scope; a one-line help-text correction, human-gated.",
+      "readonly": false,
+      "held_reason": "class 'docfix' is outside this leg's spawn_classes ['probe'] -> lands held for Joe."
+    }
+  ],
+  "touched_files": [
+    "python/synapse/panel/compositor.py",
+    "harness/probes/flow/probe_j4_flowfix.py",
+    "harness/probes/flow/j4_red.txt",
+    "harness/probes/flow/j4_green.txt",
+    "harness/probes/flow/j4_fullrig_green.json",
+    "tests/panel/test_flowfix_j4.py"
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "proof": "W6-FLOWFIX full W6-FLOWRIG rig re-run FIRST-HAND against the fixed compositor",
+  "instrument": "harness/probes/flow/probe_flow.py (W6-FLOWRIG, product 9a78ad30), unchanged",
+  "runtime": {
+    "hython": "22.0.400",
+    "python": "3.13.10",
+    "qt_binding": "PySide6",
+    "qt_platform": "offscreen",
+    "undo_enabled": true
+  },
+  "repo_root": "C:/Users/User/SYNAPSE/.claude/worktrees/w6-flowfix",
+  "note": "repo_root is the w6-flowfix worktree \u2014 main tree is unfixed, so J4.3/J4.4 PASS proves the fixed module loaded",
+  "predicate_counts_now": {
+    "total": 30,
+    "pass": 30,
+    "fail": 0,
+    "unknown": 0
+  },
+  "predicate_counts_flowrig_baseline": {
+    "total": 30,
+    "pass": 28,
+    "fail": 2,
+    "unknown": 0
+  },
+  "expected_red_confirmed_now": [],
+  "flipped_red_to_green": [
+    "J4.3",
+    "J4.4"
+  ],
+  "all_30_verdicts": {
+    "J1.1": "PASS",
+    "J1.2": "PASS",
+    "J1.3": "PASS",
+    "J1.4": "PASS",
+    "J1.spine": "PASS",
+    "J1.5": "PASS",
+    "J1.6": "PASS",
+    "J2.1": "PASS",
+    "J2.2": "PASS",
+    "J2.3": "PASS",
+    "J2.4": "PASS",
+    "J2.5": "PASS",
+    "J3.1": "PASS",
+    "J3.2": "PASS",
+    "J3.3": "PASS",
+    "J3.4": "PASS",
+    "J3.5": "PASS",
+    "J3.bad-prompt": "PASS",
+    "J4.1": "PASS",
+    "J4.2": "PASS",
+    "J4.3": "PASS",
+    "J4.4": "PASS",
+    "J5.1": "PASS",
+    "J5.2": "PASS",
+    "J5.3": "PASS",
+    "J5.4": "PASS",
+    "J5.5": "PASS",
+    "J6.1": "PASS",
+    "J6.2": "PASS",
+    "J6.3": "PASS",
+    "J6.4": "PASS",
+    "J6.5": "PASS"
+  },
+  "J4.3": {
+    "verdict": "PASS",
+    "measure": {
+      "imports_qtpy_defectA": false,
+      "premature_break_defectB": false,
+      "qtpy_importable_in_seat": false,
+      "dominant_defect": "qtpy-early-return (no repolish at all)"
+    }
+  },
+  "J4.4": {
+    "verdict": "PASS",
+    "measure": {
+      "collapse_sets_maxheight0": false,
+      "has_restore_branch": true,
+      "probe_maxh_after_collapse": 0,
+      "probe_maxh_after_uncollapse": 16777215,
+      "one_way_confirmed": false
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "leg": "W6-FLOWFIX",
+  "mode": "red",
+  "expected_each": "FAIL",
+  "compositor_source": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\w6-flowfix\\python\\synapse\\panel\\compositor.py",
+  "results": {
+    "J4.3": {
+      "verdict": "FAIL",
+      "measure": {
+        "imports_qtpy_defectA": true,
+        "premature_break_defectB": true,
+        "qtpy_importable_in_seat": false,
+        "dominant_defect": "qtpy-early-return (no repolish at all)",
+        "live_tree_reached": 0,
+        "live_tree_total": 5,
+        "reaches_every_descendant": false
+      }
+    },
+    "J4.4": {
+      "verdict": "FAIL",
+      "measure": {
+        "collapse_sets_maxheight0": true,
+        "has_restore_branch": false,
+        "probe_maxh_after_collapse": 0,
+        "probe_maxh_after_uncollapse": 0,
+        "one_way_confirmed": true
+      }
+    }
+  },
+  "all_as_expected": true
+}

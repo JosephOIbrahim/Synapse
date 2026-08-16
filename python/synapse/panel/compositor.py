@@ -77,6 +77,12 @@ WIDGET_ATTRS = {
 
 _SPEC_KEYS = ("visible", "collapsed", "stretch", "prominence")
 
+# Qt's QWIDGETSIZE_MAX — the "no maximum" sentinel a widget carries by default.
+# Restoring maxHeight to this (not leaving it pinned at 0) is what makes collapse
+# TWO-WAY: a later profile that does not collapse a widget re-expands it on a
+# mode switch-back (J4.4). Named so the substring is greppable in _apply_spec.
+_QWIDGETSIZE_MAX = (1 << 24) - 1  # 16777215
+
 
 def known_widget_ids():
     """The compositor's widget vocabulary (a frozen copy)."""
@@ -144,12 +150,18 @@ def _panel_widget(panel, widget_id):
 
 
 def _apply_spec(widget, spec, what):
-    """Best-effort application of one resolved spec to one live widget."""
+    """Best-effort application of one resolved spec to one live widget.
+
+    Every knob is applied TWO-WAY so a later profile that does not set it
+    restores the widget on a mode switch-back: visible toggles both ways, and
+    collapse toggles maxHeight between 0 and ``_QWIDGETSIZE_MAX`` (Qt's "no
+    maximum"). The prior one-way collapse only ever set maxHeight to 0 and had
+    no restore branch, so a folded readout stayed pinned collapsed through the
+    next switch — the friction J4.4 measured (density switch-back never
+    re-expanded folded readouts)."""
     try:
-        if not spec["visible"]:
-            widget.setVisible(False)
-        if spec["collapsed"]:
-            widget.setMaximumHeight(0)
+        widget.setVisible(bool(spec["visible"]))
+        widget.setMaximumHeight(0 if spec["collapsed"] else _QWIDGETSIZE_MAX)
         widget.setProperty("prominence", spec["prominence"])
         style = widget.style()
         style.unpolish(widget)
@@ -174,16 +186,23 @@ def _apply_widget_stretch(widget, stretch, what):
 
 
 def _repolish_tree(widget):
-    """Unpolish/polish a widget AND every descendant.
+    """Unpolish/polish a widget AND every descendant widget.
 
     A Qt dynamic property set on a parent does not restyle its children, so
     descendant QSS selectors keyed on that property go unapplied. Anything
     driving a panel-wide property (density) must repolish the whole tree.
+
+    Walks the live object tree by duck-typing ``QObject.children()`` — no Qt
+    import at all, honouring this module's stated no-Qt contract. The prior
+    version imported ``qtpy``, which is not installed in the Houdini seat, so
+    the ``except: return`` fired and the function was a silent no-op: density
+    never reached a single child and all three profiles rendered identically
+    (J4.3 Defect A). A ``break`` right after the ``findChildren`` extend
+    compounded it by repolishing only the root (Defect B). This version has
+    neither. Returns the number of widgets repolished (0 == nothing reachable),
+    so a caller/probe can measure that density actually propagated.
     """
-    try:
-        from qtpy import QtWidgets as _Q
-    except Exception:
-        return
+    repolished = 0
     stack = [widget]
     while stack:
         w = stack.pop()
@@ -192,13 +211,16 @@ def _repolish_tree(widget):
             st.unpolish(w)
             st.polish(w)
             w.update()
+            repolished += 1
         except Exception:
+            # not a stylable widget (a layout, a timer, ...) — skip it but keep
+            # walking; its own children may still be stylable widgets.
             pass
         try:
-            stack.extend(w.findChildren(_Q.QWidget))
-            break   # findChildren is already recursive; one pass is enough
+            stack.extend(w.children())
         except Exception:
             pass
+    return repolished
 
 
 def compose(panel, root, manifest):
