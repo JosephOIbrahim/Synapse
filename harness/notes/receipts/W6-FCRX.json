@@ -1,0 +1,65 @@
+{
+  "leg": "W6-FCRX",
+  "band": "TRUTH",
+  "name": "flow crucible: hunt invented journeys, re-run the rig, verify every fix earned its green",
+  "status": "green_with_findings",
+  "branch": "wave6/fcrx",
+  "base": "8e278b654996215096cace1be9a028f4a1abc1d9",
+  "product_head": "43677f15b163f634ca6898cce06f86550bf8da3f",
+  "readonly": true,
+  "seat": "hython 22.0.400 / Python 3.13.10 / PySide6 offscreen; SYNAPSE loads from main tree (master 8e278b65) via the W5-PARITY/W5-SEAT prefs-dir recipe",
+  "recipe": "env -u SYNAPSE_ROOT -u HOUDINI_PACKAGE_DIR HOUDINI_USER_PREF_DIR=\"C:/Users/User/OneDrive/Documents/houdini22.0\" hython.exe <probe>",
+  "deps_audited": {
+    "W6-JRNY": {"product": "10d3746f", "receipt_head": "6270bce4", "bus_release": "docs/USER-FLOW-MAP.md", "fcrx_verdict": "30/30 anchored, 0 laundered (first-hand + independent crucible CONFIRMED); F1/F2/F3 bounded map-accuracy nits"},
+    "W6-FLOWRIG": {"product": "9a78ad30", "receipt_head": "9261e7ff", "bus_release": "harness/probes/flow/", "fcrx_verdict": "rig re-run byte-identical 28 PASS/2 FAIL/0 UNKNOWN, 0 divergence; F4 J4.3 source-pin over-claim"},
+    "W6-FLOWFIX": {"product": "2880bace", "receipt_head": "24d45578", "bus_release": null, "fcrx_verdict": "both J4.3+J4.4 fixes are REAL pins (revert-sim green flowfix / red master); shipped fence 5/5; F5 no bus RELEASE"}
+  },
+  "evidence_artifacts": [
+    "harness/notes/receipts/w6-fcrx-evidence/rig_rerun_hython_stdout.txt",
+    "harness/notes/receipts/w6-fcrx-evidence/rig_rerun_flow_results.json",
+    "harness/notes/receipts/w6-fcrx-evidence/revert_sim_green_flowfix.json",
+    "harness/notes/receipts/w6-fcrx-evidence/revert_sim_red_master.json",
+    "harness/notes/receipts/w6-fcrx-evidence/adversarial_hython_stdout.txt",
+    "harness/notes/receipts/w6-fcrx-evidence/adversarial_results.json",
+    "harness/notes/receipts/W6-FCRX_verdict.md"
+  ],
+  "acceptance": [
+    {
+      "predicate": "per-leg verdicts with independent re-execution; revert-simulation proves every fix pin",
+      "verdict": "pass",
+      "evidence": "probe: FLOWRIG rig re-run first-hand under hython 22.0.400 reproduces flow_results.json byte-identically (28 PASS/2 FAIL/0 UNKNOWN, 0 divergence, timing excluded) - rig_rerun_flow_results.json. Revert-sim runs FLOWRIG's exact J4.3/J4.4 logic: flowfix tree green (J4.3 reaches 5/5, J4.4 uncollapse=16777215), master pre-fix red (J4.3 reaches 0/5, J4.4 stays 0) - both signature_attribution_ok - revert_sim_{green_flowfix,red_master}.json. Shipped fence tests/panel/test_flowfix_j4.py 5/5 first-hand. No fake pins."
+    },
+    {
+      "predicate": "three adversarial journeys survive, first-hand",
+      "verdict": "pass",
+      "evidence": "test: adversarial_results.json all_survived=true 3/3 against the live offscreen SynapsePanel - A1 garbage-prompt-mid-build (good builds before+after land, garbage errors clean no-traceback, session alive), A2 panel-close-mid-journey P0.3 (closeEvent no-raise, freeze beat SURVIVES close via detach_panel, in-flight work finished, conversation persisted), A3 rapid 12x mode-switch mid-exec (0 exceptions, build survives recompose, density consistent)."
+    },
+    {
+      "predicate": "mandate table binary; UNKNOWNs named with what Joe seat must observe",
+      "verdict": "pass",
+      "evidence": "check: verdict.md sec5 binary mandate table per leg incl. bus RELEASE (JRNY ok / FLOWRIG ok / FLOWFIX MISSING) and receipt==HEAD for all three; token-discipline spot-check PASS (dep receipts cite file:line/blob/receipt anchors, not dumps). sec6 names 6 gui_required UNKNOWNs each with the Joe-seat observation that closes it (J4.3 visible density, J4.4 folded re-expand, J1.5 live token counter, J2.4 one-Ctrl+Z-full-rig, J5.1 icon render, J6.5 transcript repaint)."
+    }
+  ],
+  "findings": [
+    {"id": "F1", "severity": "info", "claim": "J1.1 map annotation 'today: FAIL - absent' is STALE: icon SYNAPSE_synapse.png present (blob 23149fd8) at master HEAD AND at the map's own commit 10d3746f (added by ancestor 2dd6bab6) - false in the author's own tree, not mere drift. Anchor shelf:13 is correct; only the current-state claim is wrong. Rig measured J1.1 PASS. Not laundered.", "anchor": "houdini/config/Icons/SYNAPSE_synapse.png @10d3746f + docs/USER-FLOW-MAP.md J1.1"},
+    {"id": "F2", "severity": "info", "claim": "J5.1 inline predicate literal 'git ls-tree HEAD houdini/config/Icons/ = 6 PNGs' is STALE (same 2dd6bab6 root cause as F1): the dir holds 7 PNGs. Step intent holds and the rig's J5.1 is CORRECT because it checks the six NAMED action icons, not a bare dir count - only the map's inline wording would mis-fire.", "anchor": "docs/USER-FLOW-MAP.md J5.1 vs git ls-tree HEAD houdini/config/Icons/"},
+    {"id": "F3", "severity": "info", "claim": "J4.2 cites drifted line numbers (_select_profile:499 -> live 510; _recompose:520 -> 539; compose:566 -> 577), copied verbatim from W5-ROPE.json at an older head. Functions exist; predicate supported by test_rope_switcher_wires_profile.py + W5-ROPE acc1. Not laundered - map drift-corrected J4.1 (:1015->:1026) but left J4.2.", "anchor": "docs/USER-FLOW-MAP.md J4.2 vs python/synapse/panel/synapse_panel.py:510/539/577"},
+    {"id": "F4", "severity": "info", "claim": "W6-FLOWRIG receipt over-claims 'all four proxies reachable - none weakened to source-presence': J4.3 evidence_method is source-pin (static grep), not behavioral. J1.5/J2.4/J6.5 are genuinely behavioral. J4.3 verdict correct either way; only the wording over-reaches.", "anchor": "harness/notes/receipts/W6-FLOWRIG.json findings vs flow_results.json J4.3.evidence_method=source-pin"},
+    {"id": "F5", "severity": "warn", "claim": "W6-FLOWFIX posted a bus claim (n=18cc6765, incl. python/synapse/panel/compositor.py) but NO finding and NO status/RELEASE - the claim is still open on the shared bus. Receipt IS its closing commit (24d45578=HEAD, product half closed per W5H), but the W6-GATE close gate wants a RELEASE line. Product-correct, process-incomplete. Parallels wave-5 F-PCRUX-1.", "anchor": "harness/autorevise/bus/wave6/bus.jsonl (W6-FLOWFIX has only type=claim)"}
+  ],
+  "for_ruling": [
+    {"item": "W6-JRNY map corrections (F1/F2/F3) to fold before any USER-FLOW-MAP publish: flip J1.1 to today:PASS (or re-point to the next real gap); change J5.1 inline check to a name-scoped count over the six action icons; refresh J4.2 lines to 510/539/577 or drop to function-name anchors. Bounded map-accuracy nits, NOT blockers - the '0 laundered / 30' claim stands.", "owner": "W6-JRNY / Joe"},
+    {"item": "W6-FLOWFIX bus RELEASE for python/synapse/panel/compositor.py + probe/test files was never posted (F5). The product is closed (receipt==HEAD) but the bus claim remains open; the orchestrator close gate treats a missing RELEASE as not-done. Operator/Joe call.", "owner": "orchestrator / Joe"},
+    {"item": "Merge of W6-JRNY / W6-FLOWRIG / W6-FLOWFIX / W6-FCRX remains Joe's word per leg - none merged.", "owner": "Joe"}
+  ],
+  "spawn": [
+    {"id": "W6-FCRX-MAP-REFRESH", "class": "doc", "band": "BUILD", "name": "refresh USER-FLOW-MAP stale annotations F1/F2/F3", "rationale": "J1.1 today:FAIL and J5.1 '6 PNGs' are stale from icon commit 2dd6bab6; J4.2 line numbers drifted. All bounded, none laundered. A JRNY-owned doc edit.", "note": "class 'doc' is outside W6-FCRX spawn_classes ['probe'] -> lands HELD for Joe.", "disposition": "held"}
+  ],
+  "crucible_criteria_met": {
+    "carries_CRX0_and_wave_precedents": true,
+    "commit_before_receipt": "product 43677f15 committed (ahead:1) BEFORE this receipt; receipt is the closing commit (W5H / W5-DELTA rule)",
+    "unobtainable_renders_UNKNOWN": true,
+    "independent_reexecution": true,
+    "adversarial_cross_check": "second read-only crucible pass CONFIRMED 0 laundered / 30 with no inheritance; added F1/F2/F3"
+  }
+}

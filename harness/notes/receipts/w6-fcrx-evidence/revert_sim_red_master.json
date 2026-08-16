@@ -1,0 +1,33 @@
+{
+  "mode_expected": "red",
+  "expected_verdict_each": "FAIL",
+  "pyroot": "C:/Users/User/SYNAPSE/python",
+  "compositor_loaded": "C:/Users/User/SYNAPSE/python/synapse/panel/compositor.py",
+  "src_sha256_16": "a61b3fbb96541389",
+  "loaded_from_pyroot": true,
+  "results": {
+    "J4.3": {
+      "verdict": "FAIL",
+      "measure": {
+        "imports_qtpy_defectA": true,
+        "premature_break_defectB": true,
+        "live_tree_reached": 0,
+        "live_tree_total": 5,
+        "reaches_every_descendant": false,
+        "return_value": null
+      }
+    },
+    "J4.4": {
+      "verdict": "FAIL",
+      "measure": {
+        "collapse_sets_maxheight0": true,
+        "has_restore_branch": false,
+        "probe_maxh_after_collapse": 0,
+        "probe_maxh_after_uncollapse": 0,
+        "one_way_confirmed": true
+      }
+    }
+  },
+  "all_as_expected": true,
+  "signature_attribution_ok": true
+}

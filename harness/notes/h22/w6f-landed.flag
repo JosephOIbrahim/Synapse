@@ -1,0 +1,11 @@
+W6-FCRX landed — flow crucible over W6-JRNY + W6-FLOWRIG + W6-FLOWFIX (2026-08-16, branch wave6/fcrx)
+status: green_with_findings
+seat: hython 22.0.400 / Python 3.13.10 / PySide6 offscreen ; SYNAPSE loads from main tree (master 8e278b65)
+target1 journey audit: 30/30 anchored, 0 laundered (first-hand + independent crucible CONFIRMED); 3 bounded map-accuracy nits: F1 J1.1 today:FAIL stale (icon present, blob 23149fd8, false in map's own tree 10d3746f), F2 J5.1 inline "6 PNGs" stale (dir=7; rig checks 6 NAMED icons so rig PASS correct), F3 J4.2 line-drift 499/520/566->510/539/577
+target2 rig re-run: own hython stdout, byte-identical to FLOWRIG — 28 PASS / 2 FAIL / 0 UNKNOWN, expected-red [J4.3,J4.4], 0 divergence
+target3 fix audit: revert-sim proves BOTH J4.3+J4.4 are REAL pins (green on flowfix tree, red on master pre-fix ref); shipped fence test_flowfix_j4.py 5/5
+target4 adversarial: 3/3 SURVIVE first-hand — garbage-mid-build, panel-close-mid-journey (P0.3 beat survives), rapid 12x mode-switch mid-exec
+mandate: JRNY RELEASE ok ; FLOWRIG RELEASE ok (J4.3 source-pin over-claim -> F4) ; FLOWFIX RELEASE MISSING -> F5 (parallels wave-5 F-PCRUX-1) ; all 3 receipts == branch HEAD
+speculative-polish: none (FLOWFIX product diff = compositor.py only, exactly the 2 measured reds)
+UNKNOWN (Joe seat must observe): J4.3 visible density, J4.4 folded re-expand, J1.5 live token counter, J2.4 one-Ctrl+Z-full-rig, J5.1 icon render, J6.5 transcript repaint
+merge remains Joe word per leg

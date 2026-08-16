@@ -1,0 +1,50 @@
+{
+  "leg": "W6-FCRX",
+  "target": 4,
+  "all_survived": true,
+  "journeys": [
+    {
+      "journey": "A1 garbage-prompt-mid-build",
+      "survived": true,
+      "detail": {
+        "good_before_built": true,
+        "garbage_errored": true,
+        "garbage_no_traceback": true,
+        "garbage_error": "Unknown tool: make_me_a_sandwich_please",
+        "provider_fault_human": true,
+        "chat_no_traceback": true,
+        "good_after_built": true,
+        "session_alive": true
+      }
+    },
+    {
+      "journey": "A2 panel-close-mid-journey(P0.3)",
+      "survived": true,
+      "detail": {
+        "beat_armed_pre": true,
+        "closeEvent_no_raise": true,
+        "closeEvent_raise": false,
+        "beat_survives_close": true,
+        "panel_detached": true,
+        "detach_recorded": true,
+        "beat_freshened": true,
+        "inflight_work_finished": true,
+        "conversation_persisted": true
+      }
+    },
+    {
+      "journey": "A3 rapid-mode-switch-mid-exec",
+      "survived": true,
+      "detail": {
+        "switch_count": 12,
+        "switch_errors": [],
+        "no_switch_exception": true,
+        "inflight_build_survived": true,
+        "final_profile": "expert",
+        "final_density": "standard",
+        "final_density_consistent": true,
+        "session_alive": true
+      }
+    }
+  ]
+}
