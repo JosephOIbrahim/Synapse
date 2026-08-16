@@ -1,0 +1,102 @@
+{
+  "leg": "W5-PANEL",
+  "status": "green_with_findings",
+  "product_head": "d657dd45c852498a584bf1367fc04e48ff63e1fe",
+  "branch": "wave5/panel",
+  "base": "df8c9ef38e909e1423b1c0a5e7249b75dcb96bb7",
+  "scope_note": "All three targets built in the small panel modules; synapse_panel.py NEVER touched (peer-claimed by W5-ROPE + W5-LIFE). Bus claim disjoint from all open peer claims. Qt claims proven under hython Houdini 22.0.400 (real PySide6, Python 3.13.10, offscreen), not headless-skipped.",
+  "acceptance": [
+    {
+      "predicate": "font floor == host default at runtime and switcher only scales up from it (no state below floor reachable)",
+      "verdict": "UNKNOWN",
+      "evidence": "MATH delivered and proven: designsystem/tokens.py host_floored_steps + next_font_scale guarantee no reachable scale < host_scale for all host scales (large>1, small<1, exact-ladder-value, non-positive) - tests/panel/test_font_floor.py, 8 pass (pure, runs headless AND under hython). The guarantee derives the floor from the host at runtime (host_scale param); no hardcoded font pt introduced. LIVE acceptance NOT met by this leg: the running switcher still reaches below-floor states at TWO sites in the peer-claimed, off-limits synapse_panel.py - _cycle_font_scale (:2087, raw-ladder wrap to 1.0) AND the 'Larger text' menu action (:1948, unconditional _set_scale(1.15), below floor on any host >~13.8px UI font). Rewiring is a for_ruling handoff (F1/R1) with the exact two-call-site one-liners in W5-PANEL_notes.md, verified to keep tests/panel/test_font_scale.py::test_aa_cycle_steps_above_a_host_base_scale green. Marked UNKNOWN, not pass: PASS would launder an unshipped fix; not fail: nothing is broken, the fix is blocked on a peer-claimed surface."
+    },
+    {
+      "predicate": "chat leading increased by 0.75pt over prior value, asserted against the widget's effective line spacing",
+      "verdict": "pass",
+      "evidence": "chat_display.py::_apply_leading merges an absolute QTextBlockFormat LineDistanceHeight (chat_leading_px() = 0.75*96/72 = 1.0px/line) onto every inserted block on the Qt main thread (user + synapse sync/async + system paths), O(inserted range). Proven EFFECTIVE, not merely set: tests/panel/test_chat_leading.py 5 pass / 0 skip under hython 22.0.400 - a 12-line block's document height grows 176->188 (delta = 1.0px x 12 lines) and shrinks back when the format is stripped; the mechanism is verified NON-inert, unlike the CSS line-height / ProportionalHeight predecessors documented at message_formatter.py:43. Crucible: verdict holds."
+    },
+    {
+      "predicate": "Token tab spend traces to a real usage source for the selected model; unmeasurable states render UNKNOWN",
+      "verdict": "pass",
+      "evidence": "New pure usage_sink.py folds provider.last_usage across the whole worker tool loop (claude_worker._conversation_loop: begin_task at loop top, add() after each stream() before the abort check) so per-task spend defeats the per-stream reset. face_token._refresh_usage (via the already-wired tab-open refresh_from_probe, run AFTER the probe so the real model wins) lands CACHE prefix<-cache_read, CACHE last-turn<-cache_creation, ENGINE model<-the selected model that spent. Every SPEND number traces to provider.last_usage - an Anthropic API receipt (anthropic_provider.py:278, publishes even on abort), pinned by tests/test_provider_cache_and_usage.py (12 pass). Honesty intact: non-Anthropic engines inherit last_usage=None (base.py:42) -> spend UNKNOWN not 0; bool never counted; a real measured 0 kept while never-measured stays None -> UNKNOWN (set_row). tests/test_token_tab_usage.py: 10 pure pass headless, 14 pass / 0 skip under hython (the 4 Qt worker/FaceToken tests genuinely run). No synapse_panel.py edit; sink lock-guarded (worker writes background thread, main-thread reads on tab-open). Crucible: verdict holds_with_caveats (peripheral wording caveats in F2/F3, core claim holds)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "target": "font-floor handoff",
+      "claim": "There are TWO below-floor entry points in the off-limits synapse_panel.py, not one: _cycle_font_scale (:2087) AND the 'Larger text' menu action (:1948, unconditional _set_scale(1.15)). Fixing only the switcher leaves 'Larger text' reachable below the floor.",
+      "anchor": "python/synapse/panel/synapse_panel.py:1948 and :2087",
+      "disposition": "Addressed in for_ruling R1 (both call sites enumerated with exact wiring). 'Default text' (:1949 -> _set_scale(_chrome_scale)) is already floor-correct."
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "target": "token-tab precision",
+      "claim": "Not every row on the tab is a usage receipt or UNKNOWN: the THIS-TURN composition still shows system-prompt / tool-surface as pre-existing char-derived estimates (~6% low, footnote-disclosed via measure_static), and 'cost' shows a probe-fed value (honest measured 0.0 for a free local model, UNKNOWN for a metered one). Neither is faked from the usage receipt; both are pre-existing and untouched by this leg's wiring.",
+      "anchor": "python/synapse/panel/face_token.py:505 (measure_static), :598 (cost from probe)",
+      "disposition": "Out of scope, pre-existing, honestly disclosed. The wired SPEND numbers (cache, model) are the receipts; the leg does not claim the whole tab is receipts-or-UNKNOWN."
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "target": "token-tab ENGINE row",
+      "claim": "ENGINE 'model' now comes from the last task's real spend (sink) while 'runs'/'cost'/'probed' come from the first available probe. Under cross-engine use these can name different engines; the common single-engine case agrees. Cache rows + model row stay mutually consistent (one snapshot).",
+      "anchor": "python/synapse/panel/face_token.py:586-641",
+      "disposition": "Accepted minor caveat - showing the model that actually spent is correct for 'the selected model'; not worth fragile cross-engine reconciliation. Documented in W5-PANEL_notes.md."
+    },
+    {
+      "id": "F4",
+      "severity": "nit",
+      "target": "chat leading magnitude",
+      "claim": "The applied leading is 1px/line at Qt's 96-DPI logical default; its perceptibility on high-DPI/retina Houdini seats was not measured.",
+      "anchor": "python/synapse/panel/designsystem/tokens.py chat_leading_px",
+      "disposition": "Honest per the +0.75pt request; see spawn S1 (probe)."
+    },
+    {
+      "id": "F5",
+      "severity": "nit",
+      "target": "usage sink lifecycle",
+      "claim": "USAGE_SINK is a process-wide singleton (lock-guarded); correct for the panel's one-conversation-at-a-time model. A mid-task tab-open reads a partial-but-honest running total.",
+      "anchor": "python/synapse/panel/usage_sink.py",
+      "disposition": "Accepted; noted for any future multi-worker path."
+    },
+    {
+      "id": "F6",
+      "severity": "nit",
+      "target": "chat_display enum comment",
+      "claim": "The initial LineDistanceHeight-enum comment mis-attributed the fallback path to PySide2; the crucible live-probe showed this PySide6 build (H22.0.400) shadows the nested enum with a Property and hits the fallback. Comment corrected post-review; functionally always yielded int 4.",
+      "anchor": "python/synapse/panel/chat_display.py (enum resolution block)",
+      "disposition": "Fixed in the product commit d657dd45."
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "R1",
+      "title": "Wire the host-floored ladder into the live switcher (two call sites)",
+      "surface": "python/synapse/panel/synapse_panel.py (peer-claimed by W5-ROPE + W5-LIFE - off-limits to this leg)",
+      "action": "Once synapse_panel.py is free, (a) replace _cycle_font_scale body (~:2089-2099) with self._set_scale(t.next_font_scale(getattr(self,'_font_scale',t.FONT_SCALE_DEFAULT), getattr(self,'_chrome_scale',t.FONT_SCALE_DEFAULT))); (b) route the 'Larger text' action (:1948) through next_font_scale(self._font_scale, self._chrome_scale) instead of the unconditional _set_scale(1.15). Verified to keep tests/panel/test_font_scale.py::test_aa_cycle_steps_above_a_host_base_scale green. Exact snippets in harness/notes/receipts/W5-PANEL_notes.md.",
+      "closes": "Font-floor LIVE acceptance (predicate 1)."
+    },
+    {
+      "id": "R2",
+      "title": "Legacy chat_panel.py is unfloored + hardcodes reading sizes",
+      "surface": "python/synapse/panel/chat_panel.py:474-487 (the alternate panel under synapse_chat.pypanel - NOT on the hpath, not the panel Houdini loads)",
+      "action": "Pre-existing and out of this leg's scope. If that surface is ever revived, floor its switcher via next_font_scale and drop the 11/14/18 pt literals. Flagged so it is not mistaken for the live target.",
+      "closes": "Nothing live today; a completeness note only."
+    }
+  ],
+  "spawn": [
+    {
+      "id": "S1",
+      "class": "probe",
+      "name": "probe: is +0.75pt (1px/line at 96dpi) chat leading perceptible on high-DPI Houdini seats",
+      "band": "BUILD",
+      "note": "Measure the effective leading delta on a retina/high-DPI seat where Qt logical DPI may differ from 96; if 0.75pt reads as no change, decide whether the leading should scale with device DPI or font_scale rather than a fixed pt. Read-only measurement.",
+      "targets": ["python/synapse/panel/designsystem/tokens.py chat_leading_px", "python/synapse/panel/chat_display.py _apply_leading"],
+      "readonly": true
+    }
+  ]
+}
