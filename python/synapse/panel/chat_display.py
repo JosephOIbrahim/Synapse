@@ -36,6 +36,30 @@ except Exception:  # pragma: no cover
         return _nullctx()
 from synapse.panel.designsystem import tokens as t
 
+# W5-PANEL item 5: the absolute-leading enum, resolved once across PySide6/2.
+# LineDistanceHeight ADDS a fixed distance to each line (Qt: effective height =
+# natural + value) — the one line-spacing mechanism the QTextDocument HTML subset
+# honours. CSS line-height and ProportionalHeight were both measured inert here
+# (message_formatter.py:43); this is the untried, working lever.
+# Resolve the enum robustly across bindings. On this PySide6 (verified Houdini
+# 22.0.400) the nested `LineHeightType` name is shadowed by a Qt Property, so
+# `QTextBlockFormat.LineHeightType.LineDistanceHeight` raises AttributeError and
+# the FLATTENED member is the live path here; PySide2 also exposes the flattened
+# member. Both resolve to the same value (4).
+try:
+    _LINE_DISTANCE_HEIGHT = QtGui.QTextBlockFormat.LineHeightType.LineDistanceHeight
+except AttributeError:
+    _LINE_DISTANCE_HEIGHT = QtGui.QTextBlockFormat.LineDistanceHeight
+# setLineHeight(height: float, heightType: int) wants a PLAIN int for the type —
+# the enum object does NOT coerce and raises TypeError, which _apply_leading's
+# try/except would silently swallow (the leading would then never render — the
+# exact silent no-op the Qt tests exist to catch). So pass the int explicitly:
+# .value on the enum, else int() for a binding that already flattened it.
+try:
+    _LINE_DISTANCE_HEIGHT_INT = int(_LINE_DISTANCE_HEIGHT.value)
+except AttributeError:
+    _LINE_DISTANCE_HEIGHT_INT = int(_LINE_DISTANCE_HEIGHT)
+
 # Grouping window: messages from the same sender within this many seconds
 # are grouped together (no repeated label, tight margin).
 _GROUP_WINDOW_S = 60
@@ -271,6 +295,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         ts = _format_time(time.time())
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
+        start = cursor.position()
         cursor.insertHtml(
             format_user_message(
                 text, grouped=grouped, timestamp=ts,
@@ -279,6 +304,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         )
         cursor.insertBlock()
         self.setTextCursor(cursor)
+        self._apply_leading(start)
         self._update_sender("user")
         self._scroll_to_bottom()
 
@@ -372,15 +398,39 @@ class ChatDisplay(QtWidgets.QTextBrowser):
                 pass
         return html_str
 
+    def _apply_leading(self, start_pos):
+        """Add ``CHAT_LEADING_PT`` of absolute leading to every block just inserted
+        (from ``start_pos`` to End) — W5-PANEL item 5, the chat read "tight".
+
+        ABSOLUTE (LineDistanceHeight), because this QTextDocument drops CSS
+        line-height and ProportionalHeight (both measured inert —
+        message_formatter.py:43). Applied to the NEW range only, never the whole
+        document, so it stays O(inserted) on the latency-critical main thread.
+        Best-effort: a leading failure must never break the insert."""
+        try:
+            lead = t.chat_leading_px()
+            if lead <= 0:
+                return
+            cur = self.textCursor()
+            cur.setPosition(max(0, int(start_pos)))
+            cur.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.KeepAnchor)
+            bf = QtGui.QTextBlockFormat()
+            bf.setLineHeight(lead, _LINE_DISTANCE_HEIGHT_INT)
+            cur.mergeBlockFormat(bf)
+        except Exception:
+            pass
+
     def _do_insert(self, html_str):
         """Raw cursor insert at End (no telemetry). The only Qt work in the result path —
         ``insertHtml``'s O(document) re-layout — and it only ever runs on the Qt main
         thread (the sync path is on main; the async path routes here via ``_drain_fmt``)."""
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
+        start = cursor.position()
         cursor.insertHtml(html_str or "")
         cursor.insertBlock()
         self.setTextCursor(cursor)
+        self._apply_leading(start)
         self._scroll_to_bottom()
 
     def _insert_prerendered(self, html_str):
@@ -467,11 +517,13 @@ class ChatDisplay(QtWidgets.QTextBrowser):
 
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
+        start = cursor.position()
         cursor.insertHtml(
             format_system_message(text, font_scale=self._font_scale)
         )
         cursor.insertBlock()
         self.setTextCursor(cursor)
+        self._apply_leading(start)
         self._scroll_to_bottom()
 
     # -- Result-path cost bound (W1-MTFIX) -----------------------------------
