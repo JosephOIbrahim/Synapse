@@ -1,0 +1,48 @@
+{
+  "id": "W5-CATALOG",
+  "name": "substrate P1: build-keyed schema catalog - one hython dump makes every parm name verified-by-construction",
+  "band": "BUILD",
+  "class": "build",
+  "note": "Blueprint M1-M2 (docs/BLUEPRINT_WEAK_DOMAINS.md section 2). FP1: never recall what the binary can tell you. Domain waves A-E stay gated on this substrate.",
+  "targets": [
+    "1) scripts/build_node_catalog.py modeled on scripts/harvest_lop_catalog.py: full hou.nodeTypeCategories() walk (18 categories proven live, Cop=386 types) -> rag/catalog/h22.0.400/<category>.json with type/label/inputs/parms (name, label, type, defaults, ranges, menu tokens+labels). hython: C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe",
+    "2) VOP extension: instantiate each VOP type in a throwaway matnet, read inputNames/outputNames/inputDataTypes/outputDataTypes, destroy - wire signatures the parm templates do not carry (industrializes the conn_mtlx probes)",
+    "3) APEX extension: enumerate apex.callbackRegistry + component/constraint/control/brush registries via getRegistries; typed ports from apex.Signature/OverloadSet -> rag/catalog/h22.0.400/apex_callbacks.json (dump path proven 2026-08-16, 78 symbols)",
+    "4) docs join: each catalog row gains a doc field joined from the help-cache ASTs at C:\\Users\\User\\OneDrive\\Documents\\houdini22.0\\config\\Help\\cache, parm-include fragments resolved; cache is visited-pages-only - absent docs stay absent, never synthesized",
+    "5) spot-audit 20 nodes per weak domain (dop, vop, chop, cop, apex) against a live hython session - zero mismatches, receipts with node/parm anchors",
+    "6) if hython is unreachable from the worktree, the leg records blocked with the exact failing invocation - a catalog not dumped from the binary is not a catalog"
+  ],
+  "touches": [
+    "scripts/",
+    "rag/catalog/",
+    "tests/"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "rag/ingest_ledger is SINGLE-WRITER (R1) - this leg writes rag/catalog/ only and never touches the ledger or the served corpus; any K.5 refresh need lands as for_ruling, not an edit",
+    "catalog rows must trace to a live dump receipt (hython stdout/log committed) - rows authored from model memory are the exact defect this substrate kills",
+    "build-keyed path h22.0.400 exact - staleness-by-construction depends on it"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "source": {
+    "doc": "docs/BLUEPRINT_WEAK_DOMAINS.md",
+    "anchor": "section 2 - Substrate Phase 1, the Schema Catalog; exit criteria Mile 1-2"
+  },
+  "acceptance": [
+    {
+      "predicate": "catalog files exist for every category hou.nodeTypeCategories() returns, build-keyed under rag/catalog/h22.0.400/",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "spot-audit 20 nodes per weak domain vs live session: zero mismatches, anchored receipts",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "VOP wire signatures and APEX callback ports present with typed entries",
+      "evidence": "test"
+    }
+  ]
+}

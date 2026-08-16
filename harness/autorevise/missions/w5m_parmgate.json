@@ -1,0 +1,48 @@
+{
+  "id": "W5-PARMGATE",
+  "name": "substrate P1b: the Parm Gate - gated_set() rejects unknown parm names before touching the node, nearest-match suggestions from the catalog",
+  "band": "BUILD",
+  "class": "build",
+  "note": "Blueprint M2 (docs/BLUEPRINT_WEAK_DOMAINS.md section 2, 'The Parm Gate'). Depends on W5-CATALOG - the gate needs catalog rows to gate against. The parm('kernelcode') or parm('code') hedge in the RD handler is the symptom this cures.",
+  "targets": [
+    "1) gated_set(node, parm_values) in handler_helpers.py or python/synapse/validation/: reject unknown parm names BEFORE any mutation; on miss raise with nearest-match suggestions from rag/catalog/h22.0.400/; on pass set inside the EXISTING undo-group discipline - never a new undo path",
+    "2) runtime lookup API: catalog.parms(category, node_type), catalog.signature(category, node_type) - cheap exact lookups, no embedding round-trips",
+    "3) route the weak-domain handlers (handlers_cops.py, DOP/CHOP/VOP handler surfaces) through gated_set for every parm write; the kernelcode/code hedge in reaction_diffusion is deleted and replaced by the gate (observed 2026-08-16: kernelcode is real, code does not exist on the H22 opencl COP)",
+    "4) a hallucinated parm name becomes a caught error with a useful suggestion - RED/GREEN test pair proving both the rejection and the suggestion quality"
+  ],
+  "touches": [
+    "python/synapse/server/",
+    "python/synapse/validation/",
+    "tests/"
+  ],
+  "readonly": false,
+  "deps": [
+    "W5-CATALOG"
+  ],
+  "crucible_criteria": [
+    "the gate must not bypass or weaken the undo-group discipline the Ctrl+Z waves just shipped - crucible verifies a gated set still lands in one undo group",
+    "handlers_cops.py may be touched by future wave-A work but is claimed by nobody this wave - bus claim anyway, shared-surface habit",
+    "gate failures must be catchable and self-correcting for the agent loop, never silent no-ops"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "source": {
+    "doc": "docs/BLUEPRINT_WEAK_DOMAINS.md",
+    "anchor": "section 2 - The Parm Gate; section 8 runtime lookup API"
+  },
+  "acceptance": [
+    {
+      "predicate": "gated_set rejects a deliberately wrong parm name with a nearest-match suggestion (RED/GREEN pair)",
+      "evidence": "test"
+    },
+    {
+      "predicate": "weak-domain handlers route parm writes through the gate; the kernelcode/code hedge is gone",
+      "evidence": "test"
+    },
+    {
+      "predicate": "a gated set still wraps in exactly one undo group",
+      "evidence": "test"
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "_comment": "W5L lifecycle wave - compiled from Joe live-seat findings 2026-08-16 (g5 fail + panel observations 1-7). Base=master df8c9ef3. ARMED on Joe word: \"fold these as changes into the harness and execute the harness\". Merge/flip/gui-receipt remain Joe words per act. Ritual halted at g5; resumes on the fixed build. | FOLDED 2026-08-16 on Joe word 'fold this blueprint into the currently running harness': substrate legs W5-CATALOG, W5-PARMGATE (dep CATALOG), W5-MEASURES + crucible W5-WCRUX from docs/BLUEPRINT_WEAK_DOMAINS.md M1-M3. Domain waves A-E gated behind substrate merge.",
+  "_schema": "legs/v1",
+  "repo": "C:\\Users\\User\\SYNAPSE",
+  "settings": "C:\\Users\\User\\SYNAPSE\\harness\\relay-settings.json",
+  "effort": "ultracode",
+  "base": "master",
+  "model": "claude-opus-4-8",
+  "wave": "wave5l",
+  "legs": [
+    {
+      "id": "W5-LCRUX",
+      "name": "lifecycle-wave crucible: adversarial gate over the W5L legs before any merge word",
+      "state": "ready",
+      "receipt": "W5-LCRUX.json",
+      "branch": "wave5/lcrux",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-lcrux",
+      "prompt": "harness/autorevise/prompts/W5-LCRUX.md",
+      "deps": [
+        "W5-LIFE",
+        "W5-PANEL",
+        "W5-SHELF",
+        "W5-ROPE"
+      ],
+      "readonly": true,
+      "touches": [],
+      "note": "AUTOREVISE harness/notes/h22/BLUEPRINT.md :: house rule: CRUX before merge - applies to every merged product. Gates all. Merge remains Joe's word, per leg."
+    },
+    {
+      "id": "W5-LIFE",
+      "name": "R.2: process-lifetime heartbeat owner + session survival - panel close must not kill the runtime; reopen reconnects to the SAME session",
+      "state": "ready",
+      "receipt": "W5-LIFE.json",
+      "branch": "wave5/life",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-life",
+      "prompt": "harness/autorevise/prompts/W5-LIFE.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/synapse_panel.py",
+        "python/synapse/server/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE harness/state/release_receipts.json :: g5_lifecycle :: fail 2026-08-16 - reopen met a fresh runtime, no chat history. compiled from Joe's live g5 fail, 2026-08-16. Ritual halted at g5 until this lands; g5 re-runs on the fixed build (Joe's hands, never simulated)."
+    },
+    {
+      "id": "W5-PANEL",
+      "name": "panel UX truth: font floor = Houdini default scaling UP, +0.75pt chat leading, Token tab computes real per-task spend on the selected model",
+      "state": "ready",
+      "receipt": "W5-PANEL.json",
+      "branch": "wave5/panel",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-panel",
+      "prompt": "harness/autorevise/prompts/W5-PANEL.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE harness/notes/h22/panel-observations-2026-08-16.md :: items 2, 3, 4, 5 - Joe, live seat. compiled from Joe's live seat observations 2026-08-16, items 2-5. Fix work only - no lifecycle/timer surface (that is W5-LIFE's claim)."
+    },
+    {
+      "id": "W5-ROPE",
+      "name": "wire the CURIOUS / EXPERT / ML panel switcher to rope profile composition - selection must change the active profile",
+      "state": "ready",
+      "receipt": "W5-ROPE.json",
+      "branch": "wave5/rope",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-rope",
+      "prompt": "harness/autorevise/prompts/W5-ROPE.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/panel/",
+        "python/synapse/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE harness/notes/h22/panel-observations-2026-08-16.md :: item 1 - CURIOUS/EXPERT/ML settings do nothing; cross-ref harness/rope/ + L5-13 seat-walk. compiled from Joe's live seat observation 2026-08-16, item 1: the switcher does nothing. This IS the live seat-walk finding the pending L5-13 ruling has waited on. Wiring only - rope ratified state is untouchable."
+    },
+    {
+      "id": "W5-SHELF",
+      "name": "shelf truth: PySide6-first clipboard + current installer message (greens shelf_current), icons + tooltips for all six tools",
+      "state": "ready",
+      "receipt": "W5-SHELF.json",
+      "branch": "wave5/shelf",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-shelf",
+      "prompt": "harness/autorevise/prompts/W5-SHELF.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "houdini/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE harness/notes/h22/panel-observations-2026-08-16.md :: items 6, 7 - Joe, live seat; shelf screenshot in session. compiled from Joe's live seat observations 2026-08-16, items 6-7 ('hard to read and not sure what it does'), folded with the red shelf_current machine gate (P1-shelf)."
+    },
+    {
+      "id": "W5-CATALOG",
+      "name": "substrate P1: build-keyed schema catalog - one hython dump makes every parm name verified-by-construction",
+      "state": "ready",
+      "receipt": "W5-CATALOG.json",
+      "branch": "wave5/catalog",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-catalog",
+      "prompt": "harness/autorevise/prompts/W5-CATALOG.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "scripts/",
+        "rag/catalog/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/BLUEPRINT_WEAK_DOMAINS.md :: section 2 - Substrate Phase 1, the Schema Catalog; exit criteria Mile 1-2. Blueprint M1-M2 (docs/BLUEPRINT_WEAK_DOMAINS.md section 2). FP1: never recall what the binary can tell you. Domain waves A-E stay gated on this substrate."
+    },
+    {
+      "id": "W5-MEASURES",
+      "name": "substrate P2: cook-verify contracts - extend 'unmeasured renders UNKNOWN' to every output kind, tier ladder, golden runner",
+      "state": "ready",
+      "receipt": "W5-MEASURES.json",
+      "branch": "wave5/measures",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-measures",
+      "prompt": "harness/autorevise/prompts/W5-MEASURES.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/validation/",
+        "rulebook/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/BLUEPRINT_WEAK_DOMAINS.md :: section 3 - Substrate Phase 2, Cook-Verify contracts; exit criteria Mile 3. Blueprint M3 (docs/BLUEPRINT_WEAK_DOMAINS.md section 3). FP2: never assert what you haven't measured. Independent of the catalog - runs parallel to W5-CATALOG."
+    },
+    {
+      "id": "W5-PARMGATE",
+      "name": "substrate P1b: the Parm Gate - gated_set() rejects unknown parm names before touching the node, nearest-match suggestions from the catalog",
+      "state": "ready",
+      "receipt": "W5-PARMGATE.json",
+      "branch": "wave5/parmgate",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-parmgate",
+      "prompt": "harness/autorevise/prompts/W5-PARMGATE.md",
+      "deps": [
+        "W5-CATALOG"
+      ],
+      "readonly": false,
+      "touches": [
+        "python/synapse/server/",
+        "python/synapse/validation/",
+        "tests/"
+      ],
+      "note": "AUTOREVISE docs/BLUEPRINT_WEAK_DOMAINS.md :: section 2 - The Parm Gate; section 8 runtime lookup API. Blueprint M2 (docs/BLUEPRINT_WEAK_DOMAINS.md section 2, 'The Parm Gate'). Depends on W5-CATALOG - the gate needs catalog rows to gate against. The parm('kernelcode') or parm('code') hedge in the RD handler is the symptom this cures."
+    },
+    {
+      "id": "W5-WCRUX",
+      "name": "substrate crucible: adversarial gate over the weak-domain substrate legs before any merge word",
+      "state": "ready",
+      "receipt": "W5-WCRUX.json",
+      "branch": "wave5/wcrux",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-wcrux",
+      "prompt": "harness/autorevise/prompts/W5-WCRUX.md",
+      "deps": [
+        "W5-CATALOG",
+        "W5-PARMGATE",
+        "W5-MEASURES"
+      ],
+      "readonly": true,
+      "touches": [],
+      "note": "AUTOREVISE docs/BLUEPRINT_WEAK_DOMAINS.md :: house rule: CRUX before merge - applies to every merged product; blueprint FP1/FP2 are the audit lens. Gates the substrate trio only - W5-LCRUX's scope stays frozen on the lifecycle four. Merge remains Joe's word, per leg. Domain waves A-E author only after this substrate merges."
+    }
+  ]
+}

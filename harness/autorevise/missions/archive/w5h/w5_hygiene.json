@@ -1,0 +1,47 @@
+{
+  "id": "W5-HYGIENE",
+  "band": "BUILD",
+  "name": "harness hygiene: subagent-aware liveness tracker, receipt-closing-commit template mandate, series work-order fix",
+  "source": {
+    "doc": "harness/notes/receipts/W5-CRUX.json",
+    "anchor": "HOUSE NOTES: tracker blind to subagents/workflows; CRUX receipt closing-commit gap; CRUX-R2 set_parm mis-location"
+  },
+  "targets": [
+    "1) READ harness/SPEC.md and harness/rsi/SPEC.md FIRST - no harness edit before both are read",
+    "2) orchestrate.ps1 last-write liveness tracker also globs the leg's ~/.claude session subagents/workflows/ paths so a crucible deep in subagent probes never reads as dead",
+    "3) prompts/_template.md gains the mandate: the receipt file is committed by the leg itself as its closing commit - operator rescue is a failure mode, cite W5 (CRUX + all four legs left receipts worktree-only)",
+    "4) BLUEPRINT.md Series plan wording corrected per CRUX-R2: set_parm lives in handlers.py, not handlers_node.py; remaining Ctrl+Z holes ride W5-UNDO-B"
+  ],
+  "acceptance": [
+    {
+      "predicate": "tracker liveness test: a fixture path under subagents/workflows/ updates the last-write age",
+      "evidence": "test"
+    },
+    {
+      "predicate": "_template.md contains the receipt-closing-commit mandate with the W5 citation",
+      "evidence": "check"
+    },
+    {
+      "predicate": "BLUEPRINT.md Series plan no longer locates set_parm in handlers_node.py",
+      "evidence": "check"
+    }
+  ],
+  "deps": [],
+  "readonly": false,
+  "touches": [
+    "harness/orchestrate.ps1",
+    "harness/autorevise/prompts/_template.md",
+    "harness/notes/h22/BLUEPRINT.md",
+    "tests/"
+  ],
+  "crucible_criteria": [
+    "SPEC.md + rsi/SPEC.md read before any harness edit - state it in the receipt with anchors",
+    "the RUNNING orchestrator must not be disturbed: edits happen in the worktree only",
+    "house rule: unobtainable renders UNKNOWN, never zero and never an estimate",
+    "COMMIT BEFORE RECEIPT, and the receipt is the leg's own closing commit"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "note": "House-cleaning wave W5H. Fix the mirror before the next wave looks into it."
+}

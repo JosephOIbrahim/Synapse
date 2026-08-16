@@ -1,0 +1,37 @@
+{
+  "id": "W5-STATWT",
+  "name": "statusline resolves the worktree gitdir so tests/test_statusline.py passes in a linked worktree",
+  "band": "BUILD",
+  "targets": [
+    "resolve ROOT/.git when it is a file (parse 'gitdir: <path>') so branch()/head_sha()/packed-refs/worktrees enumeration work from inside a linked worktree",
+    "tests/test_statusline.py: 13/13 in BOTH the main checkout and a linked worktree"
+  ],
+  "touches": [
+    "harness/statusline.py",
+    "tests/"
+  ],
+  "readonly": false,
+  "spawn_classes": [
+    "build"
+  ],
+  "note": "compiled from spawn W5-STATUSLINE-WT in W5-BASE.json. harness/statusline.py:100/127 open ROOT/.git/HEAD directly; in a linked worktree .git is a FILE ('gitdir: <path>'), so branch()/head_sha()/registered_paths() fail and 4 tests/test_ ",
+  "deps": [],
+  "crucible_criteria": [
+    "house rule: unobtainable renders UNKNOWN, never zero and never an estimate",
+    "COMMIT BEFORE RECEIPT, and the receipt itself is the leg's own closing commit"
+  ],
+  "source": {
+    "doc": ".claude/worktrees/w5-base/harness/notes/receipts/W5-BASE.json",
+    "anchor": "spawned by W5-BASE :: "
+  },
+  "acceptance": [
+    {
+      "predicate": "resolve ROOT/.git when it is a file (parse 'gitdir: <path>') so branch()/head_sha()/packed-refs/worktrees enumeration work from inside a linked worktree",
+      "evidence": "test"
+    },
+    {
+      "predicate": "tests/test_statusline.py: 13/13 in BOTH the main checkout and a linked worktree",
+      "evidence": "test"
+    }
+  ]
+}

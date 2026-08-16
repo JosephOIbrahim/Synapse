@@ -1,0 +1,36 @@
+{
+  "id": "W5-CRUXS1",
+  "name": "ingest solaris_compound_node_anatomy.md into rag/corpus/ so the CTO-bound reference is retrievable",
+  "band": "BUILD",
+  "class": "probe",
+  "source": {
+    "doc": "harness/notes/receipts/W5-CRUX.json",
+    "anchor": "finding F-CRUX-1"
+  },
+  "targets": [
+    "1) author a rag/corpus/ entry for solaris_compound_node_anatomy (id/type/context/label/summary/searchable_text) so the semantic-index id has a corpus backing and is no longer skipped",
+    "2) regression probe: synapse_scout('componentgeometry') surfaces the anatomy doc (or knowledge_lookup returns it) so the H22 'alternative' output + island paths are discoverable",
+    "3) OR reconcile _dense_ids against the materialized corpus so a doc with an embedding but no corpus entry degrades to honest-empty rather than being silently unreachable"
+  ],
+  "acceptance": [
+    {
+      "predicate": "the anatomy doc is retrievable via synapse_scout or knowledge_lookup, and its H22 'alternative' + island-path facts surface for a componentgeometry / component-builder-internals query",
+      "evidence": "probe"
+    }
+  ],
+  "readonly": false,
+  "touches": [
+    "rag/corpus/",
+    "python/synapse/cognitive/tools/scout.py",
+    "tests/"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "note": "compiled from spawn W5-CRUX-S1 in W5-CRUX.json. The anatomy doc the CTO bound to this wave ('consult before any Solaris/VOP-adjacent claim') has a rag/semantic_index embedding row but NO rag/corpus backing entry, so scout's defe class=probe within W5-CRUX spawn_classes; edits shared surfaces (rag/corpus, scout.py) outside this readonly crux's touches -> lands held for Joe.",
+  "deps": [],
+  "crucible_criteria": [
+    "house rule: unobtainable renders UNKNOWN, never zero and never an estimate",
+    "COMMIT BEFORE RECEIPT, and the receipt itself is the leg's own closing commit"
+  ]
+}

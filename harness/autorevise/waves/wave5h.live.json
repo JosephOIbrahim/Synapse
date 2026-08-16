@@ -1,0 +1,105 @@
+{
+  "_comment": "DRAFT wave-5 live manifest - series waves 5-9, wave 5 = trust the gauges (DENSE/DELTA/BASE + UNDO hardening shotgun + CRUX). Establishment by Fable 5, 2026-08-15 post-v5.50.0; Anatomy cross-ref bound (rag/skills/houdini21-reference/solaris_compound_node_anatomy.md) + bus contract seeded (CTO brief). NOT ARMED - awaiting Joe's model confirmation + arm word at the prompt. Base=master 46299e07 (v5.50.0 + fix, CI green). First live enforcement of the commit-before-receipt mandate. Merge/flip/gui-receipt remain Joe's words per act.",
+  "_schema": "legs/v1",
+  "repo": "C:\\Users\\User\\SYNAPSE",
+  "settings": "C:\\Users\\User\\SYNAPSE\\harness\\relay-settings.json",
+  "effort": "ultracode",
+  "base": "master",
+  "model": "claude-opus-4-8",
+  "wave": "wave5h",
+  "legs": [
+    {
+      "id": "W5-UNDOB",
+      "name": "close the remaining live-path Ctrl+Z holes: set_parm + set_keyframe wrap, integrity_envelope docstring sync",
+      "state": "ready",
+      "receipt": "W5-UNDOB.json",
+      "branch": "wave5/undob",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-undob",
+      "prompt": "harness/autorevise/prompts/W5-UNDOB.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "python/synapse/server/handlers.py",
+        "python/synapse/server/handlers_render.py",
+        "python/synapse/server/integrity_envelope.py",
+        "CLAUDE.md",
+        "tests/"
+      ],
+      "note": "FLIPPED ready on Joe's word 2026-08-15 evening. HELD: class 'build' outside W5-UNDO playbook. AUTOREVISE .claude/worktrees/w5-undo/harness/notes/receipts/W5-UNDO.json :: spawned by W5-UNDO :: . compiled from spawn W5-UNDO-B in W5-UNDO.json. class outside W5-UNDO spawn_classes ([probe]) -> lands HELD for Joe."
+    },
+    {
+      "id": "W5-STATWT",
+      "name": "statusline resolves the worktree gitdir so tests/test_statusline.py passes in a linked worktree",
+      "state": "ready",
+      "receipt": "W5-STATWT.json",
+      "branch": "wave5/statwt",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-statwt",
+      "prompt": "harness/autorevise/prompts/W5-STATWT.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "harness/statusline.py",
+        "tests/"
+      ],
+      "note": "FLIPPED ready on Joe's word 2026-08-15 evening. HELD: class 'None' outside W5-BASE playbook. AUTOREVISE .claude/worktrees/w5-base/harness/notes/receipts/W5-BASE.json :: spawned by W5-BASE :: . compiled from spawn W5-STATUSLINE-WT in W5-BASE.json. harness/statusline.py:100/127 open ROOT/.git/HEAD directly; in a linked worktree .git is a FILE ('gitdir: <path>'), so branch()/head_sha()/registered_paths() fail and 4 tests/test_"
+    },
+    {
+      "id": "W5-CRUXS1",
+      "name": "ingest solaris_compound_node_anatomy.md into rag/corpus/ so the CTO-bound reference is retrievable",
+      "state": "ready",
+      "receipt": "W5-CRUXS1.json",
+      "branch": "wave5/cruxs1",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-cruxs1",
+      "prompt": "harness/autorevise/prompts/W5-CRUXS1.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "rag/corpus/",
+        "python/synapse/cognitive/tools/scout.py",
+        "tests/"
+      ],
+      "note": "AUTOREVISE harness/notes/receipts/W5-CRUX.json :: finding F-CRUX-1. compiled from spawn W5-CRUX-S1 in W5-CRUX.json. The anatomy doc the CTO bound to this wave ('consult before any Solaris/VOP-adjacent claim') has a rag/semantic_index embedding row but NO rag/corpus backing entry, so scout's defe class=probe within W5-CRUX spawn_classes; edits shared surfaces (rag/corpus, scout.py) outside this readonly crux's touches -> lands held for Joe."
+    },
+    {
+      "id": "W5-HYGIENE",
+      "name": "harness hygiene: subagent-aware liveness tracker, receipt-closing-commit template mandate, series work-order fix",
+      "state": "ready",
+      "receipt": "W5-HYGIENE.json",
+      "branch": "wave5/hygiene",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-hygiene",
+      "prompt": "harness/autorevise/prompts/W5-HYGIENE.md",
+      "deps": [],
+      "readonly": false,
+      "touches": [
+        "harness/orchestrate.ps1",
+        "harness/autorevise/prompts/_template.md",
+        "harness/notes/h22/BLUEPRINT.md",
+        "tests/"
+      ],
+      "note": "AUTOREVISE harness/notes/receipts/W5-CRUX.json :: HOUSE NOTES: tracker blind to subagents/workflows; CRUX receipt closing-commit gap; CRUX-R2 set_parm mis-location. House-cleaning wave W5H. Fix the mirror before the next wave looks into it."
+    },
+    {
+      "id": "W5-HCRUX",
+      "name": "house-cleaning crucible: adversarial gate over the W5H legs before any merge word",
+      "state": "ready",
+      "receipt": "W5-HCRUX.json",
+      "branch": "wave5/hcrux",
+      "base": "master",
+      "worktree": ".claude/worktrees/w5-hcrux",
+      "prompt": "harness/autorevise/prompts/W5-HCRUX.md",
+      "deps": [
+        "W5-UNDOB",
+        "W5-CRUXS1",
+        "W5-STATWT",
+        "W5-HYGIENE"
+      ],
+      "readonly": true,
+      "touches": [],
+      "note": "AUTOREVISE harness/notes/h22/BLUEPRINT.md :: house rule: CRUX before merge - applies to every merged product, house-cleaning included. Gates all. Merge remains Joe's word."
+    }
+  ]
+}

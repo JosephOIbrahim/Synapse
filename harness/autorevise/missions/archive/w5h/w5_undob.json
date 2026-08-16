@@ -1,0 +1,45 @@
+{
+  "id": "W5-UNDOB",
+  "name": "close the remaining live-path Ctrl+Z holes: set_parm + set_keyframe wrap, integrity_envelope docstring sync",
+  "band": "BUILD",
+  "class": "build",
+  "note": "compiled from spawn W5-UNDO-B in W5-UNDO.json. class outside W5-UNDO spawn_classes ([probe]) -> lands HELD for Joe.",
+  "targets": [
+    "handlers.py:_handle_set_parm wraps its parm.set/parm_tuple.set mutations in one hou.undos.group",
+    "handlers_render.py:_handle_set_keyframe wraps its parm.setKeyframe mutations in one hou.undos.group",
+    "integrity_envelope.py:19-28 docstring updated: create/connect/delete now wrap; only set_parm/set_keyframe remain; CLAUDE.md 1 is no longer drift for the three node handlers"
+  ],
+  "touches": [
+    "python/synapse/server/handlers.py",
+    "python/synapse/server/handlers_render.py",
+    "python/synapse/server/integrity_envelope.py",
+    "CLAUDE.md",
+    "tests/"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "handlers.py + handlers_render.py are high-traffic shared surfaces -> bus claim + main-tree seam-guard BEFORE any edit; two writers on one surface stops the train"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "source": {
+    "doc": ".claude/worktrees/w5-undo/harness/notes/receipts/W5-UNDO.json",
+    "anchor": "spawned by W5-UNDO :: "
+  },
+  "acceptance": [
+    {
+      "predicate": "handlers.py:_handle_set_parm wraps its parm.set/parm_tuple.set mutations in one hou.undos.group",
+      "evidence": "test"
+    },
+    {
+      "predicate": "handlers_render.py:_handle_set_keyframe wraps its parm.setKeyframe mutations in one hou.undos.group",
+      "evidence": "test"
+    },
+    {
+      "predicate": "integrity_envelope.py:19-28 docstring updated: create/connect/delete now wrap; only set_parm/set_keyframe remain; CLAUDE.md 1 is no longer drift for the three node handlers",
+      "evidence": "test"
+    }
+  ]
+}

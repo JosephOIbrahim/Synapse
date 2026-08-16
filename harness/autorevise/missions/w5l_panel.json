@@ -1,0 +1,44 @@
+{
+  "id": "W5-PANEL",
+  "name": "panel UX truth: font floor = Houdini default scaling UP, +0.75pt chat leading, Token tab computes real per-task spend on the selected model",
+  "band": "BUILD",
+  "class": "build",
+  "note": "compiled from Joe's live seat observations 2026-08-16, items 2-5. Fix work only - no lifecycle/timer surface (that is W5-LIFE's claim).",
+  "targets": [
+    "1) minimum font size floors at the Houdini UI default, derived from the host (hou.ui / QApplication font) - never a hardcoded pt; the size switcher scales UP from that floor (today it only shrinks below default)",
+    "2) chat text vertical spacing gains +0.75pt leading - current line spacing too tight (Joe's words)",
+    "3) Token tab calculates per-task token spend on the SELECTED model from real usage data (API usage fields / runtime counters); absent plumbing gets minimal honest wiring; anything unmeasurable renders UNKNOWN in the UI - never a fake or frozen number"
+  ],
+  "touches": [
+    "python/synapse/panel/",
+    "tests/"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "python/synapse/panel/ is shared with W5-LIFE and W5-ROPE -> bus claim before ANY edit; overlapping open claim stops the leg; synapse_panel.py lifecycle/timer lines are LIFE's surface - do not touch them",
+    "no hardcoded font sizes anywhere - the floor must derive from the host at runtime",
+    "token numbers must trace to a usage-source receipt; a counter that invents values is worse than a dead one"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "source": {
+    "doc": "harness/notes/h22/panel-observations-2026-08-16.md",
+    "anchor": "items 2, 3, 4, 5 - Joe, live seat"
+  },
+  "acceptance": [
+    {
+      "predicate": "font floor == host default at runtime and switcher only scales up from it (no state below floor reachable)",
+      "evidence": "test"
+    },
+    {
+      "predicate": "chat leading increased by 0.75pt over prior value, asserted against the widget's effective line spacing",
+      "evidence": "test"
+    },
+    {
+      "predicate": "Token tab spend traces to a real usage source for the selected model; unmeasurable states render UNKNOWN",
+      "evidence": "test"
+    }
+  ]
+}

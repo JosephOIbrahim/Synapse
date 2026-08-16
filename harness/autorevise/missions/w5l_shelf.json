@@ -1,0 +1,44 @@
+{
+  "id": "W5-SHELF",
+  "name": "shelf truth: PySide6-first clipboard + current installer message (greens shelf_current), icons + tooltips for all six tools",
+  "band": "BUILD",
+  "class": "build",
+  "note": "compiled from Joe's live seat observations 2026-08-16, items 6-7 ('hard to read and not sure what it does'), folded with the red shelf_current machine gate (P1-shelf).",
+  "targets": [
+    "1) houdini/scripts/python/synapse_shelf.py: PySide6-first clipboard with the PySide2 fallback KEPT (the gate greens on PySide6 PRESENCE, never PySide2 absence) + user-facing installer message points to scripts/install_synapse_package.py -> machine gate shelf_current GREEN",
+    "2) icons for the six shelf tools (Project Setup, Inspect Selection, Inspect Scene, Last Result, Health Check, Generate Docs); .gitignore blankets *.png/*.jpg around lines 94-95 -> icon assets need git add -f <named files>, shas noted in the receipt",
+    "3) tooltip/help text per tool stating what it does in one operator sentence"
+  ],
+  "touches": [
+    "houdini/",
+    "tests/"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "crucible re-runs shelf_current itself via python harness/verify/checks.py - never inherits the builder's claim",
+    "PySide2 literal legitimately survives the fix - any crucible test gating on its absence is wrong by spec",
+    "icon files must exist in the commit (git add -f receipts) - a tooltip-only fix does not satisfy item 6"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "source": {
+    "doc": "harness/notes/h22/panel-observations-2026-08-16.md",
+    "anchor": "items 6, 7 - Joe, live seat; shelf screenshot in session"
+  },
+  "acceptance": [
+    {
+      "predicate": "shelf_current reads GREEN (PySide6 presence + install_synapse_package.py message)",
+      "evidence": "check"
+    },
+    {
+      "predicate": "each of the six tools carries an icon committed via git add -f with sha recorded",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "each of the six tools carries a tooltip/help string",
+      "evidence": "test"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "id": "W5-LIFE",
+  "name": "R.2: process-lifetime heartbeat owner + session survival - panel close must not kill the runtime; reopen reconnects to the SAME session",
+  "band": "BUILD",
+  "class": "build",
+  "note": "compiled from Joe's live g5 fail, 2026-08-16. Ritual halted at g5 until this lands; g5 re-runs on the fixed build (Joe's hands, never simulated).",
+  "targets": [
+    "1) synapse_panel.py: remove the panel-parented beat source (self._freeze_timer = QTimer(self)); beat emission moves to a process-lifetime owner under python/synapse/server/ exposing def ensure_beat_started plus a # RUNTIME_BEAT_SOURCE sentinel - deleting the timer WITHOUT the replacement is the R.2 check's own RED leg",
+    "2) closeEvent performs DELIBERATE beat-source detach: watchdog informed, no dead-beat false-freeze, FreezeChain never escalates a healthy runtime (resilience.py monitor + freeze_chain.py semantics)",
+    "3) panel close leaves runtime + session store alive; reopen reconnects to the SAME runtime with chat history restored (Joe's live repro: closed tab -> operation finished headless -> reopen = not connected, no history)",
+    "4) real freeze protection intact: a stalled main thread still escalates - RED/GREEN test pair, headless-simulated",
+    "5) machine gate runtime_owns_heartbeat reads GREEN (both legs) via python harness/verify/checks.py"
+  ],
+  "touches": [
+    "python/synapse/panel/synapse_panel.py",
+    "python/synapse/server/",
+    "tests/"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "python/synapse/panel/ is shared with W5-PANEL and W5-ROPE this wave -> bus claim before ANY edit; an overlapping open claim stops the leg",
+    "timer deletion without a live process-lifetime replacement = no freeze protection at all; crucible verifies protection BEHAVIOR, not literal absence",
+    "gui-only legs (live Houdini close/reopen) render UNKNOWN - g5 re-run is Joe's, never simulated into a pass"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "source": {
+    "doc": "harness/state/release_receipts.json",
+    "anchor": "g5_lifecycle :: fail 2026-08-16 - reopen met a fresh runtime, no chat history"
+  },
+  "acceptance": [
+    {
+      "predicate": "runtime_owns_heartbeat GREEN, both legs: panel-parented literal gone AND a server-side process-lifetime owner present",
+      "evidence": "check"
+    },
+    {
+      "predicate": "deliberate detach: panel close produces no false freeze escalation; stalled main thread still escalates (RED/GREEN pair)",
+      "evidence": "test"
+    },
+    {
+      "predicate": "session survival: reconnect-to-same-runtime with history restored - headless-simulatable parts tested, gui-required parts recorded UNKNOWN",
+      "evidence": "test"
+    }
+  ]
+}

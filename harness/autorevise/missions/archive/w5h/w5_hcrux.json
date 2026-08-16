@@ -1,0 +1,45 @@
+{
+  "id": "W5-HCRUX",
+  "band": "TRUTH",
+  "name": "house-cleaning crucible: adversarial gate over the W5H legs before any merge word",
+  "source": {
+    "doc": "harness/notes/h22/BLUEPRINT.md",
+    "anchor": "house rule: CRUX before merge - applies to every merged product, house-cleaning included"
+  },
+  "targets": [
+    "1) re-verify every W5H leg acceptance independently or mark UNKNOWN with the exact unobtainable step - none inherited",
+    "2) mandate table: every receipt states a HEAD that exists and precedes the receipt write; receipt itself is the leg's closing commit (the NEW mandate) - binary per leg",
+    "3) combined-state probe on a scratch tree staging all W5H legs; exact failing surface named if any",
+    "4) verdict board + receipt committed on wave5h/crux; receipt is this leg's own closing commit"
+  ],
+  "acceptance": [
+    {
+      "predicate": "per-leg verdicts with independent re-execution evidence, UNKNOWNs never laundered",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "mandate table binary per leg including the receipt-closing-commit check",
+      "evidence": "check"
+    },
+    {
+      "predicate": "combined scratch-tree probe recorded, cleaned up",
+      "evidence": "probe"
+    }
+  ],
+  "deps": [
+    "W5-UNDOB",
+    "W5-CRUXS1",
+    "W5-STATWT",
+    "W5-HYGIENE"
+  ],
+  "readonly": true,
+  "touches": [],
+  "crucible_criteria": [
+    "carries wave-4 CRX0, wave-5 first-enforcement, and the W5 receipt-commit-gap lessons as standing checks",
+    "house rule: unobtainable renders UNKNOWN, never zero and never an estimate"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "note": "Gates all. Merge remains Joe's word."
+}

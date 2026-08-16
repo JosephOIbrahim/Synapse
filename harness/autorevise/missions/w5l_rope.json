@@ -1,0 +1,46 @@
+{
+  "id": "W5-ROPE",
+  "name": "wire the CURIOUS / EXPERT / ML panel switcher to rope profile composition - selection must change the active profile",
+  "band": "BUILD",
+  "class": "build",
+  "note": "compiled from Joe's live seat observation 2026-08-16, item 1: the switcher does nothing. This IS the live seat-walk finding the pending L5-13 ruling has waited on. Wiring only - rope ratified state is untouchable.",
+  "targets": [
+    "1) READ FIRST, before any edit: harness/rope/program.md + harness/rope/OPERATOR_CARD.md - rope is a ratified subsystem with its own contract",
+    "2) wire the panel CURIOUS/EXPERT/ML switcher to rope profile composition so selection changes the ACTIVE composed profile (today: no effect)",
+    "3) HARD PROHIBITION: never write harness/rope/STATE.json, harness/rope/PENDING_TASKS.json, or any ratified field - human-only surfaces; the pending L5-13 ruling stays untouched; if the wiring seems to require touching rope state, STOP and post for_ruling"
+  ],
+  "touches": [
+    "python/synapse/panel/",
+    "python/synapse/",
+    "tests/"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "switcher effect must be OBSERVED via test - the composed profile actually changes per selection - never asserted from wiring existence",
+    "python/synapse/panel/ is shared with W5-LIFE and W5-PANEL -> bus claim before ANY edit; overlapping open claim stops the leg",
+    "harness/rope/STATE.json and PENDING_TASKS.json byte-identical before/after - crucible diffs them",
+    "existing tests/test_rope_*.py stay green - the switcher wiring rides ON the composer, never forks it"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "source": {
+    "doc": "harness/notes/h22/panel-observations-2026-08-16.md",
+    "anchor": "item 1 - CURIOUS/EXPERT/ML settings do nothing; cross-ref harness/rope/ + L5-13 seat-walk"
+  },
+  "acceptance": [
+    {
+      "predicate": "selecting CURIOUS / EXPERT / ML composes and applies the corresponding rope profile (observed via test, per selection)",
+      "evidence": "test"
+    },
+    {
+      "predicate": "rope ratified state files byte-identical before/after the leg",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "all existing tests/test_rope_*.py remain green",
+      "evidence": "test"
+    }
+  ]
+}

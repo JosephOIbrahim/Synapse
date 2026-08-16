@@ -1,0 +1,46 @@
+{
+  "id": "W5-LCRUX",
+  "band": "TRUTH",
+  "name": "lifecycle-wave crucible: adversarial gate over the W5L legs before any merge word",
+  "source": {
+    "doc": "harness/notes/h22/BLUEPRINT.md",
+    "anchor": "house rule: CRUX before merge - applies to every merged product"
+  },
+  "targets": [
+    "1) re-verify every W5L leg acceptance independently or mark UNKNOWN with the exact unobtainable step - none inherited; that includes re-running runtime_owns_heartbeat and shelf_current via python harness/verify/checks.py yourself",
+    "2) mandate table, binary per leg: receipt states a HEAD that exists and precedes the receipt write; the receipt is the leg's OWN closing commit (W5H F2: a receipt narrating a commit that never existed is a laundered claim - interrogate git, not prose)",
+    "3) combined-state probe on a scratch tree staging all four legs; suite ratchet vs base + guardrail_violations on the combined tree; exact failing surface named if any",
+    "4) panel/ overlap audit: LIFE, PANEL, ROPE all touched python/synapse/panel/ - verify bus claims were posted/released and no two legs edited one line",
+    "5) verdict board + receipt committed on wave5l/crux; the receipt is this leg's own closing commit"
+  ],
+  "acceptance": [
+    {
+      "predicate": "per-leg verdicts with independent re-execution evidence, UNKNOWNs never laundered",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "mandate table binary per leg including the receipt-closing-commit check",
+      "evidence": "check"
+    },
+    {
+      "predicate": "combined scratch-tree probe recorded (ratchet + guardrails), cleaned up",
+      "evidence": "probe"
+    }
+  ],
+  "deps": [
+    "W5-LIFE",
+    "W5-PANEL",
+    "W5-SHELF",
+    "W5-ROPE"
+  ],
+  "readonly": true,
+  "touches": [],
+  "crucible_criteria": [
+    "carries wave-4 CRX0, wave-5 first-enforcement, and the W5H receipt-commit-gap lessons as standing checks",
+    "house rule: unobtainable renders UNKNOWN, never zero and never an estimate"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "note": "Gates all. Merge remains Joe's word, per leg."
+}
