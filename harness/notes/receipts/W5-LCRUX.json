@@ -1,0 +1,49 @@
+{
+  "leg": "W5-LCRUX",
+  "title": "lifecycle-wave crucible: adversarial gate over the W5L legs before any merge word",
+  "status": "green_with_findings",
+  "product_head": "b3de8192",
+  "base": "df8c9ef38e909e1423b1c0a5e7249b75dcb96bb7",
+  "summary": "Adversarial gate over W5-LIFE/PANEL/SHELF/ROPE. Every verdict re-executed or git-interrogated by this leg - nothing inherited from the builder receipts. All four legs gated PASS-with-findings: zero refutations, zero laundered UNKNOWNs, zero showstoppers. Two standing merge conditions (F1 combine-sequencing on tests/test_r_track.py, F2 bus release hygiene). Merge remains Joe's word, per leg.",
+  "gate_verdicts": {
+    "W5-LIFE": "PASS-with-findings (3/3 predicates pass; R.2 CLI PASS + 29/29 tests; hollow-marker attack refuted; gui session parts UNKNOWN+spawned)",
+    "W5-PANEL": "PASS-with-findings (P1 font-floor UNKNOWN-honest; P2 chat-leading + P3 token-tab PASS via hython 22.0.400 first-hand 5/5 + 14/14)",
+    "W5-SHELF": "PASS-with-findings (3/3 pass; R.7 CLI PASS + 18/18; 6 distinct icon blobs; icon GUI-render UNKNOWN+spawned)",
+    "W5-ROPE": "PASS-with-findings (3/3 pass; 101/101; tautology attack refuted - rides real compositor; density-repaint bug spawned not hidden; state byte-identical)"
+  },
+  "acceptance": [
+    {
+      "predicate": "per-leg verdicts with independent re-execution evidence, UNKNOWNs never laundered",
+      "verdict": "pass",
+      "evidence": "probe: R.2/R.7 re-run first-hand via checks.py CLI (checks.py --task R.2 --worktree <w5-life> -> runtime_owns_heartbeat ok:true, PASS, guardrail_violations []; --task R.7 --worktree <w5-shelf> -> shelf_current ok:true, PASS, []). 4 crucible agents re-executed each leg's own tests: LIFE 29/29, SHELF 18/18, ROPE 101/101 (all headless), PANEL 20 headless. PANEL's 2 headless-blind slices re-run under hython 22.0.400 offscreen: tests/panel/test_chat_leading.py 5/5 (incl 3 effect-provers), tests/test_token_tab_usage.py 14/14 (incl 4 Qt e2e) -> P2/P3 PASS first-hand. UNKNOWNs preserved not laundered: PANEL P1 font-floor (live fix unshipped, peer-blocked), LIFE gui session reconnect/rebind/repaint, SHELF icon GUI render, ROPE density visible repaint - all gui_required/peer-blocked and all spawned by their legs."
+    },
+    {
+      "predicate": "mandate table binary per leg including the receipt-closing-commit check",
+      "verdict": "pass",
+      "evidence": "check: git interrogation of all 4 legs. (a) product_head exists: LIFE 8d97f993, PANEL d657dd45, SHELF 10188cec, ROPE 661ad369 (git cat-file -e). (b) product precedes receipt: git merge-base --is-ancestor product tip AND product commit-time < receipt commit-time for all 4. (c) receipt is the leg's OWN closing tip commit: each branch tip is the receipt commit adding receipts/W5-<leg>.json, authored on the leg branch. NONE operator-rescued (no c7a6a08d/76ca94a0 close-pass tip) - the W5-DELTA rule the W5H receipt-commit-gap lesson demanded. No receipt narrates a commit that never existed (W5H F2: clean). Full table in W5-LCRUX_verdict.md Target 2."
+    },
+    {
+      "predicate": "combined scratch-tree probe recorded (ratchet + guardrails), cleaned up",
+      "verdict": "pass",
+      "evidence": "probe: wave5/lcrux-scratch off df8c9ef3, git cherry-pick (merge forbidden) of all 4 legs' product commits (af806191,8d97f993,d657dd45,10188cec,661ad369). ONE expected conflict on tests/test_r_track.py::test_live_tree_gates_read_red_now (LIFE+SHELF both promote their gate out of the shared RED tuple; docstring:604 + assertions:637) - resolved as the deterministic union (all 3 gates GREEN, both asserts kept; RED-list loop auto-merged). Solo ratchet (quiet env): checks.py --task R.2 --worktree <scratch> -> suite_baseline passed 6508 (base 6389), failed 0 (base 0), ratchet HOLDS; guardrail_violations []; runtime_owns_heartbeat True. The 6/2 failures in concurrent runs were ENVIRONMENTAL (all tests/test_harness_lock.py PID-liveness; 10/10 when run alone; no leg touches harness-lock). Scratch worktree + branch removed."
+    }
+  ],
+  "findings": [
+    {"id": "F1", "severity": "condition-on-merge", "claim": "LIFE and SHELF do not cherry-pick clean onto a common base: tests/test_r_track.py::test_live_tree_gates_read_red_now collides (both promote their gate out of the shared RED tuple). Deterministic union resolution (both GREEN, both asserts); after it the combined suite is 6508p/0f, ratchet holds. Predicted by LIFE F5 + SHELF F2 + LIFE's bus short-hold claim.", "anchor": "tests/test_r_track.py:604,637 ; wave5/lcrux-scratch probe"},
+    {"id": "F2", "severity": "hygiene-systemic", "claim": "No wave5 leg posted a bus release - every claim (LIFE/PANEL/SHELF/ROPE + peers) remains open. Claim half used, release half unused across the wave.", "anchor": "harness/autorevise/bus/wave5/bus.jsonl (open_claims)"},
+    {"id": "F3", "severity": "process-benign", "claim": "ROPE holds an open, never-released, over-broad claim on python/synapse/panel/synapse_panel.py - a file its diff never touches (ROPE is test-only). LIFE edited synapse_panel.py while its bus note says 'BLOCKED behind W5-ROPE'; ROPE never released. Harmless in outcome (ROPE edited zero lines there -> no line collision), but the block was never cleared.", "anchor": "bus.jsonl W5-ROPE 09:32:12 ; W5-LIFE amend2 09:55:07"},
+    {"id": "F4", "severity": "brief-premise-correction", "claim": "The mission target-4 premise 'LIFE, PANEL, ROPE all touched python/synapse/panel/' is inaccurate: ROPE touched ZERO panel/ files (product = tests/test_rope_switcher_wires_profile.py only). LIFE and PANEL touched panel/, on pairwise-DISJOINT files (LIFE synapse_panel.py; PANEL chat_display/claude_worker/designsystem-tokens/face_token/usage_sink).", "anchor": "git diff df8c9ef3..661ad369"},
+    {"id": "F5", "severity": "gate-design-nonblocking", "claim": "check_runtime_owns_heartbeat is grep-only for the marker strings '# RUNTIME_BEAT_SOURCE'/'def ensure_beat_started' - a hollow marker comment with no real beat WOULD green it. LIFE's runtime_beat.py is a genuine parentless-QTimer->_emit_beat->freeze_chain.beat()->singleton beat (verified by read + test_owner_beat_after_detach), so the PASS is truthful, but the gate does not observe behavior. Mitigation: a behavioral pin (arm the owner against a real FreezeChain; assert escalate-on-stall / no-escalate-when-beaten).", "anchor": "harness/verify/checks.py:1842"},
+    {"id": "F6", "severity": "test-strength-nonblocking", "claim": "SHELF test_six_tools_have_distinct_icons asserts distinctness of icon NAME attributes only, not file bytes - would miss two names pointing to identical bytes. Independently closed here via git ls-tree (6 distinct blob shas + byte sizes 2479/2604/3756/2996/2749/3000, valid 64x64 RGBA).", "anchor": "tests/test_shelf_current.py::test_six_tools_have_distinct_icons"},
+    {"id": "F7", "severity": "disclosed-inert-nonblocking", "claim": "ROPE test_profile_pills_are_connected_to_the_select_handler is a static source-regex pin (pattern not runtime) - supplementary, not the acceptance backbone (behavioral observation is the real-compose tests). Disclosed in the receipt, not laundered.", "anchor": "tests/test_rope_switcher_wires_profile.py:307"},
+    {"id": "F8", "severity": "info-resolved", "claim": "PANEL P2 (chat-leading effect) + P3 (Qt token-tab e2e) skip headless; re-run under hython 22.0.400 offscreen -> chat_leading 5/5 (effect-provers assert documentSize height delta grows +1px/line and shrinks when stripped) + token_tab 14/14 -> both PASS first-hand. The receipt's hython evidence is reproduced, not inherited.", "anchor": "hython 22.0.400 -m pytest tests/panel/test_chat_leading.py ; tests/test_token_tab_usage.py"}
+  ],
+  "for_ruling": [
+    {"claim": "MERGE SEQUENCING (F1): LIFE and SHELF cannot both land on master without reconciling tests/test_r_track.py::test_live_tree_gates_read_red_now - the deterministic union of both gate promotions. Merge one, the second conflicts on that hunk; apply the union (or serialize + hand-edit). All other leg pairs are clean against each other and the base.", "needs": "human merge-order decision"},
+    {"claim": "BUS RELEASE HYGIENE (F2/F3): no leg released its claims; ROPE's over-broad synapse_panel.py claim should be released so the bus reflects final state.", "needs": "wave close-pass to post releases"},
+    {"claim": "gui_required UNKNOWNs remain Joe's live-seat verifications: LIFE reconnect/rebind/repaint, SHELF icon render, ROPE density repaint, PANEL font-floor live wiring - all already spawned by their legs, none simulated into a pass.", "needs": "Joe's live-seat runs on the fixed build"}
+  ],
+  "spawn": [
+    {"id": "W5-LCRUX-S1", "class": "build", "band": "BUILD", "name": "behavioral pin for check_runtime_owns_heartbeat (F5)", "note": "Arm the process-lifetime beat owner against a real FreezeChain and assert escalate-on-stall / no-escalate-when-beaten through ensure_beat_started, so the gate observes the beat rather than the marker string. class build is outside spawn_classes ['probe'] -> lands HELD for Joe.", "targets": ["harness/verify/checks.py:1842 (check_runtime_owns_heartbeat)", "tests/ (new behavioral heartbeat pin)"], "readonly": false, "spawn_classes": ["probe"]}
+  ]
+}
