@@ -1947,7 +1947,7 @@ class SynapsePanel(QtWidgets.QWidget):
             menu.addSeparator()
         except Exception:
             pass
-        menu.addAction("Larger text", lambda: self._set_scale(1.15))
+        menu.addAction("Larger text", lambda: self._set_scale(t.next_font_scale(getattr(self, "_font_scale", t.FONT_SCALE_DEFAULT), getattr(self, "_chrome_scale", t.FONT_SCALE_DEFAULT))))
         menu.addAction("Default text", lambda: self._set_scale(self._chrome_scale))
 
         # ── H3b · interruption controls (R29 §2: the halt belongs in the
@@ -2088,17 +2088,7 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _cycle_font_scale(self):
         """The 'Aa' button — step through the font-scale presets live."""
-        steps = list(t.FONT_SCALE_STEPS)
-        cur = getattr(self, "_font_scale", t.FONT_SCALE_DEFAULT)
-        try:
-            nxt = steps[(steps.index(cur) + 1) % len(steps)]
-        except ValueError:
-            # cur is the host-derived base (not on the ladder) — step to the next
-            # size ABOVE it so the first Aa press never SHRINKS below the
-            # host-matched body; wrap to the smallest if already at/above the top.
-            above = [s for s in steps if s > cur + 1e-6]
-            nxt = above[0] if above else steps[0]
-        self._set_scale(nxt)
+        self._set_scale(t.next_font_scale(getattr(self, "_font_scale", t.FONT_SCALE_DEFAULT), getattr(self, "_chrome_scale", t.FONT_SCALE_DEFAULT)))
 
     def _open_palette(self):
         try:
