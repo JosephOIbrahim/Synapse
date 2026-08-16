@@ -103,10 +103,37 @@ this rest-state to UNKNOWN. `success_rate` is the one metric that never got it.
 
 ---
 
-## Queued (built on Joe's word — not this session; merge/push/tag stay human)
+## Status / queue (updated 2026-08-16 — merge/push/tag stay human)
 
-1. **Fix Bug B** — tightest: reuse the `has_data` doctrine, `bridge.py` + `health_infographic.py`,
-   golden-first, one atomic commit in a worktree. SUBSTRATE.
-2. **Fix Bug A** — one guard at the `live_metrics` `_collect_scene()`/`_run()` seam; three
-   surfaces inherit it. Golden-first. SUBSTRATE.
-3. Optional: fold both goldens into the wave-5 honesty suite so the pattern can't regress.
+### Bug B — consumer half: ✅ SHIPPED (commit `9bd298c4`, branch wave5/measures)
+`panel/health_infographic.py` hero gauge now renders UNKNOWN (slate + "—") instead of a
+red 0% at zero samples, via a self-sufficient `total>0` fallback. py_compile OK; honesty +
+observability suite green (21 passed). Pixel render remains the offscreen-at-seat gate.
+
+### Bug B — producer half: ⛔ READY TO APPLY, blocked on the guarded surface
+`shared/bridge.py` is denied to automated Edit/Write by permission settings (SUBSTRATE
+crown-jewel; one-writer-per-surface). This change was NOT auto-applied by design — it awaits
+the surface owner (Joe's hands, or a dispatched SUBSTRATE leg). It is **source-hardening**,
+not a visible-bug fix: the consumer already self-defends. Exact, self-contained patch:
+
+**`shared/bridge.py`** — in `operation_stats()`'s return dict, after `"success_rate": success_rate,`:
+```python
+                "has_data": self._operations_total > 0,
+```
+(with the doctrine comment: zero-sample success_rate is 0.0 both when all-failed and when
+nothing has run; `has_data` lets consumers render UNKNOWN, mirroring `session_integrity.summary()`.)
+
+**`tests/test_evolution_bridge_internals.py`** (`TestOperationStats`), golden pairs with the code:
+- shape test key tuple: add `"has_data"`
+- after `assert stats["success_rate"] == 1.0`: `assert stats["has_data"] is True`
+- after `assert stats["success_rate"] == 0.0`: `assert stats["has_data"] is False`
+
+Verify: `python -m pytest tests/test_evolution_bridge_internals.py::TestOperationStats -q` (one atomic commit).
+
+### Bug A — ⛔ QUEUED (SUBSTRATE, guarded surfaces)
+One guard at the `live_metrics` `_collect_scene()`/`_run()` seam so a shed cycle marks
+`inconclusive` instead of overwriting last-good with defaults; `metrics.py:304/309` +
+`live_metrics.py:39` (fps 24.0) inherit it. Golden-first.
+
+### Optional
+Fold both goldens into the wave-5 honesty suite so the pattern can't regress.
