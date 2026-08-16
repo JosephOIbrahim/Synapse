@@ -1,0 +1,66 @@
+{
+  "leg": "W6-GATE",
+  "status": "green_with_findings",
+  "product_head": "ee04ea331b9602a3c89a01bb8b35a9bf25a27f9e",
+  "summary": "receipt-is-closing-commit (S4/CRX0) and bus-RELEASE (S5) are now ENFORCED orchestrator close gates, not prose. orchestrate.ps1 Get-LegState no longer greens a leg 'done' on receipt-file existence: a worktree receipt reaches 'done' only when it is committed as the branch HEAD (W5H) AND an explicit RELEASE line for its claim is on the bus; otherwise the leg holds at a new 'closing' state with a Notify naming the exact missing condition. The existing state read was WRAPPED at :151, not rebuilt, and the gate runs before the DryRun short-circuit so a dry run exercises the identical checks. bus.py gained has_release() + a 'released' CLI - the S5 gate consumer open_claims() never had.",
+  "acceptance": [
+    {
+      "predicate": "done requires receipt==HEAD + RELEASE; three violation refusals with exact messages",
+      "verdict": "pass",
+      "evidence": "probe: harness/notes/receipts/w6gate_close_gate_probe.ps1, run first-hand PROBE_EXIT=0 against the REAL Get-LegState (dot-sourced lib-mode, -DryRun) over one scratch leg walked through each condition. V1 receipt-not-committed -> closing: 'receipt <r> exists in the worktree but is not committed on <branch> - writing the receipt is not finishing, committing it is (W5H)'. V2 receipt-not-HEAD -> closing: 'receipt <r> is committed (<sha8>) but is not the branch HEAD (<sha8>) - the receipt must land as the branch's closing commit (W5H)'. V3 no-bus-RELEASE -> closing: 'receipt is the closing commit but no RELEASE line for <id> is on the bus (<wave>) - post an explicit release at close (S5)'. OK clean-close -> done. Three refusals, three exact messages, then a clean pass."
+    },
+    {
+      "predicate": "clean leg passes the new gates end to end in dry-run",
+      "verdict": "pass",
+      "evidence": "test: tests/test_orchestrate_close_gate.py::test_clean_leg_passes_end_to_end_in_dry_run - a leg with its receipt committed as the branch HEAD AND an explicit bus RELEASE reads 'done' under -DryRun. 6 passed in 7.85s (the 3 refusals + the clean pass + two R135/M20 reconciliation guards). No regression: tests/test_orchestrate_liveness.py 2 passed / 1 skipped after the change."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "claim": "The Python reporting twin status.py::state_of returns 'done' on a GREEN receipt's PRESENCE with no commit==HEAD or bus-RELEASE check, so after W6-GATE it will report 'done' for a green-but-uncommitted worktree receipt where orchestrate.ps1 now holds 'closing'. This is a reporting-consistency divergence, NOT a safety hole: orchestrate.ps1 is the dispatch/close authority and status.py already diverges from Get-LegState (it has an 'attention' state the orchestrator lacks). Named, not chased - aligning status.py is outside W6-GATE's claimed close-state region and touches.",
+      "anchor": "harness/status.py:88-97 (state_of) + :32-45 (receipt_for) vs harness/orchestrate.ps1 Get-LegState close gate",
+      "severity": "info"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "Reporting-twin alignment: either align the Python board readers (status.py/board.py/heats_status.py/statusline.py) with the orchestrator close gate, or ratify that a reporting board may show 'done' while the orchestrator holds a leg at 'closing'. Out of W6-GATE's close-state scope; filed as spawn W6-RPTALIGN (probe) below.",
+      "anchor": "harness/status.py:95"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W6-RPTALIGN",
+      "name": "probe: inventory reporting-twin close-gate divergence (status/board/heats/statusline)",
+      "band": "TRUTH",
+      "class": "probe",
+      "source": {
+        "doc": "harness/notes/receipts/W6-GATE.json",
+        "anchor": "W6-GATE F1: status.py::state_of greens on receipt presence without the W6-GATE close gate"
+      },
+      "targets": [
+        "harness/status.py", "harness/board.py", "harness/heats_status.py", "harness/statusline.py",
+        "classify each reporting twin's leg-state computation: enforces the close gate | greens on receipt-presence | N/A - vs orchestrate.ps1 Get-LegState (receipt==HEAD + bus RELEASE), first-hand file:line each"
+      ],
+      "acceptance": [
+        {
+          "predicate": "each reporting twin classified with a file:line anchor; the divergence surface named in full, no fix applied",
+          "evidence": "probe"
+        }
+      ],
+      "deps": ["W6-GATE"],
+      "readonly": true,
+      "touches": ["harness/status.py", "harness/board.py", "harness/heats_status.py", "harness/statusline.py"],
+      "crucible_criteria": ["first-hand file:line per twin", "probe only - proposes, never edits a reporting twin"]
+    }
+  ],
+  "notes": {
+    "delivers": "This leg delivers the folded HELD spawn W5-HCRUX-GATE (mission note): receipt-is-closing-commit + bus-RELEASE as enforced close gates.",
+    "r135_reconciliation": "The gate binds ONLY worktree-resident receipts. R135 (CTO_RULINGS_01.md:3895-3907) - operator harvests the receipt from OUTSIDE the contended tree, committing it from the main tree - resolves via Get-ReceiptPath's main-tree fallback, for which Test-CloseGate returns done and never refuses. Manifest-pinned state:done (:150) is the other escape valve. So this closes M11's worktree-draft half and defuses M20 WITHOUT contradicting R135. Pinned by tests test_operator_harvested_main_tree_receipt_is_done + test_manifest_pinned_done_bypasses_gate.",
+    "scope_and_coord": "Region: orchestrate.ps1 close-state ONLY (script-var init ~L59, Test-CloseGate/Short8 helpers, the :151 done-transition wrap, main-loop closing Notify, the $live set). NOT the dispatch/quoting/lock regions. W6-QUOTE holds an open claim on orchestrate.ps1 (quoting region); coordinated on the bus (request n=18cc624d963e78dc) - line-disjoint, W6-QUOTE had not started on the file (HEAD at base, no diff).",
+    "bus": "claim n=18cc623cce8c5828; finding (R135 reconciliation) n=18cc623fcb0a66c4; finding (status.py divergence) n=18cc62fff9925e50; coord request to W6-QUOTE n=18cc624d963e78dc; explicit RELEASE posted at close.",
+    "self_model": "W6-GATE models the discipline it enforces: product committed first (ee04ea33), ahead>=1 verified, this receipt states the product HEAD and lands as the branch's closing commit, and an explicit RELEASE is posted - so W6-GATE would itself pass the W6-GATE close gate.",
+    "ci": "The full pytest suite is RED on master for a pre-existing, unrelated reason (the mcp library dropped server.list_tools since 2026-07-29 -> collection error). The close-gate and orchestrate-liveness tests exercised here are green; my change touches neither the mcp path nor any suite already red."
+  }
+}
