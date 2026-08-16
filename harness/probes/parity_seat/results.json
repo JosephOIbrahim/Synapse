@@ -1,0 +1,424 @@
+{
+  "leg": "W5-SEAT",
+  "probe": "harness/probes/parity_seat/probe_seat.py",
+  "ran_under": {
+    "hython": "c:/program files/side effects software/houdini 22.0.400/bin/hython.exe",
+    "houdini_build": "22.0.400",
+    "prefs_dir": "c:/users/user/onedrive/documents/houdini22.0",
+    "python": "3.13.10"
+  },
+  "expect_root": "c:/users/user/synapse",
+  "targets": {
+    "T1_package_hpath": {
+      "expect_root": "c:/users/user/synapse",
+      "expect_houdini_on_path": "c:/users/user/synapse/houdini",
+      "SYNAPSE_ROOT_env": "C:/Users/User/SYNAPSE",
+      "SYNAPSE_ROOT_normalized": "c:/users/user/synapse",
+      "houdini_path": [
+        "c:/program files/side effects software/sidefx_packages/sidefxlabs22.0/platform_specific/windows",
+        "c:/program files/side effects software/sidefx_packages/sidefxlabs22.0",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/texturepaint",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/shotbuilder",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/sculpt",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/kinefx",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/apex_cop",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/apex",
+        "c:/users/user/synapse/houdini",
+        "c:/program files/moonray/houdini",
+        "g:/wolfhard/houdini",
+        "c:/users/user/onedrive/documents/houdini22.0/packages/mops_plus",
+        "c:/users/user/synapse/.claude/worktrees/w5-seat",
+        "c:/users/user/onedrive/documents/houdini22.0",
+        "c:/progra~1/sideef~1/houdin~1.400/houdini",
+        "c:/progra~1/sideef~1/houdin~1.400/bin",
+        "c:/users/user/onedrive/documents/houdini22.0/packages/jltools"
+      ],
+      "hpath_contains_repo": true,
+      "root_matches_repo": true,
+      "diagnostics": {},
+      "producer": {
+        "prefs_dir": "c:/users/user/onedrive/documents/houdini22.0",
+        "synapse_json": "c:/users/user/onedrive/documents/houdini22.0/packages/synapse.json",
+        "synapse_json_present": true
+      },
+      "pass": true
+    },
+    "T2_resources": {
+      "icons_dir": "c:/users/user/synapse/houdini/config/icons",
+      "icon_count": 7,
+      "icon_count_expected": 7,
+      "icon_count_ok": true,
+      "has_SYNAPSE_synapse_png": true,
+      "disk_icons": [
+        "SYNAPSE_generate_docs.png",
+        "SYNAPSE_health_check.png",
+        "SYNAPSE_inspect_scene.png",
+        "SYNAPSE_inspect_selection.png",
+        "SYNAPSE_last_result.png",
+        "SYNAPSE_project_setup.png",
+        "SYNAPSE_synapse.png"
+      ],
+      "findfile_checks": [
+        {
+          "rel": "toolbar/synapse.shelf",
+          "resolved_raw": "C:/Users/User/SYNAPSE/houdini/toolbar/synapse.shelf",
+          "resolved": "c:/users/user/synapse/houdini/toolbar/synapse.shelf",
+          "inside_repo": true,
+          "error": null
+        },
+        {
+          "rel": "config/Icons/SYNAPSE_generate_docs.png",
+          "resolved_raw": "C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_generate_docs.png",
+          "resolved": "c:/users/user/synapse/houdini/config/icons/synapse_generate_docs.png",
+          "inside_repo": true,
+          "error": null
+        },
+        {
+          "rel": "config/Icons/SYNAPSE_health_check.png",
+          "resolved_raw": "C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_health_check.png",
+          "resolved": "c:/users/user/synapse/houdini/config/icons/synapse_health_check.png",
+          "inside_repo": true,
+          "error": null
+        },
+        {
+          "rel": "config/Icons/SYNAPSE_inspect_scene.png",
+          "resolved_raw": "C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_inspect_scene.png",
+          "resolved": "c:/users/user/synapse/houdini/config/icons/synapse_inspect_scene.png",
+          "inside_repo": true,
+          "error": null
+        },
+        {
+          "rel": "config/Icons/SYNAPSE_inspect_selection.png",
+          "resolved_raw": "C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_inspect_selection.png",
+          "resolved": "c:/users/user/synapse/houdini/config/icons/synapse_inspect_selection.png",
+          "inside_repo": true,
+          "error": null
+        },
+        {
+          "rel": "config/Icons/SYNAPSE_last_result.png",
+          "resolved_raw": "C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_last_result.png",
+          "resolved": "c:/users/user/synapse/houdini/config/icons/synapse_last_result.png",
+          "inside_repo": true,
+          "error": null
+        },
+        {
+          "rel": "config/Icons/SYNAPSE_project_setup.png",
+          "resolved_raw": "C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_project_setup.png",
+          "resolved": "c:/users/user/synapse/houdini/config/icons/synapse_project_setup.png",
+          "inside_repo": true,
+          "error": null
+        },
+        {
+          "rel": "config/Icons/SYNAPSE_synapse.png",
+          "resolved_raw": "C:/Users/User/SYNAPSE/houdini/config/Icons/SYNAPSE_synapse.png",
+          "resolved": "c:/users/user/synapse/houdini/config/icons/synapse_synapse.png",
+          "inside_repo": true,
+          "error": null
+        }
+      ],
+      "all_resolved": true,
+      "all_inside_repo": true,
+      "pass": true
+    },
+    "T3_shadow_sweep": {
+      "repo_python": "c:/users/user/synapse/python",
+      "repo_python_sys_path_index": 7,
+      "providers": [
+        {
+          "sys_path_index": 5,
+          "entry": "c:/users/user/synapse/.claude/worktrees/w5-seat",
+          "provider": "c:/users/user/synapse/.claude/worktrees/w5-seat/synapse",
+          "kind": "namespace_portion",
+          "importable": false,
+          "is_repo_python": false
+        },
+        {
+          "sys_path_index": 6,
+          "entry": "c:/users/user/synapse",
+          "provider": "c:/users/user/synapse/synapse",
+          "kind": "namespace_portion",
+          "importable": false,
+          "is_repo_python": false
+        },
+        {
+          "sys_path_index": 7,
+          "entry": "c:/users/user/synapse/python",
+          "provider": "c:/users/user/synapse/python/synapse/__init__.py",
+          "kind": "regular_package",
+          "importable": true,
+          "is_repo_python": true
+        }
+      ],
+      "provider_count": 3,
+      "importable_provider_count": 1,
+      "namespace_portions": [
+        {
+          "sys_path_index": 5,
+          "entry": "c:/users/user/synapse/.claude/worktrees/w5-seat",
+          "provider": "c:/users/user/synapse/.claude/worktrees/w5-seat/synapse",
+          "kind": "namespace_portion",
+          "importable": false,
+          "is_repo_python": false
+        },
+        {
+          "sys_path_index": 6,
+          "entry": "c:/users/user/synapse",
+          "provider": "c:/users/user/synapse/synapse",
+          "kind": "namespace_portion",
+          "importable": false,
+          "is_repo_python": false
+        }
+      ],
+      "lower_index_namespace_dirs": [
+        {
+          "sys_path_index": 5,
+          "entry": "c:/users/user/synapse/.claude/worktrees/w5-seat",
+          "provider": "c:/users/user/synapse/.claude/worktrees/w5-seat/synapse",
+          "kind": "namespace_portion",
+          "importable": false,
+          "is_repo_python": false
+        },
+        {
+          "sys_path_index": 6,
+          "entry": "c:/users/user/synapse",
+          "provider": "c:/users/user/synapse/synapse",
+          "kind": "namespace_portion",
+          "importable": false,
+          "is_repo_python": false
+        }
+      ],
+      "winner": {
+        "sys_path_index": 7,
+        "entry": "c:/users/user/synapse/python",
+        "provider": "c:/users/user/synapse/python/synapse/__init__.py",
+        "kind": "regular_package",
+        "importable": true,
+        "is_repo_python": true
+      },
+      "winner_is_repo_python": true,
+      "order_ok_repo_first": true,
+      "shadows": [],
+      "shadow_count": 0,
+      "find_spec_origin": "c:/users/user/synapse/python/synapse/__init__.py",
+      "find_spec_is_repo": true,
+      "metadata_synapse_distributions": [
+        {
+          "name": "synapse",
+          "version": "5.2.0",
+          "top_level": [
+            "synapse"
+          ],
+          "location": "c:/users/user/synapse/python",
+          "inside_repo_python": true
+        },
+        {
+          "name": "synapse-houdini",
+          "version": "5.8.0",
+          "top_level": [
+            "synapse"
+          ],
+          "location": "c:/users/user/synapse/python",
+          "inside_repo_python": true
+        }
+      ],
+      "metadata_repo_own": [
+        {
+          "name": "synapse",
+          "version": "5.2.0",
+          "top_level": [
+            "synapse"
+          ],
+          "location": "c:/users/user/synapse/python",
+          "inside_repo_python": true
+        },
+        {
+          "name": "synapse-houdini",
+          "version": "5.8.0",
+          "top_level": [
+            "synapse"
+          ],
+          "location": "c:/users/user/synapse/python",
+          "inside_repo_python": true
+        }
+      ],
+      "metadata_shadows": [],
+      "metadata_shadow_count": 0,
+      "sys_path": [
+        "c:/users/user/synapse/.claude/worktrees/w5-seat/harness/probes/parity_seat",
+        "c:/progra~1/sideef~1/houdin~1.400/python313/lib/site-packages-ui-forced",
+        "c:/progra~1/sideef~1/houdin~1.400/python313/lib/site-packages-forced",
+        "c:/progra~1/sideef~1/houdin~1.400/python313/lib/site-packages-forced",
+        "c:/progra~1/sideef~1/houdin~1.400/python313/lib/site-packages-forced",
+        "c:/users/user/synapse/.claude/worktrees/w5-seat",
+        "c:/users/user/synapse",
+        "c:/users/user/synapse/python",
+        "c:/users/user/onedrive/documents/houdini22.0/packages/jltools/python",
+        "c:/program files/side effects software/houdini 22.0.400/bin/python313.zip",
+        "c:/progra~1/sideef~1/houdin~1.400/python313/dlls",
+        "c:/progra~1/sideef~1/houdin~1.400/python313/lib",
+        "c:/program files/side effects software/houdini 22.0.400/bin",
+        "c:/users/user/appdata/roaming/python/python313/site-packages",
+        "c:/progra~1/sideef~1/houdin~1.400/python313",
+        "c:/progra~1/sideef~1/houdin~1.400/python313/lib/site-packages",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/shotbuilder/python3.13libs",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/kinefx/python3.13libs",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/apex/python3.13libs",
+        "c:/program files/moonray/houdini/python3.13libs",
+        "g:/wolfhard/houdini/python3.13libs",
+        "c:/progra~1/sideef~1/houdin~1.400/houdini/python3.13libs",
+        "c:/users/user/onedrive/documents/houdini22.0/packages/jltools/python3.13libs",
+        "c:/program files/side effects software/sidefx_packages/sidefxlabs22.0/scripts/python",
+        "c:/users/user/synapse/houdini/scripts/python",
+        "c:/users/user/onedrive/documents/houdini22.0/packages/mops_plus/scripts/python",
+        "c:/program files/side effects software/sidefx_packages/sidefxlabs22.0/viewer_states",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/texturepaint/viewer_states",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/kinefx/viewer_states",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/apex/viewer_states",
+        "c:/progra~1/sideef~1/houdin~1.400/houdini/viewer_states",
+        "c:/progra~1/sideef~1/houdin~1.400/packages/kinefx/viewer_handles",
+        "c:/progra~1/sideef~1/houdin~1.400/houdini/viewer_handles",
+        "c:/progra~1/sideef~1/houdin~1.400/python313/lib/site-packages",
+        "c:/progra~1/sideef~1/houdin~1.400/houdini/python3.13libs",
+        "c:/progra~1/sideef~1/houdin~1.400/python313/lib/site-packages",
+        "c:/progra~1/sideef~1/houdin~1.400/houdini/python3.13libs",
+        "c:/progra~1/sideef~1/houdin~1.400/python313/lib/site-packages",
+        "c:/users/user/onedrive/documents/houdini22.0/packages/jltools/scripts",
+        "c:/users/user/onedrive/documents/houdini22.0/packages/jltools/python3.13libs",
+        "c:/users/user/onedrive/documents/houdini22.0/packages/jltools/python3.11libs"
+      ],
+      "pass": true
+    },
+    "T4_multibuild": {
+      "installed_builds": [
+        {
+          "build": "21.0.773",
+          "path": "c:/program files/side effects software/houdini 21.0.773",
+          "prefs_dir_name": "houdini21.0"
+        },
+        {
+          "build": "22.0.368",
+          "path": "c:/program files/side effects software/houdini 22.0.368",
+          "prefs_dir_name": "houdini22.0"
+        },
+        {
+          "build": "22.0.397",
+          "path": "c:/program files/side effects software/houdini 22.0.397",
+          "prefs_dir_name": "houdini22.0"
+        },
+        {
+          "build": "22.0.400",
+          "path": "c:/program files/side effects software/houdini 22.0.400",
+          "prefs_dir_name": "houdini22.0"
+        },
+        {
+          "build": "22.0.406",
+          "path": "c:/program files/side effects software/houdini 22.0.406",
+          "prefs_dir_name": "houdini22.0"
+        },
+        {
+          "build": "22.0.413",
+          "path": "c:/program files/side effects software/houdini 22.0.413",
+          "prefs_dir_name": "houdini22.0"
+        },
+        {
+          "build": null,
+          "path": "c:/program files/side effects software/houdini engine",
+          "label": "Houdini Engine"
+        },
+        {
+          "build": null,
+          "path": "c:/program files/side effects software/houdini server",
+          "label": "Houdini Server"
+        }
+      ],
+      "count_22x": 5,
+      "prefs_dir_names_for_22x": [
+        "houdini22.0"
+      ],
+      "single_prefs_dir_for_all_22x": true,
+      "probe_ran_under_build": "22.0.400",
+      "gui_launch_build": "UNKNOWN",
+      "gui_launch_evidence": "no prefs/log artifact binds the GUI launch to a specific 22.0.x build; all 22.0.x map to the single houdini22.0 prefs dir and overwrite it on launch",
+      "artifacts_inspected": [],
+      "prefs_packages_listing": [
+        "JL_Tools.json",
+        "MOPS_Plus.json",
+        "boltzmann.json",
+        "moonray.json",
+        "synapse.json",
+        "synapse.json.bak-115750",
+        "synapse.json.bom-bak"
+      ],
+      "seat_synapse_json_scanned": [
+        "synapse.json"
+      ],
+      "seat_synapse_sidecars_ignored": [
+        "synapse.json.bak-115750",
+        "synapse.json.bom-bak"
+      ]
+    },
+    "T5_pypanel_flush": {
+      "rel": "python_panels/synapse_panel.pypanel",
+      "resolved_raw": "C:/Users/User/SYNAPSE/houdini/python_panels/synapse_panel.pypanel",
+      "resolved": "c:/users/user/synapse/houdini/python_panels/synapse_panel.pypanel",
+      "inside_repo": true,
+      "resolve_error": null,
+      "read_path": "c:/users/user/synapse/houdini/python_panels/synapse_panel.pypanel",
+      "exists": true,
+      "shadow_pypanels": [],
+      "flush_loop_line": 37,
+      "flush_pop_line": 38,
+      "matched_lines": [
+        {
+          "line": 37,
+          "text": "del sys.modules[_m]"
+        },
+        {
+          "line": 38,
+          "text": "sys.modules.pop(\"synapse\", None)"
+        }
+      ],
+      "pass": true
+    }
+  },
+  "acceptance": [
+    {
+      "predicate": "package + hpath resolve to the repo under hython with the live prefs dir, first-hand",
+      "verdict": "pass",
+      "evidence": "T1: SYNAPSE_ROOT=C:/Users/User/SYNAPSE ; <repo>/houdini on HOUDINI_PATH=True"
+    },
+    {
+      "predicate": "all 7 icons + shelf file resolve via hou.findFile into the repo; count asserted",
+      "verdict": "pass",
+      "evidence": "T2: icon_count=7(==7? True), all resolved=True, all inside repo=True"
+    },
+    {
+      "predicate": "zero shadow synapse installs; sys.path order proven with indices",
+      "verdict": "pass",
+      "evidence": "T3: shadow_count=0, repo/python idx=7 (lowest importable), winner_is_repo=True, order_ok=True, find_spec_is_repo=True, metadata_shadows=0"
+    }
+  ],
+  "findings": [
+    {
+      "claim": "multi-build: which 22.0.x build Joe's GUI launched is UNKNOWN",
+      "detail": "5 installed 22.x builds share the one houdini22.0 prefs dir; no prefs/log artifact binds the GUI launch to a specific 22.0.x build; all 22.0.x map to the single houdini22.0 prefs dir and overwrite it on launch",
+      "anchor": "probe_seat.py::probe_multibuild"
+    },
+    {
+      "claim": "hygiene: 2 duplicate editable-install dist-info in repo/python both provide top-level `synapse`",
+      "detail": "synapse 5.2.0, synapse-houdini 5.8.0 - both INSIDE repo/python, so NOT shadow installs (T3 shadow_count=0); stale metadata worth a cleanup pass",
+      "anchor": "probe_seat.py::probe_shadow_sweep (metadata_repo_own)"
+    },
+    {
+      "claim": "hygiene: 2 stale non-json synapse sidecar(s) in the seat packages dir",
+      "detail": "synapse.json.bak-115750, synapse.json.bom-bak - not *.json, so Houdini does NOT load them (no shadow); safe to prune",
+      "anchor": "probe_seat.py::probe_multibuild (seat_synapse_sidecars_ignored)"
+    },
+    {
+      "claim": "note: 2 lower-index `synapse/` namespace dir(s) on sys.path (no __init__.py)",
+      "detail": "idx 5 c:/users/user/synapse/.claude/worktrees/w5-seat/synapse; idx 6 c:/users/user/synapse/synapse - non-importable namespace portions; the repo/python regular package wins the import (proven by find_spec), so these are NOT shadows, but they mean repo/python is the lowest IMPORTABLE index, not the lowest synapse-named index",
+      "anchor": "probe_seat.py::probe_shadow_sweep (lower_index_namespace_dirs)"
+    }
+  ],
+  "verdict": "green_with_findings"
+}
