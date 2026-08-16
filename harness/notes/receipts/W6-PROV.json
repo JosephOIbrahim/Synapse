@@ -1,0 +1,96 @@
+{
+  "leg": "W6-PROV",
+  "title": "hardening 2/5: wire provenance_not_bypassed from warn-only to fail-closed",
+  "status": "green_with_findings",
+  "branch": "wave6/prov",
+  "product_head": "a342e2fc",
+  "base": "8e278b65",
+  "ahead": 1,
+  "commit": {
+    "product_head": "a342e2fcc6aad1f4b47f1a9a5afa842573f4ea56",
+    "files": [
+      "harness/verify/checks.py (check_provenance_not_bypassed rewritten warn-only->fail-closed; new _method_body helper immediately above it)",
+      "tests/test_provenance_gate.py (NEW, 11 tests: per-leg RED, clean GREEN, live-tree honesty, never-warn-only, get(normalize(...)) false-positive guard, _method_body)"
+    ],
+    "note": "One atomic product commit (a342e2fc); this receipt lands as the follow-up closing commit per CRX0/W5H. Region-scoped clean against W6-BEAT (checks.py L1842 check_runtime_owns_heartbeat + test_r_track.py) - W6-PROV touched only the L371 provenance region + a NEW test file; no shared hunks. drop.json / ratified / VERSION UNTOUCHED."
+  },
+  "summary": "provenance_not_bypassed was a 0a'-prime-track warn-only ADAPT stub returning ok:null on EVERY sprint across the whole R-track (recorded honestly by W5-LIFE/W5-SHELF/W5-LCRUX as 'pre-existing ADAPT/warn-only'). Target 1 answer: the real live provenance gateway (the FloorGate, python/synapse/core/floor_gate.py - the Tier-0 'provenance or it did not happen' hook) was BUILT on that same 0a'-prime track, but the guardrail was never pointed at it (DROP_DAY.md:56 'stays warn-only by design (0a' track)'). W6-PROV wires it fail-closed: a 3-leg static fingerprint of the dispatch chokepoint - (1) the server registry constructs + routes invoke() through self._floor_gate.wrap (handlers.py); (2) the gate emits + durably persists via write_report (floor_gate.py); (3) no side-door dispatch: no registry.get(...)(...) idiom under server/ and handle() dispatches only via self._registry.invoke, never a bound handler. GREEN on the live tree (verified first-hand: 3/3 invoke sites route through the gate, 0 side-door), RED the moment a mutation can reach hou.* with no provenance record. Both acceptance predicates PASS first-hand; status is green_with_findings because wiring surfaced two REAL doc-vs-code gaps (F3 agent.usd receipt invariant unmet on the live path; F4 undo-anchor gaps) that are recorded, not masked (target 4), and are out of W6-PROV's touches (harness/verify/, tests/).",
+  "acceptance": [
+    {
+      "predicate": "R.2 + R.7 report provenance wired and enforced (absent from guardrail_unwired, guardrail_violations [], suite ratchet holds)",
+      "verdict": "pass",
+      "evidence": "check (first-hand, real CLI in the worktree): `python harness/verify/checks.py --task R.2 --worktree . --mode A` -> VERDICT PASS, guardrail_violations [], guardrail_unwired [] (provenance no longer listed - it was pre-existing across the whole R-track), provenance_not_bypassed ok:true ('every mutating command routes through the FloorGate Tier-0 provenance hook...'), suite_baseline ok:true ('passed 6519 (base 6389), failed 0 (base 0); ratchet holds'), phantom_clean/scout_no_apex_corpus/no_rigging_drift all ok:true, task check runtime_owns_heartbeat ok:true. `--task R.7` identical: VERDICT PASS, violations [], unwired [], provenance ok:true, suite_baseline passed 6519/base 6389/failed 0 ratchet holds, shelf_current ok:true. The 6519 = the base-tree 6508 (measured fresh in this worktree) + 11 new tests/test_provenance_gate.py cases."
+    },
+    {
+      "predicate": "scratch-tree bypass attempt fails closed (a forced bypass fails the task verdict, first-hand)",
+      "verdict": "pass",
+      "evidence": "probe (two first-hand proofs). (a) Direct-call probe over the wired check, 7/7 PASS: LIVE worktree ok:true; clean synthetic scratch ok:true; Leg1 (invoke skips FloorGate) ok:false; Leg2 (gate does not persist) ok:false; Leg3a (registry.get(...)(...) side-door) ok:false; Leg3b (handle() calls a bound handler directly) ok:false; missing dispatch surface ok:false (fail-closed, never None). (b) REAL verdict machinery over a scratch tree (A/B, subprocess of the real checks.py --task R.2 --worktree <scratch>): WITH a planted get-and-call side-door (python/synapse/server/handlers_sneaky.py) -> task VERDICT: FAIL, provenance_not_bypassed ok:false, provenance_not_bypassed IN guardrail_violations; remove ONLY that file, same tree -> provenance ok:true, NOT in guardrail_violations. The bypass is the sole variable and it flips both the check and its verdict membership. (The scratch's suite_baseline also fails - a bare-temp-dir-has-no-git artifact, not provenance; on the REAL tree suite_baseline is green and violations is [].)"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "claim": "TARGET 1 answer (why ok:null since the R-track began): provenance_not_bypassed shipped as an honest boundary-guardrail SCAFFOLD (ok:null warn-only) alongside scout_no_apex_corpus + no_rigging_drift. Those two were wired to real anchors (server/scout_sources.json, server/authoring_domains.json) and flipped true 2026-07-10; provenance_not_bypassed was DELIBERATELY left warn-only ('0a' track') because its ADAPT anchor (the gateway manifest / runtime ledger-grew sentinel) was never built - even though the real gateway (FloorGate) WAS built on the same 0a'-prime track. It never fake-passed nor blocked; every R-leg recorded it as pre-existing-unwired. W6-PROV closes exactly that gap.",
+      "anchor": "harness/verify/checks.py:371 (old stub) ; docs/studio/DROP_DAY.md:56 ; harness/state/claude-progress.md:83 ; python/synapse/core/floor_gate.py:1 (the 0a'-prime hook)"
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "claim": "Live-tree honesty (target 4): NO FloorGate provenance bypass exists on wave6/prov today. All three registry.invoke() dispatch sites route mutations through self._floor_gate.wrap (handle() ctx=FloorContext(origin='handler'); batch sub-ops ctx=batch_ctx nested under the batch envelope; autonomy adapter ctx=FloorContext(origin='autonomy')); zero get-and-call side-doors tree-wide; the FloorGate emits + durably persists per mutating op. Recorded GREEN, not masked - the wired guardrail correctly reads a clean tree as clean.",
+      "anchor": "python/synapse/server/handlers.py:404 (invoke->wrap) ; :538 (handle) ; :1000 (batch) ; :1985 (autonomy) ; python/synapse/core/floor_gate.py:297 wrap / :342 _record / :389 write_report"
+    },
+    {
+      "id": "F3",
+      "severity": "warn",
+      "claim": "DISCOVERED RED, recorded not masked (target 4): the CLAUDE.md/BOUNDARY provenance invariant 'every scene/stage mutation lands in agent.usd with decision+reasoning+revert' is UNMET on the live handler path. Live mutations write FloorGate digests (op_id/op/payload_digest/result_digest/outcome/parent) to $SYNAPSE_PROVENANCE_DIR (default <repo>/.synapse/provenance), NOT decision/reasoning/revert to agent.usd. agent_state.log_decision fires ONLY for graph-synth BUILD ops (host/graph_synth_runtime.py:122, best-effort, swallows all exceptions); log_integrity / log_routing_decision / log_handoff have ZERO live callers. This is a DOCUMENTATION-vs-CODE truth gap, not a code bypass - the live provenance guarantee is real, it is just a different store+schema than the doc describes. The wired guardrail anchors to what the live path ACTUALLY does (the FloorGate), which is the honest choice; reconciling the doc/writer is F3's for_ruling.",
+      "anchor": "python/synapse/memory/agent_state.py:549 log_decision ; :329 log_integrity ; :492 log_routing_decision ; :601 log_handoff ; host/graph_synth_runtime.py:96-127 ; CLAUDE.md harness/CLAUDE.md 'Provenance or it did not happen' ; docs/SYNAPSE_H22_BOUNDARY.md:154"
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "claim": "Undo-anchor gaps (a DISTINCT anchor from provenance, deliberately NOT flagged by this guardrail): hda_promote_parm, hda_set_help, render_settings, and cops_temporal_analysis mutate the scene WITHOUT a hou.undos.group wrap. They ARE FloorGate-provenance-recorded (dispatched through invoke()), so they are not provenance bypasses - but they are not undo-grouped. Fingerprinting 'mutation not inside hou.undos.group' as a provenance bypass would FALSE-RED the clean tree, which is exactly why leg design rejected that candidate (cartographer-verified). Recorded so the undo-anchor gap is visible without conflating it with provenance.",
+      "anchor": "python/synapse/server/handlers_hda.py:122 hda_promote_parm ; :246 hda_set_help ; python/synapse/server/handlers_render.py:1188 render_settings ; handlers.py:242-244 cops_temporal_analysis declared-mutating"
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "claim": "The cognitive Dispatcher's PRODUCTION dispatch branch (_execute_via_main_thread) is NOT routed through the FloorGate, AND is itself unwired today (main_thread_executor=None raises). Live autonomy provenance is covered instead via the server registry adapter (handlers.py _HandlerAdapter.call -> registry.invoke -> FloorGate), so no live mutation currently flows through the un-gated dispatcher branch. Documented in-code as a follow-up. Not a live bypass (the branch does not execute). This guardrail scopes to the server registry chokepoint (the live /synapse path); the dispatcher prod-branch wiring is a separate follow-up when that branch is armed.",
+      "anchor": "python/synapse/cognitive/dispatcher.py:249-267"
+    },
+    {
+      "id": "F6",
+      "severity": "info",
+      "claim": "Adjacent (out of scope, noted for the ledger track): check_ledger (harness/verify/checks.py:202) is aspirational and does not match the writer - it hython-parses agent.usd for SynapseAction-typed prims with decision/reasoning/revertPath, but agent_state.py authors Xform prims with synapse:decision/synapse:reasoning/synapse:revert. If F3's reconciliation wires agent.usd receipts on the live path, check_ledger's schema must be aligned to the real writer.",
+      "anchor": "harness/verify/checks.py:202 check_ledger ; python/synapse/memory/agent_state.py:573-580"
+    }
+  ],
+  "for_ruling": [
+    {
+      "claim": "F3 reconciliation (doc-vs-code truth gap) is a human/CTO call and is OUT of W6-PROV's touches (harness/verify/, tests/): either (a) wire the live path to ALSO write agent.usd decision/reasoning/revert receipts (fold agent_state.log_decision/log_integrity into the FloorGate emit) so the CLAUDE.md/BOUNDARY invariant becomes literally true, OR (b) correct CLAUDE.md/BOUNDARY to state that live-path provenance is the FloorGate .synapse/provenance/ digest trail and agent.usd decision receipts are graph-synth-only. The wired guardrail is correct either way (it anchors to the live gateway); the choice is which promise the product keeps.",
+      "anchor": "python/synapse/memory/agent_state.py:549 ; host/graph_synth_runtime.py:122 ; docs/SYNAPSE_H22_BOUNDARY.md:154"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W6-PROV-S1",
+      "class": "probe",
+      "name": "Mode-B runtime ledger-grew sentinel for provenance_not_bypassed",
+      "note": "The 'rigorous form' the old ADAPT note named, now that the static gate is wired: under hython (mode B), dispatch one create_node through SynapseHandler.handle() into a sandbox $SYNAPSE_PROVENANCE_DIR and assert it grew by exactly one *.json FloorGate record. Complements the static chokepoint fingerprint with a live behavioral proof. Class probe (in W6-PROV spawn_classes).",
+      "band": "BUILD",
+      "spawn_classes": ["probe"]
+    },
+    {
+      "id": "W6-PROV-S2",
+      "class": "build",
+      "name": "reconcile the agent.usd receipt invariant (F3)",
+      "note": "Wire log_decision/log_integrity into the live FloorGate emit so ordinary mutations leave decision/reasoning/revert receipts in agent.usd, OR correct CLAUDE.md/BOUNDARY to describe the FloorGate .synapse/provenance/ trail as the live provenance store. Product code (python/synapse/) + docs - out of W6-PROV touches. Class build -> lands held for Joe."
+    },
+    {
+      "id": "W6-PROV-S3",
+      "class": "build",
+      "name": "close the undo-anchor gaps (F4)",
+      "note": "Wrap hda_promote_parm / hda_set_help / render_settings / cops_temporal_analysis in hou.undos.group so the tracked-wrap set is complete (undo anchor, distinct from provenance). Product code - out of W6-PROV touches. Class build -> lands held for Joe."
+    }
+  ]
+}
