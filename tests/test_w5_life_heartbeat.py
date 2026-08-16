@@ -27,9 +27,14 @@ from synapse.server import runtime_beat as rb
 
 
 @pytest.fixture(autouse=True)
-def _hermetic_beat():
-    """Zero the owner's module state around every test so beats/detaches from
-    one test can't bleed into the next."""
+def _hermetic_beat(monkeypatch):
+    """Zero the owner's module state around every test, and PIN the headless
+    path deterministically. Another test in the full suite can leave a Qt stub
+    in sys.modules whose QApplication.instance() is non-None; without this pin
+    ensure_beat_started() would arm a stub timer and 'headless behaviour' would
+    depend on ambient suite state instead of the code under test. Forcing
+    _qapp_instance -> None makes every assertion here order-independent."""
+    monkeypatch.setattr(rb, "_qapp_instance", lambda: None)
     rb.reset_for_test()
     yield
     rb.reset_for_test()
@@ -58,14 +63,17 @@ def test_owner_lives_under_server():
 def test_ensure_beat_started_is_safe_and_idempotent_headless():
     # No QApplication in CI -> no real timer armed, but it must never raise and
     # must mark the panel attached. Second call is a no-op that returns the same.
+    # _qapp_instance is pinned to None by the autouse fixture, so this is the
+    # deterministic "no event loop" path regardless of whether a sibling test
+    # left a Qt stub importable (which would flip the import-time _QT_AVAILABLE
+    # flag — an environment fact this behaviour test must not depend on).
     first = rb.ensure_beat_started()
     second = rb.ensure_beat_started()
-    assert first is False  # headless: no Qt loop
-    assert second is False
+    assert first is False   # no event loop -> no real timer armed
+    assert second is False  # idempotent
     st = rb.beat_status()
     assert st["timer_armed"] is False
     assert st["panel_attached"] is True
-    assert st["qt_available"] is False
 
 
 def test_detach_is_deliberate_and_reported():

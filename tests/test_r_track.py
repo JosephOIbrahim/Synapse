@@ -601,13 +601,16 @@ def test_live_tree_gates_read_red_now():
     UNRESOLVED P0 gate fires RED today — a gate that greens on the live defect
     is mis-located, not lenient.
 
-    Exception (2026-07-15, H22 drop): deps_isolated (R.4 / P0.1) is now GREEN.
-    The cp313 re-vendor replaced the strict ``== (3, 11)`` boot-cliff gate in
-    python/synapse/__init__.py with an ABI-set membership test (_VENDOR_PYS) —
-    exactly the remediation R.4 tracks. It is asserted GREEN below; the rest
-    still read RED."""
+    Exceptions (RESOLVED gates, asserted GREEN below; the rest still read RED):
+    - deps_isolated (R.4 / P0.1), 2026-07-15 H22 drop: the cp313 re-vendor
+      replaced the strict ``== (3, 11)`` boot-cliff gate in
+      python/synapse/__init__.py with an ABI-set membership test (_VENDOR_PYS).
+    - runtime_owns_heartbeat (R.2 / P0.3), 2026-08-16 W5-LIFE: the freeze beat
+      moved from a panel-parented QTimer to a process-lifetime owner
+      (server/runtime_beat.py, # RUNTIME_BEAT_SOURCE); the panel no longer
+      constructs the timer."""
     ctx = _ctx(_REPO)
-    for name in ("mutation_fail_closed", "runtime_owns_heartbeat", "hot_reload_gated",
+    for name in ("mutation_fail_closed", "hot_reload_gated",
                  "installer_host_targeted", "ci_covers_shipping_surface",
                  "shelf_current", "tool_metadata_single_source", "process_bridge_armed",
                  "auth_fail_closed", "packaging_self_contained"):
@@ -617,4 +620,11 @@ def test_live_tree_gates_read_red_now():
     assert _run("deps_isolated", ctx)["ok"] is True, (
         "deps_isolated should read GREEN — the cp313 re-vendor replaced the strict "
         "cp311 equality gate (R.4/P0.1). If this reads RED the re-vendor regressed."
+    )
+    # runtime_owns_heartbeat resolved by R.2 (W5-LIFE) — the freeze beat is now a
+    # process-lifetime owner under server/; the panel no longer owns the timer.
+    assert _run("runtime_owns_heartbeat", ctx)["ok"] is True, (
+        "runtime_owns_heartbeat should read GREEN — R.2 relocated the freeze beat "
+        "to a process-lifetime owner (RUNTIME_BEAT_SOURCE under server/). RED means "
+        "the panel re-owns the beat or the owner marker is gone."
     )
