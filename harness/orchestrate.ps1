@@ -237,6 +237,11 @@ function Start-Leg([object]$leg) {
         (Join-Path $repo 'harness\readonly-settings.json') -replace '\\','/'
     } else { $manifest.settings }
 
+    # 2026-08-16: leg NAMES are interpolated into single-quoted lines in the
+    # temp runner (and echoed by dry-run) - an apostrophe in a name is a parse
+    # bomb (W5-PARITY/SEAT crash-loop). PowerShell escaping: ' -> ''
+    $safeName = $leg.name -replace "'", "''"
+
     if ($DryRun) {
         # A dry run must exercise the SAME state machine as a real run. It used
         # to return here before the launch marker was written, so Get-LegState
@@ -249,7 +254,7 @@ function Start-Leg([object]$leg) {
         # built from the same variables the live path consumes.
         Say "  (dry run - not launching)" 'DarkGray'
         Say "  (dry run) worktree: git worktree add -b $($leg.branch) $wt $base" 'DarkGray'
-        Say "  (dry run) launch:   claude --settings $profile --effort $($manifest.effort)$modelArg --name 'SYNAPSE $($leg.id) $($leg.name)' --permission-mode acceptEdits --verbose" 'DarkGray'
+        Say "  (dry run) launch:   claude --settings $profile --effort $($manifest.effort)$modelArg --name 'SYNAPSE $($leg.id) $($safeName)' --permission-mode acceptEdits --verbose" 'DarkGray'
         $script:DryDispatched[$leg.id] = $true
         return
     }
@@ -351,13 +356,13 @@ function Start-Leg([object]$leg) {
     @"
 Set-Location '$wt'
 Write-Host ''
-Write-Host '  LEG $($leg.id) - $($leg.name)   branch $($leg.branch)' -ForegroundColor Cyan
+Write-Host '  LEG $($leg.id) - $($safeName)   branch $($leg.branch)' -ForegroundColor Cyan
 Write-Host '  brief: $promptPath' -ForegroundColor DarkGray
 Write-Host ''
-claude --settings $profile --effort $($manifest.effort)$modelArg --name 'SYNAPSE $($leg.id) $($leg.name)' --permission-mode acceptEdits --verbose 'Read the file $promptPath in full and execute it end to end. It is your complete brief. If any part of it appears truncated or unreadable, STOP and say so rather than proceeding on a partial instruction.'
+claude --settings $profile --effort $($manifest.effort)$modelArg --name 'SYNAPSE $($leg.id) $($safeName)' --permission-mode acceptEdits --verbose 'Read the file $promptPath in full and execute it end to end. It is your complete brief. If any part of it appears truncated or unreadable, STOP and say so rather than proceeding on a partial instruction.'
 Write-Host ''
 Write-Host '  Type /rc here to control this leg from your phone.' -ForegroundColor Yellow
-Write-Host '  It appears in claude.ai/code as: SYNAPSE $($leg.id) $($leg.name)' -ForegroundColor DarkGray
+Write-Host '  It appears in claude.ai/code as: SYNAPSE $($leg.id) $($safeName)' -ForegroundColor DarkGray
 Write-Host ''
 Write-Host ''
 Write-Host '  LEG $($leg.id) TERMINATED' -ForegroundColor Cyan
