@@ -1,0 +1,57 @@
+{
+  "leg": "W6-BEAT",
+  "title": "hardening 3/5: behavioral heartbeat pin - the runtime beat proven by killing the panel, not by grep (folds W5-LCRUX-S1)",
+  "status": "green_with_findings",
+  "product_head": "3b26ab0a",
+  "base": "8e278b654996215096cace1be9a028f4a1abc1d9",
+  "commits": [
+    "3b26ab0a - harness/verify/checks.py (behavioural leg 3 in check_runtime_owns_heartbeat + _beat_behaviour_proof helper) + tests/test_w6_beat_runtime_heartbeat.py (6 behavioural pins) + tests/test_r_track.py (3 gate-wiring pins + structural-N/A note on the existing owner pin)"
+  ],
+  "summary": "S3 (grep-only heartbeat gate, WIRED-BUT-HOLLOW per HARDENING-SPEC; W5-LCRUX F5) closed by BEHAVIOUR. check_runtime_owns_heartbeat kept its two structural grep legs and gained a 3rd behavioural leg: _beat_behaviour_proof imports the WORKTREE owner + freeze_chain in a subprocess and proves beat_once() keeps a real FreezeChain fed (arming the lazy Watchdog first) while a stalled chain still escalates. A marker-intact/beat-dead owner now reads RED. The P0.3 contract (beat continues after panel death; session survives) is exercised first-hand, not read.",
+  "machine_gate": {
+    "invocation": "check_runtime_owns_heartbeat(ctx) against the worktree; full suite via `python -m pytest tests/`",
+    "runtime_owns_heartbeat_behavioural": {
+      "genuine_worktree": "GREEN behavioural (beaten_stays_healthy=True, stalled_escalates=True)",
+      "hollowed_real_package_copy": "RED (marker + ensure_beat_started intact, _emit_beat's beat() removed -> beaten_stays_healthy=False)"
+    },
+    "suite": "6517 passed, 0 failed, 0 errors, 178 skipped in 268.93s (base 6389/0 at merge-base(master,HEAD)=8e278b65); ratchet HOLDS (passed up, failed unchanged)",
+    "guardrail_violations": [],
+    "relevant_cluster": "tests/test_w6_beat_runtime_heartbeat.py + test_w5_life_heartbeat + test_w5_life_session_survival + test_freeze_chain + test_panel_freeze_beat + test_r_track = 79 passed"
+  },
+  "acceptance": [
+    {
+      "predicate": "behavioral beat test: panel death, beat continues, session survives - first-hand",
+      "verdict": "pass",
+      "evidence": "test: tests/test_w6_beat_runtime_heartbeat.py 6/6 green. test_panel_death_leaves_the_process_lifetime_beat_running: attach a Qt-free PanelProxy (ensure_beat_started) -> beat while attached -> deliberate detach (detach_panel, detach_count=1, panel_attached=False) -> del proxy -> beat_once() keeps a real short-threshold FreezeChain unescalated past escalate_after=0.5s. test_session_store_survives_panel_death_and_the_reopen_module_flush: save via session_store, close+del the proxy, then the conversation survives (a) widget death (disk load == saved messages) and (b) a simulated sys.modules['synapse.server.session_store'] flush -> a FRESH module instance restores the same conversation. test_detach_keeps_freeze_protection_armed_for_headless_work (never calls shutdown_freeze_chain) + test_fresh_scene_store_is_empty_not_a_crash. Headless (no Qt/hou); escalation acting-half neutralised."
+    },
+    {
+      "predicate": "gate reads the behavior, not the grep; regression simulation fails RED",
+      "verdict": "pass",
+      "evidence": "probe (first-hand, end-to-end through the real gate): (a) genuine worktree owner -> check_runtime_owns_heartbeat = {ok:true, 'behavioural: beat_once() keeps a real FreezeChain fed (no escalation) and a stalled chain still escalates ...'}; (b) a shutil-copytree of the real python/synapse with # RUNTIME_BEAT_SOURCE + ensure_beat_started INTACT but _emit_beat's `beat()` call removed -> {ok:false, 'OWNER MARKER PRESENT BUT THE BEAT IS HOLLOW - beaten_stays_healthy=False, stalled_escalates=True'}. Pinned permanently by tests/test_r_track.py::test_runtime_heartbeat_behavioural_red_on_hollow_beat (RED) / _green_on_live_beat (GREEN) / _inconclusive_proof_keeps_structural_green, and by tests/test_w6_beat_runtime_heartbeat.py::test_regression_sim_hollow_beat_escalates_after_panel_close (in-process: a hollow / panel-parented beat ESCALATES after close - the pin catches the original defect)."
+    }
+  ],
+  "crucible_criteria": [
+    {
+      "criterion": "the pin must fail when the old panel-parented wiring is simulated - prove the test can catch the original defect",
+      "verdict": "pass",
+      "evidence": "Two independent simulations both fail RED: (1) in-process test_regression_sim_hollow_beat_escalates_after_panel_close hollows the owner (rb._emit_beat -> no-op) after detach and asserts the FreezeChain ESCALATES + is_frozen; its mirror test_regression_sim_healthy_owner_does_not_escalate_same_scenario proves the assertion discriminates real-from-hollow. (2) end-to-end, the real gate over a real-package copy with the marker strings intact but the beat dead reads {ok:false, HOLLOW}. HCRX Law-1 bar met: a gate that cannot be shown failing is a decoration; this one is shown failing."
+    },
+    {
+      "criterion": "receipt is own closing commit; RELEASE posted",
+      "verdict": "pass",
+      "evidence": "product committed FIRST (3b26ab0a, ahead>=1 verified) then this receipt written stating that HEAD sha, then committed as the branch's LAST commit (the W5-DELTA rule; no operator rescue). Bus RELEASE posted for all four claimed paths at close."
+    }
+  ],
+  "findings": [
+    {"id": "F1", "severity": "scope-disclosure", "claim": "The machine gate lives at harness/verify/checks.py, one directory beyond the literal touches ['server/','tests/']. Target 3 ('point the machine gate at the behavioral test') requires editing it, so it is in-scope per the mission BODY. NO server/ SOURCE was edited: the W5-LIFE owner (runtime_beat.py / session_store.py) is already genuine - W6-BEAT hardens the PROOF, not the owner. Bus-claimed the exact file+region and flagged the co-held checks.py seam to W6-PROV (region-disjoint by ~1400 lines).", "anchor": "harness/verify/checks.py:1842 (BEAT) vs :371 (PROV)"},
+    {"id": "F2", "severity": "design-choice-nonblocking", "claim": "On a full-package tree where the behavioural subprocess cannot import (genuine env failure), the gate keeps STRUCTURAL green with an honest INCONCLUSIVE note rather than RED - to avoid a flaky RED on environment problems. This is not a hole: the hollow-owner DEFECT is caught DETERMINISTICALLY via the sentinel (beaten_stays_healthy=False), because a hollow owner still imports fine and returns a sentinel; only a genuinely un-importable tree hits the inconclusive path, and that is disclosed, never faked green.", "anchor": "harness/verify/checks.py check_runtime_owns_heartbeat 'not ran' branch"},
+    {"id": "F3", "severity": "mechanism-note-load-bearing", "claim": "resilience.Watchdog is LAZY: it arms its monitor thread only on the FIRST heartbeat(), so a never-beaten chain never escalates. Both the gate proof and the behavioural tests MUST arm the chain with one direct beat before driving via the owner, else a hollow owner reads 'healthy' vacuously. Found first-hand this leg: the initial hollow simulation returned True (false-green) until the arming fix.", "anchor": "python/synapse/server/resilience.py:544-552,585"},
+    {"id": "F4", "severity": "process-benign", "claim": "An early edit accidentally landed on the MAIN checkout's harness/verify/checks.py (C:/Users/User/SYNAPSE is master's SEPARATE checkout; a live orchestrator runs there). Caught by a worktree-cwd probe that read the pristine worktree file. Reverted with `git -C <main> checkout -- harness/verify/checks.py` (diff verified to be exactly the accidental edit, no other main-tree change touched; orchestrator files untouched), then re-applied under the worktree path. No product impact.", "anchor": "memory: worktree-absolute-path-hits-main-tree"}
+  ],
+  "for_ruling": [
+    {"claim": "The behavioural leg spawns a `python` subprocess (~1.6s) on every full-package run of check_runtime_owns_heartbeat, including inside test_r_track::test_live_tree_gates_read_red_now during the full suite. This is intentional - the beat is behaviourally verified on every suite run, and the ratchet still holds (6517p/0f) - but it is a per-sprint cost a human may wish to bound (cache the verdict, or gate behind a flag). Named, not decided here.", "needs": "cost decision if the per-run subprocess is unwelcome"}
+  ],
+  "spawn": [
+    {"id": "W6-BEAT-S1", "class": "probe", "band": "BUILD", "name": "generalise the behaviour-observing pattern to the other WIRED-BUT-HOLLOW / textual-not-transitive gates", "note": "HARDENING-SPEC M2 ('a-check-that-cannot-fail') names siblings of S3: W5-LCRUX F7 (rope regex source-pin), V0 F10 ('textual, not transitive'), C0 F9 (pin covers one file). Probe each: simulate the defect and require the gate RED, then propose a behaviour-observing leg where a source-string proxy is the only guard. Class probe -> within spawn_classes.", "spawn_classes": ["probe"], "anchor": "harness/HARDENING-SPEC.md Part A S3 + M2"}
+  ]
+}
