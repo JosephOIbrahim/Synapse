@@ -1,0 +1,17 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0 -- C:\Program Files\Side Effects Software\Houdini 22.0.400\bin\hython.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\User\SYNAPSE\.claude\worktrees\w6-flowrig
+configfile: pyproject.toml
+collecting ... collected 3 items
+
+harness/probes/flow/test_bad_prompt_journey.py::test_unknown_tool_errors_cleanly_without_traceback PASSED [ 33%]
+harness/probes/flow/test_bad_prompt_journey.py::test_on_error_posts_human_text_no_traceback PASSED [ 66%]
+harness/probes/flow/test_bad_prompt_journey.py::test_session_survives_the_fault PASSED [100%]
+
+============================== warnings summary ===============================
+harness/probes/flow/test_bad_prompt_journey.py::test_unknown_tool_errors_cleanly_without_traceback
+  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 3 passed, 1 warning in 1.41s =========================

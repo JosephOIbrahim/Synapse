@@ -1,0 +1,100 @@
+{
+  "leg": "W6-FLOWRIG",
+  "status": "green_with_findings",
+  "band": "BUILD",
+  "product_head": "9a78ad301f0ad26bea667b2c47e0503adf1a19ef",
+  "base": "8e278b654996215096cace1be9a028f4a1abc1d9",
+  "runtime": {
+    "hython": "22.0.400",
+    "python": "3.13.10",
+    "qt": "PySide6 offscreen",
+    "undo_enabled": true,
+    "seat_recipe": "env -u SYNAPSE_ROOT -u HOUDINI_PACKAGE_DIR HOUDINI_USER_PREF_DIR=C:/Users/User/OneDrive/Documents/houdini22.0 hython.exe harness/probes/flow/probe_flow.py"
+  },
+  "consumed": {
+    "jrny_predicate_list": "bus n=18cc62114a72930c",
+    "map": "docs/USER-FLOW-MAP.md @10d3746f (6 journeys, 30 predicates)"
+  },
+  "result": "30 predicates measured first-hand under hython 22.0.400: PASS 28, FAIL 2 (both expected-red friction), UNKNOWN 0. Real nodes built in a scratch hip on two paths; live undo groups captured from the real undo stack.",
+  "acceptance": [
+    {
+      "predicate": "rig runs all 6 journeys end to end under hython; flow_results.json with per-step measurements",
+      "verdict": "pass",
+      "evidence": "harness/probes/flow/flow_results.json + harness/probes/flow/hython_stdout.txt (243 lines). 6 journeys, 32 measured step records (30 JRNY predicates + J1.spine + J3.bad-prompt). Per-step: wall latency, panel-feedback readability, node count/names/layout-bbox, undo-group name, error-path humanity. Every number traces to the committed stdout."
+    },
+    {
+      "predicate": "bad-prompt journey: readable in-panel error, no traceback, session alive",
+      "verdict": "pass",
+      "evidence": "harness/probes/flow/test_bad_prompt_journey.py: 3/3 pass under hython -m pytest (receipt harness/probes/flow/test_bad_prompt_stdout.txt). Also rig step J3.bad-prompt: unknown tool -> 'Unknown tool: make_me_a_sandwich_please' (no traceback), _on_error -> 'We hit a snag' human text (no traceback), panel accepts work after the fault (session alive)."
+    }
+  ],
+  "measurement_summary": {
+    "real_nodes_built": "J1.4 /obj/flowrig_j1/first_box (box); J1.spine /obj/flowrig_spine/panel_sphere built THROUGH the panel ToolExecutor; J2.2 wired 3-node rig src->move->OUT; J2.3 tx=2.5",
+    "undo_groups_captured_live": ["synapse_node_create", "synapse_node_connect", "synapse_set_parm"],
+    "one_ctrlz_reverses": "J1.4 true; J2.1 real nested create collapses under one outer group (recorder pins max_depth==2)",
+    "layout_bbox_sanity": "J2.2 rig spread h=2.259 (vertical chain), stacked_at_origin=False",
+    "chat_leading": "J1.3 doc height 207 -> 221px (12-line block, ~1px/line; matches the receipt's 176->188 magnitude)",
+    "red_green_heartbeat": "J3.4 GREEN never escalates; RED stalls -> escalates + frozen + reaches acting half",
+    "live_panel_mode_switch": "J4.2 densities airy/standard/tight forward AND back, per-step consistent",
+    "session_roundtrip": "J6.2/J6.3/J6.5 save/restore survives sys.modules flush; corrupt/non-list -> []; atomic; HIP-key temp fallback headless"
+  },
+  "findings": [
+    {
+      "id": "J1.1-divergence",
+      "severity": "info",
+      "claim": "MAP DRIFT (good-news): map marks J1.1 SYNAPSE_synapse.png today-FAIL/absent, but it is PRESENT at HEAD (blob 23149fd8c16564ec61e60270e01d4cbbab9518d9). git ls-tree HEAD houdini/config/Icons/ = 7 distinct PNG blobs. The fix landed at 2dd6bab6 (W5-SEAT count==7). Threaded to W6-JRNY (bus n=18cc64f66cd848a0); rig records J1.1 PASS.",
+      "anchor": "git ls-tree HEAD houdini/config/Icons/SYNAPSE_synapse.png; flow_results.json J1.1"
+    },
+    {
+      "id": "J4.3-friction-confirmed",
+      "severity": "warn",
+      "claim": "Expected-red confirmed: compositor._repolish_tree fails to reach descendants - TWO independent defects. (A) 'from qtpy import QtWidgets' early-returns (qtpy is not importable at this seat -> the density repaint no-ops entirely). (B) a premature 'break' right after findChildren extend -> only the root is repolished even when qtpy is present. Density QSS never reaches child widgets. Pre-existing spawn W5-ROPE-DENSITY-REPAINT.",
+      "anchor": "python/synapse/panel/compositor.py:184 (qtpy) + :199 (break); flow_results.json J4.3"
+    },
+    {
+      "id": "J4.4-friction-confirmed",
+      "severity": "warn",
+      "claim": "Expected-red confirmed: compositor._apply_spec collapses one-way. 'if spec[collapsed]: widget.setMaximumHeight(0)' has NO restore branch, so a switch-back never un-collapses. Micro-probe: maxHeight stays 0 after a collapse->uncollapse cycle. Prominence (written unconditionally) resets two-way; collapse does not.",
+      "anchor": "python/synapse/panel/compositor.py:152; flow_results.json J4.4"
+    },
+    {
+      "id": "J5.4-advisory-doc-drift",
+      "severity": "info",
+      "claim": "Advisory (doc-fix flag): the pypanel help advertises '115 built-in tools' but the live registry synapse.mcp._tool_registry.TOOL_DEFS == 129 (imported headlessly, hou-free). The STEP predicate (the '/' command palette substring) PASSES; the count is a standalone doc-fix, not a code defect.",
+      "anchor": "houdini/python_panels/synapse_panel.pypanel:75; flow_results.json J5.4"
+    },
+    {
+      "id": "proxies-reachable",
+      "severity": "info",
+      "claim": "All four headless-proxy predicates (J1.5, J2.4, J4.3, J6.5) were reachable - none had to be weakened to a source-presence assertion. Their gui-only halves stay UNKNOWN by construction (live per-task counter render, one artist Ctrl+Z, visible density change, visible transcript repaint), and true pixel rendering stays UNKNOWN (Joe seat).",
+      "anchor": "flow_results.json (tag headless-proxy)"
+    }
+  ],
+  "refine_round_trip": {
+    "to": "W6-JRNY",
+    "result": "none-needed",
+    "note": "No unmeasurable predicate. All 30 measurable as classified (26 headless-direct + 4 headless-proxy). Posted on bus n=18cc661f81ab2ad4. Good-news divergence J1.1 posted n=18cc64f66cd848a0."
+  },
+  "for_ruling": [
+    "J4.3/J4.4 are pre-existing friction with existing W5-ROPE spawns (W5-ROPE-DENSITY-REPAINT + the _apply_spec spawn target); confirmed live by this rig, no new ruling required.",
+    "Map annotation for J1.1 is stale (icon present) - a JRNY-side map refresh, not a code action."
+  ],
+  "spawn": [
+    {
+      "id": "W6-FLOWRIG-HELP-COUNT-FIX",
+      "band": "BUILD",
+      "class": "doc",
+      "name": "pypanel help tool-count reconciliation (115 -> 129)",
+      "source": {"doc": "harness/probes/flow/flow_results.json", "anchor": "J5.4 advisory"},
+      "targets": ["houdini/python_panels/synapse_panel.pypanel:75"],
+      "note": "Help advertises 115 built-in tools; live registry TOOL_DEFS==129 (CLAUDE.md header agrees). Reconcile the help literal to 129 or the true panel-exposed subset. Class 'doc' is outside W6-FLOWRIG spawn_classes ['probe'] -> lands held for Joe."
+    }
+  ],
+  "bus": {
+    "claim": "n=18cc64ea69115f88",
+    "findings": ["n=18cc64f66cd848a0 (J1.1 divergence)", "n=18cc661f79d1d81c (rig complete)"],
+    "status_none_needed": "n=18cc661f81ab2ad4",
+    "release": "pending (posted after this receipt commit)"
+  },
+  "notes": "No live model call: builds driven through the deterministic ToolExecutor/handler seam (provider/LLM stage bypassed by construction), so every number is reproducible from committed hython stdout; no generation looped (target #4). Token discipline held: anchored reads only, state externalized to flow_results.json + hython_stdout.txt early."
+}
