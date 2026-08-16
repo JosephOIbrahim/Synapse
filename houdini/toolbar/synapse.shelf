@@ -11,7 +11,7 @@
   </toolshelf>
 
   <tool name="synapse_panel" label="Synapse" icon="SYNAPSE_synapse">
-    <helpText>Open Synapse AI Co-Pilot panel</helpText>
+    <helpText>Open the Synapse AI Co-Pilot panel in a pane tab.</helpText>
     <script scriptType="python"><![CDATA[
 try:
     import synapse_shelf
@@ -24,8 +24,8 @@ except Exception as e:
 ]]></script>
   </tool>
 
-  <tool name="synapse_project_setup" label="Project Setup" icon="SYNAPSE_synapse">
-    <helpText>Initialize project memory for the current scene</helpText>
+  <tool name="synapse_project_setup" label="Project Setup" icon="SYNAPSE_project_setup">
+    <helpText>Set up SYNAPSE memory folders for this scene and copy a project handshake to the clipboard.</helpText>
     <script scriptType="python"><![CDATA[
 try:
     import synapse_shelf
@@ -38,8 +38,8 @@ except Exception as e:
 ]]></script>
   </tool>
 
-  <tool name="synapse_inspect_selection" label="Inspect Selection" icon="SYNAPSE_inspect">
-    <helpText>Analyze selected nodes and copy context to clipboard</helpText>
+  <tool name="synapse_inspect_selection" label="Inspect Selection" icon="SYNAPSE_inspect_selection">
+    <helpText>Copy a structured summary of the selected nodes to the clipboard for pasting into Claude.</helpText>
     <script scriptType="python"><![CDATA[
 try:
     import synapse_shelf
@@ -52,8 +52,8 @@ except Exception as e:
 ]]></script>
   </tool>
 
-  <tool name="synapse_inspect_scene" label="Inspect Scene" icon="SYNAPSE_inspect">
-    <helpText>Analyze full scene and copy context to clipboard</helpText>
+  <tool name="synapse_inspect_scene" label="Inspect Scene" icon="SYNAPSE_inspect_scene">
+    <helpText>Copy a structured overview of the whole scene to the clipboard for pasting into Claude.</helpText>
     <script scriptType="python"><![CDATA[
 try:
     import synapse_shelf
@@ -66,8 +66,8 @@ except Exception as e:
 ]]></script>
   </tool>
 
-  <tool name="synapse_last_result" label="Last Result" icon="SYNAPSE_execute">
-    <helpText>Copy last Synapse execution result to clipboard</helpText>
+  <tool name="synapse_last_result" label="Last Result" icon="SYNAPSE_last_result">
+    <helpText>Copy the most recent Synapse execution result to the clipboard.</helpText>
     <script scriptType="python"><![CDATA[
 try:
     import synapse_shelf
@@ -80,8 +80,8 @@ except Exception as e:
 ]]></script>
   </tool>
 
-  <tool name="synapse_health_check" label="Health Check" icon="SYNAPSE_verify">
-    <helpText>Run scene health check and copy results</helpText>
+  <tool name="synapse_health_check" label="Health Check" icon="SYNAPSE_health_check">
+    <helpText>Scan the scene for node errors, warnings, and setup issues, then copy the report to the clipboard.</helpText>
     <script scriptType="python"><![CDATA[
 try:
     import synapse_shelf
@@ -94,8 +94,8 @@ except Exception as e:
 ]]></script>
   </tool>
 
-  <tool name="synapse_generate_docs" label="Generate Docs" icon="SYNAPSE_document">
-    <helpText>Generate documentation for selected nodes</helpText>
+  <tool name="synapse_generate_docs" label="Generate Docs" icon="SYNAPSE_generate_docs">
+    <helpText>Copy full documentation of the selected nodes (parameters and connections) to the clipboard.</helpText>
     <script scriptType="python"><![CDATA[
 try:
     import synapse_shelf

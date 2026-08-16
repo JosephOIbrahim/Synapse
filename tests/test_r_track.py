@@ -608,11 +608,14 @@ def test_live_tree_gates_read_red_now():
     - runtime_owns_heartbeat (R.2 / P0.3), 2026-08-16 W5-LIFE: the freeze beat
       moved from a panel-parented QTimer to a process-lifetime owner
       (server/runtime_beat.py, # RUNTIME_BEAT_SOURCE); the panel no longer
-      constructs the timer."""
+      constructs the timer.
+    - shelf_current (R.7 / P1-shelf), 2026-08-16 W5-SHELF: the clipboard helper
+      is PySide6-first with the PySide2 fallback KEPT and the missing-panel
+      message names scripts/install_synapse_package.py."""
     ctx = _ctx(_REPO)
     for name in ("mutation_fail_closed", "hot_reload_gated",
                  "installer_host_targeted", "ci_covers_shipping_surface",
-                 "shelf_current", "tool_metadata_single_source", "process_bridge_armed",
+                 "tool_metadata_single_source", "process_bridge_armed",
                  "auth_fail_closed", "packaging_self_contained"):
         res = _run(name, ctx)
         assert res["ok"] is False, f"{name} reads GREEN on the live tree — mis-located fingerprint?"
@@ -627,4 +630,11 @@ def test_live_tree_gates_read_red_now():
         "runtime_owns_heartbeat should read GREEN — R.2 relocated the freeze beat "
         "to a process-lifetime owner (RUNTIME_BEAT_SOURCE under server/). RED means "
         "the panel re-owns the beat or the owner marker is gone."
+    )
+    # shelf_current resolved by W5-SHELF — PySide6-first clipboard (PySide2 fallback
+    # KEPT) + current installer message (R.7/P1-shelf).
+    assert _run("shelf_current", ctx)["ok"] is True, (
+        "shelf_current should read GREEN — W5-SHELF made the clipboard PySide6-first "
+        "and pointed the installer message at scripts/install_synapse_package.py "
+        "(R.7/P1-shelf). If this reads RED the shelf fix regressed."
     )

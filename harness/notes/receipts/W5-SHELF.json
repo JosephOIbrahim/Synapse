@@ -1,0 +1,71 @@
+{
+  "leg": "W5-SHELF",
+  "status": "green_with_findings",
+  "product_head": "10188cec5dcd2ec1539f68589c0ceb174cf9d784",
+  "base": "df8c9ef38e909e1423b1c0a5e7249b75dcb96bb7",
+  "summary": "Shelf truth: PySide6-first clipboard (PySide2 fallback KEPT per spec) + current installer message greens the shelf_current machine gate (R.7/P1-shelf); six distinct committed PNG icons (git add -f) + one operator-sentence tooltip per action tool. Full R.7 task verdict PASS: suite_baseline ratchet holds (failed 0/base 0), phantom_clean clean.",
+  "acceptance": [
+    {
+      "predicate": "shelf_current reads GREEN (PySide6 presence + install_synapse_package.py message)",
+      "verdict": "pass",
+      "evidence": "check: `python harness/verify/checks.py --task R.7 --worktree <wt> --mode A` -> checks.shelf_current.ok=true, task verdict PASS, guardrail_violations []. check_shelf_current at harness/verify/checks.py:1989 gates on 'from PySide6' + 'install_synapse_package.py' presence (never PySide2 absence). Source: houdini/scripts/python/synapse_shelf.py _copy_to_clipboard (PySide6-first, PySide2 except kept) + open_panel message names scripts/install_synapse_package.py."
+    },
+    {
+      "predicate": "each of the six tools carries an icon committed via git add -f with sha recorded",
+      "verdict": "pass",
+      "evidence": "probe: git ls-tree HEAD houdini/config/Icons/ = 6 PNG blobs (*.png is gitignored .gitignore:95, forced with `git add -f`). SHAs @10188cec: SYNAPSE_project_setup a7d7e56ec0c00e84421696447845fdffeb320b80; SYNAPSE_inspect_selection 6c464375945f8791bf7558f445d8f62b9c4a7972; SYNAPSE_inspect_scene dd1b0910979f0d6181a02467ddd85b1f04f40322; SYNAPSE_last_result 2d41aa827883e1102a365a2dca8ed33b720d1263; SYNAPSE_health_check af7918d4e23a4ba8a22601536a60eecf464814fc; SYNAPSE_generate_docs 5968b56d3c426ff01faa5ff6e0b9707ae37da59d. Each wired 1:1 in houdini/toolbar/synapse.shelf; pinned by tests/test_shelf_current.py::test_tool_icon_file_exists (6) + test_six_tools_have_distinct_icons."
+    },
+    {
+      "predicate": "each of the six tools carries a tooltip/help string",
+      "verdict": "pass",
+      "evidence": "test: tests/test_shelf_current.py::test_tool_has_one_sentence_tooltip[6] pass (helpText present, >=15 chars, sentence-terminated) for project_setup / inspect_selection / inspect_scene / last_result / health_check / generate_docs in houdini/toolbar/synapse.shelf. Full file 18 pass; also behaviorally proves PySide6-first + PySide2 fallback kept + current installer message (the FIX_IS_REAL_PROBE the gate defers to)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1-gui-render-UNKNOWN",
+      "severity": "info",
+      "claim": "Icon FILES exist, are committed, and resolve by Houdini's filename convention ($HOUDINI_PATH/houdini/config/Icons via packages/synapse.json hpath = $SYNAPSE_ROOT/houdini). Their VISUAL rendering on a live Houdini shelf is gui_required and was NOT measured headless -> recorded UNKNOWN, never a fake pass. Restart-Houdini required to pick up new icon files.",
+      "anchor": "houdini/config/Icons/*.png; packages/synapse.json:32 (hpath)"
+    },
+    {
+      "id": "F2-honesty-test-flip-resolved",
+      "severity": "info",
+      "claim": "Resolving R.7 greened shelf_current on the LIVE tree, which correctly flipped tests/test_r_track.py::test_live_tree_gates_read_red_now (it asserts every UNRESOLVED gate reads RED). Updated to assert shelf_current GREEN, mirroring the deps_isolated R.4 precedent in the same test (2026-07-15). Verified: test_r_track.py 41 pass; full R.7 PASS.",
+      "anchor": "tests/test_r_track.py:599"
+    },
+    {
+      "id": "F3-hou-eviction-caught-and-fixed",
+      "severity": "info",
+      "claim": "The new test initially used sys.modules.pop('hou', None) to restore the stub -- the banned eviction idiom caught by tests/test_hou_reimport_guard.py::test_no_test_evicts_hou_from_sys_modules (a suite-wide merge-gate AST ban; re-import re-executes hou.py and half-builds the SWIG Parm registry). Rewritten to restore the prior resident BY OBJECT, never evicting. Verified: full R.7 suite_baseline failed 0, ratchet holds.",
+      "anchor": "tests/test_shelf_current.py::_load_shelf; tests/test_hou_reimport_guard.py:468"
+    },
+    {
+      "id": "F4-provenance-guardrail-unwired",
+      "severity": "info",
+      "claim": "R.7 guardrail provenance_not_bypassed reads ok:null (unwired, warn-only) -- pre-existing across the R-track, NOT introduced by this leg and NOT a violation. Recorded so a reader does not mistake it for a green.",
+      "anchor": "harness/verify/checks.py check_provenance_not_bypassed"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": [
+    {
+      "id": "W5-SHELF-PANEL-ICON",
+      "class": "build",
+      "band": "BUILD",
+      "name": "panel-open shelf tool icon: give synapse_panel a committed icon (still references SYNAPSE_synapse.png which does not exist)",
+      "note": "The 7th shelf entry synapse_panel ('Synapse', open-panel) is OUT of the W5-SHELF six but is now the only tool with a dangling icon ref (SYNAPSE_synapse). Same 'not sure what it does' family as items 6-7. Adjacent, not chased -> proposed. class=build is outside spawn_classes(['probe']) so this lands HELD for Joe.",
+      "targets": ["houdini/config/Icons/SYNAPSE_synapse.png (new)", "houdini/toolbar/synapse.shelf (synapse_panel icon already set)"],
+      "touches": ["houdini/"]
+    },
+    {
+      "id": "W5-SHELF-ICON-RENDER-PROBE",
+      "class": "probe",
+      "band": "BUILD",
+      "name": "GUI probe: confirm the six shelf tools display their committed icons on a live Houdini shelf",
+      "note": "Closes the F1 gui_required UNKNOWN: under a GUI Houdini session (not headless), verify each of the six synapse shelf tools renders its SYNAPSE_<tool>.png icon (not the default/blank) and shows its helpText tooltip on hover. probe is within spawn_classes.",
+      "targets": ["houdini/toolbar/synapse.shelf", "houdini/config/Icons/*.png"],
+      "touches": ["houdini/"]
+    }
+  ]
+}
