@@ -1,0 +1,59 @@
+{
+  "leg": "W6-QUOTE",
+  "status": "green_with_findings",
+  "product_head": "b29ecb0a07483824f7f665412da896df03308e0d",
+  "summary": "Killed the injection class on the harness ps1 + autorevise-py surface. S1 (unquoted-interpolation): generalized the safeName point-fix into a dot-sourced Sanitize-SQ helper (harness/lib/quote-safe.ps1) + python twin, and routed all 9 uncontrolled interpolations in orchestrate.ps1's launch runner through it; the dry run now writes the real runner BOM-free so it is parseable. S8 (BOM): repaired the one committed JSON that failed json.load (resolved_lines.json) + swapped its producer to Write-Utf8NoBom; harness JSON census now 371/0. Gate: tests/test_harness_quoting.py (41 tests) - adversarial-name -DryRun parser matrix + PS/python oracle + 3 committed-tree lints, each with a proven-failing negative control.",
+  "acceptance": [
+    {
+      "predicate": "adversarial-name dry-run matrix parses clean for all metachar names",
+      "verdict": "pass",
+      "evidence": "tests/test_harness_quoting.py: 12 adversarial names (apostrophe, backtick, dollar, double-quote, em-dash, CJK, newline, injection payloads) + 2 adversarial branches + aggregate, each driven through the REAL orchestrate.ps1 -DryRun and parsed via [System.Management.Automation.Language.Parser]::ParseFile => 0 parse errors, 0 BOM, escaped name present. First-hand parser stdout. RED-proof: an unsanitized 'LEG O'Brien' runner yields ParseFile errors=1, the sanitized '' form 0 - the gate discriminates on the original defect. 41/41 green; neighboring test_orchestrate_liveness.py + test_harness_lock.py unbroken (12 passed, 1 honest skip)."
+    },
+    {
+      "predicate": "site audit table committed; zero remaining unsanitized mission-string interpolations",
+      "verdict": "pass",
+      "evidence": "harness/notes/QUOTE_AUDIT.md committed - every fixed site (9 in orchestrate.ps1) with before/after anchors, every reviewed-safe surface with its reason. Backed by 5-agent read-only audit fan-out wf_d17fb020-5fd + its completeness critic (which independently re-derived the 9-site fix list and refuted a reader's SAFE misclassification). Within scope, every uncontrolled string reaching a breakable quoted context is Sanitize-SQ'd or verified safe-by-construction (rope=markdown, Start-Process=array-argv, autorevise-py list-argv/BOM-free json, retired=quarantined). Producer lint test_lint_no_inline_command_interpolation + R26 json-parse lint keep it zero."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "claim": "CONFIG-LOW-RISK BOM writers left as-is, documented not hidden. drive_autoresearch.ps1:136, _idle_control.ps1:27/53, dispatch_lock_control.ps1:48 write a UTF-8 BOM but to runtime-only lock/TEMP/pointer files read back by BOM-tolerant PowerShell ConvertFrom-Json - never a committed *.json, never a python json.load consumer. Left unchanged to keep the edit surface tight; enumerated in QUOTE_AUDIT.md.",
+      "anchor": "harness/notes/QUOTE_AUDIT.md (S8 - reviewed & left as-is)"
+    },
+    {
+      "id": "F2",
+      "claim": "harness/retired/run_followon.ps1:64 carries the identical S1 class (leg.id/leg.wt into a runner here-string) but is under harness/retired/ - frozen, not live-dispatched. Recorded, not touched (never-rebuild-shipped-code).",
+      "anchor": "harness/retired/run_followon.ps1:64"
+    },
+    {
+      "id": "F3",
+      "claim": "harness/run.ts is the S1 ORIGIN surface (0522ad0e backslash-eaten path; 943e5375 2000-char brief split) but is .ts - outside this leg's sweep globs (harness/**/*.ps1 + harness/autorevise/**/*.py). Already uses delivery-by-file-reference. A TypeScript quoting lint is filed as a spawn.",
+      "anchor": "harness/run.ts"
+    },
+    {
+      "id": "F4",
+      "claim": "The test harness itself hit BOTH classes during development, confirming they are real and subtle: (S1) the PS driver's -Manifest param collided case-insensitively with orchestrate's [string]$manifest and silently coerced the parsed object back to a string (variable shadowing); (S8) Get-Content read a BOM-less UTF-8 manifest as ANSI, mangling unicode names. Both fixed in the test (ReadAllText + unique param name + file-based UTF-8 transfer).",
+      "anchor": "tests/test_harness_quoting.py (_DRIVER comment)"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": [
+    {
+      "id": "W6-QUOTE-S1",
+      "band": "BUILD",
+      "class": "probe",
+      "name": "TypeScript quoting lint for harness/run.ts - close the last S1 surface",
+      "rationale": "run.ts is the S1 origin surface and outside this leg's ps1/py sweep. A parallel Sanitize-SQ-style escape + a no-inline-command lint for the TS launcher would close it. Held for Joe.",
+      "targets": ["harness/run.ts"]
+    },
+    {
+      "id": "W6-QUOTE-S8",
+      "band": "BUILD",
+      "class": "probe",
+      "name": "Migrate CONFIG-LOW-RISK runtime-lock BOM writers to Write-Utf8NoBom",
+      "rationale": "The runtime lock/TEMP BOM writers (F1) are harmless today (BOM-tolerant PS readers). If any such lock ever gains a python json.load reader, swap it to the new Write-Utf8NoBom. Held for Joe.",
+      "targets": ["harness/autoresearch/drive_autoresearch.ps1", "harness/notes/_idle_control.ps1", "harness/verify/dispatch_lock_control.ps1"]
+    }
+  ]
+}
