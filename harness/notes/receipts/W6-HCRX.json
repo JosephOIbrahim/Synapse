@@ -1,0 +1,102 @@
+{
+  "leg": "W6-HCRX",
+  "status": "green_with_findings",
+  "band": "TRUTH",
+  "date": "2026-08-16",
+  "product_head": "942e9195",
+  "base": "master 8e278b65",
+  "deps_reattacked": ["W6-QUOTE", "W6-PROV", "W6-BEAT", "W6-GATE"],
+  "ledger": "wave6/forge 57f23a5c harness/HARDENING-SPEC.md",
+  "method": "Combined scratch tree = master archive + 4 products; two shared files (orchestrate.ps1, checks.py) 3-way merged via git merge-file (exit 0, zero conflicts). Every attack re-executed first-hand on that tree; nothing inherited.",
+  "acceptance": [
+    {
+      "predicate": "per-leg verdicts with independent attack evidence; UNKNOWNs never laundered",
+      "verdict": "pass",
+      "evidence": "108/108 builder acceptances re-pass first-hand (test_provenance_gate 11, test_r_track 44, test_w6_beat_runtime_heartbeat 6 behavioural, test_orchestrate_close_gate 6, test_harness_quoting 41). Fresh independent attacks per gate: QUOTE 17 adversarial names -> parse-clean+BOM-free+0 injected cmds (probes/quote_attack.{ps1,py}); PROV fresh M1 gate-constructed-but-unused -> RED (probes/prov_attack.py); BEAT panel-QTimer structural RED + hollow-beat behavioural RED (probes/beat_attack.py); GATE forged not-HEAD + decoy-release refused with exact messages (probes/gate_attack.ps1). All measurable headless -> zero UNKNOWNs; none laundered."
+    },
+    {
+      "predicate": "ledger-to-defense mapping complete: every class row wired, ruled, or honestly open",
+      "verdict": "pass",
+      "evidence": "verdict.md 6d: S1/S8 WIRED(QUOTE), S2 WIRED(PROV), S3 WIRED(BEAT), S4 WIRED + S5 WIRED-presence-only (GATE); S6/S7 unchanged (crucible/schema); M1-M25/META mapped (M11 root worktree-draft half closed by GATE commit==HEAD; M19 the two shared files proved merge-clean; M20 defused by GATE self-commit; the rest honest-open by design). No row laundered per R80 vocab. Anchors spot-verified first-hand."
+    },
+    {
+      "predicate": "mandate table incl. RELEASE check, binary per leg",
+      "verdict": "pass",
+      "evidence": "verdict.md 6c, dogfooding W6-GATE's close gate on the 4 siblings (real Test-CloseGate + live-wave6 has_release): W6-QUOTE done, W6-PROV done, W6-BEAT CLOSING (S5 no bus RELEASE), W6-GATE CLOSING (own W6-GATE.json written to worktree but UNTRACKED = S4 receipt-not-committed)."
+    }
+  ],
+  "ratchet": {
+    "base_master_archive": {"passed": 6505, "failed": 0, "errors": 0, "skipped": 181},
+    "combined_four_products": {"passed": 6572, "failed": 0, "errors": 0, "skipped": 181},
+    "delta_passed": 67, "new_failures": 0,
+    "committed_floor_suite_baseline": "6389/0/170 @ b2412b6b 2026-08-15",
+    "note": "identical stable-git contexts; passes only UP, failures held at 0 -> ratchet holds. guardrail_violations (product-caused): NONE."
+  },
+  "findings": [
+    {
+      "id": "F-QUOTE",
+      "class": "S1 / id path-traversal",
+      "claim": "orchestrate.ps1:359 builds the runner path from the RAW $leg.id (not $safeId): $script = Join-Path $env:TEMP \"orch_$($leg.id).ps1\". An id ..\\..\\..\\TARGET_OUTSIDE\\PWNED writes the runner OUTSIDE $env:TEMP; on the live path it is the Start-Process -File $script exec target -> arbitrary-location .ps1 write+exec. Content sanitization (Sanitize-SQ) is complete and unaffected; the id-PATH surface is out of its reach. Gate comment (:335-342) over-claims id coverage.",
+      "anchor": "harness/orchestrate.ps1:359 ; verified first-hand: harness/notes/receipts/W6-HCRX_probes/quote_idpath (runner landed at TARGET_OUTSIDE/PWNED.ps1 outside TEMP)",
+      "severity": "coverage-gap (not verdict-blocking); id sourced from validated manifest",
+      "verdict_blocking": false
+    },
+    {
+      "id": "F-PROV",
+      "class": "S2 / taxonomy-misclassification false-green (broadest blast radius)",
+      "claim": "Adding a mutating command (e.g. set_parm, create_node) to _READ_ONLY_COMMANDS (handlers.py:204) disarms provenance via the BLESSED invoke()->wrap() path (_is_read_only True -> self._record/write_report skipped; also skips C5 lock + integrity envelope + _submit_logs), yet check_provenance_not_bypassed STILL returns ok=True. Defeats the gate's stated core guarantee, which its docstring claims is impossible. Demonstrated-real: handlers.py:242 already hand-corrects 'cops_temporal_analysis is NOT read-only'. Verified first-hand (probes/prov_taxonomy.py). Fix: 4th static leg asserting mutating-set INTERSECT read-only-set == empty. (Also B1/B2: two-line get-and-call + dict-dispatch evade static leg-3 regex.)",
+      "anchor": "python/synapse/server/handlers.py:204,242,509 ; harness/verify/checks.py:393-479 ; probes/prov_taxonomy.py",
+      "severity": "confirmed false-green in stated scope; cheaply closable",
+      "verdict_blocking": false
+    },
+    {
+      "id": "F-BEAT",
+      "class": "S3 / inconclusive-fallback false-green",
+      "claim": "Leg-3 returns structural GREEN ('INCONCLUSIVE', checks.py:2076-2081) when the behavioural proof cannot run (ran=False); code-triggerable by an unguarded failing import so 'from synapse.server import runtime_beat' raises -> no BEHAVIOR sentinel. Verified first-hand: hollow beat + broken proof import -> check ok=True (probes/beat_inconclusive.py). Fix: a full-package proof that cannot run should RED/block, not fall back to structural GREEN.",
+      "anchor": "harness/verify/checks.py:2076-2081 ; probes/beat_inconclusive.py",
+      "severity": "coverage-gap; requires hollowing the beat AND breaking the proof",
+      "verdict_blocking": false
+    },
+    {
+      "id": "F-GATE",
+      "class": "S5 / release presence not release-to-claim match",
+      "claim": "has_release (bus.py:84-97) greens on any non-empty body.release from the frm; never compares released files to the claim (unlike open_claims in the same file). Live: W6-QUOTE has_release=True while its claim reads still-open in open_claims (file-sets differ); even {\"release\":\"yep\"} passes, only {\"release\":[]} fails. Gate comment orchestrate.ps1:191 over-claims 'a RELEASE line for this leg's claim'. Every LIVED S5 instance was total-absence (which the gate DOES catch); this is the never-lived mismatched-release variant. Fix: require release file-set to match an open claim, or accept presence-only and fix the comment.",
+      "anchor": "harness/autorevise/bus.py:84-97 ; harness/orchestrate.ps1:191,200-201 ; verified first-hand on live wave6 bus",
+      "severity": "coverage-gap + doc-over-claim; not verdict-blocking",
+      "verdict_blocking": false
+    },
+    {
+      "id": "F-MANDATE",
+      "class": "S4/S5 recurrence in the wave's own legs",
+      "claim": "W6-BEAT: receipt committed as HEAD but NO bus RELEASE -> held at closing by the S5 gate. W6-GATE: its own W6-GATE.json written to the worktree but UNTRACKED (never committed) -> held at closing by its own S4 gate. Point-in-time observation of the live wave6 bus + worktrees 2026-08-16. Merge is Joe's word; operator-harvest per R135 possible, but per CRX0/W5H 'operator rescue is a failure mode, not the plan'.",
+      "anchor": "harness/orchestrate.ps1:176 Test-CloseGate ; live wave6 bus ; .claude/worktrees/w6-gate git status (W6-GATE.json untracked)",
+      "severity": "close-discipline, not gate-correctness",
+      "verdict_blocking": false
+    }
+  ],
+  "for_ruling": [
+    "F-PROV (highest leverage): add a 4th static leg to check_provenance_not_bypassed asserting the mutating-command set does not intersect _READ_ONLY_COMMANDS.",
+    "F-QUOTE: validate/sanitize $leg.id for path safety (reject path separators / '..') before it reaches the runner filename + Start-Process -File exec target.",
+    "F-BEAT: a full-package behavioural proof that cannot run should read RED (or a distinct blocking state), not fall back to structural GREEN.",
+    "F-GATE: tighten S5 to claim-to-release file-set parity, or accept presence-only and correct the over-claiming comment at orchestrate.ps1:191.",
+    "F-MANDATE: commit W6-GATE.json and post W6-BEAT/W6-GATE bus releases before merge (or operator-harvest per R135)."
+  ],
+  "spawn": [
+    {
+      "id": "W6-HCRX-S1",
+      "class": "probe",
+      "name": "AST provenance side-door + read-only-set-intersection detector fixture",
+      "rationale": "Pin F-PROV (taxonomy misfile) + B1/B2 (two-line/dict dispatch) as RED with a deterministic guardrail fixture, closing the confirmed false-green cheaply.",
+      "targets": ["harness/verify/checks.py check_provenance_not_bypassed 4th leg", "tests/test_provenance_gate.py"]
+    },
+    {
+      "id": "W6-HCRX-S2",
+      "class": "probe",
+      "name": "S5 claim-to-release reconciliation probe + QUOTE id-path-safety fixture",
+      "rationale": "Pin F-GATE (release must match claim file-set) and F-QUOTE (a traversal id must be refused before write/exec) as RED-able tests.",
+      "targets": ["harness/autorevise/bus.py has_release/open_claims", "harness/orchestrate.ps1 id path derivation"]
+    }
+  ],
+  "verification_note": "An independent completeness workflow ran 4 gate critics (builders != reviewers != crucible); all 4 returned, each confirmed this crucible's findings accurate + fair, and each surfaced one additional gap (F-QUOTE/F-PROV/F-BEAT/F-GATE) which THIS leg then reproduced first-hand (never inherited). A 5th agent (HARDENING-SPEC ledger cross-audit) was still running at close time; the ledger mapping in verdict.md 6d is independent of it (anchors spot-verified first-hand by this leg). Recorded, not silently treated as complete (M21).",
+  "verdict": "green_with_findings — every gate fails closed on its target defect and on every lived instance of its class; 108/108 acceptances re-pass; ratchet holds (+67, 0 regressions); no ledger row laundered. Findings are cheaply-closable coverage gaps in the gates' stated scope (one confirmed false-green per gate) + two sibling legs not yet closed per the mandate, all routed to for_ruling. No gate invalidated. Merge remains Joe's word per leg."
+}
