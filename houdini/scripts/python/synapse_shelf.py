@@ -17,15 +17,24 @@ import time
 # ── Helpers ────────────────────────────────────────────────────
 
 def _copy_to_clipboard(text):
-    """Copy text to system clipboard via Qt (available in Houdini)."""
+    """Copy text to the system clipboard via Qt.
+
+    PySide6-first: current Houdini (21/22) ships PySide6 only, so the older
+    PySide2-only path silently returned False on the live runtime and nothing
+    reached the clipboard. PySide2 is KEPT as a fallback for legacy builds --
+    the repo idiom (panel/chat_panel.py) is PySide6 with a PySide2 except.
+    """
     try:
-        from PySide2 import QtWidgets
-        app = QtWidgets.QApplication.instance()
-        if app:
-            app.clipboard().setText(text)
-            return True
+        from PySide6 import QtWidgets
     except ImportError:
-        pass
+        try:
+            from PySide2 import QtWidgets
+        except ImportError:
+            return False
+    app = QtWidgets.QApplication.instance()
+    if app:
+        app.clipboard().setText(text)
+        return True
     return False
 
 
@@ -111,8 +120,8 @@ def open_panel():
         _notify(
             "Synapse Panel",
             "Couldn't find the Synapse panel.\n\n"
-            "Run the Synapse installer to set it up:\n"
-            "  python install.py",
+            "Install the Synapse package, then restart Houdini:\n"
+            "  python scripts/install_synapse_package.py",
             hou.severityType.Warning,
         )
         return

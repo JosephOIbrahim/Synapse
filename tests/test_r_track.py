@@ -605,11 +605,16 @@ def test_live_tree_gates_read_red_now():
     The cp313 re-vendor replaced the strict ``== (3, 11)`` boot-cliff gate in
     python/synapse/__init__.py with an ABI-set membership test (_VENDOR_PYS) —
     exactly the remediation R.4 tracks. It is asserted GREEN below; the rest
-    still read RED."""
+    still read RED.
+
+    Exception (2026-08-16, W5-SHELF): shelf_current (R.7 / P1-shelf) is now
+    GREEN. The clipboard helper is PySide6-first with the PySide2 fallback KEPT
+    and the missing-panel message names scripts/install_synapse_package.py —
+    exactly the remediation R.7 tracks. It too is asserted GREEN below."""
     ctx = _ctx(_REPO)
     for name in ("mutation_fail_closed", "runtime_owns_heartbeat", "hot_reload_gated",
                  "installer_host_targeted", "ci_covers_shipping_surface",
-                 "shelf_current", "tool_metadata_single_source", "process_bridge_armed",
+                 "tool_metadata_single_source", "process_bridge_armed",
                  "auth_fail_closed", "packaging_self_contained"):
         res = _run(name, ctx)
         assert res["ok"] is False, f"{name} reads GREEN on the live tree — mis-located fingerprint?"
@@ -617,4 +622,11 @@ def test_live_tree_gates_read_red_now():
     assert _run("deps_isolated", ctx)["ok"] is True, (
         "deps_isolated should read GREEN — the cp313 re-vendor replaced the strict "
         "cp311 equality gate (R.4/P0.1). If this reads RED the re-vendor regressed."
+    )
+    # shelf_current resolved by W5-SHELF — PySide6-first clipboard (PySide2 fallback
+    # KEPT) + current installer message (R.7/P1-shelf).
+    assert _run("shelf_current", ctx)["ok"] is True, (
+        "shelf_current should read GREEN — W5-SHELF made the clipboard PySide6-first "
+        "and pointed the installer message at scripts/install_synapse_package.py "
+        "(R.7/P1-shelf). If this reads RED the shelf fix regressed."
     )
