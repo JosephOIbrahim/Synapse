@@ -273,7 +273,7 @@
   },
   {
     "id": "W5-PARITY",
-    "name": "panel parity 1/2: prove every module the panel executes is the repo's, byte-for-byte, under the real hython",
+    "name": "panel parity 1/2: prove every module the panel executes is the repo copy, byte-for-byte, under the real hython",
     "state": "ready",
     "receipt": "W5-PARITY.json",
     "branch": "wave5/parity",
@@ -289,7 +289,7 @@
   },
   {
     "id": "W5-SEAT",
-    "name": "panel parity 2/2: prove the seat's resolution order - package, hpath, icons, and zero shadow installs",
+    "name": "panel parity 2/2: prove the seat resolution order - package, hpath, icons, and zero shadow installs",
     "state": "ready",
     "receipt": "W5-SEAT.json",
     "branch": "wave5/seat",

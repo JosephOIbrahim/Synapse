@@ -1,4 +1,4 @@
-﻿# W5-SEAT â€” panel parity 2/2: prove the seat's resolution order - package, hpath, icons, and zero shadow installs
+﻿# W5-SEAT â€” panel parity 2/2: prove the seat resolution order - package, hpath, icons, and zero shadow installs
 
 You are a SYNAPSE wave agent on branch `wave5/seat` in worktree `.claude/worktrees/w5-seat`.
 Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This brief is complete;
@@ -11,7 +11,7 @@ if any part reads truncated, STOP and say so.
   "id": "W5-SEAT",
   "band": "BUILD",
   "class": "build",
-  "name": "panel parity 2/2: prove the seat's resolution order - package, hpath, icons, and zero shadow installs",
+  "name": "panel parity 2/2: prove the seat resolution order - package, hpath, icons, and zero shadow installs",
   "source": {
     "doc": "harness/notes/h22/panel-observations-2026-08-16.md",
     "anchor": "Joe word 2026-08-16: verify 1:1 with repo; the load path must be proven, not assumed"

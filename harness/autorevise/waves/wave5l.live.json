@@ -1,5 +1,5 @@
 {
-  "_comment": "W5L lifecycle wave - compiled from Joe live-seat findings 2026-08-16 (g5 fail + panel observations 1-7). Base=master df8c9ef3. ARMED on Joe word: \"fold these as changes into the harness and execute the harness\". Merge/flip/gui-receipt remain Joe words per act. Ritual halted at g5; resumes on the fixed build. | FOLDED 2026-08-16 on Joe word 'fold this blueprint into the currently running harness': substrate legs W5-CATALOG, W5-PARMGATE (dep CATALOG), W5-MEASURES + crucible W5-WCRUX from docs/BLUEPRINT_WEAK_DOMAINS.md M1-M3. Domain waves A-E gated behind substrate merge. | FOLDED 2026-08-16 on Joe word 'use agent teams that have communication between agents to verify design panel is 1:1 with the repo': W5-PARITY + W5-SEAT (bus-communicating probes) + crucible W5-PCRUX.",
+  "_comment": "W5L lifecycle wave - compiled from Joe live-seat findings 2026-08-16 (g5 fail + panel observations 1-7). Base=master df8c9ef3. ARMED on Joe word: \"fold these as changes into the harness and execute the harness\". Merge/flip/gui-receipt remain Joe words per act. Ritual halted at g5; resumes on the fixed build. | FOLDED 2026-08-16 on Joe word 'fold this blueprint into the currently running harness': substrate legs W5-CATALOG, W5-PARMGATE (dep CATALOG), W5-MEASURES + crucible W5-WCRUX from docs/BLUEPRINT_WEAK_DOMAINS.md M1-M3. Domain waves A-E gated behind substrate merge. | FOLDED 2026-08-16 on Joe word 'use agent teams that have communication between agents to verify design panel is 1:1 with the repo': W5-PARITY + W5-SEAT (bus-communicating probes) + crucible W5-PCRUX. | 2026-08-16 name fix: apostrophes broke the temp-runner quoting (parse crash); rows replaced in place.",
   "_schema": "legs/v1",
   "repo": "C:\\Users\\User\\SYNAPSE",
   "settings": "C:\\Users\\User\\SYNAPSE\\harness\\relay-settings.json",
@@ -190,7 +190,7 @@
     },
     {
       "id": "W5-PARITY",
-      "name": "panel parity 1/2: prove every module the panel executes is the repo's, byte-for-byte, under the real hython",
+      "name": "panel parity 1/2: prove every module the panel executes is the repo copy, byte-for-byte, under the real hython",
       "state": "ready",
       "receipt": "W5-PARITY.json",
       "branch": "wave5/parity",
@@ -206,7 +206,7 @@
     },
     {
       "id": "W5-SEAT",
-      "name": "panel parity 2/2: prove the seat's resolution order - package, hpath, icons, and zero shadow installs",
+      "name": "panel parity 2/2: prove the seat resolution order - package, hpath, icons, and zero shadow installs",
       "state": "ready",
       "receipt": "W5-SEAT.json",
       "branch": "wave5/seat",

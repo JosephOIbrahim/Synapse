@@ -2,7 +2,7 @@
   "id": "W5-PARITY",
   "band": "BUILD",
   "class": "build",
-  "name": "panel parity 1/2: prove every module the panel executes is the repo's, byte-for-byte, under the real hython",
+  "name": "panel parity 1/2: prove every module the panel executes is the repo copy, byte-for-byte, under the real hython",
   "source": {
     "doc": "houdini/python_panels/synapse_panel.pypanel",
     "anchor": "Joe word 2026-08-16: verify design panel is 1:1 with the repo; panel reported stale after relaunch"

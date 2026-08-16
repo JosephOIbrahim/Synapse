@@ -2,7 +2,7 @@
   "id": "W5-SEAT",
   "band": "BUILD",
   "class": "build",
-  "name": "panel parity 2/2: prove the seat's resolution order - package, hpath, icons, and zero shadow installs",
+  "name": "panel parity 2/2: prove the seat resolution order - package, hpath, icons, and zero shadow installs",
   "source": {
     "doc": "harness/notes/h22/panel-observations-2026-08-16.md",
     "anchor": "Joe word 2026-08-16: verify 1:1 with repo; the load path must be proven, not assumed"

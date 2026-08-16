@@ -1,4 +1,4 @@
-﻿# W5-PARITY â€” panel parity 1/2: prove every module the panel executes is the repo's, byte-for-byte, under the real hython
+﻿# W5-PARITY â€” panel parity 1/2: prove every module the panel executes is the repo copy, byte-for-byte, under the real hython
 
 You are a SYNAPSE wave agent on branch `wave5/parity` in worktree `.claude/worktrees/w5-parity`.
 Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This brief is complete;
@@ -11,7 +11,7 @@ if any part reads truncated, STOP and say so.
   "id": "W5-PARITY",
   "band": "BUILD",
   "class": "build",
-  "name": "panel parity 1/2: prove every module the panel executes is the repo's, byte-for-byte, under the real hython",
+  "name": "panel parity 1/2: prove every module the panel executes is the repo copy, byte-for-byte, under the real hython",
   "source": {
     "doc": "houdini/python_panels/synapse_panel.pypanel",
     "anchor": "Joe word 2026-08-16: verify design panel is 1:1 with the repo; panel reported stale after relaunch"
