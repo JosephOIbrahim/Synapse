@@ -1,0 +1,69 @@
+==============================================================================
+SECTION 0 — ENVIRONMENT / LOAD PROOF (target 1)
+==============================================================================
+python      : 3.13.10
+executable  : c:/program files/side effects software/houdini 22.0.400/bin/hython.exe
+hou version : 22.0.400
+HOUDINI_PATH contains main houdini/ : True
+SYNAPSE_ROOT (hou.getenv)           : C:/Users/User/SYNAPSE
+HOUDINI_USER_PREF_DIR               : C:/Users/User/OneDrive/Documents/houdini22.0
+QT_QPA_PLATFORM                     : offscreen
+main-tree python/ on sys.path       : True
+  ACCEPTANCE [pass] real hython (Houdini 22.0.400) loads the deployed synapse package (hou.houdiniPath contains the main houdini/ dir)
+
+==============================================================================
+SECTION 2 — MODULE PROVENANCE, EXHAUSTIVE (target 2)
+==============================================================================
+glob python/synapse/panel/**/*.py (worktree) -> 90 files
+<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+rows emitted          : 90
+imported OK           : 90/90
+__file__ in repo      : 90/90
+loaded from MAIN tree : 90/90
+sha_match (disk==getsource) : 90/90
+worktree==loaded bytes      : 90/90
+  ACCEPTANCE [pass] EXHAUSTIVE: glob-count == results-row-count
+  ACCEPTANCE [pass] every panel module imports under hython with __file__ in the repo and disk==imported sha (byte-for-byte parity w/ branch)
+
+==============================================================================
+SECTION 3 — PYPANEL SHIM FIDELITY (target 3)
+==============================================================================
+pypanel parsed        : c:/users/user/synapse/houdini/python_panels/synapse_panel.pypanel
+pypanel main==worktree bytes: True
+CDATA script chars    : 2555
+Qt binding / platform : PySide6 / offscreen
+flush evicted synapse.__parity_sentinel__ : True
+flush popped bare 'synapse'               : True
+control (non-synapse) sentinel survived   : True
+onCreateInterface defined / aliased       : True / True
+calling onCreateInterface() ...
+widget class / module : SynapsePanel / synapse.panel.synapse_panel
+widget file           : c:/users/user/synapse/python/synapse/panel/synapse_panel.py
+widget from repo file : True
+fresh re-import (id changed across flush): True
+  ACCEPTANCE [pass] pypanel shim exec builds the widget from repo modules offscreen; flush sentinel evicted (synapse.* evicted, non-synapse survives)
+
+==============================================================================
+SECTION 4 — BEHAVIOR PINS ON THE LIVE BUILT WIDGET (target 4)
+==============================================================================
+R1 'Larger text' next_font_scale @ src line : 1950
+R1 _cycle_font_scale next_font_scale @ line  : 2091
+R1 double-site present                       : True
+  ACCEPTANCE [pass] R1 double-site wiring: next_font_scale at BOTH the 'Larger text' action and _cycle_font_scale (commit 4c1134d8)
+next_font_scale(default, 1.3)   : 1.3  (>= 1.3: True)
+host_floored_steps(1.3)         : [1.3, 1.4, 1.6]
+never drops below host (7 seeds x8): True
+  ACCEPTANCE [pass] tokens.next_font_scale first step from host 1.3 is >= 1.3 (and no reachable state drops below the host floor)
+chat_leading_px()      : 1.0
+laid-out lines         : 12
+doc height baseline/led: 176.0 / 188.0
+delta (px)             : 12.0  (target +12.0px +/-0.5: True)
+  ACCEPTANCE [pass] chat leading on 12 inserted lines grows document height by 12px +/- 0.5 (W5-PANEL measured-effective method)
+live ChatDisplay carries LineDistanceHeight==chat_leading_px : True (via built SynapsePanel._chat)
+
+==============================================================================
+VERDICT
+==============================================================================
+pass=7 fail=0 unknown=0 -> green
+results.json written: c:/users/user/synapse/.claude/worktrees/w5-parity/harness/probes/parity_modules/results.json
+PROBE_COMPLETE

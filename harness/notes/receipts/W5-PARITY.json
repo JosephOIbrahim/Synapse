@@ -1,0 +1,74 @@
+{
+  "leg": "W5-PARITY",
+  "status": "green",
+  "band": "BUILD",
+  "name": "panel parity 1/2: prove every module the panel executes is the repo copy, byte-for-byte, under the real hython",
+  "product_head": "10bd549593cc78c4e6f171fa3070b72e2ed45de8",
+  "recipe": {
+    "hython": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+    "env": {"HOUDINI_USER_PREF_DIR": "C:/Users/User/OneDrive/Documents/houdini22.0", "QT_QPA_PLATFORM": "offscreen"},
+    "hython_exit": 0,
+    "load_proof": "hou 22.0.400; HOUDINI_PATH contains C:/Users/User/SYNAPSE/houdini; main-tree python/ on sys.path (deployed package hard-codes SYNAPSE_ROOT=C:/Users/User/SYNAPSE)"
+  },
+  "product": [
+    "harness/probes/parity_modules/probe_parity.py",
+    "harness/probes/parity_modules/results.json",
+    "harness/probes/parity_modules/hython_stdout.txt"
+  ],
+  "acceptance": [
+    {
+      "predicate": "every python/synapse/panel module imports under hython with __file__ in the repo and disk==imported sha, exhaustively (glob count == row count)",
+      "verdict": "pass",
+      "evidence": "probe: glob 90 == 90 rows; 90/90 imported, __file__ in repo, loaded_tree=main, sha_match, AND worktree bytes == loaded bytes (cross-tree raw-byte parity). results.json:sections.s2_modules ; hython_stdout.txt Section 2. Independently reproduced by crucible (find=90 both trees, distinct inodes)."
+    },
+    {
+      "predicate": "pypanel shim exec builds the widget from repo modules offscreen; flush sentinel evicted",
+      "verdict": "pass",
+      "evidence": "probe: CDATA of houdini/python_panels/synapse_panel.pypanel exec'd under offscreen PySide6; flush evicted synapse.__parity_sentinel__ (True), popped bare 'synapse' (True), non-synapse control survived (True); fresh re-import id changed across the flush (proves the REAL synapse.panel.synapse_panel object was evicted+rebuilt, not just the sentinel); onCreateInterface() returned SynapsePanel from synapse.panel.synapse_panel (repo file), NOT the error-fallback QPlainTextEdit. results.json:sections.s3_pypanel ; hython_stdout.txt Section 3."
+    },
+    {
+      "predicate": "R1 double-site wiring + font-floor step + leading delta measured on the live widget",
+      "verdict": "pass",
+      "evidence": "probe/test on the loaded module (main tree == branch da6d2b33; panel git diff empty): R1 next_font_scale at BOTH the 'Larger text' action (synapse_panel.py src line 1950) and _cycle_font_scale (2091) [commit 4c1134d8]; next_font_scale(FONT_SCALE_DEFAULT,1.3)=1.3 (>=1.3), ladder (1.3,1.4,1.6), 7 seeds x8 never drop below host; chat leading grows the QTextDocument 176.0->188.0 = +12.0px across 12 lines (documentLayout().documentSize().height(), W5-PANEL method), and the live built SynapsePanel._chat carries LineDistanceHeight==chat_leading_px()==1.0. results.json:sections.s4_behavior ; hython_stdout.txt Section 4."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "The design panel IS 1:1 with the repo. Under the real hython the live panel loads the MAIN tree (deployed package SYNAPSE_ROOT=C:/Users/User/SYNAPSE, master 22019f52); branch da6d2b33 == master on all 90 python/synapse/panel/**.py (git diff empty), and worktree bytes == loaded bytes for all 90 modules. The 'master da6d2b33' behavior anchor is therefore byte-equal to the code the panel runs.",
+      "anchor": "harness/probes/parity_modules/results.json:sections.s2_modules (90/90 worktree_matches_loaded=true)"
+    },
+    {
+      "claim": "The 'stale after relaunch' concern is DISPROVEN at the code/module layer. The pypanel flush provably evicts every synapse.* module and forces a fresh disk re-import on relaunch (module id changed across the flush; non-synapse control survived, so the flush is scoped, not a blanket nuke). A panel relaunch cannot serve a stale in-memory panel module.",
+      "anchor": "houdini/python_panels/synapse_panel.pypanel:36-38 ; results.json:sections.s3_pypanel.fresh_reimport=true"
+    },
+    {
+      "claim": "HONEST SCOPE LIMIT (out of scope, Joe's seat): this proves the flush mechanism + code parity HEADLESS. It does NOT reproduce a live long-lived Houdini GUI session's actual panel close/reopen, and GUI pixel render is out of scope by mandate. If Joe still observes 'stale' from the live seat, it is NOT module divergence (disproven) and NOT a missing flush (disproven) — the next place to look is Houdini's own pane/panel-definition caching or a pinned pane that does not re-invoke onCreateInterface() on reopen.",
+      "anchor": "brief target 5 (gui pixel render out of scope) ; spawn W5-PARITY-LIVEREOPEN below"
+    },
+    {
+      "claim": "Two-tree deployment reality (observation, non-blocking): the deployed package points the live panel at the MAIN tree, so panel edits made in a worktree are NOT what the live panel runs until merged to master. Relevant for any future panel-parity work that edits panel/ in a worktree and expects the running panel to reflect it.",
+      "anchor": "C:/Users/User/OneDrive/Documents/houdini22.0/packages/synapse.json (SYNAPSE_ROOT=C:/Users/User/SYNAPSE)"
+    },
+    {
+      "claim": "Independently crucible-verified CONFIRMED-SOUND: denominator genuinely exhaustive (90==90 reproduced on both trees), byte-parity is a real cross-tree comparison (distinct inodes, empty branch<->master panel diff), the flush evicts the real module (id change), the real SynapsePanel is built (not the fallback). Two cosmetic notes (docstring scope overreach; sha_match near-tautological alone) were applied before the product commit.",
+      "anchor": "harness/probes/parity_modules/probe_parity.py docstring SCOPE + results.json:sections.s2_modules.parity_signal"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": [
+    {
+      "id": "W5-PARITY-LIVEREOPEN",
+      "band": "BUILD",
+      "class": "gui_probe",
+      "name": "panel parity 3/3: live GUI close/reopen serves a fresh disk re-import (Joe's seat)",
+      "spawn_classes": ["gui_probe"],
+      "readonly": false,
+      "note": "Closes the one gap this leg leaves out of scope: headless proved the pypanel flush RUNS, evicts synapse.*, and forces a fresh re-import; a real long-lived Houdini GUI session close/reopen was not exercised. From the live seat, edit a synapse.panel module, reopen the panel, and confirm the edit appears with no Houdini restart. gui_probe is outside W5-PARITY's spawn_classes (['probe']) — lands held for Joe."
+    }
+  ],
+  "crucible_criteria_met": [
+    "no claim without observation: every acceptance carries first-hand hython stdout (hython_stdout.txt) committed alongside results.json",
+    "exhaustiveness is a measured number: glob count 90 asserted == results row count 90 (results.json:sections.s2_modules)",
+    "receipt is this leg's own closing commit; product committed first (HEAD 10bd5495, ahead>=1) then the receipt; RELEASE posted on the bus"
+  ]
+}
