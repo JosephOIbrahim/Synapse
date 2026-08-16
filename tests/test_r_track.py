@@ -231,12 +231,64 @@ def test_runtime_heartbeat_red_when_deleted_without_replacement(tmp_path):
 
 
 def test_runtime_heartbeat_green_with_runtime_owner(tmp_path):
+    # Structural GREEN: owner marker present, panel clean, and the tree is NOT a full
+    # synapse package (no python/synapse/__init__.py) — so W6-BEAT's behavioural leg
+    # correctly reports N/A and the two grep legs stand. The behavioural discrimination
+    # (hollow vs live) is pinned below and in tests/test_w6_beat_runtime_heartbeat.py.
     _plant(tmp_path, "python/synapse/panel/synapse_panel.py", "class SynapsePanel: pass\n")
     _plant(tmp_path, "python/synapse/server/freeze_chain.py",
            "# RUNTIME_BEAT_SOURCE — process-lifetime beat owner\n"
            "def ensure_beat_started():\n    pass\n")
     res = _run("runtime_owns_heartbeat", _ctx(tmp_path))
     assert res["ok"] is True
+    assert "behavioural proof N/A" in res["detail"]  # not a full package -> structural stands
+
+
+# ---------------- runtime_owns_heartbeat behavioural leg (W6-BEAT / S3 · closes F5) ----------------
+# On a FULL package tree the gate stops trusting the marker string and exercises the
+# beat: the behavioural proof (_beat_behaviour_proof) drives the worktree owner against
+# a real FreezeChain in a subprocess. These pin the gate's DECISION WIRING — that it
+# consults that proof and RED-s on a hollow verdict — with the proof itself stubbed so
+# the unit is deterministic (the proof's real hollow/live discrimination is proven
+# first-hand + in tests/test_w6_beat_runtime_heartbeat.py).
+
+def _plant_full_beat_pkg(tmp_path):
+    _plant(tmp_path, "python/synapse/__init__.py", "")
+    _plant(tmp_path, "python/synapse/panel/synapse_panel.py", "class SynapsePanel: pass\n")
+    _plant(tmp_path, "python/synapse/server/runtime_beat.py",
+           "# RUNTIME_BEAT_SOURCE\ndef ensure_beat_started():\n    return False\n")
+
+
+def test_runtime_heartbeat_behavioural_red_on_hollow_beat(tmp_path, monkeypatch):
+    # The S3/F5 regression: the marker strings are intact (both grep legs pass) but the
+    # beat is hollow. beaten_stays_healthy=False MUST read RED — a marker is not a beat.
+    _plant_full_beat_pkg(tmp_path)
+    monkeypatch.setattr(checks, "_beat_behaviour_proof",
+                        lambda ctx: (True, False, "beaten_stays_healthy=False, stalled_escalates=True"))
+    res = _run("runtime_owns_heartbeat", _ctx(tmp_path))
+    assert res["ok"] is False
+    assert "HOLLOW" in res["detail"]
+
+
+def test_runtime_heartbeat_behavioural_green_on_live_beat(tmp_path, monkeypatch):
+    _plant_full_beat_pkg(tmp_path)
+    monkeypatch.setattr(checks, "_beat_behaviour_proof",
+                        lambda ctx: (True, True, "beaten_stays_healthy=True, stalled_escalates=True"))
+    res = _run("runtime_owns_heartbeat", _ctx(tmp_path))
+    assert res["ok"] is True
+    assert "behavioural" in res["detail"]
+
+
+def test_runtime_heartbeat_inconclusive_proof_keeps_structural_green(tmp_path, monkeypatch):
+    # Behaviour genuinely unmeasurable (env can't import the package under test): the
+    # structural facts stand with an honest INCONCLUSIVE note — never a faked pass and
+    # never a flaky RED.
+    _plant_full_beat_pkg(tmp_path)
+    monkeypatch.setattr(checks, "_beat_behaviour_proof",
+                        lambda ctx: (False, False, "no BEHAVIOR sentinel (rc=1): ModuleNotFoundError"))
+    res = _run("runtime_owns_heartbeat", _ctx(tmp_path))
+    assert res["ok"] is True
+    assert "INCONCLUSIVE" in res["detail"]
 
 
 # ---------------- hot_reload_gated (R.3 / P0.4) ----------------

@@ -1940,6 +1940,95 @@ def check_mutation_fail_closed(ctx):
     return {"ok": True, "detail": "no fail-open mutation path: ImportError fallbacks + the "
                                   "bridge-None direct dispatch are gone"}
 
+# W6-BEAT / S3 (was W5-LCRUX F5): the behavioural half of check_runtime_owns_heartbeat.
+# A marker string is not a beat. This snippet imports the WORKTREE's owner + freeze_chain in
+# a child process and PROVES the beat behaves: (GREEN) after arming a real FreezeChain with one
+# beat, driving the process-lifetime beat via the OWNER (beat_once) keeps it fed — no escalation;
+# (RED) a stalled chain still escalates, so GREEN's "did not escalate" is not vacuous. A hollow
+# owner (RUNTIME_BEAT_SOURCE comment with a dead beat) makes beaten_stays_healthy=False -> the
+# gate reads RED even though the grep legs pass. The arming beat is essential: resilience.Watchdog
+# is lazy — an unbeaten watchdog never starts monitoring, so a never-fed hollow owner would read
+# healthy vacuously without it. Pinned first-hand by tests/test_w6_beat_runtime_heartbeat.py.
+_BEAT_PROOF_SNIPPET = '''
+import json, sys, time
+try:
+    from synapse.server import runtime_beat as rb
+    from synapse.server import freeze_chain as fc
+except Exception as e:
+    print("BEHAVIOR_IMPORT_ERR " + type(e).__name__ + ": " + str(e)[:200]); sys.exit(0)
+# Hermetic: neutralise the acting half so escalation is observable with zero side effects.
+fc._peek_transport_breaker = lambda: None
+fc._peek_active_bridge = lambda: None
+try:
+    import synapse.server.emergency_live as _el
+    _el.emergency_halt_live = lambda **k: {"pending_dispatches_cancelled": 0, "main_thread_holder": None}
+except Exception:
+    pass
+try:
+    import synapse.server.telemetry_dump as _td
+    _td.flush_telemetry = lambda **k: None
+except Exception:
+    pass
+def _short():
+    return fc.FreezeChain(escalate_after=0.5, heartbeat_interval=0.03, freeze_threshold=0.25)
+result = {"beaten_stays_healthy": False, "stalled_escalates": False}
+if hasattr(rb, "reset_for_test"):
+    rb.reset_for_test()
+# GREEN leg: arm the lazy watchdog with one real beat, then drive ONLY via the owner.
+chain = _short(); fc.beat = chain.heartbeat
+try:
+    chain.heartbeat()
+    healthy = True; end = time.time() + 1.0
+    while time.time() < end:
+        rb.beat_once()
+        if chain.escalated:
+            healthy = False; break
+        time.sleep(0.03)
+    result["beaten_stays_healthy"] = bool(healthy and not chain.escalated)
+finally:
+    chain.stop()
+# RED leg: prove escalation IS reachable when the beat stops.
+chain2 = _short(); fc.beat = chain2.heartbeat
+try:
+    chain2.heartbeat()
+    deadline = time.time() + 6.0
+    while time.time() < deadline and not chain2.escalated:
+        time.sleep(0.02)
+    result["stalled_escalates"] = bool(chain2.escalated and chain2.is_frozen)
+finally:
+    chain2.stop()
+print("BEHAVIOR " + json.dumps(result))
+'''
+
+def _beat_behaviour_proof(ctx):
+    """Exercise the worktree's runtime-beat owner BEHAVIOURALLY in a subprocess and return
+    (ran, behaves, detail). Isolation: the FreezeChain threads + any module patching live in
+    the child, never in this process. Imports the WORKTREE's synapse via _wt_env, so a hollow
+    owner in the tree UNDER TEST — not the dev machine's real module — is what gets proven.
+    Mirrors the check_suite_baseline / hython() subprocess idiom; the beat path is pure-Python
+    (no hou, no Qt) so stock python runs it. Warnings/logs go to stderr; the BEHAVIOR sentinel
+    is the only stdout line parsed."""
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False, encoding="utf-8") as f:
+        f.write(_BEAT_PROOF_SNIPPET); path = f.name
+    try:
+        rc, out, err = sh([sys.executable, path], cwd=ctx["wt"], env=_wt_env(ctx), timeout=90)
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+    line = next((l for l in out.splitlines() if l.startswith("BEHAVIOR ")), None)
+    if line is None:
+        tail = (out.strip().splitlines() or err.strip().splitlines() or ["no output"])[-1]
+        return False, False, f"no BEHAVIOR sentinel (rc={rc}): {tail[:200]}"
+    try:
+        data = json.loads(line[len("BEHAVIOR "):])
+    except Exception as e:
+        return False, False, f"unparseable BEHAVIOR sentinel: {str(e)[:120]}"
+    beaten = bool(data.get("beaten_stays_healthy"))
+    stalled = bool(data.get("stalled_escalates"))
+    return True, (beaten and stalled), f"beaten_stays_healthy={beaten}, stalled_escalates={stalled}"
+
 def check_runtime_owns_heartbeat(ctx):
     # R.2 (review P0.3): the 1s freeze beat is a QTimer parented to the SynapsePanel widget —
     # close the panel, lose the beat; WORSE (sweep refinement): the Watchdog monitor thread
@@ -1972,9 +2061,32 @@ def check_runtime_owns_heartbeat(ctx):
             "panel-parented beat timer is gone but NO process-lifetime beat owner exists under "
             "python/synapse/server/ (`# RUNTIME_BEAT_SOURCE` marker or def ensure_beat_started) "
             "— freeze protection was removed, not relocated")[:500]}
-    return {"ok": True, "detail": "freeze beat owned by a process-lifetime service "
-                                  "(RUNTIME_BEAT_SOURCE under server/); panel no longer "
-                                  "constructs the beat timer"}
+    # leg 3 (W6-BEAT / S3 · closes F5): the two legs above are STRUCTURAL (grep for the panel
+    # literal / for the owner marker). This one is BEHAVIOURAL — a marker is not a beat. It runs
+    # the owner against a real FreezeChain (subprocess, worktree package) and reads RED if the
+    # beat is hollow, so a regression that keeps the marker strings but breaks the beat no longer
+    # greens. Only engages on a full package tree (synthetic fingerprint fixtures can't be run).
+    full_pkg = ((server_dir.parent / "__init__.py").is_file()
+                and (server_dir / "runtime_beat.py").is_file())
+    if not full_pkg:
+        return {"ok": True, "detail": "structural: process-lifetime owner marker present under "
+                                      "server/ and panel does not own the beat (behavioural proof "
+                                      "N/A — worktree is not a full synapse package tree)"}
+    ran, behaves, bdetail = _beat_behaviour_proof(ctx)
+    if not ran:
+        # Behaviour genuinely unmeasurable here (env can't import the package). Structural facts
+        # stand; disclosed as inconclusive, never faked green and never a flaky RED. The behaviour
+        # is exercised first-hand by tests/test_w6_beat_runtime_heartbeat.py.
+        return {"ok": True, "detail": ("structural GREEN (owner marker present, panel clean); "
+                f"behavioural proof INCONCLUSIVE — {bdetail}")[:500]}
+    if not behaves:
+        return {"ok": False, "detail": ("OWNER MARKER PRESENT BUT THE BEAT IS HOLLOW — " + bdetail
+                + ". A `# RUNTIME_BEAT_SOURCE` marker is not a beat: beat_once() must keep a real "
+                "FreezeChain fed and a stalled chain must still escalate (S3/F5, W6-BEAT)")[:500]}
+    return {"ok": True, "detail": "behavioural: beat_once() keeps a real FreezeChain fed (no "
+                                  "escalation) and a stalled chain still escalates — the process-"
+                                  "lifetime beat is live, not just a `# RUNTIME_BEAT_SOURCE` "
+                                  "marker string (S3/W6-BEAT closes W5-LCRUX F5)"}
 
 def check_hot_reload_gated(ctx):
     # R.3 (review P0.4): both .pypanel loaders purge sys.modules['synapse.*'] UNCONDITIONALLY
