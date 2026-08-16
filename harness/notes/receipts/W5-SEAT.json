@@ -1,0 +1,108 @@
+{
+  "leg": "W5-SEAT",
+  "name": "panel parity 2/2: prove the seat resolution order - package, hpath, icons, and zero shadow installs",
+  "band": "BUILD",
+  "status": "green_with_findings",
+  "product_head": "5a2f0bd40952a1b1fa4f627e6332a1dcb963c293",
+  "branch": "wave5/seat",
+  "base": "da6d2b33e86e37ce6914fb737135656b62c5813f",
+  "probe": "harness/probes/parity_seat/probe_seat.py",
+  "evidence_artifacts": [
+    "harness/probes/parity_seat/results.json",
+    "harness/probes/parity_seat/hython_stdout.txt",
+    "harness/probes/parity_seat/README.md"
+  ],
+  "ran_under": {
+    "hython": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+    "houdini_build": "22.0.400 (proven via hou.applicationVersion())",
+    "prefs_dir": "C:/Users/User/OneDrive/Documents/houdini22.0",
+    "python": "3.13.10",
+    "env_recipe": "env -u SYNAPSE_ROOT -u HOUDINI_PACKAGE_DIR HOUDINI_USER_PREF_DIR=C:/Users/User/OneDrive/Documents/houdini22.0 hython probe_seat.py --expect-root C:/Users/User/SYNAPSE",
+    "recipe_note": "SYNAPSE_ROOT + HOUDINI_PACKAGE_DIR unset on purpose so the package can ONLY load through the prefs-dir package scan - the GUI seat mechanism, not a parent-env leak"
+  },
+  "acceptance": [
+    {
+      "predicate": "package + hpath resolve to the repo under hython with the live prefs dir, first-hand",
+      "verdict": "pass",
+      "evidence": "T1: SYNAPSE_ROOT=C:/Users/User/SYNAPSE (set by prefs-dir packages/synapse.json, present=True); <repo>/houdini on hou.houdiniPath() at idx 8 of 17. results.json:targets.T1_package_hpath ; hython_stdout.txt 'T1 verdict: PASS'"
+    },
+    {
+      "predicate": "all 7 icons + shelf file resolve via hou.findFile into the repo; count asserted",
+      "verdict": "pass",
+      "evidence": "T2: icon_count==7 (incl. SYNAPSE_synapse.png @2dd6bab6); toolbar/synapse.shelf + all 7 config/Icons/SYNAPSE_*.png hou.findFile-resolve to C:/Users/User/SYNAPSE/houdini/... (inside repo). Raw findFile stdout in hython_stdout.txt T2; results.json:targets.T2_resources.findfile_checks"
+    },
+    {
+      "predicate": "zero shadow synapse installs; sys.path order proven with indices",
+      "verdict": "pass",
+      "evidence": "T3: repo/python is the first IMPORTABLE `synapse` provider (sys.path idx 7; find_spec resolves there); shadow_count=0; metadata_shadows=0. 2 lower-index namespace dirs (idx 5 worktree, idx 6 repo-root; no __init__.py) and 2 repo-own dist-info are recorded, NOT shadows. results.json:targets.T3_shadow_sweep"
+    }
+  ],
+  "targets_summary": {
+    "T1_package_hpath": "PASS",
+    "T2_resources": "PASS",
+    "T3_shadow_sweep": "PASS",
+    "T4_multibuild": "recorded; GUI-launch build UNKNOWN (honest gap)",
+    "T5_pypanel_flush": "PASS (findFile-resolved pypanel, flush block L37-38, 0 shadow pypanels; gates the verdict)"
+  },
+  "findings": [
+    {
+      "claim": "multi-build: which 22.0.x build Joe's GUI launched is UNKNOWN",
+      "detail": "5 installed 22.x builds (22.0.368/397/400/406/413) all map to the single houdini22.0 prefs dir and overwrite it on launch; no prefs/log artifact (houdini.log/logs/hversion/version) binds a GUI launch to a specific build. Probe ran under 22.0.400 (proven), which is NOT evidence of the GUI's build.",
+      "anchor": "results.json:targets.T4_multibuild ; hython_stdout.txt T4",
+      "severity": "honest-gap"
+    },
+    {
+      "claim": "hygiene: 2 duplicate editable-install dist-info in repo/python both provide top-level `synapse`",
+      "detail": "synapse 5.2.0 + synapse-houdini 5.8.0, both located inside C:/Users/User/SYNAPSE/python - repo's OWN metadata, so NOT shadow installs (shadow_count=0); stale, worth a prune. (Also note: both versions trail the project header v5.50.0 - VERSION is human-gated, flagged for awareness only.)",
+      "anchor": "results.json:targets.T3_shadow_sweep.metadata_repo_own",
+      "severity": "hygiene"
+    },
+    {
+      "claim": "hygiene: 2 stale non-json synapse sidecars in the seat packages dir",
+      "detail": "synapse.json.bak-115750, synapse.json.bom-bak - not *.json, so Houdini never scans them (no shadow); safe to prune.",
+      "anchor": "results.json:targets.T4_multibuild.seat_synapse_sidecars_ignored",
+      "severity": "hygiene"
+    },
+    {
+      "claim": "note: 2 lower-index `synapse/` namespace dirs on sys.path (no __init__.py)",
+      "detail": "idx 5 (worktree root) + idx 6 (repo root) each hold a non-Python `synapse/` dir; non-importable namespace portions, so the repo/python regular package (idx 7) wins the import (find_spec-confirmed). NOT shadows - recorded so the 'order with indices' claim is honest: repo/python is the lowest IMPORTABLE index, not the lowest synapse-named index.",
+      "anchor": "results.json:targets.T3_shadow_sweep.lower_index_namespace_dirs",
+      "severity": "note"
+    }
+  ],
+  "crucible": {
+    "pass": "adversarial review (crucible agent) attacked the probe reasoning; verdict CLEAN core claim, 5 bounded overclaims - all fixed in-code before commit",
+    "fixes": [
+      "T3 namespace-aware sweep: lower-index synapse/ dirs now detected + reported; order claim scoped to importable providers (was find_spec-lucky, headline was literally false)",
+      "T5 now resolves the pypanel via hou.findFile (authoritative) + sweeps HOUDINI_PATH for shadow pypanels + gates the verdict (was direct-path read, ungated)",
+      "T1 records the producer (prefs synapse.json) on the PASS path, not just on fail",
+      "acceptance-C evidence string now includes find_spec_is_repo + metadata_shadows"
+    ]
+  },
+  "for_ruling": [
+    "Multi-build GUI-launch build stays UNKNOWN by construction - closed only at Joe's seat (launch 22.0.400 explicitly, or add a per-build launch marker). No guess was recorded."
+  ],
+  "spawn": [
+    {
+      "id": "W5-SEAT-HYGIENE",
+      "band": "BUILD",
+      "class": "hygiene",
+      "name": "prune stale synapse dist-info + prefs sidecars flagged by W5-SEAT (held - class outside probe)",
+      "source": {"doc": "harness/probes/parity_seat/results.json", "anchor": "T3.metadata_repo_own + T4.seat_synapse_sidecars_ignored"},
+      "targets": [
+        "verify the two dist-info in repo/python (synapse 5.2.0, synapse-houdini 5.8.0) are untracked editable-install artifacts, then remove the stale one(s) so a single canonical dist-info remains",
+        "prune the two non-json sidecars in the prefs packages dir (synapse.json.bak-115750, synapse.json.bom-bak)"
+      ],
+      "readonly": false,
+      "note": "none are shadows (probe shadow_count=0); pure hygiene. Not class 'probe', so lands held for Joe."
+    }
+  ],
+  "bus": {
+    "claim": "posted 2026-08-16T14:23:41 (parity_seat/ files; disjoint from W5-PARITY parity_modules/)",
+    "findings": [
+      "to W5-PARITY: verified hython path + env recipe (first-hand)",
+      "to *: seat proven 1:1 to repo (T1/T2/T3/T5 PASS, multi-build UNKNOWN)"
+    ],
+    "release": "posted at close (see status/release on wave5 bus)"
+  }
+}
