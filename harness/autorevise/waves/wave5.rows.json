@@ -302,5 +302,117 @@
       "harness/probes/parity_seat/"
     ],
     "note": "AUTOREVISE harness/notes/h22/panel-observations-2026-08-16.md :: Joe word 2026-08-16: verify 1:1 with repo; the load path must be proven, not assumed. Disjoint claim from W5-PARITY (parity_seat/ vs parity_modules/). Together they define '1:1 with repo' as: repo-sourced modules, byte-equal, resolved first, no shadows, resources from hpath."
+  },
+  {
+    "id": "W6-BEAT",
+    "name": "hardening 3/5: behavioral heartbeat pin - the runtime beat proven by killing the panel, not by grep (spawn W5-LCRUX-S1)",
+    "state": "ready",
+    "receipt": "W6-BEAT.json",
+    "branch": "wave6/beat",
+    "base": "master",
+    "worktree": ".claude/worktrees/w6-beat",
+    "prompt": "harness/autorevise/prompts/W6-BEAT.md",
+    "deps": [
+      "W6-FORGE"
+    ],
+    "readonly": false,
+    "touches": [
+      "server/",
+      "tests/"
+    ],
+    "note": "AUTOREVISE harness/notes/receipts/ :: Joe word 2026-08-16: hardening pass from first principles - failure history becomes enforced gates. Folded HELD spawn W5-LCRUX-S1 on Joe hardening directive - flagged for pull before unblock."
+  },
+  {
+    "id": "W6-FORGE",
+    "name": "hardening 0/5: mine every receipt, finding, and ruling into the canonical failure-class ledger",
+    "state": "ready",
+    "receipt": "W6-FORGE.json",
+    "branch": "wave6/forge",
+    "base": "master",
+    "worktree": ".claude/worktrees/w6-forge",
+    "prompt": "harness/autorevise/prompts/W6-FORGE.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/HARDENING-SPEC.md"
+    ],
+    "note": "AUTOREVISE harness/notes/receipts/ :: Joe word 2026-08-16: hardening pass from first principles - failure history becomes enforced gates. Team-lead leg (3-reader fan-out). The ledger is the first-principles artifact: standards derived from lived failures."
+  },
+  {
+    "id": "W6-GATE",
+    "name": "hardening 4/5: receipt-is-closing-commit and bus-RELEASE become enforced orchestrator close gates (spawn W5-HCRUX-GATE)",
+    "state": "ready",
+    "receipt": "W6-GATE.json",
+    "branch": "wave6/gate",
+    "base": "master",
+    "worktree": ".claude/worktrees/w6-gate",
+    "prompt": "harness/autorevise/prompts/W6-GATE.md",
+    "deps": [
+      "W6-FORGE"
+    ],
+    "readonly": false,
+    "touches": [
+      "harness/orchestrate.ps1",
+      "harness/autorevise/bus.py",
+      "tests/"
+    ],
+    "note": "AUTOREVISE harness/notes/receipts/ :: Joe word 2026-08-16: hardening pass from first principles - failure history becomes enforced gates. Folded HELD spawn W5-HCRUX-GATE on Joe hardening directive - flagged for pull before unblock."
+  },
+  {
+    "id": "W6-HCRX",
+    "name": "hardening crucible: attack the new gates - metachar names, bypass attempts, behavior regressions",
+    "state": "ready",
+    "receipt": "W6-HCRX.json",
+    "branch": "wave6/hcrx",
+    "base": "master",
+    "worktree": ".claude/worktrees/w6-hcrx",
+    "prompt": "harness/autorevise/prompts/W6-HCRX.md",
+    "deps": [
+      "W6-QUOTE",
+      "W6-PROV",
+      "W6-BEAT",
+      "W6-GATE"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "AUTOREVISE harness/SPEC.md :: house rule: CRUX before merge; the attack list is the FORGE ledger (harness/HARDENING-SPEC.md, produced in-wave by W6-FORGE). Merge remains Joe word per leg. This wave IS the production-standard pass: history -> ledger -> gates -> attack."
+  },
+  {
+    "id": "W6-PROV",
+    "name": "hardening 2/5: wire provenance_not_bypassed from warn-only to fail-closed",
+    "state": "ready",
+    "receipt": "W6-PROV.json",
+    "branch": "wave6/prov",
+    "base": "master",
+    "worktree": ".claude/worktrees/w6-prov",
+    "prompt": "harness/autorevise/prompts/W6-PROV.md",
+    "deps": [
+      "W6-FORGE"
+    ],
+    "readonly": false,
+    "touches": [
+      "harness/verify/",
+      "tests/"
+    ],
+    "note": "AUTOREVISE harness/notes/receipts/ :: Joe word 2026-08-16: hardening pass from first principles - failure history becomes enforced gates."
+  },
+  {
+    "id": "W6-QUOTE",
+    "name": "hardening 1/5: kill the injection class - audit and sanitize every uncontrolled string entering a quoted context",
+    "state": "ready",
+    "receipt": "W6-QUOTE.json",
+    "branch": "wave6/quote",
+    "base": "master",
+    "worktree": ".claude/worktrees/w6-quote",
+    "prompt": "harness/autorevise/prompts/W6-QUOTE.md",
+    "deps": [
+      "W6-FORGE"
+    ],
+    "readonly": false,
+    "touches": [
+      "harness/",
+      "tests/test_harness_quoting.py"
+    ],
+    "note": "AUTOREVISE harness/notes/receipts/ :: Joe word 2026-08-16: hardening pass from first principles - failure history becomes enforced gates."
   }
 ]

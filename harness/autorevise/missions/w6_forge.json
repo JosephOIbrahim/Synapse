@@ -1,0 +1,40 @@
+{
+  "id": "W6-FORGE",
+  "band": "BUILD",
+  "class": "build",
+  "name": "hardening 0/5: mine every receipt, finding, and ruling into the canonical failure-class ledger",
+  "source": {
+    "doc": "harness/notes/receipts/",
+    "anchor": "Joe word 2026-08-16: hardening pass from first principles - failure history becomes enforced gates"
+  },
+  "targets": [
+    "1) TEAM LEAD - use Agent Teams: fan 3 parallel readers over (a) harness/notes/receipts/**, (b) all *_verdict.md + crux rulings + harness/SPEC.md + rsi/SPEC.md, (c) git log --grep for fix/caught/violation on harness paths. HOLD YOUR TURN while teammates run; do not conclude until all three report.",
+    "2) synthesize harness/HARDENING-SPEC.md: one row per failure CLASS (not instance) - name, first occurrence, instances, current defense (wired gate / warn-only / prose-only / none), target gate, owner surface. Known seeds you must place, then extend: unquoted interpolation (2026-07-26 prompt truncation + 2026-08-16 name parse bomb), unwired provenance guardrail, grep-only heartbeat check, receipt-without-commit (CRX0), missing bus RELEASE (LCRUX F2/F3), claim-without-observation family (face_token), UNKNOWN-laundering, PS 5.1 BOM/JSON landmines",
+    "3) publish the ledger row list to the bus addressed to W6-QUOTE/W6-PROV/W6-BEAT/W6-GATE - it is their shared spec",
+    "4) every row cites its evidence anchor (receipt path or commit) - a class without a lived instance is marked PREEMPTIVE, never invented history",
+    "5) BUS MANDATE: post claim at start, findings to peers as you resolve shared facts, explicit RELEASE at close. W6-GATE is making this enforceable - model it."
+  ],
+  "touches": [
+    "harness/HARDENING-SPEC.md"
+  ],
+  "deps": [],
+  "readonly": false,
+  "crucible_criteria": [
+    "every class row carries an evidence anchor; synthesis without citation is the exact defect this wave kills",
+    "receipt is own closing commit; RELEASE posted"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "HARDENING-SPEC.md exists with anchored class rows covering at least the 8 seeded classes plus any newly mined",
+      "evidence": "check"
+    },
+    {
+      "predicate": "bus message to all four builders with the row list",
+      "evidence": "probe"
+    }
+  ],
+  "note": "Team-lead leg (3-reader fan-out). The ledger is the first-principles artifact: standards derived from lived failures."
+}

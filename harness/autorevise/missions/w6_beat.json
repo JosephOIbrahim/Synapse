@@ -1,0 +1,43 @@
+{
+  "id": "W6-BEAT",
+  "band": "BUILD",
+  "class": "build",
+  "name": "hardening 3/5: behavioral heartbeat pin - the runtime beat proven by killing the panel, not by grep (spawn W5-LCRUX-S1)",
+  "source": {
+    "doc": "harness/notes/receipts/",
+    "anchor": "Joe word 2026-08-16: hardening pass from first principles - failure history becomes enforced gates"
+  },
+  "targets": [
+    "1) read the LCRUX F5 finding and the W5-LIFE receipt: runtime_owns_heartbeat currently greens on source grep; replace the proof with behavior",
+    "2) test: start the runtime headless (server/runtime_beat.py + session_store.py surfaces from W5-LIFE), attach then destroy a panel-proxy object, assert the beat continues and the session store survives - the P0.3 contract exercised, not read",
+    "3) point the machine gate at the behavioral test so a future regression that keeps the strings but breaks the behavior reads RED",
+    "4) full relevant suite in worktree green; ratchet holds",
+    "5) BUS MANDATE: post claim at start, findings to peers as you resolve shared facts, explicit RELEASE at close. W6-GATE is making this enforceable - model it."
+  ],
+  "touches": [
+    "server/",
+    "tests/"
+  ],
+  "deps": [
+    "W6-FORGE"
+  ],
+  "readonly": false,
+  "crucible_criteria": [
+    "the pin must fail when the old panel-parented wiring is simulated - prove the test can catch the original defect",
+    "receipt is own closing commit; RELEASE posted"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "behavioral beat test: panel death, beat continues, session survives - first-hand",
+      "evidence": "test"
+    },
+    {
+      "predicate": "gate reads the behavior, not the grep; regression simulation fails RED",
+      "evidence": "probe"
+    }
+  ],
+  "note": "Folded HELD spawn W5-LCRUX-S1 on Joe hardening directive - flagged for pull before unblock."
+}

@@ -1,0 +1,44 @@
+{
+  "id": "W6-GATE",
+  "band": "BUILD",
+  "class": "build",
+  "name": "hardening 4/5: receipt-is-closing-commit and bus-RELEASE become enforced orchestrator close gates (spawn W5-HCRUX-GATE)",
+  "source": {
+    "doc": "harness/notes/receipts/",
+    "anchor": "Joe word 2026-08-16: hardening pass from first principles - failure history becomes enforced gates"
+  },
+  "targets": [
+    "1) read orchestrate.ps1 close/state region and bus.py; the mandate exists in prose and crux checks - make the state machine refuse it",
+    "2) a leg only transitions to done when: its receipt file exists on its branch, the receipt commit IS the branch HEAD, and a RELEASE line for its claim exists on the bus; otherwise state holds at closing with a Notify naming exactly what is missing",
+    "3) SPEC-surgical: wrap the existing state read, never rebuild it; dry-run must exercise the same checks",
+    "4) prove with a scratch leg that violates each condition in turn - three refusals, three exact messages, then a clean pass",
+    "5) BUS MANDATE: post claim at start, findings to peers as you resolve shared facts, explicit RELEASE at close. W6-GATE is making this enforceable - model it."
+  ],
+  "touches": [
+    "harness/orchestrate.ps1",
+    "harness/autorevise/bus.py",
+    "tests/"
+  ],
+  "deps": [
+    "W6-FORGE"
+  ],
+  "readonly": false,
+  "crucible_criteria": [
+    "coordinate with W6-QUOTE on the bus for any orchestrate.ps1 line overlap - GATE owns the close-state region only",
+    "three-refusal proof is first-hand stdout; receipt is own closing commit; RELEASE posted"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "done requires receipt==HEAD + RELEASE; three violation refusals with exact messages",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "clean leg passes the new gates end to end in dry-run",
+      "evidence": "test"
+    }
+  ],
+  "note": "Folded HELD spawn W5-HCRUX-GATE on Joe hardening directive - flagged for pull before unblock."
+}

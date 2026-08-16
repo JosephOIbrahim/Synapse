@@ -1,0 +1,48 @@
+{
+  "id": "W6-HCRX",
+  "band": "TRUTH",
+  "name": "hardening crucible: attack the new gates - metachar names, bypass attempts, behavior regressions",
+  "source": {
+    "doc": "harness/SPEC.md",
+    "anchor": "house rule: CRUX before merge; the attack list is the FORGE ledger (harness/HARDENING-SPEC.md, produced in-wave by W6-FORGE)"
+  },
+  "targets": [
+    "1) re-execute every builder acceptance independently or mark UNKNOWN with the exact blocked step - nothing inherited",
+    "2) QUOTE attack: your OWN adversarial name set (include combos the builder did not pick) through -DryRun; parser must stay clean",
+    "3) PROV attack: construct a fresh bypass the builder did not test; it must fail closed",
+    "4) BEAT attack: simulate the original panel-parented wiring; the behavioral pin must go RED",
+    "5) GATE attack: forge a receipt that is not HEAD and a close without RELEASE; both refused with exact messages",
+    "6) mandate table binary per leg; combined scratch-tree staging of all four products: ratchet vs base, guardrail_violations, HARDENING-SPEC rows each mapped to a now-wired defense or an honest open row",
+    "7) verdict harness/notes/receipts/W6-HCRX_verdict.md + W6-HCRX.json as own closing commit; drop flag harness/notes/h22/w6-landed.flag"
+  ],
+  "acceptance": [
+    {
+      "predicate": "per-leg verdicts with independent attack evidence; UNKNOWNs never laundered",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "ledger-to-defense mapping complete: every class row wired, ruled, or honestly open",
+      "evidence": "check"
+    },
+    {
+      "predicate": "mandate table incl. RELEASE check, binary per leg",
+      "evidence": "check"
+    }
+  ],
+  "deps": [
+    "W6-QUOTE",
+    "W6-PROV",
+    "W6-BEAT",
+    "W6-GATE"
+  ],
+  "readonly": true,
+  "touches": [],
+  "crucible_criteria": [
+    "carries CRX0 + wave5l precedents",
+    "unobtainable renders UNKNOWN, never zero, never estimate"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "note": "Merge remains Joe word per leg. This wave IS the production-standard pass: history -> ledger -> gates -> attack."
+}

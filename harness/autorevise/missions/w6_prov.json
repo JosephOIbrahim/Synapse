@@ -1,0 +1,43 @@
+{
+  "id": "W6-PROV",
+  "band": "BUILD",
+  "class": "build",
+  "name": "hardening 2/5: wire provenance_not_bypassed from warn-only to fail-closed",
+  "source": {
+    "doc": "harness/notes/receipts/",
+    "anchor": "Joe word 2026-08-16: hardening pass from first principles - failure history becomes enforced gates"
+  },
+  "targets": [
+    "1) read harness/verify/checks.py check_provenance_not_bypassed and call sites; document why ok:null since the R-track began",
+    "2) wire it fail-closed in task verdicts; any legitimate-exception path made explicit and test-pinned, never implicit-via-unwired",
+    "3) run full R.2 and R.7 in the worktree - provenance absent from guardrail_unwired, guardrail_violations [], suite ratchet holds",
+    "4) if wiring reveals genuine live-tree violations, record as anchored findings and STOP short of masking - a discovered red is a win",
+    "5) BUS MANDATE: post claim at start, findings to peers as you resolve shared facts, explicit RELEASE at close. W6-GATE is making this enforceable - model it."
+  ],
+  "touches": [
+    "harness/verify/",
+    "tests/"
+  ],
+  "deps": [
+    "W6-FORGE"
+  ],
+  "readonly": false,
+  "crucible_criteria": [
+    "fail-closed proven: a forced bypass in a scratch tree fails the task verdict, first-hand",
+    "receipt is own closing commit; RELEASE posted"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "R.2 + R.7 report provenance wired and enforced",
+      "evidence": "check"
+    },
+    {
+      "predicate": "scratch-tree bypass attempt fails closed",
+      "evidence": "probe"
+    }
+  ],
+  "note": ""
+}

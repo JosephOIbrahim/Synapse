@@ -1,0 +1,44 @@
+{
+  "id": "W6-QUOTE",
+  "band": "BUILD",
+  "class": "build",
+  "name": "hardening 1/5: kill the injection class - audit and sanitize every uncontrolled string entering a quoted context",
+  "source": {
+    "doc": "harness/notes/receipts/",
+    "anchor": "Joe word 2026-08-16: hardening pass from first principles - failure history becomes enforced gates"
+  },
+  "targets": [
+    "1) consume the FORGE ledger from the bus (or proceed on the seeded classes if not yet posted). Sweep harness/**/*.ps1 and harness/autorevise/**/*.py for interpolation of mission/leg/branch/user strings into PS quotes, git arguments, here-strings, and Say/Notify lines - todays safeName fix (orchestrate.ps1 ~L240) is the pattern to generalize",
+    "2) central helpers: a PS Sanitize-SQ function dot-sourced where needed and a python equivalent; replace ad-hoc fixes with them where surgical (never rebuild shipped code - wrap, do not rewrite)",
+    "3) tests/test_harness_quoting.py: adversarial leg names (apostrophe, backtick, dollar, double-quote, em-dash, unicode) driven through orchestrate.ps1 -DryRun - the generated temp runner must parse clean via the PS Language Parser for every name",
+    "4) lint pinned in tests: committed .ps1 under harness/ must not build inline -Command strings with unescaped interpolation; JSON writes BOM-free",
+    "5) BUS MANDATE: post claim at start, findings to peers as you resolve shared facts, explicit RELEASE at close. W6-GATE is making this enforceable - model it."
+  ],
+  "touches": [
+    "harness/",
+    "tests/test_harness_quoting.py"
+  ],
+  "deps": [
+    "W6-FORGE"
+  ],
+  "readonly": false,
+  "crucible_criteria": [
+    "every fixed site enumerated with before/after anchors; dry-run parser proof is first-hand stdout",
+    "no touch of checks.py provenance region (W6-PROV owns it) or orchestrate close-state region (W6-GATE owns it) - coordinate overlaps on the bus",
+    "receipt is own closing commit; RELEASE posted"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "adversarial-name dry-run matrix parses clean for all metachar names",
+      "evidence": "test"
+    },
+    {
+      "predicate": "site audit table committed; zero remaining unsanitized mission-string interpolations",
+      "evidence": "probe"
+    }
+  ],
+  "note": ""
+}
