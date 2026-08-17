@@ -38,3 +38,23 @@ Close the tab, keep the session. Undo everything. A panel that stops lying about
 g5 lifecycle re-run (Joe's hands) . g6-g9 . W5-UNDO-GUI live Ctrl+Z receipt (doubles as marquee
 demo) . drop.json (Joe-only write) . version bump across six surfaces . R.R Mode A . tag .
 GitHub Release.
+
+
+---
+
+## Addendum - 2026-08-16 late session (merged to master, CI green)
+
+**Panel parity proven.** An adversarial crucible independently re-executed both parity probes under real hython 22.0.400: all 90 panel modules load byte-identical from the repo, zero shadow installs, all seven icons + shelf resolve in-repo, and the pypanel exec/flush path genuinely re-imports fresh (import-masking ruled out). The live GUI seat was observed running 22.0.400 during the probe window.
+
+**Hardening wave (W6).** The failure-class ledger (`harness/HARDENING-SPEC.md`) mined every receipt and ruling into eight seeded classes plus newly-mined ones; four builders then moved the worst classes from prose to enforced gates, each proven RED-able on its original defect by the crucible:
+- Injection class killed: `Sanitize-SQ` + adversarial-name parser matrix (41 tests; 17 fresh payloads, zero reached a code position)
+- Provenance now **fail-closed** in task verdicts (was warn-only by construction since June)
+- Heartbeat gate reads **behavior**, not a source grep - panel death, beat survives
+- Orchestrator `done` now requires receipt == branch HEAD **and** a bus RELEASE (the CRX0 class, structurally closed)
+- Composed tree: 6572 passed / 0 failed, ratchet +67, zero regressions
+
+One operator close-pass per R135 (recorded openly in the W6-HCRX verdict): the GATE leg's own receipt commit + two missing RELEASE lines - the wave's thesis caught live on its own authors.
+
+**User-flow wave (W6f).** Six evidence-anchored journeys mapped (zero invented personas under audit), a hython journey rig measuring every step, and two pinned panel fixes proven green-to-red under revert simulation. Three adversarial journeys survived first-hand, including panel-close mid-journey - the P0.3 fix under attack.
+
+**Honest-state correction to the list above:** `provenance_not_bypassed` is no longer unwired - it is WIRED and fail-closed as of this addendum. Cook-verify substrate (W5-MEASURES/WCRUX) still in flight; will ride the next update.
