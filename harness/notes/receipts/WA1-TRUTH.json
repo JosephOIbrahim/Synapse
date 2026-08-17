@@ -1,0 +1,66 @@
+{
+  "leg": "WA1-TRUTH",
+  "status": "green_with_findings",
+  "product_head": "27d609a76bf21b4e262d1fdef39bfbec4de7ee28",
+  "build_observed": "22.0.400",
+  "artifact": "harness/autoresearch/runs/apex_basic_20260817_122650/apex_truth_22.0.400.json",
+  "artifact_entry_count": 39,
+  "acceptance": [
+    {
+      "predicate": "apex_truth_<build>.json exists under autoresearch/runs with build == running H22 build (runtime-observed), all pre-existing rank>=70 seeds re-confirmed or explicitly UNKNOWN/absent with probe evidence",
+      "verdict": "pass",
+      "evidence": "probe :: harness/autoresearch/runs/apex_basic_20260817_122650/apex_truth_22.0.400.json meta.build=22.0.400, target_build_match=true, 39 entries all stamped 22.0.400, 0 probe failures. rank>=70 seeds re-confirmed: apex.Graph + apex.Graph.addNode present+callable (api_champions in P0_catalog '*'); apex::invokegraph/autorigbuilder/buildfkgraph/graph + kinefx::rigdoctor present in Sop; kinefx::twoboneik + kinefx::blendtransforms present in Vop (category drift recorded, not absent)."
+    },
+    {
+      "predicate": "apex_probes.py docstring re-stamped with the same runtime-observed build string; H21.0.671 stamp gone",
+      "verdict": "pass",
+      "evidence": "check :: python/synapse/science/apex_probes.py:9 'APEX-TRUTH-BUILD: 22.0.400' (read from hou.applicationVersionString() during the hython run, not typed). grep '21.0.671' on the file => 0 matches; the exact prior build number is retired to git history."
+    },
+    {
+      "predicate": "version_agreement.py covers the apex catalog stamp and reads green against the fresh artifact; full agreement suite still green",
+      "verdict": "pass",
+      "evidence": "check :: python harness/verify/version_agreement.py exit 0 -- version chain agree=True (unchanged) AND APEX stamp=22.0.400 == artifact_build=22.0.400 ok=True. tests/test_phase0c_doc1_version_conformance.py 11 passed; new apex gate pinned by tests/test_apex_truth_wa1.py (drift + no-artifact + green cases)."
+    },
+    {
+      "predicate": "P2 invoke smoke: minimal graph -> invokegraph -> cook -> geometry hash, repeat 2, hashes identical (determinism claim held)",
+      "verdict": "pass",
+      "evidence": "probe :: P2_invoke entry invoke_geo_hash:apex_invoke_smoke -- chain [apex::graph -> apex::invokegraph], context sop, repeat 2, stable=True, sha256 fd80b8ce43ad268ca9f14527bfe828bb5cfea2f503d2322e7e2633c86417c487 identical on both passes."
+    }
+  ],
+  "crucible_criteria": [
+    {"criterion": "build stamp equals runtime-observed build in the same run", "verdict": "pass", "evidence": "probes.get_build() = hou.applicationVersionString(); artifact meta.build=22.0.400, filename apex_truth_22.0.400.json, target_build_match=true. No typed/assumed stamp."},
+    {"criterion": "every catalog entry carries probe provenance; no memory/doc copy without runtime confirmation", "verdict": "pass", "evidence": "all 39 entries carry claim/value/probe/build/ts; every value is a live apex/hou probe result. Callback catalog is apex.callbackRegistry().callbackDefinitions() (2286); port sigs are Registry.getSignature()."},
+    {"criterion": "hytest shim discipline: skipped hython probe is UNKNOWN, never a pass; headless-unmeasurable => UNKNOWN", "verdict": "pass", "evidence": "apex-unavailable path returns {'value':'UNKNOWN'}; absent callback returns {'exists':False}; APEX-Log empty on a clean cook is honest empty (apex_log_count=0), never fabricated. No skip counted as pass."},
+    {"criterion": "version_agreement extension is additive - existing agreement checks still pass", "verdict": "pass", "evidence": "version-chain block untouched (agree=True); APEX check is a second independent gate; test_phase0c_doc1_version_conformance 11 pass."}
+  ],
+  "findings": [
+    {"claim": "Category drift: kinefx::twoboneik and kinefx::blendtransforms (rank 76/74 seeds) live in the Vop category on 22.0.400, not Sop. They EXIST -- the probe records found_in_categories=['Vop'] so the drift is visible, not a false absent.", "anchor": "harness/autoresearch/runs/apex_basic_20260817_122650/apex_truth_22.0.400.json (type_exists[*]:kinefx::twoboneik / :kinefx::blendtransforms)"},
+    {"claim": "Two blueprint phantoms falsified with live evidence: apex::configuregraph::2.0 (Configure Graph 'Effects' is a MODE parm on apex::configuregraph, not a ::2.0 node) and apex::fusegraph (fuse-graph utilities are apex::mergegraph / apex::layoutgraph; no literal fusegraph node). Both exists=False.", "anchor": "apex_truth_22.0.400.json (type_exists[*]:apex::configuregraph::2.0 / :apex::fusegraph)"},
+    {"claim": "rig::CurveIK confirmed hidden=True (deprecated) with successor rig::SampleSplineTransforms -- the blueprint deprecation claim held at runtime.", "anchor": "apex_truth_22.0.400.json (apex_port_signature:rig::CurveIK is_hidden=True)"},
+    {"claim": "UsdSkel renames are label-only: kinefx::usdanimimport / usdcharacterimport / usdskinimport TYPE names are stable; H22 labels now read 'UsdSkel Animation/Character/Skin Import'. Seeded as present.", "anchor": "apex_probes.py APEX_SEED rank 37/36/35 + apex_truth_22.0.400.json"},
+    {"claim": "Pre-existing createNode-literal drift in emitted_node_types.json: a full regen at the base tree also adds ~13 solaris/blocks entries (scene_template/component_builder/create_variants/import_megascans/verify_set_purpose/set_purpose, blocks/plan, blocks/runtime) that predate this leg. LEFT OUT of this commit -- emitted_node_types.json was edited surgically (apex seeds only) to keep WA1-TRUTH scoped and avoid a merge collision with WA1-RECIPE/solaris legs.", "anchor": "scripts/extract_emitted_node_types.py --check reports DRIFTED on the solaris entries; this leg added only the 9 apex spellings."},
+    {"claim": "Sibling stale stamp: python/synapse/science/__init__.py docstring still describes APEX_SEED as 'seed claims about the H21.0.671 APEX surface' -- the same stale-truth defect class this leg retired in apex_probes.py, but out of this leg's touches. Not edited; flagged for a follow-up.", "anchor": "python/synapse/science/__init__.py (module docstring)"}
+  ],
+  "for_ruling": [
+    {"item": "Prerequisite scope beyond the enumerated touches: mission_schema.py and runner.py were edited (strictly additive) to register/dispatch the two new probe kinds and the artifact_prefix, without which the apex_basic mission cannot validate or run. solaris_basic validates and runs unchanged (defaults preserve legacy behavior). Confirm this prerequisite scope is acceptable.", "claimed_on_bus": true},
+    {"item": "emitted_node_types.json touched (not in touches): surgical apex-only extension to keep tests/test_emitted_node_types.py::test_every_apex_seed_nodetype_present green. Chose surgical over full-regen to avoid sweeping in unrelated pre-existing solaris/blocks createNode drift. Confirm the surgical choice, and route the solaris drift to its owner (see spawn)."}
+  ],
+  "spawn": [
+    {
+      "id": "APEX-INIT-RESTAMP",
+      "name": "Re-stamp python/synapse/science/__init__.py off the stale H21.0.671 APEX description",
+      "band": "BUILD",
+      "class": "build",
+      "note": "One-line docstring stamp: __init__.py still says APEX_SEED is 'seed claims about the H21.0.671 APEX surface'. Same stale-truth defect class WA1-TRUTH retired in apex_probes.py. Trivial doc fix; out of WA1-TRUTH's touches.",
+      "targets": ["python/synapse/science/__init__.py: replace the H21.0.671 APEX-surface description with the build-agnostic wording (or the current APEX-TRUTH-BUILD)"]
+    },
+    {
+      "id": "EMITTED-TYPES-RESYNC",
+      "name": "Full regeneration of emitted_node_types.json to clear pre-existing solaris/blocks createNode drift",
+      "band": "BUILD",
+      "class": "build",
+      "note": "scripts/extract_emitted_node_types.py --check reports DRIFTED: solaris (scene_template/component_builder/create_variants/import_megascans/verify_set_purpose/set_purpose) and blocks (plan/runtime) createNode literals are missing from the committed artifact. WA1-TRUTH added only its 9 apex spellings surgically. A solaris/recipe owner should regenerate + human-review the full artifact.",
+      "targets": ["python scripts/extract_emitted_node_types.py (regenerate); human review; commit"]
+    }
+  ]
+}
