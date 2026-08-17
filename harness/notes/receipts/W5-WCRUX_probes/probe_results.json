@@ -1,0 +1,67 @@
+{
+  "leg": "W5-WCRUX",
+  "role": "substrate crucible - adversarial gate over CATALOG+PARMGATE+MEASURES before merge",
+  "observed_by": "the crucible itself (none inherited); every number below was run live this session",
+  "env": {
+    "python": "3.14.2 (stock; NOT Houdini 3.13 - hou-dependent tests skip)",
+    "pytest": "8.4.2",
+    "hython": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe (rc0, build 22.0.400)",
+    "note": "vendored-SDK ABI warning under 3.14 is benign - validation modules import via pip pydantic; not a leg defect"
+  },
+  "mandate_table": {
+    "CATALOG": {"product_head": "8682afef", "receipt_commit": "a26fb6ed", "receipt_is_closing_commit": true, "receipt_touches_only": "W5-CATALOG.json (82 ins)", "verdict": "PASS"},
+    "PARMGATE": {"product_head": "816826ca", "receipt_commit": "d7eb8c1b", "receipt_is_closing_commit": true, "receipt_touches_only": "W5-PARMGATE.json (89 ins)", "verdict": "PASS"},
+    "MEASURES": {"product_head": "a6db2286", "receipt_commit": "520a10d4", "receipt_is_closing_commit": true, "receipt_touches_only": "W5-MEASURES.json (96 ins)", "verdict": "PASS"}
+  },
+  "per_leg_tests": {
+    "CATALOG.isolated": {"passed": 11, "failed": 0, "file": "test_node_catalog.py"},
+    "PARMGATE.isolated": {"passed": 33, "failed": 0, "files": "test_parm_gate.py + test_cops_parmgate_routing.py"},
+    "MEASURES.isolated": {"passed": 24, "failed": 0, "file": "test_measures_contracts.py"},
+    "COMPOSED.scratch": {"passed": 68, "failed": 0, "note": "11+33+24=68, no composed regression among the leg slices"}
+  },
+  "fp1_catalog": {
+    "static_provenance_PASS": true,
+    "build": "22.0.400", "total_probe_errors": 0, "dump_receipt_present": true,
+    "live_resample": {
+      "nodes": 29, "domains": "off-stride Dop/Cop/Chop/Vop (disjoint from builder stride) + 7 SOP the builder never audited",
+      "extraction": "canonical build_node_catalog._type_record via fresh hython",
+      "mismatches": 0, "PASS": true
+    },
+    "methodology_selfcorrection": "first cut used raw entriesWithoutFolders()/minNumInputs() -> false 'mismatches' on multiparm instances + VOP arity; corrected to the canonical _type_record; zero real drift"
+  },
+  "fp2_measures": {
+    "healthy_golden": "STABLE (real evaluated-window, not laundered UNKNOWN)",
+    "exploding_golden": "EXPLODING signal=ke_growth offending_frame=5 (anchored)",
+    "tier_no_promote": "every unmeasured kind -> UNKNOWN -> V0_membership/surfaced_unverified (never foreground); a MEASURED result reaches V1_output/foreground; tiers differ; exposure.highest_tier resolved live (extension real)",
+    "PASS": true
+  },
+  "combined_probe": {
+    "faithful_set": true, "faithful_content_blobexact": true, "staged_files": 51,
+    "ingest_ledger_byte_identical": true, "ledger_sha256": "3153db99...",
+    "master_drift": {"master_changed_since_fork": 268, "leg_file_overlap": ["harness/notes/h22/CTO-RULING-measures-divergence-2026-08-16.md"], "overlap_is_doc_note_only": true, "note_blob_differs_from_master": true, "product_code_conflict": false},
+    "suite_ratchet": {"base_df8c9ef3": {"passed": 6445, "failed": 1}, "combined": {"passed": 6523, "failed": 2}, "delta_passed": 78, "new_failure": "test_m3_env_conformance.py::test_every_source_env_read_is_documented", "preexisting_failure": "F-VER version-conformance (tag 5.51.0 > VERSION 5.50.0)"},
+    "guardrails": {"leg_introduced_violations": [], "preexisting_violations": ["check_clean_install (memory/store.py hardcoded path - not a leg file)"], "phantom_clean": true, "version_single_source": true, "rigging_drift": "in-scope", "provenance": "warn-only stub at df8c9ef3 (ok:None)"},
+    "cleanup": "read-only probing; scratch worktrees left with zero untracked/extra litter; harness-provisioned stage intact"
+  },
+  "gate_composed_keystone": {
+    "note": "PARMGATE's rejection power PROVEN composed with the REAL catalog (dormant on its own branch)",
+    "catalog_resolved_real_opencl": true, "opencl_parms": 81, "kernelcode_present": true, "code_absent": true,
+    "reject_phantom_code": "ParmGateError raised before mutation; suggestion top-ranked 'kernelcode' (also displaycode, generatedcode)",
+    "accept_kernelcode": "authority=catalog, gated=True, set=[kernelcode]",
+    "PASS": true
+  },
+  "a3_fp1b_fresh_resample": {
+    "note": "CATALOG A3 (typed VOP wire sigs + APEX ports) re-derived from fresh hython on DIFFERENT nodes - not inherited",
+    "vop": ["abs", "addsteerforce", "agentlayershapes", "block_end_while", "copy", "gingham"], "vop_mismatches": 0,
+    "apex": ["Acos", "Add<Vector3,Int>", "Complement", "ForEachBegin<ApexPortID>", "Null<FBIKTarget>"], "apex_mismatches": 0,
+    "disjoint_from_builder_stride": true, "PASS": true,
+    "probe_cosmetic_bug": "probe_a3.py PASS expression returns the truthy vop list not True; substantive result = 0/0 mismatches over 11 items"
+  },
+  "headline_finding": {
+    "id": "F-ENVDOC",
+    "severity": "must-fix-before-merge (breaks full suite -> Safety Rule 7)",
+    "claim": "W5-PARMGATE's python/synapse/validation/catalog.py reads SYNAPSE_PARM_CATALOG_ROOT (:43) and SYNAPSE_PARM_CATALOG_BUILD (:44), neither documented in the '### Environment Variables' table of docs/studio/DEPLOYMENT.md; test_m3_env_conformance::test_every_source_env_read_is_documented FAILS in-suite (passes at base).",
+    "attribution": "PARMGATE (deterministic; base passes, combined fails; DEPLOYMENT.md identical both sides)",
+    "fix": "add two backticked rows to DEPLOYMENT.md's Environment Variables table (docs edit, human-gated); PARMGATE's own slice never ran the global env-conformance test so its receipt did not surface this"
+  }
+}
