@@ -1,0 +1,90 @@
+{
+  "leg": "W5-WXA",
+  "title": "crucible shard A: acceptance-1 contracts re-executed first-hand + adversarial malformed-input matrix",
+  "band": "TRUTH",
+  "status": "green_with_findings",
+  "status_note": "Both acceptance predicates PASS, verified first-hand in a detached side tree. green_with_findings = the charter's A1/A2 hold on my own run (36/36 green, matching builder M-E1), AND the adversarial matrix surfaced a robustness class (wrong-TYPE inputs) the builder scoped out: 9/17 crash, 3/17 soft-pass. Those are defense-in-depth findings out of the builder's declared input domain, not an FP2 falsification - reported honestly for W5-WCRUX, not asserted as an acceptance failure.",
+  "model": "claude-opus-4-8",
+  "audits": {
+    "branch": "wave5/measures",
+    "charter_tip": "520a10d4",
+    "product_head_audited": "a6db2286",
+    "builder_receipt": "harness/notes/receipts/W5-MEASURES.json"
+  },
+  "method": {
+    "side_tree": "git worktree add --detach _m 520a10d4",
+    "why_detach": "wave5/measures was already checked out at .claude/worktrees/w5-measures, so `git worktree add _m wave5/measures` would fail (branch-in-use). --detach at the tip SHA is semantically identical for read-only re-execution, moves NO ref, and honors 'never touch wave5/measures state'.",
+    "interpreter": "Python 3.14.2 headless (the live hython cook that PRODUCES observations is gui_required -> UNKNOWN here; the JUDGEMENT half is audited)",
+    "first_hand": true
+  },
+  "commit_at_run": "4c366f91",
+  "product_head": "59e5d096",
+  "base": "4c366f91",
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/w5-wxa",
+
+  "acceptance": [
+    {
+      "predicate": "contract slice re-executed first-hand with counts + anchors",
+      "verdict": "pass",
+      "evidence": "probe: `python -m pytest tests/test_measures_contracts.py tests/test_phase3_exposure.py -q` @ _m/520a10d4 -> 36 passed / 0 failed / 0.58s (24 measures-contract + 12 exposure). Matches builder M-E1 (W5-MEASURES.json:72) EXACTLY. A1 (5 kinds + UNKNOWN cond each), A2 (explosion golden fires signal=ke_growth frame=5, silent on healthy), A3 exposure extends-not-forks all green first-hand. Anchor: _m/tests/test_measures_contracts.py; measures.py:41,46,110-231."
+    },
+    {
+      "predicate": "adversarial malformed-input matrix posted to bus with per-contract outcomes",
+      "verdict": "pass",
+      "evidence": "test: harness/probes/wxa/adversarial_matrix.py (17 wrong-TYPE/None/malformed cases the builder did not fixture) run first-hand -> harness/probes/wxa/matrix_results.txt. Per-contract outcomes posted to bus wave5 -> W5-WCRUX (msg 18cc9ab9a583884c) with tally CRASH=9 MEASURED=4 FAIL=3 UNKNOWN=1. F1/F2 posted as separate landings (18cc9ab9ac7def70, 18cc9ab9b375a390)."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "W5-WXA-A1A2-UPHELD", "severity": "info", "state": "CONFIRMED",
+      "claim": "W5-MEASURES cook-verify charter A1/A2 upheld first-hand: absent observation -> UNKNOWN (never a fabricated pass, never zero) for all 5 output kinds; explosion detector anchored to offending_frame+signal; exposure ladder extends synapse.science.exposure without editing it (exposure tests byte-green). Charter delivery is sound - the supersession note's 'second agent BUILT the charter' checks out.",
+      "anchor": "_m 36-green slice; measures.py:46 UNKNOWN_CONDITIONS; test_measures_contracts.py:59 (parametrized x5)"
+    },
+    {
+      "id": "W5-WXA-F1", "severity": "medium", "state": "OPEN (follow-on)",
+      "claim": "9/17 malformed-TYPE observations RAISE an unhandled exception instead of rendering UNKNOWN/FAIL. A crash is neither UNKNOWN nor zero - the honesty guard aborts before a verdict, so the crucible criterion 'unobtainable renders UNKNOWN' is NOT met for the wrong-TYPE input class. Cases: sim frames as str/int/list-of-scalars (explosion.py:95,102,112); geo bbox non-iterable + weight_sum string (measures.py:163,169); channels range non-iterable/short + samples float (measures.py:181,186); measure() on None obs (measures.py:76).",
+      "scope_caveat": "Wrong-TYPE inputs a trusted hython cook would not emit. Defense-in-depth hardening, NOT proof the shipped guard fabricates passes on realistic cook output. The builder scoped ABSENT+HOLLOW; this is a different surface.",
+      "anchor": "harness/probes/wxa/matrix_results.txt; measures.py:163,169,181,186; explosion.py:95,102,112"
+    },
+    {
+      "id": "W5-WXA-F2", "severity": "low", "state": "OPEN (follow-on)",
+      "claim": "3/17 garbage-typed values ACCEPTED as MEASURED: img stats=0.5 scalar (measures.py:122), geo bbox='box' string (measures.py:163), channels variance='bad' string (measures.py:188). Present-but-garbage read as a measurement - the FP2-adjacent risk at LOW severity. Same out-of-producer-domain caveat as F1.",
+      "anchor": "measures.py:122,163,188"
+    },
+    {
+      "id": "W5-WXA-CORRECT", "severity": "info", "state": "VERIFIED",
+      "claim": "The 'never zero' line is handled CORRECTLY: geo counts=0 -> MEASURED is right (present-0 = cooked-empty geometry; absent = None -> UNKNOWN), via _has's `is not None` test. The contract never coerces absent -> 0.",
+      "anchor": "measures.py:76 (_has); matrix case geo/counts-zero"
+    }
+  ],
+
+  "for_ruling": [
+    "F1 disposition (W5-WCRUX / CTO): the wrong-TYPE robustness gap is out of the builder's DECLARED input domain (contracts consume a trusted hython cook's typed dicts). My recommendation is FOLLOW-ON SPAWN, not a merge-blocker - charter A1/A2 are sound first-hand. But the synthesizer owns whether defense-in-depth is required before merge.",
+    "F-VER (version/tag conformance, builder receipt F-VER) is OBSERVED not owned here - it is sibling shard W5-WXC's lane (its claim note: 'F-VER reconcile'). Branch VERSION=5.50.0 vs published tag v5.51.0; unrelated to the measures module. Flagged for cross-shard awareness only.",
+    "F-PANEL (builder receipt F-PANEL): the branch also carries the prior honesty-audit's panel/health_infographic.py edit (crucible criterion 3 surface). Out of THIS shard's scope; noted so the synthesizer sees it rides the same branch."
+  ],
+
+  "spawn": [
+    {
+      "id": "S1", "class": "build", "held": true,
+      "predicate": "wrong-TYPE observation renders UNKNOWN (or FAIL) instead of raising",
+      "proposal": "Add a per-contract type guard at the entry of measure_geometry / measure_channels / measure_sim (+ detect_explosion frame-shape guard + measure() None-obs guard) so a malformed-TYPE observation renders UNKNOWN with the exact malformed input, never an unhandled exception. Closes F1. Class=build lands held for Joe."
+    },
+    {
+      "id": "S2", "class": "probe", "held": false,
+      "predicate": "malformed-type -> UNKNOWN, never crash / never soft-pass, pinned by a regression slice",
+      "proposal": "Add a wrong-type fuzz slice to tests/test_measures_contracts.py (adapting harness/probes/wxa/adversarial_matrix.py's MATRIX) pinning the S1 behavior + closing F2's soft-passes. Regresses F1, closes F2."
+    }
+  ],
+
+  "constitution_check": {
+    "no_push_merge_tag": true,
+    "no_drop_json_edit": true,
+    "no_ratified_or_state_flip": true,
+    "named_file_commits_only": true,
+    "never_git_add_-A": true,
+    "never_touched_measures_branch_or_side_tree_state": true,
+    "commit_before_receipt": "product committed at 59e5d096 (ahead 1) BEFORE this receipt; this receipt is the closing commit"
+  }
+}
