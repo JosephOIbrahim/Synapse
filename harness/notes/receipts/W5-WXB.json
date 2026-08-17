@@ -1,0 +1,72 @@
+{
+  "leg": "W5-WXB",
+  "title": "crucible shard B: explosion-detector goldens + tier projection audited",
+  "band": "TRUTH",
+  "status": "green_with_findings",
+  "model": "claude-opus-4-8",
+  "audited": {
+    "branch": "wave5/measures",
+    "tip": "520a10d4",
+    "product": "a6db2286",
+    "what": "the cook-verify charter delivered by the re-dispatched second agent after the divergence ruling (CTO-RULING-measures-divergence-2026-08-16.md supersession note)"
+  },
+  "method": "first-hand re-execution in a DETACHED side worktree `_m` at tip SHA 520a10d4 (brief's literal `git worktree add _m wave5/measures` refused - branch already checked out in .claude/worktrees/w5-measures - so `--detach 520a10d4`, same target, branch+worktree untouched). Python 3.14.2, zero-hou judgement half. Read-only on all deliverables.",
+  "product_head_observed": "8c76f08c",
+  "commit_before_receipt": "product commit 8c76f08c (audit note) landed with ahead=1 BEFORE this receipt was written; this receipt is the closing commit (W5H).",
+  "acceptance": [
+    {
+      "predicate": "both goldens + one fresh variant re-executed first-hand",
+      "verdict": "pass",
+      "evidence": "Shipped detector @520a10d4 invoked directly (wxb_probe.py, 12/12 checks pass, exit 0): healthy_sim=STABLE(silent); exploding_sim=EXPLODING/ke_growth/offending_frame=5 (KE 1.0->60.0 x60 over baseline 1.0 across 5 frames, max_strain 3.1<bound so ke_growth is genuinely the rule); fresh W5-WXB variant wxb_fresh_late_ke_growth (9 frames, runaway from frame 5)=EXPLODING/ke_growth/offending_frame=8 (detector locates the FIRST qualifying window frames 4..8, NOT the trivial last frame 9 -> anchor computed not pinned); flat-KE control=STABLE. tests/test_measures_contracts.py = 24 passed/0 failed. Assertion at :125-126 chains to literals (==5, ==ke_growth), immune to golden-expect drift."
+    },
+    {
+      "predicate": "tier projection: extends-not-forks verified; S1 absence confirmed honest",
+      "verdict": "pass",
+      "evidence": "measures.py:239-261 emits only rung strings verbatim-present in science/exposure.py (V1_output/V0_membership/V1-degraded) and exposure_tier() drives the REAL exposure.highest_tier([rung]) with a guarded honest fallback. Branch never touched science/exposure.py NOR mcp/_tool_registry.py (git log merge-base..520a10d4 empty for both). test_phase3_exposure.py + test_m1_truth_contract.py = 16 passed. Projection test :211-219 asserts exposure.highest_tier([V1_output])==foreground (live coupling, not a mock). Only exposure_rung/exposure_tier consumers on the branch are measures.py + its tests; ZERO mcp/ references. Receipt marks A3 PARTIAL-EXTENDS, files F-A3 NOT-DELIVERED honest gap, holds S1 spawn -> deferral disclosed, not laundered."
+    }
+  ],
+  "findings": [
+    {
+      "id": "WXB-F1",
+      "severity": "info",
+      "state": "CONFIRMED",
+      "claim": "A2 + A3 re-execute green first-hand at the tip; anchor is computed (fresh variant fires at frame 8 via the first qualifying window), projection couples to the real exposure system, S1 absence is honest.",
+      "anchor": "harness/notes/h22/W5-WXB-audit.md"
+    },
+    {
+      "id": "WXB-F2",
+      "severity": "low",
+      "state": "FOR RULING (WCRUX)",
+      "claim": "Receipt status_note prose says all three acceptance predicates are 'satisfied and demonstrated (predicate 3 via an exposure-rung extension)' - the word 'satisfied' for predicate 3 reads a touch stronger than its own structured verdict acceptance[2].verdict=PARTIAL (registry-disclosure half not delivered). The parenthetical + structured PARTIAL + F-A3 + held S1 make the gap unmissable, so this is a summary-prose-vs-structured-verdict tension, NOT an FP2 fabrication. Receipt is honest overall; flagged for WCRUX to weigh the framing.",
+      "anchor": "harness/notes/receipts/W5-MEASURES.json status_note vs acceptance[2].verdict"
+    },
+    {
+      "id": "WXB-F3",
+      "severity": "low",
+      "state": "FOR RULING (CTO, out of my remit)",
+      "claim": "FAIL and EXPLODING both project to V1-degraded -> surfaced_caveat (visible+enabled, 'degraded' badge), reusing the rung minted for 'live verification unavailable' for a measured-and-bad cook - conflating 'couldn't measure' with 'measured, it failed'. Defensible product choice, honestly mapped and tested; whether a failed cook-verify should demote harder than surfaced_caveat is Joe/CTO's call.",
+      "anchor": "python/synapse/validation/measures.py:241-242"
+    }
+  ],
+  "for_ruling": [
+    "F-PANEL confirmed (delivering leg already flagged it; disposition Joe/CTO): the branch's diff carries the prior unmeasured-honesty audit riding the same branch, including a +21-line edit to python/synapse/panel/health_infographic.py - the surface the leg's own crucible criterion 3 fences off. Present on the branch; not this cook-verify build. Anchor: git diff --stat merge-base..520a10d4 -> panel/health_infographic.py +21.",
+    "WXB-F2: weigh the receipt status_note's 'three predicates satisfied' framing against its own structured acceptance[2]=PARTIAL."
+  ],
+  "unmeasurable": [
+    "Live hython golden cook (delivering leg's spawn S2: cook rulebook/goldens/sim/* in Houdini 22.0.400 and feed the same contract) is gui_required and UNKNOWN headless. NOT in my acceptance predicates - my remit is the judgement half (goldens + projection), fully headless-testable. Not simulated, not estimated (crucible criterion 2)."
+  ],
+  "spawn": [],
+  "bus": {
+    "wave": "wave5",
+    "to": "W5-WCRUX",
+    "claim": "posted at start (18cc9a7b2120afdc)",
+    "findings_posted": [
+      "18cc9a82da5eee80 (contract suite green)",
+      "18cc9ab07adc8d90 (A2 goldens + fresh variant)",
+      "18cc9ad33ed909f4 (A3 extends-not-forks)",
+      "18cc9ad3461b7c10 (S1 absence honest)",
+      "18cc9ad34d4452b4 (WXB-F2/F3 crucible observations)"
+    ],
+    "release": "posted at close (see status line)"
+  }
+}
