@@ -1,4 +1,4 @@
-"""AUTORESEARCH probe library — the only module that touches hou.
+﻿"""AUTORESEARCH probe library ΓÇö the only module that touches hou.
 
 Evidence discipline:
     - Probes ask the live runtime. They never answer from memory.
@@ -9,7 +9,7 @@ Evidence discipline:
       NodeType.deprecated is guarded) and record which path was used.
 
 hou is imported guarded so mission validation and unit tests run under
-plain Python. Execution requires hython — require_hou() enforces it.
+plain Python. Execution requires hython ΓÇö require_hou() enforces it.
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from pathlib import Path as _Path
 try:
     import hou  # type: ignore
     HOU_AVAILABLE = True
-except ImportError:  # plain Python — validation / unit tests only
+except ImportError:  # plain Python ΓÇö validation / unit tests only
     hou = None
     HOU_AVAILABLE = False
 
@@ -36,7 +36,7 @@ _REPO_ROOT = _Path(__file__).resolve().parents[2]
 # bug. tests/test_blocks_reconciler.py pins the single-source relationship.
 #
 # The path is derived from THIS file, so a git worktree's probes.py imports
-# that worktree's canonicalizer — which is what makes a worktree run evidence
+# that worktree's canonicalizer ΓÇö which is what makes a worktree run evidence
 # about the worktree.
 if str(_REPO_ROOT / "python") not in _sys.path:
     _sys.path.insert(0, str(_REPO_ROOT / "python"))
@@ -52,7 +52,7 @@ from synapse.blocks.canonical import (  # noqa: E402
 def _env_map() -> dict:
     """The c3 environment map for this process, or {} under plain Python.
 
-    R-M5-1: a baseline cut without this is machine-local (finding M5-F1) —
+    R-M5-1: a baseline cut without this is machine-local (finding M5-F1) ΓÇö
     $HIP reaches the composed stage already expanded, so rule 5 has nothing to
     match unless the environment is handed to it. Every hash produced in this
     module goes through here; there is no second path.
@@ -63,7 +63,7 @@ def _env_map() -> dict:
 
 
 _PROBE_NODE = "ar_probe"        # parm-probe scratch node name
-_CHAIN_PREFIX = "arc"           # chain nodes: arc<i>_<type> — exact, never auto-incremented
+_CHAIN_PREFIX = "arc"           # chain nodes: arc<i>_<type> ΓÇö exact, never auto-incremented
 
 
 def require_hou() -> None:
@@ -101,8 +101,8 @@ _cat_index_cache = None
 def _sop_types() -> dict:
     """name -> hou.NodeType for the SOP category. Cached per process.
 
-    The APEX authoring nodes (apex::invokegraph, apex::graph, apex::rigpose, …)
-    and kinefx::rigdoctor live in Sop, NOT Lop — probing them against the LOP
+    The APEX authoring nodes (apex::invokegraph, apex::graph, apex::rigpose, ΓÇª)
+    and kinefx::rigdoctor live in Sop, NOT Lop ΓÇö probing them against the LOP
     catalog would falsely report every one absent.
     """
     global _sop_types_cache
@@ -129,7 +129,7 @@ def _all_category_types() -> dict:
 
 def _type_category_index() -> dict:
     """type_name -> sorted[category names]. The runtime-truth membership map that
-    answers 'this type exists — and lives in category X' (e.g. kinefx::twoboneik
+    answers 'this type exists ΓÇö and lives in category X' (e.g. kinefx::twoboneik
     is a Vop, not a Sop). Cached per process."""
     global _cat_index_cache
     if _cat_index_cache is None:
@@ -162,7 +162,7 @@ def _safe_str(fn):
 def probe_type_discovery(pattern: str) -> dict:
     """All LOP type names containing `pattern` (case-insensitive), from the
     live category list. This is the probe that finds successors to dead
-    literals — the answer comes from the runtime, not from recall."""
+    literals ΓÇö the answer comes from the runtime, not from recall."""
     p = pattern.lower()
     matches = sorted(n for n in _lop_types() if p in n.lower())
     return {"pattern": pattern, "count": len(matches), "matches": matches}
@@ -175,14 +175,14 @@ def probe_type_existence(name: str, category=None) -> dict:
         t = _lop_types().get(name)
         if t is None:
             return {"exists": False}
-        # deprecated() is guarded — phantom-API discipline applies to probes too.
+        # deprecated() is guarded ΓÇö phantom-API discipline applies to probes too.
         dep_fn = getattr(t, "deprecated", None)
         deprecated = dep_fn() if callable(dep_fn) else None
         return {"exists": True, "description": t.description(), "deprecated": deprecated}
 
     # Category-aware path (WA1-TRUTH). "*" = exists in ANY category; a specific
     # category name restricts existence to that surface. Either way the evidence
-    # records EVERY category the name was found in — so a Sop/Vop category drift
+    # records EVERY category the name was found in ΓÇö so a Sop/Vop category drift
     # (kinefx::twoboneik moved Sop -> Vop between builds) is visible, not silent.
     found_in = _type_category_index().get(name, [])
     if category == "*":
@@ -236,7 +236,7 @@ def probe_parms(type_name: str, highlight: list) -> dict:
                         if d and d != n:
                             decoded[n] = d
                     except Exception:
-                        pass  # undecodable name — raw form is still evidence
+                        pass  # undecodable name ΓÇö raw form is still evidence
 
         hits = {}
         for f in highlight:
@@ -332,7 +332,7 @@ def _build_chain_sop_once(chain: list, geo) -> dict:
         prev = None
         for i, tname in enumerate(chain):
             # Node NAMES cannot contain "::" (legal only in TYPE names), so the
-            # SOP-context name is sanitized — the real type is recorded verbatim.
+            # SOP-context name is sanitized ΓÇö the real type is recorded verbatim.
             safe = tname.replace("::", "_").replace(".", "_")
             requested = f"{_CHAIN_PREFIX}{i}_{safe}"
             n = geo.createNode(tname, requested)
@@ -363,7 +363,7 @@ def _probe_chain_hash_sop(chain: list, name: str, repeat: int) -> dict:
     """APEX invoke smoke: build a SOP chain (e.g. apex::graph -> apex::invokegraph)
     `repeat` times from clean, cook the tail, hash the geometry, compare. stable ==
     True is the determinism claim held. APEX Log entries produced during the cook
-    are captured alongside stdout — headless-empty is honest, not a failure."""
+    are captured alongside stdout ΓÇö headless-empty is honest, not a failure."""
     obj = hou.node("/obj")
     if obj is None:
         return {"error": "/obj not present in this session"}
@@ -709,7 +709,7 @@ import fnmatch as _fnmatch
 # harness/state. The precise signatures:
 #   .synapse   SYNAPSE's memory home (jsonl + nested .moneta)
 #   .moneta    the moneta backend dir (normally nested inside .synapse)
-#   claude     SYNAPSE SCENE MEMORY — a *claude* dir (no leading dot) carrying
+#   claude     SYNAPSE SCENE MEMORY ΓÇö a *claude* dir (no leading dot) carrying
 #              agent.usd or memory.md. This is what distinguishes it from Claude
 #              Code's .claude config tree, which must NOT be counted as a store.
 _STORE_DIR_NAMES = {".synapse", "claude", ".moneta"}
@@ -721,7 +721,7 @@ _TEST_SEGMENT_GLOBS = (".pytest_bt_*", "pytest-of-*", ".pytest_cache", "test_*",
                        "MagicMock", "mock.path*")
 # A literal, unexpanded environment-variable path segment: $VAR, ${VAR}, %VAR%.
 _LITERAL_ENV_RE = _re.compile(r"^(\$\w+|\$\{[^}]+\}|%[^%]+%)$")
-# Heavy trees that never hold user memory — pruned at the walk, in addition to
+# Heavy trees that never hold user memory ΓÇö pruned at the walk, in addition to
 # any exclude_globs the mission passes.
 _ALWAYS_PRUNE = {".git", "node_modules", "__pycache__", ".venv", "venv",
                  "site-packages", ".mypy_cache", ".idea", ".vscode"}
@@ -750,7 +750,7 @@ def _iter_store_dirs(root: str, max_depth: int, exclude: set):
         if base in (".synapse", ".moneta"):
             is_store = True
         elif base == "claude":
-            # Only a claude dir with the scene-memory signature — never a bare
+            # Only a claude dir with the scene-memory signature ΓÇö never a bare
             # cache dir named 'claude' and never Claude Code's '.claude'.
             is_store = any(_os.path.isfile(_os.path.join(d, s))
                            for s in _SCENE_SIGNATURE)
@@ -796,7 +796,7 @@ def _classify(norm_path: str):
 def _count_entries(store_dir: str):
     """Walk a store dir; return (file_count, byte_size, entry_counts, mem_ids,
     per_store_errors). mem_ids are SYNAPSE memory ids (payload 'id') extracted
-    from moneta snapshot.json rows — the only cross-store-stable key available
+    from moneta snapshot.json rows ΓÇö the only cross-store-stable key available
     (jsonl lines are Fernet-encrypted; entity_id is a per-store UUID)."""
     file_count = 0
     byte_size = 0
@@ -856,7 +856,7 @@ def _count_entries(store_dir: str):
                                 1 for ln in fh if _re.match(r"\s*def\s", ln))
                     except Exception:
                         pass
-            except Exception as e:  # noqa: BLE001 — a bad file is evidence, not a crash
+            except Exception as e:  # noqa: BLE001 ΓÇö a bad file is evidence, not a crash
                 errs.append({"file": fp, "error": f"{type(e).__name__}: {e}"})
     entry_counts = {
         "memory_jsonl_lines": memory_jsonl_lines,
@@ -890,7 +890,7 @@ def probe_store_census(roots: list, exclude_globs: list) -> dict:
             found.setdefault(_norm_key(sd), sd)
 
     # Drop nested stores subsumed by an ancestor store (e.g. .synapse/.moneta,
-    # .synapse/ledger) — the parent's recursive size already counts them.
+    # .synapse/ledger) ΓÇö the parent's recursive size already counts them.
     keys = sorted(found)
     top = []
     for k in keys:
@@ -1038,7 +1038,7 @@ def _apex_log_capture() -> "_LogCapture":
 
 
 def _apex_registry():
-    """(apex_module, callback_Registry). Raises if apex is unimportable — the
+    """(apex_module, callback_Registry). Raises if apex is unimportable ΓÇö the
     caller renders that as UNKNOWN, never a fabricated catalog."""
     import apex  # only importable inside Houdini/hython
     return apex, apex.callbackRegistry()
@@ -1050,7 +1050,7 @@ def _namespace_head(cb_name: str) -> str:
 
 def probe_apex_callback_discovery(namespace: str = "*") -> dict:
     """Enumerate the live APEX callback registry.
-    namespace == "*" (default) dumps the whole catalog — the ground-truth
+    namespace == "*" (default) dumps the whole catalog ΓÇö the ground-truth
     vocabulary the scout literal fence admits names from. A namespace head
     (e.g. "rig", "transform") filters to that family. Per name: registry
     presence, ::version (apex.splitNameAndVersion), and the hidden flag."""
@@ -1091,7 +1091,7 @@ def probe_apex_callback_discovery(namespace: str = "*") -> dict:
                 pass
 
         # The champion Python-API surface (apex_probes.py rank 100/90 seeds).
-        # "The callback registry is the API surface" — apex.Graph is its handle.
+        # "The callback registry is the API surface" ΓÇö apex.Graph is its handle.
         G = getattr(apex, "Graph", None)
         add = getattr(G, "addNode", None) if G is not None else None
         api_champions = {
@@ -1191,3 +1191,374 @@ def probe_apex_port_signature(callback: str) -> dict:
         result["apex_log"] = cap.snapshot()
 
     return result
+# ---------------------------------------------------------------- APEX wire matrix
+# WA1-WIRE (C2, blueprint sec.5): the wire-typing matrix + @/$ resolution table.
+# probes.py is the ONE module allowed to touch hou/apex, so the live apex.Graph
+# construction and wiring live here. Every verdict is asked of the live apex
+# runtime, never recalled. Grounded ops (all confirmed via live dir()/doc
+# introspection on H22.0.400 -- NOT from memory):
+#   apex.Graph()                       -> in-memory graph object (no scene mutation)
+#   g.addNode(name, callback) -> int   (arg0=name, arg1=callback; returns node id)
+#   g.getOutputPorts(nid) / getInputPorts(nid) -> list[int]
+#   g.portTypeName(pid) -> str ,  g.portName(pid) -> str
+#   g.addWire(src_port_id, dst_port_id) -> int  (STRUCTURAL: never type-checks)
+#   g.resolveTypes() -> bool ,  g.errors() -> list[str]  (the TYPE-verdict surface)
+# Observed on 22.0.400: a matched pair resolves (connect); ANY mismatch -- even
+# Int->Float -- yields resolveTypes()==False + "Mismatched type: ..." (reject).
+# No implicit wire coercion exists on this build; APEX coercion is explicit via
+# Convert<A,B> callbacks. The probe DERIVES the verdict from the runtime and would
+# record 'coerce' IF the runtime ever accepts a cross-type wire. UNKNOWN posture:
+# an unconstructable node/port, or apex/hou unavailable, renders the string
+# "UNKNOWN" with a reason -- never omitted, never guessed (skip != pass).
+#
+# Helpers are prefixed _wm_ / _tok_ to stay merge-clean against WA1-TRUTH's own
+# apex helpers (_apex_registry / _apex_log_capture) on the shared probes.py seam.
+
+def _build_or_unknown() -> str:
+    """The live build string, or 'UNKNOWN' under plain Python (no hou)."""
+    return get_build() if HOU_AVAILABLE else "UNKNOWN"
+
+
+def _wm_apex():
+    """(apex_module, callbackRegistry, set(callback names)). Raises if apex is
+    unimportable -- the caller renders that as UNKNOWN, never a fabricated verdict."""
+    import apex  # only importable inside Houdini/hython
+    reg = apex.callbackRegistry()
+    names = set(str(n) for n in reg.callbackDefinitions())
+    return apex, reg, names
+
+
+def _wm_wire_one(apex, names, out_type: str, in_type: str) -> dict:
+    """Construct Value<out_type> -> Value<in_type>, wire the typed ports, resolve,
+    and return the verdict cell. ONE wire in a FRESH graph => the single resolve
+    error (if any) attributes unambiguously to THIS pair. Deterministic: no clock,
+    no randomness => idempotent across passes.
+
+    Value<T> is the matrix node: it exposes one output port 'value':T and one input
+    port 'parm':T, so for any (out,in) pair the source output is exactly out_type and
+    the dest input is exactly in_type."""
+    cell = {"out": out_type, "in": in_type}
+    cb_out = "Value<%s>" % out_type
+    cb_in = "Value<%s>" % in_type
+    if cb_out not in names or cb_in not in names:
+        cell["verdict"] = "UNKNOWN"
+        cell["reason"] = ("node unconstructable: %s present=%s, %s present=%s"
+                          % (cb_out, cb_out in names, cb_in, cb_in in names))
+        return cell
+    try:
+        g = apex.Graph()
+        s = g.addNode("s", cb_out)
+        d = g.addNode("d", cb_in)
+        sop = list(g.getOutputPorts(s))
+        dip = list(g.getInputPorts(d))
+        # pick the port whose LIVE type matches the requested type (fallback: the
+        # conventional value/parm port). portTypeName is the runtime-truth surface.
+        so = next((p for p in sop if g.portTypeName(p) == out_type), sop[-1] if sop else None)
+        di = next((p for p in dip if g.portTypeName(p) == in_type), dip[0] if dip else None)
+        if so is None or di is None:
+            cell["verdict"] = "UNKNOWN"
+            cell["reason"] = "no typed port found (out_ports=%d in_ports=%d)" % (len(sop), len(dip))
+            return cell
+        cell["src_type"] = g.portTypeName(so)
+        cell["dst_type"] = g.portTypeName(di)
+        # addWire is STRUCTURAL -- a raise here is a structural rejection.
+        try:
+            g.addWire(so, di)
+        except Exception as e:
+            cell["verdict"] = "reject"
+            cell["reject_mode"] = "structural"
+            cell["exception"] = "%s: %s" % (type(e).__name__, e)
+            return cell
+        # resolveTypes()/errors() are the TYPE verdict surface.
+        try:
+            resolved = bool(g.resolveTypes())
+        except Exception as e:
+            cell["verdict"] = "UNKNOWN"
+            cell["reason"] = "resolveTypes() raised: %s: %s" % (type(e).__name__, e)
+            return cell
+        try:
+            errs = [str(x) for x in g.errors()]
+        except Exception:
+            errs = []
+        if resolved and not errs:
+            cell["verdict"] = "connect" if cell["src_type"] == cell["dst_type"] else "coerce"
+        else:
+            cell["verdict"] = "reject"
+            cell["reject_mode"] = "type"
+            cell["exception"] = errs[0] if errs else "resolveTypes() False with no error string"
+            if len(errs) > 1:
+                cell["exception_all"] = errs
+        return cell
+    except Exception as e:
+        cell["verdict"] = "UNKNOWN"
+        cell["reason"] = "graph construction raised: %s: %s" % (type(e).__name__, e)
+        return cell
+
+
+def _wm_matrix_hash(cells: list) -> str:
+    """Order-independent verdict hash: sha256 over sorted (out,in,verdict,exception)
+    rows. Idempotence == equal hash across passes. Exception text is IN the hash, so
+    a reject that silently changed its reason would break idempotence loudly."""
+    rows = sorted(
+        "%s|%s|%s|%s" % (c.get("out"), c.get("in"), c.get("verdict"),
+                         (c.get("exception") or "")) for c in cells)
+    return hashlib.sha256("\n".join(rows).encode("utf-8")).hexdigest()
+
+
+# The idempotence-sample priority: a fixed representative slice of the axis. Fixed
+# order => deterministic sample => a flaky verdict is a finding, not sample noise.
+_WM_SAMPLE_PRIORITY = ("Float", "Int", "Bool", "Vector3", "Matrix4",
+                       "Geometry", "Dict", "String", "FloatRamp")
+
+
+def probe_apex_wire_matrix(type_set, repeat: int = 2, sample=None) -> dict:
+    """The C2 wire-typing matrix over the DECLARED type set (the matrix axis;
+    deterministic => idempotent). For every ordered (out,in) pair, script-construct
+    a two-node apex graph and record connect | coerce | reject(+exception) | UNKNOWN.
+    A repeat-`repeat` re-run on a deterministic sample proves idempotence (identical
+    verdicts + hashes); a flaky verdict is a finding, not noise.
+
+    type_set: DECLARED list of APEX port-type names (the mission supplies it; the
+    receipt states the source). Each type's Value<T> constructor existence is checked
+    live and recorded -- an absent constructor renders that row/column UNKNOWN, never
+    a silent omit. sample: optional explicit [[out,in],...] pairs to re-run; default
+    is the ordered product of _WM_SAMPLE_PRIORITY intersected with the axis."""
+    try:
+        apex, reg, names = _wm_apex()
+    except Exception as e:
+        return {"value": "UNKNOWN", "reason": "apex module/registry unavailable",
+                "detail": "%s: %s" % (type(e).__name__, e),
+                "type_set": list(type_set), "build": _build_or_unknown()}
+
+    ts = [str(t) for t in type_set]
+    type_present = {t: ("Value<%s>" % t) in names for t in ts}
+
+    cells = [_wm_wire_one(apex, names, a, b) for a in ts for b in ts]
+
+    verdict_counts = {}
+    for c in cells:
+        verdict_counts[c["verdict"]] = verdict_counts.get(c["verdict"], 0) + 1
+    matrix_hash = _wm_matrix_hash(cells)
+
+    # -- idempotence: re-run a deterministic sample `repeat` times from clean --
+    if sample is None:
+        core = [t for t in _WM_SAMPLE_PRIORITY if t in ts]
+        sample_pairs = [[a, b] for a in core for b in core]
+    else:
+        sample_pairs = [list(p) for p in sample]
+
+    passes = []
+    for _ in range(max(1, int(repeat))):
+        pcells = [_wm_wire_one(apex, names, a, b) for a, b in sample_pairs]
+        passes.append({
+            "hash": _wm_matrix_hash(pcells),
+            "verdicts": {"%s->%s" % (c["out"], c["in"]): c["verdict"] for c in pcells},
+        })
+    pass_hashes = [p["hash"] for p in passes]
+    idempotent = len(set(pass_hashes)) == 1
+    drift = []
+    if not idempotent and passes:
+        base = passes[0]["verdicts"]
+        for p in passes[1:]:
+            for k, v in p["verdicts"].items():
+                if base.get(k) != v:
+                    drift.append({"pair": k, "pass0": base.get(k), "other": v})
+
+    return {
+        "build": _build_or_unknown(),
+        "type_set": ts,
+        "type_set_count": len(ts),
+        "type_set_source": "declared_fixture",
+        "type_present": type_present,
+        "pair_count": len(cells),
+        "verdict_counts": verdict_counts,
+        "matrix_hash": matrix_hash,
+        "cells": cells,
+        "repeat": {
+            "repeat": int(repeat),
+            "sample_pairs": sample_pairs,
+            "sample_count": len(sample_pairs),
+            "pass_hashes": pass_hashes,
+            "idempotent": idempotent,
+            "drift": drift,
+        },
+        "wire_surface": {
+            "construct": "apex.Graph().addNode(name, callback)",
+            "wire": "Graph.addWire(src_port_id, dst_port_id)  [structural; never type-checks]",
+            "verdict": "Graph.resolveTypes() + Graph.errors()  [the type surface]",
+            "node_family": "Value<T>  (output 'value':T, input 'parm':T)",
+        },
+    }
+
+
+# ---------------------------------------------------------------- APEX @/$ resolution
+# WA1-WIRE (C2 step 3): the @/$ resolution TABLE -- one row per (token, bind context).
+# The output is a table, not an explanation. Contexts, all measured live on 22.0.400:
+#   hscript_global     hou.text.expandString(token)          -- session-global
+#   scene_node_parm    scratch <font>.parm('text') set+eval  -- node context ($OS=node name)
+#   apex_graph_parm    g.setNodeParm + getNodeParms          -- APEX typed data (literal)
+#   apex_invoke_binding apex::invokegraph @attr binding       -- UNKNOWN headless (structural surface recorded)
+# Observed: $-forms expand, @-forms are literal in every MEASURABLE context. Session-
+# dependent values ($HIP/$OS/$F/...) are flagged: the row is a per-run snapshot, not a
+# constant. The invoke @attr binding needs a cooked geometry+graph invoke and is not
+# deterministically measurable headless -> UNKNOWN with a reason (never guessed).
+
+_TOK_SESSION_DEP = {"$HIP", "$HIPNAME", "$JOB", "$OS", "$F", "$FF", "$T",
+                    "$HFS", "$HOME", "$TEMP", "$HOUDINI_TEMP_DIR", "$OStype"}
+
+
+def _tok_form(token: str) -> str:
+    if token.startswith("$"):
+        return "$"
+    if token.startswith("@"):
+        return "@"
+    return "other"
+
+
+def probe_apex_token_resolution(tokens, contexts=None) -> dict:
+    """Resolve each token in each bind context; return the resolution table. Every
+    unmeasurable (token, context) cell is UNKNOWN with a reason -- never a guess,
+    never a silent omit."""
+    rows = []
+    meta = {}
+    try:
+        import hou
+    except Exception as e:
+        hou = None
+        meta["hou_error"] = "%s: %s" % (type(e).__name__, e)
+    try:
+        import apex
+    except Exception as e:
+        apex = None
+        meta["apex_error"] = "%s: %s" % (type(e).__name__, e)
+
+    if contexts is None:
+        contexts = ["hscript_global", "scene_node_parm", "apex_graph_parm", "apex_invoke_binding"]
+
+    # ---- build reusable surfaces once (each guarded; absence => UNKNOWN rows) ----
+    expand = None
+    if hou is not None:
+        _t = getattr(hou, "text", None)
+        expand = getattr(_t, "expandString", None) if _t is not None else None
+
+    scratch_obj = None
+    font_parm = None
+    if hou is not None and "scene_node_parm" in contexts:
+        try:
+            scratch_obj = hou.node("/obj").createNode("geo", "wa1_wire_tok_scratch")
+            font_parm = scratch_obj.createNode("font").parm("text")
+        except Exception as e:
+            meta["scene_node_parm_setup_error"] = "%s: %s" % (type(e).__name__, e)
+
+    apex_graph = None
+    apex_nid = None
+    if apex is not None and "apex_graph_parm" in contexts:
+        try:
+            apex_graph = apex.Graph()
+            apex_nid = apex_graph.addNode("s", "Value<String>")
+        except Exception as e:
+            meta["apex_graph_parm_setup_error"] = "%s: %s" % (type(e).__name__, e)
+
+    invoke_binding_parms = None
+    if hou is not None and "apex_invoke_binding" in contexts:
+        try:
+            nt = hou.sopNodeTypeCategory().nodeType("apex::invokegraph")
+            if nt is not None:
+                invoke_binding_parms = [
+                    t.name() for t in nt.parmTemplates()
+                    if any(k in t.name().lower() for k in ("bind", "attrib", "input", "output"))]
+        except Exception as e:
+            meta["apex_invoke_binding_setup_error"] = "%s: %s" % (type(e).__name__, e)
+
+    def measure(token, ctx):
+        row = {"token": token, "context": ctx, "form": _tok_form(token),
+               "session_dependent": token in _TOK_SESSION_DEP}
+        if ctx == "hscript_global":
+            if expand is None:
+                row["resolved_to"] = "UNKNOWN"
+                row["reason"] = "hou.text.expandString unavailable"
+                return row
+            try:
+                v = expand(token)
+                row["resolved_to"] = v
+                row["expanded"] = (v != token)
+            except Exception as e:
+                row["resolved_to"] = "UNKNOWN"
+                row["reason"] = "%s: %s" % (type(e).__name__, e)
+        elif ctx == "scene_node_parm":
+            if font_parm is None:
+                row["resolved_to"] = "UNKNOWN"
+                row["reason"] = meta.get("scene_node_parm_setup_error", "scratch node/parm unavailable")
+                return row
+            try:
+                font_parm.set(token)
+                v = font_parm.eval()
+                row["resolved_to"] = v
+                row["raw"] = font_parm.rawValue()
+                row["expanded"] = (v != token)
+            except Exception as e:
+                row["resolved_to"] = "UNKNOWN"
+                row["reason"] = "%s: %s" % (type(e).__name__, e)
+        elif ctx == "apex_graph_parm":
+            if apex_graph is None or apex_nid is None:
+                row["resolved_to"] = "UNKNOWN"
+                row["reason"] = meta.get("apex_graph_parm_setup_error", "apex graph/parm unavailable")
+                return row
+            try:
+                apex_graph.setNodeParm(apex_nid, "parm", token)
+                pd = apex_graph.getNodeParms(apex_nid)
+                v = str(pd.get("parm"))
+                row["resolved_to"] = v
+                row["expanded"] = (v != token)
+            except Exception as e:
+                row["resolved_to"] = "UNKNOWN"
+                row["reason"] = "%s: %s" % (type(e).__name__, e)
+        elif ctx == "apex_invoke_binding":
+            # The @attr -> graph-port binding at SOP invoke time. Resolving what a
+            # bound token maps to requires a cooked geometry+graph invoke; not
+            # deterministically measurable headless. UNKNOWN with the structural
+            # surface recorded -- never guessed.
+            row["resolved_to"] = "UNKNOWN"
+            row["reason"] = ("invoke @attr resolution requires a cooked geometry+graph "
+                             "invoke (cook/gui-bound); not measured headless")
+            row["binding_parms_present"] = invoke_binding_parms
+        else:
+            row["resolved_to"] = "UNKNOWN"
+            row["reason"] = "unknown context '%s'" % ctx
+        return row
+
+    try:
+        for tok in tokens:
+            for ctx in contexts:
+                rows.append(measure(str(tok), ctx))
+    finally:
+        if scratch_obj is not None:
+            try:
+                scratch_obj.destroy()
+            except Exception:
+                pass
+
+    by_ctx = {}
+    for r in rows:
+        d = by_ctx.setdefault(r["context"], {"total": 0, "resolved": 0, "literal": 0, "unknown": 0})
+        d["total"] += 1
+        if r.get("resolved_to") == "UNKNOWN":
+            d["unknown"] += 1
+        elif r.get("expanded"):
+            d["resolved"] += 1
+        else:
+            d["literal"] += 1
+
+    return {
+        "build": _build_or_unknown(),
+        "tokens": [str(t) for t in tokens],
+        "contexts": contexts,
+        "row_count": len(rows),
+        "summary_by_context": by_ctx,
+        "invoke_binding_parms": invoke_binding_parms,
+        "setup_notes": meta,
+        "rows": rows,
+        "note": ("$-forms expand, @-forms are literal in every measurable context; "
+                 "session-dependent rows ($HIP/$OS/$F/...) are per-run snapshots. "
+                 "apex_invoke_binding is UNKNOWN headless by design (skip != pass)."),
+    }

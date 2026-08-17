@@ -1,4 +1,4 @@
-"""AUTORESEARCH mission schema — pure Python, zero hou imports.
+﻿"""AUTORESEARCH mission schema ΓÇö pure Python, zero hou imports.
 
 A mission is a JSON question-set. The model may author questions;
 only probes produce answers. This module validates the questions.
@@ -14,17 +14,20 @@ Kinds:
     store_census     {"roots": [{"path": str, "max_depth": int?}], "exclude_globs": [str]?}
     apex_callback_discovery  {"namespace": str?}   # "*" (default) = whole callback registry
     apex_port_signature      {"callback": str}     # one registered APEX callback name
+    apex_wire_matrix     {"type_set": [str], "repeat": int?, "sample": [[str,str]]?}  # WA1-WIRE (C2)
+    apex_token_resolution {"tokens": [str], "contexts": [str]?}                        # WA1-WIRE (C2)
 
 `type_existence` gains an OPTIONAL "category" (WA1-TRUTH / G1+C1): omitted keeps
 the legacy LOP-category lookup byte-for-byte; a category name (e.g. "Sop", "Vop")
 or "*" (any category) routes the probe to the right surface for APEX/KineFX types
 that do not live in LOP. `chain_hash` gains an OPTIONAL "context": "lop" (default,
-composed-USD hash) or "sop" (geometry hash — the APEX invoke smoke). Both defaults
+composed-USD hash) or "sop" (geometry hash ΓÇö the APEX invoke smoke). Both defaults
 preserve every pre-existing mission's behavior.
 
 The mission may carry an OPTIONAL top-level "artifact_prefix" (default
 "lop_truth"); the runner names its evidence file "<artifact_prefix>_<build>.json".
-apex_basic sets "apex_truth" so its catalog artifact is self-describing.
+apex_basic sets "apex_truth"; apex_wire sets "apex_wire_matrix" - each evidence
+artifact is self-describing.
 
 Validation normalizes defaults into each question dict so the runner
 never guesses. All errors carry phase/question coordinates.
@@ -39,7 +42,9 @@ VALID_KINDS = {"type_discovery", "type_existence", "parm_probe", "chain_hash",
                "fixture_hash", "usd_schema_probe", "store_census",
                # WA1-TRUTH (G1+C1): APEX truth-surface probe kinds. probes.py is
                # the only module that resolves these against the live apex runtime.
-               "apex_callback_discovery", "apex_port_signature"}
+               "apex_callback_discovery", "apex_port_signature",
+               # WA1-WIRE (C2): APEX wire-typing matrix + @/$ resolution table.
+               "apex_wire_matrix", "apex_token_resolution"}
 
 
 class MissionError(ValueError):
@@ -127,7 +132,7 @@ def _validate_question(kind: str, q: dict, where: str) -> dict:
             raise MissionError(f"{where}: 'candidate' must be a bool")
         # Optional context (WA1-TRUTH): "lop" (default) composes a USD stage and
         # hashes it; "sop" builds the chain in a geo network, cooks the tail SOP,
-        # and hashes the geometry — the APEX invoke smoke. Default keeps every
+        # and hashes the geometry ΓÇö the APEX invoke smoke. Default keeps every
         # existing chain_hash question on the composed-USD path.
         ctx = q.setdefault("context", "lop")
         if ctx not in ("lop", "sop"):
@@ -158,7 +163,7 @@ def _validate_question(kind: str, q: dict, where: str) -> dict:
         if not isinstance(rt, bool):
             raise MissionError(f"{where}: 'roundtrip' must be a bool")
     elif kind == "store_census":
-        # A filesystem census question. Pure Python, zero hou — enumerates
+        # A filesystem census question. Pure Python, zero hou ΓÇö enumerates
         # candidate memory-store directories under each root, classifies each,
         # and computes cross-store key overlap. Deterministic: sorted output,
         # no clock in the answer beyond the runner's per-entry timestamp.
@@ -183,7 +188,7 @@ def _validate_question(kind: str, q: dict, where: str) -> dict:
     elif kind == "apex_callback_discovery":
         # Enumerate the live APEX callback registry. "namespace" filters to one
         # namespace head (e.g. "rig", "transform"); "*" (default) is the whole
-        # catalog — the ground-truth vocabulary the scout's literal fence consumes.
+        # catalog ΓÇö the ground-truth vocabulary the scout's literal fence consumes.
         nsp = q.setdefault("namespace", "*")
         if not isinstance(nsp, str) or not nsp.strip():
             raise MissionError(
@@ -193,6 +198,34 @@ def _validate_question(kind: str, q: dict, where: str) -> dict:
         cb = _req(q, "callback", str, where)
         if not cb.strip():
             raise MissionError(f"{where}: 'callback' must be a non-empty APEX callback name")
+    elif kind == "apex_wire_matrix":
+        # WA1-WIRE (C2): the ordered-pair wire-typing matrix over a DECLARED type
+        # set. The type set is the matrix axis; being declared (not runtime-derived)
+        # keeps the product deterministic -> the repeat-2 idempotence hash is stable.
+        ts = _req(q, "type_set", list, where)
+        if not ts or not all(isinstance(x, str) and x.strip() for x in ts):
+            raise MissionError(f"{where}: 'type_set' must be a non-empty list of type-name strings")
+        rep = q.setdefault("repeat", 2)
+        if not isinstance(rep, int) or rep < 1:
+            raise MissionError(f"{where}: 'repeat' must be an int >= 1")
+        # Optional explicit idempotence sample; None -> probe picks a fixed subset.
+        sample = q.setdefault("sample", None)
+        if sample is not None:
+            ok = isinstance(sample, list) and all(
+                isinstance(p, list) and len(p) == 2 and all(isinstance(x, str) for x in p)
+                for p in sample)
+            if not ok:
+                raise MissionError(f"{where}: 'sample' must be a list of [out,in] string pairs or omitted")
+
+    elif kind == "apex_token_resolution":
+        # WA1-WIRE (C2 step 3): @/$ resolution table, one row per (token, context).
+        toks = _req(q, "tokens", list, where)
+        if not toks or not all(isinstance(x, str) and x.strip() for x in toks):
+            raise MissionError(f"{where}: 'tokens' must be a non-empty list of token strings")
+        ctxs = q.setdefault("contexts", None)
+        if ctxs is not None and (not isinstance(ctxs, list)
+                                 or not all(isinstance(x, str) and x.strip() for x in ctxs)):
+            raise MissionError(f"{where}: 'contexts' must be a list of non-empty strings or omitted")
 
     return q
 
@@ -246,5 +279,5 @@ def load_mission(path: Path) -> Mission:
     except FileNotFoundError:
         raise MissionError(f"mission file not found: {path}")
     except json.JSONDecodeError as e:
-        raise MissionError(f"{path}: invalid JSON — {e}")
+        raise MissionError(f"{path}: invalid JSON ΓÇö {e}")
     return validate_mission(data, source=str(path))

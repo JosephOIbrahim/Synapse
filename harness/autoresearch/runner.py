@@ -1,13 +1,13 @@
-#!/usr/bin/env python
-"""AUTORESEARCH runner — executes a probe mission inside hython, unattended.
+﻿#!/usr/bin/env python
+"""AUTORESEARCH runner ΓÇö executes a probe mission inside hython, unattended.
 
 The model authors questions (mission files). Only probes produce answers.
-This process runs DETACHED. Desktop Commander never waits on it — DC fires
+This process runs DETACHED. Desktop Commander never waits on it ΓÇö DC fires
 the launch via drive_autoresearch.ps1 and returns in milliseconds; Claude
 polls the artifacts below with cheap reads. Never trust the call, trust
 the artifact.
 
-Contract (every write is atomic — tmp file + os.replace):
+Contract (every write is atomic ΓÇö tmp file + os.replace):
     state.json                 heartbeat {mission, phase, question, done, total, pct, ts, pid}
     lop_truth_<build>.json     evidence, atomically rewritten after every question
     DONE | FAILED              sentinel, written LAST. FAILED carries the traceback.
@@ -99,11 +99,12 @@ class Run:
         self.meta["canonicalizer"] = canonicalizer
         # Evidence filename follows the mission's artifact_prefix (default
         # "lop_truth"; apex_basic sets "apex_truth"). WA1-TRUTH.
+        # "lop_truth"; apex_basic sets "apex_truth", apex_wire "apex_wire_matrix").
         self.meta["artifact_prefix"] = self.mission.artifact_prefix
         self.evidence_path = self.out / f"{self.mission.artifact_prefix}_{build}.json"
         if not self.meta["target_build_match"]:
             log(f"WARNING: probed build {build} != mission target "
-                f"{self.mission.target_build} — evidence is true to the probed build")
+                f"{self.mission.target_build} ΓÇö evidence is true to the probed build")
 
     def record(self, claim: str, value, probe: str, note: str = "") -> None:
         entry = {
@@ -161,12 +162,16 @@ def question_label(kind: str, q: dict) -> str:
         return f"apex_catalog:{q.get('namespace', '*')}"
     if kind == "apex_port_signature":
         return f"apex_ports:{q['callback']}"
+    if kind == "apex_wire_matrix":
+        return f"apex_wire:{len(q.get('type_set', []))}types"
+    if kind == "apex_token_resolution":
+        return f"apex_tokens:{len(q.get('tokens', []))}x{len(q.get('contexts') or [])}"
     return kind
 
 
 def execute_question(kind: str, q: dict, probes, run: Run) -> None:
     """Dispatch one question to its probe. Probe exceptions become evidence,
-    not crashes — a dead literal is an answer, not a failure."""
+    not crashes ΓÇö a dead literal is an answer, not a failure."""
     note = q.get("note", "")
     try:
         if kind == "type_discovery":
@@ -216,6 +221,13 @@ def execute_question(kind: str, q: dict, probes, run: Run) -> None:
         elif kind == "apex_port_signature":
             value = probes.probe_apex_port_signature(q["callback"])
             run.record(f"apex_port_signature:{q['callback']}", value, kind, note)
+        elif kind == "apex_wire_matrix":
+            value = probes.probe_apex_wire_matrix(q["type_set"], q["repeat"], q["sample"])
+            run.record("apex_wire_matrix", value, kind, note)
+
+        elif kind == "apex_token_resolution":
+            value = probes.probe_apex_token_resolution(q["tokens"], q["contexts"])
+            run.record("apex_token_resolution", value, kind, note)
 
         else:  # unreachable post-validation; recorded, not raised
             run.record(f"unknown_kind:{kind}", {"error": "unknown question kind"}, kind)
@@ -237,7 +249,7 @@ def run_mission(mission: Mission, out_dir: Path) -> Run:
         f"| {run.total} questions")
 
     for phase in mission.phases:
-        log(f"phase {phase.id} ({phase.kind}) — {len(phase.questions)} questions")
+        log(f"phase {phase.id} ({phase.kind}) ΓÇö {len(phase.questions)} questions")
         for q in phase.questions:
             label = question_label(phase.kind, q)
             run.heartbeat(phase.id, label)
@@ -245,7 +257,7 @@ def run_mission(mission: Mission, out_dir: Path) -> Run:
         run.heartbeat(phase.id, "phase complete")
 
     run.finish()
-    log(f"DONE — {len(run.entries)} entries, {run.failures()} probe failures")
+    log(f"DONE ΓÇö {len(run.entries)} entries, {run.failures()} probe failures")
     return run
 
 
