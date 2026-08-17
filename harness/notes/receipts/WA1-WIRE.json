@@ -1,0 +1,76 @@
+{
+  "leg": "WA1-WIRE",
+  "name": "C2: wire-typing matrix + @/$ resolution table",
+  "status": "green_with_findings",
+  "build_probed": "22.0.400",
+  "product_head": "6e02ccf6fc27843de9010ebba4df5c6aef3d1da8",
+  "base": "cecfa54c137655e894038749b2402d724e37235f",
+  "artifact": "harness/autoresearch/runs/apex_wire_20260817_130845/apex_wire_matrix_22.0.400.json",
+  "type_set_source": "declared_fixture (21 types, catalog-proven: each has a live Value<T> in apex.callbackRegistry().callbackDefinitions(), 2286 names, TRUTH artifact apex_basic_20260817_122650/apex_truth_22.0.400.json). NOT harvested from TRUTH's apex_port_signature artifact, whose port 'type' field is null on this build (see finding F1). The wire probe reads live port types via Graph.portTypeName(port_id).",
+  "acceptance": [
+    {
+      "predicate": "apex_wire_matrix_<build>.json exists covering the full ordered-pair product of the consumed type set, every cell connects|coerces|rejects(+exception)|UNKNOWN",
+      "verdict": "pass",
+      "evidence": "harness/autoresearch/runs/apex_wire_20260817_130845/apex_wire_matrix_22.0.400.json entry claim=apex_wire_matrix: type_set_count=21, pair_count=441 (=21^2), verdict_counts={connect:21, reject:420}, 0 cells with missing verdict, 0 rejects without exception text (each reject carries 'Mismatched type: /s:value:X -> /d:parm:Y'). type_present all True -> 0 UNKNOWN cells (fixture fully catalog-proven)."
+    },
+    {
+      "predicate": "repeat-2 sample re-run yields identical verdicts (idempotence hash match)",
+      "verdict": "pass",
+      "evidence": "same artifact, value.repeat: repeat=2, sample_count=81 (9x9 core), idempotent=true, pass_hashes both 90f3d3c5...a4a4ed2b, drift=[]. Cross-run belt-and-suspenders: matrix_hash 8bde4bb5...02ea94 identical across two independent hython 22.0.400 sessions (second run was scratch, removed)."
+    },
+    {
+      "predicate": "@/$ resolution table present with one row per (token, bind context) pair; unmeasured contexts UNKNOWN",
+      "verdict": "pass",
+      "evidence": "same artifact entry claim=apex_token_resolution: row_count=68 (17 tokens x 4 contexts), 0 rows missing resolved_to, 0 UNKNOWN rows without a reason. summary_by_context: hscript_global {resolved:10,literal:7,unknown:0}, scene_node_parm {10,7,0}, apex_graph_parm {0,17,0}, apex_invoke_binding {0,0,unknown:17}. Invoke-binding rows UNKNOWN with reason + structural binding-parm surface recorded (skip != pass)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "WA1-WIRE-F1",
+      "claim": "WA1-TRUTH's apex_port_signature artifact reports NULL port types on H22.0.400 (arity is correct, 'type' is null for every port). Root cause: probes.py _ports() calls _safe_str(p.name)/_safe_str(p.type_name), and _safe_str(fn) does str(fn()) -- it CALLS its argument, but p.name/p.type_name are string properties, so fn() raises and null is recorded. Downstream: the type set CANNOT be harvested from that artifact; consumers must read types from Graph.portTypeName(port_id) instead (as this leg does).",
+      "anchor": "wa1-truth runs/apex_basic_20260817_122650/apex_truth_22.0.400.json (e.g. Add<Matrix4> ports type:null); root cause at wa1-truth harness/autoresearch/probes.py:152 (_safe_str) + :1159-1160 (_safe_str(p.name)/(p.type_name))",
+      "severity": "warn",
+      "owner": "WA1-TRUTH (their file; not fixed here -- flagged)"
+    },
+    {
+      "id": "WA1-WIRE-F2",
+      "claim": "APEX wire typing is EXACT-match on 22.0.400. Graph.addWire is purely structural (always returns a wire; never type-checks); type checking is at Graph.resolveTypes()/errors(). Any mismatch -- even Int->Float -- rejects with 'Mismatched type: ...'. There is NO implicit wire coercion: over the full 21x21 product, 21 connect (exact-match diagonal) + 420 reject + 0 coerce. Coercion in APEX is explicit via Convert<A,B> callbacks (present in the catalog), not via a direct port-to-port wire.",
+      "anchor": "harness/autoresearch/runs/apex_wire_20260817_130845/apex_wire_matrix_22.0.400.json (verdict_counts + per-cell exception text)",
+      "severity": "info"
+    },
+    {
+      "id": "WA1-WIRE-F3",
+      "claim": "@/$ resolution: $-forms expand and @-forms are literal in hscript_global (hou.text.expandString) and scene_node_parm (node string-parm eval); APEX graph parms store BOTH literally (typed data, no hscript expansion); the apex::invokegraph @attr binding is not measurable headless (needs a cooked geometry+graph invoke) -> UNKNOWN. $OS is context-dependent: 'Director' at session-global vs the node name ('font1') at node-context.",
+      "anchor": "harness/autoresearch/runs/apex_wire_20260817_130845/apex_wire_matrix_22.0.400.json (apex_token_resolution rows) + harness/notes/WA1-WIRE-NOTES.md",
+      "severity": "info"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "WA1-WIRE-R1",
+      "topic": "shared-seam merge-awareness",
+      "detail": "probes.py, runner.py, mission_schema.py are the WA1-TRUTH-released shared seam. This leg's edits are additive: new kinds apex_wire_matrix + apex_token_resolution (probe fns, dispatch branches, VALID_KINDS + _validate_question branches). The artifact_prefix mechanism was replicated VERBATIM from TRUTH so those lines auto-merge; helper fns are _wm_/_tok_-prefixed to avoid colliding with TRUTH's _apex_registry/_apex_log_capture. At merge, VALID_KINDS and the runner/schema dispatch chains need a trivial human union (both waves add branches to the same regions). No overlapping OPEN bus claim existed at edit time (TRUTH released first)."
+    },
+    {
+      "id": "WA1-WIRE-R2",
+      "topic": "F1 fix is TRUTH's to make",
+      "detail": "The null-port-type bug (F1) lives in TRUTH's probes.py additions. The one-line fix is to read p.name/p.type_name as properties (or getattr) rather than _safe_str(fn)=str(fn()). Not fixed here (their released territory); flagged so the wave's port-type surface can be made usable if RECIPE/XREF need declared port types rather than arity."
+    }
+  ],
+  "spawn": [
+    {
+      "id": "APEX-CONVERT-MATRIX",
+      "class": "probe",
+      "name": "C2b: APEX explicit-coercion (Convert<A,B>) matrix - which cross-type conversions exist as callbacks",
+      "band": "BUILD",
+      "note": "F2 established that a DIRECT wire never coerces. The complement of the wire matrix is the set of Convert<A,B> callbacks in apex.callbackRegistry() that DO provide explicit coercion. Probe kind apex_convert_matrix: for each ordered (A,B) in the wire-matrix type set, does 'Convert<A,B>' exist in callbackDefinitions()? Output a companion coercion table so W1 has both halves (wire=never-coerce, Convert=the explicit path). Pure registry-membership; deterministic; idempotent. Consumes the same declared type set.",
+      "targets": [
+        "harness/autoresearch/probes.py: probe kind apex_convert_matrix (registry membership of Convert<A,B> over the type-set product)",
+        "harness/autoresearch/missions/apex_wire.json: add a phase, or a sibling mission",
+        "run + repeat-2 idempotence"
+      ],
+      "spawn_classes": ["probe"],
+      "source": {"doc": "docs/APEX_H22_BLUEPRINT.md", "anchor": "sec.5 C2 - the coercion half of the wire matrix"}
+    }
+  ]
+}
