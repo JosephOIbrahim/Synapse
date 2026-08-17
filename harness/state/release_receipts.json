@@ -6,9 +6,9 @@
     "notes": "Joe's word 'pass' at live seat. Install from dev checkout @ df8c9ef3 (vNEXT ZIP cannot exist pre-tag; ZIP re-run available post-tag). Panel + shelf both appeared after restart - shelf evidenced by screenshot in session. Seven panel/shelf UX defects observed, logged in harness/notes/h22/panel-observations-2026-08-16.md; none touch the g1 criterion."
   },
   "g5_lifecycle": {
-    "result": "fail",
+    "result": "pass",
     "build": "22.0.400",
     "date": "2026-08-16",
-    "notes": "Joe's dictated observation at live seat: built a Solaris network, closed the SYNAPSE tab, operation completed headless (work-in-flight SURVIVED), reopened panel - not connected, no chat history; reconnect met a fresh runtime. Consistent with P0.3 (panel-parented beat source -> false freeze escalation on healthy runtime); root cause not independently confirmed in-session. Verdict taken from Joe's narrative + direction 'fold these as changes into the harness and execute'. Ritual HALTED at g5 per stop clause; g6-g9 pending; g5 re-runs on the fixed build. Fix leg = R.2 spec (process-lifetime beat owner + deliberate-detach handling)."
+    "notes": "Joe's word 'pass' at live seat, fixed build (master 0e313535, fresh GUI session 20:32). Re-run of the halted gate: built via /synapse, closed the SYNAPSE tab, reopened - panel reconnected to the same session (history present, build intact, no fresh-runtime greeting). P0.3 verified dead by operator hands; behavioral pin W6-BEAT guards the regression."
   }
 }
