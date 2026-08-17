@@ -1,0 +1,54 @@
+{
+  "leg": "W5-WXC",
+  "status": "green_with_findings",
+  "product_head": "5c7afd9aeb725bdf3b9dafd2bed14b711824c259",
+  "base": "4c366f916dd24706db9e010f89e29e848ead3d42",
+  "note": "Read-only crucible shard C. All evidence first-hand from this worktree's own git/tool runs; nothing inherited. Findings posted live to W5-WCRUX on the wave5 bus as they landed (6 findings), explicit RELEASE at close.",
+  "acceptance": [
+    {
+      "predicate": "divergence arc verdict with anchors; mandate inputs binary",
+      "verdict": "pass",
+      "evidence": "Arc: ruling points 1-2 STAND (P1 audit=KEEP - 6 audit commits present on wave5/measures: 5320da97/9bd298c4/e544534b/eeebca16/a1e3fa03/d44b750f; P2 Layer-6 attribution - wave5/measures:harness/notes/h22/AUDIT-2026-08-16-unmeasured.md:23-28 ties findings to Layer-6 synapse_doctor fidelity=0.0 lineage). Points 3-4 DISCHARGED by 520a10d4 and NOT laundered - charter artifacts exist first-hand (validation/measures.py 12294b, validation/explosion.py 7930b, rulebook/goldens/sim/{healthy,exploding}_sim.json, tests/test_measures_contracts.py 11073b), receipt A1/A2 PASS w/ real artifacts + A3 honestly PARTIAL-EXTENDS. Mandate inputs (binary): receipt-is-closing-commit=YES (520a10d4 is tip AND touches only W5-MEASURES.json, 96 ins); bus RELEASE present=YES (status@2026-08-16T23:36:34 RELEASE:true, receipt_head 520a10d4); one-writer 9bd298c4=NOT a two-writer collision (wave5/panel has zero divergent edits to health_infographic.py; 9bd298c4 is the sole divergent writer, MEASURES/Layer-6 lineage) - it IS a crucible-crit-3 boundary crossing, disposition = CTO (F-PANEL). Full note: harness/notes/h22/W5-WXC-audit.md."
+    },
+    {
+      "predicate": "F-VER reconcile plan concrete enough to execute in one merge-train step",
+      "verdict": "pass",
+      "evidence": "master:VERSION=5.51.0 vs wave5/measures:VERSION=5.50.0 under tag v5.51.0 (0545881b). Six version surfaces across 5 files (scripts/sync_version.py:41-53): VERSION, pyproject.toml, python/synapse/__init__.py x2 (__version__ + docstring), CLAUDE.md, README.md. merge-base=df8c9ef3; master bumped all 5 files via 03ced883 (master-only since base); wave5/measures touched ZERO version files (git diff df8c9ef3..wave5/measures on the 5 paths = empty). => 3-way merge auto-resolves all six surfaces to master 5.51.0, NO manual reconcile, NO conflict. sync_version.py --write post-merge is SUFFICIENT but REDUNDANT (no-op; canonical propagates outward, never reads tags). Failing test tests/test_phase0c_doc1_version_conformance.py:184 (test_no_published_tag_outruns_the_canonical_version) self-heals: canonical becomes 5.51.0 == tag v5.51.0. Plan: (1) merge wave5/measures->master (clean on version files); (2) python scripts/sync_version.py --check -> PASS; (3) pytest tests/test_phase0c_doc1_version_conformance.py -> 11 passed. First-hand on master tree this session: sync_version --check verdict=PASS exit 0; conformance test 11 passed."
+    }
+  ],
+  "findings": [
+    {
+      "id": "W5-WXC-1",
+      "claim": "receipt-is-closing-commit HONORED for W5-MEASURES: tip 520a10d4 touches only harness/notes/receipts/W5-MEASURES.json (96 ins); charter deliverable validation/measures.py built (31de38b8) + hardened (6f8a158a, a6db2286).",
+      "anchor": "git show --stat 520a10d4; git rev-parse wave5/measures"
+    },
+    {
+      "id": "W5-WXC-2",
+      "claim": "bus RELEASE present for W5-MEASURES (has_release=True): status@2026-08-16T23:36:34 RELEASE:true, 7 files, verdict green_with_findings.",
+      "anchor": "harness/autorevise/bus/wave5/bus.jsonl frm W5-MEASURES status body.release"
+    },
+    {
+      "id": "W5-WXC-3-F-PANEL",
+      "claim": "9bd298c4 edits panel/health_infographic.py - a crossing of MEASURES crucible-criterion 3 (no overlap with W5-PANEL panel/) AND prior-audit Layer-6 (Bug B consumer) lineage. NOT a two-writer merge collision (no competing divergent writer; wave5/panel diff on that file = empty). Disposition reserved to CTO; the leg flagged it honestly as F-PANEL in its own RELEASE.",
+      "anchor": "git log --all -- panel/health_infographic.py; git diff --stat master...wave5/panel -- panel/health_infographic.py (empty); git log master..wave5/measures -- panel/health_infographic.py (9bd298c4 only)"
+    },
+    {
+      "id": "W5-WXC-4-honesty",
+      "claim": "The full 6479-test suite green on the branch tree is the leg's own claim; I did NOT re-run it (out of charter). Held UNKNOWN-to-me. Live hython golden cook of the MEASURES charter is gui_required -> UNKNOWN headless (matches MEASURES crucible-criterion 2). What I DID measure first-hand on master: version conformance slice 11 green + sync_version --check PASS.",
+      "anchor": "crucible_criteria: unobtainable renders UNKNOWN, never estimate"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "F-PANEL disposition",
+      "ask": "9bd298c4's panel/health_infographic.py edit crosses MEASURES crucible-crit-3 but is legitimate Layer-6 audit work and not a merge collision. CTO/human word: accept-as-audit-lineage vs require re-attribution. Not my word.",
+      "anchor": "harness/notes/h22/W5-WXC-audit.md Target 2"
+    },
+    {
+      "item": "wave5/measures merge + F-VER reconcile",
+      "ask": "Merge is a human word (per leg constitution). The F-VER plan is provided; on merge the version surfaces auto-reconcile to 5.51.0 with no manual edit. sync_version --write is optional/redundant. No edits performed.",
+      "anchor": "harness/notes/h22/W5-WXC-audit.md Target 3"
+    }
+  ],
+  "spawn": []
+}
