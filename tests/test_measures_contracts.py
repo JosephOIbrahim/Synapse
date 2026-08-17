@@ -187,6 +187,17 @@ class TestFP2Regressions:
                   {"frame": 5}, {"frame": 6, "kinetic_energy": 64.0}]  # frame 5 KE unmeasured
         assert detect_explosion(frames, ke_window=5).verdict == EXPL_UNKNOWN
 
+    def test_real_explosion_not_masked_by_unrelated_malformed_field(self):
+        # A malformed INFORMATIONAL signal (max_velocity, scored by no rule) must
+        # not downgrade a real NaN explosion to UNKNOWN — the blow-up wins.
+        r = detect_explosion([{"frame": 1, "kinetic_energy": float("nan")},
+                              {"frame": 2, "kinetic_energy": 1.0},
+                              {"frame": 3, "max_velocity": "oops"}])
+        assert r.verdict == EXPL_EXPLODING and r.signal == "nan" and r.offending_frame == 1
+        # but a malformed JUDGED signal with no explosion is still honest UNKNOWN
+        r2 = detect_explosion([{"frame": 1, "kinetic_energy": 1.0, "max_strain": "bad"}])
+        assert r2.verdict == EXPL_UNKNOWN
+
 
 # ── Acceptance 3 (extends, never forks): measurement -> existing exposure rung ──
 

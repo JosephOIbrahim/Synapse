@@ -94,18 +94,11 @@ def detect_explosion(
         f = frames[i]
         return f.get("frame", i) if isinstance(f, dict) else i
 
-    # ── Guard: a present-but-non-numeric judged signal is a BROKEN measurement.
-    # It is neither STABLE nor a clean explosion — we cannot judge it, so UNKNOWN.
-    # (NaN/inf are numeric floats and pass here, to be caught as explosions below.)
-    for i, fr in enumerate(frames):
-        for key in _SIGNAL_KEYS:
-            if key in fr and fr[key] is not None and not _is_number(fr[key]):
-                return ExplosionVerdict(
-                    UNKNOWN,
-                    unknown_reason=f"malformed signal '{key}' at frame {frame_no(i)}: {fr[key]!r} is not numeric",
-                )
+    # Explosion RULES run first: a definite explosion on numeric data must win
+    # over an unrelated malformed field elsewhere (never mask a real blow-up).
 
-    # ── Rule 1: any NaN/inf in a measured signal (highest severity) ──────────
+    # ── Rule 1: any NaN/inf in a measured signal (highest severity). A NaN
+    # anywhere means the solve diverged; _is_bad_float is type-safe on any value.
     for i, fr in enumerate(frames):
         for key in _SIGNAL_KEYS:
             if key in fr and _is_bad_float(fr[key]):
@@ -114,7 +107,7 @@ def detect_explosion(
                     detail=f"{key} is NaN/inf at frame {frame_no(i)}",
                 )
 
-    # ── Rule 2: max_strain over the hard bound ───────────────────────────────
+    # ── Rule 2: max_strain over the hard bound (numeric values only). ────────
     for i, fr in enumerate(frames):
         s = fr.get("max_strain")
         if _is_number(s) and s > strain_bound:
@@ -123,13 +116,11 @@ def detect_explosion(
                 detail=f"max_strain {s} > bound {strain_bound}",
             )
 
-    # ── Rule 3: monotonic KE growth over a window of N consecutive frames ────
-    kes = [fr.get("kinetic_energy") for fr in frames]
-    if all(k is None for k in kes):
-        # Strain/NaN were measurable (or absent) but KE never was — we cannot
-        # judge growth, so say so rather than pass by omission.
-        return ExplosionVerdict(UNKNOWN, unknown_reason="no kinetic_energy measured in any frame")
-
+    # ── Rule 3: monotonic KE growth over a window of N consecutive frames. A
+    # non-numeric KE is treated as a GAP (like a missing frame), so a malformed
+    # value can neither crash the comparison nor be read as growth. ──────────
+    kes = [fr.get("kinetic_energy") if _is_number(fr.get("kinetic_energy")) else None
+           for fr in frames]
     evaluated_a_window = False
     if ke_window >= 2:
         for start in range(0, len(frames) - ke_window + 1):
@@ -154,9 +145,25 @@ def detect_explosion(
                             f"(x{ratio} over baseline {baseline}) across {ke_window} consecutive frames"),
                 )
 
-    # KE data was present but no full, gap-free window ever assembled (fewer than
-    # ke_window frames, or every window straddled a KE gap). The growth rule could
-    # not run, so its silence is not evidence of stability. FP2: UNKNOWN, not STABLE.
+    # ── No explosion detected. Decide STABLE vs UNKNOWN honestly (FP2). ──────
+    # (a) A JUDGED signal (one a rule scores) present but non-numeric could not be
+    # judged -> UNKNOWN. max_velocity is informational (no rule scores it), so its
+    # corruption alone does not force UNKNOWN — and any real NaN/strain/KE
+    # explosion already won above, so a malformed field never masks a blow-up.
+    for i, fr in enumerate(frames):
+        for key in ("kinetic_energy", "max_strain"):
+            v = fr.get(key)
+            if v is not None and not _is_number(v):
+                return ExplosionVerdict(
+                    UNKNOWN,
+                    unknown_reason=f"malformed signal '{key}' at frame {frame_no(i)}: {v!r} is not numeric",
+                )
+    # (b) KE never numerically measured -> growth cannot be judged.
+    if not any(_is_number(fr.get("kinetic_energy")) for fr in frames):
+        return ExplosionVerdict(UNKNOWN, unknown_reason="no kinetic_energy measured in any frame")
+    # (c) KE present but no gap-free window of ke_window frames ever assembled
+    # (too few frames, or every window straddled a gap). The growth rule could not
+    # run, so its silence is not evidence of stability. UNKNOWN, not STABLE.
     if not evaluated_a_window:
         return ExplosionVerdict(
             UNKNOWN,
