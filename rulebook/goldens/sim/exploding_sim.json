@@ -1,0 +1,16 @@
+{
+  "kind": "sim",
+  "name": "exploding_sim",
+  "seed": 20260816,
+  "description": "A blown-up solver — kinetic energy more than doubles across 5 consecutive frames (1 -> 60). The explosion detector MUST read EXPLODING with signal ke_growth at the offending frame; max_strain stays under bound so ke_growth is the rule that fires (not strain), pinning the KE path specifically.",
+  "expect": { "verdict": "EXPLODING", "explosion": "EXPLODING", "signal": "ke_growth", "offending_frame": 5 },
+  "obs": {
+    "frames": [
+      { "frame": 1, "kinetic_energy": 1.0, "max_strain": 0.5, "max_velocity": 1.0 },
+      { "frame": 2, "kinetic_energy": 2.5, "max_strain": 0.9, "max_velocity": 2.0 },
+      { "frame": 3, "kinetic_energy": 7.0, "max_strain": 1.4, "max_velocity": 4.5 },
+      { "frame": 4, "kinetic_energy": 20.0, "max_strain": 2.0, "max_velocity": 9.0 },
+      { "frame": 5, "kinetic_energy": 60.0, "max_strain": 3.1, "max_velocity": 18.0 }
+    ]
+  }
+}
