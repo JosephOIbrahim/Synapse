@@ -1,0 +1,5141 @@
+{
+  "meta": {
+    "mission": "apex_wire",
+    "mission_version": "1.0.0",
+    "target_build": "22.0.400",
+    "build": "22.0.400",
+    "target_build_match": true,
+    "runner_version": "1.0.0",
+    "python": "3.13.10",
+    "started": "2026-08-17T17:08:47+00:00",
+    "finished": "2026-08-17T17:08:48+00:00",
+    "canonicalizer": "c3",
+    "artifact_prefix": "apex_wire_matrix"
+  },
+  "entries": [
+    {
+      "claim": "apex_wire_matrix",
+      "value": {
+        "build": "22.0.400",
+        "type_set": [
+          "Bool",
+          "Int",
+          "Float",
+          "String",
+          "Vector2",
+          "Vector3",
+          "Vector4",
+          "Matrix3",
+          "Matrix4",
+          "Geometry",
+          "Dict",
+          "DataItem",
+          "FloatRamp",
+          "ColorRamp",
+          "FloatArray",
+          "IntArray",
+          "StringArray",
+          "Vector3Array",
+          "Matrix4Array",
+          "GeometryArray",
+          "DictArray"
+        ],
+        "type_set_count": 21,
+        "type_set_source": "declared_fixture",
+        "type_present": {
+          "Bool": true,
+          "Int": true,
+          "Float": true,
+          "String": true,
+          "Vector2": true,
+          "Vector3": true,
+          "Vector4": true,
+          "Matrix3": true,
+          "Matrix4": true,
+          "Geometry": true,
+          "Dict": true,
+          "DataItem": true,
+          "FloatRamp": true,
+          "ColorRamp": true,
+          "FloatArray": true,
+          "IntArray": true,
+          "StringArray": true,
+          "Vector3Array": true,
+          "Matrix4Array": true,
+          "GeometryArray": true,
+          "DictArray": true
+        },
+        "pair_count": 441,
+        "verdict_counts": {
+          "connect": 21,
+          "reject": 420
+        },
+        "matrix_hash": "8bde4bb5df92a7c95b88b1e2563211c2593ff1bbf3f81f071bb47cf37402ea94",
+        "cells": [
+          {
+            "out": "Bool",
+            "in": "Bool",
+            "src_type": "Bool",
+            "dst_type": "Bool",
+            "verdict": "connect"
+          },
+          {
+            "out": "Bool",
+            "in": "Int",
+            "src_type": "Bool",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:Int"
+          },
+          {
+            "out": "Bool",
+            "in": "Float",
+            "src_type": "Bool",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:Float"
+          },
+          {
+            "out": "Bool",
+            "in": "String",
+            "src_type": "Bool",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:String"
+          },
+          {
+            "out": "Bool",
+            "in": "Vector2",
+            "src_type": "Bool",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:Vector2"
+          },
+          {
+            "out": "Bool",
+            "in": "Vector3",
+            "src_type": "Bool",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:Vector3"
+          },
+          {
+            "out": "Bool",
+            "in": "Vector4",
+            "src_type": "Bool",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:Vector4"
+          },
+          {
+            "out": "Bool",
+            "in": "Matrix3",
+            "src_type": "Bool",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:Matrix3"
+          },
+          {
+            "out": "Bool",
+            "in": "Matrix4",
+            "src_type": "Bool",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:Matrix4"
+          },
+          {
+            "out": "Bool",
+            "in": "Geometry",
+            "src_type": "Bool",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:Geometry"
+          },
+          {
+            "out": "Bool",
+            "in": "Dict",
+            "src_type": "Bool",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:Dict"
+          },
+          {
+            "out": "Bool",
+            "in": "DataItem",
+            "src_type": "Bool",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:DataItem"
+          },
+          {
+            "out": "Bool",
+            "in": "FloatRamp",
+            "src_type": "Bool",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Bool",
+            "in": "ColorRamp",
+            "src_type": "Bool",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Bool",
+            "in": "FloatArray",
+            "src_type": "Bool",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Bool",
+            "in": "IntArray",
+            "src_type": "Bool",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:IntArray"
+          },
+          {
+            "out": "Bool",
+            "in": "StringArray",
+            "src_type": "Bool",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:StringArray"
+          },
+          {
+            "out": "Bool",
+            "in": "Vector3Array",
+            "src_type": "Bool",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "Bool",
+            "in": "Matrix4Array",
+            "src_type": "Bool",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "Bool",
+            "in": "GeometryArray",
+            "src_type": "Bool",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Bool",
+            "in": "DictArray",
+            "src_type": "Bool",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Bool -> /d:parm:DictArray"
+          },
+          {
+            "out": "Int",
+            "in": "Bool",
+            "src_type": "Int",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:Bool"
+          },
+          {
+            "out": "Int",
+            "in": "Int",
+            "src_type": "Int",
+            "dst_type": "Int",
+            "verdict": "connect"
+          },
+          {
+            "out": "Int",
+            "in": "Float",
+            "src_type": "Int",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:Float"
+          },
+          {
+            "out": "Int",
+            "in": "String",
+            "src_type": "Int",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:String"
+          },
+          {
+            "out": "Int",
+            "in": "Vector2",
+            "src_type": "Int",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:Vector2"
+          },
+          {
+            "out": "Int",
+            "in": "Vector3",
+            "src_type": "Int",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:Vector3"
+          },
+          {
+            "out": "Int",
+            "in": "Vector4",
+            "src_type": "Int",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:Vector4"
+          },
+          {
+            "out": "Int",
+            "in": "Matrix3",
+            "src_type": "Int",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:Matrix3"
+          },
+          {
+            "out": "Int",
+            "in": "Matrix4",
+            "src_type": "Int",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:Matrix4"
+          },
+          {
+            "out": "Int",
+            "in": "Geometry",
+            "src_type": "Int",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:Geometry"
+          },
+          {
+            "out": "Int",
+            "in": "Dict",
+            "src_type": "Int",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:Dict"
+          },
+          {
+            "out": "Int",
+            "in": "DataItem",
+            "src_type": "Int",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:DataItem"
+          },
+          {
+            "out": "Int",
+            "in": "FloatRamp",
+            "src_type": "Int",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Int",
+            "in": "ColorRamp",
+            "src_type": "Int",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Int",
+            "in": "FloatArray",
+            "src_type": "Int",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Int",
+            "in": "IntArray",
+            "src_type": "Int",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:IntArray"
+          },
+          {
+            "out": "Int",
+            "in": "StringArray",
+            "src_type": "Int",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:StringArray"
+          },
+          {
+            "out": "Int",
+            "in": "Vector3Array",
+            "src_type": "Int",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "Int",
+            "in": "Matrix4Array",
+            "src_type": "Int",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "Int",
+            "in": "GeometryArray",
+            "src_type": "Int",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Int",
+            "in": "DictArray",
+            "src_type": "Int",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Int -> /d:parm:DictArray"
+          },
+          {
+            "out": "Float",
+            "in": "Bool",
+            "src_type": "Float",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:Bool"
+          },
+          {
+            "out": "Float",
+            "in": "Int",
+            "src_type": "Float",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:Int"
+          },
+          {
+            "out": "Float",
+            "in": "Float",
+            "src_type": "Float",
+            "dst_type": "Float",
+            "verdict": "connect"
+          },
+          {
+            "out": "Float",
+            "in": "String",
+            "src_type": "Float",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:String"
+          },
+          {
+            "out": "Float",
+            "in": "Vector2",
+            "src_type": "Float",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:Vector2"
+          },
+          {
+            "out": "Float",
+            "in": "Vector3",
+            "src_type": "Float",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:Vector3"
+          },
+          {
+            "out": "Float",
+            "in": "Vector4",
+            "src_type": "Float",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:Vector4"
+          },
+          {
+            "out": "Float",
+            "in": "Matrix3",
+            "src_type": "Float",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:Matrix3"
+          },
+          {
+            "out": "Float",
+            "in": "Matrix4",
+            "src_type": "Float",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:Matrix4"
+          },
+          {
+            "out": "Float",
+            "in": "Geometry",
+            "src_type": "Float",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:Geometry"
+          },
+          {
+            "out": "Float",
+            "in": "Dict",
+            "src_type": "Float",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:Dict"
+          },
+          {
+            "out": "Float",
+            "in": "DataItem",
+            "src_type": "Float",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:DataItem"
+          },
+          {
+            "out": "Float",
+            "in": "FloatRamp",
+            "src_type": "Float",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Float",
+            "in": "ColorRamp",
+            "src_type": "Float",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Float",
+            "in": "FloatArray",
+            "src_type": "Float",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Float",
+            "in": "IntArray",
+            "src_type": "Float",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:IntArray"
+          },
+          {
+            "out": "Float",
+            "in": "StringArray",
+            "src_type": "Float",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:StringArray"
+          },
+          {
+            "out": "Float",
+            "in": "Vector3Array",
+            "src_type": "Float",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "Float",
+            "in": "Matrix4Array",
+            "src_type": "Float",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "Float",
+            "in": "GeometryArray",
+            "src_type": "Float",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Float",
+            "in": "DictArray",
+            "src_type": "Float",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Float -> /d:parm:DictArray"
+          },
+          {
+            "out": "String",
+            "in": "Bool",
+            "src_type": "String",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Bool"
+          },
+          {
+            "out": "String",
+            "in": "Int",
+            "src_type": "String",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Int"
+          },
+          {
+            "out": "String",
+            "in": "Float",
+            "src_type": "String",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Float"
+          },
+          {
+            "out": "String",
+            "in": "String",
+            "src_type": "String",
+            "dst_type": "String",
+            "verdict": "connect"
+          },
+          {
+            "out": "String",
+            "in": "Vector2",
+            "src_type": "String",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Vector2"
+          },
+          {
+            "out": "String",
+            "in": "Vector3",
+            "src_type": "String",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Vector3"
+          },
+          {
+            "out": "String",
+            "in": "Vector4",
+            "src_type": "String",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Vector4"
+          },
+          {
+            "out": "String",
+            "in": "Matrix3",
+            "src_type": "String",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Matrix3"
+          },
+          {
+            "out": "String",
+            "in": "Matrix4",
+            "src_type": "String",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Matrix4"
+          },
+          {
+            "out": "String",
+            "in": "Geometry",
+            "src_type": "String",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Geometry"
+          },
+          {
+            "out": "String",
+            "in": "Dict",
+            "src_type": "String",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Dict"
+          },
+          {
+            "out": "String",
+            "in": "DataItem",
+            "src_type": "String",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:DataItem"
+          },
+          {
+            "out": "String",
+            "in": "FloatRamp",
+            "src_type": "String",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "String",
+            "in": "ColorRamp",
+            "src_type": "String",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "String",
+            "in": "FloatArray",
+            "src_type": "String",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:FloatArray"
+          },
+          {
+            "out": "String",
+            "in": "IntArray",
+            "src_type": "String",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:IntArray"
+          },
+          {
+            "out": "String",
+            "in": "StringArray",
+            "src_type": "String",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:StringArray"
+          },
+          {
+            "out": "String",
+            "in": "Vector3Array",
+            "src_type": "String",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "String",
+            "in": "Matrix4Array",
+            "src_type": "String",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "String",
+            "in": "GeometryArray",
+            "src_type": "String",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "String",
+            "in": "DictArray",
+            "src_type": "String",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:String -> /d:parm:DictArray"
+          },
+          {
+            "out": "Vector2",
+            "in": "Bool",
+            "src_type": "Vector2",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:Bool"
+          },
+          {
+            "out": "Vector2",
+            "in": "Int",
+            "src_type": "Vector2",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:Int"
+          },
+          {
+            "out": "Vector2",
+            "in": "Float",
+            "src_type": "Vector2",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:Float"
+          },
+          {
+            "out": "Vector2",
+            "in": "String",
+            "src_type": "Vector2",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:String"
+          },
+          {
+            "out": "Vector2",
+            "in": "Vector2",
+            "src_type": "Vector2",
+            "dst_type": "Vector2",
+            "verdict": "connect"
+          },
+          {
+            "out": "Vector2",
+            "in": "Vector3",
+            "src_type": "Vector2",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:Vector3"
+          },
+          {
+            "out": "Vector2",
+            "in": "Vector4",
+            "src_type": "Vector2",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:Vector4"
+          },
+          {
+            "out": "Vector2",
+            "in": "Matrix3",
+            "src_type": "Vector2",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:Matrix3"
+          },
+          {
+            "out": "Vector2",
+            "in": "Matrix4",
+            "src_type": "Vector2",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:Matrix4"
+          },
+          {
+            "out": "Vector2",
+            "in": "Geometry",
+            "src_type": "Vector2",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:Geometry"
+          },
+          {
+            "out": "Vector2",
+            "in": "Dict",
+            "src_type": "Vector2",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:Dict"
+          },
+          {
+            "out": "Vector2",
+            "in": "DataItem",
+            "src_type": "Vector2",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:DataItem"
+          },
+          {
+            "out": "Vector2",
+            "in": "FloatRamp",
+            "src_type": "Vector2",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Vector2",
+            "in": "ColorRamp",
+            "src_type": "Vector2",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Vector2",
+            "in": "FloatArray",
+            "src_type": "Vector2",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Vector2",
+            "in": "IntArray",
+            "src_type": "Vector2",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:IntArray"
+          },
+          {
+            "out": "Vector2",
+            "in": "StringArray",
+            "src_type": "Vector2",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:StringArray"
+          },
+          {
+            "out": "Vector2",
+            "in": "Vector3Array",
+            "src_type": "Vector2",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "Vector2",
+            "in": "Matrix4Array",
+            "src_type": "Vector2",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "Vector2",
+            "in": "GeometryArray",
+            "src_type": "Vector2",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Vector2",
+            "in": "DictArray",
+            "src_type": "Vector2",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector2 -> /d:parm:DictArray"
+          },
+          {
+            "out": "Vector3",
+            "in": "Bool",
+            "src_type": "Vector3",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:Bool"
+          },
+          {
+            "out": "Vector3",
+            "in": "Int",
+            "src_type": "Vector3",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:Int"
+          },
+          {
+            "out": "Vector3",
+            "in": "Float",
+            "src_type": "Vector3",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:Float"
+          },
+          {
+            "out": "Vector3",
+            "in": "String",
+            "src_type": "Vector3",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:String"
+          },
+          {
+            "out": "Vector3",
+            "in": "Vector2",
+            "src_type": "Vector3",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:Vector2"
+          },
+          {
+            "out": "Vector3",
+            "in": "Vector3",
+            "src_type": "Vector3",
+            "dst_type": "Vector3",
+            "verdict": "connect"
+          },
+          {
+            "out": "Vector3",
+            "in": "Vector4",
+            "src_type": "Vector3",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:Vector4"
+          },
+          {
+            "out": "Vector3",
+            "in": "Matrix3",
+            "src_type": "Vector3",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:Matrix3"
+          },
+          {
+            "out": "Vector3",
+            "in": "Matrix4",
+            "src_type": "Vector3",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:Matrix4"
+          },
+          {
+            "out": "Vector3",
+            "in": "Geometry",
+            "src_type": "Vector3",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:Geometry"
+          },
+          {
+            "out": "Vector3",
+            "in": "Dict",
+            "src_type": "Vector3",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:Dict"
+          },
+          {
+            "out": "Vector3",
+            "in": "DataItem",
+            "src_type": "Vector3",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:DataItem"
+          },
+          {
+            "out": "Vector3",
+            "in": "FloatRamp",
+            "src_type": "Vector3",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Vector3",
+            "in": "ColorRamp",
+            "src_type": "Vector3",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Vector3",
+            "in": "FloatArray",
+            "src_type": "Vector3",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Vector3",
+            "in": "IntArray",
+            "src_type": "Vector3",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:IntArray"
+          },
+          {
+            "out": "Vector3",
+            "in": "StringArray",
+            "src_type": "Vector3",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:StringArray"
+          },
+          {
+            "out": "Vector3",
+            "in": "Vector3Array",
+            "src_type": "Vector3",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "Vector3",
+            "in": "Matrix4Array",
+            "src_type": "Vector3",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "Vector3",
+            "in": "GeometryArray",
+            "src_type": "Vector3",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Vector3",
+            "in": "DictArray",
+            "src_type": "Vector3",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3 -> /d:parm:DictArray"
+          },
+          {
+            "out": "Vector4",
+            "in": "Bool",
+            "src_type": "Vector4",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:Bool"
+          },
+          {
+            "out": "Vector4",
+            "in": "Int",
+            "src_type": "Vector4",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:Int"
+          },
+          {
+            "out": "Vector4",
+            "in": "Float",
+            "src_type": "Vector4",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:Float"
+          },
+          {
+            "out": "Vector4",
+            "in": "String",
+            "src_type": "Vector4",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:String"
+          },
+          {
+            "out": "Vector4",
+            "in": "Vector2",
+            "src_type": "Vector4",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:Vector2"
+          },
+          {
+            "out": "Vector4",
+            "in": "Vector3",
+            "src_type": "Vector4",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:Vector3"
+          },
+          {
+            "out": "Vector4",
+            "in": "Vector4",
+            "src_type": "Vector4",
+            "dst_type": "Vector4",
+            "verdict": "connect"
+          },
+          {
+            "out": "Vector4",
+            "in": "Matrix3",
+            "src_type": "Vector4",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:Matrix3"
+          },
+          {
+            "out": "Vector4",
+            "in": "Matrix4",
+            "src_type": "Vector4",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:Matrix4"
+          },
+          {
+            "out": "Vector4",
+            "in": "Geometry",
+            "src_type": "Vector4",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:Geometry"
+          },
+          {
+            "out": "Vector4",
+            "in": "Dict",
+            "src_type": "Vector4",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:Dict"
+          },
+          {
+            "out": "Vector4",
+            "in": "DataItem",
+            "src_type": "Vector4",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:DataItem"
+          },
+          {
+            "out": "Vector4",
+            "in": "FloatRamp",
+            "src_type": "Vector4",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Vector4",
+            "in": "ColorRamp",
+            "src_type": "Vector4",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Vector4",
+            "in": "FloatArray",
+            "src_type": "Vector4",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Vector4",
+            "in": "IntArray",
+            "src_type": "Vector4",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:IntArray"
+          },
+          {
+            "out": "Vector4",
+            "in": "StringArray",
+            "src_type": "Vector4",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:StringArray"
+          },
+          {
+            "out": "Vector4",
+            "in": "Vector3Array",
+            "src_type": "Vector4",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "Vector4",
+            "in": "Matrix4Array",
+            "src_type": "Vector4",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "Vector4",
+            "in": "GeometryArray",
+            "src_type": "Vector4",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Vector4",
+            "in": "DictArray",
+            "src_type": "Vector4",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector4 -> /d:parm:DictArray"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Bool",
+            "src_type": "Matrix3",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:Bool"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Int",
+            "src_type": "Matrix3",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:Int"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Float",
+            "src_type": "Matrix3",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:Float"
+          },
+          {
+            "out": "Matrix3",
+            "in": "String",
+            "src_type": "Matrix3",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:String"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Vector2",
+            "src_type": "Matrix3",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:Vector2"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Vector3",
+            "src_type": "Matrix3",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:Vector3"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Vector4",
+            "src_type": "Matrix3",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:Vector4"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Matrix3",
+            "src_type": "Matrix3",
+            "dst_type": "Matrix3",
+            "verdict": "connect"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Matrix4",
+            "src_type": "Matrix3",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:Matrix4"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Geometry",
+            "src_type": "Matrix3",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:Geometry"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Dict",
+            "src_type": "Matrix3",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:Dict"
+          },
+          {
+            "out": "Matrix3",
+            "in": "DataItem",
+            "src_type": "Matrix3",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:DataItem"
+          },
+          {
+            "out": "Matrix3",
+            "in": "FloatRamp",
+            "src_type": "Matrix3",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Matrix3",
+            "in": "ColorRamp",
+            "src_type": "Matrix3",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Matrix3",
+            "in": "FloatArray",
+            "src_type": "Matrix3",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Matrix3",
+            "in": "IntArray",
+            "src_type": "Matrix3",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:IntArray"
+          },
+          {
+            "out": "Matrix3",
+            "in": "StringArray",
+            "src_type": "Matrix3",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:StringArray"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Vector3Array",
+            "src_type": "Matrix3",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "Matrix3",
+            "in": "Matrix4Array",
+            "src_type": "Matrix3",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "Matrix3",
+            "in": "GeometryArray",
+            "src_type": "Matrix3",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Matrix3",
+            "in": "DictArray",
+            "src_type": "Matrix3",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix3 -> /d:parm:DictArray"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Bool",
+            "src_type": "Matrix4",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:Bool"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Int",
+            "src_type": "Matrix4",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:Int"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Float",
+            "src_type": "Matrix4",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:Float"
+          },
+          {
+            "out": "Matrix4",
+            "in": "String",
+            "src_type": "Matrix4",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:String"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Vector2",
+            "src_type": "Matrix4",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:Vector2"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Vector3",
+            "src_type": "Matrix4",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:Vector3"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Vector4",
+            "src_type": "Matrix4",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:Vector4"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Matrix3",
+            "src_type": "Matrix4",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:Matrix3"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Matrix4",
+            "src_type": "Matrix4",
+            "dst_type": "Matrix4",
+            "verdict": "connect"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Geometry",
+            "src_type": "Matrix4",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:Geometry"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Dict",
+            "src_type": "Matrix4",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:Dict"
+          },
+          {
+            "out": "Matrix4",
+            "in": "DataItem",
+            "src_type": "Matrix4",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:DataItem"
+          },
+          {
+            "out": "Matrix4",
+            "in": "FloatRamp",
+            "src_type": "Matrix4",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Matrix4",
+            "in": "ColorRamp",
+            "src_type": "Matrix4",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Matrix4",
+            "in": "FloatArray",
+            "src_type": "Matrix4",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Matrix4",
+            "in": "IntArray",
+            "src_type": "Matrix4",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:IntArray"
+          },
+          {
+            "out": "Matrix4",
+            "in": "StringArray",
+            "src_type": "Matrix4",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:StringArray"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Vector3Array",
+            "src_type": "Matrix4",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "Matrix4",
+            "in": "Matrix4Array",
+            "src_type": "Matrix4",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "Matrix4",
+            "in": "GeometryArray",
+            "src_type": "Matrix4",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Matrix4",
+            "in": "DictArray",
+            "src_type": "Matrix4",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4 -> /d:parm:DictArray"
+          },
+          {
+            "out": "Geometry",
+            "in": "Bool",
+            "src_type": "Geometry",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:Bool"
+          },
+          {
+            "out": "Geometry",
+            "in": "Int",
+            "src_type": "Geometry",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:Int"
+          },
+          {
+            "out": "Geometry",
+            "in": "Float",
+            "src_type": "Geometry",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:Float"
+          },
+          {
+            "out": "Geometry",
+            "in": "String",
+            "src_type": "Geometry",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:String"
+          },
+          {
+            "out": "Geometry",
+            "in": "Vector2",
+            "src_type": "Geometry",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:Vector2"
+          },
+          {
+            "out": "Geometry",
+            "in": "Vector3",
+            "src_type": "Geometry",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:Vector3"
+          },
+          {
+            "out": "Geometry",
+            "in": "Vector4",
+            "src_type": "Geometry",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:Vector4"
+          },
+          {
+            "out": "Geometry",
+            "in": "Matrix3",
+            "src_type": "Geometry",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:Matrix3"
+          },
+          {
+            "out": "Geometry",
+            "in": "Matrix4",
+            "src_type": "Geometry",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:Matrix4"
+          },
+          {
+            "out": "Geometry",
+            "in": "Geometry",
+            "src_type": "Geometry",
+            "dst_type": "Geometry",
+            "verdict": "connect"
+          },
+          {
+            "out": "Geometry",
+            "in": "Dict",
+            "src_type": "Geometry",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:Dict"
+          },
+          {
+            "out": "Geometry",
+            "in": "DataItem",
+            "src_type": "Geometry",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:DataItem"
+          },
+          {
+            "out": "Geometry",
+            "in": "FloatRamp",
+            "src_type": "Geometry",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Geometry",
+            "in": "ColorRamp",
+            "src_type": "Geometry",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Geometry",
+            "in": "FloatArray",
+            "src_type": "Geometry",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Geometry",
+            "in": "IntArray",
+            "src_type": "Geometry",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:IntArray"
+          },
+          {
+            "out": "Geometry",
+            "in": "StringArray",
+            "src_type": "Geometry",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:StringArray"
+          },
+          {
+            "out": "Geometry",
+            "in": "Vector3Array",
+            "src_type": "Geometry",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "Geometry",
+            "in": "Matrix4Array",
+            "src_type": "Geometry",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "Geometry",
+            "in": "GeometryArray",
+            "src_type": "Geometry",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Geometry",
+            "in": "DictArray",
+            "src_type": "Geometry",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Geometry -> /d:parm:DictArray"
+          },
+          {
+            "out": "Dict",
+            "in": "Bool",
+            "src_type": "Dict",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:Bool"
+          },
+          {
+            "out": "Dict",
+            "in": "Int",
+            "src_type": "Dict",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:Int"
+          },
+          {
+            "out": "Dict",
+            "in": "Float",
+            "src_type": "Dict",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:Float"
+          },
+          {
+            "out": "Dict",
+            "in": "String",
+            "src_type": "Dict",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:String"
+          },
+          {
+            "out": "Dict",
+            "in": "Vector2",
+            "src_type": "Dict",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:Vector2"
+          },
+          {
+            "out": "Dict",
+            "in": "Vector3",
+            "src_type": "Dict",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:Vector3"
+          },
+          {
+            "out": "Dict",
+            "in": "Vector4",
+            "src_type": "Dict",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:Vector4"
+          },
+          {
+            "out": "Dict",
+            "in": "Matrix3",
+            "src_type": "Dict",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:Matrix3"
+          },
+          {
+            "out": "Dict",
+            "in": "Matrix4",
+            "src_type": "Dict",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:Matrix4"
+          },
+          {
+            "out": "Dict",
+            "in": "Geometry",
+            "src_type": "Dict",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:Geometry"
+          },
+          {
+            "out": "Dict",
+            "in": "Dict",
+            "src_type": "Dict",
+            "dst_type": "Dict",
+            "verdict": "connect"
+          },
+          {
+            "out": "Dict",
+            "in": "DataItem",
+            "src_type": "Dict",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:DataItem"
+          },
+          {
+            "out": "Dict",
+            "in": "FloatRamp",
+            "src_type": "Dict",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Dict",
+            "in": "ColorRamp",
+            "src_type": "Dict",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Dict",
+            "in": "FloatArray",
+            "src_type": "Dict",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Dict",
+            "in": "IntArray",
+            "src_type": "Dict",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:IntArray"
+          },
+          {
+            "out": "Dict",
+            "in": "StringArray",
+            "src_type": "Dict",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:StringArray"
+          },
+          {
+            "out": "Dict",
+            "in": "Vector3Array",
+            "src_type": "Dict",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "Dict",
+            "in": "Matrix4Array",
+            "src_type": "Dict",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "Dict",
+            "in": "GeometryArray",
+            "src_type": "Dict",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Dict",
+            "in": "DictArray",
+            "src_type": "Dict",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Dict -> /d:parm:DictArray"
+          },
+          {
+            "out": "DataItem",
+            "in": "Bool",
+            "src_type": "DataItem",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Bool"
+          },
+          {
+            "out": "DataItem",
+            "in": "Int",
+            "src_type": "DataItem",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Int"
+          },
+          {
+            "out": "DataItem",
+            "in": "Float",
+            "src_type": "DataItem",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Float"
+          },
+          {
+            "out": "DataItem",
+            "in": "String",
+            "src_type": "DataItem",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:String"
+          },
+          {
+            "out": "DataItem",
+            "in": "Vector2",
+            "src_type": "DataItem",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Vector2"
+          },
+          {
+            "out": "DataItem",
+            "in": "Vector3",
+            "src_type": "DataItem",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Vector3"
+          },
+          {
+            "out": "DataItem",
+            "in": "Vector4",
+            "src_type": "DataItem",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Vector4"
+          },
+          {
+            "out": "DataItem",
+            "in": "Matrix3",
+            "src_type": "DataItem",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Matrix3"
+          },
+          {
+            "out": "DataItem",
+            "in": "Matrix4",
+            "src_type": "DataItem",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Matrix4"
+          },
+          {
+            "out": "DataItem",
+            "in": "Geometry",
+            "src_type": "DataItem",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Geometry"
+          },
+          {
+            "out": "DataItem",
+            "in": "Dict",
+            "src_type": "DataItem",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Dict"
+          },
+          {
+            "out": "DataItem",
+            "in": "DataItem",
+            "src_type": "DataItem",
+            "dst_type": "DataItem",
+            "verdict": "connect"
+          },
+          {
+            "out": "DataItem",
+            "in": "FloatRamp",
+            "src_type": "DataItem",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "DataItem",
+            "in": "ColorRamp",
+            "src_type": "DataItem",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "DataItem",
+            "in": "FloatArray",
+            "src_type": "DataItem",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:FloatArray"
+          },
+          {
+            "out": "DataItem",
+            "in": "IntArray",
+            "src_type": "DataItem",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:IntArray"
+          },
+          {
+            "out": "DataItem",
+            "in": "StringArray",
+            "src_type": "DataItem",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:StringArray"
+          },
+          {
+            "out": "DataItem",
+            "in": "Vector3Array",
+            "src_type": "DataItem",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "DataItem",
+            "in": "Matrix4Array",
+            "src_type": "DataItem",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "DataItem",
+            "in": "GeometryArray",
+            "src_type": "DataItem",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "DataItem",
+            "in": "DictArray",
+            "src_type": "DataItem",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DataItem -> /d:parm:DictArray"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Bool",
+            "src_type": "FloatRamp",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Bool"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Int",
+            "src_type": "FloatRamp",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Int"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Float",
+            "src_type": "FloatRamp",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Float"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "String",
+            "src_type": "FloatRamp",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:String"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Vector2",
+            "src_type": "FloatRamp",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Vector2"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Vector3",
+            "src_type": "FloatRamp",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Vector3"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Vector4",
+            "src_type": "FloatRamp",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Vector4"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Matrix3",
+            "src_type": "FloatRamp",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Matrix3"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Matrix4",
+            "src_type": "FloatRamp",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Matrix4"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Geometry",
+            "src_type": "FloatRamp",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Geometry"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Dict",
+            "src_type": "FloatRamp",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Dict"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "DataItem",
+            "src_type": "FloatRamp",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:DataItem"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "FloatRamp",
+            "src_type": "FloatRamp",
+            "dst_type": "FloatRamp",
+            "verdict": "connect"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "ColorRamp",
+            "src_type": "FloatRamp",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "FloatArray",
+            "src_type": "FloatRamp",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:FloatArray"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "IntArray",
+            "src_type": "FloatRamp",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:IntArray"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "StringArray",
+            "src_type": "FloatRamp",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:StringArray"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Vector3Array",
+            "src_type": "FloatRamp",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "Matrix4Array",
+            "src_type": "FloatRamp",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "GeometryArray",
+            "src_type": "FloatRamp",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "FloatRamp",
+            "in": "DictArray",
+            "src_type": "FloatRamp",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatRamp -> /d:parm:DictArray"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Bool",
+            "src_type": "ColorRamp",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Bool"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Int",
+            "src_type": "ColorRamp",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Int"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Float",
+            "src_type": "ColorRamp",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Float"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "String",
+            "src_type": "ColorRamp",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:String"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Vector2",
+            "src_type": "ColorRamp",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Vector2"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Vector3",
+            "src_type": "ColorRamp",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Vector3"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Vector4",
+            "src_type": "ColorRamp",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Vector4"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Matrix3",
+            "src_type": "ColorRamp",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Matrix3"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Matrix4",
+            "src_type": "ColorRamp",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Matrix4"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Geometry",
+            "src_type": "ColorRamp",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Geometry"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Dict",
+            "src_type": "ColorRamp",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Dict"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "DataItem",
+            "src_type": "ColorRamp",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:DataItem"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "FloatRamp",
+            "src_type": "ColorRamp",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "ColorRamp",
+            "src_type": "ColorRamp",
+            "dst_type": "ColorRamp",
+            "verdict": "connect"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "FloatArray",
+            "src_type": "ColorRamp",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:FloatArray"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "IntArray",
+            "src_type": "ColorRamp",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:IntArray"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "StringArray",
+            "src_type": "ColorRamp",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:StringArray"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Vector3Array",
+            "src_type": "ColorRamp",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "Matrix4Array",
+            "src_type": "ColorRamp",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "GeometryArray",
+            "src_type": "ColorRamp",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "ColorRamp",
+            "in": "DictArray",
+            "src_type": "ColorRamp",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:ColorRamp -> /d:parm:DictArray"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Bool",
+            "src_type": "FloatArray",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Bool"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Int",
+            "src_type": "FloatArray",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Int"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Float",
+            "src_type": "FloatArray",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Float"
+          },
+          {
+            "out": "FloatArray",
+            "in": "String",
+            "src_type": "FloatArray",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:String"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Vector2",
+            "src_type": "FloatArray",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Vector2"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Vector3",
+            "src_type": "FloatArray",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Vector3"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Vector4",
+            "src_type": "FloatArray",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Vector4"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Matrix3",
+            "src_type": "FloatArray",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Matrix3"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Matrix4",
+            "src_type": "FloatArray",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Matrix4"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Geometry",
+            "src_type": "FloatArray",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Geometry"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Dict",
+            "src_type": "FloatArray",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Dict"
+          },
+          {
+            "out": "FloatArray",
+            "in": "DataItem",
+            "src_type": "FloatArray",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:DataItem"
+          },
+          {
+            "out": "FloatArray",
+            "in": "FloatRamp",
+            "src_type": "FloatArray",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "FloatArray",
+            "in": "ColorRamp",
+            "src_type": "FloatArray",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "FloatArray",
+            "in": "FloatArray",
+            "src_type": "FloatArray",
+            "dst_type": "FloatArray",
+            "verdict": "connect"
+          },
+          {
+            "out": "FloatArray",
+            "in": "IntArray",
+            "src_type": "FloatArray",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:IntArray"
+          },
+          {
+            "out": "FloatArray",
+            "in": "StringArray",
+            "src_type": "FloatArray",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:StringArray"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Vector3Array",
+            "src_type": "FloatArray",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "FloatArray",
+            "in": "Matrix4Array",
+            "src_type": "FloatArray",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "FloatArray",
+            "in": "GeometryArray",
+            "src_type": "FloatArray",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "FloatArray",
+            "in": "DictArray",
+            "src_type": "FloatArray",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:FloatArray -> /d:parm:DictArray"
+          },
+          {
+            "out": "IntArray",
+            "in": "Bool",
+            "src_type": "IntArray",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Bool"
+          },
+          {
+            "out": "IntArray",
+            "in": "Int",
+            "src_type": "IntArray",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Int"
+          },
+          {
+            "out": "IntArray",
+            "in": "Float",
+            "src_type": "IntArray",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Float"
+          },
+          {
+            "out": "IntArray",
+            "in": "String",
+            "src_type": "IntArray",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:String"
+          },
+          {
+            "out": "IntArray",
+            "in": "Vector2",
+            "src_type": "IntArray",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Vector2"
+          },
+          {
+            "out": "IntArray",
+            "in": "Vector3",
+            "src_type": "IntArray",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Vector3"
+          },
+          {
+            "out": "IntArray",
+            "in": "Vector4",
+            "src_type": "IntArray",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Vector4"
+          },
+          {
+            "out": "IntArray",
+            "in": "Matrix3",
+            "src_type": "IntArray",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Matrix3"
+          },
+          {
+            "out": "IntArray",
+            "in": "Matrix4",
+            "src_type": "IntArray",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Matrix4"
+          },
+          {
+            "out": "IntArray",
+            "in": "Geometry",
+            "src_type": "IntArray",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Geometry"
+          },
+          {
+            "out": "IntArray",
+            "in": "Dict",
+            "src_type": "IntArray",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Dict"
+          },
+          {
+            "out": "IntArray",
+            "in": "DataItem",
+            "src_type": "IntArray",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:DataItem"
+          },
+          {
+            "out": "IntArray",
+            "in": "FloatRamp",
+            "src_type": "IntArray",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "IntArray",
+            "in": "ColorRamp",
+            "src_type": "IntArray",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "IntArray",
+            "in": "FloatArray",
+            "src_type": "IntArray",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:FloatArray"
+          },
+          {
+            "out": "IntArray",
+            "in": "IntArray",
+            "src_type": "IntArray",
+            "dst_type": "IntArray",
+            "verdict": "connect"
+          },
+          {
+            "out": "IntArray",
+            "in": "StringArray",
+            "src_type": "IntArray",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:StringArray"
+          },
+          {
+            "out": "IntArray",
+            "in": "Vector3Array",
+            "src_type": "IntArray",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "IntArray",
+            "in": "Matrix4Array",
+            "src_type": "IntArray",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "IntArray",
+            "in": "GeometryArray",
+            "src_type": "IntArray",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "IntArray",
+            "in": "DictArray",
+            "src_type": "IntArray",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:IntArray -> /d:parm:DictArray"
+          },
+          {
+            "out": "StringArray",
+            "in": "Bool",
+            "src_type": "StringArray",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Bool"
+          },
+          {
+            "out": "StringArray",
+            "in": "Int",
+            "src_type": "StringArray",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Int"
+          },
+          {
+            "out": "StringArray",
+            "in": "Float",
+            "src_type": "StringArray",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Float"
+          },
+          {
+            "out": "StringArray",
+            "in": "String",
+            "src_type": "StringArray",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:String"
+          },
+          {
+            "out": "StringArray",
+            "in": "Vector2",
+            "src_type": "StringArray",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Vector2"
+          },
+          {
+            "out": "StringArray",
+            "in": "Vector3",
+            "src_type": "StringArray",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Vector3"
+          },
+          {
+            "out": "StringArray",
+            "in": "Vector4",
+            "src_type": "StringArray",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Vector4"
+          },
+          {
+            "out": "StringArray",
+            "in": "Matrix3",
+            "src_type": "StringArray",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Matrix3"
+          },
+          {
+            "out": "StringArray",
+            "in": "Matrix4",
+            "src_type": "StringArray",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Matrix4"
+          },
+          {
+            "out": "StringArray",
+            "in": "Geometry",
+            "src_type": "StringArray",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Geometry"
+          },
+          {
+            "out": "StringArray",
+            "in": "Dict",
+            "src_type": "StringArray",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Dict"
+          },
+          {
+            "out": "StringArray",
+            "in": "DataItem",
+            "src_type": "StringArray",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:DataItem"
+          },
+          {
+            "out": "StringArray",
+            "in": "FloatRamp",
+            "src_type": "StringArray",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "StringArray",
+            "in": "ColorRamp",
+            "src_type": "StringArray",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "StringArray",
+            "in": "FloatArray",
+            "src_type": "StringArray",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:FloatArray"
+          },
+          {
+            "out": "StringArray",
+            "in": "IntArray",
+            "src_type": "StringArray",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:IntArray"
+          },
+          {
+            "out": "StringArray",
+            "in": "StringArray",
+            "src_type": "StringArray",
+            "dst_type": "StringArray",
+            "verdict": "connect"
+          },
+          {
+            "out": "StringArray",
+            "in": "Vector3Array",
+            "src_type": "StringArray",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "StringArray",
+            "in": "Matrix4Array",
+            "src_type": "StringArray",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "StringArray",
+            "in": "GeometryArray",
+            "src_type": "StringArray",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "StringArray",
+            "in": "DictArray",
+            "src_type": "StringArray",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:StringArray -> /d:parm:DictArray"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Bool",
+            "src_type": "Vector3Array",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:Bool"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Int",
+            "src_type": "Vector3Array",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:Int"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Float",
+            "src_type": "Vector3Array",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:Float"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "String",
+            "src_type": "Vector3Array",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:String"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Vector2",
+            "src_type": "Vector3Array",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:Vector2"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Vector3",
+            "src_type": "Vector3Array",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:Vector3"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Vector4",
+            "src_type": "Vector3Array",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:Vector4"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Matrix3",
+            "src_type": "Vector3Array",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:Matrix3"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Matrix4",
+            "src_type": "Vector3Array",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:Matrix4"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Geometry",
+            "src_type": "Vector3Array",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:Geometry"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Dict",
+            "src_type": "Vector3Array",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:Dict"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "DataItem",
+            "src_type": "Vector3Array",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:DataItem"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "FloatRamp",
+            "src_type": "Vector3Array",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "ColorRamp",
+            "src_type": "Vector3Array",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "FloatArray",
+            "src_type": "Vector3Array",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "IntArray",
+            "src_type": "Vector3Array",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:IntArray"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "StringArray",
+            "src_type": "Vector3Array",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:StringArray"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Vector3Array",
+            "src_type": "Vector3Array",
+            "dst_type": "Vector3Array",
+            "verdict": "connect"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "Matrix4Array",
+            "src_type": "Vector3Array",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "GeometryArray",
+            "src_type": "Vector3Array",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Vector3Array",
+            "in": "DictArray",
+            "src_type": "Vector3Array",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Vector3Array -> /d:parm:DictArray"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Bool",
+            "src_type": "Matrix4Array",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:Bool"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Int",
+            "src_type": "Matrix4Array",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:Int"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Float",
+            "src_type": "Matrix4Array",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:Float"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "String",
+            "src_type": "Matrix4Array",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:String"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Vector2",
+            "src_type": "Matrix4Array",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:Vector2"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Vector3",
+            "src_type": "Matrix4Array",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:Vector3"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Vector4",
+            "src_type": "Matrix4Array",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:Vector4"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Matrix3",
+            "src_type": "Matrix4Array",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:Matrix3"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Matrix4",
+            "src_type": "Matrix4Array",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:Matrix4"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Geometry",
+            "src_type": "Matrix4Array",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:Geometry"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Dict",
+            "src_type": "Matrix4Array",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:Dict"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "DataItem",
+            "src_type": "Matrix4Array",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:DataItem"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "FloatRamp",
+            "src_type": "Matrix4Array",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "ColorRamp",
+            "src_type": "Matrix4Array",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "FloatArray",
+            "src_type": "Matrix4Array",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:FloatArray"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "IntArray",
+            "src_type": "Matrix4Array",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:IntArray"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "StringArray",
+            "src_type": "Matrix4Array",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:StringArray"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Vector3Array",
+            "src_type": "Matrix4Array",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "Matrix4Array",
+            "src_type": "Matrix4Array",
+            "dst_type": "Matrix4Array",
+            "verdict": "connect"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "GeometryArray",
+            "src_type": "Matrix4Array",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "Matrix4Array",
+            "in": "DictArray",
+            "src_type": "Matrix4Array",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:Matrix4Array -> /d:parm:DictArray"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Bool",
+            "src_type": "GeometryArray",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Bool"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Int",
+            "src_type": "GeometryArray",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Int"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Float",
+            "src_type": "GeometryArray",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Float"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "String",
+            "src_type": "GeometryArray",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:String"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Vector2",
+            "src_type": "GeometryArray",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Vector2"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Vector3",
+            "src_type": "GeometryArray",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Vector3"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Vector4",
+            "src_type": "GeometryArray",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Vector4"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Matrix3",
+            "src_type": "GeometryArray",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Matrix3"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Matrix4",
+            "src_type": "GeometryArray",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Matrix4"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Geometry",
+            "src_type": "GeometryArray",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Geometry"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Dict",
+            "src_type": "GeometryArray",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Dict"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "DataItem",
+            "src_type": "GeometryArray",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:DataItem"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "FloatRamp",
+            "src_type": "GeometryArray",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "ColorRamp",
+            "src_type": "GeometryArray",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "FloatArray",
+            "src_type": "GeometryArray",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:FloatArray"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "IntArray",
+            "src_type": "GeometryArray",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:IntArray"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "StringArray",
+            "src_type": "GeometryArray",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:StringArray"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Vector3Array",
+            "src_type": "GeometryArray",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "Matrix4Array",
+            "src_type": "GeometryArray",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "GeometryArray",
+            "src_type": "GeometryArray",
+            "dst_type": "GeometryArray",
+            "verdict": "connect"
+          },
+          {
+            "out": "GeometryArray",
+            "in": "DictArray",
+            "src_type": "GeometryArray",
+            "dst_type": "DictArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:GeometryArray -> /d:parm:DictArray"
+          },
+          {
+            "out": "DictArray",
+            "in": "Bool",
+            "src_type": "DictArray",
+            "dst_type": "Bool",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Bool"
+          },
+          {
+            "out": "DictArray",
+            "in": "Int",
+            "src_type": "DictArray",
+            "dst_type": "Int",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Int"
+          },
+          {
+            "out": "DictArray",
+            "in": "Float",
+            "src_type": "DictArray",
+            "dst_type": "Float",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Float"
+          },
+          {
+            "out": "DictArray",
+            "in": "String",
+            "src_type": "DictArray",
+            "dst_type": "String",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:String"
+          },
+          {
+            "out": "DictArray",
+            "in": "Vector2",
+            "src_type": "DictArray",
+            "dst_type": "Vector2",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Vector2"
+          },
+          {
+            "out": "DictArray",
+            "in": "Vector3",
+            "src_type": "DictArray",
+            "dst_type": "Vector3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Vector3"
+          },
+          {
+            "out": "DictArray",
+            "in": "Vector4",
+            "src_type": "DictArray",
+            "dst_type": "Vector4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Vector4"
+          },
+          {
+            "out": "DictArray",
+            "in": "Matrix3",
+            "src_type": "DictArray",
+            "dst_type": "Matrix3",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Matrix3"
+          },
+          {
+            "out": "DictArray",
+            "in": "Matrix4",
+            "src_type": "DictArray",
+            "dst_type": "Matrix4",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Matrix4"
+          },
+          {
+            "out": "DictArray",
+            "in": "Geometry",
+            "src_type": "DictArray",
+            "dst_type": "Geometry",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Geometry"
+          },
+          {
+            "out": "DictArray",
+            "in": "Dict",
+            "src_type": "DictArray",
+            "dst_type": "Dict",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Dict"
+          },
+          {
+            "out": "DictArray",
+            "in": "DataItem",
+            "src_type": "DictArray",
+            "dst_type": "DataItem",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:DataItem"
+          },
+          {
+            "out": "DictArray",
+            "in": "FloatRamp",
+            "src_type": "DictArray",
+            "dst_type": "FloatRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:FloatRamp"
+          },
+          {
+            "out": "DictArray",
+            "in": "ColorRamp",
+            "src_type": "DictArray",
+            "dst_type": "ColorRamp",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:ColorRamp"
+          },
+          {
+            "out": "DictArray",
+            "in": "FloatArray",
+            "src_type": "DictArray",
+            "dst_type": "FloatArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:FloatArray"
+          },
+          {
+            "out": "DictArray",
+            "in": "IntArray",
+            "src_type": "DictArray",
+            "dst_type": "IntArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:IntArray"
+          },
+          {
+            "out": "DictArray",
+            "in": "StringArray",
+            "src_type": "DictArray",
+            "dst_type": "StringArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:StringArray"
+          },
+          {
+            "out": "DictArray",
+            "in": "Vector3Array",
+            "src_type": "DictArray",
+            "dst_type": "Vector3Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Vector3Array"
+          },
+          {
+            "out": "DictArray",
+            "in": "Matrix4Array",
+            "src_type": "DictArray",
+            "dst_type": "Matrix4Array",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:Matrix4Array"
+          },
+          {
+            "out": "DictArray",
+            "in": "GeometryArray",
+            "src_type": "DictArray",
+            "dst_type": "GeometryArray",
+            "verdict": "reject",
+            "reject_mode": "type",
+            "exception": "Mismatched type: /s:value:DictArray -> /d:parm:GeometryArray"
+          },
+          {
+            "out": "DictArray",
+            "in": "DictArray",
+            "src_type": "DictArray",
+            "dst_type": "DictArray",
+            "verdict": "connect"
+          }
+        ],
+        "repeat": {
+          "repeat": 2,
+          "sample_pairs": [
+            [
+              "Float",
+              "Float"
+            ],
+            [
+              "Float",
+              "Int"
+            ],
+            [
+              "Float",
+              "Bool"
+            ],
+            [
+              "Float",
+              "Vector3"
+            ],
+            [
+              "Float",
+              "Matrix4"
+            ],
+            [
+              "Float",
+              "Geometry"
+            ],
+            [
+              "Float",
+              "Dict"
+            ],
+            [
+              "Float",
+              "String"
+            ],
+            [
+              "Float",
+              "FloatRamp"
+            ],
+            [
+              "Int",
+              "Float"
+            ],
+            [
+              "Int",
+              "Int"
+            ],
+            [
+              "Int",
+              "Bool"
+            ],
+            [
+              "Int",
+              "Vector3"
+            ],
+            [
+              "Int",
+              "Matrix4"
+            ],
+            [
+              "Int",
+              "Geometry"
+            ],
+            [
+              "Int",
+              "Dict"
+            ],
+            [
+              "Int",
+              "String"
+            ],
+            [
+              "Int",
+              "FloatRamp"
+            ],
+            [
+              "Bool",
+              "Float"
+            ],
+            [
+              "Bool",
+              "Int"
+            ],
+            [
+              "Bool",
+              "Bool"
+            ],
+            [
+              "Bool",
+              "Vector3"
+            ],
+            [
+              "Bool",
+              "Matrix4"
+            ],
+            [
+              "Bool",
+              "Geometry"
+            ],
+            [
+              "Bool",
+              "Dict"
+            ],
+            [
+              "Bool",
+              "String"
+            ],
+            [
+              "Bool",
+              "FloatRamp"
+            ],
+            [
+              "Vector3",
+              "Float"
+            ],
+            [
+              "Vector3",
+              "Int"
+            ],
+            [
+              "Vector3",
+              "Bool"
+            ],
+            [
+              "Vector3",
+              "Vector3"
+            ],
+            [
+              "Vector3",
+              "Matrix4"
+            ],
+            [
+              "Vector3",
+              "Geometry"
+            ],
+            [
+              "Vector3",
+              "Dict"
+            ],
+            [
+              "Vector3",
+              "String"
+            ],
+            [
+              "Vector3",
+              "FloatRamp"
+            ],
+            [
+              "Matrix4",
+              "Float"
+            ],
+            [
+              "Matrix4",
+              "Int"
+            ],
+            [
+              "Matrix4",
+              "Bool"
+            ],
+            [
+              "Matrix4",
+              "Vector3"
+            ],
+            [
+              "Matrix4",
+              "Matrix4"
+            ],
+            [
+              "Matrix4",
+              "Geometry"
+            ],
+            [
+              "Matrix4",
+              "Dict"
+            ],
+            [
+              "Matrix4",
+              "String"
+            ],
+            [
+              "Matrix4",
+              "FloatRamp"
+            ],
+            [
+              "Geometry",
+              "Float"
+            ],
+            [
+              "Geometry",
+              "Int"
+            ],
+            [
+              "Geometry",
+              "Bool"
+            ],
+            [
+              "Geometry",
+              "Vector3"
+            ],
+            [
+              "Geometry",
+              "Matrix4"
+            ],
+            [
+              "Geometry",
+              "Geometry"
+            ],
+            [
+              "Geometry",
+              "Dict"
+            ],
+            [
+              "Geometry",
+              "String"
+            ],
+            [
+              "Geometry",
+              "FloatRamp"
+            ],
+            [
+              "Dict",
+              "Float"
+            ],
+            [
+              "Dict",
+              "Int"
+            ],
+            [
+              "Dict",
+              "Bool"
+            ],
+            [
+              "Dict",
+              "Vector3"
+            ],
+            [
+              "Dict",
+              "Matrix4"
+            ],
+            [
+              "Dict",
+              "Geometry"
+            ],
+            [
+              "Dict",
+              "Dict"
+            ],
+            [
+              "Dict",
+              "String"
+            ],
+            [
+              "Dict",
+              "FloatRamp"
+            ],
+            [
+              "String",
+              "Float"
+            ],
+            [
+              "String",
+              "Int"
+            ],
+            [
+              "String",
+              "Bool"
+            ],
+            [
+              "String",
+              "Vector3"
+            ],
+            [
+              "String",
+              "Matrix4"
+            ],
+            [
+              "String",
+              "Geometry"
+            ],
+            [
+              "String",
+              "Dict"
+            ],
+            [
+              "String",
+              "String"
+            ],
+            [
+              "String",
+              "FloatRamp"
+            ],
+            [
+              "FloatRamp",
+              "Float"
+            ],
+            [
+              "FloatRamp",
+              "Int"
+            ],
+            [
+              "FloatRamp",
+              "Bool"
+            ],
+            [
+              "FloatRamp",
+              "Vector3"
+            ],
+            [
+              "FloatRamp",
+              "Matrix4"
+            ],
+            [
+              "FloatRamp",
+              "Geometry"
+            ],
+            [
+              "FloatRamp",
+              "Dict"
+            ],
+            [
+              "FloatRamp",
+              "String"
+            ],
+            [
+              "FloatRamp",
+              "FloatRamp"
+            ]
+          ],
+          "sample_count": 81,
+          "pass_hashes": [
+            "90f3d3c5360675570799708fca147e625149b0fbeee4420c67386b99a4a4ed2b",
+            "90f3d3c5360675570799708fca147e625149b0fbeee4420c67386b99a4a4ed2b"
+          ],
+          "idempotent": true,
+          "drift": []
+        },
+        "wire_surface": {
+          "construct": "apex.Graph().addNode(name, callback)",
+          "wire": "Graph.addWire(src_port_id, dst_port_id)  [structural; never type-checks]",
+          "verdict": "Graph.resolveTypes() + Graph.errors()  [the type surface]",
+          "node_family": "Value<T>  (output 'value':T, input 'parm':T)"
+        }
+      },
+      "probe": "apex_wire_matrix",
+      "build": "22.0.400",
+      "ts": "2026-08-17T17:08:48+00:00",
+      "note": "DECLARED FIXTURE type set (crucible: 'TRUTH's artifact OR a declared fixture'). Every entry is catalog-proven: each has a live Value<T> in apex.callbackRegistry().callbackDefinitions() on 22.0.400 (WA1-TRUTH artifact apex_basic_20260817_122650/apex_truth_22.0.400.json, 2286 names). Fixture chosen because TRUTH's apex_port_signature type field reads null on this build (its ports carry arity but not type strings) - so the type set is NOT harvested from that artifact; see receipt/findings. Full ordered product = 21x21 = 441 cells, each connect|coerce|reject(+exception)|UNKNOWN; repeat-2 sample proves idempotence."
+    },
+    {
+      "claim": "apex_token_resolution",
+      "value": {
+        "build": "22.0.400",
+        "tokens": [
+          "$HIP",
+          "$HFS",
+          "$F",
+          "$FF",
+          "$T",
+          "$OS",
+          "$HIPNAME",
+          "$JOB",
+          "$E",
+          "$PI",
+          "@P",
+          "@name",
+          "@Cd",
+          "@ptnum",
+          "@value",
+          "@parm",
+          "@elemnum"
+        ],
+        "contexts": [
+          "hscript_global",
+          "scene_node_parm",
+          "apex_graph_parm",
+          "apex_invoke_binding"
+        ],
+        "row_count": 68,
+        "summary_by_context": {
+          "hscript_global": {
+            "total": 17,
+            "resolved": 10,
+            "literal": 7,
+            "unknown": 0
+          },
+          "scene_node_parm": {
+            "total": 17,
+            "resolved": 10,
+            "literal": 7,
+            "unknown": 0
+          },
+          "apex_graph_parm": {
+            "total": 17,
+            "resolved": 0,
+            "literal": 17,
+            "unknown": 0
+          },
+          "apex_invoke_binding": {
+            "total": 17,
+            "resolved": 0,
+            "literal": 0,
+            "unknown": 17
+          }
+        },
+        "invoke_binding_parms": [
+          "inputbindings",
+          "outputbindings",
+          "outputtypeinfo",
+          "dictbindings",
+          "bindoutputgeo",
+          "apexgeooutput",
+          "outputmode"
+        ],
+        "setup_notes": {},
+        "rows": [
+          {
+            "token": "$HIP",
+            "context": "hscript_global",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "C:/Users/User/SYNAPSE/.claude/worktrees/wa1-wire",
+            "expanded": true
+          },
+          {
+            "token": "$HIP",
+            "context": "scene_node_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "C:/Users/User/SYNAPSE/.claude/worktrees/wa1-wire",
+            "raw": "$HIP",
+            "expanded": true
+          },
+          {
+            "token": "$HIP",
+            "context": "apex_graph_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "$HIP",
+            "expanded": false
+          },
+          {
+            "token": "$HIP",
+            "context": "apex_invoke_binding",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "$HFS",
+            "context": "hscript_global",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400",
+            "expanded": true
+          },
+          {
+            "token": "$HFS",
+            "context": "scene_node_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400",
+            "raw": "$HFS",
+            "expanded": true
+          },
+          {
+            "token": "$HFS",
+            "context": "apex_graph_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "$HFS",
+            "expanded": false
+          },
+          {
+            "token": "$HFS",
+            "context": "apex_invoke_binding",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "$F",
+            "context": "hscript_global",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "1",
+            "expanded": true
+          },
+          {
+            "token": "$F",
+            "context": "scene_node_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "1",
+            "raw": "$F",
+            "expanded": true
+          },
+          {
+            "token": "$F",
+            "context": "apex_graph_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "$F",
+            "expanded": false
+          },
+          {
+            "token": "$F",
+            "context": "apex_invoke_binding",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "$FF",
+            "context": "hscript_global",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "1",
+            "expanded": true
+          },
+          {
+            "token": "$FF",
+            "context": "scene_node_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "1",
+            "raw": "$FF",
+            "expanded": true
+          },
+          {
+            "token": "$FF",
+            "context": "apex_graph_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "$FF",
+            "expanded": false
+          },
+          {
+            "token": "$FF",
+            "context": "apex_invoke_binding",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "$T",
+            "context": "hscript_global",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "0",
+            "expanded": true
+          },
+          {
+            "token": "$T",
+            "context": "scene_node_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "0",
+            "raw": "$T",
+            "expanded": true
+          },
+          {
+            "token": "$T",
+            "context": "apex_graph_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "$T",
+            "expanded": false
+          },
+          {
+            "token": "$T",
+            "context": "apex_invoke_binding",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "$OS",
+            "context": "hscript_global",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "Director",
+            "expanded": true
+          },
+          {
+            "token": "$OS",
+            "context": "scene_node_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "font1",
+            "raw": "$OS",
+            "expanded": true
+          },
+          {
+            "token": "$OS",
+            "context": "apex_graph_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "$OS",
+            "expanded": false
+          },
+          {
+            "token": "$OS",
+            "context": "apex_invoke_binding",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "$HIPNAME",
+            "context": "hscript_global",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "untitled",
+            "expanded": true
+          },
+          {
+            "token": "$HIPNAME",
+            "context": "scene_node_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "untitled",
+            "raw": "$HIPNAME",
+            "expanded": true
+          },
+          {
+            "token": "$HIPNAME",
+            "context": "apex_graph_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "$HIPNAME",
+            "expanded": false
+          },
+          {
+            "token": "$HIPNAME",
+            "context": "apex_invoke_binding",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "$JOB",
+            "context": "hscript_global",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "C:/Users/User/SYNAPSE/.claude/worktrees/wa1-wire",
+            "expanded": true
+          },
+          {
+            "token": "$JOB",
+            "context": "scene_node_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "C:/Users/User/SYNAPSE/.claude/worktrees/wa1-wire",
+            "raw": "$JOB",
+            "expanded": true
+          },
+          {
+            "token": "$JOB",
+            "context": "apex_graph_parm",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "$JOB",
+            "expanded": false
+          },
+          {
+            "token": "$JOB",
+            "context": "apex_invoke_binding",
+            "form": "$",
+            "session_dependent": true,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "$E",
+            "context": "hscript_global",
+            "form": "$",
+            "session_dependent": false,
+            "resolved_to": "2.7182818284590452354",
+            "expanded": true
+          },
+          {
+            "token": "$E",
+            "context": "scene_node_parm",
+            "form": "$",
+            "session_dependent": false,
+            "resolved_to": "2.7182818284590452354",
+            "raw": "$E",
+            "expanded": true
+          },
+          {
+            "token": "$E",
+            "context": "apex_graph_parm",
+            "form": "$",
+            "session_dependent": false,
+            "resolved_to": "$E",
+            "expanded": false
+          },
+          {
+            "token": "$E",
+            "context": "apex_invoke_binding",
+            "form": "$",
+            "session_dependent": false,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "$PI",
+            "context": "hscript_global",
+            "form": "$",
+            "session_dependent": false,
+            "resolved_to": "3.1415926535897932384",
+            "expanded": true
+          },
+          {
+            "token": "$PI",
+            "context": "scene_node_parm",
+            "form": "$",
+            "session_dependent": false,
+            "resolved_to": "3.1415926535897932384",
+            "raw": "$PI",
+            "expanded": true
+          },
+          {
+            "token": "$PI",
+            "context": "apex_graph_parm",
+            "form": "$",
+            "session_dependent": false,
+            "resolved_to": "$PI",
+            "expanded": false
+          },
+          {
+            "token": "$PI",
+            "context": "apex_invoke_binding",
+            "form": "$",
+            "session_dependent": false,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "@P",
+            "context": "hscript_global",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@P",
+            "expanded": false
+          },
+          {
+            "token": "@P",
+            "context": "scene_node_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@P",
+            "raw": "@P",
+            "expanded": false
+          },
+          {
+            "token": "@P",
+            "context": "apex_graph_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@P",
+            "expanded": false
+          },
+          {
+            "token": "@P",
+            "context": "apex_invoke_binding",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "@name",
+            "context": "hscript_global",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@name",
+            "expanded": false
+          },
+          {
+            "token": "@name",
+            "context": "scene_node_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@name",
+            "raw": "@name",
+            "expanded": false
+          },
+          {
+            "token": "@name",
+            "context": "apex_graph_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@name",
+            "expanded": false
+          },
+          {
+            "token": "@name",
+            "context": "apex_invoke_binding",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "@Cd",
+            "context": "hscript_global",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@Cd",
+            "expanded": false
+          },
+          {
+            "token": "@Cd",
+            "context": "scene_node_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@Cd",
+            "raw": "@Cd",
+            "expanded": false
+          },
+          {
+            "token": "@Cd",
+            "context": "apex_graph_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@Cd",
+            "expanded": false
+          },
+          {
+            "token": "@Cd",
+            "context": "apex_invoke_binding",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "@ptnum",
+            "context": "hscript_global",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@ptnum",
+            "expanded": false
+          },
+          {
+            "token": "@ptnum",
+            "context": "scene_node_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@ptnum",
+            "raw": "@ptnum",
+            "expanded": false
+          },
+          {
+            "token": "@ptnum",
+            "context": "apex_graph_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@ptnum",
+            "expanded": false
+          },
+          {
+            "token": "@ptnum",
+            "context": "apex_invoke_binding",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "@value",
+            "context": "hscript_global",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@value",
+            "expanded": false
+          },
+          {
+            "token": "@value",
+            "context": "scene_node_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@value",
+            "raw": "@value",
+            "expanded": false
+          },
+          {
+            "token": "@value",
+            "context": "apex_graph_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@value",
+            "expanded": false
+          },
+          {
+            "token": "@value",
+            "context": "apex_invoke_binding",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "@parm",
+            "context": "hscript_global",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@parm",
+            "expanded": false
+          },
+          {
+            "token": "@parm",
+            "context": "scene_node_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@parm",
+            "raw": "@parm",
+            "expanded": false
+          },
+          {
+            "token": "@parm",
+            "context": "apex_graph_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@parm",
+            "expanded": false
+          },
+          {
+            "token": "@parm",
+            "context": "apex_invoke_binding",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          },
+          {
+            "token": "@elemnum",
+            "context": "hscript_global",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@elemnum",
+            "expanded": false
+          },
+          {
+            "token": "@elemnum",
+            "context": "scene_node_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@elemnum",
+            "raw": "@elemnum",
+            "expanded": false
+          },
+          {
+            "token": "@elemnum",
+            "context": "apex_graph_parm",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "@elemnum",
+            "expanded": false
+          },
+          {
+            "token": "@elemnum",
+            "context": "apex_invoke_binding",
+            "form": "@",
+            "session_dependent": false,
+            "resolved_to": "UNKNOWN",
+            "reason": "invoke @attr resolution requires a cooked geometry+graph invoke (cook/gui-bound); not measured headless",
+            "binding_parms_present": [
+              "inputbindings",
+              "outputbindings",
+              "outputtypeinfo",
+              "dictbindings",
+              "bindoutputgeo",
+              "apexgeooutput",
+              "outputmode"
+            ]
+          }
+        ],
+        "note": "$-forms expand, @-forms are literal in every measurable context; session-dependent rows ($HIP/$OS/$F/...) are per-run snapshots. apex_invoke_binding is UNKNOWN headless by design (skip != pass)."
+      },
+      "probe": "apex_token_resolution",
+      "build": "22.0.400",
+      "ts": "2026-08-17T17:08:48+00:00",
+      "note": "@/$ resolution table - one row per (token, bind context). Contexts: hscript_global (hou.text.expandString), scene_node_parm (scratch font.text parm eval, node context), apex_graph_parm (apex graph setNodeParm/getNodeParms, typed data), apex_invoke_binding (apex::invokegraph @attr binding). Observed: $-forms expand, @-forms literal; apex_invoke_binding renders UNKNOWN headless by design (cook/gui-bound). Output is a table, not an explanation."
+    }
+  ]
+}

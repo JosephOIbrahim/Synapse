@@ -1,0 +1,41 @@
+{
+  "mission": "apex_wire",
+  "version": "1.0.0",
+  "target_build": "22.0.400",
+  "artifact_prefix": "apex_wire_matrix",
+  "phases": [
+    {
+      "id": "P0_wire_matrix",
+      "kind": "apex_wire_matrix",
+      "questions": [
+        {
+          "type_set": [
+            "Bool", "Int", "Float", "String",
+            "Vector2", "Vector3", "Vector4",
+            "Matrix3", "Matrix4",
+            "Geometry", "Dict", "DataItem",
+            "FloatRamp", "ColorRamp",
+            "FloatArray", "IntArray", "StringArray",
+            "Vector3Array", "Matrix4Array", "GeometryArray", "DictArray"
+          ],
+          "repeat": 2,
+          "note": "DECLARED FIXTURE type set (crucible: 'TRUTH's artifact OR a declared fixture'). Every entry is catalog-proven: each has a live Value<T> in apex.callbackRegistry().callbackDefinitions() on 22.0.400 (WA1-TRUTH artifact apex_basic_20260817_122650/apex_truth_22.0.400.json, 2286 names). Fixture chosen because TRUTH's apex_port_signature type field reads null on this build (its ports carry arity but not type strings) - so the type set is NOT harvested from that artifact; see receipt/findings. Full ordered product = 21x21 = 441 cells, each connect|coerce|reject(+exception)|UNKNOWN; repeat-2 sample proves idempotence."
+        }
+      ]
+    },
+    {
+      "id": "P1_token_resolution",
+      "kind": "apex_token_resolution",
+      "questions": [
+        {
+          "tokens": [
+            "$HIP", "$HFS", "$F", "$FF", "$T", "$OS", "$HIPNAME", "$JOB", "$E", "$PI",
+            "@P", "@name", "@Cd", "@ptnum", "@value", "@parm", "@elemnum"
+          ],
+          "contexts": ["hscript_global", "scene_node_parm", "apex_graph_parm", "apex_invoke_binding"],
+          "note": "@/$ resolution table - one row per (token, bind context). Contexts: hscript_global (hou.text.expandString), scene_node_parm (scratch font.text parm eval, node context), apex_graph_parm (apex graph setNodeParm/getNodeParms, typed data), apex_invoke_binding (apex::invokegraph @attr binding). Observed: $-forms expand, @-forms literal; apex_invoke_binding renders UNKNOWN headless by design (cook/gui-bound). Output is a table, not an explanation."
+        }
+      ]
+    }
+  ]
+}

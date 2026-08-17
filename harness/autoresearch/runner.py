@@ -97,7 +97,10 @@ class Run:
         self.meta["build"] = build
         self.meta["target_build_match"] = (build == self.mission.target_build)
         self.meta["canonicalizer"] = canonicalizer
-        self.evidence_path = self.out / f"lop_truth_{build}.json"
+        # Evidence filename follows the mission's artifact_prefix (default
+        # "lop_truth"; apex_basic sets "apex_truth", apex_wire "apex_wire_matrix").
+        self.meta["artifact_prefix"] = self.mission.artifact_prefix
+        self.evidence_path = self.out / f"{self.mission.artifact_prefix}_{build}.json"
         if not self.meta["target_build_match"]:
             log(f"WARNING: probed build {build} != mission target "
                 f"{self.mission.target_build} — evidence is true to the probed build")
@@ -154,6 +157,10 @@ def question_label(kind: str, q: dict) -> str:
         return f"usd_schema:{q['name']}"
     if kind == "store_census":
         return f"census:{len(q['roots'])}roots"
+    if kind == "apex_wire_matrix":
+        return f"apex_wire:{len(q.get('type_set', []))}types"
+    if kind == "apex_token_resolution":
+        return f"apex_tokens:{len(q.get('tokens', []))}x{len(q.get('contexts') or [])}"
     return kind
 
 
@@ -196,6 +203,14 @@ def execute_question(kind: str, q: dict, probes, run: Run) -> None:
         elif kind == "store_census":
             value = probes.probe_store_census(q["roots"], q["exclude_globs"])
             run.record("memory_store_census", value, kind, note)
+
+        elif kind == "apex_wire_matrix":
+            value = probes.probe_apex_wire_matrix(q["type_set"], q["repeat"], q["sample"])
+            run.record("apex_wire_matrix", value, kind, note)
+
+        elif kind == "apex_token_resolution":
+            value = probes.probe_apex_token_resolution(q["tokens"], q["contexts"])
+            run.record("apex_token_resolution", value, kind, note)
 
         else:  # unreachable post-validation; recorded, not raised
             run.record(f"unknown_kind:{kind}", {"error": "unknown question kind"}, kind)

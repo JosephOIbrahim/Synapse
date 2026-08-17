@@ -9,6 +9,12 @@ Kinds:
     parm_probe       {"type": str, "highlight": [str]?, "skip_if_missing": bool?}
     chain_hash       {"name": str, "chain": [str], "repeat": int?, "candidate": bool?}
     store_census     {"roots": [{"path": str, "max_depth": int?}], "exclude_globs": [str]?}
+    apex_wire_matrix     {"type_set": [str], "repeat": int?, "sample": [[str,str]]?}  # WA1-WIRE (C2)
+    apex_token_resolution {"tokens": [str], "contexts": [str]?}                        # WA1-WIRE (C2)
+
+The mission may carry an OPTIONAL top-level "artifact_prefix" (default
+"lop_truth"); the runner names its evidence file "<artifact_prefix>_<build>.json".
+apex_wire sets "apex_wire_matrix" so its artifact is self-describing.
 
 Validation normalizes defaults into each question dict so the runner
 never guesses. All errors carry phase/question coordinates.
@@ -20,7 +26,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 VALID_KINDS = {"type_discovery", "type_existence", "parm_probe", "chain_hash",
-               "fixture_hash", "usd_schema_probe", "store_census"}
+               "fixture_hash", "usd_schema_probe", "store_census",
+               # WA1-WIRE (C2): APEX wire-typing matrix + @/$ resolution table.
+               # probes.py resolves these against the live apex runtime.
+               "apex_wire_matrix", "apex_token_resolution"}
 
 
 class MissionError(ValueError):
@@ -40,6 +49,9 @@ class Mission:
     version: str
     target_build: str
     phases: list = field(default_factory=list)
+    # WA1-TRUTH: the runner names its evidence file "<artifact_prefix>_<build>.json".
+    # Default preserves every existing mission's "lop_truth_<build>.json" artifact.
+    artifact_prefix: str = "lop_truth"
 
     def total_questions(self) -> int:
         return sum(len(p.questions) for p in self.phases)
@@ -144,6 +156,35 @@ def _validate_question(kind: str, q: dict, where: str) -> dict:
         if not isinstance(ex, list) or not all(isinstance(x, str) for x in ex):
             raise MissionError(f"{where}: 'exclude_globs' must be a list of strings")
 
+    elif kind == "apex_wire_matrix":
+        # WA1-WIRE (C2): the ordered-pair wire-typing matrix over a DECLARED type
+        # set. The type set is the matrix axis; being declared (not runtime-derived)
+        # keeps the product deterministic -> the repeat-2 idempotence hash is stable.
+        ts = _req(q, "type_set", list, where)
+        if not ts or not all(isinstance(x, str) and x.strip() for x in ts):
+            raise MissionError(f"{where}: 'type_set' must be a non-empty list of type-name strings")
+        rep = q.setdefault("repeat", 2)
+        if not isinstance(rep, int) or rep < 1:
+            raise MissionError(f"{where}: 'repeat' must be an int >= 1")
+        # Optional explicit idempotence sample; None -> probe picks a fixed subset.
+        sample = q.setdefault("sample", None)
+        if sample is not None:
+            ok = isinstance(sample, list) and all(
+                isinstance(p, list) and len(p) == 2 and all(isinstance(x, str) for x in p)
+                for p in sample)
+            if not ok:
+                raise MissionError(f"{where}: 'sample' must be a list of [out,in] string pairs or omitted")
+
+    elif kind == "apex_token_resolution":
+        # WA1-WIRE (C2 step 3): @/$ resolution table, one row per (token, context).
+        toks = _req(q, "tokens", list, where)
+        if not toks or not all(isinstance(x, str) and x.strip() for x in toks):
+            raise MissionError(f"{where}: 'tokens' must be a non-empty list of token strings")
+        ctxs = q.setdefault("contexts", None)
+        if ctxs is not None and (not isinstance(ctxs, list)
+                                 or not all(isinstance(x, str) and x.strip() for x in ctxs)):
+            raise MissionError(f"{where}: 'contexts' must be a list of non-empty strings or omitted")
+
     return q
 
 
@@ -154,6 +195,10 @@ def validate_mission(data: dict, source: str = "<mission>") -> Mission:
     name = _req(data, "mission", str, source)
     version = _req(data, "version", str, source)
     target_build = _req(data, "target_build", str, source)
+    # Optional (WA1-TRUTH); defaults to "lop_truth" so existing missions are unchanged.
+    artifact_prefix = data.get("artifact_prefix", "lop_truth")
+    if not isinstance(artifact_prefix, str) or not artifact_prefix.strip():
+        raise MissionError(f"{source}: 'artifact_prefix' must be a non-empty string")
     raw_phases = _req(data, "phases", list, source)
     if not raw_phases:
         raise MissionError(f"{source}: 'phases' must be non-empty")
@@ -182,7 +227,8 @@ def validate_mission(data: dict, source: str = "<mission>") -> Mission:
         ]
         phases.append(Phase(id=pid, kind=kind, questions=validated))
 
-    return Mission(name=name, version=version, target_build=target_build, phases=phases)
+    return Mission(name=name, version=version, target_build=target_build,
+                   phases=phases, artifact_prefix=artifact_prefix)
 
 
 def load_mission(path: Path) -> Mission:
