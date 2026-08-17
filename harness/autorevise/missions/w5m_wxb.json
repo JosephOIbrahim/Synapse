@@ -1,0 +1,37 @@
+{
+  "id": "W5-WXB",
+  "band": "TRUTH",
+  "name": "crucible shard B: explosion-detector goldens + tier projection audited",
+  "source": {
+    "doc": "harness/notes/h22/CTO-RULING-measures-divergence-2026-08-16.md",
+    "anchor": "supersession note: charter delivered at 520a10d4 - the team audits that delivery"
+  },
+  "targets": [
+    "1) Evidence tree: the audited content lives on branch wave5/measures (tip 520a10d4, product a6db2286), which is NOT on master. Create a side worktree inside your sandbox: `git worktree add _m wave5/measures` and run all re-execution there. Your receipts and any notes commit to YOUR OWN branch only - never touch wave5/measures or the side tree state.",
+    "2) re-run the explosion-detector golden pair (fires-on-broken, silent-on-healthy) first-hand; verify the anchor names the offending frame + signal; try ONE fresh broken golden variant of your own",
+    "3) acceptance-3 audit: the measurement-to-exposure-rung projection - re-run its tests, confirm extends-not-forks synapse.science.exposure, and verify the deferred MCP DISCLOSURE wiring (S1) is honestly absent, not silently claimed",
+    "4) TOKEN DISCIPLINE: read anchors not trees; externalize evidence to your receipt early; cite line anchors, never file dumps.",
+    "5) BUS MANDATE - this team exists to talk: post claim at start, post each finding to the bus AS IT LANDS addressed to W5-WCRUX (do not batch), explicit RELEASE at close."
+  ],
+  "touches": [],
+  "deps": [],
+  "readonly": true,
+  "crucible_criteria": [
+    "evidence first-hand from your own side-tree run, never inherited",
+    "unobtainable renders UNKNOWN, never zero, never estimate"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "both goldens + one fresh variant re-executed first-hand",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "tier projection: extends-not-forks verified; S1 absence confirmed honest",
+      "evidence": "check"
+    }
+  ],
+  "note": ""
+}

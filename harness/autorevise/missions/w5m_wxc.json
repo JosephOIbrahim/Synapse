@@ -1,0 +1,37 @@
+{
+  "id": "W5-WXC",
+  "band": "TRUTH",
+  "name": "crucible shard C: divergence history, mandates, and version reconcile",
+  "source": {
+    "doc": "harness/notes/h22/CTO-RULING-measures-divergence-2026-08-16.md",
+    "anchor": "supersession note: charter delivered at 520a10d4 - the team audits that delivery"
+  },
+  "targets": [
+    "1) audit the divergence arc: the CTO ruling doc vs the delivered charter - confirm points 1-2 stand (audit=KEEP, Layer-6 attribution) and 3-4 are discharged by 520a10d4; anchor every claim",
+    "2) mandate table inputs for MEASURES: receipt-is-closing-commit (receipt==tip?), bus RELEASE present?, one-writer (the prior agent's panel/health_infographic.py commit 9bd298c4 - attribute to WHICH agent/charter, is it a violation or prior-audit lineage?)",
+    "3) F-VER reconcile plan: branch VERSION says 5.50.0 under the published v5.51.0 tag - enumerate exactly which files a merge to master must reconcile and whether sync_version --write post-merge suffices; no edits, plan only",
+    "4) TOKEN DISCIPLINE: read anchors not trees; externalize evidence to your receipt early; cite line anchors, never file dumps.",
+    "5) BUS MANDATE - this team exists to talk: post claim at start, post each finding to the bus AS IT LANDS addressed to W5-WCRUX (do not batch), explicit RELEASE at close."
+  ],
+  "touches": [],
+  "deps": [],
+  "readonly": true,
+  "crucible_criteria": [
+    "evidence first-hand from your own side-tree run, never inherited",
+    "unobtainable renders UNKNOWN, never zero, never estimate"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "divergence arc verdict with anchors; mandate inputs binary",
+      "evidence": "check"
+    },
+    {
+      "predicate": "F-VER reconcile plan concrete enough to execute in one merge-train step",
+      "evidence": "check"
+    }
+  ],
+  "note": ""
+}

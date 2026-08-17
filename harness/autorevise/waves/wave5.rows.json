@@ -238,7 +238,7 @@
   },
   {
     "id": "W5-WCRUX",
-    "name": "substrate crucible: adversarial gate over the weak-domain substrate legs before any merge word",
+    "name": "substrate crucible SYNTHESIZER: consume the shard evidence, spot-check it, write the one verdict",
     "state": "ready",
     "receipt": "W5-WCRUX.json",
     "branch": "wave5/wcrux",
@@ -246,13 +246,55 @@
     "worktree": ".claude/worktrees/w5-wcrux",
     "prompt": "harness/autorevise/prompts/W5-WCRUX.md",
     "deps": [
-      "W5-CATALOG",
-      "W5-PARMGATE",
-      "W5-MEASURES"
+      "W5-WXA",
+      "W5-WXB",
+      "W5-WXC"
     ],
     "readonly": true,
     "touches": [],
-    "note": "AUTOREVISE docs/BLUEPRINT_WEAK_DOMAINS.md :: house rule: CRUX before merge - applies to every merged product; blueprint FP1/FP2 are the audit lens. Gates the substrate trio only - W5-LCRUX's scope stays frozen on the lifecycle four. Merge remains Joe's word, per leg. Domain waves A-E author only after this substrate merges."
+    "note": "AUTOREVISE harness/notes/h22/CTO-RULING-measures-divergence-2026-08-16.md :: supersession note - the team model: shards produce evidence, one writer produces the verdict. Team-sharded crucible per Joe word (accelerate via talking agents). Merge remains Joe word per leg."
+  },
+  {
+    "id": "W5-WXA",
+    "name": "crucible shard A: acceptance-1 contracts re-executed first-hand",
+    "state": "ready",
+    "receipt": "W5-WXA.json",
+    "branch": "wave5/wxa",
+    "base": "master",
+    "worktree": ".claude/worktrees/w5-wxa",
+    "prompt": "harness/autorevise/prompts/W5-WXA.md",
+    "deps": [],
+    "readonly": true,
+    "touches": [],
+    "note": "AUTOREVISE harness/notes/h22/CTO-RULING-measures-divergence-2026-08-16.md :: supersession note: charter delivered at 520a10d4 - the team audits that delivery."
+  },
+  {
+    "id": "W5-WXB",
+    "name": "crucible shard B: explosion-detector goldens + tier projection audited",
+    "state": "ready",
+    "receipt": "W5-WXB.json",
+    "branch": "wave5/wxb",
+    "base": "master",
+    "worktree": ".claude/worktrees/w5-wxb",
+    "prompt": "harness/autorevise/prompts/W5-WXB.md",
+    "deps": [],
+    "readonly": true,
+    "touches": [],
+    "note": "AUTOREVISE harness/notes/h22/CTO-RULING-measures-divergence-2026-08-16.md :: supersession note: charter delivered at 520a10d4 - the team audits that delivery."
+  },
+  {
+    "id": "W5-WXC",
+    "name": "crucible shard C: divergence history, mandates, and version reconcile",
+    "state": "ready",
+    "receipt": "W5-WXC.json",
+    "branch": "wave5/wxc",
+    "base": "master",
+    "worktree": ".claude/worktrees/w5-wxc",
+    "prompt": "harness/autorevise/prompts/W5-WXC.md",
+    "deps": [],
+    "readonly": true,
+    "touches": [],
+    "note": "AUTOREVISE harness/notes/h22/CTO-RULING-measures-divergence-2026-08-16.md :: supersession note: charter delivered at 520a10d4 - the team audits that delivery."
   },
   {
     "id": "W5-PCRUX",

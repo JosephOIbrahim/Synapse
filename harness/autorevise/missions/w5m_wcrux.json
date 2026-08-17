@@ -1,46 +1,47 @@
 {
   "id": "W5-WCRUX",
   "band": "TRUTH",
-  "name": "substrate crucible: adversarial gate over the weak-domain substrate legs before any merge word",
+  "name": "substrate crucible SYNTHESIZER: consume the shard evidence, spot-check it, write the one verdict",
   "source": {
-    "doc": "docs/BLUEPRINT_WEAK_DOMAINS.md",
-    "anchor": "house rule: CRUX before merge - applies to every merged product; blueprint FP1/FP2 are the audit lens"
+    "doc": "harness/notes/h22/CTO-RULING-measures-divergence-2026-08-16.md",
+    "anchor": "supersession note - the team model: shards produce evidence, one writer produces the verdict"
   },
   "targets": [
-    "1) re-verify every substrate leg acceptance independently or mark UNKNOWN with the exact unobtainable step - none inherited; catalog spot-audits re-sampled with DIFFERENT nodes than the builder chose",
-    "2) FP1 audit: sample catalog rows against a fresh hython session yourself; any row not traceable to a dump receipt is a laundered claim",
-    "3) FP2 audit: run the broken/healthy golden pair yourself; verify the tier ladder cannot promote without measurement",
-    "4) mandate table, binary per leg: receipt states a HEAD that exists and precedes the receipt write; the receipt is the leg's OWN closing commit",
-    "5) combined-state probe on a scratch tree staging CATALOG + PARMGATE + MEASURES; suite ratchet vs base + guardrail_violations; ingest_ledger byte-identical before/after (single-writer R1)",
-    "6) verdict board + receipt committed on wave5/wcrux; the receipt is this leg's own closing commit"
+    "1) consume the bus: shards W5-WXA/WXB/WXC posted findings addressed to you as they landed - read them ALL before judging; a shard claim you cannot trace to its receipt anchors is treated as unproven",
+    "2) independent spot-check: re-execute AT LEAST one load-bearing item per shard first-hand in your own side worktree (git worktree add _m wave5/measures) - trust is verified, never inherited",
+    "3) verdict over the substrate quartet: CATALOG + PARMGATE (receipts from yesterday, re-verify tips) + MEASURES (shard evidence + your spot-checks) - per-leg mandate table binary incl. receipt==tip and bus RELEASE",
+    "4) the divergence arc and F-VER reconcile plan (shard C) fold into the verdict as first-class sections - the arc is history, the plan is a merge-train instruction",
+    "5) UNKNOWNs named with what would resolve them (live hython cook remains the known GUI-seat UNKNOWN); never laundered",
+    "6) verdict harness/notes/receipts/W5-WCRUX_verdict.md + W5-WCRUX.json as your own closing commit; RELEASE on the bus; drop flag harness/notes/h22/w5m-landed.flag"
   ],
   "acceptance": [
     {
-      "predicate": "per-leg verdicts with independent re-execution evidence, UNKNOWNs never laundered",
-      "evidence": "probe"
-    },
-    {
-      "predicate": "mandate table binary per leg including the receipt-closing-commit check",
+      "predicate": "all shard findings consumed with per-claim trace-or-unproven status",
       "evidence": "check"
     },
     {
-      "predicate": "combined scratch-tree probe recorded (ratchet + guardrails + ledger byte-check), cleaned up",
+      "predicate": "one first-hand spot-check per shard, stdout in receipt",
       "evidence": "probe"
+    },
+    {
+      "predicate": "quartet mandate table binary; verdict + flag landed as closing commit",
+      "evidence": "check"
     }
   ],
   "deps": [
-    "W5-CATALOG",
-    "W5-PARMGATE",
-    "W5-MEASURES"
+    "W5-WXA",
+    "W5-WXB",
+    "W5-WXC"
   ],
   "readonly": true,
   "touches": [],
-  "crucible_criteria": [
-    "carries CRX0, the W5H receipt-commit-gap lessons, and the wave5l precedents as standing checks",
-    "house rule: unobtainable renders UNKNOWN, never zero and never an estimate"
-  ],
   "spawn_classes": [
     "probe"
   ],
-  "note": "Gates the substrate trio only - W5-LCRUX's scope stays frozen on the lifecycle four. Merge remains Joe's word, per leg. Domain waves A-E author only after this substrate merges."
+  "crucible_criteria": [
+    "carries CRX0 + all wave precedents",
+    "one writer: only this leg writes the verdict/flag",
+    "unobtainable renders UNKNOWN, never zero, never estimate"
+  ],
+  "note": "Team-sharded crucible per Joe word (accelerate via talking agents). Merge remains Joe word per leg."
 }
