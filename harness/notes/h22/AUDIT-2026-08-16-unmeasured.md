@@ -14,6 +14,12 @@ budget; cap never hit ⇒ **whole surface, not a sample.**
 **5 confirmed · 3 refuted · 0 deferred. None critical** (medium and below,
 verifier confidence 0.66–0.78). The tree is close to clean; these are the residuals.
 
+> **R2 addendum (2026-08-16, same day):** Bug A + Bug B-consumer shipped; a 4-agent
+> adversarial verify of Bug A then surfaced **two more same-shape seams** (Resilience HIGH,
+> Routing MEDIUM) in the same file, now also shipped. Running tally: **7 confirmed** (5 static
+> + 2 from the verify pass), Bug B-producer still blocked on the write-denied `shared/` surface.
+> See **Status / queue** at the bottom for the shipped record.
+
 Every confirmed finding is the **same shape** as the Layer-6 `synapse_doctor`
 `fidelity=0.0` bug (`docs/INTERPRETATION_INTEGRITY.md` §Layer 6), living in two other
 places. Layer 6's fix note ended with an un-run to-do — *"audit every other probe for
@@ -103,18 +109,47 @@ this rest-state to UNKNOWN. `success_rate` is the one metric that never got it.
 
 ---
 
-## Status / queue (updated 2026-08-16 — merge/push/tag stay human)
+## Status / queue (updated 2026-08-16 R2 — merge/push/tag stay human)
 
-### Bug B — consumer half: ✅ SHIPPED (commit `9bd298c4`, branch wave5/measures)
-`panel/health_infographic.py` hero gauge now renders UNKNOWN (slate + "—") instead of a
-red 0% at zero samples, via a self-sufficient `total>0` fallback. py_compile OK; honesty +
-observability suite green (21 passed). Pixel render remains the offscreen-at-seat gate.
+### Bug A — ✅ SHIPPED (commit `eeebca16`, branch wave5/measures)
+`SceneMetrics` gained `measured: bool = True`; every shed path in `_collect_scene()` returns
+`SceneMetrics(measured=False)`; `_snapshot_to_dict` nulls the fabrication-prone scene fields
+(fps + all counts) when unmeasured — one chokepoint fixing the `synapse_live_metrics` MCP tool
+AND the dashboard; `render_prometheus` emits `synapse_scene_measured {0|1}` and OMITS the scene
+counts on a shed cycle; dashboard renders `—`. Goldens in `test_live_metrics.py` +
+`test_metrics_invariants.py`; the three `test_live_metrics_threadsafe.py` shed-path tests moved
+from `== SceneMetrics()` to the `measured=False` contract. **Verified** by a 4-agent adversarial
+pass (`wf_333e65c3-406`): missed-shed-path and consumer-crash lenses both CLEAN; Prometheus lens
+clean but for one latent default (folded into the sibling commit below).
 
-### Bug B — producer half: ⛔ READY TO APPLY, blocked on the guarded surface
-`shared/bridge.py` is denied to automated Edit/Write by permission settings (SUBSTRATE
-crown-jewel; one-writer-per-surface). This change was NOT auto-applied by design — it awaits
-the surface owner (Joe's hands, or a dispatched SUBSTRATE leg). It is **source-hardening**,
-not a visible-bug fix: the consumer already self-defends. Exact, self-contained patch:
+### Bug A siblings — ✅ SHIPPED (commit `a1e3fa03`) — found by the Bug A verify pass
+The adversarial completeness critic found the identical shape untreated in two SceneMetrics
+siblings in the same file; on the dominant hwebserver transport (router + health_monitor never
+wired) they shed **every** cycle:
+- **ResilienceMetrics (HIGH)** — bare `circuit_state='closed'` / `health_status='healthy'`, an
+  affirmative all-clear rendered green when nothing was measured; a throwing health monitor also
+  sheds here and reports itself healthy. Fixed: `measured` flag; serializer nulls
+  circuit_state/health_status; dashboard renders `—` with a neutral class (no false green).
+- **RoutingMetrics (MEDIUM)** — bare `cache_hit_rate=0.0` / `avg_latency_ms=0.0`, computed rates
+  indistinguishable from measured-zero. Fixed: `measured` flag; serializer nulls the rates;
+  dashboard guards `toFixed` against the resulting null.
+- **SessionMetrics** — examined and CLEARED (no shed-return; its zeros read as resting).
+- Also folded: `render_prometheus` scene honesty default flipped `True`→`False` (unknown-provenance
+  scene dict ⇒ treat as unmeasured); latent-trap comment that the null-out is a dict-only chokepoint.
+Two blessing goldens moved to the `measured=False` contract; sibling + hardening goldens added.
+546 passed / 0 failed across the metrics+observability+resilience slice.
+
+### Bug B — consumer half: ✅ SHIPPED (commit `9bd298c4`)
+`panel/health_infographic.py` hero gauge renders UNKNOWN (slate + "—") instead of a red 0% at
+zero samples, via a self-sufficient `total>0` fallback. Pixel render remains the offscreen gate.
+
+### Bug B — producer half: ⛔ STILL BLOCKED — `shared/` is write-denied (CONFIRMED this session)
+Re-confirmed empirically: an Edit to `shared/bridge.py` is denied at the permission layer
+(not the `guard-edit-targets.py` hook — that only fences deployed copies — but a higher policy
+layer; SUBSTRATE crown-jewel, one-writer-per-surface). Per the `2026-07-25_push_denied`
+precedent, this was NOT routed around via Bash/git-apply. Awaits the surface owner (Joe's hands
+or a dispatched SUBSTRATE leg). It is **source-hardening**, not a visible-bug fix — the consumer
+already self-defends. Exact, self-contained patch:
 
 **`shared/bridge.py`** — in `operation_stats()`'s return dict, after `"success_rate": success_rate,`:
 ```python
@@ -130,10 +165,8 @@ nothing has run; `has_data` lets consumers render UNKNOWN, mirroring `session_in
 
 Verify: `python -m pytest tests/test_evolution_bridge_internals.py::TestOperationStats -q` (one atomic commit).
 
-### Bug A — ⛔ QUEUED (SUBSTRATE, guarded surfaces)
-One guard at the `live_metrics` `_collect_scene()`/`_run()` seam so a shed cycle marks
-`inconclusive` instead of overwriting last-good with defaults; `metrics.py:304/309` +
-`live_metrics.py:39` (fps 24.0) inherit it. Golden-first.
-
-### Optional
-Fold both goldens into the wave-5 honesty suite so the pattern can't regress.
+### Follow-on (not a honesty bug — a wiring gap the honest fix exposes)
+The hwebserver transport builds `MetricsAggregator()` with `router`/`health_monitor`/
+`session_manager` all `None` (no setters), so resilience/routing now correctly read UNKNOWN there.
+Wiring those monitors into the hwebserver aggregator would make them genuinely measured — a
+separate feature, out of scope for the honesty wave.
