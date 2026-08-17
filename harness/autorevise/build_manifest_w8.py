@@ -13,8 +13,8 @@ assert len(rows) == 9, f"expected 9 W8 legs, got {len(rows)}: {[r['id'] for r in
 man = {
     "_comment": ('W8 BASTION wave-0 (7 scouts + librarian + smith) - compiled from '
                  'harness/bastion/PROGRAM.md, ratified 2026-08-17 ("go"). Filtered to W8-* '
-                 'from the shared rows file. ARM IS A WORD: launch only via arm_w8.ps1 on '
-                 "Joe's explicit arm word. Merge/flip/push remain Joe words per act. "
+                 'from the shared rows file. ARMED on Joe word: "approved and go" (2026-08-17). '
+                 'Merge/flip/push remain Joe words per act. '
                  'W8-LIBR gates on all seven scouts; W8-SMITH independent, touches '
                  'harness/bastion/** only.'),
     "_schema": "legs/v1",
