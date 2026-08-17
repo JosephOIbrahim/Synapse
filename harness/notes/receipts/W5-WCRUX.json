@@ -1,0 +1,109 @@
+{
+  "leg": "W5-WCRUX",
+  "status": "green_with_findings",
+  "band": "TRUTH",
+  "role": "substrate crucible - adversarial gate over CATALOG+PARMGATE+MEASURES before any merge word",
+  "build_observed": "22.0.400 (fresh hython, rc0)",
+  "product_head": "026dc33d5c6da289eae775444e5ea3c16e725305",
+  "product_head_note": "product (verdict board + 12 probe files, 1006 insertions) committed BEFORE this receipt; rev-list ab4ebaf3..026dc33d = 1; this receipt is W5-WCRUX's OWN closing commit (W5H), not operator-rescued.",
+  "readonly": true,
+  "none_inherited": "every number was run live this session by the crucible; leg receipts were used only to locate acceptance + product heads, never as evidence of pass.",
+  "env_note": "stock Python 3.14.2 (not Houdini 3.13) runs the pure-python validation layer; hou-dependent tests skip identically on both ratchet sides. Vendored-SDK ABI warning is benign (pip pydantic covers it), not a leg defect.",
+
+  "acceptance": [
+    {
+      "predicate": "per-leg verdicts with independent re-execution evidence, UNKNOWNs never laundered",
+      "verdict": "pass",
+      "evidence": "probe. Per-leg tests RE-RUN by me (subprocess pytest): CATALOG test_node_catalog.py 11/11 (incl VOP/APEX typed-port pins), PARMGATE test_parm_gate.py+test_cops_parmgate_routing.py 33/33, MEASURES test_measures_contracts.py 24/24, COMPOSED all four in the scratch tree 68/68 (=11+33+24, no composed regression among leg slices) - probe_tests.py. FP1 (target 2): 29 nodes OFF the builder's 20-stride (disjoint, dop/cop/chop/vop) + 7 SOP the builder audited zero of, re-read in a FRESH hython via the canonical _type_record, 0 mismatches - probe_fp1.py/fp1_hython.py. A3 closed by fresh re-sample: 6 off-stride VOP wire sigs + 5 off-stride APEX callback ports, 0 mismatches - probe_a3.py/fp1b_hython.py. FP2 (target 3): golden pair healthy=STABLE (real evaluated window) / exploding=EXPLODING ke_growth frame 5, and the tier ladder cannot promote without measurement (every unmeasured kind->UNKNOWN->V0_membership; MEASURED->V1_output/foreground; exposure.highest_tier resolved live) - probe_fp2.py. KEYSTONE: gate rejection PROVEN composed with the real catalog (dormant on parmgate branch alone) - phantom 'code' rejected before mutation with suggestion 'kernelcode'; 'kernelcode' accepted authority=catalog - probe_gate_composed.py. UNKNOWNs recorded not laundered: PARMGATE F5 (live GUI one-Ctrl+Z reversal) and MEASURES S2 (live hython golden cook) are gui_required -> untestable headless, held UNKNOWN, never faked."
+    },
+    {
+      "predicate": "mandate table binary per leg including the receipt-closing-commit check",
+      "verdict": "pass",
+      "evidence": "check (git). CATALOG: product_head 8682afef precedes receipt commit a26fb6ed which touches ONLY W5-CATALOG.json (82 ins) = own closing commit. PARMGATE: 816826ca precedes d7eb8c1b (touches only W5-PARMGATE.json, 89 ins). MEASURES: a6db2286 precedes 520a10d4 (touches only W5-MEASURES.json, 96 ins). All three product heads exist, precede their receipt writes, and each receipt is the leg's OWN closing commit - no operator rescue (the exact W5H rule). Re-derived with git log/show, see verdict board section 1."
+    },
+    {
+      "predicate": "combined scratch-tree probe recorded (ratchet + guardrails + ledger byte-check), cleaned up",
+      "verdict": "pass",
+      "evidence": "probe. Combined tree = wcrux-scratch @ df8c9ef3 (legs' shared fork) with the 3 legs staged (harness-provisioned; verified FAITHFUL by me: 51 files = exact union, every git blob SHA == its leg branch - probe_combined.py). RATCHET: base wcrux-base 6445 pass/1 fail -> combined 6523 pass/2 fail (+78 leg-test passes); ONE new failure caught (F-ENVDOC) + one pre-existing (F-VER); probe_ratchet.py, both sides same interpreter so env skips cancel in the delta. GUARDRAILS: 0 leg-introduced violations (phantom-clean, version-single-source, rigging in-scope; provenance warn-only at df8c9ef3; the one clean_install hit on memory/store.py is pre-existing on BOTH sides, not a leg file) - probe_guardrails.py delta base-vs-combined. LEDGER R1: harness/ingest_ledger.json byte-identical base<->combined (sha 3153db99...) - staging the catalog did NOT write the served single-writer ledger. CLEANUP: read-only probing; both scratch worktrees left with zero untracked/extra litter; harness-provisioned stage intact (worktrees are the provisioner's to tear down, not this read-only leg's)."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "F-ENVDOC",
+      "severity": "must-fix-before-merge (breaks the full suite -> Safety Rule 7 'tests must pass before merge')",
+      "attribution": "W5-PARMGATE",
+      "claim": "python/synapse/validation/catalog.py reads SYNAPSE_PARM_CATALOG_ROOT (:43) and SYNAPSE_PARM_CATALOG_BUILD (:44); neither is in the '### Environment Variables' table of docs/studio/DEPLOYMENT.md, so tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented FAILS in the combined tree. Passes at base; DEPLOYMENT.md is identical both sides -> PARMGATE-attributable. PARMGATE's own slice never ran the global env-conformance test, so its receipt did not surface it.",
+      "anchor": "python/synapse/validation/catalog.py:43-44 ; docs/studio/DEPLOYMENT.md:92 ; probe_regression.py (base pass / combined fail, exact vars named in the assertion)",
+      "fix": "add two backticked rows (SYNAPSE_PARM_CATALOG_ROOT, SYNAPSE_PARM_CATALOG_BUILD) to DEPLOYMENT.md's Environment Variables table before the trio merges - a docs edit, human-gated, out of this read-only leg's touches."
+    },
+    {
+      "id": "F-VER",
+      "severity": "info (not this trio)",
+      "claim": "tests/test_phase0c_doc1_version_conformance.py::test_no_published_tag_outruns_the_canonical_version fails at df8c9ef3 because published tag v5.51.0 outruns VERSION 5.50.0 at the fork. Present identically at base and combined; resolves when the legs rebase onto v5.51.0 master. No leg touches VERSION/tag/pyproject.",
+      "anchor": "probe_ratchet.py base=6445/1 (this is the 1 failure)"
+    },
+    {
+      "id": "F-SCOPE",
+      "severity": "for-ruling (disclosed, not laundered)",
+      "claim": "The MEASURES branch carries a prior 'unmeasured honesty audit' ride-along beyond the cook-verify charter (python/synapse/panel/health_infographic.py, server/dashboard.py, server/live_metrics.py, server/metrics.py + tests), disclosed in its own receipt as F-PANEL. The combined stage includes these; their tests pass in-suite; disposition is Joe/CTO's (see harness/notes/h22/CTO-RULING-measures-divergence-2026-08-16.md).",
+      "anchor": "git diff --name-only master...wave5/measures (16 files, 10 beyond cook-verify)"
+    },
+    {
+      "id": "F-TABLE",
+      "severity": "low",
+      "claim": "check_phantom_clean ran with no live Houdini bound to scout, so its membership authority was the committed Houdini 21.0.671 symbol table, not 22.0.400. It found ZERO phantoms, so 'clean' holds regardless of table version (clean is clean) - the caveat would only bite had it FLAGGED something. A stronger guarantee wants an H22 table regenerated on-host (hython host/introspect_runtime.py).",
+      "anchor": "probe_guardrails.py scratch detail: '19 changed .py clean ... @ 21.0.671'"
+    },
+    {
+      "id": "F-METHOD",
+      "severity": "info (self-correction, recorded)",
+      "claim": "The first FP1 cut compared via raw entriesWithoutFolders()/minNumInputs() and produced FALSE 'mismatches' on multiparm-instance parms + VOP arity. Diagnosed as the crucible's OWN extraction being cruder than the catalog's canonical _type_record (do-not-pin-your-own-error). Re-run via the canonical extraction showed ZERO real drift. Recorded so the correction is auditable, not hidden.",
+      "anchor": "fp1_hython.py header note ; probe_results.json fp1_catalog.methodology_selfcorrection"
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "item": "MERGE remains Joe's word, per leg. The substrate trio is faithful + independently re-verified + adds 0 guardrail violations, BUT F-ENVDOC must be reconciled (two DEPLOYMENT.md rows) before the combined suite goes green - Safety Rule 7. Recommend: land the DEPLOYMENT.md docs edit with (or before) PARMGATE, then merge.",
+      "why": "the combined full suite is RED on F-ENVDOC until the docs rows are added; a green suite is the merge precondition."
+    },
+    {
+      "item": "MERGE ORDER (echoing PARMGATE R1): W5-CATALOG should land with or before W5-PARMGATE so the gate is authoritative (not degraded) in-tree; the keystone proof (probe_gate_composed.py) holds only when the catalog data is present.",
+      "why": "PARMGATE's rejection power is dormant without the catalog; proven live only in composition."
+    },
+    {
+      "item": "MASTER DRIFT: staging was probed at the legs' shared fork df8c9ef3, but the trio will merge to CURRENT master (20e3d70c, +268 files since fork). The ONLY leg-file overlap is one markdown note (harness/notes/h22/CTO-RULING-measures-divergence-2026-08-16.md) whose blob differs from master -> a benign doc-note 3-way reconcile at merge; NO product-code overlap, so no code conflict expected. Reconcile the note at merge.",
+      "why": "the fork-point ratchet cannot see post-fork master drift; verified the drift touches no leg product code."
+    },
+    {
+      "item": "MEASURES ride-along (F-SCOPE / the leg's own F-PANEL) disposition is Joe/CTO's - carry or split the panel/metrics work from the cook-verify substrate.",
+      "why": "the branch mixes two work bodies; honestly disclosed, staged together, tests green - a scope decision, not a defect."
+    }
+  ],
+
+  "spawn": [
+    {
+      "id": "W5-PARMGATE-ENVDOC",
+      "class": "build",
+      "held": true,
+      "name": "document SYNAPSE_PARM_CATALOG_ROOT + SYNAPSE_PARM_CATALOG_BUILD in docs/studio/DEPLOYMENT.md",
+      "note": "add two backticked rows to the '### Environment Variables' table so test_m3_env_conformance passes with the parmgate catalog reader in-tree (F-ENVDOC). Build class -> lands held for Joe (outside spawn_classes=[probe]).",
+      "deps": ["W5-PARMGATE"]
+    },
+    {
+      "id": "W5-WCRUX-H22TABLE",
+      "class": "probe",
+      "name": "regenerate the H22.0.400 scout symbol table on-host so the phantom guardrail judges against the running build",
+      "note": "hython host/introspect_runtime.py -> the phantom guardrail currently falls back to the committed 21.0.671 table headless (F-TABLE). Zero phantoms found either way, but an H22 table makes the guarantee build-exact.",
+      "deps": []
+    },
+    {
+      "id": "W5-WCRUX-MERGEHEAD-RATCHET",
+      "class": "probe",
+      "name": "re-run the combined ratchet at CURRENT master (not the df8c9ef3 fork) once merge order is set",
+      "note": "confirms the trio composes with master's +268-file post-fork drift; this leg proved only leg-vs-leg composition at the shared fork + that the drift touches no leg product code.",
+      "deps": ["W5-CATALOG", "W5-PARMGATE", "W5-MEASURES"]
+    }
+  ]
+}
