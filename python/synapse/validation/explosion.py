@@ -61,6 +61,11 @@ class ExplosionVerdict:
         return self.verdict != UNKNOWN
 
 
+def _is_number(x) -> bool:
+    """True for a real numeric signal value (int/float, excluding bool)."""
+    return isinstance(x, (int, float)) and not isinstance(x, bool)
+
+
 def _is_bad_float(x) -> bool:
     """True for NaN or inf. Non-floats (ints, None) are never 'bad' here."""
     return isinstance(x, float) and (math.isnan(x) or math.isinf(x))
@@ -76,8 +81,11 @@ def detect_explosion(
     """Judge a sequence of measured per-frame signals.
 
     ``frames`` is a list of dicts, one per cooked frame, each optionally carrying
-    ``frame`` (its index/number) and any of ``_SIGNAL_KEYS``. Returns UNKNOWN if
-    there is nothing to measure — an unmeasured sim is never called STABLE.
+    ``frame`` (its index/number) and any of ``_SIGNAL_KEYS``. FP2 is enforced at
+    every gap: an unmeasured OR un-evaluable sim is UNKNOWN, never STABLE. In
+    particular a signal present but non-numeric, and a KE-growth rule that cannot
+    run (too few frames, or a NaN-free window never assembled), both yield UNKNOWN
+    rather than a fabricated pass.
     """
     if not frames:
         return ExplosionVerdict(UNKNOWN, unknown_reason="no frames measured")
@@ -85,6 +93,17 @@ def detect_explosion(
     def frame_no(i: int):
         f = frames[i]
         return f.get("frame", i) if isinstance(f, dict) else i
+
+    # ── Guard: a present-but-non-numeric judged signal is a BROKEN measurement.
+    # It is neither STABLE nor a clean explosion — we cannot judge it, so UNKNOWN.
+    # (NaN/inf are numeric floats and pass here, to be caught as explosions below.)
+    for i, fr in enumerate(frames):
+        for key in _SIGNAL_KEYS:
+            if key in fr and fr[key] is not None and not _is_number(fr[key]):
+                return ExplosionVerdict(
+                    UNKNOWN,
+                    unknown_reason=f"malformed signal '{key}' at frame {frame_no(i)}: {fr[key]!r} is not numeric",
+                )
 
     # ── Rule 1: any NaN/inf in a measured signal (highest severity) ──────────
     for i, fr in enumerate(frames):
@@ -98,7 +117,7 @@ def detect_explosion(
     # ── Rule 2: max_strain over the hard bound ───────────────────────────────
     for i, fr in enumerate(frames):
         s = fr.get("max_strain")
-        if isinstance(s, (int, float)) and s > strain_bound:
+        if _is_number(s) and s > strain_bound:
             return ExplosionVerdict(
                 EXPLODING, signal="strain", offending_frame=frame_no(i),
                 detail=f"max_strain {s} > bound {strain_bound}",
@@ -111,19 +130,38 @@ def detect_explosion(
         # judge growth, so say so rather than pass by omission.
         return ExplosionVerdict(UNKNOWN, unknown_reason="no kinetic_energy measured in any frame")
 
+    evaluated_a_window = False
     if ke_window >= 2:
         for start in range(0, len(frames) - ke_window + 1):
             window = kes[start:start + ke_window]
             if any(k is None for k in window):
-                continue
-            strictly_increasing = all(window[j + 1] > window[j] for j in range(len(window) - 1))
-            if strictly_increasing and window[0] > 0 and window[-1] / window[0] > ke_ratio_threshold:
-                ratio = round(window[-1] / window[0], 2)
+                continue  # a KE gap: this window is not evaluable
+            evaluated_a_window = True
+            if not all(window[j + 1] > window[j] for j in range(len(window) - 1)):
+                continue  # not strictly increasing -> no growth signature here
+            # Strictly increasing. Ratio uses the first NON-ZERO frame as the
+            # baseline, so a runaway from rest (KE starts at 0) is still caught —
+            # division by zero would otherwise have silently dropped it.
+            baseline = next((v for v in window if v > 0), None)
+            if baseline is None:
+                continue  # all non-positive (cannot be strictly increasing to >0)
+            if window[-1] / baseline > ke_ratio_threshold:
+                ratio = round(window[-1] / baseline, 2)
                 end_i = start + ke_window - 1
                 return ExplosionVerdict(
                     EXPLODING, signal="ke_growth", offending_frame=frame_no(end_i),
                     detail=(f"kinetic_energy grew {window[0]}->{window[-1]} "
-                            f"(x{ratio}) over {ke_window} consecutive frames"),
+                            f"(x{ratio} over baseline {baseline}) across {ke_window} consecutive frames"),
                 )
+
+    # KE data was present but no full, gap-free window ever assembled (fewer than
+    # ke_window frames, or every window straddled a KE gap). The growth rule could
+    # not run, so its silence is not evidence of stability. FP2: UNKNOWN, not STABLE.
+    if not evaluated_a_window:
+        return ExplosionVerdict(
+            UNKNOWN,
+            unknown_reason=(f"KE-growth not evaluable: no {ke_window} consecutive frames "
+                            "with kinetic_energy measured"),
+        )
 
     return ExplosionVerdict(STABLE)

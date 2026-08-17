@@ -76,12 +76,34 @@ def _has(obs: dict, *keys) -> bool:
     return all(obs.get(k) is not None for k in keys)
 
 
+def _is_num(x) -> bool:
+    """A real numeric measurement (int/float, excluding bool)."""
+    return isinstance(x, (int, float)) and not isinstance(x, bool)
+
+
 def _bad(x) -> bool:
     return isinstance(x, float) and (math.isnan(x) or math.isinf(x))
 
 
 def _any_bad(values) -> bool:
     return any(_bad(v) for v in values)
+
+
+def _flatten_stats(stats):
+    """Leaf values of a stats dict/list, up to two levels (per-channel dicts)."""
+    if isinstance(stats, dict):
+        src = stats.values()
+    elif isinstance(stats, (list, tuple)):
+        src = stats
+    else:
+        return [stats]
+    out = []
+    for s in src:
+        if isinstance(s, dict):
+            out.extend(s.values())
+        else:
+            out.append(s)
+    return out
 
 
 # ── image ────────────────────────────────────────────────────────────────────
@@ -91,14 +113,22 @@ def measure_image(obs: dict) -> MeasureResult:
     res = obs["resolution"]
     stats = obs["stats"]
     channels = obs.get("channels")
-    # bad shape
-    if not (isinstance(res, (list, tuple)) and len(res) == 2 and res[0] > 0 and res[1] > 0):
+    # resolution is a render SETTING, not proof of pixels — validate its shape,
+    # but the actual pixel MEASUREMENT is stats (checked next).
+    if not (isinstance(res, (list, tuple)) and len(res) == 2
+            and _is_num(res[0]) and _is_num(res[1]) and res[0] > 0 and res[1] > 0):
         return MeasureResult("image", FAIL, signals={"resolution": res},
-                             detail=f"non-positive resolution {res}")
-    flat = [v for s in (stats.values() if isinstance(stats, dict) else stats)
-            for v in (s.values() if isinstance(s, dict) else [s])]
-    if _any_bad(flat):
-        return MeasureResult("image", FAIL, signals={"stats": stats}, detail="NaN/inf in pixel stats")
+                             detail=f"non-positive / malformed resolution {res}")
+    flat = _flatten_stats(stats)
+    numeric = [v for v in flat if _is_num(v)]
+    # FP2: present-but-empty stats == no pixel measured. resolution alone (a
+    # setting known before any render) must not green a never-rendered image.
+    if not numeric:
+        return MeasureResult("image", UNKNOWN,
+                             unknown_reason="image stats present but empty: no pixel statistics measured")
+    if _any_bad(numeric) or len(numeric) != len(flat):
+        return MeasureResult("image", FAIL, signals={"stats": stats},
+                             detail="NaN/inf or non-numeric value in pixel stats")
     return MeasureResult("image", MEASURED, signals={
         "resolution": tuple(res), "channels": channels, "stats": stats,
         "hash": obs.get("hash"),
@@ -164,14 +194,23 @@ def measure_channels(obs: dict) -> MeasureResult:
 def measure_graph(obs: dict) -> MeasureResult:
     if obs.get("compiles") is None:
         return MeasureResult("graph", UNKNOWN, unknown_reason=UNKNOWN_CONDITIONS["graph"])
-    errors = obs.get("errors") or []
     if not obs["compiles"]:
-        return MeasureResult("graph", FAIL, signals={"errors": errors}, detail="graph does not compile")
+        return MeasureResult("graph", FAIL, signals={"errors": obs.get("errors") or []},
+                             detail="graph does not compile")
+    errors = obs.get("errors")
+    invokes = obs.get("invokes")
+    # measured failures first (a present, bad signal)
     if errors:
         return MeasureResult("graph", FAIL, signals={"errors": errors}, detail=f"{len(errors)} error(s) present")
-    if obs.get("invokes") is False:
+    if invokes is False:
         return MeasureResult("graph", FAIL, detail="graph compiles but does not invoke")
-    return MeasureResult("graph", MEASURED, signals={"compiles": True, "invokes": obs.get("invokes", True)})
+    # FP2: the graph contract is three legs (compiles, errors empty, invokes).
+    # If errors/invokes were never captured, only compilation was measured —
+    # UNKNOWN (partial), never a green verdict that fabricates invokes=True.
+    if errors is None or invokes is None:
+        return MeasureResult("graph", UNKNOWN,
+                             unknown_reason="graph partially measured: only compiles captured (errors/invokes absent)")
+    return MeasureResult("graph", MEASURED, signals={"compiles": True, "errors": errors, "invokes": invokes})
 
 
 CONTRACTS: dict[str, Callable[[dict], MeasureResult]] = {

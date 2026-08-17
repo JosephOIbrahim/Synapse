@@ -100,6 +100,8 @@ def test_graph_measured_fail_unknown():
     assert measure_graph({"compiles": False}).verdict == FAIL
     assert measure_graph({"compiles": True, "errors": ["boom"]}).verdict == FAIL
     assert measure_graph({"compiles": True, "invokes": False}).verdict == FAIL
+    # only compilation measured -> partial -> UNKNOWN, never a fabricated invokes=True
+    assert measure_graph({"compiles": True}).verdict == UNKNOWN
 
 
 # ── Acceptance 2: explosion detector — fires on broken, silent on healthy ──────
@@ -134,12 +136,56 @@ def test_detector_nan_and_strain_and_empty():
 
 
 def test_ke_growth_needs_full_window_and_ratio():
-    # doubles but only across 3 frames with window=5 -> not enough frames -> STABLE
+    # doubles but only across 3 frames with window=5 -> KE-growth NOT EVALUABLE.
+    # FP2: an un-runnable rule must render UNKNOWN, never a fabricated STABLE.
     frames = [{"frame": i, "kinetic_energy": ke} for i, ke in enumerate([1.0, 2.1, 4.4], 1)]
-    assert detect_explosion(frames, ke_window=5).verdict == STABLE
-    # rises but ratio under threshold -> STABLE
+    assert detect_explosion(frames, ke_window=5).verdict == EXPL_UNKNOWN
+    # 5 frames (evaluable), rises but ratio under threshold -> STABLE
     slow = [{"frame": i, "kinetic_energy": ke} for i, ke in enumerate([10, 11, 12, 13, 14], 1)]
     assert detect_explosion(slow, ke_window=5, ke_ratio_threshold=2.0).verdict == STABLE
+
+
+# ── FP2 regressions: present-but-hollow must never fabricate a pass ────────────
+# Each pins a hole the measures-verify adversarial pass (wf_b1f31760-314) found in
+# the first cut: the honesty guards checked presence/type but not that the value
+# was an actual measurement, so empty/malformed/un-evaluable inputs slipped into a
+# green verdict — the exact unmeasured-as-measured bug this leg exists to kill.
+
+class TestFP2Regressions:
+    def test_image_empty_stats_is_unknown_not_measured(self):
+        # resolution is a render SETTING; empty stats == no pixel measured.
+        assert measure_image({"resolution": [8, 8], "stats": {}}).verdict == UNKNOWN
+        assert measure_image({"resolution": [8, 8], "stats": []}).verdict == UNKNOWN
+        assert measure_image({"resolution": [8, 8], "stats": {"R": {}}}).verdict == UNKNOWN
+
+    def test_nonnumeric_signal_is_unknown_not_swallowed(self):
+        # a present-but-non-numeric strain must not fall through to STABLE
+        r = detect_explosion([{"frame": 1, "kinetic_energy": 1.0, "max_strain": "42.0"},
+                              {"frame": 2, "kinetic_energy": 1.0, "max_strain": "42.0"}])
+        assert r.verdict == EXPL_UNKNOWN and "not numeric" in r.unknown_reason
+        assert measure_sim({"frames": [{"frame": 1, "max_strain": "42.0", "kinetic_energy": 1.0}]}).verdict == UNKNOWN
+
+    def test_graph_compile_only_fabricates_nothing(self):
+        r = measure_graph({"compiles": True})
+        assert r.verdict == UNKNOWN
+        assert "invokes" not in r.signals  # no fabricated invokes=True
+
+    def test_ke_runaway_from_rest_is_exploding(self):
+        # KE starts at 0 (canonical solver initial condition) then runs away.
+        frames = [{"frame": i, "kinetic_energy": ke}
+                  for i, ke in enumerate([0.0, 5.0, 25.0, 125.0, 625.0], 1)]
+        r = detect_explosion(frames, ke_window=5)
+        assert r.verdict == EXPL_EXPLODING and r.signal == "ke_growth" and r.offending_frame == 5
+
+    def test_too_few_frames_is_unknown(self):
+        frames = [{"frame": i, "kinetic_energy": ke} for i, ke in enumerate([1.0, 10.0, 100.0, 1000.0], 1)]
+        assert detect_explosion(frames, ke_window=5).verdict == EXPL_UNKNOWN
+
+    def test_ke_gap_breaking_every_window_is_unknown(self):
+        frames = [{"frame": 1, "kinetic_energy": 1.0}, {"frame": 2, "kinetic_energy": 2.0},
+                  {"frame": 3, "kinetic_energy": 4.0}, {"frame": 4, "kinetic_energy": 8.0},
+                  {"frame": 5}, {"frame": 6, "kinetic_energy": 64.0}]  # frame 5 KE unmeasured
+        assert detect_explosion(frames, ke_window=5).verdict == EXPL_UNKNOWN
 
 
 # ── Acceptance 3 (extends, never forks): measurement -> existing exposure rung ──
