@@ -1,0 +1,20 @@
+W8-STRUTH: truth-scout evidence — claim surfaces, stamp staleness, catalog absence, cook-verify
+
+Read-only recon for BASTION B2-TRUTH. First-hand-verified inventory in
+harness/notes/W8-STRUTH-evidence.md:
+- ENFORCED cluster (13 surfaces) already apply measured-or-UNKNOWN (R162).
+- P0: tops_cook_node/batch_cook report status=cooked from cook() not raising
+  (ignores CookedFail); execute_python served desc claims automatic rollback
+  while the handler keeps mutations on operational failure.
+- P1: fabricated-value surfaces (health.healthy=True, live_metrics healthy/zero,
+  render_farm running=False, validate_frame valid w/o OIIO, render_preflight 64GB
+  guess); sleep_pass gate-bypass on bridge failure; NO per-build parm-name catalog
+  (parm gate absent on branch, verified); frozen H21 punycode map live-consumed;
+  rulebook baseline 21.0.671 freshness untested; connectivity_22/lop_22 368-vs-400
+  point-release drift ungated in wiring.
+- P2: 11 doc-drift / cosmetic / low-blast surfaces.
+- UNKNOWNs recorded not zeroed.
+
+Named-file commit; readonly leg.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
