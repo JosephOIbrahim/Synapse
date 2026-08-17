@@ -1,0 +1,49 @@
+{
+  "id": "WA1-XREF",
+  "name": "C3: help-cache cross-reference referee - parse cached APEX node help, three-way diff runtime/docs/recipes, file phantom candidates",
+  "band": "BUILD",
+  "class": "build",
+  "note": "Plain Python, no hou - parallel-safe with WA1-TRUTH by design. The cache is high-precision, low-recall (~18 APEX entries, lazily built): treat absence-from-cache as no-evidence, never as absence-from-product. Consume apex_truth via the bus when TRUTH posts it; until then build + test the parser against the cache alone.",
+  "targets": [
+    "1) harness/autoresearch/xref_help.py: parse OneDrive Documents/houdini22.0/config/Help/cache nodes/apex/*.json + nodes/sop/apex--*.json + nodes/lop/apexsoprigbuilder.json into the same claim schema as apex_truth (typed inputs/outputs, since version, deprecation status, successor links, context, namespace)",
+    "2) three-way diff per node: runtime (apex_truth artifact, consumed when TRUTH publishes) / docs (cache) / recipes-corpus (names emitted by python/synapse/panel/apex_recipes.py, read-only scan): confirmed rows, undocumented-surface flags, doc-present-runtime-absent quarantine candidates, port-type mismatches filed as findings",
+    "3) quarantine candidates filed per the harness/phantoms/ workflow (log entry, never a deletion)",
+    "4) evidence artifact: harness/autoresearch/runs/<stamp>/apex_help_xref_<build>.json + human-readable report; cache absence renders no-evidence, never absence",
+    "5) pure-Python tests for the parser + diff logic under stock pytest (fixture cache entries, no live cache dependency in tests)"
+  ],
+  "touches": [
+    "harness/autoresearch/xref_help.py",
+    "harness/autoresearch/runs/",
+    "harness/phantoms/",
+    "tests/"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "the diff never treats cache absence as product absence - low-recall referee caveat encoded in code and report",
+    "recipes-corpus scan is read-only: XREF flags phantom names, WA1-RECIPE fixes them - one writer per surface",
+    "runtime-side rows appear only if apex_truth was actually consumed; if TRUTH had not published by close, the runtime column renders UNKNOWN and the receipt says so",
+    "every mismatch finding carries both anchors: cache file + runtime artifact entry"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "source": {
+    "doc": "docs/APEX_H22_BLUEPRINT.md",
+    "anchor": "sec.5 C3 - help-cache cross-reference, three-way diff, phantom quarantine"
+  },
+  "acceptance": [
+    {
+      "predicate": "xref_help.py parses all APEX-related cache entries present at run time into the claim schema; parser tests green under stock pytest",
+      "evidence": "test"
+    },
+    {
+      "predicate": "apex_help_xref_<build>.json exists with per-node three-way verdicts: confirmed / undocumented / quarantine-candidate / type-mismatch; zero unclassified rows",
+      "evidence": "check"
+    },
+    {
+      "predicate": "any doc-present-runtime-absent name is filed in harness/phantoms/ per the existing workflow, with both anchors",
+      "evidence": "receipt"
+    }
+  ]
+}

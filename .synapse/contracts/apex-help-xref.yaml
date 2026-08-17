@@ -1,0 +1,22 @@
+# APEX-XREF — Blueprint sec.5 C3. GREEN — plain Python, no hou, no hython. The referee.
+id: apex-help-xref
+goal: "harness/autoresearch/xref_help.py parses the local H22 help cache (nodes/apex, nodes/sop/apex--*, nodes/lop/apexsoprigbuilder) into the apex_truth claim schema and emits a three-way diff (runtime/docs/recipes) with verdicts confirmed | undocumented | quarantine-candidate | type-mismatch. Cache absence == no-evidence, NEVER product absence. Quarantine candidates filed per harness/phantoms/ workflow. Executed as wave leg WA1-XREF (harness/apexforge)."
+model: opus
+autonomy: green
+owns:
+  - "harness/autoresearch/xref_help.py"
+do_not_touch:
+  - "python/synapse/panel/**"             # read-only scan permitted, writes forbidden - RECIPE's surface
+  - "python/synapse/science/**"           # TRUTH's surface
+  - "harness/autorevise/**"
+features:
+  - description: "parser + diff logic green under stock pytest against fixture cache entries (no live-cache dependency in tests)"
+    verify: "pytest -q tests/autoresearch/test_xref_help.py"
+    passing: false
+  - description: "apex_help_xref_<build>.json emitted with zero unclassified rows; low-recall caveat present in report"
+    verify: "check artifact under harness/autoresearch/runs"
+    passing: false
+  - description: "every quarantine candidate carries both anchors (cache file + runtime entry) and a phantoms/ log entry"
+    verify: "check harness/phantoms/LOG.md tail"
+    passing: false
+stop_when: "all features passing OR sessions exhausted OR budget reached"

@@ -1,0 +1,46 @@
+{
+  "id": "WA1-RECIPE",
+  "name": "G2: migrate panel recipes off phantom APEX names + catalog-membership goalpost test - the phantom class becomes unshippable",
+  "band": "BUILD",
+  "class": "build",
+  "note": "The supersession map has existed in apex_probes.py since June; this leg executes it. Consume the fresh apex_truth catalog VIA THE BUS when TRUTH posts it; the supersession map in apex_probes.py is the migration guide either way. Pure-Python goalpost - no hou, no hython, stock pytest.",
+  "targets": [
+    "1) python/synapse/panel/apex_recipes.py: replace every fictional name (apex::rig::, apex::sop:: namespaces and any other catalog-absent type) with the real superseded name per the supersession map; recipe semantics preserved",
+    "2) python/synapse/panel/apex_explainer.py: same migration, same map",
+    "3) goalpost test (tests/panel/): grep every emitted graph/recipe type name against the apex_truth catalog artifact - any catalog-absent name fails the test; pure Python, real signal under stock pytest, no skip path",
+    "4) the test reads the catalog path from the newest apex_truth_*.json under autoresearch/runs (or an env override) - it must fail LOUDLY if no catalog artifact exists, never skip to green",
+    "5) record in notes which names were migrated old->new, with the supersession-map anchor per rename"
+  ],
+  "touches": [
+    "python/synapse/panel/apex_recipes.py",
+    "python/synapse/panel/apex_explainer.py",
+    "tests/"
+  ],
+  "readonly": false,
+  "deps": ["WA1-TRUTH"],
+  "crucible_criteria": [
+    "no-catalog-artifact => test FAILS loudly, never skips - a skip here is the false-green class hytest exists to kill",
+    "migration preserves recipe behavior: renames only, no silent semantic edits; any needed semantic change is a finding for ruling, not a quiet fix",
+    "python/synapse/panel/ surface: this leg is the ONLY writer to apex_recipes.py/apex_explainer.py this wave; bus claim still posted before edit (house discipline)",
+    "every rename in the notes carries its supersession-map anchor"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/APEX_H22_BLUEPRINT.md",
+    "anchor": "sec.4 G2 - phantom-name migration + catalog-membership goalpost"
+  },
+  "acceptance": [
+    {
+      "predicate": "zero catalog-absent type names emitted by apex_recipes.py/apex_explainer.py - goalpost test green against the fresh apex_truth catalog",
+      "evidence": "test"
+    },
+    {
+      "predicate": "goalpost test fails loudly (not skip) when the catalog artifact is absent - RED leg demonstrated in the test suite",
+      "evidence": "test"
+    },
+    {
+      "predicate": "rename ledger in notes: every old->new pair anchored to the supersession map",
+      "evidence": "receipt"
+    }
+  ]
+}

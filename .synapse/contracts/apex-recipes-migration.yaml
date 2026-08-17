@@ -1,0 +1,24 @@
+# APEX-RECIPE — Blueprint sec.4 G2. AMBER — edits shipped panel-adjacent recipe modules; pure-Python goalpost.
+id: apex-recipes-migration
+goal: "Migrate python/synapse/panel/apex_recipes.py + apex_explainer.py off the phantom names (apex::rig::, apex::sop:: and any catalog-absent type) onto the real names per the supersession map in apex_probes.py. Goalpost: a stock-pytest pure-Python test that greps every emitted type name against the newest apex_truth catalog - catalog-absent name fails; missing catalog artifact FAILS LOUDLY, never skips. Executed as wave leg WA1-RECIPE (harness/apexforge)."
+model: opus
+autonomy: amber
+owns:
+  - "python/synapse/panel/apex_recipes.py"
+  - "python/synapse/panel/apex_explainer.py"
+do_not_touch:
+  - "python/synapse/panel/claude_worker.py"   # sec.1 FLOOR
+  - "python/synapse/panel/synapse_panel.py"   # W5L LIFE/PANEL/ROPE surface - live wave
+  - "python/synapse/cognitive/**"
+  - "python/synapse/science/**"               # TRUTH's surface
+features:
+  - description: "goalpost green: zero catalog-absent names emitted, checked against the fresh apex_truth catalog"
+    verify: "pytest -q tests/panel/test_apex_recipe_catalog.py::test_no_phantom_names"
+    passing: false
+  - description: "RED leg: goalpost fails loudly (not skip) when the catalog artifact is absent"
+    verify: "pytest -q tests/panel/test_apex_recipe_catalog.py::test_missing_catalog_fails_loud"
+    passing: false
+  - description: "suite still green"
+    verify: "pytest -q"
+    passing: false
+stop_when: "all features passing OR sessions exhausted OR budget reached"

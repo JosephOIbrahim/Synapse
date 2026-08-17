@@ -1,0 +1,25 @@
+# APEX-TRUTH — Blueprint sec.4 G1/G4 + sec.5 C1. GREEN — probe + artifact work, hython via shim, no panel/runtime touch.
+id: apex-truth-reseed
+goal: "Re-seed the APEX truth surface under the running H22 build: apex_truth_<build>.json evidence artifact (callback catalog + port signatures + SOP surface + invoke smoke) via a new autoresearch mission apex_basic.json and probe kinds in probes.py; re-stamp python/synapse/science/apex_probes.py with the runtime-observed build; extend harness/verify/version_agreement.py to cover the catalog stamp. Executed as wave leg WA1-TRUTH (harness/apexforge)."
+model: opus
+autonomy: green
+owns:
+  - "python/synapse/science/apex_probes.py"
+  - "harness/autoresearch/missions/apex_basic.json"
+  - "harness/autoresearch/probes.py"      # shared seam with WA1-WIRE - bus-serialized
+  - "harness/verify/version_agreement.py"
+do_not_touch:
+  - "python/synapse/panel/**"             # RECIPE's surface
+  - "python/synapse/cognitive/**"
+  - "harness/autorevise/**"               # W5L's harness, live
+features:
+  - description: "apex_truth_<build>.json exists; build stamp == runtime-observed build string; rank>=70 seeds re-confirmed or UNKNOWN with probe evidence"
+    verify: "python harness/verify/version_agreement.py"
+    passing: false
+  - description: "invoke smoke chain_hash repeat-2 hashes identical (determinism)"
+    verify: "check apex_truth artifact P2 entries"
+    passing: false
+  - description: "hytest shim discipline held: no skipped-probe counted as pass"
+    verify: "python .synapse/hytest.py"
+    passing: false
+stop_when: "all features passing OR sessions exhausted OR budget reached"

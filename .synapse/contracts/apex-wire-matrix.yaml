@@ -1,0 +1,22 @@
+# APEX-WIRE — Blueprint sec.5 C2. GREEN — probe work, hython via shim. W1 becomes a lookup.
+id: apex-wire-matrix
+goal: "New probe kind apex_wire_matrix: from TRUTH's port-signature set, attempt every ordered (out-type,in-type) wire in a script-built two-node graph and record connects | coerces | rejects(+exception text) | UNKNOWN; plus an @/$ resolution table per bind context (graph parms, scene hierarchy, invoke bindings). Artifact apex_wire_matrix_<build>.json regenerates per build. Repeat-2 sample proves idempotence. Executed as wave leg WA1-WIRE (harness/apexforge), type set consumed from TRUTH via the apexforge bus."
+model: opus
+autonomy: green
+owns:
+  - "harness/autoresearch/missions/apex_wire.json"
+  - "harness/autoresearch/probes.py"      # shared seam with WA1-TRUTH - bus-serialized
+do_not_touch:
+  - "python/synapse/**"
+  - "harness/autorevise/**"
+features:
+  - description: "matrix artifact covers the full ordered-pair product of the consumed type set; every cell verdicted, rejects carry exception text"
+    verify: "check apex_wire_matrix artifact under harness/autoresearch/runs"
+    passing: false
+  - description: "repeat-2 sample re-run verdict-identical (idempotence hash)"
+    verify: "check artifact repeat entries"
+    passing: false
+  - description: "@/$ resolution table complete per (token, context) pair; unmeasured contexts UNKNOWN"
+    verify: "check artifact resolution section"
+    passing: false
+stop_when: "all features passing OR sessions exhausted OR budget reached"

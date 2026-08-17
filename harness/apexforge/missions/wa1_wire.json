@@ -1,0 +1,49 @@
+{
+  "id": "WA1-WIRE",
+  "name": "C2: wire-typing matrix + @/$ resolution table - W1 made mechanical, connects/coerces/rejects per ordered type pair",
+  "band": "BUILD",
+  "class": "build",
+  "note": "Depends on TRUTH's port-signature artifact for the type set - consume it VIA THE BUS when TRUTH posts it (dynamic handoff, do not wait for merge). Until it lands: scaffold the probe kind, the matrix mission, and tests against a fixture type set. hython execution through the hytest shim.",
+  "targets": [
+    "1) harness/autoresearch/probes.py: new probe kind apex_wire_matrix - from the port-signature set collect distinct port types (Matrix4, Float, Geometry, Dict, String, arrays, ramps - H22 adds ramp types to graph interfaces, in scope); for each ordered (out,in) pair script-construct a two-node graph (apex.Graph.addNode + wire, both champion-confirmed probe ops), attempt the wire, record connects/coerces/rejects + exception text",
+    "2) @/$ resolution probe family: build bind contexts (graph parms, scene hierarchy, invoke bindings), record what each token form resolves to in each context - output is a resolution table, not an explanation",
+    "3) harness/apexforge/missions author-side artifact: a matrix mission JSON for autoresearch (apex_wire.json) wiring both probe families",
+    "4) run it: harness/autoresearch/runs/<stamp>/apex_wire_matrix_<build>.json; repeat-2 on a sample of pairs proves idempotence (identical verdicts + hashes)",
+    "5) unresolvable pairs and headless-unmeasurable contexts render UNKNOWN - never omitted silently, never guessed"
+  ],
+  "touches": [
+    "harness/autoresearch/probes.py",
+    "harness/autoresearch/missions/",
+    "harness/autoresearch/runs/",
+    "tests/"
+  ],
+  "readonly": false,
+  "deps": ["WA1-TRUTH"],
+  "crucible_criteria": [
+    "probes.py is shared with WA1-TRUTH this wave -> bus claim before ANY edit to it; overlapping open claim stops the leg (serialize on the file, parallel on everything else)",
+    "the type set comes from TRUTH's artifact or a declared fixture - a matrix over a typed-from-memory set is the phantom class in matrix clothing; the receipt states which set was used",
+    "verdicts carry exception text for rejects; a reject without the exception is an unanchored claim",
+    "repeat-2 idempotence on the sampled pairs is a hard acceptance - flaky wiring verdicts are a finding, not noise"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "source": {
+    "doc": "docs/APEX_H22_BLUEPRINT.md",
+    "anchor": "sec.5 C2 - wire-typing matrix, @/$ resolution, per-build regeneration"
+  },
+  "acceptance": [
+    {
+      "predicate": "apex_wire_matrix_<build>.json exists covering the full ordered-pair product of the consumed type set, every cell connects|coerces|rejects(+exception)|UNKNOWN",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "repeat-2 sample re-run yields identical verdicts (idempotence hash match)",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "@/$ resolution table present with one row per (token, bind context) pair; unmeasured contexts UNKNOWN",
+      "evidence": "probe"
+    }
+  ]
+}

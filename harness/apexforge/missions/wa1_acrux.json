@@ -1,0 +1,43 @@
+{
+  "id": "WA1-ACRUX",
+  "name": "Adversarial crucible for wave WA1 - audits TRUTH/XREF/WIRE/RECIPE verdicts, builds nothing",
+  "band": "TRUST",
+  "class": "crucible",
+  "note": "Blocked by design until the four builder receipts exist. Read-only. A green ACRUX receipt is a PRECONDITION for Joe's merge words, never a substitute for them.",
+  "targets": [
+    "1) audit every builder receipt against its mission acceptance: verdict-by-verdict, anchor-by-anchor - an unanchored pass is a finding",
+    "2) stale-stamp hunt: confirm the apex_truth build stamp was runtime-observed in-run (probe provenance), not typed; confirm apex_probes.py docstring matches the artifact stamp",
+    "3) false-green hunt: run the RECIPE goalpost test yourself with the catalog artifact hidden - it must fail, not skip; run it normally - it must pass",
+    "4) phantom-class audit: sample XREF quarantine candidates and confirm each carries both anchors; sample WIRE reject cells and confirm exception text present",
+    "5) shared-surface audit: probes.py was touched by TRUTH and WIRE - confirm bus claims serialized the edits, no overlapping open claims, releases posted",
+    "6) UNKNOWN audit: every headless-unmeasurable acceptance renders UNKNOWN in receipts - any zero or estimate where UNKNOWN belongs is a BLOCK",
+    "7) post any BLOCK on the bus addressed to the offending leg; all BLOCKs answered before the receipt closes"
+  ],
+  "touches": [],
+  "readonly": true,
+  "deps": ["WA1-TRUTH", "WA1-XREF", "WA1-WIRE", "WA1-RECIPE"],
+  "crucible_criteria": [
+    "builds nothing, fixes nothing - findings and BLOCKs only",
+    "verdict for the wave: green | green_with_findings | blocked, with per-leg breakdown",
+    "merge words remain Joe's, per branch, after this receipt - state that in the receipt"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/APEX_H22_BLUEPRINT.md",
+    "anchor": "sec.7 contracts table + sec.10 failure classes - the crucible audits the two failure modes this blueprint is armor against"
+  },
+  "acceptance": [
+    {
+      "predicate": "per-leg audit table complete: every builder acceptance predicate has an ACRUX verdict pass|fail|UNKNOWN with anchor",
+      "evidence": "receipt"
+    },
+    {
+      "predicate": "RECIPE goalpost RED leg reproduced by the crucible itself (fail-loud confirmed, skip absent)",
+      "evidence": "test"
+    },
+    {
+      "predicate": "zero unanswered BLOCKs at receipt close",
+      "evidence": "receipt"
+    }
+  ]
+}
