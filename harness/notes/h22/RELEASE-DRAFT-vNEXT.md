@@ -1,60 +1,37 @@
-# RELEASE DRAFT - vNEXT (v5.51.0 proposed - number is Joe's call at ritual)
-# Status: DRAFT. Tag + GitHub Release happen ONLY via the release ritual (g-receipts + drop.json are Joe's).
-# Updated 2026-08-16: post-W5L merge train (5 legs), R1 flip, shelf icon. Ritual HALTED at g5; resumes on this build.
+# v5.51.0 (proposed) - Close the tab, keep the session
 
-## Headline
-Close the tab, keep the session. Undo everything. A panel that stops lying about spend.
+Draft release notes for the build after v5.50.0. Publish is gated at ritual step g9; this document tracks everything merged to master and pushed as of 2026-08-16 evening. All claims below are receipt-backed on master.
 
 ## For artists
-- **Closing the SYNAPSE panel no longer kills the runtime** - heartbeat moved off the panel into
-  the runtime (P0.3 fixed, W5-LIFE). Close the tab mid-operation: work finishes, session and chat
-  history are there when you reopen. (g5 re-run on this build confirms live.)
-- **Ctrl+Z reverses everything SYNAPSE builds** - named undo groups wrap creation, deletion,
-  wiring, parms, keyframes.
-- **Font scale respects the host** - floor equals Houdini's UI font; the Aa cycle and "Larger text"
-  can never shrink below it (R1 wired live today, 4c1134d8).
-- **Token tab tells the truth** - spend traces to real API usage receipts; unmetered engines read
-  UNKNOWN, never a fake 0. Chat leading +0.75pt, proven effective not inert.
-- **Shelf grown up** - six distinct committed icons + one-sentence tooltips per tool; panel-open
-  tool has its icon (2dd6bab6). Visual render = live-seat check at relaunch.
-- Type-name retrieval P@1 1.0 (603/603) on a corpus stamped fresh at 22.0.400.
 
-## For the harness
-- **First fully-clean wave**: 4/4 legs' receipts are their own closing commits, zero operator
-  rescues (W5-LCRUX mandate table). Commit-before-receipt is now lived, not just codified.
-- Substrate fold in flight: per-build **Schema Catalog** (386 Cop types, APEX registries) and
-  **gated_set() parm API** legs DONE; **Cook-Verify measures** running; all three merge only on
-  the W5-WCRUX verdict - not in this tag unless merged before ritual resume.
-- suite_baseline ratchet holds through the 5-leg train (6508/0); hosted CI green on push.
+**Closing the SYNAPSE panel tab no longer kills your session.** The runtime heartbeat was parented to the panel widget (defect P0.3); it now lives in the runtime itself. Build something, close the tab mid-operation, reopen the panel - the session, its history, and its undo stack are still there. This is the headline fix, and it is now pinned by a behavioral test that fails if anyone ever re-parents the beat.
 
-## Honest state (ships declared, not hidden)
-- 4 machine gates still RED: mutation_fail_closed, hot_reload_gated, installer_host_targeted,
-  ci_covers_shipping_surface. Shipping red-declared per v5.50.0 precedent.
-- G3 pending-drop: h22 symbol table not regenerated since Aug 9 (drop.json is Joe-only).
-- provenance guardrail warn-only/unwired (standing hardening debt).
-- gui_required UNKNOWNs close only at Joe's live seat: g5 re-run, icon render, font floor feel.
+**The panel you see is provably the code in the repo.** An adversarial crucible re-executed the parity probes under real hython 22.0.400: all 90 panel modules load byte-identical from the repo, zero shadow installs anywhere on the path, all seven shelf icons resolve in-repo, and the panel's exec/flush loader genuinely re-imports fresh on every reopen. Close and reopen the panel after a code change and you are running that change - no Houdini restart.
 
-## Ritual checklist (resume point: g5 on THIS build)
-g5 lifecycle re-run (Joe's hands) . g6-g9 . W5-UNDO-GUI live Ctrl+Z receipt (doubles as marquee
-demo) . drop.json (Joe-only write) . version bump across six surfaces . R.R Mode A . tag .
-GitHub Release.
+**Text never shrinks below the floor.** Both font-scale entry points (the Aa button and the "Larger text" menu) now route through the token ladder - the R1 regression class is closed at both sites.
 
+**Flow fixes, measured not opined.** Six canonical user journeys (first build, multi-node rig, error recovery, mode switch, palette, close-reopen) were mapped from lived evidence and driven end-to-end by a journey rig under hython. Two panel-side fixes shipped, each proven red-then-green by the rig, and three adversarial journeys - garbage prompt mid-build, panel close mid-journey, rapid mode-switch - all survive with the session intact.
 
----
+## Under the hood
 
-## Addendum - 2026-08-16 late session (merged to master, CI green)
+**The harness now enforces what it used to merely say.** A failure-class ledger (`harness/HARDENING-SPEC.md`) mined every receipt, finding, and ruling in the project's history into named classes with a one-token honesty vocabulary (WIRED / WIRED-BUT-HOLLOW / WARN-ONLY / PROSE-ONLY / NONE). Four builders then moved the worst classes to enforced gates, and a crucible proved every gate goes RED on a simulation of its original defect:
 
-**Panel parity proven.** An adversarial crucible independently re-executed both parity probes under real hython 22.0.400: all 90 panel modules load byte-identical from the repo, zero shadow installs, all seven icons + shelf resolve in-repo, and the pypanel exec/flush path genuinely re-imports fresh (import-masking ruled out). The live GUI seat was observed running 22.0.400 during the probe window.
+- **Injection class killed.** `Sanitize-SQ` helpers plus a 41-test adversarial-name matrix through the real PowerShell parser; 17 fresh payloads in crucible re-attack, zero reached a command position.
+- **Provenance is fail-closed.** The check that had returned warn-only by construction since June now fails task verdicts; a forced bypass in a scratch tree reads RED.
+- **The heartbeat gate reads behavior, not source strings.** Marker present but beat hollowed = RED.
+- **A leg is not done until its receipt commit IS the branch HEAD and a RELEASE line is on the bus.** The receipt-without-commit class (~12 lived instances across four waves) is structurally closed in the orchestrator state machine.
+- Composed tree: 6572 passed / 0 failed, ratchet +67, zero regressions.
 
-**Hardening wave (W6).** The failure-class ledger (`harness/HARDENING-SPEC.md`) mined every receipt and ruling into eight seeded classes plus newly-mined ones; four builders then moved the worst classes from prose to enforced gates, each proven RED-able on its original defect by the crucible:
-- Injection class killed: `Sanitize-SQ` + adversarial-name parser matrix (41 tests; 17 fresh payloads, zero reached a code position)
-- Provenance now **fail-closed** in task verdicts (was warn-only by construction since June)
-- Heartbeat gate reads **behavior**, not a source grep - panel death, beat survives
-- Orchestrator `done` now requires receipt == branch HEAD **and** a bus RELEASE (the CRX0 class, structurally closed)
-- Composed tree: 6572 passed / 0 failed, ratchet +67, zero regressions
+One operator close-pass was performed per R135 and recorded openly in the W6-HCRX verdict: the GATE leg's own receipt commit and two missing RELEASE lines - the wave's thesis, caught live on its own authors by its own gate.
 
-One operator close-pass per R135 (recorded openly in the W6-HCRX verdict): the GATE leg's own receipt commit + two missing RELEASE lines - the wave's thesis caught live on its own authors.
+**Substrate progress.** The compiled parameter-name catalog (W5-CATALOG) and the parameter gate (W5-PARMGATE) are complete; the cook-verify measurement layer (W5-MEASURES) is in flight with its crucible (W5-WCRUX) queued behind it. Those land in the next update to this draft.
 
-**User-flow wave (W6f).** Six evidence-anchored journeys mapped (zero invented personas under audit), a hython journey rig measuring every step, and two pinned panel fixes proven green-to-red under revert simulation. Three adversarial journeys survived first-hand, including panel-close mid-journey - the P0.3 fix under attack.
+## Honest state
 
-**Honest-state correction to the list above:** `provenance_not_bypassed` is no longer unwired - it is WIRED and fail-closed as of this addendum. Cook-verify substrate (W5-MEASURES/WCRUX) still in flight; will ride the next update.
+Still RED, unchanged by this span: `mutation_fail_closed`, `hot_reload_gated`, `installer_host_targeted`, `ci_covers_shipping_surface`. G3 remains pending-drop (human-only `drop.json` write). GUI-required checks remain UNKNOWN until the operator's seat exercises them - the seat checklist is three items: print `hou.applicationVersion()` + a panel module `__file__` from the live panel; edit a panel module and see the edit after close/reopen with no restart; launch explicitly from the `22.0.400\bin` (five builds share one prefs dir and nothing pins the default).
+
+Corrected from the previous draft of these notes: `provenance_not_bypassed` is no longer unwired - it is WIRED and fail-closed on master.
+
+## Ritual state
+
+The release ritual resumes at **g5 on this build**: build something in the panel, close the tab mid-operation, reopen, confirm the session survived - operator hands, live GUI. Then g6-g9, the live Ctrl+Z undo receipt (W5-UNDO-GUI), version bump across the six surfaces via `scripts/sync_version.py`, and publish of this draft. v5.50.0 remains Latest until then.
