@@ -1,0 +1,60 @@
+{
+  "leg": "W8-SMITH",
+  "status": "green_with_findings",
+  "product_head": "0da17aa3227142b4148ffaccea491b372de93753",
+  "base": "327f52fd672b5cda334c8a1eb5c51df655f85ba2",
+  "branch": "wave8/smith",
+  "summary": "Forked AUTOREVISE into BASTION harness v2 under harness/bastion/ (13 files, +1134). Schema v2 skills[], typed bus with validator-on-write, arm template v2 with steward arm/refresh + /rc bake-in slot. Self-test 10/10 green. /rc DELIVERY resolved first-hand; /rc DEFINITION UNKNOWN, escalated with transcript (never guessed).",
+  "acceptance": [
+    {
+      "predicate": "v2 fork complete with skills[] + typed bus + steward-arm clause; pytest self-test green, skip is not pass",
+      "verdict": "pass",
+      "evidence": "test",
+      "detail": "python -m pytest harness/bastion/tests/test_bastion_v2.py -v -> 10 passed, 0 skipped (skip is not pass). Covers: schema round-trip incl. skills[]; compile of fixtures/w99_skills.json carrying skills[] (brief lists both paths, {SKILLS} substituted); bus kind validation (typed+operational accepted, unknown REFUSED on write, exit 2); release/close-gate back-compat (both idioms). skills[] in mission_schema.py (OPTIONAL + shape validator) + compile_wave.py render_skills(); typed bus in bus.py canonical_kind()/VALID_KINDS; steward arm/refresh in arm_template.ps1 (steward relaunch, deadline past wave horizon)."
+    },
+    {
+      "predicate": "/rc resolved and documented, or UNKNOWN escalated with interrogation transcript",
+      "verdict": "pass",
+      "evidence": "check",
+      "detail": "Satisfied via the UNKNOWN-escalated disjunct. DELIVERY resolved first-hand (steward.ps1:22-31 SendKeys('/rc')+'~' to leg windows matched by title, once each). DEFINITION UNKNOWN and escalated as a wave8 bus block (n=18cca71d6db73ee8) + HARNESS_V2.md. The /rc definition itself remains UNKNOWN (see findings) - the acceptance predicate is met, the underlying gap is named, not closed."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1-rc-definition-unknown",
+      "claim": "/rc DEFINITION is UNKNOWN; DELIVERY mechanism is resolved.",
+      "delivery_resolved": "harness/notes/h22/steward.ps1:22-31 - finds windows by title 'SYNAPSE (W..-..)', AppActivate, SendKeys('/rc') + '~' (Enter), once per leg.",
+      "interrogation_transcript": [
+        "1) filesystem: ~/.claude/commands has only bridge.md; no rc.md anywhere under ~/.claude, no rc.md in repo, no plugin command rc*; repo .claude/commands empty.",
+        "2) CLI: no built-in /rc subcommand (claude 2.1.233; subcommands agents/auth/auto-mode/doctor/gateway/import/install/mcp/plugin/project/setup-token/ultrareview/update).",
+        "3) settings: global settings.json has no command/rc alias.",
+        "4) print-mode live probe: 'claude -p /rc', '/bridge', '/help' each hung and were killed by timeout (EXIT=124), emitting only the connectors warning - no resolution.",
+        "5) interactive TUI: 'claude --bare --ax-screen-reader' fell back to --print (Error: Input must be provided...); a non-TTY pipe cannot drive the slash autocomplete. A dispatched agent has no TTY."
+      ],
+      "why_unobservable": "/rc's interactive resolution is a live-TUI fuzzy autocomplete over the session command set - non-deterministic from disk, unobservable without a terminal.",
+      "consequence": "arm_template.ps1 $RcBakeIn ships as a NAMED UNKNOWN sentinel; headless (-p) legs run windowed-or-steward-covered only until Joe states /rc or an interactive interrogation captures it.",
+      "anchor": "harness/bastion/HARNESS_V2.md"
+    },
+    {
+      "id": "F2-survival-rules-traced",
+      "claim": "All five runner survival rules carried to source, none from memory (crucible criterion: no phantom surface).",
+      "anchor": "harness/bastion/HARNESS_V2.md#runner-survival-rules; hold-turn=CARD_cache-advisor.md:66-67; BG_WAIT_CEILING=arm_w8.ps1:21; AGENT_TEAMS=arm_w8.ps1:20; detached+pid=arm_w8.ps1:25-26 & orchestrate.ps1:493,504; debom=quote_safe.py"
+    },
+    {
+      "id": "F3-bus-promotion-seam",
+      "claim": "Shipped orchestrator close-gate is hardcoded to the autorevise bus (orchestrate.ps1:206, called :211). The typed bastion bus is a strict superset drop-in; promoting it to the live close-gate requires repointing that one line to harness/bastion/bus.py.",
+      "anchor": "harness/orchestrate.ps1:206,211; harness/bastion/HARNESS_V2.md#promotion-seam"
+    }
+  ],
+  "for_ruling": [
+    "/rc definition stays UNKNOWN until Joe states it or an interactive (TTY) session runs /help and reads what /rc autocompletes to. Bake-in slot holds a NAMED UNKNOWN until then.",
+    "To make the shipped close-gate read the typed bastion bus, repoint orchestrate.ps1:206 to harness/bastion/bus.py (a human word; touches harness/orchestrate.ps1, outside W8-SMITH scope harness/bastion/).",
+    "Live PowerShell AST parse of arm_template.ps1 + steward.ps1 was permission-blocked this session; verified by inspection against traced sources. Joe can run [Parser]::ParseFile to confirm if desired. The .ps1 files are templates - never executed (arming is a Joe word)."
+  ],
+  "spawn": [],
+  "notes": {
+    "bus": "claim n=18cca6ab7d496ccc (harness/bastion/, no peer overlap); block n=18cca71d6db73ee8 (/rc UNKNOWN); RELEASE posted at close.",
+    "scope": "13 files, all under harness/bastion/ (exclusive write scope). Never git add -A; never push/merge/tag/drop.json/ratified.",
+    "self_test_cmd": "python -m pytest harness/bastion/tests/test_bastion_v2.py -v"
+  }
+}
