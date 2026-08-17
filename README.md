@@ -30,6 +30,7 @@ How a change ships (nothing merges without the crucible; nothing pushes without 
 flowchart LR
     M[mission JSON] --> C[compile + validate] --> O[orchestrator] --> L[Opus agents in worktrees]
     L --> X[adversarial crucible] --> W{Joe reads verdict,<br>says merge per leg} --> G[Gate C push]
+    L -.->|close-gate: receipt is branch HEAD<br>+ RELEASE on the bus, or the leg holds| X
 ```
 
 Why closing the panel is safe now:
@@ -39,6 +40,8 @@ flowchart LR
     P[panel closes] -->|deliberate detach| B[runtime_beat<br>process-lifetime owner]
     B -->|beat continues| F[freeze watchdog<br>stays calm]
     S[runtime + session_store] -->|survives| R[reopen: same session,<br>history intact]
+    NB[new Houdini boot] -->|scoped: previous work<br>parked, never destroyed| CL[panel starts clean]
+    CL -->|/restore-session| R
 ```
 
 **New in v5.50.0 — the knowledge layer stops guessing:** retrieval repair lands. Scout finally sees the node corpus, ambiguous type names disambiguate by context, datasheets carry real internal parm names + channels, and the dense path can honestly say "not found" — 0/25 confident-wrong on fresh adversarial probes. Under it: a build-freshness release gate, a single-writer ingest ledger, and a parameterized help-archive pin. [Release notes →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.50.0)
