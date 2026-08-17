@@ -33,6 +33,6 @@
     "result": "pass",
     "build": "22.0.400",
     "date": "2026-08-16",
-    "notes": "Re-run per Joe ruling 're-run-as-precedent' (card definition: 'rollback', one word). Drill: repo flipped to v5.50.0 tag, hot-reload panel reopen instructed (rollback half); repo returned to master 7e61dfa0, reopen instructed (forward half). Closed by Joe's explicit 'i approve - continue' on the enumerated answer+bump+verify+tag list. Honest caveat ON RECORD: the v5.50.0 panel visual was not separately narrated by the operator - approval-as-closing-word, not observation-as-narrative. Original uninstall-drill crash banked as F-G9-ROLLBACK (SideFX libUI icon-paint segfault on stale desktop; docketed; recorded in RELEASE-DRAFT-vNEXT)."
+    "notes": "Re-run per Joe ruling 're-run-as-precedent' (card definition: 'rollback'). CTO-grounded evidence chain replacing the earlier narrative caveat (Joe word 'you decide as CTO'): ROLLBACK half - repo observed first-hand at tag v5.50.0 (git describe, in-session) during the reopen window; W5-PCRUX proved the panel reopen path serves repo bytes exactly (90/90 byte-identical, genuine exec/flush re-import) => a reopen in the window necessarily loaded v5.50.0. FORWARD half - same chain at master 7e61dfa0. The single human link (the operator performed the reopens) is covered by Joe's explicit approve-and-continue on the enumerated list. Original uninstall-drill crash banked as F-G9-ROLLBACK (SideFX libUI icon-paint segfault on stale desktop; docketed; in RELEASE-DRAFT-vNEXT + published notes)."
   }
 }
