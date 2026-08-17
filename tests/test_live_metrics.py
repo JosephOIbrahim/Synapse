@@ -162,7 +162,10 @@ class TestAggregator:
     def test_collect_routing_no_router(self):
         agg = MetricsAggregator(router=None)
         routing = agg._collect_routing()
-        assert routing == RoutingMetrics()
+        # Bug A sibling: an unwired router is a shed cycle, not a measured
+        # zero-traffic router. Its computed rates (0.0) are unmeasured.
+        assert routing.measured is False
+        assert routing == RoutingMetrics(measured=False)
 
     def test_collect_routing_with_router(self):
         mock_router = MagicMock()
@@ -187,7 +190,11 @@ class TestAggregator:
     def test_collect_resilience_no_monitor(self):
         agg = MetricsAggregator(health_monitor=None)
         res = agg._collect_resilience()
-        assert res == ResilienceMetrics()
+        # Bug A sibling (HIGH): an unwired health monitor is a shed cycle. The
+        # bare 'closed'/'healthy' all-clear must be marked unmeasured, not blessed
+        # as an affirmative measured green.
+        assert res.measured is False
+        assert res == ResilienceMetrics(measured=False)
 
     def test_collect_resilience_with_monitor(self):
         mock_monitor = MagicMock()
@@ -348,6 +355,58 @@ class TestUnmeasuredScene:
         text = json.dumps(snapshot_to_dict(snap), sort_keys=True)
         assert '"fps": null' in text
         assert '"measured": false' in text
+
+
+# ---------------------------------------------------------------------------
+# Bug A siblings: Routing/Resilience carry the same honesty contract. A shed
+# cycle (router / health monitor unwired — the steady state on the dominant
+# hwebserver transport) must mark measured=False and surface its computed /
+# affirmative fields as UNKNOWN, never as a measured 0% cache or a green
+# 'healthy' all-clear.
+# ---------------------------------------------------------------------------
+
+class TestUnmeasuredSiblings:
+    def test_sibling_measured_defaults_true(self):
+        assert RoutingMetrics().measured is True
+        assert ResilienceMetrics().measured is True
+
+    def test_shed_routing_nulls_rates_keeps_counts(self):
+        routing = snapshot_to_dict(
+            MetricSnapshot(routing=RoutingMetrics(measured=False)))["routing"]
+        assert routing["measured"] is False
+        # Computed rates are unmeasured → None (UNKNOWN), not a measured 0.0.
+        assert routing["cache_hit_rate"] is None
+        assert routing["avg_latency_ms"] is None
+        # Resting counts read as empty and are kept.
+        assert routing["total_requests"] == 0
+        assert routing["knowledge_entries"] == 0
+
+    def test_shed_resilience_nulls_affirmations_keeps_counts(self):
+        res = snapshot_to_dict(
+            MetricSnapshot(resilience=ResilienceMetrics(measured=False)))["resilience"]
+        assert res["measured"] is False
+        # Affirmative safety claims are unmeasured → None — never a false green.
+        assert res["circuit_state"] is None
+        assert res["health_status"] is None
+        assert res["health_status"] != "healthy"
+        assert res["circuit_state"] != "closed"
+        # Counts read as resting and are kept.
+        assert res["circuit_trip_count"] == 0
+        assert res["rate_limit_rejects"] == 0
+
+    def test_measured_siblings_keep_values(self):
+        snap = MetricSnapshot(
+            routing=RoutingMetrics(
+                measured=True, cache_hit_rate=42.0, avg_latency_ms=1.5,
+                total_requests=10),
+            resilience=ResilienceMetrics(
+                measured=True, circuit_state="open", health_status="critical"),
+        )
+        d = snapshot_to_dict(snap)
+        assert d["routing"]["cache_hit_rate"] == 42.0
+        assert d["routing"]["avg_latency_ms"] == 1.5
+        assert d["resilience"]["circuit_state"] == "open"
+        assert d["resilience"]["health_status"] == "critical"
 
 
 # ---------------------------------------------------------------------------

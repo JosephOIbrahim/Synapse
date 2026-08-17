@@ -301,7 +301,11 @@ def render_prometheus(
         # Wave5/measures Bug A: distinguish a MEASURED scene from a SHED cycle
         # (hou unavailable / main thread busy past the collect timeout). On a shed
         # cycle the counts below are bare defaults, not observations.
-        scene_measured = scene.get("measured", True)
+        # Default False (honesty-safe): a scene dict with no measured marker is of
+        # unknown provenance, so treat it as UNMEASURED rather than fabricate a
+        # clean scrape. The shipped handler always passes snapshot_to_dict() output
+        # (which carries the flag), so this default only guards partial/legacy dicts.
+        scene_measured = scene.get("measured", False)
 
         lines.append("")
         lines.append("# HELP synapse_scene_measured 1 if the scene collector observed the scene this cycle, 0 if the cycle was shed")

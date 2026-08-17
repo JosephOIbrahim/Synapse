@@ -101,3 +101,14 @@ def test_shed_scene_omits_counts_and_never_emits_none():
     assert "synapse_scene_errors" not in text
     # And the nulled dict must never leak a literal None into the scrape.
     assert "None" not in text
+
+
+def test_scene_dict_without_measured_marker_is_unmeasured():
+    """Honesty-safe default: a scene dict of unknown provenance (no 'measured'
+    key, e.g. a partial/legacy snapshot) must be treated as UNMEASURED, not
+    fabricate a clean 0-count scrape. Regression for the render_prometheus
+    default-True finding from the Bug A adversarial pass."""
+    text = render_prometheus(live_snapshot={"session": {}, "resilience": {}})
+    assert "synapse_scene_measured 0" in text
+    assert "synapse_scene_nodes_total" not in text
+    assert "synapse_scene_warnings" not in text
