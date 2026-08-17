@@ -1,0 +1,52 @@
+{
+  "leg": "WA1-RECIPE",
+  "name": "G2: migrate panel recipes off phantom APEX names + catalog-membership goalpost test",
+  "branch": "wavea1/recipe",
+  "product_head": "c9c34026fa2309d3e896d09ddb1250a5f604c26c",
+  "base": "cecfa54c",
+  "status": "green_with_findings",
+  "build_target": "22.0.400",
+  "catalog_consumed": "harness/autoresearch/runs/apex_basic_20260817_122650/apex_truth_22.0.400.json (WA1-TRUTH, 39 entries, 0 probe failures)",
+  "acceptance": [
+    {
+      "predicate": "zero catalog-absent type names emitted by apex_recipes.py/apex_explainer.py - goalpost test green against the fresh apex_truth catalog",
+      "verdict": "pass",
+      "evidence": "APEX_TRUTH_CATALOG=<apex_truth_22.0.400.json> python -m pytest tests/panel/test_apex_catalog_membership.py => 4 passed, 0 skipped. test_emitted_recipe_types_are_catalog_present PASSED: all APEX/KineFX emitted nodes[].type (apex_recipes.py, AST-extracted) present in the catalog present-set; apex_explainer.py emits no node types."
+    },
+    {
+      "predicate": "goalpost test fails loudly (not skip) when the catalog artifact is absent - RED leg demonstrated in the test suite",
+      "verdict": "pass",
+      "evidence": "No-catalog run (this branch alone): test_emitted_recipe_types_are_catalog_present FAILED with CatalogNotFound (hard ERROR, not skip); 0 skipped in every run. test_missing_catalog_fails_loudly_never_skips PASSED - proves discovery raises on empty search root + env-to-missing-file, and statically bans a skip( call in the discovery path."
+    },
+    {
+      "predicate": "rename ledger in notes: every old->new pair anchored to the supersession map",
+      "verdict": "pass",
+      "evidence": "harness/notes/WA1-RECIPE-migration-ledger.md - each rename anchored to apex_probes.py supersession map L24-33 with the exact map line; disclosed reclassification table; constraint finding recorded."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "apex_recipes.py required NO edit - its 24 emitted nodes[].type (13 distinct) are already migrated to real, catalog-present names (zero apex::rig::/apex::sop::/apex::autorig::). Confirmed by AST read + WA1-XREF independent scan. Claimed for sole-writer discipline; left byte-unchanged.",
+      "anchor": "python/synapse/panel/apex_recipes.py (nodes[].type) ; bus WA1-XREF n=18cca4649fce0508"
+    },
+    {
+      "claim": "DISCLOSED reclassification (not a silent semantic edit): migrating the classifier substrings to real names makes real rig nodes classify by actual type instead of falling through. apex::buildfkgraph/apex::autorigbuilder/apex::autorigcomponent/apex::configurecontrols/apex::controlextract now -> autorig (were apex_network); kinefx::twoboneik/kinefx::blendtransforms now -> autorig (were kinefx) - realising the pre-existing intent (the phantom apex::sop::ik / apex::sop::blendtransform already lived in the autorig bucket). No existing test pinned the old classification (only tests/test_apex_recipe_names.py references these modules, and it scans apex_recipes.py data only).",
+      "anchor": "python/synapse/panel/apex_explainer.py:_APEX_TYPE_PATTERNS ; verified live via _classify_apex_type ; ledger 'Disclosed reclassification' table"
+    },
+    {
+      "claim": "Cross-seam emitted_node_types.json NOT triggered by this leg. Its extractor scans createNode(\"...\") literals + APEX_SEED + setdressing VERIFIED_NODE_TYPES; neither apex_recipes.py nor apex_explainer.py contains a createNode( literal, and this leg edits none of those inputs. tests/test_emitted_node_types.py stays green on this branch (7 passed). WA1-TRUTH's own regen (bus n=18cca4e00fcefa58) stands on wavea1/truth; no collision.",
+      "anchor": "scripts/extract_emitted_node_types.py:_CREATE_NODE ; tests/test_emitted_node_types.py (7 passed)"
+    }
+  ],
+  "for_ruling": [
+    {
+      "claim": "apex::sop::parentconstraint / apex::sop::aimconstraint classifier recognisers were REMOVED, not renamed - the supersession map has no constraint row and the apex_truth catalog has no SOP constraint node type. The real constraint surface is graph-internal: rig::PointConstraint / rig::PrimConstraint / rig::CurveConstraint / rig::UVConstraint / transform::LookAt callbacks (present in apex_callback_catalog, addNode-only, not SOP-createable) or the apex.Constraint / ConstraintManager Python API. Removal changes no runtime classification (no node type contains those substrings) so it is behaviour-preserving in practice; the lost INTENT (recognise constraint nodes) is flagged. RULING NEEDED: should constraint recognition be re-added keyed on the real graph-callback surface? Out of this rename leg's scope.",
+      "anchor": "python/synapse/panel/apex_explainer.py:_APEX_TYPE_PATTERNS (autorig bucket) ; apex_truth_22.0.400.json apex_callback_catalog:rig ; apex_recipes.py constraint_setup caveat"
+    }
+  ],
+  "spawn": [],
+  "bus": {
+    "claim": "n=18cca686a6b05fdc (apex_explainer.py + apex_recipes.py + tests/panel/test_apex_catalog_membership.py)",
+    "released": "posted at completion (see status release)"
+  }
+}

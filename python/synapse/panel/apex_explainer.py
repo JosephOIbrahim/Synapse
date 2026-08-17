@@ -129,8 +129,8 @@ APEX_CONCEPTS: Dict[str, Dict[str, Any]] = {
             "inspect, modify, or replace entirely."
         ),
         "mental_model": (
-            "Like shelf tools but for rigging. 'apex::sop::TransformObject' "
-            "creates a transform control, 'apex::sop::FK' builds an FK "
+            "Like shelf tools but for rigging. 'apex::configurecontrols' "
+            "creates a transform control, 'apex::buildfkgraph' builds an FK "
             "chain. They output APEX graphs you can wire together. Think "
             "of them as rig building blocks."
         ),
@@ -247,20 +247,48 @@ APEX_CONCEPTS: Dict[str, Dict[str, Any]] = {
 # 2. Node context gathering
 # ============================================================================
 
-# Node type patterns for APEX classification.
+# Node type patterns for APEX classification. Matched as substrings against a
+# live node's type name (``node.type().name()``) -- these RECOGNISE node types,
+# they are never emitted to createNode.
+#
+# G2 / WA1-RECIPE migration (2026-08-17): every ``apex::sop::`` / ``apex::rig::``
+# entry here was a phantom -- that namespace does not exist in Houdini, so the
+# substring matched no real node and the recognisers were dead. Each is now the
+# real superseded name per the apex_probes.py supersession map (L24-33),
+# catalog-proven present in apex_truth_22.0.400.json. Because the recognisers
+# now carry real names, real APEX rig nodes classify by their actual type rather
+# than falling through to the ``if "apex" in lower`` bucket -- see the migration
+# ledger (harness/notes/WA1-RECIPE-migration-ledger.md) for the exact old->new
+# map, the anchor per rename, and the disclosed reclassification deltas.
+#   apex::sop::invoke         -> apex::invokegraph        (map L28)
+#   apex::sop::rig            -> apex::autorigbuilder / apex::autorigcomponent (map L27)
+#   apex::sop::fk             -> apex::buildfkgraph        (map L24)
+#   apex::sop::ik             -> kinefx::twoboneik         (map L25)
+#   apex::sop::transformobject-> apex::configurecontrols / apex::controlextract (map L31)
+#   apex::sop::blendtransform -> kinefx::blendtransforms   (map L26)
+#   apex::sop::apexedit       -> apex::configuregraph      (map L30; the bare
+#     legacy 'apexedit' spelling folds into the same row -- both are fictional)
+# The two constraint recognisers (apex::sop::parentconstraint / aimconstraint)
+# have NO SOP node-type successor: constraints are graph-internal callbacks
+# (rig::PointConstraint / rig::PrimConstraint / transform::LookAt in the
+# apex_truth callback registry) or the apex.Constraint Python API, not SOP-
+# creatable types. They are removed as dead phantom recognisers (no runtime
+# classification changes -- no real node type contains those substrings) and
+# flagged for ruling: whether constraint recognition should be re-added keyed on
+# the real graph-callback surface is out of this rename leg's scope.
 _APEX_TYPE_PATTERNS: Dict[str, List[str]] = {
-    "invoke": ["invoke", "apex::sop::invoke"],
+    "invoke": ["invoke", "apex::invokegraph"],
     "autorig": [
-        "apex::sop::rig",
-        "apex::sop::fk",
-        "apex::sop::ik",
-        "apex::sop::transformobject",
-        "apex::sop::blendtransform",
-        "apex::sop::parentconstraint",
-        "apex::sop::aimconstraint",
+        "apex::autorigbuilder",
+        "apex::autorigcomponent",
+        "apex::buildfkgraph",
+        "kinefx::twoboneik",
+        "apex::configurecontrols",
+        "apex::controlextract",
+        "kinefx::blendtransforms",
     ],
     "packfolder": ["packfolder", "pack", "packfolderpath"],
-    "apex_network": ["apex::sop::apexedit", "apexedit"],
+    "apex_network": ["apex::configuregraph"],
     "kinefx": [
         "kinefx",
         "skeleton",
