@@ -19,7 +19,16 @@
 **It asks first** before anything risky, and **says UNKNOWN** instead of guessing.
 **It tells you what doesn't work** — [Known limitations](#known-limitations) is the most-read section on purpose.
 
-**On master since v5.50.0 (unreleased — the next tag rides the release ritual):**
+**New in v5.52.0 — the weak domains became lookups:**
+
+- **APEX stopped being guesswork.** 2,286 callbacks enumerated from the *live* runtime, a 441-cell wire-typing matrix, and panel recipes migrated off node names that never existed. It regenerates per build, so it can't quietly go stale.
+- **The parm gate got teeth.** A phantom parameter name is now rejected *before* anything mutates — and answered with the real one (`code` → suggests `kernelcode`).
+- **Cook results can't fake success.** No measurement, no promotion: anything unmeasured stays UNKNOWN instead of defaulting to fine.
+- **Production hardening opened.** A seven-blueprint audit indexed **112 findings** — 3 critical — each with a file:line anchor and first-hand evidence. The critical ones are published, not buried.
+
+[Release notes →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.52.0)
+
+**Shipped in v5.51.0 — close the tab, keep the session:**
 **Closing the panel no longer kills your session.** The heartbeat moved out of the panel into a process-lifetime owner, closing the tab is a deliberate detach (not a fake freeze), and reopening reconnects to the *same* session with chat history intact. Also live: the CURIOUS / EXPERT / ML switcher actually switches profiles, the shelf grew icons + tooltips, chat text breathes (+0.75pt), and the Token tab counts real spend on the selected model — or says UNKNOWN. Two more red gauges turned green (runtime heartbeat R.2, shelf currency R.7); the ones still red are listed honestly below.
 
 ### The shape of it — two pictures
@@ -44,7 +53,7 @@ flowchart LR
     CL -->|/restore-session| R
 ```
 
-**New in v5.50.0 — the knowledge layer stops guessing:** retrieval repair lands. Scout finally sees the node corpus, ambiguous type names disambiguate by context, datasheets carry real internal parm names + channels, and the dense path can honestly say "not found" — 0/25 confident-wrong on fresh adversarial probes. Under it: a build-freshness release gate, a single-writer ingest ledger, and a parameterized help-archive pin. [Release notes →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.50.0)
+**Still on board, from v5.50.0 — the knowledge layer stops guessing:** retrieval repair lands. Scout finally sees the node corpus, ambiguous type names disambiguate by context, datasheets carry real internal parm names + channels, and the dense path can honestly say "not found" — 0/25 confident-wrong on fresh adversarial probes. Under it: a build-freshness release gate, a single-writer ingest ledger, and a parameterized help-archive pin. [Release notes →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.50.0)
 
 **Jump to:** [Artists](#for-artists--the-one-minute-version) · [Demo](#watch-it-work) · [Limitations](#known-limitations) · [Install](#install) · [First prompt](#first-prompt) · [Verify it yourself](#verifying-any-of-this)
 
