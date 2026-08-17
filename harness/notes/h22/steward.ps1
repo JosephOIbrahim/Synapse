@@ -7,7 +7,7 @@ $out = 'C:\Users\User\SYNAPSE\harness\notes\h22\steward.log'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName Microsoft.VisualBasic
 $wsh = New-Object -ComObject WScript.Shell
-$rcDone = @{ 'W5-PARITY' = $true }
+$rcDone = @{ 'W5-PARITY' = $true; 'W5-WCRUX' = $true; 'W5-WXA' = $true; 'W5-WXB' = $true; 'W5-WXC' = $true; 'WA1-RECIPE' = $true }
 $toasted = @{}
 $lastLine = 0
 function Toast($title, $msg) {
@@ -19,9 +19,9 @@ function Toast($title, $msg) {
 }
 while ((Get-Date) -lt $deadline) {
     # 1) /rc to any new leg window, once each
-    $wins = Get-Process | Where-Object { $_.MainWindowTitle -match 'SYNAPSE (W[56]-[A-Z]+)' }
+    $wins = Get-Process | Where-Object { $_.MainWindowTitle -match 'SYNAPSE (W[A-Z0-9]+-[A-Z0-9]+)' }
     foreach ($p in $wins) {
-        if ($p.MainWindowTitle -match 'SYNAPSE (W[56]-[A-Z]+)') {
+        if ($p.MainWindowTitle -match 'SYNAPSE (W[A-Z0-9]+-[A-Z0-9]+)') {
             $leg = $Matches[1]
             if (-not $rcDone[$leg]) {
                 [Microsoft.VisualBasic.Interaction]::AppActivate($p.Id); Start-Sleep -Milliseconds 700
