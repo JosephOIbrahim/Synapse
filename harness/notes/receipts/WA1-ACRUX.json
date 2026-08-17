@@ -1,0 +1,90 @@
+{
+  "leg": "WA1-ACRUX",
+  "name": "Adversarial crucible for wave WA1 - audits TRUTH/XREF/WIRE/RECIPE verdicts, builds nothing",
+  "class": "crucible",
+  "readonly": true,
+  "status": "green_with_findings",
+  "product_head": "d0a85e982e37ab013923a9df36f0b0182de6c640",
+  "product": "harness/notes/WA1-ACRUX-audit.md",
+  "closing_commit": "this receipt (WA1-ACRUX.json) is committed as the closing commit ON TOP of product_head, per CRX0/W5H",
+  "base": "20e3d70c",
+  "precondition": "MET - all four builder receipts exist, each green_with_findings, each committed as its own closing commit: WA1-TRUTH(product 27d609a7/receipt 1efdd080), WA1-XREF(ac2f8e1b/3d675f62), WA1-WIRE(6e02ccf6/dee58340), WA1-RECIPE(c9c34026/5a61ae21).",
+  "verification_method": "ACRUX re-derived every acceptance claim from the COMMITTED evidence artifacts (not builder self-claims) and re-executed the two pure-Python goalposts itself (RECIPE membership 4 passed / XREF parser 42 passed). Runtime-only claims (hython idempotence, version_agreement suite) were verified by artifact re-derivation + input agreement, not re-run headless - stated honestly per predicate.",
+
+  "wave_verdict": {
+    "verdict": "green_with_findings",
+    "blocks_raised": 0,
+    "per_leg": [
+      {"leg": "WA1-TRUTH", "acrux_verdict": "green_with_findings", "predicates": "4/4 pass", "notes": "2 ACRUX findings (F-TRUTH-1 receipt omits null-port-type defect; F-TRUTH-2 determinism over empty geo) - non-blocking"},
+      {"leg": "WA1-XREF", "acrux_verdict": "green", "predicates": "3/3 pass", "notes": "parser 42 passed (ACRUX re-ran); 55 rows 0 unclassified; 2 quarantine candidates both-anchored"},
+      {"leg": "WA1-WIRE", "acrux_verdict": "green", "predicates": "3/3 pass", "notes": "441-cell matrix, 420/420 rejects carry exception text, 0 UNKNOWN cells; token table 68 rows 0 unknown-without-reason; declared-fixture type set honestly stated"},
+      {"leg": "WA1-RECIPE", "acrux_verdict": "green", "predicates": "3/3 pass", "notes": "goalpost reproduced by ACRUX both directions (4 passed normal / 2 failed CatalogNotFound hidden, 0 skipped)"}
+    ]
+  },
+
+  "acceptance": [
+    {
+      "predicate": "per-leg audit table complete: every builder acceptance predicate has an ACRUX verdict pass|fail|UNKNOWN with anchor",
+      "verdict": "pass",
+      "evidence": "receipt :: harness/notes/WA1-ACRUX-audit.md T1 section - all 13 builder acceptance predicates (TRUTH 4, XREF 3, WIRE 3, RECIPE 3) carry an ACRUX verdict + anchor; 13/13 pass. Two carry an honest partial-verification caveat (TRUTH #3 version_agreement suite not re-run headless; TRUTH #4 + WIRE #2 runtime hashes relied on the committed artifact, not re-executed) - stated, not hidden."
+    },
+    {
+      "predicate": "RECIPE goalpost RED leg reproduced by the crucible itself (fail-loud confirmed, skip absent)",
+      "verdict": "pass",
+      "evidence": "test :: ACRUX re-ran tests/panel/test_apex_catalog_membership.py in wavea1/recipe. NORMAL (APEX_TRUTH_CATALOG -> committed apex_truth_22.0.400.json): 4 passed, 0 skipped. HIDDEN (no catalog reachable; discovery searched the recipe branch runs dirs, found zero candidates): 2 failed, 2 passed, 0 skipped - both failures a hard CatalogNotFound raised from discover_catalog_path() (fail-loud, never skip)."
+    },
+    {
+      "predicate": "zero unanswered BLOCKs at receipt close",
+      "verdict": "pass",
+      "evidence": "receipt :: 0 BLOCKs raised by ACRUX. No false-green (T3 proven both ways), no fabricated value (all provenance present; nulls honest), no UNKNOWN-as-pass (T6 clean), no unserialized shared-surface edit (T5 clean). ACRUX findings posted to bus as findings (WA1-ACRUX->WA1-TRUTH n=18ccacd3e745deac; WA1-ACRUX->* verdict). Nothing to answer."
+    }
+  ],
+
+  "crucible_criteria": [
+    {"criterion": "builds nothing, fixes nothing - findings and BLOCKs only", "verdict": "pass", "evidence": "read-only. ACRUX product = the audit note + this receipt; no builder territory touched; no source/test/artifact of any builder leg edited."},
+    {"criterion": "verdict for the wave: green | green_with_findings | blocked, with per-leg breakdown", "verdict": "pass", "evidence": "wave_verdict block above: green_with_findings; per-leg breakdown for all four legs."},
+    {"criterion": "merge words remain Joe's, per branch, after this receipt", "verdict": "pass", "evidence": "STATED: a green ACRUX receipt is a PRECONDITION for Joe's merge words, never a substitute. Merge/push/tag remain Joe's, per branch (--no-ff). The TRUTH<->WIRE probes.py/mission_schema.py/runner.py merge union is a human union at merge time (flagged, not resolved here)."}
+  ],
+
+  "targets_audit": {
+    "T1_per_leg": "complete - 13/13 builder predicates verified pass with anchors (audit note T1)",
+    "T2_stale_stamp": "pass - artifact meta.build=22.0.400 runtime-observed (target_build_match=true, per-entry build+ts, hou.applicationVersionString); apex_probes.py:9 docstring 22.0.400 == artifact stamp == filename; 21.0.671 count=0",
+    "T3_false_green": "pass - reproduced by ACRUX (normal 4 passed / hidden CatalogNotFound hard-fail, 0 skipped both)",
+    "T4_phantom_class": "pass - XREF 2/2 quarantine candidates carry BOTH anchors (docs+runtime, artifact+ledger); WIRE 420/420 reject cells carry exception text",
+    "T5_shared_surface": "pass - probes.py serialized on the bus (TRUTH claim 12:15->release 12:43; WIRE claim 12:58 post-release; no overlapping open claims; both released). mission_schema.py/runner.py both-touched additively, disclosed. XREF/RECIPE never claimed probes.py",
+    "T6_unknown_audit": "pass - no zero/estimate where UNKNOWN belongs (XREF type-mismatch=0 labeled UNMEASURABLE; WIRE invoke-binding UNKNOWN with reason; WIRE 0 UNKNOWN cells legitimate-catalog-proven; TRUTH port type=null is honest unobtained-value rendering, no green claimed over it)",
+    "T7_blocks": "pass - 0 BLOCKs; findings posted to bus addressed to offending leg (WA1-TRUTH) and to *"
+  },
+
+  "findings": [
+    {
+      "id": "F-TRUTH-1",
+      "severity": "warn",
+      "blocking": false,
+      "claim": "WA1-TRUTH's receipt marks the provenance criterion green without disclosing that all 41 apex_port_signature ports carry type:null (arity/input_count correct). Root cause is WIRE-F1: probes.py _safe_str(fn)=str(fn()) CALLS its argument, but p.name/p.type_name are string properties, so it raises and records null. The artifact records null HONESTLY (no fabricated type); WIRE and XREF both rendered the port-type dimension UNMEASURABLE/UNKNOWN - so this is NOT a false-green and NOT a T6 violation. TRUTH's own receipt should disclose F1, and the declared-port-type surface must not be relied on until the one-line fix (read the properties, not _safe_str) lands.",
+      "anchor": "apex_truth_22.0.400.json apex_port_signature:*.inputs/outputs type=null (41/41); WA1-WIRE receipt F1 + root cause probes.py:152/:1159-1160; WA1-XREF summary type-mismatch=0 UNMEASURABLE",
+      "owner": "WA1-TRUTH (fix already filed as WIRE-R2)"
+    },
+    {
+      "id": "F-TRUTH-2",
+      "severity": "info",
+      "blocking": false,
+      "claim": "TRUTH P2 invoke determinism (repeat-2 identical sha fd80b8ce...) is computed over EMPTY geometry (point_count=0, prim_count=0). The predicate is met as written (minimal graph, invokegraph, cook, repeat-2, identical hashes) but determinism is proven on a trivial cook only; a non-trivial invoke output would be a stronger claim.",
+      "anchor": "apex_truth_22.0.400.json invoke_geo_hash:apex_invoke_smoke (hashes[], point_count=0, prim_count=0, stable=true)"
+    }
+  ],
+
+  "for_ruling": [
+    {"item": "TRUTH<->WIRE shared-seam merge union: probes.py + mission_schema.py + runner.py were additively edited by both legs on divergent bases (TRUTH base 782b2376, WIRE base cecfa54c). VALID_KINDS and the runner/schema dispatch chains need a trivial human union at merge. ACRUX confirms the bus serialization held (no overlapping open claims); the git merge itself is Joe's.", "owner": "Joe / merge"},
+    {"item": "F-TRUTH-1 disposition: whether TRUTH amends its receipt to disclose the null-port-type defect and whether the one-line probes.py fix lands before any consumer relies on declared port types. Non-blocking for this wave.", "owner": "Joe / WA1-TRUTH"},
+    {"item": "Builder for_ruling items carried forward (not re-adjudicated by ACRUX): TRUTH prerequisite scope (mission_schema/runner) + surgical emitted_node_types.json; XREF 2 quarantine-candidate dispositions (likely non-callback concepts) + cross-branch runtime artifact residency; RECIPE apex::sop::parentconstraint/aimconstraint recogniser removal (behavior-preserving, lost intent) + disclosed classifier reclassification.", "owner": "Joe"}
+  ],
+
+  "spawn": [],
+  "spawn_note": "ACRUX proposes no new legs. Builder spawn[] proposals (TRUTH: APEX-INIT-RESTAMP, EMITTED-TYPES-RESYNC; XREF: WA1-XREF-CORPUS, WA1-XREF-PORTTYPES; WIRE: APEX-CONVERT-MATRIX) are probe/build class and land held for Joe in their own receipts. WA1-XREF-PORTTYPES directly addresses F-TRUTH-1's null-port-type surface.",
+
+  "bus_posts": [
+    {"to": "WA1-TRUTH", "type": "finding", "n": "18ccacd3e745deac", "subject": "F-TRUTH-1 + F-TRUTH-2"},
+    {"to": "*", "type": "finding", "subject": "ACRUX wave verdict green_with_findings, 0 BLOCKs"}
+  ]
+}
