@@ -1,7 +1,7 @@
 {
   "leg": "W5-PARITY",
   "probe": "harness/probes/parity_modules/probe_parity.py",
-  "worktree_root": "c:/users/user/synapse/.claude/worktrees/w5-parity",
+  "worktree_root": "c:/users/user/synapse",
   "sections": {
     "s0_env": {
       "python_version": "3.13.10",
@@ -15,7 +15,7 @@
       "qt_platform": "offscreen",
       "package_loaded": true,
       "sys_path_head": [
-        "C:/Users/User/SYNAPSE/.claude/worktrees/w5-parity/harness/probes/parity_modules",
+        "C:/Users/User/SYNAPSE/harness/probes/parity_modules",
         "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/python313/lib/site-packages-ui-forced",
         "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/python313/lib/site-packages-forced",
         "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.400/python313/lib/site-packages-forced",
@@ -34,7 +34,7 @@
       "rows": [
         {
           "module": "synapse.panel",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/__init__.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/__init__.py",
           "worktree_sha256": "7861a34680127d305e39b993a4d86ab3146dc2c0c0934719c902d6f9089a3d0d",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/__init__.py",
@@ -47,7 +47,7 @@
         },
         {
           "module": "synapse.panel.agent_health",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/agent_health.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/agent_health.py",
           "worktree_sha256": "fd53c8d09466c12b5f621d6cd69572a98b122f4e9fda09c7ea1853ee4cdb93af",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/agent_health.py",
@@ -60,7 +60,7 @@
         },
         {
           "module": "synapse.panel.agent_prompts",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/agent_prompts.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/agent_prompts.py",
           "worktree_sha256": "5f7eda8b195b8c1c93cb37272c36a38c61428d2007a2e84d0b2b12e8ff47a94e",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/agent_prompts.py",
@@ -73,7 +73,7 @@
         },
         {
           "module": "synapse.panel.apex_explainer",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/apex_explainer.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/apex_explainer.py",
           "worktree_sha256": "d631a5e163e7ce6a13658c1bbb59468210b0ac4795da72064c4c556cd1a1174a",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/apex_explainer.py",
@@ -86,7 +86,7 @@
         },
         {
           "module": "synapse.panel.apex_recipes",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/apex_recipes.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/apex_recipes.py",
           "worktree_sha256": "bf693b2f302858b1a6dc1c093876f3894b712d59d94323c8cb852bdbb1a3bd33",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/apex_recipes.py",
@@ -99,7 +99,7 @@
         },
         {
           "module": "synapse.panel.apex_trace",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/apex_trace.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/apex_trace.py",
           "worktree_sha256": "f8fb727f04596827ea33a9201fa46404bb108cf3b0d7092320ae8eabe865a173",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/apex_trace.py",
@@ -112,7 +112,7 @@
         },
         {
           "module": "synapse.panel.async_format",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/async_format.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/async_format.py",
           "worktree_sha256": "93c626f865371cb950010072a75409d3bf84e6855a1fdcdcf7cd6df42cf0f5de",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/async_format.py",
@@ -125,7 +125,7 @@
         },
         {
           "module": "synapse.panel.bookmarks",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/bookmarks.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/bookmarks.py",
           "worktree_sha256": "8cb5a5a4c8dd520cbefffeed0f77769205984cb23eeb0622c12158bb1ea6b627",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/bookmarks.py",
@@ -138,7 +138,7 @@
         },
         {
           "module": "synapse.panel.bridge_adapter",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/bridge_adapter.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/bridge_adapter.py",
           "worktree_sha256": "b9c87fbcd94915e8f475a8aa103e402c55a86697bba3d8298b848ab082b22dcf",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/bridge_adapter.py",
@@ -151,7 +151,7 @@
         },
         {
           "module": "synapse.panel.chat_display",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/chat_display.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/chat_display.py",
           "worktree_sha256": "6cb8ab78f373671d1103612f8f417762ffb9862b62832dde334f38cbbf2b9b96",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/chat_display.py",
@@ -164,7 +164,7 @@
         },
         {
           "module": "synapse.panel.chat_panel",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/chat_panel.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/chat_panel.py",
           "worktree_sha256": "692db0ce7c04092935eba2d2f826040aae7d93961cf08b04233d9f0d6f771cfc",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/chat_panel.py",
@@ -177,7 +177,7 @@
         },
         {
           "module": "synapse.panel.claude_worker",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/claude_worker.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/claude_worker.py",
           "worktree_sha256": "950a89d4347d6c273209b9f0f621bb3be1cccf7969139a925cbe2f589db3088e",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/claude_worker.py",
@@ -190,7 +190,7 @@
         },
         {
           "module": "synapse.panel.command_palette",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/command_palette.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/command_palette.py",
           "worktree_sha256": "e3d9771558555f7fac2085e92335624fc2b627727ce052e34ac91944d104eb52",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/command_palette.py",
@@ -203,20 +203,20 @@
         },
         {
           "module": "synapse.panel.compositor",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/compositor.py",
-          "worktree_sha256": "a61b3fbb965413894729b119ba9d474eb3a27d178f6db449108334473051bdda",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/compositor.py",
+          "worktree_sha256": "36800adf6aa03daccc5e5a867c733737ef9f3821dc7609274d63d7b5f673be40",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/compositor.py",
           "in_repo": true,
           "loaded_tree": "main",
           "sha_match": true,
-          "loaded_sha256": "a61b3fbb965413894729b119ba9d474eb3a27d178f6db449108334473051bdda",
+          "loaded_sha256": "36800adf6aa03daccc5e5a867c733737ef9f3821dc7609274d63d7b5f673be40",
           "worktree_matches_loaded": true,
           "error": null
         },
         {
           "module": "synapse.panel.context_bar",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/context_bar.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/context_bar.py",
           "worktree_sha256": "12d979f34df69082d5fa91aeaf9c5a096926c7e07f21235b5e9dccc08f213982",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/context_bar.py",
@@ -229,7 +229,7 @@
         },
         {
           "module": "synapse.panel.cross_scene",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/cross_scene.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/cross_scene.py",
           "worktree_sha256": "65e7d6508db5e3f9de7acac370273a858d06282b24dad92845086ffeefd229e6",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/cross_scene.py",
@@ -242,7 +242,7 @@
         },
         {
           "module": "synapse.panel.decision_log",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/decision_log.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/decision_log.py",
           "worktree_sha256": "0cb477d71d5d5c0c221d796d266f52dc0aeac0405b2a2d8697f26af460f01202",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/decision_log.py",
@@ -255,7 +255,7 @@
         },
         {
           "module": "synapse.panel.dependency_map",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/dependency_map.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/dependency_map.py",
           "worktree_sha256": "a5948af52b008099df09d7c0b55091e3235baa7d4fe9e32e3de410e227561572",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/dependency_map.py",
@@ -268,7 +268,7 @@
         },
         {
           "module": "synapse.panel.designsystem",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/designsystem/__init__.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/designsystem/__init__.py",
           "worktree_sha256": "07efef048897781c112918aa5028342c5394d30c3a329d4ff607c963fc9e9c08",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/designsystem/__init__.py",
@@ -281,7 +281,7 @@
         },
         {
           "module": "synapse.panel.designsystem.components",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/designsystem/components.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/designsystem/components.py",
           "worktree_sha256": "a3ae056c1d73fd4c94540ce8725d3e02bbe7b55f10f8bc88c20c3999c4763529",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/designsystem/components.py",
@@ -294,7 +294,7 @@
         },
         {
           "module": "synapse.panel.designsystem.fontload",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/designsystem/fontload.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/designsystem/fontload.py",
           "worktree_sha256": "f1575b4192056014e9a73aca78120e13eb6e77ee18a4329ee63374d7d4d0f42e",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/designsystem/fontload.py",
@@ -307,7 +307,7 @@
         },
         {
           "module": "synapse.panel.designsystem.loader",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/designsystem/loader.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/designsystem/loader.py",
           "worktree_sha256": "1a712b82a984a19e1370f91734f469be5a99798bcfa8a0d63e2f35e239137593",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/designsystem/loader.py",
@@ -320,7 +320,7 @@
         },
         {
           "module": "synapse.panel.designsystem.motion",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/designsystem/motion.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/designsystem/motion.py",
           "worktree_sha256": "20509bb67c778d10ff05312df8a5040b509a389b6a31a0ab571998a9eb749cfb",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/designsystem/motion.py",
@@ -333,7 +333,7 @@
         },
         {
           "module": "synapse.panel.designsystem.qss",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/designsystem/qss.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/designsystem/qss.py",
           "worktree_sha256": "06630022507d3c4262e45df6d11626eb38c4bec9e685f1e0b8c4ba8f864c2696",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/designsystem/qss.py",
@@ -346,7 +346,7 @@
         },
         {
           "module": "synapse.panel.designsystem.theme_source",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/designsystem/theme_source.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/designsystem/theme_source.py",
           "worktree_sha256": "57ee37b0ba49e08936b8a99b048a4875c9dace46ab95f7cf05312f8a5c841a34",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/designsystem/theme_source.py",
@@ -359,7 +359,7 @@
         },
         {
           "module": "synapse.panel.designsystem.tokens",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/designsystem/tokens.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/designsystem/tokens.py",
           "worktree_sha256": "fcf9e87ab1108b40b3a155b851f4bbc80ec4b728e2affddc34dd77ebac57adc5",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/designsystem/tokens.py",
@@ -372,7 +372,7 @@
         },
         {
           "module": "synapse.panel.direct_tool",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/direct_tool.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/direct_tool.py",
           "worktree_sha256": "ff2a554abff55ce633a67895c5559f9caa44ca2c00e89e35bc1de5f9d0a79c87",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/direct_tool.py",
@@ -385,7 +385,7 @@
         },
         {
           "module": "synapse.panel.dnd",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/dnd.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/dnd.py",
           "worktree_sha256": "9f2f7ffb8690fe4ae6e4d94386873c52ab3d8a66f2554affde43e99d27cec30e",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/dnd.py",
@@ -398,7 +398,7 @@
         },
         {
           "module": "synapse.panel.error_translator",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/error_translator.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/error_translator.py",
           "worktree_sha256": "f8bdb7239f79aa559062a69d02b6bac7051a772fda925a032608024eff6a4f5f",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/error_translator.py",
@@ -411,7 +411,7 @@
         },
         {
           "module": "synapse.panel.explain_mode",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/explain_mode.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/explain_mode.py",
           "worktree_sha256": "e881044afed1620a74586d3bc181f9f91b95d2e7c7da4a2effe67f0270636c4d",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/explain_mode.py",
@@ -424,7 +424,7 @@
         },
         {
           "module": "synapse.panel.exposure_seam",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/exposure_seam.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/exposure_seam.py",
           "worktree_sha256": "5f6bd8936f82c99ec4fbe87c6160d465de60c7b123bf027285cf78483ff07e63",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/exposure_seam.py",
@@ -437,7 +437,7 @@
         },
         {
           "module": "synapse.panel.face_review",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/face_review.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/face_review.py",
           "worktree_sha256": "c787e9d80028f4882de6ad40c428cde092fe4a703acb839a7d05ef638aeddf5e",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/face_review.py",
@@ -450,7 +450,7 @@
         },
         {
           "module": "synapse.panel.face_token",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/face_token.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/face_token.py",
           "worktree_sha256": "4f765eaf4955139562a86a7554e95261d05ca6f549d98a341a1460fee271c5c7",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/face_token.py",
@@ -463,7 +463,7 @@
         },
         {
           "module": "synapse.panel.face_work",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/face_work.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/face_work.py",
           "worktree_sha256": "fc435ae893448d4341e61729c05631cb3b3c7ff3b22860de468d5c76dce3553a",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/face_work.py",
@@ -476,7 +476,7 @@
         },
         {
           "module": "synapse.panel.gate_stamp",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/gate_stamp.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/gate_stamp.py",
           "worktree_sha256": "1ef23da09b704842b13bce793ca5aab64cf6f4d0c2bc48b81f129f6598918962",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/gate_stamp.py",
@@ -489,7 +489,7 @@
         },
         {
           "module": "synapse.panel.gate_widget",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/gate_widget.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/gate_widget.py",
           "worktree_sha256": "909f00dcf0d0b1bc5839379d1654a71816bd7cf0623c2d090b7560ead54e8651",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/gate_widget.py",
@@ -502,7 +502,7 @@
         },
         {
           "module": "synapse.panel.hda_controller",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/hda_controller.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/hda_controller.py",
           "worktree_sha256": "0c9e984026162a140fa6b3773e0f59d51c0b9728e2d4a20e023f5a2ec30d3b33",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/hda_controller.py",
@@ -515,7 +515,7 @@
         },
         {
           "module": "synapse.panel.hda_views",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/hda_views.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/hda_views.py",
           "worktree_sha256": "616b5c404d161d1645de25162aada7c6b879c00df52c0f1f461bde5c7239cc61",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/hda_views.py",
@@ -528,7 +528,7 @@
         },
         {
           "module": "synapse.panel.health_infographic",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/health_infographic.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/health_infographic.py",
           "worktree_sha256": "10da517c11860f81f68f8bb71b5d870d05c6ff7c4781b4b983896d1844c1374f",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/health_infographic.py",
@@ -541,7 +541,7 @@
         },
         {
           "module": "synapse.panel.health_strip",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/health_strip.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/health_strip.py",
           "worktree_sha256": "aefc73e5f2760c1fd767eb455416693cd5ef03bda93bb9f090d544fcf88e5fba",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/health_strip.py",
@@ -554,7 +554,7 @@
         },
         {
           "module": "synapse.panel.image_prep",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/image_prep.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/image_prep.py",
           "worktree_sha256": "ca43cc1be61a2846fa5e1a68cb4235a4809914fd8234c5855be1bcb565ae5d01",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/image_prep.py",
@@ -567,7 +567,7 @@
         },
         {
           "module": "synapse.panel.integrity_readout",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/integrity_readout.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/integrity_readout.py",
           "worktree_sha256": "768e34d56a911fea79a4a4ea8154e44a95b761ce967ca600262b742983e53900",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/integrity_readout.py",
@@ -580,7 +580,7 @@
         },
         {
           "module": "synapse.panel.manifests",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/manifests/__init__.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/manifests/__init__.py",
           "worktree_sha256": "c34f313e8471638650c4e8387c659008e52e13becc67c8897cbcf117f0ac6553",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/manifests/__init__.py",
@@ -593,7 +593,7 @@
         },
         {
           "module": "synapse.panel.manifests.curious",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/manifests/curious.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/manifests/curious.py",
           "worktree_sha256": "6b1320624d6af3858b4c3cd9f68e29de5e4688383757216121dde2fb7d7eea47",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/manifests/curious.py",
@@ -606,7 +606,7 @@
         },
         {
           "module": "synapse.panel.manifests.expert",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/manifests/expert.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/manifests/expert.py",
           "worktree_sha256": "0161f10027f85c7f254895934486d9cf601d8ad94f29bc11b9b13f79f1c2fc21",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/manifests/expert.py",
@@ -619,7 +619,7 @@
         },
         {
           "module": "synapse.panel.manifests.ml",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/manifests/ml.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/manifests/ml.py",
           "worktree_sha256": "6aaca0e4a7d51189b3e3fb250fc6086c11336c0a7eb39f96bad137447d8ba728",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/manifests/ml.py",
@@ -632,7 +632,7 @@
         },
         {
           "module": "synapse.panel.message_formatter",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/message_formatter.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/message_formatter.py",
           "worktree_sha256": "5eaed21a7e36ff71a09563244312dbd606bca9ec00b891cca62dc04b187e766e",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/message_formatter.py",
@@ -645,7 +645,7 @@
         },
         {
           "module": "synapse.panel.network_trace",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/network_trace.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/network_trace.py",
           "worktree_sha256": "3b6392fa6630db8121b13fd5b30ce5104e447313e1b9458b86ab8372cea2b5ed",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/network_trace.py",
@@ -658,7 +658,7 @@
         },
         {
           "module": "synapse.panel.performance_profiler",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/performance_profiler.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/performance_profiler.py",
           "worktree_sha256": "769b70f5bbb78e24ab2dd1ec4f0441845a67da8eb41e0e4c74aa2bbbcc32c85b",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/performance_profiler.py",
@@ -671,7 +671,7 @@
         },
         {
           "module": "synapse.panel.prompt_to_hda",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/prompt_to_hda.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/prompt_to_hda.py",
           "worktree_sha256": "d02b8506cecc48b425477c18c08eee4b93200659c65410064491c51266532fbc",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/prompt_to_hda.py",
@@ -684,7 +684,7 @@
         },
         {
           "module": "synapse.panel.providers",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/providers/__init__.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/providers/__init__.py",
           "worktree_sha256": "a42a8e30442020e69e086a574f6471283c5f7b2b8a5ac861c9cb832cac9c7067",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/providers/__init__.py",
@@ -697,7 +697,7 @@
         },
         {
           "module": "synapse.panel.providers.anthropic_provider",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/providers/anthropic_provider.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/providers/anthropic_provider.py",
           "worktree_sha256": "9c7642aa57d48a087f741aeab005fa8d91aa1aa923aca5c9aff8cbc3a7edb393",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/providers/anthropic_provider.py",
@@ -710,7 +710,7 @@
         },
         {
           "module": "synapse.panel.providers.base",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/providers/base.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/providers/base.py",
           "worktree_sha256": "72a5c4ae764dbef78366e33ca0a6910c8754072932ec2fe1e108d8ad4ae3b171",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/providers/base.py",
@@ -723,7 +723,7 @@
         },
         {
           "module": "synapse.panel.providers.catalog",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/providers/catalog.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/providers/catalog.py",
           "worktree_sha256": "5527cbf23ab592784d5b66e4b055cf9edd725130a89033df60c2d3e3a1644de9",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/providers/catalog.py",
@@ -736,7 +736,7 @@
         },
         {
           "module": "synapse.panel.providers.custom_provider",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/providers/custom_provider.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/providers/custom_provider.py",
           "worktree_sha256": "45c7062f539c4c1e3f4c6ffe407da63e8a105facd4e146b0d56d667b1e9b17e5",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/providers/custom_provider.py",
@@ -749,7 +749,7 @@
         },
         {
           "module": "synapse.panel.providers.gemini_provider",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/providers/gemini_provider.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/providers/gemini_provider.py",
           "worktree_sha256": "af0fb0b5ab3b80995b6fda1eb3ec8b1b70dc9bbe52bb9a7234af11ce72566177",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/providers/gemini_provider.py",
@@ -762,7 +762,7 @@
         },
         {
           "module": "synapse.panel.providers.gemini_translate",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/providers/gemini_translate.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/providers/gemini_translate.py",
           "worktree_sha256": "b0b2c6db7f2a1300d2b51a94cd06ac99ae8a5ad42f0b5cffbe07a978a0b61dea",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/providers/gemini_translate.py",
@@ -775,7 +775,7 @@
         },
         {
           "module": "synapse.panel.providers.nemotron_provider",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/providers/nemotron_provider.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/providers/nemotron_provider.py",
           "worktree_sha256": "b71a7559e1ac0d447b6f852ed4ca1bdaddd33e393d5449da629fbb585556e203",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/providers/nemotron_provider.py",
@@ -788,7 +788,7 @@
         },
         {
           "module": "synapse.panel.providers.ollama_provider",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/providers/ollama_provider.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/providers/ollama_provider.py",
           "worktree_sha256": "f8183f65cb5c93948ad933b7804aa2edd941845c8a3d28b91a3257467487f67d",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/providers/ollama_provider.py",
@@ -801,7 +801,7 @@
         },
         {
           "module": "synapse.panel.providers.probe",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/providers/probe.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/providers/probe.py",
           "worktree_sha256": "c405445e30733e537fa507f0c14ffdf697b6db07f48948e84e723402f100e514",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/providers/probe.py",
@@ -814,7 +814,7 @@
         },
         {
           "module": "synapse.panel.providers.registry",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/providers/registry.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/providers/registry.py",
           "worktree_sha256": "fcb3a98aa8a6e58bface4d1d355ca861486d88eb085824ec448a578462977ee4",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/providers/registry.py",
@@ -827,7 +827,7 @@
         },
         {
           "module": "synapse.panel.quick_actions",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/quick_actions.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/quick_actions.py",
           "worktree_sha256": "75adbaae0fb9fc214fffe04102b193108f42a854dfea6a44f6165ddf220468c4",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/quick_actions.py",
@@ -840,7 +840,7 @@
         },
         {
           "module": "synapse.panel.recipe_book",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/recipe_book.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/recipe_book.py",
           "worktree_sha256": "e92bd8b6e7d2e4fb6cdfdf18af48449154bf7470187ecd79fec2727d2ce327d8",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/recipe_book.py",
@@ -853,7 +853,7 @@
         },
         {
           "module": "synapse.panel.render_preflight",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/render_preflight.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/render_preflight.py",
           "worktree_sha256": "5b05c26b697ad3b614ab46c95ece769f27c3f08d191cdbd74e8b113b3c304df0",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/render_preflight.py",
@@ -866,7 +866,7 @@
         },
         {
           "module": "synapse.panel.render_receipt",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/render_receipt.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/render_receipt.py",
           "worktree_sha256": "ce84fc6c08b789e9230f86fb4c390d617a8f347661831fa846cecdcfa2758466",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/render_receipt.py",
@@ -879,7 +879,7 @@
         },
         {
           "module": "synapse.panel.result_telemetry",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/result_telemetry.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/result_telemetry.py",
           "worktree_sha256": "b88b59960443a349dfb5ab6baadfe04b4218687fb7427c489ab72a2ddd23bed1",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/result_telemetry.py",
@@ -892,7 +892,7 @@
         },
         {
           "module": "synapse.panel.retry_breaker",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/retry_breaker.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/retry_breaker.py",
           "worktree_sha256": "081e34164ec067f66754c095218d8da0e9586ebb6832857d7e732b684db5d41e",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/retry_breaker.py",
@@ -905,7 +905,7 @@
         },
         {
           "module": "synapse.panel.routing_log",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/routing_log.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/routing_log.py",
           "worktree_sha256": "114c93f98cbfab1faa2b20bdd9aee3697b8782953f8c3c693888760dead4acf8",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/routing_log.py",
@@ -918,7 +918,7 @@
         },
         {
           "module": "synapse.panel.save_shot",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/save_shot.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/save_shot.py",
           "worktree_sha256": "bdd3ad1cdce3d186d8679f680dc5e58a5949536389806251e88184b14ce76502",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/save_shot.py",
@@ -931,7 +931,7 @@
         },
         {
           "module": "synapse.panel.scene_doctor",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/scene_doctor.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/scene_doctor.py",
           "worktree_sha256": "a3035bec546bf280129230a2b97a0691c1c9de25c7c2a5823ba0212019afc2b9",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/scene_doctor.py",
@@ -944,7 +944,7 @@
         },
         {
           "module": "synapse.panel.session_integrity",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/session_integrity.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/session_integrity.py",
           "worktree_sha256": "d0e768cff24e04e73f230d41e4a5738587f934dcea9a5a07bcfac11593709456",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/session_integrity.py",
@@ -957,7 +957,7 @@
         },
         {
           "module": "synapse.panel.session_journal",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/session_journal.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/session_journal.py",
           "worktree_sha256": "f56b79f58afe8eb7b5ace607d9204c7c8045a6318b819ea34809b7d753295b38",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/session_journal.py",
@@ -970,7 +970,7 @@
         },
         {
           "module": "synapse.panel.settings",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/settings.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/settings.py",
           "worktree_sha256": "aafbea86ff295a8dccd2b837f8b333da89117cab5e10d8a8066b5f71d33be4ae",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/settings.py",
@@ -983,7 +983,7 @@
         },
         {
           "module": "synapse.panel.shot_login",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/shot_login.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/shot_login.py",
           "worktree_sha256": "1ce1eb84db175203ee109f22210a8671e825e27a6b8e30039f2df30047a0b6a7",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/shot_login.py",
@@ -996,7 +996,7 @@
         },
         {
           "module": "synapse.panel.styles",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/styles.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/styles.py",
           "worktree_sha256": "f460c1b62a2c10678d2f8284def8f422fd36f386a9074cc0d2837d7356513d38",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/styles.py",
@@ -1009,20 +1009,20 @@
         },
         {
           "module": "synapse.panel.synapse_panel",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/synapse_panel.py",
-          "worktree_sha256": "32712e4f8383b8891c5930cd4a534b12bc69da8a16ec63b033a3f3f4ccb39d0c",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/synapse_panel.py",
+          "worktree_sha256": "8039c56ae0241ceaa3648cde8159c64e44c46e68f59a5a2742b61cbf96d7dd2a",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/synapse_panel.py",
           "in_repo": true,
           "loaded_tree": "main",
           "sha_match": true,
-          "loaded_sha256": "32712e4f8383b8891c5930cd4a534b12bc69da8a16ec63b033a3f3f4ccb39d0c",
+          "loaded_sha256": "8039c56ae0241ceaa3648cde8159c64e44c46e68f59a5a2742b61cbf96d7dd2a",
           "worktree_matches_loaded": true,
           "error": null
         },
         {
           "module": "synapse.panel.system_prompt",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/system_prompt.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/system_prompt.py",
           "worktree_sha256": "5213f6acd21558fb3fd4ba273bf4dd5b1ac7fe61a05dcae56336f25f3d839a90",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/system_prompt.py",
@@ -1035,7 +1035,7 @@
         },
         {
           "module": "synapse.panel.tokens",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/tokens.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/tokens.py",
           "worktree_sha256": "4119437add76bf6fc49e480ce49dfaa3f754b3bff278863ebf68691899096b7d",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/tokens.py",
@@ -1048,7 +1048,7 @@
         },
         {
           "module": "synapse.panel.tool_bridge",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/tool_bridge.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/tool_bridge.py",
           "worktree_sha256": "bd62efa480968f5695d2a5c7dd80734e11165a9d33c1dadd339cf5921198ace6",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/tool_bridge.py",
@@ -1061,7 +1061,7 @@
         },
         {
           "module": "synapse.panel.tool_executor",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/tool_executor.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/tool_executor.py",
           "worktree_sha256": "5b75d140c92e7277ffefc04a7f246f85b9bd4f642707aa424135dd4131c502fb",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/tool_executor.py",
@@ -1074,7 +1074,7 @@
         },
         {
           "module": "synapse.panel.tool_filter",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/tool_filter.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/tool_filter.py",
           "worktree_sha256": "70753b26ae9988757c783e051bbbc81dadb8c20a01decff812265553016d3d34",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/tool_filter.py",
@@ -1087,7 +1087,7 @@
         },
         {
           "module": "synapse.panel.tool_palette",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/tool_palette.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/tool_palette.py",
           "worktree_sha256": "8683815aed441d06bbe8f77ba64412e0711021855d7db22b56ea0befd580fb01",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/tool_palette.py",
@@ -1100,7 +1100,7 @@
         },
         {
           "module": "synapse.panel.usage_sink",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/usage_sink.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/usage_sink.py",
           "worktree_sha256": "d47536f635df3ef4f7555e740e2f2e765c97336aa346ec996598390fa98ecee7",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/usage_sink.py",
@@ -1113,7 +1113,7 @@
         },
         {
           "module": "synapse.panel.verdict",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/verdict.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/verdict.py",
           "worktree_sha256": "7b1707cfd4fc05fd482dd6498a045b3df4840d3cbecad41ce32ee3df36c6505b",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/verdict.py",
@@ -1126,7 +1126,7 @@
         },
         {
           "module": "synapse.panel.vex_tutor",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/vex_tutor.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/vex_tutor.py",
           "worktree_sha256": "8c101ecf06d6b8524651e25f56b2e27bf53ea588ee88355b6cb2d9b818c0dbfd",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/vex_tutor.py",
@@ -1139,7 +1139,7 @@
         },
         {
           "module": "synapse.panel.vision_attach",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/vision_attach.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/vision_attach.py",
           "worktree_sha256": "bd29c894654e8d24c357ede24f136f416856cfa461d1b10e19e651faa1173630",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/vision_attach.py",
@@ -1152,7 +1152,7 @@
         },
         {
           "module": "synapse.panel.voice_contract",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/voice_contract.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/voice_contract.py",
           "worktree_sha256": "99317ef966921beecb21dbf086dcc4e3a9075015716988fc0dc6669770112a02",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/voice_contract.py",
@@ -1165,7 +1165,7 @@
         },
         {
           "module": "synapse.panel.worker_policy",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/worker_policy.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/worker_policy.py",
           "worktree_sha256": "d515590d8ea882fa7cecd64f4e757cb1d964db3d65134c6433d55c8f86808ac0",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/worker_policy.py",
@@ -1178,7 +1178,7 @@
         },
         {
           "module": "synapse.panel.working_indicator",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/working_indicator.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/working_indicator.py",
           "worktree_sha256": "899b0b27600ed0710c02ee4f705b4eae074950d933509a502035c2dbc00a4cd9",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/working_indicator.py",
@@ -1191,7 +1191,7 @@
         },
         {
           "module": "synapse.panel.ws_bridge",
-          "worktree_file": "c:/users/user/synapse/.claude/worktrees/w5-parity/python/synapse/panel/ws_bridge.py",
+          "worktree_file": "c:/users/user/synapse/python/synapse/panel/ws_bridge.py",
           "worktree_sha256": "222ce6546e53f487776823bcf03edaf53178d42909ebd13b9fa72df411110e10",
           "imported": true,
           "file": "c:/users/user/synapse/python/synapse/panel/ws_bridge.py",
@@ -1213,7 +1213,7 @@
       "qt_binding": "PySide6",
       "qt_real": true,
       "qt_platform_runtime": "offscreen",
-      "module_id_before_flush": 6272144848,
+      "module_id_before_flush": 6275616336,
       "flush_evicted_synapse_dot": true,
       "flush_popped_bare_synapse": true,
       "control_sentinel_survived": true,
@@ -1223,14 +1223,14 @@
       "widget_module": "synapse.panel.synapse_panel",
       "widget_file": "c:/users/user/synapse/python/synapse/panel/synapse_panel.py",
       "widget_from_repo": true,
-      "module_id_after_flush": 6269273648,
+      "module_id_after_flush": 6272646928,
       "fresh_reimport": true
     },
     "s4_behavior": {
       "panel_module_file": "c:/users/user/synapse/python/synapse/panel/synapse_panel.py",
       "tokens_module_file": "c:/users/user/synapse/python/synapse/panel/designsystem/tokens.py",
-      "r1_larger_text_line": 1950,
-      "r1_cycle_font_scale_line": 2091,
+      "r1_larger_text_line": 1956,
+      "r1_cycle_font_scale_line": 2097,
       "r1_double_site": true,
       "next_font_scale_first_step": 1.3,
       "ladder_host_1_3": [
@@ -1276,7 +1276,7 @@
     {
       "predicate": "R1 double-site wiring: next_font_scale at BOTH the 'Larger text' action and _cycle_font_scale (commit 4c1134d8)",
       "verdict": "pass",
-      "evidence": "larger_text_line=1950 cycle_line=2091"
+      "evidence": "larger_text_line=1956 cycle_line=2097"
     },
     {
       "predicate": "tokens.next_font_scale first step from host 1.3 is >= 1.3 (and no reachable state drops below the host floor)",
