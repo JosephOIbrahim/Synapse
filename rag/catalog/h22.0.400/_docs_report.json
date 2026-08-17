@@ -1,0 +1,122 @@
+{
+ "build": "22.0.400",
+ "by_category": [
+  {
+   "category": "Chop",
+   "context": "chop",
+   "joined": 4,
+   "total": 149
+  },
+  {
+   "category": "ChopNet",
+   "context": null,
+   "joined": 0,
+   "total": 1
+  },
+  {
+   "category": "Cop",
+   "context": "cop",
+   "joined": 25,
+   "total": 385
+  },
+  {
+   "category": "Cop2",
+   "context": "cop2",
+   "joined": 137,
+   "total": 169
+  },
+  {
+   "category": "CopNet",
+   "context": null,
+   "joined": 0,
+   "total": 3
+  },
+  {
+   "category": "Data",
+   "context": null,
+   "joined": 0,
+   "total": 450
+  },
+  {
+   "category": "Director",
+   "context": null,
+   "joined": 0,
+   "total": 0
+  },
+  {
+   "category": "Dop",
+   "context": "dop",
+   "joined": 90,
+   "total": 505
+  },
+  {
+   "category": "Driver",
+   "context": "out",
+   "joined": 9,
+   "total": 90
+  },
+  {
+   "category": "Lop",
+   "context": "lop",
+   "joined": 33,
+   "total": 222
+  },
+  {
+   "category": "Manager",
+   "context": "manager",
+   "joined": 0,
+   "total": 0
+  },
+  {
+   "category": "Object",
+   "context": "obj",
+   "joined": 31,
+   "total": 186
+  },
+  {
+   "category": "Shop",
+   "context": "shop",
+   "joined": 88,
+   "total": 219
+  },
+  {
+   "category": "Sop",
+   "context": "sop",
+   "joined": 313,
+   "total": 1690
+  },
+  {
+   "category": "Top",
+   "context": "top",
+   "joined": 8,
+   "total": 183
+  },
+  {
+   "category": "TopNet",
+   "context": null,
+   "joined": 0,
+   "total": 2
+  },
+  {
+   "category": "Vop",
+   "context": "vop",
+   "joined": 260,
+   "total": 1305
+  },
+  {
+   "category": "VopNet",
+   "context": null,
+   "joined": 0,
+   "total": 17
+  }
+ ],
+ "cache_errors": [],
+ "cache_index_size": 1452,
+ "cache_root": "C:/Users/User/OneDrive/Documents/houdini22.0/config/Help/cache",
+ "generated": {
+  "by": "scripts/catalog_docs_join.py",
+  "note": "visited-pages-only; deterministic; never synthesized"
+ },
+ "schema": "node_catalog_docs_report/v1",
+ "total_docs_joined": 998
+}

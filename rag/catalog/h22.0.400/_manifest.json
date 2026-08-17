@@ -1,0 +1,127 @@
+{
+ "build": "22.0.400",
+ "category_count": 18,
+ "files": {
+  "Chop.json": {
+   "blake2b": "0edcda99f962a43bc0ce0f6b6fd66bdc",
+   "category": "Chop",
+   "count": 149,
+   "probe_errors": 0
+  },
+  "ChopNet.json": {
+   "blake2b": "14c7764cc781d5220de6edce25c680e7",
+   "category": "ChopNet",
+   "count": 1,
+   "probe_errors": 0
+  },
+  "Cop.json": {
+   "blake2b": "b17772e17908a1bb371d763ecbdf49d2",
+   "category": "Cop",
+   "count": 385,
+   "probe_errors": 0
+  },
+  "Cop2.json": {
+   "blake2b": "3f3aa4b68e915abbb9f337467afcf378",
+   "category": "Cop2",
+   "count": 169,
+   "probe_errors": 0
+  },
+  "CopNet.json": {
+   "blake2b": "36c4b682cfd1bd84fe2d3c6156126641",
+   "category": "CopNet",
+   "count": 3,
+   "probe_errors": 0
+  },
+  "Data.json": {
+   "blake2b": "41bbd82a2d1555ebbe966c9db6315859",
+   "category": "Data",
+   "count": 450,
+   "probe_errors": 0
+  },
+  "Director.json": {
+   "blake2b": "2afb9b83f9314e5d029766197f539792",
+   "category": "Director",
+   "count": 0,
+   "probe_errors": 0
+  },
+  "Dop.json": {
+   "blake2b": "546ce7dad787b3ddde7cc8ebdd5d85f1",
+   "category": "Dop",
+   "count": 505,
+   "probe_errors": 0
+  },
+  "Driver.json": {
+   "blake2b": "b7f60c8ebcd764d16efcdb7ac81f8368",
+   "category": "Driver",
+   "count": 90,
+   "probe_errors": 0
+  },
+  "Lop.json": {
+   "blake2b": "0358de64ad03cb9687018732bd94d7fa",
+   "category": "Lop",
+   "count": 222,
+   "probe_errors": 0
+  },
+  "Manager.json": {
+   "blake2b": "2afb9b83f9314e5d029766197f539792",
+   "category": "Manager",
+   "count": 0,
+   "probe_errors": 0
+  },
+  "Object.json": {
+   "blake2b": "a352526de1c4a05ea9f846bc9eebe694",
+   "category": "Object",
+   "count": 186,
+   "probe_errors": 0
+  },
+  "Shop.json": {
+   "blake2b": "b7412adeda0b6f3394671c48803d8ceb",
+   "category": "Shop",
+   "count": 219,
+   "probe_errors": 0
+  },
+  "Sop.json": {
+   "blake2b": "5a08c1907253164d5627233f6f24a501",
+   "category": "Sop",
+   "count": 1690,
+   "probe_errors": 0
+  },
+  "Top.json": {
+   "blake2b": "df5d342b886aa75814155eec7be4ad00",
+   "category": "Top",
+   "count": 183,
+   "probe_errors": 0
+  },
+  "TopNet.json": {
+   "blake2b": "9866ad92d10c602de36d7a01302709c5",
+   "category": "TopNet",
+   "count": 2,
+   "probe_errors": 0
+  },
+  "Vop.json": {
+   "blake2b": "d98247af361b6a9632327fd177ca47ad",
+   "category": "Vop",
+   "count": 1305,
+   "probe_errors": 0,
+   "vop_instantiated": 1297
+  },
+  "VopNet.json": {
+   "blake2b": "5448ddf9bca52d3f6a13a3f5333d38d7",
+   "category": "VopNet",
+   "count": 17,
+   "probe_errors": 0
+  },
+  "apex_callbacks.json": {
+   "blake2b": "33aef46b93b97eaaf427e726aa2ebe57",
+   "count": 2286,
+   "probe_errors": 0,
+   "subgraph_count": 175
+  }
+ },
+ "generated": {
+  "by": "scripts/build_node_catalog.py",
+  "note": "deterministic: sorted, no wall-clock stamp"
+ },
+ "schema": "node_catalog_manifest/v1",
+ "total_probe_errors": 0
+}

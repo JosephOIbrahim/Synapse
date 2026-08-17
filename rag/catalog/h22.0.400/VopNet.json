@@ -1,0 +1,584 @@
+{
+ "blake2b": "5448ddf9bca52d3f6a13a3f5333d38d7",
+ "build": "22.0.400",
+ "category": "VopNet",
+ "count": 17,
+ "docs_join": {
+  "cache_root": "C:/Users/User/OneDrive/Documents/houdini22.0/config/Help/cache",
+  "context": null,
+  "joined": 0,
+  "note": "visited-pages-only; absent docs stay absent, never synthesized; each doc records its join tier ('match'); a namespaced node never borrows a bare sibling's page. Binary blake2b above is unchanged by this join.",
+  "tiers": {
+   "exact": 0,
+   "namespace_relaxed": 0,
+   "version_relaxed": 0
+  },
+  "total": 17
+ },
+ "generated": {
+  "by": "scripts/build_node_catalog.py (phase A)",
+  "note": "deterministic: sorted keys, no wall-clock stamp"
+ },
+ "probe_errors": [],
+ "schema": "node_catalog_live/v1",
+ "types": {
+  "chop": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "CHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "VEX Builder CHOP"
+     ],
+     "label": "CHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      1
+     ],
+     "label": "Minimum Inputs",
+     "max": 4,
+     "max_strict": false,
+     "min": 0,
+     "min_strict": true,
+     "name": "mininputs",
+     "num_components": 1,
+     "type": "Int"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      1
+     ],
+     "label": "Maximum Inputs",
+     "max": 4,
+     "max_strict": false,
+     "min": 0,
+     "min_strict": true,
+     "name": "maxinputs",
+     "num_components": 1,
+     "type": "Int"
+    }
+   ]
+  },
+  "cop2filter": {
+   "deprecated": true,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "COP2 Filter Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "VEX Builder COP2 Filter"
+     ],
+     "label": "COP2 Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      1
+     ],
+     "label": "Minimum Inputs",
+     "max": 4,
+     "max_strict": false,
+     "min": 1,
+     "min_strict": true,
+     "name": "mininputs",
+     "num_components": 1,
+     "type": "Int"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      1
+     ],
+     "label": "Maximum Inputs",
+     "max": 4,
+     "max_strict": false,
+     "min": 1,
+     "min_strict": true,
+     "name": "maxinputs",
+     "num_components": 1,
+     "type": "Int"
+    }
+   ]
+  },
+  "cop2gen": {
+   "deprecated": true,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "COP2 Generator Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "VEX Builder COP2 Generator"
+     ],
+     "label": "COP2 Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "cvex": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "CVEX Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "VEX Builder CVEX"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "displace": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "VEX Displacement SHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "VEX Builder Displacement"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "fog": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "VEX Fog SHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "VEX Builder Fog"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "image3d": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "VEX Image3D SHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "VEX Builder Image3D"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "light": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "VEX Light SHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "VEX Builder Light"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "rsl_displace": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "RSL Displacement SHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "RSL Builder Displacement"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "rsl_imager": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "RSL Imager SHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "RSL Builder Imager"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "rsl_light": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "RSL Light SHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "RSL Builder Light"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "rsl_surface": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "RSL Surface SHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "RSL Builder Surface"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "rsl_volume": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "RSL Volume SHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "RSL Builder Volume"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "shadow": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "VEX Shadow SHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "VEX Builder Shadow"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  },
+  "sop": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "SOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "VEX Builder SOP"
+     ],
+     "label": "SOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      1
+     ],
+     "label": "Minimum Inputs",
+     "max": 4,
+     "max_strict": false,
+     "min": 1,
+     "min_strict": true,
+     "name": "mininputs",
+     "num_components": 1,
+     "type": "Int"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      1
+     ],
+     "label": "Maximum Inputs",
+     "max": 4,
+     "max_strict": false,
+     "min": 1,
+     "min_strict": true,
+     "name": "maxinputs",
+     "num_components": 1,
+     "type": "Int"
+    }
+   ]
+  },
+  "subnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Subnetwork",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": []
+  },
+  "surface": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "VEX Surface SHOP Type",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0,
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      "VEX Builder Surface"
+     ],
+     "label": "SHOP Type Name",
+     "name": "englishname",
+     "num_components": 1,
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": true,
+     "label": "Show Operator in Tab Menu",
+     "name": "tabmenuflag",
+     "num_components": 1,
+     "type": "Toggle"
+    }
+   ]
+  }
+ }
+}
