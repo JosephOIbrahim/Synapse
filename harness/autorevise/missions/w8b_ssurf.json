@@ -1,0 +1,36 @@
+{
+  "id": "W8-SSURF",
+  "band": "TRUTH",
+  "name": "surface scout: install, first-run, UX debt, error language, operator docs",
+  "source": {
+    "doc": "harness/bastion/PROGRAM.md",
+    "anchor": "B5-SURFACE"
+  },
+  "targets": [
+    "1) Install path audit: packages json, prefs-dir resolution (OneDrive-redirect bug class), multi-build collision (five builds share one prefs dir, nothing pins the default). 2) First-run: what a fresh user hits before first success; error-language pass - list messages a non-builder cannot act on. 3) Panel/shelf/ROP UX debt: enumerate, do not fix. 4) Operator docs: what exists vs what an operator needs (Operator's Card gaps).",
+    "5) Output: receipt harness/notes/receipts/W8-SSURF.json + findings ranked P0 (production-blocking) / P1 (hardening) / P2 (polish), each with a file:line anchor and first-hand observation or UNKNOWN.",
+    "TOKEN DISCIPLINE: read anchors not trees; externalize evidence to your receipt early; cite file:line anchors, never file dumps.",
+    "BUS MANDATE - this team exists to talk: post claim at start, post each finding to the bus AS IT LANDS addressed to W8-LIBR (do not batch), explicit RELEASE at close."
+  ],
+  "touches": [],
+  "deps": [],
+  "readonly": true,
+  "crucible_criteria": [
+    "evidence first-hand from your own read-only recon, never inherited",
+    "unobtainable renders UNKNOWN, never zero, never estimate"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "findings ranked P0/P1/P2 with file:line anchors, receipt committed on own branch",
+      "evidence": "check"
+    },
+    {
+      "predicate": "every claim traced to first-hand observation or named UNKNOWN",
+      "evidence": "probe"
+    }
+  ],
+  "note": ""
+}

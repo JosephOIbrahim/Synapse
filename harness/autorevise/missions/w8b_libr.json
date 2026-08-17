@@ -1,0 +1,51 @@
+{
+  "id": "W8-LIBR",
+  "band": "TRUTH",
+  "name": "librarian SYNTHESIZER: one findings index from seven scout streams",
+  "source": {
+    "doc": "harness/bastion/PROGRAM.md",
+    "anchor": "W8-LIBRARIAN"
+  },
+  "targets": [
+    "1) Consume the bus: scouts post findings addressed to you as they land - read ALL; a scout claim you cannot trace to its receipt anchor is treated as unproven.",
+    "2) Dedup against prior art: existing receipts, standing rulings, and the W6 failure-class ledger - a finding already ruled or already gated is cited, not re-opened.",
+    "3) Spot-check: re-observe at least one load-bearing P0 finding per scout first-hand - trust is verified, never inherited.",
+    "4) Emit harness/bastion/FINDINGS_INDEX.md on your own branch: per finding - id, blueprint, rank, anchor, status (new/known/gated), one-line evidence. This index is the sole input the Chunk-C blueprints cite.",
+    "5) Receipt harness/notes/receipts/W8-LIBR.json as your closing commit; RELEASE on the bus; drop flag harness/notes/h22/w8-landed.flag.",
+    "TOKEN DISCIPLINE: read anchors not trees; externalize evidence to your receipt early; cite file:line anchors, never file dumps."
+  ],
+  "touches": [],
+  "deps": [
+    "W8-SLIFE",
+    "W8-STRUTH",
+    "W8-SENGINE",
+    "W8-SMEM",
+    "W8-SSURF",
+    "W8-SSHIELD",
+    "W8-SSHIP"
+  ],
+  "readonly": true,
+  "crucible_criteria": [
+    "evidence first-hand from your own read-only recon, never inherited",
+    "unobtainable renders UNKNOWN, never zero, never estimate",
+    "one first-hand spot-check per scout stream"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "all scout findings consumed with per-claim trace-or-unproven status",
+      "evidence": "check"
+    },
+    {
+      "predicate": "one first-hand spot-check per scout, stdout in receipt",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "FINDINGS_INDEX.md + receipt + flag landed as closing commit",
+      "evidence": "check"
+    }
+  ],
+  "note": ""
+}

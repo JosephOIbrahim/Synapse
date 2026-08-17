@@ -1,0 +1,36 @@
+{
+  "id": "W8-SSHIP",
+  "band": "TRUTH",
+  "name": "ship scout: g1-g9 automation map, version sync, matrix truth, CI, distribution",
+  "source": {
+    "doc": "harness/bastion/PROGRAM.md",
+    "anchor": "B7-SHIP"
+  },
+  "targets": [
+    "1) g1-g9 map: per gate, automated / scripted-manual / pure-human today; cite the v5.51.0 ritual receipts. 2) VERSION-sync: is sync_version.py drift-detected anywhere or run on memory. 3) SUPPORT_MATRIX: per row, tested-in-CI / tested-once / asserted. 4) CI: what the 6587-test verify does NOT cover (GUI class, hython class); the distribution story for a non-builder.",
+    "5) Output: receipt harness/notes/receipts/W8-SSHIP.json + findings ranked P0 (production-blocking) / P1 (hardening) / P2 (polish), each with a file:line anchor and first-hand observation or UNKNOWN.",
+    "TOKEN DISCIPLINE: read anchors not trees; externalize evidence to your receipt early; cite file:line anchors, never file dumps.",
+    "BUS MANDATE - this team exists to talk: post claim at start, post each finding to the bus AS IT LANDS addressed to W8-LIBR (do not batch), explicit RELEASE at close."
+  ],
+  "touches": [],
+  "deps": [],
+  "readonly": true,
+  "crucible_criteria": [
+    "evidence first-hand from your own read-only recon, never inherited",
+    "unobtainable renders UNKNOWN, never zero, never estimate"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "findings ranked P0/P1/P2 with file:line anchors, receipt committed on own branch",
+      "evidence": "check"
+    },
+    {
+      "predicate": "every claim traced to first-hand observation or named UNKNOWN",
+      "evidence": "probe"
+    }
+  ],
+  "note": ""
+}

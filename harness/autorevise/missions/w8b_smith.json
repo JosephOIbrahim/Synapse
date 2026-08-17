@@ -1,0 +1,42 @@
+{
+  "id": "W8-SMITH",
+  "band": "BUILD",
+  "name": "smith: fork AUTOREVISE into BASTION harness v2 under harness/bastion/",
+  "source": {
+    "doc": "harness/bastion/PROGRAM.md",
+    "anchor": "HARNESS-V2-SMITH"
+  },
+  "targets": [
+    "1) TASK 1 - resolve /rc: it is delivered by steward SendKeys and observed working across W6+W5 waves, but no rc.md exists under .claude (recursive) or the repo, and no doc mentions it. Interrogate: launch a scratch claude session in a worktree, capture /help and what typing '/rc' resolves to, document it. If unresolvable headless, escalate UNKNOWN with the transcript - never guess.",
+    "2) Fork, do not rewrite: copy AUTOREVISE (mission_schema, compile_wave, make_control, bus, orchestrate pattern, arm template) into harness/bastion/, preserving every runner survival rule traced to its source file: hold-turn clause, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0, AGENT_TEAMS env, detached Start-Process with pid capture, debom discipline.",
+    "3) Schema v2: add optional skills[] (list of repo-relative or /mnt skill paths); compile injects them into the leg prompt brief. Add typed bus message kinds CLAIM/FINDING/HANDOFF/BLOCK/RELEASE with a validator on bus write.",
+    "4) Arm template v2: steward arm/refresh with deadline past the wave horizon + /rc bake-in slot (fills from task 1 resolution).",
+    "5) Self-test under stock pytest, pure Python, no hou: schema round-trip, compile of a fixture mission carrying skills[], bus kind validation. Skip is not pass.",
+    "6) Receipt harness/notes/receipts/W8-SMITH.json; commit-before-receipt; your branch only.",
+    "TOKEN DISCIPLINE: read anchors not trees; externalize evidence to your receipt early; cite file:line anchors, never file dumps.",
+    "BUS MANDATE: post claim at start, post BLOCK immediately if /rc stays unresolved, explicit RELEASE at close."
+  ],
+  "touches": [
+    "harness/bastion/"
+  ],
+  "deps": [],
+  "readonly": false,
+  "crucible_criteria": [
+    "no phantom surface: every carried runner rule traced to its source file, never memory",
+    "unobtainable renders UNKNOWN, never zero, never estimate"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "v2 fork complete with skills[] + typed bus + steward-arm clause; pytest self-test green, skip is not pass",
+      "evidence": "test"
+    },
+    {
+      "predicate": "/rc resolved and documented, or UNKNOWN escalated with interrogation transcript",
+      "evidence": "check"
+    }
+  ],
+  "note": "no W8 leg depends on smith; v2 serves the exec waves"
+}
