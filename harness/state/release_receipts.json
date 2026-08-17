@@ -16,5 +16,11 @@
     "build": "22.0.400",
     "date": "2026-08-16",
     "notes": "Joe's word 'pass' at live seat (master be38cc2f, session 20:32). Core surface exercised: shelf tools (health check, inspect) + /synapse command - sane panel results, no tracebacks, no dead clicks."
+  },
+  "g7_reversibility": {
+    "result": "pass",
+    "build": "22.0.400",
+    "date": "2026-08-16",
+    "notes": "Joe's word 'pass' at live seat (master a67cf753, session 20:32). Built a multi-part network via /synapse; ONE Ctrl+Z reversed the entire build as a single undo group. Counts double: g7 gate + the W5-UNDO-GUI receipt (human hands in Houdini, never simulatable) - the standing spawn from Wave 5 is hereby discharged. Marquee demo verified live."
   }
 }
