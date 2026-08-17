@@ -298,20 +298,36 @@ def render_prometheus(
         session = live_snapshot.get("session", {})
         resilience = live_snapshot.get("resilience", {})
 
-        lines.append("")
-        lines.append("# HELP synapse_scene_nodes_total Total nodes in Houdini scene")
-        lines.append("# TYPE synapse_scene_nodes_total gauge")
-        lines.append(f"synapse_scene_nodes_total {scene.get('total_nodes', 0)}")
+        # Wave5/measures Bug A: distinguish a MEASURED scene from a SHED cycle
+        # (hou unavailable / main thread busy past the collect timeout). On a shed
+        # cycle the counts below are bare defaults, not observations.
+        scene_measured = scene.get("measured", True)
 
         lines.append("")
-        lines.append("# HELP synapse_scene_warnings Nodes with warnings")
-        lines.append("# TYPE synapse_scene_warnings gauge")
-        lines.append(f"synapse_scene_warnings {scene.get('warnings', 0)}")
+        lines.append("# HELP synapse_scene_measured 1 if the scene collector observed the scene this cycle, 0 if the cycle was shed")
+        lines.append("# TYPE synapse_scene_measured gauge")
+        lines.append(f"synapse_scene_measured {1 if scene_measured else 0}")
 
-        lines.append("")
-        lines.append("# HELP synapse_scene_errors Nodes with errors")
-        lines.append("# TYPE synapse_scene_errors gauge")
-        lines.append(f"synapse_scene_errors {scene.get('errors', 0)}")
+        # Omit the counts on a shed cycle rather than fabricate 0. A scrape gap is
+        # the honest Prometheus representation of "unmeasured"; synapse_scene_measured
+        # 0 documents the gap. Prevents the worst case the audit named: an operator
+        # scraping /metrics while debugging a freeze reading "0 nodes, 0 warnings"
+        # as if the scene were verified clean.
+        if scene_measured:
+            lines.append("")
+            lines.append("# HELP synapse_scene_nodes_total Total nodes in Houdini scene")
+            lines.append("# TYPE synapse_scene_nodes_total gauge")
+            lines.append(f"synapse_scene_nodes_total {scene.get('total_nodes', 0)}")
+
+            lines.append("")
+            lines.append("# HELP synapse_scene_warnings Nodes with warnings")
+            lines.append("# TYPE synapse_scene_warnings gauge")
+            lines.append(f"synapse_scene_warnings {scene.get('warnings', 0)}")
+
+            lines.append("")
+            lines.append("# HELP synapse_scene_errors Nodes with errors")
+            lines.append("# TYPE synapse_scene_errors gauge")
+            lines.append(f"synapse_scene_errors {scene.get('errors', 0)}")
 
         lines.append("")
         lines.append("# HELP synapse_sessions_active Active user sessions")

@@ -190,18 +190,21 @@ body{background:#1a1a1a;color:#e0e0e0;font-family:'Segoe UI',system-ui,-apple-sy
     // Scene
     if(d.scene){
       const s = d.scene;
+      // Bug A: a shed scene cycle nulls the numeric fields (unmeasured, not
+      // observed). Render '—' for UNKNOWN rather than a fabricated 0 / 24.
+      const u = v => (v === null || v === undefined) ? '—' : v;
       $('hipFile').textContent = s.hip_file ? s.hip_file.split('/').pop().split('\\').pop() : '-';
       $('frame').textContent = s.current_frame;
-      $('fps').textContent = s.fps;
-      $('totalNodes').textContent = s.total_nodes;
-      $('nodeBreakdown').textContent = s.sop_nodes + ' / ' + s.lop_nodes + ' / ' + s.obj_nodes;
+      $('fps').textContent = u(s.fps);
+      $('totalNodes').textContent = u(s.total_nodes);
+      $('nodeBreakdown').textContent = u(s.sop_nodes) + ' / ' + u(s.lop_nodes) + ' / ' + u(s.obj_nodes);
 
       const wEl = $('warnings');
-      wEl.textContent = s.warnings;
+      wEl.textContent = u(s.warnings);
       wEl.className = 'value' + (s.warnings > 0 ? ' warn' : '');
 
       const eEl = $('errors');
-      eEl.textContent = s.errors;
+      eEl.textContent = u(s.errors);
       eEl.className = 'value' + (s.errors > 0 ? ' err' : '');
     }
 

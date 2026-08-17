@@ -142,8 +142,12 @@ def test_collect_scene_marshals_hou_through_run_on_main():
             )
 
 
-def test_collect_scene_timeout_yields_empty_metrics():
-    """A run_on_main timeout returns an empty SceneMetrics() rather than hanging."""
+def test_collect_scene_timeout_yields_unmeasured_metrics():
+    """A run_on_main timeout returns an UNMEASURED SceneMetrics rather than hanging.
+
+    Bug A: the timeout path is a shed cycle — it must mark measured=False, not
+    hand back a bare SceneMetrics() whose fps=24 / 0 counts read as observed.
+    """
 
     def fake_run_on_main_timeout(fn, timeout=10.0):
         # Mirror the real run_on_main contract on a busy main thread: raise
@@ -158,24 +162,32 @@ def test_collect_scene_timeout_yields_empty_metrics():
     finally:
         restore()
 
-    assert scene == SceneMetrics()
+    assert scene.measured is False
+    assert scene == SceneMetrics(measured=False)
 
 
-def test_collect_scene_no_hou_returns_empty():
-    """Standalone (no hou) still short-circuits via the ImportError guard."""
+def test_collect_scene_no_hou_returns_unmeasured():
+    """Standalone (no hou) short-circuits via the ImportError guard.
+
+    Bug A: no-hou is a shed cycle, not a measured empty scene — measured=False.
+    """
     saved = sys.modules.get("hou")
     sys.modules["hou"] = None  # type: ignore[assignment]
     try:
         agg = MetricsAggregator()
         scene = agg._collect_scene()
-        assert scene == SceneMetrics()
+        assert scene.measured is False
+        assert scene == SceneMetrics(measured=False)
     finally:
         # `= None`, never a pop — see HOU_REIMPORT_GUARD in tests/conftest.py.
         sys.modules["hou"] = saved
 
 
-def test_collect_scene_callable_failure_yields_empty():
-    """An exception inside the marshalled walk degrades to empty SceneMetrics()."""
+def test_collect_scene_callable_failure_yields_unmeasured():
+    """An exception inside the marshalled walk degrades to an UNMEASURED SceneMetrics.
+
+    Bug A: a walk failure is a shed cycle — measured=False, not a fabricated 0.
+    """
 
     def fake_run_on_main_raises_fn(fn, timeout=10.0):
         # Run fn so its internal failure propagates exactly as the real path would.
@@ -196,7 +208,8 @@ def test_collect_scene_callable_failure_yields_empty():
     finally:
         restore()
 
-    assert scene == SceneMetrics()
+    assert scene.measured is False
+    assert scene == SceneMetrics(measured=False)
 
 
 def teardown_module():

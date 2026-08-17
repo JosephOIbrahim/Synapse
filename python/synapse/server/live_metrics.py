@@ -34,6 +34,12 @@ logger = logging.getLogger("synapse.live_metrics")
 
 @dataclass(frozen=True)
 class SceneMetrics:
+    # measured=False marks a SHED cycle (hou unimportable, main thread busy past
+    # the collect timeout, or a walk exception): the numeric fields below are then
+    # bare defaults, NOT observations. Wave5/measures Bug A: consumers must render
+    # UNKNOWN when measured is False rather than exporting fps=24 / nodes=0 as if
+    # measured. This is the SceneMetrics analogue of the doctor's honesty contract.
+    measured: bool = True
     hip_file: str = ""
     current_frame: int = 0
     fps: float = 24.0
@@ -214,7 +220,7 @@ class MetricsAggregator:
         try:
             import hou
         except ImportError:
-            return SceneMetrics()
+            return SceneMetrics(measured=False)
 
         def _gather() -> SceneMetrics:
             # Runs on Houdini's main thread (marshalled below). All hou.* access
@@ -269,7 +275,7 @@ class MetricsAggregator:
             # Timeout (main thread busy), marshaller unavailable, or a failure
             # inside the walk. Never block the daemon — shed this cycle.
             logger.debug("Scene metrics collection failed/skipped", exc_info=True)
-            return SceneMetrics()
+            return SceneMetrics(measured=False)
 
     def _collect_routing(self) -> RoutingMetrics:
         """Collect routing stats from the tiered router."""
@@ -406,14 +412,33 @@ class MetricsAggregator:
     # Serialization
     # ------------------------------------------------------------------
 
+    # Scene fields that are pure fabrication on a shed cycle — a bare SceneMetrics
+    # reports fps=24 and 0 for every count. When measured is False these are NOT
+    # observations, so the serializer nulls them (JSON null) and consumers render
+    # UNKNOWN. hip_file/current_frame stay: they are "" / 0 defaults that read as
+    # empty, not as a fabricated measurement. Wave5/measures Bug A.
+    _SCENE_UNMEASURED_NULL_FIELDS = (
+        "fps", "total_nodes", "lop_nodes", "sop_nodes", "obj_nodes",
+        "warnings", "errors",
+    )
+
     @staticmethod
     def _snapshot_to_dict(snapshot: MetricSnapshot) -> Dict:
-        """Convert snapshot to JSON-serializable dict with sorted keys."""
+        """Convert snapshot to JSON-serializable dict with sorted keys.
+
+        Honesty (Bug A): on a shed scene cycle (``scene.measured is False``) the
+        numeric scene fields are bare defaults, not observations — they are
+        nulled here so no consumer reports fps=24 / 0 nodes as if measured.
+        """
         d = dataclasses.asdict(snapshot)
         # Convert tier_counts tuple-of-tuples back to a dict for readability
         tc = d.get("routing", {}).get("tier_counts", ())
         if tc:
             d["routing"]["tier_counts"] = {name: count for name, count in tc}
+        scene = d.get("scene")
+        if isinstance(scene, dict) and scene.get("measured") is False:
+            for _f in MetricsAggregator._SCENE_UNMEASURED_NULL_FIELDS:
+                scene[_f] = None
         return d
 
 

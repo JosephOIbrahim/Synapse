@@ -150,7 +150,11 @@ class TestAggregator:
         sys.modules["hou"] = None  # type: ignore[assignment]
         try:
             scene = agg._collect_scene()
-            assert scene == SceneMetrics()
+            # Bug A: a shed cycle (no hou) is UNMEASURED, not a measured empty
+            # scene. It must be marked measured=False so consumers render UNKNOWN
+            # rather than exporting fps=24 / 0 nodes as if observed.
+            assert scene.measured is False
+            assert scene == SceneMetrics(measured=False)
         finally:
             if saved is not None:
                 sys.modules["hou"] = saved
@@ -300,6 +304,50 @@ class TestSerialization:
         d = snapshot_to_dict(snap)
         text = json.dumps(d, sort_keys=True)
         assert '"tier_counts"' in text
+
+
+# ---------------------------------------------------------------------------
+# Bug A goldens: a shed (unmeasured) scene cycle must surface as UNKNOWN,
+# never as a fabricated fps=24 / 0 nodes. Pins the honesty contract so it
+# cannot silently regress.
+# ---------------------------------------------------------------------------
+
+class TestUnmeasuredScene:
+    def test_scene_measured_defaults_true(self):
+        # A fully-built (observed) scene is measured; the default must be True so
+        # every existing measured readout is unaffected.
+        assert SceneMetrics().measured is True
+        assert SceneMetrics(total_nodes=5).measured is True
+
+    def test_shed_scene_nulls_fabrication_fields(self):
+        # measured=False ⇒ the serializer nulls the fields that are pure defaults
+        # on a shed cycle (fps=24 is the only non-zero fabrication; counts are 0).
+        snap = MetricSnapshot(scene=SceneMetrics(measured=False))
+        scene = snapshot_to_dict(snap)["scene"]
+        assert scene["measured"] is False
+        for f in ("fps", "total_nodes", "lop_nodes", "sop_nodes",
+                  "obj_nodes", "warnings", "errors"):
+            assert scene[f] is None, f"{f} must be None (UNKNOWN) on a shed cycle"
+        # The fabricated 24.0 must never reach a consumer as if measured.
+        assert scene["fps"] != 24.0
+
+    def test_measured_scene_keeps_values(self):
+        # measured=True ⇒ nothing is nulled; real observations pass through.
+        snap = MetricSnapshot(
+            scene=SceneMetrics(measured=True, total_nodes=42, fps=30.0, warnings=3)
+        )
+        scene = snapshot_to_dict(snap)["scene"]
+        assert scene["measured"] is True
+        assert scene["total_nodes"] == 42
+        assert scene["fps"] == 30.0
+        assert scene["warnings"] == 3
+
+    def test_shed_scene_json_serializable(self):
+        # Nulled fields must still round-trip through json (None → null).
+        snap = MetricSnapshot(scene=SceneMetrics(measured=False))
+        text = json.dumps(snapshot_to_dict(snap), sort_keys=True)
+        assert '"fps": null' in text
+        assert '"measured": false' in text
 
 
 # ---------------------------------------------------------------------------
