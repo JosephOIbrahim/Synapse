@@ -10,5 +10,11 @@
     "build": "22.0.400",
     "date": "2026-08-16",
     "notes": "Joe's word 'pass' at live seat, fixed build (master 0e313535, fresh GUI session 20:32). Re-run of the halted gate: built via /synapse, closed the SYNAPSE tab, reopened - panel reconnected to the same session (history present, build intact, no fresh-runtime greeting). P0.3 verified dead by operator hands; behavioral pin W6-BEAT guards the regression."
+  },
+  "g6_core_smoke": {
+    "result": "pass",
+    "build": "22.0.400",
+    "date": "2026-08-16",
+    "notes": "Joe's word 'pass' at live seat (master be38cc2f, session 20:32). Core surface exercised: shelf tools (health check, inspect) + /synapse command - sane panel results, no tracebacks, no dead clicks."
   }
 }
