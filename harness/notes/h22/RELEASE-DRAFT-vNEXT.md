@@ -12,6 +12,8 @@ Draft release notes for the build after v5.50.0. Publish is gated at ritual step
 
 **Flow fixes, measured not opined.** Six canonical user journeys (first build, multi-node rig, error recovery, mode switch, palette, close-reopen) were mapped from lived evidence and driven end-to-end by a journey rig under hython. Two panel-side fixes shipped, each proven red-then-green by the rig, and three adversarial journeys - garbage prompt mid-build, panel close mid-journey, rapid mode-switch - all survive with the session intact.
 
+**Sessions now scope to the Houdini boot.** Closing the panel tab reattaches to the same session (the headline fix, unchanged) - but a fresh Houdini launch now starts clean instead of auto-loading yesterday's conversation. The previous boot's work is parked, never destroyed: one command, `/restore-session`, brings the full history back. Pre-existing stores from older builds park safely on first contact and restore the same way.
+
 ## Under the hood
 
 **The harness now enforces what it used to merely say.** A failure-class ledger (`harness/HARDENING-SPEC.md`) mined every receipt, finding, and ruling in the project's history into named classes with a one-token honesty vocabulary (WIRED / WIRED-BUT-HOLLOW / WARN-ONLY / PROSE-ONLY / NONE). Four builders then moved the worst classes to enforced gates, and a crucible proved every gate goes RED on a simulation of its original defect:
@@ -36,4 +38,6 @@ Corrected from the previous draft of these notes: `provenance_not_bypassed` is n
 
 ## Ritual state
 
-The release ritual resumes at **g5 on this build**: build something in the panel, close the tab mid-operation, reopen, confirm the session survived - operator hands, live GUI. Then g6-g9, the live Ctrl+Z undo receipt (W5-UNDO-GUI), version bump across the six surfaces via `scripts/sync_version.py`, and publish of this draft. v5.50.0 remains Latest until then.
+Operator gates walked at the live seat this evening, all receipt-backed on master: **g1 clean install - g5 lifecycle (the halted gate, now PASS on the fixed build: P0.3 dead by operator hands) - g6 core smoke - g7 reversibility (one Ctrl+Z reversed an entire multi-part build; the long-standing W5-UNDO-GUI receipt is discharged) - g8 restart.** The machine verify on this HEAD is the cleanest on record: 6580 passed / 0 failed, guardrail violations empty, guardrail unwired empty.
+
+**g9 (rollback) surfaced a real finding and awaits ruling:** removing the package with a stale desktop still referencing the panel crashes Houdini's native icon paint (`QIcon::operator=` in libUI - a SideFX-side segfault our uninstall residue triggers; zero Python or SYNAPSE frames in the dump). The gate did its job. Publish follows the g9 ruling, the version bump across six surfaces, a final verify, and the tag - in that order. v5.50.0 remains Latest until then.
