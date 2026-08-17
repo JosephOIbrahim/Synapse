@@ -78,7 +78,8 @@ def conversation_path(path: Optional[str] = None) -> str:
     return os.path.join(_resolve_store_dir(), _CONVERSATION_FILENAME)
 
 
-def save_conversation(messages: List[dict], path: Optional[str] = None) -> bool:
+def save_conversation(messages: List[dict], path: Optional[str] = None,
+                      token: Optional[str] = None) -> bool:
     """Persist *messages* (Anthropic conversation format) durably.
 
     Atomic (``.tmp`` + ``os.replace``) and thread-safe. Best-effort: any I/O or
@@ -100,6 +101,7 @@ def save_conversation(messages: List[dict], path: Optional[str] = None) -> bool:
                 # Anthropic format is JSON-native so it is rarely exercised.
                 json.dump(messages, fh, ensure_ascii=False, default=str)
             os.replace(tmp, target)
+            _write_owner(target, token)
             return True
         except Exception as exc:
             logger.warning("session store: save failed (%s): %s", target, exc)
@@ -155,3 +157,126 @@ def clear_conversation(path: Optional[str] = None) -> bool:
         except OSError as exc:
             logger.warning("session store: clear failed (%s): %s", target, exc)
             return False
+
+
+# ---------------------------------------------------------------------------
+# Boot-scoped ownership (W7-SESSCOPE, Joe word 2026-08-16)
+# ---------------------------------------------------------------------------
+# The disk store above survives EVERYTHING by design - widget death, the pypanel
+# module flush, and full Houdini restarts. g5 wants the first two and not the
+# third: close/reopen must reattach (P0.3 stays dead), but a NEW Houdini boot
+# should start clean without destroying the old work. The mechanism is an owner
+# stamp: a token minted once per host process, stored OUTSIDE the synapse.*
+# namespace (hou.session in Houdini, builtins headless) so it survives the
+# module flush but dies with the process - exactly the boot lifetime. A scoped
+# load compares stamps: same boot -> reattach; different boot -> the current
+# conversation is PARKED to a 'previous' slot (never deleted) and the panel
+# starts clean, with restore_previous_conversation() as the one-call undo.
+
+_OWNER_SUFFIX = ".owner.json"
+_PREVIOUS_FILENAME = "conversation.previous.json"
+_BOOT_ATTR = "__synapse_boot_token__"
+
+
+def _boot_token(token: Optional[str] = None) -> str:
+    """The per-host-process boot token. Explicit *token* wins (tests)."""
+    if token:
+        return token
+    host = None
+    if _HOU_AVAILABLE and hou is not None:
+        host = getattr(hou, "session", None)
+    if host is None:
+        import builtins as host  # type: ignore[no-redef]
+    tok = getattr(host, _BOOT_ATTR, None)
+    if not tok:
+        import uuid
+        tok = uuid.uuid4().hex
+        try:
+            setattr(host, _BOOT_ATTR, tok)
+        except Exception:
+            pass
+    return tok
+
+
+def _owner_path(target: str) -> str:
+    return target + _OWNER_SUFFIX
+
+
+def previous_path(path: Optional[str] = None) -> str:
+    """The parked-previous slot beside the active conversation."""
+    return os.path.join(os.path.dirname(conversation_path(path)),
+                        _PREVIOUS_FILENAME)
+
+
+def _write_owner(target: str, token: Optional[str] = None) -> None:
+    """Stamp *target*'s owner sidecar with the current boot token. Best-effort:
+    a failed stamp degrades to 'unowned' (parked on next boot), never a crash."""
+    try:
+        opath = _owner_path(target)
+        tmp = opath + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump({"boot": _boot_token(token)}, fh)
+        os.replace(tmp, opath)
+    except Exception as exc:
+        logger.warning("session store: owner stamp failed (%s): %s", target, exc)
+
+
+def _read_owner(target: str) -> Optional[str]:
+    try:
+        with open(_owner_path(target), "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        return data.get("boot") if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def load_conversation_scoped(path: Optional[str] = None,
+                             token: Optional[str] = None):
+    """Boot-scoped restore. Returns ``(messages, scope)`` where scope is one of
+    ``"same_boot"`` (reattached - the close/reopen case), ``"empty"`` (nothing
+    stored), or ``"previous_parked"`` (a conversation from an earlier boot -
+    or with no owner stamp, the legacy case - was moved to the previous slot
+    and the caller starts clean). Parking replaces any older previous: the slot
+    always holds the most recent prior boot's work."""
+    target = conversation_path(path)
+    messages = load_conversation(path)
+    if not messages:
+        return [], "empty"
+    if _read_owner(target) == _boot_token(token):
+        return messages, "same_boot"
+    prev = previous_path(path)
+    with _lock:
+        try:
+            os.replace(target, prev)
+            try:
+                os.replace(_owner_path(target), _owner_path(prev))
+            except OSError:
+                pass
+        except OSError as exc:
+            logger.warning("session store: park failed (%s): %s - loading as-is",
+                           target, exc)
+            return messages, "same_boot"
+    return [], "previous_parked"
+
+
+def has_previous_conversation(path: Optional[str] = None) -> bool:
+    """True when a parked previous-boot conversation exists."""
+    return os.path.exists(previous_path(path))
+
+
+def restore_previous_conversation(path: Optional[str] = None,
+                                  token: Optional[str] = None) -> List[dict]:
+    """Move the parked previous conversation back to the active slot, stamp it
+    with the CURRENT boot token, and return its messages ([] if none parked)."""
+    prev = previous_path(path)
+    target = conversation_path(path)
+    with _lock:
+        try:
+            os.replace(prev, target)
+        except FileNotFoundError:
+            return []
+        except OSError as exc:
+            logger.warning("session store: restore failed (%s): %s", prev, exc)
+            return []
+    _write_owner(target, token)
+    return load_conversation(path)

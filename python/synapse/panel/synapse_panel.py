@@ -338,9 +338,15 @@ class SynapsePanel(QtWidgets.QWidget):
         # Best-effort; a missing/corrupt store degrades to an empty conversation.
         try:
             from synapse.server import session_store as _session_store
-            self._messages = _session_store.load_conversation()
+            self._messages, _sess_scope = _session_store.load_conversation_scoped()
+            # W7-SESSCOPE: work from an earlier Houdini boot is parked, never
+            # destroyed - a fresh boot starts clean, /restore-session undoes.
+            self._parked_previous = (_sess_scope == "previous_parked")
+            if self._parked_previous:
+                QTimer.singleShot(0, self._announce_parked)
         except Exception:
             self._messages = []          # Anthropic-format conversation
+            self._parked_previous = False
         self._stream_buf = []        # accumulates streamed tokens
         # P2: what the agent actually DID this turn, in order. The result
         # surface has always been able to render credit/flags/paths; before
@@ -2157,6 +2163,11 @@ class SynapsePanel(QtWidgets.QWidget):
             self._send(text)
 
     def _send(self, text):
+        # W7-SESSCOPE: /restore-session brings back the conversation parked by
+        # a fresh-boot scoped load. Panel-local, never reaches the model.
+        if (text or "").strip().lower() in ("/restore-session", "/restore_session"):
+            self._restore_previous_session()
+            return
         # Submitting is the artist handing off — drop input focus.
         if getattr(self, "_input", None) is not None:
             self._input.clearFocus()
@@ -2170,6 +2181,37 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
         self._messages.append({"role": "user", "content": text})
         self._start_worker()
+
+    def _announce_parked(self):
+        """W7-SESSCOPE: tell the artist their previous-boot work is parked, not
+        gone. Fires once via singleShot after the UI exists. Best-effort."""
+        try:
+            self._chat.append_system_message(
+                "Previous session from your last Houdini boot was parked - "
+                "type /restore-session to bring it back.")
+        except Exception:
+            pass
+
+    def _restore_previous_session(self):
+        """W7-SESSCOPE: swap the parked previous-boot conversation back in as
+        the live context. Display continues from here (full re-render of old
+        turns is docketed); the model sees the complete restored history."""
+        try:
+            from synapse.server import session_store as _session_store
+            restored = _session_store.restore_previous_conversation()
+        except Exception:
+            restored = []
+        try:
+            if restored:
+                self._messages = restored
+                self._parked_previous = False
+                self._chat.append_system_message(
+                    "Restored %d messages from the previous session - context "
+                    "is live; new replies continue from that history." % len(restored))
+            else:
+                self._chat.append_system_message("No parked previous session to restore.")
+        except Exception:
+            pass
 
     def _build_system_prompt(self):
         """SYNAPSE's identity + the 'act via tools, don't narrate' steering.
