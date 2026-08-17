@@ -1,4 +1,4 @@
-# Synapse Studio Deployment Guide
+﻿# Synapse Studio Deployment Guide
 
 Deploy Synapse for multi-user studio environments with per-artist roles,
 session tracking, and optional TLS encryption.
@@ -91,7 +91,7 @@ Or configure it in their Claude Code MCP settings.
 
 ### Environment Variables
 
-Complete reference — every `SYNAPSE_*` environment variable read by production
+Complete reference â€” every `SYNAPSE_*` environment variable read by production
 code, enforced by `tests/test_m3_env_conformance.py` (a new env read without a
 row here fails CI; a stale row fails CI).
 
@@ -99,6 +99,8 @@ row here fails CI; a stale row fails CI).
 |----------|---------|---------|---------|-----------------------|
 | `SYNAPSE_APEX_MCP_ENDPOINT` | H22 native APEX MCP endpoint for the truth-contract provider; `mock` = in-repo mock (pre-drop) | `mock` | `python/synapse/providers/apex_mcp.py` | Both: stays `mock` until D-H22-4 verifies the shipped surface |
 | `SYNAPSE_SCOUT_SOURCES` | Path to the federated-source registry scout reads for `domain="apex"` (D-H22-2) | `python/synapse/server/scout_sources.json` | `cognitive/tools/scout.py` | Both: default in-repo path |
+| `SYNAPSE_PARM_CATALOG_ROOT` | Root directory of the per-build parameter-name catalog the parm gate validates against | `python/synapse/validation/catalogs` | `python/synapse/validation/catalog.py` | Both: in-repo default; studio may point at a shared build catalog |
+| `SYNAPSE_PARM_CATALOG_BUILD` | Houdini build whose catalog the gate loads; must match the running build or the gate degrades to advisory | running build | `python/synapse/validation/catalog.py` | Both: leave unset to track the running build |
 | `SYNAPSE_API_KEY` | Shared API key for WS/MCP auth; env beats `~/.synapse/auth.key` | unset (auth off) | `server/auth.py`, `mcp_server.py` | Studio: required for studio-lan/vpn; per-user keys in users.json preferred |
 | `SYNAPSE_AUTOSTART_HWEBSERVER` | `"1"` restores import-time start of the in-Houdini hwebserver endpoint | unset | `server/start_hwebserver.py` | Single-seat convenience |
 | `SYNAPSE_BRIDGE_FILE` | Override path of the self-healing port sidecar | `~/.synapse/bridge.json` | `server/bridge_endpoint.py` | Both |
@@ -114,10 +116,10 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_LEDGER_DIR` | agent.usd ledger records | `<repo>/.synapse/ledger` | `memory/ledger.py` | Studio: shared storage |
 | `SYNAPSE_LIVE_ENVELOPE` | `"0"`/`"false"`/`"off"` disables live-path IntegrityBlock envelope captures + blocks (latency escape hatch for the unresolved C6/T1 wake-floor hypothesis) | on | `server/integrity_envelope.py` | Both: leave on unless live latency demands shedding it |
 | `SYNAPSE_LOG_DIR` | Directory for synapse.log + telemetry.json + freeze dumps | `~/.synapse/logs` | `core/logfile.py`, `server/doctor.py` | Both |
-| `SYNAPSE_MAIN_INLINE_BUDGET_S` | Seconds a payload may run INLINE on the main thread (run_on_main fast path 2) before the overrun is logged at WARNING and appended to the guard ledger. Float; unparseable or non-numeric values silently fall back to the default. **Telemetry threshold only** — it never raises, never blocks, never changes control flow, so tuning it cannot break a render. Default `5.0` is the `freeze_chain` detection threshold (`resilience.Watchdog.freeze_threshold`): an inline payload that outruns the freeze detector *is* the freeze. Lower it to catch shorter GUI stalls; raise it on a box with legitimately slow cooks to quiet the log | `5.0` | `server/marshal_guard.py` | Both: leave unset |
-| `SYNAPSE_MARSHAL_GUARD` | Mode of the main-thread starvation guard (`forbid_main_thread_block`). Exactly three accepted values: `warn` (**default**) logs at ERROR with a full stack, writes a `freeze_stacks_*.txt` thread dump, records a ledger entry, and **does not raise**; `raise` does all of that and additionally raises `MainThreadStarvationError`; `off` records the ledger entry only — no log, no dump, no raise. Case-insensitive and whitespace-stripped; any other value degrades to `warn`. Read per call, not cached, so a live session can be flipped without a restart | `warn` | `server/marshal_guard.py` | Both: ship on `warn`; see the warn-vs-raise note below before flipping |
-| `SYNAPSE_MEMORY_BACKEND` | `jsonl` (default) / `moneta` / `shadow`; unknown values fall back to jsonl with a warning; `sqlite` is NOT live (dormant factory only). Selects the project memory store AND gates the Ledger→Moneta enrichment seam (`moneta`/`shadow` only) — one switch, both substrates | `jsonl` | `memory/store.py`, `memory/ledger.py` | Both |
-| `SYNAPSE_MONETA_USD_ROOT` | Diagnostics-only seam: the Moneta USD root layer (`cortex_root.usda`, or a directory containing it) that `moneta_provenance()`/`synapse_doctor` inspect for condition 4 — "are prims authored with typeName `MonetaMemory`". Read-only: it never redirects where memory is written. Unset means the check reports UNKNOWN (not "no typed prims"), which is the honest default today because `memory/moneta_store.py` builds `MonetaConfig` without `use_real_usd=True` and so authors no USD at all | unset | `memory/moneta_runtime.py` | Both: leave unset unless pointing the doctor at a real stage |
+| `SYNAPSE_MAIN_INLINE_BUDGET_S` | Seconds a payload may run INLINE on the main thread (run_on_main fast path 2) before the overrun is logged at WARNING and appended to the guard ledger. Float; unparseable or non-numeric values silently fall back to the default. **Telemetry threshold only** â€” it never raises, never blocks, never changes control flow, so tuning it cannot break a render. Default `5.0` is the `freeze_chain` detection threshold (`resilience.Watchdog.freeze_threshold`): an inline payload that outruns the freeze detector *is* the freeze. Lower it to catch shorter GUI stalls; raise it on a box with legitimately slow cooks to quiet the log | `5.0` | `server/marshal_guard.py` | Both: leave unset |
+| `SYNAPSE_MARSHAL_GUARD` | Mode of the main-thread starvation guard (`forbid_main_thread_block`). Exactly three accepted values: `warn` (**default**) logs at ERROR with a full stack, writes a `freeze_stacks_*.txt` thread dump, records a ledger entry, and **does not raise**; `raise` does all of that and additionally raises `MainThreadStarvationError`; `off` records the ledger entry only â€” no log, no dump, no raise. Case-insensitive and whitespace-stripped; any other value degrades to `warn`. Read per call, not cached, so a live session can be flipped without a restart | `warn` | `server/marshal_guard.py` | Both: ship on `warn`; see the warn-vs-raise note below before flipping |
+| `SYNAPSE_MEMORY_BACKEND` | `jsonl` (default) / `moneta` / `shadow`; unknown values fall back to jsonl with a warning; `sqlite` is NOT live (dormant factory only). Selects the project memory store AND gates the Ledgerâ†’Moneta enrichment seam (`moneta`/`shadow` only) â€” one switch, both substrates | `jsonl` | `memory/store.py`, `memory/ledger.py` | Both |
+| `SYNAPSE_MONETA_USD_ROOT` | Diagnostics-only seam: the Moneta USD root layer (`cortex_root.usda`, or a directory containing it) that `moneta_provenance()`/`synapse_doctor` inspect for condition 4 â€” "are prims authored with typeName `MonetaMemory`". Read-only: it never redirects where memory is written. Unset means the check reports UNKNOWN (not "no typed prims"), which is the honest default today because `memory/moneta_store.py` builds `MonetaConfig` without `use_real_usd=True` and so authors no USD at all | unset | `memory/moneta_runtime.py` | Both: leave unset unless pointing the doctor at a real stage |
 | `SYNAPSE_METRICS_INTERVAL` | Live-metrics sample interval, seconds (floor 0.5) | `2.0` | `server/live_metrics.py` | Both |
 | `SYNAPSE_MONITOR_EVENT_CAP` | Max buffered events per TOPs monitor stream | `5000` | `server/handlers_tops/_common.py` | Both |
 | `SYNAPSE_OPTIX_CACHE_DIR` | Override the Karma XPU OptiX kernel-cache directory the foreground-render guard probes for warmth; empty dir = cold cache = expect the fixed first-render OptiX compile stall, so foreground renders are refused | `%LOCALAPPDATA%/NVIDIA/OptixCache/Houdini<major>` | `server/foreground_guard.py` | Both: leave unset on a standard install; tests + non-standard installs override |
@@ -125,13 +127,13 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_PORT` | Bridge WS port fallback (sidecar wins) | `9999` | `mcp_server.py`, `server/bridge_endpoint.py`, `server/start_hwebserver.py`, panel | Both |
 | `SYNAPSE_PROVENANCE_DIR` | Floor provenance records | `<repo>/.synapse/provenance` | `core/floor_gate.py` | Studio: audited storage |
 | `SYNAPSE_PROVENANCE_MAX_RECORDS` | Provenance FIFO cap; <=0 or unparseable disables rotation | `5000` | `core/floor_gate.py` | Studio |
-| `SYNAPSE_RAG_ROOT` | TWO meanings — see note below table | `<repo>/rag` (recall) / `G:\HOUDINI21_RAG_SYSTEM` (scout, dev-only) | `server/handlers.py`, `cognitive/tools/scout.py` | Both; if set, ONLY to a repo-rag tree |
+| `SYNAPSE_RAG_ROOT` | TWO meanings â€” see note below table | `<repo>/rag` (recall) / `G:\HOUDINI21_RAG_SYSTEM` (scout, dev-only) | `server/handlers.py`, `cognitive/tools/scout.py` | Both; if set, ONLY to a repo-rag tree |
 | `SYNAPSE_RATE_LIMITER` | `"1"` enables the WS rate limiter, `"0"` disables | `1` (on) | `server/start_hwebserver.py` | Studio: never disable |
 | `SYNAPSE_REDUCED_MOTION` | `1`/`true`/`yes`/`on` minimizes panel motion (accessibility) | off | `panel/designsystem/tokens.py` | Single-seat (accessibility) |
 | `SYNAPSE_REPORTS_DIR` | `synapse_write_report` output dir | `<repo>/docs` | `server/handlers.py` | Studio: show storage |
 | `SYNAPSE_RESILIENCE` | `"0"` disables rate-limiter + circuit-breaker (CI escape hatch only) | enabled | `mcp/server.py`, `server/websocket.py` | Studio: never set 0 |
-| `SYNAPSE_RETINA_DONE_FALLBACK` | RETINA sentinel fallback: when the manifest can't be resolved, the husk post-frame `.done` sentinel drops an `inconclusive` marker here instead of failing silently (blueprint §7 honesty) | unset | `host/retina_sentinel_postframe.py` | Both: leave unset (diagnostic only) |
-| `SYNAPSE_RETINA_MANIFEST` | Path to the RETINA perception manifest the host writer just wrote; the carrier the husk post-frame `.done` sentinel reads to locate products (husk-level scripts take no CLI args — perception catalog item 2), set per-render by the host hook | unset | `host/retina_manifest.py` (write), `host/retina_sentinel_postframe.py` (read) | Both: set automatically per render |
+| `SYNAPSE_RETINA_DONE_FALLBACK` | RETINA sentinel fallback: when the manifest can't be resolved, the husk post-frame `.done` sentinel drops an `inconclusive` marker here instead of failing silently (blueprint Â§7 honesty) | unset | `host/retina_sentinel_postframe.py` | Both: leave unset (diagnostic only) |
+| `SYNAPSE_RETINA_MANIFEST` | Path to the RETINA perception manifest the host writer just wrote; the carrier the husk post-frame `.done` sentinel reads to locate products (husk-level scripts take no CLI args â€” perception catalog item 2), set per-render by the host hook | unset | `host/retina_manifest.py` (write), `host/retina_sentinel_postframe.py` (read) | Both: set automatically per render |
 | `SYNAPSE_ROOT` | Repo root for panel bootstrap + agent-health JSONL; set by `packages/synapse.json` in live Houdini | `C:\Users\User\SYNAPSE` (.pypanel) / `~` (agent_health) | `houdini/python_panels/synapse_panel.pypanel` (the shipped loader), `panel/agent_health.py` | Both |
 | `SYNAPSE_SCOUT_DRIFT_POLICY` | `warn` (default) / `refuse` on scout corpus drift | `warn` | `cognitive/tools/scout.py` | Studio: refuse |
 | `SYNAPSE_SHOW_CONFIG` | Path to a show.json config layer; precedence env > $HIP > $JOB > defaults | unset | `core/show_config.py` | Both |
@@ -142,7 +144,7 @@ row here fails CI; a stale row fails CI).
 
 #### Test-only variables
 
-Read only by the test suite — never by production code:
+Read only by the test suite â€” never by production code:
 
 | Variable | Meaning | Read by |
 |----------|---------|---------|
@@ -168,12 +170,12 @@ answered from real traffic before escalation is justified:
 2. **Does every recorded violation name a genuine main-thread marshal?** Each
    ledger entry carries its `where` call-site id and a `freeze_stacks_*.txt`
    dump; a real starvation shows a MAIN frame stack ending in
-   `hdefereval._queueDeferred` → `threading.Condition.wait`.
+   `hdefereval._queueDeferred` â†’ `threading.Condition.wait`.
 
 Flip to `raise` only once (1) holds across a representative sample and (2) is
 true of every entry that did fire. This is the same two-stage ratchet the repo
 uses for the suite baseline: ship the instrument, collect evidence, then raise
-the bar on human-reviewed evidence — never on the instrument's own say-so.
+the bar on human-reviewed evidence â€” never on the instrument's own say-so.
 
 `off` exists for the case where the guard itself is suspected of causing
 trouble in the field. It keeps the ledger (so the incident stays diagnosable)
@@ -190,10 +192,10 @@ park; it is not a recovery mechanism.
 One env var, two incompatible consumers:
 
 1. **recall / knowledge_lookup** (`server/handlers.py`) reads it as a
-   **repo-rag tree** root — expects
+   **repo-rag tree** root â€” expects
    `documentation/_metadata/semantic_index.json` plus
    `skills/houdini21-reference/`. Default: `<repo>/rag`.
-2. **scout** (`cognitive/tools/scout.py`) reads it as a **store** root —
+2. **scout** (`cognitive/tools/scout.py`) reads it as a **store** root â€”
    expects `corpus/` plus `semantic_index/`. Default:
    `G:\HOUDINI21_RAG_SYSTEM`. On the live MCP path this meaning is inert:
    `mcp_server.py` overrides scout's root to `<repo>/.synapse/scout_corpus`
@@ -201,7 +203,7 @@ One env var, two incompatible consumers:
    only applies in headless/dev/eval use.
 
 **Operator rule:** leave it unset, or set it ONLY to a repo-rag-tree path.
-Pointing it at a store-layout root silently empties recall — the
+Pointing it at a store-layout root silently empties recall â€” the
 KnowledgeIndex only checks that the directory exists. There is no split
 variable: no supported deployment needs the two meanings simultaneously.
 
@@ -210,35 +212,35 @@ variable: no supported deployment needs the two meanings simultaneously.
 The R1 scene-integrity hash (`shared/bridge.py`) hashes the COMPOSED Solaris/LOP
 stage before and after every stage-touching op. The default algorithm,
 `stage.Flatten().ExportToString()` + sha256, scales with **stage size**, not the
-mutation — a real per-op cost floor on large production stages.
+mutation â€” a real per-op cost floor on large production stages.
 
 | Variable | Meaning | Default | Read by |
 |----------|---------|---------|---------|
-| `SYNAPSE_STAGE_HASH_PRIM_THRESHOLD` | Prim-count gate above which the bridge stops running the full `Flatten()`+sha256 per hash and switches to the mode selected by `SYNAPSE_STAGE_HASH_LARGE_MODE`. At/below the threshold the hash is byte-identical to the original `Flatten()` algorithm. Non-negative ints only; a bad value falls back to the default. | `10000` (measured — `scripts/probe_stage_hash_floor.py`) | `shared/bridge.py` |
-| `SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD` | Authored-array-volume gate (total array elements x authored time samples, counted by a bounded probe that never reads element values). Trips the same `SYNAPSE_STAGE_HASH_LARGE_MODE` switch when a stage is prim-light but value-heavy — the H10 class (a 4-prim PointInstancer @ 2M instances cost 2017.9 ms/op while staying under the prim gate). The hash is full-`Flatten()` only when BOTH gates pass. Non-negative ints only; a bad value falls back to the default. | `500000` (measured 2026-08-02 — see the H10 constants block in `shared/bridge.py`) | `shared/bridge.py` |
-| `SYNAPSE_STAGE_HASH_LARGE_MODE` | What runs ABOVE the threshold. `reduced` (default) — a cheap reduced-detail signature (topology, typing, property structure, relationship targets; **no attribute values, no time samples, no metadata**), recorded honestly on the IntegrityBlock as `stage_hash_mode="reduced"` / `stage_hash_full_fidelity=false`. `structural` — the COMPLETE structural signature (every mutation class incl. values + time samples; measured NOT faster than `Flatten()`, a memory choice not a speed one). `full` — never degrade: `Flatten()` everywhere, the always-full override. | `reduced` | `shared/bridge.py` |
+| `SYNAPSE_STAGE_HASH_PRIM_THRESHOLD` | Prim-count gate above which the bridge stops running the full `Flatten()`+sha256 per hash and switches to the mode selected by `SYNAPSE_STAGE_HASH_LARGE_MODE`. At/below the threshold the hash is byte-identical to the original `Flatten()` algorithm. Non-negative ints only; a bad value falls back to the default. | `10000` (measured â€” `scripts/probe_stage_hash_floor.py`) | `shared/bridge.py` |
+| `SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD` | Authored-array-volume gate (total array elements x authored time samples, counted by a bounded probe that never reads element values). Trips the same `SYNAPSE_STAGE_HASH_LARGE_MODE` switch when a stage is prim-light but value-heavy â€” the H10 class (a 4-prim PointInstancer @ 2M instances cost 2017.9 ms/op while staying under the prim gate). The hash is full-`Flatten()` only when BOTH gates pass. Non-negative ints only; a bad value falls back to the default. | `500000` (measured 2026-08-02 â€” see the H10 constants block in `shared/bridge.py`) | `shared/bridge.py` |
+| `SYNAPSE_STAGE_HASH_LARGE_MODE` | What runs ABOVE the threshold. `reduced` (default) â€” a cheap reduced-detail signature (topology, typing, property structure, relationship targets; **no attribute values, no time samples, no metadata**), recorded honestly on the IntegrityBlock as `stage_hash_mode="reduced"` / `stage_hash_full_fidelity=false`. `structural` â€” the COMPLETE structural signature (every mutation class incl. values + time samples; measured NOT faster than `Flatten()`, a memory choice not a speed one). `full` â€” never degrade: `Flatten()` everywhere, the always-full override. | `reduced` | `shared/bridge.py` |
 
 > **The gate is real since 2026-08-01** (BRIDGE-FLOOR). Measured on the dev
 > workstation (pxr 0.26.5, median of 3): the per-op `Flatten()` envelope (2
-> hashes) costs ~6ms at 100 prims, 0.6–0.9s at 10k, 6.9–7.7s at 100k — a per-op
+> hashes) costs ~6ms at 100 prims, 0.6â€“0.9s at 10k, 6.9â€“7.7s at 100k â€” a per-op
 > floor scaling with stage size, not the mutation. The reduced envelope holds
 > ~175ms at 10k and ~1.8s at 100k, independent of authored value volume. The
 > honest tradeoff: above the threshold, **value-only edits hash as `no_change`**
-> — every affected IntegrityBlock says so (`stage_hash_full_fidelity=false`), and
+> â€” every affected IntegrityBlock says so (`stage_hash_full_fidelity=false`), and
 > both hashes of an op always use the same algorithm (mode pinned at
 > `scene_hash_before`). Set `SYNAPSE_STAGE_HASH_LARGE_MODE=full` to restore
 > full fidelity everywhere; use `scene_hash_ms` telemetry (`scene_hash_stats()`,
 > surfaced in `telemetry_dump`) to see what the choice costs on your stages.
 > **To see how often the gate actually fired on your stages**, read
 > `stage_hash_reduced_ops` and `composition_checks_reduced_ops` from
-> `LosslessExecutionBridge.operation_stats()` (CLAUDE.md §16.2) — lifetime
+> `LosslessExecutionBridge.operation_stats()` (CLAUDE.md Â§16.2) â€” lifetime
 > counters, so operation-log eviction cannot age them out. Zero means the gate
 > never degraded a hash this session; a non-zero count is the honest answer to
 > "could a value-only edit have been missed?" (R306).
 > The same threshold also sheds `_verify_composition`'s inherit/specialize
 > sweep on oversized stages (recorded as `composition_checks_reduced=true`);
-> the per-prim reference/payload checks — the composition anchor itself —
-> always run. The sweep shed is keyed on the PRIM threshold only — the
+> the per-prim reference/payload checks â€” the composition anchor itself â€”
+> always run. The sweep shed is keyed on the PRIM threshold only â€” the
 > array-volume gate affects the stage hash, never composition validation.
 >
 > This variable is read in `shared/`, outside the studio env-var conformance scanner
@@ -290,13 +292,13 @@ Clients connect via `wss://` instead of `ws://` when TLS is enabled.
 
 1. `SYNAPSE_ENCRYPTION_KEY` env var (priority 1; a base64 Fernet key).
 2. `~/.synapse/encryption.key` keyfile.
-3. Auto-generate — writes `encryption.key` + an escrow copy
+3. Auto-generate â€” writes `encryption.key` + an escrow copy
    `encryption.key.bak` with a one-time loud backup warning (owner-only
    permissions, best-effort).
 
 ### Single-seat warning
 
-The memory store lives at `<hip_dir>/.synapse/` — on whatever storage
+The memory store lives at `<hip_dir>/.synapse/` â€” on whatever storage
 holds the hip. The auto-generated key lives **per-user** in `~/.synapse/`.
 On shared storage, seat B opening the shot loads **degraded**:
 recall/search return empty (**amnesia, not an error dialog**), every
@@ -316,13 +318,13 @@ Store it in the studio secret store; the studio launcher/wrapper injects
 `SYNAPSE_ENCRYPTION_KEY` into every seat's Houdini environment. Because
 the env var beats the keyfile, no per-seat `~/.synapse` cleanup is needed.
 Windows caveat: the variable must be set at a level Houdini inherits
-(launcher or SYSTEM scope) — not a terminal-scoped `set`.
+(launcher or SYSTEM scope) â€” not a terminal-scoped `set`.
 
-### Rotation and escrow — what actually exists
+### Rotation and escrow â€” what actually exists
 
 There is **no re-encryption tool**. Changing the key mid-show orphans
 existing stores (loud, refused saves) until the old key is restored. The
-`.bak` escrow is written **only** for auto-generated keys — an
+`.bak` escrow is written **only** for auto-generated keys â€” an
 env-provisioned show key gets no `.bak`; escrowing the show key is the
 secret store's job. The `key.fingerprint` sidecar (8-hex sha256 prefix,
 plaintext, non-secret) is stamped on every save so the next load detects
@@ -330,7 +332,7 @@ a changed key **before** any rewrite.
 
 ### Verifying a seat
 
-Run `synapse_doctor` — its `memory_key_fingerprint` check compares the
+Run `synapse_doctor` â€” its `memory_key_fingerprint` check compares the
 active key's fingerprint against the store sidecar and reports
 match/mismatch with remediation (see docs/studio/DIAGNOSTICS.md).
 
@@ -354,7 +356,7 @@ For studios with proprietary scenes, consider:
 The panel worker loop is bounded at **25 tool-use iterations per turn**
 (`synapse/panel/claude_worker.py::_MAX_TOOL_ITERATIONS`). There is **no
 token/dollar budget** and the worker does not measure token usage. Per the
-2026-06-09 hardening report this is accepted for **single-seat use only** —
+2026-06-09 hardening report this is accepted for **single-seat use only** â€”
 a per-run monetary budget is a prerequisite for any unattended or
 multi-seat use.
 
@@ -371,14 +373,14 @@ multi-seat use.
 - Raising `max_wall_clock_seconds` in the payload requires raising the
   **client** timeout in step, or the client abandons a run the server will
   still finish.
-- Worst-case render work = `max_iterations × frames × (1 + per-frame
+- Worst-case render work = `max_iterations Ã— frames Ã— (1 + per-frame
   retries)`; the per-frame retry default is 3.
 
 ### Kill switches
 
 - `synapse_render_farm_cancel` reaches **both** the running farm sequence
   and a running autonomous driver. Signal semantics: the in-flight frame
-  finishes first — confirm via `synapse_render_farm_status`. The command
+  finishes first â€” confirm via `synapse_render_farm_status`. The command
   deliberately bypasses the mutation lock and rate limiting so it cannot
   queue behind the very render it cancels.
 - The panel worker's stop is `ClaudeWorker.abort()` (the panel Stop button).
