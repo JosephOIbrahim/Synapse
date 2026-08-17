@@ -1,0 +1,59 @@
+{
+  "leg": "W8-SSHIP",
+  "status": "green_with_findings",
+  "band": "TRUTH",
+  "branch": "wave8/sship",
+  "base": "327f52fd672b5cda334c8a1eb5c51df655f85ba2",
+  "product_head_sha": "9c3fa9bc1e8c0ce093d9052944bae6a7093e5639",
+  "product_files": ["harness/notes/W8-SSHIP-evidence.md"],
+  "observed_head_at_recon": "v5.51.0-11-g327f52fd",
+  "bus_findings_posted": 9,
+  "acceptance": [
+    {
+      "predicate": "findings ranked P0/P1/P2 with file:line anchors, receipt committed on own branch",
+      "verdict": "pass",
+      "evidence": "9 ranked findings below, each with a file:line anchor; evidence dossier committed at 9c3fa9bc on wave8/sship (ahead:1 of base 327f52fd); this receipt is the closing commit."
+    },
+    {
+      "predicate": "every claim traced to first-hand observation or named UNKNOWN",
+      "verdict": "pass",
+      "evidence": "Every finding cites a first-hand Read/Grep/Bash observation with anchor. Two items explicitly named UNKNOWN: (1) headless-greenness of scripted gates G2/G3/G4/G5-machine (read the checks.py:2401 verdict emitter, not a live checks.py run; release_readiness_verdict.json is gitignored so no committed sample); (2) no P0 substantiated first-hand — recorded as observation, not a manufactured pass."
+    }
+  ],
+  "targets": {
+    "g1_g9_automation_map": "release-READINESS axis (G1..G10), NOT the H22 gap-blueprint G-axis; the collision is documented at docs/SCENE_GROUNDING_CONTRACT.md:13. Verdict emitter harness/verify/checks.py:2401-2410; human receipts harness/state/release_receipts.json. Zero of it runs in CI — entirely ritual-time. ~4 scripted (G2/G3/G4/G5-machine), 6 pure-human GUI (G1/G5-human/G6/G7/G8/G9).",
+    "version_sync": "sync_version.py (6 surfaces) is wired to NOTHING automated (grep of .github/orchestrate/githooks empty); runs only at RELEASE_CARD.md:13 --write and tag_release.py:92 --check gate. Drift IS caught in CI, by the independent re-impl tests/test_phase0c_doc1_version_conformance.py:184 (not by the script). First-hand: --check = PASS, all 6 CONFORM at 5.51.0. Blind spot: README.md:11 'v5.50.0 is latest' note is unguarded and now stale (v5.51.0 tagged).",
+    "support_matrix": "Every build-specific row is tested-once (hython/GUI receipt) or asserted/pending; ZERO rows tested-in-CI (no Houdini, no pxr in CI). docs/SUPPORT_MATRIX.md honest (pending != pass); nothing re-checks a build claim automatically.",
+    "ci_and_distribution": "CI = ubuntu+macos x py3.11/3.14, pytest -m 'not needs_houdini' (ci.yml:109). First-hand: 6763 collected / 6678 run / 85 deselected (7 hou+pxr modules). NOT covered: the 85 live tiers; the GUI/panel class (skips silently-as-pass, no PySide dep); Windows (production platform); the real runtime (CI uses fake H21 hou); the deployment interpreter (H22=py3.13, neither CI leg). Distribution: pure-Python no-compile, but Moneta is a private repo (jsonl fallback for non-builders), no wheel/PyPI/zip-builder, vendored-wheel ABI fragility off cp311/cp313."
+  },
+  "findings": [
+    {"rank": "P1", "id": "F1-GUI-SKIP-AS-PASS", "claim": "CI GUI/panel class skips silently and a skip reads as PASS. PySide is not a declared dep (pyproject grep empty); synapse_panel.py's top-level PySide import makes tests/panel/* skip on stock CI. qt_stub_window.py documents historical cross-file-residue phantom passes. These modules are NOT in the 85 needs_houdini deselections (AST marker keys only hou/pxr). Real graphical H22 panel behaviour NEVER run.", "anchor": "tests/panel/test_docking.py:21-23", "corroborating": ["tests/qt_stub_window.py:1-16", "docs/reviews/h22-per-context-postmortem-2026-07-17.md:426", "pyproject.toml (no PySide)"]},
+    {"rank": "P1", "id": "F2-SHIP-GATES-RITUAL-ONLY", "claim": "The g1-g9 ship-gate verdict is entirely ritual-time; zero runs in CI. release_readiness_verdict.json is gitignored — computed live by checks.py when the OPERATOR'S-CARD driver runs the ritual, never committed, never CI. 6 of the 10 gates are irreducibly pure-human GUI acts.", "anchor": ".gitignore:148", "corroborating": ["harness/verify/checks.py:2401-2410", "harness/state/release_receipts.json", "harness/notes/h22/OPERATORS-CARD-release-ritual.md:21-26"]},
+    {"rank": "P1", "id": "F3-SUPPORT-MATRIX-NONE-IN-CI", "claim": "Every SUPPORT_MATRIX build-specific row is tested-once (hython/GUI receipt) or asserted/pending; ZERO rows tested-in-CI, because CI has no Houdini and no pxr. The live tier test_live_wiring.py (PINNED_BUILD=22.0.368) is deselected in CI. Nothing re-checks a build claim automatically.", "anchor": "docs/SUPPORT_MATRIX.md:7", "corroborating": ["tests/solaris/test_live_wiring.py:44", "harness/verify/checks.py:102"]},
+    {"rank": "P1", "id": "F4-DISTRIBUTION-GAPS", "claim": "Non-builder distribution: no compile needed, but (a) Moneta is a separate PRIVATE repo (deploy-key gated) so public users get jsonl fallback not the advertised substrate; (b) no wheel/PyPI and no zip-builder script — the ZIP is only GitHub's auto source-archive; (c) _vendor ships cp311+cp313 only, a mismatched embedded Python silently inactivates the vendor tree.", "anchor": "docs/MONETA_FOLLOWUPS.md:95", "corroborating": ["docs/getting-started/installation.md", "tests/conftest.py:507", "README.md install section"]},
+    {"rank": "P1", "id": "F5-VERSION-DRIFT-DUPLICATED-NOT-SCRIPT", "claim": "VERSION drift IS caught in CI, but by an independent re-implementation, not by sync_version.py. The script is wired to nothing automated (grep empty); it runs only at the release ritual (--write) and inside tag_release.py (--check gate). The script's own output is never asserted in CI.", "anchor": "tests/test_phase0c_doc1_version_conformance.py:184", "corroborating": ["scripts/sync_version.py:41-53", "scripts/tag_release.py:92", "docs/RELEASE_CARD.md:13"]},
+    {"rank": "P1", "id": "F6-GRECEIPTS-PREDATE-HEAD", "claim": "The v5.51.0 g1-g9 human receipts pin PRE-tag master SHAs and are dated 2026-08-16; HEAD is now 11 commits past the v5.51.0 tag, so the current tree carries no fresh acceptance receipts. A tag cut from HEAD now would ship against stale g-gate evidence.", "anchor": "harness/state/release_receipts.json:6", "corroborating": ["git describe = v5.51.0-11-g327f52fd", "tag v5.51.0 subject 'release(bump): 5.51.0 ... verdict PASS'"]},
+    {"rank": "P2", "id": "F7-G-NUMBERING-COLLISION", "claim": "Two different G1-G9 axes share one label: ship release-gate G5=Lifecycle vs H22 gap-blueprint G5=scene-grounding. A reader can conflate the grounding contract with the lifecycle release gate. Human decision to rename one axis is open.", "anchor": "docs/SCENE_GROUNDING_CONTRACT.md:13", "corroborating": ["docs/reviews/synapse-h22-readiness-2026-07-10.md:486-495", "docs/SYNAPSE_H22_GAP_BLUEPRINT.md:125"]},
+    {"rank": "P2", "id": "F8-README-LATEST-TAG-STALE", "claim": "sync_version tracks only the README <sub>vX.Y.Z banner, not the 'tags: v5.50.0 is latest' note on the same line. That note is stale (v5.51.0 is tagged), so the README self-contradicts. No surface guards the latest-tag prose claim.", "anchor": "README.md:11", "corroborating": ["scripts/sync_version.py:51", "git tag"]},
+    {"rank": "P2", "id": "F9-TEST-COUNT-STALE", "claim": "The '6587-test verify' figure is stale. First-hand collect on wave8/sship: 6763 tests collected; CI subset = 6678 run / 85 deselected across 7 modules. installation.md:60 '~4,700 collected / ~100 skip' is also stale. The count is asserted in docs, never derived.", "anchor": ".github/workflows/ci.yml:109", "corroborating": ["harness/bastion/PROGRAM.md:27", "docs/getting-started/installation.md:60"]}
+  ],
+  "for_ruling": [
+    {"item": "G-numbering collision (F7): confirm the shared 'G5' label or rename one axis (e.g. gap -> GAP-5). SCENE_GROUNDING_CONTRACT.md:13 already flags this as a human decision.", "owner": "Joe"},
+    {"item": "Should sync_version gain a 7th check (or a conformance-test assertion) guarding the README 'latest tag' prose (F8), or is that note intentionally hand-maintained?", "owner": "Joe"},
+    {"item": "Should the asserted doc counts (6587 / ~4,700, F9) be replaced by a derived-and-pinned figure so they cannot drift?", "owner": "Joe"},
+    {"item": "Policy: must the pure-human g1-g9 gates be re-run before a tag is cut from a HEAD that is N commits past the last ritual (F6)? Today nothing enforces re-run.", "owner": "Joe"},
+    {"item": "GUI skip-as-pass (F1): accept as a known, documented, human-backstopped gap, or add a CI guard that FAILS (not skips) when PySide is absent / asserts the panel suite ran under hython?", "owner": "Joe + CTO"}
+  ],
+  "spawn": [
+    {
+      "id": "W8-SSHIP-SPAWN-SILENTSKIP",
+      "class": "probe",
+      "band": "TRUTH",
+      "name": "silent-skip surface probe: enumerate every test module that SKIPS (not deselects) on stock CI and reads as pass",
+      "readonly": true,
+      "targets": ["Enumerate every module that collects on stock CI but skips at runtime (PySide-gated, moneta-gated, env-gated) and would exit 0 as PASS — quantify the silent-skip surface BEYOND the 85 needs_houdini deselections. Distinguish loud-deselect (needs_houdini) from silent-skip. Output a count + per-module reason + anchor. First-hand only."],
+      "rationale": "F1 confirmed the panel class skips-as-pass qualitatively; the full silent-skip surface (the real optional-dep + GUI coverage hole) was not quantified. This is a pure read-only probe."
+    }
+  ],
+  "notes": "Read-only ship scout. No files touched outside harness/notes/ (own leg). 9 findings posted to the wave8 bus addressed to W8-LIBR as they landed (no batching). Base 327f52fd; product commit 9c3fa9bc; this receipt is the closing commit."
+}
