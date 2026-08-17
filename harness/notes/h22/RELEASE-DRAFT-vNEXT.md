@@ -24,6 +24,8 @@ Draft release notes for the build after v5.50.0. Publish is gated at ritual step
 
 One operator close-pass was performed per R135 and recorded openly in the W6-HCRX verdict: the GATE leg's own receipt commit and two missing RELEASE lines - the wave's thesis, caught live on its own authors by its own gate.
 
+The gates are not just merged - they are the running supervisor. On first boot of the hardened orchestrator it retroactively audited the full 22-leg wave history and held eight historical legs at `closing` with exact-missing messages (unposted RELEASE lines, one uncommitted receipt), touching nothing on master. The enforcement is live, honest about the past, and on duty for every future wave.
+
 **Substrate progress.** The compiled parameter-name catalog (W5-CATALOG) and the parameter gate (W5-PARMGATE) are complete; the cook-verify measurement layer (W5-MEASURES) is in flight with its crucible (W5-WCRUX) queued behind it. Those land in the next update to this draft.
 
 ## Honest state
