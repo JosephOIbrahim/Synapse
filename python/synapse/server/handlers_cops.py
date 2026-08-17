@@ -23,6 +23,7 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.aliases import resolve_param, resolve_param_with_default
+from ..validation.parm_gate import gated_set
 from .handler_helpers import _HOUDINI_UNAVAILABLE
 
 _LOG = logging.getLogger(__name__)
@@ -1417,6 +1418,7 @@ class CopsHandlerMixin:
                 raise ValueError(f"Couldn't find COP network '{parent_path}'")
 
             created_any = False
+            kernel_gate = None
             try:
                 with hou.undos.group("synapse_cops_reaction_diffusion"):
                     # Create solver
@@ -1446,20 +1448,27 @@ class CopsHandlerMixin:
                     if opencl_node is not None:
                         opencl_node.setInput(0, block_begin)
 
-                        # Set kernel code (Gray-Scott R-D)
-                        kernel_parm = opencl_node.parm("kernelcode") or opencl_node.parm("code")
-                        if kernel_parm is not None:
-                            kernel_code = (
-                                f"// Gray-Scott Reaction-Diffusion\n"
-                                f"// F={feed_rate}, k={kill_rate}, "
-                                f"Da={diffusion_a}, Db={diffusion_b}\n"
-                                f"#define F {feed_rate}f\n"
-                                f"#define K {kill_rate}f\n"
-                                f"#define DA {diffusion_a}f\n"
-                                f"#define DB {diffusion_b}f\n"
-                                f"// PLACEHOLDER — no kernel body; parameters only, node will not simulate\n"
-                            )
-                            kernel_parm.set(kernel_code)
+                        # Author the kernel through the Parm Gate (W5-PARMGATE).
+                        # 'kernelcode' is validated against the H22 opencl COP
+                        # catalog BEFORE the write; the old `or parm("code")`
+                        # hedge is deleted -- 'code' does not exist on the H22
+                        # opencl COP (verified against rag/catalog/h22.0.400/
+                        # Cop.json: opencl has 'kernelcode', not 'code'). Runs
+                        # inside the already-open undo group; the gate opens no
+                        # undo path of its own. A hallucinated name would raise a
+                        # catchable ParmGateError with a suggestion rather than
+                        # silently hedging onto a phantom parm.
+                        kernel_code = (
+                            f"// Gray-Scott Reaction-Diffusion\n"
+                            f"// F={feed_rate}, k={kill_rate}, "
+                            f"Da={diffusion_a}, Db={diffusion_b}\n"
+                            f"#define F {feed_rate}f\n"
+                            f"#define K {kill_rate}f\n"
+                            f"#define DA {diffusion_a}f\n"
+                            f"#define DB {diffusion_b}f\n"
+                            f"// PLACEHOLDER — no kernel body; parameters only, node will not simulate\n"
+                        )
+                        kernel_gate = gated_set(opencl_node, {"kernelcode": kernel_code})
 
                     # Wire: opencl -> block_end
                     last_node = opencl_node if opencl_node else block_begin
@@ -1494,6 +1503,12 @@ class CopsHandlerMixin:
                 "resolution": resolution,
                 "scaffolded": True,
                 "cooked": False,
+                # Surface the Parm Gate's verdict so a dropped kernel write is
+                # never a silent no-op at the handler boundary: kernel_written
+                # is False (and kernel_skipped names it) when the created node
+                # had no 'kernelcode' parm to author.
+                "kernel_written": bool(kernel_gate and kernel_gate.get("set")),
+                "kernel_skipped": list((kernel_gate or {}).get("skipped", [])),
                 "note": (
                     "Solver graph scaffolded with a placeholder #define-only "
                     "kernel — no kernel body authored and the node was not "
@@ -1540,6 +1555,7 @@ class CopsHandlerMixin:
             if parent is None:
                 raise ValueError(f"Couldn't find COP network '{parent_path}'")
 
+            kernel_gate = None
             with hou.undos.group("synapse_cops_pixel_sort"):
                 # Create OpenCL node for pixel sorting
                 sort_node = parent.createNode("opencl", name)
@@ -1554,19 +1570,20 @@ class CopsHandlerMixin:
                     if input_node is not None:
                         sort_node.setInput(0, input_node)
 
-                # Set kernel with sorting parameters
-                kernel_parm = sort_node.parm("kernelcode") or sort_node.parm("code")
-                if kernel_parm is not None:
-                    kernel_code = (
-                        f"// Pixel Sort: {sort_by}, {direction}\n"
-                        f"// Threshold: [{threshold_low}, {threshold_high}]\n"
-                        f"#define SORT_BY_{sort_by.upper()} 1\n"
-                        f"#define DIRECTION_{direction.upper()} 1\n"
-                        f"#define THRESHOLD_LOW {threshold_low}f\n"
-                        f"#define THRESHOLD_HIGH {threshold_high}f\n"
-                        f"// PLACEHOLDER — no kernel body; parameters only, node will not sort\n"
-                    )
-                    kernel_parm.set(kernel_code)
+                # Author the kernel through the Parm Gate (W5-PARMGATE): same
+                # cure as reaction_diffusion -- the `or parm("code")` phantom
+                # hedge is deleted, 'kernelcode' is catalog-validated before the
+                # write, inside the already-open undo group.
+                kernel_code = (
+                    f"// Pixel Sort: {sort_by}, {direction}\n"
+                    f"// Threshold: [{threshold_low}, {threshold_high}]\n"
+                    f"#define SORT_BY_{sort_by.upper()} 1\n"
+                    f"#define DIRECTION_{direction.upper()} 1\n"
+                    f"#define THRESHOLD_LOW {threshold_low}f\n"
+                    f"#define THRESHOLD_HIGH {threshold_high}f\n"
+                    f"// PLACEHOLDER — no kernel body; parameters only, node will not sort\n"
+                )
+                kernel_gate = gated_set(sort_node, {"kernelcode": kernel_code})
 
                 sort_node.moveToGoodPosition()
                 try:
@@ -1582,6 +1599,10 @@ class CopsHandlerMixin:
                 "threshold_high": threshold_high,
                 "scaffolded": True,
                 "cooked": False,
+                # Surface the Parm Gate's verdict (see reaction_diffusion): a
+                # dropped kernel write is observable, never a silent no-op.
+                "kernel_written": bool(kernel_gate and kernel_gate.get("set")),
+                "kernel_skipped": list((kernel_gate or {}).get("skipped", [])),
                 "note": (
                     "Sort node scaffolded with a placeholder #define-only "
                     "kernel — no kernel body authored and the node was not "

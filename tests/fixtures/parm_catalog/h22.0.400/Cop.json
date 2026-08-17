@@ -1,0 +1,88 @@
+{
+ "build": "22.0.400",
+ "category": "Cop",
+ "note": "W5-PARMGATE test fixture: faithful tiny subset of the real 22.0.400 Cop.json. Real parm names only; phantom 'code' deliberately absent.",
+ "schema": "node_catalog_live/v1",
+ "types": {
+  "block_end": {
+   "deprecated": false,
+   "label": "Block End",
+   "parms": [
+    {
+     "data_type": "Int",
+     "default": [
+      1
+     ],
+     "name": "iterations",
+     "type": "Int"
+    },
+    {
+     "data_type": "Int",
+     "default": false,
+     "name": "simulate",
+     "type": "Toggle"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      1
+     ],
+     "name": "startframe",
+     "type": "Int"
+    }
+   ]
+  },
+  "opencl": {
+   "deprecated": false,
+   "label": "OpenCL",
+   "parms": [
+    {
+     "data_type": "String",
+     "default": [
+      ""
+     ],
+     "name": "kernelcode",
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      "generickernel"
+     ],
+     "name": "kernelname",
+     "type": "String"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      ""
+     ],
+     "name": "kerneloptions",
+     "type": "String"
+    },
+    {
+     "data_type": "Int",
+     "default": 2,
+     "name": "filter",
+     "type": "Menu"
+    },
+    {
+     "data_type": "Int",
+     "default": [
+      1
+     ],
+     "name": "options_iterations",
+     "type": "Int"
+    },
+    {
+     "data_type": "String",
+     "default": [
+      ""
+     ],
+     "name": "input#_name",
+     "type": "String"
+    }
+   ]
+  }
+ }
+}
