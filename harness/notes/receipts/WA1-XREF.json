@@ -1,0 +1,75 @@
+{
+  "leg": "WA1-XREF",
+  "status": "green_with_findings",
+  "product_head": "ac2f8e1b3ccfa0ad2c022b4d1814c39d7398b393",
+  "base": "782b2376",
+  "runtime_consumed": true,
+  "runtime_artifact": "wavea1/truth : harness/autoresearch/runs/apex_basic_20260817_122650/apex_truth_22.0.400.json (build 22.0.400, complete 2286-callback registry)",
+  "acceptance": [
+    {
+      "predicate": "xref_help.py parses all APEX-related cache entries present at run time into the claim schema; parser tests green under stock pytest",
+      "verdict": "pass",
+      "evidence": "25 live cache entries (nodes/apex/* + nodes/sop/apex--* + nodes/lop/apexsoprigbuilder) parsed into HelpClaim (typed inputs/outputs, since, deprecation status, successor link, context, namespace). 42 tests green: `pytest tests/test_xref_help.py` (fixture cache entries, no live-cache dependency)."
+    },
+    {
+      "predicate": "apex_help_xref_<build>.json exists with per-node three-way verdicts: confirmed / undocumented / quarantine-candidate / type-mismatch; zero unclassified rows",
+      "verdict": "pass",
+      "evidence": "harness/autoresearch/runs/apex_help_xref_wa1_20260817/apex_help_xref_22.0.400.json (runtime CONSUMED, build 22.0.400). 55 rows: confirmed 17 / undocumented 27 / quarantine-candidate 2 / type-mismatch 0 / runtime-unknown 9; unclassified 0. HONEST NOTES: type-mismatch 0 is UNMEASURABLE not clean (apex_port_signature exposes arity but null port names/types; runtime_port_types_measurable=false). runtime-unknown 9 are all legitimately OUTSIDE TRUTH's probed type_exists subset (generic SOP types bonegenerator/skeleton/null + unprobed apex:: SOP/version variants); never falsely called absent."
+    },
+    {
+      "predicate": "any doc-present-runtime-absent name is filed in harness/phantoms/ per the existing workflow, with both anchors",
+      "verdict": "pass",
+      "evidence": "harness/phantoms/XREF-CANDIDATES.md filed 2 candidates, each with BOTH anchors (cache file + runtime catalog entry). Log entry, never a deletion (phantoms SPEC discipline). Zero candidates against an unconsumed runtime is the honest zero; here the runtime WAS consumed and 2 real candidates surfaced."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "Quarantine candidate: component::MappedConstraints documented under nodes/apex/ but absent from the complete 2286-callback registry. Namespace 'component' has ZERO registered callbacks -> likely a KineFX rig component (non-callback concept), NOT a phantom. Human disposition: doc-fix vs quarantine.",
+      "anchor": "docs: nodes/apex/component--MappedConstraints-.json | runtime: apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:* | ledger: harness/phantoms/XREF-CANDIDATES.md"
+    },
+    {
+      "claim": "Quarantine candidate: controlgadget::SnapXFormToAxes documented under nodes/apex/ but absent from the complete callback registry. Namespace 'controlgadget' has ZERO registered callbacks -> likely a control-gadget concept, NOT a phantom.",
+      "anchor": "docs: nodes/apex/controlgadget--SnapXFormToAxes.json | runtime: apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:* | ledger: harness/phantoms/XREF-CANDIDATES.md"
+    },
+    {
+      "claim": "rig::CurveIK is DEPRECATED in docs (successor rig::SampleSplineTransforms) but PRESENT (hidden) in the runtime registry -> confirmed-deprecated, NOT a phantom. Runtime truth over the docs referee: a deprecated-but-registered node is not quarantined.",
+      "anchor": "docs: nodes/apex/rig--CurveIK.json | runtime: apex_port_signature:rig::CurveIK (exists=true, is_hidden=true)"
+    },
+    {
+      "claim": "Cache internal-name inconsistency (posted to bus for TRUTH/WIRE): rig--SplineInterpolateTransformsToArray-2.0.json bakes ::2.0 into attrs.internal while its v2.0 siblings do not. Any version-fold onto internal must be idempotent or it double-folds to ::2.0::2.0 and never matches the runtime spelling. xref_help._strip_embedded_version normalizes this.",
+      "anchor": "OneDrive/.../houdini22.0/config/Help/cache/nodes/apex/rig--SplineInterpolateTransformsToArray-2.0.json | harness/autoresearch/xref_help.py:_strip_embedded_version"
+    },
+    {
+      "claim": "Recipes read-only scan (posted to bus for RECIPE): 24 emitted node types (13 distinct), ZERO apex::rig::/apex::sop::/apex::autorig:: phantom-namespaced names. Against consumed runtime: several confirmed/undocumented; generic bonegenerator/skeleton/null runtime-unknown (outside probed set). Zero recipe names proved phantom. One writer per surface: XREF flags, RECIPE fixes.",
+      "anchor": "python/synapse/panel/apex_recipes.py | harness/autoresearch/xref_help.py:scan_recipe_names"
+    },
+    {
+      "claim": "Self-report (provenance): three adversarial-verification passes caught and fixed 4 real defects before commit - (1) version double-fold ::2.0::2.0 [MAJOR, would false-quarantine a real v2.0 node], (2) junk membership value truthiness-coercion [MAJOR, could fabricate a quarantine], (3) non-membership invoke_geo_hash entry polluting/overwriting the membership surface [minor-latent], (4) both-anchor guard now code-enforced. Each is regression-pinned by a test.",
+      "anchor": "tests/test_xref_help.py (test_parse_embedded_version_internal_does_not_double_fold, test_junk_membership_does_not_flip_consumed_or_quarantine, test_non_membership_entries_do_not_pollute_or_overwrite, test_quarantine_requires_both_anchors_in_code)"
+    }
+  ],
+  "for_ruling": [
+    "Disposition of the 2 quarantine candidates (component::MappedConstraints, controlgadget::SnapXFormToAxes): both are documented under the callback help dir yet absent from the callback registry because their namespaces are not callback namespaces. Likely non-callback concepts (rig component / control gadget) rather than phantoms - the human decides doc-fix vs quarantine per the phantoms workflow. XREF flags; it does not judge.",
+    "The runtime witness (apex_truth) lives on branch wavea1/truth; XREF consumed it cross-worktree via the bus-posted path. If wave close requires the runtime artifact co-resident on this branch, that is an orchestration/merge decision, not an XREF edit."
+  ],
+  "spawn": [
+    {
+      "id": "WA1-XREF-CORPUS",
+      "name": "C3-recall: point the help-cache parser at the shipped help archives ($HFS/houdini/help) for full recall",
+      "band": "BUILD",
+      "class": "probe",
+      "note": "Blueprint C3 caveat: the local cache is high-precision/low-recall (~25 entries); the SAME xref_help parser can be pointed at the shipped help corpus for the full APEX surface. The cache proved the mechanism; this raises recall so doc-side coverage matches the runtime catalog.",
+      "targets": ["harness/autoresearch/xref_help.py: add a --help-archive source that parses $HFS/houdini/help APEX pages into HelpClaim via the same schema", "regenerate the xref against the full corpus; compare candidate set vs the cache-only run"],
+      "rationale": "Low-recall means many runtime-present callbacks show as runtime-unknown/undocumented only because the local cache never indexed them; the archive closes that gap without changing the runtime authority."
+    },
+    {
+      "id": "WA1-XREF-PORTTYPES",
+      "name": "C3-porttypes: enrich apex_port_signature to expose typed port names so type-mismatch becomes measurable",
+      "band": "BUILD",
+      "class": "probe",
+      "note": "apex_port_signature returns arity but null port names/types (even for non-hidden callbacks), so the referee's type-mismatch dimension is currently UNMEASURABLE. A probe that resolves typed port signatures (apex.Graph port introspection) would let the highest-value finding class (doc-vs-runtime port-type mismatch) actually fire.",
+      "targets": ["harness/autoresearch/probes.py (TRUTH-owned): apex_port_signature to populate port name+type where the API exposes them", "xref_help._compare_ports already consumes typed ports once present"],
+      "rationale": "Type-mismatch is named the highest-value C3 finding; it can only fire when the runtime exposes port types. This is a TRUTH-side probe enhancement XREF consumes for free."
+    }
+  ]
+}

@@ -1,0 +1,1995 @@
+{
+  "meta": {
+    "artifact": "apex_help_xref",
+    "leg": "WA1-XREF",
+    "schema_version": "1.0.0",
+    "generated": "2026-08-17T16:46:00.541945+00:00",
+    "runtime_build": "22.0.400",
+    "runtime_consumed": true,
+    "runtime_artifact": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wa1-truth\\harness\\autoresearch\\runs\\apex_basic_20260817_122650\\apex_truth_22.0.400.json",
+    "runtime_callback_catalog_size": 2286,
+    "runtime_callback_catalog_complete": true,
+    "runtime_port_types_measurable": false,
+    "cache_root": "C:\\Users\\User\\OneDrive\\Documents\\houdini22.0\\config\\Help\\cache",
+    "cache_config_version": "22.0",
+    "cache_entries_parsed": 25,
+    "recipe_names_scanned": 24,
+    "referee_caveat": "The help cache is HIGH-PRECISION, LOW-RECALL: it holds only locally-browsed pages, not the full product surface. Absence from the cache is NO-EVIDENCE, never product-absence. A quarantine candidate is emitted ONLY when the runtime was actually consumed (runtime_consumed=true); otherwise the runtime column is UNKNOWN and no node is called absent.",
+    "verdict_legend": {
+      "confirmed": "docs+runtime agree (membership)",
+      "type-mismatch": "docs+runtime present but a port type differs",
+      "undocumented": "runtime present, docs absent (low-recall gap)",
+      "quarantine-candidate": "docs present, runtime KNOWN-absent (deprecation/phantom)",
+      "runtime-unknown": "docs present, runtime UNKNOWN (apex_truth not yet consumed)"
+    }
+  },
+  "summary": {
+    "rows_total": 55,
+    "verdict_counts": {
+      "confirmed": 17,
+      "undocumented": 27,
+      "quarantine-candidate": 2,
+      "type-mismatch": 0,
+      "runtime-unknown": 9
+    },
+    "unclassified": 0,
+    "quarantine_candidates": 2,
+    "deprecated_in_docs": 1
+  },
+  "docs_claims": [
+    {
+      "node": "component::MappedConstraints",
+      "type_name": "component::MappedConstraints",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "component",
+      "version": "",
+      "since": "21.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [],
+      "outputs": [],
+      "ports_present": false,
+      "summary": "",
+      "source_file": "nodes/apex/component--MappedConstraints-.json"
+    },
+    {
+      "node": "controlgadget::SnapXFormToAxes",
+      "type_name": "controlgadget::SnapXFormToAxes",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "controlgadget",
+      "version": null,
+      "since": "21.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "xform",
+          "type": "Matrix4"
+        },
+        {
+          "name": "root_xform",
+          "type": "Matrix4"
+        },
+        {
+          "name": "axes_alignment",
+          "type": "Matrix4"
+        },
+        {
+          "name": "cursor_offset",
+          "type": "Vector3"
+        },
+        {
+          "name": "ray_dir",
+          "type": "Vector3"
+        },
+        {
+          "name": "ray_orig",
+          "type": "Vector3"
+        },
+        {
+          "name": "start_ray_dir",
+          "type": "Vector3"
+        },
+        {
+          "name": "start_ray_orig",
+          "type": "Vector3"
+        },
+        {
+          "name": "snap_angle_deg",
+          "type": "Float"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "xform",
+          "type": "Matrix4"
+        },
+        {
+          "name": "axis_geo",
+          "type": "Geometry"
+        },
+        {
+          "name": "snapped",
+          "type": "Bool"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Snaps a transform to the specified axes during a mouse drag.",
+      "source_file": "nodes/apex/controlgadget--SnapXFormToAxes.json"
+    },
+    {
+      "node": "geo::Lattice",
+      "type_name": "geo::Lattice",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "geo",
+      "version": "",
+      "since": "20.5",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "",
+          "type": "Geometry"
+        },
+        {
+          "name": "restgeo",
+          "type": "Geometry"
+        },
+        {
+          "name": "deformedgeo",
+          "type": "Geometry"
+        },
+        {
+          "name": "divsx",
+          "type": "Int"
+        },
+        {
+          "name": "divsy",
+          "type": "Int"
+        },
+        {
+          "name": "divsz",
+          "type": "Int"
+        },
+        {
+          "name": "group",
+          "type": "String"
+        },
+        {
+          "name": "interptype",
+          "type": "Int"
+        },
+        {
+          "name": "updatenmls",
+          "type": "Bool"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "Geometry"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Deforms geometry based on the reshaping of a control lattice.",
+      "source_file": "nodes/apex/geo--Lattice-.json"
+    },
+    {
+      "node": "rig::CombineParmTransform",
+      "type_name": "rig::CombineParmTransform",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "inputlocalxform",
+          "type": "Matrix4"
+        },
+        {
+          "name": "parentlocalscale",
+          "type": "Vector3"
+        },
+        {
+          "name": "xord",
+          "type": "Int"
+        },
+        {
+          "name": "rord",
+          "type": "Int"
+        },
+        {
+          "name": "t",
+          "type": "Vector3"
+        },
+        {
+          "name": "r",
+          "type": "Vector3"
+        },
+        {
+          "name": "s",
+          "type": "Vector3"
+        },
+        {
+          "name": "p",
+          "type": "Vector3"
+        },
+        {
+          "name": "pr",
+          "type": "Vector3"
+        },
+        {
+          "name": "scaleinheritance",
+          "type": "Int"
+        },
+        {
+          "name": "method",
+          "type": "Int"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "localxform",
+          "type": "Matrix4"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Combines an input transform matrix and a set of translation, rotation, and scale parameters into a new transform.",
+      "source_file": "nodes/apex/rig--CombineParmTransform-.json"
+    },
+    {
+      "node": "rig::ControlSpline",
+      "type_name": "rig::ControlSpline",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "cvs",
+          "type": "VariadicArg<Matrix4>"
+        },
+        {
+          "name": "twists",
+          "type": "VariadicArg<Float>"
+        },
+        {
+          "name": "order",
+          "type": "Int"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "geo",
+          "type": "Geometry"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Creates a spline of a given order using a list of CVs.",
+      "source_file": "nodes/apex/rig--ControlSpline-.json"
+    },
+    {
+      "node": "rig::ControlSplineFromArray",
+      "type_name": "rig::ControlSplineFromArray",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "cvs",
+          "type": "Matrix4Array"
+        },
+        {
+          "name": "twists",
+          "type": "FloatArray"
+        },
+        {
+          "name": "order",
+          "type": "Int"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "geo",
+          "type": "Geometry"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Creates a spline of a given order using an array of CVs.",
+      "source_file": "nodes/apex/rig--ControlSplineFromArray-.json"
+    },
+    {
+      "node": "rig::CurveIK",
+      "type_name": "rig::CurveIK",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": null,
+      "since": "20.0",
+      "status": "deprecated",
+      "successor": "rig::SampleSplineTransforms",
+      "successor_link": "/nodes/apex/rig--SampleSplineTransforms",
+      "inputs": [
+        {
+          "name": "curve",
+          "type": "Geometry"
+        },
+        {
+          "name": "curvexform",
+          "type": "Matrix4"
+        },
+        {
+          "name": "restlocal",
+          "type": "VariadicArg<Matrix4>"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "outlocal",
+          "type": "VariadicArg<Matrix4>"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Drives a joint chain with a curve.",
+      "source_file": "nodes/apex/rig--CurveIK.json"
+    },
+    {
+      "node": "rig::ExtractParmTransform",
+      "type_name": "rig::ExtractParmTransform",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "local",
+          "type": "Matrix4"
+        },
+        {
+          "name": "inputlocal",
+          "type": "Matrix4"
+        },
+        {
+          "name": "parentlocalscale",
+          "type": "Vector3"
+        },
+        {
+          "name": "xord",
+          "type": "Int"
+        },
+        {
+          "name": "rord",
+          "type": "Int"
+        },
+        {
+          "name": "scaleinheritance",
+          "type": "Int"
+        },
+        {
+          "name": "method",
+          "type": "Int"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "t",
+          "type": "Vector3"
+        },
+        {
+          "name": "r",
+          "type": "Vector3"
+        },
+        {
+          "name": "s",
+          "type": "Vector3"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Extracts the transformation parameters from a local matrix with respect to a local rest matrix.",
+      "source_file": "nodes/apex/rig--ExtractParmTransform-.json"
+    },
+    {
+      "node": "rig::SampleSplineTransforms",
+      "type_name": "rig::SampleSplineTransforms",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "geo",
+          "type": "Geometry"
+        },
+        {
+          "name": "primnum",
+          "type": "Int"
+        },
+        {
+          "name": "smooth",
+          "type": "Bool"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "outgeo",
+          "type": "Geometry"
+        },
+        {
+          "name": "xforms",
+          "type": "VariadicArg<Matrix4>"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Samples a variable number of transforms from a spline.",
+      "source_file": "nodes/apex/rig--SampleSplineTransforms-.json"
+    },
+    {
+      "node": "rig::SampleSplineTransforms",
+      "type_name": "rig::SampleSplineTransforms::2.0",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "2.0",
+      "since": "20.5",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "geo",
+          "type": "Geometry"
+        },
+        {
+          "name": "primnum",
+          "type": "Int"
+        },
+        {
+          "name": "tangent",
+          "type": "Vector3"
+        },
+        {
+          "name": "smooth",
+          "type": "Bool"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "outgeo",
+          "type": "Geometry"
+        },
+        {
+          "name": "arclength",
+          "type": "Float"
+        },
+        {
+          "name": "xforms",
+          "type": "VariadicArg<Matrix4>"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Samples a variable number of transforms from a spline.",
+      "source_file": "nodes/apex/rig--SampleSplineTransforms-2.0.json"
+    },
+    {
+      "node": "rig::SampleSplineTransformsToArray",
+      "type_name": "rig::SampleSplineTransformsToArray",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "geo",
+          "type": "Geometry"
+        },
+        {
+          "name": "primnum",
+          "type": "Int"
+        },
+        {
+          "name": "numsamples",
+          "type": "Int"
+        },
+        {
+          "name": "smooth",
+          "type": "Bool"
+        },
+        {
+          "name": "byedge",
+          "type": "Bool"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "outgeo",
+          "type": "Geometry"
+        },
+        {
+          "name": "xforms",
+          "type": "Matrix4Array"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Samples a given number of transforms from a spline.",
+      "source_file": "nodes/apex/rig--SampleSplineTransformsToArray-.json"
+    },
+    {
+      "node": "rig::SampleSplineTransformsToArray",
+      "type_name": "rig::SampleSplineTransformsToArray::2.0",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "2.0",
+      "since": "20.5",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "geo",
+          "type": "Geometry"
+        },
+        {
+          "name": "primnum",
+          "type": "Int"
+        },
+        {
+          "name": "numsamples",
+          "type": "Int"
+        },
+        {
+          "name": "tangent",
+          "type": "Vector3"
+        },
+        {
+          "name": "smooth",
+          "type": "Bool"
+        },
+        {
+          "name": "byedge",
+          "type": "Bool"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "outgeo",
+          "type": "Geometry"
+        },
+        {
+          "name": "arclength",
+          "type": "Float"
+        },
+        {
+          "name": "xforms",
+          "type": "Matrix4Array"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Samples a given number of transforms from a spline.",
+      "source_file": "nodes/apex/rig--SampleSplineTransformsToArray-2.0.json"
+    },
+    {
+      "node": "rig::SplineInterpolateTransforms",
+      "type_name": "rig::SplineInterpolateTransforms",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "cvs",
+          "type": "VariadicArg<Matrix4>"
+        },
+        {
+          "name": "twists",
+          "type": "VariadicArg<Float>"
+        },
+        {
+          "name": "order",
+          "type": "Int"
+        },
+        {
+          "name": "smooth",
+          "type": "Bool"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "resampled",
+          "type": "VariadicArg<Matrix4>"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Generates and samples a spline.",
+      "source_file": "nodes/apex/rig--SplineInterpolateTransforms-.json"
+    },
+    {
+      "node": "rig::SplineInterpolateTransforms",
+      "type_name": "rig::SplineInterpolateTransforms::2.0",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "2.0",
+      "since": "20.5",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "cvs",
+          "type": "VariadicArg<Matrix4>"
+        },
+        {
+          "name": "twists",
+          "type": "VariadicArg<Float>"
+        },
+        {
+          "name": "order",
+          "type": "Int"
+        },
+        {
+          "name": "tangent",
+          "type": "Vector3"
+        },
+        {
+          "name": "smooth",
+          "type": "Bool"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "outgeo",
+          "type": "Geometry"
+        },
+        {
+          "name": "arclength",
+          "type": "Float"
+        },
+        {
+          "name": "xforms",
+          "type": "VariadicArg<Matrix4>"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Generates and samples a spline.",
+      "source_file": "nodes/apex/rig--SplineInterpolateTransforms-2.0.json"
+    },
+    {
+      "node": "rig::SplineInterpolateTransformsToArray",
+      "type_name": "rig::SplineInterpolateTransformsToArray",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "cvs",
+          "type": "Matrix4Array"
+        },
+        {
+          "name": "twists",
+          "type": "FloatArray"
+        },
+        {
+          "name": "numsamples",
+          "type": "Int"
+        },
+        {
+          "name": "order",
+          "type": "Int"
+        },
+        {
+          "name": "smooth",
+          "type": "Bool"
+        },
+        {
+          "name": "byedge",
+          "type": "Bool"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "resampled",
+          "type": "Matrix4Array"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Generates and samples a spline.",
+      "source_file": "nodes/apex/rig--SplineInterpolateTransformsToArray-.json"
+    },
+    {
+      "node": "rig::SplineInterpolateTransformsToArray",
+      "type_name": "rig::SplineInterpolateTransformsToArray::2.0",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "rig",
+      "version": "2.0",
+      "since": "20.5",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "cvs",
+          "type": "Matrix4Array"
+        },
+        {
+          "name": "twists",
+          "type": "FloatArray"
+        },
+        {
+          "name": "numsamples",
+          "type": "Int"
+        },
+        {
+          "name": "order",
+          "type": "Int"
+        },
+        {
+          "name": "tangent",
+          "type": "Vector3"
+        },
+        {
+          "name": "smooth",
+          "type": "Bool"
+        },
+        {
+          "name": "byedge",
+          "type": "Bool"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "outgeo",
+          "type": "Geometry"
+        },
+        {
+          "name": "arclength",
+          "type": "Float"
+        },
+        {
+          "name": "xforms",
+          "type": "Matrix4Array"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Generates and samples a spline.",
+      "source_file": "nodes/apex/rig--SplineInterpolateTransformsToArray-2.0.json"
+    },
+    {
+      "node": "transform::LookAt",
+      "type_name": "transform::LookAt",
+      "surface": "apex_callback",
+      "context": "apex",
+      "namespace": "transform",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [
+        {
+          "name": "inxform",
+          "type": "Matrix4"
+        },
+        {
+          "name": "lookat",
+          "type": "Matrix4"
+        },
+        {
+          "name": "lookup",
+          "type": "Matrix4"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "xform",
+          "type": "Matrix4"
+        }
+      ],
+      "ports_present": true,
+      "summary": "Rotates a 4\u00d74 matrix so that its -Z axis points at a target.",
+      "source_file": "nodes/apex/transform--LookAt-.json"
+    },
+    {
+      "node": "apex::autorigcomponent",
+      "type_name": "apex::autorigcomponent::2.0",
+      "surface": "sop_type",
+      "context": "sop",
+      "namespace": "apex",
+      "version": "2.0",
+      "since": "20.5",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [],
+      "outputs": [],
+      "ports_present": true,
+      "summary": "Procedurally adds a rig component to an APEX rig.",
+      "source_file": "nodes/sop/apex--autorigcomponent-2.0.json"
+    },
+    {
+      "node": "apex::autorigcomponent",
+      "type_name": "apex::autorigcomponent::3.0",
+      "surface": "sop_type",
+      "context": "sop",
+      "namespace": "apex",
+      "version": "3.0",
+      "since": "21.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [],
+      "outputs": [],
+      "ports_present": true,
+      "summary": "Procedurally adds a rig component to an APEX rig.",
+      "source_file": "nodes/sop/apex--autorigcomponent.json"
+    },
+    {
+      "node": "apex::controlextract",
+      "type_name": "apex::controlextract",
+      "surface": "sop_type",
+      "context": "sop",
+      "namespace": "apex",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [],
+      "outputs": [],
+      "ports_present": true,
+      "summary": "Extracts APEX rig controls to a KineFX skeleton.",
+      "source_file": "nodes/sop/apex--controlextract-.json"
+    },
+    {
+      "node": "apex::rigscriptcomponent",
+      "type_name": "apex::rigscriptcomponent",
+      "surface": "sop_type",
+      "context": "sop",
+      "namespace": "apex",
+      "version": null,
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [],
+      "outputs": [],
+      "ports_present": true,
+      "summary": "Procedurally builds a rig script for deferred rig building.",
+      "source_file": "nodes/sop/apex--rigscriptcomponent.json"
+    },
+    {
+      "node": "apex::sceneaddanimation",
+      "type_name": "apex::sceneaddanimation",
+      "surface": "sop_type",
+      "context": "sop",
+      "namespace": "apex",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [],
+      "outputs": [],
+      "ports_present": true,
+      "summary": "Adds animation to a scene.",
+      "source_file": "nodes/sop/apex--sceneaddanimation-.json"
+    },
+    {
+      "node": "apex::sceneinvoke",
+      "type_name": "apex::sceneinvoke",
+      "surface": "sop_type",
+      "context": "sop",
+      "namespace": "apex",
+      "version": "",
+      "since": "20.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [],
+      "outputs": [],
+      "ports_present": true,
+      "summary": "Fetches the results from an APEX scene evaluation.",
+      "source_file": "nodes/sop/apex--sceneinvoke-.json"
+    },
+    {
+      "node": "apex::apexscript",
+      "type_name": "apex::apexscript",
+      "surface": "sop_type",
+      "context": "sop",
+      "namespace": "apex",
+      "version": null,
+      "since": "20.5",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [],
+      "outputs": [],
+      "ports_present": true,
+      "summary": "Executes code snippets written with the APEX Script syntax.",
+      "source_file": "nodes/sop/apex--script.json"
+    },
+    {
+      "node": "apexsoprigbuilder",
+      "type_name": "apexsoprigbuilder",
+      "surface": "lop_type",
+      "context": "lop",
+      "namespace": null,
+      "version": null,
+      "since": "22.0",
+      "status": "current",
+      "successor": null,
+      "successor_link": null,
+      "inputs": [],
+      "outputs": [],
+      "ports_present": false,
+      "summary": "Authors APEX rigs and binds them to USD primitives.",
+      "source_file": "nodes/lop/apexsoprigbuilder.json"
+    }
+  ],
+  "rows": [
+    {
+      "surface": "apex_callback",
+      "type_name": "Add<Float>",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[9]:apex_port_signature:Add<Float>",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "Add<Matrix4>",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[8]:apex_port_signature:Add<Matrix4>",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "component::MappedConstraints",
+      "verdict": "quarantine-candidate",
+      "docs": "present",
+      "runtime": "absent",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/component--MappedConstraints-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "21.0",
+      "port_mismatches": [],
+      "notes": [
+        "docs present but runtime KNOWN-absent \u2014 phantom or removed; not marked deprecated in docs",
+        "namespace 'component' has NO registered callbacks in the runtime registry \u2014 likely a non-callback concept (rig component / control gadget), not necessarily a phantom; disposition is the human's"
+      ]
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "controlgadget::SnapXFormToAxes",
+      "verdict": "quarantine-candidate",
+      "docs": "present",
+      "runtime": "absent",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/controlgadget--SnapXFormToAxes.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "21.0",
+      "port_mismatches": [],
+      "notes": [
+        "docs present but runtime KNOWN-absent \u2014 phantom or removed; not marked deprecated in docs",
+        "namespace 'controlgadget' has NO registered callbacks in the runtime registry \u2014 likely a non-callback concept (rig component / control gadget), not necessarily a phantom; disposition is the human's"
+      ]
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "geo::AddPacked",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[11]:apex_port_signature:geo::AddPacked",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "geo::Lattice",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/geo--Lattice-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.5",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::AbstractControl",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[5]:apex_port_signature:rig::AbstractControl",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::CombineParmTransform",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--CombineParmTransform-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::ControlSpline",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--ControlSpline-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::ControlSplineFromArray",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--ControlSplineFromArray-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::CurveIK",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--CurveIK.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[12]:apex_port_signature:rig::CurveIK",
+      "recipes_anchors": [],
+      "status": "deprecated",
+      "successor": "rig::SampleSplineTransforms",
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::ExtractParmTransform",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--ExtractParmTransform-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::SampleSplineTransforms",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--SampleSplineTransforms-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::SampleSplineTransforms::2.0",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--SampleSplineTransforms-2.0.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.5",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::SampleSplineTransformsToArray",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--SampleSplineTransformsToArray-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::SampleSplineTransformsToArray::2.0",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--SampleSplineTransformsToArray-2.0.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.5",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::SplineInterpolateTransforms",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--SplineInterpolateTransforms-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::SplineInterpolateTransforms::2.0",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--SplineInterpolateTransforms-2.0.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.5",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::SplineInterpolateTransformsToArray",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--SplineInterpolateTransformsToArray-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "rig::SplineInterpolateTransformsToArray::2.0",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/rig--SplineInterpolateTransformsToArray-2.0.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.5",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "skel::AddJoint",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[10]:apex_port_signature:skel::AddJoint",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "transform::Blend",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[6]:apex_port_signature:transform::Blend",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "apex_callback",
+      "type_name": "transform::LookAt",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/apex/transform--LookAt-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[7]:apex_port_signature:transform::LookAt",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "lop_type",
+      "type_name": "apexsoprigbuilder",
+      "verdict": "runtime-unknown",
+      "docs": "present",
+      "runtime": "unknown",
+      "recipes": "absent",
+      "docs_anchor": "nodes/lop/apexsoprigbuilder.json",
+      "runtime_anchor": null,
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "22.0",
+      "port_mismatches": [],
+      "notes": [
+        "runtime catalog consumed but this node was not probed / recorded UNKNOWN \u2014 pending"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::apexscript",
+      "verdict": "runtime-unknown",
+      "docs": "present",
+      "runtime": "unknown",
+      "recipes": "absent",
+      "docs_anchor": "nodes/sop/apex--script.json",
+      "runtime_anchor": null,
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.5",
+      "port_mismatches": [],
+      "notes": [
+        "runtime catalog consumed but this node was not probed / recorded UNKNOWN \u2014 pending"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::autorigbuilder",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[14]:type_exists[*]:apex::autorigbuilder",
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:256"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::autorigcomponent",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[21]:type_exists[*]:apex::autorigcomponent",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::autorigcomponent::2.0",
+      "verdict": "runtime-unknown",
+      "docs": "present",
+      "runtime": "unknown",
+      "recipes": "absent",
+      "docs_anchor": "nodes/sop/apex--autorigcomponent-2.0.json",
+      "runtime_anchor": null,
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.5",
+      "port_mismatches": [],
+      "notes": [
+        "runtime catalog consumed but this node was not probed / recorded UNKNOWN \u2014 pending"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::autorigcomponent::3.0",
+      "verdict": "runtime-unknown",
+      "docs": "present",
+      "runtime": "unknown",
+      "recipes": "absent",
+      "docs_anchor": "nodes/sop/apex--autorigcomponent.json",
+      "runtime_anchor": null,
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "21.0",
+      "port_mismatches": [],
+      "notes": [
+        "runtime catalog consumed but this node was not probed / recorded UNKNOWN \u2014 pending"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::buildfkgraph",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[15]:type_exists[*]:apex::buildfkgraph",
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:70",
+        "python/synapse/panel/apex_recipes.py:180",
+        "python/synapse/panel/apex_recipes.py:368",
+        "python/synapse/panel/apex_recipes.py:483"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::configurecontrols",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[22]:type_exists[*]:apex::configurecontrols",
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:363"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::configuregraph",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[20]:type_exists[*]:apex::configuregraph",
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:307"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::controlextract",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/sop/apex--controlextract-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[23]:type_exists[*]:apex::controlextract",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::controlextract::2.0",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[28]:type_exists[*]:apex::controlextract::2.0",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::graph",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[19]:type_exists[*]:apex::graph",
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:302"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::invokegraph",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[13]:type_exists[*]:apex::invokegraph",
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:312"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::layoutgraph",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[32]:type_exists[*]:apex::layoutgraph",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::mapcharacter",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[24]:type_exists[*]:apex::mapcharacter",
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:473"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::mergegraph",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[31]:type_exists[*]:apex::mergegraph",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::packcharacter",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[25]:type_exists[*]:apex::packcharacter",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::rigpose",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[27]:type_exists[*]:apex::rigpose",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::rigscriptcomponent",
+      "verdict": "runtime-unknown",
+      "docs": "present",
+      "runtime": "unknown",
+      "recipes": "absent",
+      "docs_anchor": "nodes/sop/apex--rigscriptcomponent.json",
+      "runtime_anchor": null,
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": [
+        "runtime catalog consumed but this node was not probed / recorded UNKNOWN \u2014 pending"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::sceneaddanimation",
+      "verdict": "runtime-unknown",
+      "docs": "present",
+      "runtime": "unknown",
+      "recipes": "absent",
+      "docs_anchor": "nodes/sop/apex--sceneaddanimation-.json",
+      "runtime_anchor": null,
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": [
+        "runtime catalog consumed but this node was not probed / recorded UNKNOWN \u2014 pending"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::sceneanimate",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[30]:type_exists[*]:apex::sceneanimate",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::sceneinvoke",
+      "verdict": "confirmed",
+      "docs": "present",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": "nodes/sop/apex--sceneinvoke-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[26]:type_exists[*]:apex::sceneinvoke",
+      "recipes_anchors": [],
+      "status": "current",
+      "successor": null,
+      "since": "20.0",
+      "port_mismatches": [],
+      "notes": []
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "apex::sceneinvoke::2.0",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[29]:type_exists[*]:apex::sceneinvoke::2.0",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "bonegenerator",
+      "verdict": "runtime-unknown",
+      "docs": "absent",
+      "runtime": "unknown",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": null,
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:60",
+        "python/synapse/panel/apex_recipes.py:246"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "recipes-emitted name, no docs entry, runtime UNKNOWN \u2014 cannot adjudicate until apex_truth is consumed"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "kinefx::blendtransforms",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[17]:type_exists[*]:kinefx::blendtransforms",
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:190"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "kinefx::rigdoctor",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[18]:type_exists[*]:kinefx::rigdoctor",
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:65",
+        "python/synapse/panel/apex_recipes.py:251",
+        "python/synapse/panel/apex_recipes.py:478"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "kinefx::twoboneik",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[16]:type_exists[*]:kinefx::twoboneik",
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:119",
+        "python/synapse/panel/apex_recipes.py:185"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "kinefx::usdanimimport",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[33]:type_exists[*]:kinefx::usdanimimport",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "kinefx::usdcharacterimport",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[34]:type_exists[*]:kinefx::usdcharacterimport",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "kinefx::usdskinimport",
+      "verdict": "undocumented",
+      "docs": "absent",
+      "runtime": "present",
+      "recipes": "absent",
+      "docs_anchor": null,
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[35]:type_exists[*]:kinefx::usdskinimport",
+      "recipes_anchors": [],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "runtime-present, docs-absent \u2014 a surface the low-recall cache never indexed (expected; informational, not a fault)"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "null",
+      "verdict": "runtime-unknown",
+      "docs": "absent",
+      "runtime": "unknown",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": null,
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:124"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "recipes-emitted name, no docs entry, runtime UNKNOWN \u2014 cannot adjudicate until apex_truth is consumed"
+      ]
+    },
+    {
+      "surface": "sop_type",
+      "type_name": "skeleton",
+      "verdict": "runtime-unknown",
+      "docs": "absent",
+      "runtime": "unknown",
+      "recipes": "present",
+      "docs_anchor": null,
+      "runtime_anchor": null,
+      "recipes_anchors": [
+        "python/synapse/panel/apex_recipes.py:114",
+        "python/synapse/panel/apex_recipes.py:175",
+        "python/synapse/panel/apex_recipes.py:358",
+        "python/synapse/panel/apex_recipes.py:417",
+        "python/synapse/panel/apex_recipes.py:468"
+      ],
+      "status": null,
+      "successor": null,
+      "since": null,
+      "port_mismatches": [],
+      "notes": [
+        "recipes-emitted name, no docs entry, runtime UNKNOWN \u2014 cannot adjudicate until apex_truth is consumed"
+      ]
+    }
+  ],
+  "quarantine_candidates": [
+    {
+      "symbol": "component::MappedConstraints",
+      "surface": "apex_callback",
+      "docs_anchor": "nodes/apex/component--MappedConstraints-.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "status": "current",
+      "successor": null,
+      "deprecated": false,
+      "notes": [
+        "docs present but runtime KNOWN-absent \u2014 phantom or removed; not marked deprecated in docs",
+        "namespace 'component' has NO registered callbacks in the runtime registry \u2014 likely a non-callback concept (rig component / control gadget), not necessarily a phantom; disposition is the human's"
+      ]
+    },
+    {
+      "symbol": "controlgadget::SnapXFormToAxes",
+      "surface": "apex_callback",
+      "docs_anchor": "nodes/apex/controlgadget--SnapXFormToAxes.json",
+      "runtime_anchor": "apex_truth_22.0.400.json#entries[0]:apex_callback_catalog:*",
+      "status": "current",
+      "successor": null,
+      "deprecated": false,
+      "notes": [
+        "docs present but runtime KNOWN-absent \u2014 phantom or removed; not marked deprecated in docs",
+        "namespace 'controlgadget' has NO registered callbacks in the runtime registry \u2014 likely a non-callback concept (rig component / control gadget), not necessarily a phantom; disposition is the human's"
+      ]
+    }
+  ]
+}
