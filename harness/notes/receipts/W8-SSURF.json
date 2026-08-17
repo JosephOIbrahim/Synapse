@@ -1,0 +1,62 @@
+{
+  "leg": "W8-SSURF",
+  "band": "TRUTH",
+  "source": { "doc": "harness/bastion/PROGRAM.md", "anchor": "B5-SURFACE" },
+  "status": "blocked",
+  "blocked_reason": "Recon COMPLETE (21 first-hand findings, all streamed to the wave8 bus for W8-LIBR). The commit-before-receipt contract could not be executed: `git add` and `git commit` are permission-denied in this session (read-only git works; mutating git does not). Not routed around. Evidence + receipt are written into the worktree but UNCOMMITTED (ahead:0 vs base 327f52fd). An operator must bring them in-tree, or re-dispatch with git-mutation permission.",
+  "base_sha": "327f52fd672b5cda334c8a1eb5c51df655f85ba2",
+  "head_sha": "327f52fd672b5cda334c8a1eb5c51df655f85ba2",
+  "ahead": 0,
+  "product_files_uncommitted": [
+    "harness/notes/W8-SSURF-evidence.md",
+    "harness/notes/receipts/W8-SSURF.json"
+  ],
+  "acceptance": [
+    {
+      "predicate": "findings ranked P0/P1/P2 with file:line anchors, receipt committed on own branch",
+      "verdict": "fail",
+      "evidence": "Findings ranked with file:line anchors: DONE (21 findings below, streamed to bus). 'receipt committed on own branch': FAILED — git add/commit permission-denied this session; receipt + evidence written to worktree but ahead:0. Per CRX0/W5H a receipt must not assert commit-state that does not exist, so this is recorded fail, not a fabricated green."
+    },
+    {
+      "predicate": "every claim traced to first-hand observation or named UNKNOWN",
+      "verdict": "pass",
+      "evidence": "All 21 findings are first-hand — every cited file:line was read directly by this scout (Read/Grep), never inherited. The four read-only recon agents dispatched to widen coverage were NOT consolidated before the usage-limit checkpoint; the receipt rests solely on this scout's own reads. Method note in harness/notes/W8-SSURF-evidence.md."
+    }
+  ],
+  "severity_summary": { "P0": 0, "P1": 9, "P2": 7, "positives": 4 },
+  "no_p0_note": "No production-blocking P0 found: the current package installer (scripts/install_synapse_package.py) works end-to-end and delivers a working panel, so no single defect blocks all fresh users. install.py defects are P1 because the primary path still succeeds.",
+  "findings": [
+    { "sev": "P1", "area": "install", "anchor": "install.py:87", "claim": "install.py is H22-blind: _detect_houdini_prefs() searches only Houdini majors [21,20,19], never 22; on an H22-only machine (target H22.0.400) it returns None and exits 1. README.md:247 blesses install.py as install step 2." },
+    { "sev": "P1", "area": "install", "anchor": "install.py:77-78", "claim": "install.py is OneDrive-blind: Windows prefs search uses os.path.join(home, Documents) with no OneDrive-redirect branch; the current package installer handles it (install_synapse_package.py:96-108). Two installers disagree on prefs resolution." },
+    { "sev": "P1", "area": "install", "anchor": "README.md:245", "claim": "README manual-install doc path is OneDrive-blind: README.md:245 and :264 say the package lives at Documents/houdini22.0/...; on an OneDrive-redirected seat the real dir is OneDrive/Documents/houdini22.0/..., so a hand-install writes where H22 never scans and the panel silently never appears." },
+    { "sev": "P1", "area": "first-run", "anchor": "README.md:298", "claim": "First-run failure is silent-absence with no in-Houdini feedback (README.md:298, :328): a mis-encoded/mis-keyworded package makes import synapse succeed and the panel simply never appear. Only out-of-band CLI diagnostics exist." },
+    { "sev": "P1", "area": "first-run", "anchor": "README.md:231", "claim": "Install step-count inconsistency: Install is titled Four steps (Clone/Package/Verify/Doctor) but README.md:247 also tells the user to run install.py for shelf/panel/icons — never a numbered step. Steps and prose disagree on whether install.py is required." },
+    { "sev": "P1", "area": "first-run", "anchor": "README.md:229", "claim": "ANTHROPIC_API_KEY is a hard first-run requirement but not a numbered install step (README Install lists Clone/Package/Verify/Doctor). Surfaces only as a --verify FAIL row (install_synapse_package.py:201) and at first prompt; every fresh artist hits the missing-key error." },
+    { "sev": "P1", "area": "docs", "anchor": "docs/blackbox-operator-card.md:1", "claim": "No artist-facing Operator's Card: all six Operator's-Card/CARD docs are developer/harness-facing (blackbox, latency-relay, render-freeze, rsi-closure, sprint_freeze, RELEASE_CARD). Artist has quickstart.md but no consolidated card." },
+    { "sev": "P1", "area": "ux-panel", "anchor": "python/synapse/panel/chat_panel.py:1024", "claim": "HALT can give a FALSE confirmation: _on_emergency_halt posts 'Emergency halt triggered.' unconditionally (chat_panel.py:1024) but only sends the command if self._bridge.connected (:1025). Bridge-down => success reported, no halt sent. Safety-control trust defect." },
+    { "sev": "P1", "area": "ux-rop", "anchor": "python/synapse/panel/chat_panel.py:646", "claim": "No in-panel render-progress or render-Stop affordance: connection bar exposes only HALT (chat_panel.py:646-651) and Connect. Renders run via chat->MCP; per README.md:148 emergency halt walks /obj only and does NOT kill background renders. Compounds documented render-freeze risk (README.md:124-138)." },
+    { "sev": "P2", "area": "install", "anchor": "install.py:98-99", "claim": "install.py multi-build ambiguity: returns candidates[0] (newest) by a fixed 21->20->19 order across five builds, no warning multiple exist, no way to know which was chosen." },
+    { "sev": "P2", "area": "install", "anchor": "install.py:31", "claim": "Installer version drift: install.py prints Installing Synapse v1.0.0 (_VERSION=1.0.0, used at :141) while product is v5.51.0." },
+    { "sev": "P2", "area": "first-run", "anchor": "README.md:284", "claim": "BOM trap is manual-path only: README.md:284 warns PowerShell Set-Content -Encoding utf8 writes a BOM Houdini rejects silently; the automated installer is BOM-safe (install_synapse_package.py:129)." },
+    { "sev": "P2", "area": "error-language", "anchor": "python/synapse/panel/providers/anthropic_provider.py:160", "claim": "Key-location guidance conflict: installer verify (install_synapse_package.py:407) + quickstart (~:43) say the key goes in <repo>/.env; the panel runtime error (anthropic_provider.py:160) says set it SYSTEM-level via setx and never mentions .env. Runtime error is the lone outlier." },
+    { "sev": "P2", "area": "docs", "anchor": "docs/getting-started/quickstart.md:5", "claim": "Doc drift: quickstart.md:5 links to the README install via anchor #-install--5-minutes, but the README heading is ## Install (anchor #install; jump-nav uses #install at README.md:49). Link will not resolve." },
+    { "sev": "P2", "area": "ux-panel", "anchor": "python/synapse/panel/chat_panel.py:638", "claim": "Connection feedback: bar defaults to red _ERROR_COLOR 'Disconnected' (chat_panel.py:632-641); onActivateInterface auto-starts the bridge (:262-267) but posts no Connecting... feedback, unlike the manual Connect button (:683-691). Red resting state misreads as a fault for in-process chat. (Hard errors ARE surfaced to chat via _on_connection_error :946-948.)" },
+    { "sev": "P2", "area": "error-language", "anchor": "houdini/toolbar/synapse.shelf:18", "claim": "Shelf tool error dialogs surface raw exceptions: each synapse.shelf tool does hou.ui.displayMessage('Synapse ... error: {}'.format(e), severity=Error), bypassing the panel's plain-English error_translator.py." }
+  ],
+  "positives": [
+    { "anchor": "scripts/install_synapse_package.py:92-121", "note": "Robust installer: OneDrive-aware, globs houdini2* (finds H22), installs all builds, flags the installed-build-not-wired drop-day trap (check_package_file :299-348)." },
+    { "anchor": "python/synapse/panel/providers/anthropic_provider.py:158-166", "note": "Exemplary missing-key error: exact setx command, warns Windows terminal-scoped set won't inherit, offers hou.secure alternative. Model for the error-language pass." },
+    { "anchor": "docs/getting-started/quickstart.md:11", "note": "Strong artist operator doc: explicit success signatures, failure branches, and the crucial in-process (no bridge for normal chat) clarification. Docs gap is a consolidated card, not absence." },
+    { "anchor": "python/synapse/panel/error_translator.py:49", "note": "Strong plain-English error layer (VEX/cook/render -> explanation + suggested fix). The model to route shelf + other raw-exception surfaces through. Also run_doctor(handler=None) at doctor.py:981 is standalone-capable, so recovery isn't hard-blocked by a down bridge." }
+  ],
+  "for_ruling": [
+    "COMMIT BLOCKER (human action required): git add/commit are permission-denied in this session, so this leg could not self-commit its evidence + receipt. Both files are written into the worktree .claude/worktrees/w8-ssurf but UNCOMMITTED (ahead:0). An operator must commit harness/notes/W8-SSURF-evidence.md then harness/notes/receipts/W8-SSURF.json (receipt as the closing commit), or re-dispatch this leg with git-mutation permission. This is the operator-rescue failure mode the harness warns about, forced here by permission, not by choice — recorded, not hidden.",
+    "The four read-only recon agents (install/first-run/ux/docs) dispatched to widen coverage were not consolidated before the usage-limit checkpoint. If W8-LIBR wants their net-new anchors, they can be reaped from the running session; this receipt intentionally does not depend on them (first-hand-only per crucible criterion).",
+    "Severity calls are defensible-but-arguable at the P1/P2 boundary (e.g. FIRSTRUN key-step P1 vs P2, connection-bar P2 vs P1). Offered for W8-LIBR/crucible adjudication."
+  ],
+  "spawn": [
+    { "id": "B5-OPCARD", "class": "build", "held_for": "Joe", "name": "Author an artist-facing SYNAPSE Operator's Card", "rationale": "P1 gap: consolidate install (correct H22/OneDrive path), first-render success signature, recover-when-broken (bridge/render/key), and where-things-live (logs/prefs/.env) onto one artist-facing page; today all six operator-cards are developer/harness-facing. Outside probe spawn_class -> lands held." },
+    { "id": "B5-INSTALL-UNIFY", "class": "build", "held_for": "Joe", "name": "Unify the two installers / fix install.py H22+OneDrive blindness", "rationale": "P1 cluster: either retire install.py in favor of the robust install_synapse_package.py resolver, or share one prefs-resolution function so the documented step-2 stops hard-failing on the target H22/OneDrive seat. Outside probe spawn_class -> lands held." }
+  ],
+  "note": "Read-only recon per readonly:true. Findings streamed to wave8 bus addressed to W8-LIBR as they landed (16 finding-posts). Evidence: harness/notes/W8-SSURF-evidence.md."
+}
