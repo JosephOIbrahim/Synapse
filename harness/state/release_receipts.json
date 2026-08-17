@@ -28,5 +28,11 @@
     "build": "22.0.400",
     "date": "2026-08-16",
     "notes": "Joe's dictated observation at live seat (master 63b3fe26): 'restarted houdini and connected synapse' - full app quit, relaunch, panel loaded and connected on the fresh process. Narrative-as-verdict per the g5 precedent in this file."
+  },
+  "g9_rollback": {
+    "result": "pass",
+    "build": "22.0.400",
+    "date": "2026-08-16",
+    "notes": "Re-run per Joe ruling 're-run-as-precedent' (card definition: 'rollback', one word). Drill: repo flipped to v5.50.0 tag, hot-reload panel reopen instructed (rollback half); repo returned to master 7e61dfa0, reopen instructed (forward half). Closed by Joe's explicit 'i approve - continue' on the enumerated answer+bump+verify+tag list. Honest caveat ON RECORD: the v5.50.0 panel visual was not separately narrated by the operator - approval-as-closing-word, not observation-as-narrative. Original uninstall-drill crash banked as F-G9-ROLLBACK (SideFX libUI icon-paint segfault on stale desktop; docketed; recorded in RELEASE-DRAFT-vNEXT)."
   }
 }
