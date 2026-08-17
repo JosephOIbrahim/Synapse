@@ -1,0 +1,71 @@
+{
+  "leg": "W8-LIBR",
+  "band": "TRUTH",
+  "role": "librarian SYNTHESIZER - one findings index from seven scout streams",
+  "status": "blocked",
+  "blocker": "Self-commit is git-fenced in this dispatch: `git add` and `git commit` are approval-denied (verified twice: compound and atomic `git add harness/bastion/FINDINGS_INDEX.md` both 'has been denied'). `bus.py post` (python) works; git does not - the exact MX-1 fence that held the 6 closing scouts. FINDINGS_INDEX.md + w8-landed.flag are WRITTEN to the wave8/libr worktree but UNCOMMITTED (ahead:0). This receipt does NOT assert a commit that does not exist (CRX0/W5H). To close: grant git approval so the leg commits its own closing commit, OR a human commits the three named files on wave8/libr (FINDINGS_INDEX.md, w8-landed.flag, then this receipt as the closing commit) and posts the RELEASE.",
+  "observed_head": "20e3d70cc287a9a609986ab9a69983ca2acc7eee (== master merge-base; ahead:0 - product written to worktree, not committed, because git is fenced)",
+  "product": {
+    "index": "harness/bastion/FINDINGS_INDEX.md (128 findings, 7 blueprint sections, written)",
+    "flag": "harness/notes/h22/w8-landed.flag (written)",
+    "receipt": "harness/notes/receipts/W8-LIBR.json (this file)"
+  },
+  "acceptance": [
+    {
+      "predicate": "all scout findings consumed with per-claim trace-or-unproven status",
+      "verdict": "pass",
+      "evidence": "128 findings consumed across all 7 streams (SLIFE 26, STRUTH 26, SENGINE 9, SMEM 22, SSURF 16, SSHIELD 20, SSHIP 9) from BOTH the wave8 bus (75 posts) AND each scout's on-disk receipt+evidence. W8-SLIFE posted 0 to the bus (its own bus-post was approval-denied) so its 26 findings were read first-hand from the wave8/slife worktree (W8-SLIFE.json + W8-SLIFE-evidence.md) - not inherited from a bus claim. 1 finding (SHLD-P0, a whole-history 'no secret found' negative claim) has anchor MISSING and is recorded UNPROVEN, not counted as proven. 10 findings whose verdict is UNKNOWN/gui_required are recorded UNKNOWN (never zero, never estimated). Each finding carries the scout's verbatim file:line anchor in the index."
+    },
+    {
+      "predicate": "one first-hand spot-check per scout, stdout in receipt",
+      "verdict": "pass",
+      "evidence": "7/7 streams re-observed FIRST-HAND with the Read tool against live source (byte-identical across scout worktrees @ base 327f52fd); 7/7 CONFIRMED, 0 refuted. Observed content in spot_checks[] below.",
+      "spot_checks": [
+        {"stream": "LIFE", "id": "L9", "anchor": "python/synapse/server/api_adapter.py:214-372", "observed": "CONFIRMED: create_node (215) parent.createNode via _on_main_thread; delete_node n.destroy() (248); set_parm p.set(value) (310, NOT even main-thread-marshalled); execute_python exec with __builtins__ full (358, 367) - no hou.undos.group anywhere in the /api transport. Static bypass confirmed; live-routing stays UNKNOWN (gated)."},
+        {"stream": "TRUTH", "id": "P0-2", "anchor": "python/synapse/mcp/_tool_registry.py:203-211", "observed": "CONFIRMED: houdini_execute_python description string (204-205) reads verbatim 'ONE mutation per call. Wrapped in undo group -- automatic rollback on failure.' atomic param defaults true (209). The 'automatic rollback on failure' is the false guarantee (wrapping != reversing, per CTO_RELAY R1)."},
+        {"stream": "ENG", "id": "INJ-GATE-OFF", "anchor": "python/synapse/panel/synapse_panel.py:2287-2290 + claude_worker.py:104,111-113", "observed": "CONFIRMED: panel builds ClaudeWorker(..., enforce_worker_policy=False, ...) (2289) with comment 'the worker allowlist gate (autonomous-only) is disabled here'. claude_worker.py default is True (104); comment 111-113 'enforce_worker_policy gates the dispatch-side check (the load-bearing security boundary)'. The security boundary is off on the interactive path."},
+        {"stream": "MEM", "id": "C1", "anchor": "python/synapse/server/session_store.py:267-282", "observed": "CONFIRMED: restore_previous_conversation() does os.replace(prev, target) (275) - an atomic MOVE (docstring 269 'Move the parked previous conversation back'); the parked previous slot is consumed on restore, no park-current-first."},
+        {"stream": "SURF", "id": "U1", "anchor": "python/synapse/panel/chat_panel.py:1022-1028", "observed": "CONFIRMED: _on_emergency_halt posts self._chat.append_system_message('Emergency halt triggered.') (1024) UNCONDITIONALLY, BEFORE the 'if self._bridge is not None and self._bridge.connected' check (1025). Bridge-down reports success while no halt command is sent."},
+        {"stream": "SHLD", "id": "T1", "anchor": "python/synapse/panel/system_prompt.py:255-277", "observed": "CONFIRMED (core): _format_scene_context builds '## Current Scene Context' injecting Network path (263), Selected node paths (267/269), Frame (274), and hip File path (275) into the provider-bound prompt. Scene-topology egress to the cloud provider confirmed."},
+        {"stream": "SHIP", "id": "F1", "anchor": "tests/panel/test_docking.py:1-24", "observed": "CONFIRMED: module docstring states verbatim (23) 'A SKIP exits 0, which the harness reads as PASSING; run via hython for a real signal.' and (20-22) under stock CPython (no PySide) the module SKIPS. Silent skip-as-pass confirmed."}
+      ]
+    },
+    {
+      "predicate": "FINDINGS_INDEX.md + receipt + flag landed as closing commit",
+      "verdict": "fail",
+      "evidence": "HONESTLY SPLIT: FINDINGS_INDEX.md + w8-landed.flag + this receipt are all WRITTEN to the wave8/libr worktree. LANDED-AS-CLOSING-COMMIT = NOT done - git add/commit are approval-denied in this dispatch (ahead:0, verified twice). No fabricated commit-state per the commit-before-receipt / CRX0 / W5H contract. Flips to pass the moment git is approved (leg self-commits: index+flag, then this receipt as the closing commit) or a human lands the three named files."
+    }
+  ],
+  "findings_summary": {
+    "total": 128, "P0": 3, "P1": 58, "P2": 51, "info": 16,
+    "status_split": {"new": 114, "known": 4, "gated": 10},
+    "unproven": 1, "unknown": 10,
+    "by_blueprint": {"B1-LIFECYCLE": 26, "B2-TRUTH": 26, "B3-ENGINE": 9, "B4-MEMORY": 22, "B5-SURFACE": 16, "B6-SHIELD": 20, "B7-SHIP": 9},
+    "P0_findings": [
+      "TRUTH-P0-1  handlers_tops/cook.py:79  tops_cook_node/tops_batch_cook report status='cooked' because node.cook(block=True) didn't raise; an all-failed PDG cook (CookedFail doesn't raise) returns 'cooked' - false-success.",
+      "TRUTH-P0-2  _tool_registry.py:205  CRITICAL execute_python advertises 'automatic rollback on failure' but rolls back only on _ROLLBACK_ERRORS (coding bugs), deliberately keeping mutations on operational failure - false honesty claim (spot-checked).",
+      "ENG-INJ-GATE-OFF  synapse_panel.py:2289  the real worker_policy allowlist (denies review/approve/critical incl. execute_python) ships with enforce_worker_policy=False on the interactive panel path - P0 for networked/multi-user; single-user-localhost auto-approve is the documented posture (gated on a Joe DECIDE) (spot-checked)."
+    ],
+    "reference": "harness/bastion/FINDINGS_INDEX.md is the canonical, complete artifact (per-finding id/blueprint/rank/anchor/status/evidence + failure-class tag + 4 cross-cutting meta-findings + aggregated for_ruling). This receipt summarizes; the index is the source blueprints cite."
+  },
+  "dedup_corpus": "W6 failure-class ledger harness/HARDENING-SPEC.md (35 classes) + 65 standing rulings (CTO_RULINGS_01/02/03, CTO_RELAY_01_RULING, crux-ruling.md, CTO-RULING-measures-divergence, RULING_SHEET_2026-08-08, REPAIR_HEATS_RULING) + 104 existing receipts + CLAUDE.md known-issues (32 topics). Built by a 10-agent workflow (7 scout-ingest + 3 prior-art), 0 errors.",
+  "for_ruling": [
+    "MX-1 (wave-level): 6 of 7 scouts (SLIFE, STRUTH, SENGINE, SMEM, SSURF, SSHIELD) AND W8-LIBR itself finished their work but could NOT git-commit (mutating Bash approval-denied in the non-interactive dispatch). Class receipt-without-commit-crx0 (HARDENING-SPEC.md:65; W6-GATE wired the detector, not a fix) x read-only-legs-fenced/fence-form-not-capability (CTO_RULINGS_01 R61). New angle: the fence blocked a REQUIRED write, not an unwanted one. Human action: commit each held leg's named files on its branch + post RELEASE, or re-dispatch these legs with git/bus mutation approval. All evidence is intact on disk - no recon lost.",
+    "MX-2: /rc definition UNKNOWN (W8-SMITH block). Delivery is resolved (steward.ps1:22-31 SendKeys); the definition is unresolvable headless. BASTION-v2 arm-template /rc bake-in stays a named UNKNOWN placeholder - Joe states it or a future interactive interrogation resolves it.",
+    "MX-3: three P0 truth/security defects (P0-1 tops cook false-success, P0-2 execute_python false-rollback, INJ-GATE-OFF gate off) - all confirmed first-hand, all with honest fixes named by their scouts. Feed B2 + B3.",
+    "MX-4: B6-SHIELD (previously UNAUDITED) is clean of live secrets (whole-object-store scan) but has 4xP1 patent-pending disclosures in the public auto-pushed repo + an unimplemented egress-redaction hook (EGRESS.md:160-164, so all recall/inspect context egresses unredacted). Gated on a Joe DECIDE (product-readiness-over-patents is standing law; public disclosure is a human call).",
+    "Per-scout for_ruling items are aggregated in FINDINGS_INDEX.md section 'For-ruling' (SENGINE PROGRAM.md:23 B3-status miscredit; SMEM SQLite disposition; SSHIP F1/F6/F7/F8/F9 human-gate policy questions; SURF severity P1/P2 boundary calls)."
+  ],
+  "spawn": [
+    {"id": "W8-SLIFE-P2", "class": "probe", "band": "TRUTH", "readonly": true, "name": "api_adapter live-routing probe: is the hwebserver @apiFunction('synapse') /api transport reachable/routed on the live H22 stack? If live, its zero-undo-grouping mutations are a P0 undo bypass (LIFE-L9 gate resolver)."},
+    {"id": "W8-SLIFE-P1", "class": "probe", "band": "TRUTH", "readonly": true, "name": "GUI one-Ctrl+Z reversal probe (interactive Houdini): confirm a single artist Ctrl+Z reverses each covered build op and that the uncovered holes (execute_vex, tops multi_shot/setup_wedge, render_settings) leave orphan entries. gui_required."},
+    {"id": "W8-SENGINE-PROBE-INJ-LIVE", "class": "probe", "band": "TRUTH", "readonly": true, "name": "live end-to-end injection probe: confirm execute_python dispatches ungated through the interactive panel (verifies INJ-GATE-OFF end-to-end vs static read). Likely gui_required - record UNKNOWN if not measurable headless."},
+    {"id": "W8-SMEM-LIVE", "class": "probe", "band": "TRUTH", "readonly": true, "name": "live memory probe (hython/live Houdini): close the 6 Moneta/agent.usd UNKNOWNs (recall latency, real store size, vector-index perf, registered-schema status, FTS5-in-embedded-py, boot-token lifetime)."},
+    {"id": "W8-SSHIELD-P2", "class": "probe", "band": "TRUTH", "readonly": true, "name": "remote-ref + binary-blob secret re-scan to close the residual SHLD UNKNOWNs."},
+    {"id": "W8-SSHIP-SPAWN-SILENTSKIP", "class": "probe", "band": "TRUTH", "readonly": true, "name": "silent-skip surface probe: enumerate every test module that SKIPS (not deselects) on stock CI and reads as pass (SHIP-F1 generalization)."},
+    {"id": "W8-SMEM-FIX", "class": "build", "band": "BUILD", "readonly": false, "name": "HELD (outside probe class): forge fix for MEM-C1 restore footgun (park current before os.replace) + Moneta doc-drift (M1/M3/M4) + adjudicate SQLite disposition."},
+    {"id": "B5-INSTALL-UNIFY", "class": "build", "band": "BUILD", "readonly": false, "name": "HELD (outside probe class): unify the two installers / fix install.py H22+OneDrive prefs blindness (SURF-I1/I2/I3)."},
+    {"id": "B5-OPCARD", "class": "build", "band": "BUILD", "readonly": false, "name": "HELD (outside probe class): author an artist-facing SYNAPSE Operator's Card (SURF-D1)."}
+  ],
+  "provenance": "Read-only recon. Inputs: wave8 bus (90 msgs, 75 findings) + 7 on-disk scout receipts+evidence + orchestrator board. Normalization + prior-art dedup via a 10-agent background workflow (7 ingest + 3 prior-art, 0 errors, ~989k subagent tokens). 7 first-hand spot-checks by the librarian (Read tool). Index generated deterministically from the normalized data. Nothing inherited from a bus claim alone; every load-bearing verdict re-observed or explicitly marked UNKNOWN/UNPROVEN."
+}
