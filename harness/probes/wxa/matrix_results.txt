@@ -1,0 +1,246 @@
+# adversarial matrix — measures contracts @ C:\Users\User\SYNAPSE\.claude\worktrees\w5-wxa\_m\python
+# 17 cases  tally={'MEASURED': 4, 'FAIL': 3, 'CRASH': 9, 'UNKNOWN': 1}
+
+img/stats-scalar         MEASURED(soft-pass?)  MEASURED   
+img/res-noniter          FAIL(graceful)      FAIL       non-positive / malformed resolution 1080
+img/res-string-elems     FAIL(graceful)      FAIL       non-positive / malformed resolution ['a', 'b']
+sim/frames-string        CRASH(hole)         AttributeError: 'str' object has no attribute 'get'
+sim/frames-list-nondict  CRASH(hole)         TypeError: argument of type 'int' is not a container or iterable
+sim/frames-int           CRASH(hole)         TypeError: 'int' object is not iterable
+geo/bbox-noniter         CRASH(hole)         TypeError: 'int' object is not iterable
+geo/bbox-string          MEASURED(soft-pass?)  MEASURED   
+geo/weightsum-string     CRASH(hole)         TypeError: must be real number, not str
+geo/counts-zero          MEASURED(soft-pass?)  MEASURED   
+chan/range-noniter       CRASH(hole)         TypeError: 'int' object is not iterable
+chan/range-short         CRASH(hole)         IndexError: list index out of range
+chan/samples-float       CRASH(hole)         TypeError: object of type 'float' has no len()
+chan/variance-string     MEASURED(soft-pass?)  MEASURED   
+graph/errors-string      FAIL(graceful)      FAIL       4 error(s) present
+disp/obs-none            CRASH(hole)         AttributeError: 'NoneType' object has no attribute 'get'
+disp/kind-none           UNKNOWN(honest)     UNKNOWN    no measurement contract for output kind 'None'
+
+---JSON---
+{
+  "pyroot": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\w5-wxa\\_m\\python",
+  "cases": 17,
+  "tally": {
+    "MEASURED": 4,
+    "FAIL": 3,
+    "CRASH": 9,
+    "UNKNOWN": 1
+  },
+  "rows": [
+    {
+      "case": "img/stats-scalar",
+      "kind": "image",
+      "obs": "{'resolution': [8, 8], 'stats': 0.5}",
+      "why_adversarial": "a bare scalar as stats (not per-channel dict/list)",
+      "outcome": "MEASURED(soft-pass?)",
+      "verdict": "MEASURED",
+      "reason": "",
+      "signals": {
+        "resolution": "(8, 8)",
+        "channels": "None",
+        "stats": "0.5",
+        "hash": "None"
+      },
+      "crashed": false
+    },
+    {
+      "case": "img/res-noniter",
+      "kind": "image",
+      "obs": "{'resolution': 1080, 'stats': {'R': 0.5}}",
+      "why_adversarial": "resolution a bare int, not an (w,h) pair",
+      "outcome": "FAIL(graceful)",
+      "verdict": "FAIL",
+      "reason": "non-positive / malformed resolution 1080",
+      "signals": {
+        "resolution": "1080"
+      },
+      "crashed": false
+    },
+    {
+      "case": "img/res-string-elems",
+      "kind": "image",
+      "obs": "{'resolution': ['a', 'b'], 'stats': {'R': 0.5}}",
+      "why_adversarial": "resolution elements non-numeric strings",
+      "outcome": "FAIL(graceful)",
+      "verdict": "FAIL",
+      "reason": "non-positive / malformed resolution ['a', 'b']",
+      "signals": {
+        "resolution": "['a', 'b']"
+      },
+      "crashed": false
+    },
+    {
+      "case": "sim/frames-string",
+      "kind": "sim",
+      "obs": "{'frames': 'boom'}",
+      "why_adversarial": "frames a truthy string, not a list of frame dicts",
+      "outcome": "CRASH(hole)",
+      "verdict": null,
+      "exception": "AttributeError: 'str' object has no attribute 'get'",
+      "trace_tail": "AttributeError: 'str' object has no attribute 'get'",
+      "crashed": true
+    },
+    {
+      "case": "sim/frames-list-nondict",
+      "kind": "sim",
+      "obs": "{'frames': [42, 43]}",
+      "why_adversarial": "frames a list of non-dict scalars",
+      "outcome": "CRASH(hole)",
+      "verdict": null,
+      "exception": "TypeError: argument of type 'int' is not a container or iterable",
+      "trace_tail": "TypeError: argument of type 'int' is not a container or iterable",
+      "crashed": true
+    },
+    {
+      "case": "sim/frames-int",
+      "kind": "sim",
+      "obs": "{'frames': 7}",
+      "why_adversarial": "frames a truthy int",
+      "outcome": "CRASH(hole)",
+      "verdict": null,
+      "exception": "TypeError: 'int' object is not iterable",
+      "trace_tail": "TypeError: 'int' object is not iterable",
+      "crashed": true
+    },
+    {
+      "case": "geo/bbox-noniter",
+      "kind": "geometry",
+      "obs": "{'point_count': 10, 'prim_count': 4, 'bbox': 5}",
+      "why_adversarial": "bbox a non-iterable scalar",
+      "outcome": "CRASH(hole)",
+      "verdict": null,
+      "exception": "TypeError: 'int' object is not iterable",
+      "trace_tail": "TypeError: 'int' object is not iterable",
+      "crashed": true
+    },
+    {
+      "case": "geo/bbox-string",
+      "kind": "geometry",
+      "obs": "{'point_count': 10, 'prim_count': 4, 'bbox': 'box'}",
+      "why_adversarial": "bbox a string (iterable of chars)",
+      "outcome": "MEASURED(soft-pass?)",
+      "verdict": "MEASURED",
+      "reason": "",
+      "signals": {
+        "point_count": "10",
+        "prim_count": "4",
+        "bbox": "'box'",
+        "weight_sum": "None"
+      },
+      "crashed": false
+    },
+    {
+      "case": "geo/weightsum-string",
+      "kind": "geometry",
+      "obs": "{'point_count': 10, 'prim_count': 4, 'weight_sum': '1.0'}",
+      "why_adversarial": "weight_sum a numeric-looking string",
+      "outcome": "CRASH(hole)",
+      "verdict": null,
+      "exception": "TypeError: must be real number, not str",
+      "trace_tail": "TypeError: must be real number, not str",
+      "crashed": true
+    },
+    {
+      "case": "geo/counts-zero",
+      "kind": "geometry",
+      "obs": "{'point_count': 0, 'prim_count': 0}",
+      "why_adversarial": "BOUNDARY: present-zero counts (cooked-empty vs not-cooked) \u2014 the 'never zero' line",
+      "outcome": "MEASURED(soft-pass?)",
+      "verdict": "MEASURED",
+      "reason": "",
+      "signals": {
+        "point_count": "0",
+        "prim_count": "0",
+        "bbox": "None",
+        "weight_sum": "None"
+      },
+      "crashed": false
+    },
+    {
+      "case": "chan/range-noniter",
+      "kind": "channels",
+      "obs": "{'samples': 10, 'range': 5}",
+      "why_adversarial": "range a non-iterable scalar",
+      "outcome": "CRASH(hole)",
+      "verdict": null,
+      "exception": "TypeError: 'int' object is not iterable",
+      "trace_tail": "TypeError: 'int' object is not iterable",
+      "crashed": true
+    },
+    {
+      "case": "chan/range-short",
+      "kind": "channels",
+      "obs": "{'samples': 10, 'range': [1]}",
+      "why_adversarial": "range a single-element list (rng[1] missing)",
+      "outcome": "CRASH(hole)",
+      "verdict": null,
+      "exception": "IndexError: list index out of range",
+      "trace_tail": "IndexError: list index out of range",
+      "crashed": true
+    },
+    {
+      "case": "chan/samples-float",
+      "kind": "channels",
+      "obs": "{'samples': 3.5}",
+      "why_adversarial": "samples a float (neither int nor sized)",
+      "outcome": "CRASH(hole)",
+      "verdict": null,
+      "exception": "TypeError: object of type 'float' has no len()",
+      "trace_tail": "TypeError: object of type 'float' has no len()",
+      "crashed": true
+    },
+    {
+      "case": "chan/variance-string",
+      "kind": "channels",
+      "obs": "{'samples': 10, 'variance': 'bad'}",
+      "why_adversarial": "variance a non-numeric string",
+      "outcome": "MEASURED(soft-pass?)",
+      "verdict": "MEASURED",
+      "reason": "",
+      "signals": {
+        "samples": "10",
+        "range": "None",
+        "variance": "'bad'"
+      },
+      "crashed": false
+    },
+    {
+      "case": "graph/errors-string",
+      "kind": "graph",
+      "obs": "{'compiles': True, 'errors': 'boom'}",
+      "why_adversarial": "errors a string, not a list",
+      "outcome": "FAIL(graceful)",
+      "verdict": "FAIL",
+      "reason": "4 error(s) present",
+      "signals": {
+        "errors": "'boom'"
+      },
+      "crashed": false
+    },
+    {
+      "case": "disp/obs-none",
+      "kind": "dispatch:image",
+      "obs": "None",
+      "why_adversarial": "obs is None routed through measure()",
+      "outcome": "CRASH(hole)",
+      "verdict": null,
+      "exception": "AttributeError: 'NoneType' object has no attribute 'get'",
+      "trace_tail": "AttributeError: 'NoneType' object has no attribute 'get'",
+      "crashed": true
+    },
+    {
+      "case": "disp/kind-none",
+      "kind": "dispatch:None",
+      "obs": "{}",
+      "why_adversarial": "kind is None routed through measure()",
+      "outcome": "UNKNOWN(honest)",
+      "verdict": "UNKNOWN",
+      "reason": "no measurement contract for output kind 'None'",
+      "signals": {},
+      "crashed": false
+    }
+  ]
+}
