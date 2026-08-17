@@ -1,24 +1,54 @@
 """APEX seed probes for the SYNAPSE science loop.
 
 Each :class:`ProbeSpec` in :data:`APEX_SEED` encodes a *verifiable assumption*
-the SYNAPSE codebase makes about Houdini 21.0.671's APEX surface. The science
-loop (``loop.run_search``) walks these against a live, injected namespace (the
+the SYNAPSE codebase makes about Houdini's APEX surface. The science loop
+(``loop.run_search``) walks these against a live, injected namespace (the
 ``apex`` module + ``hou``) via ``probe.probe`` to confirm which assumptions are
 champions and which are dead ends — without re-walking what the registry knows.
 
-RE-SEEDED 2026-06-02 — corrected against the live H21.0.671 catalog
-------------------------------------------------------------------
-The original seeds carried node-type strings the recipes *invented* — an
-``apex::rig::``/``apex::sop::``/``apex::autorig::`` namespacing that does **not
-exist**. A second-seed harness run + a read-only catalog dump (5811 types) +
-a 3-lens adversarial reconcile established the real surface:
+APEX-TRUTH-BUILD: 22.0.400
+RE-STAMPED 2026-08-17 — confirmed against the live H22.0.400 runtime
+-------------------------------------------------------------------
+The build string above is **read from the runtime**, never typed from memory:
+``hou.applicationVersionString()`` == ``22.0.400`` observed under hython during
+the WA1-TRUTH re-run (G1/G4+C1). The prior stamp named an **H21 build** (see git
+history for the exact number) — a truth verified once (2026-06-02) and then
+silently aged, which is precisely the stale-truth defect class this re-stamp
+retires. The per-build evidence artifact
+``harness/autoresearch/runs/<stamp>/apex_truth_22.0.400.json`` (mission
+``apex_basic``) is the receipt; ``harness/verify/version_agreement.py`` now reds
+if this stamp drifts from the freshest artifact.
 
-  * APEX node types are **flat** ``apex::<name>`` — there is NO ``::rig::`` /
-    ``::sop::`` / ``::autorig::`` middle segment.
-  * Several rig operators live under ``kinefx::``, not ``apex::``.
+What the H22.0.400 re-run confirmed (probe evidence, not recall):
 
-These seeds now carry the **real** names (each confirmed present in the
-catalog). Supersession map (fictional -> real), see
+  * All the corrected node-type seeds below are **present** on 22.0.400 — with
+    one category-drift finding: ``kinefx::twoboneik`` and
+    ``kinefx::blendtransforms`` are **Vop** category on this build, not Sop.
+    They exist; the probe records the category so the drift is visible.
+  * H22 additions confirmed and seeded: ``apex::rigpose`` (Rig Pose SOP, set
+    driven keys), ``apex::controlextract::2.0``, ``apex::sceneinvoke::2.0``
+    (the "APEX Scene Evaluate" alias), ``apex::sceneanimate``, and the
+    fuse-graph utilities ``apex::mergegraph`` / ``apex::layoutgraph``. The
+    UsdSkel renames are label-only: ``kinefx::usdanimimport`` /
+    ``usdcharacterimport`` / ``usdskinimport`` now read "UsdSkel …" but the
+    type names are unchanged.
+  * Two blueprint phantoms falsified (recorded ``exists: False`` in the
+    ``apex_basic`` mission evidence, not seeded — an absence guard is not a
+    presence assumption): ``apex::configuregraph::2.0`` (Configure Graph
+    "Effects" is a *mode* parm on ``apex::configuregraph``, not a ``::2.0`` node)
+    and ``apex::fusegraph`` (the fuse-graph *utilities* are
+    ``mergegraph``/``layoutgraph``; no literal ``fusegraph`` node exists).
+  * The callback registry is enumerable at runtime:
+    ``apex.callbackRegistry().callbackDefinitions()`` returns **2286** callbacks
+    on 22.0.400; per-callback ports come from ``Registry.getSignature(name)``
+    (types incl. ``VariadicArg<T>``, ``Matrix4``, ``Geometry``). The autoresearch
+    ``apex_basic`` mission dumps that catalog into the evidence artifact.
+
+HISTORY — the 2026-06-02 re-seed (against the then-current H21 catalog) killed
+the fictional ``apex::rig::`` / ``apex::sop::`` / ``apex::autorig::`` namespaces
+the recipes had *invented*. APEX node types are **flat** ``apex::<name>`` — there
+is NO ``::rig::`` / ``::sop::`` / ``::autorig::`` middle segment; several rig
+operators live under ``kinefx::``. Supersession map (fictional -> real), see
 ``docs/SCIENCE_apex_verify_run_2026-06-02.md``:
 
     apex::rig::fkfull        -> apex::buildfkgraph
@@ -35,7 +65,8 @@ catalog). Supersession map (fictional -> real), see
 NOTE — type-existence is confirmed; node SIGNATURES / role-fit are a separate
 verification (catalog membership != does-the-intended-job). The recipes that
 still reference the fictional names (``python/synapse/panel/apex_recipes.py``,
-``apex_explainer.py``) must be migrated to these real names before they build.
+``apex_explainer.py``) must be migrated to these real names before they build
+(that migration is WA1-RECIPE / blueprint G2, not this leg).
 
 ``kind`` distinguishes a plain attribute lookup (``"attr"``) from something
 invoked (``"call"``), a graph constructed (``"construct"``), or a Houdini node
@@ -233,4 +264,100 @@ APEX_SEED: list[ProbeSpec] = [
         ),
         rank=44,
     ),
+    # --- H22.0.400 additions (WA1-TRUTH re-run 2026-08-17; all Sop, confirmed) --
+    ProbeSpec(
+        surface="nodetypes.apex::rigpose",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "H22 APEX Rig Pose SOP (set-driven keys). New in the H22 delta "
+            "(blueprint sec.3); confirmed present on 22.0.400."
+        ),
+        rank=43,
+    ),
+    ProbeSpec(
+        surface="nodetypes.apex::controlextract::2.0",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "H22 Control Extract 2.0 — versioned successor to apex::controlextract "
+            "(both present on 22.0.400)."
+        ),
+        rank=42,
+    ),
+    ProbeSpec(
+        surface="nodetypes.apex::sceneinvoke::2.0",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "H22 Scene Invoke 2.0 — the 'APEX Scene Evaluate' alias of "
+            "apex::sceneinvoke; confirmed present on 22.0.400."
+        ),
+        rank=41,
+    ),
+    ProbeSpec(
+        surface="nodetypes.apex::sceneanimate",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "H22 APEX Scene Animate SOP (the SOP-context animate; the LOP "
+            "counterpart is the 'apexanimate' Hydra scene-index node)."
+        ),
+        rank=40,
+    ),
+    ProbeSpec(
+        surface="nodetypes.apex::mergegraph",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "H22 fuse-graph utility (APEX Merge Graph) on the APEX Graph SOP path. "
+            "Supersedes the blueprint's shorthand 'fusegraph' — there is no literal "
+            "apex::fusegraph node."
+        ),
+        rank=39,
+    ),
+    ProbeSpec(
+        surface="nodetypes.apex::layoutgraph",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "H22 fuse-graph utility (APEX Layout Graph); companion to "
+            "apex::mergegraph in the graph-assembly path."
+        ),
+        rank=38,
+    ),
+    ProbeSpec(
+        surface="nodetypes.kinefx::usdanimimport",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "UsdSkel rename (blueprint sec.3): the TYPE name is stable; the H22 "
+            "label is now 'UsdSkel Animation Import' (was 'USD Animation Import')."
+        ),
+        rank=37,
+    ),
+    ProbeSpec(
+        surface="nodetypes.kinefx::usdcharacterimport",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "UsdSkel rename: H22 label 'UsdSkel Character Import'; type name stable."
+        ),
+        rank=36,
+    ),
+    ProbeSpec(
+        surface="nodetypes.kinefx::usdskinimport",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "UsdSkel rename: H22 label 'UsdSkel Skin Import'; type name stable."
+        ),
+        rank=35,
+    ),
+    # NOTE — the two falsified blueprint phantoms (apex::configuregraph::2.0,
+    # apex::fusegraph) are deliberately NOT seeded here: APEX_SEED is the set of
+    # PRESENCE assumptions (each catalog-confirmed), and an absence guard is not an
+    # emitted node type. Their falsification lives where it belongs — as live
+    # exists=False evidence in the apex_basic mission's apex_truth artifact, and in
+    # the RE-STAMPED note above. See harness/autoresearch/missions/apex_basic.json.
 ]

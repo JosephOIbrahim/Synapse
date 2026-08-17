@@ -92,6 +92,71 @@ def _lop_types() -> dict:
     return _types_cache
 
 
+# ---- WA1-TRUTH category surface (APEX/KineFX types are not in LOP) -------
+_sop_types_cache = None
+_cat_types_cache = None
+_cat_index_cache = None
+
+
+def _sop_types() -> dict:
+    """name -> hou.NodeType for the SOP category. Cached per process.
+
+    The APEX authoring nodes (apex::invokegraph, apex::graph, apex::rigpose, …)
+    and kinefx::rigdoctor live in Sop, NOT Lop — probing them against the LOP
+    catalog would falsely report every one absent.
+    """
+    global _sop_types_cache
+    if _sop_types_cache is None:
+        _sop_types_cache = dict(hou.sopNodeTypeCategory().nodeTypes())
+    return _sop_types_cache
+
+
+def _all_category_types() -> dict:
+    """category-name -> {type_name: hou.NodeType} across every node-type category.
+    Cached. Each category is try/excepted so one hostile category never kills the
+    map (phantom-API discipline: a missing surface is an empty answer, not a crash)."""
+    global _cat_types_cache
+    if _cat_types_cache is None:
+        out = {}
+        for cname, cat in hou.nodeTypeCategories().items():
+            try:
+                out[cname] = dict(cat.nodeTypes())
+            except Exception:
+                out[cname] = {}
+        _cat_types_cache = out
+    return _cat_types_cache
+
+
+def _type_category_index() -> dict:
+    """type_name -> sorted[category names]. The runtime-truth membership map that
+    answers 'this type exists — and lives in category X' (e.g. kinefx::twoboneik
+    is a Vop, not a Sop). Cached per process."""
+    global _cat_index_cache
+    if _cat_index_cache is None:
+        idx = {}
+        for cname, types in _all_category_types().items():
+            for tname in types:
+                idx.setdefault(tname, []).append(cname)
+        _cat_index_cache = {k: sorted(v) for k, v in idx.items()}
+    return _cat_index_cache
+
+
+def _safe_call(fn):
+    """Call fn(), returning its value or None on any exception. Evidence, not crash."""
+    try:
+        return fn()
+    except Exception:
+        return None
+
+
+def _safe_str(fn):
+    """str(fn()) or None on any exception."""
+    try:
+        return str(fn())
+    except Exception:
+        return None
+
+
 # ---------------------------------------------------------------- P0 probes
 
 def probe_type_discovery(pattern: str) -> dict:
@@ -103,14 +168,40 @@ def probe_type_discovery(pattern: str) -> dict:
     return {"pattern": pattern, "count": len(matches), "matches": matches}
 
 
-def probe_type_existence(name: str) -> dict:
-    t = _lop_types().get(name)
-    if t is None:
-        return {"exists": False}
-    # deprecated() is guarded — phantom-API discipline applies to probes too.
-    dep_fn = getattr(t, "deprecated", None)
-    deprecated = dep_fn() if callable(dep_fn) else None
-    return {"exists": True, "description": t.description(), "deprecated": deprecated}
+def probe_type_existence(name: str, category=None) -> dict:
+    # Legacy path (category omitted): LOP-category lookup, byte-for-byte unchanged
+    # so every existing mission (solaris_basic, fixtures) probes identically.
+    if category is None:
+        t = _lop_types().get(name)
+        if t is None:
+            return {"exists": False}
+        # deprecated() is guarded — phantom-API discipline applies to probes too.
+        dep_fn = getattr(t, "deprecated", None)
+        deprecated = dep_fn() if callable(dep_fn) else None
+        return {"exists": True, "description": t.description(), "deprecated": deprecated}
+
+    # Category-aware path (WA1-TRUTH). "*" = exists in ANY category; a specific
+    # category name restricts existence to that surface. Either way the evidence
+    # records EVERY category the name was found in — so a Sop/Vop category drift
+    # (kinefx::twoboneik moved Sop -> Vop between builds) is visible, not silent.
+    found_in = _type_category_index().get(name, [])
+    if category == "*":
+        cats = list(found_in)
+    else:
+        cats = [category] if name in _all_category_types().get(category, {}) else []
+    result = {"exists": bool(cats), "category": category, "found_in_categories": found_in}
+    if cats:
+        describe_cat = cats[0]
+        t = _all_category_types().get(describe_cat, {}).get(name)
+        if t is not None:
+            dep_fn = getattr(t, "deprecated", None)
+            try:
+                result["description"] = t.description()
+            except Exception:
+                result["description"] = None
+            result["deprecated"] = dep_fn() if callable(dep_fn) else None
+            result["described_by_category"] = describe_cat
+    return result
 
 
 # ---------------------------------------------------------------- P1 probes
@@ -212,13 +303,125 @@ def _build_chain_once(chain: list, stage) -> dict:
                 pass
 
 
-def probe_chain_hash(chain: list, name: str, repeat: int) -> dict:
+# --- WA1-TRUTH: SOP-context chain (APEX invoke smoke, geometry hash) -------
+
+def _geo_hash(geo) -> dict:
+    """Deterministic geometry serialization -> sha256. Topology (prim->point
+    indices) + rounded point positions + attribute names, enough to detect any
+    cook drift within a session. No clock, sorted attribute lists."""
+    pts = [tuple(round(c, 6) for c in p.position()) for p in geo.points()]
+    prims = [tuple(v.point().number() for v in pr.vertices()) for pr in geo.prims()]
+    pattrs = sorted(a.name() for a in geo.pointAttribs())
+    primattrs = sorted(a.name() for a in geo.primAttribs())
+    vertattrs = sorted(a.name() for a in geo.vertexAttribs())
+    detattrs = sorted(a.name() for a in geo.globalAttribs())
+    blob = _json.dumps({"pts": pts, "prims": prims, "pattrs": pattrs,
+                        "primattrs": primattrs, "vertattrs": vertattrs,
+                        "detattrs": detattrs}, sort_keys=True)
+    return {"sha256": hashlib.sha256(blob.encode("utf-8")).hexdigest(),
+            "point_count": len(pts), "prim_count": len(prims),
+            "point_attribs": pattrs, "detail_attribs": detattrs}
+
+
+def _build_chain_sop_once(chain: list, geo) -> dict:
+    """One SOP-context construction pass inside a geo network: create with EXACT
+    names, wire linearly, cook the tail, hash the geometry, destroy."""
+    nodes = []
+    per_node = []
+    try:
+        prev = None
+        for i, tname in enumerate(chain):
+            # Node NAMES cannot contain "::" (legal only in TYPE names), so the
+            # SOP-context name is sanitized — the real type is recorded verbatim.
+            safe = tname.replace("::", "_").replace(".", "_")
+            requested = f"{_CHAIN_PREFIX}{i}_{safe}"
+            n = geo.createNode(tname, requested)
+            nodes.append(n)
+            per_node.append({"requested_type": tname, "requested_name": requested,
+                             "created_name": n.name()})
+            if prev is not None:
+                n.setInput(0, prev)
+            prev = n
+        prev.setDisplayFlag(True)
+        g = prev.geometry()  # cooks the tail SOP
+        if g is None:
+            return {"error": "geometry() returned None at chain tail",
+                    "tail_errors": list(prev.errors())[:5], "per_node": per_node}
+        gh = _geo_hash(g)
+        gh["per_node"] = per_node
+        gh["tail_warnings"] = list(prev.warnings())[:3]
+        return gh
+    finally:
+        for n in reversed(nodes):
+            try:
+                n.destroy()
+            except Exception:
+                pass
+
+
+def _probe_chain_hash_sop(chain: list, name: str, repeat: int) -> dict:
+    """APEX invoke smoke: build a SOP chain (e.g. apex::graph -> apex::invokegraph)
+    `repeat` times from clean, cook the tail, hash the geometry, compare. stable ==
+    True is the determinism claim held. APEX Log entries produced during the cook
+    are captured alongside stdout — headless-empty is honest, not a failure."""
+    obj = hou.node("/obj")
+    if obj is None:
+        return {"error": "/obj not present in this session"}
+    missing = [t for t in chain if t not in _sop_types()]
+    if missing:
+        return {"error": "chain contains non-existent Sop type literals",
+                "missing": missing, "chain": chain}
+
+    with _apex_log_capture() as cap:
+        geo = obj.createNode("geo", "ar_apex_invoke")
+        try:
+            passes = [_build_chain_sop_once(chain, geo) for _ in range(repeat)]
+        finally:
+            try:
+                geo.destroy()
+            except Exception:
+                pass
+        apex_log = cap.snapshot()
+
+    failed = [p for p in passes if "error" in p]
+    if failed:
+        return {"error": "invoke smoke construction failed", "context": "sop",
+                "detail": failed[0], "chain": chain,
+                "apex_log": apex_log, "apex_log_count": len(apex_log)}
+
+    hashes = [p["sha256"] for p in passes]
+    stable = len(set(hashes)) == 1
+    return {
+        "chain": chain,
+        "repeat": repeat,
+        "context": "sop",
+        "hashes": hashes,
+        "stable": stable,
+        "sha256": hashes[0] if stable else None,
+        "point_count": passes[0]["point_count"],
+        "prim_count": passes[0]["prim_count"],
+        "point_attribs": passes[0]["point_attribs"],
+        "detail_attribs": passes[0]["detail_attribs"],
+        "per_node": passes[0]["per_node"],
+        "name_drift": any(pn["created_name"] != pn["requested_name"]
+                          for p in passes for pn in p["per_node"]),
+        "apex_log": apex_log,
+        "apex_log_count": len(apex_log),
+    }
+
+
+def probe_chain_hash(chain: list, name: str, repeat: int, context: str = "lop") -> dict:
     """Build the chain `repeat` times from clean, hash each pass, compare.
+
+    context == "sop" (WA1-TRUTH) routes to the geometry-hash invoke smoke; the
+    default "lop" path below is unchanged.
 
     stable == True is in-run determinism evidence (F-0): identical
     construction yields identical composed USD within one session. When
     unstable, a bounded line-diff sample of the first divergent pass pair
     ships in the evidence so the volatile source is identifiable."""
+    if context == "sop":
+        return _probe_chain_hash_sop(chain, name, repeat)
     stage = hou.node("/stage")
     if stage is None:
         return {"error": "/stage not present in this session"}
@@ -768,3 +971,223 @@ def probe_store_census(roots: list, exclude_globs: list) -> dict:
         },
         "store_errors": store_errors,
     }
+
+
+# ---------------------------------------------------------------- APEX probes
+# WA1-TRUTH (G1+C1): the APEX truth surface. probes.py is the ONE file allowed
+# to touch hou/apex, so the callback-registry enumeration and per-callback port
+# signatures live here. Every value is asked of the live apex runtime (never
+# recalled): apex.callbackRegistry().callbackDefinitions() is the catalog,
+# Registry.getSignature(name) is the port surface, apex.splitNameAndVersion
+# parses ::version. The APEX Log (a hou.logging source literally named "APEX")
+# is captured around each probe so an error channel richer than stdout travels
+# with the evidence. All discovered on live H22.0.400; unobtainable -> UNKNOWN.
+
+
+class _LogCapture:
+    """Attach a hou.logging MemorySink to the APEX + Node-Errors sources for the
+    span of a probe. snapshot() reads the entries captured so far (drainable at
+    any point while connected); an empty snapshot is honest silence, not a miss.
+    Fully guarded: a build without hou.logging yields an inert capture, never a
+    crash."""
+
+    _SOURCES = ("APEX", "Node Errors")
+
+    def __init__(self):
+        self._sink = None
+
+    def __enter__(self):
+        try:
+            self._sink = hou.logging.MemorySink()
+            for src in self._SOURCES:
+                try:
+                    self._sink.connect(src)
+                except Exception:
+                    pass
+        except Exception:
+            self._sink = None
+        return self
+
+    def snapshot(self) -> list:
+        if self._sink is None:
+            return []
+        out = []
+        try:
+            for e in self._sink.logEntries():
+                out.append({
+                    "message": _safe_str(e.message),
+                    "severity": _safe_str(e.severity),
+                    "source": _safe_str(e.source),
+                })
+        except Exception:
+            pass
+        return out
+
+    def __exit__(self, *exc):
+        if self._sink is not None:
+            for src in self._SOURCES:
+                try:
+                    self._sink.disconnect(src)
+                except Exception:
+                    pass
+        return False
+
+
+def _apex_log_capture() -> "_LogCapture":
+    return _LogCapture()
+
+
+def _apex_registry():
+    """(apex_module, callback_Registry). Raises if apex is unimportable — the
+    caller renders that as UNKNOWN, never a fabricated catalog."""
+    import apex  # only importable inside Houdini/hython
+    return apex, apex.callbackRegistry()
+
+
+def _namespace_head(cb_name: str) -> str:
+    return cb_name.split("::", 1)[0] if "::" in cb_name else "(templated/none)"
+
+
+def probe_apex_callback_discovery(namespace: str = "*") -> dict:
+    """Enumerate the live APEX callback registry.
+    namespace == "*" (default) dumps the whole catalog — the ground-truth
+    vocabulary the scout literal fence admits names from. A namespace head
+    (e.g. "rig", "transform") filters to that family. Per name: registry
+    presence, ::version (apex.splitNameAndVersion), and the hidden flag."""
+    try:
+        apex, reg = _apex_registry()
+    except Exception as e:
+        return {"value": "UNKNOWN", "reason": "apex module/registry unavailable",
+                "detail": "%s: %s" % (type(e).__name__, e)}
+
+    with _apex_log_capture() as cap:
+        defs = [str(n) for n in reg.callbackDefinitions()]
+        total = len(defs)
+
+        hist = {}
+        for n in defs:
+            h = _namespace_head(n)
+            hist[h] = hist.get(h, 0) + 1
+        hist = dict(sorted(hist.items(), key=lambda kv: (-kv[1], kv[0])))
+
+        if namespace and namespace != "*":
+            names = sorted(n for n in defs if _namespace_head(n) == namespace)
+        else:
+            names = sorted(defs)
+
+        versioned = {}
+        hidden = []
+        for n in names:
+            try:
+                base, ver = apex.splitNameAndVersion(n)
+                if ver:
+                    versioned[n] = ver
+            except Exception:
+                pass
+            try:
+                if reg.getIsHidden(n):
+                    hidden.append(n)
+            except Exception:
+                pass
+
+        # The champion Python-API surface (apex_probes.py rank 100/90 seeds).
+        # "The callback registry is the API surface" — apex.Graph is its handle.
+        G = getattr(apex, "Graph", None)
+        add = getattr(G, "addNode", None) if G is not None else None
+        api_champions = {
+            "apex.Graph": {"present": G is not None, "callable": bool(callable(G))},
+            "apex.Graph.addNode": {"present": add is not None, "callable": bool(callable(add))},
+        }
+
+        apex_log = cap.snapshot()
+
+    return {
+        "namespace": namespace,
+        "registry": "apex.callbackRegistry().callbackDefinitions()",
+        "total_in_registry": total,
+        "namespaces": hist,
+        "count": len(names),
+        "names": names,
+        "versioned": versioned,
+        "hidden_count": len(hidden),
+        "hidden": hidden,
+        "api_champions": api_champions,
+        "apex_log": apex_log,
+        "apex_log_count": len(apex_log),
+    }
+
+
+def probe_apex_port_signature(callback: str) -> dict:
+    """Ordered in/out ports (declared types, incl. VariadicArg<T>) for one
+    registered APEX callback, via Registry.getSignature(name). An absent name is
+    an answer (exists: False), never a fabricated signature."""
+    try:
+        apex, reg = _apex_registry()
+    except Exception as e:
+        return {"value": "UNKNOWN", "reason": "apex module/registry unavailable",
+                "detail": "%s: %s" % (type(e).__name__, e), "callback": callback}
+
+    with _apex_log_capture() as cap:
+        try:
+            defs = set(str(n) for n in reg.callbackDefinitions())
+        except Exception as e:
+            return {"value": "UNKNOWN", "callback": callback,
+                    "reason": "callbackDefinitions() failed",
+                    "detail": "%s: %s" % (type(e).__name__, e),
+                    "apex_log": cap.snapshot()}
+
+        if callback not in defs:
+            return {"exists": False, "callback": callback,
+                    "note": "absent from apex.callbackRegistry().callbackDefinitions()",
+                    "apex_log": cap.snapshot()}
+
+        try:
+            sig = reg.getSignature(callback)
+        except Exception as e:
+            return {"exists": True, "callback": callback,
+                    "signature_error": "%s: %s" % (type(e).__name__, e),
+                    "apex_log": cap.snapshot()}
+
+        def _ports(getter):
+            try:
+                ports = getter()
+            except Exception as e:
+                return {"error": "%s: %s" % (type(e).__name__, e)}
+            out = []
+            for p in ports:
+                out.append({
+                    "name": _safe_str(p.name),
+                    "type": _safe_str(p.type_name),
+                    "inplace": _safe_call(p.isInplace) if hasattr(p, "isInplace") else None,
+                })
+            return out
+
+        inputs = _ports(sig.inputs)
+        outputs = _ports(sig.outputs)
+        in_list = inputs if isinstance(inputs, list) else []
+        out_list = outputs if isinstance(outputs, list) else []
+
+        result = {
+            "exists": True,
+            "callback": callback,
+            "inputs": inputs,
+            "outputs": outputs,
+            "input_count": len(in_list) if isinstance(inputs, list) else None,
+            "output_count": len(out_list) if isinstance(outputs, list) else None,
+            "variadic_inputs": [p["name"] for p in in_list if "Variadic" in (p.get("type") or "")],
+            "variadic_outputs": [p["name"] for p in out_list if "Variadic" in (p.get("type") or "")],
+            "is_generic": _safe_call(sig.isGeneric),
+            "is_empty": _safe_call(sig.isEmpty),
+            "is_hidden": _safe_call(lambda: reg.getIsHidden(callback)),
+            "min_product_version": _safe_str(lambda: reg.getMinProductVersion(callback)),
+            "latest_name": _safe_str(lambda: reg.latestCallbackName(callback)),
+        }
+        try:
+            base, ver = apex.splitNameAndVersion(callback)
+            result["namespace"] = base.split("::", 1)[0] if "::" in base else None
+            result["version"] = ver or None
+        except Exception:
+            pass
+        result["apex_log"] = cap.snapshot()
+
+    return result

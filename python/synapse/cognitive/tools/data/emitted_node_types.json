@@ -46,6 +46,13 @@
     },
     {
       "category": "apex_seed",
+      "type_name": "apex::controlextract::2.0",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
       "type_name": "apex::graph",
       "source_files": [
         "python/synapse/science/apex_probes.py"
@@ -60,7 +67,21 @@
     },
     {
       "category": "apex_seed",
+      "type_name": "apex::layoutgraph",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
       "type_name": "apex::mapcharacter",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::mergegraph",
       "source_files": [
         "python/synapse/science/apex_probes.py"
       ]
@@ -74,7 +95,28 @@
     },
     {
       "category": "apex_seed",
+      "type_name": "apex::rigpose",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::sceneanimate",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
       "type_name": "apex::sceneinvoke",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::sceneinvoke::2.0",
       "source_files": [
         "python/synapse/science/apex_probes.py"
       ]
@@ -365,6 +407,27 @@
     {
       "category": "apex_seed",
       "type_name": "kinefx::twoboneik",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "kinefx::usdanimimport",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "kinefx::usdcharacterimport",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "kinefx::usdskinimport",
       "source_files": [
         "python/synapse/science/apex_probes.py"
       ]

@@ -1,0 +1,78 @@
+{
+  "mission": "apex_basic",
+  "version": "1.0.0",
+  "target_build": "22.0.400",
+  "artifact_prefix": "apex_truth",
+  "phases": [
+    {
+      "id": "P0_catalog",
+      "kind": "apex_callback_discovery",
+      "questions": [
+        { "namespace": "*" },
+        { "namespace": "rig" },
+        { "namespace": "transform" },
+        { "namespace": "graph" },
+        { "namespace": "skel" }
+      ]
+    },
+    {
+      "id": "P0_ports",
+      "kind": "apex_port_signature",
+      "questions": [
+        { "callback": "rig::AbstractControl" },
+        { "callback": "transform::Blend" },
+        { "callback": "transform::LookAt", "note": "blueprint-cited example; existence + ports under test" },
+        { "callback": "Add<Matrix4>", "note": "VariadicArg<Matrix4> arity exemplar (blueprint W1)" },
+        { "callback": "Add<Float>", "note": "VariadicArg<Float> arity exemplar" },
+        { "callback": "skel::AddJoint" },
+        { "callback": "geo::AddPacked", "note": "in-place *geo port exemplar" },
+        { "callback": "rig::CurveIK", "note": "blueprint deprecation example (successor rig::SampleSplineTransforms); existence under test" }
+      ]
+    },
+    {
+      "id": "P1_sops",
+      "kind": "type_existence",
+      "questions": [
+        { "name": "apex::invokegraph", "category": "*", "note": "rank85 seed" },
+        { "name": "apex::autorigbuilder", "category": "*", "note": "rank80 seed" },
+        { "name": "apex::buildfkgraph", "category": "*", "note": "rank78 seed" },
+        { "name": "kinefx::twoboneik", "category": "*", "note": "rank76 seed - lives in Vop, NOT Sop (category recorded)" },
+        { "name": "kinefx::blendtransforms", "category": "*", "note": "rank74 seed - lives in Vop, NOT Sop (category recorded)" },
+        { "name": "kinefx::rigdoctor", "category": "*", "note": "rank72 seed" },
+        { "name": "apex::graph", "category": "*", "note": "rank70 seed" },
+        { "name": "apex::configuregraph", "category": "*", "note": "rank65 seed" },
+        { "name": "apex::autorigcomponent", "category": "*", "note": "rank60 seed" },
+        { "name": "apex::configurecontrols", "category": "*", "note": "rank55 seed" },
+        { "name": "apex::controlextract", "category": "*", "note": "rank50 seed" },
+        { "name": "apex::mapcharacter", "category": "*", "note": "rank48 seed" },
+        { "name": "apex::packcharacter", "category": "*", "note": "rank46 seed" },
+        { "name": "apex::sceneinvoke", "category": "*", "note": "rank44 seed" },
+        { "name": "apex::rigpose", "category": "*", "note": "H22 addition - APEX Rig Pose SOP (set driven keys)" },
+        { "name": "apex::controlextract::2.0", "category": "*", "note": "H22 addition - Control Extract 2.0" },
+        { "name": "apex::sceneinvoke::2.0", "category": "*", "note": "H22 addition - Scene Invoke 2.0 (APEX Scene Evaluate)" },
+        { "name": "apex::sceneanimate", "category": "*", "note": "H22 addition - APEX Scene Animate SOP" },
+        { "name": "apex::mergegraph", "category": "*", "note": "H22 fuse-graph utility - APEX Merge Graph" },
+        { "name": "apex::layoutgraph", "category": "*", "note": "H22 fuse-graph utility - APEX Layout Graph" },
+        { "name": "kinefx::usdanimimport", "category": "*", "note": "UsdSkel rename - label now 'UsdSkel Animation Import'" },
+        { "name": "kinefx::usdcharacterimport", "category": "*", "note": "UsdSkel rename - label now 'UsdSkel Character Import'" },
+        { "name": "kinefx::usdskinimport", "category": "*", "note": "UsdSkel rename - label now 'UsdSkel Skin Import'" },
+        { "name": "apex::configuregraph::2.0", "category": "*", "note": "PHANTOM UNDER TEST - blueprint 'Configure Graph Effects mode' is a MODE parm on apex::configuregraph, expected NOT a ::2.0 node" },
+        { "name": "apex::fusegraph", "category": "*", "note": "PHANTOM UNDER TEST - blueprint 'fuse-graph utilities' resolve to mergegraph/layoutgraph, expected NO literal fusegraph node" }
+      ]
+    },
+    {
+      "id": "P2_invoke",
+      "kind": "chain_hash",
+      "questions": [
+        {
+          "name": "apex_invoke_smoke",
+          "chain": ["apex::graph", "apex::invokegraph"],
+          "repeat": 2,
+          "context": "sop",
+          "candidate": false,
+          "note": "minimal graph -> invokegraph -> cook -> geometry hash; repeat-2 stable == determinism held"
+        }
+      ]
+    }
+  ]
+}

@@ -97,7 +97,10 @@ class Run:
         self.meta["build"] = build
         self.meta["target_build_match"] = (build == self.mission.target_build)
         self.meta["canonicalizer"] = canonicalizer
-        self.evidence_path = self.out / f"lop_truth_{build}.json"
+        # Evidence filename follows the mission's artifact_prefix (default
+        # "lop_truth"; apex_basic sets "apex_truth"). WA1-TRUTH.
+        self.meta["artifact_prefix"] = self.mission.artifact_prefix
+        self.evidence_path = self.out / f"{self.mission.artifact_prefix}_{build}.json"
         if not self.meta["target_build_match"]:
             log(f"WARNING: probed build {build} != mission target "
                 f"{self.mission.target_build} — evidence is true to the probed build")
@@ -154,6 +157,10 @@ def question_label(kind: str, q: dict) -> str:
         return f"usd_schema:{q['name']}"
     if kind == "store_census":
         return f"census:{len(q['roots'])}roots"
+    if kind == "apex_callback_discovery":
+        return f"apex_catalog:{q.get('namespace', '*')}"
+    if kind == "apex_port_signature":
+        return f"apex_ports:{q['callback']}"
     return kind
 
 
@@ -167,8 +174,10 @@ def execute_question(kind: str, q: dict, probes, run: Run) -> None:
             run.record(f"lop_type_discovery:{q['pattern']}", value, kind, note)
 
         elif kind == "type_existence":
-            value = probes.probe_type_existence(q["name"])
-            run.record(f"lop_type_exists:{q['name']}", value, kind, note)
+            cat = q.get("category")
+            value = probes.probe_type_existence(q["name"], cat)
+            prefix = f"type_exists[{cat}]" if cat else "lop_type_exists"
+            run.record(f"{prefix}:{q['name']}", value, kind, note)
 
         elif kind == "parm_probe":
             tname = q["type"]
@@ -181,9 +190,11 @@ def execute_question(kind: str, q: dict, probes, run: Run) -> None:
             run.record(f"lop_type_parms:{tname}", value, kind, note)
 
         elif kind == "chain_hash":
-            value = probes.probe_chain_hash(q["chain"], q["name"], q["repeat"])
+            ctx = q.get("context", "lop")
+            value = probes.probe_chain_hash(q["chain"], q["name"], q["repeat"], ctx)
             value["candidate"] = q["candidate"]
-            run.record(f"chain_stage_hash:{q['name']}", value, kind, note)
+            prefix = "invoke_geo_hash" if ctx == "sop" else "chain_stage_hash"
+            run.record(f"{prefix}:{q['name']}", value, kind, note)
 
         elif kind == "fixture_hash":
             value = probes.probe_fixture_hash(q["path"], q["name"], q["repeat"])
@@ -196,6 +207,15 @@ def execute_question(kind: str, q: dict, probes, run: Run) -> None:
         elif kind == "store_census":
             value = probes.probe_store_census(q["roots"], q["exclude_globs"])
             run.record("memory_store_census", value, kind, note)
+
+        elif kind == "apex_callback_discovery":
+            nsp = q.get("namespace", "*")
+            value = probes.probe_apex_callback_discovery(nsp)
+            run.record(f"apex_callback_catalog:{nsp}", value, kind, note)
+
+        elif kind == "apex_port_signature":
+            value = probes.probe_apex_port_signature(q["callback"])
+            run.record(f"apex_port_signature:{q['callback']}", value, kind, note)
 
         else:  # unreachable post-validation; recorded, not raised
             run.record(f"unknown_kind:{kind}", {"error": "unknown question kind"}, kind)

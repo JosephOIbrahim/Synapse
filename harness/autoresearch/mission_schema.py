@@ -5,10 +5,26 @@ only probes produce answers. This module validates the questions.
 
 Kinds:
     type_discovery   {"pattern": str}
-    type_existence   {"name": str, "note": str?}
+    type_existence   {"name": str, "note": str?, "category": str?}
     parm_probe       {"type": str, "highlight": [str]?, "skip_if_missing": bool?}
-    chain_hash       {"name": str, "chain": [str], "repeat": int?, "candidate": bool?}
+    chain_hash       {"name": str, "chain": [str], "repeat": int?, "candidate": bool?,
+                      "context": "lop"|"sop"?}
+    fixture_hash     {"name": str, "path": str, "repeat": int?}
+    usd_schema_probe {"name": str, "schema_type": str, "plugin_name": str?, "roundtrip": bool?}
     store_census     {"roots": [{"path": str, "max_depth": int?}], "exclude_globs": [str]?}
+    apex_callback_discovery  {"namespace": str?}   # "*" (default) = whole callback registry
+    apex_port_signature      {"callback": str}     # one registered APEX callback name
+
+`type_existence` gains an OPTIONAL "category" (WA1-TRUTH / G1+C1): omitted keeps
+the legacy LOP-category lookup byte-for-byte; a category name (e.g. "Sop", "Vop")
+or "*" (any category) routes the probe to the right surface for APEX/KineFX types
+that do not live in LOP. `chain_hash` gains an OPTIONAL "context": "lop" (default,
+composed-USD hash) or "sop" (geometry hash — the APEX invoke smoke). Both defaults
+preserve every pre-existing mission's behavior.
+
+The mission may carry an OPTIONAL top-level "artifact_prefix" (default
+"lop_truth"); the runner names its evidence file "<artifact_prefix>_<build>.json".
+apex_basic sets "apex_truth" so its catalog artifact is self-describing.
 
 Validation normalizes defaults into each question dict so the runner
 never guesses. All errors carry phase/question coordinates.
@@ -20,7 +36,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 VALID_KINDS = {"type_discovery", "type_existence", "parm_probe", "chain_hash",
-               "fixture_hash", "usd_schema_probe", "store_census"}
+               "fixture_hash", "usd_schema_probe", "store_census",
+               # WA1-TRUTH (G1+C1): APEX truth-surface probe kinds. probes.py is
+               # the only module that resolves these against the live apex runtime.
+               "apex_callback_discovery", "apex_port_signature"}
 
 
 class MissionError(ValueError):
@@ -40,6 +59,9 @@ class Mission:
     version: str
     target_build: str
     phases: list = field(default_factory=list)
+    # WA1-TRUTH: the runner names its evidence file "<artifact_prefix>_<build>.json".
+    # Default preserves every existing mission's "lop_truth_<build>.json" artifact.
+    artifact_prefix: str = "lop_truth"
 
     def total_questions(self) -> int:
         return sum(len(p.questions) for p in self.phases)
@@ -71,6 +93,13 @@ def _validate_question(kind: str, q: dict, where: str) -> dict:
         if not name.strip():
             raise MissionError(f"{where}: 'name' must be non-empty")
         q.setdefault("note", "")
+        # Optional category (WA1-TRUTH): omitted -> legacy LOP lookup; a category
+        # name (e.g. "Sop"/"Vop") or "*" -> route to the right surface. Kept None
+        # by default so existing missions are unchanged.
+        cat = q.setdefault("category", None)
+        if cat is not None and (not isinstance(cat, str) or not cat.strip()):
+            raise MissionError(
+                f"{where}: 'category' must be a non-empty string (e.g. 'Sop', 'Vop', '*') or omitted")
 
     elif kind == "parm_probe":
         t = _req(q, "type", str, where)
@@ -96,6 +125,13 @@ def _validate_question(kind: str, q: dict, where: str) -> dict:
         cand = q.setdefault("candidate", False)
         if not isinstance(cand, bool):
             raise MissionError(f"{where}: 'candidate' must be a bool")
+        # Optional context (WA1-TRUTH): "lop" (default) composes a USD stage and
+        # hashes it; "sop" builds the chain in a geo network, cooks the tail SOP,
+        # and hashes the geometry — the APEX invoke smoke. Default keeps every
+        # existing chain_hash question on the composed-USD path.
+        ctx = q.setdefault("context", "lop")
+        if ctx not in ("lop", "sop"):
+            raise MissionError(f"{where}: 'context' must be 'lop' or 'sop'")
 
     elif kind == "fixture_hash":
         name = _req(q, "name", str, where)
@@ -144,6 +180,20 @@ def _validate_question(kind: str, q: dict, where: str) -> dict:
         if not isinstance(ex, list) or not all(isinstance(x, str) for x in ex):
             raise MissionError(f"{where}: 'exclude_globs' must be a list of strings")
 
+    elif kind == "apex_callback_discovery":
+        # Enumerate the live APEX callback registry. "namespace" filters to one
+        # namespace head (e.g. "rig", "transform"); "*" (default) is the whole
+        # catalog — the ground-truth vocabulary the scout's literal fence consumes.
+        nsp = q.setdefault("namespace", "*")
+        if not isinstance(nsp, str) or not nsp.strip():
+            raise MissionError(
+                f"{where}: 'namespace' must be a non-empty string ('*' for the whole registry)")
+
+    elif kind == "apex_port_signature":
+        cb = _req(q, "callback", str, where)
+        if not cb.strip():
+            raise MissionError(f"{where}: 'callback' must be a non-empty APEX callback name")
+
     return q
 
 
@@ -154,6 +204,10 @@ def validate_mission(data: dict, source: str = "<mission>") -> Mission:
     name = _req(data, "mission", str, source)
     version = _req(data, "version", str, source)
     target_build = _req(data, "target_build", str, source)
+    # Optional (WA1-TRUTH); defaults to "lop_truth" so existing missions are unchanged.
+    artifact_prefix = data.get("artifact_prefix", "lop_truth")
+    if not isinstance(artifact_prefix, str) or not artifact_prefix.strip():
+        raise MissionError(f"{source}: 'artifact_prefix' must be a non-empty string")
     raw_phases = _req(data, "phases", list, source)
     if not raw_phases:
         raise MissionError(f"{source}: 'phases' must be non-empty")
@@ -182,7 +236,8 @@ def validate_mission(data: dict, source: str = "<mission>") -> Mission:
         ]
         phases.append(Phase(id=pid, kind=kind, questions=validated))
 
-    return Mission(name=name, version=version, target_build=target_build, phases=phases)
+    return Mission(name=name, version=version, target_build=target_build,
+                   phases=phases, artifact_prefix=artifact_prefix)
 
 
 def load_mission(path: Path) -> Mission:
