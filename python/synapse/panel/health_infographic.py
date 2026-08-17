@@ -118,18 +118,25 @@ class HealthInfographic(QtWidgets.QWidget):
         stats = self._data.get("bridge_stats", {})
         total = stats.get("operations_total", 0)
         rate = stats.get("success_rate", 0.0)
+        # Wave-5 has_data doctrine: success_rate is 0.0 both when every op
+        # failed AND when nothing has run. Without data the rate is UNKNOWN —
+        # render it as "—" and an inert slate gauge, never a red 0% on a
+        # healthy just-started bridge. Fall back to total>0 so the widget stays
+        # honest even against a stats dict that predates the producer flag.
+        has_data = bool(stats.get("has_data", total > 0))
+        rate_txt = ("%.0f%%" % (rate * 100)) if has_data else "—"
         y = self._PAD
 
         # ── header: label + ops/rate summary ──────────────────────
         self._text(p, x0, y, x1 - x0, self._HEAD_H, "OBSERVABILITY",
                    t.TEXT_TERTIARY, 11, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, spacing=1.5)
         self._text(p, x0, y, x1 - x0, self._HEAD_H,
-                   "%d ops · %.0f%%" % (total, rate * 100),
+                   "%d ops · %s" % (total, rate_txt),
                    t.TEXT_SECONDARY, 11, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         y += self._HEAD_H + self._GAP
 
         # ── bridge success gauge (the hero metric) ────────────────
-        self._gauge(p, x0, y, x1 - x0, rate)
+        self._gauge(p, x0, y, x1 - x0, rate, has_data)
         y += self._GAUGE_H + self._GAP
 
         # ── per-agent bar chart ───────────────────────────────────
@@ -158,12 +165,20 @@ class HealthInfographic(QtWidgets.QWidget):
         p.end()
 
     # ---------------------------------------------------------------- pieces
-    def _gauge(self, p, x, y, w, rate):
+    def _gauge(self, p, x, y, w, rate, has_data=True):
         track_h = 8
         ty = y + (self._GAUGE_H - track_h) / 2.0
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QtGui.QColor(t.SURFACE))
         p.drawRoundedRect(QtCore.QRectF(x, ty, w, track_h), 4, 4)
+        if not has_data:
+            # No operations tracked yet: an inert slate track, no colored fill
+            # and no threshold ticks. A zero-sample success rate is UNKNOWN,
+            # never a red 0% — the has_data doctrine (matches integrity_readout
+            # rendering t.SLATE / "no operations tracked yet").
+            p.setBrush(QtGui.QColor(t.SLATE))
+            p.drawRoundedRect(QtCore.QRectF(x, ty, w, track_h), 4, 4)
+            return
         fill_w = max(2.0, w * max(0.0, min(1.0, rate)))
         p.setBrush(QtGui.QColor(_rate_color(rate)))
         p.drawRoundedRect(QtCore.QRectF(x, ty, fill_w, track_h), 4, 4)

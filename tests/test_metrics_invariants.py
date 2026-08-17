@@ -60,3 +60,55 @@ def test_tool_duration_histogram_is_well_formed():
     assert 'synapse_tool_duration_ms_bucket{tool="scene_info",le="+Inf"} 5' in text
     assert 'synapse_tool_duration_ms_count{tool="scene_info"} 5' in text
     assert 'synapse_tool_duration_ms_sum{tool="scene_info"}' in text
+
+
+# ---------------------------------------------------------------------------
+# Bug A (wave5/measures): a SHED scene cycle must not fabricate 0-count gauges.
+# The /metrics scrape carries synapse_scene_measured {0|1}; on a shed cycle the
+# scene counts are OMITTED (a scrape gap), never emitted as "0" — otherwise an
+# operator scraping while the main thread is busy (e.g. debugging a freeze)
+# reads "0 nodes, 0 warnings" as if the scene were observed clean.
+# ---------------------------------------------------------------------------
+
+def _scene_snapshot(measured):
+    from synapse.server.live_metrics import (
+        MetricSnapshot, SceneMetrics, snapshot_to_dict,
+    )
+    if measured:
+        scene = SceneMetrics(measured=True, total_nodes=7, warnings=2, errors=1)
+    else:
+        scene = SceneMetrics(measured=False)
+    # Route through the REAL serializer so the test pins the true end-to-end
+    # dict handlers.py feeds to render_prometheus (nulls the counts when shed).
+    return snapshot_to_dict(MetricSnapshot(scene=scene))
+
+
+def test_measured_scene_emits_gauges():
+    text = render_prometheus(live_snapshot=_scene_snapshot(measured=True))
+    assert "synapse_scene_measured 1" in text
+    assert "synapse_scene_nodes_total 7" in text
+    assert "synapse_scene_warnings 2" in text
+    assert "synapse_scene_errors 1" in text
+
+
+def test_shed_scene_omits_counts_and_never_emits_none():
+    text = render_prometheus(live_snapshot=_scene_snapshot(measured=False))
+    # The honesty flag says "not measured this cycle".
+    assert "synapse_scene_measured 0" in text
+    # The fabrication-prone counts are absent — a gap, not a fake 0.
+    assert "synapse_scene_nodes_total" not in text
+    assert "synapse_scene_warnings" not in text
+    assert "synapse_scene_errors" not in text
+    # And the nulled dict must never leak a literal None into the scrape.
+    assert "None" not in text
+
+
+def test_scene_dict_without_measured_marker_is_unmeasured():
+    """Honesty-safe default: a scene dict of unknown provenance (no 'measured'
+    key, e.g. a partial/legacy snapshot) must be treated as UNMEASURED, not
+    fabricate a clean 0-count scrape. Regression for the render_prometheus
+    default-True finding from the Bug A adversarial pass."""
+    text = render_prometheus(live_snapshot={"session": {}, "resilience": {}})
+    assert "synapse_scene_measured 0" in text
+    assert "synapse_scene_nodes_total" not in text
+    assert "synapse_scene_warnings" not in text

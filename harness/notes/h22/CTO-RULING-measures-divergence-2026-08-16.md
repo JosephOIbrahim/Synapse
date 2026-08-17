@@ -60,18 +60,3 @@ the collision this house has been burned by before. Best practice is to record t
 let the orchestrator route the build cleanly — not to gamble a public-repo collision on it.
 
 *No `harness/state/drop.json` touched. No `ratified` flipped. No merge/push/tag performed.*
-
-
----
-
-## SUPERSESSION NOTE (2026-08-17 morning, CTO)
-
-This ruling correctly described `wave5/measures` as of the FIRST agent's death (~17:25 2026-08-16):
-audit delivered, charter unbuilt, DIVERGED-OPEN. It was then **superseded by events**: the leg was
-re-dispatched at 20:32 into the same worktree, and the second agent BUILT the charter -
-`520a10d4` "receipt(w5-measures): cook-verify charter delivered, green_with_findings" (Acceptance
-1 PASS, 2 PASS, 3 PARTIAL/EXTENDS with the deferred MCP DISCLOSURE wiring named honestly),
-receipt-is-closing-commit honored, `harness/notes/receipts/W5-MEASURES.json` on the branch,
-hardened GATE close verified. Points 1-2 of the ruling stand (audit = KEEP, Layer-6 attribution);
-points 3-4 are discharged by the second agent's delivery. Preserved as the honest record of the
-divergence-then-recovery arc. W5-WCRUX re-execution follows.

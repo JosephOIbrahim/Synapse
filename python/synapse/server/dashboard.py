@@ -187,31 +187,36 @@ body{background:#1a1a1a;color:#e0e0e0;font-family:'Segoe UI',system-ui,-apple-sy
   }
 
   function update(d){
+    // Bug A + siblings: a shed cycle nulls the fabricated fields (unmeasured, not
+    // observed). Render '—' for UNKNOWN rather than a fabricated 0 / 24 / 'healthy'.
+    const u = v => (v === null || v === undefined) ? '—' : v;
     // Scene
     if(d.scene){
       const s = d.scene;
       $('hipFile').textContent = s.hip_file ? s.hip_file.split('/').pop().split('\\').pop() : '-';
       $('frame').textContent = s.current_frame;
-      $('fps').textContent = s.fps;
-      $('totalNodes').textContent = s.total_nodes;
-      $('nodeBreakdown').textContent = s.sop_nodes + ' / ' + s.lop_nodes + ' / ' + s.obj_nodes;
+      $('fps').textContent = u(s.fps);
+      $('totalNodes').textContent = u(s.total_nodes);
+      $('nodeBreakdown').textContent = u(s.sop_nodes) + ' / ' + u(s.lop_nodes) + ' / ' + u(s.obj_nodes);
 
       const wEl = $('warnings');
-      wEl.textContent = s.warnings;
+      wEl.textContent = u(s.warnings);
       wEl.className = 'value' + (s.warnings > 0 ? ' warn' : '');
 
       const eEl = $('errors');
-      eEl.textContent = s.errors;
+      eEl.textContent = u(s.errors);
       eEl.className = 'value' + (s.errors > 0 ? ' err' : '');
     }
 
     // Routing
     if(d.routing){
       const r = d.routing;
+      // Bug A sibling: cache_hit_rate / avg_latency_ms are nulled on a shed cycle
+      // (router unwired). Guard toFixed against null and render '—' for UNKNOWN.
       $('totalRequests').textContent = r.total_requests;
-      $('cacheRate').textContent = r.cache_hit_rate.toFixed(1) + '%';
-      $('cacheBar').style.width = Math.min(r.cache_hit_rate, 100) + '%';
-      $('avgLatency').textContent = r.avg_latency_ms.toFixed(1) + 'ms';
+      $('cacheRate').textContent = (r.cache_hit_rate == null) ? '—' : r.cache_hit_rate.toFixed(1) + '%';
+      $('cacheBar').style.width = (r.cache_hit_rate == null) ? '0%' : Math.min(r.cache_hit_rate, 100) + '%';
+      $('avgLatency').textContent = (r.avg_latency_ms == null) ? '—' : r.avg_latency_ms.toFixed(1) + 'ms';
       $('knowledgeEntries').textContent = r.knowledge_entries;
 
       // Tier chips
@@ -233,9 +238,13 @@ body{background:#1a1a1a;color:#e0e0e0;font-family:'Segoe UI',system-ui,-apple-sy
     // Resilience
     if(d.resilience){
       const re = d.resilience;
+      // Bug A sibling (HIGH): circuit_state / health_status are nulled on a shed
+      // cycle (health monitor unwired). A null must NOT fall through to the green
+      // '.ok' class — render '—' with a neutral class so nothing was measured
+      // reads as UNKNOWN, never as an affirmative all-clear.
       const cbEl = $('cbState');
-      cbEl.textContent = re.circuit_state;
-      cbEl.className = 'value' + (re.circuit_state === 'open' ? ' err' : re.circuit_state === 'half_open' ? ' warn' : ' ok');
+      cbEl.textContent = u(re.circuit_state);
+      cbEl.className = 'value' + (re.circuit_state === 'open' ? ' err' : re.circuit_state === 'half_open' ? ' warn' : re.circuit_state === 'closed' ? ' ok' : '');
       $('cbTrips').textContent = re.circuit_trip_count;
 
       const rlEl = $('rlActive');
@@ -244,8 +253,8 @@ body{background:#1a1a1a;color:#e0e0e0;font-family:'Segoe UI',system-ui,-apple-sy
       $('rlRejects').textContent = re.rate_limit_rejects;
 
       const hEl = $('health');
-      hEl.textContent = re.health_status;
-      hEl.className = 'value' + (re.health_status === 'healthy' ? ' ok' : re.health_status === 'critical' ? ' err' : ' warn');
+      hEl.textContent = u(re.health_status);
+      hEl.className = 'value' + (re.health_status === 'healthy' ? ' ok' : re.health_status === 'critical' ? ' err' : re.health_status ? ' warn' : '');
 
       $('uptime').textContent = formatUptime(re.uptime_seconds);
     }

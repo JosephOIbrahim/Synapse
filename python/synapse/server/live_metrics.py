@@ -34,6 +34,12 @@ logger = logging.getLogger("synapse.live_metrics")
 
 @dataclass(frozen=True)
 class SceneMetrics:
+    # measured=False marks a SHED cycle (hou unimportable, main thread busy past
+    # the collect timeout, or a walk exception): the numeric fields below are then
+    # bare defaults, NOT observations. Wave5/measures Bug A: consumers must render
+    # UNKNOWN when measured is False rather than exporting fps=24 / nodes=0 as if
+    # measured. This is the SceneMetrics analogue of the doctor's honesty contract.
+    measured: bool = True
     hip_file: str = ""
     current_frame: int = 0
     fps: float = 24.0
@@ -47,6 +53,13 @@ class SceneMetrics:
 
 @dataclass(frozen=True)
 class RoutingMetrics:
+    # measured=False marks a shed cycle (the router was never wired on this
+    # transport, or stats() raised). The COMPUTED rates below are then bare 0.0
+    # defaults, not observations — byte-identical to a real "router present, 0
+    # requests" result, so without this flag a consumer cannot tell unmeasured
+    # from measured-zero. Wave5/measures sibling of Bug A. (total_requests /
+    # cache_hits / knowledge_entries at 0 read as empty/resting and are kept.)
+    measured: bool = True
     total_requests: int = 0
     cache_hits: int = 0
     cache_hit_rate: float = 0.0
@@ -57,6 +70,13 @@ class RoutingMetrics:
 
 @dataclass(frozen=True)
 class ResilienceMetrics:
+    # measured=False marks a shed cycle (no health_monitor wired on this
+    # transport, or to_dict() raised). circuit_state/health_status are then bare
+    # AFFIRMATIVE defaults ('closed'/'healthy') that render green — an all-clear
+    # nobody measured. Worst case: a health monitor that is itself throwing sheds
+    # here and reports itself healthy. Wave5/measures sibling of Bug A; higher
+    # stakes than the scene counts because these are positive safety claims.
+    measured: bool = True
     circuit_state: str = "closed"
     circuit_trip_count: int = 0
     rate_limiter_active: bool = False
@@ -214,7 +234,7 @@ class MetricsAggregator:
         try:
             import hou
         except ImportError:
-            return SceneMetrics()
+            return SceneMetrics(measured=False)
 
         def _gather() -> SceneMetrics:
             # Runs on Houdini's main thread (marshalled below). All hou.* access
@@ -269,12 +289,12 @@ class MetricsAggregator:
             # Timeout (main thread busy), marshaller unavailable, or a failure
             # inside the walk. Never block the daemon — shed this cycle.
             logger.debug("Scene metrics collection failed/skipped", exc_info=True)
-            return SceneMetrics()
+            return SceneMetrics(measured=False)
 
     def _collect_routing(self) -> RoutingMetrics:
         """Collect routing stats from the tiered router."""
         if not self._router:
-            return RoutingMetrics()
+            return RoutingMetrics(measured=False)
 
         try:
             stats = self._router.stats()
@@ -316,12 +336,12 @@ class MetricsAggregator:
             )
         except Exception:
             logger.debug("Routing metrics collection failed", exc_info=True)
-            return RoutingMetrics()
+            return RoutingMetrics(measured=False)
 
     def _collect_resilience(self) -> ResilienceMetrics:
         """Collect resilience metrics from HealthMonitor."""
         if not self._health_monitor:
-            return ResilienceMetrics()
+            return ResilienceMetrics(measured=False)
 
         try:
             health = self._health_monitor.to_dict()
@@ -348,7 +368,7 @@ class MetricsAggregator:
             )
         except Exception:
             logger.debug("Resilience metrics collection failed", exc_info=True)
-            return ResilienceMetrics()
+            return ResilienceMetrics(measured=False)
 
     def _collect_session(self) -> SessionMetrics:
         """Collect session and command metrics."""
@@ -406,14 +426,52 @@ class MetricsAggregator:
     # Serialization
     # ------------------------------------------------------------------
 
+    # Per-section fields that are pure fabrication on a shed cycle. When that
+    # section's measured flag is False these are NOT observations, so the
+    # serializer nulls them (JSON null) and consumers render UNKNOWN. Resting
+    # values are deliberately KEPT (scene hip_file/current_frame; routing counts;
+    # resilience trip/reject counts): a "" / 0 there reads as empty, not as a
+    # fabricated measurement. Wave5/measures Bug A + its Routing/Resilience siblings.
+    #   NOTE (latent trap): the null-out lives ONLY here, in the dict serializer.
+    #   The frozen dataclasses on a shed cycle still carry the bare defaults
+    #   (SceneMetrics.fps=24.0, etc.). Every production consumer goes through this
+    #   serializer, so the chokepoint is complete — but a future reader that
+    #   touches agg.latest().scene.fps as an ATTRIBUTE would see the fabricated
+    #   value. Read the dict, or check .measured first.
+    _SCENE_UNMEASURED_NULL_FIELDS = (
+        "fps", "total_nodes", "lop_nodes", "sop_nodes", "obj_nodes",
+        "warnings", "errors",
+    )
+    _ROUTING_UNMEASURED_NULL_FIELDS = ("cache_hit_rate", "avg_latency_ms")
+    _RESILIENCE_UNMEASURED_NULL_FIELDS = ("circuit_state", "health_status")
+
+    @staticmethod
+    def _null_if_unmeasured(section, fields) -> None:
+        """Null a section's fabricated fields when it is marked measured=False."""
+        if isinstance(section, dict) and section.get("measured") is False:
+            for _f in fields:
+                section[_f] = None
+
     @staticmethod
     def _snapshot_to_dict(snapshot: MetricSnapshot) -> Dict:
-        """Convert snapshot to JSON-serializable dict with sorted keys."""
+        """Convert snapshot to JSON-serializable dict with sorted keys.
+
+        Honesty (Bug A + siblings): on a shed cycle (``section.measured is False``)
+        the fabricated fields of scene/routing/resilience are bare defaults, not
+        observations — they are nulled here so no consumer reports fps=24 / 0
+        nodes / 'healthy' / 0% cache-hit as if measured.
+        """
         d = dataclasses.asdict(snapshot)
         # Convert tier_counts tuple-of-tuples back to a dict for readability
         tc = d.get("routing", {}).get("tier_counts", ())
         if tc:
             d["routing"]["tier_counts"] = {name: count for name, count in tc}
+        MetricsAggregator._null_if_unmeasured(
+            d.get("scene"), MetricsAggregator._SCENE_UNMEASURED_NULL_FIELDS)
+        MetricsAggregator._null_if_unmeasured(
+            d.get("routing"), MetricsAggregator._ROUTING_UNMEASURED_NULL_FIELDS)
+        MetricsAggregator._null_if_unmeasured(
+            d.get("resilience"), MetricsAggregator._RESILIENCE_UNMEASURED_NULL_FIELDS)
         return d
 
 

@@ -1,0 +1,17 @@
+{
+  "kind": "sim",
+  "name": "healthy_sim",
+  "seed": 20260816,
+  "description": "A settling sim — kinetic energy decays toward rest, strain bounded, no NaN. The explosion detector MUST read STABLE and the sim contract MEASURED.",
+  "expect": { "verdict": "MEASURED", "explosion": "STABLE" },
+  "obs": {
+    "frames": [
+      { "frame": 1, "kinetic_energy": 5.0, "max_strain": 1.2, "max_velocity": 3.0 },
+      { "frame": 2, "kinetic_energy": 4.1, "max_strain": 1.1, "max_velocity": 2.6 },
+      { "frame": 3, "kinetic_energy": 3.0, "max_strain": 0.9, "max_velocity": 2.0 },
+      { "frame": 4, "kinetic_energy": 2.2, "max_strain": 0.8, "max_velocity": 1.5 },
+      { "frame": 5, "kinetic_energy": 1.6, "max_strain": 0.7, "max_velocity": 1.1 },
+      { "frame": 6, "kinetic_energy": 1.2, "max_strain": 0.6, "max_velocity": 0.8 }
+    ]
+  }
+}
