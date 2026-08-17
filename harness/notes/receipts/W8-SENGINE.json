@@ -1,0 +1,109 @@
+{
+  "leg": "W8-SENGINE",
+  "status": "green_with_findings",
+  "close_state": {
+    "recon": "complete — all four axes mapped first-hand; 11 findings posted to the wave8 bus addressed to W8-LIBR as they landed",
+    "commit": "BLOCKED — git add/commit denied by Bash permission in this interactive session (3 denials). Evidence note + this receipt are WRITTEN to the worktree but NOT committed. worktree HEAD is still base 327f52fd (ahead:0). Commit-before-receipt could not be executed; needs git-write permission or an orchestrator commit. Not faking a HEAD sha.",
+    "product_file": "harness/notes/W8-SENGINE-evidence.md (written, staged attempt denied)",
+    "base_sha": "327f52fd"
+  },
+  "acceptance": [
+    {
+      "predicate": "findings ranked P0/P1/P2 with file:line anchors, receipt committed on own branch",
+      "verdict": "UNKNOWN",
+      "evidence": "Ranking + file:line anchors: DONE (findings[] below, every entry carries a repo-relative file:line). Committed-on-branch: BLOCKED — Bash denied `git add`/`git commit` this session; receipt and evidence note are worktree-only, ahead:0. The conjunction cannot read pass while the commit half is unmet, and I will not assert commit-state that does not exist (the exact claim-before-act defect this harness kills)."
+    },
+    {
+      "predicate": "every claim traced to first-hand observation or named UNKNOWN",
+      "verdict": "pass",
+      "evidence": "Every finding anchor was personally read in the worktree tree at 327f52fd. The multi-agent recon corroborated and its adversarial pass CONFIRMED all findings with 0 refutations; the one claim originating from the verifier (worker-policy gate disabled on the panel) was re-verified first-hand at synapse_panel.py:2289 and claude_worker.py:292."
+    }
+  ],
+  "findings": [
+    {
+      "id": "INJ-GATE-OFF",
+      "rank": "P0",
+      "scope_note": "P0 for any networked/multi-user deployment; DELIBERATE auto-approve for single-user localhost (documented posture, CLAUDE.md 1.2).",
+      "axis": "injection",
+      "claim": "A real tool-policy allow-list gate exists (worker_policy.is_tool_allowed_for_worker denies review/approve/critical ops incl. execute_python/execute_vex/delete/render, fails closed on unknown tools) but is DISABLED on the interactive artist path: the panel builds the worker with enforce_worker_policy=False, so _execute_tool_block skips the gate (guarded by `if self._enforce_worker_policy`). The panel bridge also nullifies consent (auto-approve True, HumanGate _gate=None). Terminus is arbitrary code: _handle_execute_python compiles+exec()s the LLM `content` with {hou, __builtins__} — full builtins, no import filter. Net: on the path users chat through, a prompt-injected execute_python runs ungated. The gate that would stop it ships built-but-off.",
+      "anchor": "python/synapse/panel/synapse_panel.py:2289; python/synapse/panel/claude_worker.py:104,292-297; python/synapse/panel/worker_policy.py; python/synapse/server/handlers.py:1262,1272; python/synapse/server/api_adapter.py:367,471"
+    },
+    {
+      "id": "SANITIZE-SQ-MISLABEL",
+      "rank": "P1",
+      "axis": "injection",
+      "claim": "Sanitize-SQ is a harness-only PowerShell single-quote escaper (sanitize_sq doubles the apostrophe for a PS single-quoted literal). Whole-repo grep: every call site is under harness/** (orchestrate.ps1, quote-safe.ps1, tests); ZERO under python/synapse/**. It wraps ZERO NL-to-node engine entry points. PROGRAM.md B3 row lists 'Sanitize-SQ shipped (W6)' as the engine NL-to-node injection defense — a category error; the engine path has no Sanitize-SQ coverage at all.",
+      "anchor": "harness/autorevise/quote_safe.py:29; grep python/=empty; harness/bastion/PROGRAM.md:23"
+    },
+    {
+      "id": "NO-RETRY",
+      "rank": "P1",
+      "axis": "backends",
+      "claim": "Zero retry on any of the five backends. Each stream() issues exactly one conn.request/getresponse in a try/finally that only closes the connection; a 429/5xx becomes RuntimeError with no Retry-After honoring, and a transport error (socket.timeout/ConnectionError) propagates uncaught. Uniform across all five.",
+      "anchor": "python/synapse/panel/providers/nemotron_provider.py:299-306; anthropic_provider.py:195-216; gemini_provider.py:85-100"
+    },
+    {
+      "id": "ERR-SURFACE-ASYMMETRY",
+      "rank": "P1",
+      "axis": "backends",
+      "claim": "Only the Anthropic parser converts a mid-stream server `error` event into a loud RuntimeError. Gemini and the OpenAI-shape parsers (nemotron/ollama/custom) have NO in-band error handling — a mid-stream server error is skipped as non-JSON (logger.debug) or ignored, and the turn ends as end_turn with partial/empty content, nothing surfaced. Nemotron unclosed-<think> truncation drops reasoning with only logger.warning, yielding an empty visible turn. Breaks the D3 loud-surface discipline for 4 of 5 backends.",
+      "anchor": "python/synapse/panel/providers/gemini_provider.py:127-172,183; nemotron_provider.py:333-367,375-378; anthropic_provider.py:379-381"
+    },
+    {
+      "id": "OFFLINE-NO-FAILOVER",
+      "rank": "P1",
+      "axis": "offline",
+      "claim": "Fully offline there is no failover and no transport retry: a provider stream/transport error ends the turn via stream_error.emit; the worker's F2 retry_breaker is a loop-abandon guard for repeated identical TOOL failures, not an HTTP retry or provider switch. Ollama is the only local-capable backend, but its default row glm-5:cloud is a CLOUD tag metered by ollama.com, so the default 'local' pick also fails offline; only a genuinely-local tag with a running daemon works.",
+      "anchor": "python/synapse/panel/claude_worker.py:136,173-175,517-545; python/synapse/panel/providers/registry.py:88-96"
+    },
+    {
+      "id": "CREATE-NODE-SET-PARM-VERBATIM",
+      "rank": "P2",
+      "axis": "injection",
+      "claim": "Additional argument-content-unchecked NL-to-node seams: create_node passes the LLM-supplied name verbatim to parent_node.createNode(node_type, name) with existence-check only — the repo _safe_node_name sanitizer is not applied. set_parm validates only NaN/Inf then passes node path, parm name, and value verbatim to hou parm.set.",
+      "anchor": "python/synapse/server/handlers_node.py:43,68"
+    },
+    {
+      "id": "KEY-PLAINTEXT-ENV-SETTABLE-HOST",
+      "rank": "P2",
+      "axis": "keys",
+      "claim": "Key location classes (values never echoed): claude=hou.secure cred store (inert on H21/H22) OR ANTHROPIC_API_KEY env OR <repo>/.env PLAINTEXT (set_anthropic_key.bat appends; .env gitignored). gemini=GEMINI_API_KEY/GOOGLE_API_KEY env. nemotron=NVIDIA_API_KEY env. ollama=OLLAMA_API_KEY env or none. custom=user-named env var; only the NAME lives in panel_settings.json, never the value. No key value is ever logged (host/auth: 'No logging is emitted on fallback'). Each key egresses only to its provider host, but nemotron/ollama/custom base URLs are env/config-settable, so the Bearer key follows the configured host with no vendor-host pin.",
+      "anchor": "python/synapse/host/auth.py:1-45,120-155; set_anthropic_key.bat; python/synapse/panel/settings.py:129; .gitignore:90-92; nemotron_provider.py:57; ollama_provider.py:38"
+    },
+    {
+      "id": "TIMEOUT-ASYMMETRY",
+      "rank": "P2",
+      "axis": "backends",
+      "claim": "HTTP timeout value asymmetry with no in-code rationale: claude/gemini 60s vs nemotron/ollama/custom 120s. Module constants, no env override or per-call parameter.",
+      "anchor": "python/synapse/panel/providers/anthropic_provider.py:28; gemini_provider.py:28; nemotron_provider.py:40"
+    },
+    {
+      "id": "VERIFIED-NON-ISSUES",
+      "rank": "INFO",
+      "axis": "all",
+      "claim": "Confirmed NON-issues (first-hand positive evidence, recorded so they are not re-litigated): (1) NO no-timeout hang class — every backend passes a bounded socket timeout to its connection (60s claude/gemini, 120s nemotron/ollama/custom). (2) NO cross-backend failover — by design (base.py D3 no-silent-fallback); a stream failure surfaces loud as stream_error. (3) Routing is EXPLICIT SELECTION, not cost/capability routing — the tier_candidates_for capability classifier is latent (zero non-test consumers); cost is display-only ('Cost never appears here. A price cannot make anything green'). (4) No key value is ever logged.",
+      "anchor": "anthropic_provider.py:28,192; nemotron_provider.py:40,291,294; python/synapse/panel/providers/registry.py:106,193; probe.py:269,339; base.py:14-16"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "PROGRAM.md:23 B3 status column is wrong: 'Sanitize-SQ shipped (W6); defense breadth unmeasured' credits a harness shell-quoter as the engine's NL-to-node injection defense. A human should correct the row — the engine path has no Sanitize-SQ coverage; the actual defense (worker_policy allow-list) exists but is off on the interactive path.",
+      "owner": "Joe / CTO"
+    },
+    {
+      "item": "Decide the artist-path posture: keep enforce_worker_policy=False + consent-nullified bridge for single-user localhost (documented auto-approve), or ARM the worker-policy gate / consent for any networked/multi-user or studio ship. This is the 'defense breadth unmeasured' decision the blueprint flagged; the machinery already exists (worker_policy.is_tool_allowed_for_worker).",
+      "owner": "Joe / CTO"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W8-SENGINE-PROBE-INJ-LIVE",
+      "class": "probe",
+      "band": "TRUTH",
+      "name": "live end-to-end injection probe: confirm execute_python dispatches ungated through the interactive panel",
+      "scope": "Through a live Houdini + panel, send a benign prompt-injection payload that induces houdini_execute_python with a marker side-effect, and confirm it dispatches without the worker-policy gate or consent. LIKELY gui_required — record UNKNOWN if not measurable headless. Read-only-ish (benign marker only, undo-wrapped).",
+      "readonly": false,
+      "note": "Verifies INJ-GATE-OFF end-to-end rather than by static read."
+    }
+  ]
+}
