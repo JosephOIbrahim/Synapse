@@ -1,0 +1,20 @@
+W8-LIBR LANDED 2026-08-17
+
+harness/bastion/FINDINGS_INDEX.md  (one index, one writer)
+
+128 findings synthesized across 7 scout streams (B1..B7):
+  P0=3  P1=58  P2=51  info=16   |   status: new=114  known=4  gated=10
+  7/7 first-hand librarian spot-checks CONFIRMED, 0 refuted.
+  1 UNPROVEN (no file:line), 10 UNKNOWN (unobtainable headless, each named).
+
+Three P0 (confirmed first-hand):
+  TRUTH-P0-1  tops cook reports status='cooked' on an all-failed PDG cook   (handlers_tops/cook.py:79)
+  TRUTH-P0-2  execute_python advertises 'automatic rollback on failure' it does not provide  (_tool_registry.py:205)
+  ENG-INJ-GATE-OFF  worker-policy allowlist ships OFF on the interactive path  (synapse_panel.py:2289)
+
+Cross-cutting (read MX-1..MX-4 in the index):
+  MX-1  6 of 7 scouts finished recon but could NOT commit (mutating Bash approval-denied); receipts uncommitted on their branches. Evidence intact on disk - human commit or re-dispatch-with-approval needed.
+  MX-2  /rc definition UNKNOWN (SMITH block) - stays a named placeholder for Joe.
+  MX-4  B6-SHIELD clean of live secrets; open: 4xP1 patent disclosures in the public repo + unimplemented egress-redaction hook.
+
+Next (touchpoint 2, batched sitting): Chunk-C blueprints cite the index; accept W8 findings + ratify the seven blueprints.
