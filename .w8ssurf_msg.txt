@@ -1,0 +1,6 @@
+W8-SSURF (B5-SURFACE): surface-scout evidence — install/first-run/error-language/UX/docs
+
+21 first-hand findings, 0 P0 / 9 P1 / 7 P2 + positives, streamed to wave8 bus for W8-LIBR.
+Product commit; receipt lands as the closing commit per commit-before-receipt (CRX0/W5H).
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
