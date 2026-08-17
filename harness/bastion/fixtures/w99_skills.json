@@ -1,0 +1,35 @@
+{
+  "id": "W99-SKILLS",
+  "band": "BUILD",
+  "name": "fixture: a mission carrying skills[] for the v2 compile self-test",
+  "source": {
+    "doc": "harness/bastion/PROGRAM.md",
+    "anchor": "HARNESS-V2-SMITH"
+  },
+  "targets": [
+    "self-test fixture only; not a real leg. Exercises schema round-trip + skills[] injection."
+  ],
+  "skills": [
+    "harness/bastion/skills/example_repo_relative_skill.md",
+    "/mnt/skills/public/artifact-design"
+  ],
+  "deps": [],
+  "readonly": false,
+  "touches": [
+    "harness/bastion/fixtures/"
+  ],
+  "crucible_criteria": [
+    "skills[] paths render verbatim into the compiled brief",
+    "unobtainable renders UNKNOWN, never zero"
+  ],
+  "spawn_classes": [
+    "probe"
+  ],
+  "acceptance": [
+    {
+      "predicate": "compiles into a leg row + a brief whose Skills section lists both declared paths",
+      "evidence": "test"
+    }
+  ],
+  "note": "FIXTURE for tests/test_bastion_v2.py; W99 is a non-colliding fixture wave."
+}
