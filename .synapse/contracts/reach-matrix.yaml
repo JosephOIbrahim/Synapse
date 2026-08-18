@@ -1,0 +1,33 @@
+# R3 — REACH blueprint §4 R3 / §7. GREEN. Evidence-only leg: the matrix JSON is the
+# artifact; every cell named, honest UNKNOWN rendered, never inferred.
+id: reach-matrix
+goal: "Maintain harness/reach/reach_matrix_<date>.json: for every named (Houdini build x licence tier x OS) cell in the grid, a verdict of runs / fails / UNKNOWN with an evidence trail or an explicit reason; an unnamed cell FAILS the contract. Unmeasured is UNKNOWN — never zero, never an estimate, never inferred (blueprint §1.1)."
+model: sonnet
+autonomy: green
+owns:
+  - "harness/reach/reach_matrix_*.json"
+  - ".synapse/contracts/reach-matrix.yaml"
+do_not_touch:
+  - "harness/reach/STATE.json"                    # the scoreboard — Joe's
+  - "VERSION"
+  - "python/synapse/cognitive/**"
+features:
+  - description: "The grid names every cell: for each named (build x tier x OS) a cell object exists with an explicit verdict field — no axis combination is silently absent"
+    verify: "python -c \"import json,itertools; m=json.load(open('harness/reach/reach_matrix_2026-08-18.json')); w=set(itertools.product(m['grid_axes']['houdini_build'],m['grid_axes']['licence_tier'],m['grid_axes']['os'])); g=set((c['houdini_build'],c['licence_tier'],c['os']) for c in m['cells']); assert w==g and m['summary']['unnamed']==0\""
+    passing: true
+  - description: "Every verdict is one of runs / fails / UNKNOWN; every UNKNOWN cell carries a note explaining why it is unmeasured; every runs cell carries at least one evidence entry"
+    verify: "python -c \"import json; m=json.load(open('harness/reach/reach_matrix_2026-08-18.json')); [(_ for _ in ()).throw(AssertionError(c)) for c in m['cells'] if c['verdict'] not in ('runs','fails','UNKNOWN') or (c['verdict']=='UNKNOWN' and not c['note']) or (c['verdict']=='runs' and not c['evidence'])]\""
+    passing: true
+  - description: "Today's honest state: exactly one runs cell (22.0.400 x indie x windows), zero fails, all remaining cells UNKNOWN; summary counts match the cells array"
+    verify: "python -c \"import json; m=json.load(open('harness/reach/reach_matrix_2026-08-18.json')); s=m['summary']; assert s['runs']==sum(1 for c in m['cells'] if c['verdict']=='runs')==1 and s['fails']==0 and s['unknown']==sum(1 for c in m['cells'] if c['verdict']=='UNKNOWN') and s['cells_total']==len(m['cells'])\""
+    passing: true
+notes: >-
+  Licence tier is evidence, not inference: today's seat tier (indie) is verified by
+  harness/notes/probe_render_offload.results.20260815T124545Z.json (hou.licenseCategory()
+  == licenseCategoryType.Indie, live on 22.0.400, 2026-08-15). If a tier cannot be
+  verified from an artifact, cells on that tier stay UNKNOWN — never infer.
+  Apprentice/ApprenticeHD are where beta testers live (blueprint §4 R3); the Gate A
+  L3-5 Apprentice session is already an outstanding human task — closing those cells
+  is the same work, two purposes. Grid widening (per-patch H22 cells, H20 line) is a
+  human call: 22.0.368/397/406/413 are installed on the seat but unnamed targets today.
+stop_when: "all features passing (a re-dated matrix must re-derive summary counts and re-run all three checks)"
