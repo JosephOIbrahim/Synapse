@@ -30,4 +30,13 @@ notes: >-
   L3-5 Apprentice session is already an outstanding human task — closing those cells
   is the same work, two purposes. Grid widening (per-patch H22 cells, H20 line) is a
   human call: 22.0.368/397/406/413 are installed on the seat but unnamed targets today.
+  WIDEN TRIGGER (CTO ruling 2026-08-18): widen grid_axes.houdini_build only in the
+  re-dated matrix cycle that ALSO produces the first measurement for a previously
+  unnamed patch — (a) the N-1 live pass on 22.0.368 (docs/reviews/h22-cto-roadmap-2026-07-16.md),
+  or (b) a cheap F5a-class env probe re-run per installed patch's hython.exe. The
+  widened matrix must re-run all three goalposts. Per-build evidence discipline:
+  licence-tier facts are host-level and generalize across builds (measured on
+  22.0.400, 2026-08-15); run verdicts never generalize across builds — a probe
+  measured on 22.0.400 fills only 22.0.400 cells. Until such a leg exists, leave the
+  axis at two builds; grid_rationale carries the installed-but-unnamed truth.
 stop_when: "all features passing (a re-dated matrix must re-derive summary counts and re-run all three checks)"
