@@ -14,7 +14,7 @@ do_not_touch:
   - "README.md"                             # public-face content edits are Joe words; the gate only READS it
 features:
   - description: "ROOT_FILES gains readme_banner anchored to the '<sub>vX.Y.Z · Houdini' banner so a historical version in the body cannot satisfy it; the in-tree chain (VERSION == __version__ == pyproject == docstring == claude_md == readme_banner) is one agree= verdict"
-    verify: "python harness/verify/version_agreement.py prints the six-way chain and readme_banner=5.52.0 agree=True"
+    verify: "python harness/verify/version_agreement.py prints the six-way chain and readme_banner=5.53.0 agree=True"
     passing: true
   - description: "public_agreement verdict gates the exit: banner != VERSION red; newest release tag > banner red ('public face stale'); absent banner red; banner ahead of tags green (release window); git/tags unavailable green-with-'nothing to compare'"
     verify: "tests/test_reach_public_agreement.py — injected-tags unit tests cover every arm"
@@ -22,7 +22,7 @@ features:
   - description: "--fix heals ONLY a stale 'tags: vX is latest' claim forward to canonical; a claim AHEAD of canonical stays red for human eyes (fixing it down would mask the anomaly)"
     verify: "tests/test_reach_public_agreement.py::test_fix_heals_stale_claim_only"
     passing: true
-  - description: "live run on master checkout: banner == VERSION == newest tag (5.52.0), and the stale 'tags: v5.50.0 is latest' claim surfaces RED with evidence — the exact drift shape this contract exists to catch"
+  - description: "live run on master checkout: banner == VERSION == newest tag (5.53.0), and the stale 'tags: v5.50.0 is latest' claim surfaces RED with evidence — the exact drift shape this contract exists to catch"
     verify: "paste of real `python harness/verify/version_agreement.py` output in the leg receipt harness/reach/bus/reach_p1_r2.json"
     passing: true
 stop_when: "all features passing OR sessions exhausted OR budget reached"

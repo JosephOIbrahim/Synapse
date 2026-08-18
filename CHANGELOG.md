@@ -2,6 +2,18 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.53.0 — the public face stops trailing
+
+*2026-08-18: the REACH blueprint's P1 Truth phase closes — the public face can no longer trail a published release, and the reach matrix names every cell. **Six version surfaces agree on 5.53.0, verdict=PASS** · Houdini 22.0.400 · the changelog gap below is stated, not hidden.*
+
+**THE PUBLIC FACE STOPS TRAILING (R2, `2d2bad15` + `dc4b0367`).** `harness/verify/version_agreement.py` gains a `readme_banner` anchor and a `public_agreement()` gate: the README's claimed version must equal the newest release tag, or the verifier exits red. The release-window asymmetry is deliberate — the public face ahead of the newest tag stays green (bump lands, README syncs, tag is pushed after); a tag ahead of the public face is red. The stale `tags: v5.50.0 is latest` claim live on master surfaced RED and was healed forward by the verifier's own `--fix`. Pinned by `tests/test_reach_public_agreement.py`.
+
+**THE REACH MATRIX NAMES EVERY CELL (R3, `853874a6`).** `harness/reach/reach_matrix_2026-08-18.json` — the (Houdini build × licence tier × OS) grid, every cell runs / fails / UNKNOWN with an evidence trail or an explicit reason. Unmeasured is UNKNOWN, never zero, never an estimate. Today's honest state: one runs cell (22.0.400 × indie × windows), zero fails, 29 UNKNOWN. Contract: `.synapse/contracts/reach-matrix.yaml`, three mechanically-checkable goalposts.
+
+**THE CONTRACT GOALPOSTS RATIFIED (`006c6834`).** The four `passing: false` flags in `reach-public-agreement.yaml` flipped to true after the crucible's SOUND-WITH-NITS verdict and the two nits closed (contract flags + matrix evidence SHA).
+
+**CHANGELOG GAP (honest note).** This entry is the first since v5.41.0 — v5.42.0 through v5.52.0 were released without changelog entries. The release ritual touches the five version-chain files only; the changelog is not part of it. Backfill is a separate task.
+
 ## v5.41.0 — the clearance release, and the house gets a broom
 
 *2026-07-31: v5.40.1's deferred list closes and the #1 failure class (phantom APIs) gets a standing housecleaning harness. **5,336 tests passing, 0 failures, 137 skipped** — **+6** against v5.40.1 (5,330; +3 `test_sessionstart_ping.py`, +3 `test_websocket_cancel_reachable.py`), local Windows suite · Houdini 22.0.368 · two review branches deliberately NOT in this release.*
