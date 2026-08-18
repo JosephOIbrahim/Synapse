@@ -212,3 +212,7 @@ shot_layers/
 # Session scratch (runner logs, probe outputs, one-off scripts) — regenerates
 # every session; ruled Phase-1 debris 2026-08-09.
 harness/notes/scratch/
+
+# Probe outputs from wave legs (phase-1 debris ruled 2026-08-18):
+# regenerable evidence — relocated out of docs/ so the public repo carries no probe noise.
+harness/notes/h22/probes/

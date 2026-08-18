@@ -2281,12 +2281,17 @@ class SynapsePanel(QtWidgets.QWidget):
             _frz_send.set_sizes(payload_chars=len(self._messages or ()))
             tools = get_anthropic_tools() if get_anthropic_tools else None
             system = self._build_system_prompt()
-            # Interactive panel = human-in-the-loop: the artist typed the request
-            # and is watching it run, so the worker allowlist gate (autonomous-only)
-            # is disabled here to preserve the existing artist-initiated path.
+            # Interactive panel — the artist is in the loop for creative intent,
+            # but the WORKER (an LLM) may not self-authorize gated ops.
+            # Joe DECIDE 2026-08-18 (ENG-INJ-GATE-OFF): consent posture = ON.
+            # The worker-policy allowlist (denies review/approve/critical gates:
+            # execute_python/execute_vex, delete_node, renders, exports, prunes,
+            # PDG cooks — fails closed on unknown tools) now binds this path too.
+            # Gated ops happen in the native Houdini UI or via a bridge /mcp
+            # consent-gated call, not through the panel worker.
             self._worker = ClaudeWorker(self._messages, system_prompt=system,
                                         tools=tools, parent=self,
-                                        enforce_worker_policy=False,
+                                        enforce_worker_policy=True,
                                         provider=self._make_provider())
         self._worker.token_received.connect(self._on_token)
         self._worker.stream_done.connect(self._on_done)

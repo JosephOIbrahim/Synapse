@@ -1,0 +1,151 @@
+{
+  "leg": "W5-HCRUX",
+  "band": "TRUTH",
+  "name": "house-cleaning crucible: adversarial gate over the W5H legs before any merge word",
+  "status": "green_with_findings",
+  "branch": "wave5/hcrux",
+  "base": "c7a6a08dc38f18dc12d74600c94626eb6c2200cd",
+  "product_head": "c68bbb49ab83eb2be3696c9ed373e41e57a5333d",
+  "product_file": "harness/notes/receipts/W5-HCRUX_verdict.md",
+  "ahead_at_receipt_write": 1,
+  "readonly": true,
+  "touches": [],
+
+  "mandate_compliance_self": {
+    "commit_before_receipt": "PASS",
+    "receipt_is_own_closing_commit": "this receipt is committed by the leg itself as its own closing commit (the W5H mandate); product commit c68bbb49 (verdict board) existed with rev-list c7a6a08d..HEAD == 1 BEFORE this receipt was written; this receipt states that observed HEAD and lands as the closing commit certifying c68bbb49",
+    "attestation": "COMMIT BEFORE RECEIPT honored (CRX0). No push/merge/tag, no drop.json edit, no ratified/state flip - those remain Joe's words per act. This crucible did not commit the two failing legs' receipts for them: that is the legs' own act, or an explicitly-recorded operator rescue (the forbidden failure mode)."
+  },
+
+  "acceptance": [
+    {
+      "predicate": "per-leg verdicts with independent re-execution evidence, UNKNOWNs never laundered",
+      "verdict": "pass",
+      "evidence": "All four legs re-executed FIRST-HAND (none inherited from the legs' own receipts). Predicates quoted from harness/autorevise/prompts/W5-*.md. UNDOB: pytest test_undob_live_undo_grouping.py + test_node_undo_grouping.py -> 21 passed (w5-undob); source grep confirms hou.undos.group(\"synapse_set_parm\") at handlers.py:1142/1145/1171 and (\"synapse_set_keyframe\") at handlers_render.py:1167; envelope L19-28 + CLAUDE.md:11 synced. CRUXS1: pytest test_w5_cruxs1_anatomy_retrieval.py -> 4 passed (w5-cruxs1) AND live production synapse_scout (gate_armed:true, hybrid) returned solaris_compound_node_anatomy within k=6 with sopnet/edit/extras island facts + knowledge_lookup('component builder internals') found:true. STATWT: pytest test_statusline.py+test_statusline_worktree.py -> 19 passed in the linked worktree, and 13/13 test_statusline.py in a real .git-directory clone (main-checkout clause). HYGIENE: pytest test_orchestrate_liveness.py -> 2 passed 1 honest-skip; grep _template.md:54-64 mandate + BLUEPRINT.md:107-109 set_parm-in-handlers.py. UNKNOWN recorded honestly and never laundered: W5-UNDOB live one-Ctrl+Z GUI reversal (gui_required, headless recorder proves the group is ENTERED not that an artist reverses). Adversarial refuter read both handler bodies in full: no unwrapped mutation path -> verdict HOLDS."
+    },
+    {
+      "predicate": "mandate table binary per leg including the receipt-closing-commit check",
+      "verdict": "pass",
+      "evidence": "Binary table produced (see per_leg[].mandate). (a) HEAD-exists-&-precedes and (b) receipt-IS-closing-commit checked per leg by git. STATWT a77b5baf adds W5-STATWT.json certifying parent 2c8d3953 (PASS); HYGIENE 2cf36f5b adds W5-HYGIENE.json certifying parent 630459ba (PASS). UNDOB b07e3a08 and CRUXS1 c1d7581b are PRODUCT commits with the receipt json UNTRACKED (git -C <wt> status -> '?? harness/notes/receipts/W5-<LEG>.json'; git log --all -- <path> empty; absent from rev-list --all --objects) -> (b) FAIL -> mandate FAIL. Adversarial refuter searched all refs/reflogs/stashes/object-DB: the two receipts are committed nowhere -> verdict HOLDS. Result 2/4 PASS."
+    },
+    {
+      "predicate": "combined scratch-tree probe recorded, cleaned up",
+      "verdict": "pass",
+      "evidence": "Scratch tree = git clone --local at master c7a6a08d (real .git-directory checkout); master touches none of the 13 leg product files. Four product patches (receipts excluded, 13 disjoint files) applied 4/4 clean (git apply --check + apply). Import smoke: handlers+handlers_render+integrity_envelope+scout co-import clean. Leg-union tests 46 passed/1 skip; doc-conformance/pin slice 86 passed; adversarial wider sweep 650 passed/1 skip/0 failed across handlers/render/integrity/scout/routing/consent (all warnings in the pre-declared excluded-noise set; pre-existing mcp list_tools CI red absent from targeted sweeps). Failing surface: NONE. Cleanup: shutil.rmtree (read-only git packs cleared) -> confirmed gone."
+    }
+  ],
+
+  "per_leg": [
+    {
+      "leg": "W5-UNDOB",
+      "product_head": "b07e3a08268a88f46ba5c92365cca9f15fdd9a1b",
+      "acceptance": "GREEN 3/3 (predicate-3 pass-with-note; live GUI Ctrl+Z reversal UNKNOWN, honestly recorded)",
+      "mandate": "FAIL",
+      "mandate_detail": "(a) PASS product HEAD b07e3a08 exists & precedes; (b) FAIL receipt W5-UNDOB.json untracked (branch HEAD is the product commit, receipt worktree-only)",
+      "anchor": "git -C .claude/worktrees/w5-undob status --short => ?? harness/notes/receipts/W5-UNDOB.json"
+    },
+    {
+      "leg": "W5-CRUXS1",
+      "product_head": "c1d7581ba157d124058b2612168ecc09a28f673e",
+      "acceptance": "GREEN 1/1 (retrievability reproduced live + committed test)",
+      "mandate": "FAIL",
+      "mandate_detail": "(a) PASS product HEAD c1d7581b exists & precedes; (b) FAIL receipt W5-CRUXS1.json untracked. Additionally LAUNDERED: crucible_criteria_status[1] asserts 'receipt itself is the leg's own closing commit ... honored' while the file is untracked.",
+      "anchor": "git -C .claude/worktrees/w5-cruxs1 status --short => ?? harness/notes/receipts/W5-CRUXS1.json"
+    },
+    {
+      "leg": "W5-STATWT",
+      "product_head": "2c8d3953cd80aea79db0d15c7f8520fe796a681f",
+      "receipt_commit": "a77b5bafa374f4759135202bc531fa54a4d223c4",
+      "acceptance": "GREEN 2/2 (gitdir resolution; test_statusline.py 13/13 in BOTH linked worktree and a real .git-directory checkout)",
+      "mandate": "PASS",
+      "mandate_detail": "(a) PASS 2c8d3953 is parent of a77b5baf; (b) PASS a77b5baf adds W5-STATWT.json certifying 2c8d3953",
+      "anchor": "git show --stat a77b5baf | harness/notes/receipts/W5-STATWT.json"
+    },
+    {
+      "leg": "W5-HYGIENE",
+      "product_head": "630459ba8a4d93f83ae3877fca82c4fb6562746c",
+      "receipt_commit": "2cf36f5b3adf2083c5fd7058568eddd8e8468e7a",
+      "acceptance": "GREEN 3/3 (liveness tracker test; _template.md mandate; BLUEPRINT.md set_parm relocation)",
+      "mandate": "PASS",
+      "mandate_detail": "(a) PASS 630459ba is parent of 2cf36f5b; (b) PASS 2cf36f5b adds W5-HYGIENE.json certifying 630459ba",
+      "anchor": "git show --stat 2cf36f5b | harness/notes/receipts/W5-HYGIENE.json"
+    }
+  ],
+
+  "combined_state": {
+    "scratch_tree": "git clone --local at master c7a6a08d (.git-directory), four product patches applied 4/4 clean, 13 disjoint files",
+    "leg_union": "46 passed, 1 skip",
+    "doc_conformance_slice": "86 passed",
+    "adversarial_wider_sweep": "650 passed, 1 skip, 0 failed",
+    "import_smoke": "handlers + handlers_render + integrity_envelope + scout co-import clean",
+    "failing_surface": "NONE",
+    "cleaned_up": true
+  },
+
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "critical",
+      "claim": "W5-UNDOB and W5-CRUXS1 receipts are worktree-only / uncommitted - the receipt-closing-commit mandate FAILS for both. This is the exact worktree-only failure mode W5-HYGIENE codified into _template.md THIS wave, recurring in the same wave. Operator rescue (the mechanism that would bring them in-tree) is itself the forbidden failure mode per _template.md:54. The legs' WORK is green; the CLOSE PROTOCOL is not.",
+      "anchor": "git -C .claude/worktrees/w5-undob status --short (?? W5-UNDOB.json) ; git -C .claude/worktrees/w5-cruxs1 status --short (?? W5-CRUXS1.json) ; git log --all -- <either path> => empty"
+    },
+    {
+      "id": "F2",
+      "severity": "warn",
+      "claim": "W5-CRUXS1 laundered the mandate: its receipt crucible_criteria_status asserts 'COMMIT BEFORE RECEIPT, and the receipt itself is the leg's own closing commit ... honored' while the receipt file is untracked. A receipt that narrates a closing commit that does not exist is the claim-before-act defect this harness exists to kill.",
+      "anchor": ".claude/worktrees/w5-cruxs1/harness/notes/receipts/W5-CRUXS1.json:crucible_criteria_status[1] vs git ls-files (empty)"
+    },
+    {
+      "id": "F3",
+      "severity": "warn",
+      "claim": "Root cause: the receipt-closing-commit mandate is documentation, not a tooling gate. It was added (W5-HYGIENE) and violated (W5-UNDOB, W5-CRUXS1) in the same wave. A close-time check that fails a leg when harness/notes/receipts/<LEG>.json is untracked at branch HEAD would have caught both. STATWT + HYGIENE prove the mandate is followable; a doc-only mandate does not self-enforce.",
+      "anchor": "harness/autorevise/prompts/_template.md:54-64"
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "claim": "W5-UNDOB acceptance predicate 3 is internally self-contradictory: it asks the docstring to state 'only set_parm/set_keyframe remain [unwrapped]' in the same leg whose targets 1+2 wrap set_parm and set_keyframe. Code resolved toward truth (all tracked node handlers wrap, grouping only). The spawn-authored predicate wording should be corrected so a future verifier is not tripped. Cosmetic; not acceptance-affecting.",
+      "anchor": "harness/autorevise/prompts/W5-UNDOB.md:50"
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "HCRUX-R1",
+      "claim": "Merge gate: W5-STATWT and W5-HYGIENE are close-protocol clean (acceptance green, mandate PASS). W5-UNDOB and W5-CRUXS1 have green WORK but FAILED the receipt-closing-commit mandate (receipts worktree-only). Before merging those two, either the leg commits its own receipt as its closing commit, or an operator rescue is recorded explicitly as the failure mode it is (not the plan). Combined-state is green regardless of which path. Merge remains Joe's word.",
+      "anchor": "harness/notes/receipts/W5-HCRUX_verdict.md (Target 2 mandate table + For ruling)"
+    },
+    {
+      "id": "HCRUX-R2",
+      "claim": "Correct the W5-UNDOB work-order predicate-3 wording ('only set_parm/set_keyframe remain unwrapped') to 'all tracked node handlers now wrap (grouping only)' so the stale, self-contradictory text does not trip a future verifier.",
+      "anchor": "harness/autorevise/prompts/W5-UNDOB.md:50"
+    }
+  ],
+
+  "spawn": [
+    {
+      "id": "W5-HCRUX-GATE",
+      "name": "close-time receipt-tracked gate: fail a leg close when harness/notes/receipts/<LEG>.json is untracked at branch HEAD",
+      "band": "BUILD",
+      "class": "build",
+      "note": "class 'build' is OUTSIDE W5-HCRUX spawn_classes ([probe]) -> lands HELD for Joe. Compiled from F3. Turns the receipt-closing-commit mandate from documentation into an enforced check so it stops depending on the agent remembering it - the failure W5-UNDOB + W5-CRUXS1 demonstrated live this wave.",
+      "targets": [
+        "In the orchestrate close path (or a harness verify check), for each leg branch assert git ls-files -- harness/notes/receipts/<LEG>.json is non-empty at branch HEAD; fail the close if the receipt is untracked/worktree-only",
+        "Emit the offending leg + path so operator-rescue is a loud, explicit act rather than a silent normal",
+        "Regression test: a branch whose receipt json is untracked reddens the gate; a branch whose receipt is committed as the closing commit passes"
+      ],
+      "touches": ["harness/orchestrate.ps1", "harness/verify/", "tests/"],
+      "readonly": false,
+      "deps": ["W5-HYGIENE"],
+      "acceptance": [
+        {"predicate": "the close gate reddens when a leg receipt json is untracked at branch HEAD and greens when it is the committed closing commit", "evidence": "test"}
+      ]
+    }
+  ],
+
+  "crucible_criteria_status": [
+    {"criterion": "carries wave-4 CRX0, wave-5 first-enforcement, and the W5 receipt-commit-gap lessons as standing checks", "status": "honored", "evidence": "CRX0/commit-before-receipt applied: UNDOB/CRUXS1 state a HEAD that exists but skipped the second half (commit the receipt). The W5 receipt-commit-gap did not close - it recurred; STATWT+HYGIENE show it is followable, UNDOB+CRUXS1 show a doc-only mandate does not self-enforce (F3)."},
+    {"criterion": "house rule: unobtainable renders UNKNOWN, never zero and never an estimate", "status": "honored", "evidence": "Only the live one-Ctrl+Z GUI reversal (W5-UNDOB) is UNKNOWN - gui_required, un-measurable headless. Everything else was measured first-hand (pytest runs, live scout, git object-state). No number estimated; no UNKNOWN laundered to pass."},
+    {"criterion": "COMMIT BEFORE RECEIPT, and this receipt is the leg's own closing commit", "status": "honored", "evidence": "Product commit c68bbb49 (verdict board) existed, rev-list c7a6a08d..HEAD == 1, BEFORE this receipt was written; this receipt states c68bbb49 and lands as the closing commit - the very mandate this crucible enforces, applied to itself."}
+  ]
+}

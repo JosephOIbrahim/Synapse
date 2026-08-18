@@ -1,0 +1,131 @@
+{
+  "schema": "receipt/v1",
+  "leg": "W2-S1",
+  "title": "doctor off-main for real: marshal the transitive hou closure first",
+  "band": "BUILD",
+  "status": "green_with_findings",
+  "status_note": "All four targets shipped. The gating audit (crucible criterion #4) came back MAP_COMPLETE from BOTH adversarial passes, so the closure is fully marshalable this leg -- no STOP-at-(1)+(2). green_with_findings because: (1) the mission's site counts under-count by design (the resolver's hip_is_unsaved->isNewFile read at store.py:807 is a THIRD hou read the 'two sites' framing folds in; the doctor's '2 direct sites' are 3 reads across 2 functions); (2) a hou crash site OUTSIDE the store/doctor closure and OUTSIDE my touches -- shared/bridge.py::_execute_houdini scene-hash + hou.undos.group -- is handled by BYPASSING the bridge in target 3, not by editing shared/; (3) secondary pxr exposure (moneta_provenance reads + the external-Moneta store construct now run off-main) is thread-tolerant for the reads but the external authoring is unverifiable here -> spawned as a probe; (4) a stale-doc drift found in moneta_runtime/doctor (use_real_usd) is out of my touches -> spawned. The gui_required predicate 3 is UNKNOWN (human-gated deploy+reload), never zero.",
+  "model": "claude-opus-4-8",
+  "branch": "wave2/s1",
+  "worktree": "C:/Users/User/SYNAPSE/.claude/worktrees/w2-s1",
+  "commit": "2fa5ec2e",
+  "base": "29e55bf0",
+  "source_authority": "docs/reviews/latency_authority_2026-08-13.md (R2): 514ms run_doctor hold MEASURED; 648ms UNCONFIRMED. This leg targets the 514ms figure; 648 is cited NOWHERE (crucible criterion #3 satisfied).",
+
+  "acceptance": [
+    {
+      "predicate": "transitive hou audit enumerated in the receipt, file:line per site, each marked marshaled/guarded/unreachable",
+      "verdict": "pass",
+      "evidence": "receipt",
+      "detail": "See audit_map below. Method: a 6-subsystem read-only tracer fan-out + 2 adversarial completeness passes (grep-sweep brute force + call-path skeptic), both returning MAP_COMPLETE with ZERO missed sites and ZERO reachability disputes. 7 F1 hou.* sites reachable off-main, all marshalled; 4 sites proven unreachable; 6 secondary pxr sites (NOT the hou F1 class) documented."
+    },
+    {
+      "predicate": "cold-store-construct off main no longer reaches an unmarshalled hou call (the W1-MTFIX F1 crash class, tested directly)",
+      "verdict": "pass",
+      "evidence": "test",
+      "detail": "tests/test_w2s1_doctor_offmain.py -- 9/9 green (system Python 3.14.2, the GATE interpreter). test_store_cold_resolve_off_main_marshals_every_hou_read: a fake hou records the thread of EVERY read; a fake hdefereval pumps deferred callbacks on the test's main thread (a stand-in for Houdini's main-thread event loop, so run_on_main's DEFERRED path is genuinely exercised); the resolver runs on a WORKER thread; assertion = all three reads (path, isNewFile-via-hip_is_unsaved, expandString) landed on the MAIN thread. NEGATIVE CONTROL (test_negative_control_marshal_disabled_touches_off_main): the SAME construct with _read_on_main disabled DOES touch hou off-main -- so the positive test can fail (Law 1). doctor mirror + symbol-table version read pinned the same way (216/217/220 + 603). This IS the adversarial re-attack of the F1 class after the fix (crucible criterion #2), not an assumption of closure."
+    },
+    {
+      "predicate": "in-Houdini hwebserver run_doctor main-thread hold < 100ms (baseline: measured ~514ms)",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_probe",
+      "gui_required": true,
+      "detail": "Recorded UNKNOWN per Constitution (unobtainable renders UNKNOWN, never zero). The after-fix number is on the in-Houdini hwebserver /mcp transport, which requires deploying THIS branch to C:/Users/User/SYNAPSE and reloading the live bridge -- a human act. The SessionStart bridge is connected but runs the MAIN-tree (unfixed) code, so calling synapse_doctor through it would measure the UNFIXED path, not this fix; it is not a valid after-measurement. Baseline: W1-MTFIX live GUI probe measured synapse_doctor tool_duration 514.6ms (Houdini Indie 22.0.400). DESIGN ARGUMENT for <100ms (supporting, NOT a measurement): the off-main dispatch runs the ~514ms cold store-construct + embedder on the hwebserver worker thread; only the microsecond hou reads (hipFile.path/isNewFile/expandString/applicationVersionString) hop to main via run_on_main; the doctor is in ENVELOPE_SKIP_COMMANDS so no scene-hash hop fires; the bridge (whose _execute_houdini would re-pin main) is bypassed. TO OBTAIN: deploy branch, reload bridge, arm scripts/frz_probe.py, run synapse_doctor, read synapse_metrics main_thread_hold_slowest_ms{synapse_doctor}."
+    },
+    {
+      "predicate": "headless run_doctor behaviour unchanged; C5 lock/provenance preserved",
+      "verdict": "pass",
+      "evidence": "test",
+      "detail": "HEADLESS/ON-MAIN UNCHANGED: run_on_main is a DIRECT passthrough when the caller is already on the main thread (fast path 2) and never imports hdefereval on that path, so headless (hython, on the main thread) and GUI-main callers are byte-identical. Pinned: test_resolve_semantics_unchanged_on_main_thread (saved/unsaved/explicit-path all match the pre-fix resolver), test_resolve_no_hou_fallback_unchanged (HOU_AVAILABLE False -> cwd/untitled.hip, hou block never entered), test_read_on_main_falls_back_to_direct_when_marshal_absent. Regression net across the changed surfaces: 293 passed / 12 skipped, 1 PRE-EXISTING unrelated failure (test_scene_memory::test_validate_healthy_dir -- agent.usd schema drift file=2.0.0 vs current=0.1.0; VERIFIED fails identically on the unmodified base via git stash; documented pre-existing in W1-MTFIX receipt). C5 LOCK/PROVENANCE PRESERVED: target 3 dispatches via handler.handle() (NOT the bridge), and handlers.py handle() takes the C5 _MUTATION_LOCK off-main (doctor is mutating: not in _READ_ONLY_COMMANDS; _serialize = mutating AND off-main = True) and routes through invoke()->FloorGate.wrap for Tier-0 provenance. Pinned: test_doctor_offmain_dispatch_uses_handler_handle_not_bridge + test_doctor_offmain_dispatch_propagates_handler_failure."
+    },
+    {
+      "predicate": "store.py diff confined to the marshalling wrap at the two anchored sites",
+      "verdict": "pass",
+      "evidence": "check",
+      "detail": "git diff python/synapse/memory/store.py = the _read_on_main() helper (the wrap mechanism) + the resolver's hou block wrapped: site 975/976 folded into a _read_hip() closure marshalled in ONE hop (this also covers the store.py:807 isNewFile read that hip_is_unsaved makes -- a THIRD hou read the 'two sites' framing implicitly includes), and site 984 wrapped in a _read_on_main lambda. No store SEMANTICS change: the returned paths (saved -> Path(hip); unsaved -> $HOUDINI_TEMP_DIR/untitled; no-hou -> cwd/untitled.hip) are byte-identical; only the thread the hou reads run on changes, and only off main. Nothing else in store.py touched (45 insertions, the helper + the wrap)."
+    }
+  ],
+
+  "audit_map": {
+    "method": "workflow w2s1-hou-closure-audit (transcript wf_a1c65734-91c): 6 read-only cartographer tracers (store-construct, scene-memory, moneta-store-embedder, moneta-runtime-provenance, doctor-callgraph, doctor-support-modules) + 2 crucible adversarial passes. Both adversaries returned MAP_COMPLETE, missed_sites=[], reachability_disputes=[].",
+    "entry_point": "server/doctor.py::run_doctor dispatched OFF Houdini main on the hwebserver worker thread, hou PRESENT (in-Houdini GUI). Crash class: a bare hou.* on a non-main thread faults natively (uncatchable by try/except).",
+    "F1_hou_sites_marshalled": [
+      {"file": "python/synapse/server/doctor.py", "line": 216, "symbol": "hou.hipFile.path()", "fn": "_resolve_store_base_dir", "verdict": "marshaled", "note": "FIRST off-main hou (check #4 _wrap_memory_key_check, UNCONDITIONAL every run) -> the true first crash point. Marshalled in ONE hop via _read_on_main(_resolve_on_main), label synapse_doctor."},
+      {"file": "python/synapse/server/doctor.py", "line": 217, "symbol": "hip_is_unsaved(hip, hou) -> store.py:807 hou.hipFile.isNewFile()", "fn": "_resolve_store_base_dir", "verdict": "marshaled", "note": "Inside the same _resolve_on_main hop."},
+      {"file": "python/synapse/server/doctor.py", "line": 220, "symbol": "hou.text.expandString(\"$HOUDINI_TEMP_DIR\")", "fn": "_resolve_store_base_dir", "verdict": "marshaled", "note": "Unsaved branch; same hop."},
+      {"file": "python/synapse/server/doctor.py", "line": 603, "symbol": "hou.applicationVersionString()", "fn": "_check_symbol_table", "verdict": "marshaled", "note": "Second always-on site (check #9). Wrapped with _read_on_main, label synapse_doctor."},
+      {"file": "python/synapse/memory/store.py", "line": 975, "symbol": "hou.hipFile.path()", "fn": "_resolve_project_path", "verdict": "marshaled", "note": "Cold construct via get_synapse_memory() (checks #6/#7/#8). Folded into _read_hip() hop."},
+      {"file": "python/synapse/memory/store.py", "line": 807, "symbol": "hou.hipFile.isNewFile() (via hip_is_unsaved from :976)", "fn": "hip_is_unsaved", "verdict": "marshaled", "note": "THIRD resolver read the 'two sites (975,984)' framing folds in. Inside the _read_hip() hop."},
+      {"file": "python/synapse/memory/store.py", "line": 984, "symbol": "hou.text.expandString(\"$HOUDINI_TEMP_DIR\")", "fn": "_resolve_project_path", "verdict": "marshaled", "note": "Unsaved branch; wrapped in a _read_on_main lambda."}
+    ],
+    "unreachable_from_doctor_offmain": [
+      {"file": "python/synapse/memory/store.py", "line": 1087, "symbol": "hou.hipFile.name()", "fn": "SynapseMemory.add", "verdict": "unreachable", "note": "WRITE path. run_doctor never calls .add() (checks only construct + read .store/.count/isinstance/getattr). Proven by both adversaries."},
+      {"file": "python/synapse/memory/store.py", "line": 1096, "symbol": "hou.frame()", "fn": "SynapseMemory.add", "verdict": "unreachable", "note": "WRITE path, same proof."},
+      {"file": "python/synapse/memory/scene_memory.py", "line": 124, "symbol": "hou.text.expandString(\"$HOUDINI_TEMP_DIR\")", "fn": "unsaved_memory_base", "verdict": "marshaled (defensive) + unreachable-from-doctor", "note": "AUDIT PROVED NOT on the doctor path (store construct uses store.py:984, and store.py imports scene_memory 0 times; the dependency is unidirectional scene_memory->store). MARSHALLED ANYWAY per mission target-2's explicit listing and because it is the same F1 class for scene_memory's OWN off-main callers (handlers_memory/session.tracker/websocket/...). Its existing try/except absorbs a marshal timeout as the hou-absent fallback."},
+      {"file": "python/synapse/memory/scene_memory.py", "line": 156, "symbol": "_impl(hip,hou) -> store.py:807", "fn": "_hip_is_unsaved", "verdict": "unreachable", "note": "Reached only via resolve_hip_dir, which no doctor check calls. Delegates to store.hip_is_unsaved (already covered when reached from the doctor path)."}
+    ],
+    "secondary_pxr_not_F1_class": [
+      {"file": "python/synapse/memory/moneta_runtime.py", "line": 227, "symbol": "Usd.SchemaRegistry().FindConcretePrimDefinition('MonetaMemory')", "verdict": "reachable off-main, thread-tolerant", "note": "via _check_moneta_substrate -> moneta_provenance (backend in {moneta,shadow}). Process-global registry READ; not the hou native-thread-affinity class. NOT gated behind the store hou crash (moneta_provenance builds no store). pxr has no main-thread affinity."},
+      {"file": "python/synapse/memory/moneta_runtime.py", "line": 331, "symbol": "Usd.Stage.Open + Traverse + GetTypeName", "verdict": "reachable off-main (conditional), thread-tolerant read", "note": "Only if a stage exists at the resolved hint (default wiring: none). USD stage READ, multithread-read-safe."},
+      {"file": "python/synapse/memory/moneta_store.py", "line": 280, "symbol": "mr.Moneta(cfg, use_real_usd=True)", "verdict": "reachable off-main (conditional), external, unverifiable here", "note": "The store construct now runs off-main on the worker; mr.Moneta may author real USD in the EXTERNAL Moneta pkg (C:/Users/User/Moneta/src, not in this worktree). pxr has no main-thread affinity (unlike hou), and authoring to an independent stage is thread-safe, but the external timing is unverifiable -> spawned as a probe. Gated behind store.py:975 anyway."}
+    ],
+    "handler_handle_path_zero_hou": "The bridge-bypass dispatch (target 3) calls handler.handle(); its own surface is zero-hou -- C5 _MUTATION_LOCK + FloorGate.wrap are hou-free, and the doctor is in integrity_envelope.ENVELOPE_SKIP_COMMANDS so no capture_scene_hash hop fires. Confirmed by the doctor-support-modules tracer."
+  },
+
+  "targets_delivered": [
+    "1) store.py:975/984 marshalled (folding in 807) via _read_on_main + _read_hip. Semantics unchanged.",
+    "2) transitive closure enumerated (audit_map) and marshalled/guarded: doctor + store sites marshalled; scene_memory:124 marshalled defensively; embedder/moneta construct proven hou-clean.",
+    "3) off-main-safe dispatch branch in mcp/server.py::_handle_tools_call for synapse_doctor via _dispatch_doctor_off_main -> handler.handle (bridge bypassed), after the resilience gates, preserving C5 lock + FloorGate provenance.",
+    "4) doctor-internal marshalling of its direct hou sites (216/217/220 + 603) via doctor._read_on_main, labelled synapse_doctor."
+  ],
+
+  "rebase_compatibility": {
+    "seam_branch": "fix/memory-store-recovery (UNMERGED, owns store.py; HEAD 5e933c13 'W1 resolver unsaved base uses store's own hou'). +103/-8 on store.py, substantially rewriting _resolve_project_path.",
+    "method": "git merge-tree --write-tree HEAD origin/fix/memory-store-recovery (merged tree a98240a9). The harness/autoresearch/* conflicts in that output are PRE-EXISTING history divergence (the seam branch is off an older master), NOT from this leg's code.",
+    "scene_memory": "AUTO-MERGES CLEAN (no conflict).",
+    "store_py": "ONE conflict, at the temp_root line only. _read_on_main merges cleanly (additive module-level helper). The resolver's FIRST read (975/976) AUTO-MERGES: the seam's `hip_path = hou.hipFile.path()` / `if not hip_is_unsaved(hip_path, hou)` are byte-identical to master's, so the _read_hip() wrap applies with no conflict. The conflict is HEAD's `temp_root = Path(_read_on_main(lambda: hou.text.expandString('$HOUDINI_TEMP_DIR'))) / 'untitled'` vs the seam's `temp_root = _safe_unsaved_base()` (the seam moved that hou call into the module-level _safe_unsaved_base helper).",
+    "resolution": "Take the seam's `temp_root = _safe_unsaved_base()`, AND wrap _safe_unsaved_base's lone `expanded = hou.text.expandString(_TOKEN)` (seam store.py ~line 892) with the SAME helper: `expanded = _read_on_main(lambda: hou.text.expandString(_TOKEN))`. Both are module-level, so the wrap applies directly. One-line, mechanical. Net effect after merge: identical marshalling coverage, the expandString read living where the seam relocated it.",
+    "verdict": "rebase-compatible: one trivial, well-understood conflict with a one-line resolution; the wrap coverage is preserved under either merge order."
+  },
+
+  "findings": [
+    {"id": "W2-S1-F1", "severity": "INFO (mission framing)", "claim": "The mission's 'two anchored sites (store.py:975,984)' under-counts by one: hip_is_unsaved's internal hou.hipFile.isNewFile() (store.py:807), reached from :976, is a THIRD hou read in the SAME resolver and MUST be marshalled or the crash survives on the unsaved-scene path.", "anchor": "python/synapse/memory/store.py:807 via :976", "handling": "Folded into the _read_hip() single-hop closure (reads path + unsaved verdict on main together). Documented; not a defect in the fix."},
+    {"id": "W2-S1-F2", "severity": "MAJOR (crash site outside the named closure)", "claim": "dispatch_tool routes the non-read-only doctor through execute_through_bridge -> bridge.execute -> _execute_houdini (shared/bridge.py), which runs _compute_scene_hash (hou.node/sessionId/intrinsics), _undo_evidence_snapshot (hou.undos.areEnabled), and `with hou.undos.group()` BARE on the calling thread and only RECORDS main_thread_executed (does not marshal). Off-main that is the F1 crash class, in a module OUTSIDE the store/doctor closure AND outside my touches (shared/ is INTEGRATOR territory). The undo group is structurally coupled to op.fn (a context manager cannot straddle threads), so the doctor CANNOT be split off-main while bridge-routed.", "anchor": "shared/bridge.py:1797 _execute_houdini (:1811 _compute_scene_hash, :1816 _undo_evidence_snapshot, :1818 hou.undos.group)", "handling": "Target 3 BYPASSES the bridge for the doctor (handler.handle directly), so _execute_houdini is never on the off-main doctor path. The doctor mutates nothing, so the bridge integrity wrap is pure overhead; the LIVE-path envelope block (observe-only) still fires on the handler.handle path only where enveloped -- and the doctor is in ENVELOPE_SKIP_COMMANDS, so it leaves FloorGate Tier-0 provenance, not a bridge IntegrityBlock. This is the in-scope way to close F2 without editing shared/bridge.py."},
+    {"id": "W2-S1-F3", "severity": "MINOR (behavioural delta, in-Houdini /mcp doctor)", "claim": "Bypassing the bridge means the in-Houdini /mcp doctor response no longer carries a bridge `_integrity` block (it did when bridge-routed). Headless already had none (get_bridge()->None), so this ALIGNS the in-Houdini path with headless rather than diverging it. C5 lock + FloorGate provenance are preserved; the mission asked to preserve 'C5 lock/provenance', not the bridge IntegrityBlock.", "anchor": "python/synapse/panel/bridge_adapter.py:394-402 (the _integrity attach that no longer runs for the doctor)", "handling": "Accepted as correct: a diagnostic that mutates nothing should not be undo-grouped/hashed. Recorded as a deliberate behavioural delta, not a regression."},
+    {"id": "W2-S1-F4", "severity": "INFO (secondary, pxr not hou)", "claim": "With the off-main dispatch, moneta_provenance's pxr reads (SchemaRegistry query, and conditionally Usd.Stage.Open/Traverse) and the moneta store construct's mr.Moneta(use_real_usd=True) pxr authoring run on the worker thread. pxr has NO main-thread affinity (standalone lib; independent stages/reads are thread-safe), unlike hou -- so this is NOT the F1 crash class. The external-Moneta authoring path (C:/Users/User/Moneta/src) is unverifiable from this worktree.", "anchor": "python/synapse/memory/moneta_runtime.py:227,:331; python/synapse/memory/moneta_store.py:280", "handling": "Not a blocker for the hou F1 fix. Spawned as a probe (see spawn S1P1) to verify the external authoring is off-main-safe under concurrency before relying on it."},
+    {"id": "W2-S1-F5", "severity": "STRUCTURAL (doc drift, out of touches)", "claim": "moneta_runtime.py:277,:305 and doctor.py:406-408 still assert MonetaBackedStore.from_storage_dir does NOT pass use_real_usd=True; moneta_store.py:276 now DOES (use_real_usd=True). The doctor's _check_moneta_substrate hint-comment is therefore stale.", "anchor": "python/synapse/memory/moneta_runtime.py:277,:305; python/synapse/server/doctor.py:406-408; python/synapse/memory/moneta_store.py:276", "handling": "moneta_store.py + moneta_runtime.py are outside my touches; the doctor.py:406-408 comment is tangential to this mission (a marshalling leg, not a moneta-doc leg). Surfaced as a finding; spawned as an s1-followup (S1F1)."}
+  ],
+
+  "for_ruling": [
+    {"id": "W2-S1-R1", "question": "The off-main doctor dispatch bypasses execute_through_bridge for synapse_doctor (F2/F3), which is the only in-scope way to make it off-main-safe without editing shared/bridge.py (INTEGRATOR territory). Is bypassing the bridge for a zero-mutation diagnostic the accepted design, or should the doctor instead be declared bridge-read-only in panel/bridge_adapter._READ_ONLY_TOOLS (a panel-territory change) so dispatch_tool takes handler.handle itself?", "why_human": "It is a routing/ownership decision touching another agent's territory (bridge_adapter is panel/; shared/bridge.py is INTEGRATOR). The in-mcp-server.py bypass keeps the change inside W2-S1's touches; the bridge_adapter declaration would be cleaner but crosses a file-ownership boundary. Either is defensible; the choice is architectural."},
+    {"id": "W2-S1-R2", "question": "Secondary pxr (F4): the off-main dispatch moves moneta_provenance pxr reads AND the external-Moneta store construct off Houdini's main thread. pxr has no main-thread affinity so this is judged safe, but the external Moneta authoring is unverifiable here. Ship as-is (probe-gated), or gate the off-main dispatch behind a probe of the external Moneta pkg first?", "why_human": "Cost/benefit of shipping a hou-safe fix whose secondary pxr exposure is verified-by-reasoning but not verified-by-probe against an external package. Agent position: ship -- the hou F1 fix is the mission and is fully verified; the pxr exposure is a lesser class and is spawn-probed (S1P1)."}
+  ],
+
+  "spawn": [
+    {"id": "S1P1", "class": "probe", "name": "verify moneta pxr authoring is off-main-safe on the worker thread", "why": "F4: the off-main doctor dispatch now runs mr.Moneta(cfg, use_real_usd=True) (moneta_store.py:280) and moneta_provenance's Usd.Stage.Open/SchemaRegistry reads on the hwebserver worker thread. pxr is believed thread-safe for independent stages, but the authoring path lives in the external Moneta pkg (C:/Users/User/Moneta/src) and is unverifiable from this worktree.", "targets": ["probe mr.Moneta(cfg, use_real_usd=True) construction on a non-main thread in-Houdini; confirm no native fault + stage authored correctly", "probe moneta_provenance() Usd.Stage.Open + SchemaRegistry read on a worker thread"], "acceptance": [{"predicate": "mr.Moneta construct + moneta_provenance pxr reads on a worker thread do not fault and produce correct results", "evidence": "gui_probe", "gui_required": true}], "blocked_by": "requires the external Moneta pkg + a live in-Houdini seat", "readonly": true},
+    {"id": "S1F1", "class": "s1-followup", "name": "fix use_real_usd stale-doc drift", "why": "F5: moneta_runtime.py:277,:305 + doctor.py:406-408 claim from_storage_dir does NOT pass use_real_usd=True; moneta_store.py:276 now DOES. The claims are stale and misleading.", "targets": ["correct the moneta_runtime.py and doctor.py comments/docstrings to state use_real_usd=True is now passed", "confirm whether the doctor _check_moneta_substrate schema_in_use hint should change given real USD may now be authored"], "acceptance": [{"predicate": "no doc/comment in moneta_runtime/doctor claims from_storage_dir omits use_real_usd=True", "evidence": "check"}], "touches": ["python/synapse/memory/moneta_runtime.py", "python/synapse/server/doctor.py"], "readonly": false}
+  ],
+
+  "crucible_criteria_addressed": {
+    "SEAM_GUARD": "PASS. store.py diff confined to the marshalling wrap at the two anchored sites (predicate 5). Rebase-compatibility with fix/memory-store-recovery STATED and VERIFIED via git merge-tree (rebase_compatibility above): one trivial conflict, one-line resolution.",
+    "F1_re_attacked_not_assumed": "PASS. The F1 crash class is re-attacked (a) by 2 adversarial audit passes (both MAP_COMPLETE, zero missed sites) and (b) by a direct off-main-construct test with a fake-hou thread recorder + a NEGATIVE CONTROL proving the test can fail.",
+    "514_not_648": "PASS. The target is the MEASURED 514ms hwebserver figure per docs/reviews/latency_authority_2026-08-13.md. 648ms is cited NOWHERE in this leg.",
+    "STOP_if_closure_too_large": "N/A -- both adversaries returned MAP_COMPLETE and the closure is fully within my territory (doctor + store marshalling + mcp/server bridge-bypass), so the full (1)+(2)+(3)+(4) shipped. Shipping a PARTIAL off-main dispatch (the W1 crash path) was averted precisely by the audit + the bridge-bypass (F2), which removes the shared/bridge.py hou closure from the off-main path."
+  },
+
+  "suite": {
+    "interpreter": "system Python 3.14.2 (the GATE interpreter; vendor tree INACTIVE, _VENDOR_ABI_RISK True)",
+    "new_tests": "tests/test_w2s1_doctor_offmain.py 9/9 passed",
+    "regression_net": "tests/{test_c0_store_address,test_scene_memory,test_g1a_scene_memory_address,test_doctor_coexistence,test_m3_logs_doctor,test_moneta_substrate_truth,test_write_plane_health,test_context_poll_offmain,test_w1_mtfix,test_mcp_protocol,test_l8_mitigation}.py -> 293 passed, 12 skipped, 1 failed",
+    "the_one_failure": "test_scene_memory::test_validate_healthy_dir -- PRE-EXISTING (agent.usd schema drift file=2.0.0 vs current=0.1.0), VERIFIED fails identically on the unmodified base via git stash; documented pre-existing in the W1-MTFIX receipt. Not touched by this leg (my scene_memory change is only the unsaved_memory_base marshal, which validate_memory does not exercise).",
+    "gate_interpreter_note": "A shipping-suite (hython3.13) number is not claimed here -- no release. Suite evidence is the GATE-interpreter run above, admissible for a non-release BUILD leg."
+  },
+
+  "resume_token": {
+    "skip": ["Do NOT re-run the hou-closure audit -- MAP_COMPLETE from 2 adversaries, transcript wf_a1c65734-91c. Do NOT re-derive the bridge-bypass rationale (F2). Do NOT cite 648ms (crucible #3).",
+      "Do NOT attempt to measure predicate 3 off the live SessionStart bridge -- it runs the unfixed main-tree code."],
+    "do_first_on_reentry": ["If merging near fix/memory-store-recovery: apply the one-line rebase resolution (wrap _safe_unsaved_base's hou.text.expandString with _read_on_main).",
+      "For predicate 3: deploy this branch to C:/Users/User/SYNAPSE, reload the bridge, run synapse_doctor, read synapse_metrics main_thread_hold."],
+    "next": "S1P1 (moneta pxr off-main probe) and S1F1 (use_real_usd doc drift). Both are actionable spawns (in spawn_classes)."
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "leg": "W6-FORGE",
+  "status": "green_with_findings",
+  "product_head": "57f23a5c90058fa788e13a4f435ed9122942e5eb",
+  "base": "2dc4a821e723edb16f7a88020bfbfb6ac2291509",
+  "ahead_at_receipt_write": 1,
+  "acceptance": [
+    {
+      "predicate": "HARDENING-SPEC.md exists with anchored class rows covering at least the 8 seeded classes plus any newly mined",
+      "verdict": "pass",
+      "evidence": "harness/HARDENING-SPEC.md committed at 57f23a5c. Part A = 8 seeds (S1-S8), Part B = 25 mined (M1-M25), Part C = META. Every row carries a receipt path / file:line / commit-sha anchor; 26 anchor shas + 6 gate/BOM/bus facts verified first-hand this leg."
+    },
+    {
+      "predicate": "bus message to all four builders with the row list",
+      "verdict": "pass",
+      "evidence": "5 wave6 bus posts: 1 finding to * (n=18cc615e7cffe0d0) + 4 targeted findings to W6-QUOTE (n=18cc615e85c56eec), W6-PROV (n=18cc615e8e63544c), W6-BEAT (n=18cc615e96af32d8), W6-GATE (n=18cc615e9ead7d3c). Each names the owned rows, the defense-state to move, and the coordination note."
+    }
+  ],
+  "findings": [
+    {
+      "id": "W6-FORGE-F1",
+      "claim": "seed-1 first occurrence corrected: 0522ad0e 2026-06-24 (shell:true ate the --settings path backslashes -> silent fallback to the global API key), NOT the 2026-07-26 prompt-truncation. 6 instances / 3 mechanisms (backslash-eaten path, quote-split arg, apostrophe parse-bomb) / 2 surfaces (run.ts, orchestrate.ps1). The class has never been through a crucible; its evidence base is git commit bodies only.",
+      "anchor": "0522ad0e; 943e5375; 22019f52; harness/HARDENING-SPEC.md S1"
+    },
+    {
+      "id": "W6-FORGE-F2",
+      "claim": "seed-5 earlier instance found: W2-CRUX B1-S5 (~2026-08-09, verdict FAIL) predates the LCRUX F2/F3 systematization on 2026-08-16. NO FIX COMMIT EXISTS. bus.py:71 open_claims() is correct; legs simply never call release. Defense = prose-only.",
+      "anchor": "harness/notes/receipts/W2-CRUX.json B1-S5; b3de8192; harness/HARDENING-SPEC.md S5"
+    },
+    {
+      "id": "W6-FORGE-F3",
+      "claim": "S8 has two LIVE-OPEN instances on wave6/forge right now: base_control/resolved_lines.json fails json.loads (Unexpected UTF-8 BOM); 53 of 54 files in autorevise/prompts/ carry a UTF-8 BOM plus double-encoded em-dashes, including every W6 brief. Actionable by W6-QUOTE today; the S8 lint has a live regression target.",
+      "anchor": "harness/notes/base_control/resolved_lines.json; harness/autorevise/prompts/*.md (verified this leg)"
+    },
+    {
+      "id": "W6-FORGE-F4",
+      "claim": "bus-dedup-collapse (M2-CRUX MAJ-3, a second-granularity read() collapse) is already FIXED via nonce dedup: bus.py:58 keys on m.get('n') first (the time_ns nonce added by e6d421ea). Re-derived first-hand, deliberately NOT carried as an open ledger row (R131: re-derive, never inherit a reader claim).",
+      "anchor": "harness/autorevise/bus.py:58; e6d421ea"
+    },
+    {
+      "id": "W6-FORGE-F5",
+      "claim": "25 mined classes (M1-M25) extend the 8 seeds. The honest-open set that no single builder wave closes: M13 (readonly-leg-product-destroyed), M15 (brief-premise-error), M16 (phantom-governing-document), M18 (uninstructable-standing-rule), M20 (rule-in-tension), M21 (unrun-adversarial-pass), M22 (pytest-pollutes-telemetry), M23 (unbounded-destructive-op), M24 (prohibition-without-a-channel). These are the W6-HCRX honest-open rows and for-ruling candidates.",
+      "anchor": "harness/HARDENING-SPEC.md Part B + Builder crosswalk"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "W6-FORGE-R1",
+      "question": "M20 rule-in-tension: R135 (a third party commits from the main tree = the standing answer when a leg cannot preserve its own work) vs _template.md:58 (operator rescue = a failure mode, not the plan). W6-GATE is about to make self-commit a close gate; it must NOT wire a refusal that contradicts R135. Which text governs, and does the self-commit gate supersede R135 in practice?",
+      "anchor": "CTO_RULINGS_01.md:3895 (R135); harness/autorevise/prompts/_template.md:58; 362d5755"
+    },
+    {
+      "id": "W6-FORGE-R2",
+      "question": "M10 fence-form-not-capability: F1-R1 proved by probe that every Bash deny in all three profiles is keyed on a command FORM and is bypassed by 'git -C <path>' / '--git-dir'. Per F1-R1, no harness deny-list may be cited as a safety guarantee until re-keyed on capability. Ratify a capability-keyed fence (the pre-push/SYNAPSE_GATE_C model)?",
+      "anchor": "harness/notes/receipts/F1.json F1-R1; harness/HARDENING-SPEC.md M10"
+    },
+    {
+      "id": "W6-FORGE-R3",
+      "question": "M24 prohibition-without-a-channel: RULING_AMENDMENTS.md (R81) is still absent, so no leg can mark a refuted or superseded ruling in place; 13+ SUPERSEDED_UNMARKED accumulate. Create the append-only amendments channel?",
+      "anchor": "CTO_RULINGS_01.md:2247 (R81); harness/notes/RULING_AUDIT.json"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "W6-BOM-SURVEY",
+      "class": "probe",
+      "band": "TRUTH",
+      "name": "enumerate every BOM / mojibake / CRLF-in-hash / cp1252 instance across harness/**/*.{md,py,json,ps1}; produce the live-open count W6-QUOTE S8 lint must drive to zero",
+      "source": { "doc": "harness/HARDENING-SPEC.md", "anchor": "S8 live-open instances (F3)" },
+      "readonly": true,
+      "touches": [],
+      "acceptance": [
+        { "predicate": "full harness/ encoding census with per-file verdict; live-open count reported, never estimated", "evidence": "probe" }
+      ]
+    },
+    {
+      "id": "W6-FENCE-PROBE",
+      "class": "probe",
+      "band": "TRUTH",
+      "name": "re-run the F1-R1 bypass matrix (git -C / --git-dir / env-prefix) against readonly/relay/agent settings profiles; confirm M10 porosity or a fix first-hand",
+      "source": { "doc": "harness/HARDENING-SPEC.md", "anchor": "M10" },
+      "readonly": true,
+      "touches": [],
+      "acceptance": [
+        { "predicate": "per-profile bypass matrix with first-hand stdout; porosity confirmed or refuted, never assumed", "evidence": "probe" }
+      ]
+    }
+  ],
+  "notes": "Team-lead leg. 3 readers held until all reported: ReaderA (92 receipts), ReaderB (verdicts+rulings+SPECs incl RULING_AUDIT.json census: 41 rulings no-mechanism, UNENFORCED 31/78), ReaderC (git-log forensics, all shas verified). Anchors cross-checked against this leg's independent reads plus git/gate verifications. Receipt is this leg's own closing commit per W5H; product 57f23a5c committed before this receipt was written (CRX0)."
+}

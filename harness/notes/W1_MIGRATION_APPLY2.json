@@ -1,0 +1,130 @@
+{
+  "mode": "apply",
+  "generated": "2026-08-09T17:30:15",
+  "canonical_root": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled",
+  "canonical_synapse": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse",
+  "canonical_claude": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\claude",
+  "classification": {
+    "canonical": [
+      "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse",
+      "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\claude"
+    ],
+    "fragment": [
+      "C:\\Users\\User\\AppData\\Local\\Temp\\synapse\\untitled\\claude",
+      "C:\\Users\\User\\Synapse\\$HOUDINI_TEMP_DIR\\untitled\\.synapse",
+      "C:\\Users\\User\\Synapse\\untitled.hip\\.synapse",
+      "C:\\Users\\User\\Synapse\\untitled.hip\\claude",
+      "C:\\Users\\User\\untitled.hip\\.synapse",
+      "C:\\Users\\User\\untitled.hip\\claude"
+    ],
+    "leave": [
+      "C:\\Users\\User\\.synapse",
+      "C:\\Users\\User\\Desktop\\claude",
+      "C:\\Users\\User\\Houdini_Camera_Rig_System\\cinema_camera\\examples\\claude",
+      "C:\\Users\\User\\rope-beacon-wt\\.synapse",
+      "C:\\Users\\User\\SYNAPSE\\.synapse"
+    ]
+  },
+  "fragments": [
+    {
+      "source": "C:\\Users\\User\\AppData\\Local\\Temp\\synapse\\untitled\\claude",
+      "store_type": "claude",
+      "canonical": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\claude",
+      "exists": true,
+      "collisions_kept_both": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\claude\\agent.usd.w1-collision-004d6913",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\claude\\memory.md.w1-collision-43af8c70"
+      ]
+    },
+    {
+      "source": "C:\\Users\\User\\Synapse\\$HOUDINI_TEMP_DIR\\untitled\\.synapse",
+      "store_type": ".synapse",
+      "canonical": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse",
+      "exists": true,
+      "jsonl": {
+        "fragment_lines": 19,
+        "already_present": 19,
+        "appended": 0
+      },
+      "moneta": {
+        "fragment_rows": 12,
+        "appended": 0,
+        "preserved_not_merged": true,
+        "reason": "embedder dim mismatch (frag=384, canonical=256)",
+        "preserved_to": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\.w1_incoming_moneta\\C_Users_User_Synapse_HOUDINI_TEMP_DIR_untitled_synapse"
+      },
+      "identical_skipped": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\.w1_incoming_moneta\\C_Users_User_Synapse_HOUDINI_TEMP_DIR_untitled_synapse\\snapshot.json",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\.w1_incoming_moneta\\C_Users_User_Synapse_HOUDINI_TEMP_DIR_untitled_synapse\\usd\\cortex_protected.usda",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\.w1_incoming_moneta\\C_Users_User_Synapse_HOUDINI_TEMP_DIR_untitled_synapse\\usd\\cortex_root.usda"
+      ],
+      "collisions_kept_both": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\context.md.w1-collision-90c6b857",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\decisions.md.w1-collision-0e3768c4",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\tasks.md.w1-collision-a9bbf159"
+      ]
+    },
+    {
+      "source": "C:\\Users\\User\\Synapse\\untitled.hip\\.synapse",
+      "store_type": ".synapse",
+      "canonical": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse",
+      "exists": true,
+      "jsonl": {
+        "fragment_lines": 39,
+        "already_present": 39,
+        "appended": 0
+      },
+      "moneta": {
+        "fragment_rows": 0,
+        "appended": 0
+      },
+      "collisions_kept_both": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\context.md.w1-collision-d0022249",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\decisions.md.w1-collision-0e3768c4",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\tasks.md.w1-collision-745366f9"
+      ]
+    },
+    {
+      "source": "C:\\Users\\User\\Synapse\\untitled.hip\\claude",
+      "store_type": "claude",
+      "canonical": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\claude",
+      "exists": true,
+      "collisions_kept_both": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\claude\\agent.usd.w1-collision-f13f569c",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\claude\\memory.md.w1-collision-94ef3dc3"
+      ]
+    },
+    {
+      "source": "C:\\Users\\User\\untitled.hip\\.synapse",
+      "store_type": ".synapse",
+      "canonical": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse",
+      "exists": true,
+      "jsonl": {
+        "fragment_lines": 453,
+        "already_present": 453,
+        "appended": 0
+      },
+      "moneta": {
+        "fragment_rows": 160,
+        "appended": 0,
+        "collisions_kept_both": [],
+        "canonical_dim": 256
+      },
+      "collisions_kept_both": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\context.md.w1-collision-4a5468ab",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\decisions.md.w1-collision-0e3768c4",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\.synapse\\tasks.md.w1-collision-4699a180"
+      ]
+    },
+    {
+      "source": "C:\\Users\\User\\untitled.hip\\claude",
+      "store_type": "claude",
+      "canonical": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\claude",
+      "exists": true,
+      "collisions_kept_both": [
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\claude\\agent.usd.w1-collision-5d110112",
+        "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled\\claude\\memory.md.w1-collision-acce6bdc"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+{
+  "leg": "W3-CRUX",
+  "name": "wave-3 crucible: adversarial gate on the memory wave before any merge word",
+  "status": "blocked",
+  "readonly": true,
+  "base": "5e933c13 (fix/memory-store-recovery tip == wave-3 base)",
+  "grounded_at": "2026-08-13",
+  "method": "Read-only per the mission: reviewed via receipts, diffs, git facts, and DIRECT RE-EXECUTION of each leg's own pytest from inside its worktree. Built nothing, mutated no peer git state, flipped no manifest, never touched the live 473-memory corpus. 9 read-only adversarial agents (7 per-leg reviewers + 2 failure-class attackers) plus the crux's own live doctor probe.",
+  "whole_wave_verdict": {
+    "verdict": "BLOCKED",
+    "one_line": "Substance sound across all 7 legs; the wave is BLOCKED solely on durability - 5 of 7 builder legs have UNCOMMITTED product code (wave-2 B1 standing lesson). One `git commit` of named files per blocked leg clears it. The wave is NOT yet live-doctor-confirmed (nothing merged; live doctor still shows moneta_substrate=FAIL). A green crux receipt is a precondition for merge, not a permission - this receipt is NOT green. Merge stays Joe's word.",
+    "durable_legs": ["W3-DIM (16cf1543)", "W3-VEC (a7112bd1+6600295b)"],
+    "blocked_legs_durability_only": ["W3-STORE", "W3-KIND", "W3-EVOLVE", "W3-MIGRATE", "W3-HARDEN"],
+    "failure_classes_reattacked": {"silent-fallback-claiming-moneta": "CLOSED", "data-loss-in-migration/consolidation": "CLOSED"},
+    "scope_honesty": "PASS on all 7 receipts - no registration/standalone/in-hython evidence dressed as live store-level health.",
+    "bus_block": "ANSWERED (W3-KIND vs W3-STORE on moneta_store.py) - resolved at source, seam honored.",
+    "s9_guardrail_note": "S9 'doctor is the source of truth - a change isn't done until the doctor SHOWS it' is NOT yet satisfied for ANY leg on the live seat: nothing is merged, so the live doctor still shows moneta_substrate=FAIL. The wave is TEST-PROVEN in standalone (Python 3.14.2) scope, DURABILITY-INCOMPLETE, and LIVE-DOCTOR-UNCONFIRMED. That is the honest whole-wave status."
+  },
+  "live_grounding": {
+    "probe": "synapse_ping (pong, protocol 4.0.0) + synapse_doctor + synapse_memory_status, bridge pid 22328, 2026-08-13",
+    "moneta_substrate": "FAIL - backend 'moneta' selected but this process FELL BACK to jsonl (init failed: ValueError: embedding dim mismatch: expected 384, got 256; storage C:/Users/User/AppData/Local/Temp/houdini_temp/untitled/.synapse)",
+    "backend_fallback": {"requested": "moneta", "served": "jsonl", "reason": "init failed: ValueError: embedding dim mismatch: expected 384, got 256", "at": "2026-08-13 12:27:22"},
+    "downstream": "moneta_consolidation / vector_recall / use_real_usd = SKIPPED ('store is not Moneta-backed') - skipped, not faked-ok",
+    "summary": "fail=1, ok=8, skipped=4; entries_total=473 (real user corpus); evolution=charmander",
+    "reading": "The live fallback is LOUD and HONEST (served=jsonl reported, doctor shows fail, downstream skipped) - the silent-fallback-CLAIMING-moneta class is ABSENT on the live seat today. None of the W3 fixes are merged, so the live seat runs BASE (5e933c13) code."
+  },
+  "acceptance": [
+    {
+      "predicate": "receipt carries CLEAR or BLOCKED per leg with anchored findings, and a whole-wave verdict",
+      "verdict": "pass",
+      "evidence": "This receipt: legs[] carries a CLEAR_WITH_FINDINGS or BLOCKED verdict per leg, each with git-fact / file:line / test-line anchors; whole_wave_verdict carries the wave gate outcome. All 7 deps (DIM/STORE/KIND/VEC/EVOLVE/MIGRATE/HARDEN) adjudicated."
+    },
+    {
+      "predicate": "every BUILD receipt claims observed scope only - registration-level evidence never claims store-level health",
+      "verdict": "pass",
+      "evidence": "All 7 leg receipts verified scope_honesty=pass by the per-leg reviewers AND cross-checked by the silent-fallback attacker: no leg dresses registration/standalone-test/in-hython-with-fix-loaded evidence as live store-level production health. W3-DIM records its live-doctor conjunct UNKNOWN (honest, not a fabricated ok). W3-STORE's in_use=True is backed by a real authored cortex_root.usda and explicitly states overall moneta_substrate stays fail. W3-HARDEN's write_plane strengthens honesty (degraded-store-over-healthy-bridge shows degraded)."
+    }
+  ],
+  "legs": [
+    {
+      "leg": "W3-DIM", "verdict": "CLEAR_WITH_FINDINGS", "committed": true, "branch_tip": "16cf1543",
+      "durability": "CLEAR - committed one past base 5e933c13, worktree clean (508 insertions across moneta_store.py + test + receipt).",
+      "tests_reexecuted": "tests/test_w3_dim_contract.py -> 13 passed, 0 failed, 0 skipped (Moneta importable, genuine end-to-end runs).",
+      "acceptance": "P1 (live hython moneta_substrate ok) = UNKNOWN, honestly recorded (unobtainable pre-merge + USD schema-registration out of lane); P2 stale-snapshot rebuild both directions = PASS (test); P3 forced-init-failure serves jsonl = PASS (test); P4 dim resolved in one place, no hardcoded pin = PASS (grep).",
+      "criteria": "all 4 pass - seam guard (byte-identical base blob, additive-only diff, ancestor of fix/memory-store-recovery), Moneta boundary respected (vendor unmodified, held moneta-side spawn), silent-fallback re-attacked (tests), house-rule UNKNOWN honored.",
+      "findings": [
+        {"anchor": "harness/notes/receipts/W3-DIM.json acceptance[0]", "severity": "warn", "claim": "P1 live/hython probe artifacts (scratchpad/*.json) are ephemeral and not in the tree - the live-seat PASS-conjunct cannot be independently re-verified; substantive claim IS corroborated by committed passing tests. Correctly recorded UNKNOWN."},
+        {"anchor": "python/synapse/memory/moneta_store.py:527", "severity": "info", "claim": "The reconcile mutates the live persisted snapshot.json in place at init on a real seat (atomic tmp+fsync+replace); derived-data rewrite, not source loss."}
+      ]
+    },
+    {
+      "leg": "W3-STORE", "verdict": "BLOCKED", "committed": false, "branch_tip": "5e933c13 (== base)",
+      "durability": "BLOCK (SOLE blocker) - product code STAGED but NEVER COMMITTED: moneta_store.py + moneta_runtime.py (M) + test + receipt (A), tip == base. Staged-not-committed is still not durable.",
+      "tests_reexecuted": "tests/test_w3_store_contract.py -> 13 passed (+78 store/shadow/moneta regression, 0 failures).",
+      "acceptance": "all 4 PASS - doctor in_use=True + sidecar (probe/test), .usda round-trip (test), dual-write JSONL identity (test), jsonl path unchanged (check).",
+      "criteria": "all 4 pass - seam disjoint from wave3/dim (post-dim-check block, new names), dual-write non-negotiable met (no moneta-only path), Temp-dir usd_root durability risk receipted, scope-honest.",
+      "findings": [
+        {"anchor": "git rev-parse wave3/store == 5e933c13 + git status --porcelain (A/M, no commit past base)", "severity": "block", "claim": "DURABILITY BLOCK (sole blocker): product code staged but never committed. wave-2 B1 / target #4 -> BLOCK regardless of code quality. One `git commit` of the named files clears it."},
+        {"anchor": "python/synapse/memory/moneta_runtime.py:375 (schema_in_use)", "severity": "info", "claim": "Stale-cortex residue: a cortex_root.usda left from a prior session could read schema_in_use=True even after a later jsonl fallback. Mitigated today by the doctor fallback-first guard (doctor.py:394-403 returns FAIL before schema_in_use is consulted)."}
+      ]
+    },
+    {
+      "leg": "W3-KIND", "verdict": "BLOCKED", "committed": false, "branch_tip": "5e933c13 (== base)",
+      "durability": "BLOCK (SOLE blocker) - 3 modified unstaged (models.py, store.py, tracker.py) + 4 untracked (kind_schema.py, 2 tests, receipt), tip == base.",
+      "tests_reexecuted": "tests/test_w3_kind_schema.py + tests/test_w3_kind_routing.py -> 46 passed, 0 failed.",
+      "acceptance": "all 3 PASS - kind-filtered query returns only that kind, non-scan routing shown, per-kind fields match spec (decision=reasoning+alternatives, task=status).",
+      "criteria": "all 3 pass - seam guard (additive), schema additions additive (no field renamed/dropped), unknown-kind negative control (empty/loud, no silent full-store scan).",
+      "findings": [
+        {"anchor": "git rev-parse wave3/kind == 5e933c13; git status --porcelain (dirty tree)", "severity": "block", "claim": "DURABILITY BLOCK (sole blocker): all product code uncommitted."},
+        {"anchor": "python/synapse/session/tracker.py (edited); mission touches = [moneta_store.py, memory/, tests/]", "severity": "warn", "claim": "SCOPE-GLOB: tracker.py is under session/, outside the leg's declared touches. For_ruling - benign wiring, but crosses the declared boundary."},
+        {"anchor": "python/synapse/memory/moneta_store.py:519-520; receipt for_ruling[0]", "severity": "info", "claim": "Non-scan proven on the jsonl backend ONLY; the Moneta backend get_by_type still full-scans - the Moneta per-kind non-scan is W3-STORE cortex territory (deferred, honestly noted)."}
+      ]
+    },
+    {
+      "leg": "W3-VEC", "verdict": "CLEAR_WITH_FINDINGS", "committed": true, "branch_tip": "a7112bd1 (code) + 6600295b (receipt)",
+      "durability": "CLEAR - committed above base, worktree clean. New owned module vector_recall.py (documented pivot from editing moneta_store.py).",
+      "tests_reexecuted": "tests/test_w3_vec_recall.py -> 8 passed, 0 failed (incl. a real Moneta store-backed integration test in an ephemeral store).",
+      "acceptance": "all 4 PASS - doctor vector_recall ok (probe), ranked+scored recall (test), delete/rebuild-from-source reproduces (test), no hardcoded dim (check).",
+      "criteria": "all 3 pass incl. both BLOCK-class - index never source of truth (rebuildable), scores are REAL cosine (not fabricated/constant).",
+      "findings": [
+        {"anchor": "python/synapse/session/tracker.py:546", "severity": "warn", "claim": "Mission target #2 (synapse_recall tool returns ranked NN) is delivered at MODULE level only; the tool-level wiring is a HELD spawn, not wired. Recall improvement is not reachable via the synapse_recall tool until wired."},
+        {"anchor": "python/synapse/server/doctor.py:525", "severity": "warn", "claim": "Acceptance P1 (doctor vector_recall ok) is satisfied via a pre-existing embedder-probe path, not a live moneta-backed recall - scope-honest but not live-store-proven."},
+        {"anchor": "python/synapse/memory/vector_recall.py:124", "severity": "info", "claim": "A swapped-embedder derived index silently drops old-dimension entries from the ranking (skip-not-compare across spaces) - correct behaviour, but the drop is silent."}
+      ]
+    },
+    {
+      "leg": "W3-EVOLVE", "verdict": "BLOCKED", "committed": false, "branch_tip": "5e933c13 (== base)",
+      "durability": "BLOCK (SOLE blocker) - handlers_memory.py + _tool_registry.py modified unstaged, consolidation.py + test + receipt untracked, tip == base.",
+      "tests_reexecuted": "tests/test_w3_evolve_consolidation.py -> 17 passed, 0 failed (incl. 2 live-Moneta backend tests).",
+      "acceptance": "all 4 PASS - dry-run audit + zero mutation (test), apply-without-token refuses loudly (test), protected survives approved run (test), approved run reduces count with audit intact (test).",
+      "criteria": "all 4 pass incl. BLOCK-class - seam guard, backup-before-mutation + structural preview-then-approve (no auto-apply), information recoverable, audit re-attacks (apply-without-approval + protected-prune) defeated.",
+      "findings": [
+        {"anchor": "git rev-parse wave3/evolve == 5e933c13; git status --porcelain", "severity": "block", "claim": "DURABILITY BLOCK (sole blocker): zero commits, all product code uncommitted."},
+        {"anchor": "python/synapse/memory/consolidation.py:271-303; tests/test_w3_evolve_consolidation.py:197-214", "severity": "warn", "claim": "Bounded merge-fidelity gap: _union_into unions list fields and fills only EMPTY scalars; a differing NON-EMPTY scalar (e.g. hip_version) on the absorbed duplicate is dropped from the survivor. NOT a data-loss BLOCK because apply backs up ALL memories before any mutation (the absorbed original is recoverable), and only exact-normalized-content duplicates are pruned. For_ruling: decide whether to tighten to full scalar-union."}
+      ]
+    },
+    {
+      "leg": "W3-MIGRATE", "verdict": "BLOCKED", "committed": false, "branch_tip": "5e933c13 (== base)",
+      "durability": "BLOCK (SOLE blocker) - ALL 5 deliverables untracked (migrate.py, writethrough_store.py, test, receipt, evidence json), tip == base.",
+      "tests_reexecuted": "tests/test_w3_migrate.py -> 14 passed, 0 failed (Moneta live, so the 6 Moneta-backed acceptance tests actually ran).",
+      "acceptance": "all 4 PASS - backup exists + sources byte-untouched (check), count parity (check), 5 spot-checks field-for-field (test), post-flip write lands in Moneta AND JSONL (probe).",
+      "criteria": "all 4 pass incl. BLOCK-class - seam reconciled by identical SHA, NO source-deletion path exists (hard data-safety gate holds), crux recomputed count parity from disk independently, cut-over reversibility stated.",
+      "findings": [
+        {"anchor": "git status --porcelain: ?? migrate.py, ?? writethrough_store.py (untracked)", "severity": "block", "claim": "DURABILITY BLOCK (sole blocker): user-memory migration code uncommitted - the highest-stakes leg to lose to a worktree prune."},
+        {"anchor": "python/synapse/memory/migrate.py:544 (CLI subparsers)", "severity": "info", "claim": "The hard backup gate is not STRUCTURALLY chained before the exporter (backup + export are independent CLI subparsers) - an operator could run export without backup. Defense-in-depth only: no source-write primitive exists, so sources are never mutated regardless. For_ruling: chain backup->export structurally."},
+        {"anchor": "receipt F4; moneta_store.py:182 (snapshot.json = durable source of truth)", "severity": "warn", "claim": "Acceptance #2's literal 'USD prim' is remapped to Moneta snapshot.json ECS rows (typed .usda prims are a later/registration-gated concern). Scope-honest remap, but 'USD prim count' == 'snapshot ECS row count' should be read that way."}
+      ]
+    },
+    {
+      "leg": "W3-HARDEN", "verdict": "BLOCKED", "committed": false, "branch_tip": "5e933c13 (== base)",
+      "durability": "BLOCK (SOLE blocker) - doctor.py + write_plane.py modified unstaged, 4 tests + receipt + _w3scratch/ probes untracked, tip == base.",
+      "tests_reexecuted": "4 harden test files -> 25 passed, 0 failed (incl. a genuine real-corpus dry-run + healthy-bridge-over-degraded-store seam).",
+      "acceptance": "all 4 PASS - kill-mid-write reopen no corruption (test), two concurrent writers both present + merge semantics receipted (test), write_plane ok derived from store-level evidence (probe), post-migration evolve dry-run sane (test).",
+      "criteria": "all 4 pass - seam guard (edits in server/, not fix's memory/ territory), concurrency OBSERVED not asserted, write_plane truth (degraded store shows degraded), house-rule UNKNOWN honored.",
+      "findings": [
+        {"anchor": "git rev-parse wave3/harden == 5e933c13; git status --porcelain", "severity": "block", "claim": "DURABILITY BLOCK (sole blocker): product code uncommitted."},
+        {"anchor": "moneta/api.py:199; tests/test_w3_harden_concurrency.py::test_cross_process_uri_lock_is_process_local", "severity": "warn", "claim": "BOUNDED WEAKNESS (documented, keep): Moneta's single-owner URI lock is PROCESS-LOCAL only. Two OS processes on one store dir both succeed and last-writer-wins on snapshot.json -> silent deposit CLOBBER (observed live, survivors=1 of 2). Honestly receipted (F1) + spawned, NOT falsely claimed fixed. Outside the supported single-user-localhost envelope, but a real standing data-loss risk the wave must CARRY."}
+      ]
+    }
+  ],
+  "failure_classes": [
+    {
+      "class": "silent-fallback-claiming-moneta",
+      "verdict": "CLOSED",
+      "present_on_live_seat": "no",
+      "evidence": "Live seat (BASE code): store.py:764 hardcodes served='jsonl'; the moneta init-fail arm records requested/served/reason at store.py:1021-1024 then returns MemoryStore(jsonl) at :1047; doctor fallback-first guard (doctor.py:394-403) returns FAIL before schema_in_use is consulted - matches the crux's own live probe (moneta_substrate=fail).",
+      "per_leg": "No W3 leg reintroduces the class. DIM preserves fallback honesty (reconcile re-raises on unrecoverable snapshot; no catch-and-continue). STORE's in_use=True is backed by a real authored cortex_root.usda and explicitly keeps overall moneta_substrate=fail. HARDEN only ADDS a doctor check (store-level write_plane) - strengthens honesty. KIND/VEC/EVOLVE/MIGRATE touch no substrate-selection/served path.",
+      "carried_note": "BOUNDED (not the class): STORE's schema_in_use is a disk-read probe -> stale-cortex residue risk (see W3-STORE findings); mitigated by the doctor fallback-first guard today."
+    },
+    {
+      "class": "data-loss-in-migration/consolidation",
+      "verdict": "CLOSED",
+      "present_on_live_seat": "no",
+      "evidence": "Re-ran each leg's own tests tmp-dir-isolated (evolve 17/17, migrate 14/14, harden concurrency+crash 10/10), never touched the live 473-corpus. MIGRATE: zero source-write primitives (no os.remove/unlink/truncate/'w'-open/replace on source paths), keep-both/idempotent/byte-verified(sha256)/disk-recomputed. EVOLVE: delete path gated four ways (plan-bound approval token FIRST, backup-before-mutation, exact-normalized-content-only prune, protected structurally excluded); apply over the live Moneta backend raises ConsolidationUnsupported (real 473-corpus is protected). STORE/MIGRATE dual-write de-sync is LOUD (logger.warning), never silent.",
+      "carried_risks": [
+        {"anchor": "moneta/api.py:199 + W3-HARDEN.json F1", "risk": "Cross-process snapshot clobber - genuine runtime-silent data-loss path (two OS processes / one store dir). Honestly receipted + spawned; outside single-user envelope. CARRY as a standing wave risk; owner-lock hardening is a held spawn."},
+        {"anchor": "python/synapse/memory/consolidation.py:271-303", "risk": "_union_into drops differing non-empty scalars from the survivor. Recoverable via backup-before-mutation; decide whether to tighten (for_ruling)."}
+      ]
+    }
+  ],
+  "bus_block_answered": {
+    "block": "W3-KIND -> W3-STORE on python/synapse/memory/moneta_store.py (posted 2026-08-13 14:25, msg 18cb70aa21c22278): W3-STORE held an open claim; W3-KIND declined to edit the contested file.",
+    "resolution": "RESOLVED AT SOURCE. Independently verified: W3-KIND's final changed-file set = {models.py, store.py, tracker.py, kind_schema.py, 2 tests, receipt} - NO moneta_store.py (git diff --name-only HEAD + ls-files --others on w3-kind). W3-STORE owns the moneta_store.py edit alone. No two-writer collision on the contested file; the seam was honored. W3-KIND released the block same minute (18cb70aa2a4e7ae0).",
+    "verdict": "answered - not a blocker to CLEAR (durability is the only blocker)."
+  },
+  "for_ruling": [
+    "DURABILITY (headline): 5 legs (STORE/KIND/EVOLVE/MIGRATE/HARDEN) have uncommitted product code at base 5e933c13. Each leg owner must `git commit` its NAMED files on its own branch (the crux cannot commit peer work). This is a one-commit-per-leg mechanical fix; the substance is already sound. Re-run the crux durability check after commits to flip those 5 BLOCKED -> CLEAR_WITH_FINDINGS.",
+    "LIVE-DOCTOR (S9): nothing is merged, so the live seat still shows moneta_substrate=FAIL. Per S9 'a change isn't done until the doctor SHOWS it', the wave is NOT done on the live seat until W3-DIM (dim contract) at minimum is merged AND the server is restarted. The dim fix + USD schema registration (PXR_PLUGINPATH_NAME, a separate leg's lane) are the two prerequisites for a live moneta_substrate=ok.",
+    "MERGE ORDER (INTEGRATOR): moneta_store.py is edited by BOTH wave3/dim (committed) and wave3/store (uncommitted). W3-STORE's block is post-dim-check + new-names-only (rebase-compat verified), but the merge must land DIM before/with STORE. W3-MIGRATE write-through vs W3-STORE in-add dual-write overlap - pick ONE dual-write path at merge.",
+    "CARRIED DATA-LOSS RISK: cross-process snapshot clobber (moneta/api.py:199, process-local lock). Owner-lock hardening (loud refusal + stale-pid reclaim) belongs to W3-STORE's from_storage_dir lane; already a held spawn from W3-HARDEN. Carry until closed.",
+    "CONSOLIDATION merge fidelity: _union_into (consolidation.py:271-303) drops differing non-empty scalars from the survivor. Recoverable via backup, but decide whether to tighten to full scalar-union before a real-corpus apply.",
+    "MIGRATE backup chaining: chain the hard backup gate structurally before the exporter (migrate.py CLI) so export cannot run without a backup - defense-in-depth (no source-write path exists today).",
+    "VEC tool wiring: synapse_recall ranked-NN is module-level only; the tool wiring (tracker.py) is a held spawn - recall improvement is not reachable via the tool until wired.",
+    "KIND scope-glob: tracker.py (session/) is outside W3-KIND's declared touches - ratify the boundary crossing or move the wiring.",
+    "TEST-ENV CAVEAT: all 136 leg tests passed on Python 3.14.2 with a vendored-moneta SDK ABI-incompatibility warning (conftest.py:507). The production seat is Python 3.13.10 / H22. Test evidence is STANDALONE scope; live-seat/hython confirmation is deferred to merge+restart and is honestly UNKNOWN today, not a fabricated pass."
+  ],
+  "spawn": [
+    {"id": "W3-LOCK", "name": "cross-process owner-lock hardening on from_storage_dir: loud refusal + stale-pid reclaim (closes the snapshot-clobber data-loss risk)", "band": "BUILD", "disposition": "held", "owner_lane": "W3-STORE from_storage_dir", "anchor": "moneta/api.py:199; W3-HARDEN.json F1", "rationale": "Process-local lock lets two OS processes clobber snapshot.json (survivors=1 of 2, observed live). Held for Joe - outside crux spawn_classes."},
+    {"id": "MONETA-DIM-HYDRATE", "name": "vendor-side: Moneta.__init__ should treat a dim-mismatched persisted vector as rebuildable (re-derive/skip) OR raise a typed EmbeddingDimMismatchError", "band": "BUILD", "disposition": "held", "owner_lane": "C:/Users/User/Moneta (vendor, no harness)", "anchor": "C:/Users/User/Moneta/src/moneta/api.py:229; vector_index.py:112", "rationale": "Root cause of the dim-mismatch abort; SYNAPSE-side reconcile (W3-DIM) pre-empts it. Echoes W3-DIM's held moneta-side spawn. Held for Joe."}
+  ],
+  "constitution_compliance": "No git push/merge/tag; no drop.json edit; no ratified/state flip; no peer-branch mutation; no live-corpus mutation. Named-file commit of THIS receipt only, on wave3/crux. Unobtainable rendered UNKNOWN (W3-DIM P1), never a fabricated ok."
+}

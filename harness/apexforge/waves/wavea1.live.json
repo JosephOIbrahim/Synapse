@@ -1,5 +1,5 @@
 {
-  "_comment": "WA1 APEXFORGE wave - compiled from docs/APEX_H22_BLUEPRINT.md (phases 0-4: G1/G4+C1 truth, C3 xref, C2 wire matrix, G2 recipe migration, ACRUX crucible). Base=master 90b36103. ARMED only on Joe word. Merge/push/flip remain Joe words per act. Own bus (apexforge/bus), own worktree prefix (wa1-*) - zero claim overlap with any live autorevise wave.",
+  "_comment": "WA1 APEXFORGE wave - compiled from docs/APEX_H22_BLUEPRINT.md (phases 0-4: G1/G4+C1 truth, C3 xref, C2 wire matrix, G2 recipe migration, ACRUX crucible). Base=master 782b2376. ARMED only on Joe word. Merge/push/flip remain Joe words per act. Own bus (apexforge/bus), own worktree prefix (wa1-*) - zero claim overlap with any live autorevise wave.",
   "_schema": "legs/v1",
   "repo": "C:\\Users\\User\\SYNAPSE",
   "settings": "C:\\Users\\User\\SYNAPSE\\harness\\relay-settings.json",

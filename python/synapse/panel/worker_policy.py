@@ -157,8 +157,9 @@ def is_tool_allowed_for_worker(tool_name: str) -> tuple[bool, str]:
         return True, "inform-level mutation: permitted"
     if gate in _DENIED_GATES:
         return False, (
-            f"gate '{gate}' requires human review -- denied to the autonomous "
-            "worker (no human-in-the-loop on this path)"
+            f"gate '{gate}' requires human review -- the panel worker may not "
+            "perform this op itself; do it in the native Houdini UI (or via a "
+            "bridge /mcp consent-gated call)"
         )
     # Non-read-only tool with no derivable gate -> fail closed.
     return False, "unclassified mutation (no gate mapping): denied by fail-closed policy"
@@ -174,7 +175,7 @@ def denial_tool_result(tool_use_id: str, tool_name: str, reason: str) -> dict:
         "type": "tool_result",
         "tool_use_id": tool_use_id,
         "content": (
-            f"Tool '{tool_name}' is not permitted for the autonomous worker: "
+            f"Tool '{tool_name}' is not permitted for the panel worker: "
             f"{reason}. Choose a different, lower-privilege approach."
         ),
         "is_error": True,
