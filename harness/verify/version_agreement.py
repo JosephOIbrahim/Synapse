@@ -43,7 +43,213 @@ ROOT_FILES = {
     # known when this check was written; the other three were found by a test
     # somebody else wrote first.
     'claude_md': (re.compile(r'SYNAPSE v([0-9]+\.[0-9]+\.[0-9]+)'), 'CLAUDE.md'),
+    # EIGHTH (REACH R2, blueprint sec.4 R2): the README public face. The
+    # '<sub>vX.Y.Z · Houdini …' banner is the version the outside world reads.
+    # Anchored to the banner line so a historical version mentioned in the body
+    # cannot satisfy it — same anchor as the phase0c conformance test.
+    'readme_banner': (re.compile(r'<sub>v([0-9]+\.[0-9]+\.[0-9]+) · Houdini', re.M),
+                      'README.md'),
 }
+
+
+# --- REACH R2: public-face agreement ---------------------------------------
+# Blueprint docs/REACH_BLUEPRINT.md sec.4 R2 + contract
+# .synapse/contracts/reach-public-agreement.yaml: the README's claimed version
+# must equal the tagged version, or red. The in-tree chain above proves the
+# tree agrees with itself; four locations agreeing is not a quorum when nothing
+# reads the outside world — v5.43.0 was tagged against a tree that still said
+# 5.42.0 (tests/test_phase0c_doc1_version_conformance.py carries that story).
+# This section is that check's public half: the newest published release tag
+# may never outrun the version the README shows a stranger.
+#
+# Tag comparison semantics mirror the phase0c conformance test: tag AHEAD of
+# the public face is red (stale public face); the public face ahead of the
+# newest tag is the release ritual's own window (bump lands, README syncs, tag
+# is pushed after) and must stay green or every correct release fires.
+import subprocess as _subprocess
+
+_RELEASE_TAG_RE = re.compile(r'^v([0-9]+)\.([0-9]+)\.([0-9]+)$')
+# A second public claim this leg found already stale on master: the README
+# sub-line 'tags: v5.50.0 is latest' while v5.52.0 was published. Absence of
+# the claim is allowed; a present-but-stale claim is drift, and drift is red.
+_README_TAG_CLAIM_RE = re.compile(r'tags:\s*v([0-9]+\.[0-9]+\.[0-9]+)\s+is\s+latest')
+
+
+def parse_version(version):
+    """'5.52.0' -> (5, 52, 0). Returns None on a shape this file cannot compare."""
+    m = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)$', str(version).strip())
+    return tuple(int(g) for g in m.groups()) if m else None
+
+
+def parse_release_tag(tag):
+    """'v5.52.0' -> (5, 52, 0). Anything else (archive/... refs) -> None."""
+    m = _RELEASE_TAG_RE.match(str(tag).strip())
+    return tuple(int(g) for g in m.groups()) if m else None
+
+
+def newest_release_tag(tags):
+    """Highest release tag as (name, tuple), or None when there are none.
+
+    Sorted in Python rather than by `git --sort=-v:refname` so the ordering is
+    the same on every git version and is directly testable. Mirrors the phase0c
+    conformance test's copy deliberately: that test pins the concept, this is
+    the verifier's runtime copy.
+    """
+    parsed = [(t, parse_release_tag(t)) for t in (tags or [])]
+    parsed = [(t, v) for t, v in parsed if v is not None]
+    return max(parsed, key=lambda pair: pair[1]) if parsed else None
+
+
+def _git(args, cwd):
+    """One git invocation, or None when the question cannot be asked."""
+    try:
+        proc = _subprocess.run(['git', '-C', cwd] + args, capture_output=True,
+                               text=True, encoding='utf-8', errors='replace',
+                               timeout=30)
+    except (OSError, _subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    return proc.stdout
+
+
+def git_release_tags(cwd='.'):
+    """Every tag git knows about. --list, not describe: a release can be tagged
+    from a branch HEAD does not contain, and the public face must not trail a
+    published tag wherever it was cut."""
+    out = _git(['tag', '--list'], cwd)
+    if out is None:
+        return None
+    return [line.strip() for line in out.splitlines() if line.strip()]
+
+
+def git_describe(cwd='.'):
+    """`git describe --tags`-style context string, or None. Reported for
+    transparency (which tag HEAD descends from); never the comparison basis."""
+    out = _git(['describe', '--tags'], cwd)
+    return out.strip() if out is not None else None
+
+
+def readme_tag_claim(readme_path='README.md'):
+    """The version in the README's 'tags: vX.Y.Z is latest' claim, or None."""
+    try:
+        txt = open(readme_path, encoding='utf-8-sig').read()
+    except OSError:
+        return None
+    m = _README_TAG_CLAIM_RE.search(txt)
+    return m.group(1) if m else None
+
+
+def _fix_tag_claim(canonical, readme_path='README.md'):
+    """--fix half of the claim check: heal a STALE claim forward to canonical.
+
+    Only staleness is healed (claim < canonical). A claim AHEAD of canonical
+    asserts a release the tree knows nothing about — that stays red for human
+    eyes; fixing it down would mask the anomaly."""
+    claim = readme_tag_claim(readme_path)
+    if claim is None:
+        return None
+    c, k = parse_version(claim), parse_version(canonical)
+    if c is not None and k is not None and c < k:
+        _set(_README_TAG_CLAIM_RE, readme_path, canonical)
+        return claim
+    return None
+
+
+def public_agreement(canonical=None, readme_path='README.md', tags=None,
+                     git_cwd='.'):
+    """Verdict {ok, checks, banner, tag_claim, newest_tag, describe} for the
+    public face against the published tags.
+
+    ok is False ONLY on real drift: no banner, banner != canonical, a published
+    release tag ahead of the banner, or a present 'tags: vX is latest' claim
+    naming anything but max(newest release tag, canonical). Git or release tags
+    unavailable -> those checks pass with a 'nothing to compare' reason, never
+    a fabricated green (unmeasurable != wrong). Tests inject `tags`; production
+    asks git."""
+    if canonical is None:
+        canonical = _read(None, 'VERSION')
+    canonical = (canonical or '').strip()
+    banner = _read(ROOT_FILES['readme_banner'][0], readme_path)
+    claim = readme_tag_claim(readme_path)
+    if tags is None:
+        tags = git_release_tags(git_cwd)
+        describe = git_describe(git_cwd)
+    else:
+        describe = None
+    newest = newest_release_tag(tags) if tags else None
+    newest_name, newest_tuple = newest if newest else (None, None)
+    banner_tuple = parse_version(banner) if banner else None
+    canonical_tuple = parse_version(canonical) if canonical else None
+
+    checks = []
+    checks.append({
+        'name': 'readme_banner_present', 'ok': banner is not None,
+        # ASCII-only on purpose: this prints to cp1252 consoles live (the '·'
+        # in the real banner rendered as mojibake on the first live run).
+        'reason': ('README <sub>vX.Y.Z banner reads %s' % banner)
+                  if banner else 'no <sub>vX.Y.Z banner in README '
+                                  '(public face is silent)'})
+    checks.append({
+        'name': 'banner_matches_canonical',
+        'ok': (banner is not None and banner == canonical),
+        'reason': ('agree' if banner == canonical else
+                   'README banner %s != canonical VERSION %s'
+                   % (banner, canonical))})
+    if tags is None:
+        checks.append({'name': 'tag_not_ahead_of_banner', 'ok': True,
+                       'reason': 'git unavailable - nothing to compare '
+                                 '(unmeasurable != wrong)'})
+    elif newest is None:
+        checks.append({'name': 'tag_not_ahead_of_banner', 'ok': True,
+                       'reason': 'no vX.Y.Z release tags in this checkout - '
+                                 'nothing to compare (unmeasurable != wrong)'})
+    elif banner_tuple is None:
+        checks.append({'name': 'tag_not_ahead_of_banner', 'ok': False,
+                       'reason': 'cannot compare: no banner to hold against '
+                                 'newest release tag %s' % newest_name})
+    else:
+        ahead = newest_tuple > banner_tuple
+        checks.append({
+            'name': 'tag_not_ahead_of_banner', 'ok': not ahead,
+            'reason': ('agree' if not ahead else
+                       'public face stale: newest release tag %s outruns the '
+                       'README banner %s - a release was published without '
+                       'updating the public artifact' % (newest_name, banner))})
+    if claim is None:
+        checks.append({'name': 'tag_claim_current', 'ok': True,
+                       'reason': "no 'tags: vX is latest' claim in README - "
+                                 'nothing to pin'})
+    else:
+        claim_tuple = parse_version(claim)
+        basis_label, basis_tuple = None, None
+        for label, t in (('newest release tag', newest_tuple),
+                         ('VERSION', canonical_tuple)):
+            if t is not None and (basis_tuple is None or t > basis_tuple):
+                basis_label, basis_tuple = label, t
+        if basis_tuple is None:
+            checks.append({'name': 'tag_claim_current', 'ok': True,
+                           'reason': 'nothing to compare the claim against '
+                                     '(unmeasurable != wrong)'})
+        else:
+            current = (claim_tuple == basis_tuple)
+            basis_str = '.'.join(str(p) for p in basis_tuple)
+            if current:
+                reason = 'agree'
+            elif claim_tuple < basis_tuple:
+                reason = ("README tags-claim names v%s but the latest is v%s "
+                          "(per %s) - stale public claim about the tag set"
+                          % (claim, basis_str, basis_label))
+            else:
+                reason = ("README tags-claim names v%s ahead of anything the "
+                          "tree knows (latest v%s per %s) - the README "
+                          "asserts a release that does not exist"
+                          % (claim, basis_str, basis_label))
+            checks.append({'name': 'tag_claim_current', 'ok': current,
+                           'reason': reason})
+    return {'ok': all(c['ok'] for c in checks), 'checks': checks,
+            'banner': banner, 'tag_claim': claim, 'newest_tag': newest_name,
+            'describe': describe}
 
 
 def _read(pat, path):
@@ -167,6 +373,11 @@ if __name__ == '__main__':
         agree = len(set(vals.values())) == 1
         print('AFTER   ' + '  '.join(f'{k}={v}' for k, v in vals.items()) + f'  agree={agree}')
 
+    # REACH R2: --fix also heals a stale 'tags: vX is latest' claim forward.
+    healed = _fix_tag_claim(canonical) if fix else None
+    if healed:
+        print(f'  set readme_tag_claim {healed} -> {canonical}')
+
     # WA1-TRUTH (G4): the APEX catalog-stamp contract, additive to the version
     # chain. Reported always; gates the exit alongside `agree`. Never touches the
     # version-chain logic above (do-not-weaken).
@@ -179,7 +390,19 @@ if __name__ == '__main__':
     if art_path:
         print('APEX    artifact=%s' % art_path)
 
+    # REACH R2: the public-face gate, additive alongside the version chain and
+    # the APEX gate. Reported always; gates the exit. Computed AFTER the fix
+    # block so --fix output reflects the healed state.
+    public = public_agreement(canonical=vals['VERSION'])
+    for c in public['checks']:
+        print('PUBLIC  %s %s  (%s)'
+              % ('ok ' if c['ok'] else 'RED', c['name'], c['reason']))
+    print('PUBLIC  banner=%s  tag_claim=%s  newest_tag=%s  describe=%s'
+          % (public['banner'], public['tag_claim'],
+             public['newest_tag'], public['describe']))
+
     # A check that can fail. It failed on this tree before --fix, twice - once on
     # __version__ and once on pyproject (R80: build it, or strike the ruling
     # that ordered it. This one gets built.) WA1-TRUTH adds the apex gate.
-    sys.exit(0 if (agree and apex['ok']) else 1)
+    # REACH R2 adds the public-face gate.
+    sys.exit(0 if (agree and apex['ok'] and public['ok']) else 1)
