@@ -2,6 +2,16 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.54.0 — the worker gate closes, and the post-mortem lands
+
+*2026-08-18: first-principles post-mortem + house-cleaning from the last wave, with the panel worker-policy consent gate flipped ON. **Six version surfaces agree on 5.54.0, verdict=PASS** · Houdini 22.0.400 · the changelog gap note below stands (backfill is a separate task).*
+
+**CONSENT POSTURE = ON (Joe DECIDE 2026-08-18, `872054c1`).** The interactive panel worker (an LLM with no human review loop) can no longer self-authorize review/approve/critical-gated ops. `enforce_worker_policy` flips to `True` on the interactive path — the worker-policy allowlist (built from `TOOL_DEFS` + `OPERATION_GATES`, fail-closed on unknown tools) denies `execute_python`/`execute_vex`, `delete_node`, renders, exports, prunes, and PDG cooks. Denial reason text is now path-accurate: gated ops go through the native Houdini UI or a bridge `/mcp` consent-gated call. Post-mortem hardening-path item #2 (D2 second surface) closes the last unguarded panel entry point.
+
+**POST-MORTEM, FIRST PRINCIPLES (`docs/reviews/POSTMORTEM_2026-08-18.md`).** A house-cleaning pass on the last wave → 1/8 swarm scouts landed (9/10 died on provider 429), remaining domains swept directly. The spine is healthy (version chain green on all six surfaces, public-face gate green, 6,932 tests collect clean, panel + Moneta live). Three demo-killers named: **D1** the harness runtime is not pinned (`python` resolves 3.14.2 vs the pinned 3.13 — vendored wheels inactive), **D2** undo guarantees are grouping-only and two safety surfaces have different consent (the flipped gate above is the first action), **D3** the changelog is 13 releases behind and outside the ritual. Eight-item hardening path with owners, plus honest UNKNOWNs (CI state, symbol-table staleness over-claim corrected, Moneta vector recall).
+
+**HOUSE-CLEANING, EXECUTED.** 30 stale merged worktrees removed (12 clean + 18 dirty — every unique receipt preserved to `harness/notes/receipts/` first); 13 probe files relocated out of `docs/` to `harness/notes/h22/probes/` (gitignored, regenerable evidence); `harness/notes/W1_MIGRATION_APPLY2.json` preserved. The worktree fleet is down to the two intentionally-kept worktrees.
+
 ## v5.53.0 — the public face stops trailing
 
 *2026-08-18: the REACH blueprint's P1 Truth phase closes — the public face can no longer trail a published release, and the reach matrix names every cell. **Six version surfaces agree on 5.53.0, verdict=PASS** · Houdini 22.0.400 · the changelog gap below is stated, not hidden.*
