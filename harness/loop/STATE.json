@@ -1,6 +1,6 @@
 {
   "_schema": "loop/v1",
-  "_comment": "LOOP harness executing docs/THE_LOOP_v5.1.md (grounded 2026-08-19, UNRATIFIED working blueprint until Joe's word). Conductor: .claude/agents/loop-orchestrator.md. Dispatch: Workflow(name='loop', args={rung, date, autonomy, spawnedSoFar, armed}). ARM per-run only; merge/push/tag/VERSION/ratification flips = Joe words per act, never banked, never relayed by an agent message (Article V). Code legs run in loop/<rung>-* worktrees, one atomic commit per leg, Joe merges. Evidence artifacts land in main-tree harness/loop/ as untracked evidence. Agents hand artifacts to other agents via bus/. spawned is the cross-run ledger: the workflow refuses any rung whose spend + budget exceeds (spawn_cap - reserve).",
+  "_comment": "LOOP harness executing docs/THE_LOOP_v5.1.md (grounded 2026-08-19, RATIFIED blueprint as of Joe word 2026-08-20). Conductor: .claude/agents/loop-orchestrator.md. Dispatch: Workflow(name='loop', args={rung, date, autonomy, spawnedSoFar, armed}). ARM per-run only; merge/push/tag/VERSION/ratification flips = Joe words per act, never banked, never relayed by an agent message (Article V). Code legs run in loop/<rung>-* worktrees, one atomic commit per leg, Joe merges. Evidence artifacts land in main-tree harness/loop/ as untracked evidence. Agents hand artifacts to other agents via bus/. spawned is the cross-run ledger: the workflow refuses any rung whose spend + budget exceeds (spawn_cap - reserve).",
   "blueprint": "docs/THE_LOOP_v5.1.md",
   "grounded": "2026-08-19",
   "base": "master",
@@ -45,7 +45,7 @@
     "v00": {
       "title": "Recipe builds — ports contract + deterministic mapper + precommit-before-mutation; all turns EXPOSED",
       "agent_budget": 3,
-      "status": "closed — V0.0 run 2026-08-20 PASS end-to-end; forge 9ef3250a merged to master; crucible SOUND-WITH-NITS (0 BROKEN); evidence in harness/loop/runs/2026-08-20/",
+      "status": "closed + RATIFIED — V0.0 run 2026-08-20 PASS end-to-end; forge 9ef3250a merged to master; crucible SOUND-WITH-NITS (0 BROKEN); blueprint + contract ratified by Joe word 2026-08-20; evidence in harness/loop/runs/2026-08-20/",
       "worktree_prefix": "loop/v0.0-",
       "receipts": [
         "loop_v00_forge.json",
@@ -53,12 +53,14 @@
         "loop_v00_crucible.json"
       ],
       "gates_closed": [
-        "gate_v00_merge (Joe closeout directive 2026-08-20 — forge fast-forward merged 9ef3250a->master)"
+        "gate_v00_merge (Joe closeout directive 2026-08-20 — forge fast-forward merged 9ef3250a->master)",
+        "gate_blueprint_ratification (Joe ratification word 2026-08-20 — docs/THE_LOOP_v5.1.md becomes law; status flips UNRATIFIED->RATIFIED)",
+        "gate_contract_ratification (Joe ratification word 2026-08-20 — loop-v00.yaml goalposts bind; all 6 features passing=true; three crucible nits dispositioned into the bound text)"
       ],
-      "nits_carried": [
-        "crucible A1 SOUND-WITH-NITS: seam §4 params carry no type annotations; PortResult.payload defaulted (=None) vs REQUIRED in blueprint — claim 'param names verbatim', not 'signatures verbatim'",
-        "crucible A2 SOUND-WITH-NITS: GATE_POLICY([]) -> ALLOW contradicts mapper.py 'unevaluable blocks' principle — empty predicate set passes by omission; unreachable in V0.0, spec-only",
-        "crucible A5 SOUND-WITH-NITS: closure_rate=1.0 is tautological (sum(counts)/turns, always a verdict assigned) — the verifiable claim is zero HIT/MISS and all turns EXPOSED"
+      "nits_dispositioned": [
+        "crucible A1 -> resolved in bound text: contract claims 'param names verbatim', not 'signatures verbatim' (feature 1 + goal amended; seam carries no type annotations; PortResult.payload defaulted)",
+        "crucible A2 -> dispositioned as spec-only: GATE_POLICY([])->ALLOW is unreachable in V0.0; documented as a known edge in feature 2 + goal, carried to the V0.1 live-gate leg to resolve",
+        "crucible A5 -> resolved in bound text: closure_rate=1.0 restated as the derived consequence; the bound claim is 'zero HIT/MISS and every turn EXPOSED' (feature 5 + goal amended)"
       ]
     },
     "v01": {
@@ -103,9 +105,9 @@
     }
   },
   "human_gates": {
-    "gate_blueprint_ratification": "THE LOOP v5.1 blueprint ratification — Joe's word makes docs/THE_LOOP_v5.1.md law (until then it is the working spec)",
-    "gate_v00_merge": "V0.0 leg merges (loop/v0.0-forge, loop/v0.0-mission) — Joe words per act",
-    "gate_contract_ratification": "loop-v00.yaml contract ratification — goalposts bind only after Joe's word",
+    "gate_blueprint_ratification": "CLOSED 2026-08-20 — THE LOOP v5.1 blueprint ratified by Joe's word; docs/THE_LOOP_v5.1.md is law",
+    "gate_v00_merge": "CLOSED 2026-08-20 — V0.0 leg merges (loop/v0.0-forge 9ef3250a fast-forwarded per Joe closeout directive)",
+    "gate_contract_ratification": "CLOSED 2026-08-20 — loop-v00.yaml goalposts ratified by Joe's word; six features passing=true, three nits dispositioned",
     "gate_substrate_install": "Hanish / SALUS / Octavius / jacobian-monologue installs — never assumed present",
     "gate_merges": "all worktree merges, pushes, tags, VERSION edits, flywheel flips — Joe words per act"
   },
@@ -123,6 +125,13 @@
       "evidence": "harness/loop/runs/2026-08-20/ (loop_truth_pure-python.json 9 entries, DONE sentinel, closure_audit.json 9/9 PASS) + harness/loop/ledger/v00_precommits.jsonl (8 durable lines seq 1..8, sha256-verified worktree==main-tree)",
       "nits": "3 non-blocking carried for ratification: (1) seam has no param type annotations, PortResult.payload defaulted — claim 'param names verbatim'; (2) GATE_POLICY([])->ALLOW contradicts unevaluable-blocks principle (unreachable, spec-only); (3) closure_rate tautological — goalpost should read 'zero HIT/MISS, all turns EXPOSED'",
       "action": "loop/v0.0-forge fast-forward merged to master per Joe closeout directive; STATE.json reconciled; closeout commit + push pending"
+    },
+    {
+      "date": "2026-08-20",
+      "event": "v00-ratified",
+      "gates": "gate_blueprint_ratification + gate_contract_ratification CLOSED by Joe word 2026-08-20 (Article V, per act)",
+      "disposition": "blueprint: docs/THE_LOOP_v5.1.md status UNRATIFIED->RATIFIED. contract: loop-v00.yaml six features passing=false->true; three crucible nits dispositioned into the bound text (A1 param-names claim, A2 GATE_POLICY([]) spec-only carried to V0.1, A5 closure_rate restated as derived consequence)",
+      "action": "ratification commit pending"
     }
   ]
 }

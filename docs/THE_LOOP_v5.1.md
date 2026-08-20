@@ -1,6 +1,6 @@
 # THE LOOP v5.1 — Master Architecture Specification
 
-> **Status:** UNRATIFIED working blueprint — law once Joe says the word. Until then the
+> **Status:** RATIFIED — law as of Joe's word, 2026-08-20. The
 > harness treats this document as the spec it builds against, and every seam below is
 > honest about what is installed vs. what is spec-grounded.
 >
