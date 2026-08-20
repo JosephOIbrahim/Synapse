@@ -2,6 +2,16 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.55.0 — the loop's first rung closes clean
+
+*2026-08-20: THE LOOP v5.1 harness opens for real — V0.0 (recipe builds) runs end-to-end and closes with the forge merged, the mission 9/9, and the crucible SOUND-WITH-NITS. **Six version surfaces agree on 5.55.0, verdict=PASS** · Houdini 22.0.400 · blueprint UNRATIFIED until Joe's word.*
+
+**THE LOOP v5.1 GROUNDED (`docs/THE_LOOP_v5.1.md`, 2026-08-19).** Six-repository shelf (Synapse host over Moneta, Hanish, SALUS, Octavius, jacobian-monologue), §5 ladder V0.0–V0.5 never re-sorted, honest-seam rule: absent substrate reports UNAVAILABLE with a reason, never fabricated SUCCESS/BLOCK. Working blueprint only — `gate_blueprint_ratification` still open.
+
+**V0.0 RUN CLOSED (2026-08-20, run `wf_53e745a4-5df`).** Forge (`loop/v0.0-forge`, `9ef3250a`, merged) built the seam `python/synapse/loop/` — ports contract §4 (PortResult NamedTuple, SafetyPort/MemoryPort/LedgerPort/StagePort with params verbatim), deterministic mapper (27/27 truth table, absent evidence blocks), precommit-before-mutation (append+flush+fsync durable ledger). 20 tests pass on plain Python 3.14.2, `needs_hou=false`. Mission: 9/9 goalposts PASS, closure audit 9/9, 8 durable ledger lines, every turn EXPOSED (settlement honestly UNAVAILABLE — Hanish absent). Crucible: 6 adversarial attacks re-run, 0 BROKEN, SOUND-WITH-NITS; three nits carried as ratification fodder (claim "param names verbatim" not "signatures verbatim"; GATE_POLICY([])→ALLOW docstring edge; closure_rate tautology).
+
+**EVIDENCE LANDED, STATE RECONCILED.** `harness/loop/runs/2026-08-20/` (truth, DONE, closure audit), `harness/loop/ledger/v00_precommits.jsonl` (sha256-verified byte-identical worktree→main), `harness/loop/bus/` (forge+mission+crucible receipts). STATE.json: spawned 0→3, v00 closed, gates_closed recorded, nits carried. `gate_contract_ratification` + `gate_blueprint_ratification` still open; substrate installs (Hanish/SALUS/Octavius) never assumed present.
+
 ## v5.54.0 — the worker gate closes, and the post-mortem lands
 
 *2026-08-18: first-principles post-mortem + house-cleaning from the last wave, with the panel worker-policy consent gate flipped ON. **Six version surfaces agree on 5.54.0, verdict=PASS** · Houdini 22.0.400 · the changelog gap note below stands (backfill is a separate task).*
