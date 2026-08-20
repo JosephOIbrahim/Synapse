@@ -1,0 +1,42 @@
+# LOOP-V00 — THE LOOP v5.1 (docs/THE_LOOP_v5.1.md) §5 rung V0.0 goalposts.
+# Ratification: UNRATIFIED — binds only after Joe's word (loop-orchestrator halt).
+# V0.0 is the RECIPE rung: ports §4 contract + deterministic mapper + precommit-
+# before-mutation recipe, all pure-python. It must close WITHOUT the Octavius
+# stage present. Every goalpost below is probe-verifiable; UNKNOWN renders, never
+# fabricated green.
+id: loop-v00
+goal: "V0.0 proves the recipe plane honestly: the seam (python/synapse/loop/) exposes the blueprint §4 ports contract VERBATIM; the mapper is a deterministic pure spec (ALLOW iff every predicate True; any False OR None-unevaluable BLOCKs); the recipe authors each turn's precommit in the REAL durable ledger BEFORE any mutation step; settlement stays honest-UNAVAILABLE until Hanish lands, so every turn is EXPOSED; StagePort reports UNAVAILABLE (Octavius absent) with zero disk side effects; closure_rate = 1.0 with zero HIT/MISS. The rung closes without the Octavius stage. Absence is a measured fact: an absent substrate is reported UNAVAILABLE with a reason, never fabricated SUCCESS/BLOCK."
+model: opus
+autonomy: green            # pure-python evidence/contract legs; no hython, no hou
+owns:
+  - "python/synapse/loop/ports.py"       # PortResult NamedTuple + STATUS + SafetyPort/MemoryPort/LedgerPort/StagePort §4 methods
+  - "python/synapse/loop/mapper.py"      # GATE_POLICY: all True -> ALLOW, any False/None -> BLOCK, deterministic pure
+  - "python/synapse/loop/recipe.py"      # build_recipe/run_recipe: precommit authored BEFORE mutation, every turn; settle UNAVAILABLE -> EXPOSED
+  - "python/synapse/loop/__init__.py"    # __version__
+  - "tests/test_loop_contracts.py"       # pins the §4 contract surface + mapper truth table + precommit order
+  - ".synapse/contracts/loop-v00.yaml"
+do_not_touch:
+  - "VERSION"                             # bump is a Joe word
+  - "harness/loop/STATE.json"             # the orchestrator's instrument
+  - "python/synapse/**/!(loop)/**"        # the loop seam is the only seam V0.0 touches
+  - "README.md"                           # public-face content is Joe words
+features:
+  - description: "ports contract holds by inspection AND probe: PortResult is a NamedTuple with status/payload/error_message; STATUS covers SUCCESS|UNAVAILABLE|BLOCKED; SafetyPort.evaluate_path(agent_id, path_history_hash, recent_actions, proposed_action, scene_state_digest), MemoryPort.query_and_filter(relation_keys, task_context_tokens), LedgerPort.author_precommit(claim_predicate, probability, world_ref), StagePort.compose_sanitized_stage(stage_identifier) — signatures verbatim per blueprint §4"
+    verify: "tests/test_loop_contracts.py passes + mission phase port_contract: all 5 port questions contract_holds=true (harness/loop/runs/<date>/loop_truth_pure-python.json)"
+    passing: false
+  - description: "mapper.GATE_POLICY is deterministic and pure: ALLOW iff every predicate is True; any False OR None (unevaluable) BLOCKs — truth table exercised over all 27 combos of (True|False|None)^3 with the expected column hardcoded in the probe, never read back from the seam"
+    verify: "mission phase mapper_green: truth_table_holds=true and unevaluable_blocks=true"
+    passing: false
+  - description: "every turn's precommit is authored in the real durable ledger (harness/loop/ledger/v00_precommits.jsonl) BEFORE the mutation step executes; one precommit per turn, first step is precommit, precommit_before_mutation=true every turn; ledger grows by exactly `turns` lines"
+    verify: "mission phase precommit_order: invariant_holds=true and precommit_per_turn=true; crucible reads the actual ledger lines"
+    passing: false
+  - description: "StagePort.compose_sanitized_stage returns UNAVAILABLE naming the absent Octavius substrate and writes NOTHING to disk (harness/loop/ snapshot before/after identical; ledger unchanged)"
+    verify: "mission phase stageport_cow: closes_without_octavius=true"
+    passing: false
+  - description: "closure_rate = 1.0 with zero HIT/MISS and every turn EXPOSED; settlement is honest-UNAVAILABLE until Hanish — no fabricated SUCCESS/BLOCK/verdict anywhere in the evidence"
+    verify: "mission phase closure_rate: goalpost_holds=true (closure_rate==1.0, HIT==0, MISS==0, all EXPOSED)"
+    passing: false
+  - description: "the whole V0.0 rung closes with needs_hou=false under plain python — the evidence artifact loop_truth_pure-python.json is real runner output (DONE sentinel written LAST), not a hand-authored file"
+    verify: "harness/loop/runs/<date>/DONE exists and loop_truth_pure-python.json parses; receipt loop_v00_mission.json verdict=PASS"
+    passing: false
+stop_when: "all features passing (verified by the V0.0-CRUCIBLE attacks + closure audit) OR the rung is re-armed with a fix OR Joe halts"

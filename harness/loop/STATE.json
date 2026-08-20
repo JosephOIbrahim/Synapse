@@ -1,0 +1,87 @@
+{
+  "_schema": "loop/v1",
+  "_comment": "LOOP harness executing docs/THE_LOOP_v5.1.md (grounded 2026-08-19, UNRATIFIED working blueprint until Joe's word). Conductor: .claude/agents/loop-orchestrator.md. Dispatch: Workflow(name='loop', args={rung, date, autonomy, spawnedSoFar, armed}). ARM per-run only; merge/push/tag/VERSION/ratification flips = Joe words per act, never banked, never relayed by an agent message (Article V). Code legs run in loop/<rung>-* worktrees, one atomic commit per leg, Joe merges. Evidence artifacts land in main-tree harness/loop/ as untracked evidence. Agents hand artifacts to other agents via bus/. spawned is the cross-run ledger: the workflow refuses any rung whose spend + budget exceeds (spawn_cap - reserve).",
+  "blueprint": "docs/THE_LOOP_v5.1.md",
+  "grounded": "2026-08-19",
+  "base": "master",
+  "base_version": "5.54.0",
+  "houdini_build": "22.0.400",
+  "spawn_cap": 30,
+  "spawn_reserve": 2,
+  "spawned": 0,
+  "spawn_ledger": [],
+  "bus": "harness/loop/bus/",
+  "ledger": "harness/loop/ledger/",
+  "contracts": {
+    "loop-v00.yaml": "harness/loop/../.synapse/contracts/loop-v00.yaml"
+  },
+  "substrate_presence": {
+    "moneta": "live — current python/synapse/memory/ substrate; in-Houdini reachable, headless UNAVAILABLE unless the seam resolves",
+    "hanish": "absent — spec-grounded v0.1.2; LedgerPort.settle() reports UNAVAILABLE until installed",
+    "salus": "absent — spec-grounded v1.0.0; SafetyPort.evaluate_path reports UNAVAILABLE until installed",
+    "octavius": "absent — portfolio concept (v0.9.0); StagePort.compose_sanitized_stage reports UNAVAILABLE until installed",
+    "jacobian_monologue": "absent — off-loop metrology plane (v0.1.0); V0.5 target"
+  },
+  "rungs": {
+    "v00": {
+      "title": "Recipe builds — ports contract + deterministic mapper + precommit-before-mutation; all turns EXPOSED",
+      "agent_budget": 3,
+      "status": "ready",
+      "worktree_prefix": "loop/v0.0-",
+      "receipts": [],
+      "gates_closed": []
+    },
+    "v01": {
+      "title": "SafetyPort (SALUS) f(I, S_k, a_{k+1}, Omega) active, N=20 sliding window",
+      "agent_budget": 4,
+      "status": "blocked: needs v00 closed + SALUS substrate present (spec-grounded only today)",
+      "worktree_prefix": "loop/v0.1-",
+      "receipts": [],
+      "gates_closed": []
+    },
+    "v02": {
+      "title": "PG-DRM active inside MemoryPort; first BLIND calibration samples logged to Hanish",
+      "agent_budget": 4,
+      "status": "blocked: needs v01 closed + Hanish substrate present",
+      "worktree_prefix": "loop/v0.2-",
+      "receipts": [],
+      "gates_closed": []
+    },
+    "v03": {
+      "title": "StagePort USD metadata quine filter active; drain points wired (LedgerPort.process()); prediction debt in panel",
+      "agent_budget": 4,
+      "status": "blocked: needs Octavius substrate present",
+      "worktree_prefix": "loop/v0.3-",
+      "receipts": [],
+      "gates_closed": []
+    },
+    "v04": {
+      "title": "Outer ring formation over MCP; SALUS evaluates path sequences; Synapse executes",
+      "agent_budget": 5,
+      "status": "blocked: needs v01-v03 closed",
+      "worktree_prefix": "loop/v0.4-",
+      "receipts": [],
+      "gates_closed": []
+    },
+    "v05": {
+      "title": "Metrology & domain ablation via jacobian-monologue under Houdini 22",
+      "agent_budget": 5,
+      "status": "blocked: needs v04 closed + jacobian-monologue present",
+      "worktree_prefix": "loop/v0.5-",
+      "receipts": [],
+      "gates_closed": []
+    }
+  },
+  "human_gates": {
+    "gate_blueprint_ratification": "THE LOOP v5.1 blueprint ratification — Joe's word makes docs/THE_LOOP_v5.1.md law (until then it is the working spec)",
+    "gate_v00_merge": "V0.0 leg merges (loop/v0.0-forge, loop/v0.0-mission) — Joe words per act",
+    "gate_contract_ratification": "loop-v00.yaml contract ratification — goalposts bind only after Joe's word",
+    "gate_substrate_install": "Hanish / SALUS / Octavius / jacobian-monologue installs — never assumed present",
+    "gate_merges": "all worktree merges, pushes, tags, VERSION edits, flywheel flips — Joe words per act"
+  },
+  "mile_markers": {
+    "map": "blueprint §5: v00 = first capability (recipe builds), v01 = first live gate (SALUS), v03 = prediction debt, v05 = metrology",
+    "first_tracked_delta": "v01: S_k path state tracked across multi-step turns"
+  },
+  "log": []
+}

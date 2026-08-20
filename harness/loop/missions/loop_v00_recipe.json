@@ -1,0 +1,80 @@
+{
+  "mission": "loop_v00_recipe",
+  "version": "1.0.0",
+  "target_build": "pure-python",
+  "needs_hou": false,
+  "artifact_prefix": "loop_truth",
+  "phases": [
+    {
+      "id": "port_contract",
+      "kind": "port_contract",
+      "questions": [
+        {
+          "port": "PortResult",
+          "methods": [],
+          "note": "blueprint §4: PortResult NamedTuple with status/payload/error_message; status ∈ SUCCESS|UNAVAILABLE|BLOCKED"
+        },
+        {
+          "port": "SafetyPort",
+          "methods": ["evaluate_path"],
+          "note": "blueprint §4: evaluate_path(agent_id, path_history_hash, recent_actions, proposed_action, scene_state_digest)"
+        },
+        {
+          "port": "MemoryPort",
+          "methods": ["query_and_filter"],
+          "note": "blueprint §4: query_and_filter(relation_keys, task_context_tokens)"
+        },
+        {
+          "port": "LedgerPort",
+          "methods": ["author_precommit"],
+          "note": "blueprint §4: author_precommit(claim_predicate, probability, world_ref)"
+        },
+        {
+          "port": "StagePort",
+          "methods": ["compose_sanitized_stage"],
+          "note": "blueprint §4: compose_sanitized_stage(stage_identifier)"
+        }
+      ]
+    },
+    {
+      "id": "mapper_green",
+      "kind": "mapper_green",
+      "questions": [
+        {
+          "name": "gate-policy-truth-table",
+          "note": "deterministic mapper: all True → ALLOW; any False or None (unevaluable) → BLOCK"
+        }
+      ]
+    },
+    {
+      "id": "precommit_order",
+      "kind": "precommit_order",
+      "questions": [
+        {
+          "turns": 3,
+          "note": "V0.0 invariant: precommit authored in the real ledger BEFORE the mutating act, every turn"
+        }
+      ]
+    },
+    {
+      "id": "stageport_cow",
+      "kind": "stageport_cow",
+      "questions": [
+        {
+          "stage_identifier": "/stage",
+          "note": "StagePort reports UNAVAILABLE (Octavius absent) with zero side effects — closes without Octavius"
+        }
+      ]
+    },
+    {
+      "id": "closure_rate",
+      "kind": "closure_rate",
+      "questions": [
+        {
+          "turns": 5,
+          "note": "V0.0 gate: every turn EXPOSED, zero HIT/MISS, closure_rate = 1.0"
+        }
+      ]
+    }
+  ]
+}
