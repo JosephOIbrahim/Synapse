@@ -8,8 +8,27 @@
   "houdini_build": "22.0.400",
   "spawn_cap": 30,
   "spawn_reserve": 2,
-  "spawned": 0,
-  "spawn_ledger": [],
+  "spawned": 3,
+  "spawn_ledger": [
+    {
+      "run": "2026-08-20",
+      "rung": "v00",
+      "workflow": "wf_53e745a4-5df",
+      "spent": 3,
+      "budget": 3,
+      "agents": [
+        "loop:v00:forge",
+        "loop:v00:mission",
+        "loop:v00:crucible"
+      ],
+      "receipts": [
+        "harness/loop/bus/loop_v00_forge.json",
+        "harness/loop/bus/loop_v00_mission.json",
+        "harness/loop/bus/loop_v00_crucible.json"
+      ],
+      "verdict": "forge PASS (20 tests) / mission PASS (9/9 goalposts, closure 1.0) / crucible SOUND-WITH-NITS (0 BROKEN)"
+    }
+  ],
   "bus": "harness/loop/bus/",
   "ledger": "harness/loop/ledger/",
   "contracts": {
@@ -26,10 +45,21 @@
     "v00": {
       "title": "Recipe builds — ports contract + deterministic mapper + precommit-before-mutation; all turns EXPOSED",
       "agent_budget": 3,
-      "status": "ready",
+      "status": "closed — V0.0 run 2026-08-20 PASS end-to-end; forge 9ef3250a merged to master; crucible SOUND-WITH-NITS (0 BROKEN); evidence in harness/loop/runs/2026-08-20/",
       "worktree_prefix": "loop/v0.0-",
-      "receipts": [],
-      "gates_closed": []
+      "receipts": [
+        "loop_v00_forge.json",
+        "loop_v00_mission.json",
+        "loop_v00_crucible.json"
+      ],
+      "gates_closed": [
+        "gate_v00_merge (Joe closeout directive 2026-08-20 — forge fast-forward merged 9ef3250a->master)"
+      ],
+      "nits_carried": [
+        "crucible A1 SOUND-WITH-NITS: seam §4 params carry no type annotations; PortResult.payload defaulted (=None) vs REQUIRED in blueprint — claim 'param names verbatim', not 'signatures verbatim'",
+        "crucible A2 SOUND-WITH-NITS: GATE_POLICY([]) -> ALLOW contradicts mapper.py 'unevaluable blocks' principle — empty predicate set passes by omission; unreachable in V0.0, spec-only",
+        "crucible A5 SOUND-WITH-NITS: closure_rate=1.0 is tautological (sum(counts)/turns, always a verdict assigned) — the verifiable claim is zero HIT/MISS and all turns EXPOSED"
+      ]
     },
     "v01": {
       "title": "SafetyPort (SALUS) f(I, S_k, a_{k+1}, Omega) active, N=20 sliding window",
@@ -83,5 +113,16 @@
     "map": "blueprint §5: v00 = first capability (recipe builds), v01 = first live gate (SALUS), v03 = prediction debt, v05 = metrology",
     "first_tracked_delta": "v01: S_k path state tracked across multi-step turns"
   },
-  "log": []
+  "log": [
+    {
+      "date": "2026-08-20",
+      "event": "v00-run-closed",
+      "workflow": "wf_53e745a4-5df",
+      "agents": 3,
+      "verdict": "forge PASS (9ef3250a, 20 tests) / mission PASS (9/9 goalposts, closure_rate 1.0, HIT=0 MISS=0 EXPOSED=5/5) / crucible SOUND-WITH-NITS (6 attacks, 0 BROKEN, chain_broken_at null)",
+      "evidence": "harness/loop/runs/2026-08-20/ (loop_truth_pure-python.json 9 entries, DONE sentinel, closure_audit.json 9/9 PASS) + harness/loop/ledger/v00_precommits.jsonl (8 durable lines seq 1..8, sha256-verified worktree==main-tree)",
+      "nits": "3 non-blocking carried for ratification: (1) seam has no param type annotations, PortResult.payload defaulted — claim 'param names verbatim'; (2) GATE_POLICY([])->ALLOW contradicts unevaluable-blocks principle (unreachable, spec-only); (3) closure_rate tautological — goalpost should read 'zero HIT/MISS, all turns EXPOSED'",
+      "action": "loop/v0.0-forge fast-forward merged to master per Joe closeout directive; STATE.json reconciled; closeout commit + push pending"
+    }
+  ]
 }

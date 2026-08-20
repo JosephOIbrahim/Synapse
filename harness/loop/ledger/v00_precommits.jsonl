@@ -1,0 +1,8 @@
+{"author": "v0.0-recipe", "claim_predicate": "precommit-order-t1: no observed outcome is claimed at author time", "event": "precommit", "probability": 0.0, "seq": 1, "world_ref": "v0.0/precommit-order"}
+{"author": "v0.0-recipe", "claim_predicate": "precommit-order-t2: no observed outcome is claimed at author time", "event": "precommit", "probability": 0.0, "seq": 2, "world_ref": "v0.0/precommit-order"}
+{"author": "v0.0-recipe", "claim_predicate": "precommit-order-t3: no observed outcome is claimed at author time", "event": "precommit", "probability": 0.0, "seq": 3, "world_ref": "v0.0/precommit-order"}
+{"author": "v0.0-recipe", "claim_predicate": "closure-rate-t1: no observed outcome is claimed at author time", "event": "precommit", "probability": 0.0, "seq": 4, "world_ref": "v0.0/closure-rate"}
+{"author": "v0.0-recipe", "claim_predicate": "closure-rate-t2: no observed outcome is claimed at author time", "event": "precommit", "probability": 0.0, "seq": 5, "world_ref": "v0.0/closure-rate"}
+{"author": "v0.0-recipe", "claim_predicate": "closure-rate-t3: no observed outcome is claimed at author time", "event": "precommit", "probability": 0.0, "seq": 6, "world_ref": "v0.0/closure-rate"}
+{"author": "v0.0-recipe", "claim_predicate": "closure-rate-t4: no observed outcome is claimed at author time", "event": "precommit", "probability": 0.0, "seq": 7, "world_ref": "v0.0/closure-rate"}
+{"author": "v0.0-recipe", "claim_predicate": "closure-rate-t5: no observed outcome is claimed at author time", "event": "precommit", "probability": 0.0, "seq": 8, "world_ref": "v0.0/closure-rate"}

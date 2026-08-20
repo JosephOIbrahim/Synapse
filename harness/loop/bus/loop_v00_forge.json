@@ -1,0 +1,49 @@
+{
+  "leg": "v00-forge",
+  "rung": "v00",
+  "title": "Recipe builds — ports contract + deterministic mapper + precommit-before-mutation",
+  "branch": "loop/v0.0-forge",
+  "base": "master (454fbeee)",
+  "commit_sha": "9ef3250a",
+  "verdict": "PASS",
+  "needs_hou": false,
+  "substrate_presence": {
+    "moneta": "live — not touched by this leg; MemoryPort headless reports UNAVAILABLE (PG-DRM unwired, V0.2)",
+    "hanish": "absent — LedgerPort.settle() reports UNAVAILABLE, hence every V0.0 turn EXPOSED",
+    "salus": "absent — SafetyPort.evaluate_path reports UNAVAILABLE until V0.1",
+    "octavius": "absent — StagePort.compose_sanitized_stage reports UNAVAILABLE with zero disk writes",
+    "jacobian_monologue": "absent — off-loop, V0.5 target"
+  },
+  "evidence": {
+    "pytest": "cd loop/v0.0-forge && python -m pytest tests/test_loop_contracts.py -q -> 'collected 20 items; tests\\test_loop_contracts.py .................... [100%]; 20 passed, 2 warnings in 0.34s' (Python 3.14.2, plain python, no hython/hou)",
+    "smoke_import": "seam_version 0.1.0; PortResult fields (status,payload,error_message); STATUS [BLOCKED,SUCCESS,UNAVAILABLE]; SafetyPort/MemoryPort/LedgerPort/StagePort §4 params verbatim; GATE_POLICY [T,T,T]=ALLOW, [T,None,T]=BLOCK, [T,False,T]=BLOCK; SafetyPort/MemoryPort/StagePort/settle all UNAVAILABLE; ledger_path default = <repo>/harness/loop/ledger/v00_precommits.jsonl (no hardcoded user path)",
+    "contract_holds_by_inspection": "python/synapse/loop/ports.py (PortResult NamedTuple + STATUS + 4 port classes, LedgerPort.settle + ledger_path), mapper.py (deterministic pure ALLOW iff all True; False/None block), recipe.py (precommit FIRST via LedgerPort.author_precommit, honest no-op mutation marker, settle UNAVAILABLE -> EXPOSED)"
+  },
+  "hardening_applied": [
+    "author_precommit: append + flush + os.fsync BEFORE any mutation step (durable claim)",
+    "ledger dir/write OSError -> honest UNAVAILABLE with reason, never a crash (blueprint §3 step-6 fallback)",
+    "probability rejects bool (True is an int subclass, not a confidence); world_ref validated non-empty",
+    "mapper + recipe verified already correct — unchanged"
+  ],
+  "artifacts": [
+    "python/synapse/loop/ports.py",
+    "tests/test_loop_contracts.py"
+  ],
+  "tests_pinned": [
+    "PortResult NamedTuple fields + STATUS coverage",
+    "§4 signatures verbatim (SafetyPort/MemoryPort/LedgerPort/StagePort) via inspect",
+    "mapper truth table: all 27 combos of (True|False|None)^3, expected column hardcoded",
+    "mapper determinism + input purity",
+    "precommit-authored-before-mutation every turn; one precommit per turn; all EXPOSED",
+    "StagePort UNAVAILABLE naming Octavius with zero disk writes (harness/loop snapshot identical)",
+    "closure_rate = 1.0, zero HIT/MISS, all EXPOSED",
+    "LedgerPort.settle UNAVAILABLE naming Hanish",
+    "LedgerPort.ledger_path env override + repo-relative default (no user path)",
+    "author_precommit hardening: bool-probability and bad-world_ref BLOCKED with zero ledger writes"
+  ],
+  "needs_joe": [
+    "merge loop/v0.0-forge to master (gate_v00_merge / gate_merges)",
+    "then dispatch the V0.0 mission leg (loop/v0.0-mission) to run the probe phases against the merged seam and produce harness/loop/runs/<date>/loop_truth_pure-python.json"
+  ],
+  "notes": "No push, no merge, no tags, no VERSION edit. Only python/synapse/loop/ and tests/test_loop_contracts.py touched (territory held). Worktree loop/v0.0-forge clean after commit. The two pytest warnings are environment noise (vendored-SDK ABI mismatch on Python 3.14; pytest-asyncio deprecation) — neither touches the loop seam."
+}

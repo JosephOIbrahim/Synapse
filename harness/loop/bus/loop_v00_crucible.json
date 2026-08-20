@@ -1,0 +1,54 @@
+{
+  "leg": "v00-crucible",
+  "rung": "v00",
+  "title": "Adversarial re-probe of the V0.0 forge+mission artifacts — 6 attacks, all re-run against the live seam",
+  "date": "2026-08-20",
+  "consumed": {
+    "forge_bus": "harness/loop/bus/loop_v00_forge.json",
+    "mission_bus": "harness/loop/bus/loop_v00_mission.json",
+    "truth": "harness/loop/runs/2026-08-20/loop_truth_pure-python.json",
+    "closure_audit": "harness/loop/runs/2026-08-20/closure_audit.json",
+    "ledger": "harness/loop/ledger/v00_precommits.jsonl",
+    "seam_probed_at": "commit 9ef3250a (loop/v0.0-mission worktree, detached) — the exact code the mission validated"
+  },
+  "overall_verdict": "SOUND-WITH-NITS",
+  "attacks": [
+    {
+      "target": "Contract drift — forge '§4 signatures verbatim' claim + mission goalpost a_ports_contract",
+      "verdict": "SOUND-WITH-NITS",
+      "evidence": "Re-ran all 5 port_contract probes against the live seam at 9ef3250a: every contract_holds=true; param NAMES verbatim (SafetyPort.evaluate_path=[agent_id,path_history_hash,recent_actions,proposed_action,scene_state_digest], MemoryPort.query_and_filter=[relation_keys,task_context_tokens], LedgerPort.author_precommit=[claim_predicate,probability,world_ref], StagePort.compose_sanitized_stage=[stage_identifier]); return_annotation=PortResult on all four. NITS: (1) inspect.signature shows ALL param type annotations are absent (<none>) in the seam — blueprint docs/THE_LOOP_v5.1.md:104-146 declares agent_id:str, recent_actions:List[Dict[str,Any]], etc. The probe (harness/loop/probes.py:146-147) checks names only, so 'verbatim' holds for names, not the full annotated signature. (2) PortResult.payload is defaulted (=None) in the seam vs REQUIRED in the blueprint (docs/THE_LOOP_v5.1.md:106); PortResult('SUCCESS') constructs in the seam but would TypeError under the blueprint. Both are relaxations — no blueprint-following caller breaks (annotations are unenforced; callers bind by name).",
+      "fix": "For claim precision: say '§4 param names verbatim' not 'signatures verbatim'; optionally add the blueprint's type annotations to the seam. No functional fix required."
+    },
+    {
+      "target": "Mapper smuggling — mission goalpost b_mapper_truth_table (unevaluable_blocks=true) vs mapper.py docstring principle",
+      "verdict": "SOUND-WITH-NITS",
+      "evidence": "All 27 truth-table rows re-verified: ALLOW iff all True; any False or None -> BLOCK; non-bool -> TypeError per spec (mapper.py:32-33). OUTSIDE THE FORGE'S ROWS: GATE_POLICY([]) -> ALLOW (command: `python -c ... GATE_POLICY([])`, returned 'ALLOW'). mapper.py:18-26 documents 'any None -> BLOCK (unevaluable blocks: absent evidence is a block, never a pass-by-omission)' — an empty predicate set is the purest form of absent evidence, yet passes by omission. The function's stated principle and its empty boundary disagree. Not reachable in V0.0 (recipe never calls GATE_POLICY; probes/tests pass only 3-element combos), and GATE_POLICY is spec-only, never a live gate (ports.py docstring), so no production smuggling path.",
+      "fix": "Treat an empty predicates iterable as BLOCK (absent evidence blocks), or amend the docstring to bound the contract to non-empty iterables."
+    },
+    {
+      "target": "Precommit-before-mutation — mission goalpost c_precommit_before_mutation",
+      "verdict": "SOUND",
+      "evidence": "Main-tree ledger harness/loop/ledger/v00_precommits.jsonl = 8 real lines, seq 1..8, sha256 76d7fb999829d2527a4d43b729c6ec7d00b562a78f4348b6d9f1fad8c19548dc, byte-identical to the worktree ledger (diff=IDENTICAL). Re-ran probe_precommit_order(3) against a scratch ledger (env SYNAPSE_LOOP_LEDGER_DIR): new_precommits=3/3, invariant_holds=true, step_kinds=[precommit,mutation,observe,settle]. Code path is linear: recipe.py:60-68 calls author_precommit (durable append+flush+os.fsync, ports.py:166-169) and returns before the mutation Step is appended. The probe's invariant_holds requires new_precommits==turns (probes.py:245), so a recipe that claimed precommit-first without writing the ledger would fail. No fabricated or absent lines found; every authored line is author=v0.0-recipe, event=precommit, probability=0.0, world_ref=v0.0/<recipe>.",
+      "fix": "none"
+    },
+    {
+      "target": "Side-effect sweep — mission goalpost d_stageport_unavailable (zero_disk_writes)",
+      "verdict": "SOUND",
+      "evidence": "compose_sanitized_stage('/stage') -> status=UNAVAILABLE naming Octavius. Side-effect checks: (1) whole-worktree snapshot of loop/v0.0-mission before/after the call (excluding .git and __pycache__) — diff count 0; (2) harness/loop/ snapshot — zero_disk_writes=true; (3) a run_recipe(2 turns) left python/synapse/loop/ untouched, only the (intended) ledger grew. ports.py:206-212 is a pure return with no I/O reachable. Re-verified ledger_unchanged=true.",
+      "fix": "none"
+    },
+    {
+      "target": "Closure honesty — mission goalpost e_closure_rate (closure_rate=1.0, zero HIT/MISS, all EXPOSED)",
+      "verdict": "SOUND-WITH-NITS",
+      "evidence": "probe_closure_rate(5) re-run: closure_rate=1.0, HIT=0, MISS=0, EXPOSED=5/5, goalpost_holds=true. Honest: settlement genuinely UNAVAILABLE (Hanish absent, ports.py:175-181), so every verdict is EXPOSED — no fabricated settlement/verdict. NIT: the metric itself is tautological — probes.py:293-294 computes closure_rate = sum(all verdict counts)/turns, and run_recipe always assigns every turn a verdict, so closure_rate is 1.0 by construction for ANY recipe run and can never fail. The discriminating signal is the underlying counts (HIT=0, MISS=0, EXPOSED=5), which are real and verified. 'closure_rate = 1.0' as a goalpost is decorative, not a test.",
+      "fix": "State the goalpost as 'zero HIT/MISS and all turns EXPOSED' (the verifiable claim); treat closure_rate=1.0 as derived, or compute it as EXPOSED/(HIT+MISS+EXPOSED) so it can actually fail."
+    },
+    {
+      "target": "Receipt audit — every claim carrying file:line / command+output",
+      "verdict": "SOUND",
+      "evidence": "forge bus pytest claim re-run: `python -m pytest tests/test_loop_contracts.py -q` -> '20 passed, 2 warnings in 0.31s' (forge claimed 0.34s — noise). seam_version=0.1.0 verified (python/synapse/loop/__init__.py:12). GATE_POLICY [T,T,T]=ALLOW, [T,None,T]/[T,False,T]=BLOCK verified. ledger_path env-override + repo-relative default verified (tests/test_loop_contracts.py:200-211); no hardcoded user path in the seam or tests (grep over python/synapse/loop/ + test file: zero hits). Forge commit 9ef3250a touches only python/synapse/loop/ports.py + tests/test_loop_contracts.py (git show --name-only) — territory claim holds. All 5 JSON artifacts parse cleanly. DONE sentinel content (entries=9, failures=0) matches the 9-entry truth file; closure_audit 9/9 PASS, false_goalpost_flags=0, every evidence string cites a truth-file entry position. STATE.json v00 rung still 'ready' with no gates_closed — the merge gate is genuinely open, nothing fabricated.",
+      "fix": "none"
+    }
+  ],
+  "notes": "V0.0 pure-python held: no hou, no hython touched. All 9 mission probes re-ran green against the exact seam (9ef3250a). The three nits are claim-precision issues (verbatim-signatures, closure_rate tautology) and one edge-case docstring inconsistency (empty-iterable -> ALLOW) — none is a fabrication, and none is reachable as a live gate in V0.0. Evidence ledger sha256-verified byte-identical between worktree and main tree. No push, no merge, no tags, no VERSION edit."
+}

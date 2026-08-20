@@ -1,0 +1,43 @@
+{
+  "leg": "v00-mission",
+  "rung": "v00",
+  "title": "Probe mission run — 9 questions, closure audit 9/9 PASS, all V0.0 goalposts hold",
+  "date": "2026-08-20",
+  "branch": "loop/v0.0-mission",
+  "worktree": "C:/Users/User/SYNAPSE/loop/v0.0-mission (detached at forge commit 9ef3250a)",
+  "forge_consumed": {
+    "branch": "loop/v0.0-forge",
+    "commit_sha": "9ef3250a"
+  },
+  "commit_sha": null,
+  "commit_note": "evidence-only leg: no commit authored, no push, no merge",
+  "verdict": "PASS",
+  "needs_hou": false,
+  "mission": "loop_v00_recipe v1.0.0",
+  "target_build": "pure-python",
+  "evidence": {
+    "runs": "harness/loop/runs/2026-08-20/loop_truth_pure-python.json — 9 entries, 0 probe failures",
+    "sentinel": "harness/loop/runs/2026-08-20/DONE — entries=9, failures=0, written LAST",
+    "closure_audit": "harness/loop/runs/2026-08-20/closure_audit.json — 9/9 PASS, false_goalpost_flags=0",
+    "ledger": "harness/loop/ledger/v00_precommits.jsonl — 8 durable precommit lines, seq 1..8"
+  },
+  "goalposts": {
+    "a_ports_contract": "PASS — all 5 port_contract probes contract_holds=true; signatures verbatim by inspect (PortResult NamedTuple status/payload/error_message; SafetyPort/MemoryPort/LedgerPort/StagePort §4 params)",
+    "b_mapper_truth_table": "PASS — 27/27 rows; [T,T,T]->ALLOW; any False or None->BLOCK; unevaluable_blocks=true",
+    "c_precommit_before_mutation": "PASS — 3/3 turns first_step_is_precommit and precommit_before_mutation=true; 3 new durable ledger lines; all EXPOSED",
+    "d_stageport_unavailable": "PASS — StagePort status=UNAVAILABLE naming Octavius absent; zero_disk_writes=true; ledger_unchanged=true; closes_without_octavius=true",
+    "e_closure_rate": "PASS — closure_rate=1.0; HIT=0 MISS=0 UNRESOLVABLE=0; EXPOSED=5/5; goalpost_holds=true"
+  },
+  "artifacts": [
+    "harness/loop/runs/2026-08-20/loop_truth_pure-python.json",
+    "harness/loop/runs/2026-08-20/DONE",
+    "harness/loop/runs/2026-08-20/closure_audit.json",
+    "harness/loop/ledger/v00_precommits.jsonl"
+  ],
+  "needs_joe": [
+    "merge loop/v0.0-forge to master (gate_v00_merge / gate_merges) — the seam python/synapse/loop/ the mission validated lives on that branch",
+    "dispose loop/v0.0-mission worktree (detached at forge commit; evidence already landed in main-tree harness/loop/ as untracked)",
+    "gate_blueprint_ratification + gate_contract_ratification — goalposts bind only after Joe's word per act"
+  ],
+  "notes": "V0.0 pure-python: no hython, no hou touched — needs_hou=false held. The vendored-SDK ABI RuntimeWarning (cp311/cp313 wheels vs Python 3.14.2) fired once on seam import and is environment noise, not a seam failure; all 9 probes resolved clean, 0 failures. Ledger was authored in the worktree (repo-relative seam default) then copied byte-identical (sha256 verified) to main tree as untracked evidence. No push, no merge, no tag, no VERSION edit, no flywheel/pin flips."
+}

@@ -1,0 +1,90 @@
+{
+  "leg": "v00-mission",
+  "rung": "v00",
+  "title": "V0.0 probe mission closure audit — 9 questions vs the V0.0 goalposts",
+  "date": "2026-08-20",
+  "forge_consumed": {
+    "branch": "loop/v0.0-forge",
+    "commit_sha": "9ef3250a"
+  },
+  "mission": "loop_v00_recipe v1.0.0",
+  "target_build": "pure-python",
+  "needs_hou": false,
+  "evidence_source": "harness/loop/runs/2026-08-20/loop_truth_pure-python.json",
+  "sentinel": "DONE (entries=9, failures=0) — written LAST after all questions",
+  "goalposts": {
+    "a_ports_contract": "ports contract holds by inspection + probe (blueprint §4 verbatim signatures)",
+    "b_mapper_truth_table": "mapper truth table all-True -> ALLOW / any False-None -> BLOCK",
+    "c_precommit_before_mutation": "precommit authored in the ledger BEFORE the mutation step every turn",
+    "d_stageport_unavailable": "StagePort UNAVAILABLE with zero side effects",
+    "e_closure_rate": "closure_rate = 1.0 with zero HIT/MISS and all turns EXPOSED"
+  },
+  "questions": [
+    {
+      "question": "port_contract:PortResult",
+      "goalpost": "a_ports_contract",
+      "verdict": "PASS",
+      "goalpost_holds": true,
+      "evidence": "loop_truth_pure-python.json entry 1: contract_holds=true, is_namedtuple=true, fields=[status,payload,error_message], valid_statuses=[BLOCKED,SUCCESS,UNAVAILABLE]"
+    },
+    {
+      "question": "port_contract:SafetyPort",
+      "goalpost": "a_ports_contract",
+      "verdict": "PASS",
+      "goalpost_holds": true,
+      "evidence": "loop_truth_pure-python.json entry 2: contract_holds=true; evaluate_path params=[agent_id,path_history_hash,recent_actions,proposed_action,scene_state_digest] verbatim, returns PortResult"
+    },
+    {
+      "question": "port_contract:MemoryPort",
+      "goalpost": "a_ports_contract",
+      "verdict": "PASS",
+      "goalpost_holds": true,
+      "evidence": "loop_truth_pure-python.json entry 3: contract_holds=true; query_and_filter params=[relation_keys,task_context_tokens] verbatim, returns PortResult"
+    },
+    {
+      "question": "port_contract:LedgerPort",
+      "goalpost": "a_ports_contract",
+      "verdict": "PASS",
+      "goalpost_holds": true,
+      "evidence": "loop_truth_pure-python.json entry 4: contract_holds=true; author_precommit params=[claim_predicate,probability,world_ref] verbatim, returns PortResult"
+    },
+    {
+      "question": "port_contract:StagePort",
+      "goalpost": "a_ports_contract",
+      "verdict": "PASS",
+      "goalpost_holds": true,
+      "evidence": "loop_truth_pure-python.json entry 5: contract_holds=true; compose_sanitized_stage params=[stage_identifier] verbatim, returns PortResult"
+    },
+    {
+      "question": "mapper_green:gate-policy-truth-table",
+      "goalpost": "b_mapper_truth_table",
+      "verdict": "PASS",
+      "goalpost_holds": true,
+      "evidence": "loop_truth_pure-python.json entry 6: 27/27 rows passed, truth_table_holds=true, unevaluable_blocks=true — [T,T,T]->ALLOW, any False or None->BLOCK"
+    },
+    {
+      "question": "precommit_order:3turns",
+      "goalpost": "c_precommit_before_mutation",
+      "verdict": "PASS",
+      "goalpost_holds": true,
+      "evidence": "loop_truth_pure-python.json entry 7: invariant_holds=true, new_precommits=3/3, every turn first_step_is_precommit=true and precommit_before_mutation=true, step_kinds=[precommit,mutation,observe,settle]"
+    },
+    {
+      "question": "stageport_cow:/stage",
+      "goalpost": "d_stageport_unavailable",
+      "verdict": "PASS",
+      "goalpost_holds": true,
+      "evidence": "loop_truth_pure-python.json entry 8: status=UNAVAILABLE (names Octavius absent), payload=null, zero_disk_writes=true, ledger_unchanged=true, closes_without_octavius=true"
+    },
+    {
+      "question": "closure_rate:5turns",
+      "goalpost": "e_closure_rate",
+      "verdict": "PASS",
+      "goalpost_holds": true,
+      "evidence": "loop_truth_pure-python.json entry 9: closure_rate=1.0, HIT=0, MISS=0, UNRESOLVABLE=0, EXPOSED=5/5, goalpost_holds=true"
+    }
+  ],
+  "overall_verdict": "PASS",
+  "false_goalpost_flags": 0,
+  "notes": "All 9 question values carry their goalpost flag true — no spin, no fabricated SUCCESS. Ports contract also holds by inspection (python/synapse/loop/ports.py:27-213 STATUS+PortResult+4 ports, recipe.py:60-77 precommit-first order, mapper.py:17-36 deterministic truth table). StagePort UNAVAILABLE is honest (substrate_presence.octavius=absent); MemoryPort UNAVAILABLE names PG-DRM unwired (V0.2); settle UNAVAILABLE names Hanish absent, hence all turns EXPOSED. V0.0 pure-python: no hou touched."
+}

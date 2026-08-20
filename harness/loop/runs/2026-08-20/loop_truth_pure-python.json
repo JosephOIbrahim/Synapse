@@ -1,0 +1,531 @@
+{
+  "meta": {
+    "mission": "loop_v00_recipe",
+    "mission_version": "1.0.0",
+    "target_build": "pure-python",
+    "needs_hou": false,
+    "build": "pure-python",
+    "target_build_match": true,
+    "runner_version": "1.0.0",
+    "seam_version": "0.1.0",
+    "python": "3.14.2",
+    "started": "2026-08-20T15:36:29+00:00",
+    "finished": "2026-08-20T15:36:29+00:00",
+    "artifact_prefix": "loop_truth"
+  },
+  "entries": [
+    {
+      "claim": "port_contract:PortResult",
+      "value": {
+        "port": "PortResult",
+        "exists": true,
+        "is_namedtuple": true,
+        "fields": [
+          "status",
+          "payload",
+          "error_message"
+        ],
+        "has_status": true,
+        "has_payload": true,
+        "has_error_message": true,
+        "valid_statuses": [
+          "BLOCKED",
+          "SUCCESS",
+          "UNAVAILABLE"
+        ],
+        "contract_holds": true
+      },
+      "probe": "port_contract",
+      "build": "pure-python",
+      "ts": "2026-08-20T15:36:29+00:00",
+      "note": "blueprint \u00a74: PortResult NamedTuple with status/payload/error_message; status \u2208 SUCCESS|UNAVAILABLE|BLOCKED"
+    },
+    {
+      "claim": "port_contract:SafetyPort",
+      "value": {
+        "port": "SafetyPort",
+        "exists": true,
+        "methods": {
+          "evaluate_path": {
+            "present": true,
+            "params": [
+              "agent_id",
+              "path_history_hash",
+              "recent_actions",
+              "proposed_action",
+              "scene_state_digest"
+            ],
+            "return_annotation": "PortResult"
+          }
+        },
+        "all_methods_present": true,
+        "contract_holds": true
+      },
+      "probe": "port_contract",
+      "build": "pure-python",
+      "ts": "2026-08-20T15:36:29+00:00",
+      "note": "blueprint \u00a74: evaluate_path(agent_id, path_history_hash, recent_actions, proposed_action, scene_state_digest)"
+    },
+    {
+      "claim": "port_contract:MemoryPort",
+      "value": {
+        "port": "MemoryPort",
+        "exists": true,
+        "methods": {
+          "query_and_filter": {
+            "present": true,
+            "params": [
+              "relation_keys",
+              "task_context_tokens"
+            ],
+            "return_annotation": "PortResult"
+          }
+        },
+        "all_methods_present": true,
+        "contract_holds": true
+      },
+      "probe": "port_contract",
+      "build": "pure-python",
+      "ts": "2026-08-20T15:36:29+00:00",
+      "note": "blueprint \u00a74: query_and_filter(relation_keys, task_context_tokens)"
+    },
+    {
+      "claim": "port_contract:LedgerPort",
+      "value": {
+        "port": "LedgerPort",
+        "exists": true,
+        "methods": {
+          "author_precommit": {
+            "present": true,
+            "params": [
+              "claim_predicate",
+              "probability",
+              "world_ref"
+            ],
+            "return_annotation": "PortResult"
+          }
+        },
+        "all_methods_present": true,
+        "contract_holds": true
+      },
+      "probe": "port_contract",
+      "build": "pure-python",
+      "ts": "2026-08-20T15:36:29+00:00",
+      "note": "blueprint \u00a74: author_precommit(claim_predicate, probability, world_ref)"
+    },
+    {
+      "claim": "port_contract:StagePort",
+      "value": {
+        "port": "StagePort",
+        "exists": true,
+        "methods": {
+          "compose_sanitized_stage": {
+            "present": true,
+            "params": [
+              "stage_identifier"
+            ],
+            "return_annotation": "PortResult"
+          }
+        },
+        "all_methods_present": true,
+        "contract_holds": true
+      },
+      "probe": "port_contract",
+      "build": "pure-python",
+      "ts": "2026-08-20T15:36:29+00:00",
+      "note": "blueprint \u00a74: compose_sanitized_stage(stage_identifier)"
+    },
+    {
+      "claim": "mapper_green:gate-policy-truth-table",
+      "value": {
+        "name": "gate-policy-truth-table",
+        "total": 27,
+        "passed": 27,
+        "truth_table_holds": true,
+        "unevaluable_blocks": true,
+        "rows": [
+          {
+            "predicates": [
+              true,
+              true,
+              true
+            ],
+            "expected": "ALLOW",
+            "got": "ALLOW",
+            "pass": true
+          },
+          {
+            "predicates": [
+              true,
+              true,
+              false
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              true,
+              true,
+              null
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              true,
+              false,
+              true
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              true,
+              false,
+              false
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              true,
+              false,
+              null
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              true,
+              null,
+              true
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              true,
+              null,
+              false
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              true,
+              null,
+              null
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              false,
+              true,
+              true
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              false,
+              true,
+              false
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              false,
+              true,
+              null
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              false,
+              false,
+              true
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              false,
+              false,
+              false
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              false,
+              false,
+              null
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              false,
+              null,
+              true
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              false,
+              null,
+              false
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              false,
+              null,
+              null
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              null,
+              true,
+              true
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              null,
+              true,
+              false
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              null,
+              true,
+              null
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              null,
+              false,
+              true
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              null,
+              false,
+              false
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              null,
+              false,
+              null
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              null,
+              null,
+              true
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              null,
+              null,
+              false
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          },
+          {
+            "predicates": [
+              null,
+              null,
+              null
+            ],
+            "expected": "BLOCK",
+            "got": "BLOCK",
+            "pass": true
+          }
+        ]
+      },
+      "probe": "mapper_green",
+      "build": "pure-python",
+      "ts": "2026-08-20T15:36:29+00:00",
+      "note": "deterministic mapper: all True \u2192 ALLOW; any False or None (unevaluable) \u2192 BLOCK"
+    },
+    {
+      "claim": "precommit_order:3turns",
+      "value": {
+        "turns": [
+          {
+            "turn": "precommit-order-t1",
+            "verdict": "EXPOSED",
+            "step_kinds": [
+              "precommit",
+              "mutation",
+              "observe",
+              "settle"
+            ],
+            "first_step_is_precommit": true,
+            "precommit_before_mutation": true,
+            "exposed": true,
+            "pass": true
+          },
+          {
+            "turn": "precommit-order-t2",
+            "verdict": "EXPOSED",
+            "step_kinds": [
+              "precommit",
+              "mutation",
+              "observe",
+              "settle"
+            ],
+            "first_step_is_precommit": true,
+            "precommit_before_mutation": true,
+            "exposed": true,
+            "pass": true
+          },
+          {
+            "turn": "precommit-order-t3",
+            "verdict": "EXPOSED",
+            "step_kinds": [
+              "precommit",
+              "mutation",
+              "observe",
+              "settle"
+            ],
+            "first_step_is_precommit": true,
+            "precommit_before_mutation": true,
+            "exposed": true,
+            "pass": true
+          }
+        ],
+        "ledger": "C:\\Users\\User\\SYNAPSE\\loop\\v0.0-mission\\harness\\loop\\ledger\\v00_precommits.jsonl",
+        "lines_before": 0,
+        "lines_after": 3,
+        "new_precommits": 3,
+        "precommit_per_turn": true,
+        "all_turns_exposed": true,
+        "invariant_holds": true
+      },
+      "probe": "precommit_order",
+      "build": "pure-python",
+      "ts": "2026-08-20T15:36:29+00:00",
+      "note": "V0.0 invariant: precommit authored in the real ledger BEFORE the mutating act, every turn"
+    },
+    {
+      "claim": "stageport_cow:/stage",
+      "value": {
+        "stage_identifier": "/stage",
+        "status": "UNAVAILABLE",
+        "unavailable": true,
+        "error_message": "Octavius substrate not installed (substrate_presence.octavius=absent); StagePort.compose_sanitized_stage('/stage') is contract-surface-only until V0.3",
+        "payload": null,
+        "ledger_unchanged": true,
+        "zero_disk_writes": true,
+        "closes_without_octavius": true
+      },
+      "probe": "stageport_cow",
+      "build": "pure-python",
+      "ts": "2026-08-20T15:36:29+00:00",
+      "note": "StagePort reports UNAVAILABLE (Octavius absent) with zero side effects \u2014 closes without Octavius"
+    },
+    {
+      "claim": "closure_rate:5turns",
+      "value": {
+        "turns": 5,
+        "verdicts": [
+          "EXPOSED",
+          "EXPOSED",
+          "EXPOSED",
+          "EXPOSED",
+          "EXPOSED"
+        ],
+        "counts": {
+          "HIT": 0,
+          "MISS": 0,
+          "EXPOSED": 5,
+          "UNRESOLVABLE": 0
+        },
+        "terminal_total": 5,
+        "closure_rate": 1.0,
+        "closure_rate_1_0": true,
+        "zero_hit_miss": true,
+        "all_exposed": true,
+        "goalpost_holds": true
+      },
+      "probe": "closure_rate",
+      "build": "pure-python",
+      "ts": "2026-08-20T15:36:29+00:00",
+      "note": "V0.0 gate: every turn EXPOSED, zero HIT/MISS, closure_rate = 1.0"
+    }
+  ]
+}
