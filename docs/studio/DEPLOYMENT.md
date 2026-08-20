@@ -141,6 +141,8 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_TOPS_MAX_PROCS` | maxprocs for auto-created TOPs localscheduler | cpu_count-2 (min 1) | `server/handlers_tops/_common.py` | Both |
 | `SYNAPSE_VEX_ROOT` | Scout VEX store root | == `SYNAPSE_RAG_ROOT` | `cognitive/tools/scout.py` | Dev |
 | `SYNAPSE_WORKER_TOOL_MODE` | Autonomous-worker tool policy: `strict` / `standard` / `unrestricted` | `standard` | `panel/worker_policy.py` | Studio: standard or strict |
+| `SYNAPSE_LOOP_LEDGER_DIR` | Directory holding THE LOOP's append-only precommit ledger (`v00_precommits.jsonl`). Overrides the repo-relative default so a run can write outside the source tree; the tests point it at a tmp dir to stay hermetic. | `harness/loop/ledger/` (repo-relative) | `python/synapse/loop/ports.py` | Studio: set to a durable per-show path so precommits survive a workstation rebuild |
+| `MONETA_SRC` | Source root of the Moneta memory package when it is not pip-installed; inserted on `sys.path` so `import moneta` resolves. Without it (and with no installed wheel) `MemoryPort` reports UNAVAILABLE instead of binding a store. | unset (import from `sys.path` only) | `python/synapse/memory/moneta_runtime.py` | Studio: point at the pinned Moneta checkout, or install the wheel and leave unset |
 
 #### Test-only variables
 

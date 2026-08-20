@@ -144,7 +144,6 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     "synapse_decide": "set_parameter",
     "synapse_add_memory": "set_parameter",
     "synapse_memory_write": "set_parameter",
-    "synapse_evolve_memory": "evolve_memory",
     "synapse_sleep_pass": "sleep_pass",
     "synapse_project_setup": "set_parameter",
     # Undo/redo
@@ -256,7 +255,7 @@ _KNOWN_SLOW_TOOLS = frozenset({
     "synapse_safe_render", "synapse_render_progressively",
     "tops_batch_cook", "tops_cook_and_validate", "tops_multi_shot",
     "tops_render_sequence", "cops_batch_cook",
-    "synapse_batch", "synapse_evolve_memory", "synapse_sleep_pass",
+    "synapse_batch", "synapse_sleep_pass",
     # F6 (2026-08-14) -- viewport capture is a main-thread GL flipbook grab
     # (sv.flipbook); already budgeted 30s in core/timeouts ("capture_viewport"),
     # and its main-thread hold deserves the same up-front heads-up.

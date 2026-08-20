@@ -808,7 +808,6 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("memory_write", self._handle_memory_write)
         reg.register("memory_query", self._handle_memory_query)
         reg.register("memory_status", self._handle_memory_status)
-        reg.register("evolve_memory", self._handle_evolve_memory)
         reg.register("sleep_pass", self._handle_sleep_pass)
 
         # Autonomous render pipeline

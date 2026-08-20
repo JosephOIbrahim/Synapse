@@ -132,7 +132,6 @@ def get_group_for_tool(tool_name: str) -> Optional[str]:
         "synapse_add_memory": "memory",
         "synapse_project_setup": "memory",
         "synapse_memory_": "memory",
-        "synapse_evolve_memory": "memory",
         "synapse_metrics": "memory",
         "synapse_router_stats": "memory",
         "synapse_list_recipes": "memory",

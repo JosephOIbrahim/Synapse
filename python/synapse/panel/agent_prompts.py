@@ -146,8 +146,7 @@ You handle node creation, wiring, and project setup.
 
 ### Project Setup
 - synapse_project_setup for initializing project memory.
-- synapse_memory_write for persisting decisions.
-- synapse_evolve_memory when structured data accumulates.""",
+- synapse_memory_write for persisting decisions.""",
 
     "INTEGRATOR": "",  # Gets all tools, no extra expertise needed
 }

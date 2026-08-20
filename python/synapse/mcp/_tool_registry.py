@@ -1151,21 +1151,6 @@ TOOL_DEFS: list[tuple] = [
      "Get memory system status: evolution stage, file sizes, session count.",
      _EMPTY_SCHEMA, True, False, True),
 
-    ("synapse_evolve_memory", "evolve_memory", _passthrough,
-     "Manually trigger memory evolution. target_stage='charmeleon' evolves the "
-     "markdown log to typed USD; target_stage='charizard' runs store consolidation "
-     "(dedupe/prune over the live store). Consolidation is dry-run by default and "
-     "returns a full prune audit (merge list, prune list with ids, before/after "
-     "counts) without mutating; apply (dry_run=false) requires the approval_token "
-     "returned by a prior dry-run. Protected memories are never pruned.",
-     {"type": "object", "properties": {
-         "scope": {"type": "string", "enum": ["scene", "project"]},
-         "target_stage": {"type": "string", "enum": ["charmeleon", "charizard"]},
-         "dry_run": {"type": "boolean", "description": "Preview without evolving/consolidating (default: true)"},
-         "approval_token": {"type": "string", "description": "For target_stage='charizard' apply: the approval_token from a prior dry-run audit. Required to mutate; omitting it refuses."},
-     }, "required": []},
-     False, False, False),
-
     ("synapse_sleep_pass", "sleep_pass", _passthrough,
      "Run Moneta consolidation/decay (the Moneta memory backend). DESTRUCTIVE: "
      "permanently prunes unprotected memories; gated APPROVE. Returns a prune "

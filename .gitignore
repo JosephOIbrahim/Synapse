@@ -2,6 +2,13 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Test pollution: tests/test_retina_manifest.py writes to a path derived from a
+# MagicMock repr when it runs without a real Houdini, dropping a file literally
+# named "<MagicMock name='mock.retina_manifest.json" in the repo root on every
+# headless suite run. Ignored so it cannot ride along in a commit; the real fix
+# is to make that test write under tmp_path.
+<MagicMock*
 *.so
 *.pyd
 *.egg-info/

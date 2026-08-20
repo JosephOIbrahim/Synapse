@@ -34,12 +34,13 @@
   "contracts": {
     "loop-v00.yaml": "harness/loop/../.synapse/contracts/loop-v00.yaml"
   },
+  "_substrate_presence_note": "Values below were VERIFIED by clone-and-import on 2026-08-20, not asserted from spec. Each names the SHA actually inspected. 'absent-for-purpose' means the package installs and runs but does not expose what the port needs — a scope mismatch, which is a different fact from a missing install and must not be collapsed into it.",
   "substrate_presence": {
-    "moneta": "live — current python/synapse/memory/ substrate; in-Houdini reachable, headless UNAVAILABLE unless the seam resolves",
-    "hanish": "absent — spec-grounded v0.1.2; LedgerPort.settle() reports UNAVAILABLE until installed",
-    "salus": "absent — spec-grounded v1.0.0; SafetyPort.evaluate_path reports UNAVAILABLE until installed",
-    "octavius": "absent — portfolio concept (v0.9.0); StagePort.compose_sanitized_stage reports UNAVAILABLE until installed",
-    "jacobian_monologue": "absent — off-loop metrology plane (v0.1.0); V0.5 target"
+    "moneta": "live — moneta 1.2.0rc1 @c4a6218, zero-dependency import via $MONETA_SRC; smoke_check() PASS. MemoryPort binds a real handle per storage_uri and PG-DRM filters live rows. Moneta owns the URI lock (_ACTIVE_URIS, api.py:198-204) and all three decay points (api.py:401, attention_log.py:131, consolidation.py:161); SYNAPSE reads row.utility and never recomputes decay. USD authoring mode needs pxr (absent on this host), so the store runs without USD sublayers.",
+    "hanish": "absent — hanish 0.2.0 @b82e334 clones and imports zero-dep (flat layout, repo root on sys.path), but is NOT wired: LedgerPort.settle() still reports UNAVAILABLE. Outcome vocabulary verified as two axes, not one enum: Terminal{RESOLVED,INVALIDATED,INTERVENED,UNRESOLVABLE} x Verdict{HIT,MISS} (past/events.py:27-37), with Outcome.__post_init__ (:143-159) structurally forbidding a MISS built from absence.",
+    "salus": "absent-for-purpose — salus 0.3.1 @16e9d5b imports cleanly and self-verifies 5/5 (verify/success_signature.py), but its public surface is a memory wake-predicate engine over Moneta's own vitals (SalusEngine, wake/predicate.py:46), not a path/action safety evaluator. There is no evaluate_path counterpart anywhere in the repo, so SafetyPort stays honestly UNAVAILABLE. This is a scope mismatch, not a packaging problem — installing more does not fix it.",
+    "octavius": "absent — octavius 0.0.0 @1fbc090 has NO importable top-level module: internal imports are src.*-rooted and pyproject declares no wheel target. Stage composition exists at src/stage/composer.py:14-60 but requires pxr, an undeclared dependency absent on this host. The USD metadata quine filter that StagePort.compose_sanitized_stage needs has zero counterpart in the repo.",
+    "jacobian_monologue": "absent — 0.1.1 @8d3e7af (the v0.1.0 target recorded here was stale). Imports as 'probe', not 'jacobian_monologue'. Declares requires-python >=3.12,<3.13 while this host runs 3.13.7, and SubstrateRanker.default() (probe/substrate.py:56-68) raises unless supplied a proprietary probe/_substrate_impl.py that the public repo deliberately excludes. No generic metrology call SYNAPSE can invoke exists."
   },
   "rungs": {
     "v00": {

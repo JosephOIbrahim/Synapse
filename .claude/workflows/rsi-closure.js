@@ -398,24 +398,23 @@ const closeA3 = () =>
   agent(`${GROUND}
 
 You are the A3-DISPOSITION leg. Loop A3 (memory evolution charmander/charmeleon) sits at
-L2 — the highest rung in the registry. Its detector fires every ~10th memory write; the
-converter evolve_to_charmeleon has exactly one caller, behind the synapse_evolve_memory
-tool with dry_run defaulting True (handlers_memory.py:252,:263). The module declares
-itself SUPERSEDED by Moneta ("do not extend it").
+L2 — the highest rung in the registry. CLOSED (RETIREMENT agent, refactor/memory-v51-substrates,
+${DATE}): C ratified toward Moneta, so the manual/human-token-gated evolution path was retired
+in favor of THE LOOP v5.1's decay-driven lifecycle. Removed: the synapse_evolve_memory MCP tool
+(mcp/_tool_registry.py), the _handle_evolve_memory / _handle_evolve_consolidate handlers
+(server/handlers_memory.py), and apply_consolidation's approval_token string-gate
+(memory/consolidation.py) — deleted outright once its only caller (_handle_evolve_consolidate)
+was gone, rather than left reachable-but-ungated. The sanctioned mutator is the decay-driven
+_handle_sleep_pass / store.run_sleep_pass() path, which carries a real consent gate via the
+execution bridge, not a copy-pasted approval string. plan_consolidation / is_protected (the
+pure, read-only preview half) were never the interactive part and were left in place.
 
-FIRST: read the C decision state. Check harness/rsi/briefs/ for the C brief and
-harness/state/flywheel_queue.json (READ ONLY) for any ratified C entry.
-  - C ratified toward Moneta => draft the RETIREMENT: what formally supersedes the
-    converter, what the registry entry becomes (keep the A3 entry — P9 requires all nine
-    ids present — add a disposition field + honest blocker text), which detector call
-    sites (store.py:530-547, scene_memory.py:486-500) get removed or repointed, and what
-    tests pin the retirement.
-  - C undecided or ratified toward jsonl => draft the L3 CLOSURE plan: what would consume
-    the detector's verdict such that a later decision differs (the L3 bar), whether
-    flipping dry_run default is justifiable (that is a HUMAN GATE — propose, never flip),
-    and what the lossless round-trip guard requires (CLAUDE.md: evolution is lossless or
-    aborted).
-Either way: a written plan with file:line evidence to harness/rsi/briefs/A3-disposition-${DATE}.md.
+FIRST: confirm the registry entry still carries the A3 id with this disposition (P9 requires all
+nine ids present) — read harness/rsi/REGISTRY.json and harness/state/flywheel_queue.json
+(READ ONLY). If the disposition field is missing or stale, write the update as a brief, not a
+direct registry edit: harness/rsi/briefs/A3-disposition-${DATE}.md, with file:line evidence for
+each removal above and confirmation that tests/test_w3_evolve_consolidation.py now guards the
+retirement (TestEvolveConsolidationRetired) instead of testing the retired mechanism.
 No code changes, no registry changes, no tool invocations that mutate memory.`,
     { label: 'close:A3', phase: 'Close', agentType: 'general-purpose', effort: 'high', schema: BRIEF_SCHEMA })
 

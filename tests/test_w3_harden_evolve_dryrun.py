@@ -19,7 +19,6 @@ Moneta is not importable.
 
 from __future__ import annotations
 
-import inspect
 import json
 import shutil
 from pathlib import Path
@@ -227,21 +226,3 @@ def test_dim_mismatch_is_the_documented_root_cause(tmp_path, caplog):
         "the reconcile must be LOUD in the log (W3-DIM target 4)"
     )
     store.close()
-
-
-# ---------------------------------------------------------------------------
-# the existing synapse_evolve_memory dry-run is structurally non-mutating
-# (static pin: the dry_run branch returns BEFORE any evolve/author call)
-# ---------------------------------------------------------------------------
-
-def test_existing_evolve_memory_dry_run_is_structurally_non_mutating():
-    from synapse.server.handlers_memory import MemoryHandlerMixin
-
-    src = inspect.getsource(MemoryHandlerMixin._handle_evolve_memory)
-    # The dry_run early-return must precede the only authoring call.
-    dry_idx = src.find('if dry_run:')
-    evolve_idx = src.find('evolve_to_structured')
-    assert dry_idx != -1, "evolve handler must have a dry_run branch"
-    assert evolve_idx == -1 or dry_idx < evolve_idx, (
-        "the dry_run branch must return before the authoring call — a dry-run "
-        "that can reach evolve_to_structured is not a dry-run")
