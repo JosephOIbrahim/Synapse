@@ -176,6 +176,67 @@ def test_closure_rate_goalpost(tmp_ledger):
 
 
 def test_safetyport_and_memoryport_unavailable_with_reason():
-    assert ports.SafetyPort().evaluate_path(
-        "a1", "h1", [], {"type": "noop"}, "d1").status == "UNAVAILABLE"
-    assert ports.MemoryPort().query_and_filter(["rel"], 128).status == "UNAVAILABLE"
+    s = ports.SafetyPort().evaluate_path(
+        "a1", "h1", [], {"type": "noop"}, "d1")
+    assert s.status == "UNAVAILABLE"
+    assert "SALUS" in s.error_message, "reason must name the absent substrate"
+    m = ports.MemoryPort().query_and_filter(["rel"], ["tok"])
+    assert m.status == "UNAVAILABLE"
+    assert "PG-DRM" in m.error_message, "reason must name the unwired filter"
+
+
+# ---------------------------------------------------------------------------
+# LedgerPort settle() + ledger_path() oracle (req 1)
+# ---------------------------------------------------------------------------
+
+def test_ledgerport_settle_reports_unavailable(tmp_ledger):
+    lp = ports.LedgerPort(ledger_dir_override=tmp_ledger.parent)
+    result = lp.settle("t1")
+    assert result.status == "UNAVAILABLE"
+    assert "Hanish" in result.error_message
+    assert result.payload is None
+
+
+def test_ledgerport_ledger_path_env_override(tmp_ledger):
+    # tmp_ledger fixture sets SYNAPSE_LOOP_LEDGER_DIR -> tmp_path; the oracle
+    # must resolve to exactly that file.
+    assert ports.LedgerPort.ledger_path() == tmp_ledger
+
+
+def test_ledgerport_ledger_path_repo_relative_default(monkeypatch):
+    monkeypatch.delenv("SYNAPSE_LOOP_LEDGER_DIR", raising=False)
+    repo_root = Path(__file__).resolve().parents[1]
+    p = ports.LedgerPort.ledger_path()
+    rel = p.relative_to(repo_root)  # must live UNDER the repo — no user path
+    assert rel.as_posix() == "harness/loop/ledger/v00_precommits.jsonl"
+
+
+# ---------------------------------------------------------------------------
+# Mapper purity + determinism (req 2)
+# ---------------------------------------------------------------------------
+
+def test_mapper_is_deterministic_and_pure():
+    combo = [True, False, None, True]
+    snapshot = list(combo)
+    first = mapper.GATE_POLICY(combo)
+    second = mapper.GATE_POLICY(list(snapshot))
+    assert first == second == mapper.BLOCK
+    assert combo == snapshot, "GATE_POLICY mutated its input (not pure)"
+
+
+# ---------------------------------------------------------------------------
+# Author_precommit hardening
+# ---------------------------------------------------------------------------
+
+def test_author_precommit_rejects_bool_probability(tmp_ledger):
+    lp = ports.LedgerPort(ledger_dir_override=tmp_ledger.parent)
+    r = lp.author_precommit("p", True, "w")  # True is an int subclass, not a probability
+    assert r.status == "BLOCKED"
+    assert _ledger_lines(tmp_ledger) == []
+
+
+def test_author_precommit_rejects_bad_world_ref(tmp_ledger):
+    lp = ports.LedgerPort(ledger_dir_override=tmp_ledger.parent)
+    assert lp.author_precommit("p", 0.5, "   ").status == "BLOCKED"
+    assert lp.author_precommit("p", 0.5, None).status == "BLOCKED"
+    assert _ledger_lines(tmp_ledger) == []

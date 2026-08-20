@@ -132,15 +132,19 @@ class LedgerPort:
 
         probability is a number in [0,1] the AUTHOR asserts for the predicate
         at author time — V0.0 honest value is 0.0 (no observed outcome yet,
-        the predicate is a pre-registration, not a posterior).
+        the predicate is a pre-registration, not a posterior). A bool is not a
+        probability (True is an int subclass) — rejected.
         """
-        if not isinstance(probability, (int, float)) or not (0.0 <= probability <= 1.0):
+        if isinstance(probability, bool) or \
+                not isinstance(probability, (int, float)) or \
+                not (0.0 <= probability <= 1.0):
             return _require_status(PortResult.blocked(
-                f"probability must be in [0,1], got {probability!r}"))
+                f"probability must be a number in [0,1], got {probability!r}"))
         if not isinstance(claim_predicate, str) or not claim_predicate.strip():
             return _require_status(PortResult.blocked("claim_predicate must be a non-empty string"))
+        if not isinstance(world_ref, str) or not world_ref.strip():
+            return _require_status(PortResult.blocked("world_ref must be a non-empty string"))
 
-        self.ledger.parent.mkdir(parents=True, exist_ok=True)
         line = {
             "event": "precommit",
             "claim_predicate": claim_predicate,
@@ -149,11 +153,23 @@ class LedgerPort:
             "author": "v0.0-recipe",
             "seq": self._next_seq(),
         }
-        # Append + flush: durable before the mutation step runs. Never rename
-        # over an existing ledger (append-only discipline).
-        with open(self.ledger, "a", encoding="utf-8") as f:
-            f.write(json.dumps(line, sort_keys=True) + "\n")
-            f.flush()
+        # Append + flush + fsync: durable BEFORE the mutation step runs. Never
+        # rename over an existing ledger (append-only discipline). A write
+        # failure is an honest UNAVAILABLE — never a crash, never a fabricated
+        # SUCCESS (blueprint §3 step-6 fallback: log error, turn stays exposed).
+        try:
+            self.ledger.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            return _require_status(PortResult.unavailable(
+                f"ledger dir create failed: {e}"))
+        try:
+            with open(self.ledger, "a", encoding="utf-8") as f:
+                f.write(json.dumps(line, sort_keys=True) + "\n")
+                f.flush()
+                os.fsync(f.fileno())
+        except OSError as e:
+            return _require_status(PortResult.unavailable(
+                f"ledger write failed: {e}"))
         return _require_status(PortResult.ok({"seq": line["seq"]}))
 
     def settle(self, turn_id) -> PortResult:
