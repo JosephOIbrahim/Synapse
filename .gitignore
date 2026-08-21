@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Agent runtime state: synapse_checkpoint.py writes resume checkpoints to
+# agent/checkpoints/ (CHECKPOINT_DIR). That is per-session runtime data, never
+# source. Tests are hermetic -- they monkeypatch CHECKPOINT_DIR to a tmp_path.
+agent/checkpoints/
+
 # Test pollution: tests/test_retina_manifest.py writes to a path derived from a
 # MagicMock repr when it runs without a real Houdini, dropping a file literally
 # named "<MagicMock name='mock.retina_manifest.json" in the repo root on every
