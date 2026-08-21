@@ -67,7 +67,7 @@
     "v01": {
       "title": "SafetyPort (SALUS) f(I, S_k, a_{k+1}, Omega) active, N=20 sliding window",
       "agent_budget": 4,
-      "status": "blocked: needs v00 closed + SALUS substrate present (spec-grounded only today)",
+      "status": "blocked: SCOPE MISMATCH, not a missing install. Verified 2026-08-20: SALUS 0.3.1 @16e9d5b clones, imports zero-dep and self-verifies 5/5, but its public surface is a memory wake-predicate engine over Moneta's vitals (SalusEngine, wake/predicate.py:46) — there is no evaluate_path counterpart anywhere in the repo. Installing more does not close this rung. Either SALUS grows a path-policy surface, or this rung's substrate assignment changes. SafetyPort stays honestly UNAVAILABLE meanwhile.",
       "worktree_prefix": "loop/v0.1-",
       "receipts": [],
       "gates_closed": []
@@ -75,7 +75,7 @@
     "v02": {
       "title": "PG-DRM active inside MemoryPort; first BLIND calibration samples logged to Hanish",
       "agent_budget": 4,
-      "status": "blocked: needs v01 closed + Hanish substrate present",
+      "status": "blocked: needs v01 closed + Hanish WIRED. Partial progress recorded, rung NOT closed: as of v5.56.0 (2026-08-20) PG-DRM is live inside MemoryPort — it binds a real Moneta handle per storage_uri and filters deterministically with zero LLM calls — so the first clause of this rung's title now holds in code. The second does not: Hanish 0.2.0 @b82e334 imports clean but LedgerPort.settle() is unwired, so ZERO BLIND calibration samples have been logged. The ladder is never re-sorted, so this rung also waits on v01 regardless.",
       "worktree_prefix": "loop/v0.2-",
       "receipts": [],
       "gates_closed": []
