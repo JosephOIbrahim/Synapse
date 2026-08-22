@@ -1,0 +1,464 @@
+{
+  "packet": "mem-quartermaster/2026-08-21",
+  "board": "MEMORY",
+  "produced_by": "QUARTERMASTER (mem-quartermaster)",
+  "produced_at": "2026-08-21",
+  "measured_at": {
+    "tree": "C:/Users/User/SYNAPSE",
+    "branch": "master",
+    "head": "bb348abedb781265bfe1f1343714ed1369ec14d9",
+    "why_here": "master == merge-base(master, mem/m1-handle-law) == merge-base(master, mem/m2-pgdrm); both mem/* worktrees are AT bb348abe with no divergent commits, so master IS the merge-base for every mem/* branch today. Joe's ratchet law: the floor is read at merge-base, never on the branch under test.",
+    "merge_base_verification": "git worktree list --porcelain shows /c/Users/User/synapse-m1-handle-wt and /c/Users/User/synapse-m2-pgdrm-wt both at HEAD bb348abe, identical to master HEAD."
+  },
+  "1_suite_floor": {
+    "status": "MEASURED",
+    "command": "python -m pytest tests/ -p no:cacheprovider -q",
+    "cwd": "C:/Users/User/SYNAPSE",
+    "summary_line_verbatim": "==== 2 failed, 6773 passed, 180 skipped, 625 warnings in 260.24s (0:04:20) ====",
+    "collection_line_verbatim": "collected 6952 items / 3 skipped",
+    "exit_code": 1,
+    "duration_seconds": 260.24,
+    "counts": {
+      "passed": 6773,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 180,
+      "xfailed": 0,
+      "xpassed": 0,
+      "warnings": 625,
+      "collection_errors": 0
+    },
+    "interpreter": "Python 3.14.2, win32, pytest-8.4.2, pluggy-1.6.0, configfile=pyproject.toml",
+    "note_on_xfail": "The summary line reports no xfail/xpass category at all. This is not an omission on my part — pytest prints those categories only when non-zero, so xfailed=0 and xpassed=0 are read off the absence of the category.",
+    "the_two_reds_by_name": [
+      {
+        "nodeid": "tests/test_backfill.py::test_backup_is_taken_and_source_intact",
+        "assertion_site": "tests/test_backfill.py:62",
+        "failure_verbatim": "assert jsonl.read_bytes() == before  # source untouched (reversible)  ->  AssertionError: assert b'SYNAPSE_ENC...UIhSz_rdY\\r\\n' == b'SYNAPSE_ENC...Z8xxLK6hH\\r\\n'",
+        "reproduces_in_isolation": true,
+        "isolation_command": "python -m pytest tests/test_backfill.py::test_backup_is_taken_and_source_intact -p no:cacheprovider -q",
+        "reading": "Encrypted-store byte-equality check. The two ciphertexts differ in their tail, which is the signature of a fresh nonce/IV per write rather than the source actually being mutated. NOT test-order pollution — it fails alone. I did not diagnose it further; that is outside a supply packet's job.",
+        "relevance_to_this_board": "none — does not touch python/synapse/memory/ or python/synapse/loop/"
+      },
+      {
+        "nodeid": "tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented",
+        "assertion_site": "tests/test_m3_env_conformance.py:146",
+        "failure_verbatim": "Env vars read by production code but missing from the '### Environment Variables' table in docs/studio/DEPLOYMENT.md (add a backticked row for each): SYNAPSE_LOOP_LEDGER_DIR: python/synapse/loop/ports.py:71  ->  assert not {'SYNAPSE_LOOP_LEDGER_DIR': ['python/synapse/loop/ports.py:71']}",
+        "reproduces_in_isolation": true,
+        "isolation_command": "python -m pytest tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented -p no:cacheprovider -q",
+        "reading": "A DOC-conformance red, already-red at merge-base, pointing INTO python/synapse/loop/ports.py:71 (the $SYNAPSE_LOOP_LEDGER_DIR read that ledger_dir() performs). The V0.0 rung shipped the env read without adding the row to docs/studio/DEPLOYMENT.md.",
+        "relevance_to_this_board": "HIGH — M2's forge owns python/synapse/loop/. This red is IN its neighborhood and is NOT its fault. Do not let a leg (a) panic that it broke ports.py, or (b) use this as cover for a genuinely new failure. The fix is a one-row doc addition, and it is NOT in M2's charter (pgdrm.py only)."
+      }
+    ],
+    "subtraction_rule_for_later_legs": "A branch suite at HEAD is GREEN-EQUIVALENT to this floor iff it reports exactly these two failures by nodeid and passed >= 6773. A third failing nodeid, or passed < 6773 without a matching skip increase, is a new red the branch owns. Do NOT compare bare failure COUNTS — compare nodeid SETS.",
+    "known_master_red_mcp_list_tools": {
+      "expected": "collection error at python/synapse/mcp/mcp_server.py:899 plus 2 test failures, caused by the `mcp` library dropping server.list_tools()",
+      "verdict": "DOES NOT REPRODUCE ON THIS HOST",
+      "evidence": [
+        "collection line is 'collected 6952 items / 3 skipped' with ZERO collection errors",
+        "python -c \"from mcp.server import Server; print(hasattr(Server,'list_tools'))\" -> True; mcp==1.26.0 (importlib.metadata)",
+        "the cited path python/synapse/mcp/mcp_server.py DOES NOT EXIST in this tree; `find . -name mcp_server.py` returns ./mcp_server.py (repo root) and ./.claude/worktrees/wcrux-scratch/mcp_server.py"
+      ],
+      "honest_reading": "The local pip `mcp` still carries Server.list_tools, so the drift is not visible from this seat. This is consistent with the prior record that the red is a CI-side (macOS/Linux runner) artifact of a newer/different mcp resolution, not a repo defect. A leg must NOT subtract a phantom: on THIS host there is nothing to subtract. If a leg sees a collection error at mcp_server.py it is a NEW environment change and must be reported, not waved through as 'the known one'.",
+      "path_correction": "Any brief citing `python/synapse/mcp/mcp_server.py:899` is citing a path that does not exist. The file is `mcp_server.py` at the repo root."
+    }
+  },
+  "2_constraints_m1_must_not_break": {
+    "what_MonetaConfig_ephemeral_guarantees": {
+      "synapse_wrapper": "python/synapse/memory/moneta_runtime.py:686 make_ephemeral(embedding_dim=None, **overrides) -> Moneta(MonetaConfig.ephemeral(**cfg_kwargs))  [docstring at :689]",
+      "vendor_source": "C:/Python314/Lib/site-packages/moneta/api.py:144 MonetaConfig.ephemeral(cls, **overrides)",
+      "guarantee_verbatim_from_vendor": "If 'storage_uri' not in overrides, it is set to f\"moneta-ephemeral://{uuid.uuid4().hex}\" (api.py:154-157). Docstring: 'Each call returns a config whose URI does not collide with any prior or concurrent ephemeral() call in the same process.' storage_uri MAY be overridden by the caller, in which case the auto-generated URI is replaced.",
+      "the_lock_it_pairs_with": "moneta/api.py:169 `_ACTIVE_URIS: set[str]` — a process-level registry, NOT a scalar. Moneta.__init__ acquires a process-level lock ON config.storage_uri; close()/context-exit releases it. Two live handles on the SAME storage_uri raise MonetaResourceLockedError (api.py:180-183).",
+      "the_load_bearing_consequence": "The substrate's own contract is URI-KEYED EXCLUSION, not global exclusion. N live handles are legal iff their N URIs are distinct. A process-global SCALAR singleton in SYNAPSE would be STRICTLY STRONGER than the substrate's own law and would forbid behaviour Moneta explicitly permits — and which the test suite explicitly pins. SPEC.md board law 3 already says the fix is 'a URI-keyed registry, not a scalar'; the vendor source is the independent second witness for that.",
+      "also_true": "make_ephemeral defaults use_real_usd=False (mock target), no snapshot/WAL paths -> fully in-memory, needs no OpenUSD. Pinned by tests/test_moneta_runtime.py:42 test_ephemeral_path_is_pxr_free, which asserts in a CLEAN subprocess that 'pxr' not in sys.modules. Any M1 change that pulls pxr into the import path of moneta_runtime turns that test red."
+    },
+    "the_two_authorities_to_reconcile_not_triple": [
+      {
+        "authority": "A — the unlocked scalar",
+        "site": "python/synapse/memory/store.py:1516",
+        "shape": "_global_synapse: Optional[SynapseMemory] = None; get_synapse_memory() at :1519 does a check-then-set with NO lock (:1522-1524); reset_synapse_memory() at :1527 saves + nulls (:1529-1532)",
+        "defects": "no lock (two threads can both see None and both construct), and keyed on NOTHING — a re-pointed project_path silently keeps serving the old store"
+      },
+      {
+        "authority": "B — the keyed, locked one",
+        "site": "python/synapse/memory/ledger.py:320-322",
+        "shape": "_MONETA_STORE = None; _MONETA_STORE_KEY: Optional[str] = None; _MONETA_LOCK = threading.Lock(). Resolution at :415-437 takes the lock (:424), returns the cached store iff the key matches (:425-426), otherwise CLOSES the previous store to release its URI lock (:429) and rebuilds (:435-436). Teardown at :442-449.",
+        "note": "This one already does the right thing for ONE key. It is a keyed scalar, not a registry — it can hold exactly one live store at a time and evicts by closing. The comment at ledger.py:317-319 states the reasoning verbatim."
+      },
+      {
+        "derived_uri_shape": "python/synapse/memory/moneta_store.py:285 — MonetaBackedStore.from_storage_dir builds storage_uri = f\"moneta-file://{Path(storage_dir).resolve().as_posix()}\". This is the URI a registry must key on for the durable path; make_ephemeral's moneta-ephemeral://<uuid> is the key for the in-memory path."
+      }
+    ],
+    "call_sites_of_get_synapse_memory_that_a_lock_change_touches": [
+      "python/synapse/memory/scene_memory.py:723",
+      "python/synapse/memory/scene_memory.py:769",
+      "python/synapse/server/doctor.py:512",
+      "python/synapse/server/doctor.py:555",
+      "python/synapse/server/doctor.py:588",
+      "python/synapse/server/handlers.py:1776",
+      "python/synapse/server/handlers.py:1998",
+      "python/synapse/server/handlers_render.py:1588",
+      "python/synapse/session/tracker.py:105",
+      "python/synapse/ui/panel.py:192",
+      "python/synapse/panel/health_strip.py:293 — NEGATIVE site: comment explicitly says it must NOT call get_synapse_memory() because that would BUILD the store. AGENTS.md §3.3 names this the reference disciplined read. Do not 'simplify' it into a call.",
+      "python/synapse/server/write_plane.py:306 — NEGATIVE site: same, 'NEVER calls get_synapse_memory()'."
+    ],
+    "tests_that_hold_two_or_more_live_stores_at_once": {
+      "method": "Mechanical scan (functions with >= 2 store constructions) followed by a HAND READ of every candidate. Only hand-verified cases are listed here; the scan's false positives (nested-def and module-level attribution artifacts in test_sqlite_store.py, test_pipeline_efficiency.py, test_ledger_moneta_seam.py) are excluded, as are sequential open/close pairs (test_moneta_crucible.py:111,:130; test_moneta_integration.py:122; test_moneta_runtime.py:68; test_w3_harden_concurrency.py:193) which do NOT hold two at once.",
+      "verified_count": 8,
+      "cases": [
+        {
+          "test": "tests/test_moneta_integration.py:79 test_replay_determinism_same_inputs_same_state",
+          "sites": "nested build_state() constructs a fresh ephemeral handle at tests/test_moneta_integration.py:91; the assertion at :99 is `assert build_state() == build_state()`",
+          "why_it_breaks_under_a_scalar": "Python evaluates the left call fully, then the right — the FIRST handle is never closed before the SECOND is built. Two live ephemeral handles, distinct URIs. A scalar singleton returns the first store to the second call and the determinism assertion becomes vacuous (or the second construction is refused outright)."
+        },
+        {
+          "test": "tests/test_moneta_integration.py:102 test_single_owner_uri_lock_is_enforced",
+          "sites": ":107 s1 = MonetaBackedStore.from_storage_dir(tmp_path/'proj'); :110 a SECOND from_storage_dir on the SAME dir inside pytest.raises; :115 a third after s1.close()",
+          "why_it_matters": "This test PINS the URI-keyed semantics directly: same URI -> refuse while live; after release -> acquire cleanly AND reload prior state. Any M1 design must keep same-URI refusal AND post-close reacquisition. It is the single most load-bearing test for the handle law."
+        },
+        {
+          "test": "tests/test_w3_harden_concurrency.py:62 test_inprocess_second_handle_on_same_uri_is_refused",
+          "sites": ":63 a = from_storage_dir(tmp_path); :67 second from_storage_dir(tmp_path) inside pytest.raises",
+          "why_it_matters": "Second, independent pin of same-URI refusal, and it asserts on the EXCEPTION IDENTITY ('Locked' in type name, or 'already held' in message). A registry that refuses with a different exception type/message turns this red."
+        },
+        {
+          "test": "tests/test_w3_harden_concurrency.py:77 test_cross_process_uri_lock_is_process_local",
+          "sites": ":87 spawns TWO OS child processes each opening the same store dir; :112 the parent then opens it again",
+          "why_it_matters": "Asserts opened == 2, i.e. the lock is deliberately PROCESS-LOCAL and cross-process opens are NOT excluded. An M1 fix that reaches for a filesystem lock to 'do it properly' turns this red — the test is a receipt of a KNOWN limit, not a bug to fix. Changing it is a finding to report, not a diff to land (AGENTS.md §4)."
+        },
+        {
+          "test": "tests/test_shadow_store.py:49 _shadow()",
+          "sites": ":51 primary = MemoryStore(tmp_path/'.synapse'); :52 shadow = MonetaBackedStore(make_ephemeral(...)); :53 ShadowMemoryStore(primary, shadow)",
+          "why_it_breaks_under_a_scalar": "A jsonl store and a Moneta store live SIMULTANEOUSLY, by construction — the whole point of the shadow. Used by every test in the file that calls _shadow(). A single global 'the store' has no way to represent this."
+        },
+        {
+          "test": "tests/test_moneta_store.py:103 test_search_ranking_parity_with_jsonl_store",
+          "sites": ":105 and :106 — a Moneta-backed store and a jsonl store built back to back, then rank(moneta.search(q)) == rank(jsonl.search(q))",
+          "why_it_breaks_under_a_scalar": "The comparison is meaningless unless both are live at the same instant."
+        },
+        {
+          "test": "tests/test_moneta_store.py:259 test_re_embed_preserves_memory_count",
+          "sites": ":268 handle = make_ephemeral(dim=DIM); :269 s1 = MonetaBackedStore(handle, ...); :275 s2 = MonetaBackedStore(handle, ...) — a DIFFERENT embedder over the SAME handle",
+          "why_it_matters": "Two live STORE objects over ONE handle. The docstring states the invariant explicitly: 'the handle owns the ECS, not the store wrapper.' Any registry must key on the HANDLE/URI, not on the store wrapper object, or this becomes a false conflict."
+        },
+        {
+          "test": "tests/test_moneta_store.py:283 test_embedder_swap_detectable",
+          "sites": ":289 handle; :290 s1 (dim 256); :293 s2 (dim 384) over the same handle",
+          "why_it_matters": "Same shape as above and it asserts s1.embedder_id != s2.embedder_id, so BOTH wrappers must remain alive and independently interrogable."
+        }
+      ]
+    },
+    "tests_relying_on_a_unique_auto_generated_storage_uri": {
+      "call_sites": 18,
+      "files": 10,
+      "command": "grep -rn \"make_ephemeral(\" tests/ --include=*.py",
+      "sites": [
+        "tests/test_moneta_crucible.py:38",
+        "tests/test_moneta_fc4_audit.py:34",
+        "tests/test_moneta_integration.py:91",
+        "tests/test_moneta_runtime.py:34",
+        "tests/test_moneta_runtime.py:52 (inside a clean-subprocess driver string)",
+        "tests/test_moneta_runtime.py:64",
+        "tests/test_moneta_runtime.py:71",
+        "tests/test_moneta_runtime.py:73",
+        "tests/test_moneta_store.py:36 (the _store() fixture — every test in the file inherits this)",
+        "tests/test_moneta_store.py:119",
+        "tests/test_moneta_store.py:133",
+        "tests/test_moneta_store.py:268",
+        "tests/test_moneta_store.py:289",
+        "tests/test_shadow_store.py:52",
+        "tests/test_sleep_pass_gate.py:96",
+        "tests/test_w3_evolve_consolidation.py:358",
+        "tests/test_w3_store_contract.py:265",
+        "tests/test_w3_vec_recall.py:178"
+      ],
+      "the_constraint": "Every one of these depends on ephemeral() minting a FRESH uuid4 URI per call. If M1 introduces a registry that normalizes, canonicalizes, interns, or reuses ephemeral URIs, these 18 sites start colliding with each other and the suite goes red in a way that looks like a substrate bug. Key the registry on the storage_uri AS GIVEN; do not rewrite it."
+    },
+    "design_note_for_the_forge": "The substrate already implements the correct data structure (moneta/api.py:169 `_ACTIVE_URIS: set[str]`). SYNAPSE's two authorities are a keyless unlocked scalar (store.py:1516) and a single-key locked scalar (ledger.py:320-322). SPEC.md board law 3 forbids adding a THIRD. The shape that satisfies every test above is one URI-keyed registry with the lock, replacing both — not a new module alongside them."
+  },
+  "3_surface_m2_must_not_move": {
+    "file": "python/synapse/loop/ports.py",
+    "line_count": 212,
+    "declared_verbatim_block": "python/synapse/loop/ports.py:3-8 (module docstring, 'VERBATIM signatures (blueprint §4)')",
+    "parameter_names_as_they_stand_today": [
+      {
+        "port": "SafetyPort",
+        "class_def": "python/synapse/loop/ports.py:82",
+        "method": "evaluate_path",
+        "def_line": "python/synapse/loop/ports.py:89-90",
+        "params": [
+          "agent_id",
+          "path_history_hash",
+          "recent_actions",
+          "proposed_action",
+          "scene_state_digest"
+        ]
+      },
+      {
+        "port": "MemoryPort",
+        "class_def": "python/synapse/loop/ports.py:97",
+        "method": "query_and_filter",
+        "def_line": "python/synapse/loop/ports.py:104",
+        "params": [
+          "relation_keys",
+          "task_context_tokens"
+        ]
+      },
+      {
+        "port": "LedgerPort",
+        "class_def": "python/synapse/loop/ports.py:111",
+        "method": "author_precommit",
+        "def_line": "python/synapse/loop/ports.py:130",
+        "params": [
+          "claim_predicate",
+          "probability",
+          "world_ref"
+        ]
+      },
+      {
+        "port": "StagePort",
+        "class_def": "python/synapse/loop/ports.py:198",
+        "method": "compose_sanitized_stage",
+        "def_line": "python/synapse/loop/ports.py:206",
+        "params": [
+          "stage_identifier"
+        ]
+      }
+    ],
+    "envelope": {
+      "type": "PortResult",
+      "def_line": "python/synapse/loop/ports.py:30",
+      "fields": [
+        "status",
+        "payload",
+        "error_message"
+      ],
+      "statuses": [
+        "SUCCESS",
+        "UNAVAILABLE",
+        "BLOCKED"
+      ],
+      "helpers": "PortResult.ok() :38, .unavailable() :42, .blocked() :46; _require_status() :50 rejects any status outside the three",
+      "note": "the seam carries NO type annotations — the ratified claim is param NAMES, not signatures. PortResult.payload defaults to None."
+    },
+    "ratifying_contract": {
+      "path": ".synapse/contracts/loop-v00.yaml",
+      "ratification_line": ".synapse/contracts/loop-v00.yaml:2 — 'Ratification: RATIFIED — Joe word 2026-08-20; goalposts bind (loop-orchestrator halt lifted for these acts).'",
+      "feature_that_binds_the_names": ".synapse/contracts/loop-v00.yaml, features[0].description — enumerates all four signatures with param names verbatim",
+      "owns_declares": "loop-v00.yaml `owns:` lists python/synapse/loop/ports.py, mapper.py, recipe.py, __init__.py, tests/test_loop_contracts.py, and the contract itself"
+    },
+    "pinning_test": {
+      "path": "tests/test_loop_contracts.py",
+      "the_pin": "tests/test_loop_contracts.py:57-73 — @pytest.mark.parametrize over the four (port, method, expected-params) tuples; test_contract_signature_verbatim at :68 does inspect.signature(fn).parameters, strips self/cls, and asserts params == expected (exact list equality, order-sensitive)",
+      "expected_lists_hardcoded_at": [
+        "tests/test_loop_contracts.py:59-60",
+        ":61-62",
+        ":63-64",
+        ":65-66"
+      ],
+      "currently_passes": true,
+      "count_verbatim": "======================= 20 passed, 2 warnings in 0.35s ========================",
+      "command": "python -m pytest tests/test_loop_contracts.py -p no:cacheprovider -q",
+      "measured_at": "C:/Users/User/SYNAPSE @ bb348abe (master / merge-base)"
+    },
+    "the_rule_for_M2": "SPEC.md board law 4: the ratified §4 port surface does not move without Joe's word. New PG-DRM parameters live on the KERNEL (python/synapse/loop/pgdrm.py, which does not exist yet — verified absent at bb348abe) until the V0.2 contract amendment is ratified. Adding, renaming, reordering, or even re-annotating a §4 param turns tests/test_loop_contracts.py:68 red — the assertion is exact ordered list equality.",
+    "adjacent_red_warning": "tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented is ALREADY RED at merge-base and its failure message names python/synapse/loop/ports.py:71. M2's forge will see a red pointing at the file next door to its work. It is pre-existing. See section 1."
+  },
+  "4_readiness": {
+    "command": "git worktree list --porcelain; git -C <path> status --porcelain",
+    "worktrees": [
+      {
+        "path": "C:/Users/User/SYNAPSE",
+        "branch": "master",
+        "head": "bb348abedb781265bfe1f1343714ed1369ec14d9",
+        "clean": false,
+        "dirty_detail": "1 modified tracked file (harness/rope/STATE.json) + a large untracked set (.claude/agents/*.md incl. this board's roster, .claude/workflows/memory-loop.js, AGENTS.md, harness/memory/, harness/flow/, harness/reach/, harness/hardening/, docs/REACH_BLUEPRINT.md, docs/harness/). The MEMORY board's own scaffolding is untracked here — that is expected, not damage.",
+        "role": "merge-base measurement seat; evidence artifacts land here as untracked files (AGENTS.md §5)"
+      },
+      {
+        "path": "C:/Users/User/synapse-m1-handle-wt",
+        "branch": "mem/m1-handle-law",
+        "head": "bb348abedb781265bfe1f1343714ed1369ec14d9",
+        "clean": false,
+        "dirty_detail": "?? tests/test_memory_handle_law.py (untracked, new) — M1's forge is mid-flight and has authored its test file but not committed",
+        "diverged_from_master": false
+      },
+      {
+        "path": "C:/Users/User/synapse-m2-pgdrm-wt",
+        "branch": "mem/m2-pgdrm",
+        "head": "bb348abedb781265bfe1f1343714ed1369ec14d9",
+        "clean": true,
+        "dirty_detail": "",
+        "diverged_from_master": false
+      }
+    ],
+    "non_mem_worktrees_present": [
+      {
+        "path": "C:/Users/User/rope-beacon-wt",
+        "branch": "rope/beacon",
+        "head": "6854c72c9a880224c7c278fad531ab409a089a47",
+        "note": "not this board's"
+      },
+      {
+        "path": "C:/Users/User/SYNAPSE/.claude/worktrees/wcrux-scratch",
+        "branch": "(detached)",
+        "head": "df8c9ef38e909e1423b1c0a5e7249b75dcb96bb7",
+        "note": "not this board's"
+      }
+    ],
+    "live_second_run_sweep": {
+      "law": "AGENTS.md Law 6 — one conductor per board",
+      "bus_mtimes": [
+        "harness/memory/bus/memory_m0_audit.json — 2026-08-21T22:47:40",
+        "harness/memory/bus/memory_m1_cartographer.json — 2026-08-21T23:00:44 (LIVE, written during my run)"
+      ],
+      "verdict": "The sprint wf_ccb70efc-5b5 is actively writing this board's bus. That is the expected single conductor, not a second one. I write only harness/memory/supply/packet_2026-08-21.json and harness/memory/bus/mem_quartermaster.json — no STATE.json write, no bus file another leg owns."
+    }
+  },
+  "5_could_not_supply": [
+    {
+      "gap": "This packet reaches NO leg of sprint wf_ccb70efc-5b5.",
+      "why": "Workflow scripts have no filesystem access and workflow legs are not addressable. Delivery is by args.supply, which .claude/workflows/memory-loop.js folds into a leg's briefing at DISPATCH time. M1's forge, M2's forge, M3's envoy and their crucibles were already flying when I started. They are re-deriving the floor themselves, or not reading it at all, and I cannot stop that.",
+      "consequence": "If a sprint leg reports a floor number, it did not come from here, and it may have been read on its own branch — which is exactly the ratchet violation this role exists to prevent. Treat any in-sprint floor claim as unsupplied.",
+      "reaches": "the NEXT dispatch only"
+    },
+    {
+      "gap": "The known master red (mcp list_tools) is UNVERIFIED as a CI fact.",
+      "why": "It does not reproduce on this host at all — see section 1. I can prove it is absent HERE (mcp 1.26.0 has Server.list_tools; zero collection errors; the cited path does not exist). I cannot prove what a CI runner resolves, because I did not run CI.",
+      "consequence": "A leg must not subtract two phantom failures from its local run. Locally there is nothing to subtract; the floor's two reds are test_backfill and test_m3_env_conformance, neither of which is the mcp drift."
+    },
+    {
+      "gap": "The floor was measured while two forge worktrees were live.",
+      "why": "The sprint is running concurrently. I measured in the main tree; the forges have their own trees. But SYNAPSE tests are known to touch user-level shared state (~/.synapse/logs/synapse.log is documented as pytest-polluted), so a concurrent run in another tree could in principle perturb a shared-path test.",
+      "consequence": "Both failures reproduce in ISOLATION with the sprint still running, so neither is a concurrency artifact. I did not re-run the full suite under quiescence, so I cannot rule out that some PASSING test passed by luck of ordering. The 260.24s duration is likewise a loaded-machine number, not a clean-machine benchmark."
+    },
+    {
+      "gap": "I did not measure a flake rate.",
+      "why": "One run. A single green is not a stability claim.",
+      "consequence": "6773 passed is a floor, not a guarantee. If a leg sees a NEW single failure, re-run that nodeid alone before calling it a regression — that is cheap and I did it for both of mine."
+    },
+    {
+      "gap": "No xfail/xpass baseline.",
+      "why": "pytest reported no xfail/xpass category, which means zero, but I did not enumerate xfail-MARKED tests. A leg that converts a failure into an xfail would move the passed count without adding a red, and this packet cannot detect that.",
+      "consequence": "AGENTS.md §4 already forbids weakening an assertion to pass. Note that adding an xfail marker is the same act wearing a different hat."
+    },
+    {
+      "gap": "I did not diagnose either failing test.",
+      "why": "Out of a supply packet's charter. I measure and publish; I do not change code, tests, or contracts.",
+      "consequence": "test_backfill's ciphertext-tail mismatch reads like a per-write nonce, but that is a hypothesis with no probe behind it. Do not cite it as a finding."
+    },
+    {
+      "gap": "The multi-store list is complete for what a mechanical scan can see.",
+      "why": "The scan matched construction CALL SITES within function bodies. A store handed in through a pytest fixture, a conftest-level helper, or a class attribute would not appear. I hand-read every candidate the scan produced and excluded the false positives, but I cannot claim the scan itself was exhaustive.",
+      "consequence": "Treat the 8 verified cases as a floor on the constraint set, not a ceiling. Re-run the scan command in section 2 after any test-file change."
+    },
+    {
+      "gap": "No live-substrate claim.",
+      "why": "I did not call synapse_ping. Nothing in this packet asserts anything about the live Houdini bridge, and nothing in it should be read as a runtime claim about hou.*.",
+      "consequence": "none for M1/M2/M3, all of which are pure-python."
+    }
+  ],
+  "bisect": {
+    "requested_by": "team-lead, follow-up to packet_2026-08-21",
+    "method": "Read-only. Detached worktrees via `git worktree add --detach <tmp> <sha>`; the main tree was never checked out to another sha (two forge worktrees are live off master). All bisect worktrees removed after use.",
+    "constraints_honored": [
+      "no merge",
+      "no push",
+      "no code edits",
+      "no VERSION",
+      "no .synapse/contracts/ touched",
+      "neither red fixed"
+    ],
+    "red_1_env_conformance": {
+      "nodeid": "tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented",
+      "hypothesis_tested": "did 9ef3250a (LOOP V0.0 forge) introduce this red?",
+      "verdict": "REFUTED - 9ef3250a did NOT introduce it. Introduced by 454fbeee.",
+      "introduced_by_sha": "454fbeee157deb27437ca7769c6aef93e3f0ee11",
+      "introduced_by_subject": "feat(loop): v5.1 harness scaffold - seam, runner, contract, workflow",
+      "results": [
+        {
+          "sha": "d5d1240e",
+          "role": "454fbeee^ (release v5.54.0)",
+          "result_verbatim": "1 passed, 2 warnings in 0.41s",
+          "state": "GREEN"
+        },
+        {
+          "sha": "454fbeee",
+          "role": "the scaffold commit that CREATED python/synapse/loop/ports.py",
+          "result_verbatim": "1 failed, 2 warnings in 0.51s",
+          "state": "RED",
+          "message": "SYNAPSE_LOOP_LEDGER_DIR: python/synapse/loop/ports.py:71"
+        },
+        {
+          "sha": "9ef3250a",
+          "role": "the V0.0 forge commit the lead suspected",
+          "result_verbatim": "1 failed, 2 warnings in 0.55s",
+          "state": "RED",
+          "message": "SYNAPSE_LOOP_LEDGER_DIR: python/synapse/loop/ports.py:71 - byte-identical failure message to 454fbeee"
+        }
+      ],
+      "corroboration": "`git log -S SYNAPSE_LOOP_LEDGER_DIR --all` lists 454fbeee as the earliest commit touching the symbol. `git show --stat 9ef3250a` shows it touched only python/synapse/loop/ports.py and tests/test_loop_contracts.py, and its ports.py diff is confined to author_precommit validation + durable-write hardening - it never added an env read.",
+      "what_this_says_about_the_LOOP_board": "The regression is real and the board did ship it - one commit earlier than suspected, in the SCAFFOLD leg (454fbeee) rather than the forge leg (9ef3250a). Both the V0.0 mission (9/9 PASS) and the crucible (SOUND-WITH-NITS) ran AFTER 454fbeee and did not see it. The goalpost was 'tests/test_loop_contracts.py passes (20 tests)' - scoped to the seam's own test file. A repo-wide conformance test that scans production source for env reads sits entirely outside that scope, so a narrowly-scoped goalpost let a repo-wide red through. This is not a fabricated-SUCCESS failure; it is a SCOPE failure. The 20 tests really do pass, at 9ef3250a and today.",
+      "cost_to_close": "One backticked row for SYNAPSE_LOOP_LEDGER_DIR in the '### Environment Variables' table of docs/studio/DEPLOYMENT.md. NOT in M2's charter (pgdrm.py only) and not done here - this leg fixes nothing."
+    },
+    "red_2_backfill": {
+      "nodeid": "tests/test_backfill.py::test_backup_is_taken_and_source_intact",
+      "question_asked": "environmental (key/clock/locale) or genuine logic failure?",
+      "verdict": "GENUINE LOGIC FAILURE. Deterministic, mechanism proven, and bisected to a single commit.",
+      "introduced_by_sha": "e8b691de",
+      "introduced_by_subject": "feat(memory): W3-STORE cortex_root materialized - typed root, write/query, dual-write armed [receipt: W3-STORE.json]  (2026-08-13)",
+      "bisect_results": [
+        {
+          "sha": "5e933c13",
+          "role": "e8b691de^ (2026-08-09)",
+          "pytest_verbatim": "1 passed, 2 warnings in 0.41s",
+          "probe": "jsonl lines 7 -> 7, bytes_equal=True, len 4891 -> 4891",
+          "state": "GREEN"
+        },
+        {
+          "sha": "e8b691de",
+          "role": "dual-write armed (2026-08-13)",
+          "pytest_verbatim": "1 failed, 2 warnings in 0.43s",
+          "probe": "jsonl lines 7 -> 14, bytes_equal=False, len 4891 -> 9782",
+          "state": "RED"
+        }
+      ],
+      "mechanism_proven_at_master": {
+        "finding": "MonetaBackedStore.from_storage_dir attaches a JSONL DUAL-WRITE SINK - the instance attribute `_jsonl_net` is itself a MemoryStore over the SAME storage_dir. backfill_to_moneta (python/synapse/memory/backfill.py:75-79) opens the target that way and then calls target.add(memory) for each of the 7 memories it just READ out of that same memory.jsonl. Each add() therefore re-writes the record into the source file.",
+        "isolation_probe_step_by_step": [
+          "after seed + save(): 7 lines",
+          "after a second MemoryStore(storage_dir) ctor + _wait_loaded(): 7 lines  (not the cause)",
+          "after .all(): 7 lines  (not the cause)",
+          "after MonetaBackedStore.from_storage_dir(): 7 lines  (construction alone is not the cause)",
+          "after 7 x target.add(): 14 lines  <-- THE CAUSE",
+          "after target.save(): 14 lines",
+          "after target.close(): 14 lines"
+        ],
+        "confirmation": "getattr(target, '_jsonl_net') is a live <synapse.memory.store.MemoryStore> object. Decrypting both files and comparing as SETS gives only-in-before=0 and only-in-after=0 - every added line is an exact duplicate of an existing one, not new or altered content."
+      },
+      "why_it_is_not_environmental": [
+        "Not key-dependent: the damage is LINE COUNT (7 -> 14) and byte length (4891 -> 9782, exactly 2x), not ciphertext tails. It would fail identically with encryption off.",
+        "Not clock-dependent: measured backfill elapsed = 0.195s against MemoryStore._flush_interval = 2.0s (python/synapse/memory/store.py:196), so the 2-second background flusher never fires. _flush_max = 50 (store.py:197) against 7 buffered lines, so the capacity trigger never fires either. Neither background-writer path is involved.",
+        "Not locale-dependent: no formatting or collation is in play.",
+        "Deterministic: 3 consecutive runs at master, 3 failures. Fails both in isolation and inside the full suite, with the same assertion."
+      ],
+      "correction_to_my_own_earlier_packet": "In section 1 I recorded a reading that the differing ciphertext tails looked like a per-write nonce. That reading is REFUTED by this probe - it is duplicate-append, not nonce churn. I flagged it at the time as a hypothesis with no probe behind it; the probe now says otherwise. Routing on the nonce reading would have sent this to the crypto layer instead of the dual-write sink.",
+      "blast_radius_stated_precisely": "The duplicate records land in the SOURCE memory.jsonl - the durable store the backfill promised to leave untouched. On reload MemoryStore keys _memories by id, so a re-open dedupes back to 7, which is why tests/test_backfill.py::test_execute_backfills_and_verifies still passes (source_count == deposited == 7). The observable damage is therefore (a) the file doubling on every backfill run, and (b) a violated 'source untouched (reversible)' guarantee - NOT count corruption or lost content. Do not escalate this as data loss; do not dismiss it as cosmetic.",
+      "not_fixed": "No fix applied. The test is correct as written; the assertion is doing exactly its job."
+    },
+    "an_older_unrelated_red_i_did_not_chase": {
+      "fact": "tests/test_backfill.py::test_backup_is_taken_and_source_intact ALSO fails at 84fcd071 (2026-05-31), the commit that ADDED the test - result: '1 failed, 2 warnings in 0.40s'.",
+      "but": "Running the same scenario at 84fcd071 OUTSIDE pytest does NOT reproduce it: lines 7 -> 7, bytes_equal=True, len 4891 -> 4891. And the intervening sha 5e933c13 (2026-08-09) is GREEN under pytest, with 84fcd071 confirmed an ancestor of it.",
+      "honest_reading": "The history is red (84fcd071) -> green (5e933c13) -> red again (e8b691de). The 2026-05-31 red is a SEPARATE, older, since-fixed defect with a different shape - its failure showed differing ciphertext tails at an apparently unchanged length, and it did not reproduce outside the pytest process. I did not chase it: it is fixed, it is not the current red, and doing so was outside the ask.",
+      "why_it_is_recorded_anyway": "So nobody later re-runs this bisect, hits the 84fcd071 red, and concludes e8b691de is innocent. The parent-green/child-red pair at 5e933c13 -> e8b691de is the load-bearing evidence and it is unambiguous on both the pytest nodeid and an independent line-count probe."
+    },
+    "could_not_verify_bisect": [
+      "The 84fcd071 red's root cause is UNKNOWN. It reproduces under pytest and not outside it at that sha, which points at test-process context (the conftest at that sha, an import-order effect, or a live flusher thread) rather than at backfill logic. Unchased by choice - it is already fixed by 5e933c13.",
+      "I did not bisect the interval 84fcd071..5e933c13 to name which commit FIXED the older red. Not asked, and it has no bearing on either current red.",
+      "Every result is from THIS host: Python 3.14.2 / win32, with ~/.synapse/encryption.key present (dated 2026-02-06) so crypto is active. A host with no key auto-generates one (python/synapse/core/crypto.py:102), so crypto-active is the normal state and these results should port - but I ran nothing on Linux or macOS and claim nothing about CI.",
+      "The e8b691de bisect was run on the single nodeid plus a targeted probe, not the full suite at those shas. It proves that commit introduced THIS failure; it does not characterize the rest of the suite's state at either sha.",
+      "The 'scope failure, not fabricated SUCCESS' reading of the LOOP V0.0 mission is my inference from the goalpost text in .synapse/contracts/loop-v00.yaml features[0].verify plus the measured green of tests/test_loop_contracts.py. I did not re-run the V0.0 mission or read its crucible artifacts."
+    ]
+  }
+}

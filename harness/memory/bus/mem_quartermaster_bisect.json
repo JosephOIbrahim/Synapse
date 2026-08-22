@@ -1,0 +1,61 @@
+{
+  "leg": "memory:supply:quartermaster-bisect",
+  "verdict": "PASS",
+  "addendum_to": "harness/memory/bus/mem_quartermaster.json",
+  "touched": [
+    "harness/memory/supply/packet_2026-08-21.json (appended a new top-level `bisect` key; no existing key altered)",
+    "python/synapse/loop/ports.py:71 (read — the SYNAPSE_LOOP_LEDGER_DIR env read named by the failing assertion)",
+    "python/synapse/memory/backfill.py:35-86 (read — backfill_to_moneta)",
+    "python/synapse/memory/store.py:194-267 (read — _write_buffer, _flush_interval=2.0, _flush_max=50, _flush_writes)",
+    "python/synapse/memory/store.py:443-495 (read — MemoryStore.save full-rewrite path)",
+    "python/synapse/memory/moneta_store.py:270-320 (read — from_storage_dir)",
+    "python/synapse/core/crypto.py:86-115 (read — key resolution order)"
+  ],
+  "commands": [
+    "git log --oneline -5 9ef3250a",
+    "git show --stat --oneline 9ef3250a",
+    "git log --oneline -S SYNAPSE_LOOP_LEDGER_DIR --all",
+    "git log --oneline -S _jsonl_net -- python/synapse/memory/moneta_store.py",
+    "git log --oneline --diff-filter=A -- tests/test_backfill.py",
+    "git worktree add --detach C:/Users/User/qm-bisect-<sha> <sha>   # for d5d1240e, 454fbeee, 9ef3250a, 84fcd071, 5e933c13, e8b691de",
+    "cd C:/Users/User/qm-bisect-<sha> && python -m pytest tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented -p no:cacheprovider -q",
+    "cd C:/Users/User/qm-bisect-<sha> && python -m pytest tests/test_backfill.py::test_backup_is_taken_and_source_intact -p no:cacheprovider -q",
+    "git worktree remove --force C:/Users/User/qm-bisect-<sha>   # all six removed; git worktree prune run after"
+  ],
+  "artifacts": [
+    "harness/memory/supply/packet_2026-08-21.json (key: bisect)"
+  ],
+  "findings": {
+    "red_1_env_conformance": {
+      "nodeid": "tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented",
+      "answer": "INTRODUCED BY 454fbeee — NOT by 9ef3250a. The lead's hypothesis is refuted.",
+      "d5d1240e_454fbeee_parent": "1 passed, 2 warnings in 0.41s  (GREEN)",
+      "454fbeee": "1 failed, 2 warnings in 0.51s  (RED)",
+      "9ef3250a": "1 failed, 2 warnings in 0.55s  (RED — inherited, byte-identical message)",
+      "reading": "The LOOP board did ship a regression, in the SCAFFOLD leg rather than the forge leg. The V0.0 mission and crucible both ran after it and did not see it, because the goalpost was scoped to tests/test_loop_contracts.py — a repo-wide env-conformance test lies outside that scope. A SCOPE failure, not a fabricated SUCCESS: the 20 tests genuinely pass."
+    },
+    "red_2_backfill": {
+      "nodeid": "tests/test_backfill.py::test_backup_is_taken_and_source_intact",
+      "answer": "GENUINE LOGIC FAILURE, introduced by e8b691de. Not environmental.",
+      "5e933c13_e8b691de_parent": "1 passed, 2 warnings in 0.41s  (GREEN; probe: jsonl 7 -> 7 lines, bytes equal)",
+      "e8b691de": "1 failed, 2 warnings in 0.43s  (RED; probe: jsonl 7 -> 14 lines, 4891 -> 9782 bytes)",
+      "mechanism": "MonetaBackedStore.from_storage_dir attaches a jsonl dual-write sink (_jsonl_net — itself a MemoryStore over the SAME dir). backfill_to_moneta reads 7 records out of memory.jsonl and then target.add()s them back into that same file through the sink. Step-isolated: construction adds 0 lines; the 7 target.add() calls add all 7 duplicates.",
+      "not_environmental_because": "damage is line count and 2x byte length, not ciphertext tails (so not key-dependent); backfill takes 0.195s against a 2.0s flusher interval and 7 lines against a 50-line flush cap, so neither background-writer trigger fires (so not clock-dependent); 3/3 deterministic at master.",
+      "blast_radius": "Duplicates land in the source memory.jsonl. Reload dedupes by id, so counts stay 7 and test_execute_backfills_and_verifies still passes. Real damage: the file doubles on every backfill run, and the 'source untouched (reversible)' guarantee is violated. Not data loss; not cosmetic."
+    }
+  },
+  "proved_it_bites": "No test authored, no code changed — so no mutation to name. The equivalent evidence is a parent-green/child-red pair on BOTH reds, each measured at two adjacent commits with the verbatim pytest line recorded: d5d1240e GREEN -> 454fbeee RED, and 5e933c13 GREEN -> e8b691de RED. For the backfill red the pytest verdict is independently corroborated by a line-count probe (7 -> 7 at the parent, 7 -> 14 at the child) that does not depend on the assertion under test.",
+  "corrections_to_prior_receipt": [
+    "My first receipt recorded a reading that the test_backfill ciphertext tails looked like a per-write nonce. REFUTED by probe — it is duplicate-append via the _jsonl_net dual-write sink. I had flagged it as an unprobed hypothesis; it is now measured and wrong. Routing on it would have sent the fix to the crypto layer instead of the store layer.",
+    "My first receipt described the two reds as 'pre-existing at merge-base' and said nothing about provenance. Both now have an introducing sha."
+  ],
+  "could_not_verify": [
+    "The 84fcd071 (2026-05-31) red is a SEPARATE, older, since-fixed defect and its root cause is UNKNOWN. It fails under pytest at that sha but the same scenario run outside pytest there does NOT reproduce (7 -> 7 lines, bytes equal), and 5e933c13 is green — so the history is red -> green -> red. Unchased by choice: it is fixed and it is not the current red. Recorded so a later bisect does not hit it and wrongly acquit e8b691de.",
+    "I did not bisect 84fcd071..5e933c13 to name which commit fixed the older red. Not asked; no bearing on either current red.",
+    "All results are from THIS host: Python 3.14.2 / win32, ~/.synapse/encryption.key present (2026-02-06) so crypto is active. A keyless host auto-generates one (python/synapse/core/crypto.py:102), so crypto-active is the normal state — but I ran nothing on Linux or macOS and claim nothing about CI.",
+    "The e8b691de bisect ran one nodeid plus a targeted probe, not the full suite at those shas. It proves that commit introduced THIS failure; it does not characterize the rest of the suite at either sha.",
+    "The 'scope failure, not fabricated SUCCESS' reading of the V0.0 mission is my inference from .synapse/contracts/loop-v00.yaml features[0].verify plus the measured green of tests/test_loop_contracts.py. I did not re-run the mission or read its crucible artifacts.",
+    "Neither red was fixed and neither fix was scoped beyond naming its cost. Fixing is not this leg's charter."
+  ],
+  "needs_human": []
+}

@@ -1,0 +1,304 @@
+{
+  "_schema": "memory/v1",
+  "_comment": "MEMORY board — substrate-conformance sidecar to THE LOOP v5.1. Executes the AMENDED 'Refactor SYNAPSE Memory Sub-System' spec (adjudication: notes/BLUEPRINT_ADJUDICATION.md). This board is NOT a LOOP rung and never re-sorts the ratified ladder; its closed rungs are preconditions LOOP V0.2 consumes. Conductor: .claude/agents/memory-conductor.md. Dispatch: Workflow(name='memory-loop', args={rung, date, autonomy, spawnedSoFar, armed}). ARM is per-run, never banked. Merge/push/tag/VERSION/ratification/MCP-tool-removal = Joe's word per act (Article V), never relayed by an agent message. Code legs run in mem/<rung>-<leg> worktrees, one atomic commit per leg, Joe merges. Evidence lands in main-tree harness/memory/ as untracked files. Agents hand artifacts to each other via bus/.",
+  "spec": "harness/memory/SPEC.md",
+  "agent_law": "AGENTS.md",
+  "adjudication": "harness/memory/notes/BLUEPRINT_ADJUDICATION.md",
+  "parent_board": "harness/loop/STATE.json",
+  "parent_relation": "read-only — this board never writes harness/loop/; loop-orchestrator owns it",
+  "grounded": "2026-08-21",
+  "base": "master",
+  "base_commit": "bb348abe",
+  "base_version": "5.55.0",
+  "houdini_build": "22.0.400",
+  "spawn_cap": 24,
+  "spawn_reserve": 2,
+  "spawned": 8,
+  "spawn_ledger": [
+    {
+      "run": "2026-08-21",
+      "rung": "sprint",
+      "workflow": "wf_ccb70efc-5b5",
+      "spent": 7,
+      "budget": 7,
+      "agents": [
+        "mem:m1:census",
+        "mem:m1:forge",
+        "mem:m1:crucible",
+        "mem:m2:forge",
+        "mem:m2:crucible",
+        "mem:m3:envoy",
+        "mem:m3:crucible"
+      ],
+      "duration_ms": 5693685,
+      "subagent_tokens": 1261791,
+      "note": "14 agent_count / 7 errored = the dispatch() fallback working: each custom agentType threw on a registry miss, the fallback base type succeeded. Not 7 failures."
+    },
+    {
+      "run": "2026-08-22",
+      "rung": "m2-fix",
+      "agent": "M2FIX (pgdrm-kernel-forge, custom type now REGISTERED so the declared tool fence is genuinely in force this time)",
+      "spent": 1,
+      "scope": [
+        "defect 1: materialize one-shot iterables once at entry -- evaluate() returned ALLOW then DROP on the same exhausted generator",
+        "defect 2: cover pgdrm.py lines 201 (str guard, mutation X25 survivor), 231 (infinity branch), 263 (non-MemoryRecord guard)"
+      ],
+      "goalpost": "26 RED / 0 survivors on the crucible's own harness shape; ports.py §4 unchanged; nodeid-set floor match"
+    }
+  ],
+  "bus": "harness/memory/bus/",
+  "notes": "harness/memory/notes/",
+  "runs": "harness/memory/runs/",
+  "substrate_presence": {
+    "moneta": "LIVE — python/synapse/memory/ substrate; in-Houdini reachable, headless UNAVAILABLE unless the seam resolves. Failure mode is OWNERSHIP, not absence.",
+    "hanish": "absent — WRITE-side. Degradation shape: durable local outbox + UNAVAILABLE; drain on install. Never a fabricated settlement.",
+    "octavius": "absent — READ-side. Degradation shape: narrow to the local stage with an explicit capability flag (sanitization=none). Never a claimed sanitization that did not run.",
+    "salus": "absent — GATE-side. Degradation shape: FAIL CLOSED. Never allow-until-it-lands.",
+    "jacobian_monologue": "absent — off-loop metrology plane; nothing here depends on it."
+  },
+  "rungs": {
+    "m0": {
+      "title": "Audit — legacy inventory, handle-authority census, panel call-site classification",
+      "agent_budget": 2,
+      "status": "CLOSED 2026-08-21 — executed inline by the architect pass; 4 verdicts, 4 could-not-verify items recorded",
+      "worktree_prefix": null,
+      "receipts": [
+        "memory_m0_audit.json"
+      ],
+      "artifacts": [
+        "harness/memory/notes/AUDIT_2026-08-21.md"
+      ],
+      "findings": [
+        "F1 CONFIRMED-SHARPER: two competing store authorities; python/synapse/memory/store.py:1517 get_synapse_memory() is an UNLOCKED check-then-create — two threads construct two SynapseMemory objects, one orphaned while holding a Moneta handle. ledger.py:424 holds _MONETA_LOCK and does it correctly.",
+        "F2 REFUTED: approval_token is not a human consent gate — it is a plan-binding CAS nonce (consolidation.py:343-351). Removing it deletes optimistic-concurrency control from the only destructive memory op.",
+        "F3 PARTIAL: charmander/charizard are persisted USD metadata values (scene_memory.py:476,487), not just identifiers. 42 doc hits are history; 4 live-code hits are a data-format reader + a public tool schema. Migration, not deletion.",
+        "F4 50%: panel/health_strip.py:296 is the reference-clean disciplined read (peeks the singleton, never builds, returns UNMEASURED). panel/shot_login.py:34 imports ensure_scene_structure (a writer) — unproven, needs a live thread-ownership probe."
+      ],
+      "could_not_verify": [
+        "whether shot_login.ensure_scene_structure is ever reached off the main thread (bridge unreachable this session — SessionStart ping failed)",
+        "whether any worker thread reaches get_synapse_memory() (needs call-graph tracing from panel/providers + agent_loop)",
+        "whether the 42 markdown hits contain instructional text that re-teaches legacy staging to a future agent (code/corpus divergence class — not swept)",
+        "live Moneta reachability (headless UNAVAILABLE by construction)"
+      ],
+      "gates_closed": []
+    },
+    "m1": {
+      "title": "Handle law — one handle per storage URI, one owner; fix the unlocked singleton; reconcile the two authorities",
+      "agent_budget": 4,
+      "status": "MERGED to master 2026-08-22 (fast-forward bb348abe..c3b9d1fc, house style) — CLOSED pending the merged-master suite; push held until the floor comparison returns",
+      "worktree_prefix": "mem/m1-",
+      "goalposts": [
+        "a concurrency test exists that goes RED on HEAD and GREEN after the fix (the mutation is named in the receipt)",
+        "get_synapse_memory() is lock-guarded; the double-checked path is pinned",
+        "the two authorities (store.py:1514, ledger.py:320) are reconciled or the split is documented as deliberate with a reason",
+        "NO third authority is added",
+        "MonetaConfig.ephemeral() multi-store test usage still works (moneta_runtime.py:689)",
+        "full pytest tests/ is no worse than the merge-base floor"
+      ],
+      "receipts": [
+        "memory_m1_cartographer.json",
+        "memory_m1_forge.json"
+      ],
+      "gates_closed": []
+    },
+    "m2": {
+      "title": "PG-DRM kernel — pure deterministic zero-LLM filter (decay + token contamination + vector distance)",
+      "agent_budget": 4,
+      "status": "BUILT + ATTACKED (SOUND-WITH-NITS); FIX LEG RUNNING on mem/m2-pgdrm — 2 real defects, not merged",
+      "worktree_prefix": "mem/m2-",
+      "goalposts": [
+        "python/synapse/loop/pgdrm.py is a pure function set: no I/O, no hou, no store handle, no LLM call",
+        "U = exp(-lambda*t) decay table is HAND-COMPUTED in the test, never read back from the implementation",
+        "protected_floor semantics are pinned to ONE definition and the inverted reading (adjudication D6) is resolved in the docstring",
+        "distance_threshold is implemented, or the parameter does not exist (adjudication D4 — no dead capability claims)",
+        "every branch has a mutation that turns its test red; each is named",
+        "python/synapse/loop/ports.py §4 signatures are UNCHANGED (tests/test_loop_contracts.py stays green)"
+      ],
+      "receipts": [
+        "memory_m2_pgdrm_kernel.json"
+      ],
+      "gates_closed": []
+    },
+    "m3": {
+      "title": "Substrate scaffolds — Hanish outbox / Octavius narrowed-read / SALUS fail-closed contracts + V0.2 contract-amendment proposal",
+      "agent_budget": 3,
+      "status": "BUILT + ATTACKED (SOUND-WITH-NITS, chain_broken_at=null) — NOT merged, NOT closed; merge is a human gate",
+      "worktree_prefix": null,
+      "goalposts": [
+        "each absent substrate has a written degradation shape, a drain path, and the observable that proves the drain worked",
+        "the Hanish outbox record format is specified and is a superset of what settle() will need",
+        "the V0.2 contract amendment is DRAFTED, not applied — ratification is Joe's word",
+        "nothing in M3 changes a line of shipped code"
+      ],
+      "receipts": [],
+      "gates_closed": []
+    },
+    "m4": {
+      "title": "Legacy retirement — rename the surface, keep the reader, migrate the data; retire the evolve_memory verb",
+      "agent_budget": 4,
+      "status": "BLOCKED — human gate: removing a registered MCP tool is a public API break. Needs Joe's word.",
+      "worktree_prefix": "mem/m4-",
+      "receipts": [],
+      "gates_closed": []
+    }
+  },
+  "human_gates": {
+    "gate_m1_merge": "OPEN — mem/m1-* worktree merge is Joe's word",
+    "gate_m2_merge": "OPEN — mem/m2-* worktree merge is Joe's word",
+    "gate_v02_contract_amendment": "OPEN — adding distance_threshold / wake_scene_relations / deposit_settlement to the ratified §4 surface (.synapse/contracts/loop-v00.yaml) is a ratification flip, Joe's word",
+    "gate_mcp_tool_removal": "OPEN — retiring synapse_evolve_memory from the registered tool surface is a public API break, Joe's word",
+    "gate_substrate_install": "OPEN — Hanish / SALUS / Octavius installs; never assumed present",
+    "gate_pushes": "OPEN — origin is a PUBLIC GitHub repo; every push is Joe's word"
+  },
+  "mile_markers": {
+    "map": "M0 audit (closed) -> M1 the only live-substrate defect -> M2 the math that needs nobody -> M3 how absence connects -> M4 the gated cleanup",
+    "hardest_subtask": "M1 — reconciling two store authorities without breaking ephemeral test stores or the ledger's URI lock"
+  },
+  "log": [
+    {
+      "date": "2026-08-21",
+      "event": "board-created",
+      "by": "harness-architect pass",
+      "verdict": "blueprint ACCEPTED WITH AMENDMENTS (C1 fabricated SUCCESS, C2 ladder ordering, C3 unratified contract change; 8 code-level defects recorded D1-D8)",
+      "artifacts": [
+        "AGENTS.md",
+        "harness/memory/SPEC.md",
+        "harness/memory/STATE.json",
+        "harness/memory/notes/AUDIT_2026-08-21.md",
+        "harness/memory/notes/BLUEPRINT_ADJUDICATION.md",
+        "harness/memory/dashboard.py",
+        ".claude/workflows/memory-loop.js",
+        ".claude/agents/memory-conductor.md + 5 workers"
+      ],
+      "action": "M0 closed on evidence. M1/M2/M3 READY, awaiting ARM. M4 blocked on a human gate."
+    },
+    {
+      "date": "2026-08-21",
+      "event": "sprint-dispatched",
+      "workflow": "wf_ccb70efc-5b5",
+      "rungs": [
+        "m1",
+        "m2",
+        "m3"
+      ],
+      "budget": 7,
+      "dispatch_path": "Workflow tool directly, NOT via memory-conductor -- the six new agent definitions were written this session and their registry resolution is unverified until a session restart. Steady-state path is memory-conductor.",
+      "arming": "Joe's execute directive in the /harness-architect invocation (2026-08-21). Per-run, not banked.",
+      "action": "awaiting return; spawned stays 0 in the ledger until the run reports its real count",
+      "superseded": "wf_43e6a880-216 FAILED at 4s — agentType resolution: the six board agent definitions were written this session and Claude Code snapshots the agent registry at session start, so none resolved. Fixed by a registry-resilient dispatch() layer in the workflow: try the custom type, fall back to a base type whose TOOL FENCE matches the role (cartographer/crucible for read-only roles, general-purpose for the forges), carrying the role charter inline. Fallback is recorded in each receipt's could_not_verify, never silent."
+    },
+    {
+      "date": "2026-08-21",
+      "event": "out-of-band-team-added",
+      "agents": [
+        "MARSHAL (base cartographer -- read-only fence, no Write/Edit)",
+        "QUARTERMASTER (base general-purpose)"
+      ],
+      "spawned_via": "Agent tool with names, NOT the workflow -- they must outlive and observe the run rather than be part of it",
+      "sweep_1": "CLEAR -- 0 breach, 1 NOTE (other boards' worktrees rope/beacon + wcrux-scratch are not this board's collisions)",
+      "workflow_change": "leg prompts now build from BRIEFING (GROUND + SUPPLY + ADVISORY) instead of GROUND alone; 8 call sites",
+      "note": "these two are OUT-OF-BAND: they do not consume the 24-agent rung budget, which covers workflow legs only"
+    },
+    {
+      "date": "2026-08-22",
+      "event": "m1-merged",
+      "merge": "git merge --ff-only mem/m1-handle-law -> bb348abe..c3b9d1fc fast-forward, 3 files, +507/-9",
+      "authorization": "Joe word 'unblock the merge' + 'apply recommended' (2026-08-22), after an earlier auto-mode classifier denial that was NOT routed around",
+      "recommendation_applied": "M1 rides now; M2 gets a short fix leg before it merges",
+      "push_status": "HELD -- merged master is a third state neither crucible measured; full suite running (floor_merged_master_c3b9d1fc.txt). Push only on a nodeid-set match.",
+      "master": "c3b9d1fc",
+      "origin_master": "bb348abe (unpushed)"
+    }
+  ],
+  "out_of_band_team": {
+    "_comment": "NOT workflow legs and NOT ladder rungs. Two named, addressable agents that scaffold and check the legs. Spawned via the Agent tool with names, so they are reachable by SendMessage from this session and from each other -- unlike workflow-spawned legs, which ListAgents confirms are NOT addressable.",
+    "mem-quartermaster": {
+      "role": "scaffold ahead of the legs",
+      "def": ".claude/agents/mem-quartermaster.md",
+      "writes": "harness/memory/supply/packet_<date>.json",
+      "delivery": "args.supply -> folded into every leg briefing by .claude/workflows/memory-loop.js; reaches the NEXT dispatch, never a leg already in flight",
+      "why": "three legs need the same expensive suite floor, and each would be tempted to read it off its own branch -- which lets a sprint lower its own bar. Measured once at merge-base instead."
+    },
+    "mem-marshal": {
+      "role": "live invariant check from outside",
+      "def": ".claude/agents/mem-marshal.md",
+      "instrument": "harness/memory/marshal/sweep.py (deterministic, local, re-runnable; exit 0 CLEAR / 2 BREACH / 3 could-not-run)",
+      "invariants": [
+        "I1 repo-root contamination -- an absolute repo-root path written from inside a worktree lands on MASTER's tree and looks like success from inside the leg",
+        "I2 territory -- m1 owns python/synapse/memory/, m2 owns python/synapse/loop/; collisions only surface at merge, long after both report PASS",
+        "I3 forbidden surface -- .synapse/contracts/ and VERSION are ratified/gated text",
+        "I4 no promotion -- no merge, no push, no commit on master",
+        "I5 pinned §4 port surface -- ports.py parameter names are ratified law",
+        "I6 second conductor -- two runs on one bus is a silent corruptor"
+      ],
+      "writes": "harness/memory/bus/mem_marshal.json + harness/memory/runs/<date>/sweep_<n>.json"
+    },
+    "channel_truth": "VERIFIED by ListAgents during the live sprint: workflow-spawned legs are NOT addressable via SendMessage. For legs already in flight the team is an OBSERVER (filesystem + bus + git graph), not an interlocutor. For the next dispatch it is a true two-way channel via args.supply / args.advisory. An absent packet is stated to the leg explicitly, never left silent."
+  },
+  "standing_instruction": {
+    "given": "2026-08-21 (Joe, verbatim intent): wait for the sprint to finish, then push and update release when the loop closes.",
+    "close_condition": "ALL of: (1) every dispatched leg has a receipt on the bus; (2) no crucible returns BROKEN -- a BROKEN rung does not close and does not ride; (3) the final marshal sweep is CLEAR with zero breaches; (4) each branch suite matches the merge-base floor by NODEID SET, not failure count (2 failed / >=6773 passed, same two nodeids).",
+    "authorized_by_this_instruction": [
+      "push (ritual card section A -- Gate C push, 'origin==master: TRUE' echoed back)"
+    ],
+    "still_needs_a_separate_word": [
+      "merge -- mem/m1-handle-law and mem/m2-pgdrm into master. Distinct act from push; the card's section A pushes commits already riding on master.",
+      "the release ritual (card section B) -- NOT agent-completable. g1 clean install, g5 Houdini lifecycle, g6 core smoke, g9 rollback and the Ctrl+Z demo are Joe's hands at the rig; drop.json is human-only by recorded precedent; then three closing words in order: bump -> verify -> tag."
+    ],
+    "automatable_prep_when_the_loop_closes": [
+      "scripts/sync_version.py --check (six surfaces vs canonical VERSION)",
+      "scripts/tag_release.py --check-only (refuse-dirty-tag preflight; UNKNOWN refuses)",
+      "CHANGELOG entry + release draft text",
+      "final marshal sweep + a per-rung close audit"
+    ],
+    "refusal": "If any crucible returns BROKEN the loop has NOT closed. Nothing merges, nothing pushes, and I report the break instead."
+  },
+  "floor_reds_provenance": {
+    "_comment": "Both merge-base reds now have an introducing sha (QUARTERMASTER bisect, harness/memory/bus/mem_quartermaster_bisect.json). Neither belongs to this board -- they do not block the loop closing under the nodeid-set rule -- but both are release-relevant.",
+    "red_1_env_conformance": {
+      "nodeid": "tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented",
+      "introduced_by": "454fbeee (v5.1 harness scaffold), NOT 9ef3250a -- the lead's hypothesis was REFUTED",
+      "evidence": "d5d1240e GREEN (1 passed 0.41s) -> 454fbeee RED (1 failed 0.51s) -> 9ef3250a RED inherited, byte-identical message",
+      "reading": "The LOOP board shipped a regression in its SCAFFOLD leg, not its forge leg. V0.0's mission and crucible both ran after it and missed it because the goalpost was scoped to tests/test_loop_contracts.py. A SCOPE failure, not a fabricated SUCCESS -- the 20 tests genuinely pass.",
+      "fix_shape": "document SYNAPSE_LOOP_LEDGER_DIR (read at python/synapse/loop/ports.py:71) in the env table the conformance test checks. Cheap."
+    },
+    "red_2_backfill": {
+      "nodeid": "tests/test_backfill.py::test_backup_is_taken_and_source_intact",
+      "introduced_by": "e8b691de",
+      "answer": "GENUINE LOGIC FAILURE, not environmental",
+      "mechanism": "duplicate-append via the _jsonl_net dual-write sink -- 7 -> 14 lines where the parent gives 7 -> 7. Corroborated by a line-count probe independent of the assertion under test.",
+      "correction": "QUARTERMASTER's first receipt read the ciphertext-tail difference as a per-write nonce; its own probe REFUTED that. Routing on the wrong reading would have sent the fix to the crypto layer instead of the store layer.",
+      "release_relevance": "the test is literally 'backup is taken and source intact' -- a duplicate-append in a backup path is data-integrity adjacent. Joe's call, not a footnote."
+    },
+    "older_red_flagged": "84fcd071 (2026-05-31) carries a SEPARATE, since-fixed defect -- history is red -> green -> red. Recorded so a later bisect does not hit it and wrongly acquit e8b691de. Root cause UNKNOWN, unchased by choice.",
+    "hygiene": "all six qm-bisect-* detached worktrees removed and git worktree prune run -- confirmed 0 remaining"
+  },
+  "sprint_verdicts": {
+    "close_condition_met": "YES on the stated test: 7/7 receipts landed, no crucible returned BROKEN (all three SOUND-WITH-NITS, chain_broken_at=null), final sweep CLEAR with 0 breaches across 22 sweeps, floor matched by nodeid set.",
+    "m1": {
+      "sha": "c3b9d1fc",
+      "files": 3,
+      "shape": "+507/-9",
+      "verdict": "SOUND-WITH-NITS, zero NITs on any attack",
+      "crucible": "authored 8 of its OWN mutations rather than trusting proved_it_bites — all 8 red. A4: the diff adds exactly ONE module-global, _GLOBAL_LOCK = threading.RLock() at store.py:1545 — a lock, not a store. NO third authority. A5: 12 self-authored sequences all pass. A7: re-measured in ONE worktree to control for the sibling-worktree skip divergence.",
+      "assessment": "clean. Rides as-is."
+    },
+    "m2": {
+      "sha": "e4730869",
+      "files": 2,
+      "shape": "+777",
+      "verdict": "SOUND-WITH-NITS, 2 substantive NITs",
+      "nit_A2_survivor_X25": "an INDEPENDENT 26-mutation harness (not the builder's 16) found 25 RED, 1 SURVIVOR. Removing the str guard at pgdrm.py:200 leaves the suite green — so a str task context 'shot_A' silently becomes frozenset({'A','_','h','o','s','t'}) and NO test catches it. Branch coverage corroborates: 95%, MISSING 201 (str guard), 231 (infinity branch), 263 (non-MemoryRecord guard) — three guards with no covering test.",
+      "nit_A5_one_shot_iterable": "evaluate(task_context_tokens=<generator>) returns ALLOW on first use and DROP on the SECOND use of the same exhausted generator — the exhausted generator becomes an empty task context. A pure kernel whose verdict depends on call order is not pure in the way the goalpost claims.",
+      "assessment": "do NOT ship as-is. Both nits are small: materialize the iterable once, and cover the three missing branches."
+    },
+    "m3": {
+      "verdict": "SOUND-WITH-NITS, papers only — nothing ships, so nothing to hold back",
+      "nit_A1_gate_has_no_attestation": "the crucible IMPLEMENTED the proposed gate_decision exactly as the scaffolds paper specifies and ran it: a LOCAL STUB PortResult.ok({'allow':True}) yields ALLOW. The function ENVOY names as 'where fail-closed actually lives' has no substrate-attestation check, so one line of local Python opens the gate — and THE_LOOP_v5.1.md:62 prohibits exactly that self-attestation.",
+      "nit_A4_second_authority": "the proposed Hanish outbox duplicates claim_predicate/probability/world_ref that the precommit ledger already holds, and the join key between them does not work.",
+      "nit_A5_taint_is_per_object": "Octavius taint acceptance is per-object, not per-consumer: a second consumer holding an already-accepted view reads .prims freely and never appears in accepted_by, so the audit under-counts exactly the sites the design claims to enumerate.",
+      "nit_A8_protected_floor": "the paper persists protected_floor into a 'never deleted' record while adjudication D6's inverted-semantics finding is still unresolved.",
+      "assessment": "caught at design stage, before any of it became code. This is the crucible earning its seat."
+    }
+  }
+}

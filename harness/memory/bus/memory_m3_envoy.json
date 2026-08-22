@@ -1,0 +1,107 @@
+{
+  "leg": "memory:m3:substrate-envoy",
+  "date": "2026-08-21",
+  "verdict": "PASS",
+  "by": "ENVOY (FALLBACK base agent 'general-purpose' -- the custom type 'substrate-envoy' was not in this session's agent registry)",
+  "base_commit": "bb348abe",
+  "base_version": "5.55.0",
+  "branch": "master (read-only; NO worktree, NO commit -- M3 has worktree_prefix=null and is papers-only; marshal invariant I4 forbids a commit on master, so both papers land as UNTRACKED evidence in the main tree, consistent with STATE.json's 'Evidence artifacts land in main-tree harness/memory/ as untracked files')",
+  "role_contract": "PAPERS ONLY. No shipped code, no test, no .synapse/contracts/, no VERSION. No substrate installed, mocked, or vendored. No ratification performed.",
+
+  "artifacts": [
+    "harness/memory/notes/SUBSTRATE_SCAFFOLDS_2026-08-21.md",
+    "harness/memory/notes/CONTRACT_AMENDMENT_v02.md",
+    "harness/memory/bus/memory_m3_envoy.json"
+  ],
+
+  "touched": [
+    "harness/memory/notes/SUBSTRATE_SCAFFOLDS_2026-08-21.md:1 (CREATED -- all four substrates: shape / degraded behaviour / drain path / observable / ratification gate)",
+    "harness/memory/notes/CONTRACT_AMENDMENT_v02.md:1 (CREATED -- v0.2 §4 surface PROPOSAL, unratified)",
+    "harness/memory/bus/memory_m3_envoy.json:1 (CREATED -- this receipt; no existing bus file was opened for write)",
+    "AGENTS.md (read -- Seven Laws, §2 absence-has-a-shape, §3 ownership)",
+    "harness/memory/SPEC.md (read), harness/memory/STATE.json (read)",
+    "harness/memory/notes/AUDIT_2026-08-21.md (read -- M0 evidence, extended not re-derived)",
+    "harness/memory/notes/BLUEPRINT_ADJUDICATION.md:31-33,57-58 (read -- C1 fabricated SUCCESS, D4 dead param, C3 contract gate)",
+    "python/synapse/loop/ports.py:27,34,41-43,71,89-94,104-108,138,148-155,166-173,175-181,183-195,206-212 (read)",
+    "python/synapse/loop/mapper.py:17-36 (read -- the GATE_POLICY([]) vacuous-truth edge)",
+    "python/synapse/loop/recipe.py:60-77 (read -- turn_id embedded in claim_predicate, EXPOSED verdict)",
+    "tests/test_loop_contracts.py:37-43,58-74,81-91,109-134,141-161,178-198 (read -- what the pin does and does NOT cover)",
+    ".synapse/contracts/loop-v00.yaml:2,11-17,24,27,30,33-35 (READ ONLY -- never opened for write)",
+    "docs/THE_LOOP_v5.1.md:61,89,96,97,100-145,153-157,175-190 (read -- Hanish laws, step 8/9, V0.3 gate)",
+    "python/synapse/panel/health_strip.py:288-322 (read -- the reference disciplined read)",
+    "python/synapse/panel/shot_login.py:34-44 (read -- the unproven sibling)",
+    "python/synapse/memory/store.py:1516-1532 (read -- master's unlocked check-then-create)",
+    "python/synapse/memory/ledger.py:320-322,415-437 (read -- the correct, locked, URI-keyed authority)",
+    "C:/Users/User/synapse-m1-handle-wt/python/synapse/memory/store.py:1542-1662 (read on branch mem/m1-handle-law @ c3b9d1fc -- memory_handle_census())",
+    "C:/Users/User/synapse-m2-pgdrm-wt/python/synapse/loop/pgdrm.py:1-96,185,217,242-313,316-340 (read on branch mem/m2-pgdrm @ e4730869 -- distance_threshold is implemented)",
+    "tests/test_m3_env_conformance.py:1-30 (read -- DOC-1 env rule that any outbox env var must satisfy)",
+    "harness/memory/bus/memory_m1_cartographer.json, memory_m1_forge.json, memory_m2_pgdrm_kernel.json (read -- cross-checked, not taken on faith where a file could be opened instead)"
+  ],
+
+  "commands": [
+    "git worktree list",
+    "git status --porcelain",
+    "grep -rn \"evaluate_path\" --include=*.py .            # 5 hits, ALL definition/docstring/test -- ZERO production call sites",
+    "grep -rn \"query_and_filter\" --include=*.py .          # ports.py + tests only",
+    "grep -rn \"compose_sanitized_stage\" --include=*.py .   # one non-test caller: harness/loop/probes.py:260",
+    "grep -rn \"wake_scene_relations|deposit_settlement\" --include=*.md --include=*.py --include=*.json --include=*.yaml .   # only harness/memory/ board docs; absent from python/, tests/, .synapse/contracts/",
+    "grep -rn \"GATE_POLICY(\\[\\])\" tests/                  # no hits -- the edge is UNPINNED",
+    "grep -n \"prediction debt|prediction_debt\" docs/THE_LOOP_v5.1.md harness/loop/SPEC.md harness/loop/STATE.json",
+    "grep -rln \"outbox\" --include=*.py python/ shared/      # no hits -- no outbox exists anywhere in the tree",
+    "grep -n \"_global_synapse|def get_synapse_memory\" python/synapse/memory/store.py",
+    "grep -n \"def _gather_memory|singleton = getattr|return UNMEASURED\" python/synapse/panel/health_strip.py",
+    "grep -n \"distance_threshold|def evaluate|def _number\" C:/Users/User/synapse-m2-pgdrm-wt/python/synapse/loop/pgdrm.py"
+  ],
+
+  "deliverables": {
+    "substrate_scaffolds": {
+      "moneta": "present-contended. Failure = OWNERSHIP. Degradation: one handle per URI, loser CLOSED not orphaned, ERROR-log on a refused close, UNMEASURED headless. Drain: N/A (release, not drain) -- reset must close(), not save(), or the moneta-file:// URI stays locked and the process silently downgrades to jsonl. Reference disciplined read (health_strip.py:288-322) decomposed into FIVE named rules R1-R5 so it can be enforced rather than reinvented. OBSERVABLE: distinct_handles_per_storage_uri via a threading.Barrier + memory_handle_census(); today 8/8 distinct (3/3 runs, 7 jsonl / 1 moneta), after M1 = 1. Fabrication signatures named: a serialised 'concurrency' test, an unset backend env, a census that constructs what it reports. GATE: gate_m1_merge.",
+      "hanish": "write-side. Degradation: durable local OUTBOX + UNAVAILABLE, never a fabricated settlement. Record format specified (schema loop/settlement-outbox/v1) and argued field-by-field as a SUPERSET: it carries world_digest, record_id and observation.captured -- the three facts a later settle() call cannot reconstruct. Drain: LedgerPort.process() in (ledger_file_id, precommit_seq) order, append-only, idempotent by record_id. World-since-changed resolved in THREE cases: observation captured -> drain normally; no observation -> UNRESOLVABLE never MISS (ratified: 'No MISS from absence', THE_LOOP:61); world gone + no observation -> STALE/UNRESOLVABLE, never deleted. OBSERVABLE: prediction_debt = count(state==EXPOSED), already ratified as the V0.3 falling metric; today UNKNOWN (uncountable -- no outbox exists), not 0. Conservation check + MISS-vs-captured check catch the three fabrication shapes. GATES: gate_substrate_install, gate_v02_contract_amendment, and DOC-1 env conformance.",
+      "octavius": "read-side. Degradation: narrow to the local stage. The capability flag is designed in FOUR layers precisely because a boolean in a dict is passively ignorable: (1) the limit lives in the METHOD NAME -- compose_local_stage_unsanitized, a caller must type the word; (2) the payload is a TAINT TYPE whose accessors raise UnsanitizedAccessError until accept_unsanitized(reason=) is called, so 'consumed believing it was sanitized' becomes structurally impossible rather than documented-against; (3) provenance travels into downstream artifacts with the same keys and different values; (4) a negative test with its mutation named. Drain: N/A and said so -- a prompt already sent cannot be retroactively sanitized; the recoverable artifact is the accepted_by audit list. OBSERVABLE: unsanitized_reads_total next to quine_filter_runs (measured 0), plus contributing_agents==1 as the measurable narrowing; the COVERAGE RATIO is UNKNOWN because the denominator is the absent substrate. V0.3 positive control must plant its own quine string, never assert a figure from the blueprint. GATE: gate_substrate_install + the amendment.",
+      "salus": "gate-side. FAIL CLOSED. Finding surfaced: the gate is not merely closed, it is UNWIRED -- zero production call sites of evaluate_path (VERIFIED by grep), so its closure has never been exercised by anything that could otherwise have proceeded. Hence the observable is a CALL COUNTER, not a status. Caller contract given as one named testable gate_decision() whose default branch is the entire safety property, with a seven-row table including SUCCESS-with-None-payload -> BLOCK and truthy-but-not-True -> BLOCK. GATE_POLICY([]) EDGE RESOLVED IN DESIGN: three candidates weighed (A special-case BLOCK / B raise / C separate the algebra from the decision); C recommended -- GATE_POLICY keeps its ratified truth table untouched and a new evaluate_gate() returns (decision, reason) with empty -> BLOCK/NO_PREDICATES_EVALUATED, mirroring how pgdrm.py already separates decay_utility (math) from evaluate (verdict). C is explicitly stated to be INCOMPLETE without a test pinning GATE_POLICY([])==ALLOW as deliberate vacuous-truth algebra -- without that pin C is a dodge, and the paper says so. Resolution lands at V0.1 on the LOOP board, which is INSIDE the ratified plan (loop-v00.yaml:27 carries it there), NOT a ratification flip. OBSERVABLE: safety_evaluations_total / safety_blocks_total vs mutating_turns_total; today (0,0) is honest, (0, >0) is the breach; the resolution signature is ALLOW-rate 0 -> >0 with the evaluation count UNCHANGED."
+    },
+    "contract_amendment_v02": {
+      "status": "PROPOSAL ONLY -- .synapse/contracts/loop-v00.yaml was opened READ-ONLY and is byte-unchanged",
+      "current_surface_quoted": "loop-v00.yaml:2 (ratification line) + :24 (the binding sentence) + tests/test_loop_contracts.py:58-74 (the parametrize pin), with an explicit table of what the pin does NOT cover: type annotations, ADDITIONAL methods, ledger JSON keys, and LedgerPort.settle's signature",
+      "proposed": [
+        "MemoryPort.query_and_filter(relation_keys, task_context_tokens, distance_threshold=None) -- NOT a dead param: the M2 kernel implements it at pgdrm.py:242-247/:291-296/:297-302 (branch)",
+        "MemoryPort.wake_scene_relations(stage_identifier, relation_keys) -> UNAVAILABLE, never an echoed-input SUCCESS -- param names are INFERENCE, the submitted signature is not in the repo",
+        "LedgerPort.deposit_settlement(turn_id, verdict, protected_floor) -> writes the outbox record, returns UNAVAILABLE with the record_id IN THE REASON STRING, because PortResult.unavailable() leaves payload None (ports.py:41-43) and tests/test_loop_contracts.py:197 pins payload is None -- so the design deliberately avoids a second amendment"
+      ],
+      "fourth_item_needing_NO_ratification": "author_precommit writes no turn_id (ports.py:148-155) while settle(turn_id) is keyed on it (ports.py:175); recipe.py:61 only embeds it as a string prefix of claim_predicate. Adding a turn_id FIELD to the written line is not a contract change -- the pin is on parameter names, and test_precommit_lines_are_durable_json (:124-134) does not forbid extra keys. Recorded so nobody stalls it behind a gate it does not need.",
+      "test_changes_forced": "tests/test_loop_contracts.py:61-62 MemoryPort row gains distance_threshold (THIS is the flip); two new parametrize rows; three NEW tests required (hand-computed distance boundary, deposit_settlement writes-AND-refuses, wake_scene_relations never echoes). Tests that must NOT change are listed, including the payload-is-None settle pin.",
+      "what_breaks_if_not_ratified": "Nothing today -- query_and_filter has zero production callers (VERIFIED). What is BLOCKED is LOOP V0.2's gate ('PG-DRM active inside MemoryPort'), because the kernel's distance axis is unreachable from the port surface. deposit_settlement and wake_scene_relations are soft. The paper then argues AGAINST its own urgency: a param on an UNAVAILABLE port is a capability claim with no implementation, so the recommendation is to ratify AT V0.2 ARMING bundled with the wiring, not now.",
+      "open_question_for_joe": "whether the v0.2 surface belongs in loop-v00.yaml or a NEW loop-v02.yaml. Recommendation: a new file -- editing a CLOSED, ratified rung's contract to describe a later rung's surface makes the V0.0 record retroactively untrue. There is no loop-v01.yaml in the tree today."
+    }
+  },
+
+  "proved_it_bites": "NOT APPLICABLE -- and this is not a green receipt for an untested claim. M3 is papers-only by its own charter and STATE.json goalpost ('nothing in M3 changes a line of shipped code'), so no test was authored and no mutation was run. Every observable in the scaffolds paper instead ships WITH the mutation that would prove it, named in the text for the leg that builds it: remove the record_id idempotency check and the Hanish drain settles a record twice; delete the taint-type accessor guard and unacknowledged prims become readable; change gate_decision's guard to payload.get('allow') truthiness and the malformed-payload case flips to ALLOW. No test was written, therefore no test was watched go red, therefore nothing here is claimed as verified behaviour.",
+
+  "suite": "NOT RUN. No shipped file, test, or import was modified -- `git status --porcelain` shows exactly two new untracked .md files under harness/memory/notes/ plus this receipt, and nothing under python/, tests/, .synapse/contracts/, or VERSION. Running the ~6773-test suite to observe a guaranteed no-op would burn the sprint's remaining budget to prove a tautology. The merge-base floor (2 failed / 6773 passed / 180 skipped, both reds pre-existing and provenance-traced in STATE.json.floor_reds_provenance) is therefore UNCHANGED BY CONSTRUCTION, not by measurement. Stated as an inference, not a reading.",
+
+  "could_not_verify": [
+    "ran as FALLBACK general-purpose base agent -- the custom 'substrate-envoy' type was not in this session's agent registry, so the role's intended TOOL FENCE was not applied; the papers-only constraint was honoured by discipline, not enforced by the harness",
+    "the submitted blueprint's ACTUAL signatures for wake_scene_relations and deposit_settlement are not in this repository (grep returns only harness/memory/ board docs); §3.2/§3.3 of the amendment are reconstructions from BLUEPRINT_ADJUDICATION.md:31-33 prose and are labelled INFERENCE. If Joe holds the original document, its names supersede mine",
+    "every Hanish observable is a DESIGN TARGET, not a measurement -- no outbox exists in the tree (grep -rln outbox over python/ and shared/ returns nothing), so prediction_debt today is UNKNOWN/uncountable rather than zero",
+    "no Octavius coverage ratio can be given -- the denominator is the absent substrate. Reported UNKNOWN rather than estimated",
+    "the taint type (UnsanitizedStageView) has NO prototype; its ergonomic cost at real call sites is unmeasured, and if it proves unusable only Layer 1 (the method name) survives",
+    "memory_handle_census() and the whole M1 fix were read on the UNMERGED branch mem/m1-handle-law @ c3b9d1fc; pgdrm.py was read on the UNMERGED branch mem/m2-pgdrm @ e4730869. Neither is on master. Every observable that depends on them is conditional on a merge gate",
+    "the 8-distinct-handles figure is a READ of harness/memory/bus/memory_m1_cartographer.json, not a probe I re-ran myself -- AGENTS.md §6 says do not take another agent's word at face value, and I checked the artifact's cited code but not its runtime claim",
+    "shot_login.ensure_scene_structure thread ownership remains UNPROVEN -- M0's open probe was not run and is not upgraded here",
+    "no live bridge was reachable; synapse_ping was NOT run this session. Nothing in either paper was confirmed against a running Houdini, and no claim depends on one",
+    "whether Moneta's vector distance is cosine / L2 / normalised is UNKNOWN -- nothing in this repo characterises the metric space, so any distance_threshold VALUE is a calibration problem the amendment does not solve and does not pretend to",
+    "the full pytest suite was NOT run this leg (see `suite` above) -- the floor is unchanged by construction, which is an argument, not a measurement",
+    "whether a second conductor is live on this board: `git worktree list` and bus mtimes were checked and show only the expected m1/m2 worktrees, but MARSHAL and QUARTERMASTER are running concurrently in this session and I did not SendMessage either to confirm before writing bus/memory_m3_envoy.json. I created a NEW file and opened no existing bus file for write, so a collision is structurally impossible even if one is mid-sweep"
+  ],
+
+  "needs_human": [
+    "gate_v02_contract_amendment: OPEN — adding distance_threshold / wake_scene_relations / deposit_settlement to the ratified §4 surface (.synapse/contracts/loop-v00.yaml) is a ratification flip, Joe's word",
+    "gate_substrate_install: OPEN — Hanish / SALUS / Octavius installs; never assumed present",
+    "gate_m1_merge: OPEN — mem/m1-* worktree merge is Joe's word",
+    "gate_m2_merge: OPEN — mem/m2-* worktree merge is Joe's word",
+    "gate_pushes: OPEN — origin is a PUBLIC GitHub repo; every push is Joe's word",
+    "DECIDE (new, raised by this leg): does the v0.2 surface amend loop-v00.yaml, or open a new .synapse/contracts/loop-v02.yaml? ENVOY recommends a new file — editing a closed, ratified rung's contract to describe a later rung's surface makes the V0.0 record retroactively untrue."
+  ],
+
+  "scope_drift": "NONE. The leg stayed inside M3: papers only, no shipped code, no contract edit, no commit, no push, no merge, no tag, no VERSION touch, no MCP tool removed. The GATE_POLICY([]) resolution was DESIGNED and handed to LOOP V0.1 rather than implemented here, because mapper.py belongs to the LOOP board."
+}

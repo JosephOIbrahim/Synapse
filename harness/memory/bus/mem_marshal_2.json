@@ -1,0 +1,112 @@
+{
+  "leg": "memory:live:marshal:window-2",
+  "verdict": "PASS",
+  "addendum_to": "harness/memory/bus/mem_marshal.json",
+  "touched": [
+    "harness/memory/runs/2026-08-21/sweep_11.json .. sweep_21.json (created — the only files this leg authored besides this receipt)",
+    "tests/test_w3_harden_evolve_dryrun.py:65-84 (read — _find_real_corpus, the cause of the skip discrepancy)",
+    "harness/memory/bus/mem_quartermaster_bisect.json (read — cross-checked)",
+    "harness/memory/bus/memory_m1_forge.json (read — cross-checked)",
+    ".claude/agents/ (read — frontmatter and mtimes only)"
+  ],
+  "commands": [
+    "python harness/memory/marshal/sweep.py --out harness/memory/runs/2026-08-21/sweep_<n>.json   # n = 11..21, all exit 0",
+    "diff harness/memory/runs/2026-08-21/m2_suite_floor_mergebase_bb348abe.txt harness/memory/runs/2026-08-21/m2_suite_floor_same_checkout_master.txt",
+    "git -C C:/Users/User/synapse-m1-handle-wt diff --shortstat master...HEAD",
+    "git -C C:/Users/User/synapse-m1-handle-wt rev-list --count master..HEAD",
+    "git -C C:/Users/User/synapse-m1-handle-wt log --oneline --merges master..HEAD",
+    "git log -1 -S SYNAPSE_LOOP_LEDGER_DIR --oneline 454fbeee -- python/synapse/loop/ports.py",
+    "git log -1 -S _jsonl_net --oneline e8b691de -- python/synapse/memory/moneta_store.py",
+    "ls -d C:/Users/User/qm-bisect-*"
+  ],
+  "artifacts": [
+    "harness/memory/runs/2026-08-21/sweep_11.json",
+    "harness/memory/runs/2026-08-21/sweep_12.json",
+    "harness/memory/runs/2026-08-21/sweep_13.json",
+    "harness/memory/runs/2026-08-21/sweep_14.json",
+    "harness/memory/runs/2026-08-21/sweep_15.json",
+    "harness/memory/runs/2026-08-21/sweep_16.json",
+    "harness/memory/runs/2026-08-21/sweep_17.json",
+    "harness/memory/runs/2026-08-21/sweep_18.json",
+    "harness/memory/runs/2026-08-21/sweep_19.json",
+    "harness/memory/runs/2026-08-21/sweep_20.json",
+    "harness/memory/runs/2026-08-21/sweep_21.json"
+  ],
+  "measurements": {
+    "sweeps_run": 11,
+    "sweeps_range": "11..21",
+    "verdict_every_sweep": "CLEAR",
+    "breaches": 0,
+    "i1_repo_root_code_edits": "main_tree_code_edits was empty at every one of sweeps 11..21",
+    "i4_master_sha": "bb348abe unchanged; master equals origin/master at sweep 13 and sweep 21. No merge, no push, no tag.",
+    "window": "2026-08-21 23:21 .. 2026-08-22 00:01 local"
+  },
+  "m1_commit_verified_from_outside": {
+    "sha": "c3b9d1fc4a672101dbf7460cd5f888c227758f2d",
+    "subject": "fix(memory): M1 handle law - lock the store accessor, release on reset",
+    "commits_ahead_of_master": 1,
+    "merge_commits": 0,
+    "files": [
+      "python/synapse/memory/shadow_store.py",
+      "python/synapse/memory/store.py",
+      "tests/test_memory_handle_law.py"
+    ],
+    "shortstat_measured_independently": "3 files changed, 507 insertions(+), 9 deletions(-) — identical to the figure the M1 receipt claims",
+    "territory": "python/synapse/loop/ ABSENT from master...HEAD. ports.py, VERSION and .synapse/contracts/ all absent. I2 / I3 / I5 clean.",
+    "receipt_arithmetic": "branch source-only 2 failed / 6771 passed / 182 skipped; branch full 2 failed / 6781 passed / 182 skipped. Delta is +10, exactly the 10 new tests. Same two pre-existing reds. Zero new reds. All 7 named .txt artifacts exist on disk."
+  },
+  "qm_bisect_worktrees_resolved": {
+    "question": "were the detached qm-bisect checkouts removed when the leg finished?",
+    "answer": "YES — verified two independent ways, not taken from the receipt.",
+    "evidence": [
+      "git worktree list at sweep 12 onward shows zero qm-bisect entries (six were present at sweep 11)",
+      "ls -d of the qm-bisect glob returns No such file or directory — no orphan directories left behind",
+      "the sweep I6 NOTE evidence list returned to exactly rope/beacon plus df8c9ef38e90 — the two other-board worktrees — from sweep 13 on"
+    ],
+    "peak": "6 simultaneous detached checkouts at sweep 11; all removed with --force plus a prune by sweep 12"
+  },
+  "skip_discrepancy_settled": {
+    "question": "QM main-tree floor 6773 passed / 180 skipped vs M2 worktree floor 6771 / 182 at the same commit",
+    "answer": "SETTLED from the artifacts alone. No suite was re-run.",
+    "evidence": "diff of the two floor artifacts differs in exactly ONE progress line — line 403: main tree reads tests/test_w3_harden_evolve_dryrun.py ..... and the worktree reads tests/test_w3_harden_evolve_dryrun.py s..s. — that single file accounts for the whole 2-test delta.",
+    "root_cause": "tests/test_w3_harden_evolve_dryrun.py:65-84 _find_real_corpus() walks the parents of __file__ looking for <anc>/.synapse/corpus/.moneta/snapshot.json, with a special hop to the main repo ONLY for a .claude/worktrees/<name> layout. Sibling worktrees such as C:/Users/User/synapse-m2-pgdrm-wt do not match that hop. The corpus is gitignored runtime data: present at C:/Users/User/SYNAPSE/.synapse/corpus/.moneta/snapshot.json (250169 bytes, dated 2026-06-02), absent in the worktree. Both real-corpus tests then hit pytest.skip at :101 and :206.",
+    "why_it_matters": "It is systematic, not a flake: EVERY sibling-worktree run of this suite is exactly -2 passed / +2 skipped against a main-tree floor at the same commit. A leg comparing its worktree run to a main-tree floor must not read that -2 as a regression. Corroborated independently: M1 branch source-only also reads 6771 / 182.",
+    "changes_no_verdict": "Both floors carry the identical 2 failures. Nothing about M1 or M2 turns on this."
+  },
+  "receipt_cross_checks": [
+    "mem_quartermaster_bisect.json — all six bisect shas resolve, with dates consistent with a real bisect (2026-05-31 .. 2026-08-20).",
+    "Its finding that red 1 was introduced by 454fbeee and NOT by 9ef3250a is CORROBORATED INDEPENDENTLY without re-running pytest: git log -1 -S SYNAPSE_LOOP_LEDGER_DIR 454fbeee -- python/synapse/loop/ports.py returns 454fbeee itself, i.e. that commit introduced the env read the failing assertion names.",
+    "Its finding that red 2 was introduced by e8b691de likewise: git log -1 -S _jsonl_net e8b691de -- python/synapse/memory/moneta_store.py returns e8b691de, and that commit stat touches moneta_store.py with +133. The dual-write-sink mechanism it names is where it says it is.",
+    "Its artifact packet_2026-08-21.json with a new top-level bisect key EXISTS; the packet grew 27605 to 38337 bytes and the key is present.",
+    "It self-corrects its own prior receipt: the per-write-nonce reading of the backfill red is withdrawn as REFUTED by probe. That correction is consistent with the mechanism I confirmed by pickaxe.",
+    "memory_m1_forge.json — full sha matches HEAD of mem/m1-handle-law exactly; all 8 named artifacts exist; the claimed 3-file / 507-insertion / 9-deletion shape reproduces under an independent git diff --shortstat."
+  ],
+  "notes_not_breaches": [
+    "INSTRUMENT GAP — sweep.py:89 mem_trees() filters worktrees on a branch prefix of mem/ . The M1 crucible works in a DETACHED worktree (C:/Users/User/synapse-m1-crux-wt), so I2 / I3 / I5 do not cover it; it appears only in the I6 NOTE list. Its behaviour was clean and I tracked it by hand this window, but the next run should either extend mem_trees() to detached checkouts of mem/* commits or accept that crucible worktrees are unpoliced.",
+    "AGENT REGISTRY GAP (board-wide) — three legs independently report running as FALLBACK base agents rather than their declared custom type: memory_m1_cartographer.json (ran as fallback base agent cartographer; the custom type moneta-cartographer is not in this session agent registry), memory_m1_forge.json (same, for moneta-forge), and this marshal (its loaded prompt was the CARTOGRAPHER definition, not mem-marshal.md). Every .claude/agents file on this board is UNTRACKED and was created today between 22:42 and 23:02. Consequence worth naming: the tools fences declared in those files are NOT in force, so a role written read-only is read-only by instruction, not by fence — the exact failure the repo already learned once. I flag it; I did not diagnose the loader.",
+    "RECEIPT REWRITTEN AFTER POSTING — memory_m1_forge.json changed from 13521 to 14868 bytes between 23:31 and 23:33. Re-read: verdict, commit sha and artifact list all UNCHANGED; could_not_verify was expanded. An honest expansion, not a claim revision. Recorded because a bus entry that mutates after posting is worth seeing.",
+    "MAIN-TREE SUITE RUNS — M1, M2 and the quartermaster each ran a full pytest in the repo root (their receipts name the commands; the artifacts warning paths read C:/Users/User/SYNAPSE). Read-only with respect to tracked files: I1 stayed empty at every sweep. Side effects observed: a repo-root __pycache__ tree touched during the window, and C:/Users/User/.synapse/logs/synapse.log written at 23:48 (4.8 MB). The repo already knows pytest pollutes that production log; I did not fingerprint the records, so attribution is plausible, not proven.",
+    "HOUSEKEEPING (named, not removed, as instructed) — C:/Users/User/pgdrm_mutate.py, C:/Users/User/pgdrm_floor_same_checkout.sh and C:/Users/User/pgdrm_commit_msg.txt remain in HOME. A copy of the mutation harness is banked at harness/memory/runs/2026-08-21/m2_mutate_harness.py.",
+    "rope/beacon and .claude/worktrees/wcrux-scratch belong to other boards and are not counted as collisions."
+  ],
+  "m1_crucible_observed_but_unreceipted": {
+    "worktree": "C:/Users/User/synapse-m1-crux-wt (detached), appeared between sweep 15 and sweep 16",
+    "posture": "CORRECT as far as disk shows — it attacks the commit in a detached checkout and never touches the branch. mem/m1-handle-law stayed at c3b9d1fc through every sweep 16..21 and its own worktree stayed clean.",
+    "sequence_observed": "sweep 16 checkout at c3b9d1fc -> sweep 17 store.py and shadow_store.py MODIFIED in the crux tree (mutation applied) -> sweep 18 restored clean -> sweep 19 checked out bb348abe, the pre-fix baseline, i.e. it is re-deriving the forge red-on-HEAD claim rather than accepting it -> sweep 21 back at c3b9d1fc, clean",
+    "receipt": "NONE landed inside this window.",
+    "after_window_close": "At 00:04, three minutes after the last sweep, C:/Users/User/synapse-m1-crux-wt was REMOVED from git worktree list. The crucible therefore finished its on-disk work and cleaned up after itself (same discipline the quartermaster showed), but had still posted no receipt to bus/ at that moment. mem/m1-handle-law remained at c3b9d1fc and master remained bb348abe == origin/master."
+  },
+  "proved_it_bites": "N/A — no test authored, no code changed. Discrimination evidence for the instrument and the watch: sweep 11 reported six qm-bisect worktrees and sweep 13 reported none; sweep 14 was the first to carry M1 against a moved branch head; the watcher fired on a 30s delta and also correctly reported NO CHANGE after 450s during the crucible quiet suite run. A watch that always says CLEAR could not produce that sequence.",
+  "could_not_verify": [
+    "NO CRUCIBLE RECEIPT LANDED. The M1 crucible was still working at the close of the window (last observed checkout flip at about 23:57). mem:m1:crucible, mem:m2:crucible and mem:m3:crucible are all unposted. The crucible cross-check the lead asked for could not be performed on any lane — only the M1 crucible on-disk posture was observed, and posture is not an attack.",
+    "M2 CRUCIBLE never started — no worktree, no artifact, no receipt in any of sweeps 11..21.",
+    "M3 (substrate-envoy) never started — still no worktree, artifact, or receipt. It remains queued behind the M1/M2 barrier as the lead described; I saw no evidence of it beginning.",
+    "No test result of any kind. This leg ran no pytest, deliberately. Every suite figure quoted above is READ OUT OF an artifact, not reproduced. An artifact can be authored; I verified contents and internal arithmetic, not provenance.",
+    "Whether the M1 fix is CORRECT. I verified scope, atomicity, territory and no-new-red from outside. I did not read the diff logic, and the concurrency claim of 8 threads collapsing to 1 object is the forge measurement, not mine.",
+    "Whether the M1 crucible eventual verdict is honest. Unknowable — it had not written one.",
+    "The agent-registry gap CAUSE. I observed three fallback reports and that all board agent files are untracked and dated today; I did not test whether a session started after 23:02 loads them, and I read no loader code.",
+    "Whether the qm-bisect worktrees left stale git metadata. git worktree list and a directory glob both come back empty, which is the check that matters, but I did not inspect .git/worktrees/ for orphaned admin dirs.",
+    "Nothing after 2026-08-22 00:01 local. A breach after that time is unobserved by this leg."
+  ],
+  "needs_human": []
+}

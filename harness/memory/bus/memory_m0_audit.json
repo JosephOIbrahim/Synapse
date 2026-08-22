@@ -1,0 +1,79 @@
+{
+  "leg": "memory:m0:audit",
+  "verdict": "PASS",
+  "date": "2026-08-21",
+  "by": "harness-architect pass (inline, no subagent spawned)",
+  "base_commit": "bb348abe",
+  "touched": [
+    "python/synapse/memory/store.py:1514-1522",
+    "python/synapse/memory/ledger.py:320-449",
+    "python/synapse/memory/consolidation.py:151,261,331-351,410",
+    "python/synapse/memory/scene_memory.py:476,487,1309-1329",
+    "python/synapse/mcp/_tool_registry.py:1155-1165",
+    "python/synapse/server/handlers_memory.py:337-430",
+    "python/synapse/panel/health_strip.py:296-320",
+    "python/synapse/panel/shot_login.py:34-56",
+    "python/synapse/memory/moneta_runtime.py:689",
+    "shared/evolution.py:114,141",
+    "python/synapse/cognitive/tools/propose_graph.py:31"
+  ],
+  "commands": [
+    "git grep -licE \"charmander|charizard|charmeleon\"                       # 108 files",
+    "git grep -licE \"charmander|charizard|charmeleon\" -- '*.py'             # 20 files",
+    "git grep -licE \"charmander|charizard|charmeleon\" -- '*.md'             # 42 files",
+    "git grep -ln \"synapse_evolve_memory\"                                   # 31 files",
+    "git grep -ln \"target_stage\"                                            # 7 files",
+    "git grep -ln \"approval_token\"                                          # 5 files",
+    "git grep -n \"storage_uri\" python/                                      # 4 hits, all in memory/",
+    "git grep -n \"^_MONETA_STORE\\|^_global_synapse\\|^_STORE\" -- 'python/**/*.py'",
+    "git grep -n \"from synapse.memory\\|import memory\" python/synapse/panel/  # 2 sites"
+  ],
+  "artifacts": [
+    "harness/memory/notes/AUDIT_2026-08-21.md",
+    "harness/memory/notes/BLUEPRINT_ADJUDICATION.md"
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "verdict": "CONFIRMED-SHARPER",
+      "claim": "Single-handle enforcement is absent",
+      "reality": "Two competing store authorities exist and one is not thread-safe. python/synapse/memory/store.py:1517 get_synapse_memory() is an unlocked check-then-create; two threads construct two SynapseMemory objects, one orphaned while holding a Moneta handle on the same storage dir. python/synapse/memory/ledger.py:424 does the same job correctly under _MONETA_LOCK, keyed by abspath(ledger_dir()), closing the prior handle.",
+      "consequence": "The submitted fix (a singleton inside MemoryPort) adds a THIRD authority in a module nothing calls, and leaves both real ones untouched."
+    },
+    {
+      "id": "F2",
+      "verdict": "REFUTED",
+      "claim": "approval_token is a manual human-approval gate to delete under the zero-LLM law",
+      "reality": "It is a plan-binding CAS nonce. A dry-run computes a consolidation plan and hashes it; apply refuses unless the caller returns the token for THAT plan (python/synapse/memory/consolidation.py:343-351).",
+      "consequence": "Removing it deletes optimistic-concurrency control from the only destructive memory operation in the product. Rename it; do not remove it."
+    },
+    {
+      "id": "F3",
+      "verdict": "PARTIAL",
+      "claim": "Remove all charmander/charizard staging artifacts",
+      "reality": "42 of 108 hits are markdown history. Of the 4 live-code sites, scene_memory.py:476,487 WRITES 'charmeleon'/'charmander' as persisted USD metadata values, and scene_memory.py:1309-1329 reads them back.",
+      "consequence": "This is a data migration wearing an identifier-cleanup costume. Deleting the reader orphans memory written by every prior session."
+    },
+    {
+      "id": "F4",
+      "verdict": "50%",
+      "claim": "Panel/worker code instantiates memory off the main thread",
+      "reality": "python/synapse/panel/health_strip.py:296-320 is already the reference-clean disciplined read — it peeks _global_synapse via getattr rather than calling get_synapse_memory() 'which would build the store', and returns UNMEASURED rather than a fabricated green. python/synapse/panel/shot_login.py:34 imports ensure_scene_structure (a writer) directly.",
+      "consequence": "One site is the pattern to enforce, not replace. One site is a CANDIDATE that needs a live thread-ownership probe, not a rewrite."
+    }
+  ],
+  "proved_it_bites": "n/a — M0 is a read-only audit rung; it authored no test.",
+  "suite": "not run — M0 touched no code.",
+  "could_not_verify": [
+    "whether python/synapse/panel/shot_login.py ensure_scene_structure is ever REACHED off the main thread (static import is not a call; the live bridge was unreachable this session — SessionStart ping failed)",
+    "whether any worker thread reaches store.py get_synapse_memory() (needs call-graph tracing from panel/providers/ and the agent loop, not grep)",
+    "whether the 42 markdown hits contain instructional text that would re-teach the legacy staging model to a future agent (code/corpus divergence class — not swept)",
+    "live Moneta reachability (headless is UNAVAILABLE by construction)"
+  ],
+  "needs_human": [
+    "Joe: approve removing synapse_evolve_memory from the registered MCP tool surface (public API break) — or approve deprecate-in-place instead",
+    "Joe: approve the rename approval_token -> plan_token (mechanism kept, misleading name dropped)",
+    "Joe: approve a data-migration leg for persisted charmander/charmeleon/charizard USD metadata before any reader is removed",
+    "Joe: ratify or reject the V0.2 §4 contract amendment before distance_threshold / wake_scene_relations / deposit_settlement touch python/synapse/loop/ports.py"
+  ]
+}

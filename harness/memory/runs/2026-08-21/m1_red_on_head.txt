@@ -1,0 +1,39 @@
+M1 FORGE — RED-first evidence
+=============================
+Command (worktree C:/Users/User/synapse-m1-handle-wt, branch mem/m1-handle-law
+at bb348abe, source UNMODIFIED, only tests/test_memory_handle_law.py added):
+
+    python -m pytest tests/test_memory_handle_law.py -q -p no:randomly
+
+Result: 8 failed, 1 passed, 2 warnings in 0.67s
+(the file had 9 tests at that point; the 10th, the shadow-backend second-action
+test, was added with its own mutation proof — see m1_mutation_ledger.txt)
+
+FAILED test_concurrent_accessors_build_one_object_amplified
+FAILED test_concurrent_accessors_build_one_object
+FAILED test_backwards_compat_aliases_share_the_one_handle
+FAILED test_reentrant_construction_does_not_deadlock_or_orphan
+FAILED test_reset_closes_the_store_handle
+FAILED test_reset_survives_a_store_whose_close_raises
+FAILED test_reset_then_reopen_keeps_the_moneta_backend
+FAILED test_census_names_both_authorities_and_constructs_nothing
+PASSED test_ephemeral_multi_store_still_works   <- a guard, correctly green on HEAD
+
+Verbatim failure text for the composed (second-action) defect:
+
+  AssertionError: backend downgraded to JSONL after reset:
+  {'requested': 'moneta', 'served': 'jsonl',
+   'storage_dir': '...\test_reset_then_reopen_keeps_t0\.synapse',
+   'reason': "init failed: MonetaResourceLockedError: storage_uri
+      'moneta-file://.../test_reset_then_reopen_keeps_t0/.synapse' is already
+      held by another live Moneta handle in this process; release it via
+      close() or context-manager exit before reconstructing",
+   'at': '2026-08-21 23:06:15'}
+
+Verbatim failure text for the release half:
+
+  AssertionError: reset dropped the reference without close() - the storage URI
+  stays locked by an unreachable object for the life of the process
+  assert 0 == 1  where 0 = _RecordingStore.closed
+
+After the fix, same command: 10 passed, 2 warnings in 0.65s

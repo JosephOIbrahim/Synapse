@@ -1,0 +1,159 @@
+{
+  "leg": "memory:m1:cartographer",
+  "verdict": "PASS",
+  "date": "2026-08-21",
+  "by": "cartographer (FALLBACK base agent -- custom type 'moneta-cartographer' not in this session's agent registry)",
+  "base_commit": "bb348abe",
+  "branch": "master (read-only; no worktree, no commit -- a cartography leg touched no source)",
+  "role_contract": "READ-ONLY. Terrain only. No fix proposed. Handed to FORGE.",
+
+  "headline": "The unlocked singleton is not a latent race -- it is a REPRODUCED, UNAMPLIFIED capability loss. 8 barrier-synchronized callers produce 8 distinct SynapseMemory objects, 3/3 runs, with NO injected delay. Under SYNAPSE_MEMORY_BACKEND=moneta the split is 7 JSONL / 1 Moneta, the JSONL loser wins the module global, and the single MonetaBackedStore holding the process URI lock is orphaned AND atexit-pinned (moneta_store.py:377-378) -- so Moneta is unrecoverable for the remainder of the process.",
+
+  "q1_callers_of_get_synapse_memory": {
+    "sole_construction_site": "python/synapse/memory/store.py:1523 -- git grep -n 'SynapseMemory(' -- python/ returns exactly one hit",
+    "accessor": "python/synapse/memory/store.py:1519-1524 (unlocked check-then-create); aliases get_nexus_memory:1536 and get_engram:1541 both delegate to it",
+    "constructing_callers": [
+      {"site": "python/synapse/server/doctor.py:512", "what": "_check_moneta_consolidation", "thread": "OFF-MAIN -- PROVED",
+       "evidence": "doctor.py:74 states run_doctor is dispatched OFF Houdini's main thread on the hwebserver transport. mcp/server.py:697-708 routes synapse_doctor to _dispatch_doctor_off_main DELIBERATELY, to keep 'the doctor's ~514 ms cold store-construct' off the main thread. Only the hou reads hop (doctor.py:71 _read_on_main; store.py:1093 _read_on_main). The Moneta handle construction stays on the worker thread."},
+      {"site": "python/synapse/server/doctor.py:555", "what": "_check_vector_recall", "thread": "OFF-MAIN -- PROVED", "evidence": "same dispatch as :512"},
+      {"site": "python/synapse/server/doctor.py:588", "what": "_check_use_real_usd", "thread": "OFF-MAIN -- PROVED", "evidence": "same dispatch as :512"},
+      {"site": "python/synapse/server/handlers.py:1776", "what": "_get_knowledge_index (lazy, memoized on self._knowledge)", "thread": "THREE THREADS, NONE SERIALIZED -- PROVED",
+       "evidence": "Reached by _handle_knowledge_lookup (handlers.py:1804) and by the memory recall path. 'knowledge_lookup' IS in _READ_ONLY_COMMANDS (handlers.py:205) => handlers.py:509 _mutating=False => :518-520 _serialize=False => contextlib.nullcontext() => the C5 _MUTATION_LOCK (handlers.py:257) is NOT taken. Reached from (a) a websockets-sync per-connection thread via websocket.py:689 self._handler.handle; (b) a per-tool panel DAEMON thread via claude_worker.py:425 _dispatch_off_main -> claude_worker.py:507-514 _spawn_off_main_tool_thread -> tool_executor.py:633 execute_tool_off_main -> _dispatch -> handler.handle (tool_executor.py:134/151); (c) Houdini's MAIN thread via mcp/server.py:719 run_on_main."},
+      {"site": "python/synapse/server/handlers.py:1998", "what": "_handle_autonomous_render -- memory_system for AutonomousDriver", "thread": "OFF-MAIN; C5-serialized against other MUTATING commands only",
+       "evidence": "'autonomous_render' is NOT in _READ_ONLY_COMMANDS, so it holds _MUTATION_LOCK (handlers.py:520,535). That lock does NOT exclude a concurrent read-only knowledge_lookup, which reaches the same accessor."},
+      {"site": "python/synapse/server/handlers_render.py:1588", "what": "_handle_render_sequence -- injects the store into RenderFarmOrchestrator._memory", "thread": "OFF-MAIN; C5-serialized against other mutating commands only",
+       "evidence": "same argument as handlers.py:1998. The orchestrator then holds a STRONG REF to whichever object it received (handlers_render.py:1588)."},
+      {"site": "python/synapse/memory/scene_memory.py:723", "what": "write_memory_entry -> Moneta secondary deposit", "thread": "OFF-MAIN via handlers_memory.py:234 (_handle_memory_write, mutating => C5-serialized)", "evidence": "handlers_memory.py:221,234"},
+      {"site": "python/synapse/memory/scene_memory.py:769", "what": "_deposit_to_moneta_if_available (record_solaris_state and siblings)", "thread": "OFF-MAIN via the same handler dispatch", "evidence": "scene_memory.py:747-782"},
+      {"site": "python/synapse/session/tracker.py:105", "what": "SessionTracker._init_synapse", "thread": "UNKNOWN -- no production constructor found",
+       "evidence": "git grep 'SessionTracker(' -- python/ returns NO production construction. panel/session_integrity.py:239 get_tracker() builds a DIFFERENT class (SessionIntegrityTracker). Classified DORMANT-CANDIDATE, not live."},
+      {"site": "python/synapse/ui/panel.py:192", "what": "SynapsePanel._init_synapse", "thread": "MAIN (Qt panel construction) -- INFERRED",
+       "evidence": "reached only via the lazy import at python/synapse/__init__.py:432. harness/CLAUDE.md declares the ui/ tree DEAD. Classified LEGACY."}
+    ],
+    "non_constructing_peekers": [
+      {"site": "python/synapse/panel/health_strip.py:311", "note": "getattr(_store, '_global_synapse', None) -- reference-clean disciplined read; docstring at :292-293 says it deliberately avoids get_synapse_memory() 'which would build the store'"},
+      {"site": "python/synapse/server/write_plane.py:313", "note": "getattr(_store_mod, '_global_synapse', None) -- same discipline; docstring :305-306"}
+    ],
+    "answer": "FOUR distinct threads construct the same process-global: Houdini's MAIN thread (/mcp non-doctor, mcp/server.py:719), an hwebserver WORKER thread (/mcp synapse_doctor, mcp/server.py:708), a websockets per-connection SERVER thread (/synapse, websocket.py:689), and a per-tool panel DAEMON thread (claude_worker.py:425). NONE marshals the construction itself; only the hou reads inside _resolve_project_path hop to main (store.py:1093). The C5 _MUTATION_LOCK does not cover it, because the highest-frequency reader -- knowledge_lookup -- is classified read-only."
+  },
+
+  "q2_shared_uri": {
+    "answer": "YES -- PROVED, live, end-to-end.",
+    "mechanism": "Both authorities key on an exact resolved path. moneta_store.py:274 builds storage_uri = moneta-file://{Path(storage_dir).resolve().as_posix()}. Project store dir = store.py::_get_storage_dir -> <project-parent>/.synapse. Ledger dir = ledger.py::ledger_dir -> $SYNAPSE_LEDGER_DIR verbatim if set, else <repo-root>/.synapse/ledger.",
+    "default_posture": "DISTINCT (<hip-dir>/.synapse vs <repo>/.synapse/ledger). ledger.py:404-410 already records that this is a property of the paths, NOT a guarantee. Nesting alone does not collide: the URI is exact-path keyed, so <repo>/.synapse and <repo>/.synapse/ledger are different URIs.",
+    "collision_route_proved": "Set SYNAPSE_LEDGER_DIR to the project .synapse dir. Probe output: SAME PATH = True, then LEDGER RAISED = MonetaResourceLockedError (storage_uri ... is already held by another live Moneta handle in this process).",
+    "lock_semantics_proved": "The Moneta URI lock is PROCESS-scoped, exact-URI keyed, and released only by close(). Probe: handle1 OK -> handle2 RAISED MonetaResourceLockedError -> h1.close() -> handle3 OK.",
+    "propagation_note": "PROVED: ledger_moneta_store() does NOT catch the lock error -- it propagates out of ledger.py:435. The never-touches-the-file-write promise lives one level up in _deposit_to_moneta (ledger.py:452-459), the ONLY production caller (ledger.py:481). The docstring at ledger.py:414 advertises the accessor as a public named door for readers; any future direct reader inherits an uncaught raise. Today that path is exercised only by tests (test_ledger_moneta_seam.py:156,178,192,310,594). LATENT SEAM, not a live defect.",
+    "candidate_not_proved": "ledger.py:423 keys the registry on os.path.abspath(ledger_dir()) while moneta_store.py:274 builds the URI with Path(...).resolve(). On Windows these diverge across junctions / 8.3 names / case. PROBE THAT WOULD SETTLE IT: in one process, point SYNAPSE_LEDGER_DIR first at a junction and then at its target, and assert both the registry key and the resulting storage_uri."
+  },
+
+  "q3_ephemeral_requirements": {
+    "answer": "MonetaConfig.ephemeral() needs the handle discipline to stay OFF the direct-construction path entirely.",
+    "facts": [
+      "moneta_runtime.py:686-704 make_ephemeral() returns Moneta(MonetaConfig.ephemeral(**kwargs)) and NEVER touches _global_synapse or _MONETA_STORE.",
+      "PROVED by probe: MonetaConfig.ephemeral() emits moneta-ephemeral://<uuid4-hex>, unique per call (two calls -> two distinct URIs).",
+      "Every ephemeral test store is built as MonetaBackedStore(handle, embedder) DIRECTLY, bypassing from_storage_dir -- and therefore also bypassing the atexit.register(store.close) at moneta_store.py:377-378. The caller owns the lifetime; moneta_runtime.py:693-694 says so explicitly.",
+      "Dependent test modules (13): tests/test_moneta_crucible.py:38, tests/test_moneta_fc4_audit.py:34, tests/test_moneta_integration.py:91, tests/test_moneta_runtime.py:34,52,64,71,73, tests/test_moneta_store.py:36,119,133,268,289, tests/test_shadow_store.py:52, tests/test_sleep_pass_gate.py:96, tests/test_w3_evolve_consolidation.py:358, tests/test_w3_store_contract.py:265."
+    ],
+    "requirement_for_forge": "Any handle authority must be keyed by RESOLVED storage_uri (a registry), never a process-scalar, and must not intercept direct MonetaBackedStore(handle, embedder) construction. A scalar max-one-handle-per-process would break all 13 modules above -- this is adjudication D7. Because ephemeral URIs are already unique, a URI-keyed registry costs them nothing."
+  },
+
+  "q4_reset_windows": {
+    "reset_synapse_memory__store_py_1527": {
+      "verdict": "PROVED DEFECT -- not merely a window; a deterministic, permanent capability loss.",
+      "code": "store.py:1530-1532 calls _global_synapse.save() and then sets the global to None. It NEVER calls .close(). MonetaBackedStore.close() (moneta_store.py:934-958) is the only thing that releases the Moneta URI lock (:956-958).",
+      "why_gc_does_not_save_it": "moneta_store.py:377-378 registers atexit.register(store.close) inside from_storage_dir. atexit holds a STRONG process-lifetime reference, so an orphaned store is never collected and its URI lock is never released. Independently, tracker.py:113-116 reload_synapse() keeps self._synapse alive across reset_synapse_memory() until _init_synapse() reassigns at :105 -- the old handle is provably alive at the exact moment the new one is constructed.",
+      "measured_consequence": "With SYNAPSE_MEMORY_BACKEND=moneta: store1 = MonetaBackedStore -> reset_synapse_memory() -> store2 = MemoryStore. The next accessor call downgrades the backend to JSONL. It is LOUD (store.py::_make_store logs at ERROR, and _BACKEND_FALLBACK records reason = init failed: MonetaResourceLockedError) -- credit where due -- but the capability is gone for the process.",
+      "callers_of_the_reset": ["python/synapse/session/tracker.py:115 (reload_synapse -- dormant; no production constructor found)", "python/synapse/ui/panel.py:321 (legacy ui/ tree)", "aliases reset_nexus_memory:1546 / reset_engram:1551"]
+    },
+    "reset_moneta_store__ledger_py_440": {
+      "verdict": "NO WINDOW on the happy path -- PROVED by reading the code.",
+      "reason": "ledger.py:443-449 holds _MONETA_LOCK across BOTH close() and the null-out. A concurrent ledger_moneta_store() blocks at ledger.py:424 on the same lock, so no caller can observe a closed-but-still-registered store."
+    },
+    "fifth_finding__close_is_not_atomic": {
+      "verdict": "PROVED -- a hole in the CORRECT authority too.",
+      "code": "moneta_store.py:938-958. self._closed = True is set at :941 BEFORE self.save() at :942. If save() raises, lines 943-958 never run, self._handle.close() is never called, and the URI lock is stranded -- and because _closed is already True, every retry returns at :940 as a silent no-op.",
+      "probe_output": "CLOSE RAISED: OSError disk full | closed flag: True | SECOND close: returned (no-op) | LOCK: STILL HELD -> MonetaResourceLockedError",
+      "reachability": "ledger.py:445-448 catches the close() exception and then nulls the globals at :449, so the stranded lock becomes unreachable through the ledger authority as well. Also reachable from the atexit hook at moneta_store.py:378."
+    }
+  },
+
+  "touched": [
+    "python/synapse/memory/store.py:1516",
+    "python/synapse/memory/store.py:1519-1524",
+    "python/synapse/memory/store.py:1527-1532",
+    "python/synapse/memory/store.py:1536-1553",
+    "python/synapse/memory/store.py:1093",
+    "python/synapse/memory/ledger.py:316-322",
+    "python/synapse/memory/ledger.py:398-437",
+    "python/synapse/memory/ledger.py:440-449",
+    "python/synapse/memory/ledger.py:452-459",
+    "python/synapse/memory/ledger.py:481",
+    "python/synapse/memory/moneta_store.py:274",
+    "python/synapse/memory/moneta_store.py:364-379",
+    "python/synapse/memory/moneta_store.py:934-958",
+    "python/synapse/memory/moneta_runtime.py:686-704",
+    "python/synapse/memory/scene_memory.py:722-723",
+    "python/synapse/memory/scene_memory.py:757-769",
+    "python/synapse/server/doctor.py:71-93",
+    "python/synapse/server/doctor.py:512",
+    "python/synapse/server/doctor.py:555",
+    "python/synapse/server/doctor.py:588",
+    "python/synapse/server/handlers.py:203-205",
+    "python/synapse/server/handlers.py:248-257",
+    "python/synapse/server/handlers.py:505-548",
+    "python/synapse/server/handlers.py:1775-1786",
+    "python/synapse/server/handlers.py:1997-1998",
+    "python/synapse/server/handlers_render.py:1586-1590",
+    "python/synapse/server/handlers_memory.py:219-235",
+    "python/synapse/server/websocket.py:298-303",
+    "python/synapse/server/websocket.py:686-693",
+    "python/synapse/server/write_plane.py:305-313",
+    "python/synapse/panel/health_strip.py:292-311",
+    "python/synapse/panel/claude_worker.py:399-425",
+    "python/synapse/panel/claude_worker.py:507-514",
+    "python/synapse/panel/tool_executor.py:633-659",
+    "python/synapse/mcp/server.py:697-719",
+    "python/synapse/session/tracker.py:100-116",
+    "python/synapse/ui/panel.py:192",
+    "python/synapse/ui/panel.py:321"
+  ],
+
+  "commands": [
+    "git worktree list",
+    "git grep -n \"get_synapse_memory|get_nexus_memory|get_engram|_global_synapse|reset_synapse_memory|reset_nexus_memory|reset_engram\" -- '*.py'",
+    "git grep -n \"SynapseMemory(\" -- python/     # exactly one hit: store.py:1523",
+    "git grep -n \"_MUTATION_LOCK\" -- python/     # declared handlers.py:257, used ONCE at handlers.py:520",
+    "git grep -n \"ledger_moneta_store|reset_moneta_store\" -- python/ tests/",
+    "git grep -rn \"ephemeral(\" -- python/ tests/",
+    "python -c \"import sys;sys.path.insert(0,'python');from synapse.memory import moneta_runtime as mr;print(mr.moneta_available());print(mr.MonetaConfig.ephemeral().storage_uri);print(mr.MonetaConfig.ephemeral().storage_uri)\"   # True; two distinct moneta-ephemeral:// URIs",
+    "python <scratchpad>/probe_race2.py jsonl    # 3/3 runs -> distinct objects: 8 | backends: [MemoryStore]",
+    "python <scratchpad>/probe_race2.py moneta   # 3/3 runs -> distinct objects: 8 | backends: [MemoryStore, MonetaBackedStore]; SPLIT Counter(MemoryStore=7, MonetaBackedStore=1); WINNER backend on the global: MemoryStore",
+    "python <scratchpad>/probe_reset2.py         # A store1 = MonetaBackedStore ; B store2 = MemoryStore ; fallback reason = MonetaResourceLockedError",
+    "python -c \"<two-handles-one-URI probe>\"     # handle1 OK ; handle2 RAISED MonetaResourceLockedError ; after close(), handle3 OK",
+    "python -c \"<shared-URI collision probe>\"    # SAME PATH = True ; LEDGER RAISED = MonetaResourceLockedError",
+    "python -c \"<close()-raises probe>\"          # closed flag True ; second close no-op ; LOCK STILL HELD"
+  ],
+
+  "artifacts": [
+    "harness/memory/bus/memory_m1_cartographer.json  (this file -- the terrain handoff to FORGE)",
+    "scratchpad probes (ephemeral, NOT committed, under the session scratchpad): probe_race.py, probe_race2.py, probe_reset.py, probe_reset2.py"
+  ],
+
+  "proved_it_bites": "No new test was authored -- this is a READ-ONLY cartography leg and the charter forbids proposing or landing the fix. What WAS proved, three runs each and with NO injected delay, is that the defect bites on HEAD today: 8 barrier-synchronized threads calling get_synapse_memory() produce 8 distinct SynapseMemory objects (7 orphaned), and under SYNAPSE_MEMORY_BACKEND=moneta the process ends with a 7-JSONL / 1-Moneta split in which the JSONL loser owns the module global while the Moneta object that won the URI lock is orphaned and atexit-pinned. Separately proved: reset_synapse_memory() deterministically downgrades MonetaBackedStore -> MemoryStore on the very next accessor call. The RED test FORGE must write is a concurrency test asserting single object identity across N threads; the mutation that would turn it red is the current unlocked body at store.py:1522-1523.",
+
+  "could_not_verify": [
+    "Ran as FALLBACK base agent 'cartographer' -- the custom type 'moneta-cartographer' is not in this session's agent registry. Mitigating fact discovered mid-run: the Write tool IS disabled for this session, so the read-only posture was tool-fenced for file creation; Bash was not fenced and I used it to author this receipt.",
+    "All probes ran HEADLESS on Python 3.14.2 with the vendored-SDK ABI-mismatch warning active (cp311/cp313 wheels, no match for this interpreter). Moneta 1.2.0rc1 IS importable there, so the lock semantics are real -- but in-Houdini H22.0.400 (Python 3.13) behaviour is UNKNOWN. I did not reach a live bridge; no synapse_ping was attempted and no live-bridge claim is made.",
+    "The thread-per-connection model of websockets sync_serve (websocket.py:379) is INFERRED from the library design plus the comment at websocket.py:425 (runs in server thread pool). I did not instrument a live two-client session to count threads.",
+    "handlers.py:1776 memoizes on self._knowledge, so the race THERE needs two threads inside the SAME CommandHandlers instance before memoization completes. Whether two live clients share one CommandHandlers instance is UNKNOWN -- not traced. The doctor sites (:512/:555/:588) have no such memo and are unconditional.",
+    "session/tracker.py SessionTracker has NO production constructor I could find; classified DORMANT-CANDIDATE. A dynamic/importlib construction would defeat that grep.",
+    "ui/panel.py:192,321 classified LEGACY on harness/CLAUDE.md's word plus the single lazy import at __init__.py:432. I did not prove it is unreachable in a live Houdini session.",
+    "Whether panel/shot_login.py:34 ensure_scene_structure ever runs off-main (M0 open item) is STILL unproven -- I traced the get_synapse_memory call graph, not that one.",
+    "No pytest run this leg. It touched no source, so there is no suite-floor delta to report; the merge-base floor is UNMEASURED for M1, and master's known pre-existing red (mcp list_tools drift) is unassessed this session.",
+    "The Windows abspath-vs-resolve key divergence between ledger.py:423 and moneta_store.py:274 is a CANDIDATE only; the junction probe named in q2 was not run.",
+    "STATE.json marks m1 AND m2 RUNNING under one sprint dispatch (wf_ccb70efc-5b5). At write time bus/ held only m0's receipt and no mem/* worktree existed, so the Law-6 sweep was clean -- but a sibling FORGE/CRUCIBLE may be live. I wrote only my own file and touched no other agent's."
+  ],
+
+  "needs_human": []
+}

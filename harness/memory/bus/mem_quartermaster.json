@@ -1,0 +1,62 @@
+{
+  "leg": "memory:supply:quartermaster",
+  "verdict": "PASS",
+  "touched": [
+    "harness/memory/supply/packet_2026-08-21.json (created — the only file this leg authored besides this receipt)",
+    "python/synapse/memory/moneta_runtime.py:686 (read)",
+    "C:/Python314/Lib/site-packages/moneta/api.py:144 (read — vendor source for MonetaConfig.ephemeral)",
+    "C:/Python314/Lib/site-packages/moneta/api.py:169 (read — _ACTIVE_URIS process-level URI registry)",
+    "python/synapse/memory/store.py:1516 (read — authority A, unlocked keyless scalar)",
+    "python/synapse/memory/ledger.py:320 (read — authority B, keyed + locked scalar)",
+    "python/synapse/memory/moneta_store.py:285 (read — moneta-file:// URI derivation)",
+    "python/synapse/loop/ports.py:89 (read)",
+    "python/synapse/loop/ports.py:104 (read)",
+    "python/synapse/loop/ports.py:130 (read)",
+    "python/synapse/loop/ports.py:206 (read)",
+    ".synapse/contracts/loop-v00.yaml:2 (read — ratification line)",
+    "tests/test_loop_contracts.py:57 (read — the §4 parametrized pin)"
+  ],
+  "commands": [
+    "python -m pytest tests/ -p no:cacheprovider -q   # cwd=C:/Users/User/SYNAPSE @ master bb348abe",
+    "python -m pytest tests/test_loop_contracts.py -p no:cacheprovider -q",
+    "python -m pytest tests/test_backfill.py::test_backup_is_taken_and_source_intact tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented -p no:cacheprovider -q",
+    "python -c \"from mcp.server import Server; print(hasattr(Server,'list_tools'))\"",
+    "python -c \"from importlib.metadata import version; print(version('mcp'))\"",
+    "find . -name mcp_server.py -not -path './.git/*'",
+    "git worktree list --porcelain",
+    "git -C C:/Users/User/synapse-m1-handle-wt status --porcelain",
+    "git -C C:/Users/User/synapse-m2-pgdrm-wt status --porcelain",
+    "grep -rn \"make_ephemeral(\" tests/ --include=*.py"
+  ],
+  "artifacts": [
+    "harness/memory/supply/packet_2026-08-21.json"
+  ],
+  "measurements": {
+    "floor_summary_line_verbatim": "==== 2 failed, 6773 passed, 180 skipped, 625 warnings in 260.24s (0:04:20) ====",
+    "floor_collection_line_verbatim": "collected 6952 items / 3 skipped",
+    "floor_exit_code": 1,
+    "floor_read_at": "C:/Users/User/SYNAPSE, branch master, HEAD bb348abe — which IS merge-base(master, mem/m1-handle-law) and merge-base(master, mem/m2-pgdrm); both mem/* worktrees sit at bb348abe with zero divergent commits",
+    "the_two_reds": [
+      "tests/test_backfill.py::test_backup_is_taken_and_source_intact (tests/test_backfill.py:62, ciphertext tail mismatch)",
+      "tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented (tests/test_m3_env_conformance.py:146, SYNAPSE_LOOP_LEDGER_DIR undocumented, cites python/synapse/loop/ports.py:71)"
+    ],
+    "both_reds_reproduce_in_isolation": true,
+    "known_mcp_list_tools_red": "DOES NOT REPRODUCE on this host — zero collection errors, mcp==1.26.0 still exposes Server.list_tools, and the briefed path python/synapse/mcp/mcp_server.py does not exist (the file is ./mcp_server.py at repo root)",
+    "pinned_surface_test": "tests/test_loop_contracts.py — '20 passed, 2 warnings in 0.35s' — GREEN",
+    "tests_holding_two_or_more_live_stores": 8,
+    "make_ephemeral_call_sites_in_tests": 18,
+    "make_ephemeral_test_files": 10
+  },
+  "proved_it_bites": "N/A — this leg authored no test and changed no code. It measures and publishes. The nearest equivalent evidence: both floor failures were re-run ALONE and failed alone, proving they are real merge-base reds and not test-order pollution; and tests/test_loop_contracts.py was run in isolation to confirm the pinned §4 surface is green rather than inferring it from the suite total.",
+  "could_not_verify": [
+    "DELIVERY: this packet reaches NO leg of the in-flight sprint wf_ccb70efc-5b5. Workflow scripts have no filesystem access and workflow legs are not addressable; delivery is by args.supply at DISPATCH time, so this reaches the NEXT dispatch only. M1/M2/M3 and their crucibles were already flying. I supplied nobody currently running, and any floor number a sprint leg reports did not come from here — it may have been read on its own branch.",
+    "The CI-side mcp list_tools red is unverifiable from this seat — I can prove it is absent locally, not what a CI runner resolves. No leg should subtract two phantom failures from a local run.",
+    "The floor was measured with two forge worktrees live; 260.24s is a loaded-machine number. Both failures reproduce in isolation so neither is a concurrency artifact, but I did not re-run under quiescence, so I cannot rule out that some PASSING test passed on ordering luck.",
+    "No flake rate — one run. 6773 passed is a floor, not a stability guarantee.",
+    "No xfail/xpass baseline enumerated. pytest printed no such category (= zero), but a leg converting a failure into an xfail would move the passed count without adding a red, and this packet cannot detect that.",
+    "Neither failing test was diagnosed. The test_backfill per-write-nonce reading is a hypothesis with no probe behind it — do not cite it as a finding.",
+    "The 8-case multi-store list is a floor, not a ceiling: the scan matched construction call sites inside function bodies and would miss a store arriving via a pytest fixture, a conftest helper, or a class attribute. Every candidate it produced was hand-read; false positives were excluded.",
+    "No live-substrate claim anywhere in the packet. synapse_ping was not called; nothing here asserts anything about the live Houdini bridge."
+  ],
+  "needs_human": []
+}

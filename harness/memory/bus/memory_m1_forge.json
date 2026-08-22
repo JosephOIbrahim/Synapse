@@ -1,0 +1,75 @@
+{
+  "leg": "memory:m1:forge",
+  "verdict": "PASS",
+  "git_branch": "mem/m1-handle-law (worktree C:/Users/User/synapse-m1-handle-wt, branched off master bb348abe). NOT pushed, NOT merged, no tag, no VERSION edit.",
+  "commit_shas": [
+    "c3b9d1fc4a672101dbf7460cd5f888c227758f2d"
+  ],
+  "suite": "Same-checkout master floor (worktree): 2 failed, 6771 passed, 180+2=182 skipped. This branch with the SOURCE FIX ONLY (--ignore=tests/test_memory_handle_law.py): 2 failed, 6771 passed, 182 skipped -- byte-identical to the floor, so the fix is suite-neutral. This branch FULL (fix + new tests): 2 failed, 6781 passed, 182 skipped (+10 = exactly the new tests). The main-tree merge-base run reads 2 failed / 6773 passed / 180 skipped; the 2-test difference is tests/test_w3_harden_evolve_dryrun.py, whose guard at :203 skips when _find_real_corpus() is None -- the rag/ corpus is materialized lazily and exists only in the main checkout, not in a fresh worktree. Identified, not assumed (per-file outcome diff). Independently corroborated: the sibling M2 forge measured master IN A WORKTREE at 2 failed / 6771 passed / 182 skipped. The 2 pre-existing failures (test_backfill.py::test_backup_is_taken_and_source_intact, test_m3_env_conformance.py::test_every_source_env_read_is_documented) are present in every measurement and are NOT this rung's. NOTE: master's KNOWN pre-existing red (mcp library list_tools drift) did NOT appear -- the locally installed mcp still exposes server.list_tools(); that red is a CI-only condition on this host.",
+  "proved_it_bites": "8 of the 10 tests were RED on unmodified HEAD before a line of source changed (`python -m pytest tests/test_memory_handle_law.py -q -p no:randomly` -> 8 failed, 1 passed, 0.67s). The race half: 8 barrier-synchronised threads through get_synapse_memory() produced 8 distinct SynapseMemory objects (amplified) and 16 threads produced 16 (unamplified). The release half failed with the real substrate error, verbatim: \"init failed: MonetaResourceLockedError: storage_uri 'moneta-file://.../.synapse' is already held by another live Moneta handle in this process; release it via close() or context-manager exit before reconstructing\" -- i.e. get -> reset -> get silently downgraded the backend to JSONL. The mutation that turns the fixed code red again is the original body at store.py:1519-1524 (unlocked check-then-create) and store.py:1527-1532 (save-without-close). The two tests that were correctly GREEN on HEAD are guards, and each was proved to bite by a named mutation, applied then reverted: (a) renaming ShadowMemoryStore.close -> _close_MUTATED_AWAY turned test_reset_then_reopen_keeps_the_shadow_backend red; (b) pinning a fixed storage_uri inside moneta_runtime.make_ephemeral turned test_ephemeral_multi_store_still_works red; (c) additionally, making memory_handle_census() call get_synapse_memory() turned the census test red on a behavioural assertion rather than only an AttributeError. Residue check after reverts: `git diff | grep MUTANT` -> clean.",
+  "touched": [
+    "python/synapse/memory/store.py:1512-1540 (handle-law header: names BOTH authorities, states the split is deliberate and why, states why this accessor stays a scalar while ledger.py's is URI-keyed)",
+    "python/synapse/memory/store.py:1545 (_GLOBAL_LOCK = threading.RLock(), re-entrant on purpose)",
+    "python/synapse/memory/store.py:1548-1584 (_close_memory_quietly: prefers close() -- the only thing that drops the moneta-file:// URI lock -- falls back to save() for lock-free backends; never raises; logs at ERROR because a failed release is the precursor to the silent jsonl downgrade)",
+    "python/synapse/memory/store.py:1587-1610 (get_synapse_memory: double-checked locking + post-construction re-check that CLOSES a superseded loser instead of orphaning it)",
+    "python/synapse/memory/store.py:1613-1624 (reset_synapse_memory: swaps the global out under the lock, then releases the handle outside it; the global is cleared even when teardown raises)",
+    "python/synapse/memory/store.py:1627-1668 (memory_handle_census: reports both authorities, constructs nothing, snapshots the global once so a concurrent reset cannot make it invent a live-handle-with-no-URI state)",
+    "python/synapse/memory/shadow_store.py:151-164 (ShadowMemoryStore.close: the shadow owns a MonetaBackedStore behind a JSONL primary and had no close(), so release fell through to save() and leaked the URI lock)",
+    "tests/test_memory_handle_law.py:1-353 (new; 10 tests)"
+  ],
+  "commands": [
+    "git worktree list",
+    "git -C C:/Users/User/SYNAPSE worktree add C:/Users/User/synapse-m1-handle-wt -b mem/m1-handle-law master",
+    "python -m pytest tests/ -q -p no:randomly   # main tree @ bb348abe -> 2 failed, 6773 passed, 180 skipped",
+    "python -m pytest tests/test_memory_handle_law.py -q -p no:randomly   # on UNMODIFIED source -> 8 failed, 1 passed",
+    "python -m pytest tests/test_memory_handle_law.py -q -p no:randomly   # after the fix -> 10 passed",
+    "python -m pytest tests/ -q -p no:randomly -rs --ignore=tests/test_memory_handle_law.py   # branch, source only -> 2 failed, 6771 passed, 182 skipped",
+    "python -m pytest tests/ -q -p no:randomly -rs   # branch, full -> 2 failed, 6781 passed, 182 skipped",
+    "python <scratchpad>/census_probe.py   # 8 unamplified threads -> 1 distinct object; census before/after; reset -> None",
+    "git commit -F <scratchpad>/m1_commit_msg.txt",
+    "git diff --stat master...HEAD   # 3 files, 507 insertions, 9 deletions"
+  ],
+  "artifacts": [
+    "C:/Users/User/SYNAPSE/harness/memory/runs/2026-08-21/m1_red_on_head.txt",
+    "C:/Users/User/SYNAPSE/harness/memory/runs/2026-08-21/m1_mutation_ledger.txt",
+    "C:/Users/User/SYNAPSE/harness/memory/runs/2026-08-21/m1_suite_floor_mergebase_bb348abe.txt",
+    "C:/Users/User/SYNAPSE/harness/memory/runs/2026-08-21/m1_suite_branch_mem-m1-handle-law.txt",
+    "C:/Users/User/SYNAPSE/harness/memory/runs/2026-08-21/m1_suite_branch_source_only_rs.txt",
+    "C:/Users/User/SYNAPSE/harness/memory/runs/2026-08-21/m1_suite_branch_full_rs.txt",
+    "C:/Users/User/SYNAPSE/harness/memory/runs/2026-08-21/m1_suite_reconciliation.txt",
+    "C:/Users/User/SYNAPSE/harness/memory/bus/memory_m1_forge.json"
+  ],
+  "goalposts": {
+    "concurrency test RED on HEAD then GREEN": "MET -- 8/10 red on unmodified HEAD, 10/10 green after; mutations named above",
+    "get_synapse_memory() lock-guarded, double-checked path pinned": "MET -- store.py:1587-1610; pinned by three concurrency tests (amplified 8-thread, unamplified 16-thread, and the alias accessors) plus a bounded-join re-entrancy test",
+    "two authorities reconciled or split documented as deliberate WITH the reason": "MET as DOCUMENTED-DELIBERATE. store.py:1512-1540 names both (store._global_synapse -> <project>/.synapse; ledger._MONETA_STORE -> $SYNAPSE_LEDGER_DIR), states they are distinct moneta-file:// URIs under default roots, repeats ledger.py's own honest caveat that pointing $SYNAPSE_LEDGER_DIR at the project dir makes them contend, and gives the evidence-backed reason this one stays a scalar while the ledger's is URI-keyed: this URI is not knowable without a main-thread hou.hipFile marshal (store.py:1099-1105) and a possible legacy-tree copytree (store.py:1156), so re-keying per call would put a blocking main-thread hop and a migration probe on every reader. memory_handle_census() reports both in one place.",
+    "NO third authority added": "MET -- memory_handle_census() constructs nothing; pinned by test_census_names_both_authorities_and_constructs_nothing, and that assertion was proved to bite by making the census call get_synapse_memory()",
+    "MonetaConfig.ephemeral() multi-store usage still works": "MET -- pinned by test_ephemeral_multi_store_still_works (two live ephemeral handles), and that guard was proved to bite by pinning a fixed storage_uri in make_ephemeral",
+    "full pytest no worse than merge-base floor": "MET -- suite-neutral against the same-checkout floor; +10 passed with the new tests; see the reconciliation artifact"
+  },
+  "findings": [
+    "F5 (new, live-posture): packages/synapse.json:27-29 sets SYNAPSE_MEMORY_BACKEND=moneta for every in-Houdini SYNAPSE session, and this dev shell inherits it (verified: env reads 'moneta'; the census probe built a MonetaBackedStore with no explicit env set in the command). So the reset->downgrade half of the defect fires on the PRODUCTION posture, not a hypothetical one: every project change routes through reset_synapse_memory() (session/tracker.py:115 reload_synapse, ui/panel.py:321 _reload_project) and, before this fix, would have left the rest of that Houdini session on JSONL. Proven headless; NOT proven in-Houdini (no live bridge this session).",
+    "F6: ShadowMemoryStore was the one backend arrangement with NO release path at all -- it owns a MonetaBackedStore but exposed no close(), so even a correct caller could not drop its URI lock. Found by asking which backends actually implement close() rather than assuming the moneta path was the only one.",
+    "F7: the M0 audit's framing of the defect as a pure race was half the story. The race needs concurrency; the reset->downgrade needs only a single-threaded project switch. The second is the more likely production bite.",
+    "F8 (unfixed, reported not silently patched): before this change reset_synapse_memory() propagated a raising save() to its callers (session/tracker.py:115 and ui/panel.py:321 both call it with no try). It now swallows a failing release and logs at ERROR instead. That is a deliberate loudness trade -- an unreleasable handle must not wedge project reload forever -- but it IS a behaviour change on the failure path, and it is named here rather than buried.",
+    "F9 (adversarial self-check, prompted by the sibling quartermaster-bisect receipt which roots the test_backfill red in MonetaBackedStore's _jsonl_net dual-write duplicate-append): reset_synapse_memory() now calls MonetaBackedStore.close(), which calls self._jsonl_net.flush() (moneta_store.py:942-946) -- a call the old save()-only reset never made. Checked whether that can duplicate rows. It cannot: MemoryStore.flush -> _flush_writes (store.py:235-267) drains _write_buffer under _write_lock BEFORE writing and only restores lines on a write exception, so repeated flushes are idempotent; and MonetaBackedStore.close() is itself guarded by a _closed flag (moneta_store.py:938-940), so the atexit hook firing after an explicit reset is a no-op rather than a second URI-lock release. The suite agrees: the branch-source-only run is byte-identical to the same-checkout floor, so test_backfill did not get worse."
+  ],
+  "could_not_verify": [
+    "Ran as a FALLBACK base agent ('general-purpose'); the custom type 'moneta-forge' is not in this session's agent registry, although .claude/agents/moneta-forge.md exists on disk. Same registry-load gap the cartographer leg reported.",
+    "ALL evidence is HEADLESS on Python 3.14.2 with the vendored-SDK ABI-mismatch warning active (cp311/cp313 wheels, no match for this interpreter). Moneta 1.2.0rc1 IS importable there, so the URI-lock semantics exercised are real -- but in-Houdini H22.0.400 (Python 3.13) behaviour is UNKNOWN. No live bridge was reached; synapse_ping was not attempted; no live-bridge claim is made anywhere in this receipt.",
+    "The re-entrancy test proves no self-deadlock and no orphan under a SYNTHETIC re-entrant construction path. I did NOT find a real production path that re-enters get_synapse_memory() from inside SynapseMemory.__init__ -- the RLock and the post-construction re-check are defence against a class, not a repro of a live bug.",
+    "Thread-count claims about the live server are inherited from the cartographer leg, not re-measured. I did not instrument a live two-client session.",
+    "Whether panel/shot_login.py:34 ensure_scene_structure is ever reached off the main thread is STILL unproven (M0 open item #1, cartographer open item). M1 did not touch it.",
+    "The census is not wired into anything (doctor, health_strip, write_plane still peek the global directly via getattr). It is available at synapse.memory.store.memory_handle_census and deliberately NOT exported from python/synapse/memory/__init__.py, because adding a name to that package's __all__ is a public-surface change with no consumer yet. Whether the doctor should consume it is an M3+ question, not measured here.",
+    "MemoryStore itself has no close(); the fallback calls SynapseMemory.save() -> MemoryStore.save(). Whether MemoryStore holds any OS-level resource that would benefit from an explicit close (it starts a daemon flusher thread and registers its own atexit _shutdown_flush) was NOT audited. It is not a Moneta URI lock, which is what M1 was chartered to fix.",
+    "The two pre-existing suite failures were not investigated. test_m3_env_conformance::test_every_source_env_read_is_documented is an env-read conformance test; I added no env read, and the branch-source-only run is byte-identical to the same-checkout floor, so it is not this rung's -- but I did not read its failure to confirm what it is complaining about.",
+    "The Windows abspath-vs-resolve key divergence the cartographer flagged (ledger.py:423 os.path.abspath vs moneta_store.py:274 Path.resolve) is UNTOUCHED and unprobed. It is a real candidate for the two authorities colliding on a junction, and it is out of M1's charter.",
+    "Law 6 sweep at write time: the sibling M2 forge is LIVE (worktree C:/Users/User/synapse-m2-pgdrm-wt at e4730869 on mem/m2-pgdrm) and has written harness/memory/runs/2026-08-21/m2_* artifacts. Territories do not overlap (it owns python/synapse/loop/pgdrm.py; I own python/synapse/memory/). I wrote ONLY harness/memory/bus/memory_m1_forge.json and harness/memory/runs/2026-08-21/m1_*; I did not touch STATE.json, m0/m1-cartographer receipts, or any m2_* file.",
+    "harness/rope/STATE.json shows as modified in git status; that predates this leg (present in the session-start snapshot) and was not touched by me.",
+    "The idempotency check in F9 is a code read plus the suite delta, not a dedicated test. I did not author a test asserting that reset-then-exit writes each memory line exactly once; the existing test_backfill red (introduced by e8b691de per the sibling bisect, not by this rung) already occupies that ground and belongs to whoever fixes it."
+  ],
+  "needs_human": [
+    "git merge mem/m1-handle-law into master (Article V: origin is a PUBLIC GitHub repo; merge/push/tag are Joe's word, per act). The branch is committed at c3b9d1fc and NOT pushed.",
+    "Flipping harness/memory/STATE.json rung m1 status from RUNNING to CLOSED is the conductor's act after CRUCIBLE attacks this leg -- not mine. I wrote no board state."
+  ]
+}

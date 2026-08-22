@@ -1,0 +1,187 @@
+[
+  {
+    "mutation": "M1  decay sign flipped",
+    "status": "RED",
+    "n_red": 17,
+    "summary": "================== 17 failed, 49 passed, 2 warnings in 0.37s ==================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_decay_is_monotonically_non_increasing_in_age",
+      "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.001-1000.0-0.36787944117144233-e^(-0.001*1000) = e^-1 = 1/e]",
+      "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.5-4.0-0.1353352832366127-e^(-0.5*4) = e^-2]",
+      "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.6931471805599453-1.0-0.5-e^(-ln2*1) = 2^-1 = 1/2]",
+      "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.6931471805599453-10.0-0.0009765625-e^(-ln2*10) = 2^-10 = 1/1024]",
+      "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.6931471805599453-2.0-0.25-e^(-ln2*2) = 2^-2 = 1/4]"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M2  protected_floor clamp removed",
+    "status": "RED",
+    "n_red": 3,
+    "summary": "================== 3 failed, 63 passed, 2 warnings in 0.31s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_filter_preserves_input_order_and_partitions_correctly",
+      "tests/test_pgdrm_kernel.py::test_protected_floor_is_a_lower_bound_on_utility",
+      "tests/test_pgdrm_kernel.py::test_protected_floor_reading_is_protection_not_eviction"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M3  floor becomes a ceiling (min)",
+    "status": "RED",
+    "n_red": 19,
+    "summary": "================== 19 failed, 47 passed, 2 warnings in 0.34s ==================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_decay_is_monotonically_non_increasing_in_age",
+      "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.0-0.0-1.0-e^(-0*0) = e^0 = 1]",
+      "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.0-1000000.0-1.0-e^(-0*1e6) = e^0 = 1]",
+      "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.001-1000.0-0.36787944117144233-e^(-0.001*1000) = e^-1 = 1/e]",
+      "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.5-4.0-0.1353352832366127-e^(-0.5*4) = e^-2]",
+      "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.6931471805599453-0.0-1.0-e^(-ln2*0) = 2^-0 = 1]"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M4  floor read as eviction (D6 Reading B)",
+    "status": "RED",
+    "n_red": 2,
+    "summary": "================== 2 failed, 64 passed, 2 warnings in 0.32s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_filter_preserves_input_order_and_partitions_correctly",
+      "tests/test_pgdrm_kernel.py::test_protected_floor_reading_is_protection_not_eviction"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M5  contamination direction reversed",
+    "status": "RED",
+    "n_red": 6,
+    "summary": "================== 6 failed, 60 passed, 2 warnings in 0.32s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_any_foreign_token_contaminates",
+      "tests/test_pgdrm_kernel.py::test_clean_record_is_a_subset_of_the_task_context",
+      "tests/test_pgdrm_kernel.py::test_describe_is_pure_string_formatting",
+      "tests/test_pgdrm_kernel.py::test_empty_task_context_makes_every_tagged_record_foreign",
+      "tests/test_pgdrm_kernel.py::test_foreign_tokens_are_reported_sorted_and_complete",
+      "tests/test_pgdrm_kernel.py::test_untagged_record_claims_no_task_scope_and_passes_the_token_axis"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M6  exact match becomes fuzzy substring",
+    "status": "RED",
+    "n_red": 5,
+    "summary": "================== 5 failed, 61 passed, 2 warnings in 0.31s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_matching_is_exact_not_fuzzy[ shot_A-shot_A]",
+      "tests/test_pgdrm_kernel.py::test_matching_is_exact_not_fuzzy[shot-shot_010]",
+      "tests/test_pgdrm_kernel.py::test_matching_is_exact_not_fuzzy[shot_010-shot]",
+      "tests/test_pgdrm_kernel.py::test_matching_is_exact_not_fuzzy[shot_A -shot_A]",
+      "tests/test_pgdrm_kernel.py::test_matching_is_exact_not_fuzzy[shot_a-shot_A]"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M7  unmeasured distance passes",
+    "status": "RED",
+    "n_red": 1,
+    "summary": "================== 1 failed, 65 passed, 2 warnings in 0.34s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_unmeasured_distance_fails_closed"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M8  distance comparison flipped",
+    "status": "RED",
+    "n_red": 3,
+    "summary": "================== 3 failed, 63 passed, 2 warnings in 0.34s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_distance_at_and_below_threshold_is_kept",
+      "tests/test_pgdrm_kernel.py::test_distance_beyond_threshold_drops",
+      "tests/test_pgdrm_kernel.py::test_distance_outranks_decay"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M9  utility boundary made exclusive",
+    "status": "RED",
+    "n_red": 1,
+    "summary": "================== 1 failed, 65 passed, 2 warnings in 0.32s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_utility_threshold_boundary_is_inclusive"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M10 precedence: decay runs first",
+    "status": "RED",
+    "n_red": 2,
+    "summary": "================== 2 failed, 64 passed, 2 warnings in 0.33s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_contamination_outranks_distance_and_decay",
+      "tests/test_pgdrm_kernel.py::test_distance_outranks_decay"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M11 impure import added",
+    "status": "RED",
+    "n_red": 1,
+    "summary": "================== 1 failed, 65 passed, 2 warnings in 0.32s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_kernel_imports_nothing_impure"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M12 filter order not preserved",
+    "status": "RED",
+    "n_red": 1,
+    "summary": "================== 1 failed, 65 passed, 2 warnings in 0.29s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_filter_preserves_input_order_and_partitions_correctly"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M13 non-str tokens accepted",
+    "status": "RED",
+    "n_red": 1,
+    "summary": "================== 1 failed, 65 passed, 2 warnings in 0.31s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_non_string_token_is_rejected"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M15 NaN guard removed",
+    "status": "RED",
+    "n_red": 1,
+    "summary": "================== 1 failed, 65 passed, 2 warnings in 0.32s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_nan_is_rejected_everywhere_it_could_fake_a_pass"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M16 describe drops the reason",
+    "status": "RED",
+    "n_red": 1,
+    "summary": "================== 1 failed, 65 passed, 2 warnings in 0.30s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_describe_is_pure_string_formatting"
+    ],
+    "errors": []
+  },
+  {
+    "mutation": "M14 bool guard removed",
+    "status": "RED",
+    "n_red": 1,
+    "summary": "================== 1 failed, 65 passed, 2 warnings in 0.28s ===================",
+    "red_tests": [
+      "tests/test_pgdrm_kernel.py::test_bool_is_not_a_number_here"
+    ],
+    "errors": []
+  }
+]

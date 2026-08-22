@@ -1,0 +1,343 @@
+{
+  "total": 28,
+  "red": 28,
+  "survivors": [],
+  "results": [
+    {
+      "mutation": "M1  decay sign flipped",
+      "status": "RED",
+      "n_red": 17,
+      "summary": "================== 17 failed, 69 passed, 2 warnings in 0.36s ==================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_decay_is_monotonically_non_increasing_in_age",
+        "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.001-1000.0-0.36787944117144233-e^(-0.001*1000) = e^-1 = 1/e]",
+        "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.5-4.0-0.1353352832366127-e^(-0.5*4) = e^-2]",
+        "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.6931471805599453-1.0-0.5-e^(-ln2*1) = 2^-1 = 1/2]",
+        "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.6931471805599453-10.0-0.0009765625-e^(-ln2*10) = 2^-10 = 1/1024]",
+        "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.6931471805599453-2.0-0.25-e^(-ln2*2) = 2^-2 = 1/4]"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M2  protected_floor clamp removed",
+      "status": "RED",
+      "n_red": 4,
+      "summary": "================== 4 failed, 82 passed, 2 warnings in 0.33s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_an_infinite_parameter_still_produces_a_real_verdict",
+        "tests/test_pgdrm_kernel.py::test_filter_preserves_input_order_and_partitions_correctly",
+        "tests/test_pgdrm_kernel.py::test_protected_floor_is_a_lower_bound_on_utility",
+        "tests/test_pgdrm_kernel.py::test_protected_floor_reading_is_protection_not_eviction"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M3  floor becomes a ceiling (min)",
+      "status": "RED",
+      "n_red": 22,
+      "summary": "================== 22 failed, 64 passed, 2 warnings in 0.35s ==================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_an_infinite_parameter_still_produces_a_real_verdict",
+        "tests/test_pgdrm_kernel.py::test_decay_is_monotonically_non_increasing_in_age",
+        "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.0-0.0-1.0-e^(-0*0) = e^0 = 1]",
+        "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.0-1000000.0-1.0-e^(-0*1e6) = e^0 = 1]",
+        "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.001-1000.0-0.36787944117144233-e^(-0.001*1000) = e^-1 = 1/e]",
+        "tests/test_pgdrm_kernel.py::test_decay_table_hand_computed[0.5-4.0-0.1353352832366127-e^(-0.5*4) = e^-2]"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M4  floor read as eviction (D6 Reading B)",
+      "status": "RED",
+      "n_red": 3,
+      "summary": "================== 3 failed, 83 passed, 2 warnings in 0.31s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_an_infinite_parameter_still_produces_a_real_verdict",
+        "tests/test_pgdrm_kernel.py::test_filter_preserves_input_order_and_partitions_correctly",
+        "tests/test_pgdrm_kernel.py::test_protected_floor_reading_is_protection_not_eviction"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M5  contamination direction reversed",
+      "status": "RED",
+      "n_red": 6,
+      "summary": "================== 6 failed, 80 passed, 2 warnings in 0.31s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_any_foreign_token_contaminates",
+        "tests/test_pgdrm_kernel.py::test_clean_record_is_a_subset_of_the_task_context",
+        "tests/test_pgdrm_kernel.py::test_describe_is_pure_string_formatting",
+        "tests/test_pgdrm_kernel.py::test_empty_task_context_makes_every_tagged_record_foreign",
+        "tests/test_pgdrm_kernel.py::test_foreign_tokens_are_reported_sorted_and_complete",
+        "tests/test_pgdrm_kernel.py::test_untagged_record_claims_no_task_scope_and_passes_the_token_axis"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M6  exact match becomes fuzzy substring",
+      "status": "RED",
+      "n_red": 6,
+      "summary": "================== 6 failed, 80 passed, 2 warnings in 0.32s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_a_str_task_context_is_refused_never_shredded_into_characters",
+        "tests/test_pgdrm_kernel.py::test_matching_is_exact_not_fuzzy[ shot_A-shot_A]",
+        "tests/test_pgdrm_kernel.py::test_matching_is_exact_not_fuzzy[shot-shot_010]",
+        "tests/test_pgdrm_kernel.py::test_matching_is_exact_not_fuzzy[shot_010-shot]",
+        "tests/test_pgdrm_kernel.py::test_matching_is_exact_not_fuzzy[shot_A -shot_A]",
+        "tests/test_pgdrm_kernel.py::test_matching_is_exact_not_fuzzy[shot_a-shot_A]"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M7  unmeasured distance passes",
+      "status": "RED",
+      "n_red": 1,
+      "summary": "================== 1 failed, 85 passed, 2 warnings in 0.31s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_unmeasured_distance_fails_closed"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M8  distance comparison flipped",
+      "status": "RED",
+      "n_red": 3,
+      "summary": "================== 3 failed, 83 passed, 2 warnings in 0.30s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_distance_at_and_below_threshold_is_kept",
+        "tests/test_pgdrm_kernel.py::test_distance_beyond_threshold_drops",
+        "tests/test_pgdrm_kernel.py::test_distance_outranks_decay"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M9  utility boundary made exclusive",
+      "status": "RED",
+      "n_red": 2,
+      "summary": "================== 2 failed, 84 passed, 2 warnings in 0.30s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_an_infinite_parameter_still_produces_a_real_verdict",
+        "tests/test_pgdrm_kernel.py::test_utility_threshold_boundary_is_inclusive"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M10 precedence: decay runs first",
+      "status": "RED",
+      "n_red": 2,
+      "summary": "================== 2 failed, 84 passed, 2 warnings in 0.31s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_contamination_outranks_distance_and_decay",
+        "tests/test_pgdrm_kernel.py::test_distance_outranks_decay"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M11 impure import added",
+      "status": "RED",
+      "n_red": 1,
+      "summary": "================== 1 failed, 85 passed, 2 warnings in 0.32s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_kernel_imports_nothing_impure"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M12 filter order not preserved",
+      "status": "RED",
+      "n_red": 1,
+      "summary": "================== 1 failed, 85 passed, 2 warnings in 0.31s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_filter_preserves_input_order_and_partitions_correctly"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M13 non-str tokens accepted",
+      "status": "RED",
+      "n_red": 1,
+      "summary": "================== 1 failed, 85 passed, 2 warnings in 0.31s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_non_string_token_is_rejected"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M14 bool guard removed",
+      "status": "RED",
+      "n_red": 1,
+      "summary": "================== 1 failed, 85 passed, 2 warnings in 0.30s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_bool_is_not_a_number_here"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M15 NaN guard removed",
+      "status": "RED",
+      "n_red": 1,
+      "summary": "================== 1 failed, 85 passed, 2 warnings in 0.31s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_nan_is_rejected_everywhere_it_could_fake_a_pass"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "M16 describe drops the reason",
+      "status": "RED",
+      "n_red": 1,
+      "summary": "================== 1 failed, 85 passed, 2 warnings in 0.30s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_describe_is_pure_string_formatting"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X17 one-shot guard removed from _token_set",
+      "status": "RED",
+      "n_red": 3,
+      "summary": "================== 3 failed, 83 passed, 2 warnings in 0.31s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_a_record_is_a_stable_value_the_moment_it_exists",
+        "tests/test_pgdrm_kernel.py::test_filter_records_refuses_a_one_shot_iterable_on_both_iterable_arguments",
+        "tests/test_pgdrm_kernel.py::test_the_same_one_shot_iterable_answers_identically_on_every_call"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X18 one-shot guard removed from filter_records(records)",
+      "status": "RED",
+      "n_red": 1,
+      "summary": "================== 1 failed, 85 passed, 2 warnings in 0.30s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_filter_records_refuses_a_one_shot_iterable_on_both_iterable_arguments"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X19 MemoryRecord.__post_init__ deleted",
+      "status": "RED",
+      "n_red": 2,
+      "summary": "================== 2 failed, 84 passed, 2 warnings in 0.32s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_a_record_is_a_stable_value_the_moment_it_exists",
+        "tests/test_pgdrm_kernel.py::test_a_str_record_token_set_is_refused_at_construction"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X20 non-Iterable half of the str guard dropped",
+      "status": "RED",
+      "n_red": 4,
+      "summary": "================== 4 failed, 82 passed, 2 warnings in 0.33s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[123]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[4.5]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[None]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[not_iterable3]"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X21 infinity branch deleted",
+      "status": "RED",
+      "n_red": 3,
+      "summary": "================== 3 failed, 83 passed, 2 warnings in 0.31s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_an_infinite_parameter_still_produces_a_real_verdict",
+        "tests/test_pgdrm_kernel.py::test_infinity_yields_a_limit_never_a_nan[0.0-inf-1.0-lambda = 0 disables decay: U = 1 at every age]",
+        "tests/test_pgdrm_kernel.py::test_infinity_yields_a_limit_never_a_nan[inf-0.0-1.0-t = 0: no time has passed, U = 1]"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X22 MemoryRecord type guard deleted",
+      "status": "RED",
+      "n_red": 1,
+      "summary": "================== 1 failed, 85 passed, 2 warnings in 0.31s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_a_lookalike_object_cannot_buy_a_filter_verdict"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X23 records-iterable guard deleted",
+      "status": "RED",
+      "n_red": 4,
+      "summary": "================== 4 failed, 82 passed, 2 warnings in 0.30s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_records_argument_is_refused[123]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_records_argument_is_refused[4.5]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_records_argument_is_refused[None]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_records_argument_is_refused[not_iterable3]"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X24 one-shot detection inverted",
+      "status": "RED",
+      "n_red": 44,
+      "summary": "================== 44 failed, 42 passed, 2 warnings in 0.34s ==================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_a_lookalike_object_cannot_buy_a_filter_verdict",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[123]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[4.5]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[None]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[not_iterable3]",
+        "tests/test_pgdrm_kernel.py::test_a_record_is_a_stable_value_the_moment_it_exists"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X25 str guard deleted (SURVIVED on e4730869)",
+      "status": "RED",
+      "n_red": 6,
+      "summary": "================== 6 failed, 80 passed, 2 warnings in 0.31s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[123]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[4.5]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[None]",
+        "tests/test_pgdrm_kernel.py::test_a_non_iterable_task_context_is_refused[not_iterable3]",
+        "tests/test_pgdrm_kernel.py::test_a_str_record_token_set_is_refused_at_construction",
+        "tests/test_pgdrm_kernel.py::test_a_str_task_context_is_refused_never_shredded_into_characters"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X26 __post_init__ stores the raw value, never freezes it",
+      "status": "RED",
+      "n_red": 2,
+      "summary": "================== 2 failed, 84 passed, 2 warnings in 0.30s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_a_record_is_a_stable_value_the_moment_it_exists",
+        "tests/test_pgdrm_kernel.py::test_a_str_record_token_set_is_refused_at_construction"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X27 a single foreign token no longer contaminates",
+      "status": "RED",
+      "n_red": 12,
+      "summary": "================== 12 failed, 74 passed, 2 warnings in 0.32s ==================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_a_record_is_a_stable_value_the_moment_it_exists",
+        "tests/test_pgdrm_kernel.py::test_a_str_task_context_is_refused_never_shredded_into_characters",
+        "tests/test_pgdrm_kernel.py::test_any_foreign_token_contaminates",
+        "tests/test_pgdrm_kernel.py::test_contamination_outranks_distance_and_decay",
+        "tests/test_pgdrm_kernel.py::test_describe_is_pure_string_formatting",
+        "tests/test_pgdrm_kernel.py::test_empty_task_context_makes_every_tagged_record_foreign"
+      ],
+      "errors": []
+    },
+    {
+      "mutation": "X28 distance boundary made exclusive",
+      "status": "RED",
+      "n_red": 1,
+      "summary": "================== 1 failed, 85 passed, 2 warnings in 0.30s ===================",
+      "red_tests": [
+        "tests/test_pgdrm_kernel.py::test_distance_at_and_below_threshold_is_kept"
+      ],
+      "errors": []
+    }
+  ]
+}

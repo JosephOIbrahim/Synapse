@@ -1,0 +1,633 @@
+C:\Users\User\AppData\Roaming\Python\Python314\site-packages\torch\cuda\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+============================= test session starts =============================
+collected 6952 items / 3 skipped
+
+tests\panel\test_apex_catalog_membership.py ....                         [  0%]
+tests\panel\test_chat_gate_off_bridge.py ..                              [  0%]
+tests\panel\test_chat_leading.py ..sss                                   [  0%]
+tests\panel\test_docking.py s                                            [  0%]
+tests\panel\test_failure_trail.py ss                                     [  0%]
+tests\panel\test_flowfix_j4.py .....                                     [  0%]
+tests\panel\test_font_floor.py ........                                  [  0%]
+tests\panel\test_font_scale.py ssssssss                                  [  0%]
+tests\panel\test_gate_fidelity_unknown.py ssssssss                       [  0%]
+tests\panel\test_health_strip.py .............ss                         [  0%]
+tests\panel\test_seeded_contrast.py ...                                  [  0%]
+tests\panel\test_session_scope.py .......                                [  0%]
+tests\panel\test_theme_source.py ........                                [  1%]
+tests\panel\test_token_authority.py .................................    [  1%]
+tests\panel\test_token_seeding.py ..                                     [  1%]
+tests\panel\test_type_scale_native.py ...                                [  1%]
+tests\rulebook\test_rulebook_meta.py .......                             [  1%]
+tests\solaris\test_component_builder.py ...........................      [  2%]
+tests\solaris\test_create_variants.py ............                       [  2%]
+tests\solaris\test_import_megascans.py ......................            [  2%]
+tests\solaris\test_live_wiring.py sssssssssssssssssssssssssss            [  3%]
+tests\solaris\test_scene_template.py .......................             [  3%]
+tests\solaris\test_set_purpose.py .................                      [  3%]
+tests\test_agent_loop.py ..................                              [  3%]
+tests\test_agent_loop_usage.py .........                                 [  3%]
+tests\test_agent_state.py .............................................. [  4%]
+.........................                                                [  4%]
+tests\test_agent_usd_ledger.py ..........................                [  5%]
+tests\test_apex_provider_contract.py ..................                  [  5%]
+tests\test_apex_recipe_names.py .......                                  [  5%]
+tests\test_apex_truth_wa1.py ..................                          [  5%]
+tests\test_apex_wire_wa1.py ........s..                                  [  6%]
+tests\test_area4_observability.py ..........                             [  6%]
+tests\test_auth.py .......................................               [  6%]
+tests\test_autonomy_driver.py ............                               [  7%]
+tests\test_autonomy_evaluator.py ................                        [  7%]
+tests\test_autonomy_live_contract.py ..                                  [  7%]
+tests\test_autonomy_models.py ...........                                [  7%]
+tests\test_autonomy_planner.py ..............                            [  7%]
+tests\test_autonomy_predictor.py ........................                [  7%]
+tests\test_autonomy_task_provenance.py .........                         [  8%]
+tests\test_autonomy_validator.py ............                            [  8%]
+tests\test_backfill.py ..F..                                             [  8%]
+tests\test_bench_scale.py .............................................. [  9%]
+.....................................                                    [  9%]
+tests\test_blackbox_recover.py ..............                            [  9%]
+tests\test_blast_radius.py ...........                                   [  9%]
+tests\test_blocks_reconciler.py ........................................ [ 10%]
+.............................                                            [ 10%]
+tests\test_blocks_seam.py ..............................                 [ 11%]
+tests\test_bridge_endpoint.py ...........................                [ 11%]
+tests\test_bridge_endpoint_pid_probe.py ....                             [ 11%]
+tests\test_bridge_multiclient.py ..................                      [ 12%]
+tests\test_bridge_phase_timers.py .........                              [ 12%]
+tests\test_c0_store_address.py ...........                               [ 12%]
+tests\test_cache_assess_tool.py ................................         [ 12%]
+tests\test_cache_estimator.py ............................               [ 13%]
+tests\test_cache_host_probe_boundary.py ...................              [ 13%]
+tests\test_cache_no_forced_cook.py .......                               [ 13%]
+tests\test_cache_policy.py ............................................. [ 14%]
+...........                                                              [ 14%]
+tests\test_cache_signatures.py ............                              [ 14%]
+tests\test_camera_twins.py ...................                           [ 14%]
+tests\test_capture.py .......                                            [ 14%]
+tests\test_chat_panel.py ....................................sssssssssss [ 15%]
+s...............sssss............................                        [ 16%]
+tests\test_cognitive_boundary.py .                                       [ 16%]
+tests\test_compose_offmain_wp3.py ......                                 [ 16%]
+tests\test_composition_validation.py ............................        [ 16%]
+tests\test_conductor_advisor.py ...................                      [ 17%]
+tests\test_consent_timeout.py ........................                   [ 17%]
+tests\test_context_poll_offmain.py ......                                [ 17%]
+tests\test_cops.py ..................................................... [ 18%]
+.....................................                                    [ 18%]
+tests\test_cops_parmgate_routing.py ........                             [ 18%]
+tests\test_core.py ..................................................... [ 19%]
+..........                                                               [ 19%]
+tests\test_corpus_activate.py ....                                       [ 19%]
+tests\test_corpus_encoding_conformance.py ....                           [ 19%]
+tests\test_corpus_lop_conformance.py ..                                  [ 19%]
+tests\test_crypto.py .............................                       [ 20%]
+tests\test_ctx_track.py ................                                 [ 20%]
+tests\test_custom_provider.py ..........                                 [ 20%]
+tests\test_d_track.py ................................                   [ 21%]
+tests\test_daemon_event_loop.py ..s                                      [ 21%]
+tests\test_decisions.py .......                                          [ 21%]
+tests\test_decisions_resolve.py .......                                  [ 21%]
+tests\test_design_system.py ............................................ [ 22%]
+                                                                         [ 22%]
+tests\test_determinism_edge.py ......                                    [ 22%]
+tests\test_dispatch_wait_metric.py ...                                   [ 22%]
+tests\test_dispatcher_port.py ...........                                [ 22%]
+tests\test_doctor_coexistence.py ......                                  [ 22%]
+tests\test_e2e_sprint.py ................                                [ 22%]
+tests\test_embedding.py ..............................                   [ 23%]
+tests\test_emergency_halt.py ............                                [ 23%]
+tests\test_emitted_node_types.py .......                                 [ 23%]
+tests\test_errors.py ...................                                 [ 23%]
+tests\test_evaluator_io.py ............                                  [ 23%]
+tests\test_evolution_bridge_internals.py ......................          [ 24%]
+tests\test_f3_emergency_net.py .................                         [ 24%]
+tests\test_f6_hygiene.py ......                                          [ 24%]
+tests\test_floor_gate_async.py ..........                                [ 24%]
+tests\test_floor_hook.py ..............                                  [ 24%]
+tests\test_floor_provenance_rotation.py .........                        [ 24%]
+tests\test_foreground_guard.py .......................                   [ 25%]
+tests\test_forge_copernicus.py ......                                    [ 25%]
+tests\test_forge_engine_honest_signal.py ..........................      [ 25%]
+tests\test_forge_integration.py .......                                  [ 25%]
+tests\test_forge_render.py ...                                           [ 25%]
+tests\test_forge_usd.py .........................................        [ 26%]
+tests\test_frame_validator.py .............................              [ 26%]
+tests\test_freeze_chain.py ........                                      [ 27%]
+tests\test_g1a_followup_job_root_discovery.py ...                        [ 27%]
+tests\test_g1a_scene_memory_address.py .................                 [ 27%]
+tests\test_gate_fidelity_honesty_sourcepin.py .........                  [ 27%]
+tests\test_gemini_translate.py ...........                               [ 27%]
+tests\test_graph_builder_mile3.py .....                                  [ 27%]
+tests\test_graph_oracle_mile2.py .....                                   [ 27%]
+tests\test_graph_proposal_mile1.py ..                                    [ 27%]
+tests\test_graph_synth_wiring.py ...........                             [ 27%]
+tests\test_guards.py ..............................................      [ 28%]
+tests\test_h22_api_delta.py ..........................                   [ 28%]
+tests\test_h22_cops_solver_live.py sssss                                 [ 29%]
+tests\test_h22_resweep_spec.py .........                                 [ 29%]
+tests\test_h22_setdressing_live.py ssss                                  [ 29%]
+tests\test_h3b_panel_cancel.py ..................                        [ 29%]
+tests\test_h3b_render_stop.py ....................                       [ 29%]
+tests\test_handler_edge.py .....                                         [ 29%]
+tests\test_handler_mutation_lock.py ...                                  [ 29%]
+tests\test_handoff_verification.py ..................                    [ 30%]
+tests\test_harness_lock.py ..........                                    [ 30%]
+tests\test_harness_quoting.py .........................................  [ 30%]
+tests\test_hda.py ..........................                             [ 31%]
+tests\test_hda_panel.py ..s.............................                 [ 31%]
+tests\test_host_layer.py ............................................... [ 32%]
+......s................                                                  [ 32%]
+tests\test_hou_reimport_guard.py sssssss....s....                        [ 32%]
+tests\test_hwebserver_integration.py ssss                                [ 33%]
+tests\test_inspect_live.py ssssssssss                                    [ 33%]
+tests\test_inspect_mock.py ............................................. [ 33%]
+..........................................                               [ 34%]
+tests\test_inspect_node_default.py ..                                    [ 34%]
+tests\test_install_package.py ........                                   [ 34%]
+tests\test_install_package_parity.py ....                                [ 34%]
+tests\test_install_verify.py ......................                      [ 34%]
+tests\test_integration_pipeline.py ..................................... [ 35%]
+.....                                                                    [ 35%]
+tests\test_introspection.py ...........................................  [ 36%]
+tests\test_karma_progressive_presets.py .........................        [ 36%]
+tests\test_keyframe_aov.py .......                                       [ 36%]
+tests\test_knowledge.py ................................................ [ 37%]
+............................                                             [ 37%]
+tests\test_knowledge_retrieval_repair.py ........................        [ 38%]
+tests\test_l8_mitigation.py ...                                          [ 38%]
+tests\test_layout_and_matlib.py .............                            [ 38%]
+tests\test_ledger_moneta_seam.py ....................................    [ 38%]
+tests\test_live_integrity_envelope.py .................................. [ 39%]
+......                                                                   [ 39%]
+tests\test_live_metrics.py ......................................        [ 39%]
+tests\test_live_metrics_threadsafe.py ....                               [ 39%]
+tests\test_load.py s                                                     [ 39%]
+tests\test_loop_contracts.py ....................                        [ 40%]
+tests\test_lop_flywheel.py ................                              [ 40%]
+tests\test_lop_major_resolution.py .....................                 [ 40%]
+tests\test_m1_truth_contract.py ....                                     [ 40%]
+tests\test_m2_color_preview.py ..........                                [ 41%]
+tests\test_m2_cook_verify.py .................                           [ 41%]
+tests\test_m2_display_policy.py ....................                     [ 41%]
+tests\test_m2_frame_tokens.py ...............                            [ 41%]
+tests\test_m2_path_policy.py ................                            [ 41%]
+tests\test_m2_safe_node_name.py ...........                              [ 42%]
+tests\test_m2_show_config.py ..........                                  [ 42%]
+tests\test_m3_bounded_autonomy.py ..........                             [ 42%]
+tests\test_m3_egress_docs.py .....                                       [ 42%]
+tests\test_m3_env_conformance.py F.....                                  [ 42%]
+tests\test_m3_logs_doctor.py ........................                    [ 42%]
+tests\test_m3_upgrade_surface.py ..........                              [ 43%]
+tests\test_main_thread.py ..........                                     [ 43%]
+tests\test_main_thread_hold_metric.py ........                           [ 43%]
+tests\test_main_thread_holder.py ..........                              [ 43%]
+tests\test_main_thread_stall.py ....                                     [ 43%]
+tests\test_main_thread_zombie.py ..                                      [ 43%]
+tests\test_marshal_hostile.py ..........................                 [ 43%]
+tests\test_marshal_lint.py ....                                          [ 44%]
+tests\test_materials.py ..........................                       [ 44%]
+tests\test_mcp_protocol.py ............................................. [ 45%]
+................................................                         [ 45%]
+tests\test_mcp_roundtrip.py .....................                        [ 46%]
+tests\test_mcp_surface_probe.py .........                                [ 46%]
+tests\test_measures_contracts.py ........................                [ 46%]
+tests\test_memory_models.py ....                                         [ 46%]
+tests\test_memory_patterns.py ........                                   [ 46%]
+tests\test_metrics_invariants.py .....                                   [ 46%]
+tests\test_mode_gate.py ..........                                       [ 46%]
+tests\test_model_ids_lockstep.py ..                                      [ 46%]
+tests\test_model_picker.py ........                                      [ 47%]
+tests\test_moneta_crucible.py ..............................             [ 47%]
+tests\test_moneta_fc4_audit.py ........                                  [ 47%]
+tests\test_moneta_integration.py ...........                             [ 47%]
+tests\test_moneta_provenance_union.py .............                      [ 47%]
+tests\test_moneta_runtime.py .....                                       [ 47%]
+tests\test_moneta_store.py ....................                          [ 48%]
+tests\test_moneta_substrate_truth.py ..................................  [ 48%]
+tests\test_mtlx_conformance.py ......                                    [ 48%]
+tests\test_multi_shot.py ..............                                  [ 49%]
+tests\test_needs_houdini_marker.py ..................                    [ 49%]
+tests\test_nemotron_provider.py ...................                      [ 49%]
+tests\test_network_explain.py ...................                        [ 49%]
+tests\test_node_catalog.py ...........                                   [ 50%]
+tests\test_node_undo_grouping.py ...........                             [ 50%]
+tests\test_offmain_fallback.py ........                                  [ 50%]
+tests\test_ollama_provider.py .............                              [ 50%]
+tests\test_orchestrate_close_gate.py ......                              [ 50%]
+tests\test_orchestrate_liveness.py ..s                                   [ 50%]
+tests\test_panel_consent_no_freeze.py ..                                 [ 50%]
+tests\test_panel_faces.py ssssssssssssssssssssssssssssssssssssss         [ 51%]
+tests\test_panel_fidelity_honesty_sourcepin.py ....                      [ 51%]
+tests\test_panel_freeze_beat.py ...                                      [ 51%]
+tests\test_panel_preflight.py .............                              [ 51%]
+tests\test_panel_preflight_h7_guard.py .........                         [ 51%]
+tests\test_panel_receipt_honesty_sourcepin.py ..                         [ 51%]
+tests\test_panel_render_receipt.py ............                          [ 51%]
+tests\test_panel_settings.py ........                                    [ 51%]
+tests\test_panel_stop_honest.py ...                                      [ 51%]
+tests\test_parity_promotions.py ....                                     [ 52%]
+tests\test_parm_gate.py .........................                        [ 52%]
+tests\test_pass7_per_agent_and_canonical.py ..........................   [ 52%]
+tests\test_pass8_history_and_meta.py ...........................         [ 53%]
+tests\test_passthrough_hygiene.py .......................                [ 53%]
+tests\test_pdg_cook_timeout.py ...                                       [ 53%]
+tests\test_perception_baseline.py ........                               [ 53%]
+tests\test_perf_ratchet.py ............................................  [ 54%]
+tests\test_phantom_guardrail.py ................................         [ 54%]
+tests\test_phase0a_write_backup.py ......                                [ 54%]
+tests\test_phase0b_consent_posture.py ..                                 [ 54%]
+tests\test_phase0c_doc1_toolcount.py ...                                 [ 54%]
+tests\test_phase0c_doc1_version_conformance.py ...........               [ 55%]
+tests\test_phase0c_int1_async_consent.py ....                            [ 55%]
+tests\test_phase0c_int3_fail_closed.py ..                                [ 55%]
+tests\test_phase0c_s2_stage_hash.py .                                    [ 55%]
+tests\test_phase0c_s3_outputs_trace.py .                                 [ 55%]
+tests\test_phase0c_sec0_hwebserver_os.py .                               [ 55%]
+tests\test_phase1_rungs.py ...........s                                  [ 55%]
+tests\test_phase2_allocation.py ...........                              [ 55%]
+tests\test_phase3_exposure.py ............                               [ 55%]
+tests\test_pipeline_efficiency.py ....................................   [ 56%]
+tests\test_pkg_bootstrap_invariant.py ..................                 [ 56%]
+tests\test_port_wave_scene1.py .............................             [ 56%]
+tests\test_provenance_gate.py ...........                                [ 57%]
+tests\test_provider_cache_and_usage.py ............                      [ 57%]
+tests\test_providers_floor.py .........                                  [ 57%]
+tests\test_prst_network_persistence.py ............                      [ 57%]
+tests\test_qt_stub_window.py ......                                      [ 57%]
+tests\test_r306_reduced_mode_surfacing.py ...................            [ 57%]
+tests\test_r_track.py ............................................       [ 58%]
+tests\test_rag_promote_contract.py .......                               [ 58%]
+tests\test_rbac.py ..................................................... [ 59%]
+..................                                                       [ 59%]
+tests\test_reach_public_agreement.py ...............                     [ 59%]
+tests\test_recall_rag_seam.py .......                                    [ 59%]
+tests\test_render.py ..................................................  [ 60%]
+tests\test_render_bounded.py ...............                             [ 60%]
+tests\test_render_constants.py ..............                            [ 61%]
+tests\test_render_diagnostics.py ..................................      [ 61%]
+tests\test_render_farm.py .............................                  [ 61%]
+tests\test_render_farm_handler.py .......                                [ 62%]
+tests\test_render_notify.py ....................                         [ 62%]
+tests\test_render_offmain_c11.py .                                       [ 62%]
+tests\test_render_parm_restore.py .......                                [ 62%]
+tests\test_residency_guard_fires.py ..                                   [ 62%]
+tests\test_resilience.py ..................................              [ 62%]
+tests\test_resilience_fixes.py ......                                    [ 63%]
+tests\test_result_telemetry.py ...................                       [ 63%]
+tests\test_retina_boundary.py ..                                         [ 63%]
+tests\test_retina_exr_header.py ..........                               [ 63%]
+tests\test_retina_ingest.py ...sss                                       [ 63%]
+tests\test_retina_manifest.py .......................                    [ 63%]
+tests\test_retina_t0.py .................                                [ 64%]
+tests\test_retina_t1.py ......................                           [ 64%]
+tests\test_retina_t1_schema.py ..............                            [ 64%]
+tests\test_retry_breaker.py ........                                     [ 64%]
+tests\test_rope_catalog.py ......                                        [ 64%]
+tests\test_rope_composer_height.py .................                     [ 65%]
+tests\test_rope_curious_manifest.py ....                                 [ 65%]
+tests\test_rope_density.py ...........                                   [ 65%]
+tests\test_rope_design_conformance.py ....                               [ 65%]
+tests\test_rope_expert_pin.py ..                                         [ 65%]
+tests\test_rope_manifests.py ..............                              [ 65%]
+tests\test_rope_profile_composition.py .............                     [ 65%]
+tests\test_rope_prominence_visible.py ............                       [ 66%]
+tests\test_rope_scoped_revert.py .....                                   [ 66%]
+tests\test_rope_switcher_state.py .......                                [ 66%]
+tests\test_rope_switcher_wires_profile.py ......                         [ 66%]
+tests\test_router_internals.py ..............................            [ 66%]
+tests\test_routing.py .................................................. [ 67%]
+........................................................................ [ 68%]
+........................................................................ [ 69%]
+...................................                                      [ 69%]
+tests\test_s_track.py ......................                             [ 70%]
+tests\test_scene_hash_gate.py ......................                     [ 70%]
+tests\test_scene_load_bridge.py ........................                 [ 70%]
+tests\test_scene_memory.py ......................................sssssss [ 71%]
+sss..............................                                        [ 72%]
+tests\test_science_deposit.py ....                                       [ 72%]
+tests\test_science_harness.py .......................................... [ 72%]
+...............                                                          [ 72%]
+tests\test_scope_fence_h22.py .............                              [ 73%]
+tests\test_scout.py .....................................                [ 73%]
+tests\test_scout_apex_federation.py ............                         [ 73%]
+tests\test_scout_eval.py ..........                                      [ 74%]
+tests\test_scout_ingest.py ............                                  [ 74%]
+tests\test_scout_introspect.py ....                                      [ 74%]
+tests\test_scout_node_dense.py ...........                               [ 74%]
+tests\test_scout_typename_eval.py ......                                 [ 74%]
+tests\test_seed_corpus.py .....                                          [ 74%]
+tests\test_session_integrity_summary.py ....                             [ 74%]
+tests\test_session_summary_dedup.py ...                                  [ 74%]
+tests\test_sessions.py ..................................                [ 75%]
+tests\test_sessionstart_ping.py ...                                      [ 75%]
+tests\test_set_usd_attribute_alias.py .......                            [ 75%]
+tests\test_set_usd_primvar.py ...........................                [ 75%]
+tests\test_setdressing_recipe.py ..........                              [ 75%]
+tests\test_settings_v2.py ............                                   [ 75%]
+tests\test_shadow_store.py .....                                         [ 76%]
+tests\test_shelf_current.py ..................                           [ 76%]
+tests\test_shot_render_ready_empty_stage.py ...                          [ 76%]
+tests\test_sleep_pass_gate.py .......                                    [ 76%]
+tests\test_solaris_assembly.py ......................................... [ 77%]
+..                                                                       [ 77%]
+tests\test_solaris_compose.py .................                          [ 77%]
+tests\test_solaris_compose_tools.py ..................                   [ 77%]
+tests\test_solaris_context.py ..............................             [ 78%]
+tests\test_solaris_graph.py ............................................ [ 78%]
+............................................                             [ 79%]
+tests\test_solaris_guardrails.py ...................                     [ 79%]
+tests\test_solaris_harden_harness.py ...........                         [ 79%]
+tests\test_solaris_layout.py ..........................                  [ 80%]
+tests\test_solaris_ordering.py .....                                     [ 80%]
+tests\test_solaris_tool_registration.py ................................ [ 80%]
+............                                                             [ 80%]
+tests\test_solaris_wiring_verifiers.py .............................     [ 81%]
+tests\test_sqlite_store.py ...........................................   [ 81%]
+tests\test_stage_exceeds_cache_and_composition_valid.py .............    [ 82%]
+tests\test_stage_hash_honesty.py ..........                              [ 82%]
+tests\test_stage_hash_volume_gate.py ............                        [ 82%]
+tests\test_start_hwebserver_durable_ref.py .....                         [ 82%]
+tests\test_statusline.py .............                                   [ 82%]
+tests\test_statusline_worktree.py ......                                 [ 82%]
+tests\test_store_atomic_save.py ..                                       [ 82%]
+tests\test_store_degraded_load.py ...                                    [ 82%]
+tests\test_store_key_escrow.py ...                                       [ 82%]
+tests\test_store_path_resolver.py ..................                     [ 83%]
+tests\test_store_resilience.py ....                                      [ 83%]
+tests\test_stress.py ....................                                [ 83%]
+tests\test_studio_integration.py .........                               [ 83%]
+tests\test_suite_baseline_shape.py ....                                  [ 83%]
+tests\test_timeouts_c7.py .......                                        [ 83%]
+tests\test_token_tab_usage.py ..........ssss                             [ 83%]
+tests\test_tops.py ..................................................... [ 84%]
+........................................                                 [ 85%]
+tests\test_tops_assembly.py .............................                [ 85%]
+tests\test_tops_bridge.py .............................................. [ 86%]
+.                                                                        [ 86%]
+tests\test_tops_cook_error_path.py ..                                    [ 86%]
+tests\test_turn_handle.py ................................               [ 86%]
+tests\test_undo_redo.py ......                                           [ 86%]
+tests\test_undob_live_undo_grouping.py ..........                        [ 87%]
+tests\test_update_mode_sandwich.py ..........                            [ 87%]
+tests\test_usd_punycode_single_source.py .......                         [ 87%]
+tests\test_usd_relationship_aware.py .............                       [ 87%]
+tests\test_usd_relationship_live.py s                                    [ 87%]
+tests\test_v2_invariant8.py ...............                              [ 87%]
+tests\test_v2_verdict_contract.py ...................................... [ 88%]
+.......................................................                  [ 89%]
+tests\test_v2_voice_contract.py ........................................ [ 89%]
+.............                                                            [ 89%]
+tests\test_v3_provider_probe.py ........................................ [ 90%]
+.........                                                                [ 90%]
+tests\test_v5_features.py .............................................. [ 91%]
+........................................................................ [ 92%]
+..                                                                       [ 92%]
+tests\test_v6_track.py .....................                             [ 92%]
+tests\test_vendored_deps.py .................ss                          [ 92%]
+tests\test_vex_capture.py .......                                        [ 92%]
+tests\test_vex_diagnostics.py .......................................... [ 93%]
+.....                                                                    [ 93%]
+tests\test_viewport_sync.py ........                                     [ 93%]
+tests\test_w1_consolidate_stores.py .............                        [ 93%]
+tests\test_w1_mtfix.py ......ss                                          [ 94%]
+tests\test_w2_s5_context_offmain.py sss                                  [ 94%]
+tests\test_w2s1_doctor_offmain.py .........                              [ 94%]
+tests\test_w2s2_format_offmain.py .......ssssss                          [ 94%]
+tests\test_w3_dim_contract.py .............                              [ 94%]
+tests\test_w3_evolve_consolidation.py .................                  [ 94%]
+tests\test_w3_harden_concurrency.py .....                                [ 94%]
+tests\test_w3_harden_crash_recovery.py .....                             [ 94%]
+tests\test_w3_harden_evolve_dryrun.py .....                              [ 95%]
+tests\test_w3_harden_write_plane_store.py ..........                     [ 95%]
+tests\test_w3_kind_routing.py ................................           [ 95%]
+tests\test_w3_kind_schema.py ..............                              [ 95%]
+tests\test_w3_migrate.py ..............                                  [ 96%]
+tests\test_w3_store_contract.py .............                            [ 96%]
+tests\test_w3_vec_recall.py ........                                     [ 96%]
+tests\test_w4_guard_freshness.py ...........                             [ 96%]
+tests\test_w4_guard_ledger.py .................                          [ 96%]
+tests\test_w4_help_build_param.py ...............                        [ 96%]
+tests\test_w5_cruxs1_anatomy_retrieval.py ....                           [ 96%]
+tests\test_w5_delta_promote_400.py .........                             [ 97%]
+tests\test_w5_life_heartbeat.py ........                                 [ 97%]
+tests\test_w5_life_session_survival.py ..........                        [ 97%]
+tests\test_w6_beat_runtime_heartbeat.py ......                           [ 97%]
+tests\test_websocket_cancel_inflight_known_defect.py ..                  [ 97%]
+tests\test_websocket_cancel_reachable.py ...                             [ 97%]
+tests\test_wiring_flywheel.py ..........................                 [ 97%]
+tests\test_wiring_major_resolution.py .............                      [ 98%]
+tests\test_worker_tool_policy.py ........................                [ 98%]
+tests\test_working_indicator.py ...........ss....                        [ 98%]
+tests\test_worktree_guard.py .......                                     [ 98%]
+tests\test_wp5_evaluator_truth.py ......                                 [ 98%]
+tests\test_write_plane_health.py ..........................              [ 99%]
+tests\test_write_report.py ..........                                    [ 99%]
+tests\test_xref_help.py ..........................................       [100%]
+
+================================== FAILURES ===================================
+___________________ test_backup_is_taken_and_source_intact ____________________
+tests\test_backfill.py:62: in test_backup_is_taken_and_source_intact
+    assert jsonl.read_bytes() == before  # source untouched (reversible)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert b'SYNAPSE_ENC...qe0yAHBCb\r\n' == b'SYNAPSE_ENC...mYh-W891o\r\n'
+E     
+E     Use -v to get more diff
+__________________ test_every_source_env_read_is_documented ___________________
+tests\test_m3_env_conformance.py:146: in test_every_source_env_read_is_documented
+    assert not missing, (
+E   AssertionError: Env vars read by production code but missing from the '### Environment Variables' table in docs/studio/DEPLOYMENT.md (add a backticked row for each):
+E       SYNAPSE_LOOP_LEDGER_DIR: python/synapse/loop/ports.py:71
+E   assert not {'SYNAPSE_LOOP_LEDGER_DIR': ['python/synapse/loop/ports.py:71']}
+============================== warnings summary ===============================
+tests\conftest.py:507
+  C:\Users\User\Synapse\tests\conftest.py:507: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+    from synapse.inspector import reset_transport as _inspector_reset_transport
+
+tests/panel/test_apex_catalog_membership.py::test_emitted_recipe_types_are_catalog_present
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:1216: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    return asyncio.get_event_loop_policy()
+
+tests/test_autonomy_driver.py: 11 warnings
+tests/test_autonomy_predictor.py: 19 warnings
+tests/test_autonomy_validator.py: 12 warnings
+tests/test_forge_integration.py: 7 warnings
+tests/test_pdg_cook_timeout.py: 2 warnings
+tests/test_phase0c_int1_async_consent.py: 4 warnings
+tests/test_solaris_ordering.py: 5 warnings
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:874: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    _restore_event_loop_policy(asyncio.get_event_loop_policy()),
+
+tests/test_autonomy_driver.py: 11 warnings
+tests/test_autonomy_predictor.py: 19 warnings
+tests/test_autonomy_validator.py: 12 warnings
+tests/test_forge_integration.py: 7 warnings
+tests/test_pdg_cook_timeout.py: 2 warnings
+tests/test_phase0c_int1_async_consent.py: 4 warnings
+tests/test_solaris_ordering.py: 5 warnings
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:772: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    old_loop_policy = asyncio.get_event_loop_policy()
+
+tests/test_autonomy_driver.py: 11 warnings
+tests/test_autonomy_predictor.py: 19 warnings
+tests/test_autonomy_validator.py: 12 warnings
+tests/test_forge_integration.py: 7 warnings
+tests/test_pdg_cook_timeout.py: 2 warnings
+tests/test_phase0c_int1_async_consent.py: 4 warnings
+tests/test_solaris_ordering.py: 5 warnings
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:777: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(policy)
+
+tests/test_autonomy_driver.py: 11 warnings
+tests/test_autonomy_predictor.py: 19 warnings
+tests/test_autonomy_validator.py: 12 warnings
+tests/test_forge_integration.py: 7 warnings
+tests/test_pdg_cook_timeout.py: 2 warnings
+tests/test_phase0c_int1_async_consent.py: 4 warnings
+tests/test_solaris_ordering.py: 5 warnings
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:1183: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+
+tests/test_autonomy_driver.py: 11 warnings
+tests/test_autonomy_predictor.py: 19 warnings
+tests/test_autonomy_validator.py: 12 warnings
+tests/test_forge_integration.py: 7 warnings
+tests/test_pdg_cook_timeout.py: 2 warnings
+tests/test_phase0c_int1_async_consent.py: 4 warnings
+tests/test_solaris_ordering.py: 5 warnings
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:889: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+tests/test_autonomy_driver.py: 11 warnings
+tests/test_autonomy_predictor.py: 19 warnings
+tests/test_autonomy_validator.py: 12 warnings
+tests/test_forge_integration.py: 7 warnings
+tests/test_pdg_cook_timeout.py: 2 warnings
+tests/test_phase0c_int1_async_consent.py: 4 warnings
+tests/test_solaris_ordering.py: 5 warnings
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:794: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(old_loop_policy)
+
+tests/test_autonomy_driver.py: 11 warnings
+tests/test_autonomy_predictor.py: 19 warnings
+tests/test_autonomy_validator.py: 12 warnings
+tests/test_forge_integration.py: 7 warnings
+tests/test_pdg_cook_timeout.py: 2 warnings
+tests/test_phase0c_int1_async_consent.py: 4 warnings
+tests/test_solaris_ordering.py: 5 warnings
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:942: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+tests/test_autonomy_driver.py: 11 warnings
+tests/test_autonomy_predictor.py: 19 warnings
+tests/test_autonomy_validator.py: 12 warnings
+tests/test_forge_integration.py: 7 warnings
+tests/test_pdg_cook_timeout.py: 2 warnings
+tests/test_phase0c_int1_async_consent.py: 4 warnings
+tests/test_solaris_ordering.py: 5 warnings
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:966: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(previous_policy)
+
+tests/test_autonomy_driver.py: 11 warnings
+tests/test_autonomy_predictor.py: 19 warnings
+tests/test_autonomy_validator.py: 12 warnings
+tests/test_forge_integration.py: 7 warnings
+tests/test_pdg_cook_timeout.py: 2 warnings
+tests/test_phase0c_int1_async_consent.py: 4 warnings
+tests/test_solaris_ordering.py: 5 warnings
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:978: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+tests/test_autonomy_evaluator.py::TestPerFrameEvaluation::test_inf_detection
+tests/test_autonomy_evaluator.py::TestPerFrameEvaluation::test_multiple_issues
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\numpy\_core\_methods.py:191: RuntimeWarning: invalid value encountered in subtract
+    x = asanyarray(arr - arrmean)
+
+tests/test_autonomy_evaluator.py::TestPerFrameEvaluation::test_inf_detection
+tests/test_autonomy_evaluator.py::TestPerFrameEvaluation::test_multiple_issues
+  C:\Users\User\SYNAPSE\python\synapse\autonomy\evaluator.py:451: RuntimeWarning: invalid value encountered in subtract
+    outlier_mask = np.abs(luminance - mean_val) > (self._firefly_std_devs * std_val)
+
+tests/test_corpus_activate.py::test_activate_builds_corpus_and_grounds_solaris
+  C:\Users\User\SYNAPSE\tests\test_corpus_activate.py:28: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    hits = synapse_scout("karmarendersettings xpu engine", k=4).get("hits", [])
+
+tests/test_forge_engine_honest_signal.py: 25 warnings
+  C:\Users\User\SYNAPSE\forge\engine\schemas.py:380: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+
+tests/test_forge_engine_honest_signal.py: 11 warnings
+  C:\Users\User\SYNAPSE\forge\engine\schemas.py:175: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+
+tests/test_forge_engine_honest_signal.py: 11 warnings
+  C:\Users\User\SYNAPSE\forge\engine\schemas.py:244: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+
+tests/test_forge_engine_honest_signal.py: 11 warnings
+  C:\Users\User\SYNAPSE\forge\engine\corpus_manager.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "updated": datetime.utcnow().isoformat(),
+
+tests/test_m3_upgrade_surface.py::test_stale_table_verdicts_carry_reason
+  C:\Users\User\SYNAPSE\python\synapse\cognitive\tools\scout.py:985: RuntimeWarning: SYNAPSE scout phantom-API gate is DOWN: the symbol table at C:\Users\User\AppData\Local\Temp\pytest-of-User\pytest-3482\test_stale_table_verdicts_carr0\symbol_table.json is stamped for Houdini 21.0.631 but this process is running Houdini 99.0.000. A membership verdict cut on a different point release can certify a symbol that is absent here, so existence checks will report None (unverified) rather than a value that cannot be trusted. Regenerate with: hython host/introspect_runtime.py
+    table_syms, table_status = _load_symbol_table()
+
+tests/test_m3_upgrade_surface.py::test_fresh_table_arms_gate_and_omits_reason
+  C:\Users\User\SYNAPSE\tests\test_m3_upgrade_surface.py:91: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    out = scout.synapse_scout("can I use hou.LopNode", k=3)
+
+tests/test_scout.py::test_real_but_undocumented_resolves_true
+  C:\Users\User\Synapse\tests\test_scout.py:291: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    out = scout.synapse_scout("can I use hou.LopNode", k=3)
+
+tests/test_scout.py::test_documented_but_fake_flags_absent
+  C:\Users\User\Synapse\tests\test_scout.py:303: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    out = scout.synapse_scout("use hou.lopNetworks", k=3)
+
+tests/test_scout.py::test_version_mismatch_reads_stale
+  C:\Users\User\SYNAPSE\python\synapse\cognitive\tools\scout.py:985: RuntimeWarning: SYNAPSE scout phantom-API gate is DOWN: the symbol table at C:\Users\User\AppData\Local\Temp\pytest-of-User\pytest-3482\test_version_mismatch_reads_st0\symbol_table.json is stamped for Houdini 21.0.512 but this process is running Houdini 21.0.671. A membership verdict cut on a different point release can certify a symbol that is absent here, so existence checks will report None (unverified) rather than a value that cannot be trusted. Regenerate with: hython host/introspect_runtime.py
+    table_syms, table_status = _load_symbol_table()
+
+tests/test_scout.py::test_pkg_table_keyed_on_running_major
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\_pytest\python.py:157: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    result = testfunction(**testargs)
+
+tests/test_scout.py::test_pkg_table_keyed_on_running_major
+  C:\Users\User\Synapse\tests\test_scout.py:388: RuntimeWarning: SYNAPSE scout phantom-API gate is DOWN: the symbol table at C:\Users\User\AppData\Local\Temp\pytest-of-User\pytest-3482\test_pkg_table_keyed_on_runnin0\data\h21_symbol_table.json is stamped for Houdini 21.0.671 but this process is running Houdini 23.0.000. A membership verdict cut on a different point release can certify a symbol that is absent here, so existence checks will report None (unverified) rather than a value that cannot be trusted. Regenerate with: hython host/introspect_runtime.py
+    syms23, status23 = scout._load_symbol_table()
+
+tests/test_scout.py::test_external_process_is_not_refused_under_the_fail_closed_policy
+  C:\Users\User\Synapse\tests\test_scout.py:602: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    out = scout.synapse_scout("can I use hou.LopNode", k=3)        # must not raise
+
+tests/test_scout_apex_federation.py::test_hits_tagged_source_and_domain
+  C:\Users\User\SYNAPSE\python\synapse\cognitive\tools\scout.py:978: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    return _scout_apex(query, k, max_chars)
+
+tests/test_scout_eval.py::test_clean_corpus_scores_perfect
+tests/test_scout_eval.py::test_missing_real_is_false_phantom_and_blocks
+tests/test_scout_eval.py::test_phantom_leak_detected
+tests/test_scout_eval.py::test_release_blocking_tracks_metric
+  C:\Users\User\SYNAPSE\python\synapse\cognitive\tools\scout_eval.py:153: RuntimeWarning: SYNAPSE scout: no running Houdini to verify against - membership authority is the committed Houdini 21.0.671 table; verdicts hold for 21.0.671, not for the build you will run on. Regenerate on the target host: hython host/introspect_runtime.py
+    out = scout_fn(sym, k=1)
+
+tests/test_undo_redo.py::TestUndoHandler::test_undo_handler_calls_performUndo
+tests/test_undo_redo.py::TestUndoHandler::test_undo_returns_status
+tests/test_undo_redo.py::TestUndoHandler::test_undo_registered_in_handlers
+tests/test_undo_redo.py::TestRedoHandler::test_redo_handler_calls_performRedo
+tests/test_undo_redo.py::TestRedoHandler::test_redo_returns_status
+tests/test_undo_redo.py::TestRedoHandler::test_redo_registered_in_handlers
+  C:\Users\User\SYNAPSE\tests\test_undo_redo.py:81: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+    import synapse  # noqa: F811
+
+tests/test_vendored_deps.py::TestVendorPathActivation::test_prepend_is_idempotent
+  C:\Python314\Lib\importlib\__init__.py:129: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+    _bootstrap._exec(spec, module)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_backfill.py::test_backup_is_taken_and_source_intact - Asser...
+FAILED tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented
+==== 2 failed, 6773 passed, 180 skipped, 625 warnings in 222.09s (0:03:42) ====

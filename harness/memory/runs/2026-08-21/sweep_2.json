@@ -1,0 +1,27 @@
+{
+  "verdict": "CLEAR",
+  "findings": [
+    {
+      "invariant": "I6",
+      "severity": "NOTE",
+      "detail": "other worktrees exist on this machine -- confirm they belong to a DIFFERENT board before calling this a collision",
+      "evidence": [
+        "rope/beacon",
+        "df8c9ef38e90"
+      ]
+    }
+  ],
+  "worktrees": [
+    {
+      "branch": "mem/m1-handle-law",
+      "path": "C:/Users/User/synapse-m1-handle-wt",
+      "changed": []
+    },
+    {
+      "branch": "mem/m2-pgdrm",
+      "path": "C:/Users/User/synapse-m2-pgdrm-wt",
+      "changed": []
+    }
+  ],
+  "main_tree_code_edits": []
+}

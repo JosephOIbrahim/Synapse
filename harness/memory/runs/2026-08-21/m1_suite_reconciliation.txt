@@ -1,0 +1,36 @@
+M1 FORGE — suite floor reconciliation
+=====================================
+Three measurements, all `python -m pytest tests/ -q -p no:randomly`.
+
+  (1) merge-base bb348abe, MAIN TREE C:/Users/User/SYNAPSE
+      2 failed, 6773 passed, 180 skipped       [m1_suite_floor_mergebase_bb348abe.txt]
+
+  (2) branch mem/m1-handle-law, worktree, SOURCE FIX ONLY
+      (--ignore=tests/test_memory_handle_law.py)
+      2 failed, 6771 passed, 182 skipped       [m1_suite_branch_source_only_rs.txt]
+
+  (3) branch mem/m1-handle-law, worktree, FULL (fix + new tests)
+      2 failed, 6781 passed, 182 skipped       [m1_suite_branch_full_rs.txt]
+                                                [m1_suite_branch_mem-m1-handle-law.txt]
+
+(1) vs (2) differs by 2 passed / 2 skipped. That delta is NOT the source change.
+It is a CHECKOUT artifact, identified rather than assumed:
+
+  tests/test_w3_harden_evolve_dryrun.py
+      main tree : .....     (5 passed, 0 skipped)
+      worktree  : s..s.     (3 passed, 2 skipped)
+  -rs reason: "no on-disk real corpus - cannot demonstrate the dim seam here"
+  (tests/test_w3_harden_evolve_dryrun.py:203, guard `_find_real_corpus() is None`)
+  The rag/ corpus is materialized lazily and exists only in the main tree; a
+  fresh worktree has none, so those two tests skip there.
+
+Independent corroboration: the sibling M2 forge measured master IN A WORKTREE
+(harness/memory/runs/2026-08-21/m2_suite_floor_same_checkout_master.txt) and got
+2 failed, 6771 passed, 182 skipped -- byte-identical to (2). Two independent
+measurements agree that the same-checkout floor is 6771/182.
+
+VERDICT: the M1 source change is suite-neutral. (2) == same-checkout floor
+exactly. (3) adds exactly the 10 new tests. The 2 pre-existing failures
+(test_backfill.py::test_backup_is_taken_and_source_intact and
+test_m3_env_conformance.py::test_every_source_env_read_is_documented) are
+present in every measurement and are NOT this rung's.

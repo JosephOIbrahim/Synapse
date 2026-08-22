@@ -1,0 +1,118 @@
+{
+  "leg": "memory:m2:pgdrm-kernel-forge",
+  "date": "2026-08-21",
+  "verdict": "PASS",
+  "branch": "mem/m2-pgdrm",
+  "worktree": "C:/Users/User/synapse-m2-pgdrm-wt",
+  "base_commit": "bb348abedb781265bfe1f1343714ed1369ec14d9",
+  "commit_shas": ["e47308690b5ec0e5fbfdb97425eafa39e5ff3da2"],
+  "merged": false,
+  "pushed": false,
+
+  "touched": [
+    "python/synapse/loop/pgdrm.py:1-348 (NEW) — module docstring carries the D6 ruling and the purity contract",
+    "python/synapse/loop/pgdrm.py:217-234 — decay_utility(); :233 raw = math.exp(-lam*age); :234 return max(raw, floor)",
+    "python/synapse/loop/pgdrm.py:242-313 — evaluate(); :276 utility; :279 contamination; :289 distance-unmeasured; :297 distance-exceeded; :305 decay",
+    "python/synapse/loop/pgdrm.py:316-340 — filter_records(); :343 describe()",
+    "python/synapse/loop/pgdrm.py:130-181 — MemoryRecord / Verdict / FilterResult (frozen dataclasses)",
+    "python/synapse/loop/pgdrm.py:185-214 — _number() domain guard (bool/NaN/range) and _token_set() str-only guard",
+    "tests/test_pgdrm_kernel.py:1-429 (NEW) — 66 tests",
+    "tests/test_pgdrm_kernel.py:60 test_kernel_imports_nothing_impure (AST import whitelist)",
+    "tests/test_pgdrm_kernel.py:88 test_kernel_never_returns_success_and_is_not_wired_to_the_port",
+    "tests/test_pgdrm_kernel.py:141 test_decay_table_hand_computed (12 hand-computed rows)",
+    "tests/test_pgdrm_kernel.py:178 test_protected_floor_reading_is_protection_not_eviction (the D6 discriminator)",
+    "tests/test_pgdrm_kernel.py:256 test_matching_is_exact_not_fuzzy",
+    "tests/test_pgdrm_kernel.py:308 test_unmeasured_distance_fails_closed",
+    "tests/test_pgdrm_kernel.py:403 test_nan_is_rejected_everywhere_it_could_fake_a_pass"
+  ],
+
+  "goalposts": {
+    "pure_function_set": "MET — AST import whitelist {__future__, math, dataclasses, typing} + source scan for time.time/datetime/random/os./open(/requests/import hou/anthropic/sqlite3/socket/threading. Standalone file-load probe pulls only math + dataclasses/typing transitives. No module-level mutable state; time is the age_seconds PARAMETER, never a clock read.",
+    "hand_computed_decay": "MET — 12 rows derived from e^(-k*ln2)=2^-k and e^(-k*ln10)=10^-k, plus 1/e and e^-2. Cross-checked against math.exp in a scratch interpreter BEFORE the kernel existed (max observed reldiff 6.5e-16; tolerance rel=1e-12). No expectation is read back from the implementation and none is copied from the blueprint.",
+    "protected_floor_one_meaning": "MET — RULED as a LOWER BOUND on utility: U = max(e^(-lambda*t), floor). Written in the module docstring (pgdrm.py:44-72). Eviction is the separate, explicitly named utility_threshold argument. The inverted reading (D6 Reading B: raw < floor => DROP) is named in the docstring as rejected, with the reason: under it a HIGH floor evicts a deposit FASTER, so the parameter meant to protect would destroy.",
+    "distance_threshold_implemented": "MET (D4) — None turns the axis OFF (record.distance ignored); a number turns it ON. distance > threshold DROPs; distance is None DROPs as DISTANCE_UNMEASURED (fail closed), mirroring mapper.GATE_POLICY where an unevaluable predicate BLOCKs. Not a dead parameter: 5 tests exercise both states and both boundaries.",
+    "every_branch_has_a_red_mutation": "MET — 16 mutations, 16 RED, 0 survivors.",
+    "ports_signatures_unchanged": "MET — git diff master -- python/synapse/loop/ports.py is EMPTY (0 lines). tests/test_loop_contracts.py: 20 passed."
+  },
+
+  "protected_floor_ruling": {
+    "chosen": "protected_floor is a LOWER BOUND on utility. U = max(e^(-lambda*t), protected_floor).",
+    "rejected": "protected_floor as an eviction threshold (utility < floor => DROP), the reading in the submitted code.",
+    "authority": "docs/THE_LOOP_v5.1.md step 9 — settlement deposit written 'with protected_floor'; 'UUID expired: written as new deposit with protected floor'. A floor that evicts is not a floor.",
+    "discriminating_test": "tests/test_pgdrm_kernel.py:178 — one record built so the two readings return OPPOSITE verdicts: raw = e^(-ln2*10) = 2^-10 = 0.0009765625, floor = 0.5, utility_threshold = 0.2. Reading A (ratified here): U = max(0.0009765625, 0.5) = 0.5 >= 0.2 -> ALLOW. Reading B: 0.0009765625 < 0.5 -> DROP. Mutation M4 implements Reading B and turns this test RED.",
+    "second_knob_pinned": "tests/test_pgdrm_kernel.py:207 — the SAME record with floor 0.0 is DROPped as DECAYED by utility_threshold, proving the two knobs are distinct and both live."
+  },
+
+  "commands": [
+    "git -C C:/Users/User/SYNAPSE worktree add -b mem/m2-pgdrm C:/Users/User/synapse-m2-pgdrm-wt master",
+    "cd C:/Users/User/synapse-m2-pgdrm-wt && python -m pytest tests/test_pgdrm_kernel.py -q --no-header -p no:cacheprovider   # 66 passed",
+    "cd C:/Users/User/synapse-m2-pgdrm-wt && python -m pytest tests/test_loop_contracts.py -q --no-header -p no:cacheprovider   # 20 passed",
+    "python C:/Users/User/pgdrm_mutate.py   # 16 mutations, 16 RED, 0 survivors (copy: harness/memory/runs/2026-08-21/m2_mutate_harness.py)",
+    "bash C:/Users/User/pgdrm_floor_same_checkout.sh   # git stash -u; suite at master IN THE WORKTREE; stash pop",
+    "cd C:/Users/User/synapse-m2-pgdrm-wt && python -m pytest tests/ -q --no-header -p no:cacheprovider",
+    "cd C:/Users/User/synapse-m2-pgdrm-wt && git commit -F C:/Users/User/pgdrm_commit_msg.txt"
+  ],
+
+  "artifacts": [
+    "harness/memory/runs/2026-08-21/m2_mutation_ledger.json",
+    "harness/memory/runs/2026-08-21/m2_mutate_harness.py",
+    "harness/memory/runs/2026-08-21/m2_suite_floor_same_checkout_master.txt",
+    "harness/memory/runs/2026-08-21/m2_suite_floor_mergebase_bb348abe.txt",
+    "harness/memory/runs/2026-08-21/m2_suite_after_commit.txt"
+  ],
+
+  "suite": {
+    "floor_same_checkout_master_in_worktree": "2 failed, 6771 passed, 182 skipped, 625 warnings in 252.21s",
+    "after_commit_same_checkout": "2 failed, 6837 passed, 182 skipped, 625 warnings in 243.12s",
+    "delta": "+66 passed, +0 failed, +0 skipped — exactly the 66 tests this leg added",
+    "pre_existing_reds_identical_before_and_after": [
+      "tests/test_backfill.py::test_backup_is_taken_and_source_intact",
+      "tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented"
+    ],
+    "note_on_the_first_floor_run": "The first floor run was taken in the MAIN tree (C:/Users/User/SYNAPSE): 2 failed, 6773 passed, 180 skipped. Comparing it to the worktree run showed a +2 skip drift that was NOT caused by this leg — it is a checkout difference. The same-checkout floor above removes that confounder and the skip count then matches exactly (182 = 182).",
+    "note_on_the_known_master_red": "The repo's known pre-existing red (mcp library list_tools drift) did NOT reproduce on this host — the locally installed mcp still exposes server.list_tools(). The two reds above are different tests and are present at the floor, so they are pre-existing either way. Neither is attributable to this rung."
+  },
+
+  "proved_it_bites": "16 mutations applied one at a time to pgdrm.py, suite re-run per mutation, source restored and byte-compared after each. 16/16 RED, 0 survivors. M1 decay sign flipped (exp(-lam*age) -> exp(lam*age)) -> 17 red incl. the whole hand-computed table. M2 protected_floor clamp removed (max(raw,floor) -> raw) -> 3 red. M3 floor becomes a ceiling (max -> min) -> 19 red. M4 floor read as eviction, D6 Reading B -> 2 red incl. test_protected_floor_reading_is_protection_not_eviction. M5 contamination direction reversed (rec-task -> task-rec) -> 6 red. M6 exact match becomes casefold substring match -> 5 red (all of test_matching_is_exact_not_fuzzy). M7 unmeasured distance passes -> 1 red (test_unmeasured_distance_fails_closed). M8 distance comparison flipped (> -> <) -> 3 red. M9 utility boundary made exclusive (< -> <=) -> 1 red. M10 precedence reordered so decay runs before contamination -> 2 red. M11 `import time` added -> 1 red (the AST purity test). M12 filter order not preserved (reversed(records)) -> 1 red. M13 non-str tokens accepted -> 1 red. M14 bool guard removed -> 1 red. M15 NaN guard removed -> 1 red (a NaN distance would otherwise slide past `distance > threshold` and be reported ALLOW). M16 describe() drops the reason -> 1 red. Ledger: harness/memory/runs/2026-08-21/m2_mutation_ledger.json. The test file was also watched RED before any implementation existed (ImportError: cannot import name 'pgdrm' from 'synapse.loop').",
+
+  "hard_refusals_honored": [
+    "python/synapse/loop/ports.py NOT modified — git diff master on that path is empty; tests/test_loop_contracts.py 20 passed",
+    "kernel NOT wired into MemoryPort.query_and_filter (LOOP V0.2, blocked) — pinned by a test asserting the string 'pgdrm' does not appear in ports.py and that query_and_filter still returns UNAVAILABLE",
+    "no SUCCESS from a substrate-less path — the kernel does not use the port status vocabulary at all; its verdicts are ALLOW/DROP. Pinned: 'SUCCESS' and 'PortResult' do not appear in pgdrm.py",
+    "python/synapse/memory/ NOT touched (moneta-forge territory) — git status --porcelain on that path is empty",
+    ".synapse/contracts/ and VERSION NOT touched",
+    "no merge, no push, no tag, no ratification flip"
+  ],
+
+  "could_not_verify": [
+    "ran as FALLBACK base agent 'general-purpose' — the custom agent type 'pgdrm-kernel-forge' was not in this session's agent registry (definitions written this session; Claude Code snapshots the registry at session start). The charter was carried inline, but the agent-definition TOOL FENCE was not applied, so nothing structurally prevented this agent from writing outside its territory. The territory boundary held by discipline and is evidenced by git status, not by a fence.",
+    "the kernel is UNPROVEN AGAINST REAL MONETA RECORDS. Every input in these tests is hand-built. No real recalled record, no real age, no real embedding distance, and no real task-context token set has ever passed through it. Whether Moneta records can even supply a per-record token set and a vector distance is an M1/V0.2 question this leg did not answer.",
+    "the decay lambda, utility_threshold and distance_threshold VALUES that SYNAPSE should actually use are UNKNOWN. The kernel proves the curve is correct; it says nothing about where the knobs belong. Calibration needs the BLIND samples that V0.2 logs to Hanish, and Hanish is absent.",
+    "the contamination MODEL is a design choice, not a measured fact. 'foreign = record.tokens - task_context_tokens' encodes strict scoping: a record carrying ANY token outside the task context is dropped, even if it also carries a matching one. A recall-oriented reading (drop only when the intersection is empty) would keep those records. No corpus was measured to decide which reading loses less useful context — the strict reading was chosen because it is the safety direction and it is stated plainly in the docstring.",
+    "'untagged record passes the token axis' (empty record.tokens) is a deliberate semantic, not an empirical one. If real deposits are commonly untagged, this axis will be a no-op for them and the whole filter reduces to distance + decay for that population. Unmeasured.",
+    "the standalone-import probe cannot prove absence of modules already loaded at interpreter startup (os, io are always present). The actual purity pin is the AST import whitelist plus the source scan, not that probe.",
+    "float underflow behaviour for extreme lambda*t is asserted only at 1e9 (returns 0.0). Denormal-range behaviour between ~1e-308 and 0.0 is untested.",
+    "no live Houdini and no live bridge were involved — synapse_ping was not run because nothing in this rung touches the bridge. Any claim about in-Houdini behaviour of this kernel would be UNKNOWN.",
+    "the two suite failures (test_backfill, test_m3_env_conformance) were confirmed present at the same-checkout floor but were NOT root-caused by this leg.",
+    "two other agents are writing this board concurrently (bus/mem_quartermaster.json 23:12, bus/memory_m1_cartographer.json 23:00, runs/2026-08-21/sweep_*.json). This receipt is a new file and overwrote nothing, but this leg did not verify what those agents are doing or whether any of them intends to touch python/synapse/loop/."
+  ],
+
+  "needs_human": [
+    "git merge of branch mem/m2-pgdrm into master — Article V, Joe's word per act",
+    "git push — origin is a PUBLIC GitHub repo, Joe's word per act",
+    "ratification of the V0.2 contract amendment that would add distance_threshold to the §4 MemoryPort surface in .synapse/contracts/loop-v00.yaml — NOT done here; distance_threshold lives on the kernel only, exactly as the adjudication requires",
+    "STATE.json rung-m2 status flip and spawn-ledger reconciliation — memory-conductor owns that file; this leg did not write it"
+  ],
+
+  "handoff": {
+    "to": "memory-crucible",
+    "attack_surface": [
+      "the D6 ruling itself — is 'floor = lower bound' the right reading, or does some other ratified text support eviction?",
+      "the strict contamination model (any foreign token drops) — find a realistic recall case where it destroys useful context",
+      "the untagged-record semantic — is passing the token axis the safe direction, or should untagged fail closed like an unmeasured distance?",
+      "the mutation set — find a branch or boundary with NO mutation covering it",
+      "the hand-computed table — verify 2^-k and 10^-k independently; do not accept the tolerance choice on this leg's word"
+    ],
+    "to_next": "M3 substrate-envoy: the kernel's parameter set (decay_lambda, utility_threshold, distance_threshold, protected_floor) is what the V0.2 contract-amendment proposal must carry if PG-DRM is ever to reach MemoryPort. It is drafted nowhere yet."
+  }
+}

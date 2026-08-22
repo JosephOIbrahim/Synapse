@@ -1,0 +1,76 @@
+{
+  "leg": "memory:live:marshal",
+  "verdict": "PASS",
+  "touched": [
+    "harness/memory/runs/2026-08-21/sweep_2.json .. sweep_10.json (created — the only files this leg authored besides this receipt)",
+    "harness/memory/marshal/sweep.py:109 (read — sweep() entry point, ran unmodified)",
+    "harness/memory/bus/mem_quartermaster.json (read — cross-checked)",
+    "harness/memory/bus/memory_m2_pgdrm_kernel.json (read — cross-checked)"
+  ],
+  "commands": [
+    "python harness/memory/marshal/sweep.py --out harness/memory/runs/2026-08-21/sweep_<n>.json   # n = 2..10, all exit 0",
+    "git worktree list",
+    "git -C C:/Users/User/synapse-m1-handle-wt status --porcelain",
+    "git -C C:/Users/User/synapse-m2-pgdrm-wt status --porcelain && git -C C:/Users/User/synapse-m2-pgdrm-wt stash list",
+    "git -C C:/Users/User/synapse-m2-pgdrm-wt show --stat --oneline e4730869",
+    "git rev-parse --short master origin/master",
+    "tail -3 harness/memory/runs/2026-08-21/m2_suite_after_commit.txt"
+  ],
+  "artifacts": [
+    "harness/memory/runs/2026-08-21/sweep_2.json",
+    "harness/memory/runs/2026-08-21/sweep_3.json",
+    "harness/memory/runs/2026-08-21/sweep_4.json",
+    "harness/memory/runs/2026-08-21/sweep_5.json",
+    "harness/memory/runs/2026-08-21/sweep_6.json",
+    "harness/memory/runs/2026-08-21/sweep_7.json",
+    "harness/memory/runs/2026-08-21/sweep_8.json",
+    "harness/memory/runs/2026-08-21/sweep_9.json",
+    "harness/memory/runs/2026-08-21/sweep_10.json"
+  ],
+  "measurements": {
+    "sweeps_run": 9,
+    "sweeps_range": "2..10 (sweep_1 was run before this leg)",
+    "verdict_every_sweep": "CLEAR",
+    "breaches": 0,
+    "i1_repo_root_code_edits": "none in any sweep — main_tree_code_edits was [] at 2,3,4,5,6,7,8,9,10",
+    "i4_master_sha": "bb348abe unchanged across all 9 sweeps; origin/master == master (no promotion, no push)",
+    "i5_ports_py": "python/synapse/loop/ports.py absent from every mem/* worktree diff in every sweep",
+    "m2_commit_verified": "e47308690b5ec0e5fbfdb97425eafa39e5ff3da2 exists on mem/m2-pgdrm, committed 2026-08-21T23:09:06-04:00, 2 files (python/synapse/loop/pgdrm.py, tests/test_pgdrm_kernel.py), +777 lines, no merge commit",
+    "m1_state_at_last_sweep": "mem/m1-handle-law still at bb348abe — no commit; 3 working-tree changes (store.py, shadow_store.py modified; tests/test_memory_handle_law.py untracked)"
+  },
+  "deltas_observed": [
+    "sweep 1 -> 2: worktree mem/m1-handle-law appeared at C:/Users/User/synapse-m1-handle-wt (M1 forge started)",
+    "sweep 1 -> 2: M2's pgdrm.py + test_pgdrm_kernel.py DISAPPEARED from its worktree with no commit. Cause identified from disk alone: 'stash@{0}: On mem/m2-pgdrm: m2-floor-probe' plus two 'reset: moving to HEAD' reflog entries. Later corroborated by the M2 receipt naming 'git stash -u; suite at master IN THE WORKTREE; stash pop'. NOT a loss.",
+    "sweep 5 -> 6: stash popped, both M2 files back, stash list empty",
+    "sweep 6 -> 7: M2 committed e4730869; branch head moved off bb348abe",
+    "sweep 3 -> 9: M1 grew tests/test_memory_handle_law.py, then store.py, shadow_store.py, briefly moneta_runtime.py (reverted by sweep 10) — all inside mem/m1-* territory, never into python/synapse/loop/",
+    "sweep 8: bus receipt mem_quartermaster.json landed (23:12)",
+    "sweep 9: bus receipt memory_m2_pgdrm_kernel.json landed (23:14)",
+    "sweep 9 -> 10: FOUR new detached-HEAD worktrees appeared — C:/Users/User/qm-bisect-{454fbeee,84fcd071,9ef3250a,d5d1240e}. Same board (quartermaster bisecting the two pre-existing reds), not a second conductor. Classified NOTE."
+  ],
+  "cross_checks": [
+    "mem_quartermaster.json artifact 'harness/memory/supply/packet_2026-08-21.json' — EXISTS on disk (27605 bytes, 23:11). VERIFIED.",
+    "mem_quartermaster.json claim that python/synapse/mcp/mcp_server.py does not exist and the file is ./mcp_server.py at repo root — VERIFIED on disk.",
+    "mem_quartermaster.json floor_read_at says 'both mem/* worktrees sit at bb348abe with zero divergent commits'. STALE at write time: M2 committed e4730869 at 23:09:06, receipt written 23:12:27. The substantive claim survives — merge-base(master, mem/m2-pgdrm) is still bb348abe — but the literal clause was already false when posted. NOTE, not a breach.",
+    "memory_m2_pgdrm_kernel.json commit_shas[0] = e47308690b5ec... — VERIFIED present on mem/m2-pgdrm with the claimed 2-file scope.",
+    "memory_m2_pgdrm_kernel.json all 5 named artifacts — EXIST on disk with plausible mtimes (23:00 / 23:01 / 23:09 / 23:13).",
+    "Suite artifact arithmetic is self-consistent: same-checkout floor '2 failed, 6771 passed, 182 skipped'; after-commit '2 failed, 6837 passed, 182 skipped'. Delta = +66 passed, exactly the 66 new pgdrm tests, same two pre-existing reds, zero new reds.",
+    "Quartermaster's main-tree floor reads 6773 passed / 180 skipped where M2's worktree floor at the same merge-base reads 6771 / 182. Two tests skip in the worktree that pass in the main tree. Small, unexplained, worth a look before anyone treats either number as THE floor."
+  ],
+  "proved_it_bites": "N/A for this leg — it authored no test and changed no code. Nearest equivalent: the sweep instrument demonstrably discriminates. It reported mem/m2-pgdrm with 2 changed files at sweep 1, 0 at sweeps 2-5 (stash window), 2 again at sweep 6, and at sweep 10 it detected four worktrees that did not exist at sweep 9. A sweep that returned CLEAR unconditionally could not have produced that sequence.",
+  "could_not_verify": [
+    "No leg's reasoning. Workflow legs are not addressable via SendMessage; ListAgents showed none reachable. Everything above is disk-derived only.",
+    "No test result. This leg ran no pytest — deliberately, to avoid loading a machine already running two forges plus four bisect checkouts. Suite numbers quoted above are READ OUT OF the artifacts, not reproduced. An artifact can be authored; I confirmed its contents and internal arithmetic, not its provenance.",
+    "Whether the M2 kernel is correct. Territory, scope, atomicity and no-new-red are checkable from outside; the mutation ledger's 16/16 RED claim is not — I read the ledger, I did not re-run it.",
+    "Whether M1's in-flight edits to store.py / shadow_store.py resolve the two-authority problem. Uncommitted work at the last sweep; contents not audited (that is the crucible's job, not the marshal's).",
+    "M3 (substrate-envoy). No receipt, no worktree, no artifact observed in any sweep. Cannot say whether it is running, queued, or never dispatched.",
+    "Any crucible leg. No crucible receipt landed during the watch window.",
+    "Whether the 4 qm-bisect worktrees will be pruned. They were live at the last sweep. If the quartermaster exits without `git worktree prune`, they persist as machine clutter and will keep firing sweep's I6 NOTE for the next run.",
+    "Nothing after 2026-08-21 23:18:21 local. The watch window closed there; a breach after that time is unobserved by this leg."
+  ],
+  "notes_not_breaches": [
+    "C:/Users/User/pgdrm_mutate.py, pgdrm_floor_same_checkout.sh, pgdrm_commit_msg.txt — M2 scratch scripts left in the HOME directory, outside the repo. Not I1 (nothing landed in the repo root's code paths) and a copy of the harness is banked under harness/memory/runs/. Housekeeping only.",
+    "rope/beacon and .claude/worktrees/wcrux-scratch belong to OTHER boards. Per charter they are not this board's collisions and are not counted as such."
+  ],
+  "needs_human": []
+}

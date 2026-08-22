@@ -1,0 +1,33 @@
+M1 FORGE — mutation ledger (every test must be able to fail)
+============================================================
+Eight of ten tests were RED on unmodified HEAD; that IS their mutation (the
+mutation is the shipped fix, in reverse). See m1_red_on_head.txt.
+
+The two remaining tests were correctly green on HEAD because they are GUARDS
+("the fix must not break this"). Each was proved to bite by a named mutation,
+applied to the branch tree, run, then reverted:
+
+1. test_reset_then_reopen_keeps_the_shadow_backend
+   Mutation: rename ShadowMemoryStore.close -> _close_MUTATED_AWAY
+             (python/synapse/memory/shadow_store.py:151)
+   Result:   FAILED tests/test_memory_handle_law.py::
+             test_reset_then_reopen_keeps_the_shadow_backend
+             (1 failed, 9 deselected)
+   Reverted; 10 passed.
+
+2. test_ephemeral_multi_store_still_works
+   Mutation: pin a fixed storage_uri inside moneta_runtime.make_ephemeral
+             (cfg_kwargs.setdefault('storage_uri','moneta-mem://MUTANT-FIXED-URI'))
+   Result:   FAILED test_ephemeral_multi_store_still_works
+   Reverted (git checkout -- python/synapse/memory/moneta_runtime.py).
+
+3. test_census_names_both_authorities_and_constructs_nothing
+   (already red on HEAD by AttributeError, which is a weak bite, so it was ALSO
+   mutated for a behavioural one)
+   Mutation: make memory_handle_census() call get_synapse_memory() first
+   Result:   FAILED test_census_names_both_authorities_and_constructs_nothing
+             ("the census CONSTRUCTED a handle")
+   Reverted.
+
+Residue check after all reverts:
+   git diff | grep MUTANT  ->  clean
