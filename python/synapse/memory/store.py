@@ -1510,26 +1510,157 @@ EngramMemory = SynapseMemory
 
 
 # =============================================================================
-# GLOBAL INSTANCE
+# GLOBAL INSTANCE  --  the handle law
 # =============================================================================
+#
+# ONE handle per storage URI, ONE owner per handle (AGENTS.md §3.1).
+#
+# This process holds exactly TWO store authorities, and that split is
+# DELIBERATE -- they are rooted at different URIs and serve different readers:
+#
+#   1. PROJECT MEMORY   `_global_synapse` (here)        -> <project>/.synapse
+#   2. LEDGER FINDINGS  `ledger._MONETA_STORE`          -> $SYNAPSE_LEDGER_DIR
+#                       (`ledger.ledger_moneta_store`)     default <repo>/.synapse/ledger
+#
+# Under the default roots those are distinct `moneta-file://` URIs, so the two
+# do not contend for Moneta's single-owner lock. That is a property of the
+# PATHS, not a guarantee: point $SYNAPSE_LEDGER_DIR at the project storage dir
+# and the second handle raises MonetaResourceLockedError (stated at
+# `ledger.ledger_moneta_store`, and it is honest about it). `memory_handle_census()`
+# below reports both in one place; it CONSTRUCTS NOTHING, so reading the census
+# can never become a third way to open a store.
+#
+# Why this one is a scalar and the ledger's is a URI-keyed registry: the ledger's
+# key is a cheap env-var read (`ledger_dir()`), so re-keying on every access is
+# free. This accessor's URI is not knowable without `SynapseMemory.__init__`
+# work -- `_resolve_project_path` marshals `hou.hipFile.path()` to Houdini's main
+# thread (store.py:1099-1105) and `_get_storage_dir` may `shutil.copytree` a
+# legacy `.nexus/` tree (store.py:1156). Re-deriving the key per call would put a
+# blocking main-thread hop and a migration probe on every reader. Project changes
+# route through `reset_synapse_memory()` instead, which now RELEASES the handle.
 
 _global_synapse: Optional[SynapseMemory] = None
 
+# Re-entrant on purpose: `SynapseMemory.__init__` runs INSIDE this lock, and a
+# plain Lock would deadlock the whole process if any construction path ever
+# reached back into the accessor. Re-entry is still not allowed to orphan a
+# handle -- see the post-construction re-check in get_synapse_memory().
+_GLOBAL_LOCK = threading.RLock()
+
+
+def _close_memory_quietly(mem: "SynapseMemory", why: str) -> None:
+    """Persist and RELEASE a SynapseMemory's backend handle. Never raises.
+
+    `save()` alone is not a release. `MonetaBackedStore.close()` is what drops
+    the `moneta-file://` URI lock (moneta_store.py:934-958); without it the
+    object stays reachable from the atexit hook registered in
+    `from_storage_dir` (moneta_store.py:377-378) and keeps the URI locked for
+    the rest of the process, so the NEXT construction fails with
+    MonetaResourceLockedError and is silently downgraded to jsonl.
+    """
+    store = getattr(mem, "store", None)
+    closer = getattr(store, "close", None)
+    if callable(closer):
+        try:
+            closer()
+            return
+        except Exception as exc:  # noqa: BLE001 -- teardown must not propagate
+            # ERROR, not warning: this is the precursor to the silent downgrade.
+            # A handle that would not close may still hold the moneta-file://
+            # URI, and the NEXT construction then falls back to jsonl.
+            logger.error(
+                "Closing the %s memory handle FAILED (%s: %s); the storage URI "
+                "may stay locked for this process and the next store "
+                "construction may silently fall back to jsonl",
+                why, type(exc).__name__, exc,
+            )
+            return
+    # No close() on this backend (MemoryStore holds no external lock): a save is
+    # the whole of its teardown.
+    try:
+        mem.save()
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Saving the %s memory handle FAILED (%s: %s); buffered "
+                     "memories may not have reached disk",
+                     why, type(exc).__name__, exc)
+
 
 def get_synapse_memory() -> SynapseMemory:
-    """Get or create the global SynapseMemory instance."""
+    """Get or create the process-global SynapseMemory instance.
+
+    Double-checked locking. The unlocked read is the fast path (attribute loads
+    and reference assignment are atomic under the GIL, and the global is only
+    ever published fully constructed); the lock covers the construct-and-publish
+    window that used to let N concurrent callers build N stores and orphan N-1
+    of them on the same storage URI.
+    """
     global _global_synapse
-    if _global_synapse is None:
-        _global_synapse = SynapseMemory()
-    return _global_synapse
+    existing = _global_synapse
+    if existing is not None:
+        return existing
+    with _GLOBAL_LOCK:
+        if _global_synapse is None:
+            built = SynapseMemory()
+            if _global_synapse is None:
+                _global_synapse = built
+            else:
+                # Re-entrant construction published a handle underneath us.
+                # One owner per URI: close the loser rather than orphan it.
+                _close_memory_quietly(built, "superseded")
+        return _global_synapse
 
 
 def reset_synapse_memory():
-    """Reset the global SynapseMemory instance (e.g., when opening new project)."""
+    """Release the global SynapseMemory instance (e.g., when opening a new project).
+
+    Closes the backend handle, not just `save()` -- see `_close_memory_quietly`.
+    The global is cleared even when teardown raises, so a store that refuses to
+    close cannot wedge the accessor for the life of the process.
+    """
     global _global_synapse
-    if _global_synapse:
-        _global_synapse.save()
-    _global_synapse = None
+    with _GLOBAL_LOCK:
+        stale, _global_synapse = _global_synapse, None
+    if stale is not None:
+        _close_memory_quietly(stale, "reset")
+
+
+def memory_handle_census() -> Dict[str, Any]:
+    """Report BOTH store authorities in one place, without constructing either.
+
+    An observer, never an authority: it peeks module globals exactly the way
+    `panel/health_strip.py:311` does (the reference-clean disciplined read) and
+    reports `live: False` rather than opening anything. Unreadable state is
+    reported as an explicit error string -- never as an absent handle.
+    """
+    # Snapshot once: a concurrent reset_synapse_memory() between two reads of
+    # the global would otherwise let the census report a live handle with a
+    # None URI -- an observer must never invent a state that never existed.
+    held_project = _global_synapse
+    project: Dict[str, Any] = {
+        "authority": "python/synapse/memory/store.py:_global_synapse",
+        "accessor": "synapse.memory.store.get_synapse_memory",
+        "live": held_project is not None,
+        "storage_uri": (str(held_project.storage_dir)
+                        if held_project is not None else None),
+        "backend": (type(held_project.store).__name__
+                    if held_project is not None else None),
+    }
+    ledger_entry: Dict[str, Any] = {
+        "authority": "python/synapse/memory/ledger.py:_MONETA_STORE",
+        "accessor": "synapse.memory.ledger.ledger_moneta_store",
+        "live": None,
+        "storage_uri": None,
+        "backend": None,
+    }
+    try:
+        from . import ledger as _ledger
+        held = getattr(_ledger, "_MONETA_STORE", None)
+        ledger_entry["live"] = held is not None
+        ledger_entry["storage_uri"] = getattr(_ledger, "_MONETA_STORE_KEY", None)
+        ledger_entry["backend"] = type(held).__name__ if held is not None else None
+    except Exception as exc:  # noqa: BLE001
+        ledger_entry["error"] = f"{type(exc).__name__}: {exc}"
+    return {"project_memory": project, "ledger_findings": ledger_entry}
 
 
 # Backwards compatibility aliases
