@@ -148,6 +148,20 @@ class ShadowMemoryStore:
         self.primary.save()
         self._shadow_write(lambda: self.shadow.save())
 
+    def close(self) -> None:
+        """Release the shadow's Moneta handle (M1 handle law).
+
+        Without this, `shadow` was the one arrangement where
+        `reset_synapse_memory()` could not release the `moneta-file://` URI
+        lock: the shadow owns a `MonetaBackedStore` but exposed no `close()`,
+        so teardown fell through to `save()` and the URI stayed held for the
+        life of the process. The primary (`MemoryStore`) owns no external lock
+        and has no `close()` -- a save IS its teardown. Shadow failure stays
+        isolated, exactly as on every other write path here.
+        """
+        self.primary.save()
+        self._shadow_write(lambda: self.shadow.close())
+
     def update(self, memory: Memory):
         self.primary.update(memory)
         self._shadow_write(lambda: self.shadow.update(memory))
