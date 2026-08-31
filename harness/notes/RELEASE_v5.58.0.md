@@ -65,9 +65,10 @@ kept it red through every prior release; corrected in this span.
 **Still RED, carried unchanged from v5.56.0:** the release-readiness review's
 four standing blockers — `mutation_fail_closed`, `hot_reload_gated`,
 `installer_host_targeted`, `ci_covers_shipping_surface`. Named debt, not hidden
-debt: v5.56.0 published over the same four. Publishing this release over them is
-a per-act decision of Joe's, recorded here if taken; either way they head the
-hardening backlog.
+debt: v5.56.0 published over the same four. **Published over them 2026-08-31 under
+Joe's explicit recorded waiver** ("publish over standing"), with CI green on the
+tagged head and every other gate measured green; the four head the hardening
+backlog.
 
 The one demo-critical thing still UNMEASURED is cross-session recall (close →
 reopen → remember) — the red-tier demo-round-trip contract, GUI, on camera. That
