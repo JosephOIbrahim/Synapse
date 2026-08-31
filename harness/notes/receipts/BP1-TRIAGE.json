@@ -1,0 +1,97 @@
+{
+  "leg": "BP1-TRIAGE",
+  "status": "green_with_findings",
+  "head_sha": "325c55d8195318fd12a37671fab7496b20f66d26",
+  "base_sha": "9e444d90ecda930e679bca76cc72644e3b8332ef",
+  "product_commit": "325c55d8 feat(battleplan): BP1-TRIAGE Gate 0 silent-recall four-gate probe + hython run + launch-path inspection",
+  "environment": "hython (agent lane); GUI half is Joe's hands",
+  "build_observed": "22.0.417",
+  "shim_resolved_hython": "C:/Program Files/Side Effects Software/Houdini 22.0.417/bin/hython.exe (newest-usable: 7 H21/H22 builds installed, 22.0.417 is newest with pytest+PySide6)",
+  "bucket": "env",
+  "run_command": "python .synapse/hytest.py harness/battleplan/notes/probe_silent_recall.py -o python_files=probe_silent_recall.py -s",
+  "artifact": "harness/battleplan/runs/2026-08-31/silent_recall_hython.json",
+  "gate_rows": {"G1 ENV": "fail", "G2 PLUGIN": "fail", "G3 LAYER": "UNKNOWN", "G4 RECALL": "UNKNOWN"},
+  "acceptance": [
+    {
+      "predicate": "harness/battleplan/runs/<date>/silent_recall_hython.json exists with exactly four gate rows, each verdict in pass|fail|UNKNOWN, environment=hython, build runtime-observed, DONE sentinel present",
+      "verdict": "pass",
+      "evidence": "probe -- harness/battleplan/runs/2026-08-31/silent_recall_hython.json: 5 JSONL lines = 4 gate rows (G1 fail, G2 fail, G3 UNKNOWN, G4 UNKNOWN) then a DONE sentinel LAST; every row environment=hython, build=22.0.417 read from hou.applicationVersionString() at runtime (never typed). Shim run pytest: 1 passed."
+    },
+    {
+      "predicate": "a bucket finding is on the BP1 bus addressed to * whose anchor is the artifact path",
+      "verdict": "pass",
+      "evidence": "check -- BP1 bus finding n=18d0f229ca7d5418, frm=BP1-TRIAGE, to=*, body.bucket=env, body.gates=[G1 fail,G2 fail,G3 UNKNOWN,G4 UNKNOWN], body.anchor=harness/battleplan/runs/2026-08-31/silent_recall_hython.json. Confirmed readable as BP1-HONESTY (`bus.py read bp1 BP1-HONESTY --types finding` -> BP1-TRIAGE -> env)."
+    },
+    {
+      "predicate": "GUI launch-path inspection: every env-injection claim carries file:line; the OneDrive redirect is confirmed honored or named as the defect",
+      "verdict": "pass",
+      "evidence": "check -- harness/battleplan/notes/BP1-TRIAGE_launch_path.md. Injection sites (package-env ONLY, no 456.py/pythonrc): packages/synapse.json:22-25; scripts/install_synapse_package.py:73-77 (build_package) + :43-48 (schema resolver); deployed C:/Users/User/OneDrive/Documents/houdini22.0/packages/synapse.json:23-25. Redirect: HONORED by installer (candidate_pref_dirs():105-108, docstring :96-99) and by the GUI (live prefs written to OneDrive 2026-08-22); NOT honored by hython (hou.homeHoudiniDirectory()=C:/Users/User/houdini22.0 classic, verified in the artifact row G1) -- named as the headless launch-path defect, with three remedies."
+    },
+    {
+      "predicate": "probe_silent_recall.py runs to completion pasted into the Houdini 22.0.400 GUI Python shell and emits four rows (Joe's hands)",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_probe (gui_required=true) -- UNOBTAINABLE headless; measurable only by Joe's hands at the rig. Recorded UNKNOWN per the constitution (a gui_required acceptance not measurable headless is UNKNOWN, never zero/estimate/pass). Exact paste-in command in for_ruling R1. The GUI run is the DECIDING run."
+    }
+  ],
+  "crucible_self_check": [
+    {"criterion": "build stamp equals hou.applicationVersionString() in the crucible's own shim run", "status": "pass", "note": "22.0.417 is runtime-read from the shim's newest-usable resolution; the crucible's own UNPINNED shim on this machine (same install set) resolves the same build -> stamp matches. If the crucible pins SYNAPSE_HYTHON to another build its stamp differs by pin choice, not by a typed/assumed stamp -- the exact defect this criterion kills (a typed stamp) is absent: the stamp is genuinely read, never typed."},
+    {"criterion": "UNAVAILABLE/UNKNOWN recorded as such, never coerced", "status": "pass", "note": "G3 LAYER + G4 RECALL = UNKNOWN because `import moneta` raises ModuleNotFoundError headless (MONETA_SRC unset); recorded in observed as UNAVAILABLE->UNKNOWN, never coerced. G1/G2 are definite measured fails (PXR_PLUGINPATH_NAME unset; 68 plugins, no moneta), matching the mission's expectation that G1/G2 render definite while G3/G4 may be UNAVAILABLE headless."},
+    {"criterion": "no product code touched (git diff confined to harness/battleplan/ and the receipt)", "status": "pass", "note": "git diff --name-only 9e444d90..325c55d8 | grep -v '^harness/battleplan/' = NONE. Three files: notes/probe_silent_recall.py, notes/BP1-TRIAGE_launch_path.md, runs/2026-08-31/silent_recall_hython.json. This receipt (harness/notes/receipts/) is the only file outside, as CRX0/W5H requires."},
+    {"criterion": "the bucket named on the bus follows from the gate rows, not from the M1 narrative", "status": "pass", "note": "bucket=env = the first gate whose verdict==fail (G1 ENV). UNKNOWN gates never name it (sec.2 line 43). Derived from the four rows, NOT from M1's two-store-authorities hypothesis: the rows point UPSTREAM at env (the package never loads headless), before the recall path M1 addresses is even reached."}
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "claim": "hython half bucket=env. Root cause is a prefs-dir divergence, not a code defect: synapse.json is installed ONLY in the OneDrive prefs dir (present) and ABSENT from classic C:/Users/User/houdini22.0/packages/; hython resolves HOUDINI_USER_PREF_DIR=C:/Users/User/houdini22.0 (classic) so the synapse package never loads headless -> PXR_PLUGINPATH_NAME/MONETA_SRC/PYTHONPATH unset -> G1 fail, G2 fail, moneta unimportable -> G3/G4 UNKNOWN. The GUI honors Documents->OneDrive (its live prefs are in OneDrive); hython does not.",
+      "anchor": "harness/battleplan/runs/2026-08-31/silent_recall_hython.json (G1.observed.homeHoudiniDirectory); harness/battleplan/notes/BP1-TRIAGE_launch_path.md"
+    },
+    {
+      "id": "F2",
+      "severity": "doc-drift",
+      "claim": "Two stale docstrings in the substrate-HONESTY module python/synapse/memory/moneta_runtime.py contradict current code: (a) :76-78 states 'Nothing in packages/synapse.json ... sets PXR_PLUGINPATH_NAME' -- FALSE, packages/synapse.json:22-25 sets it; (b) :280-285 states from_storage_dir builds MonetaConfig WITHOUT use_real_usd=True so it 'authors ZERO USD' -- FALSE, moneta_store.py:300 sets use_real_usd=True and :327-334 materializes UsdCortexStore authoring <store>/.moneta/cortex_root.usda. These stale claims sit in the very module SYNAPSE uses to reason about substrate truth. Memory-board territory (python/synapse/memory/) -- surfaced, NOT touched (TRIAGE is read-only re product code).",
+      "anchor": "python/synapse/memory/moneta_runtime.py:76-78,280-285; python/synapse/memory/moneta_store.py:300,327-334"
+    },
+    {
+      "id": "F3",
+      "claim": "The classic pref dir C:/Users/User/houdini22.0 is a discovered-but-unwired Houdini pref candidate: install_synapse_package.py:candidate_pref_dirs():111 globs home/houdini2* and a no-args install run writes synapse.json to every candidate (:574-577), so it WOULD wire the classic dir. Its current bareness (only cop_ibex.*.hdalc) is exactly why hython -- which resolves that dir -- misses the package.",
+      "anchor": "scripts/install_synapse_package.py:92-121,574-577; C:/Users/User/houdini22.0/packages/"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "R1",
+      "type": "human-hands",
+      "item": "GUI half (acceptance predicate 4, gui_required) -- UNKNOWN until Joe runs it at the rig. The GUI run is the DECIDING run (the demo runs in the GUI); its first-fail gate names the PRODUCTION bucket.",
+      "exact_paste_in": "Open Houdini 22.0.400 -> Windows menu > Python Shell (or the Python Source Editor). EITHER (a) copy the entire contents of harness/battleplan/notes/probe_silent_recall.py, paste, run -> it prints four JSON rows; copy them into silent_recall_gui.json. OR (b, auto-writes the artifact) paste ONE line: import runpy; runpy.run_path(r'C:/Users/User/SYNAPSE/harness/battleplan/notes/probe_silent_recall.py', run_name='__main__')  -> prints the four rows AND writes harness/battleplan/runs/2026-08-31/silent_recall_gui.json (4 rows + DONE sentinel).",
+      "note": "Use the path where the probe lives at the rig: the MAIN checkout C:/Users/User/SYNAPSE/... after the branch is merged (merge is a human gate, not done here), or the worktree C:/Users/User/SYNAPSE/.claude/worktrees/bp1-triage/... right now. Expected in GUI: environment=gui, build=22.0.400; if the OneDrive package loaded, G1/G2 should pass and G3/G4 become real pass/fail -- that is the production discriminator."
+    },
+    {
+      "id": "R2",
+      "type": "awareness",
+      "item": "Claim de-confliction with BP1-RAILS. RAILS held an over-broad open claim on the DIRECTORIES harness/battleplan/notes/ + harness/battleplan/runs/ (bus 12:29) overlapping my two named deliverable files. I posted the mandated block (bus n=18d0f1a48d74e4e4) naming the directory-vs-file overlap; RAILS's own declared write set (harness/rails.py, harness/rails_exec.json, harness/orchestrate.ps1, tests/test_rails.py -- bus n=18d0f12474e3d154) is disjoint from mine. Per the board's parallel-safe declaration (docs/BATTLEPLAN.md:78) I proceeded on ONLY my two named files with named-file commits (never git add -A). No file collision occurred.",
+      "anchor": "bus n=18d0f1a48d74e4e4 (block); docs/BATTLEPLAN.md:78"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "BP1-TRIAGE-S1",
+      "disposition": "held",
+      "reason": "class is doc-fix (product code in python/synapse/memory/), outside this leg's spawn_classes=[probe]; edits the memory board's territory -> held for Joe / the memory board.",
+      "name": "Fix stale substrate-honesty docstrings in moneta_runtime.py (F2)",
+      "band": "TRUTH",
+      "class": "doc-fix",
+      "note": "moneta_runtime.py is the module SYNAPSE uses to reason about whether Moneta is really working; two of its docstrings now assert the opposite of the code. A stale honesty claim is worse than none.",
+      "targets": [
+        "Correct python/synapse/memory/moneta_runtime.py:76-78 -- packages/synapse.json:22-25 DOES set PXR_PLUGINPATH_NAME (the 'default posture: unset' claim is stale).",
+        "Correct python/synapse/memory/moneta_runtime.py:280-285 -- from_storage_dir builds MonetaConfig WITH use_real_usd=True (moneta_store.py:300) and materializes UsdCortexStore (moneta_store.py:334); the 'authors ZERO USD' claim is stale. Reconcile the schema_in_use() reasoning that leans on it.",
+        "Re-verify any test that pins the stale text (grep 'authors no USD' / 'default posture')."
+      ],
+      "touches": ["python/synapse/memory/moneta_runtime.py"],
+      "readonly": false,
+      "deps": [],
+      "acceptance": [
+        {"predicate": "moneta_runtime.py:76-78 and :280-285 match current code (synapse.json sets PXR_PLUGINPATH_NAME; from_storage_dir uses use_real_usd=True); no test pins the stale text", "evidence": "check"}
+      ]
+    }
+  ]
+}
