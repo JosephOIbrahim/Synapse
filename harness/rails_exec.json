@@ -1,0 +1,29 @@
+{
+  "_comment": "BP1-RAILS execution seam. A LOOKUP TABLE, not a second orchestrator. rails.py::resolve_model(tier) reads tiers.<tier>.model. Two tiers today: mechanical -> the cheapest Claude model string; reasoning -> claude-opus-4-8. The 'engine' field is the swap point: a local engine (harness/rope/exec_ollama.py, already contract-complete) becomes the mechanical tier by changing engine to 'ollama' and pointing model at a local model name - NO change to rails.py, because rails.py only ever looks the value up. Do NOT build the local engine here (Target 4 scope); the seam contract is the deliverable. Design note: harness/battleplan/notes/RAILS_SEAM.md.",
+  "_schema": "rails-exec/v1",
+  "tiers": {
+    "mechanical": {
+      "engine": "claude",
+      "model": "claude-haiku-4-5-20251001",
+      "why": "cheapest available Claude model string (Haiku 4.5) - the default for mechanical/low-reasoning legs so trivial work does not spend Opus tokens"
+    },
+    "reasoning": {
+      "engine": "claude",
+      "model": "claude-opus-4-8",
+      "why": "the reasoning tier default named by the mission brief"
+    }
+  },
+  "engines": {
+    "claude": {
+      "kind": "api",
+      "dispatch": "harness/rope/runner.py::claude_cmd -> ['claude','-p','--model',<model>, ...]",
+      "note": "the shipped engine; today's only wired path"
+    },
+    "ollama": {
+      "kind": "local",
+      "built": false,
+      "dispatch": "harness/rope/exec_ollama.py --task <id> --model <model> (contract-complete, exit 0=wrote / 3=none)",
+      "note": "NOT built by BP1-RAILS. Documented so a future editor flips a tier's engine to 'ollama' and sets model to a local model name; runner.py::claude_cmd already branches on SYNAPSE_ROPE_ENGINE. Zero rails.py change - that is the point of a lookup seam."
+    }
+  }
+}

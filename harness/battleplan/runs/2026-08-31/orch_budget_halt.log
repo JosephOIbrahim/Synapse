@@ -1,0 +1,13 @@
+12:51:41  SYNAPSE ORCHESTRATOR
+12:51:41  manifest 2 legs   base master   log C:\Users\User\AppData\Local\Temp\rails_orch_budget\repo\harness\notes\orchestrator_20260831-125141.log
+12:51:41  one window owns the board. close it to stop everything.
+12:51:41  baseline: CTRLA=ready  CTRLB=ready
+12:51:41  digest every 999 min - first at 05:30
+12:51:41  board-complete enters IDLE WATCH, not exit - add a leg to legs.json any time
+12:51:41    rails: rails open orch_20260831-125141 cap={'turns': 1, 'tokens': None} -> C:\Users\User\AppData\Local\Temp\rails_orch_budget\repo\harness\battleplan\runs\2026-08-31\ledger_orch_20260831-125141.json
+12:51:41  DISPATCH CTRLA control leg A  ->  control/ctrla
+12:51:41    (dry run - not launching)
+12:51:41    (dry run) runner:   C:\Users\User\AppData\Local\Temp\orch_CTRLA.ps1  (parse-clean, BOM-free)
+12:51:42    (dry run) worktree: git worktree add -b control/ctrla C:\Users\User\AppData\Local\Temp\rails_orch_budget\repo\wt\ctrla HEAD
+12:51:42    (dry run) launch:   claude --settings 'C:/scratch/settings.json' --effort ultracode --model claude-opus-4-8 --name 'SYNAPSE CTRLA control leg A' --permission-mode acceptEdits --verbose
+12:51:42  BUDGET HALT: dispatch stopped by -Budget '1turns'. rails.py wrote a blocked:budget receipt under harness/battleplan/runs/. Nothing pushed to master.

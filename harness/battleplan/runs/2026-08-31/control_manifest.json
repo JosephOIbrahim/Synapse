@@ -1,0 +1,10 @@
+{
+  "_comment": "CONTROL manifest for the BP1-RAILS proof (Target 5). Trivial legs, DRY. A real leg here would spend real tokens; because nothing launches, tokens_in/tokens_out render UNKNOWN and the cap enforces in the always-measurable unit (turns) - the fallback rule, demonstrated. NEVER dispatch for real from this file.",
+  "_schema": "rails-control/v1",
+  "run_family": "bp1-rails-proof",
+  "legs": [
+    { "id": "TRIVIAL-1", "name": "control leg one", "tier": "mechanical" },
+    { "id": "TRIVIAL-2", "name": "control leg two", "tier": "reasoning" },
+    { "id": "TRIVIAL-3", "name": "control leg three", "tier": "mechanical" }
+  ]
+}

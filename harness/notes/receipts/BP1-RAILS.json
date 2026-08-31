@@ -1,0 +1,73 @@
+{
+  "leg": "BP1-RAILS",
+  "status": "green",
+  "product_head": "1c2810f69f956a8140481dceaf25b8ae1d7725fa",
+  "summary": "Harness budget rails: per-run cap (turns floor always-measurable + optional tokens ceiling), hard stop -> blocked:budget receipt, ledger-as-receipt every run, execution seam as a lookup table. Survey-first (built only the gap), additive orchestrator wiring, proven with two run artifacts + an end-to-end orchestrator halt, 26 pytest, and six adversarial verifiers all HOLDS.",
+  "acceptance": [
+    {
+      "predicate": "a capped run completes and harness/battleplan/runs/<date>/ledger_*.json exists with leg, model, cap, spent-or-UNKNOWN per field, remaining",
+      "verdict": "pass",
+      "evidence": "probe: harness/battleplan/runs/2026-08-31/ledger_bp1-rails-proofA.json - status=complete, cap={turns:4}, 3 legs each with leg/model/tokens_in=UNKNOWN/tokens_out=UNKNOWN/wall_ms(measured 0.121,0.1,0.091)/cap/remaining. Reproducible: python harness/battleplan/runs/2026-08-31/prove_rails.py"
+    },
+    {
+      "predicate": "a run whose cap is below its spend halts; its receipt status is blocked with reason budget",
+      "verdict": "pass",
+      "evidence": "test+probe: harness/battleplan/runs/2026-08-31/ledger_bp1-rails-proofB.json (cap=1turn, status=blocked, reason=budget, TRIVIAL-2 admitted:false 'REFUSED: turn 2 > 1'); tests/test_rails.py::test_hard_stop_on_turns/_tokens/_zero_turn_cap/_blocked_run_refuses_further; and orchestrate.ps1 end-to-end: harness/battleplan/runs/2026-08-31/ledger_orch_budget_halt.json (real orchestrator, -Budget 1turns, CTRLB refused, BUDGET HALT logged)"
+    },
+    {
+      "predicate": "orchestrate.ps1 invoked without -Budget produces identical -DryRun control output to the pre-change baseline (diff attached)",
+      "verdict": "pass",
+      "evidence": "check: harness/battleplan/runs/2026-08-31/orch_dryrun_diff.txt - normalized diff of orch_dryrun_before.norm.log vs orch_dryrun_after.norm.log is EMPTY (exit 0). Only wall-clock fields normalized; git diff of orchestrate.ps1 = +58/-1, every changed line is the new param, a self-guarding function, or a block guarded by if($Budget)/if($script:BudgetHalted). Verifier 'additive' re-ran the diff independently: byte-identical."
+    },
+    {
+      "predicate": "tests/test_rails.py passes under stock pytest",
+      "verdict": "pass",
+      "evidence": "test: python -m pytest tests/test_rails.py -q -> 26 passed, 2 warnings (pre-existing vendored-SDK ABI + asyncio deprecation, unrelated). Pure Python, stock pytest, no hou."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "Survey (Target 1): five existing meters are each scope-distinct from a per-run spend cap. token_ceiling.json = STATIC preload budget of the tool catalog, and its claimed enforcer checks.py::check_tool_surface_deferred DOES NOT EXIST (grep-clean) - it is enforced by nothing.",
+      "anchor": "harness/verify/token_ceiling.json:2,4; harness/verify/checks.py:3177-3178 (only token_baseline_fresh registered)"
+    },
+    {
+      "claim": "The source of truth for MEASURED tokens is the transcript JSONL message.usage.{input_tokens,output_tokens,cache_creation_input_tokens,cache_read_input_tokens}, read by NO existing script. econ_transcript_cost.py substitutes a chars/3.6 PROXY - the exact estimate a ledger must not use. rails.py reads the real usage; when absent it renders UNKNOWN, never an estimate.",
+      "anchor": "harness/notes/econ_transcript_cost.py:68,77; harness/rails.py:measure_transcript_tokens"
+    },
+    {
+      "claim": "memory STATE spawn_ledger caps AGENT-TURNS via a fail-closed capCheck (the pattern rails mirrors), but its subagent_tokens field is hand-transcribed on one entry and enforced by nothing. .synapse/harness.py --budget tracks USD but writes no receipt and always exits 0, so a budget block is not signalled as a failure. rails.py supplies the missing receipt + non-zero exit + hard stop.",
+      "anchor": ".claude/workflows/memory-loop.js:250-266; harness/memory/STATE.json:34; .synapse/harness.py:296-299,419-420"
+    },
+    {
+      "claim": "Adversarial verification (6 skeptics) confirmed all four crucible criteria and both invariants HOLD: no estimate reaches a ledger field; the hard stop is real and not trivially always-on; orchestrate.ps1 is byte-for-byte additive; the seam is a pure lookup with no dispatch primitive; a tokens-only cap is refused and the turns floor bites even under a ~1e9 token ceiling with an UNKNOWN meter (never unlimited); a missing transcript yields UNKNOWN, not 0.",
+      "anchor": "workflow wf_7c5532fa-aae (6/6 HOLDS); harness/rails.py; tests/test_rails.py"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": [
+    {
+      "id": "RAILS-TIER-CLASSIFIER",
+      "name": "How a leg acquires a tier: reuse effort or add leg.tier, so the seam routes mechanical legs to the cheap model automatically",
+      "band": "BUILD",
+      "class": "build",
+      "note": "rails_exec.json + resolve_model + the orchestrator's leg.tier hook are all in place; what is missing is the classifier that assigns mechanical|reasoning per leg. Out of BP1-RAILS scope (my spawn_classes are probe/test); held for Joe.",
+      "deps": ["BP1-RAILS"]
+    },
+    {
+      "id": "RAILS-POSTHOC-TOKENS",
+      "name": "Post-hoc token reconciliation: after a leg finishes, rails reads its transcript message.usage to turn the orchestrator ledger's UNKNOWN tokens into MEASURED, enabling a real token ceiling on the live board",
+      "band": "BUILD",
+      "class": "build",
+      "note": "The orchestrator charges pre-dispatch, where tokens are honestly UNKNOWN, so it enforces the turns floor. rails.measure_transcript_tokens already exists to close the loop after the fact. Held for Joe.",
+      "deps": ["BP1-RAILS"]
+    },
+    {
+      "id": "RAILS-TOKEN-CEILING-ENFORCER",
+      "name": "Wire the orphaned token_ceiling.json to a real gate (its claimed enforcer check_tool_surface_deferred does not exist), reusing the measured-vs-ceiling math in econ_floor.py",
+      "band": "BUILD",
+      "class": "build",
+      "note": "A pre-existing honesty gap the survey surfaced: a ceiling file enforced by nothing. Distinct from rails' per-run spend; scope-adjacent to BP1-TRIAGE/HONESTY. Held for Joe.",
+      "deps": []
+    }
+  ]
+}

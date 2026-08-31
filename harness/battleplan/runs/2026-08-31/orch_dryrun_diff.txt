@@ -1,0 +1,8 @@
+BP1-RAILS Target 3 / acceptance predicate 3 - additive-wiring proof
+Generated: prove_orchestrate_additive.ps1 (before = unedited orchestrate.ps1, after = +[-Budget]).
+Both runs invoke orchestrate.ps1 -DryRun WITHOUT -Budget against an isolated scratch repo.
+Normalization strips ONLY wall-clock fields (per-line HH:mm:ss, log-file timestamp,
+'first at HH:MM', 'last write Nm ago'); every code-driven line is preserved verbatim.
+
+$ diff orch_dryrun_before.norm.log orch_dryrun_after.norm.log
+exit=0 -> EMPTY diff: the -Budget addition is byte-for-byte additive on the default path.

@@ -14,6 +14,7 @@ param([int]$PollSeconds = 45, [int]$StaleMinutes = 40, [int]$MaxHours = 12,
       [int]$DigestMinutes = 20, [int]$IdlePollSeconds = 120,
       [string]$Repo = 'C:\Users\User\SYNAPSE',
       [string]$ManifestPath = '',
+      [string]$Budget = '',
       [switch]$Quiet, [switch]$DryRun)
 
 $ErrorActionPreference = 'SilentlyContinue'
@@ -75,6 +76,45 @@ $script:DryDispatched = @{}
 # poll (it is cleared when the leg leaves 'closing').
 $script:CloseGateReason   = @{}
 $script:CloseGateNotified = @{}
+
+# --- BP1-RAILS budget rails (additive; inert unless -Budget is set) ----------
+# When -Budget is passed (e.g. -Budget 8turns or -Budget "8turns,50000tokens")
+# each dispatch is charged through harness/rails.py BEFORE Start-Leg. rails.py
+# owns the cap arithmetic, the spend ledger (harness/battleplan/runs/<date>/) and
+# the HARD STOP: a charge that would exceed the cap writes a blocked:budget
+# receipt and returns non-zero, and this loop then halts dispatch - never a
+# silent continue. Absent -Budget, Rails-Charge returns $true unconditionally and
+# Rails-Open no-ops, so every default-path line stays byte-for-byte identical.
+$script:BudgetHalted = $false
+$script:RailsRun = if ($Budget) { "orch_{0}" -f (Get-Date -Format 'yyyyMMdd-HHmmss') } else { '' }
+
+function Rails-Open {
+    if (-not $Budget) { return }
+    $rails = Join-Path $repo 'harness\rails.py'
+    if (-not (Test-Path $rails)) {
+        Say "  BUDGET: harness/rails.py not found - refusing to run capped (fail closed)" 'Red'
+        throw "rails.py missing; -Budget cannot be honored"
+    }
+    & python $rails open --run $script:RailsRun --cap $Budget 2>&1 |
+        ForEach-Object { Say "  rails: $_" 'DarkGray' }
+}
+
+function Rails-Charge([object]$leg) {
+    # $true  = dispatch admitted (or -Budget absent, the inert default)
+    # $false = cap hit or rails error; rails.py wrote the receipt. Fail closed.
+    if (-not $Budget) { return $true }
+    if ($script:BudgetHalted) { return $false }
+    $rails = Join-Path $repo 'harness\rails.py'
+    if ($leg.tier) {
+        & python $rails charge --run $script:RailsRun --leg $leg.id --tier $leg.tier 2>&1 | Out-Null
+    } else {
+        $model = if ($manifest.model) { $manifest.model } else { '' }
+        & python $rails charge --run $script:RailsRun --leg $leg.id --model $model 2>&1 | Out-Null
+    }
+    if ($LASTEXITCODE -eq 0) { return $true }
+    $script:BudgetHalted = $true   # exit 7 (blocked:budget) or any error -> halt
+    return $false
+}
 
 function Get-ReceiptPath([object]$leg) {
     # A leg writes its receipt into ITS OWN worktree, not the main tree.
@@ -624,6 +664,7 @@ $deadline = (Get-Date).AddHours($MaxHours)
 $nextDigest = (Get-Date).AddMinutes($DigestMinutes)
 Say "digest every $DigestMinutes min - first at $($nextDigest.ToString('HH:mm'))" 'DarkGray'
 Say "board-complete enters IDLE WATCH, not exit - add a leg to legs.json any time" 'DarkGray'
+Rails-Open   # BP1-RAILS: opens the run ledger when -Budget is set; no-op otherwise
 
 while ((Get-Date) -lt $deadline) {
 
@@ -692,9 +733,25 @@ while ((Get-Date) -lt $deadline) {
         }
 
         # dispatch anything whose deps are now met. 'held' is held by RULING.
-        if ($now -eq 'ready' -and $leg.prompt) { Start-Leg $leg; $known[$leg.id] = 'launched' }
+        # BP1-RAILS: charge the dispatch through rails.py first when -Budget is
+        # set. Rails-Charge returns $true unconditionally when -Budget is absent,
+        # so this branch is byte-identical on the default path; a cap hit returns
+        # $false (rails.py already wrote the blocked:budget receipt) and we stop
+        # dispatching this poll - the halt is finalized after the loop.
+        if ($now -eq 'ready' -and $leg.prompt) {
+            if (Rails-Charge $leg) { Start-Leg $leg; $known[$leg.id] = 'launched' }
+            else { break }
+        }
 
         $summary += "$($leg.id):$($known[$leg.id])"
+    }
+
+    # BP1-RAILS: a budget halt ends the run - never a silent continue. Guarded so
+    # it can only fire when -Budget is set and rails.py refused a dispatch.
+    if ($script:BudgetHalted) {
+        Say "BUDGET HALT: dispatch stopped by -Budget '$Budget'. rails.py wrote a blocked:budget receipt under harness/battleplan/runs/. Nothing pushed to master." 'Red'
+        Notify "SYNAPSE - budget halt" "-Budget '$Budget' reached. Dispatch stopped; receipt written."
+        break
     }
 
     $backed = Backup-Branches
