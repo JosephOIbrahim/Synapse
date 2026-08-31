@@ -11,6 +11,25 @@ master = origin = **26cbb8c8**, CI **GREEN** (confirmed by watched run
 receipts. Release v5.57.0 staged correct at adfe59e0, blocked only on the
 operator seat. Demo round-trip still the one unmeasured link — Tuesday, camera.
 
+## LATE ADDENDUM (~23:30) — v5.58.0 DRAFT staged, version bumped
+Decision reversed from earlier option-A-only: Joe's word to give tonight its
+OWN release. Done, DRAFT only:
+- **Version bumped 5.57.0 → 5.58.0**, six surfaces CONFORM
+  (`python scripts/sync_version.py --check` = PASS). Commit **fb99d46f**.
+- **GitHub draft v5.58.0** created ("the night the loops closed honest"),
+  target master, `isDraft:true`, **NO TAG CUT** (URL shows `untagged-`).
+  Notes: harness/notes/RELEASE_v5.58.0.md — the BP1-wave + hardening span.
+- **v5.57.0 draft UNTOUCHED** — still the store-owner work, its own release.
+- **fb99d46f is one commit ahead of origin** — NOT pushed (per-act word).
+  First action tomorrow if you want origin current before the seat walk.
+- Publish v5.58.0 = `gh release edit v5.58.0 --draft=false` — AFTER the seat
+  gates below, per-act word. Tag cuts at publish.
+
+Net: TWO drafts now staged (v5.57.0 store work · v5.58.0 tonight), both
+publish-blocked on the same operator seat. Pick which tags first at the rig.
+
+## One-line state (as of first EOD-2 write)
+
 ## What closed tonight (all pushed, all CI-green)
 1. **Build call** — .400 owns demo week (CTO call, your word). assert_build_400
    v2 reads PASS on three surfaces; 8.3 short-path false-FAIL corrected (same
