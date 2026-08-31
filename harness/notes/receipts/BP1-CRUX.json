@@ -1,0 +1,91 @@
+{
+  "leg": "BP1-CRUX",
+  "status": "green_with_findings",
+  "product_head": "0101194c93c0c9bcc7b2759178051d79bfcc82ad",
+  "base_sha": "9e444d90ecda930e679bca76cc72644e3b8332ef",
+  "wave_base_note": "All 'vs master' checks are vs the wave base 9e444d90 (shared merge-base of all four bp1 legs). master MOVED to 7f82a437+ during this session; diffing against the live master produces phantom changes the legs never made (the crucible hit and corrected exactly that false-positive on a CAPSULE file).",
+  "audited_leg_tips": {"BP1-TRIAGE": "102c034b", "BP1-RAILS": "ec32b62c", "BP1-HONESTY": "8c930084"},
+  "acceptance": [
+    {
+      "predicate": "one verdict per builder leg, each with independently re-run acceptance rows",
+      "verdict": "pass",
+      "evidence": "receipt -- three leg verdicts below (leg_verdicts[]), each row carrying the crucible's OWN anchor from an independent re-run, not the builder's proved_it_bites. Full reasoning: harness/battleplan/notes/BP1-CRUX_verdicts.md."
+    },
+    {
+      "predicate": ">= 6 self-authored mutations against the recall path, each named with the test it reddens",
+      "verdict": "pass",
+      "evidence": "test -- harness/battleplan/notes/BP1-CRUX_mutations.py drove 8 crucible-authored mutations against python/synapse/loop/ports.py (recall path) on a fresh checkout of bp1/honesty (import resolution proven local first). rollup: applied_cleanly=8, reddened=8, escapes=0, all_named_targets_hit=true, baseline_green_before_and_after=true. Ledger: harness/battleplan/notes/BP1-CRUX_mutations.json. Includes the two brief-mandated mutations: MUT-1 restore-empty-list -> reddens test_empty_list_under_bare_success_is_impossible; MUT-2 delete-layer-check -> reddens test_layer_absent_is_unavailable."
+    },
+    {
+      "predicate": "tiny-cap halt reproduced by the crucible with its own ledger artifact",
+      "verdict": "pass",
+      "evidence": "probe -- harness/battleplan/notes/BP1-CRUX_rails_repro.py drove the real harness/rails.py engine to a tiny-cap halt: ledger harness/battleplan/runs/2026-08-31/ledger_bp1-crux-rails-tinycap.json (status=blocked, reason=budget, refused CRUX-TRIVIAL-2, remaining_turns=0). Also exercised the exact CLI seam orchestrate.ps1 calls: charge1 exit=0 (admitted), charge2 exit=7 (blocked:budget). No ledger field is an estimate (token fields literal UNKNOWN)."
+    }
+  ],
+  "leg_verdicts": [
+    {
+      "leg": "BP1-TRIAGE",
+      "verdict": "SOUND-WITH-NITS",
+      "rides": true,
+      "chain_broken_at": null,
+      "acceptance_rows": [
+        {"predicate": "artifact 4 rows + DONE, verdicts valid, env=hython, build runtime-observed", "verdict": "pass", "crucible_anchor": "own shim run reproduced G1 fail/G2 fail/G3 UNKNOWN/G4 UNKNOWN build=22.0.417; byte-structural match to committed silent_recall_hython.json; copy at harness/battleplan/notes/BP1-CRUX_triage_hython.json"},
+        {"predicate": "bus bucket finding, anchor=artifact path", "verdict": "pass", "crucible_anchor": "bus n=18d0f229ca7d5418 body.bucket=env"},
+        {"predicate": "launch-path file:line + OneDrive redirect named", "verdict": "pass", "crucible_anchor": "packages/synapse.json:22-25 sets PXR_PLUGINPATH_NAME; my G1 row corroborates homeHoudiniDirectory=classic, package_present_onedrive=true, package_absent_classic=true"},
+        {"predicate": "probe runs in Houdini GUI (gui_required)", "verdict": "UNKNOWN", "crucible_anchor": "unobtainable headless; Joe's deciding run at the rig -- caps this leg at SOUND-WITH-NITS by rule"}
+      ],
+      "crucible_criteria_checked": {"build_stamp_runtime_read_not_typed": "pass (independent hou.applicationVersionString()=22.0.417 == every row's build)", "UNKNOWN_not_coerced": "pass (G3/G4 UNKNOWN = moneta ModuleNotFoundError headless; G1/G2 definite measured fail)", "no_product_code_touched": "pass (9e444d90..bp1/triage = 4 files, all harness/battleplan/ + receipt)", "bucket_follows_from_rows": "pass (first fail = G1 -> env; UNKNOWN gates never name it)"},
+      "nits": [
+        "T-N1: GUI half UNKNOWN (the rule's nit; production discriminator is Joe's hands).",
+        "T-N2: G4 tests only the most-permissive recall (query_and_filter([],[])); a filter/predicate-path silent-empty could still pass G4 green in the GUI. Scope, mitigated by the raw_row_count/known_in_raw diagnostic.",
+        "T-N3: BP1-TRIAGE_launch_path.md 'why the classic dir is bare' aside is imprecise (candidate_pref_dirs still globs classic); observed facts verified on disk."
+      ]
+    },
+    {
+      "leg": "BP1-RAILS",
+      "verdict": "SOUND-WITH-NITS",
+      "rides": true,
+      "chain_broken_at": null,
+      "acceptance_rows": [
+        {"predicate": "capped run completes with ledger fields", "verdict": "pass", "crucible_anchor": "own ledger_bp1-crux-rails-control.json (complete, 0 estimate violations)"},
+        {"predicate": "tiny-cap halts blocked:budget", "verdict": "pass", "crucible_anchor": "own ledger_bp1-crux-rails-tinycap.json + CLI seam exit-7 on over-cap / exit-0 admitted"},
+        {"predicate": "orchestrate.ps1 additive, -DryRun identical", "verdict": "pass", "crucible_anchor": "static additivity proof of git diff 9e444d90..bp1/rails -- harness/orchestrate.ps1 (every hunk gated by new param / inert func / early-return / if($script:BudgetHalted)) + byte-identical committed norm-logs. orchestrate.ps1 NOT run: Backup-Branches auto-pushes, unguarded by -DryRun (:757,:816)."},
+        {"predicate": "tests/test_rails.py stock pytest", "verdict": "pass", "crucible_anchor": "own run: 26 passed"}
+      ],
+      "crucible_criteria_checked": {"no_ledger_field_is_estimate": "pass (token fields literal UNKNOWN, wall_ms measured; my no_estimate scan + grep = 0 violations)", "hard_stop_in_artifact": "pass (own tinycap ledger)", "orchestrate_additive": "pass (static proof)", "seam_is_lookup_table": "pass (rails_exec.json JSON; resolve_model = json.loads + dict index, no exec/eval)"},
+      "nits": [
+        "R-N1: an empty run (zero admitted charges) serializes totals.tokens_in/out=0 with token_meter='measured' (rails.py:354; empty sum()->0). Confirmed by the crucible. The 0 is an exact empty sum, NOT an estimate -> violates neither acceptance nor the no-estimate criterion, and never appears in any shipped artifact. Cosmetic; a strict reading of the engine's 'Never zero' doctrine would prefer UNKNOWN for symmetry."
+      ]
+    },
+    {
+      "leg": "BP1-HONESTY",
+      "verdict": "SOUND-WITH-NITS",
+      "rides": true,
+      "chain_broken_at": null,
+      "acceptance_rows": [
+        {"predicate": "honesty tests (a)(b)(c) pass; named mutation reddens (a)", "verdict": "pass", "crucible_anchor": "9 honesty tests pass + 8 crucible mutations all reddened a named test, 0 escapes (BP1-CRUX_mutations.json)"},
+        {"predicate": "test_loop_contracts.py unchanged + green", "verdict": "pass", "crucible_anchor": "not in 9e444d90..8c930084 name diff; 20/20 pass"},
+        {"predicate": "branch diff touches no forbidden surface", "verdict": "pass", "crucible_anchor": "base-relative grep of 9e444d90..8c930084 for pgdrm.py/VERSION/README.md/loop-v00.yaml/harness/loop/harness/memory = clean"},
+        {"predicate": "TRIAGE bucket named in receipt with the bus line", "verdict": "pass", "crucible_anchor": "bucket=env, bus n=18d0f229ca7d5418 (verified on bus)"}
+      ],
+      "crucible_criteria_checked": {"empty_success_impossible": "pass (MUT-1 confirms the test net catches its restoration; two SUCCESS exits both carry hit)", "sec4_byte_identical": "pass (header 1-30, STATUS frozenset, all 4 port signatures byte-for-byte base vs tip)", "fix_targets_env_bucket": "pass (envelope + LAUNCH_PATH_FIX.md)", "no_third_store_authority": "pass (python/synapse/memory/ incl store.py+ledger.py byte-unchanged vs base)", "no_forbidden_surface": "pass", "no_regression": "pass (loop_contracts+v51+honesty = 58 pass)"},
+      "nits": [
+        "H-N1: two NEW envelope lines unexercised by the named tests -- ports.py:344 (_bind_gate_token None-return for a generic non-import store-open failure) and ports.py:382 (_guard generic PortResult.unavailable fallthrough). Confirmed by the crucible via --cov-report=term-missing (69%, lines 344/382 in Missing). Both correctly return UNAVAILABLE, so the empty-success invariant is intact -- a coverage gap in new defensive code, not a shipped defect."
+      ]
+    }
+  ],
+  "findings": [
+    {"id": "W-N1", "claim": "BP1-TRIAGE and BP1-RAILS declare overlapping DIRECTORY-level touches (both list harness/battleplan/notes/ + harness/battleplan/runs/). No actual file-path collision occurred (name-only diffs are file-disjoint), but collision-freedom relied on named-file commits + a bus block (TRIAGE for_ruling R2, bus n=18d0f1a48d74e4e4), not the declared partition. A git add -A re-run of either leg would have collided.", "anchor": "harness/battleplan/missions/BP1-TRIAGE.json + BP1-RAILS.json (touches); git diff --name-only 9e444d90..bp1/{triage,rails}"},
+    {"id": "W-N2", "claim": "The CRUX charter target 4 ('reproduce the -DryRun control output') collides with the auto-push prohibition: orchestrate.ps1 -DryRun still reaches the unguarded Backup-Branches push (git push at :572-618, called at :757/:816 in the main loop a -DryRun run enters). The crucible verified predicate 3 the safe way (static additivity + committed norm-log identity). The charter should state this constraint.", "anchor": "harness/orchestrate.ps1:572-618,757,816"},
+    {"id": "C-1", "claim": "Adversarial pass: a 4-agent read-only skeptic panel (one per leg + completeness critic) attacked every verdict on immutable committed state. Every verdict held; zero ride-status breaks. Panel surfaced R-N1/H-N1/T-N2/T-N3/W-N1/W-N2 (all re-verified by the crucible before landing) and confirmed the probe cannot false-green, the RAILS turns-floor can never coerce the cap to unlimited, and every leg receipt SHA is a real ancestor of its tip.", "anchor": "harness/battleplan/notes/BP1-CRUX_verdicts.md (Adversarial pass)"}
+  ],
+  "for_ruling": [
+    {"id": "R1", "type": "human-hands", "item": "The demo-deciding GUI round-trip (TRIAGE predicate 4 / demo-round-trip.yaml, red) remains Joe's hands. The env bucket is a launch-path defect; the GUI half is the production discriminator. Paste-in command is in the TRIAGE receipt for_ruling R1."},
+    {"id": "R2", "type": "human-word", "item": "Merge of the three BP1 legs, the v5.57.0 tag, push (Gate C), and ratifying memory-recall-honesty.yaml are Joe's words, per act. This green_with_findings CRUX receipt is their PRECONDITION, never their substitute. The contract's five passing:false flags were deliberately NOT flipped by HONESTY (a CRUX-verify + human-ratify act); the crucible confirms the five features have green evidence -- ratification remains Joe's."},
+    {"id": "R3", "type": "mission-hygiene", "item": "W-N1 / W-N2 above: declare touches at file granularity where two legs share a directory; state the safe (no-run) verification route for RAILS predicate 3 in future crux charters, given orchestrate.ps1 auto-pushes."}
+  ],
+  "spawn": [
+    {"id": "BP1-CRUX-S1", "disposition": "held", "reason": "class=test, outside this crux's spawn_classes=[] -> held for Joe.", "name": "Cover the two uncovered recall-honesty envelope lines (H-N1)", "band": "BUILD", "class": "test", "note": "ports.py:344 (_bind_gate_token None-return for a generic non-import store-open failure) and ports.py:382 (_guard generic PortResult.unavailable fallthrough) are new but untested. Add a test constructing a generic (non-'importable') bind failure -> asserts UNAVAILABLE with the descriptive detail, closing the coverage gap.", "touches": ["tests/test_memory_recall_honesty.py"], "readonly": false, "deps": ["BP1-HONESTY"], "acceptance": [{"predicate": "a test exercises ports.py:344 and :382 (generic open-failure keeps its descriptive UNAVAILABLE); coverage of ports.py recall path has no Missing line in the new envelope", "evidence": "test"}]},
+    {"id": "BP1-CRUX-S2", "disposition": "held", "reason": "class=build (touches rails.py serialization), outside spawn_classes=[] -> held for Joe.", "name": "Empty-run token_meter symmetry in rails.py (R-N1)", "band": "BUILD", "class": "build", "note": "An empty run reports totals 0/measured; the 'Never zero' doctrine would prefer UNKNOWN when nothing was measured. Cosmetic and never in a shipped artifact, so low priority; fix only if the doctrine is to be literal for the empty-run case.", "touches": ["harness/rails.py", "tests/test_rails.py"], "readonly": false, "deps": ["BP1-RAILS"], "acceptance": [{"predicate": "an empty run (zero admitted charges) reports totals tokens as UNKNOWN (or documents 0 as the intended empty-sum); test pins the chosen behavior", "evidence": "test"}]}
+  ]
+}
