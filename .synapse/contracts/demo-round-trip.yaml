@@ -1,4 +1,7 @@
 # DEMO-ROUND-TRIP — docs/BATTLEPLAN.md §4/§5. Authored 2026-08-31 (CTO pass, Fable 5).
+# Ratification: RATIFIED — Joe word, 2026-08-31. This ratifies the Tue 18:00 BRANCH PREDICATE ONLY,
+# NOT the result: all features remain passing:false and unmeasured until footage exists. No agent may
+# ever flip them. Ratifying arms the decision rule below; it makes no claim the round-trip works.
 # Autonomy RED: human hands at the rig, in the Houdini 22.0.400 GUI. Never simulatable, never
 # agent-completable — the same class as W5-UNDO-GUI. No agent may mark any feature here passing.
 # This is the Tue 2026-09-01 18:00 branch predicate: HIT -> demo-ready Sun Sep 6 stands;

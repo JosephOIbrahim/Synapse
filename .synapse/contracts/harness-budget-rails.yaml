@@ -1,5 +1,7 @@
 # HARNESS-BUDGET-RAILS — docs/BATTLEPLAN.md §5; demo roadmap P1. Authored 2026-08-31 (CTO pass, Fable 5).
-# Ratification: PENDING — Joe word. Demo first principle #1: Synapse runs without eating tokens.
+# Ratification: RATIFIED — Joe word, 2026-08-31. Evidence on origin (9350783f): rails.py, rails_exec.json,
+# test_rails.py on master; six ledger artifacts incl. ledger_orch_budget_halt.json (hard-stop proof).
+# Demo first principle #1: Synapse runs without eating tokens.
 # Reuse before build: harness/verify/token_ceiling.json, harness/memory/STATE.json spawn_ledger
 # (real subagent_tokens), harness/notes/econ_*.py, .synapse/harness.py --budget already exist.
 # A field the runtime cannot measure renders UNKNOWN; UNKNOWN never coerces to unlimited.

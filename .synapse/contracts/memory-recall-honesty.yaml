@@ -1,6 +1,7 @@
 # MEMORY-RECALL-HONESTY — docs/BATTLEPLAN.md §5. Authored 2026-08-31 by the CTO pass (Fable 5).
-# Ratification: PENDING — Joe word. Until ratified, goalposts guide BP1-HONESTY; they do not bind
-# the loop-orchestrator. Rides INSIDE the ratified loop-v00 §4 envelope: no parameter name and no
+# Ratification: RATIFIED — Joe word, 2026-08-31. Evidence on origin (9350783f): bp1/honesty merged,
+# CRUX SOUND-WITH-NITS, tests/test_memory_recall_honesty.py on master. Now binds the loop-orchestrator.
+# Rides INSIDE the ratified loop-v00 §4 envelope: no parameter name and no
 # STATUS value changes. Same failure class as BASTION B1 (cook success-noop): a green light that
 # cannot report failure. Silent-empty recall observed 2026-08-31 (Joe, GUI). UNKNOWN renders, never
 # fabricated green.
