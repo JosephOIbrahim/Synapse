@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    defaultPrim = "MonetaMemory"
+)
+
+def MonetaMemory "MonetaMemory"
+{
+    custom string version = "1.0.0"
+
+    def "decision"
+    {
+        def MonetaMemory "mem_39630f6b4764"
+        {
+            custom string id = "mem_39630f6b4764"
+            custom string kind = "decision"
+            string payload = '{"agent_id": "", "alternatives": [], "confidence": 1.0, "consolidated_into": null, "content": "{\\"claim_id\\": \\"BP1-RAWDUMP-known-323a917e\\", \\"event\\": \\"settlement\\", \\"outcome\\": \\"HIT\\", \\"requested_protected_floor\\": 0.2}", "created_at": "2026-08-31T21:21:02Z", "embedding": null, "frame": null, "frame_range": null, "hip_file": "", "hip_version": 0, "id": "mem_39630f6b4764", "is_consolidated": false, "keywords": [], "links": [], "memory_type": "decision", "node_paths": [], "reasoning": "", "ref_uri": "", "source": "gate", "status": "", "summary": "settlement HIT for BP1-RAWDUMP-known-323a917e", "tags": ["settlement", "hit"], "tier": "shot", "updated_at": "2026-08-31T21:21:02Z"}'
+        }
+    }
+}
+
