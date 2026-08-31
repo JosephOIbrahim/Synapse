@@ -1,0 +1,37 @@
+{
+  "id": "BP1-TRIAGE",
+  "name": "Gate 0 - silent-recall triage: four-gate probe (env -> plugin -> layer -> recall) under hython via the hytest shim; names the bucket; ships the GUI-half probe script for Joe's hands",
+  "band": "TRUTH",
+  "class": "probe",
+  "note": "Silent recall = the green-light class. The M1 finding (two store authorities, python/synapse/memory/store.py:1517) is a HYPOTHESIS for the bucket, not the answer - the gate rows decide. Headless Moneta is UNAVAILABLE by construction (harness/memory/STATE.json substrate_presence); under hython G3/G4 may legitimately render UNAVAILABLE/UNKNOWN - that is a measurement, record it, never coerce it to pass or fail.",
+  "targets": [
+    "1) Author harness/battleplan/notes/probe_silent_recall.py - ONE script runnable both under hython (through .synapse/hytest.py) and pasted into the Houdini GUI Python shell. G1 ENV: PXR_PLUGINPATH_NAME set and pointing at the Moneta schema dir; the SYNAPSE/Moneta package file present under C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 and absent from C:\\Users\\User\\houdini22.0. G2 PLUGIN: pxr.Plug.Registry().GetAllPlugins() contains a plugin whose .name contains 'moneta' (case-insensitive). G3 LAYER: after a scripted deposit and a stage reload, the memory layer identifier appears in stage.GetLayerStack(). G4 RECALL: MemoryPort.query_and_filter(relation_keys, task_context_tokens) of the known deposit returns it. Emit ONE JSON line per gate: {gate, verdict: pass|fail|UNKNOWN, environment: hython|gui, build, observed, exception}. Build is read from hou.applicationVersionString() at runtime - never typed.",
+    "2) Run it under hython via the shim (python .synapse/hytest.py ...). Write harness/battleplan/runs/<date>/silent_recall_hython.json (the four rows + a DONE sentinel written LAST).",
+    "3) Statically inspect the GUI launch path: where PXR_PLUGINPATH_NAME is injected for the GUI session (package json / 456.py / pythonrc / scripts/install_synapse_package.py), and whether the Houdini prefs known-folder redirect (OneDrive) is honored. Every claim carries file:line.",
+    "4) The moment the hython run completes, post a bus finding addressed to *: {bucket: env|plugin|layer|recall|UNKNOWN, gates: [...], anchor: <artifact path>}. BP1-HONESTY consumes it live.",
+    "5) Receipt: the GUI half is UNKNOWN until Joe runs the script at the rig - name it in for_ruling as the human-hands item, with the exact paste-in command."
+  ],
+  "touches": [
+    "harness/battleplan/notes/",
+    "harness/battleplan/runs/"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "build stamp in silent_recall_hython.json equals hou.applicationVersionString() observed in the crucible's own shim run - a typed or assumed stamp is the exact defect this wave exists to kill",
+    "UNAVAILABLE/UNKNOWN under hython is recorded as such - never coerced to fail, never to pass",
+    "no product code touched (git diff of the branch is confined to harness/battleplan/ and the receipt)",
+    "the bucket named on the bus follows from the gate rows, not from the M1 narrative"
+  ],
+  "spawn_classes": ["probe"],
+  "source": {
+    "doc": "docs/BATTLEPLAN.md",
+    "anchor": "sec.2 Gate 0 - four-gate discriminator, run twice (hython + GUI); first failing gate names the bucket"
+  },
+  "acceptance": [
+    { "predicate": "harness/battleplan/runs/<date>/silent_recall_hython.json exists with exactly four gate rows, each verdict in pass|fail|UNKNOWN, environment=hython, build runtime-observed, DONE sentinel present", "evidence": "probe" },
+    { "predicate": "a bucket finding is on the BP1 bus addressed to * whose anchor is the artifact path", "evidence": "check" },
+    { "predicate": "GUI launch-path inspection: every env-injection claim carries file:line; the OneDrive redirect is confirmed honored or named as the defect", "evidence": "check" },
+    { "predicate": "probe_silent_recall.py runs to completion pasted into the Houdini 22.0.400 GUI Python shell and emits four rows (Joe's hands)", "evidence": "gui_probe", "gui_required": true }
+  ]
+}

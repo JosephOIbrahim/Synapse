@@ -1,0 +1,79 @@
+[
+  {
+    "id": "BP1-CRUX",
+    "name": "Adversarial crucible for wave BP1 - audits TRIAGE/RAILS/HONESTY receipts, builds nothing",
+    "state": "ready",
+    "receipt": "BP1-CRUX.json",
+    "branch": "bp1/crux",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp1-crux",
+    "prompt": "harness/battleplan/prompts/BP1-CRUX.md",
+    "deps": [
+      "BP1-TRIAGE",
+      "BP1-RAILS",
+      "BP1-HONESTY"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: sec.5 contracts table + sec.2 outcome map - the crucible audits the green-light class this wave is armor against. Read-only. Blocked by design until the three builder receipts exist. A BROKEN verdict means that leg does not ride. A green CRUX receipt is a PRECONDITION for Joe's merge words, never a substitute for them."
+  },
+  {
+    "id": "BP1-HONESTY",
+    "name": "Recall honesty - MemoryPort recall never returns empty-success: UNAVAILABLE+reason when it cannot observe env/plugin/layer, SUCCESS with payload.hit=false+reason on a real no-match; contract + goalpost test + fix for TRIAGE's bucket",
+    "state": "ready",
+    "receipt": "BP1-HONESTY.json",
+    "branch": "bp1/honesty",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp1-honesty",
+    "prompt": "harness/battleplan/prompts/BP1-HONESTY.md",
+    "deps": [
+      "BP1-TRIAGE"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/loop/ports.py",
+      "python/synapse/memory/",
+      "tests/test_memory_recall_honesty.py",
+      "harness/battleplan/notes/"
+    ],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: sec.5 memory-recall-honesty.yaml - the point of the week. B1 made cook silence unshippable; this makes recall silence unshippable. Same class, same weapon. The Tue 18:00 demo branch is decided by the GUI round-trip at Joe's hands - this leg makes the code side honest so that round-trip cannot lie. Ratified surfaces: python/synapse/loop/ports.py sec.4 parameter names and STATUS values (SUCCESS|UNAVAILABLE|BLOCKED) are LAW - the design rides inside them, never changes them. python/synapse/loop/pgdrm.py belongs to mem/m2-pgdrm - never touch it."
+  },
+  {
+    "id": "BP1-RAILS",
+    "name": "Harness budget rails - per-run cap with hard stop, spend ledger printed every run, swappable execution seam; a capped Synapse-revision run completes and its ledger is a receipt",
+    "state": "ready",
+    "receipt": "BP1-RAILS.json",
+    "branch": "bp1/rails",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp1-rails",
+    "prompt": "harness/battleplan/prompts/BP1-RAILS.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/rails.py",
+      "harness/rails_exec.json",
+      "harness/orchestrate.ps1",
+      "harness/battleplan/notes/",
+      "harness/battleplan/runs/",
+      "tests/test_rails.py"
+    ],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: sec.5 harness-budget-rails.yaml - demo first principle #1: Synapse runs without eating tokens. The demo roadmap's P1 - the multiplier. Reuse before build: the memory board already keeps a spawn ledger with real subagent_tokens (harness/memory/STATE.json spawn_ledger), harness/verify/token_ceiling.json exists, .synapse/harness.py has --budget, harness/notes/econ_*.py measured real burn. Extend, don't duplicate. Parallel-safe with BP1-TRIAGE by design (harness/ only)."
+  },
+  {
+    "id": "BP1-TRIAGE",
+    "name": "Gate 0 - silent-recall triage: four-gate probe (env -> plugin -> layer -> recall) under hython via the hytest shim; names the bucket; ships the GUI-half probe script for Joe's hands",
+    "state": "ready",
+    "receipt": "BP1-TRIAGE.json",
+    "branch": "bp1/triage",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp1-triage",
+    "prompt": "harness/battleplan/prompts/BP1-TRIAGE.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/battleplan/notes/",
+      "harness/battleplan/runs/"
+    ],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: sec.2 Gate 0 - four-gate discriminator, run twice (hython + GUI); first failing gate names the bucket. Silent recall = the green-light class. The M1 finding (two store authorities, python/synapse/memory/store.py:1517) is a HYPOTHESIS for the bucket, not the answer - the gate rows decide. Headless Moneta is UNAVAILABLE by construction (harness/memory/STATE.json substrate_presence); under hython G3/G4 may legitimately render UNAVAILABLE/UNKNOWN - that is a measurement, record it, never coerce it to pass or fail."
+  }
+]

@@ -1,0 +1,36 @@
+# HARNESS-BUDGET-RAILS — docs/BATTLEPLAN.md §5; demo roadmap P1. Authored 2026-08-31 (CTO pass, Fable 5).
+# Ratification: PENDING — Joe word. Demo first principle #1: Synapse runs without eating tokens.
+# Reuse before build: harness/verify/token_ceiling.json, harness/memory/STATE.json spawn_ledger
+# (real subagent_tokens), harness/notes/econ_*.py, .synapse/harness.py --budget already exist.
+# A field the runtime cannot measure renders UNKNOWN; UNKNOWN never coerces to unlimited.
+id: harness-budget-rails
+goal: "Every harness run carries a cap in the unit the runtime actually reports (tokens where measurable, agent-turns/legs otherwise), halts hard when the cap is crossed (receipt status blocked, reason budget — never a silent continue), and prints a spend ledger at the end of every run (leg, model, tokens_in, tokens_out or UNKNOWN per field, wall_ms, cap, remaining). Model choice is a lookup table (harness/rails_exec.json: mechanical -> cheapest available Claude string, reasoning -> claude-opus-4-8) so a local engine slots in later without code change. Existing orchestrate.ps1 invocations without -Budget behave byte-for-byte as before."
+model: opus
+autonomy: green            # harness/ + tests/, no hou
+owns:
+  - "harness/rails.py"
+  - "harness/rails_exec.json"
+  - "harness/orchestrate.ps1"                      # ADDITIVE only: -Budget parameter; default path unchanged
+  - "tests/test_rails.py"
+  - ".synapse/contracts/harness-budget-rails.yaml"
+do_not_touch:
+  - "harness/legs.json"                            # append is a human-word act
+  - "harness/state/drop.json"                      # human-only by recorded precedent
+  - "harness/memory/**"                            # memory board's surface (its ledger is READ, never written)
+  - "harness/loop/**"                              # loop-orchestrator's surface
+  - "harness/rope/**"                              # local-engine work lives on rope/beacon; the seam only points at it
+  - "VERSION"
+features:
+  - description: "a capped run completes under cap and emits harness/battleplan/runs/<date>/ledger_<run>.json with every field measured or the literal UNKNOWN"
+    verify: "artifact exists; BP1-CRUX reads it and finds no estimated value"
+    passing: false
+  - description: "a run whose spend crosses a deliberately tiny cap halts; its receipt is status blocked, reason budget; the ledger records where it stopped"
+    verify: "tests/test_rails.py::test_hard_stop passes; BP1-CRUX reproduces the halt with its own ledger artifact"
+    passing: false
+  - description: "orchestrate.ps1 without -Budget is unchanged: the BP1 -DryRun control log is byte-identical before and after the change"
+    verify: "diff of harness/notes/h22/orchestrator-bp1-control.log pre/post attached to the receipt"
+    passing: false
+  - description: "the execution seam is a lookup table, not a second orchestrator: harness/rails_exec.json maps tier -> model string and nothing else decides the model"
+    verify: "BP1-CRUX read of rails.py + rails_exec.json; RAILS_SEAM.md design note names where a local engine would plug in"
+    passing: false
+stop_when: "all features passing (verified by BP1-CRUX) OR Joe halts"

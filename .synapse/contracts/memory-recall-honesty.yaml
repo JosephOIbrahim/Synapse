@@ -1,0 +1,39 @@
+# MEMORY-RECALL-HONESTY — docs/BATTLEPLAN.md §5. Authored 2026-08-31 by the CTO pass (Fable 5).
+# Ratification: PENDING — Joe word. Until ratified, goalposts guide BP1-HONESTY; they do not bind
+# the loop-orchestrator. Rides INSIDE the ratified loop-v00 §4 envelope: no parameter name and no
+# STATUS value changes. Same failure class as BASTION B1 (cook success-noop): a green light that
+# cannot report failure. Silent-empty recall observed 2026-08-31 (Joe, GUI). UNKNOWN renders, never
+# fabricated green.
+id: memory-recall-honesty
+goal: "MemoryPort recall can never return empty-success. When recall cannot observe its substrate it returns UNAVAILABLE with error_message naming the gate that failed (env_unset | plugin_unregistered | layer_uncomposed); when it ran and matched nothing it returns SUCCESS with payload.hit=false and a reason (predicate_nomatch | quota_pruned) plus candidates_seen; a hit returns SUCCESS with payload.hit=true. An empty list under SUCCESS becomes unreturnable. STATUS stays SUCCESS|UNAVAILABLE|BLOCKED and query_and_filter(relation_keys, task_context_tokens) keeps its names verbatim — the honesty lives in the envelope, not in a new surface."
+model: opus
+autonomy: green            # pure-python goalpost; the GUI round-trip is a separate red contract
+owns:
+  - "python/synapse/loop/ports.py"                 # MemoryPort implementation body ONLY — §4 names/STATUS untouchable
+  - "python/synapse/memory/"                       # recall entry; no third store authority (M1 rule)
+  - "tests/test_memory_recall_honesty.py"
+  - ".synapse/contracts/memory-recall-honesty.yaml"
+do_not_touch:
+  - "python/synapse/loop/pgdrm.py"                 # memory board territory, live on mem/m2-pgdrm
+  - ".synapse/contracts/loop-v00.yaml"             # ratified
+  - "harness/loop/STATE.json"                      # loop-orchestrator's instrument
+  - "harness/memory/**"                            # memory board's surface
+  - "VERSION"                                      # bump is a Joe word
+  - "README.md"                                    # public-face content is Joe words
+features:
+  - description: "recall against a store whose memory layer is deliberately absent returns UNAVAILABLE with error_message == layer_uncomposed — never SUCCESS with an empty payload"
+    verify: "tests/test_memory_recall_honesty.py::test_layer_absent_is_unavailable passes; BP1-CRUX's own mutation restoring the empty-list return turns it red"
+    passing: false
+  - description: "recall with a non-matching predicate returns SUCCESS with payload.hit is False, reason == predicate_nomatch, candidates_seen >= 0"
+    verify: "tests/test_memory_recall_honesty.py::test_nomatch_is_explicit passes"
+    passing: false
+  - description: "recall of a known deposit returns SUCCESS with payload.hit is True and the deposit in payload"
+    verify: "tests/test_memory_recall_honesty.py::test_hit_is_explicit passes"
+    passing: false
+  - description: "the §4 surface is byte-identical: parameter names of all four ports and the STATUS set are unchanged; tests/test_loop_contracts.py is unchanged and green"
+    verify: "git diff master..bp1/honesty -- python/synapse/loop/ports.py shows no change to any def signature or STATUS member; pytest tests/test_loop_contracts.py green"
+    passing: false
+  - description: "no third store authority: the diff adds no new SynapseMemory/Moneta handle constructor path (store.py:1514 and ledger.py:320 remain the two, reconciled per M1)"
+    verify: "BP1-CRUX grep + read of the diff; finding anchored file:line"
+    passing: false
+stop_when: "all features passing (verified by BP1-CRUX) OR the leg reports blocked with an amendment draft in harness/battleplan/notes/ OR Joe halts"

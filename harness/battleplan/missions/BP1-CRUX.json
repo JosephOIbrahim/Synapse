@@ -1,0 +1,32 @@
+{
+  "id": "BP1-CRUX",
+  "name": "Adversarial crucible for wave BP1 - audits TRIAGE/RAILS/HONESTY receipts, builds nothing",
+  "band": "TRUST",
+  "class": "crucible",
+  "note": "Read-only. Blocked by design until the three builder receipts exist. A BROKEN verdict means that leg does not ride. A green CRUX receipt is a PRECONDITION for Joe's merge words, never a substitute for them.",
+  "targets": [
+    "1) For each builder receipt: re-run every acceptance predicate independently in a fresh checkout of the leg branch; verdicts pass|fail|UNKNOWN with your own anchors, never the builder's.",
+    "2) TRIAGE: run probe_silent_recall.py yourself under hython through .synapse/hytest.py; confirm the build stamp in silent_recall_hython.json equals hou.applicationVersionString() you observed; confirm UNKNOWN/UNAVAILABLE rows were not coerced; confirm the bus bucket follows from the rows.",
+    "3) HONESTY: author your own mutation set (>= 6) against the recall path - including restoring the empty-list return and deleting the layer check - every one must turn a test red; diff the sec.4 surface byte-for-byte against master; grep the branch diff for pgdrm.py, VERSION, README.md, loop-v00.yaml, harness/loop/, harness/memory/.",
+    "4) RAILS: reproduce the tiny-cap halt yourself; confirm no ledger field is an estimate; confirm the -DryRun control output is unchanged against the pre-change baseline.",
+    "5) Receipt verdict per leg: SOUND | SOUND-WITH-NITS | BROKEN with chain_broken_at named. Post each verdict on the bus addressed to *. Write harness/notes/h22/BP1_CRUX_LANDED.flag LAST."
+  ],
+  "touches": [],
+  "readonly": true,
+  "deps": ["BP1-TRIAGE", "BP1-RAILS", "BP1-HONESTY"],
+  "crucible_criteria": [
+    "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/BATTLEPLAN.md",
+    "anchor": "sec.5 contracts table + sec.2 outcome map - the crucible audits the green-light class this wave is armor against"
+  },
+  "acceptance": [
+    { "predicate": "one verdict per builder leg, each with independently re-run acceptance rows", "evidence": "receipt" },
+    { "predicate": ">= 6 self-authored mutations against the recall path, each named with the test it reddens", "evidence": "test" },
+    { "predicate": "tiny-cap halt reproduced by the crucible with its own ledger artifact", "evidence": "probe" }
+  ]
+}

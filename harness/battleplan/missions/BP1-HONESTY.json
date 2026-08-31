@@ -1,0 +1,40 @@
+{
+  "id": "BP1-HONESTY",
+  "name": "Recall honesty - MemoryPort recall never returns empty-success: UNAVAILABLE+reason when it cannot observe env/plugin/layer, SUCCESS with payload.hit=false+reason on a real no-match; contract + goalpost test + fix for TRIAGE's bucket",
+  "band": "BUILD",
+  "class": "build",
+  "note": "B1 made cook silence unshippable; this makes recall silence unshippable. Same class, same weapon. The Tue 18:00 demo branch is decided by the GUI round-trip at Joe's hands - this leg makes the code side honest so that round-trip cannot lie. Ratified surfaces: python/synapse/loop/ports.py sec.4 parameter names and STATUS values (SUCCESS|UNAVAILABLE|BLOCKED) are LAW - the design rides inside them, never changes them. python/synapse/loop/pgdrm.py belongs to mem/m2-pgdrm - never touch it.",
+  "targets": [
+    "1) Read .synapse/contracts/memory-recall-honesty.yaml (CTO-authored, ratification pending) and python/synapse/loop/ports.py sec.4. The envelope: UNAVAILABLE + error_message in {env_unset, plugin_unregistered, layer_uncomposed} when recall cannot observe its substrate; SUCCESS with payload {hit: false, reason in {predicate_nomatch, quota_pruned}, candidates_seen: n} on a genuine no-match; SUCCESS with payload {hit: true, ...} on a hit. An empty list under SUCCESS becomes impossible to return.",
+    "2) Poll the BP1 bus for BP1-TRIAGE's bucket finding before choosing the fix. Fix THAT bucket in the recall path (MemoryPort implementation in python/synapse/loop/ports.py and/or the recall entry in python/synapse/memory/) with zero change to any sec.4 parameter name or STATUS value. If the bucket is env or plugin (a launch-path defect, not a code defect), the code change is the honesty envelope only; write the launch-path fix as harness/battleplan/notes/LAUNCH_PATH_FIX.md for Joe's hands.",
+    "3) tests/test_memory_recall_honesty.py - pure Python, stock pytest, no hou: (a) recall against a store with the memory layer deliberately absent -> UNAVAILABLE, error_message == layer_uncomposed; (b) recall with a non-matching predicate -> SUCCESS, payload.hit is False, reason == predicate_nomatch; (c) recall of a known deposit -> SUCCESS, payload.hit is True; (d) a mutation restoring the old empty-list return turns (a) RED - name the mutation and the line in the receipt.",
+    "4) tests/test_loop_contracts.py stays green and byte-identical.",
+    "5) If any goalpost cannot be met without a sec.4 or STATUS change, draft the amendment to harness/battleplan/notes/AMENDMENT_recall_honesty.md and mark that target blocked (M3 precedent). Never apply it."
+  ],
+  "touches": [
+    "python/synapse/loop/ports.py",
+    "python/synapse/memory/",
+    "tests/test_memory_recall_honesty.py",
+    "harness/battleplan/notes/"
+  ],
+  "readonly": false,
+  "deps": ["BP1-TRIAGE"],
+  "crucible_criteria": [
+    "empty payload under SUCCESS is impossible after the change - the crucible authors its own probe for it",
+    "sec.4 parameter names and STATUS values are byte-identical before and after",
+    "the fix targets the bucket TRIAGE named on the bus, not the bucket the leg assumed",
+    "no third store authority is introduced (M1 rule: one handle per storage URI, one owner)",
+    "git diff touches no line of pgdrm.py, VERSION, README.md, loop-v00.yaml, harness/loop/, harness/memory/"
+  ],
+  "spawn_classes": ["test"],
+  "source": {
+    "doc": "docs/BATTLEPLAN.md",
+    "anchor": "sec.5 memory-recall-honesty.yaml - the point of the week"
+  },
+  "acceptance": [
+    { "predicate": "tests/test_memory_recall_honesty.py passes (a)(b)(c); the named mutation turns (a) red", "evidence": "test" },
+    { "predicate": "tests/test_loop_contracts.py unchanged and green", "evidence": "test" },
+    { "predicate": "branch diff touches no line of pgdrm.py, VERSION, README.md, .synapse/contracts/loop-v00.yaml, harness/loop/, harness/memory/", "evidence": "check" },
+    { "predicate": "TRIAGE's bucket is named in the receipt with the bus line that delivered it", "evidence": "check" }
+  ]
+}
