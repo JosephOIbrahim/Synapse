@@ -124,6 +124,50 @@ def storage_dir_from_uri(storage_uri: str) -> Optional[Path]:
     return Path(raw) if raw else None
 
 
+# ---------------------------------------------------------------------------
+# Recall honesty envelope (docs/BATTLEPLAN.md §5; memory-recall-honesty.yaml)
+# ---------------------------------------------------------------------------
+#
+# MemoryPort recall (``query_and_filter``) can never return empty-success. Same
+# failure class as BASTION B1 (cook success-noop): a green light that cannot
+# report failure. The honesty rides ENTIRELY in the envelope — no §4 parameter
+# name and no ``STATUS`` value changes (tests/test_loop_contracts.py pins both).
+
+_MISSING = object()  # sentinel: an attribute genuinely absent vs present-and-None
+
+#: A bound recall that cannot OBSERVE its substrate returns UNAVAILABLE with one
+#: of these as ``error_message`` — the machine-greppable gate name; human detail
+#: rides in the payload. ``env_unset`` / ``plugin_unregistered`` are bind-time
+#: gates (the Moneta package env never registered / registered-but-unimportable)
+#: whose remedy is launch-path, operator-side
+#: (harness/battleplan/notes/LAUNCH_PATH_FIX.md). ``layer_uncomposed`` is a
+#: bound store whose ECS memory layer is not composed.
+RECALL_UNOBSERVABLE_REASONS = frozenset({"env_unset", "plugin_unregistered", "layer_uncomposed"})
+
+#: A recall that RAN and observed its layer but kept nothing returns SUCCESS
+#: with ``payload["hit"] is False`` and one of these reasons — never an empty
+#: list under a bare SUCCESS. ``predicate_nomatch``: no candidate matched the
+#: relation keys. ``quota_pruned``: candidates matched but PG-DRM dropped them
+#: all (the ``dropped`` breakdown says which rule).
+RECALL_NOMATCH_REASONS = frozenset({"predicate_nomatch", "quota_pruned"})
+
+
+def _moneta_env_gate() -> str:
+    """Split a 'Moneta not importable' bind failure into its canonical gate.
+
+    ``env_unset`` — neither ``$MONETA_SRC`` nor ``$PXR_PLUGINPATH_NAME`` is
+        present, so packages/synapse.json never loaded and its env block never
+        ran. This is the launch-path defect BP1-TRIAGE bucketed as ``env`` on
+        2026-08-31 (hython resolves the classic prefs dir, which has no
+        synapse.json). Remedy is operator-side:
+        harness/battleplan/notes/LAUNCH_PATH_FIX.md.
+    ``plugin_unregistered`` — the env IS present but the package still will not
+        import (a drifted or broken adapter).
+    """
+    env_present = bool(os.environ.get("MONETA_SRC") or os.environ.get("PXR_PLUGINPATH_NAME"))
+    return "plugin_unregistered" if env_present else "env_unset"
+
+
 class MemoryPort:
     """Recall with task-context filtering (PG-DRM), backed by Moneta.
 
@@ -273,6 +317,49 @@ class MemoryPort:
                     except Exception:  # pragma: no cover - teardown is best-effort
                         pass
 
+    @staticmethod
+    def _unobservable(gate: str, detail: str) -> PortResult:
+        """UNAVAILABLE whose ``error_message`` is the canonical gate token and
+        whose payload carries the operator detail plus ``candidates_seen=None``
+        (recall never got far enough to count). The token is the greppable
+        reason; the detail is the human sentence. (docs/BATTLEPLAN.md §5.)"""
+        return _require_status(PortResult(
+            status="UNAVAILABLE",
+            payload={"gate": gate, "detail": detail, "candidates_seen": None},
+            error_message=gate,
+        ))
+
+    @staticmethod
+    def _bind_gate_token(detail: str) -> Optional[str]:
+        """Canonical env/plugin gate for a non-blocked bind failure, else None.
+
+        Only the two 'Moneta not importable' failures in :meth:`_open` are
+        env/plugin observability gates; both carry ``importable`` in their
+        detail. A generic store-open failure carries no such marker and keeps
+        its descriptive UNAVAILABLE. env_unset vs plugin_unregistered per
+        :func:`_moneta_env_gate`.
+        """
+        if detail and "importable" in detail:
+            return _moneta_env_gate()
+        return None
+
+    def _layer_observable(self) -> bool:
+        """Whether recall can OBSERVE rows to answer (the layer_uncomposed gate).
+
+        A Moneta-backed store carries a ``_handle``; its rows live on
+        ``_handle.ecs`` and are observable only once that layer is composed. A
+        store that is not Moneta-backed (no ``_handle``) carries its own rows
+        and is always observable via :meth:`_fetch_raw_memories`. Returning
+        False here is the ``layer_uncomposed`` gate — the distinction between
+        'bound but the memory layer is absent' (UNAVAILABLE) and 'layer present,
+        zero rows matched' (an honest SUCCESS no-match) that a bare empty list
+        erased. Overridable seam.
+        """
+        handle = getattr(self._store, "_handle", _MISSING)
+        if handle is _MISSING:
+            return True
+        return getattr(handle, "ecs", None) is not None
+
     def _guard(self) -> Optional[PortResult]:
         """UNAVAILABLE/BLOCKED when this port cannot honestly answer."""
         if self._storage_uri is None:
@@ -282,9 +369,17 @@ class MemoryPort:
                 f"{MONETA_URI_SCHEME}<path> to bind."
             )
         if self._store is None:
-            reason = self._bind_error or "Moneta handle unavailable"
-            return PortResult.blocked(reason) if self._bind_blocked \
-                else PortResult.unavailable(reason)
+            detail = self._bind_error or "Moneta handle unavailable"
+            if self._bind_blocked:
+                return PortResult.blocked(detail)
+            # A bind that failed because Moneta would not import is an env/plugin
+            # observability gate — name it (env_unset | plugin_unregistered) so
+            # recall's UNAVAILABLE vocabulary matches the §5 envelope. A generic
+            # open failure keeps its descriptive reason.
+            gate = self._bind_gate_token(detail)
+            if gate is not None:
+                return self._unobservable(gate, detail)
+            return PortResult.unavailable(detail)
         return None
 
     # -- blueprint §3 step 2: Wake ------------------------------------------
@@ -311,23 +406,52 @@ class MemoryPort:
     # -- blueprint §3 step 3: Recall & Filter (PG-DRM) -----------------------
 
     def query_and_filter(self, relation_keys, task_context_tokens) -> PortResult:
-        """Pre-Generation Diagnostic Retrieval Monitoring.
+        """Pre-Generation Diagnostic Retrieval Monitoring — the honest recall.
 
         Drops task-contaminated and exhausted chunks BEFORE prompt assembly,
         using only exact string tokens and the utility Moneta computed. Zero
         LLM inference, zero decay recomputation.
+
+        Recall can never return empty-success (docs/BATTLEPLAN.md §5). The
+        envelope lives entirely inside the ratified §4 surface — the signature
+        ``(relation_keys, task_context_tokens)`` and the ``STATUS`` set are
+        unchanged; the honesty is in the payload:
+
+        * cannot observe the substrate -> UNAVAILABLE, ``error_message`` a gate
+          name (env_unset | plugin_unregistered | layer_uncomposed);
+        * observed the layer, kept nothing -> SUCCESS, ``payload["hit"] is
+          False`` with a ``reason`` (predicate_nomatch | quota_pruned) and
+          ``candidates_seen``;
+        * kept results -> SUCCESS, ``payload["hit"] is True``.
+
+        An empty ``filtered_memories`` under a bare SUCCESS is unreturnable.
         """
         guard = self._guard()
         if guard is not None:
             return _require_status(guard)
 
+        # The memory layer must be observable or recall cannot honestly answer.
+        # A bound store whose ECS layer is not composed is UNAVAILABLE naming the
+        # gate — NOT a SUCCESS carrying an empty list. That empty list, returned
+        # as if it were a real "nothing recalled", is the silent-recall lie this
+        # leg makes unshippable.
+        if not self._layer_observable():
+            return self._unobservable(
+                "layer_uncomposed",
+                "bound store carries no composed memory layer (Moneta "
+                "_handle.ecs is absent); recall cannot observe rows to filter",
+            )
+
         keys = [k for k in (relation_keys or []) if isinstance(k, str)]
         tokens = {t for t in (task_context_tokens or []) if isinstance(t, str)}
+
+        candidates = self._fetch_raw_memories(keys)
+        candidates_seen = len(candidates)
 
         clean: List[Dict[str, Any]] = []
         dropped = {"exhausted": 0, "contaminated": 0, "unevaluable": 0}
 
-        for memory in self._fetch_raw_memories(keys):
+        for memory in candidates:
             utility = memory.get("utility")
             if not isinstance(utility, (int, float)) or isinstance(utility, bool):
                 # Unevaluable is NOT "fine". Mirrors mapper.GATE_POLICY: a value
@@ -343,13 +467,26 @@ class MemoryPort:
                 continue
             clean.append(memory)
 
-        return _require_status(PortResult.ok({
+        payload: Dict[str, Any] = {
             "filtered_memories": clean,
             "count": len(clean),
             "dropped": dropped,
+            "candidates_seen": candidates_seen,
             "utility_floor": self._utility_floor,
             "distance_threshold": self._distance_threshold,
-        }))
+        }
+        if clean:
+            payload["hit"] = True
+            return _require_status(PortResult.ok(payload))
+
+        # Ran, observed the layer, kept nothing: an EXPLICIT no-match, never an
+        # empty list smuggled under a bare SUCCESS. quota_pruned when candidates
+        # matched the relation-key predicate but PG-DRM dropped them all (the
+        # ``dropped`` breakdown says which rule); predicate_nomatch when nothing
+        # matched the relation keys in the first place.
+        payload["hit"] = False
+        payload["reason"] = "quota_pruned" if candidates_seen else "predicate_nomatch"
+        return _require_status(PortResult.ok(payload))
 
     # -- blueprint §3 step 9: Settle & Learn --------------------------------
 

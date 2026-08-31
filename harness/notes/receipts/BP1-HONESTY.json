@@ -1,0 +1,61 @@
+{
+  "leg": "BP1-HONESTY",
+  "status": "green_with_findings",
+  "product_head": "5d518935e124dc972bd0925b730ca41aa02da3d0",
+  "branch": "bp1/honesty",
+  "summary": "MemoryPort recall (query_and_filter) can no longer return empty-success. Cannot-observe -> UNAVAILABLE with a gate token (env_unset | plugin_unregistered | layer_uncomposed); observed-no-match -> SUCCESS payload.hit=False + reason (predicate_nomatch | quota_pruned) + candidates_seen; hit -> SUCCESS payload.hit=True. The honesty rides entirely in the envelope: ratified sec.4 signatures and the STATUS set are byte-identical. TRIAGE's bucket was env (launch-path), so the code change is the honesty envelope only and the env remedy is written to harness/battleplan/notes/LAUNCH_PATH_FIX.md for Joe's hands (target 2).",
+  "acceptance": [
+    {
+      "predicate": "tests/test_memory_recall_honesty.py passes (a)(b)(c); the named mutation turns (a) red",
+      "verdict": "pass",
+      "evidence": "test",
+      "detail": "58 passed (9 in test_memory_recall_honesty.py + 49 guardrail). (a) test_layer_absent_is_unavailable -> UNAVAILABLE, error_message=='layer_uncomposed'; (b) test_nomatch_is_explicit -> SUCCESS hit=False reason=='predicate_nomatch' + test_nomatch_quota_pruned_when_candidates_are_all_dropped -> reason=='quota_pruned' candidates_seen==1; (c) test_hit_is_explicit -> SUCCESS hit=True. MUTATION (d): neutering the guard at python/synapse/loop/ports.py:438 (`if not self._layer_observable():`) restores the old empty-list return; test_layer_absent_is_unavailable then observed UNAVAILABLE->SUCCESS = FAILED (red). Mutation reverted via git checkout; tree green again."
+    },
+    {
+      "predicate": "tests/test_loop_contracts.py unchanged and green",
+      "verdict": "pass",
+      "evidence": "test",
+      "detail": "git diff master..HEAD -- tests/test_loop_contracts.py is EMPTY (byte-identical). 20/20 pass. Never edited by this leg."
+    },
+    {
+      "predicate": "branch diff touches no line of pgdrm.py, VERSION, README.md, .synapse/contracts/loop-v00.yaml, harness/loop/, harness/memory/",
+      "verdict": "pass",
+      "evidence": "check",
+      "detail": "git diff --name-only master..HEAD = {harness/battleplan/notes/LAUNCH_PATH_FIX.md, python/synapse/loop/ports.py, tests/test_memory_recall_honesty.py}. Forbidden-surface grep returned no match. Sec.4 def-signature/STATUS grep on the ports.py diff is EMPTY (no port signature and no STATUS member changed). The contract yaml was deliberately NOT touched (its passing:false flags are a human/CRUX act, not this leg's)."
+    },
+    {
+      "predicate": "TRIAGE's bucket is named in the receipt with the bus line that delivered it",
+      "verdict": "pass",
+      "evidence": "check",
+      "detail": "Bucket = env. Delivered on the BATTLEPLAN bus by BP1-TRIAGE finding n=18d0f229ca7d5418 (ts 2026-08-31T12:55:13, body.bucket=\"env\", gates G1 ENV=fail/G2 PLUGIN=fail/G3 LAYER=UNKNOWN/G4 RECALL=UNKNOWN, build 22.0.417), re-confirmed in TRIAGE's release n=18d0f2802486a15c (body.bucket=\"env\", head 102c034b). Per brief target 2, env is a launch-path bucket: the code change is the honesty envelope only; the env remedy is harness/battleplan/notes/LAUNCH_PATH_FIX.md."
+    }
+  ],
+  "crucible_criteria": [
+    {"criterion": "empty payload under SUCCESS is impossible after the change", "verdict": "pass", "detail": "query_and_filter returns SUCCESS only via one of two branches: hit=True (clean non-empty) or hit=False + reason (clean empty). An empty filtered_memories under a bare SUCCESS (no hit/reason) is unreachable. Pinned by test_empty_list_under_bare_success_is_impossible. Cannot-observe short-circuits to UNAVAILABLE before any SUCCESS is built."},
+    {"criterion": "sec.4 parameter names and STATUS values are byte-identical before and after", "verdict": "pass", "detail": "git diff master..HEAD -- python/synapse/loop/ports.py has no +/- line matching any of the four port def signatures or `STATUS = frozenset`. query_and_filter(relation_keys, task_context_tokens) verbatim (re-pinned by test_query_and_filter_signature_is_still_verbatim); STATUS == {SUCCESS, UNAVAILABLE, BLOCKED} (test_status_set_is_still_the_ratified_three)."},
+    {"criterion": "the fix targets the bucket TRIAGE named on the bus (env), not the bucket the leg assumed", "verdict": "pass", "detail": "Bucket consumed from the bus BEFORE choosing the fix. env is launch-path -> code side = honesty envelope (layer_uncomposed + no-match + env/plugin canonicalization naming the env gate) and the env remedy authored to LAUNCH_PATH_FIX.md. The code side makes the env failure honest so the GUI round-trip cannot lie."},
+    {"criterion": "no third store authority is introduced (M1 rule)", "verdict": "pass", "detail": "The change lives entirely in python/synapse/loop/ports.py (the MemoryPort body). python/synapse/memory/ is untouched. The two authorities remain store.py:1514 (_global_synapse) and ledger.py:320 (_MONETA_STORE); the handle cache/lock/open path (_handles, _handles_lock, _acquire, _open) is byte-identical."},
+    {"criterion": "git diff touches no line of pgdrm.py, VERSION, README.md, loop-v00.yaml, harness/loop/, harness/memory/", "verdict": "pass", "detail": "Confirmed by git diff --name-only master..HEAD + forbidden-surface grep (no match)."}
+  ],
+  "findings": [
+    {"claim": "TRIAGE bucketed the failure as env, a launch-path defect (not a code defect): synapse.json is installed only in the OneDrive-redirected prefs dir and hython does not follow that redirect, so PXR_PLUGINPATH_NAME stays unset and Moneta is unimportable (G1/G2 fail). Per brief target 2 the code change is the honesty envelope only; the env remedy (3 options, HOUDINI_PACKAGE_DIR recommended) is written for Joe's hands.", "anchor": "harness/battleplan/notes/LAUNCH_PATH_FIX.md; bus n=18d0f229ca7d5418"},
+    {"claim": "The GUI half of the silent-recall reproduction is gui_required and remains UNKNOWN pending Joe's live GUI paste (TRIAGE predicate 4). The GUI's live prefs are in OneDrive so it may pass G1/G2, but that is a hypothesis, not a pass, and is not recorded green here. This leg makes the code side honest so that whatever the GUI round-trip does, recall cannot lie about it.", "anchor": "harness/battleplan/notes/LAUNCH_PATH_FIX.md (Still UNKNOWN section)"},
+    {"claim": "The full sec.5 unobservable vocabulary is now emitted by recall: env_unset/plugin_unregistered at bind time (canonicalized in _guard from the 'not importable' bind failure via _moneta_env_gate), layer_uncomposed at recall time (a bound Moneta store whose _handle.ecs is absent). Non-Moneta stores (no _handle) stay observable via _fetch_raw_memories, which is why the existing v51 PG-DRM tests that bind a fake store keep passing.", "anchor": "python/synapse/loop/ports.py:155-168,321-343,346-359,438-443"}
+  ],
+  "for_ruling": [
+    {"item": "The contract .synapse/contracts/memory-recall-honesty.yaml is ratification-pending (Joe word). This leg did NOT flip its five features' passing:false flags — that is a CRUX-verify + human-ratify act, not a leg act. All five now have green evidence (features 1-5 verdicts above). Awaiting BP1-CRUX verification and Joe ratification.", "anchor": ".synapse/contracts/memory-recall-honesty.yaml:23-38"}
+  ],
+  "spawn": [
+    {
+      "id": "BP1-HONESTY-WAKE",
+      "name": "wake_scene_relations honesty - the same layer_uncomposed gate for step-2 Wake",
+      "band": "BUILD",
+      "class": "build",
+      "note": "wake_scene_relations (blueprint step 2) still returns empty-success when the layer is uncomposed (ecs absent), because its documented 'empty woken set is a real SUCCESS' fallback does not distinguish empty-because-no-match (legitimate, step-2 flat-prompt fallback) from empty-because-cannot-observe (a layer_uncomposed lie). Recall (query_and_filter) now makes that distinction via _layer_observable(); wake could reuse the same seam so its cannot-observe case reports UNAVAILABLE layer_uncomposed while its genuine no-match stays SUCCESS. Held for Joe: this is build-class (outside HONESTY spawn_classes=[test]) and touches wake's documented step-2 contract, so it wants a human ruling before implementation.",
+      "readonly": false,
+      "touches": ["python/synapse/loop/ports.py", "tests/test_memory_port_v51.py"],
+      "spawn_classes": ["build"],
+      "held": true
+    }
+  ]
+}
