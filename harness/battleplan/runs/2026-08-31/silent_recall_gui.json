@@ -1,5 +1,100 @@
-{"gate": "G1 ENV", "verdict": "pass", "environment": "gui", "build": "22.0.400", "observed": {"PXR_PLUGINPATH_NAME": "C:/Users/User/Moneta/schema", "pxr_entries": ["C:/Users/User/Moneta/schema"], "schema_dir_has_plugInfo": true, "MONETA_SRC": "C:/Users/User/Moneta/src", "SYNAPSE_MEMORY_BACKEND": "moneta", "homeHoudiniDirectory": "C:/Users/User/OneDrive/Documents/houdini22.0", "onedrive_pkg": "C:/Users/User/OneDrive/Documents/houdini22.0/packages/synapse.json", "package_present_onedrive": true, "classic_pkg": "C:/Users/User/houdini22.0/packages/synapse.json", "package_absent_classic": true, "env_var_set_and_points_at_schema": true}, "exception": null}
-{"gate": "G2 PLUGIN", "verdict": "pass", "environment": "gui", "build": "22.0.400", "observed": {"plugin_total": 69, "moneta_plugins": ["moneta"], "schema_registered_MonetaMemory": true}, "exception": null}
-{"gate": "G3 LAYER", "verdict": "pass", "environment": "gui", "build": "22.0.400", "observed": {"store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g3_3y5_ppg_", "deposit_status": "SUCCESS", "deposit_error": null, "cortex_path": "C:/Users/User/AppData/Local/Temp/bp1_triage_g3_3y5_ppg_/.moneta/cortex_root.usda", "cortex_exists": true, "layer_stack": ["anon:0000000073FE2880:cortex_root-session.usda", "C:/Users/User/AppData/Local/Temp/bp1_triage_g3_3y5_ppg_/.moneta/cortex_root.usda"], "memory_layer_present": true}, "exception": null}
-{"gate": "G4 RECALL", "verdict": "fail", "environment": "gui", "build": "22.0.400", "observed": {"store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g4_sujg6khd", "known_claim_id": "BP1-TRIAGE-known-1a13afad", "deposit_status": "SUCCESS", "deposit_error": null, "raw_row_count": 1, "known_in_raw": false, "recall_status": "SUCCESS", "recall_count": 1, "dropped": {"exhausted": 0, "contaminated": 0, "unevaluable": 0}, "known_recalled": false, "reason": "deposit SUCCESS but query_and_filter did not return the known deposit - the green-light-that-cannot-report-failure class this wave exists to kill."}, "exception": null}
-{"sentinel": "DONE", "environment": "gui", "build": "22.0.400", "gate_count": 4, "bucket": "recall", "bucket_rule": "first gate whose verdict==fail; UNKNOWN never names it (docs/BATTLEPLAN.md sec.2 line 39/43)", "verdicts": {"G1 ENV": "pass", "G2 PLUGIN": "pass", "G3 LAYER": "pass", "G4 RECALL": "fail"}, "completed": "2026-08-31T17:13:24"}
+{
+  "format": "gate_probe_v1",
+  "record_count": 5,
+  "records": [
+    {
+      "gate": "G1 ENV",
+      "verdict": "pass",
+      "environment": "gui",
+      "build": "22.0.400",
+      "observed": {
+        "PXR_PLUGINPATH_NAME": "C:/Users/User/Moneta/schema",
+        "pxr_entries": [
+          "C:/Users/User/Moneta/schema"
+        ],
+        "schema_dir_has_plugInfo": true,
+        "MONETA_SRC": "C:/Users/User/Moneta/src",
+        "SYNAPSE_MEMORY_BACKEND": "moneta",
+        "homeHoudiniDirectory": "C:/Users/User/OneDrive/Documents/houdini22.0",
+        "onedrive_pkg": "C:/Users/User/OneDrive/Documents/houdini22.0/packages/synapse.json",
+        "package_present_onedrive": true,
+        "classic_pkg": "C:/Users/User/houdini22.0/packages/synapse.json",
+        "package_absent_classic": true,
+        "env_var_set_and_points_at_schema": true
+      },
+      "exception": null
+    },
+    {
+      "gate": "G2 PLUGIN",
+      "verdict": "pass",
+      "environment": "gui",
+      "build": "22.0.400",
+      "observed": {
+        "plugin_total": 69,
+        "moneta_plugins": [
+          "moneta"
+        ],
+        "schema_registered_MonetaMemory": true
+      },
+      "exception": null
+    },
+    {
+      "gate": "G3 LAYER",
+      "verdict": "pass",
+      "environment": "gui",
+      "build": "22.0.400",
+      "observed": {
+        "store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g3_3y5_ppg_",
+        "deposit_status": "SUCCESS",
+        "deposit_error": null,
+        "cortex_path": "C:/Users/User/AppData/Local/Temp/bp1_triage_g3_3y5_ppg_/.moneta/cortex_root.usda",
+        "cortex_exists": true,
+        "layer_stack": [
+          "anon:0000000073FE2880:cortex_root-session.usda",
+          "C:/Users/User/AppData/Local/Temp/bp1_triage_g3_3y5_ppg_/.moneta/cortex_root.usda"
+        ],
+        "memory_layer_present": true
+      },
+      "exception": null
+    },
+    {
+      "gate": "G4 RECALL",
+      "verdict": "fail",
+      "environment": "gui",
+      "build": "22.0.400",
+      "observed": {
+        "store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g4_sujg6khd",
+        "known_claim_id": "BP1-TRIAGE-known-1a13afad",
+        "deposit_status": "SUCCESS",
+        "deposit_error": null,
+        "raw_row_count": 1,
+        "known_in_raw": false,
+        "recall_status": "SUCCESS",
+        "recall_count": 1,
+        "dropped": {
+          "exhausted": 0,
+          "contaminated": 0,
+          "unevaluable": 0
+        },
+        "known_recalled": false,
+        "reason": "deposit SUCCESS but query_and_filter did not return the known deposit - the green-light-that-cannot-report-failure class this wave exists to kill."
+      },
+      "exception": null
+    },
+    {
+      "sentinel": "DONE",
+      "environment": "gui",
+      "build": "22.0.400",
+      "gate_count": 4,
+      "bucket": "recall",
+      "bucket_rule": "first gate whose verdict==fail; UNKNOWN never names it (docs/BATTLEPLAN.md sec.2 line 39/43)",
+      "verdicts": {
+        "G1 ENV": "pass",
+        "G2 PLUGIN": "pass",
+        "G3 LAYER": "pass",
+        "G4 RECALL": "fail"
+      },
+      "completed": "2026-08-31T17:13:24"
+    }
+  ]
+}

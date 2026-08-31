@@ -1,5 +1,79 @@
-{"gate": "G1 ENV", "verdict": "fail", "environment": "hython", "build": "22.0.417", "observed": {"PXR_PLUGINPATH_NAME": null, "pxr_entries": [], "schema_dir_has_plugInfo": false, "MONETA_SRC": null, "SYNAPSE_MEMORY_BACKEND": null, "homeHoudiniDirectory": "C:/Users/User/houdini22.0", "onedrive_pkg": "C:/Users/User/OneDrive/Documents/houdini22.0/packages/synapse.json", "package_present_onedrive": true, "classic_pkg": "C:/Users/User/houdini22.0/packages/synapse.json", "package_absent_classic": true, "env_var_set_and_points_at_schema": false}, "exception": null}
-{"gate": "G2 PLUGIN", "verdict": "fail", "environment": "hython", "build": "22.0.417", "observed": {"plugin_total": 68, "moneta_plugins": [], "schema_registered_MonetaMemory": false}, "exception": null}
-{"gate": "G3 LAYER", "verdict": "UNKNOWN", "environment": "hython", "build": "22.0.417", "observed": {"store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g3_ker4ylt9", "bind_status": "UNAVAILABLE", "bind_reason": "Moneta substrate not importable: ModuleNotFoundError: No module named 'moneta'; install the moneta package or point $MONETA_SRC at its source root", "reason": "Moneta store did not bind: no deposit possible, so no memory layer can be authored or reopened. Headless Moneta is UNAVAILABLE by construction (STATE.json substrate_presence). Unobtainable -> UNKNOWN, not fail."}, "exception": null}
-{"gate": "G4 RECALL", "verdict": "UNKNOWN", "environment": "hython", "build": "22.0.417", "observed": {"store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g4_u8w70abb", "known_claim_id": "BP1-TRIAGE-known-4b5cad15", "recall_status": "UNAVAILABLE", "reason": "Moneta substrate not importable: ModuleNotFoundError: No module named 'moneta'; install the moneta package or point $MONETA_SRC at its source root"}, "exception": null}
-{"sentinel": "DONE", "environment": "hython", "build": "22.0.417", "gate_count": 4, "bucket": "env", "bucket_rule": "first gate whose verdict==fail; UNKNOWN never names it (docs/BATTLEPLAN.md sec.2 line 39/43)", "verdicts": {"G1 ENV": "fail", "G2 PLUGIN": "fail", "G3 LAYER": "UNKNOWN", "G4 RECALL": "UNKNOWN"}, "completed": "2026-08-31T16:53:01"}
+{
+  "format": "gate_probe_v1",
+  "record_count": 5,
+  "records": [
+    {
+      "gate": "G1 ENV",
+      "verdict": "fail",
+      "environment": "hython",
+      "build": "22.0.417",
+      "observed": {
+        "PXR_PLUGINPATH_NAME": null,
+        "pxr_entries": [],
+        "schema_dir_has_plugInfo": false,
+        "MONETA_SRC": null,
+        "SYNAPSE_MEMORY_BACKEND": null,
+        "homeHoudiniDirectory": "C:/Users/User/houdini22.0",
+        "onedrive_pkg": "C:/Users/User/OneDrive/Documents/houdini22.0/packages/synapse.json",
+        "package_present_onedrive": true,
+        "classic_pkg": "C:/Users/User/houdini22.0/packages/synapse.json",
+        "package_absent_classic": true,
+        "env_var_set_and_points_at_schema": false
+      },
+      "exception": null
+    },
+    {
+      "gate": "G2 PLUGIN",
+      "verdict": "fail",
+      "environment": "hython",
+      "build": "22.0.417",
+      "observed": {
+        "plugin_total": 68,
+        "moneta_plugins": [],
+        "schema_registered_MonetaMemory": false
+      },
+      "exception": null
+    },
+    {
+      "gate": "G3 LAYER",
+      "verdict": "UNKNOWN",
+      "environment": "hython",
+      "build": "22.0.417",
+      "observed": {
+        "store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g3_ker4ylt9",
+        "bind_status": "UNAVAILABLE",
+        "bind_reason": "Moneta substrate not importable: ModuleNotFoundError: No module named 'moneta'; install the moneta package or point $MONETA_SRC at its source root",
+        "reason": "Moneta store did not bind: no deposit possible, so no memory layer can be authored or reopened. Headless Moneta is UNAVAILABLE by construction (STATE.json substrate_presence). Unobtainable -> UNKNOWN, not fail."
+      },
+      "exception": null
+    },
+    {
+      "gate": "G4 RECALL",
+      "verdict": "UNKNOWN",
+      "environment": "hython",
+      "build": "22.0.417",
+      "observed": {
+        "store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g4_u8w70abb",
+        "known_claim_id": "BP1-TRIAGE-known-4b5cad15",
+        "recall_status": "UNAVAILABLE",
+        "reason": "Moneta substrate not importable: ModuleNotFoundError: No module named 'moneta'; install the moneta package or point $MONETA_SRC at its source root"
+      },
+      "exception": null
+    },
+    {
+      "sentinel": "DONE",
+      "environment": "hython",
+      "build": "22.0.417",
+      "gate_count": 4,
+      "bucket": "env",
+      "bucket_rule": "first gate whose verdict==fail; UNKNOWN never names it (docs/BATTLEPLAN.md sec.2 line 39/43)",
+      "verdicts": {
+        "G1 ENV": "fail",
+        "G2 PLUGIN": "fail",
+        "G3 LAYER": "UNKNOWN",
+        "G4 RECALL": "UNKNOWN"
+      },
+      "completed": "2026-08-31T16:53:01"
+    }
+  ]
+}

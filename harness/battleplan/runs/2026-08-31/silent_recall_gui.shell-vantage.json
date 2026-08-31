@@ -1,5 +1,83 @@
-{"gate": "G1 ENV", "verdict": "pass", "environment": "gui", "build": "22.0.400", "observed": {"PXR_PLUGINPATH_NAME": "C:/Users/User/Moneta/schema", "pxr_entries": ["C:/Users/User/Moneta/schema"], "schema_dir_has_plugInfo": true, "MONETA_SRC": "C:/Users/User/Moneta/src", "SYNAPSE_MEMORY_BACKEND": "moneta", "homeHoudiniDirectory": "C:/Users/User/OneDrive/Documents/houdini22.0", "onedrive_pkg": "C:/Users/User/OneDrive/Documents/houdini22.0/packages/synapse.json", "package_present_onedrive": true, "classic_pkg": "C:/Users/User/houdini22.0/packages/synapse.json", "package_absent_classic": true, "env_var_set_and_points_at_schema": true}, "exception": null}
-{"gate": "G2 PLUGIN", "verdict": "pass", "environment": "gui", "build": "22.0.400", "observed": {"plugin_total": 69, "moneta_plugins": ["moneta"], "schema_registered_MonetaMemory": true}, "exception": null}
-{"gate": "G3 LAYER", "verdict": "UNKNOWN", "environment": "gui", "build": "22.0.400", "observed": {"store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g3_vnbndgjf", "bind_status": "BLOCKED", "bind_reason": "MemoryPort store initialization is main-thread only (host law: the main Houdini thread owns store init); refused on thread 'Dummy-6'. Panel and workers must read memory state over the WebSocket observation channel, not by binding a store.", "reason": "Moneta store did not bind: no deposit possible, so no memory layer can be authored or reopened. Headless Moneta is UNAVAILABLE by construction (STATE.json substrate_presence). Unobtainable -> UNKNOWN, not fail."}, "exception": null}
-{"gate": "G4 RECALL", "verdict": "UNKNOWN", "environment": "gui", "build": "22.0.400", "observed": {"store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g4_c1l2qf8v", "known_claim_id": "BP1-TRIAGE-known-c5186f62", "recall_status": "BLOCKED", "reason": "MemoryPort store initialization is main-thread only (host law: the main Houdini thread owns store init); refused on thread 'Dummy-6'. Panel and workers must read memory state over the WebSocket observation channel, not by binding a store."}, "exception": null}
-{"sentinel": "DONE", "environment": "gui", "build": "22.0.400", "gate_count": 4, "bucket": "UNKNOWN", "bucket_rule": "first gate whose verdict==fail; UNKNOWN never names it (docs/BATTLEPLAN.md sec.2 line 39/43)", "verdicts": {"G1 ENV": "pass", "G2 PLUGIN": "pass", "G3 LAYER": "UNKNOWN", "G4 RECALL": "UNKNOWN"}, "completed": "2026-08-31T17:10:07"}
+{
+  "format": "gate_probe_v1",
+  "record_count": 5,
+  "records": [
+    {
+      "gate": "G1 ENV",
+      "verdict": "pass",
+      "environment": "gui",
+      "build": "22.0.400",
+      "observed": {
+        "PXR_PLUGINPATH_NAME": "C:/Users/User/Moneta/schema",
+        "pxr_entries": [
+          "C:/Users/User/Moneta/schema"
+        ],
+        "schema_dir_has_plugInfo": true,
+        "MONETA_SRC": "C:/Users/User/Moneta/src",
+        "SYNAPSE_MEMORY_BACKEND": "moneta",
+        "homeHoudiniDirectory": "C:/Users/User/OneDrive/Documents/houdini22.0",
+        "onedrive_pkg": "C:/Users/User/OneDrive/Documents/houdini22.0/packages/synapse.json",
+        "package_present_onedrive": true,
+        "classic_pkg": "C:/Users/User/houdini22.0/packages/synapse.json",
+        "package_absent_classic": true,
+        "env_var_set_and_points_at_schema": true
+      },
+      "exception": null
+    },
+    {
+      "gate": "G2 PLUGIN",
+      "verdict": "pass",
+      "environment": "gui",
+      "build": "22.0.400",
+      "observed": {
+        "plugin_total": 69,
+        "moneta_plugins": [
+          "moneta"
+        ],
+        "schema_registered_MonetaMemory": true
+      },
+      "exception": null
+    },
+    {
+      "gate": "G3 LAYER",
+      "verdict": "UNKNOWN",
+      "environment": "gui",
+      "build": "22.0.400",
+      "observed": {
+        "store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g3_vnbndgjf",
+        "bind_status": "BLOCKED",
+        "bind_reason": "MemoryPort store initialization is main-thread only (host law: the main Houdini thread owns store init); refused on thread 'Dummy-6'. Panel and workers must read memory state over the WebSocket observation channel, not by binding a store.",
+        "reason": "Moneta store did not bind: no deposit possible, so no memory layer can be authored or reopened. Headless Moneta is UNAVAILABLE by construction (STATE.json substrate_presence). Unobtainable -> UNKNOWN, not fail."
+      },
+      "exception": null
+    },
+    {
+      "gate": "G4 RECALL",
+      "verdict": "UNKNOWN",
+      "environment": "gui",
+      "build": "22.0.400",
+      "observed": {
+        "store_dir": "C:\\Users\\User\\AppData\\Local\\Temp\\bp1_triage_g4_c1l2qf8v",
+        "known_claim_id": "BP1-TRIAGE-known-c5186f62",
+        "recall_status": "BLOCKED",
+        "reason": "MemoryPort store initialization is main-thread only (host law: the main Houdini thread owns store init); refused on thread 'Dummy-6'. Panel and workers must read memory state over the WebSocket observation channel, not by binding a store."
+      },
+      "exception": null
+    },
+    {
+      "sentinel": "DONE",
+      "environment": "gui",
+      "build": "22.0.400",
+      "gate_count": 4,
+      "bucket": "UNKNOWN",
+      "bucket_rule": "first gate whose verdict==fail; UNKNOWN never names it (docs/BATTLEPLAN.md sec.2 line 39/43)",
+      "verdicts": {
+        "G1 ENV": "pass",
+        "G2 PLUGIN": "pass",
+        "G3 LAYER": "UNKNOWN",
+        "G4 RECALL": "UNKNOWN"
+      },
+      "completed": "2026-08-31T17:10:07"
+    }
+  ]
+}
