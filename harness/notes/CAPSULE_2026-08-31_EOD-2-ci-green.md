@@ -58,6 +58,34 @@ publish-blocked on the same operator seat. Pick which tags first at the rig.
   paneTabOfType(NetworkEditor).pane().createTab(PythonPanel) → float only if
   no panes. Demo-relevant (on-camera surface).
 
+## ADDENDUM 4 (~23:45) — BOM fixed, CI GREEN, R.R suite green, review RC on standing debt
+- **R.R's "1 new failure" NAMED AND FIXED:** `VERSION` carried a BOM from my
+  `Set-Content -Encoding utf8` during the bump (S8 class — the exact landmine
+  sync_version.py's docstring names). test_version_file_agrees_with_pyproject
+  read '\ufeff5.58.0'. Rewritten via python io, LF restored. Commit fbf5e30e,
+  PUSHED (Joe word), **CI GREEN** on fbf5e30e (run 33450471806, all jobs).
+- **R.R re-run, both modes:** suite_baseline ok:true — 6833 passed / 0 failed,
+  ratchet holds, guardrail_violations []. Overall verdict still FAIL from
+  release_readiness_review = RC, blockers:
+  · four STANDING: mutation_fail_closed · hot_reload_gated ·
+    installer_host_targeted · ci_covers_shipping_surface (red since v5.51
+    draft; v5.56.0 published over them — precedent, not permission)
+  · g3 — **FINDING:** `_rr.ps1` runs Mode A, where g3 is "pending-drop" BY
+    CONSTRUCTION (never reads drop.json). Mode B reads it, but checks.py:2367
+    does `.get("houdini")` while drop.json (Aug 9 precedent + tonight) uses
+    `houdini_build` → major="" → "missing h?_symbol_table.json". KEY MISMATCH,
+    not a truth failure: h22_symbol_table.json exists, drop says 22.0.400.
+    One-line fix (accept either key) — gate code, deferred to daylight.
+    Also: _rr.ps1 should pass --mode B for release verifies.
+- **Publish NOT fired.** Card rule: R.R must read full green; it reads FAIL.
+  Decision on the table for Joe: (A) fix g3 key → R.R B → publish over the
+  four standing blockers with a recorded waiver naming them (matches v5.56.0
+  precedent), or (B) hold until the four are addressed. CTO lean: hold
+  tonight; the demo needs no published tag; decide fresh.
+- Logs: harness/notes/h22/rr2.log (mode A), rrB.log (mode B). Both gitignored.
+- HYGIENE (mine, tonight): inlined a 4-min `gh run watch` and hit the DC
+  transport ceiling — the house rule says detach+poll. Recovered; don't repeat.
+
 ## One-line state (as of first EOD-2 write)
 
 ## What closed tonight (all pushed, all CI-green)
