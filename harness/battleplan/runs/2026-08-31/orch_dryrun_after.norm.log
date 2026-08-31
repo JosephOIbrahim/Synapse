@@ -1,0 +1,17 @@
+﻿SYNAPSE ORCHESTRATOR
+manifest 2 legs   base master   log C:\Users\User\AppData\Local\Temp\rails_orch_control\repo\harness\notes\orchestrator_<TS>.log
+one window owns the board. close it to stop everything.
+baseline: CTRLA=ready  CTRLB=ready
+digest every 999 min - first at <HH:MM>
+board-complete enters IDLE WATCH, not exit - add a leg to legs.json any time
+DISPATCH CTRLA control leg A  ->  control/ctrla
+(dry run - not launching)
+(dry run) runner:   C:\Users\User\AppData\Local\Temp\orch_CTRLA.ps1  (parse-clean, BOM-free)
+(dry run) worktree: git worktree add -b control/ctrla C:\Users\User\AppData\Local\Temp\rails_orch_control\repo\wt\ctrla HEAD
+(dry run) launch:   claude --settings 'C:/scratch/settings.json' --effort ultracode --model claude-opus-4-8 --name 'SYNAPSE CTRLA control leg A' --permission-mode acceptEdits --verbose
+DISPATCH CTRLB control leg B  ->  control/ctrlb
+(dry run - not launching)
+(dry run) runner:   C:\Users\User\AppData\Local\Temp\orch_CTRLB.ps1  (parse-clean, BOM-free)
+(dry run) worktree: git worktree add -b control/ctrlb C:\Users\User\AppData\Local\Temp\rails_orch_control\repo\wt\ctrlb HEAD
+(dry run) launch:   claude --settings 'C:/scratch/settings.json' --effort ultracode --model claude-opus-4-8 --name 'SYNAPSE CTRLB control leg B' --permission-mode acceptEdits --verbose
+board  CTRLA:launched  CTRLB:launched   | last write <N>m ago

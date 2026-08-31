@@ -1,0 +1,77 @@
+{
+  "run": "bp1-rails-proofA",
+  "date": "2026-08-31",
+  "cap": {
+    "turns": 4,
+    "tokens": null
+  },
+  "status": "complete",
+  "reason": null,
+  "enforced_unit": "turns",
+  "token_meter": "UNKNOWN",
+  "totals": {
+    "turns": 3,
+    "tokens_in": "UNKNOWN",
+    "tokens_out": "UNKNOWN"
+  },
+  "remaining": {
+    "turns": 1,
+    "tokens": "UNKNOWN"
+  },
+  "legs": [
+    {
+      "leg": "TRIVIAL-1",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": 0.121,
+      "cap": {
+        "turns": 4,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 3,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true
+    },
+    {
+      "leg": "TRIVIAL-2",
+      "model": "claude-opus-4-8",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": 0.1,
+      "cap": {
+        "turns": 4,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 2,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true
+    },
+    {
+      "leg": "TRIVIAL-3",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": 0.091,
+      "cap": {
+        "turns": 4,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 1,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited."
+}
