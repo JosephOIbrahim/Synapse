@@ -28,6 +28,36 @@ OWN release. Done, DRAFT only:
 Net: TWO drafts now staged (v5.57.0 store work · v5.58.0 tonight), both
 publish-blocked on the same operator seat. Pick which tags first at the rig.
 
+## ADDENDUM 3 (~23:20) — ritual walked, R.R RED, publish NOT fired
+- **Seat gates: ALL PASS by Joe's word** ("all pass"): g1 · g5 (build receipt
+  PASS 22.0.400 ×3 surfaces) · g6 · Ctrl+Z (W5-UNDO-GUI receipt discharged) ·
+  g9 (no segfault this walk).
+- **drop.json WRITTEN** (harness/state/, untracked, BOM-free): values captured
+  LIVE from .400 hython — 22.0.400 / py 3.13.10 / usd 0.26.5 / pyside 6.8.3.
+  Joe author, Claude instrument, 2026-08-31T23:12:36Z.
+- **R.R verify: FAIL** (harness/notes/h22/rr2.log). Ritual STOPPED per card —
+  no partial release. Banked publish word VOIDED by red verdict. Two reds:
+  1. `suite_baseline` — **1 NEW failure**, ratchet BROKEN (6832p/1f vs base 0).
+     Test NOT yet named. Gate python is 3.14.2 w/ vendor tree INACTIVE (cp314
+     no wheels) — ABI split is a candidate cause, not a finding yet.
+     FIRST ACTION TOMORROW: `python -m pytest --lf -x -q` to name it.
+  2. `release_readiness_review` — verdict RC. Blockers: mutation_fail_closed,
+     hot_reload_gated, installer_host_targeted, ci_covers_shipping_surface
+     (all four STANDING since v5.51 draft; v5.56.0 published over them) +
+     `g3:pending-drop` (STALE — drop.json IS written; the check reads drop
+     state from elsewhere or needs registration; investigate).
+- **v5.58.0 remains DRAFT.** Publish path tomorrow: name+fix the 1 test →
+  re-run _rr.ps1 → green → `gh release edit v5.58.0 --draft=false` (Joe word).
+- **PANEL FLOAT — diagnosed, not fixed.** houdini/scripts/python/synapse_shelf.py
+  :126-137 open_panel(): paneTabOfType(PythonPanel) → if None →
+  createFloatingPaneTab. Every Ctrl+K without a docked tab spawns a float.
+  Also hijacks ANY PythonPanel. Workaround (Joe, 30s): dock a Python Panel tab
+  set to Synapse in main desktop + Save Current Desktop As (no .desk exists).
+  Code fix (~15 lines, shipping, needs GUI verify): prefer tab whose
+  activeInterface().name()=='synapse_panel' → else
+  paneTabOfType(NetworkEditor).pane().createTab(PythonPanel) → float only if
+  no panes. Demo-relevant (on-camera surface).
+
 ## One-line state (as of first EOD-2 write)
 
 ## What closed tonight (all pushed, all CI-green)
