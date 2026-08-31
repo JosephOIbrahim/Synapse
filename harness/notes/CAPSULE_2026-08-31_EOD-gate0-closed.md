@@ -111,3 +111,22 @@ LAUNCH_PATH_FIX · probe predicate fix · build call · worktree prune (bp1/*
 now merged — prunable) · Tue 18:00 branch decision. Nits R-N1/H-N1/T-N2/
 T-N3/W-N1/W-N2 + the orchestrate.ps1 unguarded Backup-Branches push →
 hardening backlog.
+
+---
+
+## ADDENDUM 2 (~18:20) — teardown complete
+
+- The shell kill orphaned the four Claude Code leg agents; found and retired
+  them by verified PID (RAILS 16176, TRIAGE 68936, HONESTY 33716, CRUX 70808)
+  after confirming all their work was merged and pushed. Closed the Windows
+  Terminal process owning all four BP1 windows. WT 24744 (windowless
+  default-host broker) deliberately left. Claude Desktop, Desktop Commander
+  transports, MCP proxies: untouched.
+- HARDENING ITEM (new, alongside the unguarded Backup-Branches push): wave
+  teardown must be a scripted single act — shells + agent processes + terminal
+  windows — not improvised. Twice this session "clean" was declared before it
+  was verified at operator scale (copy echo; terminal sweep). Same
+  green-light family, session-driver scale. Candidate: teardown verb on
+  orchestrate.ps1 or harness/battleplan/teardown_wave.ps1.
+- master is ahead of origin by the capsule addendum commits only; they ride
+  tomorrow's push with the merge-day work. Nothing else open.
