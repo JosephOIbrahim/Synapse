@@ -1,0 +1,146 @@
+{
+  "leg": "BP1-CRUX",
+  "target": "python/synapse/loop/ports.py recall path (bp1/honesty)",
+  "worktree": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\wcrux-h",
+  "baseline": {
+    "returncode": 0,
+    "green": true,
+    "summary": "======================== 9 passed, 2 warnings in 0.29s ========================",
+    "failed": []
+  },
+  "mutations": [
+    {
+      "id": "MUT-1-restore-empty-list",
+      "name": "restore the old empty-list bare-SUCCESS return",
+      "target_test": "test_empty_list_under_bare_success_is_impossible",
+      "anchor_hits": 1,
+      "applied": true,
+      "reddened": true,
+      "returncode": 1,
+      "summary": "=================== 4 failed, 5 passed, 2 warnings in 0.29s ===================",
+      "failed_tests": [
+        "tests/test_memory_recall_honesty.py::test_nomatch_is_explicit",
+        "tests/test_memory_recall_honesty.py::test_nomatch_quota_pruned_when_candidates_are_all_dropped",
+        "tests/test_memory_recall_honesty.py::test_hit_is_explicit",
+        "tests/test_memory_recall_honesty.py::test_empty_list_under_bare_success_is_impossible"
+      ],
+      "target_in_failed": true
+    },
+    {
+      "id": "MUT-2-delete-layer-check",
+      "name": "delete the layer_uncomposed guard in query_and_filter",
+      "target_test": "test_layer_absent_is_unavailable",
+      "anchor_hits": 1,
+      "applied": true,
+      "reddened": true,
+      "returncode": 1,
+      "summary": "=================== 1 failed, 8 passed, 2 warnings in 0.27s ===================",
+      "failed_tests": [
+        "tests/test_memory_recall_honesty.py::test_layer_absent_is_unavailable"
+      ],
+      "target_in_failed": true
+    },
+    {
+      "id": "MUT-3-layer-observable-lies",
+      "name": "_layer_observable always returns True",
+      "target_test": "test_layer_absent_is_unavailable",
+      "anchor_hits": 1,
+      "applied": true,
+      "reddened": true,
+      "returncode": 1,
+      "summary": "=================== 1 failed, 8 passed, 2 warnings in 0.27s ===================",
+      "failed_tests": [
+        "tests/test_memory_recall_honesty.py::test_layer_absent_is_unavailable"
+      ],
+      "target_in_failed": true
+    },
+    {
+      "id": "MUT-4-reason-swap",
+      "name": "invert the quota_pruned/predicate_nomatch condition",
+      "target_test": "test_nomatch_quota_pruned_when_candidates_are_all_dropped",
+      "anchor_hits": 1,
+      "applied": true,
+      "reddened": true,
+      "returncode": 1,
+      "summary": "=================== 2 failed, 7 passed, 2 warnings in 0.27s ===================",
+      "failed_tests": [
+        "tests/test_memory_recall_honesty.py::test_nomatch_is_explicit",
+        "tests/test_memory_recall_honesty.py::test_nomatch_quota_pruned_when_candidates_are_all_dropped"
+      ],
+      "target_in_failed": true
+    },
+    {
+      "id": "MUT-5-hit-lies",
+      "name": "hit=False even when clean results survive",
+      "target_test": "test_hit_is_explicit",
+      "anchor_hits": 1,
+      "applied": true,
+      "reddened": true,
+      "returncode": 1,
+      "summary": "=================== 1 failed, 8 passed, 2 warnings in 0.29s ===================",
+      "failed_tests": [
+        "tests/test_memory_recall_honesty.py::test_hit_is_explicit"
+      ],
+      "target_in_failed": true
+    },
+    {
+      "id": "MUT-6-env-gate-swap",
+      "name": "invert env_unset/plugin_unregistered classifier",
+      "target_test": "test_moneta_env_gate_classifies_env_vs_plugin",
+      "anchor_hits": 1,
+      "applied": true,
+      "reddened": true,
+      "returncode": 1,
+      "summary": "=================== 2 failed, 7 passed, 2 warnings in 0.28s ===================",
+      "failed_tests": [
+        "tests/test_memory_recall_honesty.py::test_moneta_env_gate_classifies_env_vs_plugin",
+        "tests/test_memory_recall_honesty.py::test_bound_but_moneta_unimportable_names_the_env_gate"
+      ],
+      "target_in_failed": true
+    },
+    {
+      "id": "MUT-7-bind-gate-none",
+      "name": "_bind_gate_token never names a gate (returns None)",
+      "target_test": "test_bound_but_moneta_unimportable_names_the_env_gate",
+      "anchor_hits": 1,
+      "applied": true,
+      "reddened": true,
+      "returncode": 1,
+      "summary": "=================== 1 failed, 8 passed, 2 warnings in 0.28s ===================",
+      "failed_tests": [
+        "tests/test_memory_recall_honesty.py::test_bound_but_moneta_unimportable_names_the_env_gate"
+      ],
+      "target_in_failed": true
+    },
+    {
+      "id": "MUT-8-unobservable-token-drop",
+      "name": "_unobservable drops the gate token from error_message",
+      "target_test": "test_layer_absent_is_unavailable",
+      "anchor_hits": 1,
+      "applied": true,
+      "reddened": true,
+      "returncode": 1,
+      "summary": "=================== 2 failed, 7 passed, 2 warnings in 0.28s ===================",
+      "failed_tests": [
+        "tests/test_memory_recall_honesty.py::test_layer_absent_is_unavailable",
+        "tests/test_memory_recall_honesty.py::test_bound_but_moneta_unimportable_names_the_env_gate"
+      ],
+      "target_in_failed": true
+    }
+  ],
+  "post_revert": {
+    "returncode": 0,
+    "green": true,
+    "summary": "======================== 9 passed, 2 warnings in 0.27s ========================",
+    "failed": []
+  },
+  "rollup": {
+    "total": 8,
+    "applied_cleanly": 8,
+    "reddened": 8,
+    "escapes": [],
+    "anchor_misses": [],
+    "all_named_targets_hit": true,
+    "baseline_green_before_and_after": true
+  }
+}

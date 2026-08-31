@@ -1,0 +1,22 @@
+BP1-CRUX LANDED — 2026-08-31
+============================================================
+Adversarial crucible for wave BP1 complete. Read-only; built nothing.
+
+Verdicts (all three legs RIDE; none BROKEN):
+  BP1-TRIAGE   SOUND-WITH-NITS   chain_broken_at: none
+  BP1-RAILS    SOUND-WITH-NITS   chain_broken_at: none
+  BP1-HONESTY  SOUND-WITH-NITS   chain_broken_at: none
+
+Crux acceptance: 3/3 pass
+  - one independently-re-run verdict per builder leg
+  - 8 self-authored recall mutations, 0 escapes (>= 6 required)
+  - tiny-cap halt reproduced with the crux's own ledger
+
+Wave base:      9e444d90  (NOT the live master 7f82a437+ — moved this session)
+Crux product:   0101194c  (receipt is the closing commit above this flag)
+Receipt:        harness/notes/receipts/BP1-CRUX.json  (status green_with_findings)
+Verdicts doc:   harness/battleplan/notes/BP1-CRUX_verdicts.md
+
+A green CRUX receipt is a PRECONDITION for Joe's merge words, never a substitute.
+Merge / v5.57.0 tag / push (Gate C) / ratify memory-recall-honesty.yaml = Joe's word, per act.
+The demo-deciding GUI round-trip remains Joe's hands.

@@ -1,0 +1,61 @@
+{
+  "run": "bp1-crux-rails-cli",
+  "date": "2026-08-31",
+  "cap": {
+    "turns": 1,
+    "tokens": null
+  },
+  "status": "blocked",
+  "reason": "budget",
+  "enforced_unit": "turns",
+  "token_meter": "UNKNOWN",
+  "totals": {
+    "turns": 1,
+    "tokens_in": "UNKNOWN",
+    "tokens_out": "UNKNOWN"
+  },
+  "remaining": {
+    "turns": 0,
+    "tokens": "UNKNOWN"
+  },
+  "legs": [
+    {
+      "leg": "CLI-1",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": "UNKNOWN",
+      "cap": {
+        "turns": 1,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 0,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true
+    },
+    {
+      "leg": "CLI-2",
+      "model": "claude-opus-4-8",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": "UNKNOWN",
+      "cap": {
+        "turns": 1,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 0,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": false,
+      "note": "REFUSED: dispatching would exceed the turns cap (turn 2 > 1)"
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited."
+}
