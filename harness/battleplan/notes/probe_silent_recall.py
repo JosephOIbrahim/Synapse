@@ -143,6 +143,26 @@ def _bootstrap_synapse() -> None:
         sys.path.insert(0, str(py))
 
 
+def _claim_id_of(row):
+    """Extract claim_id from a recall/raw row.
+
+    Corrects the BP1 G4 false-negative (BP1_G4_FALSE_FAIL.md, 2026-08-31):
+    the settlement fields are JSON-serialized inside payload.content (a string),
+    there is no top-level payload.claim_id. The old predicate
+    `(r.get("payload") or {}).get("claim_id") == known` was false-negative
+    forever on this shape. Forward-compat: honor a flattened claim_id if the
+    shape ever changes.
+    """
+    p = row.get("payload") or {}
+    cid = p.get("claim_id")
+    if cid:
+        return cid
+    try:
+        return json.loads(p.get("content") or "{}").get("claim_id")
+    except Exception:
+        return None
+
+
 def _row(gate, verdict, environment, build, observed, exception):
     """One gate row in the exact shape target 1 pins."""
     return {
@@ -386,7 +406,7 @@ def gate4_recall(environment, build):
                 raw = port._fetch_raw_memories([])
                 observed["raw_row_count"] = len(raw)
                 observed["known_in_raw"] = any(
-                    (r.get("payload") or {}).get("claim_id") == known for r in raw)
+                    _claim_id_of(r) == known for r in raw)
             except Exception as e3:
                 observed["raw_probe_error"] = f"{type(e3).__name__}: {e3}"
 
@@ -398,7 +418,7 @@ def gate4_recall(environment, build):
                 observed["recall_count"] = payload.get("count")
                 observed["dropped"] = payload.get("dropped")
                 found = any(
-                    (m.get("payload") or {}).get("claim_id") == known for m in mems)
+                    _claim_id_of(m) == known for m in mems)
                 observed["known_recalled"] = found
                 if dep.status == "SUCCESS" and found:
                     verdict = "pass"
