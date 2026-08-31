@@ -89,3 +89,25 @@ merge words · push · tag/publish · drop.json writes · contract ratification 
 all per-act Joe words. CTO standing authority for execution acts. One writer
 per surface. No amends on master. CRUX before merge. Verdicts READ before
 merge words fire. Unmeasured renders UNKNOWN.
+
+
+---
+
+## POST-CAPSULE ADDENDUM (same evening, ~18:00)
+
+CRUX landed at 17:15 (flag committed on its own branch — poll the WORKTREE
+path next time, not master). Verdicts read in-session: all three legs
+SOUND-WITH-NITS, all ride. Joe's words given and executed:
+
+- Merged, in order: bp1/triage 6cca908f · bp1/rails d01466da ·
+  bp1/honesty 88c69ccd · bp1/crux 4549380a. Zero conflicts.
+- Post-merge sweep on master: 84/84 (rails 26, honesty 9, loop_contracts 20,
+  v51 29). Flag present on master.
+- Pushed: 2767564c..4549380a, remote HEAD verified. Wave BP1 is CLOSED.
+
+Checklist deltas vs above: merge words DONE · flag/verdicts DONE · push DONE.
+Still open: ratify 3 contracts · section B gates + publish v5.57.0 draft ·
+LAUNCH_PATH_FIX · probe predicate fix · build call · worktree prune (bp1/*
+now merged — prunable) · Tue 18:00 branch decision. Nits R-N1/H-N1/T-N2/
+T-N3/W-N1/W-N2 + the orchestrate.ps1 unguarded Backup-Branches push →
+hardening backlog.
