@@ -2364,8 +2364,12 @@ def check_release_readiness_review(ctx):
     if ctx.get("mode") == "B":
         major = ""
         try:
-            major = str(json.loads(_drop_path().read_text(encoding="utf-8"))
-                        .get("houdini", "")).split(".")[0]
+            _d = json.loads(_drop_path().read_text(encoding="utf-8"))
+            # drop.json's human-written precedent (2026-08-09) uses `houdini_build`;
+            # the original key was `houdini`. Accept either - the gate reads the
+            # surface as the human wrote it, not the reverse. (Corrected 2026-08-31:
+            # g3 had never read green because of this one field name.)
+            major = str(_d.get("houdini") or _d.get("houdini_build") or "").split(".")[0]
         except Exception:
             pass
         table = (Path(ctx["wt"]) / "python" / "synapse" / "cognitive" / "tools" / "data"

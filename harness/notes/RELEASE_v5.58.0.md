@@ -50,13 +50,27 @@ content), and four JSONL probe receipts were wrapped as valid single-object
 JSON to satisfy the S8 parse gate — without weakening the gate, which keeps its
 negative-control proof.
 
-## Honest state
+## Honest state — ritual walked 2026-08-31 evening
 
-Publish-blocked on the operator seat by design: g1 clean install · g5 lifecycle
-· g6 smoke · g9 rollback · Ctrl+Z reversibility · drop.json (human-only) ·
-final verify. The one demo-critical thing still UNMEASURED is cross-session
-recall (close → reopen → remember) — the red-tier demo-round-trip contract,
-GUI, on camera. That is the Tuesday branch predicate, not part of this tag.
+Operator seat gates, all PASS by Joe's hands at the 22.0.400 rig: g1 clean
+install · g5 lifecycle (build receipt 22.0.400 on three surfaces) · g6 core smoke
+· Ctrl+Z reversibility (one undo reversed a multi-part build; the standing
+W5-UNDO-GUI receipt is discharged) · g9 rollback (no segfault this walk).
+drop.json written from live .400 values. Version surfaces CONFORM at 5.58.0.
+CI green on the tagged head. R.R verify, Mode B: suite 6,833 passed / 0 failed,
+ratchet holds, guardrail violations empty, and G3 host truth reads green for the
+first time — a field-name mismatch between the drop schema and the checker had
+kept it red through every prior release; corrected in this span.
 
-Version surfaces all CONFORM at 5.58.0 (`scripts/sync_version.py --check` PASS).
-The tag is cut at publish, by Joe's word, after the seat gates.
+**Still RED, carried unchanged from v5.56.0:** the release-readiness review's
+four standing blockers — `mutation_fail_closed`, `hot_reload_gated`,
+`installer_host_targeted`, `ci_covers_shipping_surface`. Named debt, not hidden
+debt: v5.56.0 published over the same four. Publishing this release over them is
+a per-act decision of Joe's, recorded here if taken; either way they head the
+hardening backlog.
+
+The one demo-critical thing still UNMEASURED is cross-session recall (close →
+reopen → remember) — the red-tier demo-round-trip contract, GUI, on camera. That
+is the Tuesday branch predicate, not part of this tag.
+
+The tag is cut at publish, by Joe's word.
