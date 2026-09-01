@@ -1,0 +1,62 @@
+{
+  "leg": "BP2-LATENCY",
+  "status": "green_with_findings",
+  "product_head": "0ef5314645d9a69a3e0984b7e8c2560c962e937c",
+  "build_in_process": "22.0.400",
+  "surface": "public synapse.loop.ports.MemoryPort only; diff under python/synapse/memory/ empty",
+  "acceptance": [
+    {
+      "predicate": "harness/battleplan/runs/<date>/memory_latency_hython.json exists: 5 repeats, per-op wall_ms, p50/p95 per op, N, backend, embedder id, dim, build observed in-process; every unmeasured field literal UNKNOWN",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/runs/2026-09-01/memory_latency_hython.json (agent lane: availability UNAVAILABLE, bind_reason env_unset, every op p50/p95/samples==UNKNOWN, build 22.0.400 in-process, DONE last) AND memory_latency_hython_provisioned.json (real numbers: 5 repeats, per-op wall_ms+p50+p95, N 195->200, backend MonetaBackedStore, embedder minilm-l6-v2-d384, dim 384)"
+    },
+    {
+      "predicate": "memory_latency_gui.json from the same probe pasted into the .400 GUI Python shell (Joe)",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required and cannot be measured headless (constitution: unobtainable renders UNKNOWN). The same probe is GUI-paste ready (__main__ writes memory_latency_gui.json). Awaits Joe on the .400 GUI runtime where Moneta is live (health write_plane serving_class=MonetaBackedStore confirmed)."
+    },
+    {
+      "predicate": ".synapse/contracts/memory-latency-receipt.yaml authored, all features passing:false",
+      "verdict": "pass",
+      "evidence": ".synapse/contracts/memory-latency-receipt.yaml (git add -f; 8 features, all passing:false; ratification recorded PENDING Joe's word in the header, never flipped by an agent)"
+    },
+    {
+      "predicate": "diff under python/synapse/memory/ is empty on the branch",
+      "verdict": "pass",
+      "evidence": "git diff --stat master..HEAD -- python/synapse/memory/ is empty; working tree never touched that path (probe imports MemoryPort read-only)"
+    },
+    {
+      "predicate": "bus finding posted: either 'under budget' with the numbers, or the named bucket with its isolating row plus a spawn proposal for BP2-LATENCYFIX",
+      "verdict": "pass",
+      "evidence": "bus finding 18d13ee9a7c6dfa4 (bp2/BP2-LATENCY): UNDER BUDGET with the numbers; anchor memory_latency_hython_provisioned.json. No bucket, no spawn (T2/T4)."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "Default agent lane (hython .synapse/hytest.py, no Moneta env): Moneta UNAVAILABLE by construction, bind_reason env_unset. Recorded as a measurement, never coerced to a number, never a pass (crucible #4).",
+      "anchor": "harness/battleplan/runs/2026-09-01/memory_latency_hython.json"
+    },
+    {
+      "claim": "Provisioned-headless proxy (Moneta env MONETA_SRC + PXR_PLUGINPATH_NAME + SYNAPSE_MEMORY_BACKEND=moneta per packages/synapse.json), build 22.0.400 in-process, N 195->200, MonetaBackedStore, embedder minilm-l6-v2-d384 dim 384, repeat-5: deposit ack p95 71.8ms/500 . recall p95 3.0ms/1500 (max sample 58.5ms) . recall_after_reopen p95 4.7ms/1500 . reopen-with-memory-layer composite p95 130.4ms/3000 . cortex USD layer present all 5 reopens . known deposit recalled 5/5 both pre- and post-reopen (no silent-empty). ALL ops UNDER their sec.2-call-8 camera budget.",
+      "anchor": "harness/battleplan/runs/2026-09-01/memory_latency_hython_provisioned.json"
+    },
+    {
+      "claim": "Under budget => no bucket named (crucible #5: no name without a second isolating pass; the bucket_pass never ran), no fix leg, no spawn (T2/T4).",
+      "anchor": "harness/battleplan/runs/2026-09-01/memory_latency_hython_provisioned.json (over_budget_ops: [], named_bucket: none (under budget))"
+    },
+    {
+      "claim": "Root cause of the default-lane UNAVAILABLE, characterized: the hytest-spawned `hython -m pytest` subprocess does not carry MONETA_SRC / PXR_PLUGINPATH_NAME, which packages/synapse.json (OneDrive prefs) sets for the GUI. Setting them makes Moneta bind (proven by the provisioned run). Reproducibility note for the GUI half and any future headless memory measurement: pass those two vars (Moneta/src, Moneta/schema both present on this host).",
+      "anchor": "C:/Users/User/OneDrive/Documents/houdini22.0/packages/synapse.json:18-25"
+    },
+    {
+      "claim": "Small-n percentile caveat (repeat-5): p95 uses the house idiom sorted[int(n*0.95)-1] = the 4th of 5 samples, so a single top-sample spike (recall max 58.5ms) shows in max_ms, not p95_ms. min/max/raw samples are recorded so the percentile is re-derivable. Every op is far enough under budget that the caveat does not change any verdict (worst single recall 58.5ms is 26x under the 1500ms budget).",
+      "anchor": "harness/battleplan/runs/2026-09-01/memory_latency_hython_provisioned.json (recall op row samples_ms)"
+    }
+  ],
+  "for_ruling": [
+    "The camera budgets (docs/BATTLEPLAN.md sec.2 call 8) are PROPOSED; ratifying them is Joe's word. This leg measured against them and did not ratify.",
+    "The contract's 8 features ship passing:false; flipping any is Joe/BP2-CRUX's word, not an agent's.",
+    "Accept-scope question for Joe/CRUX: is the 'under budget' verdict from the provisioned-headless proxy sufficient for the sec.1 demo beat, or is the .400 GUI half (Joe's paste) required to confirm before the beat is called green? The GUI half is gui_required and remains UNKNOWN in this receipt."
+  ],
+  "spawn": []
+}
