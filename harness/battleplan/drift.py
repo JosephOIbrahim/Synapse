@@ -34,9 +34,21 @@ def check(wave, missions_dir=MISSIONS, post=None) -> list:
         if m.get("type") == "progress" and m.get("frm"):
             legs.setdefault(m["frm"], []).append(m.get("body") or {})
     acted = []
+    receipts = MISSIONS.parent.parent / "notes" / "receipts"
     for leg, prog in legs.items():
         if any(m.get("type") == "halt" and m.get("to") == leg for m in msgs):
             continue  # already halted - never re-halt
+        # 2026-09-01 referee guard: a CLOSED leg is not a drifting leg. Its receipt is
+        # in-tree, or its last progress said DONE, or it posted a release status -
+        # a finished session cannot answer a refocus (observed: refocus -> BP2-STORE
+        # on the first poll of the closing wave).
+        if (receipts / f"{leg}.json").exists():
+            continue
+        if any(str((b or {}).get("target", "")).upper() == "DONE" for b in prog):
+            continue
+        if any(m.get("type") == "status" and m.get("frm") == leg and (m.get("body") or {}).get("release")
+               for m in msgs):
+            continue
         last = prog[-WINDOW:]
         ratio = sum(_on_target(b) for b in last) / len(last)
         if ratio >= ON_TARGET_MIN:
