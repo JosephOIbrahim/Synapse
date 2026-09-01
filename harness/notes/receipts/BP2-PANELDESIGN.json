@@ -1,0 +1,84 @@
+{
+  "leg": "BP2-PANELDESIGN",
+  "status": "green_with_findings",
+  "branch": "bp2/paneldesign",
+  "product_head": "3371ba6278661ba8b50bf7fb4c09c835f43b8df3",
+  "base": "e9ebfeda2d71e276020d29716020b5b60c26c0a7",
+  "gate": "PANELTRUTH merged to master (0d63f206, on master + origin/master) — HELD condition (sec.12 R-6) cleared; profile_diff.json read from master",
+  "summary": "sec.7 spacing pass: 4-pt SPACE grid (additive 12/32/48 on existing names, never renamed) + gap(base,density) multiplier (airy x1.5 / standard x1 / tight x0.75, gaps only, paddings fixed) driven through the #DsRoot density property in QSS, applied to the QSS-reachable camera regions (DsTabRow / DsVerb / DsHeader). Expert manifest untouched -> pin green. Zero new colours/widgets/families. Regions 3 (recall card, greenfield) + 4 (token-face rows, inline-styled, no objectNames) are out of designsystem-only reach this leg -> documented + held spawn.",
+  "acceptance": [
+    {
+      "predicate": "docs/PANEL_RHYTHM_SPEC.md exists with px numbers per region, token table, density multipliers",
+      "verdict": "pass",
+      "evidence": "docs/PANEL_RHYTHM_SPEC.md (committed 3371ba62): token table §2, density multipliers §3, per-region before/after px §4 (all five regions)"
+    },
+    {
+      "predicate": "QSS/token diff introduces no colour token and no hex string (grep attached)",
+      "verdict": "pass",
+      "evidence": "git diff e9ebfeda..HEAD -- designsystem/ | grep '#[0-9a-fA-F]{6}' => EMPTY; no QFont/font-family/setFamily added; test_bp2_paneldesign_density.py::TestGuardrails::test_region_rhythm_introduces_no_hex green"
+    },
+    {
+      "predicate": "headless test: gap tokens step by the density multipliers per profile",
+      "verdict": "pass",
+      "evidence": "tests/test_bp2_paneldesign_density.py 16/16 green — TestGapMultiplier + TestRegionRhythmStepsByDensity (curious->airy x1.5, expert->standard x1, ml->tight x0.75; DsTabRow/DsVerb/DsHeader margins == gap(base,level))"
+    },
+    {
+      "predicate": "test_expert_resolved_equals_v5420_snapshot green and pytest -q green on the branch",
+      "verdict": "pass",
+      "evidence": "test_rope_expert_pin.py 2/2 green (manifests untouched; pin is manifest-only, test_rope_expert_pin.py:106); full pytest -q -> 6921 passed / 186 skipped / 0 failed in 271.52s (exit 0)"
+    },
+    {
+      "predicate": "importer chore outcome posted as a bus finding (deleted pair, or importers named and left)",
+      "verdict": "pass",
+      "evidence": "bus finding 2026-09-01T15:44:26 (n=18d149fa5ba88e1c): LEAVE THE PAIR. `.synapse/verify.py no-importers python/synapse/panel/tokens.py python/synapse/panel` -> exit 1 (importers exist); 8 live importers of panel/tokens.py + 3 of panel/styles.py named"
+    },
+    {
+      "predicate": "GUI sign-off on the five camera regions in the .400 GUI (Joe, Thu/Fri)",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required — unobtainable headless; recorded UNKNOWN, never a pass. Joe's eyes in live Houdini 22.0.400: the tab strip pills, verb rail, recall card, TOKEN face rows, and .hip ribbon + header status line read right across curious/expert/ml with the airy/tight rhythm visibly stepping gaps and paddings unchanged."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "Region 3 (recall card) is GREENFIELD — no widget exists and HIT/NO HIT/UNAVAILABLE/BLOCKED appear nowhere in panel/. Building it = a net-new widget, which violates this leg's 'zero new widgets' crucible + lands outside designsystem/ territory. Tokens provisioned (RADIUS_CARD=10, RADIUS_ROUND=999, HOT_SOFT, CONIFEROUS) so the build inherits the rhythm; the full band/pill spec is in PANEL_RHYTHM_SPEC.md §4. Build is a held spawn.",
+      "anchor": "docs/PANEL_RHYTHM_SPEC.md §4 Region 3; region map w40j3vyy5"
+    },
+    {
+      "claim": "Region 4 (TOKEN-face parameter rows) already honours UNKNOWN-as-text (never a bar at zero) — face_token.py:480-485 set_row renders the string 'unknown' for None, and the TokenField viz leaves a <=0 segment empty-ground. But the rows are inline-styled QGridLabels with NO objectNames, so the sec.7 parm-row grid rhythm (label col 128 / value 64 / row 24 / section head 32) is NOT QSS-reachable without adding objectNames (a face_token.py panel-module change). Follow-up.",
+      "anchor": "face_token.py:444-476 (_kv_block), :480-485 (set_row)"
+    },
+    {
+      "claim": "Inter-item gaps for regions 1/2/5 live in Python QLayout.setSpacing (tab row 28 synapse_panel.py:995, verb rail 24 :1813, token rows 18 face_token.py:449) — QSS cannot set setSpacing, so the density rhythm this leg lands scales the QSS-reachable GROUP margins; the residual layout spacing compounds and is the GUI sign-off's to judge. Follow-up: zero the setSpacing calls so QSS owns the gap outright.",
+      "anchor": "docs/PANEL_RHYTHM_SPEC.md §3 (reachability) + §5"
+    },
+    {
+      "claim": "In-session bug caught + fixed: an early qss.py comment carried the literal density=\"standard\", which test_rope_density::test_no_rule_for_standard (substring match on the whole sheet, comments included) would have failed. Reworded. Also a `| grep` pipeline masked the no-importers exit code as 0 — the raw exit is 1 (read $? off the python command, not the pipe).",
+      "anchor": "qss.py sec.7 rhythm block comment; .synapse/verify.py:70"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "Expert's LOOK changes (it picks up the new base group-gap margins at x1) although its MANIFEST is untouched and the pin stays green. sec.7 explicitly applies the rhythm to Expert at x1 ('Expert reads the same tokens at x1'); the pin proves only that the structure is unchanged. Joe's GUI sign-off is the visual arbiter of the base rhythm + the compounding with residual Python layout spacing.",
+      "context": "docs/PANEL_RHYTHM_SPEC.md §3-§4; crucible 'no structural change to the Expert manifest' honoured (manifests untouched)"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "BP2-RECALL-CARD",
+      "class": "build",
+      "disposition": "held (class outside spawn_classes=[probe] -> Joe's word)",
+      "band": "BUILD",
+      "note": "Build the three-band recall card (header 40 / body pad 16 / footer 40, hairlines between bands) with the footer text-action-left (DsVerb) + status-pill-right mirroring HIT / NO HIT / UNAVAILABLE / BLOCKED in the label style — never a colour for HIT, HOT_SOFT only for BLOCKED, UNAVAILABLE = the honest-UNKNOWN calm grey (SLATE, mirroring health_strip). Tokens already provisioned. deps: this leg merged. Full spec: docs/PANEL_RHYTHM_SPEC.md §4 Region 3.",
+      "touches": ["python/synapse/panel/ (a new recall-card module)", "python/synapse/panel/designsystem/qss.py"]
+    },
+    {
+      "id": "BP2-PANEL-RHYTHM-REACH",
+      "class": "build",
+      "disposition": "held (class outside spawn_classes=[probe] -> Joe's word)",
+      "band": "BUILD",
+      "note": "Make the remaining sec.7 rhythm QSS-reachable: (1) add objectNames to face_token._kv_block rows so the parm-row grid rhythm keys via QSS; (2) give the verb-rail container a unique objectName + border-bottom HAIR (the 'hairline under the group'); (3) build the ? glyph doc affordance on the .hip ribbon (currently a text Help button); (4) zero the Python setSpacing on the tab row / verb rail / token rows so QSS owns the inter-item gap. deps: this leg merged.",
+      "touches": ["python/synapse/panel/synapse_panel.py", "python/synapse/panel/face_token.py", "python/synapse/panel/designsystem/qss.py"]
+    }
+  ],
+  "notes": "harness/battleplan/notes/BP2-PANELDESIGN.md carries the full decision log + region reachability ledger + mutation-teeth candidates for CRUX. Contract .synapse/contracts/panel-rhythm.yaml authored (git add -f), all 8 features passing:false — flips are Joe's word; the GUI sign-off feature is the red tier. Self-cap ~40 turns of 60; no refocus/halt received."
+}
