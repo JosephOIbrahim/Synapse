@@ -1,0 +1,65 @@
+{
+  "leg": "BP2-STORE",
+  "status": "green_with_findings",
+  "product_head": "dd66b0898a4b92cad00373656a1ec0d02a7f2d38",
+  "base": "7fc09482a7653f7f8f614d88291078ba72b33b83",
+  "env": "Python 3.14.2 (C:\\Python314), Moneta importable this seat (moneta_available=True); pytest 8.4.2",
+  "acceptance": [
+    {
+      "predicate": "two identical-content deposits at different created_at produce distinct ids; identical content+type+created_at still dedups (both tests green, old tripwire inverted)",
+      "verdict": "pass",
+      "evidence": "FU-1 fix on base (models.py:141-160 __post_init__ defaults created_at before _generate_id; id hashes content:created_at:type) via 3c4f07f9/#16. Distinct ids: tests/test_memory_models.py::test_explicit_created_at_participates_in_id + ::test_defaulted_created_at_participates_in_id (pre-existing) + tests/test_moneta_crucible.py:244 (Moneta context, ids asserted distinct). Dedup: tests/test_store_backend_health.py:150 (jsonl overwrite -> count()==1) + tests/test_memory_models.py::test_same_content_same_second_still_collides. Tripwire already inverted in #16 (test_id_collision_does_not_silently_lose_memories, docstring INVERTED). 64/64 green."
+    },
+    {
+      "predicate": "MonetaBackedStore: count() == len(get-all) after two identical deposits",
+      "verdict": "pass",
+      "evidence": "tests/test_moneta_crucible.py:244 test_repeat_deposits_distinct_ids_count_equals_all_divergence_gone -> s.count()==len(s.all())==2, two distinct ids; jsonl converges to 2 (divergence gone). Moneta importable this seat (test not skipped)."
+    },
+    {
+      "predicate": "SYNAPSE_MEMORY_BACKEND=moneta with Moneta un-importable -> health row and memory tool status BLOCKED/UNAVAILABLE, never healthy JSONL (test), with the file:line cited",
+      "verdict": "pass",
+      "evidence": "Memory-layer honest verdict: python/synapse/memory/store.py:818 backend_health() -> status=UNAVAILABLE, active_backend=jsonl, requested_backend=moneta, never SUCCESS (test tests/test_store_backend_health.py:50). Server health-row anti-masquerade ALREADY true: python/synapse/server/write_plane.py:350-358,390 store_health() -> status=degraded + requested_backend=moneta + serving_jsonl=True (test tests/test_store_backend_health.py:87). Vocabulary == ratified ports.STATUS (python/synapse/loop/ports.py:28) pinned by ::test_backend_health_status_in_ratified_vocabulary. Reconciliation in finding F3: sec.4 memory tools kept byte-identical (crucible law) so the ratified verdict is surfaced via backend_health() + the existing degraded row, not by mutating any tool response."
+    },
+    {
+      "predicate": "health line carries requested backend, active backend, embedder id, dim, row count (line cited)",
+      "verdict": "pass",
+      "evidence": "python/synapse/memory/store.py:818 backend_health() returns all five keys: requested_backend, active_backend, embedder_id, embedding_dim, row_count (embedder/dim honest None on jsonl). Test tests/test_store_backend_health.py:65 test_backend_health_carries_all_five_operator_fields. Server operator row (write_plane) carries 3/5 today (requested_backend:350, serving_class:351, count:363); embedder_id+dim MISSING there -> finding F4 + held spawn."
+    },
+    {
+      "predicate": "tests/test_loop_contracts.py unchanged and green; pytest -q green on the branch",
+      "verdict": "pass",
+      "evidence": "test_loop_contracts.py git diff empty (unchanged), 20/20 green. Full suite: python -m pytest -q -> 6843 passed, 184 skipped, 0 failed (285s, Python 3.14.2). No pre-existing mcp collection failure this seat (local mcp retains list_tools)."
+    },
+    {
+      "predicate": "store authorities remain exactly two (store.py:1514, ledger.py:320) - grep attached",
+      "verdict": "pass",
+      "evidence": "Live memory_handle_census() keys == {project_memory, ledger_findings}. Authority A: store.py:1692 get_synapse_memory (banner :1617, global _global_synapse :1646). Authority B: ledger.py:398 ledger_moneta_store (global _MONETA_STORE :320). backend_health() is an OBSERVER (constructs nothing, adds no census key) -> test_memory_handle_law.py green. Forbidden-path grep of branch diff (pgdrm.py|VERSION|README.md|loop-v00.yaml|harness/loop/|harness/memory/) = EMPTY. sec.4 tool-surface files (handlers_memory/handlers/tracker/_tool_registry/scene_memory/write_plane) diff = EMPTY (byte-identical)."
+    }
+  ],
+  "findings": [
+    {"id": "F1", "severity": "info", "claim": "FU-1 (Memory.id after created_at defaults) was already landed on base via commit 3c4f07f9 / PR #16 - models.py:141-160 + tests/test_memory_models.py pre-exist. This wave did NOT re-implement it; it added the store-level pins the brief enumerated (MonetaBackedStore count==all; jsonl dedup; legacy-id round-trip).", "anchor": "python/synapse/memory/models.py:141-160"},
+    {"id": "F2", "severity": "info", "claim": "docs/MONETA_FOLLOWUPS.md FU-1 is STALE - it still lists FU-1 as a deferred follow-up though it shipped in #16. docs/ is outside STORE touches, so it was not edited. A doc-owning pass should mark FU-1 DONE (3c4f07f9).", "anchor": "docs/MONETA_FOLLOWUPS.md:11-49"},
+    {"id": "F3", "severity": "info", "claim": "Reconciliation of two brief clauses: 'report BLOCKED/UNAVAILABLE' vs 'sec.4 tool surface byte-identical'. Resolved by NOT touching any of the 5 memory tools (byte-identical, empty diff) and surfacing the ratified verdict via the new memory-layer backend_health() plus the existing honest write_plane 'degraded' row. No tool response key was added or changed.", "anchor": "python/synapse/memory/store.py:818"},
+    {"id": "F4", "severity": "warn", "claim": "The operator health ROW (server/write_plane.store_health) still (a) omits embedder_id + embedding_dim and (b) reports its own word 'degraded' rather than the ratified UNAVAILABLE/BLOCKED. Fix is a ~2-line additive wiring calling memory.store.backend_health(); server/ is outside STORE territory so it is drafted, not applied.", "anchor": "python/synapse/server/write_plane.py:345-395; harness/battleplan/notes/BP2-STORE.md sec.3"}
+  ],
+  "for_ruling": [
+    "docs/MONETA_FOLLOWUPS.md should be flipped to mark FU-1 DONE (3c4f07f9) - needs a docs-owning writer; STORE stayed in territory (F2).",
+    "Whether to dispatch a server-owning leg to wire backend_health() into write_plane.store_health()/synapse_health so the operator health row carries embedder_id+dim and the ratified SUCCESS|UNAVAILABLE|BLOCKED verdict (F4)."
+  ],
+  "spawn": [
+    {
+      "id": "BP2-STORE-HEALTHWIRE",
+      "name": "Wire memory.store.backend_health() into the server health row (embedder id + dim + ratified verdict), sec.4 tools byte-identical",
+      "band": "BUILD",
+      "class": "build",
+      "note": "HELD (class 'build' outside STORE spawn_classes=['probe']). Additive-only: merge backend_health()'s embedder_id/embedding_dim into write_plane.store_health()'s info dict and attach its dict under info['backend_health'] WITHOUT renaming write_plane's own ok/degraded/unknown status (that vocabulary is consumed by doctor + panel strip + test_w3_harden_write_plane_store.py). Draft in harness/battleplan/notes/BP2-STORE.md sec.3.",
+      "touches": ["python/synapse/server/write_plane.py", "tests/"],
+      "readonly": false,
+      "deps": ["BP2-STORE (backend_health() lands first)"],
+      "acceptance": [
+        {"predicate": "synapse_health write_plane sub-dict carries embedder_id + embedding_dim + a backend_health block with status in SUCCESS|UNAVAILABLE|BLOCKED", "evidence": "test"},
+        {"predicate": "write_plane's existing status field (ok|degraded|unknown) and all its current keys are unchanged; test_w3_harden_write_plane_store.py green", "evidence": "test"}
+      ]
+    }
+  ]
+}
