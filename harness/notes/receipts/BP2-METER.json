@@ -1,0 +1,96 @@
+{
+  "leg": "BP2-METER",
+  "status": "green",
+  "product_head": "1c2b78fdf4063dacc8336f9945f0d248bd199c28",
+  "branch": "bp2/meter",
+  "summary": "Token meter measured. rails.py measure_transcript_tokens + charge --transcript already existed and nothing called them; this leg adds the POST-CLOSE SETTLE (measures a leg's message.usage from its transcript into the run ledger, in place, no double-counted turn), per-leg tier resolution incl. a referee tier, a bus-driven drift check, and unit+status honesty. All 7 acceptance predicates pass; every orchestrate.ps1 change is gated so the -DryRun control is byte-identical.",
+  "acceptance": [
+    {
+      "predicate": "a proof run ledger under harness/battleplan/runs/<date>/ shows integer tokens_in, tokens_out and wall_ms for >= 1 leg, each traceable to a named transcript JSONL",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/runs/2026-09-01/ledger_bp2-meter-settle.json: BP2-METER leg tokens_in=12700 tokens_out=470 wall_ms=8482, transcript field = tests/fixtures/transcript_with_usage.jsonl. Stronger real evidence in bp2_meter_proof.json: this METER leg's OWN live session transcript measured to tokens_in=59428435 tokens_out=726500 (measured_int true)."
+    },
+    {
+      "predicate": "negative control: a settled leg with no resolvable transcript renders every token field the literal UNKNOWN and enforced_unit stays turns",
+      "verdict": "pass",
+      "evidence": "tests/test_rails.py::test_settle_no_transcript_is_unknown_enforced_turns and ::test_cli_settle_no_transcript_is_unknown - both token fields + wall_ms == UNKNOWN, enforced_unit=turns, token_meter=UNKNOWN."
+    },
+    {
+      "predicate": "transcript fixture with usage -> integers; fixture without usage -> UNKNOWN; enforced_unit flips to tokens only when a ceiling is set AND tokens were measured",
+      "verdict": "pass",
+      "evidence": "tests/test_rails.py::test_committed_fixture_with_usage_measures (12700,470), ::test_settle_no_transcript_from_unreadable_fixture_is_unknown (UNKNOWN), ::test_enforced_unit_flips_to_tokens_only_when_ceiling_and_measured (ceiling+measured=tokens; ceiling+UNKNOWN=turns; zero-measured=turns; no-ceiling=turns)."
+    },
+    {
+      "predicate": "a run with a tiny tokens ceiling halts after settle: status blocked, reason budget, enforced_unit tokens (ledger artifact)",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/runs/2026-09-01/ledger_bp2-meter-halt.json: status=blocked reason=budget enforced_unit=tokens (100-token ceiling, measured spend 13170 crossed it). tests/test_rails.py::test_cli_settle_crossing_tiny_ceiling_exits_7 (settle CLI exit 7)."
+    },
+    {
+      "predicate": "-DryRun control log byte-identical to the BP1 baseline (diff file attached, empty)",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/runs/2026-09-01/dryrun_bp2meter_diff.txt is EMPTY, produced by prove_bp2_meter_dryrun.ps1 which diffs a `git show HEAD:` pre-edit baseline against the edited orchestrate.ps1, both -DryRun/no -Budget in an isolated repo, same Set-Content (no CRLF/LF artifact). Every BP2-METER orchestrate.ps1 path is gated behind -Budget (settle, drift, date) or a leg.tier (model resolve)."
+    },
+    {
+      "predicate": "drift.py unit test on a synthetic bus: one drifting leg -> refocus posted with targets verbatim; two unimproved -> halt posted",
+      "verdict": "pass",
+      "evidence": "tests/test_drift.py (6 cases): refocus carries the leg's mission targets verbatim; two prior refocus + still drifting -> halt; on-target leg untouched; 0.6 boundary is on-target; halt never repeated; missions dir bytes unchanged (never edits a mission/manifest). drift.py is 60 lines, zero model calls."
+    },
+    {
+      "predicate": "rails_exec.json carries the referee tier and `python harness/rails.py resolve referee` prints claude-fable-5 (or the documented reasoning fallback)",
+      "verdict": "pass",
+      "evidence": "harness/rails_exec.json tiers.referee = {engine: claude, model: claude-fable-5}; `python harness/rails.py resolve referee` prints claude-fable-5. tests/test_rails.py::test_resolve_referee_prints_fable5 + ::test_cli_resolve_positional_referee. tests/test_bp2_meter_tier.py pins the schema+compile tier plumbing."
+    }
+  ],
+  "findings": [
+    {
+      "class": "honesty-actioned",
+      "claim": "REFEREE bus finding (2026-09-01, to BP2-METER): the live orchestrator ledger read status=complete while 4 legs were running - rails.py to_dict mapped open->complete. Actioned as T4-class: to_dict now reports the actual status; a live run reads 'open'; charge/settle persist via _persist() (stays open); only an explicit close() finalises to 'complete'; blocked unchanged.",
+      "anchor": "harness/rails.py::to_dict/_persist/close; tests/test_rails.py::test_live_run_reads_open_not_complete, ::test_cli_open_charge_persists_open",
+      "resolution": "fixed on branch bp2/meter; the LIVE orchestrator runs the main-tree rails.py and is unaffected until a human merges."
+    },
+    {
+      "class": "verify-hardening",
+      "claim": "Adversarial verify (dim 1, MAJOR): measure_transcript_tokens crashed on a JSON-valid record with a non-integer usage value (int() guarded only by except OSError) - violated 'a torn transcript never crashes'.",
+      "anchor": "harness/rails.py::_as_int + measure_transcript_tokens; tests/test_rails.py::test_measure_transcript_malformed_usage_value_never_crashes",
+      "resolution": "fixed - _as_int coerces defensively (bad field -> 0 for that field, never fatal)."
+    },
+    {
+      "class": "verify-hardening",
+      "claim": "Adversarial verify (dim 1, MINOR): an empty/field-absent usage dict returned a MEASURED (0,0) instead of UNKNOWN - a default masquerading as measured, violating 'absent token renders UNKNOWN, never 0'.",
+      "anchor": "harness/rails.py::measure_transcript_tokens (require input_tokens or output_tokens present); tests/test_rails.py::test_measure_transcript_empty_usage_is_unknown_not_zero",
+      "resolution": "fixed - a record counts as measured only when it genuinely carries a primary token field."
+    },
+    {
+      "class": "verify-hardening",
+      "claim": "Adversarial verify (dim 4, MINOR): settling the same leg twice opened a second turn, contradicting 'turns are never double-charged' (latent; the orchestrator settles once per done-transition).",
+      "anchor": "harness/rails.py::settle (re-settle in place); tests/test_rails.py::test_settle_twice_is_idempotent_no_double_turn",
+      "resolution": "fixed - a re-settle updates the existing entry in place, never opens a turn."
+    },
+    {
+      "class": "verify-hardening",
+      "claim": "Adversarial verify (dim 4, MINOR): orchestrate.ps1 omitted --date, so a wave crossing midnight would look under runs/<D+1>/ and lose the ledger opened on <D>; settle's exit-7-only check missed the resulting exit-2 (tokens silently dropped).",
+      "anchor": "harness/orchestrate.ps1 $script:RailsDate pinned at open, threaded through open/charge/settle; Rails-Settle surfaces any non-zero exit",
+      "resolution": "fixed - one ledger date for the whole run; a settle that cannot record is surfaced loudly, never silent."
+    }
+  ],
+  "for_ruling": [
+    "MERGE (human word): this leg's settle/tier/drift wiring lands on bp2/meter. The LIVE orchestrator (observed pid 66028, -Budget 10turns) runs the MAIN-tree orchestrate.ps1 + rails.py and is unaffected until merge; the post-close settle and the REFEREE status-honesty fix only take effect for the next budgeted run after a human merges.",
+    "The REFEREE status-honesty fix changes ledger status semantics (a live run now reads 'open' instead of 'complete'). Confirm the board/status readers (dashboard_bp2.py -> board_bp2.html, status_bp2) treat 'open' as live before merge - they already read integers-or-UNKNOWN and a status field; 'open' is the honest value REFEREE asked for."
+  ],
+  "spawn": [
+    {
+      "id": "BP2-METERLIVE",
+      "name": "Live -Budget end-to-end settle proof: run the orchestrator on a throwaway budgeted wave and confirm a dispatched leg's real transcript settles into the ledger at done, and a tiny tokens ceiling halts the NEXT dispatch",
+      "band": "BUILD",
+      "class": "probe",
+      "note": "Mechanism proven (rails.py settle + orchestrate.ps1 Rails-Settle) and this leg's own transcript measured; a full live orchestrator -Budget run settling a truly-dispatched leg at its done-transition is the remaining integration proof. Probe-class: read-only observation of a controlled budgeted run, no merge.",
+      "source": {"doc": "docs/BATTLEPLAN.md", "anchor": "2026-09-01 sec.6 BP2-METER T1"},
+      "targets": ["run orchestrate.ps1 -Budget on a throwaway wave", "confirm a dispatched leg settles a measured ledger at done", "confirm a tiny ceiling halts the next dispatch"],
+      "acceptance": [{"predicate": "a live budgeted orchestrator run produces a ledger with a settled dispatched leg's measured tokens", "evidence": "receipt"}],
+      "deps": [],
+      "readonly": false,
+      "touches": ["harness/battleplan/runs/"],
+      "crucible_criteria": ["the settled tokens come from the dispatched leg's own transcript message.usage, not an estimate"]
+    }
+  ]
+}
