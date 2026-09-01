@@ -204,7 +204,7 @@ def pill(text):
     cls = "pill"
     if any(k in t for k in ("RED", "BROKEN", "blocked", "DEAD", "halt", "UNMEASURED")):
         cls += " hot"
-    elif any(k in t for k in ("GREEN", "SOUND", "receipted", "MEASURED", "ALIVE", "done", "RECEIPTED")):
+    elif any(k in t for k in ("GREEN", "SOUND", "receipted", "MEASURED", "ALIVE", "done", "RECEIPTED", "open")):
         cls += " ok"
     elif any(k in t for k in ("UNKNOWN", "held", "unarmed", "pending", "AMBER")):
         cls += " dim"
