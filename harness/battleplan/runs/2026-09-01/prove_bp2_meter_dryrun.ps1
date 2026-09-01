@@ -70,7 +70,7 @@ function Capture([string]$orch, [string]$label) {
 # real one under a temp name, run, then removed (never committed / git-tracked).
 $baseOrch = Join-Path $repoRoot 'harness\_orch_base_bp2meter_tmp.ps1'
 try {
-    (& git -C $repoRoot show HEAD:harness/orchestrate.ps1) | Set-Content -Path $baseOrch -Encoding utf8
+    (& git -C $repoRoot show 'HEAD~1:harness/orchestrate.ps1') | Set-Content -Path $baseOrch -Encoding utf8
     $before = Capture $baseOrch 'baseline'
     $after  = Capture $editedOrch 'edited'
 } finally {
