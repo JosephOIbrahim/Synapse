@@ -1,0 +1,46 @@
+16:29:20  SYNAPSE ORCHESTRATOR
+16:29:20  manifest 2 legs   base master   log C:\Users\User\AppData\Local\Temp\bp2mlv\repo\harness\notes\orchestrator_20260901-162920.log
+16:29:20  one window owns the board. close it to stop everything.
+16:29:20  baseline: MLV2=blocked  MLV1=ready
+16:29:20  digest every 999 min - first at 09:08
+16:29:20  board-complete enters IDLE WATCH, not exit - add a leg to legs.json any time
+16:29:20    rails: rails open orch_20260901-162920 cap={'turns': 4, 'tokens': 1} -> C:\Users\User\AppData\Local\Temp\bp2mlv\repo\harness\battleplan\runs\2026-09-01\ledger_orch_20260901-162920.json
+16:29:20  DISPATCH MLV1 meterlive proof leg one  ->  mlv/leg1
+16:29:21    HEAD is now at 4ca628e seed scratch harness
+16:29:21    trust: 0 added, 14 already trusted
+16:29:21    launched
+16:29:21  board  MLV1:launched  MLV2:blocked   | last write 1m ago
+16:29:30  STATE  MLV1 meterlive proof leg one  launched -> running
+16:29:30  board  MLV1:running  MLV2:blocked   | last write 0m ago
+16:29:39  board  MLV1:running  MLV2:blocked   | last write 0m ago
+16:29:47  STATE  MLV1 meterlive proof leg one  running -> done
+16:29:48    reaped MLV1 window pid 75112
+16:29:48    receipt: green   0 ruling items
+16:29:48    settle: settled MLV1 model=claude-haiku-4-5-20251001 tokens_in=UNKNOWN tokens_out=UNKNOWN wall_ms=26830 remaining={'turns': 3, 'tokens': 'UNKNOWN'} enforced=turns
+16:29:48    settle: MLV1 transcript unresolved under C:\Users\User\.claude\projects\C--Users-User-AppData-Local-Temp-bp2mlv-repo-wt-leg1 - tokens UNKNOWN (honest, not estimated)
+16:29:48  STATE  MLV2 meterlive proof leg two  blocked -> ready
+16:29:48  DISPATCH MLV2 meterlive proof leg two  ->  mlv/leg2
+16:29:48    HEAD is now at 4ca628e seed scratch harness
+16:29:48    trust: 0 added, 14 already trusted
+16:29:48    launched
+16:29:49  board  MLV1:done  MLV2:launched   | last write 0m ago
+16:29:57  STATE  MLV2 meterlive proof leg two  launched -> running
+16:29:58  board  MLV1:done  MLV2:running   | last write 1m ago
+16:30:06  STATE  MLV2 meterlive proof leg two  running -> done
+16:30:07    reaped MLV2 window pid 77788
+16:30:07    receipt: green   0 ruling items
+16:30:07    settle: settled MLV2 model=claude-haiku-4-5-20251001 tokens_in=UNKNOWN tokens_out=UNKNOWN wall_ms=18514 remaining={'turns': 2, 'tokens': 'UNKNOWN'} enforced=turns
+16:30:07    settle: MLV2 transcript unresolved under C:\Users\User\.claude\projects\C--Users-User-AppData-Local-Temp-bp2mlv-repo-wt-leg2 - tokens UNKNOWN (honest, not estimated)
+16:30:08  board  MLV1:done  MLV2:done   | last write 1m ago
+16:30:08  BOARD COMPLETE - idle watch, still reading legs.json every 8s
+16:30:08    add a row to the manifest and it dispatches. close this window to stop.
+16:30:17  board  MLV1:done  MLV2:done   | last write 1m ago
+16:30:27  board  MLV1:done  MLV2:done   | last write 1m ago
+16:30:36  board  MLV1:done  MLV2:done   | last write 1m ago
+16:30:46  board  MLV1:done  MLV2:done   | last write 1m ago
+16:30:55  board  MLV1:done  MLV2:done   | last write 2m ago
+16:31:05  board  MLV1:done  MLV2:done   | last write 2m ago
+16:31:14  board  MLV1:done  MLV2:done   | last write 2m ago
+16:31:24  board  MLV1:done  MLV2:done   | last write 2m ago
+16:31:33  board  MLV1:done  MLV2:done   | last write 2m ago
+16:31:43  board  MLV1:done  MLV2:done   | last write 2m ago

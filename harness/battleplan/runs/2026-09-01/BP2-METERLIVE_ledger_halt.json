@@ -1,0 +1,46 @@
+{
+  "run": "BP2-METERLIVE-halt",
+  "date": "2026-09-01",
+  "cap": {
+    "turns": 10,
+    "tokens": 1
+  },
+  "status": "blocked",
+  "reason": "budget",
+  "enforced_unit": "tokens",
+  "token_meter": "measured",
+  "totals": {
+    "turns": 1,
+    "tokens_in": 75356,
+    "tokens_out": 278
+  },
+  "remaining": {
+    "turns": 9,
+    "tokens": -75633
+  },
+  "legs": [
+    {
+      "leg": "MLV1",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": 75356,
+      "tokens_out": 278,
+      "wall_ms": "UNKNOWN",
+      "cap": {
+        "turns": 10,
+        "tokens": 1
+      },
+      "remaining": {
+        "turns": 9,
+        "tokens": -75633
+      },
+      "enforced_unit": "tokens",
+      "admitted": true,
+      "transcript": "C:/Users/User/.claude/projects/C--Users-User-AppData-Local-Temp-bp2mlv-repo-wt-leg1/441bb920-ccfb-43e2-b76e-d39f6861d4e2.jsonl",
+      "settled": true,
+      "note": "HALT: measured spend 75634 tokens crossed the ceiling 1 at settle - the dispatch already ran; nothing further dispatches"
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+}

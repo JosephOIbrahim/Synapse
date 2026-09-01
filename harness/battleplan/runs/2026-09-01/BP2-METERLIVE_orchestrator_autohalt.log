@@ -1,0 +1,66 @@
+16:26:57  SYNAPSE ORCHESTRATOR
+16:26:57  manifest 2 legs   base master   log C:\Users\User\AppData\Local\Temp\bp2mlv\repo\harness\notes\orchestrator_20260901-162657.log
+16:26:57  one window owns the board. close it to stop everything.
+16:26:57  baseline: MLV2=blocked  MLV1=ready
+16:26:57  digest every 999 min - first at 09:05
+16:26:57  board-complete enters IDLE WATCH, not exit - add a leg to legs.json any time
+16:26:57    rails: rails open orch_20260901-162657 cap={'turns': 4, 'tokens': 1} -> C:\Users\User\AppData\Local\Temp\bp2mlv\repo\harness\battleplan\runs\2026-09-01\ledger_orch_20260901-162657.json
+16:26:57  DISPATCH MLV1 meterlive proof leg one  ->  mlv/leg1
+16:26:58    HEAD is now at 4ca628e seed scratch harness
+16:26:58    trust: 0 added, 14 already trusted
+16:26:58    launched
+16:26:59  board  MLV1:launched  MLV2:blocked   | last write 0m ago
+16:27:07  STATE  MLV1 meterlive proof leg one  launched -> running
+16:27:07  board  MLV1:running  MLV2:blocked   | last write 0m ago
+16:27:15  STATE  MLV1 meterlive proof leg one  running -> done
+16:27:16    reaped MLV1 window pid 21252
+16:27:16    receipt: green   0 ruling items
+16:27:16    settle: {
+16:27:16    settle:   "run": "orch_20260901-162657",
+16:27:16    settle:   "date": "2026-09-01",
+16:27:16    settle:   "cap": {
+16:27:16    settle:     "turns": 4,
+16:27:16    settle:     "tokens": 1
+16:27:16    settle:   },
+16:27:16    settle:   "status": "blocked",
+16:27:16    settle:   "reason": "budget",
+16:27:16    settle:   "enforced_unit": "tokens",
+16:27:16    settle:   "token_meter": "measured",
+16:27:16    settle:   "totals": {
+16:27:16    settle:     "turns": 1,
+16:27:16    settle:     "tokens_in": 75356,
+16:27:16    settle:     "tokens_out": 278
+16:27:16    settle:   },
+16:27:16    settle:   "remaining": {
+16:27:16    settle:     "turns": 3,
+16:27:16    settle:     "tokens": -75633
+16:27:16    settle:   },
+16:27:16    settle:   "legs": [
+16:27:16    settle:     {
+16:27:16    settle:       "leg": "MLV1",
+16:27:16    settle:       "model": "claude-haiku-4-5-20251001",
+16:27:16    settle:       "tokens_in": 75356,
+16:27:16    settle:       "tokens_out": 278,
+16:27:16    settle:       "wall_ms": 18303,
+16:27:16    settle:       "cap": {
+16:27:16    settle:         "turns": 4,
+16:27:16    settle:         "tokens": 1
+16:27:16    settle:       },
+16:27:16    settle:       "remaining": {
+16:27:16    settle:         "turns": 3,
+16:27:16    settle:         "tokens": -75633
+16:27:16    settle:       },
+16:27:16    settle:       "enforced_unit": "tokens",
+16:27:16    settle:       "admitted": true,
+16:27:16    settle:       "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-AppData-Local-Temp-bp2mlv-repo-wt-leg1\\441bb920-ccfb-43e2-b76e-d39f6861d4e2.jsonl",
+16:27:16    settle:       "settled": true,
+16:27:16    settle:       "note": "HALT: measured spend 75634 tokens crossed the ceiling 1 at settle - the dispatch already ran; nothing further dispatches"
+16:27:16    settle:     }
+16:27:16    settle:   ],
+16:27:16    settle:   "generated_by": "harness/rails.py",
+16:27:16    settle:   "seam": "harness\\rails_exec.json",
+16:27:16    settle:   "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+16:27:16    settle: }
+16:27:16    BUDGET: MLV1 settle crossed the token ceiling - halting dispatch
+16:27:16  STATE  MLV2 meterlive proof leg two  blocked -> ready
+16:27:16  BUDGET HALT: dispatch stopped by -Budget '4turns,1tokens'. rails.py wrote a blocked:budget receipt under harness/battleplan/runs/. Nothing pushed to master.

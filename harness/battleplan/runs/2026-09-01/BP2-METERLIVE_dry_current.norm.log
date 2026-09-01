@@ -1,0 +1,12 @@
+﻿SYNAPSE ORCHESTRATOR
+manifest 2 legs   base master   log C:\Users\User\AppData\Local\Temp\bp2mlv\repo\harness\notes\orchestrator_<TS>.log
+one window owns the board. close it to stop everything.
+baseline: MLV2=blocked  MLV1=ready
+digest every 999 min - first at <HH:MM>
+board-complete enters IDLE WATCH, not exit - add a leg to legs.json any time
+DISPATCH MLV1 meterlive proof leg one  ->  mlv/leg1
+(dry run - not launching)
+(dry run) runner:   C:\Users\User\AppData\Local\Temp\orch_MLV1.ps1  (parse-clean, BOM-free)
+(dry run) worktree: git worktree add -b mlv/leg1 C:\Users\User\AppData\Local\Temp\bp2mlv\repo\wt\leg1 HEAD
+(dry run) launch:   claude --settings 'C:/Users/User/AppData/Local/Temp/bp2mlv/settings.json' --effort low --model claude-haiku-4-5-20251001 --name 'SYNAPSE MLV1 meterlive proof leg one' --permission-mode acceptEdits --verbose
+board  MLV1:launched  MLV2:blocked   | last write <N>m ago
