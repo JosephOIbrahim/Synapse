@@ -104,8 +104,8 @@ memory beat gets numbers (6, 7).** Not a redesign. A truth pass with a spacing p
 4. **Fable 5 referees, Opus 4.8 builds, Haiku does chores.** Referee calls are few and read-only (scaffold, verdicts). Builder legs never escalate model tier on their own; a failed accept is a DISCARD row and a bus `block`, then one bounded repair, then stop.
 5. **WIP is 2 pairs, never 7.** Parallelism only where surfaces don't overlap (harness/ ∥ panel/; memory/ read-only ∥ memory/ write).
 6. **Design is truth-gated.** The spacing pass lands on the measured panel, uses the existing token scale, adds zero colours, zero widgets, zero families. The Expert pin (`test_expert_resolved_equals_v5420_snapshot`) stays green — spacing is QSS, not structure.
-7. **Camera profile = Curious.** The story is an artist; airy is the rhythm the references have. Your call to override (→ Expert stays pinned either way).
-8. **Camera latency budgets (proposed; ratify or override):** deposit ack ≤ 500 ms · recall ≤ 1,500 ms p95 · reopen-with-memory-layer ≤ 3,000 ms, on the demo scene, N ≤ 200 memories. Over budget → a fix leg opens with the bucket named. Under → done, no optimisation.
+7. **Camera profile = Curious.** *(RATIFIED 2026-09-01 18:3x, Joe word.)* The story is an artist; airy is the rhythm the references have. Your call to override (→ Expert stays pinned either way).
+8. **Camera latency budgets *(RATIFIED 2026-09-01 18:3x, Joe word; measured under budget by BP2-LATENCY + CRUX reprobe)*:** deposit ack ≤ 500 ms · recall ≤ 1,500 ms p95 · reopen-with-memory-layer ≤ 3,000 ms, on the demo scene, N ≤ 200 memories. Over budget → a fix leg opens with the bucket named. Under → done, no optimisation.
 9. **FU-1 fix is the small one.** Generate the id after `created_at` defaults (time-dependent hash, format unchanged, no migration). UUID + `content_fingerprint` (Sol-review W2) is beta-W2 — it drags legacy `mem_*` ids and the WAL with it.
 10. **Words stay words.** Merge · push · tag/publish · drop.json · ratified flips · waivers — per act, spelled out. A green CRUX receipt is a precondition for a merge word, never a substitute.
 
