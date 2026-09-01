@@ -1,0 +1,54 @@
+# MEMORY-LATENCY-RECEIPT — docs/BATTLEPLAN.md sec.2 call 8 + sec.6 BP2-LATENCY. Authored 2026-09-01
+# (BP2 wave, Opus 4.8). Ratification: PENDING — Joe's word. Features ship passing:false; no agent flips them.
+# First principle: the demo beat "memory recall inside a stated camera budget" had NO number on file
+# (docs/BATTLEPLAN.md:46 L-2 — neither LATENCY_PLAN.md nor harness/latency/LEDGER.md touches deposit/
+# recall/reopen). This receipt is that number, measured on the PUBLIC MemoryPort surface only, in-process,
+# with the build READ from hou (never typed).
+# Honesty: headless Moneta is UNAVAILABLE by construction (bind_reason env_unset) — recorded as a
+# measurement, never a coerced number, never a pass. Real numbers come from a Moneta-provisioned process:
+# the .400 GUI (Joe's half, authoritative demo number) and a provisioned-headless proxy run (Moneta env per
+# packages/synapse.json). A field the runtime cannot measure renders the literal UNKNOWN.
+id: memory-latency-receipt
+goal: "Memory deposit / recall / close-reopen-recall carries a repeat-5 p50/p95 latency number, measured on
+  the public MemoryPort surface with the build read in-process, judged against the sec.2-call-8 camera
+  budgets (deposit ack <= 500 ms, recall p95 <= 1500 ms, reopen-with-memory-layer <= 3000 ms, N <= 200); an
+  unavailable substrate renders UNKNOWN, never a coerced number; a fix leg may open ONLY against a named
+  bucket proved by a second isolating pass."
+model: opus
+autonomy: amber            # probe: READS python/synapse/memory/, runs hython, writes only harness/ + this contract
+owns:
+  - "harness/battleplan/notes/memory_latency_probe.py"                              # the probe (public MemoryPort only)
+  - "harness/battleplan/runs/2026-09-01/memory_latency_hython.json"                 # agent lane (default = UNAVAILABLE)
+  - "harness/battleplan/runs/2026-09-01/memory_latency_hython_provisioned.json"     # provisioned-headless proxy numbers
+  - ".synapse/contracts/memory-latency-receipt.yaml"
+do_not_touch:
+  - "python/synapse/memory/**"      # READ ONLY; BP2-STORE is the only writer — the diff here must stay empty
+  - "python/synapse/loop/pgdrm.py"  # memory board mem/m2-pgdrm territory
+  - "harness/state/drop.json"       # human-only by recorded precedent
+  - "VERSION"
+features:
+  - description: "memory_latency_<env>.json exists with a meta row, one row per timed op, and a DONE sentinel written last"
+    verify: "runs/2026-09-01/memory_latency_hython.json (agent lane) and memory_latency_hython_provisioned.json parse as JSONL, last line sentinel==DONE; BP2-CRUX reads them"
+    passing: false
+  - description: "every timed op is repeat-5, never repeat-1 — five wall_ms samples per op"
+    verify: "each op row carries samples_ms of length 5; test_memory_latency asserts len(samples_ms)==REPEATS==5"
+    passing: false
+  - description: "p50 AND p95 reported per op, never a mean alone"
+    verify: "each op row carries p50_ms and p95_ms (house idiom sorted[int(n*0.95)-1]); min_ms/max_ms also carried so the small-n percentile is re-derivable"
+    passing: false
+  - description: "the build stamp equals hou.applicationVersionString() observed in the SAME process that took the timings"
+    verify: "meta.build == running hython build (22.0.400 on both runs), read in-process by _build(), never typed; BP2-CRUX re-runs and gets the same stamp"
+    passing: false
+  - description: "every unmeasured field is the literal UNKNOWN — an UNAVAILABLE substrate is a measurement, never coerced to a number, never a pass"
+    verify: "memory_latency_hython.json records availability=UNAVAILABLE, bind_reason=env_unset, every op p50/p95/samples==UNKNOWN, verdict==UNAVAILABLE"
+    passing: false
+  - description: "the diff under python/synapse/memory/ is empty on this branch — the probe reads the memory path, never writes it"
+    verify: "git diff --stat master..HEAD -- python/synapse/memory/ is empty"
+    passing: false
+  - description: "recall of a KNOWN deposit returns THAT deposit — deposit SUCCESS + empty recall is the silent-empty defect this wave exists to kill"
+    verify: "provisioned run recall and recall_after_reopen op rows carry known_recalled all-true; a deposit-SUCCESS-but-not-recalled row turns it red"
+    passing: false
+  - description: "a fix leg may open ONLY against a named bucket, and no bucket is named without a second timed pass that isolates it"
+    verify: "under budget -> named_bucket 'none (under budget)', no spawn (T2/T4); over budget -> a bucket_pass row isolates exactly one of {embedding time, stage-layer compose (Flatten class), sync JSONL I/O, lock wait, predicate scan}"
+    passing: false
+stop_when: "all features passing (verified by BP2-CRUX + Joe) OR Joe halts. The camera budgets are proposed (sec.2 call 8); ratifying them, and flipping any feature, is Joe's word — never an agent's."
