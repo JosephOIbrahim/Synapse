@@ -126,15 +126,35 @@ def open_panel():
         )
         return
 
-    # Open in current pane or create new tab
+    # Prefer a DOCKED home over a floating window (BP2-PANELTRUTH T3). A floating
+    # PythonPanel does not survive a Houdini restart unless the desktop is saved;
+    # a tab docked into an existing pane does. Three branches, in preference order.
     desktop = hou.ui.curDesktop()
-    pane = desktop.paneTabOfType(hou.paneTabType.PythonPanel)
-    if pane is None:
-        # Create a new pane tab
-        pane = desktop.createFloatingPaneTab(
-            hou.paneTabType.PythonPanel,
-            size=(320, 600),
-        )
+
+    # 1) A Synapse tab is already open -> just surface it, never a second window.
+    for tab in desktop.paneTabs():
+        if (tab.type() == hou.paneTabType.PythonPanel
+                and tab.activeInterface() is not None
+                and tab.activeInterface().name() == "synapse_panel"):
+            tab.setIsCurrentTab()
+            return
+
+    # 2) Dock a new PythonPanel tab into the Network Editor's pane (or, failing
+    #    that, any existing pane) so it lives in the layout, not a loose window.
+    anchor = desktop.paneTabOfType(hou.paneTabType.NetworkEditor)
+    pane = anchor.pane() if anchor is not None else (
+        desktop.panes()[0] if desktop.panes() else None)
+    if pane is not None:
+        tab = pane.createTab(hou.paneTabType.PythonPanel)
+        tab.setActiveInterface(panel_type)
+        tab.setIsCurrentTab()
+        return
+
+    # 3) Float ONLY when there is no pane to dock into.
+    pane = desktop.createFloatingPaneTab(
+        hou.paneTabType.PythonPanel,
+        size=(320, 600),
+    )
     pane.setActiveInterface(panel_type)
 
 

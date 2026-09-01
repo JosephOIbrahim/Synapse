@@ -1,0 +1,64 @@
+{
+  "leg": "BP2-PANELTRUTH",
+  "status": "green_with_findings",
+  "branch": "bp2/paneltruth",
+  "worktree": ".claude/worktrees/bp2-paneltruth",
+  "product_head": "d9b0c06d9935f052b70ac73bddaf1e0b17b36c76",
+  "base": "master (7fc09482)",
+  "suite": "pytest -q on the branch (from the worktree): 6866 passed, 186 skipped, 0 failed (264.54s)",
+  "acceptance": [
+    {
+      "predicate": "harness/battleplan/runs/<date>/profile_diff.json exists and states what differs across curious/expert/ml (widget tree, system prompt hash+overlay, defaults); its path is posted on the bus as a finding",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/runs/2026-09-01/profile_diff.json (producer: harness/battleplan/notes/bp2_paneltruth_profile_diff.py); bus finding posted 12:11:33 + re-posted 12:31:59 (worktree anchor); tests/test_bp2_paneltruth_profile_diff.py green"
+    },
+    {
+      "predicate": "density repolish test turns red when the repolish call is removed (mutation recorded in notes)",
+      "verdict": "pass",
+      "evidence": "tests/test_bp2_paneltruth_density_repolish.py::test_compose_stamps_density_and_repolishes_root_and_descendants; mutation run (neuter compositor.py:248 _repolish_tree(panel) -> RED on 'PANEL_ROOT in polished', restore -> 7 passed) recorded in harness/battleplan/notes/BP2-PANELTRUTH.md; also monkeypatch-pinned by test_compose_repolish_call_is_load_bearing"
+    },
+    {
+      "predicate": "profile persist test: select -> save -> load -> same profile",
+      "verdict": "pass",
+      "evidence": "tests/test_bp2_paneltruth_profile_diff.py::test_profile_persists_select_save_load_same (settings.SwitcherState v3); neighbor tests/test_rope_switcher_state.py green"
+    },
+    {
+      "predicate": "TOKEN refresh test: fed sink + task completion -> face and pill text changed; negative control unfed sink -> UNKNOWN",
+      "verdict": "pass",
+      "evidence": "tests/test_bp2_paneltruth_token_refresh.py — pure token_readout rules + refresh_surfaces + REAL SynapsePanel._on_done on a fake self (fed -> meter 155 + pill carries figure + face refreshed; unfed -> empty meter, base pill, no bar); event-driven-not-timer + no-hou-in-worker source pins. Real-widget end-to-end (FaceToken + Pill) is hython-gated and SKIPPED headless (skip != pass)"
+    },
+    {
+      "predicate": "float fix unit test with mocked hou: existing synapse tab preferred; NetworkEditor pane createTab next; float only with no panes",
+      "verdict": "pass",
+      "evidence": "tests/test_bp2_paneltruth_float_fix.py (all three branches + no-Network-Editor guard); houdini/scripts/python/synapse_shelf.py::open_panel"
+    },
+    {
+      "predicate": "test_expert_resolved_equals_v5420_snapshot green and pytest -q green on the branch",
+      "verdict": "pass",
+      "evidence": "full suite from the worktree: 6866 passed, 186 skipped, 0 failed; test_rope_expert_pin.py::test_expert_resolved_equals_v5420_snapshot included and green"
+    },
+    {
+      "predicate": "GUI verify in the .400 GUI: Ctrl+K opens docked, TOKEN face updates after a task, profile switch survives close -> reopen",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required — Joe's eyes in live Houdini 22.0.400. No headless probe can honestly assert it; a skipped Qt end-to-end is skip != pass. Recorded UNKNOWN, never a pass."
+    }
+  ],
+  "crucible": [
+    {"criterion": "synapse_panel.py lifecycle/timer lines untouched (W5L-LIFE)", "verdict": "pass", "evidence": "only diff hunk is @@ -2361,+2361 @@ (_on_done + new _refresh_token_surfaces); no change near __init__ timers (~433-471), showEvent (~1418), closeEvent (~2625)"},
+    {"criterion": "no hou. reference introduced in claude_worker.py", "verdict": "pass", "evidence": "claude_worker.py not in the diff (untouched); pinned by test_claude_worker_stays_houdini_free"},
+    {"criterion": "no hardcoded pt size introduced anywhere in the diff", "verdict": "pass", "evidence": "git diff scan of python/synapse/panel + houdini shows no tracked_font/font-size/SIZE_/pt literal; the preserved (320,600) is a pre-existing floating-window px size, not a font pt"},
+    {"criterion": "no timer-driven polling of the usage sink (V3) - refresh is event-driven from task completion only", "verdict": "pass", "evidence": "refresh called only from _on_done and _show_token_face; pinned by test_refresh_rides_token_readout_and_is_not_timer_driven"},
+    {"criterion": "test_expert_resolved_equals_v5420_snapshot green on the branch", "verdict": "pass", "evidence": "green in the full suite"}
+  ],
+  "findings": [
+    {"claim": "Across curious/expert/ml the resolved surface differs ONLY in density (airy/standard/tight) + the system-prompt overlay + per-widget collapsed/prominence; capability (widget-id set) and visible=True are identical (L5); composed system prompts differ only by the overlay (identical base sha).", "anchor": "harness/battleplan/runs/2026-09-01/profile_diff.json"},
+    {"claim": "profile_diff.json is BP2-PANELDESIGN's input and was posted on the bus the moment it landed (+re-posted with the worktree anchor after the territory fix).", "anchor": "bus bp2 finding 2026-09-01T12:11:33 / 12:31:59"},
+    {"claim": "TOKEN refresh keeps UNKNOWN honest: an unmeasured task leaves the rail meter empty and the pill at its base label — never a fake zero, never a quota bar (R162/V3-F4).", "anchor": "python/synapse/panel/token_readout.py"},
+    {"claim": "The real-widget TOKEN end-to-end and the FaceToken Qt layer are hython-gated; they SKIP in stock CPython (no PySide) — recorded as skip != pass, not green.", "anchor": "tests/test_bp2_paneltruth_token_refresh.py (2 skipped headless)"}
+  ],
+  "for_ruling": [
+    {"item": "Territory breach caught by REFEREE (12:20) and remediated: my file writes initially landed in the MASTER working tree (C:/Users/User/SYNAPSE) via absolute paths, not the worktree. Files were moved into the worktree (same relative paths), the master tree was restored (git checkout of the 2 tracked files + deletion of only my untracked files), and all product/tests/artifacts/receipt now live on branch bp2/paneltruth in the worktree. The bus command remains the only main-tree absolute path used.", "disposition": "remediated in-session; refocus acknowledged on the bus"},
+    {"item": "GUI acceptance (Ctrl+K docked, TOKEN face/rail update after a task, profile switch survives reopen) needs Joe's eyes in live Houdini 22.0.400 — recorded UNKNOWN.", "disposition": "human GUI verify (gui_required)"}
+  ],
+  "spawn": []
+}
