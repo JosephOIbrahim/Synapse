@@ -316,7 +316,11 @@ function Test-CloseGate([object]$leg) {
     # wave is derived from the leg id exactly as compile_wave.py does
     # (W6-GATE -> wave6); the bus `frm` is the leg id. bus.py exit 0 == released.
     $wave  = ($leg.id -split '-', 2)[0].ToLower() -replace '^w', 'wave'
-    $busPy = Join-Path $repo 'harness\autorevise\bus.py'
+    # 2026-09-01 (REFEREE, BP2-METERLIVE finding): resolve the bus by harness family.
+    # Battleplan legs (BP<n>-*) post to harness\battleplan\bus.py; every other family keeps
+    # the autorevise bus. Reading the wrong bus made S5 unpassable for battleplan waves,
+    # so no BP leg ever reached 'done' and Rails-Settle never fired on a live wave.
+    $busPy = if ($wave -match '^bp\d+$') { Join-Path $repo 'harness\battleplan\bus.py' } else { Join-Path $repo 'harness\autorevise\bus.py' }
     if (-not (Test-Path $busPy)) {
         return @{ done = $false; reason =
             "cannot verify RELEASE - bus.py not found at $busPy" }
