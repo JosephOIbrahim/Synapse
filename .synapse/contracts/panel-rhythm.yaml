@@ -1,0 +1,52 @@
+# BP2-PANELDESIGN — Panel rhythm: the sec.7 spacing pass on the five camera
+# regions. Spacing tokens + QSS on the density root property only; zero new
+# colours, zero new widgets, zero new font families; density steps on GAPS
+# only (paddings fixed); Expert manifest pin green. Every feature passing:false
+# — the flips are Joe's word (per act) — and the GUI sign-off feature is the
+# red tier: Joe's eyes on the five regions (UNKNOWN headless, never a pass).
+id: panel-rhythm
+goal: "The sec.7 4-pt rhythm grid on the existing SPACE_* names (additive 12/32/48, never renamed) + a gap() density multiplier (airy ×1.5 / standard ×1 / tight ×0.75, GAPS only, paddings fixed) driven through the #DsRoot `density` property in QSS, applied to the QSS-reachable camera regions; Expert reads the same tokens at ×1 and the manifest pin proves the structure is untouched."
+model: opus
+autonomy: amber
+owns:
+  - "docs/PANEL_RHYTHM_SPEC.md"
+  - "python/synapse/panel/designsystem/tokens.py"      # SPACE grid + gap() + fixed dims ONLY
+  - "python/synapse/panel/designsystem/qss.py"          # sec.7 five-region rhythm block ONLY
+  - "tests/test_bp2_paneldesign_density.py"
+  - ".synapse/contracts/panel-rhythm.yaml"
+  - "harness/battleplan/notes/BP2-PANELDESIGN.md"
+do_not_touch:
+  - "python/synapse/panel/manifests/**"                 # Expert pin: manifests untouched (structure frozen)
+  - "python/synapse/panel/designsystem/fontload.py"     # crucible: families come from fontload only
+  - "python/synapse/panel/synapse_panel.py"             # panel-module assembly — out of designsystem territory
+  - "python/synapse/panel/face_token.py"                # Region 4 rows — inline-styled; objectNames are a follow-up
+  - "python/synapse/panel/tokens.py"                     # legacy pair — kept (8 live importers; chore = leave)
+  - "python/synapse/panel/styles.py"                     # legacy pair — kept (3 production importers)
+  - "python/synapse/loop/pgdrm.py"                       # memory board mem/m2 territory
+  - "python/synapse/memory/**"                           # BP2-STORE territory
+features:
+  - description: "docs/PANEL_RHYTHM_SPEC.md exists with px numbers per region (before/after), the token table (SPACE 4/8/12/16/24/32/48 on existing names), and the density multipliers"
+    verify: "test -f docs/PANEL_RHYTHM_SPEC.md && grep -q 'SPACE_12' docs/PANEL_RHYTHM_SPEC.md && grep -q '1.5' docs/PANEL_RHYTHM_SPEC.md && grep -q '0.75' docs/PANEL_RHYTHM_SPEC.md"
+    passing: false
+  - description: "SPACE scale is the sec.7 4-pt grid: 12/32/48 added, existing XS/SM/MD/LG/XL unchanged and never renamed"
+    verify: "python -m pytest -q tests/test_bp2_paneldesign_density.py::TestSpaceGrid"
+    passing: false
+  - description: "gap() steps a base by the density multiplier (airy ×1.5 / standard ×1 / tight ×0.75), integer px; an unknown density resolves to ×1 and never inverts the rhythm"
+    verify: "python -m pytest -q tests/test_bp2_paneldesign_density.py::TestGapMultiplier"
+    passing: false
+  - description: "QSS emits, for each reachable camera region (DsTabRow / DsVerb / DsHeader), density-keyed `margin` (gap) rules whose value == gap(base, level) — gap tokens step by the density multipliers per profile (curious→airy, expert→standard, ml→tight)"
+    verify: "python -m pytest -q tests/test_bp2_paneldesign_density.py::TestRegionRhythmStepsByDensity"
+    passing: false
+  - description: "guardrails: no `density=\"standard\"` rule in the sheet; density blocks carry margin/padding ONLY; the rhythm block introduces no raw hex (zero new colour); the Expert manifest pin is intact (paddings fixed, only gaps scale)"
+    verify: "python -m pytest -q tests/test_bp2_paneldesign_density.py::TestGuardrails tests/test_rope_density.py"
+    passing: false
+  - description: "test_expert_resolved_equals_v5420_snapshot green and pytest -q green on the branch"
+    verify: "python -m pytest -q tests/test_rope_expert_pin.py::test_expert_resolved_equals_v5420_snapshot && python -m pytest -q"
+    passing: false
+  - description: "importer chore (theme-seed-tokens split, sec.5): the legacy pair panel/tokens.py + panel/styles.py is NOT retired — `.synapse/verify.py no-importers` exits 1 (live importers), outcome posted on the bus as a finding; both files left untouched"
+    verify: "python .synapse/verify.py no-importers python/synapse/panel/tokens.py python/synapse/panel; test $? -eq 1"
+    passing: false
+  - description: "GUI sign-off (gui_required — RED tier, Joe's eyes): in the live Houdini 22.0.400 GUI the five camera regions read right across curious/expert/ml — the tab strip pills, the verb rail, the recall card, the TOKEN face rows, and the .hip ribbon + header status line — with the airy/tight rhythm visibly stepping gaps and paddings unchanged"
+    verify: "manual — live Houdini 22.0.400 GUI (gui_probe; UNKNOWN headless, never a pass)"
+    passing: false
+stop_when: "all features passing OR sessions exhausted OR budget reached — flips are Joe's word, per act. Follow-ups (recall-card build, parm-row objectNames, verb-group hairline, ? glyph, zeroing Python setSpacing) are out of this leg's designsystem-only territory — see docs/PANEL_RHYTHM_SPEC.md §5 and the receipt spawn[]."
