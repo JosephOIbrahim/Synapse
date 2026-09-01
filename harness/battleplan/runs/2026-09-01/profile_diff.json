@@ -1,0 +1,514 @@
+{
+  "base_prompt_sha256_16": "d06fd7e21aa6f4f3",
+  "composed_differs_only_by_overlay": true,
+  "diff_vs_expert": {
+    "curious": {
+      "density": {
+        "curious": "airy",
+        "expert": "standard"
+      },
+      "system_prompt_overlay_changed": true,
+      "widget_deltas": {
+        "activity_meter": {
+          "collapsed": {
+            "curious": true,
+            "expert": false
+          },
+          "prominence": {
+            "curious": "quiet",
+            "expert": "standard"
+          }
+        },
+        "token_meter": {
+          "collapsed": {
+            "curious": true,
+            "expert": false
+          },
+          "prominence": {
+            "curious": "quiet",
+            "expert": "standard"
+          }
+        },
+        "token_pill": {
+          "prominence": {
+            "curious": "quiet",
+            "expert": "standard"
+          }
+        }
+      },
+      "widget_knobs_that_moved": [
+        "collapsed",
+        "prominence"
+      ]
+    },
+    "ml": {
+      "density": {
+        "expert": "standard",
+        "ml": "tight"
+      },
+      "system_prompt_overlay_changed": true,
+      "widget_deltas": {
+        "author_token": {
+          "prominence": {
+            "expert": "standard",
+            "ml": "hero"
+          }
+        },
+        "token_meter": {
+          "prominence": {
+            "expert": "standard",
+            "ml": "hero"
+          }
+        },
+        "token_pill": {
+          "prominence": {
+            "expert": "standard",
+            "ml": "hero"
+          }
+        }
+      },
+      "widget_knobs_that_moved": [
+        "prominence"
+      ]
+    }
+  },
+  "finding": "Across curious/expert/ml the resolved surface differs ONLY in: density (airy/standard/tight) + the system-prompt overlay + these per-widget knobs ['collapsed', 'prominence']. Capability (the widget-id set) is identical in all three (L5); every widget stays visible=True (folding is collapse, never hide). Composed system prompts differ ONLY by the overlay (identical base sha d06fd7e21aa6f4f3).",
+  "generated_by": "harness/battleplan/notes/bp2_paneltruth_profile_diff.py",
+  "leg": "BP2-PANELTRUTH",
+  "producers": {
+    "base_prompt": "synapse.panel.system_prompt.build_system_prompt(ctx)",
+    "manifests": [
+      "python/synapse/panel/manifests/curious.py",
+      "python/synapse/panel/manifests/expert.py",
+      "python/synapse/panel/manifests/ml.py"
+    ],
+    "overlay_join": "synapse_panel.py:_build_system_prompt -> (base + \"\\n\\n\" + overlay) if overlay else base",
+    "widget_tree": "synapse.panel.compositor.resolve(manifests.get_manifest(p))"
+  },
+  "profiles": {
+    "curious": {
+      "defaults": {
+        "collapsed": false,
+        "prominence": "standard",
+        "stretch": 0,
+        "visible": true
+      },
+      "density": "airy",
+      "system_prompt": {
+        "base_sha256_16": "d06fd7e21aa6f4f3",
+        "composed_len": 12468,
+        "composed_sha256_16": "b889609a6d246f26",
+        "overlay_len": 1137,
+        "overlay_sha256_16": "8b7c126078f6f325",
+        "overlay_text": "The artist at this panel is still finding their footing in Houdini's deeper systems. Build WITH them and explain as you go \u2014 the same capability, paced gently:\n- When something breaks, say what happened in plain language first \u2014 thinking out loud with a colleague, 'we' not 'you' \u2014 then offer the fix.\n- Narrate each decision inline as you make it \u2014 what you chose and why, in one sentence.\n- After each answer, spell out the obvious next quick actions in full rather than assuming them.\n- When a sequence of steps works, promote it into a named, reusable recipe the artist can ask for again.\n- After a build completes, suggest running /explain on what was built.\n- Before any destructive operation (delete, overwrite, disk write), say what will be affected and confirm first.\n- Define jargon the first time it appears \u2014 technical terms are welcome, gatekeeping is not.\n- Frame suggestions as options: 'we could try X', never 'you should'.\nPrefer small verifiable steps over large compound ones. Explanation may rise here; automation may not (L6). Capability is unchanged \u2014 never refuse or downscale an operation because of this framing."
+      },
+      "widget_specs": {
+        "@region:context_ribbon": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "@region:faces": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 1,
+          "visible": true
+        },
+        "@region:mode_bar": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "@region:rail": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "activity_meter": {
+          "collapsed": true,
+          "prominence": "quiet",
+          "stretch": 0,
+          "visible": true
+        },
+        "author_token": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "chat_pill": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "connect": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "connection_dot": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "connection_label": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "context_label": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "corpus": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "faces_stack": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "header_status": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "mark": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "palette_hint": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "stop": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "token_meter": {
+          "collapsed": true,
+          "prominence": "quiet",
+          "stretch": 0,
+          "visible": true
+        },
+        "token_pill": {
+          "collapsed": false,
+          "prominence": "quiet",
+          "stretch": 0,
+          "visible": true
+        },
+        "wordmark": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        }
+      }
+    },
+    "expert": {
+      "defaults": {
+        "collapsed": false,
+        "prominence": "standard",
+        "stretch": 0,
+        "visible": true
+      },
+      "density": "standard",
+      "system_prompt": {
+        "base_sha256_16": "d06fd7e21aa6f4f3",
+        "composed_len": 11329,
+        "composed_sha256_16": "d06fd7e21aa6f4f3",
+        "overlay_len": 0,
+        "overlay_sha256_16": "",
+        "overlay_text": ""
+      },
+      "widget_specs": {
+        "@region:context_ribbon": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "@region:faces": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 1,
+          "visible": true
+        },
+        "@region:mode_bar": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "@region:rail": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "activity_meter": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "author_token": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "chat_pill": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "connect": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "connection_dot": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "connection_label": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "context_label": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "corpus": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "faces_stack": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "header_status": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "mark": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "palette_hint": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "stop": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "token_meter": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "token_pill": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "wordmark": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        }
+      }
+    },
+    "ml": {
+      "defaults": {
+        "collapsed": false,
+        "prominence": "standard",
+        "stretch": 0,
+        "visible": true
+      },
+      "density": "tight",
+      "system_prompt": {
+        "base_sha256_16": "d06fd7e21aa6f4f3",
+        "composed_len": 11681,
+        "composed_sha256_16": "5f52908d10912546",
+        "overlay_len": 350,
+        "overlay_sha256_16": "3f40b0a515047caf",
+        "overlay_text": "The artist at this panel is fluent in ML tooling. Keep replies terse and technical. When a choice of model, context size, or tool budget is relevant, name it explicitly rather than abstracting it away. Terse trims words, not collaboration \u2014 still build with the artist and explain when asked. Capability is unchanged \u2014 this framing adjusts tone only."
+      },
+      "widget_specs": {
+        "@region:context_ribbon": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "@region:faces": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 1,
+          "visible": true
+        },
+        "@region:mode_bar": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "@region:rail": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "activity_meter": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "author_token": {
+          "collapsed": false,
+          "prominence": "hero",
+          "stretch": 0,
+          "visible": true
+        },
+        "chat_pill": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "connect": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "connection_dot": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "connection_label": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "context_label": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "corpus": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "faces_stack": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "header_status": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "mark": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "palette_hint": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "stop": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        },
+        "token_meter": {
+          "collapsed": false,
+          "prominence": "hero",
+          "stretch": 0,
+          "visible": true
+        },
+        "token_pill": {
+          "collapsed": false,
+          "prominence": "hero",
+          "stretch": 0,
+          "visible": true
+        },
+        "wordmark": {
+          "collapsed": false,
+          "prominence": "standard",
+          "stretch": 0,
+          "visible": true
+        }
+      }
+    }
+  },
+  "scene_context": {
+    "frame": 1,
+    "hip": "",
+    "network": "/stage",
+    "selection": []
+  },
+  "target": "T1"
+}

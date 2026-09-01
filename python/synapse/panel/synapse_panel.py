@@ -2361,6 +2361,33 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
         self._set_busy(False)
+        # BP2-PANELTRUTH T2 / W5-PANEL item 3: the completed task's real token
+        # receipt (usage_sink) now lands on the TOKEN face + the rail meter/pill
+        # — event-driven from completion here, NEVER a QTimer (V3: a probe must
+        # not trip the rate limit it reports on). Best-effort; never breaks the
+        # completion path.
+        self._refresh_token_surfaces()
+
+    def _refresh_token_surfaces(self):
+        """Push the last task's per-task token receipt (usage_sink) onto the
+        TOKEN face and the rail meter + pill on TASK COMPLETION.
+
+        Called from _on_done only — event-driven, never a timer (V3; the TOKEN
+        face is likewise refreshed on OPEN, see _show_token_face). UNKNOWN stays
+        UNKNOWN: an unmeasured task leaves the meter empty and the pill at its
+        base label, never a fabricated figure and never a fuel-gauge bar (R162 /
+        V3-F4). All best-effort so a completed turn never breaks on the read-out.
+        The display rule is pure (token_readout); this method only supplies the
+        live surfaces."""
+        try:
+            from synapse.panel import token_readout
+        except Exception:
+            return
+        face = getattr(self, "_token_face", None)
+        meter = getattr(self, "_meter_lbl", None)
+        pills = getattr(self, "_face_pills", None)
+        pill = pills.get("token") if isinstance(pills, dict) else None
+        token_readout.refresh_surfaces(face=face, meter=meter, pill=pill)
 
     def _on_error(self, msg):
         self._set_thinking(False)

@@ -1,0 +1,50 @@
+# BP2-PANELTRUTH — Panel truth: profile diff with receipt, TOKEN face + rail
+# refresh on task completion, docked-open float fix. Three things on camera get
+# a receipt. Every feature passing:false — the flips are Joe's word (per act),
+# and the gui_required feature is Joe's eyes (UNKNOWN headless, never a pass).
+id: panel-truth
+goal: "Profile diff receipt (curious/expert/ml), TOKEN face + rail meter/pill refresh on task completion (event-driven, honest UNKNOWN), and a docked-open float fix — each with a test that fails on the defect."
+model: opus
+autonomy: amber
+owns:
+  - "python/synapse/panel/token_readout.py"
+  - "python/synapse/panel/synapse_panel.py"          # _on_done + _refresh_token_surfaces ONLY
+  - "houdini/scripts/python/synapse_shelf.py"          # open_panel()
+  - "docs/help/panel_docking.md"
+  - "harness/battleplan/notes/bp2_paneltruth_profile_diff.py"
+  - "harness/battleplan/runs/2026-09-01/profile_diff.json"
+  - "tests/test_bp2_paneltruth_density_repolish.py"
+  - "tests/test_bp2_paneltruth_profile_diff.py"
+  - "tests/test_bp2_paneltruth_token_refresh.py"
+  - "tests/test_bp2_paneltruth_float_fix.py"
+do_not_touch:
+  - "python/synapse/panel/claude_worker.py"            # crucible: no hou.* introduced
+  - "python/synapse/panel/synapse_panel.py: lifecycle/timer lines (W5L-LIFE)"
+  - "python/synapse/loop/pgdrm.py"                      # memory board mem/m2 territory
+  - "python/synapse/memory/**"                          # BP2-STORE territory
+features:
+  - description: "profile_diff.json states what differs across curious/expert/ml (widget tree visible/collapsed/stretch/prominence + density root property, composed system prompt hash + overlay, defaults) and its path is posted on the bus as a finding"
+    verify: "python -m pytest -q tests/test_bp2_paneltruth_profile_diff.py"
+    passing: false
+  - description: "density repolish test turns RED when the repolish call is removed from compose() (mutation recorded in harness/battleplan/notes/BP2-PANELTRUTH.md); _repolish_tree walks the whole tree"
+    verify: "python -m pytest -q tests/test_bp2_paneltruth_density_repolish.py"
+    passing: false
+  - description: "profile persist: select -> save -> load -> same profile (settings.py v3 SwitcherState)"
+    verify: "python -m pytest -q tests/test_bp2_paneltruth_profile_diff.py::test_profile_persists_select_save_load_same"
+    passing: false
+  - description: "TOKEN refresh: fed sink + task completion -> face refreshed and rail meter + pill text changed; negative control unfed sink -> UNKNOWN (empty meter, base pill), no bar; event-driven, never a timer (V3)"
+    verify: "python -m pytest -q tests/test_bp2_paneltruth_token_refresh.py"
+    passing: false
+  - description: "float fix: existing Synapse tab preferred (surfaced); NetworkEditor pane createTab next; float ONLY when no panes exist — mocked hou, all three branches"
+    verify: "python -m pytest -q tests/test_bp2_paneltruth_float_fix.py"
+    passing: false
+  - description: "crucible: claude_worker.py introduces no hou.* and the token refresh is not timer-driven (V3)"
+    verify: "python -m pytest -q tests/test_bp2_paneltruth_token_refresh.py::test_claude_worker_stays_houdini_free tests/test_bp2_paneltruth_token_refresh.py::test_refresh_rides_token_readout_and_is_not_timer_driven"
+    passing: false
+  - description: "test_expert_resolved_equals_v5420_snapshot green and pytest -q green on the branch"
+    verify: "python -m pytest -q tests/test_rope_expert_pin.py::test_expert_resolved_equals_v5420_snapshot && python -m pytest -q"
+    passing: false
+  - description: "GUI verify (gui_required — Joe's eyes): in the .400 GUI, Ctrl+K opens docked, the TOKEN face + rail meter/pill update after a task, and a profile switch survives close -> reopen"
+    verify: "manual — live Houdini 22.0.400 GUI (gui_probe; UNKNOWN headless, never a pass)"
+    passing: false
+stop_when: "all features passing OR sessions exhausted OR budget reached — flips are Joe's word, per act"
