@@ -19,6 +19,48 @@
     "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.2 calls 2/4/10, sec.6 BP2-CRUX, sec.12 R-5/R-6. Tier: referee (claude-fable-5) by intent; this wave's orchestrator resolves one model per manifest (sec.12 R-5), so you run on reasoning and your receipt says so. Read-only. Blocked by design until the four pair-builder receipts exist. BP2-PANELDESIGN is held and gets its own crucible leg Fri (BP2-CRUXB, authored Wed). A BROKEN verdict means that leg does not ride. A green CRUX receipt is a PRECONDITION for Joe's merge words, never a substitute - verdicts are READ before merge words fire. Self-cap: 25 turns (progress every 5)."
   },
   {
+    "id": "BP2-CRUXB",
+    "name": "Adversarial crucible for the BP2 closing legs - PANELDESIGN, HEALTHWIRE, NITS, METERLIVE; builds nothing",
+    "state": "ready",
+    "receipt": "BP2-CRUXB.json",
+    "branch": "bp2/cruxb",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp2-cruxb",
+    "prompt": "harness/battleplan/prompts/BP2-CRUXB.md",
+    "deps": [
+      "BP2-PANELDESIGN",
+      "BP2-HEALTHWIRE",
+      "BP2-NITS",
+      "BP2-METERLIVE"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.2 calls 2/4/10, sec.6 BP2-CRUX, sec.12 R-6. Second crucible of wave BP2 (BP2-CRUX covered pairs 1+2). Referee tier resolves to claude-fable-5 through the merged per-leg tier path; if the launch falls back to reasoning the ledger row says so. Read-only. Blocked by design until the four closing receipts exist. BROKEN does not ride. Verdicts are READ before merge words fire. Self-cap 25 turns.",
+    "tier": "referee"
+  },
+  {
+    "id": "BP2-HEALTHWIRE",
+    "name": "Wire memory.store.backend_health() into the server operator health row - embedder id + dim + ratified SUCCESS|UNAVAILABLE|BLOCKED verdict visible on camera; sec.4 tools byte-identical",
+    "state": "ready",
+    "receipt": "BP2-HEALTHWIRE.json",
+    "branch": "bp2/healthwire",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp2-healthwire",
+    "prompt": "harness/battleplan/prompts/BP2-HEALTHWIRE.md",
+    "deps": [
+      "BP2-STORE"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/server/write_plane.py",
+      "tests/",
+      "docs/help/",
+      "harness/battleplan/notes/"
+    ],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.0.1 M-5, sec.6 BP2-STORE T2/T3, BP2-STORE receipt spawn + for_ruling F4. Closing leg proposed by BP2-STORE (receipt spawn BP2-STORE-HEALTHWIRE; id shortened for the schema TAG regex). Self-cap 20 turns, progress every 5. STORE's backend_health() is on master after the merge - branch from master, do not touch python/synapse/memory/. ADDITIVE ONLY: write_plane.store_health()'s own ok/degraded/unknown words are consumed by doctor + panel strip + tests/test_w3_harden_write_plane_store.py - keep them, ATTACH the ratified dict alongside. Draft lives in harness/battleplan/notes/BP2-STORE.md sec.3. Demo-visible: this is the health line Joe reads on camera (sec.0.1 M-5, sec.1 items 3/5).",
+    "tier": "reasoning"
+  },
+  {
     "id": "BP2-LATENCY",
     "name": "Memory latency receipt: deposit / recall / close-reopen-recall timed under hython, repeat-5, p50/p95, bucketed if over the camera budget - a number on file, no code under memory/ touched",
     "state": "ready",
@@ -61,6 +103,51 @@
       "harness/battleplan/runs/"
     ],
     "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.0.4 H-1/H-2/H-4, sec.6 BP2-METER, sec.12 R-3/R-4/R-5/R-9. Tier: reasoning. Self-cap: 40 turns (a rails turn is a leg DISPATCH, not a conversational turn - docs/BATTLEPLAN.md sec.12 R-3; your cap is self-reported via progress messages every 5 turns). First leg of BP2 by design - every later cap is set from this leg's first measured ledger. REUSE BEFORE BUILD (sec.12 R-4): harness/rails.py:176 measure_transcript_tokens() and `rails.py charge --transcript` ALREADY EXIST; nothing calls them because orchestrate.ps1 Rails-Charge (:102-115) is a pre-dispatch gate. Do NOT build a `claude -p --output-format json` envelope parser: orchestrate legs are interactive sessions (orchestrate.ps1:406) and never emit an envelope; that parser belongs to harness/rope (parked). Cut T3 first if the cap nears. Parallel-safe with BP2-PANELTRUTH (harness/ vs panel/)."
+  },
+  {
+    "id": "BP2-METERLIVE",
+    "name": "Live -Budget end-to-end settle proof: a truly-dispatched leg's real transcript settles into the rails ledger at its done transition, and a tiny tokens ceiling halts the NEXT dispatch",
+    "state": "ready",
+    "receipt": "BP2-METERLIVE.json",
+    "branch": "bp2/meterlive",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp2-meterlive",
+    "prompt": "harness/battleplan/prompts/BP2-METERLIVE.md",
+    "deps": [
+      "BP2-METER"
+    ],
+    "readonly": false,
+    "touches": [
+      "harness/battleplan/runs/",
+      "harness/battleplan/notes/"
+    ],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.6 BP2-METER T1; BP2-METER receipt spawn BP2-METERLIVE. Closing probe proposed by BP2-METER (receipt spawn). Self-cap 15 turns. The mechanism is merged; what remains is the integration proof on a real orchestrator run. Use a THROWAWAY wave in a scratch repo (the BP1/BP2 dry-run isolation pattern - Backup-Branches pushes non-master branches, never run a proof against the live repo) with two trivial legs whose prompts finish in one exchange. Read-only w.r.t. product code; artifacts only.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP2-NITS",
+    "name": "Close the crucible's evidence nits: METER dry-run proof regenerated parent-vs-HEAD; MONETA_FOLLOWUPS.md FU-1/FU-2 marked DONE at 3c4f07f9; board readers accept ledger status 'open'",
+    "state": "ready",
+    "receipt": "BP2-NITS.json",
+    "branch": "bp2/nits",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp2-nits",
+    "prompt": "harness/battleplan/prompts/BP2-NITS.md",
+    "deps": [
+      "BP2-METER",
+      "BP2-STORE"
+    ],
+    "readonly": false,
+    "touches": [
+      "harness/battleplan/runs/2026-09-01/",
+      "docs/MONETA_FOLLOWUPS.md",
+      "docs/BATTLEPLAN.md",
+      "harness/battleplan/dashboard_bp2.py",
+      "harness/battleplan/status_bp2.py",
+      "harness/battleplan/notes/"
+    ],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.12; BP2-CRUX verdicts.md nits for METER and STORE; STORE for_ruling F2; METER for_ruling 2. Mechanical tier (Haiku) - every target is a documented, verifiable edit with no design decision. Self-cap 12 turns, progress every 5. Source of each nit is the BP2-CRUX verdicts file and the STORE/METER for_ruling fields; cite them. Do not touch product code under python/synapse/ or harness/rails.py.",
+    "tier": "mechanical"
   },
   {
     "id": "BP2-PANELDESIGN",

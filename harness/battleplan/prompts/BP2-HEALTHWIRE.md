@@ -1,76 +1,63 @@
-# BP2-PANELDESIGN — Panel rhythm: spec then implement the sec.7 spacing pass on the five camera regions - tokens + QSS on the density root property, zero new colours/widgets/families, Expert pin green
+# BP2-HEALTHWIRE — Wire memory.store.backend_health() into the server operator health row - embedder id + dim + ratified SUCCESS|UNAVAILABLE|BLOCKED verdict visible on camera; sec.4 tools byte-identical
 
-You are a SYNAPSE BATTLEPLAN wave agent on branch `bp2/paneldesign` in worktree
-`.claude/worktrees/bp2-paneldesign`. Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This
+You are a SYNAPSE BATTLEPLAN wave agent on branch `bp2/healthwire` in worktree
+`.claude/worktrees/bp2-healthwire`. Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This
 brief is complete; if any part reads truncated, STOP and say so.
 
 ## Mission (validated work order)
 
 ```json
 {
-  "id": "BP2-PANELDESIGN",
-  "name": "Panel rhythm: spec then implement the sec.7 spacing pass on the five camera regions - tokens + QSS on the density root property, zero new colours/widgets/families, Expert pin green",
+  "id": "BP2-HEALTHWIRE",
+  "name": "Wire memory.store.backend_health() into the server operator health row - embedder id + dim + ratified SUCCESS|UNAVAILABLE|BLOCKED verdict visible on camera; sec.4 tools byte-identical",
   "band": "BUILD",
   "class": "build",
-  "note": "Tier: reasoning (the importer-retirement chore is mechanical tier - Haiku - if the orchestrator can dispatch it separately; otherwise do it last and say so). Self-cap: 60 turns across two sessions (A: spec, B: implement; progress every 5; sec.12 R-3). HELD in the live manifest until Joe's Wed word (sec.12 R-6): PANELTRUTH must be MERGED, not merely receipted, before you run - its harness/battleplan/runs/<date>/profile_diff.json is your input, read it from master. Amber tier: the GUI sign-off on the five regions is Joe's eyes (gui_required). ADAPT: confirm /design skill syntax with /help in your session; if unavailable, author the spec by hand from sec.7 - same output, same accept.",
+  "tier": "reasoning",
+  "note": "Closing leg proposed by BP2-STORE (receipt spawn BP2-STORE-HEALTHWIRE; id shortened for the schema TAG regex). Self-cap 20 turns, progress every 5. STORE's backend_health() is on master after the merge - branch from master, do not touch python/synapse/memory/. ADDITIVE ONLY: write_plane.store_health()'s own ok/degraded/unknown words are consumed by doctor + panel strip + tests/test_w3_harden_write_plane_store.py - keep them, ATTACH the ratified dict alongside. Draft lives in harness/battleplan/notes/BP2-STORE.md sec.3. Demo-visible: this is the health line Joe reads on camera (sec.0.1 M-5, sec.1 items 3/5).",
   "targets": [
-    "T1) SESSION A - SPEC. Input: docs/BATTLEPLAN.md sec.7 + profile_diff.json + the five camera regions. Output docs/PANEL_RHYTHM_SPEC.md: token table (SPACE 4/8/12/16/24/32/48 mapped onto the EXISTING SPACE_* names - never rename), per-region QSS rules, density multipliers (airy x1.5 / standard x1 / tight x0.75, GAPS only, paddings fixed), before/after measurements in px per region. Stop at five regions.",
-    "T2) SESSION B - IMPLEMENT. Extend python/synapse/panel/designsystem/tokens.py spacing scale to sec.7 values; QSS descendant rules keyed on the existing `density` root property (repolish per 08-04, proven by PANELTRUTH); the five camera regions only: profile tab strip pills, verb rail labels, recall card (three bands; footer pill mirrors HIT / NO HIT / UNAVAILABLE / BLOCKED in label style, HOT_SOFT only for BLOCKED), TOKEN face parameter rows (UNKNOWN as text in the value column, never a bar at zero), .hip ribbon + header status line. fontload.py untouched; zero new colours; Curious gets the airy multiplier; Expert reads the same tokens at x1.",
-    "T3) HEADLESS TEST: gap tokens step by the density multipliers per profile; test_expert_resolved_equals_v5420_snapshot green; `pytest -q` green.",
-    "T4) CHORE (mechanical tier): `python .synapse/verify.py no-importers python/synapse/panel/tokens.py python/synapse/panel` - if that subcommand does not exist, a grep of importers is the same evidence. If only styles.py imports tokens.py and nothing imports styles.py, delete both (contract theme-seed-tokens.yaml split, sec.5); else post a finding and leave them. Host-scheme seeding stays parked.",
-    "T5) Author .synapse/contracts/panel-rhythm.yaml (git add -f; features passing:false; GUI sign-off feature is red tier)."
+    "T1) python/synapse/server/write_plane.py store_health(): merge backend_health()'s embedder_id + embedding_dim into the info dict and attach the full backend_health() dict under info['backend_health'] (requested backend, active backend, embedder id, dim, row count, verdict SUCCESS|UNAVAILABLE|BLOCKED). Existing keys and status words unchanged.",
+    "T2) synapse_health tool response carries the same sub-dict; sec.4 tool surface (names, arities, docstrings) byte-identical against master - attach the empty diff.",
+    "T3) tests: moneta-requested + unimportable -> info['backend_health']['verdict'] == UNAVAILABLE while write_plane status keeps its own word; healthy path -> SUCCESS with embedder id + dim present; tests/test_w3_harden_write_plane_store.py unchanged and green.",
+    "T4) One line in docs/help/ naming the five operator fields the health row now shows."
   ],
   "touches": [
-    "python/synapse/panel/designsystem/",
-    "python/synapse/panel/manifests/",
-    "python/synapse/panel/tokens.py",
-    "python/synapse/panel/styles.py",
-    "docs/PANEL_RHYTHM_SPEC.md",
-    ".synapse/contracts/panel-rhythm.yaml",
+    "python/synapse/server/write_plane.py",
     "tests/",
+    "docs/help/",
     "harness/battleplan/notes/"
   ],
   "readonly": false,
   "deps": [
-    "BP2-PANELTRUTH"
+    "BP2-STORE"
   ],
   "crucible_criteria": [
-    "any new hex colour string in the diff is BROKEN",
-    "any new QFont family in the diff is BROKEN (families come from fontload.py only)",
-    "any structural change to the Expert manifest is BROKEN - the pin proves it",
-    "paddings are fixed; only gap tokens scale with density",
-    "no hardcoded pt size (font floor derives from the host, W5L-PANEL T1)"
+    "python/synapse/memory/ diff is empty (STORE owns it; this leg reads it)",
+    "no rename or removal of write_plane's existing status vocabulary - test_w3_harden_write_plane_store.py byte-identical and green",
+    "sec.4 tool surface byte-identical against master",
+    "UNAVAILABLE/BLOCKED never rendered as ok"
   ],
   "spawn_classes": [
     "probe"
   ],
   "source": {
     "doc": "docs/BATTLEPLAN.md",
-    "anchor": "2026-09-01 sec.0.3 P-4/P-6/P-7, sec.6 BP2-PANEL-DESIGN, sec.7, sec.12 R-6"
+    "anchor": "2026-09-01 sec.0.1 M-5, sec.6 BP2-STORE T2/T3, BP2-STORE receipt spawn + for_ruling F4"
   },
   "acceptance": [
     {
-      "predicate": "docs/PANEL_RHYTHM_SPEC.md exists with px numbers per region, token table, density multipliers",
-      "evidence": "check"
-    },
-    {
-      "predicate": "QSS/token diff introduces no colour token and no hex string (grep attached)",
-      "evidence": "check"
-    },
-    {
-      "predicate": "headless test: gap tokens step by the density multipliers per profile",
+      "predicate": "synapse_health write_plane sub-dict carries embedder_id, embedding_dim and backend_health with the ratified verdict; test proves moneta-unimportable -> UNAVAILABLE",
       "evidence": "test"
     },
     {
-      "predicate": "test_expert_resolved_equals_v5420_snapshot green and `pytest -q` green on the branch",
+      "predicate": "sec.4 tool surface diff against master is empty (attached)",
+      "evidence": "check"
+    },
+    {
+      "predicate": "tests/test_w3_harden_write_plane_store.py unchanged and green; pytest -q green",
       "evidence": "test"
     },
     {
-      "predicate": "importer chore outcome posted as a bus finding (deleted pair, or importers named and left)",
-      "evidence": "receipt"
-    },
-    {
-      "predicate": "GUI sign-off on the five camera regions in the .400 GUI (Joe, Thu/Fri)",
+      "predicate": "health row observed in the .400 GUI panel strip shows the five fields (Joe)",
       "evidence": "gui_probe",
       "gui_required": true
     }
@@ -111,7 +98,7 @@ relative call from your worktree writes a FRAGMENTED bus nobody reads: your
 claims become invisible and two agents will edit one file.
 
 1. **Before touching any file in `touches`** — post a claim:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN claim '{\"files\": [\"<paths>\"]}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-HEALTHWIRE claim '{\"files\": [\"<paths>\"]}'`
    Then read open claims:
    `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py claims bp2`
    If a peer holds an overlapping open claim: STOP, post a `block`, work
@@ -127,15 +114,15 @@ claims become invisible and two agents will edit one file.
    measured ledger.
 2. **Findings** as you go — and the moment an evidence artifact lands, post its
    path so peers consume it live (this is the wave's dynamic handoff):
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN finding '{\"claim\": \"...\", \"anchor\": \"file:line-or-artifact-path\"}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-HEALTHWIRE finding '{\"claim\": \"...\", \"anchor\": \"file:line-or-artifact-path\"}'`
 3. **Release** when done editing:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN status '{\"release\": [\"<same paths>\"]}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-HEALTHWIRE status '{\"release\": [\"<same paths>\"]}'`
 4. **Read before you act** on any shared seam, and poll for peer artifacts your
    mission consumes:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py read bp2 BP2-PANELDESIGN`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py read bp2 BP2-HEALTHWIRE`
 5. **Progress** every 5 turns - the on-target signal the orchestrator's drift
    check reads. Cite the target you are on and the evidence path if one exists:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN progress '{\"target\": \"T1\", \"evidence_path\": \"<path-or-none>\"}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-HEALTHWIRE progress '{\"target\": \"T1\", \"evidence_path\": \"<path-or-none>\"}'`
    A `refocus` message addressed to you carries your own mission targets
    verbatim: answer it by naming the target you return to, not with a new idea.
    A `halt` message means rails stopped the wave: commit what is named-file
@@ -166,8 +153,8 @@ sha in it. A receipt at ahead:0 asserts commit-state that does not exist.
 Full sequence: product commit → verify ahead >= 1 → write the receipt stating
 the product HEAD sha → commit the receipt as your closing commit.
 
-Write `harness/notes/receipts/BP2-PANELDESIGN.json` **inside your worktree**:
-`{{"leg": "BP2-PANELDESIGN", "status": "green|green_with_findings|blocked",
+Write `harness/notes/receipts/BP2-HEALTHWIRE.json` **inside your worktree**:
+`{{"leg": "BP2-HEALTHWIRE", "status": "green|green_with_findings|blocked",
   "acceptance": [{{"predicate", "verdict": "pass|fail|UNKNOWN", "evidence"}}...],
   "findings": [...], "for_ruling": [...], "spawn": [...]}}`
 `spawn[]` entries are mission-schema-shaped proposals; classes outside your

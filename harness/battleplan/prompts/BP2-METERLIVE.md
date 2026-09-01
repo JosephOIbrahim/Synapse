@@ -1,78 +1,55 @@
-# BP2-PANELDESIGN — Panel rhythm: spec then implement the sec.7 spacing pass on the five camera regions - tokens + QSS on the density root property, zero new colours/widgets/families, Expert pin green
+# BP2-METERLIVE — Live -Budget end-to-end settle proof: a truly-dispatched leg's real transcript settles into the rails ledger at its done transition, and a tiny tokens ceiling halts the NEXT dispatch
 
-You are a SYNAPSE BATTLEPLAN wave agent on branch `bp2/paneldesign` in worktree
-`.claude/worktrees/bp2-paneldesign`. Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This
+You are a SYNAPSE BATTLEPLAN wave agent on branch `bp2/meterlive` in worktree
+`.claude/worktrees/bp2-meterlive`. Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This
 brief is complete; if any part reads truncated, STOP and say so.
 
 ## Mission (validated work order)
 
 ```json
 {
-  "id": "BP2-PANELDESIGN",
-  "name": "Panel rhythm: spec then implement the sec.7 spacing pass on the five camera regions - tokens + QSS on the density root property, zero new colours/widgets/families, Expert pin green",
-  "band": "BUILD",
-  "class": "build",
-  "note": "Tier: reasoning (the importer-retirement chore is mechanical tier - Haiku - if the orchestrator can dispatch it separately; otherwise do it last and say so). Self-cap: 60 turns across two sessions (A: spec, B: implement; progress every 5; sec.12 R-3). HELD in the live manifest until Joe's Wed word (sec.12 R-6): PANELTRUTH must be MERGED, not merely receipted, before you run - its harness/battleplan/runs/<date>/profile_diff.json is your input, read it from master. Amber tier: the GUI sign-off on the five regions is Joe's eyes (gui_required). ADAPT: confirm /design skill syntax with /help in your session; if unavailable, author the spec by hand from sec.7 - same output, same accept.",
+  "id": "BP2-METERLIVE",
+  "name": "Live -Budget end-to-end settle proof: a truly-dispatched leg's real transcript settles into the rails ledger at its done transition, and a tiny tokens ceiling halts the NEXT dispatch",
+  "band": "TRUTH",
+  "class": "probe",
+  "tier": "reasoning",
+  "note": "Closing probe proposed by BP2-METER (receipt spawn). Self-cap 15 turns. The mechanism is merged; what remains is the integration proof on a real orchestrator run. Use a THROWAWAY wave in a scratch repo (the BP1/BP2 dry-run isolation pattern - Backup-Branches pushes non-master branches, never run a proof against the live repo) with two trivial legs whose prompts finish in one exchange. Read-only w.r.t. product code; artifacts only.",
   "targets": [
-    "T1) SESSION A - SPEC. Input: docs/BATTLEPLAN.md sec.7 + profile_diff.json + the five camera regions. Output docs/PANEL_RHYTHM_SPEC.md: token table (SPACE 4/8/12/16/24/32/48 mapped onto the EXISTING SPACE_* names - never rename), per-region QSS rules, density multipliers (airy x1.5 / standard x1 / tight x0.75, GAPS only, paddings fixed), before/after measurements in px per region. Stop at five regions.",
-    "T2) SESSION B - IMPLEMENT. Extend python/synapse/panel/designsystem/tokens.py spacing scale to sec.7 values; QSS descendant rules keyed on the existing `density` root property (repolish per 08-04, proven by PANELTRUTH); the five camera regions only: profile tab strip pills, verb rail labels, recall card (three bands; footer pill mirrors HIT / NO HIT / UNAVAILABLE / BLOCKED in label style, HOT_SOFT only for BLOCKED), TOKEN face parameter rows (UNKNOWN as text in the value column, never a bar at zero), .hip ribbon + header status line. fontload.py untouched; zero new colours; Curious gets the airy multiplier; Expert reads the same tokens at x1.",
-    "T3) HEADLESS TEST: gap tokens step by the density multipliers per profile; test_expert_resolved_equals_v5420_snapshot green; `pytest -q` green.",
-    "T4) CHORE (mechanical tier): `python .synapse/verify.py no-importers python/synapse/panel/tokens.py python/synapse/panel` - if that subcommand does not exist, a grep of importers is the same evidence. If only styles.py imports tokens.py and nothing imports styles.py, delete both (contract theme-seed-tokens.yaml split, sec.5); else post a finding and leave them. Host-scheme seeding stays parked.",
-    "T5) Author .synapse/contracts/panel-rhythm.yaml (git add -f; features passing:false; GUI sign-off feature is red tier)."
+    "T1) Scratch repo + throwaway manifest with two trivial legs; run orchestrate.ps1 -Budget '4turns,<tiny>tokens' for real (not -DryRun). Confirm leg 1 reaches done and Rails-Settle writes integer tokens_in/tokens_out/wall_ms to its ledger row from its real transcript.",
+    "T2) Confirm the tiny tokens ceiling, crossed at leg 1's settle, refuses leg 2's dispatch: ledger status blocked, reason budget, enforced_unit tokens; orchestrator log shows the halt.",
+    "T3) Negative control: same wave without -Budget - no settle, ledger absent, log byte-identical to a -DryRun control of the same manifest.",
+    "T4) Record the first real per-leg number the orchestrator itself measured; post it as a bus finding for the referee (this is the number every later cap is set from)."
   ],
   "touches": [
-    "python/synapse/panel/designsystem/",
-    "python/synapse/panel/manifests/",
-    "python/synapse/panel/tokens.py",
-    "python/synapse/panel/styles.py",
-    "docs/PANEL_RHYTHM_SPEC.md",
-    ".synapse/contracts/panel-rhythm.yaml",
-    "tests/",
+    "harness/battleplan/runs/",
     "harness/battleplan/notes/"
   ],
   "readonly": false,
   "deps": [
-    "BP2-PANELTRUTH"
+    "BP2-METER"
   ],
   "crucible_criteria": [
-    "any new hex colour string in the diff is BROKEN",
-    "any new QFont family in the diff is BROKEN (families come from fontload.py only)",
-    "any structural change to the Expert manifest is BROKEN - the pin proves it",
-    "paddings are fixed; only gap tokens scale with density",
-    "no hardcoded pt size (font floor derives from the host, W5L-PANEL T1)"
+    "no product file in the diff - artifacts and notes only",
+    "the proof ran against a scratch repo, never the live repo (path recorded)",
+    "every token integer traces to a transcript message.usage record; no estimate"
   ],
-  "spawn_classes": [
-    "probe"
-  ],
+  "spawn_classes": [],
   "source": {
     "doc": "docs/BATTLEPLAN.md",
-    "anchor": "2026-09-01 sec.0.3 P-4/P-6/P-7, sec.6 BP2-PANEL-DESIGN, sec.7, sec.12 R-6"
+    "anchor": "2026-09-01 sec.6 BP2-METER T1; BP2-METER receipt spawn BP2-METERLIVE"
   },
   "acceptance": [
     {
-      "predicate": "docs/PANEL_RHYTHM_SPEC.md exists with px numbers per region, token table, density multipliers",
-      "evidence": "check"
-    },
-    {
-      "predicate": "QSS/token diff introduces no colour token and no hex string (grep attached)",
-      "evidence": "check"
-    },
-    {
-      "predicate": "headless test: gap tokens step by the density multipliers per profile",
-      "evidence": "test"
-    },
-    {
-      "predicate": "test_expert_resolved_equals_v5420_snapshot green and `pytest -q` green on the branch",
-      "evidence": "test"
-    },
-    {
-      "predicate": "importer chore outcome posted as a bus finding (deleted pair, or importers named and left)",
+      "predicate": "live-run ledger with integer tokens for a leg that reached done through the orchestrator (artifact + the transcript path)",
       "evidence": "receipt"
     },
     {
-      "predicate": "GUI sign-off on the five camera regions in the .400 GUI (Joe, Thu/Fri)",
-      "evidence": "gui_probe",
-      "gui_required": true
+      "predicate": "tiny-ceiling run: second dispatch refused, status blocked, reason budget, enforced_unit tokens (ledger + log)",
+      "evidence": "receipt"
+    },
+    {
+      "predicate": "no -Budget control: no ledger, log byte-identical to the -DryRun control (diff attached, empty)",
+      "evidence": "check"
     }
   ]
 }
@@ -111,7 +88,7 @@ relative call from your worktree writes a FRAGMENTED bus nobody reads: your
 claims become invisible and two agents will edit one file.
 
 1. **Before touching any file in `touches`** — post a claim:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN claim '{\"files\": [\"<paths>\"]}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-METERLIVE claim '{\"files\": [\"<paths>\"]}'`
    Then read open claims:
    `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py claims bp2`
    If a peer holds an overlapping open claim: STOP, post a `block`, work
@@ -127,15 +104,15 @@ claims become invisible and two agents will edit one file.
    measured ledger.
 2. **Findings** as you go — and the moment an evidence artifact lands, post its
    path so peers consume it live (this is the wave's dynamic handoff):
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN finding '{\"claim\": \"...\", \"anchor\": \"file:line-or-artifact-path\"}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-METERLIVE finding '{\"claim\": \"...\", \"anchor\": \"file:line-or-artifact-path\"}'`
 3. **Release** when done editing:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN status '{\"release\": [\"<same paths>\"]}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-METERLIVE status '{\"release\": [\"<same paths>\"]}'`
 4. **Read before you act** on any shared seam, and poll for peer artifacts your
    mission consumes:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py read bp2 BP2-PANELDESIGN`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py read bp2 BP2-METERLIVE`
 5. **Progress** every 5 turns - the on-target signal the orchestrator's drift
    check reads. Cite the target you are on and the evidence path if one exists:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN progress '{\"target\": \"T1\", \"evidence_path\": \"<path-or-none>\"}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-METERLIVE progress '{\"target\": \"T1\", \"evidence_path\": \"<path-or-none>\"}'`
    A `refocus` message addressed to you carries your own mission targets
    verbatim: answer it by naming the target you return to, not with a new idea.
    A `halt` message means rails stopped the wave: commit what is named-file
@@ -166,8 +143,8 @@ sha in it. A receipt at ahead:0 asserts commit-state that does not exist.
 Full sequence: product commit → verify ahead >= 1 → write the receipt stating
 the product HEAD sha → commit the receipt as your closing commit.
 
-Write `harness/notes/receipts/BP2-PANELDESIGN.json` **inside your worktree**:
-`{{"leg": "BP2-PANELDESIGN", "status": "green|green_with_findings|blocked",
+Write `harness/notes/receipts/BP2-METERLIVE.json` **inside your worktree**:
+`{{"leg": "BP2-METERLIVE", "status": "green|green_with_findings|blocked",
   "acceptance": [{{"predicate", "verdict": "pass|fail|UNKNOWN", "evidence"}}...],
   "findings": [...], "for_ruling": [...], "spawn": [...]}}`
 `spawn[]` entries are mission-schema-shaped proposals; classes outside your

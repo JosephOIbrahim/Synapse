@@ -1,78 +1,53 @@
-# BP2-PANELDESIGN — Panel rhythm: spec then implement the sec.7 spacing pass on the five camera regions - tokens + QSS on the density root property, zero new colours/widgets/families, Expert pin green
+# BP2-CRUXB — Adversarial crucible for the BP2 closing legs - PANELDESIGN, HEALTHWIRE, NITS, METERLIVE; builds nothing
 
-You are a SYNAPSE BATTLEPLAN wave agent on branch `bp2/paneldesign` in worktree
-`.claude/worktrees/bp2-paneldesign`. Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This
+You are a SYNAPSE BATTLEPLAN wave agent on branch `bp2/cruxb` in worktree
+`.claude/worktrees/bp2-cruxb`. Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This
 brief is complete; if any part reads truncated, STOP and say so.
 
 ## Mission (validated work order)
 
 ```json
 {
-  "id": "BP2-PANELDESIGN",
-  "name": "Panel rhythm: spec then implement the sec.7 spacing pass on the five camera regions - tokens + QSS on the density root property, zero new colours/widgets/families, Expert pin green",
-  "band": "BUILD",
-  "class": "build",
-  "note": "Tier: reasoning (the importer-retirement chore is mechanical tier - Haiku - if the orchestrator can dispatch it separately; otherwise do it last and say so). Self-cap: 60 turns across two sessions (A: spec, B: implement; progress every 5; sec.12 R-3). HELD in the live manifest until Joe's Wed word (sec.12 R-6): PANELTRUTH must be MERGED, not merely receipted, before you run - its harness/battleplan/runs/<date>/profile_diff.json is your input, read it from master. Amber tier: the GUI sign-off on the five regions is Joe's eyes (gui_required). ADAPT: confirm /design skill syntax with /help in your session; if unavailable, author the spec by hand from sec.7 - same output, same accept.",
+  "id": "BP2-CRUXB",
+  "name": "Adversarial crucible for the BP2 closing legs - PANELDESIGN, HEALTHWIRE, NITS, METERLIVE; builds nothing",
+  "band": "TRUST",
+  "class": "crucible",
+  "tier": "referee",
+  "note": "Second crucible of wave BP2 (BP2-CRUX covered pairs 1+2). Referee tier resolves to claude-fable-5 through the merged per-leg tier path; if the launch falls back to reasoning the ledger row says so. Read-only. Blocked by design until the four closing receipts exist. BROKEN does not ride. Verdicts are READ before merge words fire. Self-cap 25 turns.",
   "targets": [
-    "T1) SESSION A - SPEC. Input: docs/BATTLEPLAN.md sec.7 + profile_diff.json + the five camera regions. Output docs/PANEL_RHYTHM_SPEC.md: token table (SPACE 4/8/12/16/24/32/48 mapped onto the EXISTING SPACE_* names - never rename), per-region QSS rules, density multipliers (airy x1.5 / standard x1 / tight x0.75, GAPS only, paddings fixed), before/after measurements in px per region. Stop at five regions.",
-    "T2) SESSION B - IMPLEMENT. Extend python/synapse/panel/designsystem/tokens.py spacing scale to sec.7 values; QSS descendant rules keyed on the existing `density` root property (repolish per 08-04, proven by PANELTRUTH); the five camera regions only: profile tab strip pills, verb rail labels, recall card (three bands; footer pill mirrors HIT / NO HIT / UNAVAILABLE / BLOCKED in label style, HOT_SOFT only for BLOCKED), TOKEN face parameter rows (UNKNOWN as text in the value column, never a bar at zero), .hip ribbon + header status line. fontload.py untouched; zero new colours; Curious gets the airy multiplier; Expert reads the same tokens at x1.",
-    "T3) HEADLESS TEST: gap tokens step by the density multipliers per profile; test_expert_resolved_equals_v5420_snapshot green; `pytest -q` green.",
-    "T4) CHORE (mechanical tier): `python .synapse/verify.py no-importers python/synapse/panel/tokens.py python/synapse/panel` - if that subcommand does not exist, a grep of importers is the same evidence. If only styles.py imports tokens.py and nothing imports styles.py, delete both (contract theme-seed-tokens.yaml split, sec.5); else post a finding and leave them. Host-scheme seeding stays parked.",
-    "T5) Author .synapse/contracts/panel-rhythm.yaml (git add -f; features passing:false; GUI sign-off feature is red tier)."
+    "1) Re-run every acceptance predicate of the four closing legs in a fresh checkout of each branch, with your own anchors; gui_required rows are UNKNOWN to you - say so.",
+    "2) PANELDESIGN mutations (>= 4): add a hex colour -> the no-new-colour check reddens; scale a padding with density -> the gaps-only test reddens; change an Expert manifest entry -> the pin reddens; introduce a QFont family -> its test reddens. Confirm docs/PANEL_RHYTHM_SPEC.md carries px numbers for all five camera regions and no more.",
+    "3) HEALTHWIRE mutations (>= 3): make the moneta-unimportable path report ok -> test reddens; drop embedder_id from the sub-dict -> test reddens; rename a write_plane status word -> test_w3_harden_write_plane_store.py reddens. Diff the sec.4 tool surface yourself.",
+    "4) NITS: re-run the regenerated METER proof yourself and confirm its baseline is the product commit's parent; grep MONETA_FOLLOWUPS.md for the DONE markers and the commit hash; run dashboard_bp2.py against a status='open' ledger fixture.",
+    "5) METERLIVE: read its ledgers and transcript paths; confirm every integer traces to a usage record; confirm the scratch-repo path.",
+    "6) Verdict per leg SOUND | SOUND-WITH-NITS | BROKEN with chain_broken_at; write harness/battleplan/notes/BP2-CRUXB_verdicts.md + BP2-CRUXB_mutations.json; post each verdict on the bus to *; write harness/notes/h22/BP2_CRUXB_LANDED.flag LAST."
   ],
-  "touches": [
-    "python/synapse/panel/designsystem/",
-    "python/synapse/panel/manifests/",
-    "python/synapse/panel/tokens.py",
-    "python/synapse/panel/styles.py",
-    "docs/PANEL_RHYTHM_SPEC.md",
-    ".synapse/contracts/panel-rhythm.yaml",
-    "tests/",
-    "harness/battleplan/notes/"
-  ],
-  "readonly": false,
+  "touches": [],
+  "readonly": true,
   "deps": [
-    "BP2-PANELTRUTH"
+    "BP2-PANELDESIGN",
+    "BP2-HEALTHWIRE",
+    "BP2-NITS",
+    "BP2-METERLIVE"
   ],
   "crucible_criteria": [
-    "any new hex colour string in the diff is BROKEN",
-    "any new QFont family in the diff is BROKEN (families come from fontload.py only)",
-    "any structural change to the Expert manifest is BROKEN - the pin proves it",
-    "paddings are fixed; only gap tokens scale with density",
-    "no hardcoded pt size (font floor derives from the host, W5L-PANEL T1)"
+    "the crucible authors its own mutations and trusts no builder's proved_it_bites",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS",
+    "the crucible flips no contract feature and edits no product file"
   ],
-  "spawn_classes": [
-    "probe"
-  ],
+  "spawn_classes": [],
   "source": {
     "doc": "docs/BATTLEPLAN.md",
-    "anchor": "2026-09-01 sec.0.3 P-4/P-6/P-7, sec.6 BP2-PANEL-DESIGN, sec.7, sec.12 R-6"
+    "anchor": "2026-09-01 sec.2 calls 2/4/10, sec.6 BP2-CRUX, sec.12 R-6"
   },
   "acceptance": [
     {
-      "predicate": "docs/PANEL_RHYTHM_SPEC.md exists with px numbers per region, token table, density multipliers",
-      "evidence": "check"
-    },
-    {
-      "predicate": "QSS/token diff introduces no colour token and no hex string (grep attached)",
-      "evidence": "check"
-    },
-    {
-      "predicate": "headless test: gap tokens step by the density multipliers per profile",
-      "evidence": "test"
-    },
-    {
-      "predicate": "test_expert_resolved_equals_v5420_snapshot green and `pytest -q` green on the branch",
-      "evidence": "test"
-    },
-    {
-      "predicate": "importer chore outcome posted as a bus finding (deleted pair, or importers named and left)",
+      "predicate": "one verdict per closing leg (four) with independently re-run acceptance rows and the crucible's own anchors",
       "evidence": "receipt"
     },
     {
-      "predicate": "GUI sign-off on the five camera regions in the .400 GUI (Joe, Thu/Fri)",
-      "evidence": "gui_probe",
-      "gui_required": true
+      "predicate": ">= 3 self-authored mutations per builder leg, each named with the test it reddens",
+      "evidence": "test"
     }
   ]
 }
@@ -111,7 +86,7 @@ relative call from your worktree writes a FRAGMENTED bus nobody reads: your
 claims become invisible and two agents will edit one file.
 
 1. **Before touching any file in `touches`** — post a claim:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN claim '{\"files\": [\"<paths>\"]}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-CRUXB claim '{\"files\": [\"<paths>\"]}'`
    Then read open claims:
    `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py claims bp2`
    If a peer holds an overlapping open claim: STOP, post a `block`, work
@@ -127,15 +102,15 @@ claims become invisible and two agents will edit one file.
    measured ledger.
 2. **Findings** as you go — and the moment an evidence artifact lands, post its
    path so peers consume it live (this is the wave's dynamic handoff):
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN finding '{\"claim\": \"...\", \"anchor\": \"file:line-or-artifact-path\"}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-CRUXB finding '{\"claim\": \"...\", \"anchor\": \"file:line-or-artifact-path\"}'`
 3. **Release** when done editing:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN status '{\"release\": [\"<same paths>\"]}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-CRUXB status '{\"release\": [\"<same paths>\"]}'`
 4. **Read before you act** on any shared seam, and poll for peer artifacts your
    mission consumes:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py read bp2 BP2-PANELDESIGN`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py read bp2 BP2-CRUXB`
 5. **Progress** every 5 turns - the on-target signal the orchestrator's drift
    check reads. Cite the target you are on and the evidence path if one exists:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN progress '{\"target\": \"T1\", \"evidence_path\": \"<path-or-none>\"}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-CRUXB progress '{\"target\": \"T1\", \"evidence_path\": \"<path-or-none>\"}'`
    A `refocus` message addressed to you carries your own mission targets
    verbatim: answer it by naming the target you return to, not with a new idea.
    A `halt` message means rails stopped the wave: commit what is named-file
@@ -166,8 +141,8 @@ sha in it. A receipt at ahead:0 asserts commit-state that does not exist.
 Full sequence: product commit → verify ahead >= 1 → write the receipt stating
 the product HEAD sha → commit the receipt as your closing commit.
 
-Write `harness/notes/receipts/BP2-PANELDESIGN.json` **inside your worktree**:
-`{{"leg": "BP2-PANELDESIGN", "status": "green|green_with_findings|blocked",
+Write `harness/notes/receipts/BP2-CRUXB.json` **inside your worktree**:
+`{{"leg": "BP2-CRUXB", "status": "green|green_with_findings|blocked",
   "acceptance": [{{"predicate", "verdict": "pass|fail|UNKNOWN", "evidence"}}...],
   "findings": [...], "for_ruling": [...], "spawn": [...]}}`
 `spawn[]` entries are mission-schema-shaped proposals; classes outside your

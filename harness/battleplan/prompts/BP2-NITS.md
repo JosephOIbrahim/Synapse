@@ -1,78 +1,60 @@
-# BP2-PANELDESIGN — Panel rhythm: spec then implement the sec.7 spacing pass on the five camera regions - tokens + QSS on the density root property, zero new colours/widgets/families, Expert pin green
+# BP2-NITS — Close the crucible's evidence nits: METER dry-run proof regenerated parent-vs-HEAD; MONETA_FOLLOWUPS.md FU-1/FU-2 marked DONE at 3c4f07f9; board readers accept ledger status 'open'
 
-You are a SYNAPSE BATTLEPLAN wave agent on branch `bp2/paneldesign` in worktree
-`.claude/worktrees/bp2-paneldesign`. Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This
+You are a SYNAPSE BATTLEPLAN wave agent on branch `bp2/nits` in worktree
+`.claude/worktrees/bp2-nits`. Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This
 brief is complete; if any part reads truncated, STOP and say so.
 
 ## Mission (validated work order)
 
 ```json
 {
-  "id": "BP2-PANELDESIGN",
-  "name": "Panel rhythm: spec then implement the sec.7 spacing pass on the five camera regions - tokens + QSS on the density root property, zero new colours/widgets/families, Expert pin green",
-  "band": "BUILD",
+  "id": "BP2-NITS",
+  "name": "Close the crucible's evidence nits: METER dry-run proof regenerated parent-vs-HEAD; MONETA_FOLLOWUPS.md FU-1/FU-2 marked DONE at 3c4f07f9; board readers accept ledger status 'open'",
+  "band": "PAPER",
   "class": "build",
-  "note": "Tier: reasoning (the importer-retirement chore is mechanical tier - Haiku - if the orchestrator can dispatch it separately; otherwise do it last and say so). Self-cap: 60 turns across two sessions (A: spec, B: implement; progress every 5; sec.12 R-3). HELD in the live manifest until Joe's Wed word (sec.12 R-6): PANELTRUTH must be MERGED, not merely receipted, before you run - its harness/battleplan/runs/<date>/profile_diff.json is your input, read it from master. Amber tier: the GUI sign-off on the five regions is Joe's eyes (gui_required). ADAPT: confirm /design skill syntax with /help in your session; if unavailable, author the spec by hand from sec.7 - same output, same accept.",
+  "tier": "mechanical",
+  "note": "Mechanical tier (Haiku) - every target is a documented, verifiable edit with no design decision. Self-cap 12 turns, progress every 5. Source of each nit is the BP2-CRUX verdicts file and the STORE/METER for_ruling fields; cite them. Do not touch product code under python/synapse/ or harness/rails.py.",
   "targets": [
-    "T1) SESSION A - SPEC. Input: docs/BATTLEPLAN.md sec.7 + profile_diff.json + the five camera regions. Output docs/PANEL_RHYTHM_SPEC.md: token table (SPACE 4/8/12/16/24/32/48 mapped onto the EXISTING SPACE_* names - never rename), per-region QSS rules, density multipliers (airy x1.5 / standard x1 / tight x0.75, GAPS only, paddings fixed), before/after measurements in px per region. Stop at five regions.",
-    "T2) SESSION B - IMPLEMENT. Extend python/synapse/panel/designsystem/tokens.py spacing scale to sec.7 values; QSS descendant rules keyed on the existing `density` root property (repolish per 08-04, proven by PANELTRUTH); the five camera regions only: profile tab strip pills, verb rail labels, recall card (three bands; footer pill mirrors HIT / NO HIT / UNAVAILABLE / BLOCKED in label style, HOT_SOFT only for BLOCKED), TOKEN face parameter rows (UNKNOWN as text in the value column, never a bar at zero), .hip ribbon + header status line. fontload.py untouched; zero new colours; Curious gets the airy multiplier; Expert reads the same tokens at x1.",
-    "T3) HEADLESS TEST: gap tokens step by the density multipliers per profile; test_expert_resolved_equals_v5420_snapshot green; `pytest -q` green.",
-    "T4) CHORE (mechanical tier): `python .synapse/verify.py no-importers python/synapse/panel/tokens.py python/synapse/panel` - if that subcommand does not exist, a grep of importers is the same evidence. If only styles.py imports tokens.py and nothing imports styles.py, delete both (contract theme-seed-tokens.yaml split, sec.5); else post a finding and leave them. Host-scheme seeding stays parked.",
-    "T5) Author .synapse/contracts/panel-rhythm.yaml (git add -f; features passing:false; GUI sign-off feature is red tier)."
+    "T1) METER nit: harness/battleplan/runs/2026-09-01/prove_bp2_meter_dryrun.ps1 line ~73 diffs HEAD against HEAD. Regenerate the proof so the control log is the true pre-edit parent (the product commit's parent) vs HEAD, re-run it, commit the new .norm.log pair and the empty diff. The CLAIM was already true (CRUX re-derived it); only the artifact was tautological.",
+    "T2) STORE F2: docs/MONETA_FOLLOWUPS.md - mark FU-1 (Memory.id after created_at) and FU-2 (gate run_sleep_pass) DONE with commit 3c4f07f9 (#16) and the BP2-STORE pins (tests/test_memory_models.py, MonetaBackedStore count()==len(all()) test). FU-3 (CI never exercises Moneta) stays open. Add a one-line 'verified against runtime 2026-09-01' stamp.",
+    "T3) METER for_ruling: confirm harness/battleplan/dashboard_bp2.py and status_bp2.py render ledger status 'open' as live (not as an error). If either treats it as unknown/hot, add 'open' to its live/ok vocabulary - readers only, no rails change.",
+    "T4) docs/BATTLEPLAN.md sec.1 rows 6/7/9/12: append the measured evidence paths from the receipts (no status flips - flips are Joe's word)."
   ],
   "touches": [
-    "python/synapse/panel/designsystem/",
-    "python/synapse/panel/manifests/",
-    "python/synapse/panel/tokens.py",
-    "python/synapse/panel/styles.py",
-    "docs/PANEL_RHYTHM_SPEC.md",
-    ".synapse/contracts/panel-rhythm.yaml",
-    "tests/",
+    "harness/battleplan/runs/2026-09-01/",
+    "docs/MONETA_FOLLOWUPS.md",
+    "docs/BATTLEPLAN.md",
+    "harness/battleplan/dashboard_bp2.py",
+    "harness/battleplan/status_bp2.py",
     "harness/battleplan/notes/"
   ],
   "readonly": false,
   "deps": [
-    "BP2-PANELTRUTH"
+    "BP2-METER",
+    "BP2-STORE"
   ],
   "crucible_criteria": [
-    "any new hex colour string in the diff is BROKEN",
-    "any new QFont family in the diff is BROKEN (families come from fontload.py only)",
-    "any structural change to the Expert manifest is BROKEN - the pin proves it",
-    "paddings are fixed; only gap tokens scale with density",
-    "no hardcoded pt size (font floor derives from the host, W5L-PANEL T1)"
+    "no file under python/synapse/ or harness/rails.py or harness/orchestrate.ps1 in the diff",
+    "no contract feature flipped; no sec.1 status word changed",
+    "the regenerated METER proof diff is against the product commit's parent, not HEAD"
   ],
-  "spawn_classes": [
-    "probe"
-  ],
+  "spawn_classes": [],
   "source": {
     "doc": "docs/BATTLEPLAN.md",
-    "anchor": "2026-09-01 sec.0.3 P-4/P-6/P-7, sec.6 BP2-PANEL-DESIGN, sec.7, sec.12 R-6"
+    "anchor": "2026-09-01 sec.12; BP2-CRUX verdicts.md nits for METER and STORE; STORE for_ruling F2; METER for_ruling 2"
   },
   "acceptance": [
     {
-      "predicate": "docs/PANEL_RHYTHM_SPEC.md exists with px numbers per region, token table, density multipliers",
-      "evidence": "check"
-    },
-    {
-      "predicate": "QSS/token diff introduces no colour token and no hex string (grep attached)",
-      "evidence": "check"
-    },
-    {
-      "predicate": "headless test: gap tokens step by the density multipliers per profile",
-      "evidence": "test"
-    },
-    {
-      "predicate": "test_expert_resolved_equals_v5420_snapshot green and `pytest -q` green on the branch",
-      "evidence": "test"
-    },
-    {
-      "predicate": "importer chore outcome posted as a bus finding (deleted pair, or importers named and left)",
+      "predicate": "prove_bp2_meter_dryrun.ps1 re-run produces parent-vs-HEAD control logs with an empty diff (artifact committed)",
       "evidence": "receipt"
     },
     {
-      "predicate": "GUI sign-off on the five camera regions in the .400 GUI (Joe, Thu/Fri)",
-      "evidence": "gui_probe",
-      "gui_required": true
+      "predicate": "docs/MONETA_FOLLOWUPS.md shows FU-1 and FU-2 DONE at 3c4f07f9 with the pinning tests named; FU-3 still open",
+      "evidence": "check"
+    },
+    {
+      "predicate": "dashboard_bp2.py and status_bp2.py render a ledger with status 'open' as live (run against a fixture)",
+      "evidence": "check"
     }
   ]
 }
@@ -111,7 +93,7 @@ relative call from your worktree writes a FRAGMENTED bus nobody reads: your
 claims become invisible and two agents will edit one file.
 
 1. **Before touching any file in `touches`** — post a claim:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN claim '{\"files\": [\"<paths>\"]}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-NITS claim '{\"files\": [\"<paths>\"]}'`
    Then read open claims:
    `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py claims bp2`
    If a peer holds an overlapping open claim: STOP, post a `block`, work
@@ -127,15 +109,15 @@ claims become invisible and two agents will edit one file.
    measured ledger.
 2. **Findings** as you go — and the moment an evidence artifact lands, post its
    path so peers consume it live (this is the wave's dynamic handoff):
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN finding '{\"claim\": \"...\", \"anchor\": \"file:line-or-artifact-path\"}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-NITS finding '{\"claim\": \"...\", \"anchor\": \"file:line-or-artifact-path\"}'`
 3. **Release** when done editing:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN status '{\"release\": [\"<same paths>\"]}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-NITS status '{\"release\": [\"<same paths>\"]}'`
 4. **Read before you act** on any shared seam, and poll for peer artifacts your
    mission consumes:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py read bp2 BP2-PANELDESIGN`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py read bp2 BP2-NITS`
 5. **Progress** every 5 turns - the on-target signal the orchestrator's drift
    check reads. Cite the target you are on and the evidence path if one exists:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-PANELDESIGN progress '{\"target\": \"T1\", \"evidence_path\": \"<path-or-none>\"}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp2 BP2-NITS progress '{\"target\": \"T1\", \"evidence_path\": \"<path-or-none>\"}'`
    A `refocus` message addressed to you carries your own mission targets
    verbatim: answer it by naming the target you return to, not with a new idea.
    A `halt` message means rails stopped the wave: commit what is named-file
@@ -166,8 +148,8 @@ sha in it. A receipt at ahead:0 asserts commit-state that does not exist.
 Full sequence: product commit → verify ahead >= 1 → write the receipt stating
 the product HEAD sha → commit the receipt as your closing commit.
 
-Write `harness/notes/receipts/BP2-PANELDESIGN.json` **inside your worktree**:
-`{{"leg": "BP2-PANELDESIGN", "status": "green|green_with_findings|blocked",
+Write `harness/notes/receipts/BP2-NITS.json` **inside your worktree**:
+`{{"leg": "BP2-NITS", "status": "green|green_with_findings|blocked",
   "acceptance": [{{"predicate", "verdict": "pass|fail|UNKNOWN", "evidence"}}...],
   "findings": [...], "for_ruling": [...], "spawn": [...]}}`
 `spawn[]` entries are mission-schema-shaped proposals; classes outside your
