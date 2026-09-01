@@ -9,11 +9,24 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "harness" / "battleplan"))
 sys.path.insert(0, str(REPO / "harness"))
 
-import mission_schema as ms  # noqa: E402
-import compile_wave as cw    # noqa: E402
+# Load the battleplan modules BY FILE PATH under unique names: six harnesses under
+# harness/ each ship a mission_schema.py / compile_wave.py, and a bare import returns
+# whichever one an earlier test cached in sys.modules (integration finding 2026-09-01).
+import importlib.util  # noqa: E402
+
+
+def _load(name, rel):
+    spec = importlib.util.spec_from_file_location(name, REPO / "harness" / "battleplan" / rel)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+ms = _load("bp_mission_schema", "mission_schema.py")
+cw = _load("bp_compile_wave", "compile_wave.py")
 from rails import resolve_model  # noqa: E402
 
 BASE = {
