@@ -1,0 +1,30 @@
+{
+  "id": "BP2-CRUXB",
+  "name": "Adversarial crucible for the BP2 closing legs - PANELDESIGN, HEALTHWIRE, NITS, METERLIVE; builds nothing",
+  "band": "TRUST",
+  "class": "crucible",
+  "tier": "referee",
+  "note": "Second crucible of wave BP2 (BP2-CRUX covered pairs 1+2). Referee tier resolves to claude-fable-5 through the merged per-leg tier path; if the launch falls back to reasoning the ledger row says so. Read-only. Blocked by design until the four closing receipts exist. BROKEN does not ride. Verdicts are READ before merge words fire. Self-cap 25 turns.",
+  "targets": [
+    "1) Re-run every acceptance predicate of the four closing legs in a fresh checkout of each branch, with your own anchors; gui_required rows are UNKNOWN to you - say so.",
+    "2) PANELDESIGN mutations (>= 4): add a hex colour -> the no-new-colour check reddens; scale a padding with density -> the gaps-only test reddens; change an Expert manifest entry -> the pin reddens; introduce a QFont family -> its test reddens. Confirm docs/PANEL_RHYTHM_SPEC.md carries px numbers for all five camera regions and no more.",
+    "3) HEALTHWIRE mutations (>= 3): make the moneta-unimportable path report ok -> test reddens; drop embedder_id from the sub-dict -> test reddens; rename a write_plane status word -> test_w3_harden_write_plane_store.py reddens. Diff the sec.4 tool surface yourself.",
+    "4) NITS: re-run the regenerated METER proof yourself and confirm its baseline is the product commit's parent; grep MONETA_FOLLOWUPS.md for the DONE markers and the commit hash; run dashboard_bp2.py against a status='open' ledger fixture.",
+    "5) METERLIVE: read its ledgers and transcript paths; confirm every integer traces to a usage record; confirm the scratch-repo path.",
+    "6) Verdict per leg SOUND | SOUND-WITH-NITS | BROKEN with chain_broken_at; write harness/battleplan/notes/BP2-CRUXB_verdicts.md + BP2-CRUXB_mutations.json; post each verdict on the bus to *; write harness/notes/h22/BP2_CRUXB_LANDED.flag LAST."
+  ],
+  "touches": [],
+  "readonly": true,
+  "deps": ["BP2-PANELDESIGN", "BP2-HEALTHWIRE", "BP2-NITS", "BP2-METERLIVE"],
+  "crucible_criteria": [
+    "the crucible authors its own mutations and trusts no builder's proved_it_bites",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS",
+    "the crucible flips no contract feature and edits no product file"
+  ],
+  "spawn_classes": [],
+  "source": { "doc": "docs/BATTLEPLAN.md", "anchor": "2026-09-01 sec.2 calls 2/4/10, sec.6 BP2-CRUX, sec.12 R-6" },
+  "acceptance": [
+    { "predicate": "one verdict per closing leg (four) with independently re-run acceptance rows and the crucible's own anchors", "evidence": "receipt" },
+    { "predicate": ">= 3 self-authored mutations per builder leg, each named with the test it reddens", "evidence": "test" }
+  ]
+}

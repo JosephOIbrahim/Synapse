@@ -1,0 +1,29 @@
+{
+  "id": "BP2-NITS",
+  "name": "Close the crucible's evidence nits: METER dry-run proof regenerated parent-vs-HEAD; MONETA_FOLLOWUPS.md FU-1/FU-2 marked DONE at 3c4f07f9; board readers accept ledger status 'open'",
+  "band": "PAPER",
+  "class": "build",
+  "tier": "mechanical",
+  "note": "Mechanical tier (Haiku) - every target is a documented, verifiable edit with no design decision. Self-cap 12 turns, progress every 5. Source of each nit is the BP2-CRUX verdicts file and the STORE/METER for_ruling fields; cite them. Do not touch product code under python/synapse/ or harness/rails.py.",
+  "targets": [
+    "T1) METER nit: harness/battleplan/runs/2026-09-01/prove_bp2_meter_dryrun.ps1 line ~73 diffs HEAD against HEAD. Regenerate the proof so the control log is the true pre-edit parent (the product commit's parent) vs HEAD, re-run it, commit the new .norm.log pair and the empty diff. The CLAIM was already true (CRUX re-derived it); only the artifact was tautological.",
+    "T2) STORE F2: docs/MONETA_FOLLOWUPS.md - mark FU-1 (Memory.id after created_at) and FU-2 (gate run_sleep_pass) DONE with commit 3c4f07f9 (#16) and the BP2-STORE pins (tests/test_memory_models.py, MonetaBackedStore count()==len(all()) test). FU-3 (CI never exercises Moneta) stays open. Add a one-line 'verified against runtime 2026-09-01' stamp.",
+    "T3) METER for_ruling: confirm harness/battleplan/dashboard_bp2.py and status_bp2.py render ledger status 'open' as live (not as an error). If either treats it as unknown/hot, add 'open' to its live/ok vocabulary - readers only, no rails change.",
+    "T4) docs/BATTLEPLAN.md sec.1 rows 6/7/9/12: append the measured evidence paths from the receipts (no status flips - flips are Joe's word)."
+  ],
+  "touches": ["harness/battleplan/runs/2026-09-01/", "docs/MONETA_FOLLOWUPS.md", "docs/BATTLEPLAN.md", "harness/battleplan/dashboard_bp2.py", "harness/battleplan/status_bp2.py", "harness/battleplan/notes/"],
+  "readonly": false,
+  "deps": ["BP2-METER", "BP2-STORE"],
+  "crucible_criteria": [
+    "no file under python/synapse/ or harness/rails.py or harness/orchestrate.ps1 in the diff",
+    "no contract feature flipped; no sec.1 status word changed",
+    "the regenerated METER proof diff is against the product commit's parent, not HEAD"
+  ],
+  "spawn_classes": [],
+  "source": { "doc": "docs/BATTLEPLAN.md", "anchor": "2026-09-01 sec.12; BP2-CRUX verdicts.md nits for METER and STORE; STORE for_ruling F2; METER for_ruling 2" },
+  "acceptance": [
+    { "predicate": "prove_bp2_meter_dryrun.ps1 re-run produces parent-vs-HEAD control logs with an empty diff (artifact committed)", "evidence": "receipt" },
+    { "predicate": "docs/MONETA_FOLLOWUPS.md shows FU-1 and FU-2 DONE at 3c4f07f9 with the pinning tests named; FU-3 still open", "evidence": "check" },
+    { "predicate": "dashboard_bp2.py and status_bp2.py render a ledger with status 'open' as live (run against a fixture)", "evidence": "check" }
+  ]
+}

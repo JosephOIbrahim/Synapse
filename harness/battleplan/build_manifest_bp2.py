@@ -10,7 +10,9 @@ import subprocess
 from pathlib import Path
 
 AF = Path(r"C:\Users\User\SYNAPSE\harness\battleplan")
-HELD = {"BP2-PANELDESIGN": "held until Joe's Wed word: PANELTRUTH merged (sec.12 R-6)"}
+# 2026-09-01 14:5x - Joe's word ("spin up more agents to close the loop"): PANELDESIGN off hold.
+# Its dep (PANELTRUTH receipt) is satisfied on master once the merge lands; branch base = master.
+HELD = {}
 
 rows = json.loads((AF / "waves" / "bp2.rows.json").read_text(encoding="utf-8"))
 for r in rows:

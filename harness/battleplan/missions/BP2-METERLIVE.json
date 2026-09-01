@@ -1,0 +1,29 @@
+{
+  "id": "BP2-METERLIVE",
+  "name": "Live -Budget end-to-end settle proof: a truly-dispatched leg's real transcript settles into the rails ledger at its done transition, and a tiny tokens ceiling halts the NEXT dispatch",
+  "band": "TRUTH",
+  "class": "probe",
+  "tier": "reasoning",
+  "note": "Closing probe proposed by BP2-METER (receipt spawn). Self-cap 15 turns. The mechanism is merged; what remains is the integration proof on a real orchestrator run. Use a THROWAWAY wave in a scratch repo (the BP1/BP2 dry-run isolation pattern - Backup-Branches pushes non-master branches, never run a proof against the live repo) with two trivial legs whose prompts finish in one exchange. Read-only w.r.t. product code; artifacts only.",
+  "targets": [
+    "T1) Scratch repo + throwaway manifest with two trivial legs; run orchestrate.ps1 -Budget '4turns,<tiny>tokens' for real (not -DryRun). Confirm leg 1 reaches done and Rails-Settle writes integer tokens_in/tokens_out/wall_ms to its ledger row from its real transcript.",
+    "T2) Confirm the tiny tokens ceiling, crossed at leg 1's settle, refuses leg 2's dispatch: ledger status blocked, reason budget, enforced_unit tokens; orchestrator log shows the halt.",
+    "T3) Negative control: same wave without -Budget - no settle, ledger absent, log byte-identical to a -DryRun control of the same manifest.",
+    "T4) Record the first real per-leg number the orchestrator itself measured; post it as a bus finding for the referee (this is the number every later cap is set from)."
+  ],
+  "touches": ["harness/battleplan/runs/", "harness/battleplan/notes/"],
+  "readonly": false,
+  "deps": ["BP2-METER"],
+  "crucible_criteria": [
+    "no product file in the diff - artifacts and notes only",
+    "the proof ran against a scratch repo, never the live repo (path recorded)",
+    "every token integer traces to a transcript message.usage record; no estimate"
+  ],
+  "spawn_classes": [],
+  "source": { "doc": "docs/BATTLEPLAN.md", "anchor": "2026-09-01 sec.6 BP2-METER T1; BP2-METER receipt spawn BP2-METERLIVE" },
+  "acceptance": [
+    { "predicate": "live-run ledger with integer tokens for a leg that reached done through the orchestrator (artifact + the transcript path)", "evidence": "receipt" },
+    { "predicate": "tiny-ceiling run: second dispatch refused, status blocked, reason budget, enforced_unit tokens (ledger + log)", "evidence": "receipt" },
+    { "predicate": "no -Budget control: no ledger, log byte-identical to the -DryRun control (diff attached, empty)", "evidence": "check" }
+  ]
+}
