@@ -1,0 +1,188 @@
+{
+  "artifact": "BP2-CRUX independent latency reprobe",
+  "leg_audited": "BP2-LATENCY",
+  "crux_observed_appver": "22.0.400 (first-person: hython.exe -c \"hou.applicationVersionString()\" at Houdini 22.0.400/bin)",
+  "method": "git archive bp2/latency to scratch; ran harness/battleplan/notes/memory_latency_probe.py via .synapse/hytest.py with Moneta env (MONETA_SRC, PXR_PLUGINPATH_NAME, SYNAPSE_MEMORY_BACKEND=moneta); provisioned-headless proxy, repeat-5. NOT the builder artifact - a fresh crux run.",
+  "pinned_400_run": {
+    "meta": {
+      "build": "22.0.400",
+      "availability": "AVAILABLE",
+      "backend": "MonetaBackedStore",
+      "embedder_id": "minilm-l6-v2-d384",
+      "dim": 384,
+      "N": 195,
+      "N_after": 200,
+      "repeats": 5,
+      "verdict": "under_budget",
+      "named_bucket": "none (under budget)"
+    },
+    "ops": {
+      "open": {
+        "p50_ms": 53.753,
+        "p95_ms": 54.368,
+        "budget_ms": "UNKNOWN",
+        "over_budget": "UNKNOWN",
+        "n": 5,
+        "known_recalled": null
+      },
+      "deposit": {
+        "p50_ms": 73.471,
+        "p95_ms": 77.288,
+        "budget_ms": 500.0,
+        "over_budget": false,
+        "n": 5,
+        "known_recalled": null
+      },
+      "recall": {
+        "p50_ms": 2.323,
+        "p95_ms": 2.342,
+        "budget_ms": 1500.0,
+        "over_budget": false,
+        "n": 5,
+        "known_recalled": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "close": {
+        "p50_ms": 56.755,
+        "p95_ms": 74.595,
+        "budget_ms": "UNKNOWN",
+        "over_budget": "UNKNOWN",
+        "n": 5,
+        "known_recalled": null
+      },
+      "layer_check": {
+        "p50_ms": 1.741,
+        "p95_ms": 2.121,
+        "budget_ms": "UNKNOWN",
+        "over_budget": "UNKNOWN",
+        "n": 5,
+        "known_recalled": null
+      },
+      "recall_after_reopen": {
+        "p50_ms": 5.718,
+        "p95_ms": 6.241,
+        "budget_ms": 1500.0,
+        "over_budget": false,
+        "n": 5,
+        "known_recalled": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "reopen_with_memory_layer": {
+        "p50_ms": 116.739,
+        "p95_ms": 147.271,
+        "budget_ms": 3000.0,
+        "over_budget": false,
+        "n": 5,
+        "known_recalled": null
+      }
+    }
+  },
+  "shim_newest_run": {
+    "meta": {
+      "build": "22.0.429",
+      "availability": "AVAILABLE",
+      "backend": "MonetaBackedStore",
+      "embedder_id": "minilm-l6-v2-d384",
+      "dim": 384,
+      "N": 195,
+      "N_after": 200,
+      "repeats": 5,
+      "verdict": "under_budget",
+      "named_bucket": "none (under budget)"
+    },
+    "ops": {
+      "open": {
+        "p50_ms": 50.311,
+        "p95_ms": 51.842,
+        "budget_ms": "UNKNOWN",
+        "over_budget": "UNKNOWN",
+        "n": 5,
+        "known_recalled": null
+      },
+      "deposit": {
+        "p50_ms": 64.402,
+        "p95_ms": 66.64,
+        "budget_ms": 500.0,
+        "over_budget": false,
+        "n": 5,
+        "known_recalled": null
+      },
+      "recall": {
+        "p50_ms": 2.094,
+        "p95_ms": 2.269,
+        "budget_ms": 1500.0,
+        "over_budget": false,
+        "n": 5,
+        "known_recalled": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "close": {
+        "p50_ms": 52.207,
+        "p95_ms": 52.861,
+        "budget_ms": "UNKNOWN",
+        "over_budget": "UNKNOWN",
+        "n": 5,
+        "known_recalled": null
+      },
+      "layer_check": {
+        "p50_ms": 1.748,
+        "p95_ms": 1.807,
+        "budget_ms": "UNKNOWN",
+        "over_budget": "UNKNOWN",
+        "n": 5,
+        "known_recalled": null
+      },
+      "recall_after_reopen": {
+        "p50_ms": 5.039,
+        "p95_ms": 6.297,
+        "budget_ms": 1500.0,
+        "over_budget": false,
+        "n": 5,
+        "known_recalled": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "reopen_with_memory_layer": {
+        "p50_ms": 110.351,
+        "p95_ms": 112.377,
+        "budget_ms": 3000.0,
+        "over_budget": false,
+        "n": 5,
+        "known_recalled": null
+      }
+    },
+    "note": "hytest shim auto-picked Houdini 22.0.429 (newest installed) when SYNAPSE_HYTHON unpinned -> stamped 22.0.429, diverging from the live demo build 22.0.400"
+  },
+  "crux_verdict": {
+    "build_stamp_matches_observed_appver": "YES for pinned run (22.0.400==22.0.400); the probe stamps whatever hython the shim resolves, so pin SYNAPSE_HYTHON to reproduce a specific build",
+    "p95_present": true,
+    "repeat_count": 5,
+    "under_budget": "CONFIRMED independently: deposit p95 77.3/500, recall p95 2.3/1500, recall_after_reopen p95 6.2/1500, reopen_with_memory_layer p95 147.3/3000 - all under",
+    "no_silent_empty": "known_recalled 5/5 both pre- and post-reopen",
+    "memory_diff_empty": "git diff --stat 7fc09482..bp2/latency -- python/synapse/memory/ is EMPTY",
+    "bucket": "none (under budget) -> no isolating row required"
+  },
+  "nits": [
+    "hytest shim newest-wins: an un-pinned headless reprobe stamped 22.0.429, not the live demo build 22.0.400. Repro instruction should pin SYNAPSE_HYTHON to the demo build. The builder artifact correctly stamped 22.0.400 (controlled).",
+    "The default agent lane (no Moneta env) is UNAVAILABLE by construction (env_unset); the under-budget numbers come only from the provisioned-headless proxy. The demo-relevant GUI .400 number remains gui_required UNKNOWN (acceptance row 2)."
+  ]
+}
