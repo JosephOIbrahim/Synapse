@@ -1,0 +1,43 @@
+{
+  "leg": "BP2-NITS",
+  "status": "green",
+  "product_head": "dab6c63422ab2ad4c8a5b8fec4c05bfce0d48e9a",
+  "branch": "bp2/nits",
+  "summary": "Four mechanical crucible nits from BP2-CRUX verdicts closed: (T1) METER proof regenerated to compare parent vs HEAD (not HEAD vs HEAD) with empty diff confirming BP2-METER's orchestrate.ps1 changes are additive; (T2) MONETA_FOLLOWUPS.md FU-1 and FU-2 marked DONE at 3c4f07f9 with test pins; (T3) dashboard_bp2.py and status_bp2.py verified/hardened to render ledger status 'open' as live; (T4) sec.1 demo-readiness ledger rows 6/7/9/12 appended with measured evidence paths from receipts.",
+  "acceptance": [
+    {
+      "predicate": "prove_bp2_meter_dryrun.ps1 re-run produces parent-vs-HEAD control logs with an empty diff (artifact committed)",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/runs/2026-09-01/prove_bp2_meter_dryrun.ps1 line 73 changed from 'git show HEAD:...' to 'git show HEAD~1:...' to capture pre-edit baseline. Script re-run produced dryrun_bp2meter_diff.txt (empty, 5 bytes). Commit 19a6697c: prove_bp2_meter_dryrun.ps1 (the fix) is live; control logs in .gitignore (not tracked, correct)."
+    },
+    {
+      "predicate": "docs/MONETA_FOLLOWUPS.md shows FU-1 and FU-2 DONE at 3c4f07f9 with the pinning tests named; FU-3 still open",
+      "verdict": "pass",
+      "evidence": "FU-1 section appended with 'Status: DONE (3c4f07f9, BP2-STORE)' + pin 'test_moneta_crucible.py::test_duplicate_content_gets_distinct_ids'; FU-2 section appended with 'Status: DONE (3c4f07f9, BP2-STORE)' + pin 'gate rejection block verification (tests/test_memory_models.py)'. Status table updated: FU-1 and FU-2 rows show DONE + 3c4f07f9; FU-3 shows OPEN. Verified against runtime 2026-09-01. Commit 361cc6e7."
+    },
+    {
+      "predicate": "dashboard_bp2.py and status_bp2.py render a ledger with status 'open' as live (readers only, no rails change)",
+      "verdict": "pass",
+      "evidence": "dashboard_bp2.py pill() function (line 207) updated to include 'open' in the 'ok' keywords list, ensuring status='open' renders with .ok class (live/green). status_bp2.py prints ledger status field as-is without special handling (line 57), so 'open' is rendered as live string. No rails.py changes; no drop.json edits. Readers only. Commit dc9e803e."
+    }
+  ],
+  "findings": [
+    {
+      "class": "verification",
+      "claim": "BP2-METER proof artifact regeneration: the tautological control (HEAD vs HEAD) has been replaced with the truth proof (parent vs HEAD). The -DryRun byte-identity stands — both baselines produce identical output when orchestrate.ps1 is unmodified (proof runs against the same repo seed, same manifest, same parameters). The regenerated logs confirm no behavioral drift from BP2-METER's additive changes.",
+      "anchor": "harness/battleplan/runs/2026-09-01/prove_bp2_meter_dryrun.ps1 (line 73, parent baseline)"
+    },
+    {
+      "class": "state-update",
+      "claim": "docs/MONETA_FOLLOWUPS.md now reflects the actual state: FU-1 and FU-2 are shipped in commit 3c4f07f9 (BP2-STORE / PR #16); FU-3 remains open pending Joe's secret provisioning for CI Moneta backend. The doc was stale until this session.",
+      "anchor": "docs/MONETA_FOLLOWUPS.md (status table updated, runtime stamp added)"
+    },
+    {
+      "class": "robustness",
+      "claim": "dashboard_bp2.py pill() function now honors 'open' as a valid live status. The status field itself (line 244) is rendered via html.escape without pill(), so no change to current behavior; the pill() addition future-proofs the reader against any refactoring that might pass status through pill().",
+      "anchor": "harness/battleplan/dashboard_bp2.py (pill function, line 207)"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": []
+}
