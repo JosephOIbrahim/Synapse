@@ -434,6 +434,33 @@ SPACE_MD = 16
 SPACE_LG = 24
 SPACE_XL = 40
 
+# sec.7 4-pt rhythm grid (BP2-PANELDESIGN). The load-bearing GAP ladder is
+# 4·8·12·16·24·32·48. The existing rungs above keep their names AND values
+# verbatim (heavy consumers — SPACE_SM ×44 / SPACE_XS ×25 / SPACE_MD ×23 /
+# SPACE_LG ×9 call sites across panel/): never renamed, never revalued. The
+# three stops the grid adds are NEW + additive, named by px so the spec and QSS
+# read unambiguously. SPACE_XL (40) is retained as the fixed card-band height
+# (a dimension, off the gap ladder). See docs/PANEL_RHYTHM_SPEC.md §2.
+SPACE_12 = 12   # row-breath / label-below rung (¾ of 16)
+SPACE_32 = 32   # parm-row section-head gap
+SPACE_48 = 48   # doubled group gap (verb rail); 2 × SPACE_LG
+SPACE_GRID = (SPACE_XS, SPACE_SM, SPACE_12, SPACE_MD, SPACE_LG, SPACE_32, SPACE_48)
+
+# Density is ONE panel-wide rhythm (L5-18): GAPS scale, PADDINGS stay fixed
+# (sec.7). The compositor stamps `density` on #DsRoot and repolishes the whole
+# tree (08-04, proven by PANELTRUTH); the QSS generator bakes the three stepped
+# values into #DsRoot[density=...] descendant rules. Paddings NEVER call gap().
+DENSITY_GAP_SCALE = {"airy": 1.5, "standard": 1.0, "tight": 0.75}
+
+
+def gap(base_px, density="standard"):
+    """A GAP stepped by the density multiplier (sec.7): airy ×1.5, standard ×1,
+    tight ×0.75. Returns integer px (round). Pure — the QSS application lives in
+    qss.stylesheet(). Only gaps call this; paddings are fixed. An unknown
+    density resolves to ×1 (standard) so a malformed manifest never inverts the
+    rhythm."""
+    return int(round(base_px * DENSITY_GAP_SCALE.get(density, 1.0)))
+
 # Chat dialogue leading (W5-PANEL item 5). +0.75pt of ABSOLUTE leading added
 # between wrapped chat lines — Joe's "the chat reads tight" on the live seat.
 # Applied in chat_display as a QTextBlockFormat LineDistanceHeight: the one
@@ -459,6 +486,16 @@ RADIUS_SM = 4
 RADIUS_MD = 8
 RADIUS_LG = 12
 RADIUS_PILL = 14
+
+# sec.7 fixed dimensions (BP2-PANELDESIGN) — additive, never scaled by density.
+# RADIUS: sec.7 "8 rows · 10 cards · 999 pills" — RADIUS_MD (8) already serves
+# rows; RADIUS_CARD (10) and RADIUS_ROUND (999, fully-rounded pill) are new.
+# ROW_MIN_H is the list-row min height / 44×44 glyph cell. The three-band recall
+# card is greenfield (a held spawn) and will consume these; pinned by
+# tests/test_bp2_paneldesign_density.py so they are contract, not dead code.
+RADIUS_CARD  = 10
+RADIUS_ROUND = 999
+ROW_MIN_H    = 44
 
 # --- monolinear icon system ---------------------------------------------
 # ONE line weight, ONE grid. Every drawn glyph in the panel (status dots, the

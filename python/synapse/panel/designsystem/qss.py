@@ -315,6 +315,38 @@ QLabel[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
     padding-top: {t.SPACE_SM}px; padding-bottom: {t.SPACE_SM}px;
 }}
 
+/* ---- sec.7 five-camera-region rhythm (BP2-PANELDESIGN) -------- */
+/* The spacing pass — docs/PANEL_RHYTHM_SPEC.md. Extends the density lever to
+   the QSS-reachable camera-region widgets: each region's GROUP GAP breathes by
+   the sec.7 multiplier (airy x1.5 / standard x1 / tight x0.75) while paddings
+   stay fixed. Gaps ride `margin` — the one gap lever QSS owns; QLayout.setSpacing
+   lives in Python (synapse_panel.py), outside this leg's designsystem-only
+   territory, so the residual inter-item spacing is the GUI sign-off's to judge
+   (gui_required). Standard has NO density-keyed rule: the base `margin` rules
+   below ARE the x1 rhythm, so the sheet never emits a standard density block and
+   expert stays a manifest match to v5.42.0 (the pin is manifest-only). Every
+   stepped value is
+   round(base x multiplier) via tokens.gap(); a density block carries margin
+   ONLY — no colour, font, size, radius or border (test_rope_density). Regions 3
+   (recall card, greenfield) and 4 (token-face rows, inline-styled, no
+   objectNames) are not QSS-reachable this leg — see the spec's §5 ledger. */
+
+/* Region 1 — profile tab strip: the row's group gap below its hairline rule. */
+QWidget#DsTabRow {{ margin-bottom: {t.SPACE_MD}px; }}
+#DsRoot[density="airy"] QWidget#DsTabRow {{ margin-bottom: {t.gap(t.SPACE_MD, "airy")}px; }}
+#DsRoot[density="tight"] QWidget#DsTabRow {{ margin-bottom: {t.gap(t.SPACE_MD, "tight")}px; }}
+
+/* Region 2 — verb rail: the verb group's vertical breathing (the doubled
+   inter-verb gap itself stays Python setSpacing(24), kept per sec.7). */
+QPushButton#DsVerb {{ margin-top: {t.SPACE_SM}px; margin-bottom: {t.SPACE_SM}px; }}
+#DsRoot[density="airy"] QPushButton#DsVerb {{ margin-top: {t.gap(t.SPACE_SM, "airy")}px; margin-bottom: {t.gap(t.SPACE_SM, "airy")}px; }}
+#DsRoot[density="tight"] QPushButton#DsVerb {{ margin-top: {t.gap(t.SPACE_SM, "tight")}px; margin-bottom: {t.gap(t.SPACE_SM, "tight")}px; }}
+
+/* Region 5 — .hip ribbon + header status: the header group gap below its rule. */
+QWidget#DsHeader {{ margin-bottom: {t.SPACE_SM}px; }}
+#DsRoot[density="airy"] QWidget#DsHeader {{ margin-bottom: {t.gap(t.SPACE_SM, "airy")}px; }}
+#DsRoot[density="tight"] QWidget#DsHeader {{ margin-bottom: {t.gap(t.SPACE_SM, "tight")}px; }}
+
 /* ---- progress ------------------------------------------------ */
 QProgressBar#DsProgress {{
     background: {t.SURFACE}; border: none; border-radius: {t.RADIUS_SM}px;
