@@ -68,3 +68,5 @@ as if it were exfiltration.
 ci_covers_shipping_surface` — unchanged since v5.51; published-over under
 Joe's waiver at v5.56.0, v5.58.0 and v5.59.0. This release publishes only if
 that waiver is re-signed by Joe's word.
+
+**Published 2026-09-01 19:0x (Joe words: waiver + publish).** Waiver re-signed for the four standing RC blockers; tag v5.60.0 at 0135176c; R.R suite baseline green; seat walk carried from 2026-08-31 on 22.0.400.
