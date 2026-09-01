@@ -1,0 +1,158 @@
+{
+  "leg": "BP2-CRUX",
+  "purpose": "Self-authored adversarial mutations - the crucible trusts no builder proved_it_bites. Each mutation applied to a git-archive scratch copy (zero git-state mutation), each must redden a NAMED test for the RIGHT reason (failure on the intended assertion, not an import/syntax error), reverted between mutations so none compound. Sandbox binds the scratch tree over the editable .pth via the tests pytest pythonpath/sys.path.",
+  "summary": {
+    "total_code_mutations": 12,
+    "all_reddened": true,
+    "all_right_reason": true
+  },
+  "by_leg": {
+    "BP2-METER": [
+      {
+        "name": "M1-strip-usage-records",
+        "target_file": "tests/fixtures/transcript_with_usage.jsonl",
+        "test": "tests/test_rails.py::test_committed_fixture_with_usage_measures",
+        "baseline_result": "1 passed",
+        "mutated_result": "1 failed",
+        "reddened": true,
+        "right_reason": true,
+        "mutation_desc": "Removed every message.usage-carrying line from the fixture (kept only the user line).",
+        "evidence_line": "assert ti == 12700 and to == 470  ->  AssertionError: assert ('UNKNOWN' == 12700)"
+      },
+      {
+        "name": "M2-neuter-settle-body",
+        "target_file": "harness/rails.py",
+        "test": "tests/test_rails.py::test_settle_measures_transcript_into_integers",
+        "baseline_result": "1 passed",
+        "mutated_result": "1 failed",
+        "reddened": true,
+        "right_reason": true,
+        "mutation_desc": "Inserted an early `return target` in settle() just before it fills the measured values in place, so the settle records nothing.",
+        "evidence_line": "assert e[\"tokens_in\"] == 12700 and e[\"tokens_out\"] == 470  ->  AssertionError: assert ('UNKNOWN' == 12700)"
+      },
+      {
+        "name": "M3-hardcode-measure-constant",
+        "target_file": "harness/rails.py",
+        "test": "tests/test_rails.py::test_settle_no_transcript_from_unreadable_fixture_is_unknown",
+        "baseline_result": "2 passed (with ::test_measure_transcript_missing_is_unknown)",
+        "mutated_result": "2 failed: test_settle_no_transcript_from_unreadable_fixture_is_unknown, test_measure_transcript_missing_is_unknown",
+        "reddened": true,
+        "right_reason": true,
+        "mutation_desc": "Hardcoded measure_transcript_tokens() to `return 999, 999` unconditionally, defeating the UNKNOWN negative control.",
+        "evidence_line": "assert ti == UNKNOWN and to == UNKNOWN  ->  AssertionError: assert (999 == 'UNKNOWN')"
+      },
+      {
+        "name": "M4-force-enforced-unit-flip-without-ceiling",
+        "target_file": "harness/rails.py",
+        "test": "tests/test_rails.py::test_enforced_unit_flips_to_tokens_only_when_ceiling_and_measured",
+        "baseline_result": "1 passed",
+        "mutated_result": "1 failed",
+        "reddened": true,
+        "right_reason": true,
+        "mutation_desc": "Dropped the `self.cap.tokens is not None` ceiling requirement in _run_enforced_unit so enforced_unit reports 'tokens' even with no ceiling set.",
+        "evidence_line": "assert r4.to_dict()[\"enforced_unit\"] == \"turns\" (case d: no ceiling)  ->  AssertionError: assert 'tokens' == 'turns'"
+      }
+    ],
+    "BP2-PANELTRUTH": [
+      {
+        "name": "M1 neuter the density repolish call in compose()",
+        "target_file": "python/synapse/panel/compositor.py",
+        "test": "tests/test_bp2_paneltruth_density_repolish.py::test_compose_stamps_density_and_repolishes_root_and_descendants",
+        "baseline_result": "7 passed",
+        "mutated_result": "1 failed, 6 passed: test_compose_stamps_density_and_repolishes_root_and_descendants",
+        "mutation_desc": "Replaced '_repolish_tree(panel)' (line 248) with a no-op ('panel  # M1-NEUTERED'), so compose() stamps the density property but never repolishes the panel root/subtree.",
+        "evidence_line": "AssertionError: compose() must repolish the panel ROOT so the density property takes / assert 'PANEL_ROOT' in {'_build_context_ribbon','_build_faces',...} (PANEL_ROOT absent)",
+        "reddened": true,
+        "right_reason": true
+      },
+      {
+        "name": "M2 neuter the _on_done token-refresh call (open-only refresh)",
+        "target_file": "python/synapse/panel/synapse_panel.py",
+        "test": "tests/test_bp2_paneltruth_token_refresh.py::test_on_done_refreshes_token_surfaces_from_the_sink",
+        "baseline_result": "14 passed, 2 skipped",
+        "mutated_result": "3 failed, 11 passed, 2 skipped: test_on_done_refreshes_token_surfaces_from_the_sink, test_on_done_unfed_sink_leaves_surfaces_unknown, test_on_done_invokes_the_refresh",
+        "mutation_desc": "Replaced the sole 'self._refresh_token_surfaces()' call inside _on_done with 'pass' so refresh fires only on panel open, not task completion.",
+        "evidence_line": "assert s._token_face.refreshed == 1 -> assert 0 == 1 (face not refreshed on completion); source pin: 'self._refresh_token_surfaces()' not in _on_done body",
+        "reddened": true,
+        "right_reason": true
+      },
+      {
+        "name": "M3 add a QTimer poll of the usage sink (V3 violation)",
+        "target_file": "python/synapse/panel/synapse_panel.py",
+        "test": "tests/test_bp2_paneltruth_token_refresh.py::test_refresh_rides_token_readout_and_is_not_timer_driven",
+        "baseline_result": "1 passed",
+        "mutated_result": "1 failed: test_refresh_rides_token_readout_and_is_not_timer_driven",
+        "mutation_desc": "Injected a QTimer-driven poll into _refresh_token_surfaces (self._tok_poll=QTimer(self); timeout.connect(self._refresh_token_surfaces); start(1000)) -- exactly the not-timer-driven V3 pin's forbidden wiring.",
+        "evidence_line": "assert 'timeout.connect(self._refresh_token_surfaces' not in src -> contained here: _tok_poll.timeout.connect(self._refresh_token_surfaces)",
+        "reddened": true,
+        "right_reason": true
+      },
+      {
+        "name": "M4 reorder open_panel to float first, before trying tabs",
+        "target_file": "houdini/scripts/python/synapse_shelf.py",
+        "test": "tests/test_bp2_paneltruth_float_fix.py::test_docks_into_network_editor_pane",
+        "baseline_result": "4 passed",
+        "mutated_result": "3 failed, 1 passed: test_existing_synapse_tab_is_surfaced, test_docks_into_network_editor_pane, test_docks_into_any_pane_when_no_network_editor",
+        "mutation_desc": "Inserted a createFloatingPaneTab + setActiveInterface + return immediately after 'desktop = hou.ui.curDesktop()', so open_panel floats unconditionally before the surface/dock branches.",
+        "evidence_line": "assert len(net_pane.created) == 1 -> assert 0 == 1 (never docked into the Network Editor pane; floated first)",
+        "reddened": true,
+        "right_reason": true
+      }
+    ],
+    "BP2-STORE": [
+      {
+        "name": "M1 - reorder id mint before created_at default",
+        "target_file": "python/synapse/memory/models.py",
+        "test": "tests/test_memory_models.py::test_defaulted_created_at_participates_in_id",
+        "baseline_result": "5 passed (test_memory_models.py)",
+        "mutated_result": "1 failed: test_defaulted_created_at_participates_in_id",
+        "evidence_line": "assert a.id != b.id  ->  E AssertionError: assert 'mem_2f1bc0bbb623' != 'mem_2f1bc0bbb623'",
+        "reddened": true,
+        "right_reason": true
+      },
+      {
+        "name": "M2 - drop created_at term from _generate_id hash (crux pre-proof re-confirmed)",
+        "target_file": "python/synapse/memory/models.py",
+        "test": "tests/test_memory_models.py::test_defaulted_created_at_participates_in_id + ::test_explicit_created_at_participates_in_id",
+        "baseline_result": "5 passed (test_memory_models.py)",
+        "mutated_result": "2 failed: test_defaulted_created_at_participates_in_id, test_explicit_created_at_participates_in_id",
+        "evidence_line": "assert a.id != b.id -> E AssertionError: assert 'mem_90d464586375' != 'mem_90d464586375' (defaulted); assert 'mem_f8aa54331a41' != 'mem_f8aa54331a41' (explicit)",
+        "reddened": true,
+        "right_reason": true
+      },
+      {
+        "name": "M3 - force status SUCCESS on the moneta-unavailable branch of backend_health",
+        "target_file": "python/synapse/memory/store.py",
+        "test": "tests/test_store_backend_health.py::test_backend_health_reports_unavailable_when_moneta_unimportable",
+        "baseline_result": "8 passed (test_store_backend_health.py)",
+        "mutated_result": "1 failed: test_backend_health_reports_unavailable_when_moneta_unimportable",
+        "evidence_line": "assert h[\"status\"] == \"UNAVAILABLE\"  ->  E AssertionError: assert 'SUCCESS' == 'UNAVAILABLE'",
+        "reddened": true,
+        "right_reason": true
+      },
+      {
+        "name": "M4 - truncate id hash [:12] -> [:8] (change id length/format)",
+        "target_file": "python/synapse/memory/models.py",
+        "test": "tests/test_memory_models.py::test_legacy_mem_id_round_trips_and_format_unchanged",
+        "baseline_result": "5 passed (test_memory_models.py)",
+        "mutated_result": "1 failed: test_legacy_mem_id_round_trips_and_format_unchanged",
+        "evidence_line": "assert fresh.id.startswith(\"mem_\") and len(fresh.id) == 16  ->  E AssertionError: assert (True and 12 == 16)",
+        "reddened": true,
+        "right_reason": true
+      }
+    ],
+    "BP2-LATENCY": [
+      {
+        "name": "probe-reproduction (mutation-equivalent)",
+        "target_file": "harness/battleplan/notes/memory_latency_probe.py (product diff under python/synapse/memory/ is EMPTY - no product code to mutate)",
+        "test": "independent probe re-run under hython pinned to 22.0.400 (harness/battleplan/notes/BP2-CRUX_latency_reprobe.json)",
+        "mutation_desc": "BP2-LATENCY changed NO product code (empty memory/ diff); mission target 4 substitutes a first-person probe reproduction for the mutation battery. The crux re-ran the provisioned probe and independently reproduced the under-budget verdict + no-silent-empty, and confirmed the build stamp equals the applicationVersionString it observed.",
+        "baseline_result": "builder provisioned.json: all ops under budget, known_recalled 5/5",
+        "mutated_result": "crux reprobe (build 22.0.400): all ops under budget, known_recalled 5/5, p95 present, n=5 - REPRODUCED",
+        "reddened": null,
+        "right_reason": null,
+        "note": "reddened/right_reason are null by design: no product code exists to mutate; the bite is the independent reproduction, per acceptance predicate 3 (latency probe re-run by the crucible with its own artifact)."
+      }
+    ]
+  }
+}

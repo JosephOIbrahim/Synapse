@@ -1,0 +1,6 @@
+BP2-CRUX LANDED 2026-09-01
+product_head=4aa1efed0882a7f1b87b76a320d6575b4005c320
+verdicts: METER / PANELTRUTH / LATENCY / STORE all SOUND-WITH-NITS, chain intact, no BROKEN
+12 code mutations bit (4 each METER/PANELTRUTH/STORE); LATENCY probe reproduced under hython 22.0.400 (under budget, known_recalled 5/5, stamp==observed appver)
+three gui_required halves remain UNKNOWN (Joe's eyes): PANELTRUTH row7 + real-widget Qt, LATENCY row2
+read-only: no product file / no contract feature / no ratified surface / no leg state edited
