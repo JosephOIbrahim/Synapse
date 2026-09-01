@@ -1,0 +1,186 @@
+{
+ "leg": "BP2-CRUXB",
+ "method": "self-authored mutations in fresh git-archive scratch extracts of each branch (tree binding proven via synapse.__file__); every mutation applied, measured, restored; no builder proved_it_bites trusted",
+ "workflow": "wf_6225b609-d71",
+ "summary": {
+  "BP2-PANELDESIGN": {
+   "authored": 6,
+   "bit": 4,
+   "survived_teeth_gaps": 2
+  },
+  "BP2-HEALTHWIRE": {
+   "authored": 4,
+   "bit": 4,
+   "survived_teeth_gaps": 0
+  },
+  "BP2-NITS": {
+   "authored": 1,
+   "bit": 0,
+   "note": "no test pins the T3 dashboard change - the mutation entry records the no-teeth fact itself"
+  },
+  "BP2-METERLIVE": {
+   "authored": 0,
+   "note": "proof/measurement leg, no product code to mutate; verification was integer-tracing + halt semantics + non-tautology re-derivation"
+  }
+ },
+ "mutations": {
+  "BP2-PANELDESIGN": [
+   {
+    "id": "M-PD-1",
+    "file": "python/synapse/panel/designsystem/qss.py",
+    "edit": "Added 'color: #ff0000;' to the sec.7 airy DsTabRow rule: '#DsRoot[density=\"airy\"] QWidget#DsTabRow {{ margin-bottom: {t.gap(t.SPACE_MD, \"airy\")}px; color: #ff0000; }}'",
+    "test_run": "python -m pytest -q tests/test_bp2_paneldesign_density.py",
+    "bit": true,
+    "failing_tests": [
+     "tests/test_bp2_paneldesign_density.py::TestGuardrails::test_density_blocks_are_spacing_only",
+     "tests/test_bp2_paneldesign_density.py::TestGuardrails::test_region_rhythm_introduces_no_hex"
+    ],
+    "output_excerpt": "2 failed, 14 passed, 2 warnings in 0.35s",
+    "restored_green": true
+   },
+   {
+    "id": "M-PD-2a",
+    "file": "python/synapse/panel/designsystem/qss.py",
+    "edit": "Replaced 'margin-bottom' with 'padding-bottom' in BOTH the airy and tight DsTabRow density rules (qss.py ~336-337)",
+    "test_run": "python -m pytest -q tests/test_bp2_paneldesign_density.py tests/test_rope_density.py",
+    "bit": true,
+    "failing_tests": [
+     "tests/test_bp2_paneldesign_density.py::TestRegionRhythmStepsByDensity::test_each_reachable_region_gap_steps_by_the_multiplier",
+     "tests/test_bp2_paneldesign_density.py::TestRegionRhythmStepsByDensity::test_airy_is_looser_than_tight_for_every_region"
+    ],
+    "output_excerpt": "2 failed, 25 passed, 2 warnings in 0.44s (both failures in the density file; test_rope_density.py all green)",
+    "restored_green": true
+   },
+   {
+    "id": "M-PD-2b",
+    "file": "python/synapse/panel/designsystem/qss.py",
+    "edit": "ADDED 'padding-bottom: {t.gap(t.SPACE_MD, \"airy\")}px;' to the airy DsTabRow rule and the tight equivalent, KEEPING the margins (additive adversarial variant)",
+    "test_run": "python -m pytest -q tests/test_bp2_paneldesign_density.py tests/test_rope_density.py tests/test_design_system.py",
+    "bit": false,
+    "failing_tests": [],
+    "output_excerpt": "71 passed, 2 warnings in 0.71s \u2014 SURVIVED. Teeth gap: the 'paddings stay fixed' half of sec.7 is unpinned; density-scaled padding added alongside the margins passes every named test (spacing-only guards allow any padding/margin property inside density blocks).",
+    "restored_green": true
+   },
+   {
+    "id": "M-PD-3",
+    "file": "python/synapse/panel/manifests/expert.py",
+    "edit": "Reordered two widgets in the expert manifest rail region: '\"mark\", \"wordmark\", ...' -> '\"wordmark\", \"mark\", ...'",
+    "test_run": "python -m pytest -q tests/test_rope_expert_pin.py tests/test_bp2_paneldesign_density.py",
+    "bit": true,
+    "failing_tests": [
+     "tests/test_rope_expert_pin.py::test_expert_resolved_equals_v5420_snapshot",
+     "tests/test_rope_expert_pin.py::test_snapshot_orders_pinned_explicitly"
+    ],
+    "output_excerpt": "2 failed, 16 passed, 2 warnings in 0.45s. Note: TestGuardrails::test_expert_manifest_pin_intact stayed GREEN \u2014 by design it pins only region ids + density ('fast local guard', its own comment defers the real pin to test_rope_expert_pin, which bit).",
+    "restored_green": true
+   },
+   {
+    "id": "M-PD-4a",
+    "file": "python/synapse/panel/designsystem/qss.py",
+    "edit": "Added 'font-family: \"Comic Sans MS\";' to the sec.7 airy DsTabRow DENSITY rule. (Pre-grep: grep -rn 'font-family' tests/ found only tests/test_chat_panel.py:1049,1098 \u2014 chat_panel/styles.py guards, not designsystem qss)",
+    "test_run": "python -m pytest -q tests/test_chat_panel.py::TestCSSConsolidation tests/test_bp2_paneldesign_density.py tests/test_rope_density.py",
+    "bit": true,
+    "failing_tests": [
+     "tests/test_bp2_paneldesign_density.py::TestGuardrails::test_density_blocks_are_spacing_only",
+     "tests/test_rope_density.py::TestDensityStylesheet::test_density_rules_step_spacing_only"
+    ],
+    "output_excerpt": "2 failed, 30 passed, 2 warnings in 0.70s \u2014 both catches are density-block spacing-only guards; the chat_panel font guard did not (and cannot) fire.",
+    "restored_green": true
+   },
+   {
+    "id": "M-PD-4b",
+    "file": "python/synapse/panel/designsystem/qss.py",
+    "edit": "Added 'font-family: \"Comic Sans MS\";' to the NON-density base rule 'QWidget#DsTabRow {{ margin-bottom: {t.SPACE_MD}px; }}' in the sec.7 block (adversarial placement outside any density block)",
+    "test_run": "python -m pytest -q tests/test_chat_panel.py::TestCSSConsolidation tests/test_bp2_paneldesign_density.py tests/test_rope_density.py tests/test_design_system.py ; then python -m pytest -q tests/panel/test_font_floor.py tests/panel/test_font_scale.py",
+    "bit": false,
+    "failing_tests": [],
+    "output_excerpt": "76 passed, 2 warnings in 0.74s \u2014 SURVIVED all four named targets; follow-up sweep tests/panel/test_font_floor.py + test_font_scale.py: 8 passed, 8 skipped (Qt-dependent skips headless). Teeth gap: no test pins font declarations in non-density designsystem qss rules; the spacing-only guards are density-block-scoped and B5's hex/font grep is a diff-time chore, not a test.",
+    "restored_green": true
+   }
+  ],
+  "BP2-HEALTHWIRE": [
+   {
+    "id": "M-HW-1 unimportable-reports-ok",
+    "file": "python/synapse/server/write_plane.py",
+    "edit": "store_health() merge block line ~424: sub[\"verdict\"] = bh.get(\"status\")  ->  sub[\"verdict\"] = \"SUCCESS\" (backend verdict forced regardless of outcome)",
+    "test_run": "python -m pytest -q tests/test_bp2_healthwire_write_plane_backend_health.py",
+    "bit": true,
+    "failing_tests": [
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_health_row_attaches_unavailable_verdict_when_moneta_unimportable",
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_unavailable_is_never_rendered_as_ok"
+    ],
+    "output_excerpt": "2 failed, 5 passed, 2 warnings in 0.67s \u2014 includes the expected unimportable->UNAVAILABLE test",
+    "restored_green": true
+   },
+   {
+    "id": "M-HW-2 drop embedder_id",
+    "file": "python/synapse/server/write_plane.py",
+    "edit": "store_health() merge block line ~417: deleted line info[\"embedder_id\"] = bh.get(\"embedder_id\") (embedder_id omitted from the write_plane store row)",
+    "test_run": "python -m pytest -q tests/test_bp2_healthwire_write_plane_backend_health.py",
+    "bit": true,
+    "failing_tests": [
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_health_row_merges_embedder_fields_honest_none_on_jsonl",
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_healthy_jsonl_row_rides_success_verdict_with_operator_fields",
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_healthy_moneta_row_shows_real_embedder_id_and_dim"
+    ],
+    "output_excerpt": "3 failed, 4 passed, 2 warnings in 0.57s",
+    "restored_green": true
+   },
+   {
+    "id": "M-HW-3 rename status word",
+    "file": "python/synapse/server/write_plane.py",
+    "edit": "store_health() verdict assignment line ~428: info[\"status\"], info[\"reason\"] = \"degraded\", ...  ->  \"impaired\", ... (the actual literal is \"degraded\")",
+    "test_run": "python -m pytest -q tests/test_w3_harden_write_plane_store.py tests/test_bp2_healthwire_write_plane_backend_health.py",
+    "bit": true,
+    "failing_tests": [
+     "tests/test_w3_harden_write_plane_store.py::test_jsonl_serving_while_moneta_requested_is_degraded",
+     "tests/test_w3_harden_write_plane_store.py::test_store_count_raising_is_degraded",
+     "tests/test_w3_harden_write_plane_store.py::test_moneta_store_without_engine_handle_is_degraded",
+     "tests/test_w3_harden_write_plane_store.py::test_moneta_store_without_durability_is_degraded",
+     "tests/test_w3_harden_write_plane_store.py::test_healthy_bridge_stays_true_when_store_is_degraded",
+     "tests/test_w3_harden_write_plane_store.py::test_doctor_check_reports_store_degraded",
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_health_row_attaches_unavailable_verdict_when_moneta_unimportable",
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_two_vocabularies_stay_separate"
+    ],
+    "output_excerpt": "8 failed, 9 passed, 2 warnings in 0.84s \u2014 builder's contract 'test_w3_harden must redden' CONFIRMED (6 of its 10 tests fail) plus 2 healthwire tests",
+    "restored_green": true
+   },
+   {
+    "id": "M-HW-4 verdict/status alias fork (adversarial extra)",
+    "file": "python/synapse/server/write_plane.py",
+    "edit": "store_health() merge block line ~424: sub[\"verdict\"] = bh.get(\"status\")  ->  sub[\"verdict\"] = str(bh.get(\"status\")).lower() (verdict differs from status inside info[\"backend_health\"])",
+    "test_run": "python -m pytest -q tests/test_bp2_healthwire_write_plane_backend_health.py tests/test_w3_harden_write_plane_store.py",
+    "bit": true,
+    "failing_tests": [
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_health_row_attaches_unavailable_verdict_when_moneta_unimportable",
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_unavailable_is_never_rendered_as_ok",
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_healthy_jsonl_row_rides_success_verdict_with_operator_fields",
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_healthy_moneta_row_shows_real_embedder_id_and_dim",
+     "tests/test_bp2_healthwire_write_plane_backend_health.py::test_two_vocabularies_stay_separate"
+    ],
+    "output_excerpt": "5 failed, 12 passed, 2 warnings in 0.74s \u2014 the alias-lock assertion (bh[\"verdict\"] == bh[\"status\"], receipt F2's claim) bites directly in test_health_row_attaches_unavailable_verdict_when_moneta_unimportable; w3_harden stays green (its 10 tests do not read the sub-dict)",
+    "restored_green": true
+   }
+  ],
+  "BP2-NITS": [
+   {
+    "id": "M-NITS-NO-TEETH",
+    "file": "harness/battleplan/dashboard_bp2.py",
+    "edit": "cp dashboard_bp2.py dashboard_bp2.py.crux.bak; removed \"open\" from pill()'s ok keyword list (line 207: '\"ALIVE\", \"done\", \"RECEIPTED\", \"open\"' -> '\"ALIVE\", \"done\", \"RECEIPTED\"') \u2014 the exact revert of T3 dc9e803e",
+    "test_run": "No pinning test exists to run (N3 grep: grep -rln 'dashboard_bp2\\|status_bp2' tests/ --include=*.py -> no matches, exit 1). Mutation verified real and observable instead: python -c \"import dashboard_bp2 as d; print(d.pill('open'))\"",
+    "bit": false,
+    "failing_tests": [],
+    "output_excerpt": "mutated pill(open): <span class=\"pill\">open</span> (ok class gone, mutation live) | grep-tests-exit=1 (zero pinning tests -> nothing to redden) | restored pill(open): <span class=\"pill ok\">open</span>",
+    "restored_green": true
+   }
+  ]
+ },
+ "referee_first_person": {
+  "nits_meter_proof": {
+   "run_A_as_committed": "EMPTY DIFF exit 0 - VACUOUS: baseline HEAD~1:harness/orchestrate.ps1 blob 38d02aad == edited working copy blob on bp2/nits (no nits commit touches orchestrate.ps1); the Compare-Object cannot fail",
+   "run_B_true_parent_baseline": "EMPTY DIFF exit 0 - GENUINE: baseline forced to 1c2b78fd^ (7fc09482) blob fdadfe53 (829 lines) vs edited 38d02aad (933 lines); sources differ, normalized logs byte-identical - METER additive -DryRun claim TRUE",
+   "anchors": "scratchpad/nitsgit runs dir: diff_runA_ascommitted.txt (5 bytes), runB dryrun_bp2meter_diff.txt (5 bytes), prove_crux_parent_baseline.ps1"
+  },
+  "meterlive_integer_trace": "2 usage records re-summed first-person: tokens_in=75356 tokens_out=278 == ledger; remaining -75633 = 1-75634; DOUBLE-COUNT finding: both records are one API response (same requestId/message.id, identical usage dict {in:10,cache_create:22541,cache_read:15127,out:139}) - true single-response spend 37678/139; rails sums per-row without message.id dedupe"
+ }
+}
