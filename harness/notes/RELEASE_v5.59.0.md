@@ -75,3 +75,5 @@ Panel rhythm / spacing pass (PANELDESIGN) · server health row wiring
 ci_covers_shipping_surface` — unchanged since v5.51; published-over under
 Joe's waiver at v5.56.0 and v5.58.0. This release publishes only if that
 waiver is re-signed by Joe's word.
+
+**Published 2026-09-01 17:42 (Joe words: waiver + publish).** Waiver re-signed for the four standing RC blockers; tag v5.59.0 at 06f8df50; CI run 33554739735 green. Seat-gate walk carried from 2026-08-31 (same build 22.0.400).
