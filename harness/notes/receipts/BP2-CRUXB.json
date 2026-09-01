@@ -1,0 +1,84 @@
+{
+  "leg": "BP2-CRUXB",
+  "status": "green_with_findings",
+  "branch": "bp2/cruxb",
+  "product_head": "cf61fba6",
+  "base": "6490d8d5",
+  "summary": "Adversarial crucible over the four BP2 closing legs, read-only, builds nothing. Every acceptance row re-run in a fresh git-archive extract of each branch (tree binding proven) with crucible-own anchors; 11 self-authored mutations (8 BIT with named reddening tests, 2 adversarial survivors recorded as teeth gaps, 1 no-teeth record); the mission's 'yourself' items (sec.4 diff, METER proof, integer tracing, spec region audit) done first-person by the referee. Verdicts: PANELDESIGN SOUND-WITH-NITS, HEALTHWIRE SOUND-WITH-NITS, METERLIVE SOUND-WITH-NITS, NITS BROKEN (chain_broken_at T1). No contract feature flipped; no product file edited; gui_required rows UNKNOWN.",
+  "acceptance": [
+    {
+      "predicate": "one verdict per closing leg (four) with independently re-run acceptance rows and the crucible's own anchors",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP2-CRUXB_verdicts.md - 4 verdict sections, every acceptance row re-run in fresh extracts (pd/hw/nits/mlv @ a7035343/a50bd2e5/0dd5451e/56e92d81) via workflow wf_6225b609-d71 + referee first-person runs (sec.4 blob 8c538a85 x3; NITS proof re-run both ways in a fresh clone; 75356/278 re-summed from raw usage records; spec sec.4 five-region px audit). gui_required rows recorded UNKNOWN (PANELDESIGN row 6, HEALTHWIRE row 4). Bus verdict findings posted 18:2x for all four legs."
+    },
+    {
+      "predicate": ">= 3 self-authored mutations per builder leg, each named with the test it reddens",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP2-CRUXB_mutations.json - PANELDESIGN 6 authored / 4 BIT (M-PD-1 hex -> test_region_rhythm_introduces_no_hex + spacing-only; M-PD-2a padding-replace -> test_each_reachable_region_gap_steps_by_the_multiplier; M-PD-3 manifest reorder -> test_expert_resolved_equals_v5420_snapshot; M-PD-4a font-in-density -> spacing-only guards x2) + 2 survivors recorded as teeth gaps. HEALTHWIRE 4 authored / 4 BIT (M-HW-1 forced-SUCCESS -> unimportable/never-ok tests; M-HW-2 drop embedder_id -> 3 tests; M-HW-3 degraded->impaired -> 6 of w3_harden 10 + 2; M-HW-4 alias fork -> 5 tests). Builder legs = PANELDESIGN + HEALTHWIRE (the two shipping product code + tests); NITS carries M-NITS-NO-TEETH (bit=false honest record: zero tests pin its dashboard change); METERLIVE has no product code to mutate (proof leg) - interpretation stated in the verdicts doc."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CXB-F1",
+      "claim": "BP2-NITS T1: the regenerated METER proof still cannot fail. On bp2/nits, baseline HEAD~1:harness/orchestrate.ps1 == the edited working copy (both blob 38d02aad; no nits commit touches the file), so the empty diff is vacuous; the true METER product parent 7fc09482 (blob fdadfe53, 829 lines) is never compared. Referee re-ran as-committed (empty diff, vacuous) AND with the real parent baseline forced (empty diff, genuine) - METER's additive -DryRun claim is TRUE, the committed artifact just does not prove it. Green-light-that-cannot-report-failure class, re-shipped by the leg chartered to remove it.",
+      "anchor": "harness/battleplan/notes/BP2-CRUXB_verdicts.md#bp2-nits ; git blob identity: 38d02aad at e9ebfeda/bp2-nits(all commits)/bp2-meterlive vs fdadfe53 at 1c2b78fd^",
+      "severity": "critical-for-that-leg"
+    },
+    {
+      "id": "CXB-F2",
+      "claim": "BP2-NITS T2 (361cc6e7) wrote phantom pin names into docs/MONETA_FOLLOWUPS.md: FU-1's test_moneta_crucible.py::test_duplicate_content_gets_distinct_ids does not exist (renamed/inverted to test_id_collision_does_not_silently_lose_memories, per the docstring at tests/test_moneta_crucible.py:213); FU-2's pin cites tests/test_memory_models.py but the real gate pin is tests/test_sleep_pass_gate.py::test_rejecting_gate_blocks_the_prune. Substance green (12 + 31 passed in the scratch); the citations are the phantom-class defect.",
+      "anchor": "docs/MONETA_FOLLOWUPS.md L148-L149 (on bp2/nits) ; tests/test_moneta_crucible.py:213,244 ; tests/test_sleep_pass_gate.py:35,53",
+      "severity": "warn"
+    },
+    {
+      "id": "CXB-F3",
+      "claim": "rails.measure_transcript_tokens double-counts when Claude Code stamps the same message.usage on multiple content-block rows of one API response: METERLIVE's settled 75356/278 is one response's 37678/139 counted twice (same requestId req_011CedM5gZjooyfVCqJ1GYBG, same message.id, identical usage dict in both rows). Direction is conservative (budget halts fire early, never late) and 1:1 row traceability holds, but every measured magnitude in the METER/METERLIVE ledgers inherits the inflation. Remedy: dedupe by message.id before summing.",
+      "anchor": "harness/battleplan/notes/BP2-CRUXB_mutations.json referee_first_person.meterlive_integer_trace ; BP2-METERLIVE_transcript_441bb920.jsonl records 2-3",
+      "severity": "warn"
+    },
+    {
+      "id": "CXB-F4",
+      "claim": "PANELDESIGN teeth gaps (adversarial survivors): (a) density-scaled padding ADDED alongside the sec.7 margins passes all 71 named tests - the 'paddings stay fixed' half of sec.7 is unpinned; (b) font-family in a NON-density sec.7 qss rule passes all 76 - the font guard is density-block-scoped and acceptance row 2's hex/font grep is a diff-time chore, not a committed test.",
+      "anchor": "harness/battleplan/notes/BP2-CRUXB_mutations.json M-PD-2b, M-PD-4b",
+      "severity": "info"
+    },
+    {
+      "id": "CXB-F5",
+      "claim": "BP2-NITS T3 has no teeth: zero tests reference dashboard_bp2, status_bp2, or pill() - reverting dc9e803e reddens nothing (M-NITS-NO-TEETH). Render behavior itself re-verified PASS against a crucible-authored status='open' fixture. Also procedural: BP2-NITS posted no claim/release on the battleplan bus (REFEREE observed same), and dashboard_bp2.py's REPO is hardcoded to the live tree (a straight fixture run would write board_bp2.html into the main repo - the crucible rebound globals instead).",
+      "anchor": "harness/battleplan/notes/BP2-CRUXB_verdicts.md#bp2-nits ; BP2-CRUXB_mutations.json BP2-NITS",
+      "severity": "info"
+    },
+    {
+      "id": "CXB-F6",
+      "claim": "Full-suite rows for both builder legs adjudicated by reconciliation, not literal 0-failed reproduction: git-less extracts fail exactly the 18 git-infra tests (identical ids both legs, arithmetic reconciles exactly to the builders' 6921/6912); git-full clones pass 16/18 with 2 clone-topology residuals identical across branches (self-describing errors: 'master ref unresolvable', 'fixture must have origin/master'). No product-code failure observed in any environment.",
+      "anchor": "harness/battleplan/notes/BP2-CRUXB_verdicts.md (rows 4/3) ; workflow wf_6225b609-d71 journal",
+      "severity": "info"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "CXB-R1",
+      "question": "BP2-NITS is BROKEN at T1 (vacuous proof + phantom pins) while the substance behind every row is independently true. Remedy fits one fresh session on the same branch: (a) parameterize prove_bp2_meter_dryrun.ps1's baseline to the METER product parent (7fc09482) or an explicit -BaselineRef and regenerate where baseline != worktree (or adopt METERLIVE's committed prove_bp2_meterlive.ps1 T3 form, which already does this honestly); (b) correct the two pin names in MONETA_FOLLOWUPS.md. Does the redo ride as a NITS2 micro-leg, or fold into another leg's word?",
+      "owner": "Joe"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "BP2-METER-DEDUPE",
+      "class": "build",
+      "disposition": "held (spawn_classes=[] -> Joe's word)",
+      "band": "TRUST",
+      "note": "Dedupe rails.measure_transcript_tokens by message.id (or requestId) before summing usage, so a response whose usage dict is stamped on multiple content-block rows is counted once. Evidence: CXB-F3 (75356 == 37678 x2 on BP2-METERLIVE_transcript_441bb920.jsonl). Add a fixture transcript with a repeated-usage message and pin the deduped sum. Direction of current defect is conservative (over-count -> early halt), so this is accuracy hygiene, not a safety hole.",
+      "touches": ["harness/rails.py", "tests/test_rails.py", "tests/fixtures/"]
+    },
+    {
+      "id": "BP2-RHYTHM-TEETH",
+      "class": "build",
+      "disposition": "held (spawn_classes=[] -> Joe's word)",
+      "band": "TRUST",
+      "note": "Close the two PANELDESIGN teeth gaps (CXB-F4): pin 'padding values identical across airy/tight per region' in test_bp2_paneldesign_density.py, and extend the no-font guard to the whole designsystem sheet (not just density blocks). ~10-line test-only addition; deps: bp2/paneldesign merged.",
+      "touches": ["tests/test_bp2_paneldesign_density.py"]
+    }
+  ],
+  "notes": "Method + anchors: harness/battleplan/notes/BP2-CRUXB_verdicts.md and BP2-CRUXB_mutations.json. Workflow wf_6225b609-d71 (4 agents, 0 errors, ~474k subagent tokens). Referee tier resolved to claude-fable-5. Constitution held: no push/merge/tag, no drop.json edit, no ratified flip, no product file edit, named-file commits only. Verdicts are READ before merge words fire; BROKEN (BP2-NITS) does not ride."
+}
