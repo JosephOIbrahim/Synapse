@@ -1,0 +1,15 @@
+{
+  "run": "bp2-preflight",
+  "date": "2026-09-01",
+  "claude_code_version": "2.1.252",
+  "checks": [
+    {"check": "claude --model claude-fable-5 -p ok", "resolved": true, "reply_observed": true, "exit_code": -1,
+     "exit_note": "exit code unreliable through the PowerShell pipe (stdin warning on stderr); reply text observed, alias resolves", "wall_ms": 12730},
+    {"check": "claude --model claude-opus-4-8 -p ok", "resolved": true, "reply_observed": true, "exit_code": 0, "wall_ms": 8482},
+    {"check": "claude --help contains --output-format", "present": true},
+    {"check": "claude --help contains --max-turns", "present": false,
+     "note": "per-leg conversational-turn caps are NOT enforceable via the CLI in this version; a rails turn is a leg dispatch (docs/BATTLEPLAN.md sec.12 R-3)"}
+  ],
+  "unmeasured": {"tokens_per_ping": "UNKNOWN"},
+  "generated_by": "Fable 5 referee seat, DC session 2026-09-01"
+}
