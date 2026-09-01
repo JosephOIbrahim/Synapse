@@ -26,7 +26,17 @@ def _load(name, rel):
 
 
 ms = _load("bp_mission_schema", "mission_schema.py")
-cw = _load("bp_compile_wave", "compile_wave.py")
+# compile_wave does a bare `import mission_schema` of its sibling: hand it the battleplan
+# module for the duration of its load, then restore whatever the rest of the suite had.
+_prev = sys.modules.get("mission_schema")
+sys.modules["mission_schema"] = ms
+try:
+    cw = _load("bp_compile_wave", "compile_wave.py")
+finally:
+    if _prev is None:
+        sys.modules.pop("mission_schema", None)
+    else:
+        sys.modules["mission_schema"] = _prev
 from rails import resolve_model  # noqa: E402
 
 BASE = {
