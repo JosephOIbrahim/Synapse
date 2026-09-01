@@ -241,6 +241,30 @@ def test_id_collision_does_not_silently_lose_memories():
     )
 
 
+def test_repeat_deposits_distinct_ids_count_equals_all_divergence_gone(tmp_path):
+    """FU-1 demo shape (repeat-2 on a Moneta backend): two identical-content
+    deposits at DIFFERENT created_at now get DISTINCT ids, so the JSONL/Moneta
+    divergence recorded in docs/MONETA_FOLLOWUPS.md FU-1 is gone -- both stores
+    hold 2, and on Moneta ``count() == len(all())``."""
+    ts0, ts1 = "2026-01-01T00:00:00Z", "2026-01-01T00:00:01Z"
+    m0 = Memory(content="repeat deposit", memory_type=MemoryType.NOTE, created_at=ts0)
+    m1 = Memory(content="repeat deposit", memory_type=MemoryType.NOTE, created_at=ts1)
+    assert m0.id != m1.id, "FU-1: different created_at must give distinct ids"
+
+    s = _eph()
+    s.add(m0)
+    s.add(m1)
+    assert s.count() == len(s.all()) == 2
+    assert len({m.id for m in s.all()}) == 2, "two distinct ids, not one id twice"
+
+    # Convergence: jsonl now stores 2 as well (it stored 1 before FU-1 -- that
+    # dict-overwrite-vs-append gap WAS the FU-1 divergence).
+    j = MemoryStore(tmp_path / ".synapse")
+    j.add(Memory(content="repeat deposit", memory_type=MemoryType.NOTE, created_at=ts0))
+    j.add(Memory(content="repeat deposit", memory_type=MemoryType.NOTE, created_at=ts1))
+    assert j.count() == 2
+
+
 def test_get_by_tag_is_raw_case_sensitive():
     s = _eph()
     s.add(Memory(content="c", memory_type=MemoryType.NOTE, tags=["MixedCase"]))
