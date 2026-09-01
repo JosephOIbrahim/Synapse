@@ -18,8 +18,8 @@ model: opus
 autonomy: amber            # probe: READS python/synapse/memory/, runs hython, writes only harness/ + this contract
 owns:
   - "harness/battleplan/notes/memory_latency_probe.py"                              # the probe (public MemoryPort only)
-  - "harness/battleplan/runs/2026-09-01/memory_latency_hython.json"                 # agent lane (default = UNAVAILABLE)
-  - "harness/battleplan/runs/2026-09-01/memory_latency_hython_provisioned.json"     # provisioned-headless proxy numbers
+  - "harness/battleplan/runs/2026-09-01/memory_latency_hython.jsonl"                 # agent lane (default = UNAVAILABLE)
+  - "harness/battleplan/runs/2026-09-01/memory_latency_hython_provisioned.jsonl"     # provisioned-headless proxy numbers
   - ".synapse/contracts/memory-latency-receipt.yaml"
 do_not_touch:
   - "python/synapse/memory/**"      # READ ONLY; BP2-STORE is the only writer — the diff here must stay empty
@@ -27,8 +27,8 @@ do_not_touch:
   - "harness/state/drop.json"       # human-only by recorded precedent
   - "VERSION"
 features:
-  - description: "memory_latency_<env>.json exists with a meta row, one row per timed op, and a DONE sentinel written last"
-    verify: "runs/2026-09-01/memory_latency_hython.json (agent lane) and memory_latency_hython_provisioned.json parse as JSONL, last line sentinel==DONE; BP2-CRUX reads them"
+  - description: "memory_latency_<env>.jsonl exists with a meta row, one row per timed op, and a DONE sentinel written last"
+    verify: "runs/2026-09-01/memory_latency_hython.jsonl (agent lane) and memory_latency_hython_provisioned.jsonl parse as JSONL, last line sentinel==DONE; BP2-CRUX reads them"
     passing: false
   - description: "every timed op is repeat-5, never repeat-1 — five wall_ms samples per op"
     verify: "each op row carries samples_ms of length 5; test_memory_latency asserts len(samples_ms)==REPEATS==5"
@@ -40,7 +40,7 @@ features:
     verify: "meta.build == running hython build (22.0.400 on both runs), read in-process by _build(), never typed; BP2-CRUX re-runs and gets the same stamp"
     passing: false
   - description: "every unmeasured field is the literal UNKNOWN — an UNAVAILABLE substrate is a measurement, never coerced to a number, never a pass"
-    verify: "memory_latency_hython.json records availability=UNAVAILABLE, bind_reason=env_unset, every op p50/p95/samples==UNKNOWN, verdict==UNAVAILABLE"
+    verify: "memory_latency_hython.jsonl records availability=UNAVAILABLE, bind_reason=env_unset, every op p50/p95/samples==UNKNOWN, verdict==UNAVAILABLE"
     passing: false
   - description: "the diff under python/synapse/memory/ is empty on this branch — the probe reads the memory path, never writes it"
     verify: "git diff --stat master..HEAD -- python/synapse/memory/ is empty"

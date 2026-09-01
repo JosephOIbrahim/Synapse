@@ -15,7 +15,7 @@ that took the timings (BP2-LATENCY crucible criterion #2).
            -o python_files=memory_latency_probe.py -s
 
      -> runs under Houdini's hython (pytest collects test_memory_latency), writes
-        harness/battleplan/runs/<date>/memory_latency_hython.json
+        harness/battleplan/runs/<date>/memory_latency_hython.jsonl
         (a meta row, one row per timed op, an optional bucket-pass row, DONE last).
      The SYNAPSE_HYTHON pin targets the wave build (22.0.400) so the agent half
      matches Joe's .400 GUI half; hytest still validates it (pytest+PySide6) and
@@ -25,7 +25,7 @@ that took the timings (BP2-LATENCY crucible criterion #2).
 
        Windows menu > Python Shell (or the Python Source Editor). Paste this whole
        file and run. It prints the rows and, if it can locate the repo, writes
-       harness/battleplan/runs/<date>/memory_latency_gui.json.
+       harness/battleplan/runs/<date>/memory_latency_gui.jsonl.
 
 Timed ops (public MemoryPort surface ONLY - synapse.loop.ports; nothing under
 python/synapse/memory/ is touched, so `git diff master..HEAD -- python/synapse/
@@ -691,11 +691,11 @@ def emit(meta, op_rows, bucket_row, write=True):
         run_dir.mkdir(parents=True, exist_ok=True)
         env = meta.get("environment", "hython")
         # A non-default run_label (e.g. "provisioned") suffixes the filename so the
-        # mission's default agent-lane artifact memory_latency_<env>.json is never
+        # mission's default agent-lane artifact memory_latency_<env>.jsonl is never
         # overwritten by a differently-provisioned investigation run.
         label = meta.get("run_label", "default")
         suffix = "" if label in ("default", "", None) else ("_" + str(label))
-        path = run_dir / ("memory_latency_%s%s.json" % (env, suffix))
+        path = run_dir / ("memory_latency_%s%s.jsonl" % (env, suffix))
         sentinel = {
             "sentinel": "DONE",
             "leg": "BP2-LATENCY",
