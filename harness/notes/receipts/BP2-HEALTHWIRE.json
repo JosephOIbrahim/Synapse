@@ -1,0 +1,71 @@
+{
+  "leg": "BP2-HEALTHWIRE",
+  "status": "green_with_findings",
+  "product_head": "4f252ba571f2158aae3d6050f50ebda1cc2df854",
+  "base_note": "Branched from master at e9ebfeda (5.58.0); master moved ahead during the live merge train (VERSION 5.59.0 etc.) but this leg neither rebased nor touched any master-ahead file. ahead(master..HEAD)=1 at product commit.",
+  "summary": "Wired memory.store.backend_health() into the server operator health row. write_plane.store_health() additively merges embedder_id + embedding_dim and attaches the full backend_health() dict under info['backend_health'] (verdict = the ratified SUCCESS|UNAVAILABLE|BLOCKED word). The row's own ok/degraded/unknown vocabulary is untouched. Closes BP2-CRUX F4 (health row was 3/5 fields + non-ratified 'degraded' vocab). memory/ untouched; sec.4 tool surface byte-identical; full pytest green. GUI on-camera observation is UNKNOWN (headless + panel-strip territory).",
+  "acceptance": [
+    {
+      "predicate": "synapse_health write_plane sub-dict carries embedder_id, embedding_dim and backend_health with the ratified verdict; test proves moneta-unimportable -> UNAVAILABLE",
+      "verdict": "pass",
+      "evidence": "test tests/test_bp2_healthwire_write_plane_backend_health.py (7 passed; gated moneta-serves test RAN this seat - real embedder minilm-l6-v2-d384/dim 384). End-to-end probe through SynapseHandler._handle_get_health({}): (1) moneta un-importable -> data['write_plane']['store']['backend_health']['verdict']=='UNAVAILABLE' while write_plane word 'degraded'; (2) jsonl -> SUCCESS; (3) moneta live -> SUCCESS with real embedder_id + dim. Product write_plane.py store_health() merge block."
+    },
+    {
+      "predicate": "sec.4 tool surface diff against master is empty (attached)",
+      "verdict": "pass",
+      "evidence": "check: `git diff master -- python/synapse/mcp/ python/synapse/server/handlers*.py tracker.py scene_memory.py` == EMPTY; `git hash-object python/synapse/mcp/_tool_registry.py` == `master:...` == 8c538a856d5e7a81470f8977ab41794aad95f1ea; synapse_health entry (_tool_registry.py:129) unchanged; store_health is not a registered tool (grep clean). The only code file changed vs master is write_plane.py (server internals, not a tool). Detail in harness/battleplan/notes/BP2-HEALTHWIRE.md sec 'T2'."
+    },
+    {
+      "predicate": "tests/test_w3_harden_write_plane_store.py unchanged and green; pytest -q green",
+      "verdict": "pass",
+      "evidence": "byte-identical: `git hash-object tests/test_w3_harden_write_plane_store.py` == `master:...` == 404f6469f11ea54d444f7f745f4cdcea2671ed6e; that file: 10 passed. Full suite `python -m pytest -q`: 6912 passed, 186 skipped, 0 failed (275.59s). 186 skips are pre-existing Houdini/hython/moneta-live-gated; warnings pre-existing (vendored-ABI on Py3.14, headless scout gate)."
+    },
+    {
+      "predicate": "health row observed in the .400 GUI panel strip shows the five fields (Joe)",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required + unobtainable headless (constitution: skip != pass). The DATA is proven present at the synapse_health surface the GUI health line reads (end-to-end probe above shows the five fields + ratified verdict in _handle_get_health()). BUT the always-visible 4-cell panel strip (python/synapse/panel/health_strip.py) renders connection/memory/project/job and deliberately never calls get_health (main-thread-stall avoidance, health_strip.py:43-44), so it does not itself render these five fields; panel/ is PANELTRUTH territory, out of this leg's scope. On-camera observation of the .400 GUI is Joe's step -> UNKNOWN. See finding F1 + spawn."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "claim": "The always-visible panel health strip does not render the five operator fields; it shows a 4-cell (connection/memory/project/job) summary and never calls get_health (deliberate main-thread-stall avoidance). The synapse_health response now carries the five fields + ratified verdict, but surfacing them IN THE STRIP is a panel-side follow-up outside this leg's territory (panel/ is PANELTRUTH).",
+      "anchor": "python/synapse/panel/health_strip.py:26-48,209-248 ; python/synapse/server/write_plane.py store_health()",
+      "severity": "info",
+      "disposition": "deferred -> spawn S1 (held, panel class)"
+    },
+    {
+      "id": "F2",
+      "claim": "backend_health()'s ratified verdict is keyed 'status' in store.py (territory-frozen). This leg attaches the dict verbatim (preserving 'status') AND adds a 'verdict' alias equal to it on write_plane's side, so info['backend_health'] carries BOTH keys with the identical SUCCESS|UNAVAILABLE|BLOCKED value. Not a fork (tests assert verdict==status). Chosen because renaming store.py's key would violate the empty-memory/-diff crucible criterion.",
+      "anchor": "python/synapse/memory/store.py:818,877 ; python/synapse/server/write_plane.py store_health() merge block",
+      "severity": "info",
+      "disposition": "documented; see for_ruling FR1"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "FR1",
+      "question": "Operator-field naming: the ratified backend verdict is exposed as BOTH 'status' (store.py's word, verbatim) and 'verdict' (write_plane alias) inside info['backend_health']. If the canonical single operator name should be 'verdict' end-to-end, that requires a STORE-side rename of backend_health()'s key (memory territory) - proposed as an amendment, NOT applied here. Current state satisfies both the brief's 'verdict' prose and store.py's 'status' runtime word.",
+      "owner": "Joe / CTO"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "BP2-HEALTHSTRIP",
+      "name": "Render the five memory operator fields + ratified verdict in the always-visible panel health strip (or a dedicated health readout), consuming get_health off the main thread",
+      "band": "BUILD",
+      "class": "build",
+      "tier": "reasoning",
+      "held_reason": "class 'build' is outside this leg's spawn_classes=['probe'] -> lands held for Joe. Also panel/ is PANELTRUTH territory.",
+      "note": "The synapse_health response now carries requested_backend, active_backend, embedder_id, embedding_dim, row_count + verdict at write_plane.store.backend_health (BP2-HEALTHWIRE, product 4f252ba5). The 4-cell strip (health_strip.py) shows a memory-backend summary but not the five fields, and avoids get_health to stay off the main thread. Follow-up: surface the five fields on demand (e.g. a click-through readout or an off-main-thread fetch) WITHOUT re-introducing a main-thread stall - respect health_strip.py's no-I/O discipline. UNAVAILABLE/BLOCKED must render loud, never as ok/green.",
+      "targets": [
+        "T1) panel-side: render the five operator fields + ratified verdict from the get_health response, off the main thread, preserving the strip's FACT-sourced-or-UNKNOWN + no-main-thread-I/O rules",
+        "T2) tests: the five fields appear when a store is live; UNAVAILABLE/BLOCKED never renders green"
+      ],
+      "touches": ["python/synapse/panel/", "tests/"],
+      "deps": ["BP2-HEALTHWIRE"],
+      "spawn_classes": ["build"],
+      "source": {"doc": "harness/notes/receipts/BP2-HEALTHWIRE.json", "anchor": "F1 + acceptance predicate #4 (gui_required UNKNOWN)"}
+    }
+  ]
+}
