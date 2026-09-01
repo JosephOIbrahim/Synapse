@@ -87,6 +87,11 @@ $script:CloseGateNotified = @{}
 # Rails-Open no-ops, so every default-path line stays byte-for-byte identical.
 $script:BudgetHalted = $false
 $script:RailsRun = if ($Budget) { "orch_{0}" -f (Get-Date -Format 'yyyyMMdd-HHmmss') } else { '' }
+# Pin the ledger date at OPEN so a wave that crosses midnight keeps ONE ledger:
+# rails.py defaults --date to today per invocation, so a charge/settle after
+# midnight would look under runs/<D+1>/ and miss the run opened on <D>. Every
+# open/charge/settle below passes this fixed date (BP2-METER; verify finding).
+$script:RailsDate = if ($Budget) { Get-Date -Format 'yyyy-MM-dd' } else { '' }
 
 function Rails-Open {
     if (-not $Budget) { return }
@@ -95,7 +100,7 @@ function Rails-Open {
         Say "  BUDGET: harness/rails.py not found - refusing to run capped (fail closed)" 'Red'
         throw "rails.py missing; -Budget cannot be honored"
     }
-    & python $rails open --run $script:RailsRun --cap $Budget 2>&1 |
+    & python $rails open --run $script:RailsRun --date $script:RailsDate --cap $Budget 2>&1 |
         ForEach-Object { Say "  rails: $_" 'DarkGray' }
 }
 
@@ -106,14 +111,82 @@ function Rails-Charge([object]$leg) {
     if ($script:BudgetHalted) { return $false }
     $rails = Join-Path $repo 'harness\rails.py'
     if ($leg.tier) {
-        & python $rails charge --run $script:RailsRun --leg $leg.id --tier $leg.tier 2>&1 | Out-Null
+        & python $rails charge --run $script:RailsRun --date $script:RailsDate --leg $leg.id --tier $leg.tier 2>&1 | Out-Null
     } else {
         $model = if ($manifest.model) { $manifest.model } else { '' }
-        & python $rails charge --run $script:RailsRun --leg $leg.id --model $model 2>&1 | Out-Null
+        & python $rails charge --run $script:RailsRun --date $script:RailsDate --leg $leg.id --model $model 2>&1 | Out-Null
     }
     if ($LASTEXITCODE -eq 0) { return $true }
     $script:BudgetHalted = $true   # exit 7 (blocked:budget) or any error -> halt
     return $false
+}
+
+function Rails-Settle([object]$leg) {
+    # BP2-METER T1: POST-CLOSE settle. When a leg reaches 'done' AND -Budget is
+    # set, resolve its Claude Code transcript and MEASURE the tokens it actually
+    # spent, settling them into the run ledger. Inert unless -Budget (additive; no
+    # line on the default path). It NEVER blocks or delays a dispatch - the leg
+    # already ran; a settle that crosses the token ceiling only HALTS further
+    # dispatch (rails.py writes status blocked/budget and returns exit 7).
+    if (-not $Budget) { return }
+    $rails = Join-Path $repo 'harness\rails.py'
+    if (-not (Test-Path $rails)) { return }
+    $wt = Join-Path $repo $leg.worktree
+
+    # The leg's transcript lives under ~/.claude/projects/<slug>/, where <slug> is
+    # the worktree path with every : \ / . replaced by '-' (Claude Code's projects
+    # dir naming). The worktree is per-leg, so the newest *.jsonl there is this
+    # leg's session (the --name 'SYNAPSE <id> ...' + .claude/.orch_launched marker
+    # are the anchors). If it cannot be resolved, settle with NO --transcript so
+    # every token field stays the literal UNKNOWN - never skip, never estimate.
+    $slug = ($wt -replace '[:\\/.]', '-')
+    $projDir = Join-Path $env:USERPROFILE ".claude\projects\$slug"
+    $transcript = $null
+    if (Test-Path $projDir) {
+        $tf = Get-ChildItem $projDir -Filter *.jsonl -EA SilentlyContinue |
+              Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($tf) { $transcript = $tf.FullName }
+    }
+
+    $argList = @('settle', '--run', $script:RailsRun, '--date', $script:RailsDate, '--leg', $leg.id)
+    if ($leg.tier)          { $argList += @('--tier', $leg.tier) }
+    elseif ($manifest.model) { $argList += @('--model', $manifest.model) }
+    if ($transcript)        { $argList += @('--transcript', $transcript) }
+
+    # wall_ms = the launch marker -> now (the leg's observed wall clock). Absent
+    # the marker, wall_ms stays UNKNOWN (never a fabricated zero).
+    $marker = Join-Path $wt '.claude\.orch_launched'
+    if (Test-Path $marker) {
+        $ms = [int]((Get-Date) - (Get-Item $marker).LastWriteTime).TotalMilliseconds
+        $argList += @('--wall-ms', $ms)
+    }
+
+    & python $rails @argList 2>&1 | ForEach-Object { Say "  settle: $_" 'DarkGray' }
+    $code = $LASTEXITCODE
+    if ($code -eq 7) {
+        $script:BudgetHalted = $true
+        Say "  BUDGET: $($leg.id) settle crossed the token ceiling - halting dispatch" 'Red'
+    } elseif ($code -ne 0) {
+        # a settle that could not record (e.g. the run ledger not found) must be
+        # SURFACED, never silently dropped - the token spend is unrecorded, not
+        # zero. Not a dispatch halt: the leg already ran.
+        Say "  settle: WARNING $($leg.id) rails.py exited $code - tokens NOT recorded (surfaced, never estimated)" 'Yellow'
+    }
+    if (-not $transcript) {
+        Say "  settle: $($leg.id) transcript unresolved under $projDir - tokens UNKNOWN (honest, not estimated)" 'DarkGray'
+    }
+}
+
+function Drift-Check {
+    # BP2-METER T3: once per poll, run the bus-driven drift check. drift.py is
+    # pure Python, zero model calls; it reads the wave's bus and posts `refocus`
+    # (with the leg's mission targets verbatim) to a leg whose on-target progress
+    # ratio has fallen below 0.6, escalating to `halt` after two unimproved. Inert
+    # unless -Budget (additive; no line on the default path).
+    if (-not $Budget -or -not $script:DriftWave) { return }
+    $drift = Join-Path $repo 'harness\battleplan\drift.py'
+    if (-not (Test-Path $drift)) { return }
+    & python $drift $script:DriftWave 2>&1 | ForEach-Object { Say "  drift: $_" 'DarkGray' }
 }
 
 function Get-ReceiptPath([object]$leg) {
@@ -361,6 +434,23 @@ function Start-Leg([object]$leg) {
     # decision. Absent -> the flag is not emitted at all, i.e. today's
     # behaviour, not --model with an empty value.
     $modelArg = if ($manifest.model) { " --model $($manifest.model)" } else { '' }
+
+    # BP2-METER T2: a leg may carry a `tier` (mechanical|reasoning|referee).
+    # Resolve it to a model via `rails.py resolve <tier>` - rails_exec.json is the
+    # LOOKUP TABLE, nothing else decides a model. A tier-less leg skips this block
+    # entirely, so its launch line stays BYTE-IDENTICAL to before (manifest model
+    # or none). If resolve fails at dispatch (e.g. the referee/fable-5 alias can
+    # not be honoured), $modelArg keeps $manifest.model - the documented reasoning
+    # fallback (preflight runs/2026-09-01/preflight.json proved fable-5 resolves).
+    if ($leg.tier) {
+        $tierModel = (& python (Join-Path $repo 'harness\rails.py') resolve $leg.tier 2>$null)
+        if ($LASTEXITCODE -eq 0 -and $tierModel) {
+            $modelArg = " --model $($tierModel.Trim())"
+            Say "  tier: $($leg.tier) -> $($tierModel.Trim())" 'DarkGray'
+        } else {
+            Say "  tier: $($leg.tier) did not resolve - falling back to $($manifest.model)" 'Yellow'
+        }
+    }
 
     # R61: a read-only leg is FENCED, not asked. Read-only was an instruction in
     # the brief and nothing enforced it - a read-only fleet edited five schema
@@ -666,6 +756,13 @@ Say "digest every $DigestMinutes min - first at $($nextDigest.ToString('HH:mm'))
 Say "board-complete enters IDLE WATCH, not exit - add a leg to legs.json any time" 'DarkGray'
 Rails-Open   # BP1-RAILS: opens the run ledger when -Budget is set; no-op otherwise
 
+# BP2-METER T3: the wave the drift check reads, derived from the first leg id the
+# same way compile_wave/Test-CloseGate do (BP2-METER -> bp2). Empty (drift off)
+# unless -Budget is set, so the default path never touches the bus.
+$script:DriftWave = if ($Budget -and $manifest.legs.Count) {
+    ($manifest.legs[0].id -split '-', 2)[0].ToLower() -replace '^w', 'wave'
+} else { '' }
+
 while ((Get-Date) -lt $deadline) {
 
     $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json   # re-read: edits take effect live
@@ -713,6 +810,11 @@ while ((Get-Date) -lt $deadline) {
                 }
                 Notify "$($leg.id) $($leg.name) - $plain" "$ruling items for your ruling. Nothing pushed."
                 Say "  receipt: $status   $ruling ruling items" 'Green'
+
+                # BP2-METER T1: post-close settle. The window is reaped and the
+                # transcript is final, so MEASURE this leg's real token spend into
+                # the run ledger. Inert unless -Budget; never delays a dispatch.
+                Rails-Settle $leg
             }
         }
 
@@ -756,6 +858,8 @@ while ((Get-Date) -lt $deadline) {
 
     $backed = Backup-Branches
     if ($backed.Count) { Say "backed up  $($backed -join ' ')" 'DarkGray' }
+
+    Drift-Check   # BP2-METER T3: bus-driven refocus/halt (inert unless -Budget)
 
     $last = Get-LastProgress
     $mins = if ($last) { [int]((Get-Date) - $last).TotalMinutes } else { 999 }

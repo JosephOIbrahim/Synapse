@@ -11,6 +11,11 @@
       "engine": "claude",
       "model": "claude-opus-4-8",
       "why": "the reasoning tier default named by the mission brief"
+    },
+    "referee": {
+      "engine": "claude",
+      "model": "claude-fable-5",
+      "why": "BP2-METER T2: the referee/adjudication tier (Fable 5). A LOOKUP ONLY - orchestrate.ps1 resolves a leg's tier=referee to this model via `rails.py resolve referee`; nothing else decides a model. If the CLI alias cannot be honoured at dispatch (preflight runs/2026-09-01/preflight.json proved claude-fable-5 resolves), the orchestrator falls back to $manifest.model (reasoning) and the ledger row records the fallback."
     }
   },
   "engines": {

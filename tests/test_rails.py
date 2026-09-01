@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 HARNESS = Path(__file__).resolve().parents[1] / "harness"
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
 sys.path.insert(0, str(HARNESS))
 
 import rails  # noqa: E402
@@ -20,6 +21,11 @@ from rails import (  # noqa: E402
     Cap, Rails, BudgetExceeded, UNKNOWN, parse_cap, resolve_model,
     measure_transcript_tokens,
 )
+
+# The committed BP2-METER transcript fixtures (tests/fixtures/): one carries real
+# message.usage records (12700 in, 470 out), one carries none at all.
+TRANSCRIPT_WITH_USAGE = FIXTURES / "transcript_with_usage.jsonl"
+TRANSCRIPT_NO_USAGE = FIXTURES / "transcript_no_usage.jsonl"
 
 
 # --------------------------------------------------------------------------- #
@@ -234,6 +240,46 @@ def test_measure_transcript_no_usage_is_unknown(tmp_path):
     assert ti == UNKNOWN and to == UNKNOWN
 
 
+def test_measure_transcript_malformed_usage_value_never_crashes(tmp_path):
+    # a JSON-VALID record whose usage value is non-integer must be tolerated, not
+    # fatal (crucible #1: a torn transcript never crashes). The bad field counts
+    # as 0 for that field; the record still measures what it can.
+    p = tmp_path / "malformed.jsonl"
+    p.write_text("\n".join([
+        json.dumps({"message": {"usage": {"input_tokens": "oops", "output_tokens": 10}}}),
+        json.dumps({"message": {"usage": {"input_tokens": [1, 2], "output_tokens": {}}}}),
+        json.dumps({"message": {"usage": {"input_tokens": 100, "output_tokens": 20}}}),
+    ]) + "\n", encoding="utf-8")
+    ti, to = measure_transcript_tokens(p)      # must not raise
+    assert ti == 100 and to == 30              # 0(bad)+0(bad)+100, 10+0(bad)+20
+
+
+def test_measure_transcript_empty_usage_is_unknown_not_zero(tmp_path):
+    # an empty/field-absent usage dict must render UNKNOWN, never a measured (0,0)
+    # (crucible #1: an absent token is UNKNOWN, never a fabricated 0).
+    p = tmp_path / "emptyusage.jsonl"
+    p.write_text("\n".join([
+        json.dumps({"message": {"usage": {}}}),
+        json.dumps({"message": {"usage": {"cache_read_input_tokens": 8000}}}),  # cache-only, no primary
+    ]) + "\n", encoding="utf-8")
+    ti, to = measure_transcript_tokens(p)
+    assert ti == UNKNOWN and to == UNKNOWN
+
+
+def test_settle_twice_is_idempotent_no_double_turn(tmp_path):
+    # a second settle for the same leg updates in place, never opens a new turn
+    # (the docstring's 'turns are never double-charged' must hold literally).
+    r = Rails(run="resettle", cap="5turns,50000tokens", runs_dir=tmp_path)
+    r.charge("L1", "m")
+    r.settle("L1", "m", tokens_in=400, tokens_out=100, wall_ms=1)
+    r.settle("L1", "m", tokens_in=500, tokens_out=200, wall_ms=2)  # re-settle
+    assert r.turns_spent == 1
+    assert len([e for e in r.legs if e["leg"] == "L1"]) == 1
+    assert r.tokens_spent == 700                      # reflects the latest settle
+    leg = [e for e in r.legs if e["leg"] == "L1"][0]
+    assert leg["tokens_in"] == 500 and leg["tokens_out"] == 200 and leg["wall_ms"] == 2
+
+
 def test_measured_tokens_flow_into_the_cap(tmp_path):
     # end-to-end: a measured transcript charge counts against a token ceiling
     p = tmp_path / "t.jsonl"
@@ -307,3 +353,212 @@ def test_cli_charge_before_open_fails_closed(tmp_path):
     c = _cli("charge", "--run", "never", "--date", "2026-08-31",
              "--runs-dir", str(runs), "--leg", "L1", "--model", "m", cwd=tmp_path)
     assert c.returncode == rails.EXIT_USAGE  # not opened -> refuse, never assume unlimited
+
+
+# --------------------------------------------------------------------------- #
+# BP2-METER T2 - the referee tier resolves through the SAME lookup seam
+# --------------------------------------------------------------------------- #
+def test_resolve_referee_prints_fable5():
+    # acceptance #7: rails_exec.json carries the referee tier and it resolves to
+    # claude-fable-5 through resolve_model - a lookup, nothing else decides a model
+    assert resolve_model("referee") == "claude-fable-5"
+
+
+def test_cli_resolve_positional_referee(tmp_path):
+    # `python harness/rails.py resolve referee` -> claude-fable-5 (the exact
+    # command orchestrate.ps1:363 runs to turn a leg's tier into a model)
+    c = _cli("resolve", "referee", cwd=tmp_path)
+    assert c.returncode == 0, c.stderr
+    assert c.stdout.strip() == "claude-fable-5"
+
+
+def test_cli_resolve_reasoning_is_byte_default(tmp_path):
+    c = _cli("resolve", "reasoning", cwd=tmp_path)
+    assert c.returncode == 0 and c.stdout.strip() == "claude-opus-4-8"
+
+
+# --------------------------------------------------------------------------- #
+# BP2-METER T1 - the POST-CLOSE SETTLE: measure from the transcript, in place
+# --------------------------------------------------------------------------- #
+def test_settle_measures_transcript_into_integers(tmp_path):
+    # acceptance #1 (mechanism): a settled leg shows integer tokens traceable to
+    # the named transcript JSONL, and the measured spend counts against the cap.
+    r = Rails(run="settleint", cap="5turns,50000tokens", runs_dir=tmp_path)
+    r.charge("L1", "claude-opus-4-8")               # pre-dispatch reservation (UNKNOWN)
+    e = r.settle("L1", "claude-opus-4-8", tokens_in=12700, tokens_out=470,
+                 wall_ms=8482, transcript=str(TRANSCRIPT_WITH_USAGE))
+    assert e["tokens_in"] == 12700 and e["tokens_out"] == 470
+    assert e["wall_ms"] == 8482
+    assert e["transcript"] == str(TRANSCRIPT_WITH_USAGE)   # traceable provenance
+    assert e["enforced_unit"] == "tokens"
+    assert e["remaining"]["tokens"] == 50000 - 13170
+    # ONE turn: the settle updated the reservation in place, never double-charged
+    assert r.turns_spent == 1
+    assert len([x for x in r.legs if x["leg"] == "L1"]) == 1
+
+
+def test_settle_heals_the_pre_dispatch_unknown(tmp_path):
+    # the pre-dispatch charge records UNKNOWN and poisons the sticky meter; the
+    # settle re-derives it to "measured" because UNKNOWN means "not yet known".
+    r = Rails(run="heal", cap="5turns,50000tokens", runs_dir=tmp_path)
+    r.charge("L1", "m")                     # UNKNOWN -> sticky meter poisoned
+    assert r.token_meter == UNKNOWN
+    r.settle("L1", "m", tokens_in=400, tokens_out=100, wall_ms=1)
+    assert r.token_meter == "measured"      # healed by the real measurement
+    assert r.tokens_spent == 500
+
+
+def test_settle_no_transcript_is_unknown_enforced_turns(tmp_path):
+    # acceptance #2 (negative control): a settled leg whose transcript cannot be
+    # resolved renders EVERY token field the literal UNKNOWN and enforced_unit
+    # stays turns - never zero, never an estimate, never a pass.
+    r = Rails(run="neg", cap="5turns,50000tokens", runs_dir=tmp_path)
+    r.charge("L1", "claude-opus-4-8")
+    e = r.settle("L1", "claude-opus-4-8", tokens_in=None, tokens_out=None,
+                 wall_ms=None, transcript=None)
+    assert e["tokens_in"] == UNKNOWN and e["tokens_out"] == UNKNOWN
+    assert e["wall_ms"] == UNKNOWN
+    assert e["enforced_unit"] == "turns"
+    ledger = r.close()
+    assert ledger["enforced_unit"] == "turns"
+    assert ledger["token_meter"] == UNKNOWN
+
+
+def test_settle_no_transcript_from_unreadable_fixture_is_unknown(tmp_path):
+    # the same negative control driven through measure_transcript_tokens on the
+    # committed no-usage fixture (a torn line, no usage record anywhere).
+    ti, to = measure_transcript_tokens(TRANSCRIPT_NO_USAGE)
+    assert ti == UNKNOWN and to == UNKNOWN
+
+
+def test_committed_fixture_with_usage_measures(tmp_path):
+    # acceptance #3: the committed transcript fixture with usage -> integers.
+    ti, to = measure_transcript_tokens(TRANSCRIPT_WITH_USAGE)
+    assert ti == 12700 and to == 470
+
+
+def test_settle_crossing_token_ceiling_halts(tmp_path):
+    # acceptance #4 (mechanism): a settle whose MEASURED spend crosses a tiny
+    # tokens ceiling HALTS the run - status blocked, reason budget, enforced_unit
+    # tokens. The leg already ran; it is not retroactively refused.
+    r = Rails(run="halt", cap="5turns,100tokens", runs_dir=tmp_path)
+    r.charge("L1", "claude-opus-4-8")
+    r.settle("L1", "claude-opus-4-8", tokens_in=12700, tokens_out=470,
+             wall_ms=5, transcript=str(TRANSCRIPT_WITH_USAGE))
+    assert r.status == "blocked"
+    ledger = r.close()
+    assert ledger["status"] == "blocked"
+    assert ledger["reason"] == "budget"
+    assert ledger["enforced_unit"] == "tokens"
+
+
+def test_settle_over_turns_floor_blocks(tmp_path):
+    # a standalone settle with no reservation opens the turn, so the turns floor
+    # still bites: never a settle that silently exceeds the cap.
+    r = Rails(run="settleturns", cap="1turns", runs_dir=tmp_path)
+    r.settle("L1", "m", tokens_in=1, tokens_out=1, wall_ms=1)
+    with pytest.raises(BudgetExceeded):
+        r.settle("L2", "m", tokens_in=1, tokens_out=1, wall_ms=1)
+    assert r.status == "blocked"
+
+
+def test_enforced_unit_flips_to_tokens_only_when_ceiling_and_measured(tmp_path):
+    # acceptance #3: enforced_unit is "tokens" ONLY when a ceiling is set AND a
+    # leg was measured; a ceiling with no measured tokens, or no ceiling, is "turns".
+    # (a) ceiling + measured settle -> tokens
+    r1 = Rails(run="euA", cap="3turns,9999tokens", runs_dir=tmp_path)
+    r1.charge("L1", "m")
+    r1.settle("L1", "m", tokens_in=10, tokens_out=2, wall_ms=1)
+    assert r1.to_dict()["enforced_unit"] == "tokens"
+    # (b) ceiling + UNKNOWN settle -> turns
+    r2 = Rails(run="euB", cap="3turns,9999tokens", runs_dir=tmp_path)
+    r2.charge("L1", "m")
+    r2.settle("L1", "m", transcript=None)
+    assert r2.to_dict()["enforced_unit"] == "turns"
+    # (c) ceiling set but ZERO measured legs (empty run) -> turns, not tokens
+    r3 = Rails(run="euC", cap="3turns,9999tokens", runs_dir=tmp_path)
+    assert r3.to_dict()["enforced_unit"] == "turns"
+    # (d) no ceiling at all -> turns
+    r4 = Rails(run="euD", cap="3turns", runs_dir=tmp_path)
+    r4.charge("L1", "m")
+    r4.settle("L1", "m", tokens_in=10, tokens_out=2, wall_ms=1)
+    assert r4.to_dict()["enforced_unit"] == "turns"
+
+
+# --------------------------------------------------------------------------- #
+# BP2-METER T4 / REFEREE bus finding - STATUS HONESTY: a live wave is not "done"
+# --------------------------------------------------------------------------- #
+def test_live_run_reads_open_not_complete(tmp_path):
+    # a run still accepting charges must read "open" - the REFEREE finding: the
+    # live ledger read "complete" while legs were alive. _persist keeps it "open".
+    r = Rails(run="live", cap="5turns,50000tokens", runs_dir=tmp_path)
+    r.charge("L1", "m")
+    assert r._persist()["status"] == "open"
+    # only an explicit close finalises to "complete"
+    assert r.close()["status"] == "complete"
+
+
+def test_cli_open_charge_persists_open(tmp_path):
+    runs = tmp_path / "runs"
+    _cli("open", "--run", "liveopen", "--date", "2026-09-01",
+         "--runs-dir", str(runs), "--cap", "5turns,50000tokens", cwd=tmp_path)
+    opened = json.loads((runs / "2026-09-01" / "ledger_liveopen.json").read_text(encoding="utf-8"))
+    assert opened["status"] == "open"     # an opened-but-empty run is live, not done
+    _cli("charge", "--run", "liveopen", "--date", "2026-09-01",
+         "--runs-dir", str(runs), "--leg", "L1", "--tier", "reasoning", cwd=tmp_path)
+    charged = json.loads((runs / "2026-09-01" / "ledger_liveopen.json").read_text(encoding="utf-8"))
+    assert charged["status"] == "open"    # still live after a charge, never "complete"
+
+
+# --------------------------------------------------------------------------- #
+# BP2-METER T1 - the CLI surface orchestrate.ps1 drives at settle time
+# --------------------------------------------------------------------------- #
+def test_cli_settle_from_transcript_under_ceiling(tmp_path):
+    runs = tmp_path / "runs"
+    _cli("open", "--run", "cs", "--date", "2026-09-01", "--runs-dir", str(runs),
+         "--cap", "5turns,50000tokens", cwd=tmp_path)
+    _cli("charge", "--run", "cs", "--date", "2026-09-01", "--runs-dir", str(runs),
+         "--leg", "L1", "--tier", "reasoning", cwd=tmp_path)
+    s = _cli("settle", "--run", "cs", "--date", "2026-09-01", "--runs-dir", str(runs),
+             "--leg", "L1", "--transcript", str(TRANSCRIPT_WITH_USAGE),
+             "--wall_ms", "8482", cwd=tmp_path)
+    assert s.returncode == 0, s.stderr
+    led = json.loads((runs / "2026-09-01" / "ledger_cs.json").read_text(encoding="utf-8"))
+    leg = [e for e in led["legs"] if e["leg"] == "L1"][0]
+    assert leg["tokens_in"] == 12700 and leg["tokens_out"] == 470 and leg["wall_ms"] == 8482
+    assert leg["transcript"].endswith("transcript_with_usage.jsonl")
+    assert led["totals"]["tokens_in"] == 12700 and led["totals"]["tokens_out"] == 470
+    assert led["enforced_unit"] == "tokens" and led["token_meter"] == "measured"
+    assert led["status"] == "open"    # a single measured leg does not finish the wave
+
+
+def test_cli_settle_crossing_tiny_ceiling_exits_7(tmp_path):
+    # acceptance #4 (CLI/receipt): a tiny tokens ceiling halts after settle -
+    # exit 7, ledger status blocked, reason budget, enforced_unit tokens.
+    runs = tmp_path / "runs"
+    _cli("open", "--run", "ct", "--date", "2026-09-01", "--runs-dir", str(runs),
+         "--cap", "5turns,100tokens", cwd=tmp_path)
+    _cli("charge", "--run", "ct", "--date", "2026-09-01", "--runs-dir", str(runs),
+         "--leg", "L1", "--tier", "reasoning", cwd=tmp_path)
+    s = _cli("settle", "--run", "ct", "--date", "2026-09-01", "--runs-dir", str(runs),
+             "--leg", "L1", "--transcript", str(TRANSCRIPT_WITH_USAGE), cwd=tmp_path)
+    assert s.returncode == rails.EXIT_BLOCKED, (s.returncode, s.stdout, s.stderr)
+    led = json.loads((runs / "2026-09-01" / "ledger_ct.json").read_text(encoding="utf-8"))
+    assert led["status"] == "blocked" and led["reason"] == "budget"
+    assert led["enforced_unit"] == "tokens"
+
+
+def test_cli_settle_no_transcript_is_unknown(tmp_path):
+    # acceptance #2 (CLI): settle with no --transcript -> every token field UNKNOWN
+    runs = tmp_path / "runs"
+    _cli("open", "--run", "cu", "--date", "2026-09-01", "--runs-dir", str(runs),
+         "--cap", "5turns,50000tokens", cwd=tmp_path)
+    _cli("charge", "--run", "cu", "--date", "2026-09-01", "--runs-dir", str(runs),
+         "--leg", "L1", "--tier", "reasoning", cwd=tmp_path)
+    s = _cli("settle", "--run", "cu", "--date", "2026-09-01", "--runs-dir", str(runs),
+             "--leg", "L1", "--model", "claude-opus-4-8", cwd=tmp_path)
+    assert s.returncode == 0, s.stderr
+    led = json.loads((runs / "2026-09-01" / "ledger_cu.json").read_text(encoding="utf-8"))
+    leg = [e for e in led["legs"] if e["leg"] == "L1"][0]
+    assert leg["tokens_in"] == UNKNOWN and leg["tokens_out"] == UNKNOWN and leg["wall_ms"] == UNKNOWN
+    assert led["enforced_unit"] == "turns" and led["token_meter"] == UNKNOWN

@@ -1,0 +1,4 @@
+{"type":"summary","summary":"BP2-METER negative-control fixture - a transcript that carries NO message.usage record at all, so a settle against it renders every token field the literal UNKNOWN (never zero, never an estimate)"}
+{"type":"user","message":{"role":"user","content":"start"}}
+{"type":"progress","note":"no usage anywhere in this file"}
+{bad json line that json.loads will skip without crashing

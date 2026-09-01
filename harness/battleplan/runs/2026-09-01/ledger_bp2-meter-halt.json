@@ -1,0 +1,46 @@
+{
+  "run": "bp2-meter-halt",
+  "date": "2026-09-01",
+  "cap": {
+    "turns": 10,
+    "tokens": 100
+  },
+  "status": "blocked",
+  "reason": "budget",
+  "enforced_unit": "tokens",
+  "token_meter": "measured",
+  "totals": {
+    "turns": 1,
+    "tokens_in": 12700,
+    "tokens_out": 470
+  },
+  "remaining": {
+    "turns": 9,
+    "tokens": -13070
+  },
+  "legs": [
+    {
+      "leg": "BP2-METER",
+      "model": "claude-opus-4-8",
+      "tokens_in": 12700,
+      "tokens_out": 470,
+      "wall_ms": "UNKNOWN",
+      "cap": {
+        "turns": 10,
+        "tokens": 100
+      },
+      "remaining": {
+        "turns": 9,
+        "tokens": -13070
+      },
+      "enforced_unit": "tokens",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp2-meter\\tests\\fixtures\\transcript_with_usage.jsonl",
+      "settled": true,
+      "note": "HALT: measured spend 13170 tokens crossed the ceiling 100 at settle - the dispatch already ran; nothing further dispatches"
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+}

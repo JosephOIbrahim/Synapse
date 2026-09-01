@@ -1,0 +1,5 @@
+{"type":"summary","summary":"BP2-METER settle fixture - a Claude Code transcript with real message.usage records"}
+{"type":"user","message":{"role":"user","content":"do the thing"}}
+{"type":"assistant","message":{"id":"msg_a","role":"assistant","model":"claude-opus-4-8","usage":{"input_tokens":1000,"cache_creation_input_tokens":200,"cache_read_input_tokens":3000,"output_tokens":150}}}
+{"type":"progress","note":"a line carrying no usage record is skipped, never fatal"}
+{"type":"assistant","message":{"id":"msg_b","role":"assistant","model":"claude-opus-4-8","usage":{"input_tokens":500,"cache_read_input_tokens":8000,"output_tokens":320}}}
