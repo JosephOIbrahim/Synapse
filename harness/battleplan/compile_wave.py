@@ -38,13 +38,20 @@ def fill_prompt(m: dict, row: dict) -> str:
         tpl = tpl.replace(k, v)
     return tpl
 
-def main() -> int:
+def main(wave_arg: str = "") -> int:
+    # 2026-09-01 (BP2 scaffold): optional wave argument. `compile_wave.py bp2`
+    # compiles ONLY missions whose id prefix is that wave, so a second wave in
+    # missions/ cannot clobber the first wave's rows file. No argument = the
+    # original behaviour (every mission, wave named from the first file).
     if ms.validate_all() != 0:
         print("compile refused: missions failed validation")
         return 1
     rows, wave = [], None
+    want = wave_arg.lower() if wave_arg else ""
     for f in sorted((HERE / "missions").glob("*.json")):
         m = json.loads(f.read_text(encoding="utf-8"))
+        if want and m["id"].split("-", 1)[0].lower().replace("w", "wave") != want:
+            continue
         row = leg_row(m)
         rows.append(row)
         wave = wave or m["id"].split("-", 1)[0].lower().replace("w", "wave")
@@ -56,4 +63,4 @@ def main() -> int:
     return 0
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else ""))

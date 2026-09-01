@@ -1,0 +1,94 @@
+{
+  "run": "orch_20260901-114836",
+  "date": "2026-09-01",
+  "cap": {
+    "turns": 10,
+    "tokens": null
+  },
+  "status": "complete",
+  "reason": null,
+  "enforced_unit": "turns",
+  "token_meter": "UNKNOWN",
+  "totals": {
+    "turns": 4,
+    "tokens_in": "UNKNOWN",
+    "tokens_out": "UNKNOWN"
+  },
+  "remaining": {
+    "turns": 6,
+    "tokens": "UNKNOWN"
+  },
+  "legs": [
+    {
+      "leg": "BP2-LATENCY",
+      "model": "claude-opus-4-8",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": "UNKNOWN",
+      "cap": {
+        "turns": 10,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 9,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true
+    },
+    {
+      "leg": "BP2-METER",
+      "model": "claude-opus-4-8",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": "UNKNOWN",
+      "cap": {
+        "turns": 10,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 8,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true
+    },
+    {
+      "leg": "BP2-PANELTRUTH",
+      "model": "claude-opus-4-8",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": "UNKNOWN",
+      "cap": {
+        "turns": 10,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 7,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true
+    },
+    {
+      "leg": "BP2-STORE",
+      "model": "claude-opus-4-8",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": "UNKNOWN",
+      "cap": {
+        "turns": 10,
+        "tokens": null
+      },
+      "remaining": {
+        "turns": 6,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited."
+}

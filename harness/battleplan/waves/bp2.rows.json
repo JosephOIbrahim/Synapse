@@ -1,0 +1,132 @@
+[
+  {
+    "id": "BP2-CRUX",
+    "name": "Adversarial crucible for wave BP2 pairs 1+2 - audits METER/PANELTRUTH/LATENCY/STORE receipts, builds nothing",
+    "state": "ready",
+    "receipt": "BP2-CRUX.json",
+    "branch": "bp2/crux",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp2-crux",
+    "prompt": "harness/battleplan/prompts/BP2-CRUX.md",
+    "deps": [
+      "BP2-METER",
+      "BP2-PANELTRUTH",
+      "BP2-LATENCY",
+      "BP2-STORE"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.2 calls 2/4/10, sec.6 BP2-CRUX, sec.12 R-5/R-6. Tier: referee (claude-fable-5) by intent; this wave's orchestrator resolves one model per manifest (sec.12 R-5), so you run on reasoning and your receipt says so. Read-only. Blocked by design until the four pair-builder receipts exist. BP2-PANELDESIGN is held and gets its own crucible leg Fri (BP2-CRUXB, authored Wed). A BROKEN verdict means that leg does not ride. A green CRUX receipt is a PRECONDITION for Joe's merge words, never a substitute - verdicts are READ before merge words fire. Self-cap: 25 turns (progress every 5)."
+  },
+  {
+    "id": "BP2-LATENCY",
+    "name": "Memory latency receipt: deposit / recall / close-reopen-recall timed under hython, repeat-5, p50/p95, bucketed if over the camera budget - a number on file, no code under memory/ touched",
+    "state": "ready",
+    "receipt": "BP2-LATENCY.json",
+    "branch": "bp2/latency",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp2-latency",
+    "prompt": "harness/battleplan/prompts/BP2-LATENCY.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/battleplan/notes/memory_latency_probe.py",
+      "harness/battleplan/runs/",
+      ".synapse/contracts/memory-latency-receipt.yaml"
+    ],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.0.2 L-1/L-2, sec.2 call 8, sec.6 BP2-LATENCY, sec.12 R-8. Tier: reasoning. Self-cap: 20 turns (progress every 5; sec.12 R-3). Probe only: the diff under python/synapse/memory/ must be EMPTY. Parallel-safe with BP2-STORE (you read the memory path; STORE writes it) - claim nothing under python/synapse/memory/. Camera budgets are sec.2 call 8 (proposed, ratification pending): deposit ack <= 500 ms, recall p95 <= 1500 ms, reopen-with-memory-layer <= 3000 ms, demo scene, N <= 200. Headless Moneta may render UNAVAILABLE by construction - that IS a measurement, record it. A fix leg cannot be spawned from the bus (spawn admits probe only, sec.12 R-8): post the spawn proposal with the bucket named and stop; the referee authors BP2-LATENCYFIX on Joe's dispatch."
+  },
+  {
+    "id": "BP2-METER",
+    "name": "Token meter measured: post-close settle from the leg transcript into rails/ledger; per-leg tier resolution incl. referee; drift check on the bus",
+    "state": "ready",
+    "receipt": "BP2-METER.json",
+    "branch": "bp2/meter",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp2-meter",
+    "prompt": "harness/battleplan/prompts/BP2-METER.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/orchestrate.ps1",
+      "harness/rails.py",
+      "harness/rails_exec.json",
+      "harness/battleplan/mission_schema.py",
+      "harness/battleplan/compile_wave.py",
+      "harness/battleplan/drift.py",
+      "harness/battleplan/prompts/_template.md",
+      "tests/test_rails.py",
+      "tests/fixtures/",
+      "harness/battleplan/notes/",
+      "harness/battleplan/runs/"
+    ],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.0.4 H-1/H-2/H-4, sec.6 BP2-METER, sec.12 R-3/R-4/R-5/R-9. Tier: reasoning. Self-cap: 40 turns (a rails turn is a leg DISPATCH, not a conversational turn - docs/BATTLEPLAN.md sec.12 R-3; your cap is self-reported via progress messages every 5 turns). First leg of BP2 by design - every later cap is set from this leg's first measured ledger. REUSE BEFORE BUILD (sec.12 R-4): harness/rails.py:176 measure_transcript_tokens() and `rails.py charge --transcript` ALREADY EXIST; nothing calls them because orchestrate.ps1 Rails-Charge (:102-115) is a pre-dispatch gate. Do NOT build a `claude -p --output-format json` envelope parser: orchestrate legs are interactive sessions (orchestrate.ps1:406) and never emit an envelope; that parser belongs to harness/rope (parked). Cut T3 first if the cap nears. Parallel-safe with BP2-PANELTRUTH (harness/ vs panel/)."
+  },
+  {
+    "id": "BP2-PANELDESIGN",
+    "name": "Panel rhythm: spec then implement the sec.7 spacing pass on the five camera regions - tokens + QSS on the density root property, zero new colours/widgets/families, Expert pin green",
+    "state": "ready",
+    "receipt": "BP2-PANELDESIGN.json",
+    "branch": "bp2/paneldesign",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp2-paneldesign",
+    "prompt": "harness/battleplan/prompts/BP2-PANELDESIGN.md",
+    "deps": [
+      "BP2-PANELTRUTH"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/panel/designsystem/",
+      "python/synapse/panel/manifests/",
+      "python/synapse/panel/tokens.py",
+      "python/synapse/panel/styles.py",
+      "docs/PANEL_RHYTHM_SPEC.md",
+      ".synapse/contracts/panel-rhythm.yaml",
+      "tests/",
+      "harness/battleplan/notes/"
+    ],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.0.3 P-4/P-6/P-7, sec.6 BP2-PANEL-DESIGN, sec.7, sec.12 R-6. Tier: reasoning (the importer-retirement chore is mechanical tier - Haiku - if the orchestrator can dispatch it separately; otherwise do it last and say so). Self-cap: 60 turns across two sessions (A: spec, B: implement; progress every 5; sec.12 R-3). HELD in the live manifest until Joe's Wed word (sec.12 R-6): PANELTRUTH must be MERGED, not merely receipted, before you run - its harness/battleplan/runs/<date>/profile_diff.json is your input, read it from master. Amber tier: the GUI sign-off on the five regions is Joe's eyes (gui_required). ADAPT: confirm /design skill syntax with /help in your session; if unavailable, author the spec by hand from sec.7 - same output, same accept."
+  },
+  {
+    "id": "BP2-PANELTRUTH",
+    "name": "Panel truth: profile diff with receipt, TOKEN face + rail refresh on task completion, docked-open float fix - three things on camera get a receipt",
+    "state": "ready",
+    "receipt": "BP2-PANELTRUTH.json",
+    "branch": "bp2/paneltruth",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp2-paneltruth",
+    "prompt": "harness/battleplan/prompts/BP2-PANELTRUTH.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "python/synapse/panel/",
+      "houdini/scripts/python/synapse_shelf.py",
+      "tests/",
+      "docs/help/",
+      ".synapse/contracts/panel-truth.yaml",
+      "harness/battleplan/notes/",
+      "harness/battleplan/runs/"
+    ],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.0.3 P-1/P-2/P-3/P-7, sec.6 BP2-PANEL-TRUTH, sec.12 R-2. Tier: reasoning. Self-cap: 30 turns (self-reported via progress every 5 turns; sec.12 R-3). Parallel-safe with BP2-METER (panel/+tests/ vs harness/). Your profile_diff.json finding is BP2-PANELDESIGN's input - post its path on the bus the moment it lands. Camera profile is Curious (sec.2 call 7) unless Joe overrides; Expert is pinned by test_expert_resolved_equals_v5420_snapshot either way. GUI verification (float, refresh, profile switch -> close -> reopen) is Joe's eyes (gui_required) - record it UNKNOWN headless, never a pass."
+  },
+  {
+    "id": "BP2-STORE",
+    "name": "Store truth: FU-1 Memory.id generated after created_at (repeat deposits no longer collide); M-5 'requested Moneta, served JSONL' probed and made to report BLOCKED/UNAVAILABLE; health line carries requested/active backend, embedder, dim, rows",
+    "state": "ready",
+    "receipt": "BP2-STORE.json",
+    "branch": "bp2/store",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp2-store",
+    "prompt": "harness/battleplan/prompts/BP2-STORE.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "python/synapse/memory/models.py",
+      "python/synapse/memory/",
+      "tests/test_moneta_crucible.py",
+      "tests/",
+      "harness/battleplan/notes/"
+    ],
+    "note": "BATTLEPLAN docs/BATTLEPLAN.md :: 2026-09-01 sec.0.1 M-4/M-5, sec.2 call 9, sec.6 BP2-STORE. Tier: reasoning. Self-cap: 30 turns (progress every 5; sec.12 R-3). You are the only writer under python/synapse/memory/ this wave - claim it first; BP2-LATENCY reads it and must not claim it. Today's demo shape is repeat-2 identical deposits on a Moneta backend: FU-1 is the small fix (sec.2 call 9) - id after created_at defaults, time-dependent hash, FORMAT UNCHANGED, no migration, backfill unaffected. UUID + content_fingerprint (Sol-review W2) is beta-W2 - do not start it. Constitution territory holds: harness/memory/** and python/synapse/loop/pgdrm.py are not yours."
+  }
+]

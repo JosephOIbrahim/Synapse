@@ -47,9 +47,16 @@ claims become invisible and two agents will edit one file.
    Then read open claims:
    `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py claims {WAVE}`
    If a peer holds an overlapping open claim: STOP, post a `block`, work
-   another target until it releases. No intra-wave shared seam by design:
-   TRIAGE is read-only, RAILS owns harness/, HONESTY owns the recall path.
-   HONESTY consumes TRIAGE's bucket finding VIA THE BUS the moment it posts.
+   another target until it releases. No intra-wave shared seam by design.
+   BP2 territory: METER owns harness/; PANELTRUTH owns python/synapse/panel/
+   + houdini/scripts/python/synapse_shelf.py; LATENCY is READ-ONLY under
+   python/synapse/memory/ (its writes are harness/battleplan/notes|runs and
+   its contract); STORE is the only writer under python/synapse/memory/;
+   PANELDESIGN (held until Joe's word) owns designsystem/ + manifests/ + qss;
+   CRUX is read-only. Consumption VIA THE BUS the moment it posts: PANELDESIGN
+   reads PANELTRUTH's profile_diff.json finding; STORE reads LATENCY's bucket
+   finding if the bucket is id/lock; the orchestrator reads METER's first
+   measured ledger.
 2. **Findings** as you go — and the moment an evidence artifact lands, post its
    path so peers consume it live (this is the wave's dynamic handoff):
    `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post {WAVE} {ID} finding '{\"claim\": \"...\", \"anchor\": \"file:line-or-artifact-path\"}'`
@@ -58,6 +65,17 @@ claims become invisible and two agents will edit one file.
 4. **Read before you act** on any shared seam, and poll for peer artifacts your
    mission consumes:
    `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py read {WAVE} {ID}`
+5. **Progress** every 5 turns - the on-target signal the orchestrator's drift
+   check reads. Cite the target you are on and the evidence path if one exists:
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post {WAVE} {ID} progress '{\"target\": \"T1\", \"evidence_path\": \"<path-or-none>\"}'`
+   A `refocus` message addressed to you carries your own mission targets
+   verbatim: answer it by naming the target you return to, not with a new idea.
+   A `halt` message means rails stopped the wave: commit what is named-file
+   clean, write your receipt at observed scope, stop.
+   Self-cap: the turn number in your mission note is SELF-REPORTED (a rails
+   turn is a leg dispatch, not one of your turns - docs/BATTLEPLAN.md sec.12
+   R-3). At 80% of it post a progress message saying `wrap_up`; at 100% commit,
+   receipt, stop - partial work stays on your branch for a fresh session.
 
 ## Receipt (completion contract)
 

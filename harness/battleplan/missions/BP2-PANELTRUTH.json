@@ -1,0 +1,45 @@
+{
+  "id": "BP2-PANELTRUTH",
+  "name": "Panel truth: profile diff with receipt, TOKEN face + rail refresh on task completion, docked-open float fix - three things on camera get a receipt",
+  "band": "TRUTH",
+  "class": "build",
+  "note": "Tier: reasoning. Self-cap: 30 turns (self-reported via progress every 5 turns; sec.12 R-3). Parallel-safe with BP2-METER (panel/+tests/ vs harness/). Your profile_diff.json finding is BP2-PANELDESIGN's input - post its path on the bus the moment it lands. Camera profile is Curious (sec.2 call 7) unless Joe overrides; Expert is pinned by test_expert_resolved_equals_v5420_snapshot either way. GUI verification (float, refresh, profile switch -> close -> reopen) is Joe's eyes (gui_required) - record it UNKNOWN headless, never a pass.",
+  "targets": [
+    "T1) PROFILE DIFF. Headless Qt (the test_rope_* harness pattern): compose all three manifests (python/synapse/panel/manifests/{curious,expert,ml}.py); diff the resolved widget tree (visible / collapsed / stretch / prominence / density root property), the composed system prompt (hash + overlay text), and `defaults`. Emit harness/battleplan/runs/<date>/profile_diff.json stating exactly what differs per profile - 'only prominence + density' is a valid finding. Assert the density root property repolishes descendants (the 08-04 finding: Qt does not cascade a root property; the whole tree is repolished) with a test that FAILS if the repolish call is removed - show the mutation in notes. Persist test: select -> save -> load -> same profile (settings.py schema v3 SwitcherState).",
+    "T2) TOKEN REFRESH. Wire the worker's task-completion path (python/synapse/panel/claude_worker.py:196 begin_task / :219 add(last_usage) feed USAGE_SINK) -> face_token.refresh_from_probe() AND the rail meter/pill (compositor ids token_meter, token_pill) via the existing USAGE_SINK.snapshot(). UNKNOWN stays UNKNOWN. NEVER poll on a timer (V3 rule: a probe must never trip the limit it reports on). Test: feed the sink, emit completion, assert the face and pill text changed; negative control: unfed sink -> UNKNOWN text, no bar.",
+    "T3) FLOAT FIX. houdini/scripts/python/synapse_shelf.py open_panel() (:126-137): prefer an existing tab whose activeInterface().name() == 'synapse_panel'; else paneTabOfType(NetworkEditor).pane().createTab(PythonPanel) set to the interface; float ONLY if no panes exist. ~15 lines. Unit test with a mocked hou covering all three branches. Add one line under docs/help/: 'Save your desktop once (Windows > Desktop > Save Current Desktop As) so the docked tab persists.'",
+    "T4) Author .synapse/contracts/panel-truth.yaml (git add -f) with every feature passing:false - flips are Joe's word."
+  ],
+  "touches": [
+    "python/synapse/panel/",
+    "houdini/scripts/python/synapse_shelf.py",
+    "tests/",
+    "docs/help/",
+    ".synapse/contracts/panel-truth.yaml",
+    "harness/battleplan/notes/",
+    "harness/battleplan/runs/"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "python/synapse/panel/synapse_panel.py lifecycle/timer lines untouched (W5L-LIFE surface) - diff those line ranges is empty",
+    "no `hou.` reference introduced in python/synapse/panel/claude_worker.py",
+    "no hardcoded pt size introduced anywhere in the diff (W5L-PANEL T1: font floor derives from the host)",
+    "no timer-driven polling of the usage sink (V3 rule) - the refresh is event-driven from task completion only",
+    "test_expert_resolved_equals_v5420_snapshot green on the branch"
+  ],
+  "spawn_classes": ["probe"],
+  "source": {
+    "doc": "docs/BATTLEPLAN.md",
+    "anchor": "2026-09-01 sec.0.3 P-1/P-2/P-3/P-7, sec.6 BP2-PANEL-TRUTH, sec.12 R-2"
+  },
+  "acceptance": [
+    { "predicate": "harness/battleplan/runs/<date>/profile_diff.json exists and states what differs across curious/expert/ml (widget tree, system prompt hash+overlay, defaults); its path is posted on the bus as a finding", "evidence": "receipt" },
+    { "predicate": "density repolish test turns red when the repolish call is removed (mutation recorded in notes)", "evidence": "test" },
+    { "predicate": "profile persist test: select -> save -> load -> same profile", "evidence": "test" },
+    { "predicate": "TOKEN refresh test: fed sink + task completion -> face and pill text changed; negative control unfed sink -> UNKNOWN", "evidence": "test" },
+    { "predicate": "float fix unit test with mocked hou: existing synapse tab preferred; NetworkEditor pane createTab next; float only with no panes", "evidence": "test" },
+    { "predicate": "test_expert_resolved_equals_v5420_snapshot green and `pytest -q` green on the branch", "evidence": "test" },
+    { "predicate": "GUI verify in the .400 GUI: Ctrl+K opens docked, TOKEN face updates after a task, profile switch survives close -> reopen", "evidence": "gui_probe", "gui_required": true }
+  ]
+}

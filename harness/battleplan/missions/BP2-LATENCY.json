@@ -1,0 +1,39 @@
+{
+  "id": "BP2-LATENCY",
+  "name": "Memory latency receipt: deposit / recall / close-reopen-recall timed under hython, repeat-5, p50/p95, bucketed if over the camera budget - a number on file, no code under memory/ touched",
+  "band": "TRUTH",
+  "class": "probe",
+  "note": "Tier: reasoning. Self-cap: 20 turns (progress every 5; sec.12 R-3). Probe only: the diff under python/synapse/memory/ must be EMPTY. Parallel-safe with BP2-STORE (you read the memory path; STORE writes it) - claim nothing under python/synapse/memory/. Camera budgets are sec.2 call 8 (proposed, ratification pending): deposit ack <= 500 ms, recall p95 <= 1500 ms, reopen-with-memory-layer <= 3000 ms, demo scene, N <= 200. Headless Moneta may render UNAVAILABLE by construction - that IS a measurement, record it. A fix leg cannot be spawned from the bus (spawn admits probe only, sec.12 R-8): post the spawn proposal with the bucket named and stop; the referee authors BP2-LATENCYFIX on Joe's dispatch.",
+  "targets": [
+    "T1) harness/battleplan/notes/memory_latency_probe.py: wraps the PUBLIC calls only - store open, deposit (to ack), recall (MemoryPort.query_and_filter of a known deposit), close -> reopen -> layer-in-stack check -> recall - each under time.perf_counter(); repeat 5; records wall_ms per op per repeat, p50 and p95 per op, N memories, backend + embedder id + dim (from the health line), and build = hou.applicationVersionString() observed IN THE SAME PROCESS. Every field measured or the literal UNKNOWN. Runs under `hython .synapse/hytest.py harness/battleplan/notes/memory_latency_probe.py` (agent half -> runs/<date>/memory_latency_hython.json) and pastes cleanly into the GUI Python shell (Joe's half -> memory_latency_gui.json).",
+    "T2) BUCKET. If any p95 is over its sec.2-8 budget, attribute it with a second timed pass to exactly one bucket: embedding time / stage-layer compose (the Flatten() class, harness/latency/LEDGER.md) / sync JSONL I/O / lock wait / predicate scan. Post a bus finding naming the bucket with the row that proves it. If under budget, the finding says under budget and no fix is proposed.",
+    "T3) Author .synapse/contracts/memory-latency-receipt.yaml (git add -f; features passing:false; ratification is Joe's word): memory_latency_<env>.json exists, repeat-5, p50/p95 per op, build runtime-observed, unmeasured fields literal UNKNOWN, a fix leg may open only against a named bucket.",
+    "T4) If over budget: post `spawn` proposal for BP2-LATENCYFIX (amber, memory/ write, deps BP2-STORE merged, the bucket as its only target). Not before the bucket is proved."
+  ],
+  "touches": [
+    "harness/battleplan/notes/memory_latency_probe.py",
+    "harness/battleplan/runs/",
+    ".synapse/contracts/memory-latency-receipt.yaml"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "repeat-5, never repeat-1; p95 reported, never a mean alone",
+    "the build stamp in the artifact equals hou.applicationVersionString() observed in the same process that took the timings",
+    "`git diff --stat master..HEAD -- python/synapse/memory/` is empty",
+    "UNAVAILABLE-by-construction under headless hython is recorded as a measurement, never coerced to a number and never a pass",
+    "no bucket is named without the second timed pass that isolates it"
+  ],
+  "spawn_classes": ["probe"],
+  "source": {
+    "doc": "docs/BATTLEPLAN.md",
+    "anchor": "2026-09-01 sec.0.2 L-1/L-2, sec.2 call 8, sec.6 BP2-LATENCY, sec.12 R-8"
+  },
+  "acceptance": [
+    { "predicate": "harness/battleplan/runs/<date>/memory_latency_hython.json exists: 5 repeats, per-op wall_ms, p50/p95 per op, N, backend, embedder id, dim, build observed in-process; every unmeasured field literal UNKNOWN", "evidence": "receipt" },
+    { "predicate": "memory_latency_gui.json from the same probe pasted into the .400 GUI Python shell (Joe)", "evidence": "gui_probe", "gui_required": true },
+    { "predicate": ".synapse/contracts/memory-latency-receipt.yaml authored, all features passing:false", "evidence": "check" },
+    { "predicate": "diff under python/synapse/memory/ is empty on the branch", "evidence": "check" },
+    { "predicate": "bus finding posted: either 'under budget' with the numbers, or the named bucket with its isolating row plus a spawn proposal for BP2-LATENCYFIX", "evidence": "receipt" }
+  ]
+}

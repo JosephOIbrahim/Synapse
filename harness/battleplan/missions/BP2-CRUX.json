@@ -1,0 +1,34 @@
+{
+  "id": "BP2-CRUX",
+  "name": "Adversarial crucible for wave BP2 pairs 1+2 - audits METER/PANELTRUTH/LATENCY/STORE receipts, builds nothing",
+  "band": "TRUST",
+  "class": "crucible",
+  "note": "Tier: referee (claude-fable-5) by intent; this wave's orchestrator resolves one model per manifest (sec.12 R-5), so you run on reasoning and your receipt says so. Read-only. Blocked by design until the four pair-builder receipts exist. BP2-PANELDESIGN is held and gets its own crucible leg Fri (BP2-CRUXB, authored Wed). A BROKEN verdict means that leg does not ride. A green CRUX receipt is a PRECONDITION for Joe's merge words, never a substitute - verdicts are READ before merge words fire. Self-cap: 25 turns (progress every 5).",
+  "targets": [
+    "1) For each builder receipt: re-run every acceptance predicate independently in a fresh checkout of the leg branch; verdicts pass|fail|UNKNOWN with your own anchors, never the builder's. A gui_required predicate is UNKNOWN to you - say so.",
+    "2) METER: reproduce the settle yourself on a leg with a real transcript; confirm every token integer traces to a message.usage record and every unresolvable field is the literal UNKNOWN; diff the -DryRun control log against runs/2026-08-31/orch_dryrun_before.norm.log yourself; run rails.py resolve referee. Mutations (>= 4): strip usage records from the transcript fixture; remove the settle call; hardcode a token count; set enforced_unit tokens without a ceiling - each must redden a test.",
+    "3) PANELTRUTH: run the profile diff yourself and compare to the posted profile_diff.json; mutations (>= 4): remove the density repolish; restore the open-only refresh call site; add a timer poll of the sink; make open_panel float first - each must redden a test. Confirm the Expert pin is green and synapse_panel.py lifecycle/timer ranges are untouched.",
+    "4) LATENCY: run memory_latency_probe.py yourself under `hython .synapse/hytest.py`; confirm the build stamp equals the hou.applicationVersionString() you observed; confirm p95 is present and repeat count is 5; confirm `git diff --stat master..HEAD -- python/synapse/memory/` is empty; if a bucket was named, confirm the isolating row exists.",
+    "5) STORE: mutations (>= 4): re-order id generation before created_at; drop the created_at term from the hash; make the Moneta-unimportable path return SUCCESS; change the id format - each must redden a test. Diff the sec.4 tool surface byte-for-byte against master; grep the branch diff for pgdrm.py, VERSION, README.md, loop-v00.yaml, harness/loop/, harness/memory/.",
+    "6) Receipt verdict per leg: SOUND | SOUND-WITH-NITS | BROKEN with chain_broken_at named. Write harness/battleplan/notes/BP2-CRUX_verdicts.md and BP2-CRUX_mutations.json. Post each verdict on the bus addressed to *. Write harness/notes/h22/BP2_CRUX_LANDED.flag LAST."
+  ],
+  "touches": [],
+  "readonly": true,
+  "deps": ["BP2-METER", "BP2-PANELTRUTH", "BP2-LATENCY", "BP2-STORE"],
+  "crucible_criteria": [
+    "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "the crucible flips no contract feature and edits no product file"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/BATTLEPLAN.md",
+    "anchor": "2026-09-01 sec.2 calls 2/4/10, sec.6 BP2-CRUX, sec.12 R-5/R-6"
+  },
+  "acceptance": [
+    { "predicate": "one verdict per pair builder leg (four), each with independently re-run acceptance rows and the crucible's own anchors", "evidence": "receipt" },
+    { "predicate": ">= 4 self-authored mutations per builder, each named with the test it reddens (BP2-CRUX_mutations.json)", "evidence": "test" },
+    { "predicate": "settle reproduced by the crucible with its own ledger artifact; latency probe re-run by the crucible with its own artifact", "evidence": "probe" }
+  ]
+}
