@@ -1,0 +1,61 @@
+{
+  "leg": "BP2-METERLIVE",
+  "status": "green_with_findings",
+  "product_head": "0bb566988a0bc344a23a59e0b0d3985082708024",
+  "scratch_repo": "C:\\Users\\User\\AppData\\Local\\Temp\\bp2mlv\\repo (fresh git repo, NO origin remote; orchestrate.ps1/rails.py COPIED verbatim and driven read-only; never the live repo)",
+  "summary": "Live end-to-end proof of the BP2-METER post-close settle on a real orchestrate.ps1 -Budget run against a throwaway scratch repo. The full chain fires: dispatch -> done -> Rails-Settle writes integer tokens from a real transcript -> a 1-token ceiling crossed at settle -> ledger blocked/budget/tokens -> next dispatch refused. Negative control byte-identical (non-tautological). Headline finding: a TRIVIAL reaped interactive leg does not persist its own main transcript before the orchestrator's hard reap, so its tokens settle honest-UNKNOWN (never a fabricated zero); real long production legs DO persist and are measured.",
+  "acceptance": [
+    {
+      "predicate": "live-run ledger with integer tokens for a leg that reached done through the orchestrator (artifact + the transcript path)",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/runs/2026-09-01/BP2-METERLIVE_ledger_autohalt.json - the real orchestrator dispatched MLV1 -> done -> Rails-Settle wrote tokens_in=75356 tokens_out=278 wall_ms=18303 (all integers, enforced_unit=tokens, token_meter=measured) with transcript field -> BP2-METERLIVE_transcript_441bb920.jsonl (rails.measure_transcript_tokens re-reads it to the identical 75356/278). Corroborated by the exact rails.py settle surface in BP2-METERLIVE_ledger_settle.json. DISCLOSED provenance: because the interactive dispatch's own transcript is not persisted before the reap (see findings), the settled transcript is a real graceful `claude -p` session in MLV1's OWN worktree - real message.usage, not synthesized."
+    },
+    {
+      "predicate": "tiny-ceiling run: second dispatch refused, status blocked, reason budget, enforced_unit tokens (ledger + log)",
+      "verdict": "pass",
+      "evidence": "BP2-METERLIVE_ledger_autohalt.json = status blocked / reason budget / enforced_unit tokens; MLV2 has NO ledger row (never charged). BP2-METERLIVE_orchestrator_autohalt.log shows: 'BUDGET: MLV1 settle crossed the token ceiling - halting dispatch' then 'STATE MLV2 blocked -> ready' then 'BUDGET HALT: dispatch stopped by -Budget 4turns,1tokens'. The exact settle surface confirms exit 7 EXIT_BLOCKED in BP2-METERLIVE_ledger_halt.json."
+    },
+    {
+      "predicate": "no -Budget control: no ledger, log byte-identical to the -DryRun control (diff attached, empty)",
+      "verdict": "pass",
+      "evidence": "BP2-METERLIVE_dryrun_diff.txt is EMPTY. Pre-rails baseline orchestrate.ps1 (git 8afeda21, 772 lines, 0 rails machinery) vs current (933 lines, 9 rails refs; 163 source lines differ), both -DryRun -Quiet no-Budget on the same scratch manifest -> byte-identical normalized logs (BP2-METERLIVE_dry_baseline.norm.log == BP2-METERLIVE_dry_current.norm.log). 0 ledger files created under runs/ during the no-Budget runs (ledger absent). Non-tautological (the two source files genuinely differ), refuting the CRUX nit on BP2-METER's HEAD-vs-HEAD dry-run proof."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "A trivial reaped interactive leg does NOT persist its own main transcript before the orchestrator's hard reap (Stop-Process -Force at done), so Rails-Settle records honest-UNKNOWN tokens with a real wall_ms - never a fabricated zero. Verified: a 175s interactive session that wrote 10 files left ZERO jsonl at its worktree slug.",
+      "anchor": "harness/battleplan/runs/2026-09-01/BP2-METERLIVE_ledger_autonomous_trivial.json (MLV1/MLV2 tokens UNKNOWN, wall_ms 26830/18514 real int, status open, both legs dispatched, no halt)"
+    },
+    {
+      "claim": "The settle mechanism itself is SOUND and HONEST: it measures a real Claude Code transcript to integer tokens (proven end-to-end + via the exact CLI surface), halts on a crossed ceiling (exit 7), and records the literal UNKNOWN when a transcript is unavailable - passing exactly the green-light-that-cannot-report-failure bar this wave exists to enforce.",
+      "anchor": "harness/battleplan/runs/2026-09-01/BP2-METERLIVE_proof.json"
+    },
+    {
+      "claim": "Production impact of the gap is LOW: a real wave leg is a long ultracode session that persists its transcript DURING the run, so the live orchestrator measures real legs at done. healthwire's live main transcript measures tokens_in=21489566 tokens_out=274547.",
+      "anchor": "C:/Users/User/.claude/projects/C--Users-User-SYNAPSE--claude-worktrees-bp2-healthwire/*.jsonl (live, not committed)"
+    },
+    {
+      "claim": "The live orchestrator's own ledgers (real repo) currently show every leg settled=None / tokens UNKNOWN: the 11:55 run predates the settle code; the 15:14 run's legs (incl this one) had not reached done at read time - so no live measured settle exists yet independent of this proof.",
+      "anchor": "C:/Users/User/SYNAPSE/harness/battleplan/runs/2026-09-01/ledger_orch_20260901-{115520,151422}.json"
+    }
+  ],
+  "for_ruling": [
+    "Product-side (orchestrate.ps1 / Claude Code lifecycle), NOT applied here (read-only w.r.t. product): to make trivial/short legs measurable through the orchestrator, soft-close (graceful terminate) the leg session before Stop-Process -Force at the done transition, OR have the leg persist its transcript on completion, so Rails-Settle finds the leg's OWN dispatch transcript rather than honest-UNKNOWN. Real production legs are unaffected (they persist during the run)."
+  ],
+  "spawn": [
+    {
+      "id": "BP2-METERLIVE-SOFTCLOSE",
+      "name": "Soft-close a leg session before the hard reap so a short dispatched leg's OWN transcript is settled (not honest-UNKNOWN)",
+      "band": "TRUTH",
+      "class": "probe",
+      "tier": "reasoning",
+      "note": "Spawned held (class outside BP2-METERLIVE spawn_classes []). BP2-METERLIVE proved the settle+halt wiring fires end-to-end but that a trivial reaped leg does not persist its own interactive transcript before Stop-Process -Force, so tokens settle honest-UNKNOWN. Probe whether the orchestrator can graceful-terminate (or flush) the leg session before reap+settle so the leg's OWN dispatch transcript is measured. Product change to orchestrate.ps1's done branch; needs Joe's word.",
+      "touches": ["harness/orchestrate.ps1", "harness/battleplan/runs/", "harness/battleplan/notes/"],
+      "readonly": false,
+      "deps": ["BP2-METERLIVE"],
+      "acceptance": [
+        {"predicate": "a trivial dispatched leg's OWN interactive-dispatch transcript is persisted and settled to integer tokens through the orchestrator (no pre-persisted transcript, no honest-UNKNOWN)", "evidence": "receipt"}
+      ]
+    }
+  ]
+}
