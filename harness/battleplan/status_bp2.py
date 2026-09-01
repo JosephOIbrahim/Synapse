@@ -3,6 +3,7 @@
 # state (held legs shown), bus line count + open claims, orchestrator liveness,
 # latest ledger, CRUX flag. Observed, never asserted.
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -48,7 +49,9 @@ def main():
         print("open claims:\n" + (claims or "  (none)"))
     else:
         print("bus: empty (wave not started)")
-    ledgers = sorted((AF / "runs").glob("*/ledger_orch_*.json"))
+    # live orchestrator ledgers only (run id orch_<yyyymmdd-hhmmss>, wave dates >= 2026-09-01)
+    ledgers = [p for p in sorted((AF / "runs").glob("*/ledger_orch_*.json"))
+               if re.fullmatch(r"ledger_orch_\d{8}-\d{6}\.json", p.name) and p.parent.name >= "2026-09-01"]
     if ledgers:
         led = json.loads(ledgers[-1].read_text(encoding="utf-8"))
         print(f"ledger: {ledgers[-1].name} status={led.get('status')} unit={led.get('enforced_unit')} "
