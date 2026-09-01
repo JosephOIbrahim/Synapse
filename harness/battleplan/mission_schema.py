@@ -9,7 +9,7 @@ from pathlib import Path
 
 REQUIRED = ["id", "name", "band", "source", "targets", "acceptance",
             "deps", "readonly", "touches", "crucible_criteria"]
-OPTIONAL = ["spawn_classes", "note", "receipt", "branch", "worktree", "class"]
+OPTIONAL = ["spawn_classes", "note", "receipt", "branch", "worktree", "class", "tier"]
 BANDS = {"BUILD", "TRUST", "TRUTH", "PAPER"}
 ID_RE = re.compile(r"^BP\d+-[A-Z0-9]{2,12}$")
 

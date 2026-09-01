@@ -13,7 +13,7 @@ REPO = HERE.parents[1]
 def leg_row(m: dict) -> dict:
     tag = m["id"].split("-", 1)[1].lower()
     wave = m["id"].split("-", 1)[0].lower().replace("w", "wave")
-    return {
+    row = {
         "id": m["id"],
         "name": m["name"],
         "state": "ready",
@@ -27,6 +27,12 @@ def leg_row(m: dict) -> dict:
         "touches": m["touches"],
         "note": f"BATTLEPLAN {m['source']['doc']} :: {m['source']['anchor']}. {m.get('note','')}".strip(),
     }
+    # BP2-METER T2: carry an OPTIONAL tier onto the row so orchestrate.ps1 can
+    # resolve $leg.tier -> model via `rails.py resolve <tier>`. Omitted when the
+    # mission has none, so a tier-less row is byte-identical to before.
+    if m.get("tier"):
+        row["tier"] = m["tier"]
+    return row
 
 def fill_prompt(m: dict, row: dict) -> str:
     tpl = (HERE / "prompts" / "_template.md").read_text(encoding="utf-8")

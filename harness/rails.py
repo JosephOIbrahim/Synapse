@@ -39,13 +39,24 @@
 #
 # THE LEDGER IS THE RECEIPT (mission tagline).
 # Every run writes harness/battleplan/runs/<date>/ledger_<run>.json and prints
-# it. A run that passes cap closes status "complete"; a run that would pass cap
-# HALTS - it never silently continues - and closes status "blocked", reason
-# "budget", naming the leg it refused. That file is the receipt.
+# it. STATUS VOCABULARY (BP2-METER T4 + REFEREE bus finding 2026-09-01): a run
+# still accepting charges reads "open" - a LIVE wave must never read as finished.
+# A run that would pass cap HALTS (never a silent continue) and reads "blocked",
+# reason "budget", naming the leg it refused. Only an explicit close finalizes to
+# "complete". The old to_dict mapped open->complete, so a running wave's ledger
+# read "complete" with four legs still alive - that dishonesty is what this fixes.
+# That file is the receipt.
+#
+# WHAT A TURN IS (Target 4). One turn = one LEG DISPATCH, charged through
+# orchestrate.ps1's pre-dispatch Rails-Charge and resolved post-close by the
+# settle. It is NOT a conversational turn: a self-cap of "40 turns" is 40 leg
+# dispatches, not 40 chat turns (docs/BATTLEPLAN.md sec.12 R-3). The turns floor
+# is the always-measurable unit; the optional tokens ceiling is MEASURED from the
+# leg transcript at settle time, never estimated.
 #
 # Pure stdlib. Zero hou. Zero third-party. Importable as a library and callable
-# as a CLI (open | charge | close | tier) so harness/orchestrate.ps1 can drive it
-# from PowerShell.
+# as a CLI (open | charge | settle | close | resolve | tier) so
+# harness/orchestrate.ps1 can drive it from PowerShell.
 from __future__ import annotations
 
 import argparse
@@ -173,6 +184,22 @@ def _usage_of(obj):
     return None
 
 
+def _as_int(v) -> int:
+    """A usage subfield -> a non-negative int, or 0 when absent/malformed.
+
+    A missing cache subfield is legitimately 0 (no cache => zero cache tokens).
+    A corrupted non-numeric value ("12.5", [1], {}) is treated as 0 for THIS
+    field rather than crashing the whole measurement - a torn-but-JSON-valid line
+    still measures what it can, never raises (crucible #1: never crashes).
+    """
+    if v is None or isinstance(v, bool):
+        return 0
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return 0
+
+
 def measure_transcript_tokens(path) -> tuple:
     """MEASURE tokens_in / tokens_out from a Claude Code transcript JSONL.
 
@@ -205,11 +232,18 @@ def measure_transcript_tokens(path) -> tuple:
                 usage = _usage_of(rec)
                 if usage is None:
                     continue
+                # A record counts as MEASURED only when it genuinely carries an
+                # input_tokens or output_tokens field. An empty/absent usage dict
+                # is UNKNOWN, never a fabricated (0,0) - .get(field, 0) cannot tell
+                # an absent field from a real 0, so presence is checked explicitly
+                # (crucible #1: an absent token renders UNKNOWN, never 0).
+                if "input_tokens" not in usage and "output_tokens" not in usage:
+                    continue
                 saw = True
-                t_in += int(usage.get("input_tokens", 0) or 0)
-                t_in += int(usage.get("cache_creation_input_tokens", 0) or 0)
-                t_in += int(usage.get("cache_read_input_tokens", 0) or 0)
-                t_out += int(usage.get("output_tokens", 0) or 0)
+                t_in += _as_int(usage.get("input_tokens"))
+                t_in += _as_int(usage.get("cache_creation_input_tokens"))
+                t_in += _as_int(usage.get("cache_read_input_tokens"))
+                t_out += _as_int(usage.get("output_tokens"))
     except OSError:
         return UNKNOWN, UNKNOWN
     if not saw:
@@ -250,8 +284,9 @@ class Rails:
     turns_spent: int = 0
     tokens_spent: int = 0            # sum of MEASURED charges only
     token_meter: str = "measured"    # -> "UNKNOWN" the first time a charge is UNKNOWN
-    status: str = "open"             # open -> complete | blocked
+    status: str = "open"             # open (live) -> complete (finalised) | blocked
     reason: str | None = None
+    blocked_on: str | None = None    # "turns" | "tokens" - which cap halted the run
     legs: list = field(default_factory=list)
 
     def __post_init__(self):
@@ -315,6 +350,7 @@ class Rails:
             which = "turns" if turns_exceed else "tokens"
             self.status = "blocked"
             self.reason = "budget"
+            self.blocked_on = which
             self.legs.append({
                 "leg": leg, "model": model,
                 "tokens_in": ti, "tokens_out": to, "wall_ms": wm,
@@ -343,12 +379,145 @@ class Rails:
         self.legs.append(entry)
         return entry
 
+    # -- post-close settle (BP2-METER T1) ----------------------------------- #
+    def _rederive_token_state(self) -> None:
+        """Recompute tokens_spent + token_meter from the current leg list.
+
+        The authoritative post-settle view. tokens_spent is the sum of MEASURED
+        tokens over admitted legs; token_meter is "measured" only when EVERY
+        admitted leg carries measured int tokens - a still-pending reservation or
+        a settled-UNKNOWN leg keeps the run honest at UNKNOWN, falling enforcement
+        to the turns floor. Unlike charge()'s sticky flip this HEALS: a leg whose
+        UNKNOWN reservation is later settled from a real transcript restores the
+        meter, because UNKNOWN means "not currently known", never "known-bad".
+        """
+        admitted = [e for e in self.legs if e.get("admitted")]
+        self.tokens_spent = sum(
+            e["tokens_in"] + e["tokens_out"] for e in admitted
+            if _measured(e.get("tokens_in")) and _measured(e.get("tokens_out")))
+        fully = bool(admitted) and all(
+            _measured(e.get("tokens_in")) and _measured(e.get("tokens_out"))
+            for e in admitted)
+        self.token_meter = "measured" if fully else UNKNOWN
+
+    def settle(self, leg: str, model: str = "", tokens_in=None, tokens_out=None,
+               wall_ms=None, transcript=None) -> dict:
+        """Resolve one leg's MEASURED token cost AFTER it finished (post-close).
+
+        If a prior charge/reservation for <leg> exists, UPDATE that entry in
+        place - a settle is NOT a new turn, it is the measurement of a dispatch
+        already counted, so turns are never double-charged. If none exists, the
+        settle opens the turn itself (turns floor enforced), so it also works
+        standalone in a proof or test.
+
+        Measured tokens flow into the cap. A settle whose measured spend crosses
+        the token ceiling HALTS the run (status blocked, reason budget, blocked_on
+        tokens) - the halt the orchestrator reads before its NEXT dispatch; the
+        leg that just settled already ran, so it is never retroactively refused. A
+        settle with no resolvable transcript records every token field the literal
+        UNKNOWN (never zero, never an estimate) and leaves enforcement on the
+        turns floor.
+        """
+        if self.status == "blocked":
+            raise BudgetExceeded(
+                f"run {self.run} already halted: blocked:budget", self.to_dict())
+
+        ti = tokens_in if _measured(tokens_in) else UNKNOWN
+        to = tokens_out if _measured(tokens_out) else UNKNOWN
+        wm = wall_ms if _numeric(wall_ms) else UNKNOWN
+
+        # find this leg's entry to fill IN PLACE (never a new turn): prefer an
+        # un-settled reservation; else re-settle the newest already-settled entry
+        # (idempotent - a second settle for the same leg must NOT open a turn).
+        target = None
+        resettle = None
+        for e in reversed(self.legs):
+            if e.get("leg") == leg and e.get("admitted"):
+                if not e.get("settled", False):
+                    target = e
+                    break
+                if resettle is None:
+                    resettle = e
+        if target is None:
+            target = resettle  # re-settle in place, no new turn
+
+        if target is None:
+            # no entry for this leg at all - the settle opens the turn (floor bites)
+            prospective_turns = self.turns_spent + 1
+            if prospective_turns > self.cap.turns:
+                self.status = "blocked"
+                self.reason = "budget"
+                self.blocked_on = "turns"
+                self.legs.append({
+                    "leg": leg, "model": model,
+                    "tokens_in": ti, "tokens_out": to, "wall_ms": wm,
+                    "transcript": transcript, "cap": self.cap.to_dict(),
+                    "remaining": self._remaining(), "enforced_unit": "turns",
+                    "admitted": False, "settled": True,
+                    "note": f"REFUSED: settling would exceed the turns cap "
+                            f"(turn {prospective_turns} > {self.cap.turns})",
+                })
+                ledger = self.close()  # write the receipt before we raise
+                raise BudgetExceeded(
+                    f"blocked:budget - settle {leg} would exceed the turns cap", ledger)
+            self.turns_spent = prospective_turns
+            target = {"leg": leg, "model": model, "admitted": True, "settled": False,
+                      "cap": self.cap.to_dict()}
+            self.legs.append(target)
+
+        # fill the measured values IN PLACE (no new turn)
+        target["tokens_in"] = ti
+        target["tokens_out"] = to
+        target["wall_ms"] = wm
+        if model:
+            target["model"] = model
+        if transcript is not None:
+            target["transcript"] = transcript  # provenance: the measured source
+        target["settled"] = True
+
+        # re-derive the run token state from all admitted/settled legs
+        self._rederive_token_state()
+
+        # the token ceiling: a settle whose MEASURED spend crosses it halts the
+        # run. The leg already ran (its tokens are real spend); nothing further
+        # dispatches. This is the halt the orchestrator reads next poll.
+        if self.cap.tokens is not None and self.tokens_spent > self.cap.tokens:
+            self.status = "blocked"
+            self.reason = "budget"
+            self.blocked_on = "tokens"
+            target["note"] = (f"HALT: measured spend {self.tokens_spent} tokens crossed "
+                              f"the ceiling {self.cap.tokens} at settle - the dispatch "
+                              f"already ran; nothing further dispatches")
+
+        target["enforced_unit"] = self._run_enforced_unit()
+        target["remaining"] = self._remaining()
+        return target
+
     # -- serialisation ------------------------------------------------------ #
+    def _run_enforced_unit(self) -> str:
+        """The unit the RUN is enforcing on.
+
+        "tokens" only when a ceiling is set AND >= 1 admitted leg has MEASURED
+        tokens (BP2-METER T1) - an empty or all-UNKNOWN run reads "turns". A
+        token-ceiling halt reports "tokens" (blocked_on) even if later legs stayed
+        pending, because the halt was decided on real measured spend.
+        """
+        if self.blocked_on:
+            return self.blocked_on
+        any_measured = any(
+            _measured(e.get("tokens_in")) and _measured(e.get("tokens_out"))
+            for e in self.legs if e.get("admitted"))
+        if self.cap.tokens is not None and self.token_meter == "measured" and any_measured:
+            return "tokens"
+        return "turns"
+
     def to_dict(self) -> dict:
-        if self.status == "open":
-            run_status = "complete"
-        else:
-            run_status = self.status
+        # STATUS HONESTY (REFEREE bus finding 2026-09-01, T4 class): report the
+        # ACTUAL status. A live run still accepting charges reads "open" - it must
+        # not read "complete" while legs are alive. Only an explicit close()
+        # finalises "open" -> "complete"; "blocked" is a budget halt. The old code
+        # mapped open->complete HERE, so a running wave's ledger read finished.
+        run_status = self.status
         totals = {
             "turns": self.turns_spent,
             "tokens_in": UNKNOWN if self.token_meter != "measured" else
@@ -364,8 +533,7 @@ class Rails:
             "cap": self.cap.to_dict(),
             "status": run_status,
             "reason": self.reason,
-            "enforced_unit": "tokens" if (self.cap.tokens is not None and
-                                          self.token_meter == "measured") else "turns",
+            "enforced_unit": self._run_enforced_unit(),
             "token_meter": self.token_meter,
             "totals": totals,
             "remaining": self._remaining(),
@@ -375,13 +543,20 @@ class Rails:
             "note": "This ledger IS the receipt (BP1-RAILS). Every token field is "
                     "MEASURED from transcript message.usage or the literal UNKNOWN; "
                     "no field is an estimate. A turns floor guarantees the cap can "
-                    "never fall back to unlimited.",
+                    "never fall back to unlimited. One turn = one leg DISPATCH "
+                    "(not a conversational turn; BP2-METER T4, sec.12 R-3). Status "
+                    "'open' = the wave is still live, 'complete' = a finalised "
+                    "close, 'blocked' = a budget halt.",
         }
 
-    def close(self) -> dict:
-        """Finalise, write the ledger (the receipt) atomically, return it."""
-        if self.status == "open":
-            self.status = "complete"
+    def _persist(self) -> dict:
+        """Write the current ledger to disk atomically WITHOUT finalising status.
+
+        A live run stays "open" (REFEREE honesty: a charged-but-not-closed wave
+        must not read "complete"); a halted run stays "blocked". Only close()
+        maps "open" -> "complete". Used by the charge/settle CLI persistence so
+        the on-disk ledger reflects the live state, never a premature "complete".
+        """
         ledger = self.to_dict()
         d = self.dir()
         d.mkdir(parents=True, exist_ok=True)
@@ -390,6 +565,17 @@ class Rails:
         tmp.write_text(json.dumps(ledger, indent=2, ensure_ascii=False), encoding="utf-8")
         tmp.replace(path)  # atomic - the .tmp+replace pattern used across the harness
         return ledger
+
+    def close(self) -> dict:
+        """Finalise (open -> complete), write the ledger (the receipt), return it.
+
+        The explicit terminal close: an "open" (live) run becomes "complete", a
+        "blocked" run stays blocked. A charge/settle that only PERSISTS uses
+        _persist() and leaves the run "open" (REFEREE status-honesty fix).
+        """
+        if self.status == "open":
+            self.status = "complete"
+        return self._persist()
 
 
 def _under_root(p) -> bool:
@@ -438,6 +624,8 @@ def _load_rails(run, date, runs_dir, seam_path) -> Rails | None:
     r.token_meter = d.get("token_meter", "measured")
     r.status = d["status"] if d["status"] in ("blocked",) else "open"
     r.reason = d.get("reason")
+    # restore which cap halted a blocked run, so its enforced_unit stays stable
+    r.blocked_on = d.get("enforced_unit") if r.status == "blocked" else None
     r.legs = d.get("legs", [])
     # rebuild tokens_spent from admitted measured entries
     if r.token_meter == "measured":
@@ -445,6 +633,29 @@ def _load_rails(run, date, runs_dir, seam_path) -> Rails | None:
                              if e.get("admitted") and _measured(e.get("tokens_in"))
                              and _measured(e.get("tokens_out")))
     return r
+
+
+def _parse_wall(v):
+    """CLI wall_ms -> a measured number or None. Never fabricates a zero."""
+    if v in (None, "", UNKNOWN):
+        return None
+    wm = float(v)
+    return int(wm) if wm.is_integer() else wm
+
+
+def _measure_or_explicit(transcript, tokens_in, tokens_out):
+    """Resolve (tokens_in, tokens_out) for a charge/settle CLI call.
+
+    A --transcript is MEASURED (the source of truth); otherwise the explicit
+    --tokens-in/out are used, and an absent/empty/UNKNOWN value stays None so the
+    field renders the literal UNKNOWN - never zero, never an estimate.
+    """
+    if transcript:
+        ti, to = measure_transcript_tokens(transcript)
+        return (None if ti is UNKNOWN else ti), (None if to is UNKNOWN else to)
+    ti = None if tokens_in in (None, "", UNKNOWN) else int(tokens_in)
+    to = None if tokens_out in (None, "", UNKNOWN) else int(tokens_out)
+    return ti, to
 
 
 def _cli(argv=None) -> int:
@@ -466,10 +677,23 @@ def _cli(argv=None) -> int:
     pc.add_argument("--leg", required=True)
     pc.add_argument("--model", default="")
     pc.add_argument("--tier", default=None, help="resolve model via rails_exec.json")
-    pc.add_argument("--tokens-in", default=None)
-    pc.add_argument("--tokens-out", default=None)
-    pc.add_argument("--wall-ms", default=None)
+    pc.add_argument("--tokens-in", "--tokens_in", dest="tokens_in", default=None)
+    pc.add_argument("--tokens-out", "--tokens_out", dest="tokens_out", default=None)
+    pc.add_argument("--wall-ms", "--wall_ms", dest="wall_ms", default=None)
     pc.add_argument("--transcript", default=None, help="measure tokens from this JSONL")
+
+    # settle (BP2-METER T1): post-close, MEASURE a leg's tokens from its transcript
+    # and fill in its charge entry IN PLACE (never a new turn). --wall_ms accepted
+    # too so the orchestrator's brief-spelled call is honoured.
+    pse = sub.add_parser("settle", help="post-close: measure + settle a leg's tokens (T1)")
+    common(pse)
+    pse.add_argument("--leg", required=True)
+    pse.add_argument("--model", default="")
+    pse.add_argument("--tier", default=None, help="resolve model via rails_exec.json")
+    pse.add_argument("--tokens-in", "--tokens_in", dest="tokens_in", default=None)
+    pse.add_argument("--tokens-out", "--tokens_out", dest="tokens_out", default=None)
+    pse.add_argument("--wall-ms", "--wall_ms", dest="wall_ms", default=None)
+    pse.add_argument("--transcript", default=None, help="measure tokens from this JSONL")
 
     pcl = sub.add_parser("close", help="write + print the final ledger")
     common(pcl)
@@ -478,14 +702,20 @@ def _cli(argv=None) -> int:
     pt.add_argument("--tier", required=True)
     pt.add_argument("--seam", default=None)
 
+    # resolve <tier>: positional twin of `tier` (BP2-METER T2). orchestrate.ps1
+    # calls `rails.py resolve <tier>` to turn a leg's tier into a model string.
+    prs = sub.add_parser("resolve", help="print the model string for a tier (positional)")
+    prs.add_argument("tier")
+    prs.add_argument("--seam", default=None)
+
     args = ap.parse_args(argv)
 
-    if args.cmd == "tier":
+    if args.cmd in ("tier", "resolve"):
         try:
             print(resolve_model(args.tier, args.seam))
             return EXIT_OK
         except (OSError, KeyError, ValueError) as e:
-            print(f"rails tier error: {e}", file=sys.stderr)
+            print(f"rails {args.cmd} error: {e}", file=sys.stderr)
             return EXIT_USAGE
 
     if args.cmd == "open":
@@ -495,11 +725,11 @@ def _cli(argv=None) -> int:
         except ValueError as e:
             print(f"rails open error: {e}", file=sys.stderr)
             return EXIT_USAGE
-        r.close()  # write the empty ledger so the run exists on disk immediately
+        r._persist()  # write the empty LIVE ("open") ledger so the run exists at once
         print(f"rails open {args.run} cap={r.cap.to_dict()} -> {r.ledger_path()}")
         return EXIT_OK
 
-    # charge / close both need the persisted run
+    # charge / settle / close all need the persisted run
     r = _load_rails(args.run, args.date, args.runs_dir, args.seam)
     if r is None:
         print(f"rails {args.cmd} error: run {args.run} not opened (no ledger at "
@@ -512,37 +742,46 @@ def _cli(argv=None) -> int:
         print(json.dumps(ledger, indent=2, ensure_ascii=False))
         return EXIT_OK
 
-    # charge
+    # charge + settle share tier resolution and token/wall parsing
     model = args.model
     if args.tier and not model:
         try:
             model = resolve_model(args.tier, args.seam)
         except (OSError, KeyError, ValueError) as e:
-            print(f"rails charge error resolving tier: {e}", file=sys.stderr)
+            print(f"rails {args.cmd} error resolving tier: {e}", file=sys.stderr)
             return EXIT_USAGE
+    ti, to = _measure_or_explicit(args.transcript, args.tokens_in, args.tokens_out)
+    wm = _parse_wall(args.wall_ms)
 
-    ti = to = None
-    if args.transcript:
-        ti, to = measure_transcript_tokens(args.transcript)
-        ti = None if ti is UNKNOWN else ti
-        to = None if to is UNKNOWN else to
-    else:
-        ti = None if args.tokens_in in (None, "", UNKNOWN) else int(args.tokens_in)
-        to = None if args.tokens_out in (None, "", UNKNOWN) else int(args.tokens_out)
-    if args.wall_ms in (None, "", UNKNOWN):
-        wm = None
-    else:
-        wm = float(args.wall_ms)
-        if wm.is_integer():
-            wm = int(wm)
+    if args.cmd == "settle":
+        try:
+            entry = r.settle(args.leg, model, tokens_in=ti, tokens_out=to,
+                             wall_ms=wm, transcript=args.transcript)
+        except BudgetExceeded as e:  # turns floor: settle opened a turn over cap
+            print(f"BLOCKED:budget settle {args.leg} - receipt {r.ledger_path()}",
+                  file=sys.stderr)
+            print(json.dumps(e.ledger, indent=2, ensure_ascii=False))
+            return EXIT_BLOCKED
+        r._persist()  # persist the settled meter (stays "open" unless it halted)
+        if r.status == "blocked":  # the settle crossed the TOKEN ceiling -> halt
+            print(json.dumps(r.to_dict(), indent=2, ensure_ascii=False))
+            print(f"BLOCKED:budget settle {args.leg} crossed the token ceiling - "
+                  f"receipt {r.ledger_path()}", file=sys.stderr)
+            return EXIT_BLOCKED
+        print(f"settled {args.leg} model={entry.get('model') or '(none)'} "
+              f"tokens_in={entry['tokens_in']} tokens_out={entry['tokens_out']} "
+              f"wall_ms={entry['wall_ms']} remaining={entry['remaining']} "
+              f"enforced={entry['enforced_unit']}")
+        return EXIT_OK
 
+    # charge
     try:
         entry = r.charge(args.leg, model, tokens_in=ti, tokens_out=to, wall_ms=wm)
     except BudgetExceeded as e:
         print(f"BLOCKED:budget {args.leg} - receipt {r.ledger_path()}", file=sys.stderr)
         print(json.dumps(e.ledger, indent=2, ensure_ascii=False))
         return EXIT_BLOCKED
-    r.close()  # persist the advanced meter after every admitted charge
+    r._persist()  # persist the advanced meter after every admitted charge (stays open)
     print(f"admitted {args.leg} model={model or '(none)'} "
           f"remaining={entry['remaining']} enforced={entry['enforced_unit']}")
     return EXIT_OK

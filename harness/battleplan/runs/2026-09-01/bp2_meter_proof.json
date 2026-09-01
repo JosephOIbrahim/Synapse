@@ -1,0 +1,34 @@
+{
+  "leg": "BP2-METER",
+  "date": "2026-09-01",
+  "acceptance_1_fixture": {
+    "ledger": "runs/2026-09-01/ledger_bp2-meter-settle.json",
+    "tokens_in": 12700,
+    "tokens_out": 470,
+    "wall_ms": 8482,
+    "transcript": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp2-meter\\tests\\fixtures\\transcript_with_usage.jsonl",
+    "enforced_unit": "tokens",
+    "token_meter": "measured",
+    "status": "open",
+    "note": "integer tokens measured from a named transcript JSONL; status 'open' = live (REFEREE honesty)"
+  },
+  "acceptance_4_halt": {
+    "ledger": "runs/2026-09-01/ledger_bp2-meter-halt.json",
+    "status": "blocked",
+    "reason": "budget",
+    "enforced_unit": "tokens",
+    "cap": {
+      "turns": 10,
+      "tokens": 100
+    },
+    "settle_exit_code": 7,
+    "note": "measured spend crossed a 100-token ceiling at settle -> halt"
+  },
+  "real_leg_transcript_measurement": {
+    "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp2-meter\\e595f08d-c8d7-47e2-ac52-aead08a56d56.jsonl",
+    "tokens_in": 79921049,
+    "tokens_out": 824702,
+    "measured_int": true
+  },
+  "generated_by": "prove_bp2_meter.py"
+}
