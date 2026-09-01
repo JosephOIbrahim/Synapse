@@ -1,0 +1,62 @@
+{
+  "run": "orch_20260901-162920",
+  "date": "2026-09-01",
+  "cap": {
+    "turns": 4,
+    "tokens": 1
+  },
+  "status": "open",
+  "reason": null,
+  "enforced_unit": "turns",
+  "token_meter": "UNKNOWN",
+  "totals": {
+    "turns": 2,
+    "tokens_in": "UNKNOWN",
+    "tokens_out": "UNKNOWN"
+  },
+  "remaining": {
+    "turns": 2,
+    "tokens": "UNKNOWN"
+  },
+  "legs": [
+    {
+      "leg": "MLV1",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": 26830,
+      "cap": {
+        "turns": 4,
+        "tokens": 1
+      },
+      "remaining": {
+        "turns": 3,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "settled": true
+    },
+    {
+      "leg": "MLV2",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": 18514,
+      "cap": {
+        "turns": 4,
+        "tokens": 1
+      },
+      "remaining": {
+        "turns": 2,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "settled": true
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+}
