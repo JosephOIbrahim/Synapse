@@ -335,6 +335,14 @@ def store_health() -> Dict[str, Any]:
        ``durability=None`` keeps deposits in RAM; a restart loses them. That is
        a degraded WRITE plane even when the directory probes writable.
 
+    Additive (BP2-HEALTHWIRE, T1): on the evaluated path this row also carries
+    ``embedder_id`` and ``embedding_dim`` (the two W1 operator fields it lacked)
+    plus a ``backend_health`` sub-dict — the full ``store.backend_health()``
+    reading whose ``verdict`` (alias of its ``status``) speaks the ratified
+    ``SUCCESS | UNAVAILABLE | BLOCKED`` vocabulary. The row's OWN
+    ``ok/degraded/unknown`` word is unchanged; the ratified verdict rides
+    alongside it, so an UNAVAILABLE/BLOCKED backend is never presented as ok.
+
     Never raises; never constructs a store.
     """
     store = _live_store()
@@ -385,6 +393,36 @@ def store_health() -> Dict[str, Any]:
             broken.append(
                 "moneta store has no durability layer — deposits are RAM-only "
                 "and will not survive a restart")
+
+    # BP2-HEALTHWIRE (T1): ride the ratified backend verdict + the two W1
+    # operator fields this row lacked (embedder id + embedding dim) ALONGSIDE the
+    # existing status word. ADDITIVE ONLY: store.backend_health() speaks the
+    # ratified SUCCESS|UNAVAILABLE|BLOCKED vocabulary; write_plane keeps its own
+    # ok/degraded/unknown word untouched (its doctor, panel-strip, and
+    # test_w3_harden_write_plane_store.py consumers read that word). We reuse the
+    # SAME live store object already resolved above — no second construction.
+    # backend_health() is self-fenced and never raises; the try/except is a
+    # latent-safety belt so a health read still never escapes.
+    try:
+        from ..memory.store import backend_health as _backend_health
+        bh = _backend_health(store)
+    except Exception as exc:  # noqa: BLE001 -- health must not raise
+        bh = None
+        info["backend_health"] = {
+            "reason": f"backend_health unreadable: {type(exc).__name__}: {exc}",
+        }
+    if bh is not None:
+        # Two W1 operator fields, merged at top level (honest None on jsonl,
+        # which has no embedder — never a fabricated value).
+        info["embedder_id"] = bh.get("embedder_id")
+        info["embedding_dim"] = bh.get("embedding_dim")
+        # The full ratified dict rides under its own key. 'verdict' is an
+        # operator-facing alias for backend_health()'s 'status' (store.py is
+        # territory-frozen, so the word THERE stays 'status') — identical value,
+        # always one of SUCCESS|UNAVAILABLE|BLOCKED, never rendered as ok.
+        sub = dict(bh)
+        sub["verdict"] = bh.get("status")
+        info["backend_health"] = sub
 
     if broken:
         info["status"], info["reason"] = "degraded", "; ".join(broken)
