@@ -47,3 +47,19 @@ def test_same_content_same_second_still_collides():
 def test_explicit_id_is_never_regenerated():
     m = Memory(id="my-explicit-id", content="x", memory_type=MemoryType.NOTE)
     assert m.id == "my-explicit-id"
+
+
+def test_legacy_mem_id_round_trips_and_format_unchanged():
+    # FU-1 changed WHEN the id is minted, never the FORMAT: a legacy ``mem_*`` id
+    # read from a payload is preserved verbatim (existing ids untouched, no
+    # migration), and a freshly-minted id keeps the ``mem_`` + 12-hex shape.
+    payload = {
+        "id": "mem_deadbeef0001", "content": "legacy note",
+        "created_at": "2020-01-01T00:00:00Z", "memory_type": "note",
+    }
+    m = Memory.from_dict(payload)
+    assert m.id == "mem_deadbeef0001"
+    assert m.to_dict()["id"] == "mem_deadbeef0001"
+
+    fresh = Memory(content="x", memory_type=MemoryType.NOTE, created_at="2026-01-01T00:00:00Z")
+    assert fresh.id.startswith("mem_") and len(fresh.id) == 16

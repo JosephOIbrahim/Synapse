@@ -775,6 +775,110 @@ def backend_fallback() -> Optional[Dict[str, Any]]:
     return None if _BACKEND_FALLBACK is None else dict(_BACKEND_FALLBACK)
 
 
+# --------------------------------------------------------------------------- #
+# Honest backend health (BP2-STORE / M-5, T2+T3).
+#
+# ``backend_fallback()`` above records the requested-vs-served GAP; this is its
+# operator-facing twin: a single non-mutating verdict on the memory backend that
+# speaks the ratified ``loop/ports.py`` status vocabulary
+# (SUCCESS | UNAVAILABLE | BLOCKED) and carries the five W1 operator-acceptance
+# fields (requested backend, active backend, embedder id, embedding dim, row
+# count). The M-5 rule: SYNAPSE_MEMORY_BACKEND=moneta served by a jsonl store is
+# NEVER reported SUCCESS -- a healthy jsonl must not masquerade as Moneta.
+#
+# OBSERVER, not an authority: it never constructs a store (returns None when
+# none is live) and adds no key to ``memory_handle_census()``. The store handle
+# authorities remain exactly two (this module's ``get_synapse_memory`` and
+# ``ledger.py``'s ``ledger_moneta_store``).
+# --------------------------------------------------------------------------- #
+
+#: The three status strings this accessor may emit. Held as literals so the
+#: memory layer stays import-decoupled from ``synapse.loop``; conformance to the
+#: ratified ``ports.STATUS`` frozenset is pinned by
+#: tests/test_store_backend_health.py::test_backend_health_status_in_ratified_vocabulary.
+_BACKEND_STATUS = frozenset({"SUCCESS", "UNAVAILABLE", "BLOCKED"})
+
+
+def _classify_backend(store: Any) -> str:
+    """Name the backend actually serving, read from the live object's class."""
+    if store is None:
+        return "none"
+    if isinstance(store, MemoryStore):
+        return "jsonl"
+    lowered = type(store).__name__.lower()
+    if "moneta" in lowered:
+        return "moneta"
+    if "shadow" in lowered:
+        return "shadow"
+    if "sqlite" in lowered:
+        return "sqlite"
+    return type(store).__name__
+
+
+def backend_health(store: Any = None) -> Optional[Dict[str, Any]]:
+    """Honest, non-mutating health of the memory backend (BP2-STORE / M-5, T3).
+
+    Pass a store, or omit it to read the process-global ``SynapseMemory``'s
+    store. Returns ``None`` when no store is live (it NEVER constructs one --
+    observer, not an authority). The dict carries the five operator-acceptance
+    fields plus a ``status`` in SUCCESS | UNAVAILABLE | BLOCKED and a human
+    ``reason``:
+
+    - ``requested_backend`` -- ``$SYNAPSE_MEMORY_BACKEND`` (default ``jsonl``).
+    - ``active_backend``     -- what the live store class actually is.
+    - ``embedder_id`` / ``embedding_dim`` -- the active embedder identity + vector
+      dimension (``None`` on jsonl, which has no embedder -- honest, not faked).
+    - ``row_count``          -- ``store.count()`` (``None`` if it raises).
+    - ``status``             -- SUCCESS when the served backend satisfies the
+      request; UNAVAILABLE when a requested substrate is absent (e.g. Moneta not
+      importable -> jsonl fallback); BLOCKED when it is present but a fault
+      prevents it (init failed / durability). A ``moneta``/``shadow`` request
+      served by a jsonl store is NEVER SUCCESS -- the M-5 anti-masquerade rule.
+    """
+    if store is None:
+        mem = _global_synapse
+        if mem is None:
+            return None
+        store = getattr(mem, "store", None)
+        if store is None:
+            return None
+
+    requested = os.environ.get("SYNAPSE_MEMORY_BACKEND", "jsonl").strip().lower() or "jsonl"
+    active = _classify_backend(store)
+    served_jsonl = isinstance(store, MemoryStore)
+
+    embedder_id = getattr(store, "embedder_id", None)
+    _emb = getattr(store, "_embedder", None) or getattr(store, "embedder", None)
+    embedding_dim = getattr(_emb, "dim", None) if _emb is not None else None
+
+    try:
+        row_count: Optional[int] = int(store.count())
+    except Exception:  # noqa: BLE001 -- a health read must never raise
+        row_count = None
+
+    if requested in ("moneta", "shadow") and served_jsonl:
+        fb = backend_fallback()
+        reason = fb.get("reason") if fb and fb.get("requested") == requested else None
+        if not reason:
+            reason = (
+                f"{requested!r} selected but a jsonl {type(store).__name__} is the "
+                f"live store -- the selected substrate is not serving"
+            )
+        status = "BLOCKED" if "init failed" in reason.lower() else "UNAVAILABLE"
+    else:
+        status, reason = "SUCCESS", None
+
+    return {
+        "requested_backend": requested,
+        "active_backend": active,
+        "embedder_id": embedder_id,
+        "embedding_dim": embedding_dim,
+        "row_count": row_count,
+        "status": status,
+        "reason": reason,
+    }
+
+
 def hip_is_unsaved(hip_path: Optional[str], hou_mod: Any = None) -> bool:
     """True when *hip_path* is Houdini's placeholder for a never-saved scene.
 
