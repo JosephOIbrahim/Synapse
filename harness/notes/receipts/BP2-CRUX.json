@@ -1,0 +1,50 @@
+{
+  "leg": "BP2-CRUX",
+  "status": "green_with_findings",
+  "product_head": "4aa1efed0882a7f1b87b76a320d6575b4005c320",
+  "branch": "bp2/crux",
+  "base": "7fc09482",
+  "model": "reasoning (claude-opus-4-8) - orchestrator resolves one model per manifest (sec.12 R-5); referee-tier intent (claude-fable-5) yields to reasoning; receipt says so",
+  "summary": "Adversarial crucible over wave BP2 pairs 1+2. Four builder receipts audited read-only; every acceptance predicate independently re-run in a git-archive scratch checkout with the crucible's OWN anchors; 12 self-authored mutations (4 each for the three code legs) all reddened a named test for the right reason; settle reproduced with the crux's own ledger; latency probe re-run first-person under hython pinned 22.0.400. All four legs SOUND-WITH-NITS, chain intact on all - no BROKEN, so all four are eligible to ride subject to Joe's merge words and the three gui_required halves. No product file edited, no contract feature flipped, no ratified surface touched, no leg state changed.",
+  "verdicts": {
+    "BP2-METER": {"verdict": "SOUND-WITH-NITS", "chain_broken_at": null, "acceptance": "7/7 pass", "mutations": "4/4 bit"},
+    "BP2-PANELTRUTH": {"verdict": "SOUND-WITH-NITS", "chain_broken_at": null, "acceptance": "5/7 pass + 2 UNKNOWN (GUI row7 + real-widget Qt)", "mutations": "4/4 bit"},
+    "BP2-LATENCY": {"verdict": "SOUND-WITH-NITS", "chain_broken_at": null, "acceptance": "4/5 pass + 1 UNKNOWN (GUI row2)", "mutations": "probe-reproduced (empty product diff, nothing to mutate)"},
+    "BP2-STORE": {"verdict": "SOUND-WITH-NITS", "chain_broken_at": null, "acceptance": "6/6 pass + 0 UNKNOWN (cleanest of the four)", "mutations": "4/4 bit"}
+  },
+  "acceptance": [
+    {
+      "predicate": "one verdict per pair builder leg (four), each with independently re-run acceptance rows and the crucible's own anchors",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP2-CRUX_verdicts.md - four verdicts, each acceptance row carries a crux-own anchor (a command I ran / file:line I read / test id I executed), never the builder's evidence string."
+    },
+    {
+      "predicate": ">= 4 self-authored mutations per builder, each named with the test it reddens (BP2-CRUX_mutations.json)",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP2-CRUX_mutations.json - 12 code mutations (4 METER + 4 PANELTRUTH + 4 STORE), all reddened=true and right_reason=true. BP2-LATENCY changed NO product code (empty python/synapse/memory/ diff); mission target 4 assigns it a probe reproduction, not a mutation battery - satisfied via the reprobe (acceptance predicate 3)."
+    },
+    {
+      "predicate": "settle reproduced by the crucible with its own ledger artifact; latency probe re-run by the crucible with its own artifact",
+      "verdict": "pass",
+      "evidence": "METER settle reproduced first-person (own ledger: tokens_in=12700 tokens_out=470 wall_ms=8482 measured, enforced_unit=tokens) recorded in BP2-CRUX_verdicts.md / BP2-CRUX_mutations.json; latency probe re-run first-person under hython pinned 22.0.400 -> BP2-CRUX_latency_reprobe.json (build stamp 22.0.400 == observed applicationVersionString; all ops under budget; known_recalled 5/5; p95 present; n=5)."
+    }
+  ],
+  "findings": [
+    {"leg": "BP2-METER", "severity": "nit", "claim": "Committed dry-run proof prove_bp2_meter_dryrun.ps1:73 is tautological AS-SHIPPED: it uses `git show HEAD:harness/orchestrate.ps1` as the pre-edit baseline, so post-commit it diffs the edited file against itself and prints EMPTY DIFF regardless of correctness. Claim HOLDS - crux re-derived it against the true parent 1c2b78fd^ -> EMPTY DIFF - but the committed artifact is not independently reproducible as-shipped.", "anchor": "harness/battleplan/runs/2026-09-01/prove_bp2_meter_dryrun.ps1:73"},
+    {"leg": "BP2-METER", "severity": "nit", "claim": "dryrun_bp2meter_diff.txt is called EMPTY but is 4 bytes (UTF-8 BOM + newline) - empty of diff CONTENT, not zero-byte.", "anchor": "harness/battleplan/runs/2026-09-01/dryrun_bp2meter_diff.txt"},
+    {"leg": "BP2-PANELTRUTH", "severity": "nit", "claim": "Two acceptance halves are gui_required/hython-gated and UNKNOWN (skip != pass): row 7 (Ctrl+K docked / live face update / reopen-survival) and row-4 real-widget FaceToken/Pill Qt (2 skipped, PySide unavailable). Correctly recorded, not laundered into green.", "anchor": "tests/test_bp2_paneltruth_token_refresh.py:251,274"},
+    {"leg": "BP2-PANELTRUTH", "severity": "info", "claim": "Territory breach (REFEREE 12:20) is REMEDIATED and crux-verified: master tree carries zero PANELTRUTH files; all artifacts on-branch (panel-truth.yaml blob b8cb7b6). Accuracy note: the scratch binding lever is pytest pythonpath=[python], not the sys.path.insert the receipt attributed it to; binding verified real (compositor.__file__ = scratch path).", "anchor": "git ls-tree bp2/paneltruth; probe of compositor.__file__"},
+    {"leg": "BP2-LATENCY", "severity": "nit", "claim": "hytest shim newest-wins: an un-pinned headless reprobe stamped 22.0.429 (newest installed), diverging from the live demo build 22.0.400. Pin SYNAPSE_HYTHON to reproduce a specific build. Builder artifact correctly stamped 22.0.400 (controlled).", "anchor": "harness/battleplan/notes/BP2-CRUX_latency_reprobe.json (shim_newest_run)"},
+    {"leg": "BP2-LATENCY", "severity": "nit", "claim": "Default agent lane (no Moneta env) is UNAVAILABLE by construction (env_unset); the under-budget numbers come only from the provisioned-headless proxy. The demo-relevant GUI .400 number remains gui_required UNKNOWN (row 2).", "anchor": "harness/battleplan/runs/2026-09-01/memory_latency_hython.json"},
+    {"leg": "BP2-STORE", "severity": "warn", "claim": "F4: the server operator health row (server/write_plane.store_health) still carries 3/5 fields and uses its own degraded/ok word rather than the ratified UNAVAILABLE/BLOCKED. Operator-visible for the sec.1 demo. Correctly deferred to held spawn BP2-STORE-HEALTHWIRE (server/ out of STORE territory). STORE's own acceptance is unconditionally clean - the SOUND-WITH-NITS is driven by this disclosed-deferred nit, not any acceptance gap or UNKNOWN.", "anchor": "python/synapse/server/write_plane.py:345-395"},
+    {"leg": "BP2-STORE", "severity": "info", "claim": "F1: FU-1 (Memory.id after created_at defaults) already landed on base via 3c4f07f9/#16; models.py byte-identical to base on this branch. Leg contribution is store.py backend_health() + test pins. M1/M2 redden the pinned behavior (real). docs/MONETA_FOLLOWUPS.md FU-1 is stale (out of territory).", "anchor": "python/synapse/memory/models.py:140-162"}
+  ],
+  "for_ruling": [
+    "All four legs are eligible to ride (no BROKEN). Merge is Joe's word, per act - never an agent's.",
+    "Three GUI/gui_required halves remain UNKNOWN and need Joe's eyes on live Houdini 22.0.400: PANELTRUTH row7, PANELTRUTH row-4 real-widget Qt, LATENCY row2 (GUI paste of memory_latency_gui.json). Honest UNKNOWNs, not code blockers - but the sec.1 demo green call for the panel/latency halves depends on them.",
+    "METER committed dry-run proof artifact is tautological as-shipped (HEAD-vs-HEAD). Claim is true (re-derived vs true parent); if the artifact is to serve as standalone evidence, regenerate parent-vs-HEAD.",
+    "STORE F4 (server operator health row not yet ratified-vocabulary) deferred to held spawn BP2-STORE-HEALTHWIRE; STORE F2 (docs/MONETA_FOLLOWUPS.md FU-1 stale) needs a docs-owning writer.",
+    "Contract features stay passing:false on both LATENCY and PANELTRUTH contracts - the crucible flipped none. Flipping is Joe's word."
+  ],
+  "spawn": []
+}
