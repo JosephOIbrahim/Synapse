@@ -1,0 +1,81 @@
+{
+  "leg": "BP4-CRUX",
+  "status": "green_with_findings",
+  "tier": "referee (claude-fable-5-1 per harness/battleplan/runs/2026-09-03/preflight_bp4.json; lanes: INTAKE/RULINGS sonnet, B7FIX/SPATIAL/PANELFONT/USDKNOW opus)",
+  "product_head": "b9551c4759fd6a023b55b9b8edf671428cdb89a7",
+  "product_commits": [
+    "8a1c91e9 bp4: BP4-CRUX verdicts - five legs ride, RULINGS BROKEN (verdicts + mutations + bp4_crux evidence + LANDED flag)",
+    "b9551c47 bp4: BP4-CRUX evidence - force-add the 13 crux logs that .gitignore:87 (*.log) silently dropped"
+  ],
+  "base": "9a90e9aff9dd91c3d5788fceaf367eb7ab699996",
+  "branch": "bp4/crux",
+  "ahead_of_base_at_receipt": 2,
+  "build": "22.0.400 (SYNAPSE_HYTHON pinned; HOUDINI_USER_PREF_DIR=C:/Users/User/OneDrive/Documents/houdini22.0)",
+  "audit_targets": {
+    "BP4-INTAKE": "bp4/intake @ 0d738db9 (product 03a4e43d) AND master @ 2574de6b (R135 harvest)",
+    "BP4-RULINGS": "bp4/rulings @ a62267f9 (product ff3d6f73)",
+    "BP4-B7FIX": "bp4/b7fix @ 88ab1184 (product b3e24d14)",
+    "BP4-SPATIAL": "bp4/spatial @ 83cca627 (product c48e26fa)",
+    "BP4-PANELFONT": "bp4/panelfont @ 4b3b3967 (product 81f3fb08)",
+    "BP4-USDKNOW": "bp4/usdknow @ 73905537 (product a0cc33b1)",
+    "common_base": "28a0e183",
+    "master_during_audit": "moved 9a90e9af -> 3a27d1ff at 18:46 (tests/test_rails.py fix + receipts_bp4.py); touches none of the audited surfaces"
+  },
+  "verdicts": {
+    "BP4-INTAKE": "SOUND-WITH-NITS (chain_broken_at: none)",
+    "BP4-RULINGS": "BROKEN (chain_broken_at: T1 extraction - harness/notes/receipts/BP3-CRUX.json:for_ruling[0] never read; table 21 rows vs crucible recount 22; acceptance row 1 fails). Does not ride as-is; one-row mechanical fix.",
+    "BP4-B7FIX": "SOUND-WITH-NITS (chain_broken_at: none; D2.4 PASS / R-1 CLEAR reproduced on crux evidence; the review's per-component causal story is refuted by crux controls)",
+    "BP4-SPATIAL": "SOUND-WITH-NITS (chain_broken_at: none; every number exact; timing and registration pins have holes)",
+    "BP4-PANELFONT": "SOUND-WITH-NITS (chain_broken_at: none; ceiling = gui_required UNKNOWN; acceptance 2 holds as scoped, for ruling BP4-P-1)",
+    "BP4-USDKNOW": "SOUND-WITH-NITS (chain_broken_at: none; probe identical, anchors 15/15; checker matches by substring)"
+  },
+  "acceptance": [
+    {
+      "predicate": "one verdict per builder leg (six), each with independently re-run acceptance rows and the crucible's own anchors",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP4-CRUX_verdicts.md @ 8a1c91e9: 6 verdict sections; 29 acceptance rows re-run (INTAKE 3x2 targets = 6, RULINGS 4, B7FIX 5 incl. the append-only criterion, SPATIAL 4, PANELFONT 5 with row 2 read both ways, USDKNOW 4) -> 26 pass / 1 fail (RULINGS row 1) / 1 UNKNOWN (PANELFONT gui_required) / 1 pass-as-scoped (PANELFONT row 2). Every row carries a crux-own anchor: a command+output line or file:line produced in a fresh `git clone --shared` scratch clone of the leg branch, plus referee re-derivations marked [ref] (hashes from git objects, 5-scale stylesheet hashes on full-package archives, checker + 15/15 anchor check on own copies, hunk->def map, git grep on the branch). Method: never the builder worktree, never the main tree. Legs with any UNKNOWN acceptance capped at SOUND-WITH-NITS."
+    },
+    {
+      "predicate": ">= 2 self-authored mutations per builder leg, each named with the check it reddens (BP4-CRUX_mutations.json)",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP4-CRUX_mutations.json @ 8a1c91e9: 37 mutations (INTAKE 3, RULINGS 3, B7FIX 5, SPATIAL 7, PANELFONT 5, USDKNOW 14), all self-authored (rows/lines/cells picked by the crucible; B7FIX-M1b/M1c controls, SPATIAL-M2b/M2c/M5 evasion and timing probes, USDKNOW-M6/M7/M8 adversarial substrings beyond the brief). 26 REDDENED with exit-code / test-summary / stats evidence under green-baseline + restore-and-re-green discipline; 11 SURVIVED, each named with the check that DOES redden it and classified: 7 guard holes (SPATIAL-M2b/M2c/M5, PANELFONT-M3, USDKNOW-M6/M7/M8), 2 information-not-defect (SPATIAL-M3, PANELFONT-M4 with control M4b reddening), 2 brief signatures refuted on this build (B7FIX-M1 drop-camera-bind does NOT go black; B7FIX-M1b drop-light does not either - Karma XPU 22.0.400 substitutes a default distant light; the pre-fix b7 control M1c DOES go black)."
+    },
+    {
+      "predicate": "B-7, the spatial tests, and the USD composition probes re-run by the crucible with its own artifacts, statuses diffed against the builders'",
+      "verdict": "pass",
+      "evidence": "B-7: scratchpad/b/crux_b7_out on pinned hython 22.0.400, exit 0, B-7 5.46 s; probe_results status diff vs builder IDENTICAL (22 ids, 6 RAN / 16 NOT_RUN); crux EXR RGB max 0.455811 / avg 0.013786 / ttfp 0.651 s / Total Lights 1 / Converged on three readers (bp4_crux/b7fix/exr_stats_{oiiotool,hoiiotool,python_oiio}.txt, crux_stdout.txt, crux_probe_results.json); fixture hashes recomputed and matching. SPATIAL: hython -m pytest tests/test_spatial_lane.py in the scratch clone -> 14 passed / 0 failed / 0 skipped in 3.19 s (bp4_crux/spatial/pytest_crux.log @ b9551c47); crux_capture.py re-derives S-2 12/12 counts, B-3 bbox to 0.0, frustum 20146 == oracle (capture_out.json); binding proved by the unbound ModuleNotFoundError (binding_unbound.log). USDKNOW: probe re-run into scratchpad/u/crux_usdknow_out, exit 0, 2.59 s; stdout IDENTICAL to the builder's after normalising anon id / tmp dir / path (86/86 elements, zero hunks, same line numbers - bp4_crux/usdknow/diff_arcs_winners.txt); checker exit 0 against the crux stdout (checker_against_crux_stdout.txt). Binaries (EXR/USDC) kept in the scratch clones per the public-autopush policy."
+    }
+  ],
+  "findings": [
+    {"claim": "RULINGS: the table omits harness/notes/receipts/BP3-CRUX.json:for_ruling[0] (present at the leg's base 28a0e183, blob 8d2c48d6); the leg read six of the seven BP3 receipts and searched BP3-CRUX_verdicts.md for the seventh; count line and bus finding propagate the wrong root cause. Also: no severity column (8 of the brief's 9), claim column labelled '(truncated)', row 17 item_id is a claim fragment, file is not valid UTF-8 (bytes 0x97 @14, 0xb7 @74), receipt finding #3 false (rows 17/18 read 'no').", "anchor": "harness/battleplan/notes/BP4-CRUX_verdicts.md section BP4-RULINGS; bp4_crux/rulings/RULINGS_crux_evidence.md"},
+    {"claim": "B7FIX: verdicts reproduce, causal narrative does not. Dropping the camera bind leaves the EXR non-black (max 0.457031; husk resolves /cameras/wl_cam anyway, matrices byte-identical) and dropping the authored light leaves it non-black too (Karma substitutes a default distant light, Total Lights 1); only the pre-fix b7 goes flat black (Total Lights 0). The operative change is the topology rewiring (usdrender_rop fed by the KRS instead of the camera LOP), which the review names nowhere as causal. Builder's monochrome nit is understated: R==G==B on all 921600 px.", "anchor": "harness/battleplan/notes/BP4-CRUX_mutations.json B7FIX-M1/M1b/M1c; bp4_crux/b7fix/mutation_log.txt"},
+    {"claim": "SPATIAL: the tool `seconds` field starts AFTER _collect_triangles (queries.py:269-273, :343-347); a 6 s sleep in the gather survives every timing assert (tests 6.04-13.06 s, all green). Recorded '~980x under budget' is ~106x on wall clock. Registration pin misses root mcp_tools_*.py and the classify name (M2b/M2c survive; crux grep catches both). Classes double-count above max_angle_deg 45.", "anchor": "harness/battleplan/notes/BP4-CRUX_mutations.json SPATIAL-M2b/M2c/M5; bp4_crux/spatial/mut_M3_M4_M5.log"},
+    {"claim": "PANELFONT: `pytest tests -k panel` (the acceptance command) deselects tests/test_rope_design_conformance.py::test_no_hardcoded_hex_or_px_outside_designsystem (no 'panel' in module or test name), so a QWidget subclass with #ff0066 + 13px in synapse_panel.py passes 352 green; run by path the guard reddens at synapse_panel.py:2757. 166 truly hardcoded typography literals remain across 22 panel modules outside designsystem/ (all 8 designsystem modules are 0 under the test's own regex, though the test opens only qss.py).", "anchor": "harness/battleplan/notes/BP4-CRUX_mutations.json PANELFONT-M3; bp4_crux/panelfont/literal_split.txt, m3_panel_sweep.txt"},
+    {"claim": "USDKNOW: the checker's arc/verify gate is substring containment - arc 'spec' passes against 'arc=specialize', verify 'unloadable=True' passes against 'payload_unloadable=True' (a semantic inversion), 'loaded=1' passes against 'loaded=10'. The probe self-finds the fixture via a hardcoded absolute path (bp3-probe worktree) so its BLOCKED path is unreachable on this host. The fixture nests kind=component inside kind=component; USD drops the inner one from the model hierarchy.", "anchor": "harness/battleplan/notes/BP4-CRUX_mutations.json USDKNOW-M6/M7/M8; bp4_crux/usdknow/probe_selffind_finding.txt, crux_modelhierarchy_stdout.txt"},
+    {"claim": "INTAKE: the leg's bus finding posted dossier_in_repo:true while its own receipt recorded missing_docx_files:2 (the harvester's later 'partial' is the accurate value); the master harvest receipt says no leg branch exists although bp4/intake was committed 27 minutes before the harvest; the harvest note's 7168/6451 byte-count claim has no repo anchor; MANIFEST cross-check pointers :18/:377 are off by one (computed before the Sources line was inserted at 11).", "anchor": "harness/battleplan/notes/BP4-CRUX_verdicts.md section BP4-INTAKE; bp4_crux/intake/T-E_discrepancies.txt"},
+    {"claim": "Environment (demonstrated): under hython PYTHONPATH does not bind a scratch tree (Houdini package paths sit ahead of it) - use sys.path.insert(0) or pytest rootdir binding; a git archive of a sub-package has no synapse/__init__.py so master's regular package wins even at sys.path[1]; two edits five lines apart fold into one 3-line-context hunk (audit with -U0); .gitignore:87 (*.log) silently drops evidence logs from a named-directory git add (13 crux logs needed git add -f).", "anchor": "harness/battleplan/notes/BP4-CRUX_verdicts.md section Cross-cutting; commit b9551c47"}
+  ],
+  "for_ruling": [
+    {"id": "BP4-R-1", "claim": "BP4-RULINGS is BROKEN on acceptance row 1 (21 rows vs recount 22). Re-run the leg with the fix path in the verdicts doc: add row 22 verbatim from BP3-CRUX.json:for_ruling[0], count line -> 22 (CRUX 1), add the severity column, fix row 17's id, re-encode UTF-8, correct receipt finding #3. The leg does not ride until then.", "anchor": "harness/battleplan/notes/BP4-CRUX_verdicts.md#bp4-rulings"},
+    {"id": "BP4-I-1", "claim": "Two INTAKE receipts for one leg (branch 03a4e43d green vs master 2574de6b green_with_findings) with contradictory branch-existence claims; which is canonical is Joe's/CTO's word. The harvest receipt's proposed two-writers rule (hand runs stay off armed legs' touches; in-place runs announced on the bus) stands for ruling.", "anchor": "harness/battleplan/notes/BP4-CRUX_verdicts.md#bp4-intake"},
+    {"id": "BP4-B7-1", "claim": "Amend review sec.13.1/13.5's causal sentence ('once a camera + light are present') to: the composite rewiring restores lighting; the camera bind removes the husk errors without changing pixels. D2.4 -> PASS and R-1 -> CLEAR promotions are supported by crux evidence (D-1's word).", "anchor": "harness/battleplan/notes/BP4-CRUX_verdicts.md#bp4-b7fix"},
+    {"id": "BP4-S-1", "claim": "SPATIAL pins: move t0 above _collect_triangles (or assert on gather+compute); scan repo-root *.py and match the bare synapse_spatial_ token + `from synapse import spatial`; guard max_angle_deg > 45 (partition breaks); commit or regen the fixture binaries and the timing producer (F-3, currently C:/Users/User/bp4_scratch/capture_out.json outside the repo).", "anchor": "harness/battleplan/notes/BP4-CRUX_verdicts.md#bp4-spatial"},
+    {"id": "BP4-P-1", "claim": "Scope of PANELFONT acceptance 2: authority-scoped (complete, 166 literals carried as held spawns) vs panel-wide (incomplete). Also: select design-conformance tests by path, never `-k panel`; the floor stays UNKNOWN until Joe's probe_ui_font.py paste (BP4-FLOOR-LIFT held).", "anchor": "harness/battleplan/notes/BP4-CRUX_verdicts.md#bp4-panelfont"},
+    {"id": "BP4-U-1", "claim": "USDKNOW: token-boundary matching in bp4_usdknow_check.py; remove or announce the absolute fixture fallback in the probe; record the nested-component fixture finding in the decision record; D-1 promotions remain a human + CTO act.", "anchor": "harness/battleplan/notes/BP4-CRUX_verdicts.md#bp4-usdknow"}
+  ],
+  "spawn": [
+    {"id": "BP4-RULINGS-FIX", "band": "TRUTH", "class": "truth", "tier": "mechanical", "name": "Re-run BP4-RULINGS with row 22 (BP3-CRUX.json:for_ruling[0]), count line 22, severity column, clean row-17 id, UTF-8 encoding, corrected receipt finding #3", "note": "Held for Joe (spawn_classes empty on BP4-CRUX). Mechanical; the crux recount table in bp4_crux/rulings/ is the oracle.", "touches": ["harness/notes/CTO_RULINGS_BP3.md"], "readonly": false, "deps": ["BP4-CRUX"], "disposition": "held"},
+    {"id": "BP4-SPATIAL-PINS", "band": "BUILD", "class": "build", "tier": "reasoning", "name": "Close the three SPATIAL pin holes: timing t0 before the gather, registration scan over repo-root *.py + bare token, max_angle_deg > 45 guard", "note": "Held. Each is a one-to-three-line change with a crux mutation (SPATIAL-M2b/M2c/M5) as the regression test to make redden.", "touches": ["python/synapse/spatial/queries.py", "tests/test_spatial_lane.py"], "readonly": false, "deps": ["BP4-SPATIAL"], "disposition": "held"},
+    {"id": "BP4-USDKNOW-TOKENGATE", "band": "TRUTH", "class": "truth", "tier": "mechanical", "name": "Token-boundary matching in bp4_usdknow_check.py + announce/remove the absolute fixture fallback in bp4_usd_composition_probes.py", "note": "Held. USDKNOW-M6/M7/M8 are the tests to make redden.", "touches": ["harness/battleplan/notes/bp4_usdknow_check.py", "harness/probes/bp4_usd_composition_probes.py"], "readonly": false, "deps": ["BP4-USDKNOW"], "disposition": "held"},
+    {"id": "BP4-PANEL-GATE", "band": "TRUST", "class": "truth", "tier": "mechanical", "name": "Replace `pytest tests -k panel` as the panel acceptance gate with a path-selected list that includes tests/test_rope_design_conformance.py", "note": "Held. PANELFONT-M3 (QWidget subclass with hex+px passes 352 green under -k panel) is the reddening test. Every panel leg citing -k panel inherits the hole.", "touches": ["harness/battleplan/author_bp4.py", "harness/battleplan/prompts/"], "readonly": false, "deps": [], "disposition": "held"},
+    {"id": "BP4-B7-REVIEW-AMEND", "band": "TRUTH", "class": "truth", "tier": "mechanical", "name": "One-sentence amendment to review sec.13.1/13.5 causal story, anchored to the crux controls M1/M1b/M1c", "note": "Held; D-1's word. Verdicts unchanged.", "touches": ["docs/reviews/bp3-h22-worldlabs-probes-2026-09-03.md"], "readonly": false, "deps": ["BP4-B7FIX"], "disposition": "held"}
+  ],
+  "bus": [
+    "claim 18d1f14e8e2cee2c 18:50:46",
+    "progress 18d1f14e95eb3704 / 18d1f1c224b967bc / 18d1f1f060b5660c",
+    "verdict findings 18d1f32c8850890c (INTAKE) 18d1f32c8fa77684 (RULINGS) 18d1f32c96f43a6c (B7FIX) 18d1f32c9e1f30d0 (SPATIAL) 18d1f32ca5b91d74 (PANELFONT) 18d1f32cad0cd37c (USDKNOW) 18d1f32cb430aebc (ledgers)"
+  ],
+  "self_cap": "40 turns; receipt written at roughly turn 30 (self-reported; a rails turn is a leg dispatch, not one of these)",
+  "written_by": "BP4-CRUX referee (claude-fable-5-1), Claude Code session",
+  "written_at": "2026-09-03 19:29 -0400 (after product commits 8a1c91e9 + b9551c47; commit-before-receipt, receipt is the closing commit)"
+}
