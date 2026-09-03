@@ -1,0 +1,22 @@
+diff --git a/python/synapse/server/authoring_domains.json b/python/synapse/server/authoring_domains.json
+index ff2548c9..85376964 100644
+--- a/python/synapse/server/authoring_domains.json
++++ b/python/synapse/server/authoring_domains.json
+@@ -1,4 +1,16 @@
+ {
+   "domains": ["cop", "lop", "sop", "karma", "usd"],
+-  "note": "D-H22-3: SYNAPSE's authoring center of gravity. Rigging/APEX authoring is the native MCP's floor — a drift term (apex/rig/rigging/kinefx/muscle/cfx) entering this list is a deterministic guardrail failure (check_no_rigging_drift)."
++  "note": "D-H22-3: SYNAPSE's authoring center of gravity. Rigging/APEX authoring is the native MCP's floor — a drift term (apex/rig/rigging/kinefx/muscle/cfx) entering this list is a deterministic guardrail failure (check_no_rigging_drift).",
++  "lanes": [
++    {
++      "lane": "spatial",
++      "ratified": false,
++      "premise": ["SP-01 (Pieke 02:07)", "SP-02"],
++      "substrate": "UsdGeomMesh / UsdGeomPointInstancer prims on stage; for Marble worlds the collider under purpose=proxy. Never the splat.",
++      "scope": ["describe organization", "describe placement", "classify surfaces", "frustum membership", "placement candidates"],
++      "authoring_later": ["place component at candidate", "scatterinstances recipe with masks", "camera from spawn"],
++      "non_goals": ["physics simulation", "robotics / sim-to-real", "navmesh solvers", "APEX / CFX (Non-Goal 1)", "semantic labelling by ML"],
++      "contract": "schemas/world_manifest.schema.json"
++    }
++  ]
+ }
