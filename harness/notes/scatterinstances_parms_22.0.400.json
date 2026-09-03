@@ -1,0 +1,707 @@
+{
+  "build": "22.0.400",
+  "probe_stdout_path": "harness/notes/h22wl/bp3_probes/stdout.txt",
+  "generated_at": "2026-09-03T19:31:05Z",
+  "rows": [
+    {
+      "folder": "/",
+      "name": "primpath",
+      "label": "Primitive Path"
+    },
+    {
+      "folder": "/",
+      "name": "executionmode",
+      "label": "Execution Mode"
+    },
+    {
+      "folder": "/",
+      "name": "upaxis",
+      "label": "Up Axis"
+    },
+    {
+      "folder": "/",
+      "name": "enablecamera",
+      "label": "Enable Camera"
+    },
+    {
+      "folder": "/",
+      "name": "camerapath",
+      "label": "Camera Path"
+    },
+    {
+      "folder": "/",
+      "name": "sepparm",
+      "label": ""
+    },
+    {
+      "folder": "/Source Geometry",
+      "name": "scattertargetgeometry",
+      "label": "Prim Pattern"
+    },
+    {
+      "folder": "/Source Geometry",
+      "name": "scattertargettype",
+      "label": "Geometry Type"
+    },
+    {
+      "folder": "/Source Geometry",
+      "name": "scattertargetmotion",
+      "label": "Animation (Beta)"
+    },
+    {
+      "folder": "/Source Geometry",
+      "name": "sepparm9",
+      "label": ""
+    },
+    {
+      "folder": "/Source Geometry/Input Primvars",
+      "name": "scattertargetrestprimvar",
+      "label": "Rest Primvar"
+    },
+    {
+      "folder": "/Source Geometry/Input Primvars/Texture Coordinates",
+      "name": "scattertargettexcoordsrc",
+      "label": "TexCoord Source"
+    },
+    {
+      "folder": "/Source Geometry/Input Primvars/Texture Coordinates",
+      "name": "scattertargettexcoordprimvar",
+      "label": "TexCoord Primvar"
+    },
+    {
+      "folder": "/Source Geometry/Input Primvars/Texture Coordinates",
+      "name": "scattertargettexcoordcamscale",
+      "label": "Scale"
+    },
+    {
+      "folder": "/Source Geometry/Input Primvars/Texture Coordinates",
+      "name": "scattertargettexcoordcamoffset",
+      "label": "Offset"
+    },
+    {
+      "folder": "/Source Geometry/Input Primvars/Texture Coordinates",
+      "name": "scattertargettexcoordcamangle",
+      "label": "Angle"
+    },
+    {
+      "folder": "/Source Geometry",
+      "name": "sepparm2",
+      "label": ""
+    },
+    {
+      "folder": "/",
+      "name": "sepparm10",
+      "label": ""
+    },
+    {
+      "folder": "/Scattering",
+      "name": "scattermethod",
+      "label": "Point Count Method"
+    },
+    {
+      "folder": "/Scattering/Number of Instances",
+      "name": "scattercount",
+      "label": "Scatter Count"
+    },
+    {
+      "folder": "/Scattering/Number of Instances",
+      "name": "enablescattercountmap",
+      "label": "Label"
+    },
+    {
+      "folder": "/Scattering/Number of Instances",
+      "name": "scattercountmap",
+      "label": "Texture Map"
+    },
+    {
+      "folder": "/Scattering/Number of Instances",
+      "name": "enablescattercountprimvar",
+      "label": "Label"
+    },
+    {
+      "folder": "/Scattering/Number of Instances",
+      "name": "scattercountprimvar",
+      "label": "Primvar"
+    },
+    {
+      "folder": "/Scattering/Number of Instances",
+      "name": "sepparm3",
+      "label": ""
+    },
+    {
+      "folder": "/Scattering/Instance Density",
+      "name": "scatterdensity",
+      "label": "Density"
+    },
+    {
+      "folder": "/Scattering/Instance Density",
+      "name": "enablescatterdensitymap",
+      "label": "Label"
+    },
+    {
+      "folder": "/Scattering/Instance Density",
+      "name": "scatterdensitymap",
+      "label": "Texture Map"
+    },
+    {
+      "folder": "/Scattering/Instance Density",
+      "name": "enablescatterdensityprimvar",
+      "label": "Label"
+    },
+    {
+      "folder": "/Scattering/Instance Density",
+      "name": "scatterdensityprimvar",
+      "label": "Primvar"
+    },
+    {
+      "folder": "/Scattering/Instance Density",
+      "name": "scatterdensitytexturespace",
+      "label": "Scatter in Texture Space"
+    },
+    {
+      "folder": "/Scattering/Instance Density",
+      "name": "sepparm4",
+      "label": ""
+    },
+    {
+      "folder": "/Scattering/Instance per Face",
+      "name": "enablescatterfacesmap",
+      "label": "Label"
+    },
+    {
+      "folder": "/Scattering/Instance per Face",
+      "name": "scatterfacesmap",
+      "label": "Texture Map"
+    },
+    {
+      "folder": "/Scattering/Instance per Face",
+      "name": "enablescatterfacesprimvar",
+      "label": "Label"
+    },
+    {
+      "folder": "/Scattering/Instance per Face",
+      "name": "scatterfacesprimvar",
+      "label": "Primvar"
+    },
+    {
+      "folder": "/Scattering/Instance per Face",
+      "name": "sepparm11",
+      "label": ""
+    },
+    {
+      "folder": "/Scattering",
+      "name": "useemergencylimit",
+      "label": "Use Max Points"
+    },
+    {
+      "folder": "/Scattering",
+      "name": "emergencylimit",
+      "label": "Max Point Limit"
+    },
+    {
+      "folder": "/Scattering",
+      "name": "relaxiterations",
+      "label": "Relax Iterations"
+    },
+    {
+      "folder": "/Scattering",
+      "name": "scatterseed",
+      "label": "Seed"
+    },
+    {
+      "folder": "/Scattering/Masks",
+      "name": "enabledirection",
+      "label": "Calculate Directional Mask"
+    },
+    {
+      "folder": "/Scattering/Masks/Up Axis Direction",
+      "name": "maxangle",
+      "label": "Max Angle"
+    },
+    {
+      "folder": "/Scattering/Masks/Up Axis Direction",
+      "name": "directionsharpness",
+      "label": "Sharpness"
+    },
+    {
+      "folder": "/Scattering/Masks/Up Axis Direction",
+      "name": "reverseangle",
+      "label": "Reverse Direction"
+    },
+    {
+      "folder": "/Scattering/Masks/Up Axis Direction",
+      "name": "castshadows",
+      "label": "Cast Shadows"
+    },
+    {
+      "folder": "/Scattering/Masks/Up Axis Direction",
+      "name": "invertdirectionmask",
+      "label": "Invert"
+    },
+    {
+      "folder": "/Scattering/Masks",
+      "name": "enableao",
+      "label": "Calculate Ambient Occlusion"
+    },
+    {
+      "folder": "/Scattering/Masks/Ambient Occlusion",
+      "name": "aomaxraydist",
+      "label": "Maximum Ray Distance"
+    },
+    {
+      "folder": "/Scattering/Masks/Ambient Occlusion",
+      "name": "aoinputmin",
+      "label": "Input Min"
+    },
+    {
+      "folder": "/Scattering/Masks/Ambient Occlusion",
+      "name": "aoinputmax",
+      "label": "Input Max"
+    },
+    {
+      "folder": "/Scattering/Masks/Ambient Occlusion",
+      "name": "invertao",
+      "label": "Invert"
+    },
+    {
+      "folder": "/Scattering/Masks",
+      "name": "enablecameramask",
+      "label": "Enable Camera Mask"
+    },
+    {
+      "folder": "/Scattering/Masks/Camera",
+      "name": "cameramaskpadding",
+      "label": "Frustum Padding"
+    },
+    {
+      "folder": "/Scattering/Masks/Camera",
+      "name": "enablecameramasknear",
+      "label": "enablecameramasknearl"
+    },
+    {
+      "folder": "/Scattering/Masks/Camera",
+      "name": "cameramasknear",
+      "label": "Override Near Plane"
+    },
+    {
+      "folder": "/Scattering/Masks/Camera",
+      "name": "enablecameramaskfar",
+      "label": "enablecameramaskfar"
+    },
+    {
+      "folder": "/Scattering/Masks/Camera",
+      "name": "cameramaskfar",
+      "label": "Override Far Plane"
+    },
+    {
+      "folder": "/Scattering/Masks/Camera",
+      "name": "invertcameramask",
+      "label": "Invert"
+    },
+    {
+      "folder": "/Scattering/Masks",
+      "name": "enablepointsmask",
+      "label": "Enable Points Mask"
+    },
+    {
+      "folder": "/Scattering/Masks/PointInstancers",
+      "name": "pointsmaskprims",
+      "label": "Prim Pattern"
+    },
+    {
+      "folder": "/Scattering/Masks/PointInstancers",
+      "name": "pointsmaskradius",
+      "label": "Radius"
+    },
+    {
+      "folder": "/Scattering/Masks/PointInstancers",
+      "name": "pointsmaskfalloff",
+      "label": "Falloff"
+    },
+    {
+      "folder": "/Scattering/Masks/PointInstancers",
+      "name": "pointsmaskuseattrib",
+      "label": "Use Widths/Radius Attribute"
+    },
+    {
+      "folder": "/Scattering/Masks/PointInstancers",
+      "name": "invertpointsmask",
+      "label": "Invert"
+    },
+    {
+      "folder": "/Scattering/Masks",
+      "name": "enableobjectsmask",
+      "label": "Enable Objects Mask"
+    },
+    {
+      "folder": "/Scattering/Masks/Meshes",
+      "name": "objectsmaskprims",
+      "label": "Prim Pattern"
+    },
+    {
+      "folder": "/Scattering/Masks/Meshes",
+      "name": "objectsmaskoffset",
+      "label": "Offset"
+    },
+    {
+      "folder": "/Scattering/Masks/Meshes",
+      "name": "objectsmaskfalloff",
+      "label": "Falloff"
+    },
+    {
+      "folder": "/Scattering/Masks/Meshes",
+      "name": "objectsmaskbbox",
+      "label": "Bounding Box Only"
+    },
+    {
+      "folder": "/Scattering/Masks/Meshes",
+      "name": "invertobjectsmask",
+      "label": "Invert"
+    },
+    {
+      "folder": "/Scattering",
+      "name": "sepparm5",
+      "label": ""
+    },
+    {
+      "folder": "/Transforms/Orient to Surface",
+      "name": "orient",
+      "label": "Surface Blend"
+    },
+    {
+      "folder": "/Transforms/Orient to Surface",
+      "name": "orientvariation",
+      "label": "Blend Variation"
+    },
+    {
+      "folder": "/Transforms/Orient to Surface",
+      "name": "orientspreadangle",
+      "label": "Spread Angle"
+    },
+    {
+      "folder": "/Transforms/Spin",
+      "name": "enabledirectionprimvar",
+      "label": "Label"
+    },
+    {
+      "folder": "/Transforms/Spin",
+      "name": "directionprimvar",
+      "label": "Direction Primvar"
+    },
+    {
+      "folder": "/Transforms/Spin",
+      "name": "spin",
+      "label": "Spin"
+    },
+    {
+      "folder": "/Transforms/Spin",
+      "name": "spinvariation",
+      "label": "Variation"
+    },
+    {
+      "folder": "/Transforms/Spin",
+      "name": "spinincrements",
+      "label": "Increments"
+    },
+    {
+      "folder": "/Transforms/Spin",
+      "name": "enablespinmap",
+      "label": "Enable Spin Map"
+    },
+    {
+      "folder": "/Transforms/Spin",
+      "name": "spinmap",
+      "label": "Spin Map"
+    },
+    {
+      "folder": "/Transforms/Spin/Facing Direction",
+      "name": "enabledirectionmap",
+      "label": "Label"
+    },
+    {
+      "folder": "/Transforms/Spin/Facing Direction",
+      "name": "directionmap",
+      "label": "Direction Map"
+    },
+    {
+      "folder": "/Transforms/Scale",
+      "name": "scalefromscatter",
+      "label": "Use Scale from Scatter"
+    },
+    {
+      "folder": "/Transforms/Scale",
+      "name": "scaleuniform",
+      "label": "Scale"
+    },
+    {
+      "folder": "/Transforms/Scale",
+      "name": "scalevariation",
+      "label": "Variation"
+    },
+    {
+      "folder": "/Transforms/Scale",
+      "name": "enablescalemap",
+      "label": "Enable Scale Map"
+    },
+    {
+      "folder": "/Transforms/Scale",
+      "name": "scalemap",
+      "label": "Texture Map"
+    },
+    {
+      "folder": "/Transforms/Position",
+      "name": "peak",
+      "label": "Peak Offset"
+    },
+    {
+      "folder": "/Transforms/Position",
+      "name": "peakvariation",
+      "label": "Peak Variation"
+    },
+    {
+      "folder": "/Transforms/Position",
+      "name": "enablepeakmap",
+      "label": "Enable Peak Map"
+    },
+    {
+      "folder": "/Transforms/Position",
+      "name": "peakmap",
+      "label": "Texture Map"
+    },
+    {
+      "folder": "/Transforms",
+      "name": "alignmentseed",
+      "label": "Seed"
+    },
+    {
+      "folder": "/Transforms",
+      "name": "sepparm6",
+      "label": ""
+    },
+    {
+      "folder": "/Prototypes",
+      "name": "addprototypesfromsecondinput",
+      "label": "Add Prototypes from Second Input"
+    },
+    {
+      "folder": "/Prototypes/Copy Prototypes from Second Input/Source",
+      "name": "protouseroot",
+      "label": "Use Entire Stage as Only Prototype"
+    },
+    {
+      "folder": "/Prototypes/Copy Prototypes from Second Input/Source",
+      "name": "protopattern",
+      "label": "Primitives"
+    },
+    {
+      "folder": "/Prototypes/Copy Prototypes from Second Input/Source",
+      "name": "handlemissingprototypes",
+      "label": "Handle Missing Prototypes"
+    },
+    {
+      "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+      "name": "hideprotosourceprims",
+      "label": "Make Prototype Source Primitives Invisible"
+    },
+    {
+      "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+      "name": "protodestrootprim",
+      "label": "Root Prim"
+    },
+    {
+      "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+      "name": "protorootkind",
+      "label": "Root Prim Kind"
+    },
+    {
+      "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+      "name": "protoareadestprim",
+      "label": "Name"
+    },
+    {
+      "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+      "name": "protoreftype",
+      "label": "Reference Type"
+    },
+    {
+      "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+      "name": "makeinstanceable",
+      "label": "Make Prototype Instanceable"
+    },
+    {
+      "folder": "/Prototypes",
+      "name": "sepparm7",
+      "label": ""
+    },
+    {
+      "folder": "/Prototypes",
+      "name": "protogroupmethod",
+      "label": "Method"
+    },
+    {
+      "folder": "/Prototypes",
+      "name": "protoresetweights",
+      "label": "Reset All Weights"
+    },
+    {
+      "folder": "/Prototypes",
+      "name": "protogroupmap",
+      "label": "Texture Map"
+    },
+    {
+      "folder": "/Prototypes",
+      "name": "protogroupprimvar",
+      "label": "Primvar"
+    },
+    {
+      "folder": "/Prototypes",
+      "name": "protoseed",
+      "label": "Seed"
+    },
+    {
+      "folder": "/Prototypes",
+      "name": "sepparm8",
+      "label": ""
+    },
+    {
+      "folder": "/Prototypes/Prototype Groups/Prototype Group #",
+      "name": "protogroupprims#",
+      "label": "Prim Pattern"
+    },
+    {
+      "folder": "/Prototypes/Prototype Groups/Prototype Group #",
+      "name": "protogroupweight#",
+      "label": "Weight"
+    },
+    {
+      "folder": "/Prototypes/Prototype Groups/Prototype Group #",
+      "name": "protogroupid#",
+      "label": "Group ID"
+    },
+    {
+      "folder": "/Prototypes/Prototype Groups/Prototype Group #",
+      "name": "protogroupstart#",
+      "label": "Group Start"
+    },
+    {
+      "folder": "/Prototypes/Prototype Groups/Prototype Group #",
+      "name": "protogroupcount#",
+      "label": "Group Count"
+    },
+    {
+      "folder": "/Prototypes/Prototype Groups",
+      "name": "sepparmprotogroup#",
+      "label": ""
+    },
+    {
+      "folder": "/Shading",
+      "name": "assignmaterial",
+      "label": "Assign Material"
+    },
+    {
+      "folder": "/Shading/Bind Material",
+      "name": "mtlpath",
+      "label": "Material Path"
+    },
+    {
+      "folder": "/Shading/Bind Material",
+      "name": "mtlbindpurpose",
+      "label": "Purpose"
+    },
+    {
+      "folder": "/Shading/Bind Material",
+      "name": "mtlbindstrength",
+      "label": "Strength"
+    },
+    {
+      "folder": "/Shading/Random Primvars",
+      "name": "primvarseed",
+      "label": "Seed"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "enable#",
+      "label": "Enable"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "name#",
+      "label": "Name"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "type#",
+      "label": "Type"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "randf#",
+      "label": "Float Min/Max"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "randi#",
+      "label": "Int Min/Max"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "randr#",
+      "label": "Red Min/Max"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "randg#",
+      "label": "Green Min/Max"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "randb#",
+      "label": "Blue Min/Max"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "randhue#",
+      "label": "Hue Min/Max"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "randsat#",
+      "label": "Saturation Min/Max"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "randval#",
+      "label": "Value Min/Max"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "randx#",
+      "label": "X Min/Max"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "randy#",
+      "label": "Y Min/Max"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "randz#",
+      "label": "Z Min/Max"
+    },
+    {
+      "folder": "/Shading/Random Primvars/Random Primvars",
+      "name": "normalize#",
+      "label": "Normalize"
+    }
+  ],
+  "provenance": {
+    "leg": "BP3-CORPUS",
+    "source_leg": "BP3-PROBE (branch bp3/probe, product d6c6d9b3)",
+    "p5_block_lines": "harness/notes/h22wl/bp3_probes/stdout.txt:52-219",
+    "row_count": 138,
+    "row_rule": "one row per 'name | label' line in the P-5 block; '[folder]' headers excluded; reproducible via `sed -n '52,218p' stdout.txt | grep -c '|'` = 138",
+    "folder_rule": "indentation-stack, leading-slash; cross-validated vs S-2 stdout.txt:407 (maxangle @ /Scattering/Masks/Up Axis Direction)",
+    "count_caveat": "P-5 is a 167-parm class (BP3-PROBE review doc s4); the label walk surfaces 138 name|label rows. 167 = full parmTemplate count incl. multiparm templates/hidden; 138 = the stdout rows this seed mirrors.",
+    "build_pin": "H22 22.0.400 / USD 0.26.5 / MaterialX 1.39.5 (stdout.txt:5-7)"
+  }
+}
