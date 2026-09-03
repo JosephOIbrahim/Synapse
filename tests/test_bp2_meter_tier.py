@@ -66,4 +66,4 @@ def test_leg_row_omits_tier_when_absent_and_carries_it_when_present():
 
 
 def test_referee_tier_resolves_to_fable5():
-    assert resolve_model("referee") == "claude-fable-5"
+    assert resolve_model("referee") == "claude-fable-5-1"  # BP4 2026-09-03: referee bumped to Fable 5.1 (preflight_bp4.json); follows the seam
