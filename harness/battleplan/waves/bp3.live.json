@@ -1,5 +1,5 @@
 {
-  "_comment": "BP3 BATTLEPLAN wave - compiled from docs/BATTLEPLAN.md 2026-09-01 (RECON -> PROBE -> CORPUS; STUBS after RECON; PANEL independent; CRUX after the five; TIDY after CRUX; SPATIAL held; CRUX blocked on the four pair builders). Base=master 7bb46b62. ARMED only on Joe word, WITH -Budget (rails turn = leg dispatch, sec.12 R-3). Merge/push/flip remain Joe words per act. Own bus (battleplan/bus/bp3), own worktree prefix (bp3-*) - zero claim overlap with any live wave.",
+  "_comment": "BP3 BATTLEPLAN wave - compiled from docs/BATTLEPLAN.md 2026-09-01 (RECON -> PROBE -> CORPUS; STUBS after RECON; PANEL independent; CRUX after the five; TIDY after CRUX; SPATIAL held; CRUX blocked on the four pair builders). Base=master c6c4fb86. ARMED only on Joe word, WITH -Budget (rails turn = leg dispatch, sec.12 R-3). Merge/push/flip remain Joe words per act. Own bus (battleplan/bus/bp3), own worktree prefix (bp3-*) - zero claim overlap with any live wave.",
   "_schema": "legs/v1",
   "repo": "C:\\Users\\User\\SYNAPSE",
   "settings": "C:\\Users\\User\\SYNAPSE\\harness\\relay-settings.json",
