@@ -1,0 +1,101 @@
+BP4-CRUX / INTAKE lane — T-E: receipt-vs-reality discrepancies
+====================================================================
+
+(1) "No leg worktree or branch exists" (master receipt, harness/notes/receipts/BP4-INTAKE.json
+    field "branch") — CHECKED AGAINST GIT, FOUND FALSE AS WRITTEN.
+
+$ cd SCR_M && git branch -r | grep -i intake
+  origin/bp4/intake
+
+$ git log --format='%h %ci %s' -3 origin/bp4/intake
+  0d738db9 2026-09-03 18:12:25 -0400  BP4-INTAKE: Receipt - intake drop complete
+  03a4e43d 2026-09-03 18:12:01 -0400  intake: Home the World Labs blueprint + coffee notes under docs/intake/src/
+  28a0e183 2026-09-03 18:05:28 -0400  intake: World Labs blueprint + coffee-notes extractions ...
+
+The branch origin/bp4/intake exists and is a fully worked leg: it has its own commits and
+its own receipt (0d738db9, "Receipt - intake drop complete"), landing at 18:12:01-18:12:25,
+i.e. BEFORE the harvester's first bus post (18:39:32) and well before the master receipt was
+written (9a90e9af, 18:40:20). The master receipt's "No leg worktree or branch exists" is
+literally false — the branch is real, complete, and predates the harvest by ~27 minutes. The
+correct claim would be something like "a leg branch exists and finished independently, but
+the harvest was done in-place on master without consulting or merging it" — which is in fact
+what the master receipt's OWN finding #3 says a few lines later ("INTAKE T1-T3 were executed
+by hand on master outside the harness... second writer"). The "no branch exists" line
+contradicts that adjacent finding in the same document.
+
+Anchor: SCR_M/harness/notes/receipts/BP4-INTAKE.json field "branch" vs.
+        `git log --format='%h %ci %s' -3 origin/bp4/intake` (above) vs.
+        SCR_I/harness/notes/receipts/BP4-INTAKE.json (the branch's own green receipt, exists,
+        head_sha 03a4e43d, status "green").
+
+--------------------------------------------------------------------
+(2) "byte counts corrected 7168/6451 -> 7155/6384" — UNFALSIFIABLE FROM GIT HISTORY AS STATED;
+    both actually-committed MANIFEST.md versions already show 7155/6384.
+
+$ cd SCR_M && git log --all --format='%h %ci %s' -- docs/intake/src/MANIFEST.md
+  2574de6b 2026-09-03 18:39:31 -0400  intake (in place, R135 harvest): ... byte counts
+                                       corrected 7168/6451 -> 7155/6384; docx rows missing
+  03a4e43d 2026-09-03 18:12:01 -0400  intake: Home the World Labs blueprint + coffee notes
+                                       under docs/intake/src/
+
+Only two commits, anywhere in the repo (git log --all), ever touch this path. Both of them,
+when read, already contain 7155/6384:
+  - SCR_I MANIFEST.md (branch content at 03a4e43d): Bytes column = 7155 / 6384 (T-A_hash_
+    verification.txt above).
+  - SCR_M2574 MANIFEST.md (master content at 2574de6b): Bytes column = 7155 / 6384 (same).
+
+There is no git-tracked version of MANIFEST.md, on any ref, that ever shows 7168/6451. The
+claimed wrong numbers must therefore refer to an UNCOMMITTED intermediate state of the
+hand-run's working tree (edited, then corrected, before ever being staged) — plausible given
+the receipt's own "writers.hand_run" window is 18:04-18:13 and the harvest re-verify happened
+at 18:39, but NOT something a git-history audit can confirm or refute. Recording this as
+UNKNOWN/unverifiable rather than false: the claim is consistent with what a diligent harvester
+would report if they watched the hand-run's screen, it just leaves no trace in `git log --all`
+for an outside auditor to check independently.
+
+diff of the two committed MANIFEST.md files (branch vs. master@2574de6b) — the ONLY
+difference between them, confirmed via `diff`:
+  35a36,37
+  > (blank line)
+  > **Harvest note (2026-09-03, CTO seat, R135 in-place):** this manifest was written by hand
+  > on master outside the BP4 harness (writer: Joe's Claude Code session, 18:04-18:13). At
+  > harvest the SHA256 column was re-verified with `Get-FileHash` on master (match) and the
+  > Bytes column corrected to on-disk sizes (was 7168 / 6451; on disk 7155 / 6384 - cause of
+  > the original miscount UNKNOWN). ...
+
+So: the two committed manifests are identical in every substantive cell (file inventory table,
+cross-check table) — the ONLY delta is this appended 2-line harvest-note paragraph, which is
+where the 7168/6451 claim lives as PROSE, not as a table value that was ever actually
+committed wrong. Master's own receipt marks the miscount's cause "UNKNOWN", which this audit
+independently corroborates in the stronger sense: not just the CAUSE but the EXISTENCE of a
+7168/6451-valued commit is unconfirmable.
+
+Anchor: SCR_M/docs/intake/src/MANIFEST.md:37 (harvest note) vs.
+        `git log --all -- docs/intake/src/MANIFEST.md` (2 commits total, above) vs.
+        T-A_hash_verification.txt (both committed Bytes columns = 7155/6384).
+
+--------------------------------------------------------------------
+(3) Branch receipt vs. master receipt — field-by-field diff
+--------------------------------------------------------------------
+                     branch (SCR_I)                    master (SCR_M2574/SCR_M)
+  head_sha:          03a4e43d                          2574de6b43bb8b574f297a06f43a19691267eaa3
+  status:            green                             green_with_findings
+  findings count:    1  (dossier_in_repo: true)         3  (byte-miscount, docx-still-missing,
+                                                             second-writer/no-branch)
+  for_ruling count:  0                                  1  (BP4-I-1: standing rule proposal on
+                                                             hand-runs during an armed wave)
+  receipt commit:    0d738db9 (18:12:25, on branch)     9a90e9af (18:40:20, on master; one
+                                                             commit after the harvest product
+                                                             commit 2574de6b, per CRX0 ordering)
+  bus finding value: "true" (posted 18:10:46, in the     "partial" (posted 18:39:32, corrects
+                     receipt's own findings[0].claim)     the branch's claim - see T-C)
+
+Both receipts are internally well-formed (commit-before-receipt honored in both: branch
+0d738db9 after product 03a4e43d; master 9a90e9af after product 2574de6b). The divergence is
+that the branch leg finished, went green, and posted "true" to the bus WITHOUT ever
+discovering or reporting the 2 missing .docx files as a partial-vs-true problem at the bus-
+claim level (it's recorded in the receipt's cross_checks.missing_docx_files=2, but the
+top-level claim string still says "true" — see T-C). The master harvest is the one that
+downgrades the top-level claim to "partial" and opens the for_ruling item about the
+two-writers-on-one-leg situation. The branch's own existence (finding above, point 1) is the
+detail master's receipt gets wrong.

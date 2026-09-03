@@ -1,0 +1,41 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0 -- C:\Program Files\Side Effects Software\Houdini 22.0.400\bin\hython.exe
+rootdir: C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp4-crux\a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56\scratchpad\s
+configfile: pyproject.toml
+collecting ... collected 14 items
+
+tests/test_spatial_lane.py::test_describe_synthetic_box_bounds PASSED    [  7%]
+tests/test_spatial_lane.py::test_describe_empty_stage_is_honest_unavailable PASSED [ 14%]
+tests/test_spatial_lane.py::test_classify_synthetic_box_structure PASSED [ 21%]
+tests/test_spatial_lane.py::test_classify_default_max_angle_is_scatter_default PASSED [ 28%]
+tests/test_spatial_lane.py::test_frustum_synthetic_all_in_and_none_behind PASSED [ 35%]
+tests/test_spatial_lane.py::test_classify_unavailable_on_pointcloud_only PASSED [ 42%]
+tests/test_spatial_lane.py::test_no_default_on_registration PASSED       [ 50%]
+tests/test_spatial_lane.py::test_describe_component_usdc_matches_B3_bbox PASSED [ 57%]
+tests/test_spatial_lane.py::test_classify_collider_matches_S2_anchor[20] PASSED [ 64%]
+tests/test_spatial_lane.py::test_classify_collider_matches_S2_anchor[35] PASSED [ 71%]
+tests/test_spatial_lane.py::test_classify_collider_matches_S2_anchor[45] PASSED [ 78%]
+tests/test_spatial_lane.py::test_classify_collider_lane_coverage_and_walls PASSED [ 85%]
+tests/test_spatial_lane.py::test_frustum_collider_reproduces_S3 PASSED   [ 92%]
+tests/test_spatial_lane.py::test_D34_solaris_basic_runs_without_code_change PASSED [100%]
+
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================== slowest durations ==============================
+1.12s call     tests/test_spatial_lane.py::test_frustum_collider_reproduces_S3
+1.08s call     tests/test_spatial_lane.py::test_classify_collider_lane_coverage_and_walls
+0.20s call     tests/test_spatial_lane.py::test_no_default_on_registration
+0.12s call     tests/test_spatial_lane.py::test_D34_solaris_basic_runs_without_code_change
+0.09s call     tests/test_spatial_lane.py::test_describe_synthetic_box_bounds
+0.05s setup    tests/test_spatial_lane.py::test_classify_collider_matches_S2_anchor[20]
+0.05s call     tests/test_spatial_lane.py::test_classify_collider_matches_S2_anchor[20]
+0.04s call     tests/test_spatial_lane.py::test_classify_collider_matches_S2_anchor[35]
+0.04s call     tests/test_spatial_lane.py::test_classify_collider_matches_S2_anchor[45]
+0.04s call     tests/test_spatial_lane.py::test_classify_synthetic_box_structure
+
+(32 durations < 0.005s hidden.  Use -vv to show these durations.)
+======================== 14 passed, 1 warning in 3.19s ========================
+PYTEST_EXIT=0

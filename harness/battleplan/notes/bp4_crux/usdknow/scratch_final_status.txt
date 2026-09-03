@@ -1,0 +1,13 @@
+=== scratch git status --short ===
+?? crux_usdknow_out/
+=== tracked changes? ===
+(empty above = no tracked changes)
+=== HEAD ===
+739055372de5b7a97362d1b9522e59057ccc3e14
+=== final checker re-run ===
+[check] seed: harness/bench/corpus/usd/usd_composition_worldlabs_22.0.400.json  (ratified=False)
+[check] stdout source: harness/notes/h22wl/bp4_usdknow/stdout.txt  (86 lines, 0 blocked)
+[check] tier counts: DOC-STATED=2, FIXTURE-VERIFIED=8, PROPOSED=5, VERIFIED-RUNTIME=7
+[check] promotable rows checked: 15
+[check] RESULT: PASS (all 15 promotable rows anchor clean)
+FINAL_EXIT=0

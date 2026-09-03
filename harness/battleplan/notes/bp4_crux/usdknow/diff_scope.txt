@@ -1,0 +1,29 @@
+=== git diff --stat 28a0e183 HEAD ===
+ docs/reviews/bp4-usd-composition-worldlabs.md      | 362 +++++++++++++++++
+ harness/battleplan/notes/bp4_usdknow_check.py      | 187 +++++++++
+ .../usd/usd_composition_worldlabs_22.0.400.json    | 248 ++++++++++++
+ harness/notes/h22wl/bp4_usdknow/run_meta.txt       |   7 +
+ harness/notes/h22wl/bp4_usdknow/stdout.txt         |  85 ++++
+ harness/notes/receipts/BP4-USDKNOW.json            |  63 +++
+ harness/probes/bp4_usd_composition_probes.py       | 436 +++++++++++++++++++++
+ 7 files changed, 1388 insertions(+)
+
+=== name-status ===
+A	docs/reviews/bp4-usd-composition-worldlabs.md
+A	harness/battleplan/notes/bp4_usdknow_check.py
+A	harness/bench/corpus/usd/usd_composition_worldlabs_22.0.400.json
+A	harness/notes/h22wl/bp4_usdknow/run_meta.txt
+A	harness/notes/h22wl/bp4_usdknow/stdout.txt
+A	harness/notes/receipts/BP4-USDKNOW.json
+A	harness/probes/bp4_usd_composition_probes.py
+
+=== python/synapse/ diff bytes (base) ===
+0
+=== python/synapse/ diff bytes (origin/master) ===
+0
+=== origin/master sha ===
+3a27d1ff0fbb99c2bbad6aa6dcac0d5a307067b1
+=== registry/root files touched? ===
+(none above = clean)
+=== any non-harness/docs path? ===
+(none above = all under harness|docs)

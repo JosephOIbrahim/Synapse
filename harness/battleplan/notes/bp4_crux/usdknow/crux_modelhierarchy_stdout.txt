@@ -1,0 +1,13 @@
+USD: 0.26.5
+Houdini: 22.0.400
+file: C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe/harness/notes/h22wl/bp3_probes/b6_wl_component.usdc
+
+path                                                 kind       IsModel  IsGroup  IsComponent
+/wl_import                                           component  True     False    True    
+/wl_import/WL_fixture                                component  False    False    False   
+
+[CRUX-EV:nested-component-count] prims carrying kind=component = 2 -> ['/wl_import', '/wl_import/WL_fixture']
+[CRUX-EV:nested-component] /wl_import/WL_fixture is a descendant of component /wl_import -> nested=True ; USD model hierarchy forbids a model under a component (components are leaf models)
+[CRUX-EV:inner-IsModel] inner.IsModel()=False (False => the broken hierarchy makes the inner prim invisible to Usd.ModelAPI / model traversal)
+[CRUX-EV:model-traversal] Stage.Traverse(Usd.PrimIsModel) yields 1 prim(s): ['/wl_import']
+DONE

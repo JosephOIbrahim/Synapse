@@ -1,0 +1,18 @@
+run: BP4-CRUX USDKNOW lane independent re-run
+date_utc: 2026-09-03T22:59:20Z
+cwd: C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-bp4-crux/a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56/scratchpad/u
+hython: C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe
+HOUDINI_USER_PREF_DIR: C:/Users/User/OneDrive/Documents/houdini22.0
+BP4_WL_USDC: C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe/harness/notes/h22wl/bp3_probes/b6_wl_component.usdc
+usdc_bytes: 19756921
+argv1: C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe/harness/notes/h22wl/bp3_probes/b6_wl_component.usdc
+exit_code: 0
+wall_s: 2.59  (measured on the identical second run; run 1's bc was unavailable)
+stdout_lines: 85
+stdout_bytes: 7045
+git_head: 739055372de5b7a97362d1b9522e59057ccc3e14
+run2_exit: 0
+run2_wall_s: 2.59
+run2_lines: 85
+self_determinism: run1 vs run2 differ ONLY in the anon layer id and the mkdtemp dir name
+no_env_run: BP4_WL_USDC unset + argv=C:/nonexistent -> STILL resolved the fixture via the probe's hardcoded CANDIDATES[2]; normalized output byte-identical to the env-set run

@@ -1,0 +1,82 @@
+C:\Users\User\AppData\Roaming\Python\Python314\site-packages\torch\cuda\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-8.4.2, pluggy-1.6.0
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp4-crux\a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56\scratchpad\p
+configfile: pyproject.toml
+plugins: hydra-core-1.3.2, jaxtyping-0.3.9, asyncio-0.26.0, cov-5.0.0, torchtyping-0.1.5, typeguard-2.13.3, anyio-4.12.1, hypothesis-6.151.2, benchmark-5.2.3
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 7117 items / 6683 deselected / 3 skipped / 434 selected
+
+tests\panel\test_apex_catalog_membership.py ....                         [  0%]
+tests\panel\test_chat_gate_off_bridge.py ..                              [  1%]
+tests\panel\test_chat_leading.py ..sss                                   [  2%]
+tests\panel\test_docking.py s                                            [  2%]
+tests\panel\test_failure_trail.py ss                                     [  3%]
+tests\panel\test_flowfix_j4.py .....                                     [  4%]
+tests\panel\test_font_floor.py ........                                  [  6%]
+tests\panel\test_font_scale.py ssssssss                                  [  8%]
+tests\panel\test_gate_fidelity_unknown.py ssssssss                       [  9%]
+tests\panel\test_health_strip.py .............ss                         [ 13%]
+tests\panel\test_seeded_contrast.py ...                                  [ 14%]
+tests\panel\test_session_scope.py .......                                [ 15%]
+tests\panel\test_theme_source.py ........                                [ 17%]
+tests\panel\test_token_authority.py .................................    [ 25%]
+tests\panel\test_token_seeding.py ..                                     [ 25%]
+tests\panel\test_type_scale_native.py ...                                [ 26%]
+tests\test_bp2_paneldesign_density.py ................                   [ 29%]
+tests\test_bp2_paneltruth_density_repolish.py .......                    [ 31%]
+tests\test_bp2_paneltruth_float_fix.py ....                              [ 32%]
+tests\test_bp2_paneltruth_profile_diff.py ........                       [ 34%]
+tests\test_bp2_paneltruth_token_refresh.py ..............ss              [ 38%]
+tests\test_chat_panel.py ....................................sssssssssss [ 48%]
+s...............sssss............................                        [ 60%]
+tests\test_corpus_activate.py .                                          [ 60%]
+tests\test_design_system.py .....                                        [ 61%]
+tests\test_freeze_chain.py .                                             [ 61%]
+tests\test_h3b_panel_cancel.py ..................                        [ 65%]
+tests\test_hda_panel.py ..s.............................                 [ 73%]
+tests\test_live_integrity_envelope.py ...                                [ 73%]
+tests\test_model_ids_lockstep.py .                                       [ 74%]
+tests\test_panel_consent_no_freeze.py ..                                 [ 74%]
+tests\test_panel_faces.py ssssssssssssssssssssssssssssssssssssss         [ 83%]
+tests\test_panel_fidelity_honesty_sourcepin.py ....                      [ 84%]
+tests\test_panel_freeze_beat.py ...                                      [ 85%]
+tests\test_panel_preflight.py .............                              [ 88%]
+tests\test_panel_preflight_h7_guard.py .........                         [ 90%]
+tests\test_panel_receipt_honesty_sourcepin.py ..                         [ 90%]
+tests\test_panel_render_receipt.py ............                          [ 93%]
+tests\test_panel_settings.py ........                                    [ 95%]
+tests\test_panel_stop_honest.py ...                                      [ 95%]
+tests\test_panel_typography.py ......                                    [ 97%]
+tests\test_phase3_exposure.py ..                                         [ 97%]
+tests\test_pkg_bootstrap_invariant.py .                                  [ 97%]
+tests\test_r_track.py .                                                  [ 98%]
+tests\test_rope_catalog.py .                                             [ 98%]
+tests\test_rope_composer_height.py .                                     [ 98%]
+tests\test_rope_design_conformance.py .                                  [ 98%]
+tests\test_router_internals.py .                                         [ 99%]
+tests\test_v2_voice_contract.py .                                        [ 99%]
+tests\test_w6_beat_runtime_heartbeat.py ...                              [100%]
+
+============================== warnings summary ===============================
+tests\conftest.py:507
+  C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp4-crux\a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56\scratchpad\p\tests\conftest.py:507: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp4-crux\a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56\scratchpad\p\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+    from synapse.inspector import reset_transport as _inspector_reset_transport
+
+tests/panel/test_apex_catalog_membership.py::test_emitted_recipe_types_are_catalog_present
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:1216: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    return asyncio.get_event_loop_policy()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============== needs_houdini deselected (NOT silently dropped) ===============
+NEEDS_HOUDINI  tests/solaris/test_live_wiring.py  [27 test(s)]  -- needs a Houdini runtime: this module requires `hou` (Houdini's Python module -- exists only inside Houdini/hython, never on a stock interpreter)
+NEEDS_HOUDINI  tests/test_h22_cops_solver_live.py  [5 test(s)]  -- needs a Houdini runtime: this module requires `hou` (Houdini's Python module -- exists only inside Houdini/hython, never on a stock interpreter)
+NEEDS_HOUDINI  tests/test_h22_setdressing_live.py  [4 test(s)]  -- needs a Houdini runtime: this module requires `hou` (Houdini's Python module -- exists only inside Houdini/hython, never on a stock interpreter)
+NEEDS_HOUDINI  tests/test_hwebserver_integration.py  [4 test(s)]  -- needs a Houdini runtime: this module requires `hou` (Houdini's Python module -- exists only inside Houdini/hython, never on a stock interpreter)
+NEEDS_HOUDINI  tests/test_scene_hash_gate.py  [22 test(s)]  -- needs a Houdini runtime: this module requires `pxr` (OpenUSD -- not installed on stock CI runners)
+NEEDS_HOUDINI  tests/test_stage_exceeds_cache_and_composition_valid.py  [13 test(s)]  -- needs a Houdini runtime: this module requires `pxr` (OpenUSD -- not installed on stock CI runners)
+NEEDS_HOUDINI  tests/test_stage_hash_honesty.py  [10 test(s)]  -- needs a Houdini runtime: this module requires `pxr` (OpenUSD -- not installed on stock CI runners)
+85 test(s) in 7 module(s) deselected by -m 'not needs_houdini'. Run the full suite under hython (pytest tests/, no -m filter) to execute them.
+======== 352 passed, 85 skipped, 6683 deselected, 2 warnings in 25.22s ========

@@ -1,0 +1,26 @@
+  stdout:18   ok      path                                                 type             kind      
+  stdout:19   ok      /HoudiniLayerInfo                                    HoudiniLayerInfo -         
+  stdout:20   ok      /wl_import                                           Xform            component 
+  stdout:21   ok      /wl_import/WL_fixture                                Xform            component 
+  stdout:22   ok      /wl_import/WL_fixture/geo                            Scope            -         
+  stdout:23   ok      /wl_import/WL_fixture/geo/proxy                      Scope            -         
+  stdout:24   ok      /wl_import/WL_fixture/geo/proxy/world                Mesh             -         
+  stdout:25   ok      /wl_import/WL_fixture/geo/proxy/world/geometry_0     Mesh             -         
+  stdout:26   ok      /wl_import/WL_fixture/geo/proxy/autoproxy            Mesh             -         
+  stdout:27   ok      /wl_import/WL_fixture/geo/render                     Scope            -         
+  stdout:28   ok      /wl_import/WL_fixture/geo/render/points_0            Points           -         
+  stdout:33   ok      [BP4-EV:fx-splat-purpose-inherited] splat Points /wl_import/WL_fixture/geo/rende
+  stdout:34   ok      [BP4-EV:fx-variantsets-count] SOP-built component authors 0 variantSet(s) total 
+  stdout:35   ok      [BP4-EV:fx-customdata-worldlabs] component root customData keys=['userDocBrief']
+  stdout:41   ok      prim counts: loaded=10 unloaded=1 reloaded=10
+  stdout:42   ok      composed arcs on /shot/world: root,payload
+  stdout:43   ok      [BP4-EV:fx-payload-roundtrip] payloading the component then Unload drops 9 prim(
+  stdout:45   ok      reference prim counts: before_unload=10 after_unload=10
+  stdout:46   ok      [BP4-EV:rt-payload-unloadable-vs-reference] payload Unload removes its subtree; 
+  stdout:59   ok      arc order strong->weak: local>inherit>variant>reference>payload>specialize
+  stdout:60   ok      [BP4-EV:rt-livrps-order] one attribute with all six opinions resolves strong->we
+  stdout:76   ok      [BP4-EV:rt-local-over-specialize] spot1 keeps its own local 2.0 after base->0.5;
+  stdout:83   ok      [BP4-EV:rt-inherit-liststrength] inherit list-editing: A added before B ; compos
+
+distinct receipt-cited stdout lines: 23 ; problems: 0
+receipt status: green_with_findings | checker_exit: 0 | acceptance verdicts: ['pass', 'pass', 'pass', 'pass']

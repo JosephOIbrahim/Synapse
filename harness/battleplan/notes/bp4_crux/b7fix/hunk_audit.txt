@@ -1,0 +1,14 @@
+diff cmd: git diff -U0 28a0e183 HEAD -- harness/probes/synapse_blueprint_probes.py
+hunk            new_lines      owner_start                     owner_end                       verdict
+-366 +366       [366..366]       decorator-of:b7                 decorator-of:b7                 OK
+-370,2 +370,24  [370..393]       b7                              b7                              OK
+-375 +397       [397..397]       b7                              b7                              OK
+-385,2 +407,2   [407..408]       b7                              b7                              OK
+-473,0 +496,21  [496..516]       main-region-banner/PROBE_DEPS   _resolve_run_set                OK
+-477 +520       [520..520]       main                            main                            OK
+-482 +524,0     [524..524]       main                            main                            OK
+-483,0 +526     [526..526]       main                            main                            OK
+-485 +528       [528..528]       main                            main                            OK
+-486,0 +530,2   [530..531]       main                            main                            OK
+
+VERDICT: PASS - all 10 hunks inside b7()/its @probe decorator/the main region

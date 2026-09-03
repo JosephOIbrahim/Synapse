@@ -1,0 +1,260 @@
+python/synapse/panel/agent_health.py:211:                ' <span style="color:#888; font-size:11px">'
+python/synapse/panel/apex_explainer.py:824:        f'<div style="font-family:sans-serif;padding:12px;'
+python/synapse/panel/apex_explainer.py:826:        f'<div style="font-size:18px;font-weight:bold;color:#dddddd;'
+python/synapse/panel/apex_explainer.py:829:        f'<div style="color:#aa8855;font-size:13px;margin-bottom:2px;">'
+python/synapse/panel/apex_explainer.py:833:        f'<div style="color:#88aa66;font-size:13px;margin-bottom:2px;">'
+python/synapse/panel/apex_explainer.py:839:        f'<div style="color:#8888bb;font-size:13px;margin-bottom:2px;">'
+python/synapse/panel/apex_explainer.py:844:            f'<div style="margin-top:8px;font-size:12px;color:#666;">'
+python/synapse/panel/apex_recipes.py:733:        f'<div style="font-family: {_FONT_SANS}; color: {_TEXT}; '
+python/synapse/panel/apex_recipes.py:734:        f'font-size: {_BODY_PX}px; line-height: 1.8;">'
+python/synapse/panel/apex_recipes.py:749:            f'<span style="color: {diff_color}; font-size: {_SMALL_PX}px;">'
+python/synapse/panel/apex_recipes.py:756:        f'<span style="color: {_TEXT_DIM}; font-size: {_SMALL_PX}px;">'
+python/synapse/panel/apex_recipes.py:784:        f'<div style="font-family: {_FONT_SANS}; color: {_TEXT}; '
+python/synapse/panel/apex_recipes.py:785:        f'font-size: {_BODY_PX}px; line-height: 1.6;">'
+python/synapse/panel/apex_recipes.py:790:        f'<b style="color: {_SIGNAL}; font-size: {_BODY_PX + 2}px;">'
+python/synapse/panel/apex_recipes.py:797:        f'<span style="color: {diff_color}; font-size: {_SMALL_PX}px;">'
+python/synapse/panel/apex_recipes.py:799:        f'<span style="color: {_TEXT_DIM}; font-size: {_SMALL_PX}px;">'
+python/synapse/panel/apex_trace.py:716:        lines.append("<div style='padding:4px 8px; color:#AAA; font-family:monospace;'>")
+python/synapse/panel/apex_trace.py:729:            f"font-family:monospace;'>{flow}</div>"
+python/synapse/panel/bookmarks.py:175:    parts = [f'<div style="padding:4px 0; color:#aaa; font-size:13px;">{header}</div>']
+python/synapse/panel/bookmarks.py:197:                    f'border-radius:3px; font-size:11px; margin-right:4px;">{tag_text}</span>'
+python/synapse/panel/bookmarks.py:210:            f'<div style="font-weight:bold; color:#E0E0E0;">'
+python/synapse/panel/bookmarks.py:212:            f'<div style="color:#777; font-size:11px;">{ts_display}</div>'
+python/synapse/panel/bookmarks.py:213:            f'<div style="color:#999; font-style:italic; font-size:12px; '
+python/synapse/panel/chat_display.py:242:            f = QFont(self.font())
+python/synapse/panel/chat_display.py:243:            f.setPixelSize(int(px))
+python/synapse/panel/chat_display.py:629:            '<span style="color:{sig}; font-family:monospace; '
+python/synapse/panel/chat_display.py:630:            'font-size:{sz}px; letter-spacing:1px; font-weight:700;">'
+python/synapse/panel/chat_display.py:633:            'font-size:{sz}px;">is thinking'
+python/synapse/panel/chat_panel.py:444:            f = QtGui.QFont(b.font())
+python/synapse/panel/chat_panel.py:445:            f.setPixelSize(label_px)
+python/synapse/panel/command_palette.py:441:            font = QFont(_FONT_SANS, 12)
+python/synapse/panel/command_palette.py:455:            self._list.setFont(QFont(_FONT_SANS, 10))
+python/synapse/panel/context_bar.py:364:        "  font-size: 9pt; font-family: '{mono}', Consolas, monospace;"
+python/synapse/panel/context_bar.py:420:            "color: {fg}; font-size: 10pt;"
+python/synapse/panel/context_bar.py:421:            " font-family: '{mono}', Consolas, monospace;"
+python/synapse/panel/context_bar.py:434:            "color: {fg}; font-size: 9pt;"
+python/synapse/panel/context_bar.py:435:            " font-family: '{mono}', Consolas, monospace;"
+python/synapse/panel/context_bar.py:455:            "color: {fg}; font-size: 9pt;"
+python/synapse/panel/context_bar.py:456:            " font-family: '{mono}', Consolas, monospace;"
+python/synapse/panel/context_bar.py:491:            "color: {fg}; font-size: 9pt;"
+python/synapse/panel/context_bar.py:492:            " font-family: '{mono}', Consolas, monospace;"
+python/synapse/panel/context_bar.py:522:                "color: {fg}; font-size: 9pt;"
+python/synapse/panel/context_bar.py:523:                " font-family: '{mono}', Consolas, monospace;"
+python/synapse/panel/context_bar.py:541:                "color: {fg}; font-size: 9pt;"
+python/synapse/panel/context_bar.py:542:                " font-family: '{mono}', Consolas, monospace;"
+python/synapse/panel/cross_scene.py:450:            f"padding:1px 6px; border-radius:3px; font-size:11px;'>"
+python/synapse/panel/cross_scene.py:458:            f"<span style='color:#666; font-size:11px;'>(from {source})</span>"
+python/synapse/panel/dependency_map.py:443:    parts.append("<div style='font-family:monospace; font-size:13px;'>")
+python/synapse/panel/designsystem/components.py:41:    f = QtGui.QFont(w.font())  # inherit host attrs (hinting, style strategy)
+python/synapse/panel/designsystem/components.py:43:    f.setPixelSize(t.scaled(size, scale))
+python/synapse/panel/designsystem/fontload.py:169:        f = QtGui.QFont(QtWidgets.QApplication.font())   # inherit host attrs
+python/synapse/panel/designsystem/fontload.py:171:        f = QtGui.QFont()
+python/synapse/panel/designsystem/fontload.py:173:    f.setPixelSize(spx)
+python/synapse/panel/designsystem/qss.py:21:   No font-family: inherit Houdini's app-level UI font (native). */
+python/synapse/panel/designsystem/qss.py:31:    font-size: {s(t.SIZE_BODY)}px;
+python/synapse/panel/designsystem/qss.py:44:    border-radius: {t.RADIUS_SM}px; font-size: {s(t.SIZE_SMALL)}px;
+python/synapse/panel/designsystem/qss.py:51:    font-size: {s(t.SIZE_UI)}px;
+python/synapse/panel/designsystem/qss.py:52:    font-weight: {t.WEIGHT_SEMIBOLD};
+python/synapse/panel/designsystem/qss.py:107:    font-size: {s(t.SIZE_UI)}px; font-weight: {t.WEIGHT_SEMIBOLD};
+python/synapse/panel/designsystem/qss.py:164:    font-size: {s(t.SIZE_SMALL)}px;
+python/synapse/panel/designsystem/qss.py:188:    font-size: {s(t.SIZE_MICRO)}px;
+python/synapse/panel/designsystem/qss.py:216:    font-size: {s(t.SIZE_MICRO)}px; font-weight: {t.WEIGHT_SEMIBOLD};
+python/synapse/panel/designsystem/qss.py:232:    padding: {t.SPACE_MD}px 15px; font-size: {s(t.SIZE_UI)}px;
+python/synapse/panel/error_translator.py:503:        f"font-family: '{_FONT_MONO}', Consolas, monospace; "
+python/synapse/panel/error_translator.py:507:        f"font-size: {_SMALL_PX}px; "
+python/synapse/panel/error_translator.py:508:        f"font-weight: bold; "
+python/synapse/panel/error_translator.py:515:        f"font-size: {_BODY_PX}px; "
+python/synapse/panel/error_translator.py:522:        f"font-size: {_SMALL_PX}px; "
+python/synapse/panel/face_review.py:178:        f = QtGui.QFont()
+python/synapse/panel/face_review.py:179:        f.setPixelSize(10)
+python/synapse/panel/face_review.py:240:        self._locator_meta.setStyleSheet("color:%s; font-size:10px;" % t.TEXT_TERTIARY)
+python/synapse/panel/face_review.py:300:        self._paths.setStyleSheet("color:%s; font-size:10px;" % t.TEXT_TERTIARY)
+python/synapse/panel/face_review.py:423:            '<span style="color:%s; font-family:%s; letter-spacing:1px;">%s </span>'
+python/synapse/panel/face_token.py:425:                lbl.setStyleSheet("color:%s; font-size:%dpx;"
+python/synapse/panel/face_token.py:438:            lbl.setStyleSheet("color:%s; font-size:%dpx;"
+python/synapse/panel/face_token.py:454:                key.setStyleSheet("color:%s; font-size:%dpx;"
+python/synapse/panel/gate_widget.py:181:            "color: {fg}; font-family: '{mono}', 'Consolas', monospace; "
+python/synapse/panel/gate_widget.py:182:            "font-size: {sz}px; font-weight: 700; border: none;".format(
+python/synapse/panel/gate_widget.py:192:                "color: {fg}; font-size: {sz}px; border: none;".format(
+python/synapse/panel/gate_widget.py:206:                "color: {fg}; font-size: {sz}px; border: none;".format(
+python/synapse/panel/gate_widget.py:216:                "color: {c}; font-size: {sz}px; font-weight: 700; "
+python/synapse/panel/gate_widget.py:229:                "color: {fg}; font-size: {sz}px; "
+python/synapse/panel/gate_widget.py:230:                "font-family: '{mono}', 'Consolas', monospace; "
+python/synapse/panel/gate_widget.py:341:                "color: {c}; font-weight: bold;".format(c=t.WARN)
+python/synapse/panel/gate_widget.py:371:                "color: {c}; font-size: {sz}px; font-weight: 700; "
+python/synapse/panel/gate_widget.py:372:                "font-family: '{mono}', 'Consolas', monospace; "
+python/synapse/panel/gate_widget.py:435:            "font-family: '{mono}', 'Consolas', monospace; "
+python/synapse/panel/gate_widget.py:436:            "font-size: {sz}px; }}"
+python/synapse/panel/gate_widget.py:480:            "color: {fg}; font-family: '{mono}', 'Consolas', monospace; "
+python/synapse/panel/gate_widget.py:481:            "font-size: {sz}px; border: none;".format(
+python/synapse/panel/gate_widget.py:498:            "color: {fg}; font-family: '{mono}', 'Consolas', monospace; "
+python/synapse/panel/gate_widget.py:499:            "font-size: {sz}px; border: none;".format(
+python/synapse/panel/gate_widget.py:513:            "color: {fg}; font-family: '{mono}', 'Consolas', monospace; "
+python/synapse/panel/gate_widget.py:514:            "font-size: {sz}px; border: none;".format(
+python/synapse/panel/gate_widget.py:677:            "color: {c}; font-size: 14px; border: none;".format(
+python/synapse/panel/gate_widget.py:706:            "color: {fg}; font-family: '{mono}', 'Consolas', monospace; "
+python/synapse/panel/gate_widget.py:707:            "font-size: {sz}px; border: none;".format(
+python/synapse/panel/hda_views.py:42:            "color: {sig}; font-size: 10px; "
+python/synapse/panel/hda_views.py:43:            "font-family: monospace; letter-spacing: 2px;".format(
+python/synapse/panel/hda_views.py:72:            "color: {c}; font-family: monospace; font-size: 11px;".format(
+python/synapse/panel/hda_views.py:89:            "color: {c}; font-family: monospace; font-size: 11px;".format(
+python/synapse/panel/hda_views.py:96:            "color: {c}; font-family: monospace; font-size: 11px;".format(
+python/synapse/panel/hda_views.py:168:            "color: {c}; font-family: monospace; font-size: 14px; "
+python/synapse/panel/hda_views.py:169:            "font-weight: 700;".format(c=_ds.BONE)
+python/synapse/panel/hda_views.py:190:                "color: {c}; font-size: 8px;".format(c=t.HDA_STAGE_INACTIVE)
+python/synapse/panel/hda_views.py:202:            "color: {c}; font-family: monospace; font-size: 10px;".format(
+python/synapse/panel/hda_views.py:232:                    "color: {c}; font-size: 8px;".format(
+python/synapse/panel/hda_views.py:238:                    "color: {c}; font-size: 10px;".format(
+python/synapse/panel/hda_views.py:244:                    "color: {c}; font-size: 8px;".format(
+python/synapse/panel/hda_views.py:260:                "color: {c}; font-size: 8px;".format(c=t.HDA_STAGE_INACTIVE)
+python/synapse/panel/hda_views.py:284:            "color: {c}; font-family: monospace; font-size: 14px; "
+python/synapse/panel/hda_views.py:285:            "font-weight: 700;".format(c=_ds.GROW)
+python/synapse/panel/hda_views.py:319:            "color: {c}; font-family: monospace; font-size: 10px;".format(
+python/synapse/panel/hda_views.py:361:                "color: {c}; font-family: monospace; font-size: 14px; "
+python/synapse/panel/hda_views.py:362:                "font-weight: 700;".format(c=_ds.GROW)
+python/synapse/panel/hda_views.py:366:                "color: {fg}; font-family: monospace; font-size: 12px; "
+python/synapse/panel/hda_views.py:417:                "color: {c}; font-family: monospace; font-size: 14px; "
+python/synapse/panel/hda_views.py:418:                "font-weight: 700;".format(c=t.ERROR_COLOR)
+python/synapse/panel/hda_views.py:422:                "color: {fg}; font-family: monospace; font-size: 11px; "
+python/synapse/panel/health_infographic.py:245:        f = QtGui.QFont()
+python/synapse/panel/health_infographic.py:246:        f.setPixelSize(px)
+python/synapse/panel/health_strip.py:419:                    "font-size:%dpx; font-family:%s; background:transparent;"
+python/synapse/panel/message_formatter.py:45:# The obvious lever - line-height:150% - was already in this file, marked
+python/synapse/panel/message_formatter.py:102:            '<div style="color:{dim}; font-size:{sz}px; '
+python/synapse/panel/message_formatter.py:103:            'margin-bottom:4px; font-family:{mono};">{lang}</div>'
+python/synapse/panel/message_formatter.py:109:        '<pre style="margin:0; color:{fg}; font-family:{mono}; '
+python/synapse/panel/message_formatter.py:110:        'font-size:{sz}px; white-space:pre-wrap;">{code}</pre>'
+python/synapse/panel/message_formatter.py:123:        '<code style="color:{fg}; font-family:{mono}; font-size:{sz}px;">'
+python/synapse/panel/message_formatter.py:142:            'font-size:{ssz}px;">signed {who}</span>'
+python/synapse/panel/message_formatter.py:147:        '<span style="background:{bg}; font-family:{mono}; font-size:{sz}px;">'
+python/synapse/panel/message_formatter.py:258:        '<div style="color:{fg}; font-size:{sz}px;">{prefix}{body}</div>'
+python/synapse/panel/message_formatter.py:296:    ts = ('<span style="color:{d}; font-size:{s}px;">&#160;&#160;{t}</span>'
+python/synapse/panel/message_formatter.py:300:    dot = ('<span style="color:{c}; font-size:{s}px;">&#9679;</span>&#160;&#160;'
+python/synapse/panel/message_formatter.py:302:    return ('<div style="font-family:{m}; font-size:{s}px; letter-spacing:1.2px; '
+python/synapse/panel/message_formatter.py:326:        '<td style="color:{fg}; font-size:{sz}px; line-height:150%;">{body}</td>'
+python/synapse/panel/message_formatter.py:348:            '<div style="color:{dim}; font-size:{sz}px; letter-spacing:1px; '
+python/synapse/panel/message_formatter.py:360:        '<div style="text-align:center; color:{dim}; font-size:{sz}px; '
+python/synapse/panel/performance_profiler.py:348:    lines.append("<div style='font-family:monospace; font-size:13px; color:#ccc;'>")
+python/synapse/panel/performance_profiler.py:353:        f"margin-bottom:10px; font-size:14px;'>"
+python/synapse/panel/performance_profiler.py:381:            f"      <span style='color:#888; font-size:11px;'>({escaped_type})</span>"
+python/synapse/panel/performance_profiler.py:397:                f"  <div style='color:#e8a020; font-size:11px; margin:3px 0 0 8px;'>"
+python/synapse/panel/performance_profiler.py:406:        f"<div style='padding:8px 12px; margin-top:8px; color:#888; font-size:11px;'>"
+python/synapse/panel/quick_actions.py:132:                "color: {fg}; font-size: 14px; }}"
+python/synapse/panel/quick_actions.py:173:                "  font-family: '{mono}', 'Consolas', monospace;"
+python/synapse/panel/quick_actions.py:174:                "  font-size: {sz}px;"
+python/synapse/panel/recipe_book.py:769:        f'<div style="font-family: {_FONT_SANS}; color: {_TEXT}; '
+python/synapse/panel/recipe_book.py:770:        f'font-size: {_BODY_PX}px; line-height: 1.6;">'
+python/synapse/panel/recipe_book.py:788:        f'<span style="color: {_TEXT_DIM}; font-size: {_SMALL_PX}px;">'
+python/synapse/panel/recipe_book.py:814:        f'<div style="font-family: {_FONT_SANS}; color: {_TEXT}; '
+python/synapse/panel/recipe_book.py:815:        f'font-size: {_BODY_PX}px; line-height: 1.8;">'
+python/synapse/panel/recipe_book.py:826:            f'<span style="color: {diff_color}; font-size: {_SMALL_PX}px;">'
+python/synapse/panel/recipe_book.py:828:            f'<span style="color: {_TEXT_DIM}; font-size: {_SMALL_PX}px;">'
+python/synapse/panel/recipe_book.py:835:        f'<span style="color: {_TEXT_DIM}; font-size: {_SMALL_PX}px;">'
+python/synapse/panel/recipe_book.py:864:        f'<div style="font-family: {_FONT_SANS}; color: {_TEXT}; '
+python/synapse/panel/recipe_book.py:865:        f'font-size: {_BODY_PX}px; line-height: 1.6;">'
+python/synapse/panel/recipe_book.py:870:        f'<b style="color: {_SIGNAL}; font-size: {_BODY_PX + 2}px;">'
+python/synapse/panel/recipe_book.py:877:        f'<span style="color: {diff_color}; font-size: {_SMALL_PX}px;">'
+python/synapse/panel/recipe_book.py:879:        f'<span style="color: {_TEXT_DIM}; font-size: {_SMALL_PX}px;">'
+python/synapse/panel/recipe_book.py:925:        f'<span style="color: {_SUCCESS}; font-size: {_SMALL_PX}px;">'
+python/synapse/panel/render_preflight.py:877:    lines.append("<div style='font-family: monospace; font-size: 13px;'>")
+python/synapse/panel/render_preflight.py:889:            "<p style='color: #4CAF50; font-size: 16px; font-weight: bold; "
+python/synapse/panel/render_preflight.py:895:            f"<p style='color: #F44336; font-size: 16px; font-weight: bold; "
+python/synapse/panel/render_preflight.py:910:            f"<span style='color: {color}; font-size: 15px;'>{icon}</span> "
+python/synapse/panel/render_preflight.py:922:                f"<p style='color: #999; margin: 0 0 4px 24px; font-size: 12px;'>"
+python/synapse/panel/render_preflight.py:927:                f"<p style='color: #00D4FF; margin: 0 0 4px 24px; font-size: 12px;'>"
+python/synapse/panel/save_shot.py:379:        '<div style="font-weight:bold; color:#4a9; margin-bottom:6px;">'
+python/synapse/panel/save_shot.py:394:        f'<div style="color:#666; font-size:11px; margin-top:4px;">'
+python/synapse/panel/save_shot.py:463:        f'<div style="padding:4px 0; color:#aaa; font-size:13px;">'
+python/synapse/panel/save_shot.py:474:            f'<div style="font-weight:bold; color:#E0E0E0;">{filename_html}</div>'
+python/synapse/panel/save_shot.py:475:            f'<div style="color:#777; font-size:11px;">{ts_html}</div>'
+python/synapse/panel/save_shot.py:476:            f'<div style="color:#999; font-style:italic; font-size:12px; '
+python/synapse/panel/scene_doctor.py:677:    "critical": '<span style="color:#e74c3c; font-weight:bold;">&#10007;</span>',
+python/synapse/panel/scene_doctor.py:678:    "error": '<span style="color:#e67e22; font-weight:bold;">&#10007;</span>',
+python/synapse/panel/scene_doctor.py:690:        '<div style="font-family: monospace; font-size: 13px;">',
+python/synapse/panel/scene_doctor.py:691:        f'<p style="font-weight:bold;">{report.summary}</p>',
+python/synapse/panel/scene_doctor.py:726:                    ' <span style="color:#3498db; font-size:11px;">'
+python/synapse/panel/session_journal.py:241:        "<div style='font-family: monospace; font-size: 13px;'>"
+python/synapse/panel/styles.py:29:        "  font-family: {font};"
+python/synapse/panel/styles.py:30:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:46:        "  font-family: {font};"
+python/synapse/panel/styles.py:47:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:59:        "  font-family: {font};"
+python/synapse/panel/styles.py:60:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:61:        "  font-weight: 700;"
+python/synapse/panel/styles.py:80:        "  font-family: {font};"
+python/synapse/panel/styles.py:81:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:98:        "  font-family: {font};"
+python/synapse/panel/styles.py:99:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:114:        "  font-family: {font};"
+python/synapse/panel/styles.py:115:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:127:        "  font-weight: 700;"
+python/synapse/panel/styles.py:139:        "  font-family: {font};"
+python/synapse/panel/styles.py:140:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:141:        "  font-weight: 700;"
+python/synapse/panel/styles.py:153:        "  font-family: {font};"
+python/synapse/panel/styles.py:154:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:171:        "  font-family: {font};"
+python/synapse/panel/styles.py:172:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:188:        "  font-family: {font};"
+python/synapse/panel/styles.py:189:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:214:        "  font-family: '{mono}', 'Consolas', monospace;"
+python/synapse/panel/styles.py:215:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:243:        "  font-family: '{sans}', 'Segoe UI', sans-serif;"
+python/synapse/panel/styles.py:244:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:264:        "  font-family: '{mono}', 'Consolas', monospace;"
+python/synapse/panel/styles.py:265:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:266:        "  font-weight: 700;"
+python/synapse/panel/styles.py:290:        "  font-family: '{mono}', 'Consolas', monospace;"
+python/synapse/panel/styles.py:291:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:314:        "  font-family: '{mono}', 'Consolas', monospace;"
+python/synapse/panel/styles.py:315:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:334:    return "color: {c}; font-size: 18px; border: none;".format(c=color)
+python/synapse/panel/styles.py:340:        "color: {c}; font-family: '{mono}', 'Consolas', monospace;"
+python/synapse/panel/styles.py:341:        " font-size: {sz}px; letter-spacing: 1px;"
+python/synapse/panel/styles.py:363:        "color: {c}; font-size: {s}px; font-family: '{mono}', "
+python/synapse/panel/styles.py:379:        "color: {c}; font-size: {s}px; border: none;".format(
+python/synapse/panel/styles.py:395:        "color: {c}; font-size: {s}px; border: none;".format(
+python/synapse/panel/styles.py:404:        "color: {c}; font-size: {s}px; font-family: '{mono}', "
+python/synapse/panel/styles.py:405:        "'Consolas', monospace; font-weight: 700; border: none;".format(
+python/synapse/panel/styles.py:414:        "color: {c}; font-size: {s}px; font-family: '{mono}', "
+python/synapse/panel/styles.py:427:        "color: {sig}; font-size: 10px; "
+python/synapse/panel/styles.py:428:        "font-family: monospace; letter-spacing: 2px;".format(sig=_ds.SIGNAL)
+python/synapse/panel/styles.py:436:        "color: {c}; font-family: monospace; font-size: 11px;".format(c=c)
+python/synapse/panel/styles.py:443:        "color: {c}; font-family: monospace; font-size: 14px; "
+python/synapse/panel/styles.py:444:        "font-weight: 700;".format(c=_ds.BONE)
+python/synapse/panel/styles.py:450:    return "color: {c}; font-size: {s}px;".format(c=color, s=size)
+python/synapse/panel/styles.py:456:        "color: {c}; font-family: monospace; font-size: 10px;".format(
+python/synapse/panel/styles.py:465:        "color: {c}; font-family: monospace; font-size: 14px; "
+python/synapse/panel/styles.py:466:        "font-weight: 700;".format(c=color)
+python/synapse/panel/styles.py:473:        "color: {fg}; font-family: monospace; font-size: 12px; "
+python/synapse/panel/styles.py:482:        "color: {c}; font-family: monospace; font-size: 10px;".format(
+python/synapse/panel/styles.py:492:        "font-family: '{sans}', 'Segoe UI', sans-serif; "
+python/synapse/panel/styles.py:540:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:584:        "  font-family: '{sans}', 'Segoe UI', sans-serif;"
+python/synapse/panel/styles.py:585:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:602:        "font-size: {sz}px; color: {fg}; "
+python/synapse/panel/styles.py:603:        "font-family: '{mono}', 'Consolas', monospace;".format(
+python/synapse/panel/styles.py:619:        "  font-family: '{mono}', 'Consolas', monospace;"
+python/synapse/panel/styles.py:620:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:648:        "  font-family: '{sans}', 'Segoe UI', sans-serif;"
+python/synapse/panel/styles.py:649:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:650:        "  font-weight: 700;"
+python/synapse/panel/styles.py:740:        "font-family: '{mono}', 'Consolas', monospace; "
+python/synapse/panel/styles.py:741:        "font-size: {sz}px; font-weight: 700;".format(
+python/synapse/panel/styles.py:756:        "  font-family: '{mono}', 'Consolas', monospace;"
+python/synapse/panel/styles.py:757:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:758:        "  font-weight: 700;"
+python/synapse/panel/styles.py:778:        "  font-family: '{mono}', 'Consolas', monospace;"
+python/synapse/panel/styles.py:779:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:808:        "  font-family: '{mono}', 'Consolas', monospace;"
+python/synapse/panel/styles.py:809:        "  font-size: {sz}px;"
+python/synapse/panel/styles.py:810:        "  font-weight: 700;"
+python/synapse/panel/synapse_panel.py:1837:        self._input.setStyleSheet("QTextEdit#DsInput { font-size: %dpx; }"
+python/synapse/panel/synapse_panel.py:2090:                inp.setStyleSheet("QTextEdit#DsInput { font-size: %dpx; }"
+python/synapse/panel/vex_tutor.py:877:    html = f"""<div style="font-family: 'Consolas', 'Courier New', monospace; padding: 8px;">
+python/synapse/panel/vex_tutor.py:878:  <div style="font-size: 14px; color: #cccccc; margin-bottom: 4px;">
+python/synapse/panel/vex_tutor.py:883:    <code style="color: #d4d4d4; font-size: 13px;">{sig_html}</code>
+python/synapse/panel/vex_tutor.py:885:  <div style="color: #b0b0b0; font-size: 12px; margin-bottom: 6px;">
+python/synapse/panel/vex_tutor.py:889:    <code style="color: #d4d4d4; font-size: 12px;">{example_html}</code>
+python/synapse/panel/vex_tutor.py:891:  <div style="color: #8a8a5c; font-size: 11px; font-style: italic;">

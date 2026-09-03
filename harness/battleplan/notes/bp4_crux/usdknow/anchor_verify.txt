@@ -1,0 +1,51 @@
+====================================================================================================
+T-D1  PROMOTABLE ROWS (independent check, builder stdout AND crux stdout)
+====================================================================================================
+row id                                         tier              anchor  arc         builder  crux    
+kind-component                                 FIXTURE-VERIFIED  30      local       PASS     PASS    
+purpose-collider-proxy                         FIXTURE-VERIFIED  31      local       PASS     PASS    
+purpose-render-scope                           FIXTURE-VERIFIED  32      local       PASS     PASS    
+purpose-splat-inherited                        FIXTURE-VERIFIED  33      local       PASS     PASS    
+payload-splat-collider                         FIXTURE-VERIFIED  43      payload     PASS     PASS    
+payload-arc-present                            FIXTURE-VERIFIED  44      payload     PASS     PASS    
+payload-vs-reference-unloadable                VERIFIED-RUNTIME  46      payload     PASS     PASS    
+variantsets-absent-in-sop-build                FIXTURE-VERIFIED  34      variant     PASS     PASS    
+customdata-worldlabs-absent-in-sop-build       FIXTURE-VERIFIED  35      local       PASS     PASS    
+livrps-order                                   VERIFIED-RUNTIME  60      local       PASS     PASS    
+livrps-reference-over-payload                  VERIFIED-RUNTIME  66      reference   PASS     PASS    
+livrps-payload-over-specialize                 VERIFIED-RUNTIME  67      payload     PASS     PASS    
+livrps-specialize-weakest                      VERIFIED-RUNTIME  68      specialize  PASS     PASS    
+livrps-local-over-specialize-refutes-deepdive  VERIFIED-RUNTIME  76      local       PASS     PASS    
+inherit-liststrength-first-added-strongest     VERIFIED-RUNTIME  83      inherit     PASS     PASS    
+
+promotable: 15/15 PASS on BOTH stdouts
+
+====================================================================================================
+T-D2  DOC-ANCHORED ROWS (PROPOSED / DOC-STATED) -- does the cited section exist?
+====================================================================================================
+variantset-splattier                       PROPOSED    anchor=docs/intake/blueprint-h22-worldlabs-intent.md#2.5
+    section 2.5 EXISTS (L184 '### 2.5 The world component — USD structure intent (')
+    -> RESOLVES
+variantset-physics                         PROPOSED    anchor=docs/intake/blueprint-h22-worldlabs-intent.md#2.8-D2.7
+    section 2.8 EXISTS (L232 '### 2.8 Done-conditions')
+    sub-ref D2.7 FOUND in sec 2.8 body
+    -> RESOLVES
+customdata-worldlabs-provenance            PROPOSED    anchor=docs/intake/blueprint-h22-worldlabs-intent.md#2.5
+    section 2.5 EXISTS (L184 '### 2.5 The world component — USD structure intent (')
+    -> RESOLVES
+instanceable-false                         PROPOSED    anchor='reasoning: blueprint sec.2.5 (one world = one component) + LIVRPS ladder'
+    -> NO SECTION REF (prose/reasoning anchor)
+transforms-baked-not-xform                 PROPOSED    anchor=docs/intake/blueprint-h22-worldlabs-intent.md#2.5-property1 + #2.7
+    section 2.5 EXISTS (L184 '### 2.5 The world component — USD structure intent (')
+    section 2.7 EXISTS (L221 '### 2.7 Frame conversion — intent-level recipe')
+    sub-ref property1 NOT FOUND in sec 2.5 body
+    -> DOES NOT FULLY RESOLVE
+frame-conversion-order                     DOC-STATED  anchor=docs/intake/blueprint-h22-worldlabs-intent.md#2.7
+    section 2.7 EXISTS (L221 '### 2.7 Frame conversion — intent-level recipe')
+    -> RESOLVES
+payload-heavy-rationale                    DOC-STATED  anchor=docs/intake/blueprint-h22-worldlabs-intent.md#2.5-property3
+    section 2.5 EXISTS (L184 '### 2.5 The world component — USD structure intent (')
+    sub-ref property3 NOT FOUND in sec 2.5 body
+    -> DOES NOT FULLY RESOLVE
+
+doc-anchored: 4/7 fully resolve

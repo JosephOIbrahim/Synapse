@@ -1,0 +1,85 @@
+BP4-USDKNOW USD composition probes
+
+==============================================================================
+P-0  Build pin
+==============================================================================
+  USD: 0.26.5
+  Houdini: 22.0.400
+  pref_dir(HOUDINI_USER_PREF_DIR): C:/Users/User/OneDrive/Documents/houdini22.0
+
+==============================================================================
+A  b6_wl_component.usdc -- structure, kind, purpose, variants, customData, arcs
+==============================================================================
+  file: C:\Users\User\SYNAPSE\.claude\worktrees\bp3-probe\harness\notes\h22wl\bp3_probes\b6_wl_component.usdc
+  bytes: 19756921
+  defaultPrim: (none)
+  root prims: /HoudiniLayerInfo, /wl_import
+
+  path                                                 type             kind       purpose  auth_purpose|arcs
+  /HoudiniLayerInfo                                    HoudiniLayerInfo -          default  default|root
+  /wl_import                                           Xform            component  default  default|root
+  /wl_import/WL_fixture                                Xform            component  default  default|root
+  /wl_import/WL_fixture/geo                            Scope            -          default  default|root
+  /wl_import/WL_fixture/geo/proxy                      Scope            -          proxy    proxy|root
+  /wl_import/WL_fixture/geo/proxy/world                Mesh             -          proxy    proxy|root
+  /wl_import/WL_fixture/geo/proxy/world/geometry_0     Mesh             -          proxy    proxy|root
+  /wl_import/WL_fixture/geo/proxy/autoproxy            Mesh             -          proxy    proxy|root
+  /wl_import/WL_fixture/geo/render                     Scope            -          render   render|root
+  /wl_import/WL_fixture/geo/render/points_0            Points           -          render   default|root
+
+[BP4-EV:fx-kind-component] component root /wl_import carries kind=component | arc=local kind=component
+[BP4-EV:fx-purpose-proxy] collider subtree scope /wl_import/WL_fixture/geo/proxy authored purpose=proxy | arc=local purpose=proxy
+[BP4-EV:fx-purpose-render] render subtree scope /wl_import/WL_fixture/geo/render authored purpose=render | arc=local purpose=render
+[BP4-EV:fx-splat-purpose-inherited] splat Points /wl_import/WL_fixture/geo/render/points_0 authored purpose is default but purpose is inherited down namespace | arc=local authored_purpose=default computed_purpose=render
+[BP4-EV:fx-variantsets-count] SOP-built component authors 0 variantSet(s) total across all prims | arc=variant variantset_total=0
+[BP4-EV:fx-customdata-worldlabs] component root customData keys=['userDocBrief'] ; worldlabs provenance absent | arc=local customData_worldlabs=absent
+
+==============================================================================
+B  Payload round trip (Unload/Load prim counts) + reference not unloadable
+==============================================================================
+  payload target: asset=C:\Users\User\SYNAPSE\.claude\worktrees\bp3-probe\harness\notes\h22wl\bp3_probes\b6_wl_component.usdc prim=/wl_import
+  prim counts: loaded=10 unloaded=1 reloaded=10
+  composed arcs on /shot/world: root,payload
+[BP4-EV:fx-payload-roundtrip] payloading the component then Unload drops 9 prim(s); Load restores | arc=payload loaded=10 unloaded=1 reloaded=10 dropped=9
+[BP4-EV:fx-payload-arc-present] PrimCompositionQuery on the shot prim reports a payload arc | arc=payload composed_payload_arc=True
+  reference prim counts: before_unload=10 after_unload=10
+[BP4-EV:rt-payload-unloadable-vs-reference] payload Unload removes its subtree; the same Unload on a reference does nothing | arc=payload payload_unloadable=True reference_unloadable=False
+
+==============================================================================
+C  Synthetic LIVRPS stage -- one attribute, six arcs, empirical winner
+==============================================================================
+  composed /Test.intensity = 1.0  (expect 1.0 = local wins)
+  GetPropertyStack strong->weak:
+    value=1.0  layer=anon:0000000049854680:tmp.usda
+    value=2.0  layer=anon:0000000049854680:tmp.usda
+    value=3.0  layer=anon:0000000049854680:tmp.usda
+    value=4.0  layer=C:/Users/User/AppData/Local/Temp/bp4_livrps_hwxzwyo6/ref_src.usda
+    value=5.0  layer=C:/Users/User/AppData/Local/Temp/bp4_livrps_hwxzwyo6/pay_src.usda
+    value=6.0  layer=anon:0000000049854680:tmp.usda
+  arc order strong->weak: local>inherit>variant>reference>payload>specialize
+[BP4-EV:rt-livrps-order] one attribute with all six opinions resolves strong->weak as local>inherit>variant>reference>payload>specialize | arc=local order=local>inherit>variant>reference>payload>specialize composed=1.0
+[BP4-EV:rt-pair-local-over-inherit] local beats inherit (adjacent in the resolved stack) | arc=local strong=local weak=inherit
+[BP4-EV:rt-pair-inherit-over-variant] inherit beats variant (adjacent in the resolved stack) | arc=inherit strong=inherit weak=variant
+[BP4-EV:rt-pair-variant-over-reference] variant beats reference (adjacent in the resolved stack) | arc=variant strong=variant weak=reference
+[BP4-EV:rt-pair-reference-over-payload] reference beats payload (adjacent in the resolved stack) | arc=reference strong=reference weak=payload
+[BP4-EV:rt-pair-payload-over-specialize] payload beats specialize (adjacent in the resolved stack) | arc=payload strong=payload weak=specialize
+[BP4-EV:rt-reference-over-payload] reference is stronger than payload | arc=reference reference_beats_payload=True
+[BP4-EV:rt-payload-over-specialize] payload is stronger than specialize | arc=payload payload_beats_specialize=True
+[BP4-EV:rt-specialize-weakest] specialize is the weakest arc (loses to every other opinion) | arc=specialize specialize_rank=weakest
+
+==============================================================================
+C.1  Refute deep-dive L138: a local opinion wins over what it specializes
+==============================================================================
+  spot1.intensity local=2.0 specializes base ; base changed 1.0 -> 0.5
+  spot1.intensity before base change = 2.0 ; after = 2.0
+  deep-dive L138 claims 'spot1 gets 0.5 (base is stronger)'
+[BP4-EV:rt-local-over-specialize] spot1 keeps its own local 2.0 after base->0.5; deep-dive L138 'base is stronger' is REFUTED | arc=local local_wins_over_specialize=True spot1_after=2.0 deep_dive_L138=refuted
+
+==============================================================================
+C.2  Check deep-dive L201: is 'first added = strongest inherit' true?
+==============================================================================
+  /Obj inherits A(=10) then B(=20) ; composed = 10.0
+  'first added = strongest' -> True
+[BP4-EV:rt-inherit-liststrength] inherit list-editing: A added before B ; composed=10.0 so first-added-strongest=True | arc=inherit first_added_strongest=True composed=10.0
+
+DONE

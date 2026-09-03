@@ -1,0 +1,22 @@
+### T-F read-only audit of queries.py + __init__.py
+-- write/author API surface --
+C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-bp4-crux/a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56/scratchpad/s/python/synapse/spatial/queries.py:20:**live ``hou.Geometry``** in a running session — a different context.  For a
+
+-- all imports in the package --
+39:from __future__ import annotations
+41:import math
+42:import time
+43:from typing import Any, Dict, Optional, Sequence, Tuple
+46:    from pxr import Usd, UsdGeom, Gf  # noqa: F401
+53:    import numpy as np
+
+-- diff scope beyond the 5 files --
+A	docs/reviews/bp4-spatial-lane-probes-2026-09-03.md
+A	harness/notes/receipts/BP4-SPATIAL.json
+A	python/synapse/spatial/__init__.py
+A	python/synapse/spatial/queries.py
+A	tests/test_spatial_lane.py
+
+-- anything under python/synapse outside spatial/ ? --
+  (none)
+-- mcp_server.py changed? --

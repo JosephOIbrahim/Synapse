@@ -1,0 +1,80 @@
+BP4-CRUX / INTAKE lane — T-B: header-block confinement diff analysis
+====================================================================
+
+Header-block definition used (per crux mandate): lines strictly before the first line
+that is exactly "---". In both targets that separator is docs/intake/blueprint-h22-
+worldlabs-intent.md:13 (confirmed via `grep -n '^---$'` in each scratch target — identical
+in both, since the blueprint file content above the added line is untouched by either writer).
+
+The added "Sources (intake):" line lands at line 11 in BOTH targets (confirmed via
+`grep -n 'Sources (intake)'`), i.e. strictly above the line-13 separator. Confined to header.
+
+--------------------------------------------------------------------
+TARGET 1: SCR_I (branch bp4/intake)
+--------------------------------------------------------------------
+$ git diff 28a0e183 HEAD -- docs/intake/blueprint-h22-worldlabs-intent.md
+  @@ -8,6 +8,7 @@
+   **Companions (same project):** ...
+   **Sidecars (this drop):** ...
+   **Repo landing (2026-09-03):** ...
+  +**Sources (intake):** docs/intake/src/synapse_worldlabs_blueprint.md (dossier),
+   docs/intake/src/synapse_worldlabs_coffee_shop_talk.md (coffee notes),
+   docs/intake/src/MANIFEST.md (file inventory and cross-check).
+
+  ---
+
+  1 hunk. 1 added line, at new-file line 11. Separator at line 13. CONFINED TO HEADER: yes.
+
+$ git diff --stat 28a0e183 HEAD   (whole leg, base=28a0e183 = the input commit, HEAD=0d738db9)
+  docs/intake/blueprint-h22-worldlabs-intent.md |  1 +
+  docs/intake/src/MANIFEST.md                   | 35 ++++++++++++++++++++++++
+  harness/notes/receipts/BP4-INTAKE.json        | 38 +++++++++++++++++++++++++++
+  3 files changed, 74 insertions(+)
+
+  Exactly the 3 expected files (blueprint header edit, new MANIFEST.md, the leg's own
+  receipt). No stray files touched.
+
+VERDICT (T-B, bp4/intake): PASS. One hunk, one added header line, confined above the
+separator; leg-wide diff touches only the expected 3 files.
+
+--------------------------------------------------------------------
+TARGET 2: SCR_M (master, full clone, used for commit-range diffs against 2574de6b)
+--------------------------------------------------------------------
+$ git diff 2d26231f 2574de6b -- docs/intake/blueprint-h22-worldlabs-intent.md
+  @@ -8,6 +8,7 @@   (byte-identical hunk/line content to the branch's diff above)
+  1 hunk. 1 added line, at new-file line 11. Separator at line 13. CONFINED TO HEADER: yes.
+
+$ git diff --stat 2d26231f 2574de6b
+  docs/intake/blueprint-h22-worldlabs-intent.md | 1 +
+  docs/intake/src/MANIFEST.md                   | 37 +++++++++++++++++++++++++++
+  2 files changed, 38 insertions(+)
+
+  Only 2 files at the harvest commit itself (MANIFEST.md is +37 here vs +35 on the branch —
+  the 2-line delta is exactly the appended harvest-note paragraph, see T-E). The receipt
+  file (harness/notes/receipts/BP4-INTAKE.json) is NOT part of this commit's diff — it was
+  committed separately, one commit later, at 9a90e9af (2026-09-03T18:40:20-0400). Confirmed
+  via `git log --all -- harness/notes/receipts/BP4-INTAKE.json` (two commits: 9a90e9af on
+  master, 0d738db9 on the branch — independent receipts, see T-E).
+
+$ git diff 2574de6b HEAD -- docs/intake/    (HEAD = current master 3a27d1ff)
+  (empty)
+  Confirms master has NOT touched docs/intake/ since the 2574de6b harvest commit — the
+  audit target is stable. (Master DID move afterward — one more commit, 3a27d1ff, touching
+  unrelated files: tests/rails referee + receipts_bp4.py.)
+
+VERDICT (T-B, master@2574de6b): PASS. Same shape as the branch: one hunk, one line, confined
+to the header; docs/intake/ untouched since.
+
+--------------------------------------------------------------------
+ADVERSARIAL NOTE on the check methodology itself (see mutations, T-F / INTAKE-M2)
+--------------------------------------------------------------------
+A naive check that only counts '@@' occurrences (`git diff ... | grep -c '^@@'`) is NOT
+sufficient to verify "confined to the header block": git's default 3-line context window
+merges a change near the header with a second, nearby change below the separator into a
+SINGLE reported hunk when they are within ~6 lines of each other. Verified by mutation
+INTAKE-M2 (full detail in T-F_mutations.txt): inserting an out-of-header line at line 16
+(3 lines below the line-13 separator) still reports as 1 hunk under `grep -c '^@@'`, but a
+range-aware check (does any '+' line's new-file line number fall at/after the separator)
+correctly reddens. The acceptance predicate's own phrasing anticipates this: "the crucible
+reads the hunk's line range" — a hunk-count-only check is not what's specified, and would
+be a weaker gate than the predicate calls for.

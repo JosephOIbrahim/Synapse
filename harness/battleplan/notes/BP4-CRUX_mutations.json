@@ -1,0 +1,311 @@
+{
+  "leg": "BP4-CRUX",
+  "date": "2026-09-03",
+  "authored_by": "BP4-CRUX crucible (referee claude-fable-5-1) via six parallel lane agents; every mutation self-authored — no builder proved_it_bites replayed; rows/lines/cells picked by the crucible (USDKNOW rows chosen independently of the builder's self-test, RULINGS rows 6/9/21, B7FIX controls M1b/M1c beyond the brief)",
+  "sandbox": "git clone --shared -c core.longpaths=true scratch clones per leg branch under the session scratchpad (never the main tree, never a builder worktree); every mutation ran against a crux-green baseline, was restored via `git show HEAD:<path> > <path>` (git checkout/reset are fence-denied), and the baseline re-confirmed green; `git status --short` clean of tracked changes at the end of every lane",
+  "environment_notes": [
+    "Under hython 22.0.400 PYTHONPATH does not bind a scratch tree (the Houdini package inserts the main-tree paths ahead of it); helpers used sys.path.insert(0, <scratch>/python) and printed __file__; pytest bound itself from the scratch rootdir (pyproject.toml pythonpath=['python']). Negative proof: symbols that exist only on the branch (synapse.spatial, tokens.FONT_FLOOR_PX) fail unbound.",
+    "Under stock python 3.14 a git archive of only python/synapse/panel has no synapse/__init__.py, so master's regular package beats the scratch namespace candidate even at sys.path[1]; the referee re-archived the whole package before trusting its 5-scale hashes.",
+    "Two edits five lines apart fold into one 3-line-context hunk; hunk audits must use -U0 or line ranges (INTAKE-M2).",
+    "Karma XPU 22.0.400 substitutes a default distant light when the fixed topology carries none (B7FIX-M1b); the brief's 'drop the camera assignment - must go black' signature does not hold on this build (B7FIX-M1)."
+  ],
+  "totals": {"mutations": 37, "reddened": 26, "survived": 11, "survived_breakdown": {"guard_holes": 7, "information_not_defect": 2, "brief_signature_refuted_on_this_build": 2}, "per_leg": {"BP4-INTAKE": 3, "BP4-RULINGS": 3, "BP4-B7FIX": 5, "BP4-SPATIAL": 7, "BP4-PANELFONT": 5, "BP4-USDKNOW": 14}},
+  "mutations": [
+    {
+      "id": "INTAKE-M1",
+      "builder_leg": "BP4-INTAKE",
+      "description": "docs/intake/src/MANIFEST.md: first hex char of the coffee_shop_talk.md sha256 cell flipped (903fb2f4… -> 803fb2f4…), one cell only",
+      "check_reddened": "crux T-A hash recompute (python hashlib sha256 + byte length per inventory row)",
+      "result": "REDDENED",
+      "evidence": "baseline both rows sha_match=True bytes_match=True -> mutated coffee_shop_talk sha_match=False, blueprint row untouched -> restored, re-run both True. bp4_crux/intake/T-F_mutations.txt"
+    },
+    {
+      "id": "INTAKE-M2",
+      "builder_leg": "BP4-INTAKE",
+      "description": "docs/intake/blueprint-h22-worldlabs-intent.md: one marker line inserted after line 15 ('## 0. How to read this document'), landing at line 16 — three lines below the header separator at line 13",
+      "check_reddened": "crux T-B range-aware header-confinement check (every '+' line's new-file number must be < the first '---' line)",
+      "result": "REDDENED",
+      "evidence": "added lines [11, 16]; 16 >= 13 -> FAIL. NOTE: a naive `git diff | grep -c '^@@'` hunk count SURVIVES this mutation (still 1 hunk — git's 3-line context merges the line-11 and line-16 edits; `-U0` shows 2). Restored -> added lines [11] -> PASS"
+    },
+    {
+      "id": "INTAKE-M3",
+      "builder_leg": "BP4-INTAKE",
+      "description": "docs/intake/src/MANIFEST.md: blueprint.md Bytes cell 7155 -> 7156 (bonus)",
+      "check_reddened": "crux T-A byte-length check",
+      "result": "REDDENED",
+      "evidence": "blueprint bytes_match True -> False (sha_match stays True; other row untouched) -> restored True"
+    },
+    {
+      "id": "RULINGS-M1",
+      "builder_leg": "BP4-RULINGS",
+      "description": "harness/notes/CTO_RULINGS_BP3.md row 6 details blockquote: '46,993 tris.' -> '46,994 tris.' (one word, one line)",
+      "check_reddened": "crux T-B verbatim-equality check of each details claim against its anchored receipt for_ruling[i]",
+      "result": "REDDENED",
+      "evidence": "exact matches 21 -> 20; row 6 EXACT -> MISMATCH, other 20 rows EXACT -> restored 21/21. bp4_crux/rulings/RULINGS_crux_evidence.md"
+    },
+    {
+      "id": "RULINGS-M2",
+      "builder_leg": "BP4-RULINGS",
+      "description": "harness/notes/CTO_RULINGS_BP3.md row 9 summary-table ruling cell PENDING -> ACCEPT (details line left untouched)",
+      "check_reddened": "crux T-C all-PENDING count (summary-table column)",
+      "result": "REDDENED",
+      "evidence": "table PENDING 21/21 -> 20/21 while the details PENDING count stays 21/21 (the two counters are independent) -> restored 21/21"
+    },
+    {
+      "id": "RULINGS-M3",
+      "builder_leg": "BP4-RULINGS",
+      "description": "harness/notes/CTO_RULINGS_BP3.md: summary-table row 21 (TIDY-R3) deleted (bonus)",
+      "check_reddened": "crux table-rows == '### Row N' details-sections consistency (and the T-A count vs recount)",
+      "result": "REDDENED",
+      "evidence": "table rows 21 -> 20 vs details 21 -> mismatch (and 20 != recount 22) -> restored 21 == 21"
+    },
+    {
+      "id": "B7FIX-M1",
+      "builder_leg": "BP4-B7FIX",
+      "description": "brief-specified: harness/probes/synapse_blueprint_probes.py b7() line 389 `if kc is not None:` -> `if False:` (render camera never bound; light kept); --only B-7 re-run into crux_b7_mut1 on pinned hython 22.0.400",
+      "check_reddened": "crux D2.4 non-zero-EXR check (expected by the brief to go black)",
+      "result": "SURVIVED",
+      "evidence": "oiiotool --stats: RGB max 0.457031, avg 0.013787, alpha avg 0.035126 — indistinguishable from the unmutated run; probe printed 'WARNING: no camera parm on KRS; render camera unbound'; husk 5x 'No render camera defined in renderPassState', render_settings.rendercamera=/cameras/camera1 (the BP3 mismatch), yet render_camera resolved to /cameras/wl_cam and world_to_camera/world_to_screen are byte-identical to the bound run. The bind silences errors and changes no pixels. Restored. bp4_crux/b7fix/mut1_*"
+    },
+    {
+      "id": "B7FIX-M1b",
+      "builder_leg": "BP4-B7FIX",
+      "description": "crux control: light-type tuple replaced with a non-existent type so `light` stays None (no authored light), camera bind kept; re-run into crux_b7_mut1b",
+      "check_reddened": "crux D2.4 non-zero-EXR check",
+      "result": "SURVIVED",
+      "evidence": "probe printed 'render will be unlit'; husk light_types.distant=1, object_counts.light.total=1, 'Total Lights: 1' — Karma XPU 22.0.400 substitutes a default distant light; RGB max 0.618652, avg 0.011813, non-black. Restored. bp4_crux/b7fix/mut1b_*"
+    },
+    {
+      "id": "B7FIX-M1c",
+      "builder_leg": "BP4-B7FIX",
+      "description": "crux control: the pre-fix BP3 b7() (base 28a0e183 lines 366-386) spliced verbatim over HEAD's b7(), --only plumbing kept; re-run into crux_b7_mut1c",
+      "check_reddened": "crux D2.4 non-zero-EXR check",
+      "result": "REDDENED",
+      "evidence": "flat black: Max/Avg/StdDev 0.000000 on RGB, alpha avg 0.035138 (same geometry, unlit), 209447 B; husk object_counts.light.total=0, all light_types 0, 'Total Lights: 0', Error Summary 5 errors, xpu render_time 0.325 s vs 1.87 s lit. The BP3 black reproduces on 22.0.400 and the fix as a whole flips it. Restored. bp4_crux/b7fix/mut1c_*"
+    },
+    {
+      "id": "B7FIX-M2",
+      "builder_leg": "BP4-B7FIX",
+      "description": "brief-specified: `pass  # crux-M2` inserted as the first statement of def b3(ctx) (a non-B-7 block)",
+      "check_reddened": "crux T-A hunk audit (every hunk must map to b7() or the --only plumbing after s3())",
+      "result": "REDDENED",
+      "evidence": "attempt 1 reddened for the WRONG reason (checker diffed 28a0e183..HEAD, blind to a worktree edit; a +1 line shift re-mapped the b7 decorator hunk onto b6) — recorded, not hidden; attempt 2 with a worktree-diff mode reddened correctly: '@@ -246,0 +247 @@ def b3(ctx):' -> owner b3 -> OUT-OF-SCOPE, 1 of 11 hunks failed. Restored -> PASS in both modes. bp4_crux/b7fix/mutation_log.txt"
+    },
+    {
+      "id": "B7FIX-M3",
+      "builder_leg": "BP4-B7FIX",
+      "description": "bonus: docs/reviews/bp3-h22-worldlabs-probes-2026-09-03.md line 62 (a BP3 row) 'MaterialX' -> 'MAterialX'",
+      "check_reddened": "crux T-B append-only byte-identity check (HEAD must start with the base bytes)",
+      "result": "REDDENED",
+      "evidence": "attempt 1 targeted blank line 100 so nothing changed and the check correctly stayed green (recorded); attempt 2: head.startswith(base)=False, first divergence at byte 4026. Restored -> PASS, appended section again at byte 19461"
+    },
+    {
+      "id": "SPATIAL-M1",
+      "builder_leg": "BP4-SPATIAL",
+      "description": "python/synapse/spatial/queries.py:278 floor mask `a < thr` -> `a < (thr + 1.0)` (one-degree correctness flip)",
+      "check_reddened": "tests/test_spatial_lane.py -k classify AND the crux exact S-2 comparison (crux_capture.py)",
+      "result": "REDDENED",
+      "evidence": "pytest 3 failed (test_classify_collider_matches_S2_anchor[20/35/45]); floor 4919->5060, 6414->6527, 7733->7886; at 45 the sum became 47146 != 46993 (class overlap, finding F-C3). Restored -> 14 passed. bp4_crux/spatial/mut_M1.log"
+    },
+    {
+      "id": "SPATIAL-M2a",
+      "builder_leg": "BP4-SPATIAL",
+      "description": "default-on registration: `from synapse.spatial import synapse_spatial_describe` appended to repo-root mcp_server.py (line 1268)",
+      "check_reddened": "tests/test_spatial_lane.py::test_no_default_on_registration AND the crux registry grep",
+      "result": "REDDENED",
+      "evidence": "pytest 1 failed at tests/test_spatial_lane.py:279 (the explicit mcp_server.py assert); crux grep hit ./mcp_server.py:1268. Restored -> green. bp4_crux/spatial/mut_M2.log"
+    },
+    {
+      "id": "SPATIAL-M2b",
+      "builder_leg": "BP4-SPATIAL",
+      "description": "evasion probe: the same registration line appended to repo-root mcp_tools_scene.py (line 76)",
+      "check_reddened": "tests/test_spatial_lane.py::test_no_default_on_registration (expected); actually caught only by the crux registry grep",
+      "result": "SURVIVED",
+      "evidence": "pytest 1 passed — the test scans python/**/*.py plus the single file mcp_server.py; the six root mcp_tools_*.py are outside both roots. Crux grep caught ./mcp_tools_scene.py:76. Restored"
+    },
+    {
+      "id": "SPATIAL-M2c",
+      "builder_leg": "BP4-SPATIAL",
+      "description": "double-evasion probe inside the scanned root: `from synapse import spatial as _sp` + `_REG = _sp.synapse_spatial_classify` appended to python/synapse/mcp/_tool_registry.py",
+      "check_reddened": "tests/test_spatial_lane.py::test_no_default_on_registration (expected); actually caught only by the crux registry grep",
+      "result": "SURVIVED",
+      "evidence": "pytest 1 passed — the test matches only the literals 'synapse.spatial', 'synapse_spatial_describe', 'synapse_spatial_frustum'; the classify name is missing and `from synapse import spatial` carries no 'synapse.spatial' substring. Crux grep caught _tool_registry.py:1697 (and :1696 with a widened pattern). Restored"
+    },
+    {
+      "id": "SPATIAL-M3",
+      "builder_leg": "BP4-SPATIAL",
+      "description": "tolerance flip in the test: B-3 bbox abs=1e-3 -> abs=1e-9 (tests/test_spatial_lane.py:292-293)",
+      "check_reddened": "tests/test_spatial_lane.py -k describe_component",
+      "result": "SURVIVED (information, not a defect)",
+      "evidence": "1 passed at 1e-9 — describe reproduces the B-3 bbox byte-exact (crux residual 0.0 on all six components); the published tolerance is ~6 orders looser than the actual error and hides no drift. Restored"
+    },
+    {
+      "id": "SPATIAL-M4",
+      "builder_leg": "BP4-SPATIAL",
+      "description": "describe drift: +0.01 added to every component of the max bound (queries.py:227)",
+      "check_reddened": "tests/test_spatial_lane.py -k describe (both tiers)",
+      "result": "REDDENED",
+      "evidence": "2 failed: test_describe_component_usdc_matches_B3_bbox and test_describe_synthetic_box_bounds — the row is pinned with and without the uncommitted fixture. Restored -> green. bp4_crux/spatial/mut_M3_M4_M5.log"
+    },
+    {
+      "id": "SPATIAL-M5",
+      "builder_leg": "BP4-SPATIAL",
+      "description": "timing-blindness probe (crux-original): `time.sleep(6.0)` as the first statement of _collect_triangles in queries.py",
+      "check_reddened": "every `r['seconds'] < TIMING_BUDGET_S (5.0)` assertion — acceptance row 2's pin",
+      "result": "SURVIVED — guard hole",
+      "evidence": "8 passed / 0 failed in 56.79 s; per-test durations 6.04-13.06 s (test_frustum_collider_reproduces_S3 13.06 s) while every timing assert stayed green, because t0 is set AFTER _collect_triangles returns (queries.py:269-273, :343-347). Restored -> 14 passed in 3.09 s"
+    },
+    {
+      "id": "PANELFONT-M1",
+      "builder_leg": "BP4-PANELFONT",
+      "description": "python/synapse/panel/designsystem/qss.py line 51: `font-size: {s(t.SIZE_UI)}px` -> `font-size: 13px`",
+      "check_reddened": "tests/test_panel_typography.py::test_qss_stylesheet_source_has_no_literal_typography",
+      "result": "REDDENED",
+      "evidence": "1 failed / 5 passed: 'literal typography in designsystem/qss.py … [\"L42: font-size: 13px\"]' (reported line 42 for source line 51 — line numbers computed on the comment-stripped body, cosmetic); 5-scale stylesheet hashes all moved (2c26ba32 / b1532305 / b6061705 / b0ca38ae / 17de59f5). Restored -> 6 passed, hashes back to 1779b114/…. bp4_crux/panelfont/MUTATIONS.md"
+    },
+    {
+      "id": "PANELFONT-M2",
+      "builder_leg": "BP4-PANELFONT",
+      "description": "python/synapse/panel/designsystem/tokens.py line 308: SIZE_MICRO = 10 -> 9",
+      "check_reddened": "tests/test_panel_typography.py::test_no_size_token_below_floor",
+      "result": "REDDENED",
+      "evidence": "'size token(s) below FONT_FLOOR_PX=10: SIZE_LABEL 9, SIZE_MICRO 9'; full `-k panel` sweep 1 failed / 351 passed — the new test is the ONLY guard that catches it; hashes all moved (071b00a6 @ 18074 B / …). Restored -> green"
+    },
+    {
+      "id": "PANELFONT-M3",
+      "builder_leg": "BP4-PANELFONT",
+      "description": "brief-specified: class CruxProbeWidget(QtWidgets.QWidget) appended to python/synapse/panel/synapse_panel.py, __init__ calls setStyleSheet('color: #ff0066; font-size: 13px;')",
+      "check_reddened": "expected: 'the whitespace-only checker' = tests/test_rope_design_conformance.py::test_no_hardcoded_hex_or_px_outside_designsystem; actually reddened only when run by path, plus the crux diff-scope check",
+      "result": "SURVIVED the acceptance command — guard hole in the COMMAND",
+      "evidence": "`python -m pytest tests -k panel -q` -> 352 passed / 85 skipped / 0 failed (nothing reddened). `python -m pytest tests/test_rope_design_conformance.py -v` -> test_no_hardcoded_hex_or_px_outside_designsystem FAILED: synapse_panel.py:2757: ['#ff0066', '13px']. Root cause: `--collect-only -k panel` selects 1 of that file's 4 tests — neither module nor test name contains 'panel'. Crux diff-scope check reddens: git diff 28a0e183 -- synapse_panel.py = 727 bytes (expected 0). Restored -> 0 bytes, 352 green"
+    },
+    {
+      "id": "PANELFONT-M4",
+      "builder_leg": "BP4-PANELFONT",
+      "description": "bonus: tokens.py TYPE_ROLES 'body' weight WEIGHT_REGULAR -> bare literal 400",
+      "check_reddened": "tests/test_panel_typography.py::test_type_roles_use_weight_tokens (expected by the test's docstring 'never bare literals')",
+      "result": "SURVIVED — guard nuance, not a defect",
+      "evidence": "6 passed, 352 green, hashes unchanged: the test asserts set membership of the VALUE (400 in {400,500,600}) so a bare literal equal to a token is a runtime no-op. Restored"
+    },
+    {
+      "id": "PANELFONT-M4b",
+      "builder_leg": "BP4-PANELFONT",
+      "description": "control for M4: TYPE_ROLES 'body' weight -> 450 (outside the token set)",
+      "check_reddened": "tests/test_panel_typography.py::test_type_roles_use_weight_tokens",
+      "result": "REDDENED",
+      "evidence": "1 failed / 5 passed — the weight guard is real for out-of-set values and blind only to bare-literal style. Restored -> green"
+    },
+    {
+      "id": "USDKNOW-M1",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "seed row kind-component (FIXTURE-VERIFIED): anchor 'stdout.txt:30' -> 'probe Part A' (strip anchor)",
+      "check_reddened": "python harness/battleplan/notes/bp4_usdknow_check.py",
+      "result": "REDDENED",
+      "evidence": "exit 1: [check] FAIL 'kind-component' … -> no stdout.txt:<line> anchor. Restored -> exit 0 (seed sha256 6bf80ce3… byte-identical). bp4_crux/usdknow/mutations.txt"
+    },
+    {
+      "id": "USDKNOW-M2a",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "seed row instanceable-false: PROPOSED -> VERIFIED-RUNTIME (prose anchor kept)",
+      "check_reddened": "bp4_usdknow_check.py",
+      "result": "REDDENED",
+      "evidence": "exit 1: FAIL 'instanceable-false' tier='VERIFIED-RUNTIME' -> no stdout.txt:<line> anchor. Restored -> exit 0"
+    },
+    {
+      "id": "USDKNOW-M2b",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "seed row variantset-splattier: PROPOSED -> FIXTURE-VERIFIED (doc anchor #2.5 kept)",
+      "check_reddened": "bp4_usdknow_check.py",
+      "result": "REDDENED",
+      "evidence": "exit 1: FAIL … anchor='…#2.5' -> no stdout.txt:<line> anchor. Restored -> exit 0"
+    },
+    {
+      "id": "USDKNOW-M2c",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "seed row frame-conversion-order: DOC-STATED -> VERIFIED-RUNTIME",
+      "check_reddened": "bp4_usdknow_check.py",
+      "result": "REDDENED",
+      "evidence": "exit 1: FAIL 'frame-conversion-order' -> no stdout.txt:<line> anchor. Restored -> exit 0"
+    },
+    {
+      "id": "USDKNOW-M3",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "seed row livrps-reference-over-payload (VERIFIED-RUNTIME): arc reference -> payload",
+      "check_reddened": "bp4_usdknow_check.py (arc gate)",
+      "result": "REDDENED",
+      "evidence": "exit 1: FAIL anchor='stdout.txt:66' -> stdout.txt:66 does not carry 'arc=payload' (arc mismatch). Restored -> exit 0"
+    },
+    {
+      "id": "USDKNOW-M3b",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "seed row variantsets-absent-in-sop-build (FIXTURE-VERIFIED): arc variant -> local",
+      "check_reddened": "bp4_usdknow_check.py (arc gate)",
+      "result": "REDDENED",
+      "evidence": "exit 1: stdout.txt:34 does not carry 'arc=local'. Restored -> exit 0"
+    },
+    {
+      "id": "USDKNOW-M4",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "seed ratified false -> true",
+      "check_reddened": "bp4_usdknow_check.py (rule D-1 gate)",
+      "result": "REDDENED",
+      "evidence": "exit 1: seed 'ratified' must be exactly false, got True. Restored -> exit 0"
+    },
+    {
+      "id": "USDKNOW-M5",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "seed row purpose-collider-proxy: anchor -> stdout.txt:2 (a blank line)",
+      "check_reddened": "bp4_usdknow_check.py (blank-line gate)",
+      "result": "REDDENED",
+      "evidence": "exit 1: stdout.txt:2 is blank. Restored -> exit 0"
+    },
+    {
+      "id": "USDKNOW-M5b",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "seed row purpose-render-scope: anchor -> stdout.txt:9999",
+      "check_reddened": "bp4_usdknow_check.py (range gate)",
+      "result": "REDDENED",
+      "evidence": "exit 1: line 9999-9999 out of range 1..86. Restored -> exit 0"
+    },
+    {
+      "id": "USDKNOW-M5c",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "seed row livrps-specialize-weakest: anchor stdout.txt:68 -> :67 (a real but wrong evidence line)",
+      "check_reddened": "bp4_usdknow_check.py (arc gate)",
+      "result": "REDDENED",
+      "evidence": "exit 1: stdout.txt:67 does not carry 'arc=specialize'. Restored -> exit 0"
+    },
+    {
+      "id": "USDKNOW-M9",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "BLOCKED-section guard: synthetic stdout with the probe's own '[A] BLOCKED: …' sentence substituted at line 13 (line numbers preserved), run via --stdout",
+      "check_reddened": "bp4_usdknow_check.py --stdout <synthetic> (BLOCKED gate)",
+      "result": "REDDENED",
+      "evidence": "exit 1: 6 FAILs, all six Part-A rows 'stdout.txt:30..35 is inside a BLOCKED/Traceback section'; 25 blocked lines detected. (Needed because the real BLOCKED path is unreachable on this host — the probe self-finds the fixture through a hardcoded absolute path.) bp4_crux/usdknow/mutation_M9_blocked_guard.txt"
+    },
+    {
+      "id": "USDKNOW-M6",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "ADVERSARIAL prefix: seed row livrps-specialize-weakest arc 'specialize' -> 'spec' (an arc that does not exist in USD)",
+      "check_reddened": "bp4_usdknow_check.py (arc gate) — expected exit 1",
+      "result": "SURVIVED — checker guard hole (substring matching)",
+      "evidence": "exit 0, RESULT: PASS — `('arc=' + arc) in line` accepts any prefix of the real arc name on line 68 ('arc=specialize'). Restored"
+    },
+    {
+      "id": "USDKNOW-M7",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "ADVERSARIAL inversion: seed row payload-vs-reference-unloadable verify 'reference_unloadable=False' -> 'unloadable=True'",
+      "check_reddened": "bp4_usdknow_check.py (verify gate) — expected exit 1",
+      "result": "SURVIVED — checker guard hole (substring matching)",
+      "evidence": "exit 0 — line 46 contains 'payload_unloadable=True', so the semantically INVERTED token substring-matches; the row would assert the opposite of what the probe proves and stay green. Restored"
+    },
+    {
+      "id": "USDKNOW-M8",
+      "builder_leg": "BP4-USDKNOW",
+      "description": "ADVERSARIAL wrong value: seed row payload-splat-collider verify 'dropped=9' -> 'loaded=1'",
+      "check_reddened": "bp4_usdknow_check.py (verify gate) — expected exit 1",
+      "result": "SURVIVED — checker guard hole (substring matching)",
+      "evidence": "exit 0 — line 43 reads 'loaded=10', so the false numeric claim 'loaded=1' prefix-matches. Fix for M6/M7/M8: token-boundary matching (split the line on whitespace and compare whole tokens). Restored"
+    }
+  ]
+}

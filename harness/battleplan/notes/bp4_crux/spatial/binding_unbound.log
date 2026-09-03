@@ -1,0 +1,8 @@
+PY 3.13.10 (main, Mar  4 2026, 17:45:46) [MSC v.1942 64 bit (AMD64)]
+<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+synapse: C:\Users\User\SYNAPSE\python\synapse\__init__.py
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import sys; print('PY', sys.version); import synapse; print('synapse:', synapse.__file__); import synapse.spatial; print('SPATIAL:', synapse.spatial.__file__)
+                                                                                               ^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'synapse.spatial'

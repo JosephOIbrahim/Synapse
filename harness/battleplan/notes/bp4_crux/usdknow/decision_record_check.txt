@@ -1,0 +1,50 @@
+======================================================================================================================
+T-E1  DECISION RECORD COVERAGE (8 T1 choices + section 3)
+======================================================================================================================
+sec   choice                                 arc?    LIVRPS  failure?  tier                       anchors resolve?
+2.1   payload for splat + collider           payload yes(4)  yes       FIXTURE-VERIFIED           7 stdout cites, all resolve=True
+2.2   purpose render / proxy                 local   yes(0)  yes       FIXTURE-VERIFIED           3 stdout cites, all resolve=True
+2.3   variantSet splatTier full|low          variant yes(3)  yes       PROPOSED                   2 stdout cites, all resolve=True
+2.4   variantSet physics none|collision      variant yes(0)  yes       PROPOSED                   doc anchor only
+2.5   kind = component                       local   yes(2)  yes       FIXTURE-VERIFIED           1 stdout cites, all resolve=True
+2.6   customData:worldlabs provenance        local   yes(3)  yes       PROPOSED                   1 stdout cites, all resolve=True
+2.7   instanceable yes/no                    local   yes(1)  yes       PROPOSED                   NO ANCHOR
+2.8   where metric/ground/chirality transfor local   yes(1)  yes       PROPOSED                   doc anchor only
+
+covered: 5/8
+
+--- section 3 (blueprint sec.4 / demo) ---
+  title: ## 3. The demo layer (blueprint sec.4) adds no composition arc
+  states 'adds no composition arc': True
+  cites demo beats: True | fallback F-1: True
+  ties back to 2.1/2.2/2.5/2.8: True
+
+======================================================================================================================
+T-E2  EVERY stdout.txt:N CITATION IN THE DECISION RECORD (unchecked by the committed gate)
+======================================================================================================================
+  DR:L40   -> stdout:60   builder=OK     crux=OK     same_text=True  [BP4-EV:rt-livrps-order] one attribute with all six opinions r
+  DR:L52   -> stdout:76   builder=OK     crux=OK     same_text=True  [BP4-EV:rt-local-over-specialize] spot1 keeps its own local 2.
+  DR:L53   -> stdout:83   builder=OK     crux=OK     same_text=True  [BP4-EV:rt-inherit-liststrength] inherit list-editing: A added
+  DR:L55   -> stdout:68   builder=OK     crux=OK     same_text=True  [BP4-EV:rt-specialize-weakest] specialize is the weakest arc (
+  DR:L67   -> stdout:20   builder=OK     crux=OK     same_text=True  /wl_import                                           Xform    
+  DR:L68   -> stdout:21   builder=OK     crux=OK     same_text=True  /wl_import/WL_fixture                                Xform    
+  DR:L69   -> stdout:22   builder=OK     crux=OK     same_text=True  /wl_import/WL_fixture/geo                            Scope    
+  DR:L70   -> stdout:23   builder=OK     crux=OK     same_text=True  /wl_import/WL_fixture/geo/proxy                      Scope    
+  DR:L71   -> stdout:24   builder=OK     crux=OK     same_text=True  /wl_import/WL_fixture/geo/proxy/world                Mesh     
+  DR:L72   -> stdout:25   builder=OK     crux=OK     same_text=True  /wl_import/WL_fixture/geo/proxy/world/geometry_0     Mesh     
+  DR:L73   -> stdout:26   builder=OK     crux=OK     same_text=True  /wl_import/WL_fixture/geo/proxy/autoproxy            Mesh     
+  DR:L74   -> stdout:27   builder=OK     crux=OK     same_text=True  /wl_import/WL_fixture/geo/render                     Scope    
+  DR:L75   -> stdout:28   builder=OK     crux=OK     same_text=True  /wl_import/WL_fixture/geo/render/points_0            Points   
+  DR:L82   -> stdout:33   builder=OK     crux=OK     same_text=True  [BP4-EV:fx-splat-purpose-inherited] splat Points /wl_import/WL
+  DR:L85   -> stdout:34   builder=OK     crux=OK     same_text=True  [BP4-EV:fx-variantsets-count] SOP-built component authors 0 va
+  DR:L89   -> stdout:35   builder=OK     crux=OK     same_text=True  [BP4-EV:fx-customdata-worldlabs] component root customData key
+  DR:L92   -> stdout:19   builder=OK     crux=OK     same_text=True  /HoudiniLayerInfo                                    HoudiniLa
+  DR:L108  -> stdout:46   builder=OK     crux=OK     same_text=True  [BP4-EV:rt-payload-unloadable-vs-reference] payload Unload rem
+  DR:L120  -> stdout:43   builder=OK     crux=OK     same_text=True  [BP4-EV:fx-payload-roundtrip] payloading the component then Un
+  DR:L121  -> stdout:44   builder=OK     crux=OK     same_text=True  [BP4-EV:fx-payload-arc-present] PrimCompositionQuery on the sh
+  DR:L148  -> stdout:31   builder=OK     crux=OK     same_text=True  [BP4-EV:fx-purpose-proxy] collider subtree scope /wl_import/WL
+  DR:L149  -> stdout:32   builder=OK     crux=OK     same_text=True  [BP4-EV:fx-purpose-render] render subtree scope /wl_import/WL_
+  DR:L207  -> stdout:30   builder=OK     crux=OK     same_text=True  [BP4-EV:fx-kind-component] component root /wl_import carries k
+
+distinct stdout lines cited by the decision record: 23 ; problems: 0
+total citation occurrences (ranges expanded): 40

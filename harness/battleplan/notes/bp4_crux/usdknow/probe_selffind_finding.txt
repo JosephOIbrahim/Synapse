@@ -1,0 +1,13 @@
+=== probe with BP4_WL_USDC unset + argv=nonexistent ===
+==============================================================================
+A  b6_wl_component.usdc -- structure, kind, purpose, variants, customData, arcs
+==============================================================================
+  file: C:\Users\User\SYNAPSE\.claude\worktrees\bp3-probe\harness\notes\h22wl\bp3_probes\b6_wl_component.usdc
+  bytes: 19756921
+  defaultPrim: (none)
+  root prims: /HoudiniLayerInfo, /wl_import
+...
+BLOCKED lines present? -> 0
+line count: 85
+identical to the env-set run (normalized)? ->
+  identical: True

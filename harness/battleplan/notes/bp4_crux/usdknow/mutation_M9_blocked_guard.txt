@@ -1,0 +1,15 @@
+synthetic stdout written; line 13 now: '[A] BLOCKED: b6_wl_component.usdc not found (set BP4_WL_USDC). Part C '
+checker exit: 1
+  OUT: [check] seed: harness/bench/corpus/usd/usd_composition_worldlabs_22.0.400.json  (ratified=False)
+  OUT: [check] stdout source: crux_usdknow_out/stdout_blocked_synthetic.txt  (86 lines, 25 blocked)
+  OUT: [check] tier counts: DOC-STATED=2, FIXTURE-VERIFIED=8, PROPOSED=5, VERIFIED-RUNTIME=7
+  OUT: [check] promotable rows checked: 15
+  ERR: [check] FAIL  'kind-component'  tier='FIXTURE-VERIFIED'  anchor='stdout.txt:30'  -> stdout.txt:30 is inside a BLOCKED/Traceback section
+  ERR: [check] FAIL  'purpose-collider-proxy'  tier='FIXTURE-VERIFIED'  anchor='stdout.txt:31'  -> stdout.txt:31 is inside a BLOCKED/Traceback section
+  ERR: [check] FAIL  'purpose-render-scope'  tier='FIXTURE-VERIFIED'  anchor='stdout.txt:32'  -> stdout.txt:32 is inside a BLOCKED/Traceback section
+  ERR: [check] FAIL  'purpose-splat-inherited'  tier='FIXTURE-VERIFIED'  anchor='stdout.txt:33'  -> stdout.txt:33 is inside a BLOCKED/Traceback section
+  ERR: [check] FAIL  'variantsets-absent-in-sop-build'  tier='FIXTURE-VERIFIED'  anchor='stdout.txt:34'  -> stdout.txt:34 is inside a BLOCKED/Traceback section
+  ERR: [check] FAIL  'customdata-worldlabs-absent-in-sop-build'  tier='FIXTURE-VERIFIED'  anchor='stdout.txt:35'  -> stdout.txt:35 is inside a BLOCKED/Traceback section
+  ERR: [check] RESULT: FAIL (6 bad row(s))
+
+VERDICT: REDDENED -- BLOCKED guard fires

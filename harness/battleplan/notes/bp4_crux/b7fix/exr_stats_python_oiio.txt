@@ -1,0 +1,13 @@
+reader: OpenImageIO 2.5.18.0 shape (720, 1280, 4) float32
+  R: min=0.00000000 max=0.45581055 mean=0.01378595 std=0.06417695 nonzero=69802
+  G: min=0.00000000 max=0.45581055 mean=0.01378595 std=0.06417695 nonzero=69802
+  B: min=0.00000000 max=0.45581055 mean=0.01378595 std=0.06417695 nonzero=69802
+  A: min=0.00000000 max=1.00000000 mean=0.03512594 std=0.16400911 nonzero=70196
+  pixelwise R==G everywhere: True
+  pixelwise G==B everywhere: True
+  pixelwise R==B everywhere: True
+  count px R!=G: 0 | max |R-G|: 0.0
+  count px G!=B: 0 | max |G-B|: 0.0
+  count px R!=B: 0 | max |R-B|: 0.0
+  px with any RGB>0: 69802 of 921600
+  chroma: max over px of (max(RGB)-min(RGB)) = 0.0

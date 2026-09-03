@@ -1,0 +1,38 @@
+=== exact deep-dive line numbers ===
+L138: # If base changes to intensity=0.5, spot1 gets 0.5 (base is stronger)   <- SEE CTO NOTE AT TOP: this line is wrong
+L201: inherits.AddInherit("/classes/A")    # First added = strongest inherit   <- unverified, see CTO note
+
+=== F-1/F-2 evidence: crux stdout lines 33,34,35 ===
+L33: [BP4-EV:fx-splat-purpose-inherited] splat Points /wl_import/WL_fixture/geo/render/points_0 authored purpose is default but purpose is inherited down namespace | arc=local authored_purpose=default computed_purpose=render
+L34: [BP4-EV:fx-variantsets-count] SOP-built component authors 0 variantSet(s) total across all prims | arc=variant variantset_total=0
+L35: [BP4-EV:fx-customdata-worldlabs] component root customData keys=['userDocBrief'] ; worldlabs provenance absent | arc=local customData_worldlabs=absent
+
+=== C.1 / C.2 outputs from MY run (lines 71-85) ===
+L71: C.1  Refute deep-dive L138: a local opinion wins over what it specializes
+L72: ==============================================================================
+L73:   spot1.intensity local=2.0 specializes base ; base changed 1.0 -> 0.5
+L74:   spot1.intensity before base change = 2.0 ; after = 2.0
+L75:   deep-dive L138 claims 'spot1 gets 0.5 (base is stronger)'
+L76: [BP4-EV:rt-local-over-specialize] spot1 keeps its own local 2.0 after base->0.5; deep-dive L138 'base is stronger' is REFUTED | arc=local local_wins_over_specialize=True spot1_after=2.0 deep_dive_L138=refuted
+L77: 
+L78: ==============================================================================
+L79: C.2  Check deep-dive L201: is 'first added = strongest inherit' true?
+L80: ==============================================================================
+L81:   /Obj inherits A(=10) then B(=20) ; composed = 10.0
+L82:   'first added = strongest' -> True
+L83: [BP4-EV:rt-inherit-liststrength] inherit list-editing: A added before B ; composed=10.0 so first-added-strongest=True | arc=inherit first_added_strongest=True composed=10.0
+L84: 
+L85: DONE
+
+=== per-prim table, MY run (lines 18-28) ===
+L18:   path                                                 type             kind       purpose  auth_purpose|arcs
+L19:   /HoudiniLayerInfo                                    HoudiniLayerInfo -          default  default|root
+L20:   /wl_import                                           Xform            component  default  default|root
+L21:   /wl_import/WL_fixture                                Xform            component  default  default|root
+L22:   /wl_import/WL_fixture/geo                            Scope            -          default  default|root
+L23:   /wl_import/WL_fixture/geo/proxy                      Scope            -          proxy    proxy|root
+L24:   /wl_import/WL_fixture/geo/proxy/world                Mesh             -          proxy    proxy|root
+L25:   /wl_import/WL_fixture/geo/proxy/world/geometry_0     Mesh             -          proxy    proxy|root
+L26:   /wl_import/WL_fixture/geo/proxy/autoproxy            Mesh             -          proxy    proxy|root
+L27:   /wl_import/WL_fixture/geo/render                     Scope            -          render   render|root
+L28:   /wl_import/WL_fixture/geo/render/points_0            Points           -          render   default|root

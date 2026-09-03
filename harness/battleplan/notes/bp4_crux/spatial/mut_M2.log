@@ -1,0 +1,88 @@
+##################### SPATIAL-M2a : default-on registration in mcp_server.py #####################
+
+from synapse.spatial import synapse_spatial_describe  # crux-M2a
+-- pytest -k registration --
+
+tests\test_spatial_lane.py:279: AssertionError
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============== needs_houdini deselected (NOT silently dropped) ===============
+NEEDS_HOUDINI  tests/test_spatial_lane.py  [13 test(s)]  -- needs a Houdini runtime: this module requires `pxr` (OpenUSD -- not installed on stock CI runners)
+13 test(s) in 1 module(s) deselected by -m 'not needs_houdini'. Run the full suite under hython (pytest tests/, no -m filter) to execute them.
+=========================== short test summary info ===========================
+FAILED tests/test_spatial_lane.py::test_no_default_on_registration - Assertio...
+1 failed, 13 deselected, 1 warning in 0.80s
+-- crux T-D grep (G1 shape) --
+./crux_capture.py:18:import synapse.spatial as SP
+./crux_capture.py:19:from synapse.spatial import (synapse_spatial_describe, synapse_spatial_classify,
+./crux_capture.py:20:                             synapse_spatial_frustum)
+./crux_capture.py:50:d = synapse_spatial_describe(stage_c, prim_path=PRIM)
+./crux_capture.py:184:    r = synapse_spatial_classify(stage_g, prim_path=MESH, max_angle_deg=thr,
+./crux_capture.py:233:tool35 = synapse_spatial_classify(stage_g, prim_path=MESH, max_angle_deg=THR,
+./crux_capture.py:265:fr = synapse_spatial_frustum(stage_g, eye=eye, forward=(0, 0, 1), up=(0, 1, 0),
+./mcp_server.py:1268:from synapse.spatial import synapse_spatial_describe  # crux-M2a
+-- RESTORE --
+  [empty == clean]
+
+##################### SPATIAL-M2b : registration in ROOT mcp_tools_scene.py (evasion probe) #####################
+
+from synapse.spatial import synapse_spatial_describe  # crux-M2b
+-- pytest -k registration --
+.                                                                        [100%]
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============== needs_houdini deselected (NOT silently dropped) ===============
+NEEDS_HOUDINI  tests/test_spatial_lane.py  [13 test(s)]  -- needs a Houdini runtime: this module requires `pxr` (OpenUSD -- not installed on stock CI runners)
+13 test(s) in 1 module(s) deselected by -m 'not needs_houdini'. Run the full suite under hython (pytest tests/, no -m filter) to execute them.
+1 passed, 13 deselected, 1 warning in 0.49s
+-- crux T-D grep (G1 shape) --
+./crux_capture.py:18:import synapse.spatial as SP
+./crux_capture.py:19:from synapse.spatial import (synapse_spatial_describe, synapse_spatial_classify,
+./crux_capture.py:20:                             synapse_spatial_frustum)
+./crux_capture.py:50:d = synapse_spatial_describe(stage_c, prim_path=PRIM)
+./crux_capture.py:184:    r = synapse_spatial_classify(stage_g, prim_path=MESH, max_angle_deg=thr,
+./crux_capture.py:233:tool35 = synapse_spatial_classify(stage_g, prim_path=MESH, max_angle_deg=THR,
+./crux_capture.py:265:fr = synapse_spatial_frustum(stage_g, eye=eye, forward=(0, 0, 1), up=(0, 1, 0),
+./mcp_tools_scene.py:76:from synapse.spatial import synapse_spatial_describe  # crux-M2b
+-- RESTORE --
+  [empty == clean]
+
+##################### SPATIAL-M2c : aliased registration inside python/ (double-evasion probe) #####################
+
+from synapse import spatial as _sp  # crux-M2c
+_REG = _sp.synapse_spatial_classify
+-- pytest -k registration --
+.                                                                        [100%]
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============== needs_houdini deselected (NOT silently dropped) ===============
+NEEDS_HOUDINI  tests/test_spatial_lane.py  [13 test(s)]  -- needs a Houdini runtime: this module requires `pxr` (OpenUSD -- not installed on stock CI runners)
+13 test(s) in 1 module(s) deselected by -m 'not needs_houdini'. Run the full suite under hython (pytest tests/, no -m filter) to execute them.
+1 passed, 13 deselected, 1 warning in 0.50s
+-- crux T-D grep (G1 shape, the one in the brief) --
+./crux_capture.py:18:import synapse.spatial as SP
+./crux_capture.py:19:from synapse.spatial import (synapse_spatial_describe, synapse_spatial_classify,
+./crux_capture.py:20:                             synapse_spatial_frustum)
+./crux_capture.py:50:d = synapse_spatial_describe(stage_c, prim_path=PRIM)
+./crux_capture.py:184:    r = synapse_spatial_classify(stage_g, prim_path=MESH, max_angle_deg=thr,
+./crux_capture.py:233:tool35 = synapse_spatial_classify(stage_g, prim_path=MESH, max_angle_deg=THR,
+./crux_capture.py:265:fr = synapse_spatial_frustum(stage_g, eye=eye, forward=(0, 0, 1), up=(0, 1, 0),
+./python/synapse/mcp/_tool_registry.py:1697:_REG = _sp.synapse_spatial_classify
+-- crux T-D WIDE grep (adds aliased-import patterns) --
+./crux_capture.py:18:import synapse.spatial as SP
+./crux_capture.py:19:from synapse.spatial import (synapse_spatial_describe, synapse_spatial_classify,
+./crux_capture.py:20:                             synapse_spatial_frustum)
+./crux_capture.py:50:d = synapse_spatial_describe(stage_c, prim_path=PRIM)
+./crux_capture.py:184:    r = synapse_spatial_classify(stage_g, prim_path=MESH, max_angle_deg=thr,
+./crux_capture.py:233:tool35 = synapse_spatial_classify(stage_g, prim_path=MESH, max_angle_deg=THR,
+./crux_capture.py:265:fr = synapse_spatial_frustum(stage_g, eye=eye, forward=(0, 0, 1), up=(0, 1, 0),
+./python/synapse/mcp/_tool_registry.py:1696:from synapse import spatial as _sp  # crux-M2c
+./python/synapse/mcp/_tool_registry.py:1697:_REG = _sp.synapse_spatial_classify
+-- RESTORE --
+  [empty == clean]

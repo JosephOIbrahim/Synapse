@@ -1,0 +1,122 @@
+{
+  "lane": "INTAKE",
+  "targets": [
+    {
+      "name": "bp4/intake",
+      "head": "0d738db9",
+      "product": "03a4e43d",
+      "note": "scratch clone SCR_I, branch bp4/intake, builder receipt harness/notes/receipts/BP4-INTAKE.json status=green"
+    },
+    {
+      "name": "master@2574de6b",
+      "head": "2574de6b43bb8b574f297a06f43a19691267eaa3",
+      "product": "2574de6b (product), 9a90e9af (receipt commit, one commit later)",
+      "note": "archive SCR_M2574 for file content + full clone SCR_M (currently at master HEAD 3a27d1ff) for git-history checks; harvester receipt status=green_with_findings"
+    }
+  ],
+  "acceptance": [
+    {
+      "predicate": "MANIFEST.md has a row per present file with bytes + sha256 + role, and a 'missing' row per absent one",
+      "target": "bp4/intake",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "independent python hashlib recompute over .../scratchpad/i/docs/intake/src/*: blueprint.md 7155B/9c08a168...c5edf9, coffee_shop_talk.md 6384B/903fb2f4...f36cd98, both match docs/intake/src/MANIFEST.md:7-8 exactly; both .docx confirmed absent via dir listing, MANIFEST.md:9-10 correctly say missing. See T-A_hash_verification.txt."
+    },
+    {
+      "predicate": "MANIFEST.md has a row per present file with bytes + sha256 + role, and a 'missing' row per absent one",
+      "target": "master@2574de6b",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "independent python hashlib recompute over .../scratchpad/m2574/docs/intake/src/*: identical bytes/sha256 to the branch (7155/9c08a168..., 6384/903fb2f4...), both .docx confirmed absent, MANIFEST.md:7-10 rows correct. See T-A_hash_verification.txt."
+    },
+    {
+      "predicate": "blueprint header gained exactly one Sources line; the diff vs master is confined to the header block",
+      "target": "bp4/intake",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "git diff 28a0e183 HEAD -- docs/intake/blueprint-h22-worldlabs-intent.md = 1 hunk, +1 line at new-file line 11; header separator '---' at line 13 (grep -n '^---$'); 11 < 13, confined. git diff --stat 28a0e183 HEAD touches exactly 3 expected files. See T-B_diff_analysis.txt."
+    },
+    {
+      "predicate": "blueprint header gained exactly one Sources line; the diff vs master is confined to the header block",
+      "target": "master@2574de6b",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "git diff 2d26231f 2574de6b -- docs/intake/blueprint-h22-worldlabs-intent.md = 1 hunk, +1 line at new-file line 11, byte-identical to the branch's hunk; git diff --stat 2d26231f 2574de6b touches 2 files (blueprint + MANIFEST.md; receipt committed separately at 9a90e9af); git diff 2574de6b HEAD -- docs/intake/ empty (untouched since). See T-B_diff_analysis.txt."
+    },
+    {
+      "predicate": "bus finding posted with dossier_in_repo value and MANIFEST anchor",
+      "target": "bp4/intake",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "bus.jsonl:4 (n=18d1ef1fca958b70, ts=2026-09-03T18:10:46) claim='dossier_in_repo: true', anchor='docs/intake/src/MANIFEST.md'. Predicate literally satisfied (posted, has value, has anchor). VALUE HONESTY flagged separately as a discrepancy: 'true' contradicts the same receipt's own missing_docx_files=2. See T-C_bus_findings.txt."
+    },
+    {
+      "predicate": "bus finding posted with dossier_in_repo value and MANIFEST anchor",
+      "target": "master@2574de6b",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "bus.jsonl:28 (n=18d1f0b17fcd6908, ts=2026-09-03T18:39:32) claim='dossier_in_repo: partial - both .md extractions on master with verified SHA256; both .docx missing', anchor='docs/intake/src/MANIFEST.md'. Value IS honest here (partial matches ground truth). See T-C_bus_findings.txt."
+    }
+  ],
+  "mutations": [
+    {
+      "id": "INTAKE-M1",
+      "description": "Flip first hex char of the coffee_shop_talk.md sha256 cell in docs/intake/src/MANIFEST.md (903fb2f4... -> 803fb2f4...), scoped to that one row/cell.",
+      "check_reddened": "T-A hash-recompute check (sha256 of on-disk file vs MANIFEST.md row)",
+      "result": "REDDENED",
+      "evidence": "coffee_shop_talk.md sha_match flipped True->False; blueprint.md row unaffected (sha_match=True, bytes_match=True), confirming the mutation was scoped to exactly the intended cell. Full transcript in T-F_mutations.txt.",
+      "restored_green": true
+    },
+    {
+      "id": "INTAKE-M2",
+      "description": "Insert one marker line immediately after docs/intake/blueprint-h22-worldlabs-intent.md line 15 ('## 0. How to read this document'), landing at line 16 - 3 lines below the header's line-13 '---' separator, i.e. outside the header block.",
+      "check_reddened": "range-aware T-B header-confinement check (does any added '+' line's new-file line number fall at/after the separator line)",
+      "result": "REDDENED",
+      "evidence": "A naive git diff 28a0e183 -- <path> | grep -c '^@@' check SURVIVES this mutation (still reports 1 hunk, because git's 3-line diff context merges the line-11 and line-16 edits into one @@ block). The correct range-aware check catches it: added new-file lines=[11,16], 16 >= separator(13) -> FAIL. This is flagged as a real gap in naive hunk-counting verification, not just a mutation result - the predicate's own text ('the crucible reads the hunk's line range') anticipates exactly this. Full transcript in T-F_mutations.txt.",
+      "restored_green": true
+    },
+    {
+      "id": "INTAKE-M3",
+      "description": "Change the blueprint.md row's Bytes cell in docs/intake/src/MANIFEST.md from 7155 to 7156 (bonus mutation).",
+      "check_reddened": "T-A hash-recompute check (byte length of on-disk file vs MANIFEST.md row)",
+      "result": "REDDENED",
+      "evidence": "blueprint.md bytes_match flipped True->False; sha_match remained True for that row and both fields remained True for the coffee_shop_talk row, confirming scoped mutation. Full transcript in T-F_mutations.txt.",
+      "restored_green": true
+    }
+  ],
+  "discrepancies": [
+    {
+      "claim": "Master receipt (harness/notes/receipts/BP4-INTAKE.json, field 'branch') states 'No leg worktree or branch exists' - this is false. origin/bp4/intake exists, is fully worked, and has its own green receipt (0d738db9, 18:12:25) that predates the harvester's first bus post (18:39:32) by about 27 minutes.",
+      "anchor": "SCR_M/harness/notes/receipts/BP4-INTAKE.json field 'branch'; git log --format='%h %ci %s' -3 origin/bp4/intake (0d738db9 2026-09-03T18:12:25-0400, 03a4e43d 2026-09-03T18:12:01-0400, 28a0e183 2026-09-03T18:05:28-0400); SCR_I/harness/notes/receipts/BP4-INTAKE.json (the branch's own receipt, status=green)"
+    },
+    {
+      "claim": "Master's harvest commit message and harvest-note paragraph claim byte counts were corrected from 7168/6451 to 7155/6384. No git-tracked version of MANIFEST.md, on any ref (git log --all), ever shows 7168/6451 - both commits that ever touch the path (03a4e43d on the branch, 2574de6b on master) already show 7155/6384. The claim is not falsified, but it is unverifiable from repo history alone; it must refer to an uncommitted intermediate working-tree state.",
+      "anchor": "git log --all --format='%h %ci %s' -- docs/intake/src/MANIFEST.md (2 commits total, both already 7155/6384 per T-A_hash_verification.txt); SCR_M/docs/intake/src/MANIFEST.md:37 (harvest note prose)"
+    },
+    {
+      "claim": "The branch's own bus finding (18:10:46) posts 'dossier_in_repo: true' while the SAME receipt's findings[0].cross_checks records missing_docx_files: 2 - an internal contradiction within one artifact, only corrected 29 minutes later by the harvester's 'partial' post.",
+      "anchor": "SCR_I/harness/notes/receipts/BP4-INTAKE.json:25 (claim=true) vs :32 (missing_docx_files: 2); bus.jsonl:4 (true) vs bus.jsonl:28 (partial, harvester correction)"
+    },
+    {
+      "claim": "Two of MANIFEST.md's four cross-check pointer rows cite a line number that is off by exactly one (both point at the blank line immediately above the real content: :18 vs actual :19, and :377 vs actual :378). Identical in both targets since the content is shared/unedited by either writer. The section-level claims themselves ('Partial match' for the section-9-inclusive pointer, 'Found' for the timestamp pointer) are honestly labeled despite the line-pointer slip.",
+      "anchor": "docs/intake/src/MANIFEST.md:18,377 (as cited) vs docs/intake/blueprint-h22-worldlabs-intent.md:19,378 (actual content, confirmed by direct Read); see T-D_crosscheck_table.txt"
+    }
+  ],
+  "findings": [
+    "Both acceptance-row-1 and row-2 predicates hold exactly on both audited targets (branch bp4/intake@03a4e43d and master@2574de6b) - independently recomputed hashes/bytes match MANIFEST.md in every present-file row, both missing rows correctly reflect on-disk absence.",
+    "Acceptance row 2 (header confinement) holds on both targets by a correct, range-aware reading of the diff. A naive hunk-count-only check would still have passed the baseline, but INTAKE-M2 shows it would also silently pass a real violation - the predicate text itself calls for line-range reading, so this is a note on verification methodology, not a defect in the builder's actual work.",
+    "Acceptance row 3 is only a presence/anchor check per its literal wording, and both bus posts satisfy it. But the VALUE the branch leg posted ('true') is not honest against its own recorded evidence (2 missing docx), while the harvester's later post ('partial') is honest - this asymmetry is the most substantive finding of the lane.",
+    "The master receipt's claim that no leg branch/worktree exists is factually wrong and is contradicted by an adjacent finding in the SAME receipt document (the 'second writer' finding correctly describes a leg that ran in parallel). This looks like a drafting slip in the master receipt rather than a deliberate misstatement, since the receipt elsewhere shows awareness of the branch's work.",
+    "The claimed byte-count correction (7168/6451 to 7155/6384) cannot be confirmed or refuted from git history; both committed MANIFEST.md states already carry the corrected numbers. Recorded as unverifiable, not false.",
+    "All 3 authored mutations (2 required + 1 bonus) reddened their target checks and were cleanly restored; scratch clone SCR_I ends in an identical state to how it was cloned."
+  ],
+  "artifacts": [
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/intake/T-A_hash_verification.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/intake/T-B_diff_analysis.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/intake/T-C_bus_findings.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/intake/T-D_crosscheck_table.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/intake/T-E_discrepancies.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/intake/T-F_mutations.txt"
+  ],
+  "scratch_status_clean": true
+}
