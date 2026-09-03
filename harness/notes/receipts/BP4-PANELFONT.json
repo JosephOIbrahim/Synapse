@@ -1,0 +1,125 @@
+{
+  "leg": "BP4-PANELFONT",
+  "status": "green_with_findings",
+  "product_head": "81f3fb082c2b8c8f48cdc11c0dfc7cfe82db227f",
+  "base": "28a0e183c628b9057a887bd6a64441c23a57afb5",
+  "ahead": 1,
+  "summary": "Substitution-only typography pass on the design-system authority: weight tokens + a type-FLOOR constant with provenance, 3 qss.py font-weight literals -> {t.WEIGHT_SEMIBOLD} (byte-identical), a read-only GUI probe for Joe to MEASURE the Houdini default, and a pinning test. Floor provenance is UNKNOWN (the H22 help cache states no default UI font size) so nothing is lowered; the gui_probe is UNKNOWN headless. Panel tests 346 -> 352 passed. synapse_panel.py untouched.",
+  "acceptance": [
+    {
+      "predicate": "BP4_PANELFONT_AUDIT.md has typography rows per file:line and the floor's provenance (measured | DOC-STATED | UNKNOWN)",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP4_PANELFONT_AUDIT.md sec3 (per-file table with file:line), sec4 (floor = UNKNOWN with the cache-search evidence: .../houdini22.0/config/Help/cache ref+basics+hom searched 2026-09-03, no default UI font size stated)"
+    },
+    {
+      "predicate": "token module defines family + scale + weights + line-heights; test_panel_typography finds no typography literal outside it",
+      "verdict": "pass",
+      "evidence": "tokens.py sec5: FONT_SANS/FONT_MONO (families), SIZE_MICRO..SIZE_HERO (5-size role scale), WEIGHT_REGULAR/MEDIUM/SEMIBOLD (new), CHAT_LEADING_PT (leading/line-height token). tests/test_panel_typography.py green (6/6): test_qss_stylesheet_source_has_no_literal_typography pins designsystem/qss.py = 0 literals. SCOPE: enforced within the design-system authority (the T4 diff surface designsystem/manifests/qss/layout/scripts); the 167/88/33 out-of-territory feature-module literals are inventoried (audit sec3) and handed forward as spawns (audit sec7), never silently claimed clean. See for_ruling[0]."
+    },
+    {
+      "predicate": "no size token below the floor constant",
+      "verdict": "pass",
+      "evidence": "tests/test_panel_typography.py::test_no_size_token_below_floor green; every SIZE_* >= FONT_FLOOR_PX=10 (min size on master = SIZE_MICRO = 10). Mutation proven to redden (SIZE_* below floor)."
+    },
+    {
+      "predicate": "panel tests green before and after; diff limited to designsystem/manifests/qss/layout/scripts + the new test",
+      "verdict": "pass",
+      "evidence": "python -m pytest tests -k panel -q: 346 passed before -> 352 passed after (+6 new), 85 skipped (needs_houdini, honest). git diff --stat 28a0e183..81f3fb08 = designsystem/qss.py, designsystem/tokens.py, scripts/probe_ui_font.py, tests/test_panel_typography.py, notes/BP4_PANELFONT_AUDIT.md ONLY. synapse_panel.py untouched (empty diff). 5-scale stylesheet sha256 before==after (1779b114/7a1a99e7/e7d4298e/be8d2aaa/c99024cd)."
+    },
+    {
+      "predicate": "probe_ui_font.py output pasted from the Houdini 22.0.400 GUI and before/after screenshots captured",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required, unobtainable headless (QApplication.font() is meaningless under hython). The measurement seam is shipped: python/synapse/panel/scripts/probe_ui_font.py (read-only; prints family/pointSize/pixelSize/scaledSize(1)). Joe-hands steps in audit sec8. Skip != pass -> UNKNOWN, per the constitution."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "The Houdini default UI font size (the floor) is UNKNOWN: the local H22.0.400 help cache states no default UI font size, so the floor is pinned to the smallest size shipped on master (FONT_FLOOR_PX=10) and this pass lowers nothing. The real floor awaits Joe's GUI probe paste.",
+      "anchor": "harness/battleplan/notes/BP4_PANELFONT_AUDIT.md sec4"
+    },
+    {
+      "claim": "Pre-existing red UNRELATED to this leg: tests/test_rails.py::test_resolve_referee_prints_fable5 asserts resolve_model('referee')=='claude-fable-5' but the rails config resolves 'claude-fable-5-1' (Fable 5.1 bump). Outside this leg's territory (harness/rails), disjoint from designsystem; not caused by the typography change.",
+      "anchor": "tests/test_rails.py:364"
+    },
+    {
+      "claim": "Line-height is represented by CHAT_LEADING_PT (leading), NOT per-role CSS line-height: Qt's QTextDocument HTML subset does not implement CSS line-height (measured inert). Inventing per-role line-height tokens would be dead tokens; the 13 inline line-height strings live in out-of-territory feature modules and are documented, not tokenised.",
+      "anchor": "harness/battleplan/notes/BP4_PANELFONT_AUDIT.md sec3d"
+    },
+    {
+      "claim": "fontload.py restates the family names in private _SANS_CHAIN/_MONO_CHAIN tuples that duplicate tokens.FONT_SANS/FONT_MONO(+FALLBACKS) — a single-source candidate, not changed here (ratified v9 QFont apply layer, behaviour-adjacent).",
+      "anchor": "python/synapse/panel/designsystem/fontload.py:127"
+    }
+  ],
+  "for_ruling": [
+    {
+      "question": "Scope of 'you do typography only': this leg read that as the DESIGN-SYSTEM AUTHORITY typography contract (weight tokens + floor + probe + pinning test in designsystem/qss/scripts), bounded by the T4 diff surface 'designsystem/manifests/qss/layout/scripts files only', with the panel-wide feature-module typography (167 font-size / 88 font-family / 33 font-weight literals) inventoried and handed forward as spawns. Confirm this reading vs. a single-leg panel-wide typography migration (which would reopen the diff-surface constraint).",
+      "anchor": "harness/battleplan/notes/BP4_PANELFONT_AUDIT.md sec9 + BP4-PANELFONT brief T4"
+    },
+    {
+      "question": "Floor interim: the mission forbids recall, and the H22 cache states no default -> floor UNKNOWN, FONT_FLOOR_PX=10, byte-identical. Confirm the interim (measure via probe, then a follow-up raises the floor + lifts sub-floor roles) vs. adopting the tokens.py H21 recall '9pt ~= 12px' as a DOC-STATED floor now (deliberately not done).",
+      "anchor": "python/synapse/panel/designsystem/tokens.py FONT_FLOOR_PROVENANCE"
+    }
+  ],
+  "spawn": [
+    {
+      "id": "BP4-FLOOR-LIFT",
+      "band": "BUILD",
+      "class": "build",
+      "tier": "reasoning",
+      "name": "Raise FONT_FLOOR_PX to the MEASURED Houdini default and lift any sub-floor role",
+      "note": "Gated on Joe's probe paste (scripts/probe_ui_font.py from H22.0.400 GUI). Set FONT_FLOOR_PX = measured px, flip FONT_FLOOR_PROVENANCE UNKNOWN -> measured, raise SIZE_MICRO/SIZE_SMALL if below; the 5-scale stylesheet then differs by size tokens only (state which). Held for Joe (gui-gated).",
+      "touches": ["python/synapse/panel/designsystem/tokens.py", "tests/test_panel_typography.py"],
+      "readonly": false,
+      "deps": ["BP4-PANELFONT gui_probe"],
+      "disposition": "held"
+    },
+    {
+      "id": "BP4-INLINE-TYPO",
+      "band": "BUILD",
+      "class": "build",
+      "tier": "reasoning",
+      "name": "Migrate feature-module inline typography to the tokens (families -> FONT_*_CSS, sizes -> SIZE_*, weights -> WEIGHT_*)",
+      "note": "~28 inline HTML/QSS modules (hda_views, gate_widget, message_formatter, recipe_book, apex_*, ...). Pure substitution, ~120 instances. Out of the BP4-PANELFONT diff surface. Held.",
+      "touches": ["python/synapse/panel/ (feature modules)"],
+      "readonly": false,
+      "deps": [],
+      "disposition": "held"
+    },
+    {
+      "id": "BP4-PT-HOTSPOT",
+      "band": "BUILD",
+      "class": "build",
+      "tier": "reasoning",
+      "name": "De-hardcode context_bar.py's 7 literal 9pt QFont sizes to px + SIZE_* so the floor governs them",
+      "note": "The pt hotspot W5L-PANEL never reached. Distinct from BP3-PT-HOTSPOT, same module. 7 instances. Held.",
+      "touches": ["python/synapse/panel/context_bar.py"],
+      "readonly": false,
+      "deps": [],
+      "disposition": "held"
+    },
+    {
+      "id": "BP4-STYLES-TYPO",
+      "band": "BUILD",
+      "class": "build",
+      "tier": "reasoning",
+      "name": "styles.py typography to tokens (40 font-size + 36 font-family + 11 font-weight) — folds into BP3-STYLES-MIGRATE",
+      "note": "Highest raw yield; legacy sheet with 3 pinned importers; durable fix migrates consumers onto qss.py objectNames. ~87 instances. Held.",
+      "touches": ["python/synapse/panel/styles.py"],
+      "readonly": false,
+      "deps": [],
+      "disposition": "held"
+    },
+    {
+      "id": "BP4-FONTLOAD-1SRC",
+      "band": "BUILD",
+      "class": "build",
+      "tier": "reasoning",
+      "name": "Single-source fontload family chains onto tokens.FONT_SANS/FONT_MONO(+FALLBACKS)",
+      "note": "fontload._SANS_CHAIN/_MONO_CHAIN restate the token family names. Behaviour-adjacent (QFont.setFamilies order) -> needs a live Qt check. 2 chains. Held.",
+      "touches": ["python/synapse/panel/designsystem/fontload.py"],
+      "readonly": false,
+      "deps": [],
+      "disposition": "held"
+    }
+  ]
+}
