@@ -1,0 +1,50 @@
+{
+  "id": "BP4-B7FIX",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "reasoning",
+  "name": "Fix probe bug B-7 in harness/probes/synapse_blueprint_probes.py (camera assigned to the render settings + a light authored BEFORE rop.render), re-run B-7 only on hython 22.0.400, then and only then settle D2.4 / R-1 - pass, fail, or UNKNOWN with the new evidence",
+  "note": "Tier: reasoning. Self-cap: 25 turns (progress every 5). BP3 truth (capsule 09-03): the D2.4 black EXR is a PROBE BUG, not a Karma verdict - the camera was created after the render settings and never assigned; husk reported Total Lights 0 and a camera-name mismatch. Read docs/reviews/bp3-h22-worldlabs-probes-2026-09-03.md first (B-7 row, husk lines), then harness/notes/h22wl/bp3_probes/stdout.txt by grep only. Fixture paths + SHA256 are in the review doc (ignored binaries); a missing fixture is re-downloaded per BP3-PROBE T1 and re-hashed - a hash mismatch is a finding. The diff to the probe script is the B-7 block plus a `--only <probe-id>` flag if the script lacks one; no other probe's logic changes. Environment truths (capsule 2026-09-03, demonstrated): five hythons are installed and SYNAPSE_HYTHON must be pinned to 22.0.400 (22.0.429 fails the hytest usability gate); the hython path and the pref dir are recorded in harness/battleplan/notes/BP3_RECON.md T2 - read them, never re-derive; H22 prefs live at C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - set HOUDINI_USER_PREF_DIR explicitly; long hython runs: detach and poll a log file, never foreground-wait past 4 minutes; a fresh deep-path clone needs `git config core.longpaths true`. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+  "targets": [
+    "T1) B-7 fix: author the camera prim AND a light (dome or distant) before the render settings; set the render settings' camera relationship to the camera path; keep the existing resolution; minimal diff. Add `--only <id>` if absent (skipped probes read NOT_RUN in probe_results.json).",
+    "T2) Run detached + polled with SYNAPSE_HYTHON pinned to 22.0.400 and HOUDINI_USER_PREF_DIR set: `hython harness\\probes\\synapse_blueprint_probes.py --only B-7 --ply <ply> --glb <glb> --out harness\\notes\\h22wl\\bp4_b7fix`; stdout verbatim to stdout.txt; capture husk's own log (Total Lights, camera lines) into the out dir.",
+    "T3) EXR stats: mean/max pixel via oiiotool if on PATH, else hython (COP read or hou image API), else UNKNOWN naming the missing tool; record the exact command + numbers. Non-black -> D2.4 pass candidate; still black -> fail with the new husk lines quoted.",
+    "T4) Append a dated 'B-7 re-run (BP4)' section to docs/reviews/bp3-h22-worldlabs-probes-2026-09-03.md (append-only; BP3 rows untouched): fix summary, `git diff --stat`, stdout anchor, EXR stats, D2.4 verdict pass|fail|UNKNOWN, R-1 status triggered|clear|UNKNOWN, each with anchor. Post a bus finding with the verdict + anchor, commit the named files, then the receipt."
+  ],
+  "touches": [
+    "harness/probes/synapse_blueprint_probes.py",
+    "harness/notes/h22wl/bp4_b7fix/",
+    "docs/reviews/bp3-h22-worldlabs-probes-2026-09-03.md"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "the crucible re-runs `--only B-7` itself in a fresh checkout with its own out dir and recomputes the EXR stats",
+    "`git diff master..HEAD -- harness/probes/synapse_blueprint_probes.py` touches only the B-7 block and the --only plumbing (the crucible reads every hunk)",
+    "the review doc's BP3 rows are byte-identical to master (append-only, checked by diff line ranges)",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "capsule 2026-09-03 EOD open item 2 (fix B-7 before ruling R-1 / D2.4); blueprint v0.3 sec.2.8 D2.4; sec.10 R-1"
+  },
+  "acceptance": [
+    {
+      "predicate": "probe-script diff limited to the B-7 block + --only plumbing",
+      "evidence": "check"
+    },
+    {
+      "predicate": "bp4_b7fix/stdout.txt exists with the hython build line (22.0.400) and the B-7 block",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "EXR stats recorded with the command; D2.4 verdict pass|fail|UNKNOWN with anchor",
+      "evidence": "receipt"
+    },
+    {
+      "predicate": "R-1 status stated (triggered|clear|UNKNOWN) with anchor in the appended section",
+      "evidence": "check"
+    }
+  ]
+}

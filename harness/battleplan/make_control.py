@@ -22,7 +22,7 @@ def main(wave: str = "wave1") -> int:
         "_schema": "legs/v1",
         "repo": str(REPO),
         "settings": str(REPO / "harness" / "relay-settings.json"),
-        "effort": "ultracode",
+        "effort": "max",  # BP4 2026-09-03: was 'ultracode', not a level Claude Code 2.1.259 lists (low|medium|high|xhigh|max); control now matches the live manifest
         "base": "master",
         "model": "claude-opus-4-8",
         "legs": stubs + rows,

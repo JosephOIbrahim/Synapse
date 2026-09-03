@@ -1,0 +1,44 @@
+{
+  "id": "BP4-INTAKE",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "mechanical",
+  "name": "Intake drop: home the World Labs blueprint + coffee-notes source docs under docs/intake/src/, hash them, link them from blueprint v0.3's header - RECON's dossier_in_repo:false becomes true by artifact",
+  "note": "Tier: mechanical (Haiku 4.5). Self-cap: 10 turns (progress every 3). Joe drops up to four files into docs/intake/src/ before arm: synapse_worldlabs_blueprint.docx, synapse_worldlabs_coffee_shop_talk.docx, and their .md extractions (CTO-side pandoc). If a .md is absent but its .docx is present, extract it yourself with python zipfile (word/document.xml: <w:p> paragraphs, <w:t> runs, Heading1/Heading2 pStyle -> # / ##) and name the tool in the manifest. If BOTH docx are absent at your start, poll docs/intake/src/ with one powershell loop (Start-Sleep 60, at most 20 iterations); still absent -> bus finding 'intake files missing' and a receipt with every acceptance UNKNOWN - never fabricate content. Token-saver: read the .md by headings (grep '^#'), not whole. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+  "targets": [
+    "T1) docs/intake/src/MANIFEST.md: table `file | bytes | sha256 | role (source-docx | extracted-md) | extraction tool (pandoc CTO-side | zipfile leg-side | n/a)` for every file present; a 'missing' row for any of the four that is not.",
+    "T2) Edit ONLY the header block of docs/intake/blueprint-h22-worldlabs-intent.md: add one `Sources:` line naming the files under docs/intake/src/ (relative paths) and MANIFEST.md. No other edit (rule D-3: the blueprint gains no scope).",
+    "T3) Cross-check: grep the intent doc for 'dossier|coffee' claim pointers; for each, confirm the cited section exists in the extracted .md by heading; append table `pointer (file:line) | cited section | found (heading) or not found` to MANIFEST.md.",
+    "T4) Post one bus finding to *: {\"claim\": \"dossier_in_repo: true|partial|false\", \"anchor\": \"docs/intake/src/MANIFEST.md\"}. Then commit the named files and write the receipt."
+  ],
+  "touches": [
+    "docs/intake/src/",
+    "docs/intake/blueprint-h22-worldlabs-intent.md"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "the crucible recomputes SHA256 + bytes for every file under docs/intake/src/ and diffs against MANIFEST.md",
+    "`git diff master..HEAD -- docs/intake/blueprint-h22-worldlabs-intent.md` is one hunk inside the header block (the crucible reads the hunk's line range)",
+    "every verdict row carries the crucible's own anchor"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "capsule 2026-09-03 EOD open item 4 (dossier + coffee notes into docs/intake/); BP3-RECON T4 dossier_in_repo:false"
+  },
+  "acceptance": [
+    {
+      "predicate": "MANIFEST.md has a row per present file with bytes + sha256 + role, and a 'missing' row per absent one",
+      "evidence": "check"
+    },
+    {
+      "predicate": "blueprint header gained exactly one Sources line; the diff vs master is confined to the header block",
+      "evidence": "check"
+    },
+    {
+      "predicate": "bus finding posted with dossier_in_repo value and MANIFEST anchor",
+      "evidence": "receipt"
+    }
+  ]
+}

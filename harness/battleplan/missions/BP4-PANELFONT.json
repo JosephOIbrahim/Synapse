@@ -1,0 +1,56 @@
+{
+  "id": "BP4-PANELFONT",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "reasoning",
+  "name": "Typography pass on the SYNAPSE Python panel: one font-family token, one type scale, every size a token, floor = the MEASURED Houdini default UI font size; substitution-only change set traceable to a design-system audit; no new widgets, no behaviour",
+  "note": "Tier: reasoning. Self-cap: 30 turns (progress every 5); at 80% post wrap_up and ship what is clean. Audit shape: harness/battleplan/notes/skills/design-system.md (shipped skill text). Continue from the accepted result: BP3-PANEL landed the token audit (harness/battleplan/notes/BP3_PANEL_AUDIT.md: tokens 8.5/10, adoption 3.5/10; 492 px, 168 hex across 34 modules) and its whitespace/token change set; held spawns BP3-INLINE-HEX / BP3-STYLES-MIGRATE stay held - you do typography only. synapse_panel.py lifecycle and timer ranges are untouchable (BP2-CRUX rule). BP3 truth: the stylesheet is byte-identical across the 5 scales it is generated at; after your change it may differ by size tokens only - say which. Houdini default: MEASURE, never recall. hython has no Qt app, so the family/point-size read is GUI-only: write python/synapse/panel/scripts/probe_ui_font.py (prints QApplication.instance().font().family(), .pointSize(), .pixelSize(), and hou.ui.scaledSize(1) if present) for Joe to paste into the Houdini 22.0.400 Python shell; his paste is the gui_required evidence. Until it lands, the floor is what the local H22 help cache states for the default UI font (cite file:line under C:\\Users\\User\\OneDrive\\Documents\\houdini22.0\\config\\Help\\cache) marked DOC-STATED; if the cache states nothing, the floor is UNKNOWN and the change set makes no size smaller than the smallest size already shipped on master (say so). The floor lives as ONE constant in the token module with a provenance string. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+  "targets": [
+    "T1) Read first: BP3_PANEL_AUDIT.md, docs/PANEL_RHYTHM_SPEC.md, python/synapse/panel/designsystem/ (tokens, qss.py), `git log --oneline -10 master -- python/synapse/panel/`. Post a bus claim on python/synapse/panel/ before any edit.",
+    "T2) Typography audit -> harness/battleplan/notes/BP4_PANELFONT_AUDIT.md in the shipped audit shape, typography rows only: every font-family / font-size / font-weight / line-height occurrence per file (grep, file:line) grouped by value; the smallest size on master; existing typography tokens; the Houdini default with provenance (measured | DOC-STATED | UNKNOWN).",
+    "T3) Tokens: one family token (the Houdini family if measured, else the family Houdini's own prefs/QSS name with citation, else the panel's current majority family - provenance stated); a type scale of at most 5 sizes named by role (the rhythm spec's names if it has them), floor = the Houdini default; weight tokens 400/500/600 at most; line-height tokens. Land them where the existing colour/spacing tokens live.",
+    "T4) Change set: substitution only - each hardcoded typography value -> its token; sizes below the floor -> floor; families -> the family token. No new widget/signal/slot/timer/import/behaviour. Every hunk cites its audit row in the commit body. Evidence: `python -m pytest tests -k panel -q` green before and after; the 5-scale stylesheet check re-run (identical, or size-token-only diff, stated); `git diff --stat master..HEAD -- python/synapse/panel/` lists designsystem/manifests/qss/layout/scripts files only; synapse_panel.py lifecycle/timer ranges unchanged. Add tests/test_panel_typography.py: no typography literal outside the token module; no size token below the floor constant.",
+    "T5) Last section of the audit doc: Joe-hands steps (paste probe_ui_font.py output; before/after screenshots at 100% and 150% UI scale). Post a bus finding with the audit path, commit the named files, then the receipt."
+  ],
+  "touches": [
+    "python/synapse/panel/",
+    "tests/test_panel_typography.py",
+    "harness/battleplan/notes/BP4_PANELFONT_AUDIT.md"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "the crucible greps the branch for any remaining hardcoded font-size/font-family/font-weight/line-height outside the token module and lists file:line",
+    "mutations: re-introduce one hardcoded px size -> test_panel_typography reddens; set one size token below the floor -> reddens; add a QWidget subclass -> the whitespace-only checker reddens",
+    "panel tests green in a fresh checkout; the 5-scale stylesheet check re-run by the crucible",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "Joe 2026-09-03: panel fonts consistent and no smaller than the Houdini default (design-system pass); BP3-PANEL audit + held spawns; blueprint v0.3 rule D-2 verified over pretty"
+  },
+  "acceptance": [
+    {
+      "predicate": "BP4_PANELFONT_AUDIT.md has typography rows per file:line and the floor's provenance (measured | DOC-STATED | UNKNOWN)",
+      "evidence": "check"
+    },
+    {
+      "predicate": "token module defines family + scale + weights + line-heights; test_panel_typography finds no typography literal outside it",
+      "evidence": "test"
+    },
+    {
+      "predicate": "no size token below the floor constant",
+      "evidence": "test"
+    },
+    {
+      "predicate": "panel tests green before and after; diff limited to designsystem/manifests/qss/layout/scripts + the new test",
+      "evidence": "test"
+    },
+    {
+      "predicate": "probe_ui_font.py output pasted from the Houdini 22.0.400 GUI and before/after screenshots captured",
+      "evidence": "gui_probe",
+      "gui_required": true
+    }
+  ]
+}

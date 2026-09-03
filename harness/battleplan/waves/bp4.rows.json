@@ -1,0 +1,154 @@
+[
+  {
+    "id": "BP4-B7FIX",
+    "name": "Fix probe bug B-7 in harness/probes/synapse_blueprint_probes.py (camera assigned to the render settings + a light authored BEFORE rop.render), re-run B-7 only on hython 22.0.400, then and only then settle D2.4 / R-1 - pass, fail, or UNKNOWN with the new evidence",
+    "state": "ready",
+    "receipt": "BP4-B7FIX.json",
+    "branch": "bp4/b7fix",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp4-b7fix",
+    "prompt": "harness/battleplan/prompts/BP4-B7FIX.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/probes/synapse_blueprint_probes.py",
+      "harness/notes/h22wl/bp4_b7fix/",
+      "docs/reviews/bp3-h22-worldlabs-probes-2026-09-03.md"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: capsule 2026-09-03 EOD open item 2 (fix B-7 before ruling R-1 / D2.4); blueprint v0.3 sec.2.8 D2.4; sec.10 R-1. Tier: reasoning. Self-cap: 25 turns (progress every 5). BP3 truth (capsule 09-03): the D2.4 black EXR is a PROBE BUG, not a Karma verdict - the camera was created after the render settings and never assigned; husk reported Total Lights 0 and a camera-name mismatch. Read docs/reviews/bp3-h22-worldlabs-probes-2026-09-03.md first (B-7 row, husk lines), then harness/notes/h22wl/bp3_probes/stdout.txt by grep only. Fixture paths + SHA256 are in the review doc (ignored binaries); a missing fixture is re-downloaded per BP3-PROBE T1 and re-hashed - a hash mismatch is a finding. The diff to the probe script is the B-7 block plus a `--only <probe-id>` flag if the script lacks one; no other probe's logic changes. Environment truths (capsule 2026-09-03, demonstrated): five hythons are installed and SYNAPSE_HYTHON must be pinned to 22.0.400 (22.0.429 fails the hytest usability gate); the hython path and the pref dir are recorded in harness/battleplan/notes/BP3_RECON.md T2 - read them, never re-derive; H22 prefs live at C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - set HOUDINI_USER_PREF_DIR explicitly; long hython runs: detach and poll a log file, never foreground-wait past 4 minutes; a fresh deep-path clone needs `git config core.longpaths true`. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP4-CRUX",
+    "name": "Adversarial crucible for wave BP4 - six parallel lanes (one per builder), re-runs probes/tests/checkers itself in fresh checkouts, authors its own mutations, builds nothing",
+    "state": "ready",
+    "receipt": "BP4-CRUX.json",
+    "branch": "bp4/crux",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp4-crux",
+    "prompt": "harness/battleplan/prompts/BP4-CRUX.md",
+    "deps": [
+      "BP4-INTAKE",
+      "BP4-RULINGS",
+      "BP4-B7FIX",
+      "BP4-SPATIAL",
+      "BP4-PANELFONT",
+      "BP4-USDKNOW"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: v0.3 rule D-1 two keys; docs/BATTLEPLAN.md sec.12 R-5/R-6 crucible precedent; capsule 2026-09-03 authoring rule (nothing after the receipt). Tier: referee (claude-fable-5-1 via rails; harness/battleplan/runs/2026-09-03/preflight_bp4.json proves the alias resolves; if dispatch falls back to reasoning the ledger row says so). Read-only under harness/readonly-settings.json. Blocked until the six builder receipts exist. One lane per builder, lanes in parallel via agent teams - HOLD YOUR TURN until every lane has reported; then write. A BROKEN verdict means that leg does not ride. Verdicts are READ by Joe before any merge word; a green CRUX receipt is a precondition, never a substitute. Self-cap: 40 turns (progress every 5). Order of final writes (capsule 09-03 authoring rule): verdicts + mutations files, then harness/notes/h22/BP4_CRUX_LANDED.flag, then commit, then the receipt as the last write - nothing after the receipt. Environment truths (capsule 2026-09-03, demonstrated): five hythons are installed and SYNAPSE_HYTHON must be pinned to 22.0.400 (22.0.429 fails the hytest usability gate); the hython path and the pref dir are recorded in harness/battleplan/notes/BP3_RECON.md T2 - read them, never re-derive; H22 prefs live at C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - set HOUDINI_USER_PREF_DIR explicitly; long hython runs: detach and poll a log file, never foreground-wait past 4 minutes; a fresh deep-path clone needs `git config core.longpaths true`. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+    "tier": "referee"
+  },
+  {
+    "id": "BP4-INTAKE",
+    "name": "Intake drop: home the World Labs blueprint + coffee-notes source docs under docs/intake/src/, hash them, link them from blueprint v0.3's header - RECON's dossier_in_repo:false becomes true by artifact",
+    "state": "ready",
+    "receipt": "BP4-INTAKE.json",
+    "branch": "bp4/intake",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp4-intake",
+    "prompt": "harness/battleplan/prompts/BP4-INTAKE.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "docs/intake/src/",
+      "docs/intake/blueprint-h22-worldlabs-intent.md"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: capsule 2026-09-03 EOD open item 4 (dossier + coffee notes into docs/intake/); BP3-RECON T4 dossier_in_repo:false. Tier: mechanical (Haiku 4.5). Self-cap: 10 turns (progress every 3). Joe drops up to four files into docs/intake/src/ before arm: synapse_worldlabs_blueprint.docx, synapse_worldlabs_coffee_shop_talk.docx, and their .md extractions (CTO-side pandoc). If a .md is absent but its .docx is present, extract it yourself with python zipfile (word/document.xml: <w:p> paragraphs, <w:t> runs, Heading1/Heading2 pStyle -> # / ##) and name the tool in the manifest. If BOTH docx are absent at your start, poll docs/intake/src/ with one powershell loop (Start-Sleep 60, at most 20 iterations); still absent -> bus finding 'intake files missing' and a receipt with every acceptance UNKNOWN - never fabricate content. Token-saver: read the .md by headings (grep '^#'), not whole. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+    "tier": "mechanical"
+  },
+  {
+    "id": "BP4-PANELFONT",
+    "name": "Typography pass on the SYNAPSE Python panel: one font-family token, one type scale, every size a token, floor = the MEASURED Houdini default UI font size; substitution-only change set traceable to a design-system audit; no new widgets, no behaviour",
+    "state": "ready",
+    "receipt": "BP4-PANELFONT.json",
+    "branch": "bp4/panelfont",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp4-panelfont",
+    "prompt": "harness/battleplan/prompts/BP4-PANELFONT.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "python/synapse/panel/",
+      "tests/test_panel_typography.py",
+      "harness/battleplan/notes/BP4_PANELFONT_AUDIT.md"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: Joe 2026-09-03: panel fonts consistent and no smaller than the Houdini default (design-system pass); BP3-PANEL audit + held spawns; blueprint v0.3 rule D-2 verified over pretty. Tier: reasoning. Self-cap: 30 turns (progress every 5); at 80% post wrap_up and ship what is clean. Audit shape: harness/battleplan/notes/skills/design-system.md (shipped skill text). Continue from the accepted result: BP3-PANEL landed the token audit (harness/battleplan/notes/BP3_PANEL_AUDIT.md: tokens 8.5/10, adoption 3.5/10; 492 px, 168 hex across 34 modules) and its whitespace/token change set; held spawns BP3-INLINE-HEX / BP3-STYLES-MIGRATE stay held - you do typography only. synapse_panel.py lifecycle and timer ranges are untouchable (BP2-CRUX rule). BP3 truth: the stylesheet is byte-identical across the 5 scales it is generated at; after your change it may differ by size tokens only - say which. Houdini default: MEASURE, never recall. hython has no Qt app, so the family/point-size read is GUI-only: write python/synapse/panel/scripts/probe_ui_font.py (prints QApplication.instance().font().family(), .pointSize(), .pixelSize(), and hou.ui.scaledSize(1) if present) for Joe to paste into the Houdini 22.0.400 Python shell; his paste is the gui_required evidence. Until it lands, the floor is what the local H22 help cache states for the default UI font (cite file:line under C:\\Users\\User\\OneDrive\\Documents\\houdini22.0\\config\\Help\\cache) marked DOC-STATED; if the cache states nothing, the floor is UNKNOWN and the change set makes no size smaller than the smallest size already shipped on master (say so). The floor lives as ONE constant in the token module with a provenance string. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP4-RULINGS",
+    "name": "Compile the banked BP3 ruling items into one cold-ruling table for the CTO seat: every for_ruling entry from the seven BP3 receipts (+ CRUX verdicts) with claim, anchor, the receipt's own recommendation, ruling column PENDING - the leg extracts, it never rules",
+    "state": "ready",
+    "receipt": "BP4-RULINGS.json",
+    "branch": "bp4/rulings",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp4-rulings",
+    "prompt": "harness/battleplan/prompts/BP4-RULINGS.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/notes/CTO_RULINGS_BP3.md"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: capsule 2026-09-03 EOD open item 1 (rule the 22 banked items cold; record in harness/notes/CTO_RULINGS_*.md). Tier: mechanical (Haiku 4.5). Self-cap: 12 turns (progress every 4). Expected 22 items (RECON 3, PANEL 1, PROBE 5, CORPUS 7, STUBS 2, CRUX 1, TIDY 3 per capsule 09-03); a different count is a FINDING you report with the file you looked in, never a rounding. Sources: harness/notes/receipts/BP3-*.json `for_ruling` arrays (also scan `banked`, `open`, `for_joe` keys if present); harness/battleplan/notes/BP3-CRUX_verdicts.md; harness/battleplan/notes/BP3_TIDY.md. Token-saver: `python -c` to load each receipt and print only its ruling arrays; grep the verdicts for 'ruling'. Shape reference: harness/notes/CTO_RULINGS_01.md (read its first 40 lines only). Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+    "tier": "mechanical"
+  },
+  {
+    "id": "BP4-SPATIAL",
+    "name": "Mile 2: implement the three read-only spatial query tools on the fixture component (D3.3/D3.4) - unregistered, tested, timed; no authoring (re-homed from the held BP3-SPATIAL; armed by Joe's enumerated 'go batch')",
+    "state": "ready",
+    "receipt": "BP4-SPATIAL.json",
+    "branch": "bp4/spatial",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp4-spatial",
+    "prompt": "harness/battleplan/prompts/BP4-SPATIAL.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "python/synapse/spatial/",
+      "tests/test_spatial_lane.py",
+      "docs/reviews/bp4-spatial-lane-probes-*.md"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: v0.3 sec.3.4 tools; sec.3.7 D3.3/D3.4; sec.5 Mile 2; rule D-1; capsule 2026-09-03 EOD open item 3 (SPATIAL flip). Tier: reasoning. Self-cap: 30 turns (progress every 5). Supersedes BP3-SPATIAL (held in bp3.live.json; its deps PROBE + STUBS are merged on master). Inputs on master: PROBE's b6_wl_component.usdc + stdout under harness/notes/h22wl/bp3_probes/ (numbers B-3 bbox, S-2 dominant bin, S-3 count), STUBS' docs/intake/world_manifest.schema.json + example, BP3_RECON.md spatial_helpers. BP3 truth: the fixture collider is 46,993 tris (not the blueprint's 200k) - the timing predicate is on the collider as it is. Rule D-1: tools stay unregistered (no mcp_server import, or behind SYNAPSE_SPATIAL_LANE=1 defaulting off) because the lane is ratified:false. D-DEP-03: use pxr or hou to match RECON's spatial_helpers finding; say which. Environment truths (capsule 2026-09-03, demonstrated): five hythons are installed and SYNAPSE_HYTHON must be pinned to 22.0.400 (22.0.429 fails the hytest usability gate); the hython path and the pref dir are recorded in harness/battleplan/notes/BP3_RECON.md T2 - read them, never re-derive; H22 prefs live at C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - set HOUDINI_USER_PREF_DIR explicitly; long hython runs: detach and poll a log file, never foreground-wait past 4 minutes; a fresh deep-path clone needs `git config core.longpaths true`. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP4-TIDY",
+    "name": "House cleaning, proposal-only: worktree census with prune commands (unusable-only standard; `git branch --merged` now allowed), receipt-order + named-file-commit checks on every BP4 leg, UNKNOWN-discipline grep on BP4 artifacts, log/scratch census - removes nothing; prunes ride in Joe's closing batch",
+    "state": "ready",
+    "receipt": "BP4-TIDY.json",
+    "branch": "bp4/tidy",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp4-tidy",
+    "prompt": "harness/battleplan/prompts/BP4-TIDY.md",
+    "deps": [
+      "BP4-CRUX"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: harness constitution: unusable-only prune standard, commit-before-receipt, named-file commits; capsule 2026-09-03 housekeeping + hardening notes. Tier: mechanical (Haiku 4.5). Read-only under readonly-settings.json (`cd <wt> && git status --short`, never `git -C`). Runs after BP4-CRUX so nothing you read is moving. Capsule 09-03 counted 22 worktrees; `git worktree list` on 09-03 evening showed 18 + main - your census settles it. BP3-TIDY's merged column was UNKNOWN because `git branch` was fenced; `git branch --merged master` is allowed now. Self-cap: 15 turns (progress every 4). EXCLUDED from every table and proposal - another writer's surface, list once under 'not ours' and stop: harness/reach/, harness/flow/, harness/hardening/, .claude/agents/, .claude/workflows/, docs/REACH_BLUEPRINT.md, docs/harness/, the modified harness/battleplan/prompts/BP2-*.md, harness/battleplan/dashboard_bp1.py, harness/rope/STATE.json, harness/memory/runs/. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+    "tier": "mechanical"
+  },
+  {
+    "id": "BP4-USDKNOW",
+    "name": "Scaffold USD composition knowledge for the World Labs component into SYNAPSE's knowledge layer: a LIVRPS decision record for /WL_<world_id>, a machine-readable rule seed tiered by evidence (VERIFIED needs a hython 22.0.400 anchor), and a checker that reddens unanchored promotions - ratified:false, nothing registered, engine untouched",
+    "state": "ready",
+    "receipt": "BP4-USDKNOW.json",
+    "branch": "bp4/usdknow",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp4-usdknow",
+    "prompt": "harness/battleplan/prompts/BP4-USDKNOW.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "docs/reviews/bp4-usd-composition-worldlabs.md",
+      "harness/bench/corpus/usd/",
+      "harness/probes/bp4_usd_composition_probes.py",
+      "harness/notes/h22wl/bp4_usdknow/",
+      "harness/battleplan/notes/bp4_usdknow_check.py"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: Joe 2026-09-03: scaffold USD composition knowledge where needed (solaris-usd-composition); blueprint v0.3 sec.2 substrate split, sec.4 component topology; rule D-1. Tier: reasoning. Self-cap: 30 turns (progress every 5). Vocabulary/referee: harness/battleplan/notes/skills/solaris-usd-composition.md + harness/battleplan/notes/skills/composition-deep-dive.md (shipped skill text; read the CTO note at the top of the deep-dive - one of its examples is wrong and left visible so you verify, not recite). Truth: pxr under hython 22.0.400. Continue from the accepted result: BP3-CORPUS's proposal + checker pattern (docs/reviews/bp3-h22-promotion-proposal.md, harness/battleplan/notes/bp3_promotion_check.py); BP3_RECON.md's path table names the LOP-knowledge home (verified_lop_solaris_knowledge_*.json) - you write the seed under harness/bench/corpus/usd/ (create if absent) and record RECON's home as the proposed final destination with an unexecuted `git mv` line. Inputs on master: PROBE's b6_wl_component.usdc (built via the SOP-side USD Create Component, 19.8 MB) + stdout under harness/notes/h22wl/bp3_probes/; blueprint sec.2-4 topology. Rule D-1: you PROPOSE (ratified:false); no edit under python/synapse/; no registry. Environment truths (capsule 2026-09-03, demonstrated): five hythons are installed and SYNAPSE_HYTHON must be pinned to 22.0.400 (22.0.429 fails the hytest usability gate); the hython path and the pref dir are recorded in harness/battleplan/notes/BP3_RECON.md T2 - read them, never re-derive; H22 prefs live at C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - set HOUDINI_USER_PREF_DIR explicitly; long hython runs: detach and poll a log file, never foreground-wait past 4 minutes; a fresh deep-path clone needs `git config core.longpaths true`. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+    "tier": "reasoning"
+  }
+]

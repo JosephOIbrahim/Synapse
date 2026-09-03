@@ -1,0 +1,53 @@
+{
+  "id": "BP4-CRUX",
+  "band": "TRUST",
+  "class": "crucible",
+  "tier": "referee",
+  "name": "Adversarial crucible for wave BP4 - six parallel lanes (one per builder), re-runs probes/tests/checkers itself in fresh checkouts, authors its own mutations, builds nothing",
+  "note": "Tier: referee (claude-fable-5-1 via rails; harness/battleplan/runs/2026-09-03/preflight_bp4.json proves the alias resolves; if dispatch falls back to reasoning the ledger row says so). Read-only under harness/readonly-settings.json. Blocked until the six builder receipts exist. One lane per builder, lanes in parallel via agent teams - HOLD YOUR TURN until every lane has reported; then write. A BROKEN verdict means that leg does not ride. Verdicts are READ by Joe before any merge word; a green CRUX receipt is a precondition, never a substitute. Self-cap: 40 turns (progress every 5). Order of final writes (capsule 09-03 authoring rule): verdicts + mutations files, then harness/notes/h22/BP4_CRUX_LANDED.flag, then commit, then the receipt as the last write - nothing after the receipt. Environment truths (capsule 2026-09-03, demonstrated): five hythons are installed and SYNAPSE_HYTHON must be pinned to 22.0.400 (22.0.429 fails the hytest usability gate); the hython path and the pref dir are recorded in harness/battleplan/notes/BP3_RECON.md T2 - read them, never re-derive; H22 prefs live at C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - set HOUDINI_USER_PREF_DIR explicitly; long hython runs: detach and poll a log file, never foreground-wait past 4 minutes; a fresh deep-path clone needs `git config core.longpaths true`. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+  "targets": [
+    "T1) For each builder receipt: re-run every acceptance predicate independently in a fresh checkout of the leg branch; verdict rows pass|fail|UNKNOWN with your own anchors, never the builder's. gui_required predicates are UNKNOWN to you - say so.",
+    "T2) INTAKE lane: recompute SHA256 + bytes under docs/intake/src/ vs MANIFEST.md; the blueprint diff is one header hunk; mutations: alter a hash cell; add a line outside the header - each must redden your check.",
+    "T3) RULINGS lane: recount ruling entries across the seven receipts + verdicts; grep every claim cell verbatim; every ruling cell PENDING; mutations: change one claim word; fill one ruling - each must redden.",
+    "T4) B7FIX lane: re-run `hython ... --only B-7` yourself (own out dir, pinned hython, pref dir), recompute EXR stats, read every hunk of the probe-script diff, confirm the review doc's BP3 rows are byte-identical to master; mutations: drop the camera assignment - the re-run must go black again; touch a non-B-7 block - the hunk audit reddens.",
+    "T5) SPATIAL lane: run tests/test_spatial_lane.py + timings on the fixture yourself; grep registries for default-on registration; run the tools on the second stage; mutations: flip a tolerance; register the tool by default - each must redden.",
+    "T6) PANELFONT lane: grep the branch for hardcoded typography outside the token module; run panel tests + test_panel_typography + the 5-scale stylesheet check; mutations: re-introduce a px size; set a token below the floor; add a QWidget subclass - each must redden. GUI rows UNKNOWN.",
+    "T7) USDKNOW lane: re-run bp4_usd_composition_probes.py (own out dir) and diff arcs/winners; run bp4_usdknow_check.py then mutate (strip anchor; promote PROPOSED; change arc on VERIFIED) - each must exit 1; `git diff master..HEAD -- python/synapse/` empty.",
+    "T8) Verdict per leg: SOUND | SOUND-WITH-NITS | BROKEN with chain_broken_at named. Write harness/battleplan/notes/BP4-CRUX_verdicts.md and BP4-CRUX_mutations.json, post each verdict on the bus to *, write harness/notes/h22/BP4_CRUX_LANDED.flag, commit, then the receipt."
+  ],
+  "touches": [],
+  "readonly": true,
+  "deps": [
+    "BP4-INTAKE",
+    "BP4-RULINGS",
+    "BP4-B7FIX",
+    "BP4-SPATIAL",
+    "BP4-PANELFONT",
+    "BP4-USDKNOW"
+  ],
+  "crucible_criteria": [
+    "the crucible trusts no builder's proved_it_bites - it authors its own mutations",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND",
+    "the crucible flips no contract feature and edits no product file"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "v0.3 rule D-1 two keys; docs/BATTLEPLAN.md sec.12 R-5/R-6 crucible precedent; capsule 2026-09-03 authoring rule (nothing after the receipt)"
+  },
+  "acceptance": [
+    {
+      "predicate": "one verdict per builder leg (six), each with independently re-run acceptance rows and the crucible's own anchors",
+      "evidence": "receipt"
+    },
+    {
+      "predicate": ">= 2 self-authored mutations per builder leg, each named with the check it reddens (BP4-CRUX_mutations.json)",
+      "evidence": "test"
+    },
+    {
+      "predicate": "B-7, the spatial tests, and the USD composition probes re-run by the crucible with its own artifacts, statuses diffed against the builders'",
+      "evidence": "probe"
+    }
+  ]
+}

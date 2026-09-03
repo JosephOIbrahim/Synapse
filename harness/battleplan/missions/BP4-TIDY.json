@@ -1,0 +1,44 @@
+{
+  "id": "BP4-TIDY",
+  "band": "TRUST",
+  "class": "tidy",
+  "tier": "mechanical",
+  "name": "House cleaning, proposal-only: worktree census with prune commands (unusable-only standard; `git branch --merged` now allowed), receipt-order + named-file-commit checks on every BP4 leg, UNKNOWN-discipline grep on BP4 artifacts, log/scratch census - removes nothing; prunes ride in Joe's closing batch",
+  "note": "Tier: mechanical (Haiku 4.5). Read-only under readonly-settings.json (`cd <wt> && git status --short`, never `git -C`). Runs after BP4-CRUX so nothing you read is moving. Capsule 09-03 counted 22 worktrees; `git worktree list` on 09-03 evening showed 18 + main - your census settles it. BP3-TIDY's merged column was UNKNOWN because `git branch` was fenced; `git branch --merged master` is allowed now. Self-cap: 15 turns (progress every 4). EXCLUDED from every table and proposal - another writer's surface, list once under 'not ours' and stop: harness/reach/, harness/flow/, harness/hardening/, .claude/agents/, .claude/workflows/, docs/REACH_BLUEPRINT.md, docs/harness/, the modified harness/battleplan/prompts/BP2-*.md, harness/battleplan/dashboard_bp1.py, harness/rope/STATE.json, harness/memory/runs/. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+  "targets": [
+    "T1) Worktree census: for every row of `git worktree list` - path, branch, HEAD, merged into master (`git branch --merged master` contains it: yes/no), dirty count, usable (dir exists, HEAD resolves), proposed action + exact `git worktree remove <path>` / `git branch -d <branch>` ONLY when merged AND clean; otherwise 'keep' + reason. bp2/nits is BROKEN-carried: keep, say so.",
+    "T2) Receipt order per BP4 leg branch: the receipt commit is the last commit and every product file's commit precedes it; no `git add -A` footprint (branch diff vs master contains only the leg's touches + receipt); list violations with shas.",
+    "T3) UNKNOWN discipline: grep BP4 review docs, audit docs, the rule seed and receipts for numeric zeros or 'pass' on rows whose status is BLOCKED, NOT_RUN, gui_required or UNKNOWN; list hits file:line.",
+    "T4) Log/scratch census: harness/notes/h22/*.err *.pid *.log from bp1/bp2/bp3 (bytes, mtime), %TEMP%\\orch_BP4-*.ps1 count, docs/ root *.txt scratch family - ONE proposed Remove-Item / git mv list; touch nothing.",
+    "T5) Write harness/battleplan/notes/BP4_TIDY.md with the four tables; post one bus finding with the path; commit it; then the receipt."
+  ],
+  "touches": [],
+  "readonly": true,
+  "deps": [
+    "BP4-CRUX"
+  ],
+  "crucible_criteria": [
+    "every proposed prune row carries the merged/clean/usable evidence triple with the command that produced it",
+    "the leg's branch diff vs master contains only BP4_TIDY.md and its receipt",
+    "every verdict row carries the crucible's own anchor"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "harness constitution: unusable-only prune standard, commit-before-receipt, named-file commits; capsule 2026-09-03 housekeeping + hardening notes"
+  },
+  "acceptance": [
+    {
+      "predicate": "census row count equals `git worktree list` row count; each row has the merged/clean/usable triple and a command or a keep reason",
+      "evidence": "check"
+    },
+    {
+      "predicate": "receipt-order row per BP4 leg with shas",
+      "evidence": "check"
+    },
+    {
+      "predicate": "no file removed or moved by this leg (branch diff = BP4_TIDY.md + receipt only)",
+      "evidence": "check"
+    }
+  ]
+}

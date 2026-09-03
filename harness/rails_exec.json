@@ -14,8 +14,8 @@
     },
     "referee": {
       "engine": "claude",
-      "model": "claude-fable-5",
-      "why": "BP2-METER T2: the referee/adjudication tier (Fable 5). A LOOKUP ONLY - orchestrate.ps1 resolves a leg's tier=referee to this model via `rails.py resolve referee`; nothing else decides a model. If the CLI alias cannot be honoured at dispatch (preflight runs/2026-09-01/preflight.json proved claude-fable-5 resolves), the orchestrator falls back to $manifest.model (reasoning) and the ledger row records the fallback."
+      "model": "claude-fable-5-1",
+      "why": "BP4 2026-09-03: bumped claude-fable-5 -> claude-fable-5-1 on Joe's word (Fable 5.1 for the referee seat); harness/battleplan/runs/2026-09-03/preflight_bp4.json proves the alias resolves or records the fallback. BP2-METER T2: the referee/adjudication tier (Fable 5). A LOOKUP ONLY - orchestrate.ps1 resolves a leg's tier=referee to this model via `rails.py resolve referee`; nothing else decides a model. If the CLI alias cannot be honoured at dispatch (preflight runs/2026-09-01/preflight.json proved claude-fable-5 resolves), the orchestrator falls back to $manifest.model (reasoning) and the ledger row records the fallback."
     }
   },
   "engines": {

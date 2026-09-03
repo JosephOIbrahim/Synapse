@@ -1,0 +1,53 @@
+{
+  "id": "BP4-USDKNOW",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "reasoning",
+  "name": "Scaffold USD composition knowledge for the World Labs component into SYNAPSE's knowledge layer: a LIVRPS decision record for /WL_<world_id>, a machine-readable rule seed tiered by evidence (VERIFIED needs a hython 22.0.400 anchor), and a checker that reddens unanchored promotions - ratified:false, nothing registered, engine untouched",
+  "note": "Tier: reasoning. Self-cap: 30 turns (progress every 5). Vocabulary/referee: harness/battleplan/notes/skills/solaris-usd-composition.md + harness/battleplan/notes/skills/composition-deep-dive.md (shipped skill text; read the CTO note at the top of the deep-dive - one of its examples is wrong and left visible so you verify, not recite). Truth: pxr under hython 22.0.400. Continue from the accepted result: BP3-CORPUS's proposal + checker pattern (docs/reviews/bp3-h22-promotion-proposal.md, harness/battleplan/notes/bp3_promotion_check.py); BP3_RECON.md's path table names the LOP-knowledge home (verified_lop_solaris_knowledge_*.json) - you write the seed under harness/bench/corpus/usd/ (create if absent) and record RECON's home as the proposed final destination with an unexecuted `git mv` line. Inputs on master: PROBE's b6_wl_component.usdc (built via the SOP-side USD Create Component, 19.8 MB) + stdout under harness/notes/h22wl/bp3_probes/; blueprint sec.2-4 topology. Rule D-1: you PROPOSE (ratified:false); no edit under python/synapse/; no registry. Environment truths (capsule 2026-09-03, demonstrated): five hythons are installed and SYNAPSE_HYTHON must be pinned to 22.0.400 (22.0.429 fails the hytest usability gate); the hython path and the pref dir are recorded in harness/battleplan/notes/BP3_RECON.md T2 - read them, never re-derive; H22 prefs live at C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - set HOUDINI_USER_PREF_DIR explicitly; long hython runs: detach and poll a log file, never foreground-wait past 4 minutes; a fresh deep-path clone needs `git config core.longpaths true`. Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; use `cd <path> && git status --short`, never `git -C` (unmatched by the allow patterns, the command would stall). Commit product files BEFORE the receipt; the receipt is your final write.",
+  "targets": [
+    "T1) Decision record docs/reviews/bp4-usd-composition-worldlabs.md: for each choice in blueprint sec.2 + sec.4 (payload for splat and collider; purpose render/proxy; variantSet splatTier full|low; variantSet physics none|collision; kind=component; customData:worldlabs provenance; instanceable yes/no; where the metric/ground/chirality transforms live in the layer stack) - the arc chosen, the LIVRPS reason (why not each neighbour arc), the failure it prevents (viewport re-cook, double transform, payload unpacked in memory), the evidence tier + anchor.",
+    "T2) Rule seed harness/bench/corpus/usd/usd_composition_worldlabs_<build>.json = {build, generated_at, source_doc, ratified: false, rows:[{id, topic, rule, arc, why, anchor, tier}]}, tier in VERIFIED-RUNTIME | FIXTURE-VERIFIED | DOC-STATED | PROPOSED: VERIFIED-RUNTIME only where a probe stdout line proves it on 22.0.400; FIXTURE-VERIFIED where the B-6 usdc proves it (PrimCompositionQuery / GetPayloads / purpose attr / variant sets on the actual file); DOC-STATED for the skill text; PROPOSED otherwise.",
+    "T3) Probe harness/probes/bp4_usd_composition_probes.py (hython, detached + polled; stdout verbatim to harness/notes/h22wl/bp4_usdknow/stdout.txt): open b6_wl_component.usdc; per prim: composition arcs (PrimCompositionQuery), purpose, variant sets + selections, kind, customData keys; payload Unload/Load round trip with prim counts before/after; a synthetic tiny stage demonstrating LIVRPS (one attribute with local, inherit, variant, reference, payload, specialize opinions - print the winner per pair, which settles the deep-dive's disputed Specialize line). Every VERIFIED row anchors to stdout.txt:line.",
+    "T4) Checker harness/battleplan/notes/bp4_usdknow_check.py (plain Python, no deps): exit 1 if any VERIFIED-RUNTIME / FIXTURE-VERIFIED row's anchor does not grep in the named stdout; run it, exit code in the receipt. Post a bus finding with the seed path + row counts per tier, commit the named files, then the receipt."
+  ],
+  "touches": [
+    "docs/reviews/bp4-usd-composition-worldlabs.md",
+    "harness/bench/corpus/usd/",
+    "harness/probes/bp4_usd_composition_probes.py",
+    "harness/notes/h22wl/bp4_usdknow/",
+    "harness/battleplan/notes/bp4_usdknow_check.py"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "the crucible re-runs bp4_usd_composition_probes.py in a fresh checkout with its own out dir and diffs the printed arcs/winners against the builder's",
+    "the crucible runs bp4_usdknow_check.py, then mutates: strip an anchor; promote a PROPOSED row to VERIFIED-RUNTIME; change the arc on a VERIFIED row - each must exit 1",
+    "`git diff master..HEAD -- python/synapse/` is empty; the seed carries ratified:false",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "Joe 2026-09-03: scaffold USD composition knowledge where needed (solaris-usd-composition); blueprint v0.3 sec.2 substrate split, sec.4 component topology; rule D-1"
+  },
+  "acceptance": [
+    {
+      "predicate": "decision record covers every sec.2/sec.4 choice with arc + LIVRPS reason + tier + anchor",
+      "evidence": "check"
+    },
+    {
+      "predicate": "seed JSON parses; every VERIFIED-RUNTIME / FIXTURE-VERIFIED anchor greps; bp4_usdknow_check.py exits 0 on the committed seed",
+      "evidence": "test"
+    },
+    {
+      "predicate": "probe stdout has the per-prim arc listing for b6_wl_component.usdc, the payload round trip counts, and the LIVRPS winner table",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "no edit under python/synapse/; ratified:false present in the seed",
+      "evidence": "check"
+    }
+  ]
+}

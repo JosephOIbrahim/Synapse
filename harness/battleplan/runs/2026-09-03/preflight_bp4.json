@@ -1,0 +1,49 @@
+{
+  "run": "bp4-preflight",
+  "date": "2026-09-03",
+  "claude_code_version": "2.1.259 (Claude Code)",
+  "checks": [
+    {
+      "tier": "referee",
+      "model": "claude-fable-5-1",
+      "effort": "max",
+      "check": "claude --model claude-fable-5-1 --effort max -p \"Reply with exactly the word: ok\"",
+      "resolved": true,
+      "reply_observed": true,
+      "reply_head": "ok",
+      "exit_code": 0,
+      "stderr_head": "Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.",
+      "wall_ms": 13095
+    },
+    {
+      "tier": "reasoning",
+      "model": "claude-opus-4-8",
+      "effort": "max",
+      "check": "claude --model claude-opus-4-8 --effort max -p \"Reply with exactly the word: ok\"",
+      "resolved": true,
+      "reply_observed": true,
+      "reply_head": "ok",
+      "exit_code": 0,
+      "stderr_head": "Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.",
+      "wall_ms": 11860
+    },
+    {
+      "tier": "mechanical",
+      "model": "claude-haiku-4-5-20251001",
+      "effort": "max",
+      "check": "claude --model claude-haiku-4-5-20251001 --effort max -p \"Reply with exactly the word: ok\"",
+      "resolved": true,
+      "reply_observed": true,
+      "reply_head": "ok",
+      "exit_code": 0,
+      "stderr_head": "Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.",
+      "wall_ms": 13286
+    }
+  ],
+  "effort_levels_in_help": true,
+  "max_turns_flag_present": false,
+  "unmeasured": {
+    "tokens_per_ping": "UNKNOWN"
+  },
+  "generated_by": "Fable 5.1 CTO seat, DC session 2026-09-03"
+}
