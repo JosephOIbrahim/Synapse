@@ -1,0 +1,444 @@
+
+==============================================================================
+P-0  Build pin
+==============================================================================
+Houdini: 22.0.400
+USD: (0, 26, 5)
+MaterialX: 1.39.5
+
+==============================================================================
+P-1  Solaris node types cited by the talk (Lop category)
+==============================================================================
+  paintinstances               True
+  scatterinstances             True
+  pointinstancer               True
+  copytopoints                 True
+  edit                         True
+  karmablockerlightfilter      True
+  karmarendersettings          True
+  usdrender_rop                True
+  renderpass                   True
+  imagefilter                  True
+  texturemateriallibrary       True
+  apexanimate                  True
+  cache                        True
+  karmafogbox                  True
+  materiallibrary              True
+  light::2.0                   True
+
+==============================================================================
+P-2  Label search for V0 LOP names
+==============================================================================
+  copnet_filterlist                        | COP Image Filter List
+  imagefilter                              | Image Filter
+  karmablockerlightfilter                  | Karma Blocker Light Filter
+  renderpass                               | Render Pass
+  scatterinstances                         | Scatter Instances
+  texturemateriallibrary                   | Texture Material Library
+
+==============================================================================
+P-3  SOP-side component building: label search (Sop category)
+==============================================================================
+  usdcreatecomponent                       | USD Create Component
+  usdcreateproxygeometry                   | USD Create Proxy Geometry
+
+==============================================================================
+P-4  Equiangular MIS toggle on light::2.0 (KAR-12)
+==============================================================================
+
+==============================================================================
+P-5  Scatter Instances parameter surface (labels <-> names)
+==============================================================================
+primpath                             | Primitive Path
+executionmode                        | Execution Mode
+upaxis                               | Up Axis
+enablecamera                         | Enable Camera
+camerapath                           | Camera Path
+sepparm                              | 
+[Source Geometry]
+  scattertargetgeometry                | Prim Pattern
+  scattertargettype                    | Geometry Type
+  scattertargetmotion                  | Animation (Beta)
+  sepparm9                             | 
+  [Input Primvars]
+    scattertargetrestprimvar             | Rest Primvar
+    [Texture Coordinates]
+      scattertargettexcoordsrc             | TexCoord Source
+      scattertargettexcoordprimvar         | TexCoord Primvar
+      scattertargettexcoordcamscale        | Scale
+      scattertargettexcoordcamoffset       | Offset
+      scattertargettexcoordcamangle        | Angle
+  sepparm2                             | 
+sepparm10                            | 
+[Scattering]
+  scattermethod                        | Point Count Method
+  [Number of Instances]
+    scattercount                         | Scatter Count
+    enablescattercountmap                | Label
+    scattercountmap                      | Texture Map
+    enablescattercountprimvar            | Label
+    scattercountprimvar                  | Primvar
+    sepparm3                             | 
+  [Instance Density]
+    scatterdensity                       | Density
+    enablescatterdensitymap              | Label
+    scatterdensitymap                    | Texture Map
+    enablescatterdensityprimvar          | Label
+    scatterdensityprimvar                | Primvar
+    scatterdensitytexturespace           | Scatter in Texture Space
+    sepparm4                             | 
+  [Instance per Face]
+    enablescatterfacesmap                | Label
+    scatterfacesmap                      | Texture Map
+    enablescatterfacesprimvar            | Label
+    scatterfacesprimvar                  | Primvar
+    sepparm11                            | 
+  useemergencylimit                    | Use Max Points
+  emergencylimit                       | Max Point Limit
+  relaxiterations                      | Relax Iterations
+  scatterseed                          | Seed
+  [Masks]
+    enabledirection                      | Calculate Directional Mask
+    [Up Axis Direction]
+      maxangle                             | Max Angle
+      directionsharpness                   | Sharpness
+      reverseangle                         | Reverse Direction
+      castshadows                          | Cast Shadows
+      invertdirectionmask                  | Invert
+    enableao                             | Calculate Ambient Occlusion
+    [Ambient Occlusion]
+      aomaxraydist                         | Maximum Ray Distance
+      aoinputmin                           | Input Min
+      aoinputmax                           | Input Max
+      invertao                             | Invert
+    enablecameramask                     | Enable Camera Mask
+    [Camera]
+      cameramaskpadding                    | Frustum Padding
+      enablecameramasknear                 | enablecameramasknearl
+      cameramasknear                       | Override Near Plane
+      enablecameramaskfar                  | enablecameramaskfar
+      cameramaskfar                        | Override Far Plane
+      invertcameramask                     | Invert
+    enablepointsmask                     | Enable Points Mask
+    [PointInstancers]
+      pointsmaskprims                      | Prim Pattern
+      pointsmaskradius                     | Radius
+      pointsmaskfalloff                    | Falloff
+      pointsmaskuseattrib                  | Use Widths/Radius Attribute
+      invertpointsmask                     | Invert
+    enableobjectsmask                    | Enable Objects Mask
+    [Meshes]
+      objectsmaskprims                     | Prim Pattern
+      objectsmaskoffset                    | Offset
+      objectsmaskfalloff                   | Falloff
+      objectsmaskbbox                      | Bounding Box Only
+      invertobjectsmask                    | Invert
+  sepparm5                             | 
+[Transforms]
+  [Orient to Surface]
+    orient                               | Surface Blend
+    orientvariation                      | Blend Variation
+    orientspreadangle                    | Spread Angle
+  [Spin]
+    enabledirectionprimvar               | Label
+    directionprimvar                     | Direction Primvar
+    spin                                 | Spin
+    spinvariation                        | Variation
+    spinincrements                       | Increments
+    enablespinmap                        | Enable Spin Map
+    spinmap                              | Spin Map
+    [Facing Direction]
+      enabledirectionmap                   | Label
+      directionmap                         | Direction Map
+  [Scale]
+    scalefromscatter                     | Use Scale from Scatter
+    scaleuniform                         | Scale
+    scalevariation                       | Variation
+    enablescalemap                       | Enable Scale Map
+    scalemap                             | Texture Map
+  [Position]
+    peak                                 | Peak Offset
+    peakvariation                        | Peak Variation
+    enablepeakmap                        | Enable Peak Map
+    peakmap                              | Texture Map
+  alignmentseed                        | Seed
+  sepparm6                             | 
+[Prototypes]
+  addprototypesfromsecondinput         | Add Prototypes from Second Input
+  [Copy Prototypes from Second Input]
+    [Source]
+      protouseroot                         | Use Entire Stage as Only Prototype
+      protopattern                         | Primitives
+      handlemissingprototypes              | Handle Missing Prototypes
+    [Destination]
+      hideprotosourceprims                 | Make Prototype Source Primitives Invisible
+      protodestrootprim                    | Root Prim
+      protorootkind                        | Root Prim Kind
+      protoareadestprim                    | Name
+      protoreftype                         | Reference Type
+      makeinstanceable                     | Make Prototype Instanceable
+  sepparm7                             | 
+  protogroupmethod                     | Method
+  protoresetweights                    | Reset All Weights
+  protogroupmap                        | Texture Map
+  protogroupprimvar                    | Primvar
+  protoseed                            | Seed
+  sepparm8                             | 
+  [Prototype Groups]
+    [Prototype Group #]
+      protogroupprims#                     | Prim Pattern
+      protogroupweight#                    | Weight
+      protogroupid#                        | Group ID
+      protogroupstart#                     | Group Start
+      protogroupcount#                     | Group Count
+    sepparmprotogroup#                   | 
+[Shading]
+  assignmaterial                       | Assign Material
+  [Bind Material]
+    mtlpath                              | Material Path
+    mtlbindpurpose                       | Purpose
+    mtlbindstrength                      | Strength
+  [Random Primvars]
+    primvarseed                          | Seed
+    [Random Primvars]
+      enable#                              | Enable
+      name#                                | Name
+      type#                                | Type
+      randf#                               | Float Min/Max
+      randi#                               | Int Min/Max
+      randr#                               | Red Min/Max
+      randg#                               | Green Min/Max
+      randb#                               | Blue Min/Max
+      randhue#                             | Hue Min/Max
+      randsat#                             | Saturation Min/Max
+      randval#                             | Value Min/Max
+      randx#                               | X Min/Max
+      randy#                               | Y Min/Max
+      randz#                               | Z Min/Max
+      normalize#                           | Normalize
+
+==============================================================================
+P-6  Image filter prim type + husk:orderedImageFilters targets
+==============================================================================
+Traceback (most recent call last):
+  File "C:\Users\User\SYNAPSE\.claude\worktrees\bp3-probe\harness\probes\synapse_blueprint_probes.py", line 32, in run
+    r = fn(ctx)
+  File "C:\Users\User\SYNAPSE\.claude\worktrees\bp3-probe\harness\probes\synapse_blueprint_probes.py", line 175, in p6
+    for prim in n.stage().Traverse():
+                ^^^^^^^
+AttributeError: 'OpNode' object has no attribute 'stage'
+[P-6] BLOCKED: AttributeError("'OpNode' object has no attribute 'stage'")
+
+==============================================================================
+P-7  Render Pass schema + CLI presence
+==============================================================================
+  Pass defined: True | renderSource rel: True
+  shell check (run manually):  husk --help | findstr -- --pass
+
+==============================================================================
+P-8  Flake VOP + MaterialX version
+==============================================================================
+  mtlxflake3d: True
+
+==============================================================================
+P-9  Scatter execution / animation menus (dossier sec.5 Q2)
+==============================================================================
+  executionmode (Execution Mode): items=('0', '1') labels=('Deferred', 'Immediate')
+  scattertargetmotion (Animation (Beta)): items=('0', '1', '2') labels=('Static', 'Rigid Transforms', 'Deforming Transforms')
+
+==============================================================================
+B-1  Fixture PLY via file SOP: attribute schema + counts
+==============================================================================
+  points: 500000 prims: 0
+  pt   rot_1            attribData.Float size=1
+  pt   rot_2            attribData.Float size=1
+  pt   rot_3            attribData.Float size=1
+  pt   opacity          attribData.Float size=1
+  pt   N                attribData.Float size=3
+  pt   P                attribData.Float size=3
+  pt   f_dc_0           attribData.Float size=1
+  pt   scale_0          attribData.Float size=1
+  pt   f_dc_1           attribData.Float size=1
+  pt   f_dc_2           attribData.Float size=1
+  pt   scale_1          attribData.Float size=1
+  pt   scale_2          attribData.Float size=1
+  pt   rot_0            attribData.Float size=1
+  sample P: [-1.25708, -1.6394, -0.883789] {'rot_1': 0.49803921580314636, 'rot_2': 0.10588235408067703, 'rot_3': 0.6941176652908325, 'opacity': -4.840242385864258, 'f_dc_0': 0.5620915293693542, 'scale_0': -5.0625, 'scale_1': -4.625, 'scale_2': -4.6875, 'rot_0': 0.5088679194450378}
+  sample P: [0.426514, 0.605469, 0.894287] {'rot_1': 0.40392157435417175, 'rot_2': 0.772549033164978, 'rot_3': 0.46666666865348816, 'opacity': 0.6755514144897461, 'f_dc_0': -0.9803921580314636, 'scale_0': -6.1875, 'scale_1': -6.625, 'scale_2': -6.375, 'rot_0': 0.14912277460098267}
+  sample P: [-0.366211, 0.599854, 0.63501] {'rot_1': 0.6549019813537598, 'rot_2': 0.6392157077789307, 'rot_3': 0.04313725605607033, 'opacity': -1.2452157735824585, 'f_dc_0': -1.1372549533843994, 'scale_0': -6.1875, 'scale_1': -5.75, 'scale_2': -6.625, 'rot_0': 0.40080657601356506}
+
+==============================================================================
+B-2  Raw frame: bounds before/after Y,Z flip; where the mass sits
+==============================================================================
+  raw bbox   min [-5.84033, -19.5823, -23.1511] max [4.61206, 0.748291, 27.209]
+  raw y median -0.010498046875 | 5% -6.815673828125 | 95% 0.61767578125
+  WL-EX-05 says +y is DOWN in raw: floor should sit near the 95% end, ceiling/sky near 5%. Check that against the numbers above.
+  after scale(1,-1,-1): corners [-5.84033, 19.5823, 23.1511] [4.61206, -0.748291, -27.209] (min/max swap on Y,Z is expected)
+  handedness: not decidable numerically. Open the fixture in the viewer with the Marble world beside it; a mirrored lane means the flip needs a rotation, not a scale (B-2 manual).
+
+==============================================================================
+B-3  Collider GLB via gltf SOP: counts, bounds, normal classes in raw frame
+==============================================================================
+  gltf-ish SOP types: ['gltf', 'gltf::2.0', 'kinefx::gltfanimimport', 'kinefx::gltfcharacterimport', 'kinefx::gltfskinimport', 'kinefx::rop_gltfcharacteroutput', 'rop_gltf', 'rop_gltf::2.0']
+  prims: 2 points: 2
+  collider raw bbox min [-5.33941, -5.95713, -19.71] max [2.66088, 0.696587, 21.5132]
+  splat/collider size ratio: [1.307, 3.056, 1.222] | center delta: [0.725131, -6.78672, 1.12732]
+  up=raw-up=(0,-1,0) per WL-EX-05: {'floor<35': 0, 'wall>55': 2, 'ceil<35(opposite)': 0, 'other': 0}
+  up=(0,1,0): {'floor<35': 0, 'wall>55': 2, 'ceil<35(opposite)': 0, 'other': 0}
+  normals/centroids computed in 0.37s
+
+==============================================================================
+B-4  Do app exports carry scale/ground metadata? PLY header + GLB JSON extras
+==============================================================================
+  PLY header lines: 21
+    format binary_little_endian 1.0
+  GLB asset: {'version': '2.0', 'generator': 'https://github.com/mikedh/trimesh'}
+  GLB top-level extras: None
+  scene extras: None
+  node: world extras: None scale: None rot: None
+  node: geometry_0 extras: None scale: None rot: None
+  Any metric_scale_factor / ground_plane_offset above? If none: BLU-04 = TRUE (derive in Intent 3).
+
+==============================================================================
+B-5  Splat tooling present on this build (SOP / LOP / COP label search)
+==============================================================================
+  SOP:
+    bakegsplat                               | Bake GSplats
+    labs::delight_gsplats::1.0               | Labs Delight GSplats (Beta)
+    labs::fast_gaussian_curvature::1.0       | Labs Fast Gaussian Curvature
+    labs::normals_from_gsplats::1.0          | Labs Normals from GSplats (Beta)
+    labs::splatter                           | Labs Splatter
+    surfacesplat                             | Surface Splat
+  LOP:
+    labs::relight_gsplats::1.0               | Labs Relight GSplats (Beta)
+    labs::relight_gsplats::1.1               | Labs Relight GSplats (Beta)
+  COP (modern):
+    rasterizegsplats                         | Rasterize GSplats
+
+==============================================================================
+B-6  SOP-side component: splat=render, collider=proxy; walk the stage (kinds, purposes)
+==============================================================================
+  USD Create Component -> usdcreatecomponent | USD Create Proxy Geometry -> usdcreateproxygeometry
+  proxy SOP second input failed: Invalid input.
+  set name = WL_fixture
+  set kind = component
+  stage after SOP Import:
+  /HoudiniLayerInfo                                            HoudiniLayerInfo                    
+  /wl_import                                                   Xform                  component    default
+  /wl_import/WL_fixture                                        Xform                  component    default
+  /wl_import/WL_fixture/geo                                    Scope                               default
+  /wl_import/WL_fixture/geo/proxy                              Scope                               proxy
+  /wl_import/WL_fixture/geo/proxy/world                        Mesh                                proxy
+  /wl_import/WL_fixture/geo/proxy/world/geometry_0             Mesh                                proxy
+  /wl_import/WL_fixture/geo/proxy/autoproxy                    Mesh                                proxy
+  /wl_import/WL_fixture/geo/render                             Scope                               render
+  /wl_import/WL_fixture/geo/render/points_0                    Points                              default
+  exported harness/notes/h22wl/bp3_probes\b6_wl_component.usdc: 19.8 MB  (SH payload evidence for sec.2.5 property 3; production path = payload this file)
+
+==============================================================================
+B-7  Karma XPU render of the component via usdrender_rop (best effort; parm names V0)
+==============================================================================
+  krs parm by label ('engine',) -> engine | menu: ('cpu', 'xpu')
+  krs parm by label ('resolution',) -> res_mode | menu: ('manual', 'autowidth', 'autoheight')
+  rop parm by label ('output picture', 'output') -> outputimage
+  rop parm by label ('renderer',) -> None
+[14:49:03] No render camera defined in renderPassState
+[14:49:03] No render camera defined in renderPassState
+[14:49:03] No render camera defined in renderPassState
+[14:49:03] No render camera defined in renderPassState
+[14:49:03] No render camera defined in renderPassState
+[14:49:03] No render camera defined in renderPassState
+-------- Error Summary --------
+PID: 62376
+Command: husk --make-output-path -o 'harness/notes/h22wl/bp3_probes\\\\b7_wl_fixture.exr' -f 1 --purpose geometry,render --complexity veryhigh --snapshot 300 --mplay-session untitled C:/Users/User/AppData/Local/Temp/houdini_temp/usd_renders/usdrender_61604_115_1/__render__.usd
+-------- 6 total errors --------
+[14:49:03] No render camera defined in renderPassState
+[14:49:03] No render camera defined in renderPassState
+[14:49:03] No render camera defined in renderPassState
+[14:49:03] No render camera defined in renderPassState
+[14:49:03] No render camera defined in renderPassState
+[14:49:03] No render camera defined in renderPassState
+  EXR written: True harness/notes/h22wl/bp3_probes\b7_wl_fixture.exr 189224 bytes
+  Non-zero pixel check: open in MPlay / `iinfo -v` (OIIO) if available. Splat prims may render as nothing if the XPU splat path needs Bake GSplat / Labs LOP output - see B-5.
+
+==============================================================================
+B-8  Chisel round-trip (MANUAL - prints the checklist)
+==============================================================================
+   1. SOP blocking: two walls, one doorway (2.0 m), floor plane, a null named CAMERA at 1.6 m.
+   2. Export GLB (gltf ROP). Record units assumed (m) and axis (Y-up).
+   3. Marble -> Chisel -> Upload a glb or fbx -> position -> Panorama Camera at the CAMERA marker -> prompt -> Generate.
+   4. Note whether the upload arrived Y-up, metric, mirrored. That answers Open Q5.
+   5. Export the generated world (Standard plan) -> run B-1..B-4 on it.
+
+==============================================================================
+B-9  scatterinstances with a purpose=proxy source (Open Q1)
+==============================================================================
+  source parm: scattertargetgeometry | collider prim: None
+  stage after scatter (recipe prim expected; instances expand in Hydra, not on the stage):
+  /HoudiniLayerInfo                                            HoudiniLayerInfo                    
+  /wl_import                                                   Xform                  component    default
+  /wl_import/WL_fixture                                        Xform                  component    default
+  /wl_import/WL_fixture/geo                                    Scope                               default
+  /wl_import/WL_fixture/geo/proxy                              Scope                               proxy
+  /wl_import/WL_fixture/geo/proxy/world                        Mesh                                proxy
+  /wl_import/WL_fixture/geo/proxy/world/geometry_0             Mesh                                proxy
+  /wl_import/WL_fixture/geo/proxy/autoproxy                    Mesh                                proxy
+  /wl_import/WL_fixture/geo/render                             Scope                               render
+  /wl_import/WL_fixture/geo/render/points_0                    Points                              default
+  /wl_scatter                                                  GenerativeProcedural   group        default
+  /wl_scatter/pointinstancer                                   PointInstancer         group        default
+  /wl_scatter/pointinstancer/Prototypes                        Scope                  group        default
+  /wl_scatter/pointinstancer/Prototypes/proto_sphere           Sphere                              default
+  Visual confirmation needed in the Karma viewport (H22S-SI-03: on by default there).
+
+==============================================================================
+S-1  Organization walk: kinds, purposes, extents on the fixture component
+==============================================================================
+  /wl_import                                         kind=component    min=(-5.84033203125, -19.582275390625, -23.151123046875) max=(4.612060546875, 0.748291015625, 27.208984375)
+  /wl_import/WL_fixture                              kind=component    min=(-5.84033203125, -19.582275390625, -23.151123046875) max=(4.612060546875, 0.748291015625, 27.208984375)
+  /wl_import/WL_fixture/geo/proxy/world              kind=-            min=(-5.339412212371826, -5.957127571105957, -19.709951400756836) max=(2.660879135131836, 0.6965872645378113, 21.51317024230957)
+  /wl_import/WL_fixture/geo/proxy/world/geometry_0   kind=-            min=(-5.339412212371826, -5.957127571105957, -19.709951400756836) max=(2.660879135131836, 0.6965872645378113, 21.51317024230957)
+  /wl_import/WL_fixture/geo/proxy/autoproxy          kind=-            min=(-5.339412212371826, -5.957127571105957, -19.709951400756836) max=(2.660879135131836, 0.6965872645378113, 21.51317024230957)
+  /wl_import/WL_fixture/geo/render/points_0          kind=-            min=(-5.84033203125, -19.582275390625, -23.151123046875) max=(4.612060546875, 0.748291015625, 27.208984375)
+
+==============================================================================
+S-2  Surface classes on the collider vs the scatter Up Axis mask threshold
+==============================================================================
+  scatter Max Angle parm (from P-5): {'folder': '/Scattering/Masks/Up Axis Direction', 'name': 'maxangle', 'label': 'Max Angle'}
+  max_angle=20: floor=0 wall=2 ceil=0
+  max_angle=35: floor=0 wall=2 ceil=0
+  max_angle=45: floor=0 wall=2 ceil=0
+  S-2 in 0.00s (budget: < 5 s on a 200k-tri collider)
+
+==============================================================================
+S-3  Frustum membership from a spawn camera (Camera-mask analogue)
+==============================================================================
+  eye=[-1.33927, -0.903413, 0.901609] (floor_y_raw=0.697) fwd=[0, 0, 1] | faces in frustum: 0/2 (0.0%) in 0.00s
+  Compare against scatterinstances Camera mask with the same camera (visual, Karma viewport).
+
+HIP saved: harness/notes/h22wl/bp3_probes\synapse_blueprint_probes.hip
+
+SUMMARY:
+  P-0   RAN      0.66
+  P-1   RAN      0.0
+  P-2   RAN      0.0
+  P-3   RAN      0.0
+  P-4   RAN      0.0
+  P-5   RAN      0.0
+  P-6   BLOCKED  
+  P-7   RAN      0.09
+  P-8   RAN      0.0
+  P-9   RAN      0.01
+  B-1   RAN      0.29
+  B-2   RAN      0.34
+  B-3   RAN      0.39
+  B-4   RAN      0.0
+  B-5   RAN      0.01
+  B-6   RAN      0.35
+  B-7   RAN      4.08
+  B-8   RAN      0.0
+  B-9   RAN      0.23
+  S-1   RAN      0.0
+  S-2   RAN      0.0
+  S-3   RAN      0.0
+  total probe wall time: 6.5s  (sec.6 budget: 1800 s) | component path: sop_component

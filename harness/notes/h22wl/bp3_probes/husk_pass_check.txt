@@ -1,0 +1,6 @@
+                                        command line, the progressive-passes is
+  --progressive-passes arg (=0)         When rendering in bucket mode, number 
+                                        of progressive passes to run before 
+  --list-passes                         List all render pass primitives in the 
+  --pass arg                            Render using a pass defined by the 
+                                        multiple render passes can be specified

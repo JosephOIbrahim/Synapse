@@ -1,0 +1,102 @@
+=== BP3 SUPPLEMENTARY MEASUREMENT ===
+Houdini: 22.0.400
+  packed prims: 0 packed points: 0
+  UNPACKED prims (polys): 0 points: 0
+  UNPACKED bbox min [0, 0, 0] max [0, 0, 0]
+  TRIANGULATED prim count (tris): 0
+  100k-200k window: BELOW
+  UNPACKED normal-class max_angle=20: floor=0 wall=0 ceil=0 other=0 of 0 polys
+  UNPACKED normal-class max_angle=35: floor=0 wall=0 ceil=0 other=0 of 0 polys
+  UNPACKED normal-class max_angle=45: floor=0 wall=0 ceil=0 other=0 of 0 polys
+--- EXR stats ---
+  EXR res 1280 x 720 channels 4 ('R', 'G', 'B', 'A')
+  min: [0.0, 0.0, 0.0, 0.0]
+  max: [0.0, 0.0, 0.0, 1.0]
+  avg: [0.0, 0.0, 0.0, 0.03513612970709801]
+  NON-ZERO pixels: True
+
+=== iinfo -v on EXR (independent) ===
+C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe/harness/notes/h22wl/bp3_probes/b7_wl_fixture.exr:
+C (R, G, B, A)
+    Resolution:          1280 x 720
+    Data Resolution:     1280 x 720
+    Data Window:         (0, 0)-(1279, 719)
+    Display Window:      (0, 0)-(1279, 719)
+    Storage:             scanline
+    Format:              16 bit float
+    Alpha Channel:       3
+    Color Space:         lin_rec709
+    Meta Data:           
+	DateTime (type string):= "2026:09:03 14:49:03"
+	FramesPerSecond (type float):= 24
+	HostComputer (type string):= "DESKTOP-B2MBQRI - AMD Ryzen Threadripper PRO 7965WX 24-Cores"
+	PixelAspectRatio (type float):= 1
+	Software (type string):= "Karma (xpu) 22.0.400"
+	clipFar (type float):= 1e6
+	clipNear (type float):= 1
+	compression (type string):= "zips"
+	frame (type float):= 1
+	husk:command (type string):= "husk --make-output-path -o 'harness/notes/h22wl/bp3_probes\\\\b7_wl_fixture.exr' -f 1 --purpose geometry,render --complexity veryhigh --snapshot 300 --mplay-session untitled C:/Users/User/AppData/Local/Temp/houdini_temp/usd_renders/usdrender_61604_115_1/__render__.usd"
+	husk:render_stats (type string):= "{"__delegate":"BRAY_HdKarmaXPU","active_buckets":null,"aov_buffers":[{"cryptomatte":false,"memory":25805808,"name":"C","source":"lpe:C.*[LO]"}],"aov_raster_memory":{"current":33177600,"peak":33177600},"camera_near_far":[1,1000000],"cpu_architecture":"AMD64: mmx xmmx sse sse2 cmov fpcmov ht sse3 ssse3 sse4.1 sse4.2 avx avx2 avx512skx","cpu_brand":"AMD Ryzen Threadripper PRO 7965WX 24-Cores","deep_image_memory":{"current":0,"peak":0},"dicing_camera":"/cameras/wl_cam","engine":"xpu","filter_errors":null,"geometry_counts":{"curve":{"total":0,"unique":0},"diced_polys":{"total":0,"unique":0},"point":{"total":500000,"unique":500000},"polygon":{"total":0,"unique":0}},"hostname":"DESKTOP-B2MBQRI","karma_version":"karma 22.0.400","light_types":{"cylinder":0,"disk":0,"distant":0,"environment":0,"geometry":0,"line":0,"point":0,"rect":0,"sphere":0},"load_memory":349863936,"load_time":{"cpu":0,"sys":0,"wallclock":0.335699999999999998},"object_counts":{"camera":{"total":1,"unique":1},"curvemesh":{"total":0,"unique":0},"light":{"total":0,"unique":0},"light_tree":{"total":0,"unique":0},"pointmesh":{"total":1,"unique":1},"polygonmesh":{"total":0,"unique":0},"space":{"total":0,"unique":0},"subdivisionmesh":{"total":0,"unique":0},"volume":{"total":0,"unique":0}},"percent_complete":100,"primvar_cache":{"alignedCacheSize":2,"cacheHits":3,"cacheMiss":4,"numericCacheSize":1,"primvars":[{"memory":20000300,"name":"Total","uncompressed":34000528},{"memory":14000136,"name":"real32[3] P","uncompressed":22000200},{"memory":6000072,"name":"real32[3] N","uncompressed":12000144},{"memory":92,"name":"real32 widths","uncompressed":184}],"stringCount":0,"stringMemory":0},"ptex_stats":{"blockReads":0,"fileReopens":0,"filesAccessed":1,"filesOpen":0,"memUsed":1232,"peakFilesOpen":0,"peakMemUsed":0},"rat_disk_cache":{"cache_hits":0,"local_files_created":0,"temp_files_created":0},"rat_stats":{"bytes_read":0,"faults":0,"max_open_files":128,"open_files":0,"peak_open_files":0,"streams_per_file":-1},"ray_batch_efficiency":{},"ray_counts":{"indirect":388282,"light_geometry":0,"occlusion":0,"primary":11059200,"probe":0,"total":11447482},"ray_depths":{"camera":[11059200,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"indirect":[388282,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"light_geometry":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"occlusion":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"probe":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"total":[11447482,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},"ray_depths_percentage":{"camera":[100,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"indirect":[100,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"light_geometry":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"occlusion":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"probe":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"total":[100,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},"renderProgressAnnotation":"1280 x 720\n Optix[idle] EmbreeCPU[idle]","renderStatsAnnotation":"Karma XPU:\nTotal Threads: 48\n\nDevice 0\nType              : Optix\nName              : NVIDIA GeForce RTX 4090\nStatus            : idle\nHostMemTotal      : 11.45 MB\nDeviceMemTotal    : 32.43 MB\n    Geometry      : 32.43 MB\n    Textures      : 0.00 KB\n    Volumes       : 0.00 KB\n    Lights        : 0.00 KB\n    Other         : 0.26 KB\nPeakHostMemTotal  : 11.45 MB\nPeakDeviceMemTotal: 73.24 MB\n    Geometry      : 73.24 MB\n    Textures      : 0.00 KB\n    Volumes       : 0.00 KB\n    Lights        : 0.00 KB\n    Other         : 0.26 KB\nSamples           : 0\nContrib           : 0%\n\nDevice 1\nType              : EmbreeCPU\nName              : Embree CPU device\nStatus            : idle\nThreads Used      : 11\nHostMemTotal      : 47.49 MB\nPeakHostMemTotal  : 63.49 MB\nSamples           : 128\nContrib           : 100%\n\nTotal Lights: 0 (Light Tree Emitters: 0)\n","render_camera":"/cameras/wl_cam","render_settings":{"abortmissingtexture":false,"abortnogpudevice":false,"autoheadlight":false,"autoraybias":true,"background_iprfilter":"","bgoccludeshadow":false,"bucketorder":"Middle","bucketsize":32,"cacheratio":0.25,"cachesize":1000,"colorlimit":20,"colorlimitindirect":20,"colorlimitindlinked":true,"constrainmaxrough":true,"convergence_mode":"Variance","dcm_excludeholdouts":false,"dcm_usehitdist":false,"dicingcamera":"","dicingqualityscale":1,"diffusecomponents":["diffuse"],"disable_lighting":false,"exportcomponents":["diffuse","reflect","coat","refract","volume","sss"],"globalaovmaterial":"","guiding_clearbuffers":false,"guiding_components":["diffuse","volume","sss"],"guiding_deterministic":false,"guiding_enable":false,"guiding_samples":0,"head_ao_distance":9.99999968028569247e+37,"head_ao_samples":1,"head_depthcue_alpha":1,"head_depthcue_color":[0,0,0],"head_depthcue_z":[0,0],"image_blur":true,"imagefilter":"[]","imagemode":"Progressive","ipr_continuous_dicing":false,"ipr_proxy_for_imagefilter":2,"ipr_proxydepth":2,"ipr_reserve_threads":1,"light_sampling_mode":"Light Tree","light_sampling_quality":1,"mtlx_imageblur":0,"mtlx_imagewidth":1,"name":"karma","offscreenquality":0.100000001490116119,"outline_apply":true,"outline_color":[1,0,1],"outline_debug":false,"outline_depthblend":0,"outline_depththreshold":1,"outline_enable":false,"outline_fitmax":1,"outline_fitmin":0,"outline_intensity":1,"outline_linesaovs":false,"outline_mode":false,"outline_primary":true,"outline_primary_samples":4,"outline_primary_stencils":1,"outline_radius":1,"outline_secondary":true,"outline_secondary_samples":4,"outline_secondary_stencils":1,"override_lighting":"Off","overrideobject":"","pathtracedsamples":128,"percentofsamples":100,"pixelfilter":"gauss","pixelfilterscale":1,"pixeloracle":"[\"variance\", {\"minrays\": -1, \"plane\": \"C\", \"variance\": 0.01, \"ociomode\": 0, \"ociodisplay\": \"sRGB - Display\", \"ocioview\": \"\", \"ociocolorspace\": \"default\"}]","progressivepasses":0,"randomseed":705600000,"raybias":0.00100000004749745131,"refractcomponents":["refract"],"rendercamera":"/cameras/camera1","russianroulette_cutoff":2,"samplefilter":"","samplesperpixel":9,"screendoorlimit":4,"ssscomponents":["sss"],"use_background":"Auto","usecacheratio":true,"version":[22,0,400],"volumecomponents":["volume"]},"render_stage":5,"render_stage_label":"Converged","resolution":[1280,720],"shader_calls":{"displacement":0,"emission":0,"light":0,"opacity":0,"surface":0,"volume":0},"shader_nodes":{"cpu_shaders":{"total":0,"unique":0},"largest_shader":0,"nodes":{"total":0,"unique":0},"shader_function_errors":0,"shader_functions":0,"shaders":{"total":0,"unique":0},"usd_preview_shaders":0},"stencil_map":{"count":0,"memory":0},"system_label":"Microsoft Windows 11 Pro for Workstations x64","system_memory":{"current":580026368,"peak":580026368,"total":136910020608},"system_time":{"cpu":6.87000000000000011,"sys":7.5,"totaltime":2.26500000000000012,"wallclock":0.531691000000000025},"threads":48,"timings":{"Dicing":0,"Filtering":0,"Indirect rays":0,"Lighting":0,"Primary rays":0,"SSS samples":0,"Shading":0,"Shadows":0,"Unaccounted":0},"ttfp":0.615580000000000016,"unified_cache":{"memory_limit":1073741824,"memory_used":0,"usage":{}},"username":"User","world_to_camera":[1,0,0,0,0,1,0,0,0,0,-1,0,0,0,0,1],"world_to_ndc":[2.38606545259803804,0,0,0,0,4.24189413795206782,0,0,-0.5,-0.5,-1.00000100000100001,-1,0,0,-1.00000100000100001,0],"world_to_raster":[3054.16377932548858,0,0,0,0,-3054.16377932548903,0,0,-640,-360,-1.00000100000100001,-1,0,0,-1.00000100000100001,0],"world_to_screen":[4.77213090519607608,0,0,0,0,8.48378827590413565,0,0,0,0,-1.00000100000100001,-1,0,0,-1.00000100000100001,0],"xpu_compiles":{"active":1,"active_kernel":0,"active_shader":1,"avg_time":0,"count":0,"count_kernel":0,"count_shader":0,"interrupted":0,"max_time":0},"xpu_device_count":2,"xpu_devices":[{"xpu_device_contrib":0,"xpu_device_error":"","xpu_device_label":"NVIDIA GeForce RTX 4090","xpu_device_memory":{"geometry":34005616,"host":12001208,"other":264,"peak_geometry":76796488,"peak_host":12001296,"peak_other":264,"peak_texture":0,"peak_used":76796752,"peak_volume":0,"texture":0,"used":34005880,"volume":0},"xpu_device_samples":0,"xpu_device_status":"idle","xpu_device_type":"Optix"},{"xpu_device_contrib":100,"xpu_device_error":"","xpu_device_label":"Embree CPU device","xpu_device_memory":{"geometry":0,"host":49796616,"other":0,"peak_geometry":0,"peak_host":66571528,"peak_other":0,"peak_texture":0,"peak_used":0,"peak_volume":0,"texture":0,"used":0,"volume":0},"xpu_device_samples":128,"xpu_device_status":"idle","xpu_device_type":"EmbreeCPU"}],"xpu_timings":{"render_time":0.464288999999553198}}"
+	husk:usd_file (type string):= "C:/Users/User/AppData/Local/Temp/houdini_temp/usd_renders/usdrender_61604_115_1/__render__.usd"
+	husk:usd_file_load_time (type float):= 0.093315
+	husk:usd_file_stats (type string):= "{"assetCount":0,"instancedModelCount":0,"modelCount":1,"primary":{"primCounts":{"activePrimCount":18,"inactivePrimCount":0,"instanceCount":0,"pureOverCount":0,"totalPrimCount":18},"primCountsByType":{"Camera":1,"HoudiniLayerInfo":1,"Mesh":3,"Points":1,"RenderProduct":1,"RenderSettings":1,"RenderVar":1,"Scope":6,"Xform":3}},"prototypeCount":0,"totalInstanceCount":0,"totalPrimCount":18,"usedLayerCount":2}"
+	makemips (type int):= 0
+	oiio:ColorSpace (type string):= "lin_rec709"
+	oiio:subimagename (type string):= "C"
+	oiio:subimages (type int):= 1
+	renderMemory (type double):= 5.80026368e8
+	renderMemory_s (type string):= "553.16 MB"
+	renderTime (type double):= 0.531691
+	renderTime_s (type string):= "0:00:00.53"
+	screenWindowCenter (type v2f):= [0, 0]
+	screenWindowWidth (type float):= 1
+	typeSemantics (type string):= "color"
+	worldToCamera (type m44f):= [
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, -1, 0,
+		0, 0, 0, 1
+	]
+	worldToCamera_d (type m44d):= [
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, -1, 0,
+		0, 0, 0, 1
+	]
+	worldToNDC (type m44f):= [
+		4.772131, 0, 0, 0,
+		0, 8.4837885, 0, 0,
+		0, 0, -1.000001, -1,
+		0, 0, -1.000001, 0
+	]
+	worldToNDC_d (type m44d):= [
+		4.772130905196076, 0, 0, 0,
+		0, 8.483788275904136, 0, 0,
+		0, 0, -1.000001000001, -1,
+		0, 0, -1.000001000001, 0
+	]
+
+==================================================================
+CORRECTION RUN (v2): first hython run above printed 0 geometry
+because it never resolved the gltf::2.0 file parm (name != 'filename'/'file').
+That 0 is a SCRIPT ARTIFACT, not the collider. Authoritative tri count
+from the GLB accessors = 46993 tris (140979 indices/3). v2 confirms via Houdini unpack:
+==================================================================
+=== BP3 SUPPLEMENTARY MEASUREMENT ===
+Houdini: 22.0.400
+  gltf file parm resolved: gltffile
+  packed prims: 2 packed points: 2
+  UNPACKED prims (polys): 46993 points: 24644
+  UNPACKED bbox min [-5.33941, -5.95713, -19.71] max [2.66088, 0.696587, 21.5132]
+  TRIANGULATED prim count (tris): 46993
+  100k-200k window: BELOW
+  UNPACKED normal-class max_angle=20: floor=4919 wall=26900 ceil=350 other=14824 of 46993 polys
+  UNPACKED normal-class max_angle=35: floor=6414 wall=34415 ceil=963 other=5201 of 46993 polys
+  UNPACKED normal-class max_angle=45: floor=7733 wall=37441 ceil=1819 other=0 of 46993 polys
+--- EXR stats ---
+  EXR res 1280 x 720 channels 4 ('R', 'G', 'B', 'A')
+  min: [0.0, 0.0, 0.0, 0.0]
+  max: [0.0, 0.0, 0.0, 1.0]
+  avg: [0.0, 0.0, 0.0, 0.03513612970709801]
+  NON-ZERO pixels: True
