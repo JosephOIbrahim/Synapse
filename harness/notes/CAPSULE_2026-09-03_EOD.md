@@ -40,3 +40,9 @@ BP2-NITS2 (fresh session), METER-DEDUPE / METERLIVE-SOFTCLOSE spawns, UNKNOWN ba
 - Dirty REACH/flow-conductor work on master (pre-existing, uncommitted) - left exactly as found.
 - My malformed bus line for BP3-CRUX release at 17:03:01 (to: posted, raw msg) - append-only, left in place.
 - Dry-run ledger orch_20260903-142231 left open (2 turns, no dispatch) - preflight receipt.
+
+## Addendum 17:40 - merged
+- Joe read BP3-CRUX_verdicts.md (surfaced in chat) and said merge 1-7. Seven --no-ff merges landed in dependency order: 22437d4e recon, 9442e353 stubs, 47ced359 probe, 5708caad corpus, 7020dd6b panel, 819a7eb9 crux, 5edbd5ee tidy. Master = 5edbd5ee.
+- One hitch: an untracked copy of BP3_TIDY.md sat in the main tree (blob-identical to the branch); removed, tidy merged.
+- NOT pushed. NOT tagged. SPATIAL still held. B-7 camera fix + re-run still open. Rulings (22) still unrecorded - merging a ratified:false proposal is not a ruling.
+- Push is the next word; the release stays with the merge-session ritual per the coffee-shop explanation.
