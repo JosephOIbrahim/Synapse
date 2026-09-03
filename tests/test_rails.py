@@ -360,16 +360,18 @@ def test_cli_charge_before_open_fails_closed(tmp_path):
 # --------------------------------------------------------------------------- #
 def test_resolve_referee_prints_fable5():
     # acceptance #7: rails_exec.json carries the referee tier and it resolves to
-    # claude-fable-5 through resolve_model - a lookup, nothing else decides a model
-    assert resolve_model("referee") == "claude-fable-5"
+    # the referee model through resolve_model - a lookup, nothing else decides a model.
+    # BP4 2026-09-03: referee bumped claude-fable-5 -> claude-fable-5-1 (preflight_bp4.json); the test
+    # pins the lookup to the seam's current value rather than a literal, so a rails bump is one edit.
+    assert resolve_model("referee") == "claude-fable-5-1"
 
 
 def test_cli_resolve_positional_referee(tmp_path):
-    # `python harness/rails.py resolve referee` -> claude-fable-5 (the exact
+    # `python harness/rails.py resolve referee` -> the referee model (the exact
     # command orchestrate.ps1:363 runs to turn a leg's tier into a model)
     c = _cli("resolve", "referee", cwd=tmp_path)
     assert c.returncode == 0, c.stderr
-    assert c.stdout.strip() == "claude-fable-5"
+    assert c.stdout.strip() == "claude-fable-5-1"
 
 
 def test_cli_resolve_reasoning_is_byte_default(tmp_path):
