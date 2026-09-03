@@ -363,16 +363,38 @@ def b6(ctx):
     print(f"  exported {out}: {os.path.getsize(out)/1e6:.1f} MB  (SH payload evidence for sec.2.5 property 3; production path = payload this file)")
     return rows
 
-@probe("B-7", "Karma XPU render of the component via usdrender_rop (best effort; parm names V0)")
+@probe("B-7", "Karma XPU render of the component: author camera + light BEFORE render settings, bind the render camera (BP4 B-7 fix)")
 def b7(ctx):
     if 'stage_node' not in ctx: print("  BLOCKED: B-6 did not produce a stage"); return None
     stage_node = hou.node('/stage')
-    krs = stage_node.createNode('karmarendersettings', 'wl_krs'); krs.setInput(0, ctx['stage_node'])
-    cam = stage_node.createNode('camera', 'wl_cam'); cam.setInput(0, krs)
+    # BP4 B-7 fix. BP3's black EXR was a PROBE BUG, not a Karma verdict: the camera was
+    # created AFTER the karmarendersettings and its prim was never bound (KRS.camera
+    # defaulted to /cameras/camera1 != the authored /cameras/wl_cam -> 6x "No render
+    # camera defined"), and no light was authored (husk Total Lights 0 -> black RGB).
+    # Fix: author the camera AND a light BEFORE the render settings, then bind the render
+    # camera relationship to the authored camera prim. Resolution left at the KRS default
+    # (1280x720). Only this block changes. See review §11.3 / mission BP4-B7FIX.
+    cam = stage_node.createNode('camera', 'wl_cam'); cam.setInput(0, ctx['stage_node'])
+    cam_path = cam.parm('primpath').eval() if cam.parm('primpath') else '/cameras/wl_cam'
+    light = None
+    for ltype in ('domelight::3.0', 'domelight', 'distantlight::2.0', 'distantlight'):
+        if hou.nodeType(hou.lopNodeTypeCategory(), ltype) is not None:
+            light = stage_node.createNode(ltype, 'wl_key'); break
+    if light is not None:
+        light.setInput(0, cam); print("  authored light:", light.type().name(), "(before render settings)")
+    else:
+        print("  WARNING: no dome/distant light type resolved; render will be unlit")
+    krs = stage_node.createNode('karmarendersettings', 'wl_krs'); krs.setInput(0, light or cam)
+    kc = krs.parm('camera') or parm_by_label(krs, ('camera',))
+    if kc is not None:
+        try: kc.set(cam_path); print("  render camera bound:", kc.name(), "=", cam_path)
+        except Exception as e: print("   camera bind failed:", e)
+    else:
+        print("  WARNING: no camera parm on KRS; render camera unbound")
     for needles, val in ((('engine',), 'xpu'), (('resolution',), None)):
         p = parm_by_label(krs, needles); print("  krs parm by label", needles, "->", p.name() if p else None, "| menu:", p.menuItems() if p and p.menuItems() else "")
         if p and val and val in (p.menuItems() or []): p.set(val)
-    rop = stage_node.createNode('usdrender_rop', 'wl_render'); rop.setInput(0, cam)
+    rop = stage_node.createNode('usdrender_rop', 'wl_render'); rop.setInput(0, krs)
     out = os.path.join(ctx['out'], 'b7_wl_fixture.exr')
     for needles, val in ((('output picture', 'output'), out), (('renderer',), 'BRAY_HdKarma')):
         p = parm_by_label(rop, needles); print("  rop parm by label", needles, "->", p.name() if p else None)
@@ -382,8 +404,8 @@ def b7(ctx):
     rop.render(frame_range=(1, 1)); time.sleep(1)
     ok = os.path.exists(out) and os.path.getsize(out) > 4096
     print("  EXR written:", ok, out, os.path.getsize(out) if os.path.exists(out) else 0, "bytes")
-    print("  Non-zero pixel check: open in MPlay / `iinfo -v` (OIIO) if available. Splat prims may render as nothing if the XPU splat path needs Bake GSplat / Labs LOP output - see B-5.")
-    return {"exr": out, "exists": ok}
+    print("  Non-zero pixel check: measured externally via oiiotool/iinfo (BP4 T3); the EXR size flag above is NOT a render-success signal.")
+    return {"exr": out, "exists": ok, "camera": cam_path, "light": (light.type().name() if light else None)}
 
 @probe("B-8", "Chisel round-trip (MANUAL - prints the checklist)")
 def b8(ctx):
@@ -471,19 +493,42 @@ def s3(ctx):
     return {"inside": inside, "total": total}
 
 # ----------------------------------------------------------------------------- main
+# --only accepts GROUP letters (P,B,S) or specific probe ids (e.g. "B-7"). A probe id
+# pulls its prerequisite chain (PROBE_DEPS) so it can run standalone; every probe not in
+# the resolved run set is recorded NOT_RUN in probe_results.json (skip != pass).
+PROBE_DEPS = {          # transitive prerequisites, expanded to a closure at run time
+    'B-6': ['P-3', 'B-1', 'B-3'],   # component build needs the SOP-side type search + splat + collider
+    'B-7': ['B-6'],                 # render needs the built component stage
+}
+
+def _resolve_run_set(only, order):
+    tokens = [x.strip().upper() for x in only.split(',') if x.strip()]
+    letters = {t for t in tokens if '-' not in t}
+    ids = {t for t in tokens if '-' in t}
+    run = {fn.pid for fn in order if fn.pid[0] in letters}
+    def _closure(pid):
+        run.add(pid)
+        for dep in PROBE_DEPS.get(pid, []):
+            if dep not in run: _closure(dep)
+    for pid in ids:
+        _closure(pid)
+    return run
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--ply', required=True); ap.add_argument('--glb', required=True); ap.add_argument('--out', required=True)
-    ap.add_argument('--only', default='P,B,S', help="comma list of groups: P,B,S")
+    ap.add_argument('--only', default='P,B,S', help="comma list of GROUPS (P,B,S) or probe ids (e.g. B-7); a probe id pulls its prereq chain, the rest read NOT_RUN")
     ap.add_argument('--save-hip', action='store_true')
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     ctx = {'ply': a.ply, 'glb': a.glb, 'out': a.out}
-    groups = set(x.strip().upper() for x in a.only.split(','))
     order = [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, b1, b2, b3, b4, b5, b6, b7, b8, b9, s1, s2, s3]
+    run_set = _resolve_run_set(a.only, order)
     for fn in order:
-        if fn.pid[0] in groups or fn.pid == "P-0":
+        if fn.pid in run_set or fn.pid == "P-0":
             fn(ctx)
+        else:
+            RESULTS.setdefault(fn.pid, {"status": "NOT_RUN"})
     if a.save_hip:
         hp = os.path.join(a.out, 'synapse_blueprint_probes.hip'); hou.hipFile.save(hp); print("\nHIP saved:", hp)
     with open(os.path.join(a.out, 'probe_results.json'), 'w') as fh:

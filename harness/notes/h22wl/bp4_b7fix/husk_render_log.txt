@@ -1,0 +1,19 @@
+# husk render log -- B-7 re-run (BP4), extracted from stdout.txt + b7_wl_fixture.exr husk:render_stats
+# ---- probe-side (stdout.txt, B-7 block) ----
+authored light: domelight::3.0 (before render settings)
+render camera bound: camera = /cameras/wl_cam
+NO "No render camera defined" errors (BP3 had 6)
+# ---- husk:render_stats (EXR metadata, see exr_info.txt) ----
+render_camera            = /cameras/wl_cam         (BP3: mismatch /cameras/camera1)
+render_settings.rendercamera = /cameras/wl_cam
+light_types.environment  = 1                       (BP3: all light_types 0)
+object_counts.light.total = 1                      (BP3: 0)
+renderStatsAnnotation    : "Total Lights: 1 (Light Tree Emitters: 0)"   (BP3: Total Lights 0)
+geometry_counts.point.total   = 500000
+geometry_counts.polygon.total = 0                  (collider is purpose=proxy -> excluded)
+render_stage_label       = Converged   percent_complete = 100
+ttfp (time-to-first-pixel) = 0.662 s               (< 30 s D2.4 budget)
+resolution               = [1280, 720]             (KRS default, kept)
+# ---- NIT ----
+shader_calls.surface     = 0   -> splat Points lit as neutral geometry; per-point SH-DC (f_dc_*) color NOT shaded
+image is monochrome (RGB equal) -> naive usdrender_rop path renders splat lit-but-uncolored (blueprint Open Q2 / B-5 native path)

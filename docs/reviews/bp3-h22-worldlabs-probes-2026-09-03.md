@@ -195,3 +195,66 @@ None of the above were edited in `harness/probes/synapse_blueprint_probes.py` �
 ## 12. Corroboration harvest (for the human/CTO promotion pass — not ratified here)
 
 Runtime-confirmed on 22.0.400 (evidence = this run): all P-1 cited LOP types present; `usdcreatecomponent`/`usdcreateproxygeometry` (P-3); `UsdRender.Pass` + `husk --pass` (P-7); `mtlxflake3d` (P-8); scatter `executionmode`/Animation menus (P-9); full scatterinstances parm surface incl. `maxangle` (P-5, seed for D1.4); PLY splat schema (B-1); no app-export metric metadata → BLU-04 (B-4); native splat tooling incl. `bakegsplat`/`relight_gsplats`/`rasterizegsplats` (B-5); component splat=render/collider=proxy (B-6). **UNKNOWN-after-probe:** equiangular MIS label on `light::2.0` (P-4 empty); splat XPU beauty path (B-7); scatter-accepts-proxy (B-9); handedness (B-2). Promotion of any claim to VERIFIED-RUNTIME is D-1's, not this leg's.
+
+---
+
+## 13. B-7 re-run (BP4) — camera + light fix; D2.4 / R-1 settled (2026-09-03)
+
+**Leg:** BP4-B7FIX · branch `bp4/b7fix` · wave BP4. **Append-only: §1–§12 above are byte-identical to the BP3 leg.**
+**Trigger:** BP3 capsule open item 2 — the §5 D2.4 black EXR was hypothesised a **probe bug**, not a Karma verdict. This section fixes the bug, re-runs **B-7 only** on the pinned build, and settles D2.4 / R-1 with the new evidence.
+**Build:** 22.0.400 — `stdout.txt:5` `Houdini: 22.0.400`; `HOUDINI_USER_PREF_DIR=C:/Users/User/OneDrive/Documents/houdini22.0`; `SYNAPSE_HYTHON` pinned to the 22.0.400 hython. `run_meta.txt` exit_code=0.
+**Evidence root:** `harness/notes/h22wl/bp4_b7fix/` — `stdout.txt`, `exr_stats.txt`, `exr_info.txt`, `husk_render_log.txt`, `b7_wl_fixture.exr`, `b6_wl_component.usdc`, `probe_results.json`, `run_meta.txt`.
+**Fixtures (re-hashed vs §3 — no drift):** ply `be734a3049ebc995f945d2ffc20696ce3b181d95cd3051a3e06c60d3953beb65`, glb `08e75e0ad55ceea8ba9305bd1845749b741ca4337cda240e5a35253449eb00c9` — both **match §3 exactly** (R-3 baseline holds; not a finding).
+
+### 13.1 The fix (probe defect §11.3)
+
+Minimal diff to `harness/probes/synapse_blueprint_probes.py` — the **B-7 block only**, plus a `--only <probe-id>` flag:
+
+```
+ harness/probes/synapse_blueprint_probes.py | 63 +++++++++++++++++++++++++-----
+ 1 file changed, 54 insertions(+), 9 deletions(-)
+```
+
+- **Camera bound.** BP3 created the camera *after* the KRS and never assigned it: `karmarendersettings.camera` defaulted to `/cameras/camera1` ≠ the authored `/cameras/wl_cam` → 6× "No render camera defined". Fix: author the camera **before** the render settings and set `krs.parm('camera')` to the camera prim path, read live via `cam.parm('primpath').eval()` → `/cameras/wl_cam` (`stdout.txt:71` `render camera bound: camera = /cameras/wl_cam`).
+- **Light authored.** BP3 had no light (husk Total Lights 0 → black RGB). Fix: author `domelight::3.0` before the render settings (`stdout.txt:70` `authored light: domelight::3.0`).
+- **Resolution kept** at the KRS default 1280×720 (unchanged).
+- **`--only` plumbing.** `--only` now accepts a probe id (e.g. `B-7`), which pulls its prerequisite chain `B-7→B-6→{P-3,B-1,B-3}`; every other probe records `NOT_RUN` in `probe_results.json` (skip ≠ pass). Scope: `git diff master..HEAD -- harness/probes/synapse_blueprint_probes.py` touches only the B-7 block + this plumbing.
+
+### 13.2 Run
+
+`hython synapse_blueprint_probes.py --only B-7 --ply <500k.ply> --glb <collider.glb> --out harness/notes/h22wl/bp4_b7fix`
+Ran P-0, P-3, B-1, B-3, B-6, B-7 (component path `sop_component`, **identical to BP3**); 16 probes `NOT_RUN`. Total wall 6.8 s; B-7 5.84 s. Full verbatim: `stdout.txt` (B-7 block at `stdout.txt:68`).
+
+### 13.3 EXR stats — oiiotool 3.0.6.1 `--stats` → `exr_stats.txt`
+
+Command: `oiiotool --stats harness/notes/h22wl/bp4_b7fix/b7_wl_fixture.exr`
+
+| Field | BP3 (§6) | BP4 re-run |
+|---|---|---|
+| dims | 1280×720 RGBA half | 1280×720 RGBA half |
+| Min RGB(A) | 0,0,0,0 | 0,0,0,0 |
+| **Max RGB**(A) | **0,0,0**,1.0 | **0.452881, 0.452881, 0.452881**, 1.0 |
+| **Avg RGB**(A) | **0,0,0**,0.035 | **0.013786, 0.013786, 0.013786**, 0.035123 |
+| bytes | 189,224 | 530,347 |
+
+RGB flipped from **flat 0.0** to **non-zero** (max 0.4529). The alpha coverage (0.035) is **identical** across both runs → the *same* 500k-point geometry rendered; the only change is that BP4 is **lit**. `Constant: No`, 0 NaN/Inf, 921,600 finite px.
+
+### 13.4 husk verdict — `husk_render_log.txt` / `exr_info.txt` (`husk:render_stats`)
+
+- `render_camera = /cameras/wl_cam` (BP3: `/cameras/camera1` mismatch) → camera bound.
+- `light_types.environment = 1`; `object_counts.light.total = 1`; annotation `"Total Lights: 1 (Light Tree Emitters: 0)"` (BP3: 0). **Zero "No render camera defined" errors** (BP3 had 6).
+- `geometry_counts.point.total = 500000`, `polygon.total = 0` (collider `purpose=proxy` excluded from the render purpose).
+- `render_stage_label = Converged`, `percent_complete = 100`, `ttfp = 0.662 s`.
+
+### 13.5 Verdicts
+
+| ID | BP3 | **BP4 verdict** | Anchor |
+|---|---|---|---|
+| **D2.4** — component renders in Karma XPU to a small EXR with **non-zero pixels**, first-pixel <30 s | FAIL (black RGB, probe bug) | **PASS** | non-zero RGB max 0.452881 / avg 0.013786 (`exr_stats.txt`); ttfp 0.662 s < 30 s (`exr_info.txt` `husk:render_stats`); Karma XPU `Converged` (`stdout.txt:68-76`). BP3 black **confirmed a probe bug**, not a Karma verdict. |
+| **R-1** — Karma XPU won't render the splat from a SYNAPSE-authored component | TRIGGERED (empty-EXR signal, cause not isolated) | **CLEAR** | R-1's own signal (empty/black EXR) is **refuted**: the 500k-point splat component renders non-zero RGB in Karma XPU once a camera + light are present (`exr_stats.txt`; husk `point.total 500000`, `render_stage Converged`). BP3's confound (0 lights + 6 camera errors) is removed. |
+
+**Honest nit (does not affect the D2.4/R-1 verdicts).** The three RGB channels carry **identical aggregate stats** (max/avg/stddev equal to 6 d.p.) and `shader_calls.surface = 0` → the splat Points are **lit as neutral geometry**; their per-point SH-DC colour (`f_dc_*`) is **not shaded** through the naïve `usdrender_rop` path. So D2.4's "non-zero pixels" passes and R-1's "won't render" clears — **but** the full splat *beauty / colour* path (blueprint §8 Open Q2; native Bake GSplat / Labs Rasterize per B-5) is a **separate, still-open question**, out of this leg's minimal-diff scope.
+
+**For D-1 (ruling, not this leg's word):** promote **D2.4 → PASS** and **R-1 → CLEAR** with the evidence above; leave **Open Q2** (splat colour/beauty path) open. Every claim here is receipt-anchored to `harness/notes/h22wl/bp4_b7fix/`.
+
+*BP4-B7FIX changed only the B-7 block + `--only` plumbing in `synapse_blueprint_probes.py` and appended this §13. §1–§12 byte-identical.*
