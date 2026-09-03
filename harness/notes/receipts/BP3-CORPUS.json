@@ -1,0 +1,69 @@
+{
+  "leg": "BP3-CORPUS",
+  "status": "green_with_findings",
+  "product_head": "ac2b944034d8f18b5bfa1bc45f8e04e2fde5bd26",
+  "base": "c6c4fb86",
+  "build": "22.0.400",
+  "probe_evidence": "harness/notes/h22wl/bp3_probes/stdout.txt (BP3-PROBE branch bp3/probe, product d6c6d9b3; resolved by checker via `git show bp3/probe:` since not in this branch's tree)",
+  "dossier_in_repo": false,
+  "keying": "by runtime symbol, not dossier ID (RECON F-1: dossier N-x/H22S-* not resolvable in-repo)",
+  "touches_written": [
+    "docs/reviews/bp3-h22-merge-worksheet.md",
+    "docs/reviews/bp3-h22-promotion-proposal.md",
+    "harness/notes/scatterinstances_parms_22.0.400.json",
+    "harness/battleplan/notes/bp3_promotion_check.py"
+  ],
+  "acceptance": [
+    {
+      "predicate": "promotion proposal: every VERIFIED-RUNTIME / FIXTURE-VERIFIED row has a stdout anchor; bp3_promotion_check.py exit 0 on the committed doc",
+      "verdict": "pass",
+      "evidence": "python harness/battleplan/notes/bp3_promotion_check.py -> exit 0; 8/8 promotable rows anchor clean (7 VERIFIED-RUNTIME stdout.txt:21/22/42/43/241/246/247 + WL-EX-02 FIXTURE-VERIFIED stdout.txt:252). Checker also self-verified against all 3 crucible mutations: strip-anchor -> exit 1; promote-BLOCKED(anchor->stdout.txt:230) -> exit 1; artifact-less tier change(WL-EX-03) -> exit 1; unmutated control -> exit 0."
+    },
+    {
+      "predicate": "scatterinstances_parms_22.0.400.json row count equals the P-5 block row count",
+      "verdict": "pass",
+      "evidence": "json rows = 138 == `sed -n '52,218p' stdout.txt | grep -c '|'` = 138. Folder-stack derivation cross-validated vs S-2 stdout.txt:407 (maxangle @ /Scattering/Masks/Up Axis Direction). 138-vs-167 count caveat recorded in the seed provenance + worksheet row-28 note (167 = full parmTemplate class; 138 = the P-5 stdout label rows the seed mirrors)."
+    },
+    {
+      "predicate": "worksheet: every row has a status and an anchor or a BLOCKED probe id",
+      "verdict": "pass",
+      "evidence": "34/34 Intent-1 rows (P-0..P-9) validated: each carries named(...) | UNKNOWN-AFTER-PROBE | BLOCKED(P-6), each with a stdout.txt:<line> anchor. Row 27 UNKNOWN-AFTER-PROBE (P-4 equiangular empty, stdout.txt:46-48); row 29 BLOCKED(P-6) stdout.txt:230."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "WL-EX-03 (collider 100-200k tris) is REFUTED on the lane fixture: real count 46,993 tris < 100k. Stays DOC-STATED (not promoted). The count is NOT in stdout (B-3 stdout shows 2 packed prims, stdout.txt:283); it lives in BP3-PROBE review sec.5 D2.2 + supplementary.txt v2 L90-92.",
+      "anchor": "docs/reviews/bp3-h22-promotion-proposal.md Table B; docs/reviews/bp3-h22-worldlabs-probes-2026-09-03.md sec.5 (D2.2)"
+    },
+    {
+      "claim": "scatterinstances is a 167-parm class but the P-5 label walk surfaces 138 name|label rows. Both correct; not a phantom. The seed mirrors the 138 stdout rows.",
+      "anchor": "harness/notes/scatterinstances_parms_22.0.400.json provenance.count_caveat; worksheet row-28 note"
+    },
+    {
+      "claim": "P-4 equiangular MIS / volume-sampling toggle on light::2.0 (KAR-12) NOT surfaced -> UNKNOWN-AFTER-PROBE, not absent (a different walk / the GUI pane may still find it).",
+      "anchor": "stdout.txt:46-48 (P-4 body empty)"
+    },
+    {
+      "claim": "P-6 (imagefilter prim type + husk:orderedImageFilters) BLOCKED by a probe defect (LOP label search 'image filter' matches copnet_filterlist first; node has no .stage()). The sec.5 Q4 relationship question (RenderProduct vs RenderSettings) is therefore still open.",
+      "anchor": "stdout.txt:223-230; BP3-PROBE review sec.11.1"
+    },
+    {
+      "claim": "BLU-01 / D2.4 render FAIL: B-6 built the component (splat=render/collider=proxy, usdc 19.8 MB) but B-7 Karma XPU render produced flat-zero RGB (6 no-camera errors). R-1 TRIGGERED. BLU-01 stays PROPOSAL.",
+      "anchor": "stdout.txt:326-336 (B-6) / stdout.txt:345-361 (B-7); review sec.9 R-1"
+    },
+    {
+      "claim": "BLU-04 (app exports carry no scale/ground metadata) was RESOLVED TRUE by B-4 on the fixture (stdout.txt:300), but is not a sec.2.3 WL-* row, so per this leg's rule it STAYS put (UNKNOWN) in the proposal and is recorded as answered in the sec.8 open-Q table + for_ruling.",
+      "anchor": "stdout.txt:300; promotion doc open-Q table item 3 + Table B"
+    }
+  ],
+  "for_ruling": [
+    "Ratify the 8 Table-A promotions (7 VERIFIED-RUNTIME node/parm/menu on 22.0.400 + WL-EX-02 FIXTURE-VERIFIED PLY-500k). Promotion is human+CTO per D-1; this leg only proposes.",
+    "BLU-04: B-4 resolved it TRUE (stdout.txt:300). A human may promote UNKNOWN -> FIXTURE-VERIFIED; this leg's rule held it put (not a WL-* row).",
+    "WL-HOU-02/WL-HOU-03: B-5 confirms native splat node types exist on 22.0.400 (bakegsplat/labs::relight_gsplats::1.0-1.1/rasterizegsplats, stdout.txt:305-316), clearing R-4 and informing D-DEP-01 (native path exists). B-5 is outside the B-1..B-4 window so this leg left them DOC-STATED; a human may promote node-existence to VERIFIED-RUNTIME.",
+    "WL-EX-03 tri-count refutation (46,993 < 100k) contradicts the DOC-STATED 100-200k window for this fixture -> re-tier / re-read on drift (R-3), do not overwrite.",
+    "167-vs-138 scatterinstances parm count: reconcile the counting method before any corpus cites a parm count.",
+    "P-6 probe defect (label-search ambiguity) is BP3-PROBE territory; fix constrains the search to the exact imagefilter type before sec.5 Q4 can be answered.",
+    "Dossier + coffee notes are not in the repo (dossier_in_repo=false); dossier sec.5 Q1/Q3/Q5-Q10 tensions remain unreachable until the human drops them (RECON T4)."
+  ],
+  "spawn": []
+}
