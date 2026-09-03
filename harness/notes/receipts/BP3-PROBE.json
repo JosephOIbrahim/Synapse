@@ -1,0 +1,73 @@
+{
+  "leg": "BP3-PROBE",
+  "status": "green_with_findings",
+  "product_head": "d6c6d9b38e490b4fbd4b65d0ae71d9e98e64bdb1",
+  "base": "c6c4fb86b17f59d3d3171ecea9ee630f2a88ce78",
+  "build": "22.0.400",
+  "probe_script_unmodified": "git diff master..HEAD -- harness/probes/ is empty",
+  "acceptance": [
+    {"predicate": "stdout.txt exists and its first probe block is P-0 with a hou.applicationVersionString() line", "verdict": "pass", "evidence": "probe: harness/notes/h22wl/bp3_probes/stdout.txt:3-5 (Houdini: 22.0.400)"},
+    {"predicate": "probe_results.json has 22 entries, each RAN or BLOCKED, with seconds on RAN rows and a total wall time line in stdout", "verdict": "pass", "evidence": "check: probe_results.json 22 entries (21 RAN/1 BLOCKED, seconds present); total wall stdout.txt:444 (6.5s)"},
+    {"predicate": "review doc has D1.1 and D2.1-D2.4 rows with verdict + stdout.txt anchor; gui_required rows are UNKNOWN", "verdict": "pass", "evidence": "receipt: docs/reviews/bp3-h22-worldlabs-probes-2026-09-03.md sec.5"},
+    {"predicate": "B-6 exported b6_wl_component.usdc exists with size printed, OR B-6 is BLOCKED with a traceback quoted", "verdict": "pass", "evidence": "probe: b6_wl_component.usdc = 19,756,921 bytes; size printed stdout.txt:336 (19.8 MB)"},
+    {"predicate": "SHA256 + bytes recorded for all three fixture files", "verdict": "pass", "evidence": "check: review doc sec.3 (500k.ply be734a30.. 34000416 / collider.glb 08e75e0a.. 959216 / pano.png e6772fbd.. 4213568)"},
+    {"predicate": "B-2 handedness (lane not mirrored after the Y/Z flip) confirmed in the viewer", "verdict": "UNKNOWN", "evidence": "gui_probe: headless - not decidable numerically (stdout.txt:277); gui_required acceptance is UNKNOWN per constitution"}
+  ],
+  "done_conditions": [
+    {"id": "D1.1", "verdict": "pass", "anchor": "stdout.txt:9-247 (P-1..P-9 ran; P-6 BLOCKED-recorded stdout.txt:223-230)"},
+    {"id": "D2.1", "verdict": "pass+UNKNOWN", "anchor": "B-1 schema/counts stdout.txt:250-268 PASS; B-2 up-axis stdout.txt:271-277 consistent with +y-down; handedness UNKNOWN (gui_required) stdout.txt:277"},
+    {"id": "D2.2", "verdict": "fail", "anchor": "collider imported+bounds stdout.txt:283-285; real tris 46,993 BELOW 100-200k (supplementary.txt v2 L90-92, GLB-accessor + Houdini-unpack agree)"},
+    {"id": "D2.3", "verdict": "pass", "anchor": "B-4 stdout.txt:291-300: no PLY/GLB metric-ground metadata -> BLU-04 TRUE"},
+    {"id": "D2.4", "verdict": "fail", "anchor": "component OK (B-6 stdout.txt:319-336) but Karma XPU EXR RGB all-zero (supplementary EXR stats; stdout.txt:345-362), 6 no-render-camera errors, 0 lights -> no non-zero color pixels"}
+  ],
+  "gates": [
+    {"id": "G-1", "evidence": "PARTIAL: <=200k tris FOUND (46,993); proxy-purpose landing FOUND (stdout.txt:330-333); manifold NOT checked; B-9 scatter-accepts-proxy UNKNOWN (source not set, gui_required)"},
+    {"id": "G-2", "evidence": "NOT FOUND - Mile-2 scope (D3.3/D3.4), not exercised this run"},
+    {"id": "G-3", "evidence": "NOT FOUND - no D1.5 stub authored in session 1; no dataset consumer named"},
+    {"id": "G-4", "evidence": "N/A not sought - human-only, patent surface, no probe opens it"}
+  ],
+  "risks": [
+    {"id": "R-1", "status": "triggered", "anchor": "EXR RGB flat 0.0; 500k splat loaded, 0 radiance on naive usdrender_rop path; native tools exist (B-5) but unexercised; confound: 0 lights + camera errors -> full isolation needs a lit Bake-GSplat/Labs render; treat F-1 as live"},
+    {"id": "R-2", "status": "unknown", "anchor": "numeric flip as expected stdout.txt:271-277; mirror/handedness gui_required"},
+    {"id": "R-3", "status": "clear", "anchor": "3 fixtures hashed fresh, byte sizes match CDN Content-Length; baseline for drift set (review doc sec.3)"},
+    {"id": "R-4", "status": "clear", "anchor": "native splat tooling present on 22.0.400 (bakegsplat/relight_gsplats 1.0+1.1/rasterizegsplats/...) stdout.txt:303-316"}
+  ],
+  "open_questions": [
+    {"q": 1, "answer": "UNKNOWN - scatter instantiated against component but source not set to proxy prim; gui_required (stdout.txt:374-392)"},
+    {"q": 2, "answer": "UNKNOWN leaning naive-path-insufficient - splat loaded to Karma XPU but 0 RGB; native tools unexercised (stdout.txt:339-362)"},
+    {"q": 3, "answer": "ANSWERED NO - no app-export metric/ground metadata; BLU-04 TRUE (stdout.txt:291-300)"},
+    {"q": 4, "answer": "UNKNOWN gui_required - handedness not decidable numerically (stdout.txt:277)"},
+    {"q": 5, "answer": "UNANSWERED blocked-by: needs Marble app + Standard plan; B-8 is a manual checklist (stdout.txt:365-371)"}
+  ],
+  "findings": [
+    "D2.2 FAIL: this fixture's collider is 46,993 tris - BELOW the WL-EX-03 100-200k claim; refines WL-EX-03 to fixture-dependent.",
+    "D2.4 FAIL: naive component->usdrender_rop path renders the 500k splat as all-zero RGB (only alpha coverage ~3.5%); no lights, splat SH-DC base colour not evaluated on this path.",
+    "BLU-04 TRUE (B-4): neither PLY header nor GLB extras carry metric_scale_factor/ground_plane_offset.",
+    "R-4 clear (B-5): native splat tooling exists on 22.0.400 (bakegsplat SOP, labs::relight_gsplats::1.0/1.1 LOP, rasterizegsplats COP, labs delight/normals/splatter, surfacesplat) - GSOPs/houdini-gsplat not required for a native path (D-DEP-01 can lean native).",
+    "PLY 500k tier has NO f_rest_* (SH degree 0 only) -> exported component 19.8 MB not ~90 MB (refines blueprint sec.2.5 property 3).",
+    "PROBE DEFECT P-6: label search 'image filter' also matches 'COP Image Filter List' (copnet_filterlist), sorts first, .stage() fails -> AttributeError (stdout.txt:223-230). Not patched (mission rule).",
+    "PROBE DEFECT B-3/S-2/S-3: gltf SOP imports as 2 packed prims; primitivecount=2 is not tri count; normal classification degenerate. Real numbers from supplementary unpack. Not patched.",
+    "PROBE DEFECT B-7: no render camera set on ROP/KRS (render_settings.rendercamera=/cameras/camera1 vs /cameras/wl_cam) -> 6 errors; ok=size>4096 reports success on a failed render. Not patched.",
+    "PROBE DEFECT B-9: collider-prim search matches path ending '/collider' but proxy path is '/geo/proxy/world' -> source never set (coll=None); Open Q1 not exercised. Not patched.",
+    "gltf::2.0 file parm is 'gltffile' (not 'filename'/'file'); B-3 survives only via its parm_by_label fallback.",
+    "B-6 proxy input index (H22S-SOP-02 V0=1) invalid ('Invalid input'); proxy geo lands on input 0 (stdout.txt:322)."
+  ],
+  "for_ruling": [
+    "Promotion of runtime-confirmed claims (P-1/P-3/P-5/P-7/P-8/P-9/B-1/B-4/B-5/B-6) to VERIFIED-RUNTIME is D-1's (human+CTO), not this leg's.",
+    "WL-EX-03 '100-200k tris' should be re-tiered to fixture-dependent: this fixture is 46,993 tris.",
+    "6 probe defects (above) need a human decision to fix the probe script - the mission forbids the leg editing harness/probes/.",
+    "G-1 evidence: <=200k + proxy landing found; manifold check + scatter-accepts-proxy still owed before D-1 could consider opening.",
+    "D-DEP-01 (GSOPs) can lean 'native-only' given B-5, but the decision is the human's."
+  ],
+  "spawn": [
+    {
+      "id": "BP3-SPLAT-RENDER",
+      "band": "TRUTH",
+      "class": "truth",
+      "tier": "reasoning",
+      "name": "Fix the 6 BP3 probe defects (in a follow-up probe, not the frozen script) and give D2.4 + Open-Q2 a real verdict via the native splat render path (bakegsplat/rasterizegsplats/relight_gsplats + a dome light), unpack-before-classify for D2.2/S-2/S-3",
+      "note": "Held for Joe (BP3-PROBE spawn_classes is empty). Uses the same fixtures (already hashed). Depends on BP3-PROBE. Would close D2.4 (does the splat render at all through a corrected path) and Open Q2 (Bake GSplat survival vs Labs LOP route), and confirm S-2/S-3 on unpacked geometry.",
+      "deps": ["BP3-PROBE"]
+    }
+  ]
+}
