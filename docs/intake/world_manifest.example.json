@@ -1,0 +1,49 @@
+{
+  "manifest_version": "0",
+  "world": {
+    "id": "54fad6e4-9c9b-43ba-be6d-f1e31cbe7a95",
+    "source": "fixture",
+    "model": null,
+    "prompt": null,
+    "world_url": "https://wlt-ai-cdn.art/example_exports/narrow_european_cobblestone_lane/",
+    "generated_at": null
+  },
+  "assets": {
+    "splat_low": {
+      "path": "harness/fixtures/worldlabs/narrow_european_cobblestone_lane/narrow_european_cobblestone_lane_500k.ply",
+      "format": "ply",
+      "count": null,
+      "attribs": []
+    },
+    "collider": {
+      "path": "harness/fixtures/worldlabs/narrow_european_cobblestone_lane/narrow_european_cobblestone_lane_collider.glb",
+      "format": "glb",
+      "tris": null,
+      "kind": "collider"
+    },
+    "pano": {
+      "path": "harness/fixtures/worldlabs/narrow_european_cobblestone_lane/narrow_european_cobblestone_lane_pano.png",
+      "width": 2560,
+      "height": 1280
+    }
+  },
+  "frame": {
+    "native": "marble_raw_opencv",
+    "metric_scale_factor": { "value": null, "tier": "unknown", "method": null, "probe": null },
+    "ground_plane_offset": { "value": null, "tier": "unknown", "method": null, "probe": null },
+    "axis_fix": "rotX180",
+    "handedness_checked": false,
+    "applied": {
+      "splat_low": { "metric": false, "ground": false, "axis": false },
+      "collider": { "metric": false, "ground": false, "axis": false },
+      "pano": { "metric": false, "ground": false, "axis": false }
+    }
+  },
+  "provenance": {
+    "compiled_at": "2026-09-03T00:00:00Z",
+    "compiled_by": "BP3-STUBS (scaffold example; no probe run)",
+    "probes": [],
+    "sha256": {},
+    "ratified": false
+  }
+}

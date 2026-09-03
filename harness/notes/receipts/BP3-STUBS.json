@@ -1,0 +1,46 @@
+{
+  "leg": "BP3-STUBS",
+  "status": "green_with_findings",
+  "head_sha": "26e8313c6f8c40183f3ddcb766a493035634f1f0",
+  "build_pin": "H22.0.368 (drop) / symbol table 22.0.400 (BP3-RECON)",
+  "deps_consumed": {
+    "BP3-RECON": "schema_home=docs/intake/; notes_dir=harness/notes/; wave_notes_dir=harness/battleplan/notes/; dossier_in_repo=false; anchor harness/battleplan/notes/BP3_RECON.md @ 062669fe",
+    "BP3-PROBE": "no finding on the bus at authoring time -> provenance.probes=[] (mission: reads if present, does not wait)"
+  },
+  "acceptance": [
+    {
+      "predicate": "three candidates each with signature, preconditions, refusal text, claim IDs, implementation: none",
+      "verdict": "pass",
+      "evidence": "docs/intake/h22-tool-candidates-2026-09-03.md: Candidate 1/2/3 (synapse_author_light_blocker, synapse_author_image_filters, synapse_author_render_pass_chain) each carry a registry-tuple signature (params with JSON-schema types + defaults-in-description + required[] + ro/destr/idemp flags), sec.1.4 preconditions (PC-1 Karma delegate / PC-2 Husk raster product / PC-3 husk --pass / PC-4 one product per file), collaborative-voice refusal/warning text, source claim IDs (N-3/KAR-04/N-7/H22S-*), and 'Implementation: none (D1.5)'. Two RECIPE_CHANGE change-proposals added: RC-1 scatter recipe (parm-name dependency P-5), RC-2 textured-material (type-name dependency P-2)."
+    },
+    {
+      "predicate": "BP3_lane_spatial.diff passes `git apply --check` and authoring_domains.json is unchanged vs master",
+      "verdict": "pass",
+      "evidence": "`git apply --check harness/battleplan/notes/BP3_lane_spatial.diff` -> APPLY_CHECK_OK. `git diff master -- python/synapse/server/authoring_domains.json` -> empty (byte-identical, 301 bytes). `git status --porcelain` for that path -> untouched. Diff adds the verbatim sec.3.2 lane object (ratified:false, non_goals verbatim) under a new top-level \"lanes\" array; hunk @@ -1,4 +1,16 @@; domains line unchanged. Diff is NOT applied."
+    },
+    {
+      "predicate": "world_manifest.example.json validates against the schema (command + result in receipt)",
+      "verdict": "pass",
+      "evidence": "MINIMUM: `python -c \"import json; json.load(open('docs/intake/world_manifest.schema.json')); json.load(open('docs/intake/world_manifest.example.json'))\"` -> 'both parse OK'. JSONSCHEMA (4.26.0): `python -c \"import json,jsonschema; s=json.load(open('docs/intake/world_manifest.schema.json')); e=json.load(open('docs/intake/world_manifest.example.json')); jsonschema.validate(e,s)\"` -> 'VALID: example validates against schema'. NEGATIVE CONTROL (proves validation load-bearing): dropping required 'manifest_version' -> jsonschema.ValidationError \"'manifest_version' is a required property\". Example is fixture-shaped: world.source=fixture, frame.native=marble_raw_opencv, applied flags all false, provenance.probes=[]."
+    }
+  ],
+  "crucible_self_checks": [
+    {"criterion": "grep mcp_server.py + every mcp_tools_*.py for the three tool names -> zero hits", "result": "pass", "evidence": "grep -rnE synapse_author_light_blocker|synapse_author_image_filters|synapse_author_render_pass_chain over mcp_server.py mcp_tools_*.py -> no match (exit 1); _tool_registry.py -> count 0. Stubs live only in the docs/intake markdown."},
+    {"criterion": "authoring_domains.json byte-identical to master on the branch (diff not applied)", "result": "pass", "evidence": "git diff master -- python/synapse/server/authoring_domains.json -> empty; file restored clean after diff generation (RESTORED_CLEAN)."},
+    {"criterion": "mutation: remove `required` from schema -> example validation outcome changes", "result": "pass", "evidence": "negative control above: with required enforced the stripped example FAILS; remove the required and it would PASS -> outcome flips. Validation uses real jsonschema, not a parse-only check."},
+    {"criterion": "mutation: add a body to a stub -> a 'no implementation' checker or the crucible's grep reddens", "result": "structurally-satisfied", "evidence": "stubs are markdown signatures carrying 'Implementation: none (D1.5)'; there is no python body to add. Any registration of a tool name in mcp_server.py/mcp_tools_*.py/_tool_registry.py reddens crucible criterion 1."},
+    {"criterion": "mutation: apply the diff -> authoring_domains differs from master -> red", "result": "structurally-satisfied", "evidence": "the diff exists and applies cleanly; applying it makes `git diff master` non-empty. It is deliberately left unapplied."}
+  ],
+  "findings": [
+    {"claim": "schema_home (RECON) = docs/intake/ and world_manifest.schema.json already lives there (schemas/ has 0 tracked files). T3 git mv is a no-op; schema does NOT move; therefore T4 (edit blueprint Sidecars line) is SKIPPED. Blueprint L9 Sidecars line already reads docs/intake/world_manifest.schema.json.", "anchor": "docs/intake/blueprint-h22-worldlabs-intent.md:9"},
+    {"claim": "VERBATIM-vs-RECONCILED tension: the sec.3.2 lane entry is added verbatim per the brief, so its `contract` field reads 'schemas/world_manifest.schema.json' -- but schemas/ has 0 tracked files and the schema lives at docs/intake/. Kept verbatim because the brief requires verbatim and the diff is an UNAPPLIED proposal (ratified:false). Flagged for_ruling: reconcile `contract` to docs/intake/world_manifest.schema.json before this diff is ever applied.", "anchor": "harness/battleplan/notes/BP3_lane_spatial.diff:19"},
+    {"claim": "authoring_domains.json had no prior lane structure ({domains, note} only). The diff introduces a new top-level \"lanes\" array as the container for the verbatim lane object -- a structural choice, not dictated by the blueprint. Ratifier should confirm the container shape.", "anchor": "python/synapse/server/authoring_domains.json:1"},
+    {"claim": "Dossier claim IDs (H22S-*, N-*, KAR-*, SOL-*) cited in the tool-candidates doc are the dossier's; per RECON dossier_in_repo=false, so they are reproduced as-stated (tier STATED/DOC-STATED, blueprint sec.0.1), unverified in this repo.", "anchor": "docs/intake/h22-tool-candidates-2026-09-03.md"},
+    {"claim": "The two RECIPE_CHANGE proposals are blocked on probes: RC-1 (scatter recipe, scene_recipes.py) needs P-5's scatterinstances parm surface (harness/notes/scatterinstances_parms_22.0.x.json, D1.4); RC-2 (_handle_create_textured_material in handlers_material.py) needs P-2's Texture Material Library LOP type name (H22S-TM-03). Neither file is edited in this wave.", "anchor": "docs/intake/h22-tool-candidates-2026-09-03.md"}
+  ],
+  "for_ruling": [
+    "D3.1 lane diff is a proposal (ratified:false). Before it is applied by human+CTO (D-1, two keys): reconcile the lane's `contract` field from the verbatim 'schemas/world_manifest.schema.json' to the reconciled schema_home 'docs/intake/world_manifest.schema.json', and confirm the new top-level \"lanes\": [ ... ] container shape.",
+    "D3.2 blueprint V0 path for the schema is 'schemas/' (sec.3.7 D3.2) but the schema landed at docs/intake/ (schema_home). No move performed. If the ratifiers want the schema under schemas/ instead, that is a git mv + a blueprint Sidecars-line edit (T4) to run in a follow-up -- not done here because RECON's reconciled schema_home is docs/intake/."
+  ],
+  "spawn": []
+}
