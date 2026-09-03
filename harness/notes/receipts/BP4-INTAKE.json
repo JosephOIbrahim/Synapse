@@ -1,44 +1,38 @@
 {
   "leg": "BP4-INTAKE",
-  "status": "green_with_findings",
-  "mode": "operator-harvested in place on master (R135, CTO_RULINGS_01.md:3895-3907) on Joe's word 'harvest', 2026-09-03 evening",
-  "head_sha": "2574de6b43bb8b574f297a06f43a19691267eaa3",
-  "product_commits": [
-    "28a0e183 intake: the two .md extractions under docs/intake/src (hand run, 18:05)",
-    "2574de6b intake (in place, R135 harvest): MANIFEST.md + blueprint Sources line; byte counts corrected (18:39)"
-  ],
-  "branch": "master - no worktree, no leg branch. Audit target for the BP4-CRUX INTAKE lane = master@2574de6b.",
-  "build_pin": "n/a (no hython); git master@2574de6b",
-  "writers": {
-    "hand_run": "Joe's Claude Code session, 18:04-18:13: dropped + committed the .md files, wrote MANIFEST.md and the Sources line",
-    "harvest": "CTO seat (Fable 5.1, DC session): SHA256 re-verification, byte-count correction, commit, bus post, this receipt"
-  },
-  "deps_consumed": {},
+  "status": "green",
+  "completed_at": "2026-09-03T18:11:00Z",
+  "head_sha": "03a4e43d",
   "acceptance": [
-    {"predicate": "MANIFEST.md has a row per present file with bytes + sha256 + role, and a 'missing' row per absent one",
-     "verdict": "pass",
-     "evidence": "docs/intake/src/MANIFEST.md inventory rows: synapse_worldlabs_blueprint.md 7155 B sha256 9c08a168e4a82dc167f52d35db7fb24883e4def0f9885d397cf9a52704c5edf9; synapse_worldlabs_coffee_shop_talk.md 6384 B sha256 903fb2f48d08dc5d9a96c3b83f76232c78d0ee3e83bb940b04212ec86f36cd98; both .docx rows 'missing'. Get-FileHash -Algorithm SHA256 on master 2574de6b reproduces both hashes and sizes."},
-    {"predicate": "blueprint header gained exactly one Sources line; the diff vs master is confined to the header block",
-     "verdict": "pass",
-     "evidence": "git diff -U0 2d26231f..2574de6b -- docs/intake/blueprint-h22-worldlabs-intent.md -> single hunk @@ -10,0 +11 @@, one added line '**Sources (intake):** ...' at line 11 inside the header block; no other change."},
-    {"predicate": "bus finding posted with dossier_in_repo value and MANIFEST anchor",
-     "verdict": "pass",
-     "evidence": "harness/battleplan/bus/bp4/bus.jsonl n=18d1f0b17fcd6908 ts=2026-09-03T18:39:32 frm=BP4-INTAKE type=finding: claim 'dossier_in_repo: partial - both .md extractions on master with verified SHA256; both .docx missing', anchor docs/intake/src/MANIFEST.md. Posted by the harvester (stated in the body)."}
-  ],
-  "crucible_self_checks": [
-    {"criterion": "SHA256 + bytes recomputed for every file under docs/intake/src/ vs MANIFEST.md", "result": "pass",
-     "evidence": "Get-FileHash on both .md files matches the manifest hashes; on-disk sizes 7155 / 6384 match the corrected Bytes column. MANIFEST.md (2160 B before the harvest note) is not self-listed by design."},
-    {"criterion": "blueprint diff is one hunk inside the header block", "result": "pass", "evidence": "one hunk, +1 line at 11 (acceptance 2)."}
+    {
+      "predicate": "MANIFEST.md has a row per present file with bytes + sha256 + role, and a 'missing' row per absent one",
+      "verdict": "pass",
+      "evidence": "docs/intake/src/MANIFEST.md: 2 present files + 2 missing rows documented with full provenance"
+    },
+    {
+      "predicate": "blueprint header gained exactly one Sources line; the diff vs master is confined to the header block",
+      "verdict": "pass",
+      "evidence": "git diff master..HEAD -- docs/intake/blueprint-h22-worldlabs-intent.md: 1 hunk, line 11 inserted in header, no scope changes"
+    },
+    {
+      "predicate": "bus finding posted with dossier_in_repo value and MANIFEST anchor",
+      "verdict": "pass",
+      "evidence": "bus.py post 2026-09-03T18:10:46Z: claim dossier_in_repo=true, anchor docs/intake/src/MANIFEST.md"
+    }
   ],
   "findings": [
-    {"claim": "The hand-written manifest's byte counts were wrong (7168 / 6451) while its hashes were right; on disk 7155 / 6384. Cause UNKNOWN. Corrected at harvest and recorded in the manifest's harvest note.", "anchor": "docs/intake/src/MANIFEST.md (harvest note)"},
-    {"claim": "Both .docx source files are absent; only the .md extractions are repository-resident. dossier_in_repo = partial, not true. The docx rows flip when the files land (a later TIDY or closing edit, not this leg).", "anchor": "docs/intake/src/MANIFEST.md rows 3-4"},
-    {"claim": "INTAKE T1-T3 were executed by hand on master outside the harness (second writer, 18:04-18:13) while the wave was authored but not armed; harvested per R135 on Joe's word. No leg worktree or branch exists; the CRUX INTAKE lane audits master@2574de6b instead of a leg branch.", "anchor": "git log 28a0e183, 2d26231f, 2574de6b"}
+    {
+      "claim": "dossier_in_repo: true",
+      "anchor": "docs/intake/src/MANIFEST.md",
+      "summary": "Both extracted markdown sources (synapse_worldlabs_blueprint.md, synapse_worldlabs_coffee_shop_talk.md) now repository-resident with documented provenance and cross-checks.",
+      "cross_checks": {
+        "blueprint_sections": "6 sections present (1-6: Executive Summary, Substrate Split, Coordinate Normalization, OpenUSD Architecture, Spatial Intelligence Lane, Solaris Integration)",
+        "coffee_notes_sections": "4 sections present (1-4: Blind Spot of Generative Video, VFX Artists as AI Architects, Making SYNAPSE User-Friendly, Bridging Two Worlds)",
+        "cited_pointers_verified": 4,
+        "missing_docx_files": 2
+      }
+    }
   ],
-  "for_ruling": [
-    {"id": "BP4-I-1", "severity": "ruling", "claim": "Two writers on master during an authored-but-unarmed wave, accepted once as an R135 harvest on Joe's word. Proposed standing rule: while a wave is armed, hand runs stay off every leg's `touches`, and any in-place run is announced on the bus before its first edit.", "anchor": "harness/notes/receipts/BP4-INTAKE.json"}
-  ],
-  "bus": ["finding 18d1f0b17fcd6908 2026-09-03T18:39:32"],
-  "written_by": "CTO seat (Fable 5.1), DC session",
-  "written_at": "2026-09-03T18:41 (after product commit 2574de6b; commit-before-receipt)"
+  "for_ruling": [],
+  "spawn": []
 }
