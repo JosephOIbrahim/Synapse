@@ -67,7 +67,10 @@
       "band": "TRUST",
       "class": "guard",
       "name": "Pin designsystem palette integrity: assert every hex emitted by qss.stylesheet() at all font scales is a tokens.py value (closes the PANEL-M1b hole where off-palette drift inside the token authority survives all guards)",
-      "source": { "doc": "harness/battleplan/notes/BP3-CRUX_mutations.json", "anchor": "PANEL-M1b" },
+      "source": {
+        "doc": "harness/battleplan/notes/BP3-CRUX_mutations.json",
+        "anchor": "PANEL-M1b"
+      },
       "note": "class outside BP3-CRUX spawn_classes — lands held for Joe"
     },
     {
@@ -75,7 +78,10 @@
       "band": "TRUST",
       "class": "guard",
       "name": "Durable timer-interval pin for synapse_panel.py (_ctx_timer 2000ms, _health_timer 4000ms) so a silent interval change reddens a test instead of only a per-leg diff-scope acceptance row (closes the PANEL-M3 hole)",
-      "source": { "doc": "harness/battleplan/notes/BP3-CRUX_mutations.json", "anchor": "PANEL-M3" },
+      "source": {
+        "doc": "harness/battleplan/notes/BP3-CRUX_mutations.json",
+        "anchor": "PANEL-M3"
+      },
       "note": "class outside BP3-CRUX spawn_classes — lands held for Joe"
     },
     {
@@ -83,9 +89,17 @@
       "band": "TRUST",
       "class": "harness",
       "name": "Battleplan lane discipline: add core.longpaths=true + post-clone tree-integrity check to the scratch-clone recipe (4 of 5 crux lanes hit the silent-partial-tree failure)",
-      "source": { "doc": "harness/battleplan/notes/BP3-CRUX_verdicts.md", "anchor": "Cross-cutting findings #1" },
+      "source": {
+        "doc": "harness/battleplan/notes/BP3-CRUX_verdicts.md",
+        "anchor": "Cross-cutting findings #1"
+      },
       "note": "class outside BP3-CRUX spawn_classes — lands held for Joe"
     }
   ],
-  "notes": "Verdicts are READ before merge words fire; a green CRUX receipt is a precondition for Joe's merge words, never a substitute. All 5 verdicts posted on the bus addressed to * (n=18d1eb05aabcb990..18d1eb05c7669a0c). No contract feature flipped, no product file edited; the crucible's writes are its own notes, probe-rerun artifacts, this receipt, and the landed flag. Audit executed via 5 parallel independent lanes (workflow wf_ed2fccef-c74), all mutations restored, scratch clones disposable."
+  "notes": "Verdicts are READ before merge words fire; a green CRUX receipt is a precondition for Joe's merge words, never a substitute. All 5 verdicts posted on the bus addressed to * (n=18d1eb05aabcb990..18d1eb05c7669a0c). No contract feature flipped, no product file edited; the crucible's writes are its own notes, probe-rerun artifacts, this receipt, and the landed flag. Audit executed via 5 parallel independent lanes (workflow wf_ed2fccef-c74), all mutations restored, scratch clones disposable.",
+  "w5h_relanded": {
+    "by": "CTO seat (Fable 5.1) via DC",
+    "at": "2026-09-03T17:04",
+    "reason": "mission T7 said write BP3_CRUX_LANDED.flag LAST; CRUX obeyed, so the flag commit 1e4a22f4 followed the receipt 2d1d22c0 and W5H held the leg at closing. Receipt re-landed as HEAD; product HEAD is now 1e4a22f4 (flag commit, notes-only). No verdict content changed."
+  }
 }
