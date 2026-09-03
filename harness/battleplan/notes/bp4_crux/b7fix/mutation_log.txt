@@ -1,0 +1,81 @@
+BP4-CRUX / lane B7FIX -- mutation log
+All mutations applied ONLY inside the scratch clone <scratchpad>/b. Restored after each with
+`git show HEAD:<path> > <path>`; `git status --short` verified clean of tracked changes.
+Build 22.0.400, same pinned hython + pref dir + fixtures as the baseline crux run.
+
+--------------------------------------------------------------------------------------------
+B7FIX-M1  (brief-specified)  drop the render-camera assignment
+  edit     : line 389  `    if kc is not None:`  ->  `    if False:  # crux-M1: camera assignment dropped`
+  check    : crux D2.4 non-zero-EXR check on crux_b7_mut1/b7_wl_fixture.exr
+  RESULT   : SURVIVED  -- the render did NOT go black.
+  evidence : oiiotool --stats -> Max 0.457031 0.457031 0.457031 1.000000 ; Avg 0.013787 ... 0.035126
+             EXR 530751 B ; probe stdout: "WARNING: no camera parm on KRS; render camera unbound"
+             husk: render_settings.rendercamera = /cameras/camera1  (the BP3 mismatch state)
+             husk: render_camera               = /cameras/wl_cam    (husk resolved it anyway)
+             husk: world_to_camera / world_to_screen  BYTE-IDENTICAL to the unmutated crux run
+             5x "No render camera defined in renderPassState" printed (mut1_stdout.txt)
+  reading  : the camera *error signature* fires, the *pixel* check does not. On this fixture the
+             authored camera sits at the default transform, so binding it changes no pixels.
+             => the camera bind is NOT causally necessary for a non-black EXR.
+
+B7FIX-M1b (crux-authored control)  drop the light, KEEP the camera bind
+  edit     : line 380  light-type tuple -> ('__crux_m1b_no_such_light__',)  so `light` stays None
+  check    : same D2.4 non-zero-EXR check, on crux_b7_mut1b/
+  RESULT   : SURVIVED  -- still not black.
+  evidence : Max 0.618652 ... ; Avg 0.011813 ... 0.035128 ; EXR 537347 B
+             probe stdout: "WARNING: no dome/distant light type resolved; render will be unlit"
+             husk: light_types.distant = 1, environment = 0, object_counts.light.total = 1,
+                   renderStatsAnnotation "Total Lights: 1 (Light Tree Emitters: 0)"
+  reading  : Karma XPU 22.0.400 SUBSTITUTES a default DISTANT light when the stage carries none in
+             this topology. Removing the authored domelight changes the look, not the non-blackness.
+             => "no light -> black" is not reproducible by removing the light from the BP4 script.
+
+B7FIX-M1c (crux-authored control)  restore the pre-fix BP3 b7 verbatim
+  edit     : spliced base 28a0e183 lines 366-386 (the whole BP3 b7 + its decorator) over HEAD's
+             b7; HEAD's --only plumbing kept so `--only B-7` still resolves. ast.parse OK.
+  check    : same D2.4 non-zero-EXR check, on crux_b7_mut1c/
+  RESULT   : REDDENED  -- flat black, exactly the BP3 signature.
+  evidence : Max 0.000000 0.000000 0.000000 1.000000 ; Avg 0.000000 0.000000 0.000000 0.035138
+             StdDev 0.000000 x3 ; EXR 209447 B (BP3 recorded 189224)
+             husk: object_counts.light.total = 0 ; every light_types entry 0 ;
+                   renderStatsAnnotation "Total Lights: 0 (Light Tree Emitters: 0)"
+             husk: render_settings.rendercamera = /cameras/camera1 ; render_camera = /cameras/wl_cam
+             husk: xpu_timings.render_time 0.325 s (vs 1.87 s lit) ; "-------- 5 total errors --------"
+  reading  : the fix AS A WHOLE genuinely flips black -> non-black on 22.0.400, and BP3's black
+             reproduces. Alpha coverage 0.035138 matches the lit runs => same geometry, no light.
+
+  M1 + M1b + M1c together:
+    run            camera bound  light authored  ROP fed from  husk Total Lights   RGB max
+    crux baseline  yes           domelight::3.0  krs           1 (environment)     0.455811
+    M1             no            domelight::3.0  krs           1 (environment)     0.457031
+    M1b            yes           none            krs           1 (distant, auto)   0.618652
+    M1c (= BP3)    no            none            cam           0                   0.000000
+  The variable that co-varies perfectly with black is husk Total Lights == 0, which occurs only
+  under the BP3 topology (usdrender_rop fed from the camera LOP downstream of the KRS). Neither
+  of the two components the review names as the fix reproduces the black when removed alone.
+
+--------------------------------------------------------------------------------------------
+B7FIX-M2  (brief-specified)  touch a non-B-7 probe block
+  edit     : inserted `    pass  # crux-M2` as the first statement of `def b3(ctx):` (line 247)
+  check    : crux T-A hunk audit (check_hunks.py)
+  attempt 1: the checker diffed 28a0e183..HEAD, which cannot see a working-tree edit. It reddened
+             only because the +1 line shift re-mapped the b7 decorator hunk onto b6 -- an ARTEFACT,
+             not a detection. Recorded rather than quietly re-run.
+  attempt 2: checker given a WORKTREE mode (diff 28a0e183 against the working tree). Reddened
+             correctly: `@@ -246,0 +247 @@ def b3(ctx):` -> owner b3 -> OUT-OF-SCOPE, 1 hunk failed,
+             the other 10 still OK.
+  RESULT   : REDDENED (attempt 2, honest). Restored -> PASS in both modes.
+
+B7FIX-M3  (brief-specified)  corrupt one character of a BP3 row in the review doc
+  attempt 1: targeted file line 100, which is blank -> no edit applied, check stayed green. No
+             false redden; the mutation simply did not land. Recorded, then retargeted.
+  attempt 2: file line 62, `| P-0 | RAN | 0.66 | 22.0.400 / USD (0,26,5) / MaterialX 1.39.5 |`,
+             flipped column 48 `a` -> `A`.
+  check    : crux T-B append-only byte-identity check (check_append_only.py)
+  RESULT   : REDDENED -- "head.startswith(base): False", first byte divergence index 4026.
+             Restored -> PASS, appended section again starts at byte 19461, 5945 bytes appended.
+
+--------------------------------------------------------------------------------------------
+Final scratch state: `git status --short` in <scratchpad>/b lists ONLY untracked crux output dirs
+  ?? crux_b7_out/   ?? crux_b7_mut1/   ?? crux_b7_mut1b/   ?? crux_b7_mut1c/
+No tracked file differs from HEAD. No file outside the scratch clone was mutated.

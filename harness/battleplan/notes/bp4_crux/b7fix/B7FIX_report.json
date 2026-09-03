@@ -1,0 +1,223 @@
+{
+  "lane": "B7FIX",
+  "target": {"branch": "bp4/b7fix", "head": "88ab1184", "product": "b3e24d14", "base": "28a0e183"},
+  "rerun": {
+    "exit_code": 0,
+    "wall_s": 9,
+    "probe_reported_total_s": 6.3,
+    "build_line": "Houdini: 22.0.400  (crux_stdout.txt:5)",
+    "b7_seconds": 5.46,
+    "builder_b7_seconds": 5.84,
+    "exr_bytes": 530296,
+    "builder_exr_bytes": 530347,
+    "status_diff_vs_builder": "identical - 22 ids, 6 RAN (P-0, P-3, B-1, B-3, B-6, B-7) and 16 NOT_RUN, same ids on both sides; the B-7 result dict is identical except the out-dir path (camera /cameras/wl_cam, light domelight::3.0, exists true)",
+    "stdout_diff_vs_builder": "line-for-line identical after CR normalisation except 6 lines: 2 out-dir path strings, the EXR byte count, and 4 timing values. The builder committed stdout.txt is LF; the crux run is CRLF.",
+    "fixture_hashes": "recomputed with python hashlib, not taken from the builder: ply 34000416 B be734a3049ebc995f945d2ffc20696ce3b181d95cd3051a3e06c60d3953beb65; glb 959216 B 08e75e0ad55ceea8ba9305bd1845749b741ca4337cda240e5a35253449eb00c9 - both MATCH the builder"
+  },
+  "exr_stats": {
+    "tool": "oiiotool 3.0.6.1 AND Houdini 22.0.400 hoiiotool (byte-identical output) AND hython OpenImageIO 2.5.18.0 + numpy",
+    "dims": "1280x720 RGBA half",
+    "rgb_max": [0.455811, 0.455811, 0.455811],
+    "rgb_avg": [0.013786, 0.013786, 0.013786],
+    "rgb_stddev": [0.064177, 0.064177, 0.064177],
+    "alpha_avg": 0.035126,
+    "alpha_stddev": 0.164009,
+    "nan_inf": "0 / 0 across all 4 channels; FiniteCount 921600",
+    "px_with_nonzero_rgb": 69802,
+    "ttfp_s": 0.65083,
+    "render_camera": "/cameras/wl_cam",
+    "render_settings_rendercamera": "/cameras/wl_cam",
+    "lights": 1,
+    "light_types": "environment=1, all others 0; annotation 'Total Lights: 1 (Light Tree Emitters: 0)'",
+    "shader_calls_surface": 0,
+    "geometry_point_total": 500000,
+    "geometry_polygon_total": 0,
+    "render_stage_label": "Converged",
+    "percent_complete": 100,
+    "delegate": "BRAY_HdKarmaXPU / karma 22.0.400",
+    "monochrome_test": "R, G and B are pixelwise IDENTICAL on all 921600 px (max |R-G| = max |G-B| = max |R-B| = 0.0; max per-pixel chroma 0.0). oiiotool prints 'Monochrome: No' only because the test includes alpha; with alpha stripped the same tool prints 'Monochrome: Yes'."
+  },
+  "acceptance": [
+    {
+      "predicate": "probe-script diff limited to the B-7 block + --only plumbing",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "git diff -U0 28a0e183 HEAD -- harness/probes/synapse_blueprint_probes.py = 10 hunks; owners mapped against the NEW file top-level defs: 1 at the @probe('B-7') decorator (new:366), 3 inside b7() (new:370-393, 397, 407-408), 6 in the main region (new:496-516 banner + PROBE_DEPS + _resolve_run_set; 520, 524, 526, 528, 530-531 inside main). Zero hunks in any other @probe function. git diff --stat 28a0e183 HEAD = 9 files, 538 insertions, 9 deletions; 0 files under python/synapse/. Evidence: hunk_audit.txt"
+    },
+    {
+      "predicate": "bp4_b7fix/stdout.txt exists with the hython build line (22.0.400) and the B-7 block",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "harness/notes/h22wl/bp4_b7fix/stdout.txt:5 'Houdini: 22.0.400'; :68 B-7 block header; :70 'authored light: domelight::3.0 (before render settings)'; :71 'render camera bound: camera = /cameras/wl_cam'; :76 'EXR written: True ... 530347 bytes'; :79 SUMMARY; :96 'B-7   RAN      5.84'. 102 lines. probe_results.json carries 6 RAN + 16 NOT_RUN."
+    },
+    {
+      "predicate": "EXR stats recorded with the command; D2.4 verdict pass|fail|UNKNOWN with anchor",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "Review doc 13.3 states the command verbatim ('oiiotool --stats harness/notes/h22wl/bp4_b7fix/b7_wl_fixture.exr') and tabulates BP3-vs-BP4 stats; 13.5 row 1 gives 'D2.4 ... PASS' anchored to exr_stats.txt + exr_info.txt husk:render_stats + stdout.txt:68-76. The crux reproduced non-zero RGB on its own EXR with three independent readers."
+    },
+    {
+      "predicate": "R-1 status stated (triggered|clear|UNKNOWN) with anchor in the appended section",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "Review doc 13.5 row 2: 'R-1 ... TRIGGERED -> CLEAR', anchored to exr_stats.txt + husk point.total 500000 + render_stage Converged. Verbatim: 'R-1 own signal (empty/black EXR) is refuted: the 500k-point splat component renders non-zero RGB in Karma XPU once a camera + light are present'."
+    },
+    {
+      "predicate": "CRUCIBLE CRITERION: review doc append-only, BP3 rows byte-identical",
+      "builder_verdict": "claimed in the section-13 header and closing line",
+      "crux_verdict": "pass",
+      "crux_anchor": "python byte compare: base (git show 28a0e183:docs/reviews/bp3-h22-worldlabs-probes-2026-09-03.md) = 19461 B; HEAD = 25406 B; head.startswith(base) = True; first byte divergence index = None; appended section starts at byte offset 19461; 5945 bytes appended. Single diff hunk @@ -195,3 +195,66 @@. Evidence: append_only_check.txt"
+    }
+  ],
+  "d2_4_crux": "PASS",
+  "d2_4_crux_anchor": "Crux-owned EXR at <scratchpad>/b/crux_b7_out/b7_wl_fixture.exr: RGB max 0.455811 > 0 on three independent readers (exr_stats_oiiotool.txt, exr_stats_hoiiotool.txt, exr_stats_python_oiio.txt); 69802 of 921600 px carry non-zero RGB; ttfp 0.65083 s well under 30 s; render_stage_label Converged, percent_complete 100 (exr_render_stats_summary.txt).",
+  "r1_crux": "CLEAR",
+  "r1_crux_anchor": "R-1 signal is the empty/black EXR. The crux re-run produced a non-black EXR from the SYNAPSE-authored 500k-point splat component under Karma XPU (geometry_counts.point.total 500000, polygon.total 0, Converged). Signal refuted on my own run, my own out dir, my own readers.",
+  "mutations": [
+    {
+      "id": "B7FIX-M1",
+      "description": "brief-specified: drop the render-camera assignment (line 389 'if kc is not None:' -> 'if False:'), keep the light; re-run --only B-7 into crux_b7_mut1",
+      "check_reddened": "crux D2.4 non-zero-EXR check",
+      "result": "SURVIVED",
+      "evidence": "oiiotool --stats crux_b7_mut1/b7_wl_fixture.exr -> Max 0.457031 x3, Avg 0.013787 x3, alpha avg 0.035126, 530751 B - statistically indistinguishable from the unmutated run. The probe printed 'WARNING: no camera parm on KRS; render camera unbound' and husk printed 5x 'No render camera defined in renderPassState'. husk render_settings.rendercamera = /cameras/camera1 (the BP3 mismatch state) but render_camera resolved to /cameras/wl_cam, and world_to_camera / world_to_screen are byte-identical to the bound run. The camera ERROR signature fires; the PIXEL check does not.",
+      "restored_green": true
+    },
+    {
+      "id": "B7FIX-M1b",
+      "description": "crux-authored control: remove the light (line 380 light-type tuple replaced with a non-existent type so 'light' stays None), KEEP the camera bind; re-run into crux_b7_mut1b",
+      "check_reddened": "crux D2.4 non-zero-EXR check",
+      "result": "SURVIVED",
+      "evidence": "Max 0.618652 x3, Avg 0.011813 x3, alpha avg 0.035128, 537347 B. The probe printed 'WARNING: no dome/distant light type resolved; render will be unlit', yet husk reports light_types.distant = 1, object_counts.light.total = 1, 'Total Lights: 1 (Light Tree Emitters: 0)'. Karma XPU 22.0.400 substitutes a DEFAULT DISTANT light when the stage carries none in this topology, so removing the authored domelight changes the look but not the non-blackness.",
+      "restored_green": true
+    },
+    {
+      "id": "B7FIX-M1c",
+      "description": "crux-authored control: splice the pre-fix BP3 b7 (base 28a0e183 lines 366-386) verbatim over HEAD b7, keeping the --only plumbing so --only B-7 still resolves; re-run into crux_b7_mut1c",
+      "check_reddened": "crux D2.4 non-zero-EXR check",
+      "result": "REDDENED",
+      "evidence": "Max 0.000000 0.000000 0.000000 1.000000, Avg 0.000000 x3, StdDev 0.000000 x3 - flat black, 209447 B (BP3 recorded 189224). Alpha avg 0.035138 matches the lit runs, so the same geometry rendered unlit. husk object_counts.light.total = 0, every light_types entry 0, 'Total Lights: 0', xpu render_time 0.325 s vs 1.87 s lit, and an Error Summary of '5 total errors'. The fix AS A WHOLE does flip black to non-black, and the BP3 black reproduces on 22.0.400.",
+      "restored_green": true
+    },
+    {
+      "id": "B7FIX-M2",
+      "description": "brief-specified: insert 'pass  # crux-M2' as the first statement of 'def b3(ctx):' and re-run the T-A hunk audit",
+      "check_reddened": "crux T-A hunk audit (check_hunks.py)",
+      "result": "REDDENED",
+      "evidence": "Attempt 1 was invalid and is recorded rather than hidden: the checker diffed 28a0e183..HEAD, which cannot see a working-tree edit, so it reddened only because the +1 line shift re-mapped the b7 decorator hunk onto b6 - an artefact, not a detection. Attempt 2 gave the checker a WORKTREE mode (diff 28a0e183 against the working tree) and it reddened correctly: '@@ -246,0 +247 @@ def b3(ctx):' -> owner b3 -> OUT-OF-SCOPE, 1 of 11 hunks failed, the other 10 still OK. Restored -> PASS in both modes.",
+      "restored_green": true
+    },
+    {
+      "id": "B7FIX-M3",
+      "description": "brief-specified: flip one character in a BP3 row of the review doc (line 62, MaterialX -> MAterialX) and re-run the T-B byte-identity check",
+      "check_reddened": "crux T-B append-only byte-identity check (check_append_only.py)",
+      "result": "REDDENED",
+      "evidence": "Attempt 1 targeted line 100, which is blank, so no edit landed and the check correctly stayed green (no false redden) - recorded, then retargeted. Attempt 2 on line 62: 'head.startswith(base): False', first byte divergence index 4026, base 'MaterialX' vs head 'MAterialX'. Restored -> PASS, appended section again at byte 19461.",
+      "restored_green": true
+    }
+  ],
+  "discrepancies": [
+    {
+      "id": "D1",
+      "severity": "major",
+      "claim": "Review 13.1 and 13.5 attribute the black-to-non-black flip to the camera bind plus the authored light ('once a camera + light are present'). Mutation M1 refutes the camera half: with the bind removed and husk reporting render_settings.rendercamera = /cameras/camera1 plus 5 'No render camera defined' errors, the EXR is still non-black (max 0.457031) and the projection matrices are byte-identical to the bound run. On this fixture the authored camera sits at the default transform, so binding it silences six error lines and changes no pixels.",
+      "anchor": "mut1_exr_stats_oiiotool.txt + mut1_render_stats_summary.txt + mut1_stdout.txt; world_to_camera equality checked against exr_render_stats.json"
+    },
+    {
+      "id": "D2",
+      "severity": "major",
+      "claim": "Review 13.1 'BP3 had no light (husk Total Lights 0 -> black RGB)' is not reproducible by removing the light from the fixed script. M1b removes the authored domelight and Karma XPU 22.0.400 substitutes a default DISTANT light (light_types.distant = 1, 'Total Lights: 1'), so the render stays non-black. Across all four crux runs the only variable that co-varies perfectly with black is husk Total Lights == 0, and that state arises only under the BP3 topology (usdrender_rop fed from the camera LOP downstream of the KRS). The builder diff DID change that topology (rop.setInput(0, cam) -> rop.setInput(0, krs)) but the review names it nowhere as causal.",
+      "anchor": "mut1b_render_stats_summary.txt (distant=1, total=1) vs mut1c_render_stats_summary.txt (all light_types 0, total 0, black); mutation_log.txt comparison table"
+    },
+    {
+      "id": "D3",
+      "severity": "major",
+      "claim": "The leg's own D2.4 acceptance check cannot discriminate the fix from its absence at the component level. Neither the brief-specified nor the crux-authored single-component removal (M1, M1b) reddened it; only the full pre-fix revert (M1c) did. The evidence supports the composite verdict but not the per-component story the review tells.",
+      "anchor": "mutation_log.txt comparison table; M1 SURVIVED, M1b SURVIVED, M1c REDDENED"
+    },
+    {
+      "id": "D4",
+      "severity": "minor",
+      "claim": "Karma XPU is nondeterministic and the review quotes several run-specific numbers to full precision as if reproducible. Builder vs crux: RGB max 0.452881 vs 0.455811 (delta 0.0029, differs at the 3rd decimal); RGB stddev 0.064185 vs 0.064177; alpha avg 0.035123 vs 0.035126; ttfp 0.662 vs 0.651 s; EXR 530347 vs 530296 bytes; B-7 5.84 vs 5.46 s. RGB avg matches to all 6 quoted decimals (0.013786). Every categorical field is identical. Nothing here changes D2.4 or R-1, but 13.3 presents a byte count and a 6-decimal max as settled figures.",
+      "anchor": "exr_stats_oiiotool.txt vs harness/notes/h22wl/bp4_b7fix/exr_stats.txt; exr_render_stats_summary.txt vs builder_exr_render_stats_summary.txt"
+    },
+    {
+      "id": "D5",
+      "severity": "nit",
+      "claim": "The committed exr_stats.txt the review cites for the monochrome nit ends with the line 'Monochrome: No', which reads as contradicting 13.5's 'the three RGB channels carry identical aggregate stats'. It is an OIIO artefact: the test includes alpha. Stripping alpha makes the same tool print 'Monochrome: Yes'. A reader checking the anchor sees an apparent contradiction.",
+      "anchor": "oiiotool <exr> --ch R,G,B -o rgb.exr then oiiotool --stats rgb.exr -> 'Monochrome: Yes'; full RGBA -> 'Monochrome: No'"
+    },
+    {
+      "id": "D6",
+      "severity": "nit",
+      "claim": "The builder's committed exr_info.txt was produced by the OIIO iinfo on PATH (metadata key format 'husk:render_stats: {...}'), not Houdini's own iinfo.exe (which emits 'husk:render_stats (type string):= {...}'). Section 13.4 cites exr_info.txt without naming the tool, unlike 13.3 which names oiiotool. Immaterial to the verdicts - I reparsed the builder's file and every categorical value reproduces - but the anchor is one step short of re-runnable.",
+      "anchor": "builder file line 27 vs crux exr_info.txt; builder_exr_render_stats_summary.txt reproduces render_camera, lights, ttfp 0.662445, shader_calls and geometry counts"
+    }
+  ],
+  "findings": [
+    {
+      "severity": "confirming",
+      "claim": "The core BP4-B7FIX result is real and independently reproduced. A fresh clone, my own out dir, my own recomputed fixture hashes and three independent EXR readers give a non-black Karma XPU render of the 500k-point splat component in 6.3 s of probe time with ttfp 0.65 s. D2.4 PASS and R-1 CLEAR both stand on crux evidence alone.",
+      "anchor": "crux_stdout.txt, crux_probe_results.json, exr_stats_oiiotool.txt, exr_stats_hoiiotool.txt, exr_stats_python_oiio.txt, exr_render_stats_summary.txt"
+    },
+    {
+      "severity": "confirming",
+      "claim": "The pre-fix state really was black on this build. M1c splices the BP3 b7 back in and produces a flat-zero RGB EXR with husk Total Lights 0, so the leg is fixing a real defect, not re-labelling one. This is the strongest single piece of evidence in the leg and the builder did not run it.",
+      "anchor": "mut1c_exr_stats_oiiotool.txt (Max/Avg/StdDev all 0.000000), mut1c_render_stats_summary.txt, mut1c_stdout.txt"
+    },
+    {
+      "severity": "major",
+      "claim": "The review's causal narrative is wrong in its two named parts (see D1, D2) while its verdicts are right. Recommended correction: state that the composite rewiring is what restores lighting to the render, and that the camera bind removes six husk errors without changing pixels, rather than 'once a camera + light are present'.",
+      "anchor": "mutation_log.txt comparison table across baseline / M1 / M1b / M1c"
+    },
+    {
+      "severity": "info",
+      "claim": "The builder's monochrome nit is correct and UNDERSTATED. They claimed aggregate identity to 6 decimals; the truth is pixelwise identity - R, G and B are equal on all 921600 pixels, max |R-G| = max |G-B| = max |R-B| = 0.0, max per-pixel chroma 0.0. Combined with shader_calls.surface = 0 this is solid support for the spawned BP4-B7SPLAT-COLOR item.",
+      "anchor": "exr_stats_python_oiio.txt (hython + OpenImageIO 2.5.18.0 + numpy)"
+    },
+    {
+      "severity": "info",
+      "claim": "The --only plumbing is behaviour-neutral for the default P,B,S case and for every non-B-7 probe. Every pid in 'order' starts with P, B or S, so _resolve_run_set returns all 22 ids and the new 'else: RESULTS.setdefault(pid, NOT_RUN)' branch never fires; probe_results.json keeps its old shape. No probe's logic changed. Two real behaviour changes, both intended: a hyphenated token is now meaningful (the old code matched on fn.pid[0], so --only B-7 previously ran P-0 only), and empty tokens from a trailing comma are filtered. setdefault cannot mask a RAN or BLOCKED row because the else-branch only runs for probes that were skipped.",
+      "anchor": "harness/probes/synapse_blueprint_probes.py:496-531 (new file); crux_probe_results.json shows 16 explicit NOT_RUN rows under --only B-7"
+    },
+    {
+      "severity": "info",
+      "claim": "The dependency closure resolves exactly as documented: --only B-7 pulls B-6, then P-3, B-1 and B-3, plus the always-on P-0. Six RAN, sixteen NOT_RUN, identical id-for-id to the builder's run.",
+      "anchor": "crux_probe_results.json vs harness/notes/h22wl/bp4_b7fix/probe_results.json - zero status divergences"
+    },
+    {
+      "severity": "method",
+      "claim": "Two of my own checks failed before they worked, and both failures are recorded in the mutation log rather than quietly re-run: M2 attempt 1 reddened via a line-shift artefact because the checker diffed base..HEAD instead of base..worktree, and M3 attempt 1 targeted a blank line so no mutation landed. The first is the more instructive - a mutation check that reddens for the wrong reason is indistinguishable from a working one unless the redden reason is read.",
+      "anchor": "mutation_log.txt entries B7FIX-M2 and B7FIX-M3"
+    }
+  ],
+  "artifacts": [
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/run_meta.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/crux_stdout.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/crux_probe_results.json",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/exr_stats_oiiotool.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/exr_stats_hoiiotool.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/exr_stats_python_oiio.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/exr_info.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/exr_render_stats.json",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/exr_render_stats_summary.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/builder_exr_render_stats_summary.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/hunk_audit.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/append_only_check.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/mutation_log.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/mut1_stdout.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/mut1_exr_stats_oiiotool.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/mut1_render_stats_summary.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/mut1b_stdout.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/mut1b_exr_stats_oiiotool.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/mut1b_render_stats_summary.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/mut1c_stdout.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/mut1c_exr_stats_oiiotool.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/mut1c_render_stats_summary.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/B7FIX_report.json",
+    "binaries kept in the scratch clone only: <scratchpad>/b/crux_b7_out/{b7_wl_fixture.exr, b6_wl_component.usdc}, crux_b7_mut1/, crux_b7_mut1b/, crux_b7_mut1c/",
+    "crux checker scripts: <scratchpad>/check_hunks.py, <scratchpad>/check_append_only.py, <scratchpad>/parse_stats.py"
+  ],
+  "scratch_status_clean": true,
+  "scratch_status_detail": "git status --short in the scratch clone lists only untracked crux out dirs: crux_b7_out/, crux_b7_mut1/, crux_b7_mut1b/, crux_b7_mut1c/. git diff --stat is empty. No tracked file differs from HEAD. No file was written outside the scratch clone except the named evidence dir under the crux worktree.",
+  "verdict": "GREEN_WITH_FINDINGS - all four builder acceptance rows and the append-only crucible criterion independently PASS; D2.4 PASS and R-1 CLEAR confirmed on crux evidence; the review's per-component causal explanation of the fix is refuted (D1, D2, D3) without disturbing the verdicts."
+}

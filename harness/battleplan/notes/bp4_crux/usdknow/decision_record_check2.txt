@@ -1,0 +1,9 @@
+sec   choice                                 arc        neigh  failure  tier  neighbour phrases found
+2.1   payload for splat + collider           payload    3      yes      y     Reference; Sublayer; inline authoring
+2.2   purpose render / proxy                 local      3      yes      y     `default`; `guide`; `default`
+2.3   variantSet splatTier full|low          variant    2      yes      y     reference-swap; two payloads
+2.4   variantSet physics none|collision      variant    0      yes      y     
+2.5   kind = component                       local      2      yes      y     `assembly` / `group`; absent
+2.6   customData:worldlabs provenance        local      2      yes      y     a typed USD schema / appli; sidecar-manifest only
+2.7   instanceable yes/no                    local      3      yes      y     there is exactly **one ins; an instanceable prim becom; instance proxies complicat
+2.8   metric/ground/chirality transform home local      3      yes      y     a payloaded file already i; an `Xform` op is a; the **`applied` ledger

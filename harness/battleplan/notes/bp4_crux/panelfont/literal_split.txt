@@ -1,0 +1,45 @@
+TRULY HARDCODED (value is a literal) = 166
+%-INTERPOLATED (token-fed at runtime) = 8
+TOTAL = 174
+
+--- %-interpolated, per file ---
+    3  python/synapse/panel/face_token.py
+    2  python/synapse/panel/health_strip.py
+    2  python/synapse/panel/synapse_panel.py
+    1  python/synapse/panel/face_review.py
+
+--- TRULY HARDCODED per file (top 20) ---
+   44  python/synapse/panel/styles.py
+   33  python/synapse/panel/hda_views.py
+   14  python/synapse/panel/context_bar.py
+   13  python/synapse/panel/gate_widget.py
+    9  python/synapse/panel/render_preflight.py
+    7  python/synapse/panel/apex_explainer.py
+    6  python/synapse/panel/performance_profiler.py
+    6  python/synapse/panel/save_shot.py
+    6  python/synapse/panel/scene_doctor.py
+    6  python/synapse/panel/vex_tutor.py
+    5  python/synapse/panel/bookmarks.py
+    2  python/synapse/panel/apex_trace.py
+    2  python/synapse/panel/chat_display.py
+    2  python/synapse/panel/cross_scene.py
+    2  python/synapse/panel/dependency_map.py
+    2  python/synapse/panel/error_translator.py
+    2  python/synapse/panel/face_review.py
+    2  python/synapse/panel/quick_actions.py
+    2  python/synapse/panel/session_journal.py
+    1  python/synapse/panel/agent_health.py
+
+--- 12 sample truly-hardcoded rows ---
+   python/synapse/panel/agent_health.py:211: font-size:11px">'
+   python/synapse/panel/apex_explainer.py:824: font-family:sans-serif
+   python/synapse/panel/apex_explainer.py:826: font-size:18px
+   python/synapse/panel/apex_explainer.py:826: font-weight:bold
+   python/synapse/panel/apex_explainer.py:829: font-size:13px
+   python/synapse/panel/apex_explainer.py:833: font-size:13px
+   python/synapse/panel/apex_explainer.py:839: font-size:13px
+   python/synapse/panel/apex_explainer.py:844: font-size:12px
+   python/synapse/panel/apex_trace.py:716: font-family:monospace
+   python/synapse/panel/apex_trace.py:729: font-family:monospace
+   python/synapse/panel/bookmarks.py:175: font-size:13px
+   python/synapse/panel/bookmarks.py:197: font-size:11px

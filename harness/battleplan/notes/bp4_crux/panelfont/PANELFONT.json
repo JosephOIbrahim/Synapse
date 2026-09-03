@@ -1,0 +1,284 @@
+{
+  "lane": "PANELFONT",
+  "target": {
+    "branch": "bp4/panelfont",
+    "head": "4b3b3967",
+    "product": "81f3fb08",
+    "base": "28a0e183"
+  },
+  "binding_proof": "NEGATIVE: unbound `python -c` run from C:/Users/User resolved synapse.panel.designsystem.tokens to C:\\Users\\User\\Synapse\\python\\synapse\\panel\\designsystem\\tokens.py (master, via the editable install) and raised AttributeError: module 'synapse.panel.designsystem.tokens' has no attribute 'FONT_FLOOR_PX'. POSITIVE: with PYTHONPATH=<SCR_P>/python;<SCR_P> the same import printed __file__ = ...\\scratchpad\\p\\python\\synapse\\panel\\designsystem\\tokens.py and FONT_FLOOR_PX: 10. pytest binds itself via pyproject.toml pythonpath=[python] (line 108); every pytest run printed rootdir = the scratch clone. Interpreter: Python 3.14.2, pytest 8.4.2, no PySide6 (Qt/needs_houdini tests skip honestly).",
+  "tests": {
+    "master": {
+      "passed": 346,
+      "skipped": 85,
+      "failed": 0,
+      "command": "python -m pytest tests -k panel -q -p no:cacheprovider",
+      "tree": "scratchpad/m @ 3a27d1ff",
+      "log": "pytest_panel_master.log"
+    },
+    "branch": {
+      "passed": 352,
+      "skipped": 85,
+      "failed": 0,
+      "command": "python -m pytest tests -k panel -q -p no:cacheprovider",
+      "tree": "scratchpad/p @ 4b3b3967",
+      "log": "pytest_panel_branch.log"
+    },
+    "typography": {
+      "passed": 6,
+      "failed": 0,
+      "tests": [
+        "test_qss_stylesheet_source_has_no_literal_typography",
+        "test_type_roles_use_weight_tokens",
+        "test_floor_constant_has_provenance",
+        "test_no_size_token_below_floor",
+        "test_type_scale_is_at_most_five_sizes",
+        "test_probe_script_present_and_read_only"
+      ]
+    },
+    "outside_k_panel": {
+      "note": "Not part of the acceptance command; the crux ran it anyway.",
+      "test_rails_branch": {
+        "passed": 43,
+        "failed": 2,
+        "failing": [
+          "tests/test_rails.py::test_resolve_referee_prints_fable5",
+          "tests/test_rails.py::test_cli_resolve_positional_referee"
+        ]
+      },
+      "test_rails_master": { "passed": 45, "failed": 0 },
+      "verdict": "PRE-EXISTING and already fixed on master (commit 3a27d1ff). Not caused by the typography change. The receipt named only 1 of the 2."
+    }
+  },
+  "stylesheet_hashes": {
+    "scales": [1.0, 1.15, 1.25, 1.4, 1.6],
+    "branch": ["1779b114", "7a1a99e7", "e7d4298e", "be8d2aaa", "c99024cd"],
+    "master": ["1779b114", "7a1a99e7", "e7d4298e", "be8d2aaa", "c99024cd"],
+    "len_each": 18076,
+    "identical": true,
+    "equals_builder_claim": true,
+    "sensitivity_proven": "PANELFONT-M1 and PANELFONT-M2 each moved all five hashes, so the equality is a real measurement, not a hash that cannot move."
+  },
+  "tokens": {
+    "floor": 10,
+    "provenance_head": "UNKNOWN - the local H22.0.400 help cache states no default UI font size (.../houdini22.0/config/Help/cache, ref+basics+hom searched 2026-09-03); awaiting the scripts/probe_ui_font.py GUI paste. Floor pinned to the smallest size shipped on master (SIZE_MICRO=10) per BP4-PANELFONT, so no role is lowered.",
+    "provenance_opens_with_unknown": true,
+    "sizes": {
+      "SIZE_MICRO": 10,
+      "SIZE_LABEL": 10,
+      "SIZE_SMALL": 11,
+      "SIZE_UI": 12,
+      "SIZE_BODY": 12,
+      "SIZE_TITLE": 15,
+      "SIZE_HERO": 19
+    },
+    "distinct_sizes": 5,
+    "min_size": 10,
+    "min_ge_floor": true,
+    "weights": { "WEIGHT_REGULAR": 400, "WEIGHT_MEDIUM": 500, "WEIGHT_SEMIBOLD": 600 },
+    "families": { "FONT_SANS": "Space Grotesk", "FONT_MONO": "Space Mono" },
+    "line_height_token": {
+      "name": "CHAT_LEADING_PT",
+      "value": 0.75,
+      "note": "a leading in pt, not a per-role CSS line-height token. The builder's justification (Qt's QTextDocument HTML subset does not implement CSS line-height) is anchored at chat_display.py:42 and message_formatter.py:45; the crux read chat_display.py:42 and it says exactly that."
+    },
+    "help_cache_recheck": "Crux searched the WHOLE cache (2280 files), wider than the builder's ref+basics+hom subset. Files matching 'UI font|default font|font size|fontsize|interface font': exactly 1, nodes/sop/MOPSPlus--Typography-1.0.json, whose hits are that third-party SOP's own 'Font Size' PARAMETER doc ('Use this slider to change the preview font size'), not a Houdini preferences statement. Files matching 'General User Interface|Interface font|preference.*font': 0. DOC-STATED = absent is CONFIRMED."
+  },
+  "grep": {
+    "total_hits_outside_tokens": 260,
+    "method_a_note": "Method A, the brief's broad grep, counting matching LINES, excluding designsystem/tokens.py: font-(size|family|weight): | line-height: | setPointSize( | setPixelSize( | setPointSizeF( | QFont(",
+    "per_file_top": [
+      ["python/synapse/panel/styles.py", 75],
+      ["python/synapse/panel/hda_views.py", 22],
+      ["python/synapse/panel/gate_widget.py", 21],
+      ["python/synapse/panel/message_formatter.py", 15],
+      ["python/synapse/panel/recipe_book.py", 14],
+      ["python/synapse/panel/context_bar.py", 13],
+      ["python/synapse/panel/designsystem/qss.py", 10],
+      ["python/synapse/panel/apex_recipes.py", 9],
+      ["python/synapse/panel/vex_tutor.py", 6],
+      ["python/synapse/panel/save_shot.py", 6],
+      ["python/synapse/panel/render_preflight.py", 6],
+      ["python/synapse/panel/apex_explainer.py", 6],
+      ["python/synapse/panel/scene_doctor.py", 5],
+      ["python/synapse/panel/performance_profiler.py", 5],
+      ["python/synapse/panel/face_review.py", 5]
+    ],
+    "method_a_per_pattern_lines": {
+      "font-size:": 164,
+      "font-family:": 87,
+      "font-weight:": 33,
+      "line-height:": 7,
+      "setPixelSize(": 6,
+      "QFont(": 9,
+      "setPointSize(": 0,
+      "setPointSizeF(": 0
+    },
+    "method_b_test_regex_panelwide": {
+      "regex": "the TEST's own literal regex, applied after stripping CSS comments, to all 92 .py files under python/synapse/panel/ - the shipped test applies it to exactly ONE file, designsystem/qss.py",
+      "total": 174,
+      "truly_hardcoded": 166,
+      "percent_interpolated_token_fed": 8,
+      "files_with_hits": 23,
+      "interpolated_files": ["face_token.py x3", "health_strip.py x2", "synapse_panel.py x2", "face_review.py x1"],
+      "per_file_hardcoded_top": [
+        ["styles.py", 44],
+        ["hda_views.py", 33],
+        ["context_bar.py", 14],
+        ["gate_widget.py", 13],
+        ["render_preflight.py", 9],
+        ["apex_explainer.py", 7],
+        ["performance_profiler.py", 6],
+        ["save_shot.py", 6],
+        ["scene_doctor.py", 6],
+        ["vex_tutor.py", 6],
+        ["bookmarks.py", 5]
+      ]
+    },
+    "designsystem_literals": {
+      "__init__.py": 0,
+      "components.py": 0,
+      "fontload.py": 0,
+      "loader.py": 0,
+      "motion.py": 0,
+      "qss.py": 0,
+      "theme_source.py": 0,
+      "tokens.py": 0,
+      "note": "all 8 designsystem modules are at ZERO under the test's own regex - the authority is cleaner than the shipped test proves, since the test opens only qss.py"
+    },
+    "audit_inventory_reproduces": {
+      "claimed": { "font-size": 167, "font-family": 88, "font-weight": 33, "line-height": 13 },
+      "crux_same_method": { "font-size": 167, "font-family": 88, "font-weight": 33, "line-height": 13 },
+      "method": "bare-word OCCURRENCE count (grep -oE, no colon required) over python/synapse/panel/**/*.py INCLUDING designsystem/tokens.py",
+      "crux_line_method_excl_tokens": { "font-size": 164, "font-family": 87, "font-weight": 33, "line-height": 7 },
+      "verdict": "EXACT reproduction under the stated method. The deltas against the line-with-colon method are occurrence-vs-line and word-vs-word-colon; the line-height gap is 6 prose/comment mentions, chiefly the notes explaining that Qt does not implement CSS line-height. No inflation found."
+    }
+  },
+  "acceptance": [
+    {
+      "predicate": "BP4_PANELFONT_AUDIT.md has typography rows per file:line and the floor's provenance (measured | DOC-STATED | UNKNOWN)",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "Audit is 354 lines, sections 1-9. Section 3 carries a 32-row per-FILE table (fsz/ffam/fwt/flh/pt/sps + territory); the file:LINE citations live in the 3a-3d narrative. Crux opened 10 cited lines in the branch source, 10/10 accurate: context_bar.py:364 = font-size: 9pt; font-family: '{mono}', Consolas, monospace; hda_views.py:72 = color: {c}; font-family: monospace; font-size: 11px; qss.py:52 = font-weight: {t.WEIGHT_SEMIBOLD}; qss.py:107 and qss.py:216 = the other two weight sites; qss.py:21 = 'No font-family: inherit Houdini's app-level UI font (native)'; synapse_panel.py:1837 = the dynamic QTextEdit#DsInput font-size: %dpx filled from t.scaled(t.SIZE_UI, self._font_scale); render_preflight.py:877 = <div style='font-family: monospace; font-size: 13px;'>; chat_display.py:42 = 'CSS line-height and ProportionalHeight were both measured inert here'; gate_widget.py:182 = font-size: {sz}px; font-weight: 700; border: none. Section 4 states the floor as UNKNOWN in a 3-row provenance ladder (measured = not yet / DOC-STATED = absent / H21 recall deliberately NOT used), independently re-confirmed by the crux over a wider cache search.",
+      "nit": "Audit section 9 describes the section-3 table as carrying 'file:line'. It does not - it is per-file with count columns. The line citations are in the prose beneath it. Predicate still satisfied by the document as a whole."
+    },
+    {
+      "predicate": "token module defines family + scale + weights + line-heights; test_panel_typography finds no typography literal outside it  [READING 1: as WRITTEN, panel-wide]",
+      "builder_verdict": "pass (declared as scoped)",
+      "crux_verdict": "fail",
+      "crux_anchor": "The token-module half PASSES: FONT_SANS/FONT_MONO plus CSS chains (families), 5 distinct role-named sizes 10/11/12/15/19 (scale), WEIGHT_REGULAR/MEDIUM/SEMIBOLD (weights), CHAT_LEADING_PT = 0.75 (line-height, as a pt leading rather than a per-role CSS token). The TEST half FAILS as written: test_panel_typography opens exactly one file (tests/test_panel_typography.py, _read_ds of qss.py) and scans nothing else, while the crux ran that same regex across all 92 panel modules and found 174 hits in 23 files, 166 of them truly hardcoded (styles.py 44, hda_views.py 33, context_bar.py 14, gate_widget.py 13, render_preflight.py 9, and 17 more). No test in the repo scans them. 'Finds no typography literal outside it' is not something this test can find, because it never looks.",
+      "note": "The builder did not conceal this. The scope limit is stated in the test's own module docstring, in audit sections 3 and 9, and is routed to the referee as receipt for_ruling[0]."
+    },
+    {
+      "predicate": "token module defines family + scale + weights + line-heights; test_panel_typography finds no typography literal outside it  [READING 2: as the builder SCOPED it, design-system authority only]",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "Crux applied the test's own regex to every file under python/synapse/panel/designsystem/: all 8 modules score 0 (qss.py, tokens.py, components.py, fontload.py, loader.py, motion.py, theme_source.py, __init__.py). The authority is clean, and cleaner than the shipped test proves. Out-of-territory literals are inventoried per file in audit section 3 and carried forward as 4 named held spawns (BP4-INLINE-TYPO, BP4-PT-HOTSPOT, BP4-STYLES-TYPO, BP4-FONTLOAD-1SRC).",
+      "note": "Referee call. The brief's crucible criterion ('grep the branch for any remaining hardcoded typography OUTSIDE the token module and list file:line') presumes the panel-wide reading, while the T4 diff-surface constraint ('designsystem/manifests/qss/layout/scripts files only') makes the panel-wide reading unbuildable in one leg. The two acceptance rows are in tension with each other, not with the builder."
+    },
+    {
+      "predicate": "no size token below the floor constant",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "Crux dumped every SIZE_* int from the branch-bound token module: min = 10 (SIZE_MICRO and its alias SIZE_LABEL) vs FONT_FLOOR_PX = 10, so min >= floor holds at EQUALITY. TYPE_ROLES sizes (19/15/12/12/12/11/11) are all >= 10. Guard proven live by PANELFONT-M2: SIZE_MICRO 10 -> 9 reddens test_no_size_token_below_floor with SIZE_LABEL 9 and SIZE_MICRO 9, and it is the ONLY test in the entire -k panel selection that catches it (1 failed / 351 passed).",
+      "nit": "The floor is DEFINED as the smallest size already shipped, so this invariant could not have failed on the day it was written. It is a real anti-regression ratchet, not yet a measurement. It becomes a constraint in Joe's sense only after the GUI probe raises FONT_FLOOR_PX. The builder states this in the token comment, audit section 4, the receipt, and the BP4-FLOOR-LIFT spawn."
+    },
+    {
+      "predicate": "panel tests green before and after; diff limited to designsystem/manifests/qss/layout/scripts + the new test",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "Crux re-ran both sides in fresh shared clones: master 3a27d1ff = 346 passed / 85 skipped / 0 failed; branch 4b3b3967 = 352 passed / 85 skipped / 0 failed. Exactly +6, the new test file. Diff scope: git diff --name-status 28a0e183 HEAD = 6 paths (BP4_PANELFONT_AUDIT.md, the BP4-PANELFONT.json receipt, designsystem/qss.py, designsystem/tokens.py, scripts/probe_ui_font.py, tests/test_panel_typography.py). Every changed path under python/synapse/panel/ is designsystem/ or scripts/, nothing else. git diff 28a0e183 HEAD -- python/synapse/panel/synapse_panel.py piped to wc -c = 0. Substitution-only confirmed by grepping the ADDED lines of qss.py + tokens.py for import/def/class/QTimer/connect(/QWidget/Signal/Slot: ZERO matches. The only new statements are 5 constants (FONT_FLOOR_PX, FONT_FLOOR_PROVENANCE, WEIGHT_REGULAR/MEDIUM/SEMIBOLD) plus the TYPE_ROLES bare-int-to-token substitution.",
+      "nit": "The acceptance COMMAND is a weaker gate than it reads. pytest tests -k panel deselects tests/test_rope_design_conformance.py::test_no_hardcoded_hex_or_px_outside_designsystem (3 of that file's 4 tests are deselected) - the guard the BP3 precedent relies on. Separately, 2 tests outside the panel selection are red on the branch (tests/test_rails.py), pre-existing and already fixed on master."
+    },
+    {
+      "predicate": "gui_required: probe_ui_font.py output pasted from the Houdini 22.0.400 GUI and before/after screenshots captured",
+      "builder_verdict": "UNKNOWN",
+      "crux_verdict": "UNKNOWN",
+      "crux_anchor": "Genuinely unobtainable to this lane. No GUI was attempted and none should be. Crux read python/synapse/panel/scripts/probe_ui_font.py statically (112 lines): READ-ONLY, containing none of setParm, set_parm, .set(, hou.hipFile, createNode. It prints QApplication.font() family/pointSize/pointSizeF/pixelSize/weight, QFontInfo resolved family+pointSize+pixelSize, and hou.ui.scaledSize(1) behind a callable(getattr(...)) guard inside try/except. PySide6 with a PySide2 fallback. Both unavailability paths (no Qt binding; QApplication.instance() is None) print an explicit UNAVAILABLE and state 'Skip is NOT a pass', so a skipped probe cannot be mistaken for a measurement. Static risk under a real GUI: probe() auto-runs only under the __main__ guard, so an exec(open(...).read()) in a non-main namespace prints nothing - the module docstring already tells Joe to call probe() by hand in that case."
+    }
+  ],
+  "mutations": [
+    {
+      "id": "PANELFONT-M1",
+      "description": "Re-introduce a hardcoded px size: designsystem/qss.py line 51, font-size: {s(t.SIZE_UI)}px -> font-size: 13px",
+      "check_reddened": "tests/test_panel_typography.py::test_qss_stylesheet_source_has_no_literal_typography",
+      "result": "REDDENED",
+      "evidence": "AssertionError: literal typography in designsystem/qss.py (must be a token ref such as {s(t.SIZE_UI)}px or {t.WEIGHT_SEMIBOLD}): ['L42: font-size: 13px'] -- 1 failed, 5 passed. 5-scale hashes all moved: 2c26ba32 / b1532305 / b6061705 / b0ca38ae / 17de59f5.",
+      "restored_green": true,
+      "nit": "The failure message reports L42 while the real source line is 51. The test computes line numbers on the comment-STRIPPED body, so every reported line is offset by the comment bytes above it. Cosmetic, but it sends a reader to the wrong rule block."
+    },
+    {
+      "id": "PANELFONT-M2",
+      "description": "Size token below the floor: designsystem/tokens.py line 308, SIZE_MICRO = 10 -> SIZE_MICRO = 9",
+      "check_reddened": "tests/test_panel_typography.py::test_no_size_token_below_floor",
+      "result": "REDDENED",
+      "evidence": "AssertionError: size token(s) below FONT_FLOOR_PX=10: SIZE_LABEL 9, SIZE_MICRO 9 (SIZE_LABEL is an alias of SIZE_MICRO so both report). Full -k panel sweep under the mutation: 1 failed / 351 passed - the new test is the ONLY guard in the suite that catches it. 5-scale hashes all moved: 071b00a6 at len 18074 / f1f29567 / b450201a / 4a267bba / b583d8e5.",
+      "restored_green": true
+    },
+    {
+      "id": "PANELFONT-M3",
+      "description": "QWidget subclass with a hardcoded hex and a hardcoded px, appended to python/synapse/panel/synapse_panel.py: class CruxProbeWidget(QtWidgets.QWidget) whose __init__ calls setStyleSheet with color #ff0066 and font-size 13px",
+      "check_reddened": "NOTHING under the acceptance command; tests/test_rope_design_conformance.py::test_no_hardcoded_hex_or_px_outside_designsystem when that file is run directly",
+      "result": "SURVIVED",
+      "evidence": "python -m pytest tests -k panel -q -> 352 passed, 85 skipped, 0 failed. Nothing reddened. Run directly: python -m pytest tests/test_rope_design_conformance.py -v -> test_no_hardcoded_hex_or_px_outside_designsystem FAILED with python\\synapse\\panel\\synapse_panel.py:2757: ['#ff0066', '13px'], 1 failed / 3 passed. ROOT CAUSE: pytest tests/test_rope_design_conformance.py -k panel --collect-only -> collected 4 items / 3 deselected / 1 selected. Neither the module name (test_rope_design_conformance) nor the test name contains the substring 'panel', so -k panel never runs the guard; only test_panel_consumes_designsystem is selected. The crux T-A diff-scope check DOES redden: git diff 28a0e183 -- python/synapse/panel/synapse_panel.py piped to wc -c = 727, expected 0.",
+      "restored_green": true,
+      "finding": "GUARD HOLE IN THE ACCEPTANCE COMMAND, not in the guard. The BP3 precedent guard is alive and correct; the leg's acceptance evidence simply never invokes it. The crux diff-scope check is the only thing in this lane that catches it."
+    },
+    {
+      "id": "PANELFONT-M4",
+      "description": "Bonus: TYPE_ROLES body weight WEIGHT_REGULAR -> bare literal 400",
+      "check_reddened": "tests/test_panel_typography.py::test_type_roles_use_weight_tokens",
+      "result": "SURVIVED",
+      "evidence": "6 passed; full -k panel 352 passed; 5-scale hashes UNCHANGED. The test asserts set membership of the weight VALUE (spec[2] in the set 400/500/600); 400 == WEIGHT_REGULAR, so a bare literal is indistinguishable from the token at runtime and the mutation is a semantic no-op.",
+      "restored_green": true,
+      "verdict_class": "guard nuance, not a defect",
+      "note": "The test's own docstring claims TYPE_ROLES weights are 'never bare literals'. That half of the claim is enforced by nothing. A source-level assertion (that the TYPE_ROLES literal text in tokens.py references WEIGHT_*) would close it."
+    },
+    {
+      "id": "PANELFONT-M4b",
+      "description": "Control for M4: TYPE_ROLES body weight -> 450, a value OUTSIDE the token set",
+      "check_reddened": "tests/test_panel_typography.py::test_type_roles_use_weight_tokens",
+      "result": "REDDENED",
+      "evidence": "1 failed, 5 passed. Proves the weight guard is real for out-of-set VALUES and blind only to bare-literal STYLE, so M4's survival is a scope nuance rather than a dead test.",
+      "restored_green": true
+    }
+  ],
+  "discrepancies": [
+    "Receipt finding 2 names ONE pre-existing red (tests/test_rails.py::test_resolve_referee_prints_fable5). The branch actually has TWO: test_resolve_referee_prints_fable5 and test_cli_resolve_positional_referee (43 passed / 2 failed). Both are green on master (45 passed) - master commit 3a27d1ff fixed exactly this. The claim's substance (pre-existing, out of territory, not caused by the typography change) is CORRECT; the count is understated by one, and the condition is already resolved upstream, so a rebase clears it.",
+    "Audit section 9 describes the section-3 table as carrying 'file:line'. The table is per-FILE with count columns and no line numbers; the file:line citations live in the 3a-3d narrative beneath it. The predicate is still satisfied by the document as a whole (10/10 spot-checked citations accurate), but the section-9 self-description is inaccurate.",
+    "Receipt acceptance row 4 lists the diff as 5 paths and calls it 'ONLY'. Correct for product 81f3fb08; branch HEAD 4b3b3967 adds a 6th path, the receipt JSON itself. No substantive drift, but a reader diffing against HEAD sees 6 files, not 5.",
+    "Audit section 9's crucible map says 'a non-token weight in TYPE_ROLES -> test_type_roles_use_weight_tokens'. True for a non-token VALUE (crux M4b, 450, reddens); FALSE for a bare literal that equals a token (crux M4, 400, survives). The mapping needs the word VALUE to be exact.",
+    "The audit says the cache's only font hits are 'node docs (Font COP, MOPS Typography) and the help template's own CSS'. Over the whole cache the crux also found 6 font-library LICENSE files (fontconfig, fonttools, freetype, SIL-OFL, usd, fbx). Immaterial to the floor conclusion - none states a UI font size - but 'only' is slightly overstated for the wider surface."
+  ],
+  "findings": [
+    "ACCEPTANCE-COMMAND GUARD HOLE (highest value, from PANELFONT-M3). pytest tests -k panel, the exact command both the receipt and the audit cite as acceptance-4 evidence, deselects tests/test_rope_design_conformance.py::test_no_hardcoded_hex_or_px_outside_designsystem. A QWidget subclass carrying a hardcoded hex AND a hardcoded px, appended to synapse_panel.py, passes that command with 352 green. The guard itself is healthy and reddens the instant it is actually run. The remedy is the command, not new code: select by path, not by the substring 'panel'. This outlives this leg - every panel leg using -k panel as its gate inherits the hole.",
+    "THE FLOOR IS A RATCHET, NOT YET A MEASUREMENT. FONT_FLOOR_PX = 10 is defined AS the smallest size already shipped (SIZE_MICRO), so 'no size token below the floor' could not have failed on the day it was written. It is a real anti-regression ratchet (M2 proves it bites, and it is the only guard that does) but it is not yet what Joe's law asks for - 'no smaller than the Houdini default'. That stays UNKNOWN until the GUI probe is pasted. The builder states this in the token comment, audit section 4, the receipt, and the BP4-FLOOR-LIFT spawn. Nothing is papered over; the leg is correctly SOUND-WITH-NITS at best, never SOUND.",
+    "THE DOC-STATED SEARCH REPRODUCES, AND WIDER. The crux searched the entire H22.0.400 help cache (2280 files), not the builder's ref+basics+hom subset. Exactly one file matches 'UI font|default font|font size|fontsize|interface font' and it is the third-party MOPs Plus Typography SOP's own Font Size PARAMETER doc. Zero files match preference-flavoured phrasings. The UNKNOWN provenance is honest.",
+    "THE AUDIT'S INVENTORY IS EXACT, NOT ROUNDED. 167 / 88 / 33 / 13 reproduce to the digit under bare-word occurrence counting over python/synapse/panel/**/*.py including tokens.py. Under a stricter line-with-colon method excluding tokens.py the numbers are 164 / 87 / 33 / 7; the deltas are entirely method, chiefly 6 prose mentions of line-height inside comments explaining that Qt does not implement it. No inflation.",
+    "THE DESIGN-SYSTEM AUTHORITY IS CLEANER THAN THE TEST PROVES. All 8 modules under designsystem/ score 0 under the test's own literal regex, but the test opens only qss.py. Widening the read to walk the designsystem package costs one loop, pins what is already true, and would then catch a literal introduced into components.py or fontload.py - which today nothing catches.",
+    "PANEL-WIDE, 166 TRULY HARDCODED TYPOGRAPHY LITERALS REMAIN OUTSIDE designsystem/, across 22 modules (styles.py 44, hda_views.py 33, context_bar.py 14, gate_widget.py 13, render_preflight.py 9, and 17 more). A further 8 hits are %-interpolated token feeds (font-size: %dpx filled from t.scaled(...)) and are NOT hardcoded - the test's regex whitelists brace interpolation only, so a crux that reported 174 without splitting would have overcounted by 8. These 166 are inventoried and spawned, not fixed; whether that satisfies acceptance 2 is a scope ruling, not an honesty question.",
+    "THE WEIGHT GUARD IS VALUE-BASED, NOT SOURCE-BASED (M4 vs M4b). It catches a weight outside 400/500/600 and misses a bare literal that equals a token. Semantically harmless today. The gap is between the test and its own docstring's 'never bare literals' claim.",
+    "COSMETIC: the qss literal test reports line numbers computed on the comment-stripped body, so PANELFONT-M1 at source line 51 was reported as L42. Anyone chasing the offender lands in the wrong rule block.",
+    "THE 5-SCALE HASH CLAIM IS REAL AND SENSITIVE. Branch == master == the builder's five hashes at all five scales, and both mutations that touched a rendered value moved all five. The byte-identical claim is a measurement, not a hash that cannot move.",
+    "THE DIFF IS GENUINELY SUBSTITUTION-ONLY. Zero new import/def/class/QTimer/connect(/QWidget/Signal/Slot in the added lines of qss.py and tokens.py; the synapse_panel.py diff is 0 bytes against base. No behaviour surface was opened."
+  ],
+  "artifacts": [
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/MUTATIONS.md",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/HASHES_AND_BINDING.md",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/GREP.md",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/PANELFONT.json",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/pytest_panel_master.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/pytest_panel_branch.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/pytest_typography_branch.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/literal_scan.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/literal_split.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/tokens_dump.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/grep_broad_raw.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/m2_panel_sweep.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/m3_panel_sweep.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/cache_font_files.txt",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/panelfont/cache_uifont_files.txt"
+  ],
+  "scratch_status_clean": true,
+  "lane_verdict": "SOUND-WITH-NITS. Every headless acceptance row reproduces independently and the gui_required row is correctly declared UNKNOWN. Two mutations reddened as designed, one survived on a guard nuance whose control proves the guard alive, and one exposed a hole in the ACCEPTANCE COMMAND rather than in the code. The single substantive open question is a scope ruling on acceptance 2, which the builder itself routed to the referee."
+}

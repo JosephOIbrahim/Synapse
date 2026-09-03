@@ -1,0 +1,146 @@
+
+==============================================================================
+P-0  Build pin
+==============================================================================
+Houdini: 22.0.400
+USD: (0, 26, 5)
+MaterialX: 1.39.5
+
+==============================================================================
+P-3  SOP-side component building: label search (Sop category)
+==============================================================================
+  usdcreatecomponent                       | USD Create Component
+  usdcreateproxygeometry                   | USD Create Proxy Geometry
+
+==============================================================================
+B-1  Fixture PLY via file SOP: attribute schema + counts
+==============================================================================
+  points: 500000 prims: 0
+  pt   rot_1            attribData.Float size=1
+  pt   rot_2            attribData.Float size=1
+  pt   rot_3            attribData.Float size=1
+  pt   opacity          attribData.Float size=1
+  pt   N                attribData.Float size=3
+  pt   P                attribData.Float size=3
+  pt   f_dc_0           attribData.Float size=1
+  pt   scale_0          attribData.Float size=1
+  pt   f_dc_1           attribData.Float size=1
+  pt   f_dc_2           attribData.Float size=1
+  pt   scale_1          attribData.Float size=1
+  pt   scale_2          attribData.Float size=1
+  pt   rot_0            attribData.Float size=1
+  sample P: [-1.25708, -1.6394, -0.883789] {'rot_1': 0.49803921580314636, 'rot_2': 0.10588235408067703, 'rot_3': 0.6941176652908325, 'opacity': -4.840242385864258, 'f_dc_0': 0.5620915293693542, 'scale_0': -5.0625, 'scale_1': -4.625, 'scale_2': -4.6875, 'rot_0': 0.5088679194450378}
+  sample P: [0.426514, 0.605469, 0.894287] {'rot_1': 0.40392157435417175, 'rot_2': 0.772549033164978, 'rot_3': 0.46666666865348816, 'opacity': 0.6755514144897461, 'f_dc_0': -0.9803921580314636, 'scale_0': -6.1875, 'scale_1': -6.625, 'scale_2': -6.375, 'rot_0': 0.14912277460098267}
+  sample P: [-0.366211, 0.599854, 0.63501] {'rot_1': 0.6549019813537598, 'rot_2': 0.6392157077789307, 'rot_3': 0.04313725605607033, 'opacity': -1.2452157735824585, 'f_dc_0': -1.1372549533843994, 'scale_0': -6.1875, 'scale_1': -5.75, 'scale_2': -6.625, 'rot_0': 0.40080657601356506}
+
+==============================================================================
+B-3  Collider GLB via gltf SOP: counts, bounds, normal classes in raw frame
+==============================================================================
+  gltf-ish SOP types: ['gltf', 'gltf::2.0', 'kinefx::gltfanimimport', 'kinefx::gltfcharacterimport', 'kinefx::gltfskinimport', 'kinefx::rop_gltfcharacteroutput', 'rop_gltf', 'rop_gltf::2.0']
+  prims: 2 points: 2
+  collider raw bbox min [-5.33941, -5.95713, -19.71] max [2.66088, 0.696587, 21.5132]
+  splat/collider size ratio: [1.307, 3.056, 1.222] | center delta: [0.725131, -6.78672, 1.12732]
+  up=raw-up=(0,-1,0) per WL-EX-05: {'floor<35': 0, 'wall>55': 2, 'ceil<35(opposite)': 0, 'other': 0}
+  up=(0,1,0): {'floor<35': 0, 'wall>55': 2, 'ceil<35(opposite)': 0, 'other': 0}
+  normals/centroids computed in 0.28s
+
+==============================================================================
+B-6  SOP-side component: splat=render, collider=proxy; walk the stage (kinds, purposes)
+==============================================================================
+  USD Create Component -> usdcreatecomponent | USD Create Proxy Geometry -> usdcreateproxygeometry
+  proxy SOP second input failed: Invalid input.
+  set name = WL_fixture
+  set kind = component
+  stage after SOP Import:
+  /HoudiniLayerInfo                                            HoudiniLayerInfo                    
+  /wl_import                                                   Xform                  component    default
+  /wl_import/WL_fixture                                        Xform                  component    default
+  /wl_import/WL_fixture/geo                                    Scope                               default
+  /wl_import/WL_fixture/geo/proxy                              Scope                               proxy
+  /wl_import/WL_fixture/geo/proxy/world                        Mesh                                proxy
+  /wl_import/WL_fixture/geo/proxy/world/geometry_0             Mesh                                proxy
+  /wl_import/WL_fixture/geo/proxy/autoproxy                    Mesh                                proxy
+  /wl_import/WL_fixture/geo/render                             Scope                               render
+  /wl_import/WL_fixture/geo/render/points_0                    Points                              default
+  exported crux_b7_mut1\b6_wl_component.usdc: 19.8 MB  (SH payload evidence for sec.2.5 property 3; production path = payload this file)
+
+==============================================================================
+B-7  Karma XPU render of the component: author camera + light BEFORE render settings, bind the render camera (BP4 B-7 fix)
+==============================================================================
+  authored light: domelight::3.0 (before render settings)
+  WARNING: no camera parm on KRS; render camera unbound
+  krs parm by label ('engine',) -> engine | menu: ('cpu', 'xpu')
+  krs parm by label ('resolution',) -> res_mode | menu: ('manual', 'autowidth', 'autoheight')
+  rop parm by label ('output picture', 'output') -> outputimage
+  rop parm by label ('renderer',) -> None
+[19:00:52] No render camera defined in renderPassState
+[19:00:52] No render camera defined in renderPassState
+[19:00:52] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+-------- Error Summary --------
+PID: 55764
+Command: husk --make-output-path -o 'crux_b7_mut1\\\\b7_wl_fixture.exr' -f 1 --purpose geometry,render --complexity veryhigh --snapshot 300 --mplay-session untitled C:/Users/User/AppData/Local/Temp/houdini_temp/usd_renders/usdrender_55184_114_1/__render__.usd
+-------- 20 total errors --------
+[19:00:52] No render camera defined in renderPassState
+[19:00:52] No render camera defined in renderPassState
+[19:00:52] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:53] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+[19:00:54] No render camera defined in renderPassState
+  EXR written: True crux_b7_mut1\b7_wl_fixture.exr 530751 bytes
+  Non-zero pixel check: measured externally via oiiotool/iinfo (BP4 T3); the EXR size flag above is NOT a render-success signal.
+
+SUMMARY:
+  P-0   RAN      0.02
+  P-1   NOT_RUN  
+  P-2   NOT_RUN  
+  P-3   RAN      0.0
+  P-4   NOT_RUN  
+  P-5   NOT_RUN  
+  P-6   NOT_RUN  
+  P-7   NOT_RUN  
+  P-8   NOT_RUN  
+  P-9   NOT_RUN  
+  B-1   RAN      0.23
+  B-2   NOT_RUN  
+  B-3   RAN      0.3
+  B-4   NOT_RUN  
+  B-5   NOT_RUN  
+  B-6   RAN      0.35
+  B-7   RAN      5.51
+  B-8   NOT_RUN  
+  B-9   NOT_RUN  
+  S-1   NOT_RUN  
+  S-2   NOT_RUN  
+  S-3   NOT_RUN  
+  total probe wall time: 6.4s  (sec.6 budget: 1800 s) | component path: sop_component

@@ -1,0 +1,6 @@
+base bytes: 19461 | head bytes: 25406
+head.startswith(base)            : True
+head.startswith(base sans tail NL): True
+first byte divergence index      : None
+appended section starts at byte  : 19461
+VERDICT: PASS - append-only; 5945 bytes appended

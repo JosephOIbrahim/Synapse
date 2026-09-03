@@ -1,0 +1,356 @@
+{
+  "binding": "C:\\Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-bp4-crux/a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56/scratchpad/s/python\\synapse\\spatial\\__init__.py",
+  "stages": {
+    "S1_lop_sphere": {
+      "describe": {
+        "status": "SUCCESS",
+        "wall_seconds": 0.00038699999640812166,
+        "raised": null,
+        "payload": {
+          "status": "SUCCESS",
+          "prim_path": "/",
+          "purposes": [
+            "default",
+            "render",
+            "proxy"
+          ],
+          "bounds_m": [
+            [
+              -1.0,
+              -1.0,
+              -1.0
+            ],
+            [
+              1.0,
+              1.0,
+              1.0
+            ]
+          ],
+          "size_m": [
+            2.0,
+            2.0,
+            2.0
+          ],
+          "center_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "up_axis": "Y",
+          "meters_per_unit": 1.0,
+          "is_empty": false,
+          "seconds": 0.0002206999997724779,
+          "provenance": {
+            "tool_lane": "world_labs_spatial",
+            "ratified": false,
+            "tier": "derived",
+            "method": "UsdGeom.BBoxCache world bound",
+            "probe": "B-3",
+            "build_note": "read-only; no prim authored, no file written"
+          }
+        }
+      },
+      "classify": {
+        "status": "UNAVAILABLE",
+        "wall_seconds": 8.799999704933725e-05,
+        "raised": null,
+        "payload": {
+          "status": "UNAVAILABLE",
+          "reason": "no mesh geometry under / for purposes ('default', 'render', 'proxy')"
+        }
+      },
+      "frustum": {
+        "status": "UNAVAILABLE",
+        "wall_seconds": 4.020000051241368e-05,
+        "raised": null,
+        "payload": {
+          "status": "UNAVAILABLE",
+          "reason": "no mesh geometry under / for purposes ('default', 'render', 'proxy')"
+        }
+      }
+    },
+    "S2_sopimport_box_grid": {
+      "describe": {
+        "status": "SUCCESS",
+        "wall_seconds": 0.00014870000086375512,
+        "raised": null,
+        "payload": {
+          "status": "SUCCESS",
+          "prim_path": "/",
+          "purposes": [
+            "default",
+            "render",
+            "proxy"
+          ],
+          "bounds_m": [
+            [
+              -5.0,
+              -1.0,
+              -5.0
+            ],
+            [
+              5.0,
+              1.0,
+              5.0
+            ]
+          ],
+          "size_m": [
+            10.0,
+            2.0,
+            10.0
+          ],
+          "center_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "up_axis": "Y",
+          "meters_per_unit": 1.0,
+          "is_empty": false,
+          "seconds": 9.32000002649147e-05,
+          "provenance": {
+            "tool_lane": "world_labs_spatial",
+            "ratified": false,
+            "tier": "derived",
+            "method": "UsdGeom.BBoxCache world bound",
+            "probe": "B-3",
+            "build_note": "read-only; no prim authored, no file written"
+          }
+        }
+      },
+      "classify": {
+        "status": "SUCCESS",
+        "wall_seconds": 0.03546519999872544,
+        "raised": null,
+        "payload": {
+          "status": "SUCCESS",
+          "prim_path": null,
+          "meshes": 1,
+          "faces": 15,
+          "triangles": 30,
+          "surface_classes": {
+            "max_angle_deg": 45.0,
+            "floor": 0.6666666666666666,
+            "wall": 0.26666666666666666,
+            "ceiling": 0.06666666666666667,
+            "slope": 0.0
+          },
+          "counts": {
+            "floor": 20,
+            "wall": 8,
+            "ceiling": 2,
+            "slope": 0
+          },
+          "up": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "ground_y": {
+            "value": 0.0,
+            "tier": "derived",
+            "method": "S-2 dominant floor bin",
+            "probe": "S-2"
+          },
+          "floor_area_m2": 104.0,
+          "dominant_floor_bin": {
+            "lo": 0.0,
+            "hi": 0.02,
+            "width": 0.02,
+            "faces": 18,
+            "axis_index": 1
+          },
+          "seconds": 0.03466649999973015,
+          "provenance": {
+            "tool_lane": "world_labs_spatial",
+            "ratified": false,
+            "tier": "derived",
+            "method": "per-face geometric normal vs up axis; orientation-aware",
+            "probe": "S-2",
+            "build_note": "read-only; no prim authored, no file written"
+          }
+        }
+      },
+      "frustum": {
+        "status": "SUCCESS",
+        "wall_seconds": 0.0005187999995541759,
+        "raised": null,
+        "payload": {
+          "status": "SUCCESS",
+          "prim_path": null,
+          "inside": 30,
+          "total": 30,
+          "fraction": 1.0,
+          "eye": [
+            0.0,
+            1.0,
+            -12.0
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "half_fov_deg": 45.0,
+          "aspect": 0.5625,
+          "near": 0.0,
+          "far": null,
+          "seconds": 9.959999806596898e-05,
+          "provenance": {
+            "tool_lane": "world_labs_spatial",
+            "ratified": false,
+            "tier": "derived",
+            "method": "centroid-in-frustum, S-3 half-angle test",
+            "probe": "S-3",
+            "build_note": "read-only; no prim authored, no file written"
+          }
+        }
+      }
+    },
+    "S3_solaris_basic": {
+      "describe": {
+        "status": "UNAVAILABLE",
+        "wall_seconds": 0.0002536000029067509,
+        "raised": null,
+        "payload": {
+          "status": "UNAVAILABLE",
+          "reason": "no bounded geometry under / for purposes ('default', 'render', 'proxy')",
+          "prim_path": "/",
+          "seconds": 0.00021080000078654848
+        }
+      },
+      "classify": {
+        "status": "UNAVAILABLE",
+        "wall_seconds": 7.339999865507707e-05,
+        "raised": null,
+        "payload": {
+          "status": "UNAVAILABLE",
+          "reason": "no mesh geometry under / for purposes ('default', 'render', 'proxy')"
+        }
+      },
+      "frustum": {
+        "status": "UNAVAILABLE",
+        "wall_seconds": 5.3499999921768904e-05,
+        "raised": null,
+        "payload": {
+          "status": "UNAVAILABLE",
+          "reason": "no mesh geometry under / for purposes ('default', 'render', 'proxy')"
+        }
+      }
+    }
+  },
+  "stages_meta": {
+    "S1_prims": [
+      [
+        "/HoudiniLayerInfo",
+        "HoudiniLayerInfo"
+      ],
+      [
+        "/crux_s1_sphere",
+        "Sphere"
+      ]
+    ],
+    "S2_prims": [
+      [
+        "/HoudiniLayerInfo",
+        "HoudiniLayerInfo"
+      ],
+      [
+        "/crux_s2_import",
+        "Xform"
+      ],
+      [
+        "/crux_s2_import/mesh_0",
+        "Mesh"
+      ]
+    ],
+    "S3_prims": [
+      [
+        "/HoudiniLayerInfo",
+        "HoudiniLayerInfo"
+      ],
+      [
+        "/crux_geo",
+        "Xform"
+      ],
+      [
+        "/lights",
+        "Xform"
+      ],
+      [
+        "/lights/dome_light",
+        "DomeLight_1"
+      ],
+      [
+        "/cameras",
+        "Xform"
+      ],
+      [
+        "/cameras/camera",
+        "Camera"
+      ],
+      [
+        "/Render",
+        "Scope"
+      ],
+      [
+        "/Render/crux_render_settings",
+        "RenderSettings"
+      ],
+      [
+        "/Render/crux_render_settings/Products",
+        "Scope"
+      ],
+      [
+        "/Render/crux_render_settings/Products/renderproduct",
+        "RenderProduct"
+      ],
+      [
+        "/Render/crux_render_settings/Vars",
+        "Scope"
+      ],
+      [
+        "/Render/crux_render_settings/Vars/beauty",
+        "RenderVar"
+      ]
+    ],
+    "S3_spec_nodes": [
+      "sopcreate",
+      "domelight",
+      "materiallibrary",
+      "camera",
+      "karmarendersettings"
+    ]
+  },
+  "readonly_check_S2": {
+    "prims_before_query": [
+      [
+        "/HoudiniLayerInfo",
+        "HoudiniLayerInfo"
+      ],
+      [
+        "/crux_s2_import",
+        "Xform"
+      ],
+      [
+        "/crux_s2_import/mesh_0",
+        "Mesh"
+      ]
+    ],
+    "prims_after_query": [
+      [
+        "/HoudiniLayerInfo",
+        "HoudiniLayerInfo"
+      ],
+      [
+        "/crux_s2_import",
+        "Xform"
+      ],
+      [
+        "/crux_s2_import/mesh_0",
+        "Mesh"
+      ]
+    ],
+    "unchanged": true
+  }
+}

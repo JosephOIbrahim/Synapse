@@ -1,0 +1,30 @@
+
+### (i) per-prim table rows  (builder 10 lines / crux 10 lines)
+VERDICT: identical (same text AND same line numbers)
+
+### (ii) [BP4-EV:...] evidence lines  (builder 20 lines / crux 20 lines)
+VERDICT: identical (same text AND same line numbers)
+
+### (iii) prim counts / reference prim counts / composed arcs  (builder 4 lines / crux 4 lines)
+VERDICT: identical (same text AND same line numbers)
+
+### (iv) arc order strong->weak  (builder 2 lines / crux 2 lines)
+VERDICT: identical (same text AND same line numbers)
+
+### (v) C.1/C.2 result lines  (builder 5 lines / crux 5 lines)
+VERDICT: identical (same text AND same line numbers)
+
+### (bonus) P-0 build pin + part A header facts  (builder 6 lines / crux 6 lines)
+VERDICT: identical (same text AND same line numbers)
+
+### WHOLE-FILE normalized diff
+VERDICT: whole normalized file IDENTICAL (86 lines each)
+
+### SUMMARY
+  per_prim_table       identical
+  ev_lines             identical
+  payload_counts       identical
+  arc_order            identical
+  c1_c2                identical
+  build_pin            identical
+  whole_file           identical

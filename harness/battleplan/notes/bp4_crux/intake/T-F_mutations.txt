@@ -1,0 +1,89 @@
+BP4-CRUX / INTAKE lane — T-F: mutation log (all in SCR_I only, scratch clone)
+====================================================================
+Baseline confirmed green before every mutation (`git status --short` empty; hash-check all
+MATCH; header-diff check PASS). Each mutation restored via
+`git show HEAD:<path> > <path>`, then re-confirmed clean + green before the next mutation.
+Final scratch clone status at the end of this log: CLEAN (`git status --short` empty).
+
+--------------------------------------------------------------------
+INTAKE-M1 — flip one hex char of a sha256 cell (coffee_shop_talk row, not the first row)
+--------------------------------------------------------------------
+Check reddened: the T-A hash-recompute check (recompute sha256 of each file under
+docs/intake/src/, compare to its MANIFEST.md row).
+
+Baseline result:  synapse_worldlabs_coffee_shop_talk.md  sha_match=True
+Mutation:         docs/intake/src/MANIFEST.md — coffee_shop_talk row sha256 cell:
+                   903fb2f4...  ->  803fb2f4...   (first hex char 9 -> 8)
+Mutated result:    synapse_worldlabs_coffee_shop_talk.md  sha_match=**False**   <- REDDENED
+                   (blueprint row unaffected: sha_match=True, bytes_match=True — mutation
+                   was scoped to exactly one row/cell, as instructed)
+Restore command:   git show HEAD:docs/intake/src/MANIFEST.md > docs/intake/src/MANIFEST.md
+Post-restore:      git status --short -> (empty); sha_match=True for both rows again.
+RESULT: REDDENED. restored_green: true.
+
+--------------------------------------------------------------------
+INTAKE-M2 — add one line OUTSIDE the header block of the blueprint file
+--------------------------------------------------------------------
+Check reddened: the T-B header-confinement check — but see IMPORTANT NOTE below: a naive
+"count '@@' occurrences" check does NOT catch this mutation; a range-aware check (does any
+added '+' line's new-file line number fall at/after the header separator, line 13) is
+required and DOES catch it. This is a genuine finding about check design, not just about the
+mutation.
+
+Baseline:          `git diff 28a0e183 -- docs/intake/blueprint-h22-worldlabs-intent.md`
+                    1 hunk (@@ -8,6 +8,7 @@), one added line at new-file line 11.
+                    Range-aware check: added lines=[11], none >= separator(13) -> PASS.
+
+Mutation:           inserted one line immediately after line 15
+                    ("## 0. How to read this document"):
+                    "CRUX-INTAKE-M2-MUTATION-MARKER: this line was injected outside the
+                    header block by the crux mutation test."
+                    New line lands at file line 16 (3 lines below the line-13 separator,
+                    i.e. inside the "## 0. How to read this document" section body — clearly
+                    outside the header block by the task's own definition).
+
+Mutated result (naive hunk-count check — SURVIVES, false negative):
+                    `git diff 28a0e183 -- <path> | grep -c '^@@'`  ->  1
+                    (git's default 3-line diff context merges the original header-line hunk
+                    and the new out-of-header hunk into a single reported "@@" block because
+                    they are only ~5 lines apart — line 11 vs line 16.)
+
+Mutated result (range-aware check — REDDENS correctly):
+                    added new-file line numbers: [11, 16]
+                    lines at/after separator (13): [16]   <- REDDENED
+                    VERDICT: FAIL (not confined to header)
+
+Restore command:    git show HEAD:docs/intake/blueprint-h22-worldlabs-intent.md >
+                     docs/intake/blueprint-h22-worldlabs-intent.md
+Post-restore:       git status --short -> (empty); range-aware check -> PASS again
+                     (added=[11], none >= 13).
+RESULT: REDDENED (by the correct check only). restored_green: true.
+
+IMPORTANT NOTE for the referee: the acceptance predicate text itself says "the crucible reads
+the hunk's line range" (harness/battleplan/prompts/BP4-INTAKE.md crucible_criteria[1]) — this
+anticipates exactly the failure mode found here. A crux/verifier that only runs
+`git diff master..HEAD -- <path> | grep -c '^@@' ` (or `== 1`) as its acceptance gate would
+be a WEAKER check than the mission brief specifies, and would pass a change that adds
+unrelated content outside the header as long as it lands close enough to the header edit for
+git to fold the two into one hunk. Recommend the actual crucible/verify tooling for this
+predicate does line-range extraction, not hunk counting.
+
+--------------------------------------------------------------------
+INTAKE-M3 (bonus) — change a bytes cell (7155 -> 7156)
+--------------------------------------------------------------------
+Check reddened: the T-A hash-recompute check (byte-length comparison).
+
+Baseline result:   synapse_worldlabs_blueprint.md  bytes_match=True
+Mutation:          docs/intake/src/MANIFEST.md — blueprint row Bytes cell: 7155 -> 7156
+Mutated result:    synapse_worldlabs_blueprint.md  bytes_match=**False**   <- REDDENED
+                   (sha_match still True for that row — mutation was scoped to the byte
+                   count only; coffee_shop_talk row fully unaffected)
+Restore command:   git show HEAD:docs/intake/src/MANIFEST.md > docs/intake/src/MANIFEST.md
+Post-restore:      git status --short -> (empty); bytes_match=True again for both rows.
+RESULT: REDDENED. restored_green: true.
+
+--------------------------------------------------------------------
+Final state
+--------------------------------------------------------------------
+$ git status --short   (run at the very end, whole SCR_I clone)
+  (empty) -> CLEAN. Scratch clone left exactly as cloned.

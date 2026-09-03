@@ -1,0 +1,20 @@
+[check] OK   kind-component                                       FIXTURE-VERIFIED stdout.txt:30  <- '[BP4-EV:fx-kind-component] component root /wl_import car'
+[check] OK   purpose-collider-proxy                               FIXTURE-VERIFIED stdout.txt:31  <- '[BP4-EV:fx-purpose-proxy] collider subtree scope /wl_imp'
+[check] OK   purpose-render-scope                                 FIXTURE-VERIFIED stdout.txt:32  <- '[BP4-EV:fx-purpose-render] render subtree scope /wl_impo'
+[check] OK   purpose-splat-inherited                              FIXTURE-VERIFIED stdout.txt:33  <- '[BP4-EV:fx-splat-purpose-inherited] splat Points /wl_imp'
+[check] OK   payload-splat-collider                               FIXTURE-VERIFIED stdout.txt:43  <- '[BP4-EV:fx-payload-roundtrip] payloading the component t'
+[check] OK   payload-arc-present                                  FIXTURE-VERIFIED stdout.txt:44  <- '[BP4-EV:fx-payload-arc-present] PrimCompositionQuery on '
+[check] OK   payload-vs-reference-unloadable                      VERIFIED-RUNTIME stdout.txt:46  <- '[BP4-EV:rt-payload-unloadable-vs-reference] payload Unlo'
+[check] OK   variantsets-absent-in-sop-build                      FIXTURE-VERIFIED stdout.txt:34  <- '[BP4-EV:fx-variantsets-count] SOP-built component author'
+[check] OK   customdata-worldlabs-absent-in-sop-build             FIXTURE-VERIFIED stdout.txt:35  <- '[BP4-EV:fx-customdata-worldlabs] component root customDa'
+[check] OK   livrps-order                                         VERIFIED-RUNTIME stdout.txt:60  <- '[BP4-EV:rt-livrps-order] one attribute with all six opin'
+[check] OK   livrps-reference-over-payload                        VERIFIED-RUNTIME stdout.txt:66  <- '[BP4-EV:rt-reference-over-payload] reference is stronger'
+[check] OK   livrps-payload-over-specialize                       VERIFIED-RUNTIME stdout.txt:67  <- '[BP4-EV:rt-payload-over-specialize] payload is stronger '
+[check] OK   livrps-specialize-weakest                            VERIFIED-RUNTIME stdout.txt:68  <- '[BP4-EV:rt-specialize-weakest] specialize is the weakest'
+[check] OK   livrps-local-over-specialize-refutes-deepdive        VERIFIED-RUNTIME stdout.txt:76  <- '[BP4-EV:rt-local-over-specialize] spot1 keeps its own lo'
+[check] OK   inherit-liststrength-first-added-strongest           VERIFIED-RUNTIME stdout.txt:83  <- '[BP4-EV:rt-inherit-liststrength] inherit list-editing: A'
+[check] seed: harness/bench/corpus/usd/usd_composition_worldlabs_22.0.400.json  (ratified=False)
+[check] stdout source: harness/notes/h22wl/bp4_usdknow/stdout.txt  (86 lines, 0 blocked)
+[check] tier counts: DOC-STATED=2, FIXTURE-VERIFIED=8, PROPOSED=5, VERIFIED-RUNTIME=7
+[check] promotable rows checked: 15
+[check] RESULT: PASS (all 15 promotable rows anchor clean)

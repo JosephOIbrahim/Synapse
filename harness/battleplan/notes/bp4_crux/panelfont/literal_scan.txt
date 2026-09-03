@@ -1,0 +1,54 @@
+TOTAL literal-typography hits under python/synapse/panel/ = 174
+files scanned = 92
+
+--- per-file, nonzero, sorted desc ---
+   44  python/synapse/panel/styles.py
+   33  python/synapse/panel/hda_views.py
+   14  python/synapse/panel/context_bar.py
+   13  python/synapse/panel/gate_widget.py
+    9  python/synapse/panel/render_preflight.py
+    7  python/synapse/panel/apex_explainer.py
+    6  python/synapse/panel/performance_profiler.py
+    6  python/synapse/panel/save_shot.py
+    6  python/synapse/panel/scene_doctor.py
+    6  python/synapse/panel/vex_tutor.py
+    5  python/synapse/panel/bookmarks.py
+    3  python/synapse/panel/face_review.py
+    3  python/synapse/panel/face_token.py
+    2  python/synapse/panel/apex_trace.py
+    2  python/synapse/panel/chat_display.py
+    2  python/synapse/panel/cross_scene.py
+    2  python/synapse/panel/dependency_map.py
+    2  python/synapse/panel/error_translator.py
+    2  python/synapse/panel/health_strip.py
+    2  python/synapse/panel/quick_actions.py
+    2  python/synapse/panel/session_journal.py
+    2  python/synapse/panel/synapse_panel.py
+    1  python/synapse/panel/agent_health.py
+
+--- designsystem/*.py explicitly (incl zeros) ---
+    0  python/synapse/panel/designsystem/__init__.py
+    0  python/synapse/panel/designsystem/components.py
+    0  python/synapse/panel/designsystem/fontload.py
+    0  python/synapse/panel/designsystem/loader.py
+    0  python/synapse/panel/designsystem/motion.py
+    0  python/synapse/panel/designsystem/qss.py
+    0  python/synapse/panel/designsystem/theme_source.py
+    0  python/synapse/panel/designsystem/tokens.py
+
+--- sample hits from the 3 biggest offenders ---
+### python/synapse/panel/styles.py (44 hits) — first 4:
+      L61: font-weight: 700
+      L127: font-weight: 700
+      L141: font-weight: 700
+      L214: font-family: '{mono}', 'Consolas', monospace
+### python/synapse/panel/hda_views.py (33 hits) — first 4:
+      L42: font-size: 10px
+      L43: font-family: monospace
+      L72: font-family: monospace
+      L72: font-size: 11px
+### python/synapse/panel/context_bar.py (14 hits) — first 4:
+      L364: font-size: 9pt
+      L364: font-family: '{mono}', Consolas, monospace
+      L420: font-size: 10pt
+      L421: font-family: '{mono}', Consolas, monospace

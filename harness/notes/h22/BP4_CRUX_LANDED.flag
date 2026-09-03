@@ -1,0 +1,7 @@
+BP4-CRUX LANDED 2026-09-03
+branch: bp4/crux (base 9a90e9af; flag written after the verdict + mutation files and before the product commit, per the capsule 09-03 authoring rule)
+verdicts: harness/battleplan/notes/BP4-CRUX_verdicts.md
+mutations: harness/battleplan/notes/BP4-CRUX_mutations.json (37 self-authored; 26 reddened / 11 survived, each survivor named with the check that reddens)
+evidence: harness/battleplan/notes/bp4_crux/{intake,rulings,b7fix,spatial,panelfont,usdknow}/
+verdicts: INTAKE SOUND-WITH-NITS | RULINGS BROKEN (chain_broken_at: T1 extraction - BP3-CRUX.json:for_ruling[0] never read; 21 rows vs recount 22) | B7FIX SOUND-WITH-NITS | SPATIAL SOUND-WITH-NITS | PANELFONT SOUND-WITH-NITS | USDKNOW SOUND-WITH-NITS - 1 BROKEN: RULINGS does not ride as-is (one-row fix); the other five ride
+receipt: harness/notes/receipts/BP4-CRUX.json (written LAST, after the product commit)

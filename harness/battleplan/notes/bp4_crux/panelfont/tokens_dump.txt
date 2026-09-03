@@ -1,0 +1,42 @@
+BOUND tokens.__file__ = C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp4-crux\a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56\scratchpad\p\python\synapse\panel\designsystem\tokens.py
+
+FONT_SANS_CSS = '"Space Grotesk", "DM Sans", "Segoe UI", "sans-serif"'
+FONT_MONO_CSS = '"Space Mono", "JetBrains Mono", "Consolas", "monospace"'
+FONT_FLOOR_PROVENANCE = 'UNKNOWN — the local H22.0.400 help cache states no default UI font size (…/houdini22.0/config/Help/cache, ref+basics+ho
+FONT_FLOOR_PX = 10
+FONT_MONO = 'Space Mono'
+FONT_MONO_FALLBACKS = ('JetBrains Mono', 'Consolas', 'monospace')
+FONT_SANS = 'Space Grotesk'
+FONT_SANS_FALLBACKS = ('DM Sans', 'Segoe UI', 'sans-serif')
+FONT_SCALE_DEFAULT = 1.0
+FONT_SCALE_STEPS = (1.0, 1.15, 1.25, 1.4, 1.6)
+
+SIZE_BODY = 12
+SIZE_HERO = 19
+SIZE_LABEL = 10
+SIZE_MICRO = 10
+SIZE_SMALL = 11
+SIZE_TITLE = 15
+SIZE_UI = 12
+min(SIZE_*) = 10  FONT_FLOOR_PX = 10  -> min >= floor: True
+
+WEIGHT_MEDIUM = 500
+WEIGHT_REGULAR = 400
+WEIGHT_SEMIBOLD = 600
+
+CHAT_LEADING_PT = 0.75
+TRACKING_EM = {'EYEBROW': 0.22, 'BRAND': 0.286, 'LABEL': 0.15, 'LABEL_SM': 0.12, 'WORDMARK': 0.16, 'DATA': 0.03, 'SEND': 0.08, 'DISPLAY': -0.015, 'BODY': 0.0}
+
+FONT_FLOOR_PROVENANCE[:60] = 'UNKNOWN — the local H22.0.400 help cache states no default U'
+provenance starts with UNKNOWN: True
+
+TYPE_ROLES:
+    display -> ('"Space Grotesk", "DM Sans", "Segoe UI", "sans-serif"', 19, 600, 0.5)
+    title -> ('"Space Grotesk", "DM Sans", "Segoe UI", "sans-serif"', 15, 600, 1.0)
+    body -> ('"Space Grotesk", "DM Sans", "Segoe UI", "sans-serif"', 12, 400, 0.0)
+    label -> ('"Space Grotesk", "DM Sans", "Segoe UI", "sans-serif"', 12, 500, 0.5)
+    code -> ('"Space Mono", "JetBrains Mono", "Consolas", "monospace"', 12, 400, 0.0)
+    caption -> ('"Space Grotesk", "DM Sans", "Segoe UI", "sans-serif"', 11, 400, 0.0)
+    status -> ('"Space Mono", "JetBrains Mono", "Consolas", "monospace"', 11, 500, 0.5)
+
+FONT_SCALE_DEFAULT = 1.0

@@ -1,0 +1,58 @@
+BP4-CRUX / INTAKE lane — T-A: independent SHA256 + byte recompute
+====================================================================
+
+Method: python3 hashlib.sha256 over raw bytes read from disk, os.listdir
+for presence. Run separately in each scratch target.
+
+--------------------------------------------------------------------
+TARGET 1: SCR_I (branch bp4/intake @ 03a4e43d, scratch clone)
+Path: .../scratchpad/i/docs/intake/src/
+--------------------------------------------------------------------
+dir listing: MANIFEST.md, synapse_worldlabs_blueprint.md,
+             synapse_worldlabs_coffee_shop_talk.md   (3 files; both .docx ABSENT)
+
+Recomputed:
+  MANIFEST.md                              2160 bytes  sha256=2a2e8bb664dbabb7e56fb7f38a984808833be28149dde30e8da121ea306206ec
+  synapse_worldlabs_blueprint.md           7155 bytes  sha256=9c08a168e4a82dc167f52d35db7fb24883e4def0f9885d397cf9a52704c5edf9
+  synapse_worldlabs_coffee_shop_talk.md    6384 bytes  sha256=903fb2f48d08dc5d9a96c3b83f76232c78d0ee3e83bb940b04212ec86f36cd98
+
+MANIFEST.md row-by-row (docs/intake/src/MANIFEST.md:7-10):
+  blueprint.md          row: 7155 / 9c08a168...c5edf9 / role=extracted-md   -> MATCHES recompute exactly
+  coffee_shop_talk.md   row: 6384 / 903fb2f4...f36cd98 / role=extracted-md  -> MATCHES recompute exactly
+  blueprint.docx        row: bytes=— sha=— role=missing                    -> file confirmed ABSENT on disk. Correct.
+  coffee_shop_talk.docx row: bytes=— sha=— role=missing                    -> file confirmed ABSENT on disk. Correct.
+
+MANIFEST.md does not list itself (by design, per builder receipt claim) — confirmed: no row for
+"MANIFEST.md" in the File Inventory table (docs/intake/src/MANIFEST.md:5-10).
+
+VERDICT (T-A, target bp4/intake@03a4e43d): PASS. All present-file bytes+sha256 match; both
+missing rows correctly reflect on-disk absence; role cell present on every row.
+
+--------------------------------------------------------------------
+TARGET 2: SCR_M2574 (master @ 2574de6b, archive of docs/intake at that commit)
+Path: .../scratchpad/m2574/docs/intake/src/
+--------------------------------------------------------------------
+dir listing: MANIFEST.md, synapse_worldlabs_blueprint.md,
+             synapse_worldlabs_coffee_shop_talk.md   (3 files; both .docx ABSENT)
+
+Recomputed:
+  MANIFEST.md                              2678 bytes  sha256=7a9dc3a6b29140f80923d6161ec97d7f43888aa553fa0216a73cf016e436af8f
+  synapse_worldlabs_blueprint.md           7155 bytes  sha256=9c08a168e4a82dc167f52d35db7fb24883e4def0f9885d397cf9a52704c5edf9
+  synapse_worldlabs_coffee_shop_talk.md    6384 bytes  sha256=903fb2f48d08dc5d9a96c3b83f76232c78d0ee3e83bb940b04212ec86f36cd98
+
+Note: blueprint.md and coffee_shop_talk.md are byte-for-byte and hash-for-hash IDENTICAL between
+the branch (03a4e43d) and master@2574de6b — same source files, never modified across the two
+writers. MANIFEST.md row values (bytes/sha256) are also identical to the branch's; only
+MANIFEST.md's own file size differs (2678 vs 2160) because master's copy carries an appended
+"Harvest note" paragraph (see T-E).
+
+MANIFEST.md row-by-row (docs/intake/src/MANIFEST.md:7-10, same table as branch):
+  blueprint.md          row: 7155 / 9c08a168...c5edf9 / role=extracted-md   -> MATCHES recompute exactly
+  coffee_shop_talk.md   row: 6384 / 903fb2f4...f36cd98 / role=extracted-md  -> MATCHES recompute exactly
+  blueprint.docx        row: bytes=— sha=— role=missing                    -> file confirmed ABSENT on disk. Correct.
+  coffee_shop_talk.docx row: bytes=— sha=— role=missing                    -> file confirmed ABSENT on disk. Correct.
+
+MANIFEST.md does not list itself — confirmed, same as branch.
+
+VERDICT (T-A, target master@2574de6b): PASS. Same as branch — all present-file bytes+sha256
+match, both missing rows correct, role cell present throughout.

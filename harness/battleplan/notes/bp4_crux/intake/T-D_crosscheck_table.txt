@@ -1,0 +1,66 @@
+BP4-CRUX / INTAKE lane — T-D: MANIFEST.md's own cross-check table, independently re-derived
+====================================================================
+
+MANIFEST.md's "Cross-Check: Claim Pointers vs. Extracted Content" table (identical content
+in both targets — docs/intake/src/MANIFEST.md:14-19):
+
+  | Pointer (file:line)                        | Cited Section                         | Found (heading)                                | Status         |
+  | blueprint-h22-worldlabs-intent.md:8        | Dossier - H22 Solaris and Karma ...   | 1. Executive Summary & First Principles        | Found          |
+  | blueprint-h22-worldlabs-intent.md:8        | Coffee Shop Notes ... (digest)        | 1. The Blind Spot of Generative Video          | Found          |
+  | blueprint-h22-worldlabs-intent.md:18       | Dossier §3, §6, §9 (reading scope)    | Sections 3-6 present in blueprint file         | Partial match  |
+  | blueprint-h22-worldlabs-intent.md:377      | Coffee notes for timestamp context    | Coffee Shop Notes file contains sections 1-4   | Found          |
+
+Independent re-derivation (both targets — identical results, since the underlying files are
+byte-identical between branch and master):
+
+$ grep -n -i -E "dossier|coffee" docs/intake/blueprint-h22-worldlabs-intent.md
+  Relevant hits: line 8 (both "Dossier" and "Coffee Shop Notes" named together), line 19,
+  line 378, plus ~15 more incidental mentions of "dossier" throughout the doc (not claim
+  pointers, just prose references — expected, not a defect).
+
+$ grep -n '^#' docs/intake/src/*.md
+  blueprint.md headings:      lines 9, 18, 31, 43, 55, 66  -> sections 1-6, exactly as MANIFEST claims
+  coffee_shop_talk.md headings: lines 8, 18, 32(+36,40,44 sub), 48 -> sections 1-4, exactly as MANIFEST claims
+
+--------------------------------------------------------------------
+Row-by-row verdict
+--------------------------------------------------------------------
+Row 1 (line 8, dossier -> "1. Executive Summary & First Principles"):
+  Line 8 does contain "Dossier - H22 Solaris and Karma (SYNAPSE Intake).md" verbatim.
+  blueprint.md:9 heading is "# **1. Executive Summary **&** First Principles**".
+  EXACT MATCH. Line-number citation correct.
+
+Row 2 (line 8, coffee -> "1. The Blind Spot of Generative Video"):
+  Same line 8 also contains "Coffee Shop Notes - Solaris and Karma in Houdini 22.md" verbatim.
+  coffee_shop_talk.md:8 heading is "# **1. The Blind Spot of Generative Video**".
+  EXACT MATCH. Line-number citation correct.
+
+Row 3 (line 18, "Dossier §3, §6, §9" -> "Sections 3-6 present"):
+  MISCITED LINE NUMBER: the actual content ("Do not load the dossier beyond §3, §6, §9") is
+  at blueprint-h22-worldlabs-intent.md:19, not :18 (line 18 is blank — confirmed by direct
+  Read of lines 15-20). Off by exactly one line, in both targets identically.
+  Content-wise, the "Partial match" label is HONEST: blueprint.md's extracted sections are
+  1-6 only (no section 9 exists in the extraction, confirmed via the heading grep above), so
+  a pointer citing "§3, §6, §9" cannot be a full match against a file that stops at §6.
+  Calling it "partial" rather than "found" is the accurate call.
+
+Row 4 (line 377, "coffee notes timestamp context" -> "sections 1-4"):
+  MISCITED LINE NUMBER: the actual content ("Read the coffee notes only if a claim needs its
+  timestamp") is at blueprint-h22-worldlabs-intent.md:378, not :377 (line 377 is blank —
+  confirmed by direct Read of lines 374-380). Off by exactly one line, in both targets
+  identically.
+  Content-wise "Found" is accurate: coffee_shop_talk.md does contain sections 1-4 exactly as
+  claimed.
+
+--------------------------------------------------------------------
+VERDICT (T-D, both targets — identical since content is shared)
+--------------------------------------------------------------------
+2 of 4 rows (1, 2): exact match, line number AND content both correct.
+2 of 4 rows (3, 4): content/section claims are accurate and honestly labeled ("Partial match"
+  used correctly where the extraction is incomplete), but BOTH carry a line-number pointer
+  that is off by exactly one (cites the blank line immediately above the real content).
+  This is a minor, reproducible citation defect — not a fabrication, since the described
+  section content is genuinely present at the cited-heading level; only the file:line anchor
+  itself is imprecise. Same defect in both targets (shared, unedited content), so it is not
+  something either writer introduced or fixed — inherited unchanged from the original T3
+  cross-check pass.

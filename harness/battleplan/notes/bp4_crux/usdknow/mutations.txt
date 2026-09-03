@@ -1,0 +1,134 @@
+PRISTINE seed sha256: 6bf80ce31311c4468d6d1dfce2903e98ff4ae668c9f30fa685950b7387c086f9
+BASELINE exit: 0 | [check] RESULT: PASS (all 15 promotable rows anchor clean)
+
+========================================================================================================
+USDKNOW-M1  strip an anchor -- row 'kind-component': anchor 'stdout.txt:30' -> 'probe Part A'
+  mutated      : '"anchor": "stdout.txt:30",'  ->  '"anchor": "probe Part A",'
+  checker exit : 1
+  FAIL line    : [check] FAIL  'kind-component'  tier='FIXTURE-VERIFIED'  anchor='probe Part A'  -> no stdout.txt:<line> anchor
+  FAIL line    : [check] RESULT: FAIL (1 bad row(s))
+  verdict      : REDDENED   (expected: REDDEN)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M2a  promote a PROPOSED row -- 'instanceable-false' PROPOSED -> VERIFIED-RUNTIME (keeps its prose 'reasoning:' anchor)
+  mutated      : '"tier": "PROPOSED"'  ->  '"tier": "VERIFIED-RUNTIME"'   [within row "id": "instanceable-false"]
+  checker exit : 1
+  FAIL line    : [check] FAIL  'instanceable-false'  tier='VERIFIED-RUNTIME'  anchor='reasoning: blueprint sec.2.5 (one world = one component) + LIVRPS ladder'  -> no stdout.txt:<line> anchor
+  FAIL line    : [check] RESULT: FAIL (1 bad row(s))
+  verdict      : REDDENED   (expected: REDDEN)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M2b  promote a PROPOSED row -- 'variantset-splattier' PROPOSED -> FIXTURE-VERIFIED (keeps its blueprint#2.5 doc anchor)
+  mutated      : '"tier": "PROPOSED"'  ->  '"tier": "FIXTURE-VERIFIED"'   [within row "id": "variantset-splattier"]
+  checker exit : 1
+  FAIL line    : [check] FAIL  'variantset-splattier'  tier='FIXTURE-VERIFIED'  anchor='docs/intake/blueprint-h22-worldlabs-intent.md#2.5'  -> no stdout.txt:<line> anchor
+  FAIL line    : [check] RESULT: FAIL (1 bad row(s))
+  verdict      : REDDENED   (expected: REDDEN)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M2c  promote a DOC-STATED row -- 'frame-conversion-order' DOC-STATED -> VERIFIED-RUNTIME
+  mutated      : '"tier": "DOC-STATED"'  ->  '"tier": "VERIFIED-RUNTIME"'   [within row "id": "frame-conversion-order"]
+  checker exit : 1
+  FAIL line    : [check] FAIL  'frame-conversion-order'  tier='VERIFIED-RUNTIME'  anchor='docs/intake/blueprint-h22-worldlabs-intent.md#2.7'  -> no stdout.txt:<line> anchor
+  FAIL line    : [check] RESULT: FAIL (1 bad row(s))
+  verdict      : REDDENED   (expected: REDDEN)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M3  change the arc on a VERIFIED row -- 'livrps-reference-over-payload' reference -> payload (stdout.txt:66 reads arc=reference)
+  mutated      : '"arc": "reference",'  ->  '"arc": "payload",'   [within row "id": "livrps-reference-over-payload"]
+  checker exit : 1
+  FAIL line    : [check] FAIL  'livrps-reference-over-payload'  tier='VERIFIED-RUNTIME'  anchor='stdout.txt:66'  -> stdout.txt:66 does not carry 'arc=payload' (arc mismatch)
+  FAIL line    : [check] RESULT: FAIL (1 bad row(s))
+  verdict      : REDDENED   (expected: REDDEN)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M3b  change the arc on a FIXTURE row -- 'variantsets-absent-in-sop-build' variant -> local (stdout.txt:34 reads arc=variant)
+  mutated      : '"arc": "variant",'  ->  '"arc": "local",'   [within row "id": "variantsets-absent-in-sop-build"]
+  checker exit : 1
+  FAIL line    : [check] FAIL  'variantsets-absent-in-sop-build'  tier='FIXTURE-VERIFIED'  anchor='stdout.txt:34'  -> stdout.txt:34 does not carry 'arc=local' (arc mismatch)
+  FAIL line    : [check] RESULT: FAIL (1 bad row(s))
+  verdict      : REDDENED   (expected: REDDEN)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M4  ratified false -> true
+  mutated      : '"ratified": false,'  ->  '"ratified": true,'
+  checker exit : 1
+  FAIL line    : [check] FAIL: seed 'ratified' must be exactly false, got True (ratification is a human+CTO act, rule D-1).
+  verdict      : REDDENED   (expected: REDDEN)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M5  anchor a promotable row at a BLANK line -- 'purpose-collider-proxy' -> stdout.txt:2
+  mutated      : '"anchor": "stdout.txt:31",'  ->  '"anchor": "stdout.txt:2",'
+  checker exit : 1
+  FAIL line    : [check] FAIL  'purpose-collider-proxy'  tier='FIXTURE-VERIFIED'  anchor='stdout.txt:2'  -> stdout.txt:2 is blank
+  FAIL line    : [check] RESULT: FAIL (1 bad row(s))
+  verdict      : REDDENED   (expected: REDDEN)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M5b  anchor a promotable row PAST the end -- 'purpose-render-scope' -> stdout.txt:9999
+  mutated      : '"anchor": "stdout.txt:32",'  ->  '"anchor": "stdout.txt:9999",'
+  checker exit : 1
+  FAIL line    : [check] FAIL  'purpose-render-scope'  tier='FIXTURE-VERIFIED'  anchor='stdout.txt:9999'  -> line 9999-9999 out of range 1..86
+  FAIL line    : [check] RESULT: FAIL (1 bad row(s))
+  verdict      : REDDENED   (expected: REDDEN)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M5c  point a row at a real but WRONG evidence line -- 'livrps-specialize-weakest' stdout.txt:68 -> stdout.txt:67 (67 is the payload-over-specialize line)
+  mutated      : '"anchor": "stdout.txt:68",'  ->  '"anchor": "stdout.txt:67",'
+  checker exit : 1
+  FAIL line    : [check] FAIL  'livrps-specialize-weakest'  tier='VERIFIED-RUNTIME'  anchor='stdout.txt:67'  -> stdout.txt:67 does not carry 'arc=specialize' (arc mismatch)
+  FAIL line    : [check] RESULT: FAIL (1 bad row(s))
+  verdict      : REDDENED   (expected: REDDEN)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M6  ADVERSARIAL prefix -- arc 'specialize' -> 'spec' on 'livrps-specialize-weakest'. stdout.txt:68 literally contains 'arc=specialize', so the needle 'arc=spec' substring-matches an arc name that does not exist
+  mutated      : '"arc": "specialize",'  ->  '"arc": "spec",'
+  checker exit : 0
+  FAIL line    : (none)
+  RESULT line  : [check] RESULT: PASS (all 15 promotable rows anchor clean)
+  verdict      : SURVIVED   (expected: PROBE)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M7  ADVERSARIAL inversion -- verify 'reference_unloadable=False' -> 'unloadable=True' on 'payload-vs-reference-unloadable'. stdout.txt:46 contains 'payload_unloadable=True', so the semantically INVERTED token substring-matches
+  mutated      : '"verify": "reference_unloadable=False",'  ->  '"verify": "unloadable=True",'
+  checker exit : 0
+  FAIL line    : (none)
+  RESULT line  : [check] RESULT: PASS (all 15 promotable rows anchor clean)
+  verdict      : SURVIVED   (expected: PROBE)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+USDKNOW-M8  ADVERSARIAL wrong value -- verify 'dropped=9' -> 'loaded=1' on 'payload-splat-collider'. stdout.txt:43 reads 'loaded=10', so the false claim 'loaded=1' substring-matches
+  mutated      : '"verify": "dropped=9",'  ->  '"verify": "loaded=1",'
+  checker exit : 0
+  FAIL line    : (none)
+  RESULT line  : [check] RESULT: PASS (all 15 promotable rows anchor clean)
+  verdict      : SURVIVED   (expected: PROBE)
+  restored     : byte-identical=True  git status=''  re-run exit=0
+
+========================================================================================================
+SUMMARY
+  USDKNOW-M1   REDDENED  expect=REDDEN  contract holds
+  USDKNOW-M2a  REDDENED  expect=REDDEN  contract holds
+  USDKNOW-M2b  REDDENED  expect=REDDEN  contract holds
+  USDKNOW-M2c  REDDENED  expect=REDDEN  contract holds
+  USDKNOW-M3   REDDENED  expect=REDDEN  contract holds
+  USDKNOW-M3b  REDDENED  expect=REDDEN  contract holds
+  USDKNOW-M4   REDDENED  expect=REDDEN  contract holds
+  USDKNOW-M5   REDDENED  expect=REDDEN  contract holds
+  USDKNOW-M5b  REDDENED  expect=REDDEN  contract holds
+  USDKNOW-M5c  REDDENED  expect=REDDEN  contract holds
+  USDKNOW-M6   SURVIVED  expect=PROBE   checker WEAKNESS (false green)
+  USDKNOW-M7   SURVIVED  expect=PROBE   checker WEAKNESS (false green)
+  USDKNOW-M8   SURVIVED  expect=PROBE   checker WEAKNESS (false green)

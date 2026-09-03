@@ -1,0 +1,22 @@
+delegate                        : BRAY_HdKarmaXPU
+karma_version                   : karma 22.0.400
+render_camera                   : /cameras/wl_cam
+render_settings.rendercamera    : /cameras/wl_cam
+light_types.environment         : 1
+light_types (all)               : {'cylinder': 0, 'disk': 0, 'distant': 0, 'environment': 1, 'geometry': 0, 'line': 0, 'point': 0, 'rect': 0, 'sphere': 0}
+object_counts.light.total       : 1
+object_counts.camera.total      : 1
+ttfp                            : 0.65083
+render_stage_label              : Converged
+percent_complete                : 100
+shader_calls.surface            : 0
+shader_calls (all)              : {'displacement': 0, 'emission': 0, 'light': 0, 'opacity': 0, 'surface': 0, 'volume': 0}
+geometry_counts.point.total     : 500000
+geometry_counts.polygon.total   : 0
+resolution                      : [1280, 720]
+xpu_timings.render_time         : 1.8741599999993923
+samplesperpixel                 : 9
+randomseed                      : 705600000
+renderStatsAnnotation[lights]   : Total Lights: 1 (Light Tree Emitters: 0)
+
+[parsed render_stats saved -> C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/b7fix/exr_render_stats.json | top-level keys: 53 ]

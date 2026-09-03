@@ -1,0 +1,10 @@
+C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-bp4-crux/a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56/scratchpad/b/crux_b7_mut1b/b7_wl_fixture.exr : 1280 x  720, 4 channel, half openexr
+    Stats Min: 0.000000 0.000000 0.000000 0.000000 (float)
+    Stats Max: 0.618652 0.618652 0.618652 1.000000 (float)
+    Stats Avg: 0.011813 0.011813 0.011813 0.035128 (float)
+    Stats StdDev: 0.061810 0.061810 0.061810 0.164019 (float)
+    Stats NanCount: 0 0 0 0 
+    Stats InfCount: 0 0 0 0 
+    Stats FiniteCount: 921600 921600 921600 921600 
+    Constant: No
+    Monochrome: No

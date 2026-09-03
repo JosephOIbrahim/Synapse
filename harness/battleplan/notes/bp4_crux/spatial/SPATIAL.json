@@ -1,0 +1,358 @@
+{
+  "lane": "SPATIAL",
+  "target": {
+    "branch": "bp4/spatial",
+    "head": "83cca627",
+    "product": "c48e26fa",
+    "base": "28a0e183"
+  },
+  "environment": {
+    "hython": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+    "pytest_header": "platform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0 -- C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe",
+    "rootdir": "<scratchpad>/s",
+    "configfile": "pyproject.toml",
+    "scratch_clone": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-bp4-crux/a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56/scratchpad/s",
+    "fixtures": {
+      "SYNAPSE_WL_COMPONENT_USDC": "C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe/harness/notes/h22wl/bp3_probes/b6_wl_component.usdc",
+      "SYNAPSE_WL_COLLIDER_GLB": "C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe/harness/fixtures/worldlabs/narrow_european_cobblestone_lane/narrow_european_cobblestone_lane_collider.glb"
+    }
+  },
+  "binding_proof": "UNBOUND (no PYTHONPATH, cwd C:/Users/User): `import synapse` resolved to C:\\Users\\User\\SYNAPSE\\python\\synapse\\__init__.py (master) and `import synapse.spatial` raised ModuleNotFoundError: No module named 'synapse.spatial' -- evidence binding_unbound.log. TRAP CONFIRMED AND STRONGER THAN BRIEFED: setting PYTHONPATH alone does NOT bind, because the Houdini package inserts C:\\Users\\User\\SYNAPSE and C:\\Users\\User\\SYNAPSE\\python at sys.path[6] and [7], AHEAD of the PYTHONPATH entries at [9] and [10]; a PYTHONPATH-only bind still raised ModuleNotFoundError. Binding therefore requires sys.path.insert(0, <scratch>/python) inside the script (helper scripts) or pytest's pythonpath=[\"python\"] prepend (test runs). BOUND: synapse.spatial.__file__ = <scratch>/s/python/synapse/spatial/__init__.py, exports [synapse_spatial_classify, synapse_spatial_describe, synapse_spatial_frustum]. Both crux helper scripts re-assert under_scratch==true at runtime; the pytest run is bound by rootdir=<scratch>/s + pythonpath=[\"python\"], and master carries no synapse.spatial at all, so a green fixture-anchored run is only possible against the scratch tree.",
+  "tests": {
+    "command": "hython -m pytest tests/test_spatial_lane.py -v -rs -o addopts=\"\" -p no:cacheprovider --durations=0",
+    "passed": 14,
+    "failed": 0,
+    "skipped": 0,
+    "skipped_names": [],
+    "wall_s": 3.19,
+    "process_wall_s": 7,
+    "slowest": {
+      "test_frustum_collider_reproduces_S3": 1.12,
+      "test_classify_collider_lane_coverage_and_walls": 1.08,
+      "test_no_default_on_registration": 0.2,
+      "test_D34_solaris_basic_runs_without_code_change": 0.12
+    },
+    "note": "No skips. Both fixture-anchored module fixtures (component_stage, collider_stage) resolved, so no acceptance row falls to UNKNOWN on a skip. Re-greened to 14 passed after every mutation restore (final run 3.09 s)."
+  },
+  "crux_numbers": {
+    "describe": {
+      "prim_path": "/wl_import/WL_fixture/geo/proxy",
+      "bounds": [
+        [-5.339412212371826, -5.957127571105957, -19.709951400756836],
+        [2.660879135131836, 0.6965872645378113, 21.51317024230957]
+      ],
+      "size_m": [8.000291347503662, 6.653714835643768, 41.223121643066406],
+      "center_m": [-1.3392665386199951, -2.630270153284073, 0.9016094207763672],
+      "up_axis": "Y",
+      "seconds": 0.005499399998370791,
+      "wall_seconds": 0.005672199997206917,
+      "delta_vs_B3_min": [0.0, 0.0, 0.0],
+      "delta_vs_B3_max": [0.0, 0.0, 0.0],
+      "delta_vs_B3_worst": 0.0,
+      "crux_independent_bbox_gf_transform": [
+        [-5.339412212371826, -5.957127571105957, -19.709951400756836],
+        [2.660879135131836, 0.6965872645378113, 21.51317024230957]
+      ],
+      "crux_independent_worst_vs_B3": 0.0,
+      "crux_independent_vs_tool_worst": 0.0,
+      "crux_independent_meshes": 3,
+      "note": "BYTE-EXACT. The crux recomputed the bbox a second way -- no UsdGeom.BBoxCache, points transformed with Gf.Matrix4d.Transform per point instead of a numpy hstack @ matrix -- and got the identical float on all six components. Residual vs B-3 is 0.0, not merely under 1e-3."
+    },
+    "classify": {
+      "20": {
+        "counts": {"floor": 4919, "wall": 26900, "ceiling": 350, "slope": 14824},
+        "crux_oracle": {"floor": 4919, "wall": 26900, "ceiling": 350, "other": 14824},
+        "published_S2": {"floor": 4919, "wall": 26900, "ceiling": 350, "other": 14824},
+        "delta_tool_vs_S2": {"floor": 0, "wall": 0, "ceiling": 0, "other": 0},
+        "exact": true,
+        "sum_equals_total": true,
+        "seconds": 0.04187409999940428,
+        "wall_seconds": 0.08385959999941406,
+        "ground_y": 0.6012205084164938,
+        "floor_area_m2": 63.498638568364726
+      },
+      "35": {
+        "counts": {"floor": 6414, "wall": 34415, "ceiling": 963, "slope": 5201},
+        "crux_oracle": {"floor": 6414, "wall": 34415, "ceiling": 963, "other": 5201},
+        "published_S2": {"floor": 6414, "wall": 34415, "ceiling": 963, "other": 5201},
+        "delta_tool_vs_S2": {"floor": 0, "wall": 0, "ceiling": 0, "other": 0},
+        "exact": true,
+        "sum_equals_total": true,
+        "seconds": 0.0013242000022728462,
+        "wall_seconds": 0.04328480000185664,
+        "ground_y": 0.6007620394229889,
+        "floor_area_m2": 77.43435060754702
+      },
+      "45": {
+        "counts": {"floor": 7733, "wall": 37441, "ceiling": 1819, "slope": 0},
+        "crux_oracle": {"floor": 7733, "wall": 37441, "ceiling": 1819, "other": 0},
+        "published_S2": {"floor": 7733, "wall": 37441, "ceiling": 1819, "other": 0},
+        "delta_tool_vs_S2": {"floor": 0, "wall": 0, "ceiling": 0, "other": 0},
+        "exact": true,
+        "sum_equals_total": true,
+        "seconds": 0.0012467999986256473,
+        "wall_seconds": 0.04274219999933848,
+        "ground_y": 0.5996328194936116,
+        "floor_area_m2": 88.15359642306444
+      },
+      "triangles": 46993,
+      "faces": 46993,
+      "mesh_path": "/crux_wl_col/geometry_0",
+      "note": "EXACT on all twelve counts. The crux gathered triangles with its own code (Gf.Matrix4d.Transform per point, own fan triangulation, own leftHanded flip) and applied the class definitions re-derived from the docstring wording, not copied from the tool."
+    },
+    "frustum": {
+      "eye": [-1.3392665386199951, -0.9992379605770112, 0.9016094207763672],
+      "forward": [0, 0, 1],
+      "half_fov_deg": 45.0,
+      "aspect": 0.5625,
+      "inside": 20146,
+      "total": 46993,
+      "fraction": 0.4287021471282957,
+      "oracle": 20146,
+      "abs_diff": 0,
+      "two_pct_of_total": 939.86,
+      "within_2pct": true,
+      "exact_match": true,
+      "seconds": 0.0007678000001760665,
+      "wall_seconds": 0.04703719999815803,
+      "note": "EXACT, not merely within the 2% tolerance. The crux oracle is its own tan-formula over its own centroid gather. 20146 matches the builder F-2 re-derived S-3 count."
+    },
+    "coverage": {
+      "max_angle_deg": 35,
+      "floor_triangles": 6414,
+      "floor_z_min": -19.636457443237305,
+      "floor_z_max": 21.23605728149414,
+      "floor_z_span": 40.872514724731445,
+      "B3_z_extent": 41.223121643066406,
+      "floor_z_span_fraction_of_extent": 0.9914948964474181,
+      "lane_covered_gt_0p8": true,
+      "wall_x_negative_count": 22664,
+      "wall_x_positive_count": 11751,
+      "walls_both_sides": true,
+      "crux_dominant_floor_y": 0.6007620394229889,
+      "tool_ground_y": 0.6007620394229889,
+      "abs_diff_tool_vs_crux": 0.0,
+      "crux_bin_width": 0.11289450248082478,
+      "crux_bin_lo": 0.5609323112169902,
+      "crux_bin_hi": 0.6738268136978149,
+      "crux_bin_faces": 3030,
+      "within_one_bin_width": true
+    },
+    "collider_stage": {
+      "build_seconds": 0.05,
+      "meshes": [["/crux_wl_col/geometry_0", 46993]],
+      "picked": "/crux_wl_col/geometry_0",
+      "crux_gather_seconds": 0.46,
+      "crux_gather_triangles": 46993,
+      "crux_gather_faces": 46993
+    },
+    "timing_wall_clock": {
+      "describe": 0.005672199997206917,
+      "classify_45": 0.04274219999933848,
+      "frustum": 0.04703719999815803,
+      "budget_s": 5.0,
+      "all_under_budget": true,
+      "worst_margin_x": 106.3,
+      "note": "Wall clock measured by the crux around the whole call. This is the honest number for acceptance row 2; the tool `seconds` field the builder recorded starts AFTER _collect_triangles and understates classify by ~34x and frustum ~61x."
+    }
+  },
+  "acceptance": [
+    {
+      "predicate": "three tools return correct answers on the fixture per T2 tolerances",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "Independent re-derivation reproduces every published anchor EXACTLY, not merely within tolerance. describe: worst |bounds - B-3| = 0.0 on all six components (tolerance 1e-3); a second crux bbox computed without BBoxCache, using Gf.Matrix4d.Transform, agrees to 0.0. classify: tool counts == crux oracle counts == published S-2 at all three angles, delta 0 on all twelve numbers (4919/26900/350/14824, 6414/34415/963/5201, 7733/37441/1819/0) on 46,993 triangles. frustum: tool 20146 == crux tan-formula oracle 20146, abs_diff 0 (tolerance was 939.86 = 2% of 46,993). coverage: floor z-span 40.8725 = 99.149% of the B-3 z-extent 41.2231 (bar 80%); walls on both x signs (22,664 negative, 11,751 positive); dominant floor bin identical to the crux re-derivation, abs diff 0.0 (tolerance one bin width 0.1129). Evidence capture_out.json, capture_run.log. Mutations M1 and M4 both redden this row, so it is a check that can fail."
+    },
+    {
+      "predicate": "each call < 5 s on the fixture collider (46,993 tris), recorded",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "TRUE ON THE CRUX WALL-CLOCK NUMBER, but the recorded evidence is the wrong measurement. Crux wall clock around the whole call on the 46,993-tri collider: describe 0.00567 s, classify@45 0.04274 s, frustum 0.04704 s -- worst margin 106x under the 5 s budget. The builder recorded the tool `seconds` field (0.0051 / 0.0011 / 0.0009, receipt row 2, review doc L85-94), which is initialised AFTER _collect_triangles returns and therefore excludes the gather -- the dominant cost of classify and frustum. Understatement: classify 0.0012 vs 0.0427 wall (34x), frustum 0.00077 vs 0.04704 wall (61x). The review doc claim 'the slowest call is ~980x under' should read ~117x on classify. Predicate is true; the recorded number and the multiplier are not the call duration. Mutation M5 shows the pin is blind: sleeping 6 s inside _collect_triangles left all eight collider/synthetic tests GREEN while individual tests took 6.04-13.06 s."
+    },
+    {
+      "predicate": "tools run on a second stage without code change (D3.4)",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "Crux ran all three tools on THREE stages of its own with the package untouched, nine calls, zero exceptions, statuses only SUCCESS or UNAVAILABLE. S1 LOP `sphere` (native UsdGeomSphere, no Mesh anywhere): describe SUCCESS, classify UNAVAILABLE, frustum UNAVAILABLE. S2 sopimport of a box+grid SOP merge (real Mesh, a floor and a box): describe SUCCESS, classify SUCCESS, frustum SUCCESS -- so portability is proved on a stage with real geometry, not only on empty ones. S3 fixtures/solaris.basic.json built the way the D3.4 test builds it: all three UNAVAILABLE, matching the builder claim that the fixture carries empty geometry. Read-only re-verified live: the S2 prim list is identical before and after the three queries. Evidence second_stage_out.json, second_stage.log."
+    },
+    {
+      "predicate": "no default-on registration in mcp_server / tool registries",
+      "builder_verdict": "pass",
+      "crux_verdict": "pass",
+      "crux_anchor": "TRUE IN THE CURRENT TREE on the crux own grep, which is wider than the builder check. Zero code-side references anywhere outside python/synapse/spatial/: mcp_server.py clean, all six root-level mcp_tools_*.py clean, python/synapse/server/ clean, python/synapse/mcp/_tool_registry.py + panel/providers/registry.py + science/registry.py clean. Every hit in the tree is prose -- blueprint/intake docs, the leg review doc, the mission JSON/prompt files, and two harness authoring scripts that carry the brief text as string literals -- plus two __pycache__ binaries belonging to the package and its own test. SYNAPSE_SPATIAL_LANE appears only in the package docstring and is read by nothing. CAVEAT ON DURABILITY: the pin behind this row has two holes the crux drove mutations through (M2b, M2c below); the row is verified by the crux grep, not by the test."
+    }
+  ],
+  "registry_hits": [
+    {"file_line": "docs/intake/blueprint-h22-worldlabs-intent.md:292,293,294,301,321,346,434", "classification": "prose (upstream blueprint tool table and gate rows)"},
+    {"file_line": "docs/intake/src/synapse_worldlabs_blueprint.md:61,62,64", "classification": "prose (source blueprint extraction)"},
+    {"file_line": "docs/reviews/bp4-spatial-lane-probes-2026-09-03.md:19,20,52,53,54,155,157,162", "classification": "prose (the leg own review doc)"},
+    {"file_line": "harness/battleplan/author_bp3.py:189,192", "classification": "string literal inside a mission-authoring script (brief text, not an import)"},
+    {"file_line": "harness/battleplan/author_bp4.py:97,99,102", "classification": "string literal inside a mission-authoring script (brief text, not an import)"},
+    {"file_line": "harness/battleplan/missions/BP3-SPATIAL.json:9,12", "classification": "prose (mission spec)"},
+    {"file_line": "harness/battleplan/missions/BP4-SPATIAL.json:7,9,12", "classification": "prose (mission spec)"},
+    {"file_line": "harness/battleplan/prompts/BP3-SPATIAL.md:18,21", "classification": "prose (mission prompt)"},
+    {"file_line": "harness/battleplan/prompts/BP4-SPATIAL.md:16,18,21", "classification": "prose (mission prompt)"},
+    {"file_line": "harness/battleplan/waves/bp4.rows.json:113", "classification": "prose (wave row note)"},
+    {"file_line": "harness/notes/BP3_RECON.md:32", "classification": "prose (RECON finding that the tools were unbuilt)"},
+    {"file_line": "harness/notes/receipts/BP3-RECON.json:28", "classification": "prose (RECON receipt finding F-3)"},
+    {"file_line": "harness/notes/receipts/BP4-SPATIAL.json:27", "classification": "prose (the leg own receipt)"},
+    {"file_line": "python/synapse/spatial/__pycache__/queries.cpython-313.pyc", "classification": "build artifact of the package itself (untracked)"},
+    {"file_line": "python/synapse/spatial/__pycache__/__init__.cpython-313.pyc", "classification": "build artifact of the package itself (untracked)"},
+    {"file_line": "tests/__pycache__/test_spatial_lane.cpython-313-pytest-9.1.1.pyc", "classification": "build artifact of the leg test (untracked)"},
+    {"file_line": "mcp_server.py", "classification": "CODE -- zero hits, verified clean"},
+    {"file_line": "mcp_tools_{cops,memory,render,scene,tops,usd}.py", "classification": "CODE -- zero hits, verified clean"},
+    {"file_line": "python/synapse/server/**", "classification": "CODE -- zero hits, verified clean"},
+    {"file_line": "python/synapse/mcp/_tool_registry.py, python/synapse/panel/providers/registry.py, python/synapse/science/registry.py", "classification": "CODE -- zero hits, verified clean"}
+  ],
+  "mutations": [
+    {
+      "id": "SPATIAL-M1",
+      "description": "Correctness flip in the product: queries.py:278 floor_mask = a < thr changed to a < (thr + 1.0), shifting the floor class by one degree.",
+      "check_reddened": "tests/test_spatial_lane.py -k classify AND the crux T-C exact S-2 comparison",
+      "result": "REDDENED",
+      "evidence": "pytest: 3 failed (test_classify_collider_matches_S2_anchor[20], [35], [45]), 4 passed. Crux exact comparison: exact_tool_vs_S2 false at all three angles; floor counts moved 4919->5060 (+141), 6414->6527 (+113), 7733->7886 (+153). At 45 the mutation also drove sum_equals_total FALSE (7886+37441+1819+0 = 47146 vs 46,993 triangles), empirically exposing the class-overlap issue recorded as finding F-C3. Note test_classify_collider_lane_coverage_and_walls stayed green under a 113-triangle floor change -- its one-bin-width tolerance is not a correctness guard.",
+      "restored_green": true
+    },
+    {
+      "id": "SPATIAL-M2a",
+      "description": "Default-on registration: appended `from synapse.spatial import synapse_spatial_describe` to the repo-root mcp_server.py (line 1268).",
+      "check_reddened": "tests/test_spatial_lane.py -k registration AND the crux T-D grep",
+      "result": "REDDENED",
+      "evidence": "pytest: 1 failed -- test_no_default_on_registration, AssertionError at tests/test_spatial_lane.py:279 (the explicit mcp_server.py assert). Crux grep also caught it at ./mcp_server.py:1268. Both channels fire.",
+      "restored_green": true
+    },
+    {
+      "id": "SPATIAL-M2b",
+      "description": "Evasion probe: same default-on registration line appended to the repo-ROOT mcp_tools_scene.py (line 76) instead of mcp_server.py.",
+      "check_reddened": "tests/test_spatial_lane.py -k registration (expected to redden)",
+      "result": "SURVIVED",
+      "evidence": "pytest: 1 passed -- test_no_default_on_registration did NOT fire. The test scans python/**/*.py plus the single file mcp_server.py; the six repo-root mcp_tools_*.py files (cops, memory, render, scene, tops, usd) are outside both roots. The crux grep DID catch it (./mcp_tools_scene.py:76), which is why acceptance row 4 still stands on the crux anchor. The review doc grep at L155/L157 has the identical two-root scope, so the doc evidence shares the blind spot.",
+      "restored_green": true
+    },
+    {
+      "id": "SPATIAL-M2c",
+      "description": "Double-evasion probe: aliased registration inside the scanned root -- `from synapse import spatial as _sp` plus `_REG = _sp.synapse_spatial_classify` appended to python/synapse/mcp/_tool_registry.py.",
+      "check_reddened": "tests/test_spatial_lane.py -k registration (expected to redden)",
+      "result": "SURVIVED",
+      "evidence": "pytest: 1 passed. The file IS inside the scanned root, but the test matches only the literals 'synapse.spatial', 'synapse_spatial_describe' and 'synapse_spatial_frustum' -- the name synapse_spatial_classify is missing from the list, and `from synapse import spatial` contains no 'synapse.spatial' substring. The crux grep caught it at ./python/synapse/mcp/_tool_registry.py:1697 via the classify name, and a widened crux grep also caught the import line at :1696.",
+      "restored_green": true
+    },
+    {
+      "id": "SPATIAL-M3",
+      "description": "Tolerance flip in the test: B-3 bbox tolerance abs=1e-3 tightened to abs=1e-9 (tests/test_spatial_lane.py:292-293).",
+      "check_reddened": "tests/test_spatial_lane.py -k describe_component",
+      "result": "SURVIVED",
+      "evidence": "1 passed at abs=1e-9. This is INFORMATION, NOT A DEFECT, and it corroborates the crux T-C measurement independently: describe reproduces the B-3 bbox byte-exact, worst residual 0.0 on all six components, so the published 1e-3 tolerance is about six orders of magnitude looser than the actual error. The tolerance is not hiding drift.",
+      "restored_green": true
+    },
+    {
+      "id": "SPATIAL-M4",
+      "description": "Describe drift in the product: +0.01 added to every component of the max bound in queries.py:227.",
+      "check_reddened": "tests/test_spatial_lane.py -k describe",
+      "result": "REDDENED",
+      "evidence": "pytest: 2 failed, 1 passed -- test_describe_component_usdc_matches_B3_bbox (the B-3 anchor) and test_describe_synthetic_box_bounds (the fixture-independent tier). Both tiers catch a 0.01 m drift, so the describe row is pinned with and without the uncommitted fixture.",
+      "restored_green": true
+    },
+    {
+      "id": "SPATIAL-M5",
+      "description": "Timing-blindness probe (crux-original, beyond the brief): inserted `time.sleep(6.0)` as the first statement of _collect_triangles in queries.py, a 6-second regression in the gather that every classify and frustum call pays.",
+      "check_reddened": "every assertion of the form r['seconds'] < TIMING_BUDGET_S (5.0) on the collider -- acceptance row 2",
+      "result": "SURVIVED",
+      "evidence": "8 passed, 0 failed, total 56.79 s. Per-test durations under the mutation: test_frustum_collider_reproduces_S3 13.06 s, test_frustum_synthetic_all_in_and_none_behind 12.00 s, test_classify_collider_lane_coverage_and_walls 7.01 s, test_classify_collider_matches_S2_anchor[20] 6.06 s, [45] 6.05 s, [35] 6.04 s, test_classify_synthetic_box_structure 6.04 s. Every one of those calls blew the 5 s budget by 20-160% and every assertion stayed green, because the tool `seconds` field is initialised after _collect_triangles returns. Acceptance row 2 is pinned by a number that cannot observe the regression it exists to catch.",
+      "restored_green": true
+    }
+  ],
+  "discrepancies": [
+    "Receipt row 2 and review doc L85-94 record the tool `seconds` field (describe 0.0051, classify@45 0.0011, frustum 0.0009) as the per-call timing evidence, and derive '~980x under budget' from it. That field starts after _collect_triangles and so is not the call duration. Crux wall clock: 0.00567 / 0.04274 / 0.04704 s, i.e. 34x larger for classify and 61x larger for frustum; the true worst margin is ~106x under budget, not ~980x. The predicate remains true either way, but the recorded number and the multiplier are wrong-shaped. Mutation M5 shows the assertion cannot see a 6 s regression.",
+    "Receipt row 4 says the registration claim is 'Pinned by test_no_default_on_registration'. Two mutations walked through that pin: a default-on import in any repo-root mcp_tools_*.py (M2b) and an aliased import using the name synapse_spatial_classify (M2c, omitted from the searched-name list). The review doc grep at L155/L157 has the same two-root scope, so the documented evidence shares the hole. Current tree is genuinely clean on the wider crux grep; it is the durable pin that is partial.",
+    "Review doc L94 names the timing producer as C:/Users/User/bp4_scratch/capture_out.json. That file exists on this machine and its correctness numbers match the crux run exactly, so it is real, not fabricated -- but it lives outside the repository and is not in the leg diff, so the timing evidence cannot be reproduced from the tree. This is a third uncommitted producer alongside the two fixture binaries the builder already flagged as F-3.",
+    "Receipt row 1 cites 'lane cover 99.1%'. Crux measures 99.149% (floor z-span 40.8725 of B-3 z-extent 41.2231). Consistent, no issue -- recorded here only because the crux anchor is a different number of digits."
+  ],
+  "findings": [
+    {
+      "id": "F-C1",
+      "severity": "headline",
+      "claim": "The <5 s timing predicate is pinned by a measurement that excludes the dominant cost. In synapse_spatial_classify and synapse_spatial_frustum, t0 = time.perf_counter() is set AFTER the _collect_triangles call (queries.py:269-273 and :343-347), so the returned `seconds` covers only the vectorised numpy stage, never the mesh gather.",
+      "evidence": "Crux wall clock vs tool seconds on the 46,993-tri collider: classify@45 0.04274 vs 0.00125 (34x), frustum 0.04704 vs 0.00077 (61x). Mutation M5 (6 s sleep inside _collect_triangles) left all eight collider/synthetic tests green while individual tests took 6.04-13.06 s.",
+      "consequence": "Acceptance row 2 is true today on wall clock with ~106x margin, so nothing is broken now. But a real regression in the gather -- a slower USD read, a denser mesh, a per-point Python path -- would blow the budget invisibly. Fix is one line each: move t0 above the _collect_triangles call, or add a separate gather_seconds and assert on their sum."
+    },
+    {
+      "id": "F-C2",
+      "severity": "medium",
+      "claim": "test_no_default_on_registration has two independent holes: it scans python/**/*.py plus the single file mcp_server.py, leaving the six repo-root mcp_tools_*.py modules unscanned; and its matched-name list omits synapse_spatial_classify, so an aliased `from synapse import spatial` registration is invisible even inside the scanned root.",
+      "evidence": "M2b and M2c both SURVIVED the test while the crux grep caught both. The review doc grep (L155, L157) uses the same `python/ mcp_server.py` scope.",
+      "consequence": "The current tree is clean -- verified independently by the crux grep across every file type in the repo -- so acceptance row 4 passes. The durability claim does not hold: a future default-on registration in the most likely place for one (a root mcp_tools_* module) would ship green. Fix: scan the repo root *.py files too, and match the bare token synapse_spatial_ plus `from synapse import spatial`."
+    },
+    {
+      "id": "F-C3",
+      "severity": "medium",
+      "claim": "The classify surface classes are not a partition for max_angle_deg > 45. floor is a < thr and wall is 90-thr < a < 90+thr, so the two masks overlap once thr exceeds 45 and counts double-count; the default of 45.0 sits exactly on that boundary. Symmetrically, a face at exactly a == thr matches neither floor (strict <) nor wall (strict >), so it falls to slope.",
+      "evidence": "Analytic from queries.py:278-281, and demonstrated empirically: under mutation M1 (floor threshold raised by one degree) the 45-degree case produced 7886+37441+1819+0 = 47146 against 46,993 triangles, sum_equals_total FALSE. At the shipped thresholds 20/35/45 the crux confirmed sum_equals_total TRUE at all three.",
+      "consequence": "A caller passing max_angle_deg=60 -- a plausible value, and nothing in the signature forbids it -- gets fractions summing above 1.0 with no error. No test covers thr > 45. Untriggered today because every anchor is at or below the boundary."
+    },
+    {
+      "id": "F-C4",
+      "severity": "info",
+      "claim": "describe reproduces the B-3 bbox byte-exact, not merely inside 1e-3. Worst residual is 0.0 on all six components against both the tool output and a crux bbox computed without BBoxCache using Gf.Matrix4d.Transform.",
+      "evidence": "capture_out.json delta_vs_B3_worst = 0.0, crux_own_worst_vs_B3 = 0.0, crux_own_vs_tool_worst = 0.0; mutation M3 (tolerance tightened to 1e-9) stayed green.",
+      "consequence": "Positive information. The 1e-3 tolerance is not masking drift and could be tightened by six orders if the leg wanted a stricter pin."
+    },
+    {
+      "id": "F-C5",
+      "severity": "info",
+      "claim": "The three tools have different geometry preconditions and a caller cannot infer one from another. On a stage whose only geometry is a native UsdGeomSphere (a LOP `sphere` node), describe returns SUCCESS with real bounds while classify and frustum return UNAVAILABLE, because _iter_meshes filters on GetTypeName() == 'Mesh' and native USD gprims (Sphere, Cube, Cylinder, Capsule) are not Meshes.",
+      "evidence": "Crux stage S1, second_stage_out.json: describe SUCCESS, classify UNAVAILABLE, frustum UNAVAILABLE, no exception raised.",
+      "consequence": "Behaviour is honest and documented (UNAVAILABLE, never SUCCESS-with-nothing), so this is not a defect. Worth naming because Solaris scenes commonly carry native gprims and a caller may reasonably expect classify to tessellate or at least say why."
+    },
+    {
+      "id": "F-C6",
+      "severity": "info",
+      "claim": "tests/conftest.py mislabels the cause of deselections in its terminal summary. pytest_deselected records any needs_houdini-marked item that pytest deselects, including deselection by -k, and the summary then prints 'deselected by -m not needs_houdini'.",
+      "evidence": "Every crux `-k` run in the mutation logs shows the banner, e.g. `-k registration` reporting '13 test(s) deselected by -m not needs_houdini' when the deselection was purely -k. The unfiltered baseline run showed no banner and ran all 14.",
+      "consequence": "Out of this leg's scope -- conftest.py is not in the 5-file diff, so this is pre-existing on master. Recorded because it makes a -k run look like a marker-filtered run, which could be misread as tests being silently skipped in the crux logs. No crux verdict depends on it: the unfiltered baseline and the final re-green both ran all 14 with zero skips."
+    },
+    {
+      "id": "F-C7",
+      "severity": "info",
+      "claim": "The read-only contract holds under live inspection, not just by code reading. queries.py imports only math, time, typing, pxr and numpy -- never hou -- and contains no Define(, no Create*Attr, no Set(, no Save/Export/Flatten, and no open(). The single grep hit for a write-shaped token is the word hou.Geometry inside a docstring.",
+      "evidence": "readonly_and_scope.log; plus a live check -- the crux re-traversed its box+grid stage after all three queries and the prim list was byte-identical (readonly_check_S2.unchanged = true).",
+      "consequence": "Confirms the brief T1 requirement 'no prim authored, no file written by the tools'."
+    }
+  ],
+  "leg_diff_scope": {
+    "command": "git diff --stat 28a0e183 HEAD",
+    "files": 5,
+    "insertions": 1090,
+    "deletions": 0,
+    "all_added_none_modified": true,
+    "list": [
+      "A docs/reviews/bp4-spatial-lane-probes-2026-09-03.md (204)",
+      "A harness/notes/receipts/BP4-SPATIAL.json (59)",
+      "A python/synapse/spatial/__init__.py (42)",
+      "A python/synapse/spatial/queries.py (378)",
+      "A tests/test_spatial_lane.py (407)"
+    ],
+    "nothing_else_under_python_synapse": true,
+    "mcp_server_and_mcp_tools_untouched": true
+  },
+  "artifacts": [
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/binding_unbound.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/binding_bound.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/pytest_crux.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/crux_capture.py",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/capture_out.json",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/capture_run.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/crux_second_stage.py",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/second_stage_out.json",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/second_stage.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/registry_grep.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/readonly_and_scope.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/mut_M1.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/mut_M2.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/mut_M3_M4_M5.log",
+    "C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/SPATIAL.json"
+  ],
+  "scratch_status_clean": true,
+  "scratch_status_note": "git status --short -uno is empty after every mutation restore and at the end; the only untracked file is crux_capture.py, the crux helper. Every restore used `git show HEAD:<path> > <path>`; no git checkout, reset, merge, push or rm -rf was run. No file under C:/Users/User/SYNAPSE was modified outside the named evidence directory.",
+  "verdict": "PASS on all four acceptance rows against crux-derived anchors, with three actionable findings. Every published correctness number reproduces EXACTLY, not merely within tolerance. The defects are in the pins, not in the answers: the timing assertion cannot observe a 6-second regression (F-C1), the registration pin has two live evasions (F-C2), and the class masks stop partitioning above max_angle_deg 45 (F-C3)."
+}
