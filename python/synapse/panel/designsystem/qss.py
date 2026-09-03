@@ -49,7 +49,7 @@ QPushButton#DsButton {{
     border-radius: {t.RADIUS_SM}px;
     padding: {t.SPACE_SM}px {t.SPACE_MD}px;
     font-size: {s(t.SIZE_UI)}px;
-    font-weight: 600;
+    font-weight: {t.WEIGHT_SEMIBOLD};
     border: 1px solid transparent;
 }}
 QPushButton#DsButton[variant="primary"] {{
@@ -104,7 +104,7 @@ QPushButton#DsStop {{
     background: {t.HOT_SOFT}; color: {t.TEXT_ON_ACCENT};
     border: none; border-radius: {t.RADIUS_SM}px;
     padding: {t.SPACE_SM}px {t.SPACE_MD}px;
-    font-size: {s(t.SIZE_UI)}px; font-weight: 600;
+    font-size: {s(t.SIZE_UI)}px; font-weight: {t.WEIGHT_SEMIBOLD};
 }}
 QPushButton#DsStop:hover   {{ background: {t.WARM}; }}
 QPushButton#DsStop:pressed {{ background: {t.WARM_PRESS}; }}
@@ -213,7 +213,7 @@ QWidget#DsCard[tone="critical"] {{ border-color: {t.ERROR}; }}
 /* ---- badges / chips ------------------------------------------ */
 QLabel#DsBadge {{
     border-radius: {t.RADIUS_SM}px; padding: 1px {t.SPACE_SM}px;
-    font-size: {s(t.SIZE_MICRO)}px; font-weight: 600;
+    font-size: {s(t.SIZE_MICRO)}px; font-weight: {t.WEIGHT_SEMIBOLD};
     background: {t.RAISED}; color: {t.TEXT_SECONDARY};
 }}
 QLabel#DsBadge[kind="grow"]  {{ color: {t.GROW};  background: {t.STATE_TINTS["grow"]}; }}
