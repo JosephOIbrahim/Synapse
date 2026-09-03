@@ -1,0 +1,95 @@
+{
+  "leg": "BP3-CRUX",
+  "date": "2026-09-03",
+  "authored_by": "BP3-CRUX crucible (self-authored; no builder proved_it_bites replayed — CORPUS-M2 deliberately used a different BLOCKED line than the builder's, CORPUS-M1/M3 picked own rows)",
+  "sandbox": "git clone --shared scratch clones per leg branch (never the main tree, never a builder worktree); every mutation ran against a crux-green baseline, was restored via git checkout --, and the baseline re-confirmed green after restore",
+  "environment_note": "Windows long-path hazard: fresh clones of this repo into a deep temp path fail checkout on python/synapse/_vendor/anthropic/types/beta/* ('Filename too long') and leave a silently partial tree; fix = git config core.longpaths true + restore before trusting the tree. Hit by 4 of 5 audit lanes.",
+  "mutations": [
+    {
+      "id": "CORPUS-M1",
+      "builder_leg": "BP3-CORPUS",
+      "description": "docs/reviews/bp3-h22-promotion-proposal.md doc line 57, usdcreatecomponent VERIFIED-RUNTIME row: anchor cell '| stdout.txt:42 |' -> '| P-3 probe output |' (stdout token stripped; own row pick)",
+      "check_reddened": "bp3_promotion_check.py anchor gate (no stdout.txt:<line> anchor branch)",
+      "result": "REDDENED",
+      "evidence": "baseline exit 0 ('RESULT: PASS, all 8 promotable rows anchor clean', stdout resolved git:bp3/probe, 445 lines/44 blocked) -> mutated exit 1 '[check] FAIL doc:57 usdcreatecomponent ... no stdout.txt:<line> anchor' -> restored, re-run exit 0"
+    },
+    {
+      "id": "CORPUS-M2",
+      "builder_leg": "BP3-CORPUS",
+      "description": "same doc line 59, mtlxflake3d VERIFIED-RUNTIME row: anchor 'stdout.txt:241' -> 'stdout.txt:226'. Line 226 verified by the crucible to sit inside the P-6 BLOCKED block (title line 221, '[P-6] BLOCKED:' line 230) — deliberately NOT the builder's line 230",
+      "check_reddened": "bp3_promotion_check.py BLOCKED-block gate",
+      "result": "REDDENED",
+      "evidence": "baseline exit 0 -> mutated exit 1 '[check] FAIL doc:59 mtlxflake3d ... stdout.txt:226 is inside a BLOCKED probe block' -> restored, re-run exit 0"
+    },
+    {
+      "id": "CORPUS-M3",
+      "builder_leg": "BP3-CORPUS",
+      "description": "same doc line 90 (Table B), WL-EX-03 row: proposed tier 'REFUTED-ON-FIXTURE' -> 'VERIFIED-RUNTIME'. Crucible verified first that the row's anchor cell ('review §5 D2.2 / supplementary.txt v2 L90-92') carries no stdout.txt token — an artifact-less promotion",
+      "check_reddened": "bp3_promotion_check.py promotable-tier + anchor gate (row becomes 9th promotable, fails anchor)",
+      "result": "REDDENED",
+      "evidence": "baseline exit 0 (8 rows) -> mutated exit 1, checker now checked 9 promotable rows: '[check] FAIL doc:90 WL-EX-03 ... no stdout.txt:<line> anchor' -> restored, final re-run exit 0, tree clean"
+    },
+    {
+      "id": "STUBS-M1",
+      "builder_leg": "BP3-STUBS",
+      "description": "docs/intake/world_manifest.schema.json: removed top-level line 7 '\"required\": [\"manifest_version\", \"world\", \"assets\", \"frame\", \"provenance\"],'",
+      "check_reddened": "negative-control validation (example minus manifest_version MUST raise jsonschema.ValidationError)",
+      "result": "REDDENED",
+      "evidence": "baseline: negative control raises ValidationError \"'manifest_version' is a required property\" (jsonschema 4.26.0). Mutated: the stripped example VALIDATES cleanly -> control expectation fails. Key point: the naive positive validation STILL PASSES under this mutation — only the negative control catches the class, proving it load-bearing. Restored + re-confirmed both directions"
+    },
+    {
+      "id": "STUBS-M2",
+      "builder_leg": "BP3-STUBS",
+      "description": "appended 'def synapse_author_light_blocker(light_paths, filter_path=\"/Render/lightFilters/blocker\"): ...' to mcp_tools_render.py (landed file line 60) in scratch",
+      "check_reddened": "zero-hits grep for the three candidate tool names across mcp_server.py + mcp_tools_*.py + python/",
+      "result": "REDDENED",
+      "evidence": "baseline: 0 hits for all three names (grep exit 1) -> mutated: synapse_author_light_blocker = 1 hit (mcp_tools_render.py:60) -> restored: 0/0/0, git status clean. Upgrades the builder's 'structurally-satisfied' self-check to a demonstrated red"
+    },
+    {
+      "id": "STUBS-M3",
+      "builder_leg": "BP3-STUBS",
+      "description": "git apply harness/battleplan/notes/BP3_lane_spatial.diff (actually applied, not --check)",
+      "check_reddened": "authoring_domains.json byte-identity vs master",
+      "result": "REDDENED",
+      "evidence": "baseline: diff vs master 0 lines, cmp identical, 301 bytes -> mutated: applied cleanly, git diff master -- python/synapse/server/authoring_domains.json = 22 lines (13 ins/1 del), file 301 -> 1022 bytes -> restored: diff 0, CMP_IDENTICAL, 301 bytes"
+    },
+    {
+      "id": "PANEL-M1a",
+      "builder_leg": "BP3-PANEL",
+      "description": "qss.py:124 revert of audit row A: 'padding: 0 0 {t.SPACE_12}px 0;' -> 'padding: 0 0 12px 0;'",
+      "check_reddened": "crux hunk<->audit-row map re-check (row A's hunk disappears from git diff master..HEAD -- qss.py)",
+      "result": "SURVIVED (automated guards)",
+      "evidence": "full 148-test target list stays green (123 passed/25 skipped) — the literal predated the change and designsystem/ is exempt from the hex/px scan by construction (test_rope_design_conformance.py:27-34). Byte-identity hashing ALSO cannot catch it (value-identical both directions). Only the crux hunk-map re-check reddens. FINDING: the leg's tokenisation claim rests on diff review, not on any automated guard"
+    },
+    {
+      "id": "PANEL-M1b",
+      "builder_leg": "BP3-PANEL",
+      "description": "off-palette literal hex injected into designsystem/qss.py stylesheet output: 'QPushButton#DsPill:hover { color: {t.TEXT_BRIGHT}; }' -> 'color: #ff0066;'",
+      "check_reddened": "byte-identity stylesheet-hash comparison vs trusted baseline (stylesheet(1.0) sha256 changes from 1779b11471ff4235)",
+      "result": "SURVIVED (automated guards) — GUARD HOLE",
+      "evidence": "full target list stays green (123/25). Guard-surface read: conformance SCANNED tuple = synapse_panel.py + 3 manifests only (test_rope_design_conformance.py:27-34, designsystem/ exempt); density guard inspects density-keyed blocks only (test_rope_density.py:100-112); token-authority keys on ast.Assign hex declarations only (tests/panel/test_token_authority.py:161-171). Palette drift INSIDE the token authority is invisible to every automated guard — spawn proposed: pin that every hex emitted by stylesheet() is a tokens.py value"
+    },
+    {
+      "id": "PANEL-M2",
+      "builder_leg": "BP3-PANEL",
+      "description": "appended 'class CruxMutantWidget(QWidget)' with setStyleSheet(\"background: #ff0066; padding: 12px;\") to python/synapse/panel/synapse_panel.py — a module the conformance guard claims coverage of",
+      "check_reddened": "tests/test_rope_design_conformance.py::test_no_hardcoded_hex_or_px_outside_designsystem",
+      "result": "REDDENED",
+      "evidence": "baseline 123/25 green -> mutated: 'FAILED ...::test_no_hardcoded_hex_or_px_outside_designsystem' = 1 failed/122 passed/25 skipped -> restored, re-green. The guard bites exactly where it claims"
+    },
+    {
+      "id": "PANEL-M3",
+      "builder_leg": "BP3-PANEL",
+      "description": "python/synapse/panel/synapse_panel.py:434 'self._ctx_timer.setInterval(2000)' -> 'setInterval(2500)'",
+      "check_reddened": "diff-scope acceptance check (git diff master..HEAD -- synapse_panel.py must be EMPTY; goes non-empty: 1 ins/1 del)",
+      "result": "SURVIVED (automated guards) — GUARD HOLE",
+      "evidence": "full target list stays green (123/25): no test pins the live timer intervals (tests/test_w2_s5_context_offmain.py stops timers by name and is not in the target list; tests/test_r_track.py:218 plants tmp-path fixtures, does not scan the live file). Only the structural diff-scope check reddens, and that check exists only as this leg's acceptance row, not as a durable test — spawn proposed: timer-interval pin"
+    }
+  ],
+  "totals": {
+    "authored": 10,
+    "reddened": 7,
+    "survived_with_named_reddening_check": 3,
+    "per_leg": { "BP3-CORPUS": 3, "BP3-STUBS": 3, "BP3-PANEL": 4 }
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "leg": "BP3-CRUX",
+  "status": "green_with_findings",
+  "product_head": "ada0a7d78eeac7b4ac0a0ced6c30f88db861705e",
+  "base": "c6c4fb86b17f59d3d3171ecea9ee630f2a88ce78",
+  "branch": "bp3/crux",
+  "verdicts": {
+    "BP3-RECON": "SOUND-WITH-NITS (chain_broken_at: none)",
+    "BP3-PROBE": "SOUND-WITH-NITS (chain_broken_at: none; ceiling = B-2 handedness gui UNKNOWN)",
+    "BP3-CORPUS": "SOUND (chain_broken_at: none)",
+    "BP3-STUBS": "SOUND (chain_broken_at: none)",
+    "BP3-PANEL": "SOUND-WITH-NITS (chain_broken_at: none; ceiling = gui screenshots UNKNOWN)"
+  },
+  "acceptance": [
+    {
+      "predicate": "one verdict per builder leg (five), each with independently re-run acceptance rows and the crucible's own anchors",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP3-CRUX_verdicts.md @ ada0a7d7: 5 verdict sections, 19 acceptance rows re-run total (RECON 3, PROBE 6, CORPUS 3, STUBS 3, PANEL 4) — 17 pass / 2 UNKNOWN (both gui_required, recorded UNKNOWN per constitution, never a pass). Every row carries a crux-own anchor (command+output or file:line read by the crucible in a fresh scratch clone of the leg branch). Method: git clone --shared per leg, never the builder worktree, never the main tree. Legs with any UNKNOWN acceptance capped at SOUND-WITH-NITS per crucible_criteria."
+    },
+    {
+      "predicate": ">= 3 self-authored mutations per builder leg with a product (CORPUS, STUBS, PANEL), each named with the check it reddens (BP3-CRUX_mutations.json)",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP3-CRUX_mutations.json @ ada0a7d7: 10 mutations (CORPUS 3, STUBS 3, PANEL 4), all self-authored (CORPUS-M2 deliberately used BLOCKED line 226, not the builder's 230; row picks own). 7 REDDENED their targeted automated check with exit-code/test-summary evidence and green-baseline + restore-and-re-green discipline. 3 PANEL mutations SURVIVED the automated guards — each still named with the check that reddens it (crux hunk-map re-check / byte-identity hash / diff-scope check) and recorded as guard-hole findings with spawn proposals, per 'the crucible trusts no builder proved_it_bites'."
+    },
+    {
+      "predicate": "probe script re-run by the crucible with its own artifact; statuses diffed against the builder's; hashes recomputed",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/bp3_crux_probe_rerun/{stdout.txt,probe_results.json} @ ada0a7d7 (crux-owned artifact, committed; usdc/EXR binaries excluded per repo public-autopush policy). Run on pinned hython 22.0.400 ('Houdini: 22.0.400' at crux stdout line 5) with HOUDINI_USER_PREF_DIR=C:/Users/User/OneDrive/Documents/houdini22.0, own --out dir, exit 0, wall 5.6s. Status diff vs builder probe_results.json: IDENTICAL 22-id map, 21 RAN / 1 BLOCKED (only P-6, same AttributeError traceback), zero divergences. Fixture SHA256s recomputed full-hash identical (ply be734a30…/34000416 B, glb 08e75e0a…/959216 B, png e6772fbd…/4213568 B). git diff master..bp3/probe -- harness/probes/ EMPTY, confirmed first-hand in the crux worktree and again in the scratch clone."
+    }
+  ],
+  "findings": [
+    {
+      "claim": "RECON nit 1: BP3_RECON.md T3 'paintinstances @ ~L238 (x5)' — actual multiplicity is 3 (lines 238/246/438 of verified_lop_solaris_knowledge_22.0.368.json). Anchor right, count wrong. One-char fix on bp3/recon; verdict-neutral.",
+      "anchor": "BP3-CRUX_verdicts.md §BP3-RECON"
+    },
+    {
+      "claim": "RECON nit 2: the 'USD 0.26.5 -> harness/state/drop.json' row lists drop.json as a repo artifact but it is UNTRACKED (git ls-files 0; only drop.json.example tracked) — a fresh checkout will not contain it. Wording should read 'untracked/existence-gate'.",
+      "anchor": "BP3-CRUX_verdicts.md §BP3-RECON"
+    },
+    {
+      "claim": "PROBE evidence-durability note: b6_wl_component.usdc / b7_wl_fixture.exr / .hip are deliberately unstaged (disclosed public-autopush policy); byte-consistent with run_meta today, but that evidence dies with the bp3-probe worktree. usdc/EXR byte sizes are out-dir-dependent (+1 B / +141 B on crux re-run) — never pin exact sizes without pinning the out path.",
+      "anchor": "BP3-CRUX_verdicts.md §BP3-PROBE"
+    },
+    {
+      "claim": "PANEL guard hole (crux PANEL-M1b): an off-palette hex inside designsystem/qss.py survives all 148 target tests — designsystem/ is exempt from the hex/px conformance scan by construction (test_rope_design_conformance.py:27-34); density guard scans density-keyed blocks only; token-authority scans ast.Assign declarations only. Palette drift inside the token authority is invisible to every automated guard.",
+      "anchor": "BP3-CRUX_mutations.json PANEL-M1b"
+    },
+    {
+      "claim": "PANEL guard hole (crux PANEL-M3): no test pins synapse_panel.py's live timer intervals (2000ms _ctx_timer / 4000ms _health_timer); a silent interval change survives the whole target list. Only this leg's diff-scope acceptance row catches it, and that row is not a durable test.",
+      "anchor": "BP3-CRUX_mutations.json PANEL-M3"
+    },
+    {
+      "claim": "Environment hazard (4 of 5 audit lanes hit it): fresh clone of SYNAPSE into a deep Windows temp path fails checkout on python/synapse/_vendor/anthropic/types/beta/* ('Filename too long'), leaving a SILENTLY PARTIAL tree with staged deletions — a lane that doesn't notice could misread missing artifacts as builder failures. Fix: git config core.longpaths true + restore before trusting the tree. Belongs in battleplan lane discipline.",
+      "anchor": "BP3-CRUX_verdicts.md §Cross-cutting"
+    },
+    {
+      "claim": "RECON M-2 hazard upgraded from inferred to demonstrated: 22.0.429's hython passes the hytest usability gate live (import pytest+PySide6 -> USABLE), so an unpinned lane WILL probe on a build with no symbol table (h22 table pins 22.0.400). Every probe lane must export SYNAPSE_HYTHON.",
+      "anchor": "BP3-CRUX_verdicts.md §BP3-RECON env checks"
+    }
+  ],
+  "for_ruling": [
+    "Confirmed and re-anchored the BP3-STUBS ruling item: the lane diff's verbatim §3.2 contract path 'schemas/world_manifest.schema.json' (BP3_lane_spatial.diff L19) points at a directory with 0 tracked files; actual schema_home is docs/intake/ (blueprint L9 Sidecars line already agrees). The verbatim lane text must be reconciled BEFORE the diff is ever applied. The diff itself remains unapplied and apply-check-clean."
+  ],
+  "spawn": [
+    {
+      "id": "SPAWN-CRUX-1",
+      "band": "TRUST",
+      "class": "guard",
+      "name": "Pin designsystem palette integrity: assert every hex emitted by qss.stylesheet() at all font scales is a tokens.py value (closes the PANEL-M1b hole where off-palette drift inside the token authority survives all guards)",
+      "source": {
+        "doc": "harness/battleplan/notes/BP3-CRUX_mutations.json",
+        "anchor": "PANEL-M1b"
+      },
+      "note": "class outside BP3-CRUX spawn_classes — lands held for Joe"
+    },
+    {
+      "id": "SPAWN-CRUX-2",
+      "band": "TRUST",
+      "class": "guard",
+      "name": "Durable timer-interval pin for synapse_panel.py (_ctx_timer 2000ms, _health_timer 4000ms) so a silent interval change reddens a test instead of only a per-leg diff-scope acceptance row (closes the PANEL-M3 hole)",
+      "source": {
+        "doc": "harness/battleplan/notes/BP3-CRUX_mutations.json",
+        "anchor": "PANEL-M3"
+      },
+      "note": "class outside BP3-CRUX spawn_classes — lands held for Joe"
+    },
+    {
+      "id": "SPAWN-CRUX-3",
+      "band": "TRUST",
+      "class": "harness",
+      "name": "Battleplan lane discipline: add core.longpaths=true + post-clone tree-integrity check to the scratch-clone recipe (4 of 5 crux lanes hit the silent-partial-tree failure)",
+      "source": {
+        "doc": "harness/battleplan/notes/BP3-CRUX_verdicts.md",
+        "anchor": "Cross-cutting findings #1"
+      },
+      "note": "class outside BP3-CRUX spawn_classes — lands held for Joe"
+    }
+  ],
+  "notes": "Verdicts are READ before merge words fire; a green CRUX receipt is a precondition for Joe's merge words, never a substitute. All 5 verdicts posted on the bus addressed to * (n=18d1eb05aabcb990..18d1eb05c7669a0c). No contract feature flipped, no product file edited; the crucible's writes are its own notes, probe-rerun artifacts, this receipt, and the landed flag. Audit executed via 5 parallel independent lanes (workflow wf_ed2fccef-c74), all mutations restored, scratch clones disposable.",
+  "w5h_relanded": {
+    "by": "CTO seat (Fable 5.1) via DC",
+    "at": "2026-09-03T17:04",
+    "reason": "mission T7 said write BP3_CRUX_LANDED.flag LAST; CRUX obeyed, so the flag commit 1e4a22f4 followed the receipt 2d1d22c0 and W5H held the leg at closing. Receipt re-landed as HEAD; product HEAD is now 1e4a22f4 (flag commit, notes-only). No verdict content changed."
+  }
+}

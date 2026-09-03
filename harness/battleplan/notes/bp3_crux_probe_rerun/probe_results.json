@@ -1,0 +1,1037 @@
+{
+  "P-0": {
+    "status": "RAN",
+    "seconds": 0.02,
+    "result": "22.0.400"
+  },
+  "P-1": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": {
+      "paintinstances": true,
+      "scatterinstances": true,
+      "pointinstancer": true,
+      "copytopoints": true,
+      "edit": true,
+      "karmablockerlightfilter": true,
+      "karmarendersettings": true,
+      "usdrender_rop": true,
+      "renderpass": true,
+      "imagefilter": true,
+      "texturemateriallibrary": true,
+      "apexanimate": true,
+      "cache": true,
+      "karmafogbox": true,
+      "materiallibrary": true,
+      "light::2.0": true
+    }
+  },
+  "P-2": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": [
+      [
+        "copnet_filterlist",
+        "COP Image Filter List"
+      ],
+      [
+        "imagefilter",
+        "Image Filter"
+      ],
+      [
+        "karmablockerlightfilter",
+        "Karma Blocker Light Filter"
+      ],
+      [
+        "renderpass",
+        "Render Pass"
+      ],
+      [
+        "scatterinstances",
+        "Scatter Instances"
+      ],
+      [
+        "texturemateriallibrary",
+        "Texture Material Library"
+      ]
+    ]
+  },
+  "P-3": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": [
+      [
+        "usdcreatecomponent",
+        "USD Create Component"
+      ],
+      [
+        "usdcreateproxygeometry",
+        "USD Create Proxy Geometry"
+      ]
+    ]
+  },
+  "P-4": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": []
+  },
+  "P-5": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": [
+      {
+        "folder": "",
+        "name": "primpath",
+        "label": "Primitive Path"
+      },
+      {
+        "folder": "",
+        "name": "executionmode",
+        "label": "Execution Mode"
+      },
+      {
+        "folder": "",
+        "name": "upaxis",
+        "label": "Up Axis"
+      },
+      {
+        "folder": "",
+        "name": "enablecamera",
+        "label": "Enable Camera"
+      },
+      {
+        "folder": "",
+        "name": "camerapath",
+        "label": "Camera Path"
+      },
+      {
+        "folder": "",
+        "name": "sepparm",
+        "label": ""
+      },
+      {
+        "folder": "/Source Geometry",
+        "name": "scattertargetgeometry",
+        "label": "Prim Pattern"
+      },
+      {
+        "folder": "/Source Geometry",
+        "name": "scattertargettype",
+        "label": "Geometry Type"
+      },
+      {
+        "folder": "/Source Geometry",
+        "name": "scattertargetmotion",
+        "label": "Animation (Beta)"
+      },
+      {
+        "folder": "/Source Geometry",
+        "name": "sepparm9",
+        "label": ""
+      },
+      {
+        "folder": "/Source Geometry/Input Primvars",
+        "name": "scattertargetrestprimvar",
+        "label": "Rest Primvar"
+      },
+      {
+        "folder": "/Source Geometry/Input Primvars/Texture Coordinates",
+        "name": "scattertargettexcoordsrc",
+        "label": "TexCoord Source"
+      },
+      {
+        "folder": "/Source Geometry/Input Primvars/Texture Coordinates",
+        "name": "scattertargettexcoordprimvar",
+        "label": "TexCoord Primvar"
+      },
+      {
+        "folder": "/Source Geometry/Input Primvars/Texture Coordinates",
+        "name": "scattertargettexcoordcamscale",
+        "label": "Scale"
+      },
+      {
+        "folder": "/Source Geometry/Input Primvars/Texture Coordinates",
+        "name": "scattertargettexcoordcamoffset",
+        "label": "Offset"
+      },
+      {
+        "folder": "/Source Geometry/Input Primvars/Texture Coordinates",
+        "name": "scattertargettexcoordcamangle",
+        "label": "Angle"
+      },
+      {
+        "folder": "/Source Geometry",
+        "name": "sepparm2",
+        "label": ""
+      },
+      {
+        "folder": "",
+        "name": "sepparm10",
+        "label": ""
+      },
+      {
+        "folder": "/Scattering",
+        "name": "scattermethod",
+        "label": "Point Count Method"
+      },
+      {
+        "folder": "/Scattering/Number of Instances",
+        "name": "scattercount",
+        "label": "Scatter Count"
+      },
+      {
+        "folder": "/Scattering/Number of Instances",
+        "name": "enablescattercountmap",
+        "label": "Label"
+      },
+      {
+        "folder": "/Scattering/Number of Instances",
+        "name": "scattercountmap",
+        "label": "Texture Map"
+      },
+      {
+        "folder": "/Scattering/Number of Instances",
+        "name": "enablescattercountprimvar",
+        "label": "Label"
+      },
+      {
+        "folder": "/Scattering/Number of Instances",
+        "name": "scattercountprimvar",
+        "label": "Primvar"
+      },
+      {
+        "folder": "/Scattering/Number of Instances",
+        "name": "sepparm3",
+        "label": ""
+      },
+      {
+        "folder": "/Scattering/Instance Density",
+        "name": "scatterdensity",
+        "label": "Density"
+      },
+      {
+        "folder": "/Scattering/Instance Density",
+        "name": "enablescatterdensitymap",
+        "label": "Label"
+      },
+      {
+        "folder": "/Scattering/Instance Density",
+        "name": "scatterdensitymap",
+        "label": "Texture Map"
+      },
+      {
+        "folder": "/Scattering/Instance Density",
+        "name": "enablescatterdensityprimvar",
+        "label": "Label"
+      },
+      {
+        "folder": "/Scattering/Instance Density",
+        "name": "scatterdensityprimvar",
+        "label": "Primvar"
+      },
+      {
+        "folder": "/Scattering/Instance Density",
+        "name": "scatterdensitytexturespace",
+        "label": "Scatter in Texture Space"
+      },
+      {
+        "folder": "/Scattering/Instance Density",
+        "name": "sepparm4",
+        "label": ""
+      },
+      {
+        "folder": "/Scattering/Instance per Face",
+        "name": "enablescatterfacesmap",
+        "label": "Label"
+      },
+      {
+        "folder": "/Scattering/Instance per Face",
+        "name": "scatterfacesmap",
+        "label": "Texture Map"
+      },
+      {
+        "folder": "/Scattering/Instance per Face",
+        "name": "enablescatterfacesprimvar",
+        "label": "Label"
+      },
+      {
+        "folder": "/Scattering/Instance per Face",
+        "name": "scatterfacesprimvar",
+        "label": "Primvar"
+      },
+      {
+        "folder": "/Scattering/Instance per Face",
+        "name": "sepparm11",
+        "label": ""
+      },
+      {
+        "folder": "/Scattering",
+        "name": "useemergencylimit",
+        "label": "Use Max Points"
+      },
+      {
+        "folder": "/Scattering",
+        "name": "emergencylimit",
+        "label": "Max Point Limit"
+      },
+      {
+        "folder": "/Scattering",
+        "name": "relaxiterations",
+        "label": "Relax Iterations"
+      },
+      {
+        "folder": "/Scattering",
+        "name": "scatterseed",
+        "label": "Seed"
+      },
+      {
+        "folder": "/Scattering/Masks",
+        "name": "enabledirection",
+        "label": "Calculate Directional Mask"
+      },
+      {
+        "folder": "/Scattering/Masks/Up Axis Direction",
+        "name": "maxangle",
+        "label": "Max Angle"
+      },
+      {
+        "folder": "/Scattering/Masks/Up Axis Direction",
+        "name": "directionsharpness",
+        "label": "Sharpness"
+      },
+      {
+        "folder": "/Scattering/Masks/Up Axis Direction",
+        "name": "reverseangle",
+        "label": "Reverse Direction"
+      },
+      {
+        "folder": "/Scattering/Masks/Up Axis Direction",
+        "name": "castshadows",
+        "label": "Cast Shadows"
+      },
+      {
+        "folder": "/Scattering/Masks/Up Axis Direction",
+        "name": "invertdirectionmask",
+        "label": "Invert"
+      },
+      {
+        "folder": "/Scattering/Masks",
+        "name": "enableao",
+        "label": "Calculate Ambient Occlusion"
+      },
+      {
+        "folder": "/Scattering/Masks/Ambient Occlusion",
+        "name": "aomaxraydist",
+        "label": "Maximum Ray Distance"
+      },
+      {
+        "folder": "/Scattering/Masks/Ambient Occlusion",
+        "name": "aoinputmin",
+        "label": "Input Min"
+      },
+      {
+        "folder": "/Scattering/Masks/Ambient Occlusion",
+        "name": "aoinputmax",
+        "label": "Input Max"
+      },
+      {
+        "folder": "/Scattering/Masks/Ambient Occlusion",
+        "name": "invertao",
+        "label": "Invert"
+      },
+      {
+        "folder": "/Scattering/Masks",
+        "name": "enablecameramask",
+        "label": "Enable Camera Mask"
+      },
+      {
+        "folder": "/Scattering/Masks/Camera",
+        "name": "cameramaskpadding",
+        "label": "Frustum Padding"
+      },
+      {
+        "folder": "/Scattering/Masks/Camera",
+        "name": "enablecameramasknear",
+        "label": "enablecameramasknearl"
+      },
+      {
+        "folder": "/Scattering/Masks/Camera",
+        "name": "cameramasknear",
+        "label": "Override Near Plane"
+      },
+      {
+        "folder": "/Scattering/Masks/Camera",
+        "name": "enablecameramaskfar",
+        "label": "enablecameramaskfar"
+      },
+      {
+        "folder": "/Scattering/Masks/Camera",
+        "name": "cameramaskfar",
+        "label": "Override Far Plane"
+      },
+      {
+        "folder": "/Scattering/Masks/Camera",
+        "name": "invertcameramask",
+        "label": "Invert"
+      },
+      {
+        "folder": "/Scattering/Masks",
+        "name": "enablepointsmask",
+        "label": "Enable Points Mask"
+      },
+      {
+        "folder": "/Scattering/Masks/PointInstancers",
+        "name": "pointsmaskprims",
+        "label": "Prim Pattern"
+      },
+      {
+        "folder": "/Scattering/Masks/PointInstancers",
+        "name": "pointsmaskradius",
+        "label": "Radius"
+      },
+      {
+        "folder": "/Scattering/Masks/PointInstancers",
+        "name": "pointsmaskfalloff",
+        "label": "Falloff"
+      },
+      {
+        "folder": "/Scattering/Masks/PointInstancers",
+        "name": "pointsmaskuseattrib",
+        "label": "Use Widths/Radius Attribute"
+      },
+      {
+        "folder": "/Scattering/Masks/PointInstancers",
+        "name": "invertpointsmask",
+        "label": "Invert"
+      },
+      {
+        "folder": "/Scattering/Masks",
+        "name": "enableobjectsmask",
+        "label": "Enable Objects Mask"
+      },
+      {
+        "folder": "/Scattering/Masks/Meshes",
+        "name": "objectsmaskprims",
+        "label": "Prim Pattern"
+      },
+      {
+        "folder": "/Scattering/Masks/Meshes",
+        "name": "objectsmaskoffset",
+        "label": "Offset"
+      },
+      {
+        "folder": "/Scattering/Masks/Meshes",
+        "name": "objectsmaskfalloff",
+        "label": "Falloff"
+      },
+      {
+        "folder": "/Scattering/Masks/Meshes",
+        "name": "objectsmaskbbox",
+        "label": "Bounding Box Only"
+      },
+      {
+        "folder": "/Scattering/Masks/Meshes",
+        "name": "invertobjectsmask",
+        "label": "Invert"
+      },
+      {
+        "folder": "/Scattering",
+        "name": "sepparm5",
+        "label": ""
+      },
+      {
+        "folder": "/Transforms/Orient to Surface",
+        "name": "orient",
+        "label": "Surface Blend"
+      },
+      {
+        "folder": "/Transforms/Orient to Surface",
+        "name": "orientvariation",
+        "label": "Blend Variation"
+      },
+      {
+        "folder": "/Transforms/Orient to Surface",
+        "name": "orientspreadangle",
+        "label": "Spread Angle"
+      },
+      {
+        "folder": "/Transforms/Spin",
+        "name": "enabledirectionprimvar",
+        "label": "Label"
+      },
+      {
+        "folder": "/Transforms/Spin",
+        "name": "directionprimvar",
+        "label": "Direction Primvar"
+      },
+      {
+        "folder": "/Transforms/Spin",
+        "name": "spin",
+        "label": "Spin"
+      },
+      {
+        "folder": "/Transforms/Spin",
+        "name": "spinvariation",
+        "label": "Variation"
+      },
+      {
+        "folder": "/Transforms/Spin",
+        "name": "spinincrements",
+        "label": "Increments"
+      },
+      {
+        "folder": "/Transforms/Spin",
+        "name": "enablespinmap",
+        "label": "Enable Spin Map"
+      },
+      {
+        "folder": "/Transforms/Spin",
+        "name": "spinmap",
+        "label": "Spin Map"
+      },
+      {
+        "folder": "/Transforms/Spin/Facing Direction",
+        "name": "enabledirectionmap",
+        "label": "Label"
+      },
+      {
+        "folder": "/Transforms/Spin/Facing Direction",
+        "name": "directionmap",
+        "label": "Direction Map"
+      },
+      {
+        "folder": "/Transforms/Scale",
+        "name": "scalefromscatter",
+        "label": "Use Scale from Scatter"
+      },
+      {
+        "folder": "/Transforms/Scale",
+        "name": "scaleuniform",
+        "label": "Scale"
+      },
+      {
+        "folder": "/Transforms/Scale",
+        "name": "scalevariation",
+        "label": "Variation"
+      },
+      {
+        "folder": "/Transforms/Scale",
+        "name": "enablescalemap",
+        "label": "Enable Scale Map"
+      },
+      {
+        "folder": "/Transforms/Scale",
+        "name": "scalemap",
+        "label": "Texture Map"
+      },
+      {
+        "folder": "/Transforms/Position",
+        "name": "peak",
+        "label": "Peak Offset"
+      },
+      {
+        "folder": "/Transforms/Position",
+        "name": "peakvariation",
+        "label": "Peak Variation"
+      },
+      {
+        "folder": "/Transforms/Position",
+        "name": "enablepeakmap",
+        "label": "Enable Peak Map"
+      },
+      {
+        "folder": "/Transforms/Position",
+        "name": "peakmap",
+        "label": "Texture Map"
+      },
+      {
+        "folder": "/Transforms",
+        "name": "alignmentseed",
+        "label": "Seed"
+      },
+      {
+        "folder": "/Transforms",
+        "name": "sepparm6",
+        "label": ""
+      },
+      {
+        "folder": "/Prototypes",
+        "name": "addprototypesfromsecondinput",
+        "label": "Add Prototypes from Second Input"
+      },
+      {
+        "folder": "/Prototypes/Copy Prototypes from Second Input/Source",
+        "name": "protouseroot",
+        "label": "Use Entire Stage as Only Prototype"
+      },
+      {
+        "folder": "/Prototypes/Copy Prototypes from Second Input/Source",
+        "name": "protopattern",
+        "label": "Primitives"
+      },
+      {
+        "folder": "/Prototypes/Copy Prototypes from Second Input/Source",
+        "name": "handlemissingprototypes",
+        "label": "Handle Missing Prototypes"
+      },
+      {
+        "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+        "name": "hideprotosourceprims",
+        "label": "Make Prototype Source Primitives Invisible"
+      },
+      {
+        "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+        "name": "protodestrootprim",
+        "label": "Root Prim"
+      },
+      {
+        "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+        "name": "protorootkind",
+        "label": "Root Prim Kind"
+      },
+      {
+        "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+        "name": "protoareadestprim",
+        "label": "Name"
+      },
+      {
+        "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+        "name": "protoreftype",
+        "label": "Reference Type"
+      },
+      {
+        "folder": "/Prototypes/Copy Prototypes from Second Input/Destination",
+        "name": "makeinstanceable",
+        "label": "Make Prototype Instanceable"
+      },
+      {
+        "folder": "/Prototypes",
+        "name": "sepparm7",
+        "label": ""
+      },
+      {
+        "folder": "/Prototypes",
+        "name": "protogroupmethod",
+        "label": "Method"
+      },
+      {
+        "folder": "/Prototypes",
+        "name": "protoresetweights",
+        "label": "Reset All Weights"
+      },
+      {
+        "folder": "/Prototypes",
+        "name": "protogroupmap",
+        "label": "Texture Map"
+      },
+      {
+        "folder": "/Prototypes",
+        "name": "protogroupprimvar",
+        "label": "Primvar"
+      },
+      {
+        "folder": "/Prototypes",
+        "name": "protoseed",
+        "label": "Seed"
+      },
+      {
+        "folder": "/Prototypes",
+        "name": "sepparm8",
+        "label": ""
+      },
+      {
+        "folder": "/Prototypes/Prototype Groups/Prototype Group #",
+        "name": "protogroupprims#",
+        "label": "Prim Pattern"
+      },
+      {
+        "folder": "/Prototypes/Prototype Groups/Prototype Group #",
+        "name": "protogroupweight#",
+        "label": "Weight"
+      },
+      {
+        "folder": "/Prototypes/Prototype Groups/Prototype Group #",
+        "name": "protogroupid#",
+        "label": "Group ID"
+      },
+      {
+        "folder": "/Prototypes/Prototype Groups/Prototype Group #",
+        "name": "protogroupstart#",
+        "label": "Group Start"
+      },
+      {
+        "folder": "/Prototypes/Prototype Groups/Prototype Group #",
+        "name": "protogroupcount#",
+        "label": "Group Count"
+      },
+      {
+        "folder": "/Prototypes/Prototype Groups",
+        "name": "sepparmprotogroup#",
+        "label": ""
+      },
+      {
+        "folder": "/Shading",
+        "name": "assignmaterial",
+        "label": "Assign Material"
+      },
+      {
+        "folder": "/Shading/Bind Material",
+        "name": "mtlpath",
+        "label": "Material Path"
+      },
+      {
+        "folder": "/Shading/Bind Material",
+        "name": "mtlbindpurpose",
+        "label": "Purpose"
+      },
+      {
+        "folder": "/Shading/Bind Material",
+        "name": "mtlbindstrength",
+        "label": "Strength"
+      },
+      {
+        "folder": "/Shading/Random Primvars",
+        "name": "primvarseed",
+        "label": "Seed"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "enable#",
+        "label": "Enable"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "name#",
+        "label": "Name"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "type#",
+        "label": "Type"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "randf#",
+        "label": "Float Min/Max"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "randi#",
+        "label": "Int Min/Max"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "randr#",
+        "label": "Red Min/Max"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "randg#",
+        "label": "Green Min/Max"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "randb#",
+        "label": "Blue Min/Max"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "randhue#",
+        "label": "Hue Min/Max"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "randsat#",
+        "label": "Saturation Min/Max"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "randval#",
+        "label": "Value Min/Max"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "randx#",
+        "label": "X Min/Max"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "randy#",
+        "label": "Y Min/Max"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "randz#",
+        "label": "Z Min/Max"
+      },
+      {
+        "folder": "/Shading/Random Primvars/Random Primvars",
+        "name": "normalize#",
+        "label": "Normalize"
+      }
+    ]
+  },
+  "P-6": {
+    "status": "BLOCKED",
+    "error": "AttributeError(\"'OpNode' object has no attribute 'stage'\")"
+  },
+  "P-7": {
+    "status": "RAN",
+    "seconds": 0.1,
+    "result": true
+  },
+  "P-8": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": true
+  },
+  "P-9": {
+    "status": "RAN",
+    "seconds": 0.01,
+    "result": {
+      "executionmode": [
+        [
+          "0",
+          "1"
+        ],
+        [
+          "Deferred",
+          "Immediate"
+        ]
+      ],
+      "scattertargetmotion": [
+        [
+          "0",
+          "1",
+          "2"
+        ],
+        [
+          "Static",
+          "Rigid Transforms",
+          "Deforming Transforms"
+        ]
+      ]
+    }
+  },
+  "B-1": {
+    "status": "RAN",
+    "seconds": 0.25,
+    "result": {
+      "points": 500000,
+      "attribs": [
+        "rot_1",
+        "rot_2",
+        "rot_3",
+        "opacity",
+        "N",
+        "P",
+        "f_dc_0",
+        "scale_0",
+        "f_dc_1",
+        "f_dc_2",
+        "scale_1",
+        "scale_2",
+        "rot_0"
+      ]
+    }
+  },
+  "B-2": {
+    "status": "RAN",
+    "seconds": 0.29,
+    "result": {
+      "raw_min": [
+        -5.84033203125,
+        -19.582275390625,
+        -23.151123046875
+      ],
+      "raw_max": [
+        4.612060546875,
+        0.748291015625,
+        27.208984375
+      ]
+    }
+  },
+  "B-3": {
+    "status": "RAN",
+    "seconds": 0.33,
+    "result": {
+      "prims": 2,
+      "bbox": [
+        [
+          -5.339412212371826,
+          -5.957127571105957,
+          -19.709951400756836
+        ],
+        [
+          2.660879135131836,
+          0.6965872645378113,
+          21.51317024230957
+        ]
+      ]
+    }
+  },
+  "B-4": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": {
+      "ply_comments": [],
+      "glb_asset": {
+        "version": "2.0",
+        "generator": "https://github.com/mikedh/trimesh"
+      },
+      "glb_extras": null
+    }
+  },
+  "B-5": {
+    "status": "RAN",
+    "seconds": 0.01,
+    "result": {
+      "SOP": [
+        [
+          "bakegsplat",
+          "Bake GSplats"
+        ],
+        [
+          "labs::delight_gsplats::1.0",
+          "Labs Delight GSplats (Beta)"
+        ],
+        [
+          "labs::fast_gaussian_curvature::1.0",
+          "Labs Fast Gaussian Curvature"
+        ],
+        [
+          "labs::normals_from_gsplats::1.0",
+          "Labs Normals from GSplats (Beta)"
+        ],
+        [
+          "labs::splatter",
+          "Labs Splatter"
+        ],
+        [
+          "surfacesplat",
+          "Surface Splat"
+        ]
+      ],
+      "LOP": [
+        [
+          "labs::relight_gsplats::1.0",
+          "Labs Relight GSplats (Beta)"
+        ],
+        [
+          "labs::relight_gsplats::1.1",
+          "Labs Relight GSplats (Beta)"
+        ]
+      ],
+      "COP": [
+        [
+          "rasterizegsplats",
+          "Rasterize GSplats"
+        ]
+      ]
+    }
+  },
+  "B-6": {
+    "status": "RAN",
+    "seconds": 0.29,
+    "result": [
+      [
+        "/HoudiniLayerInfo",
+        "HoudiniLayerInfo",
+        "",
+        ""
+      ],
+      [
+        "/wl_import",
+        "Xform",
+        "component",
+        "default"
+      ],
+      [
+        "/wl_import/WL_fixture",
+        "Xform",
+        "component",
+        "default"
+      ],
+      [
+        "/wl_import/WL_fixture/geo",
+        "Scope",
+        "",
+        "default"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/proxy",
+        "Scope",
+        "",
+        "proxy"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/proxy/world",
+        "Mesh",
+        "",
+        "proxy"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/proxy/world/geometry_0",
+        "Mesh",
+        "",
+        "proxy"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/proxy/autoproxy",
+        "Mesh",
+        "",
+        "proxy"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/render",
+        "Scope",
+        "",
+        "render"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/render/points_0",
+        "Points",
+        "",
+        "default"
+      ]
+    ]
+  },
+  "B-7": {
+    "status": "RAN",
+    "seconds": 4.26,
+    "result": {
+      "exr": "C:/Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-bp3-crux/e3e7d965-9e09-406f-8dfb-dc4f41b0d42c/scratchpad/crux/probe_out_crux\\b7_wl_fixture.exr",
+      "exists": true
+    }
+  },
+  "B-8": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": "manual"
+  },
+  "B-9": {
+    "status": "RAN",
+    "seconds": 0.07,
+    "result": "semi-manual"
+  },
+  "S-1": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": "printed"
+  },
+  "S-2": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": {
+      "floor_faces": 0
+    }
+  },
+  "S-3": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": {
+      "inside": 0,
+      "total": 2
+    }
+  }
+}

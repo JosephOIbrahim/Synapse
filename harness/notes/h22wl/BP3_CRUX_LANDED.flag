@@ -1,0 +1,4 @@
+BP3-CRUX LANDED 2026-09-03
+product: ada0a7d78eeac7b4ac0a0ced6c30f88db861705e
+receipt: harness/notes/receipts/BP3-CRUX.json @ 2d1d22c0
+verdicts: RECON SOUND-WITH-NITS | PROBE SOUND-WITH-NITS | CORPUS SOUND | STUBS SOUND | PANEL SOUND-WITH-NITS | 0 BROKEN - all legs ride
