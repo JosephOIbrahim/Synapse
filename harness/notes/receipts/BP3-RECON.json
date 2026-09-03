@@ -1,0 +1,38 @@
+{
+  "leg": "BP3-RECON",
+  "status": "green_with_findings",
+  "product_head": "062669feb70a33442c0dbfee0a2039f0d3a4d0a8",
+  "build_pinned": "22.0.400",
+  "acceptance": [
+    {
+      "predicate": "BP3_RECON.md has one row per blueprint V0 path with an evidence column; no row invented",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP3_RECON.md T1 tables A (existing surfaces) + B (prospective outputs); every row carries a `git ls-files`/probe evidence cell; 'no match' rows have Test-Path-false homes. Product commit 062669fe."
+    },
+    {
+      "predicate": "bus finding posted with hython path, build string, pref_dir, fixtures/reviews/notes dirs, schema_home, spatial_helpers, dossier_in_repo",
+      "verdict": "pass",
+      "evidence": "BATTLEPLAN bus finding frm=BP3-RECON to=* ts=2026-09-03T14:38:28 n=18d1e389e49cfc98: hython=.../Houdini 22.0.400/bin/hython.exe, build=22.0.400, pref_dir=OneDrive/Documents/houdini22.0, fixtures_dir=harness/fixtures/worldlabs/, reviews_dir=docs/reviews/, notes_dir=harness/notes/, schema_home=docs/intake/, spatial_helpers=[introspection.py, explain_mode.py], dossier_in_repo=false."
+    },
+    {
+      "predicate": "prior-artifact list with repo paths for N-3/N-5/N-7/KAR-04/SOL-03 (or 'not found' per id)",
+      "verdict": "pass",
+      "evidence": "BP3_RECON.md T3 by-ID table: N-3->h22-cto-roadmap-2026-07-16.md:103, N-5->:105, N-7->:107 (F-1: these are July-roadmap IDs, not the blueprint's dossier N-x), KAR-04->h22-doc-intel-2026-07-16-wave2.md:34, SOL-03->h22_probe_results.json:51. §1.2 symbols independently pinned by symbol in the by-symbol table."
+    }
+  ],
+  "findings": [
+    {"id": "M-1", "severity": "ruling", "claim": "Blueprint §3.2 contract + D3.2 cite schemas/world_manifest.schema.json, but the schema landed at docs/intake/world_manifest.schema.json; schemas/ has 0 tracked files.", "anchor": "docs/intake/world_manifest.schema.json ; blueprint-h22-worldlabs-intent.md:271,317"},
+    {"id": "M-2", "severity": "hazard", "claim": "SYNAPSE_HYTHON unset + no hython on PATH => .synapse/hytest.py picks NEWEST install = 22.0.429 (no 22.0.429 symbol table). Pin SYNAPSE_HYTHON to the 22.0.400 hython so probes match the recon'd symbol table.", "anchor": ".synapse/hytest.py:30-52"},
+    {"id": "F-1", "severity": "info", "claim": "Blueprint N-3/N-5/N-6/N-7 are dossier-numbered; dossier absent from repo; repo N-3..N-7 are a distinct July CTO-roadmap numbering. §1.2 must reconcile by symbol, not by ID.", "anchor": "docs/reviews/h22-cto-roadmap-2026-07-16.md:103-107"},
+    {"id": "F-2", "severity": "info", "claim": "No verified_lop_solaris_knowledge_22.0.400.json exists (only 21.0.671 + 22.0.368); the pinned build 22.0.400 has no matching knowledge file — a Mile-1 probe-output gap.", "anchor": "harness/notes/verified_lop_solaris_knowledge_22.0.368.json"},
+    {"id": "F-3", "severity": "info", "claim": "The three §3.4 synapse_spatial_describe/classify/frustum tools are UNBUILT (0 matches in python/synapse). Nearest existing bbox substrate is hou-based (introspection.py:141, explain_mode.py:96) — D-DEP-03 leans (a) match-existing=hou.", "anchor": "python/synapse/server/introspection.py:141"},
+    {"id": "F-4", "severity": "info", "claim": "dossier_in_repo=false: neither the Dossier nor the Coffee Shop Notes are tracked anywhere; docs/intake holds only blueprint + schema + 4 adjudications. CORPUS falls back to blueprint pointers.", "anchor": "docs/intake/ (git ls-files)"},
+    {"id": "F-5", "severity": "info", "claim": "harness/fixtures/worldlabs/, harness/scenes/, schemas/, frames/ are all absent by design (0 tracked). BP3-RECON created none of them per §6 step 2.", "anchor": "harness/battleplan/notes/BP3_RECON.md T1.B"}
+  ],
+  "for_ruling": [
+    "M-1: is docs/intake/world_manifest.schema.json the canonical home, or should it move to schemas/ (and the schema-consuming legs follow)? Human + CTO word.",
+    "M-2: should SYNAPSE_HYTHON be pinned to 22.0.400 at the wave/env level so PROBE runs on the symbol-table build?",
+    "D-DEP-03: existing bounds code is hou-based; confirm (a) match-existing=hou for the §3.4 spatial tools (reported, not decided — D-1)."
+  ],
+  "spawn": []
+}
