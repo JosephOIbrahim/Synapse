@@ -1,0 +1,59 @@
+{
+  "leg": "BP4-SPATIAL",
+  "status": "green_with_findings",
+  "product_head": "c48e26fa906cde13c40dcbed4a9f8cbe726a89cc",
+  "build": "22.0.400",
+  "hython": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe",
+  "dep_choice": "pxr (D-DEP-03): tools query a USD component at rest; closest published spatial method is UsdGeom.BBoxCache (PROBE S-1). RECON's hou finding was about live hou.Geometry introspection, a different context. Module never imports hou.",
+  "acceptance": [
+    {
+      "predicate": "three tools return correct answers on the fixture per T2 tolerances",
+      "verdict": "pass",
+      "evidence": "tests/test_spatial_lane.py 14/14 PASS on hython 22.0.400 (3.29s). describe==B-3 bbox byte-exact; classify==S-2 counts byte-exact @20/35/45 (floor 4919/6414/7733); lane cover 99.1%; walls both sides; dominant floor bin==re-derivation within bin width. Anchor producers: supplementary.txt v2 L91,L94-96; docs/reviews/bp4-spatial-lane-probes-2026-09-03.md"
+    },
+    {
+      "predicate": "each call < 5 s on the fixture collider (46,993 tris), recorded",
+      "verdict": "pass",
+      "evidence": "tool `seconds`: describe 0.0051s, classify@45 0.0011s (46,993 tris), frustum 0.0009s. ~980x under budget. Producer capture_out.json; review doc Timing section. Collider = 46,993 tris confirmed (supplementary.txt v2 L92)."
+    },
+    {
+      "predicate": "tools run on a second stage without code change (D3.4)",
+      "verdict": "pass",
+      "evidence": "test_D34_solaris_basic_runs_without_code_change builds fixtures/solaris.basic.json live and runs all three tools unmodified (honest UNAVAILABLE on empty geometry). Plus an authored-cube fixture-free portability proof."
+    },
+    {
+      "predicate": "no default-on registration in mcp_server / tool registries",
+      "verdict": "pass",
+      "evidence": "grep: zero references to synapse_spatial_* or synapse.spatial outside python/synapse/spatial/ + tests/; SYNAPSE_SPATIAL_LANE only in the package docstring (unread). Pinned by test_no_default_on_registration. review doc Registry section."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-1",
+      "severity": "headline",
+      "claim": "b6_wl_component.usdc's proxy is a 4-face auto-proxy (usdcreateproxygeometry decimation), NOT the 46,993-tri collider. The full collider lives in the GLB. The brief assumed the .usdc held the collider; runtime shows it does not.",
+      "consequence": "describe anchors on the .usdc (bounds survive, byte-exact to B-3); classify/frustum/timing run on the collider materialized from the GLB (gltf->unpack->sopimport), which reproduces the S-2 anchor byte-exact. No anchor was weakened.",
+      "anchor": "gt_probe (probe 1): /wl_import/WL_fixture/geo/proxy/world/geometry_0 Mesh faces=4 points=6; vs GLB unpack 46993 tris (supplementary.txt v2 L90-92)"
+    },
+    {
+      "id": "F-2",
+      "severity": "info",
+      "claim": "stdout.txt S-2 (floor=0 wall=2) and S-3 (0/2) are degenerate — computed on the 2 packed prims of the gltf SOP import, not the unpacked mesh. The authoritative per-face numbers are supplementary.txt CORRECTION RUN v2.",
+      "consequence": "The frustum '== S-3 count' predicate anchors to the re-derived count (20146) via S-3's own published formula, computed by an independent oracle inside the test so the crucible can re-run it.",
+      "anchor": "stdout.txt:411,416 vs supplementary.txt L86-96"
+    },
+    {
+      "id": "F-3",
+      "severity": "reproducibility",
+      "claim": "The fixture binaries (b6_wl_component.usdc 19.8MB, collider GLB ~0.9MB) are uncommitted (PROBE left them unstaged; run_meta.txt). They exist on this machine (sibling bp3-probe worktree) so the live run is real, but a fresh checkout lacks them.",
+      "consequence": "Fixture-anchored tests skip-with-reason when the binaries are absent (visible skip, never a hidden pass). The fixture-independent tier (authored geometry) always runs and is the reproducible core.",
+      "anchor": "harness/notes/h22wl/bp3_probes/run_meta.txt; tests/test_spatial_lane.py component_stage/collider_stage fixtures"
+    }
+  ],
+  "for_ruling": [
+    "F-1: confirm the accepted reading — describe on b6_wl_component.usdc, classify/frustum on the GLB-materialized collider (the substrate the S-2/S-3 anchors measured). The brief's 'tests on b6_wl_component.usdc' assumed the .usdc carried the 46,993-tri collider; it carries only a 4-face proxy.",
+    "F-3: to make the anchored tests run in CI, commit the collider GLB (~0.9MB) as a lane fixture or add a regen script (gltf->unpack->sopimport->export). Not done here: a fixture path is outside this leg's touches, and committing a binary to a public repo is a human decision."
+  ],
+  "spawn": [],
+  "notes": "Tools unregistered (rule D-1, lane ratified:false). No prim authored, no file written by the tools. Product commit c48e26fa; this receipt is the closing commit."
+}
