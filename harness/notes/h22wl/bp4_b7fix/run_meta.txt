@@ -1,0 +1,8 @@
+build=22.0.400
+hython=C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe
+pref_dir=C:/Users/User/OneDrive/Documents/houdini22.0
+ply=C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe/harness/fixtures/worldlabs/narrow_european_cobblestone_lane/narrow_european_cobblestone_lane_500k.ply sha256=be734a3049ebc995f945d2ffc20696ce3b181d95cd3051a3e06c60d3953beb65
+glb=C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe/harness/fixtures/worldlabs/narrow_european_cobblestone_lane/narrow_european_cobblestone_lane_collider.glb sha256=08e75e0ad55ceea8ba9305bd1845749b741ca4337cda240e5a35253449eb00c9
+cmd=hython synapse_blueprint_probes.py --only B-7 --ply <ply> --glb <glb> --out harness/notes/h22wl/bp4_b7fix
+started=2026-09-03T22:21:47Z
+exit_code=0 finished=2026-09-03T22:21:56Z

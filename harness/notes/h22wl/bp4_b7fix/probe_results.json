@@ -1,0 +1,186 @@
+{
+  "P-0": {
+    "status": "RAN",
+    "seconds": 0.02,
+    "result": "22.0.400"
+  },
+  "P-1": {
+    "status": "NOT_RUN"
+  },
+  "P-2": {
+    "status": "NOT_RUN"
+  },
+  "P-3": {
+    "status": "RAN",
+    "seconds": 0.0,
+    "result": [
+      [
+        "usdcreatecomponent",
+        "USD Create Component"
+      ],
+      [
+        "usdcreateproxygeometry",
+        "USD Create Proxy Geometry"
+      ]
+    ]
+  },
+  "P-4": {
+    "status": "NOT_RUN"
+  },
+  "P-5": {
+    "status": "NOT_RUN"
+  },
+  "P-6": {
+    "status": "NOT_RUN"
+  },
+  "P-7": {
+    "status": "NOT_RUN"
+  },
+  "P-8": {
+    "status": "NOT_RUN"
+  },
+  "P-9": {
+    "status": "NOT_RUN"
+  },
+  "B-1": {
+    "status": "RAN",
+    "seconds": 0.24,
+    "result": {
+      "points": 500000,
+      "attribs": [
+        "rot_1",
+        "rot_2",
+        "rot_3",
+        "opacity",
+        "N",
+        "P",
+        "f_dc_0",
+        "scale_0",
+        "f_dc_1",
+        "f_dc_2",
+        "scale_1",
+        "scale_2",
+        "rot_0"
+      ]
+    }
+  },
+  "B-2": {
+    "status": "NOT_RUN"
+  },
+  "B-3": {
+    "status": "RAN",
+    "seconds": 0.32,
+    "result": {
+      "prims": 2,
+      "bbox": [
+        [
+          -5.339412212371826,
+          -5.957127571105957,
+          -19.709951400756836
+        ],
+        [
+          2.660879135131836,
+          0.6965872645378113,
+          21.51317024230957
+        ]
+      ]
+    }
+  },
+  "B-4": {
+    "status": "NOT_RUN"
+  },
+  "B-5": {
+    "status": "NOT_RUN"
+  },
+  "B-6": {
+    "status": "RAN",
+    "seconds": 0.37,
+    "result": [
+      [
+        "/HoudiniLayerInfo",
+        "HoudiniLayerInfo",
+        "",
+        ""
+      ],
+      [
+        "/wl_import",
+        "Xform",
+        "component",
+        "default"
+      ],
+      [
+        "/wl_import/WL_fixture",
+        "Xform",
+        "component",
+        "default"
+      ],
+      [
+        "/wl_import/WL_fixture/geo",
+        "Scope",
+        "",
+        "default"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/proxy",
+        "Scope",
+        "",
+        "proxy"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/proxy/world",
+        "Mesh",
+        "",
+        "proxy"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/proxy/world/geometry_0",
+        "Mesh",
+        "",
+        "proxy"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/proxy/autoproxy",
+        "Mesh",
+        "",
+        "proxy"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/render",
+        "Scope",
+        "",
+        "render"
+      ],
+      [
+        "/wl_import/WL_fixture/geo/render/points_0",
+        "Points",
+        "",
+        "default"
+      ]
+    ]
+  },
+  "B-7": {
+    "status": "RAN",
+    "seconds": 5.84,
+    "result": {
+      "exr": "harness/notes/h22wl/bp4_b7fix\\b7_wl_fixture.exr",
+      "exists": true,
+      "camera": "/cameras/wl_cam",
+      "light": "domelight::3.0"
+    }
+  },
+  "B-8": {
+    "status": "NOT_RUN"
+  },
+  "B-9": {
+    "status": "NOT_RUN"
+  },
+  "S-1": {
+    "status": "NOT_RUN"
+  },
+  "S-2": {
+    "status": "NOT_RUN"
+  },
+  "S-3": {
+    "status": "NOT_RUN"
+  }
+}

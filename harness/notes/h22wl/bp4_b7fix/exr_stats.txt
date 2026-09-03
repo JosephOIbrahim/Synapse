@@ -1,0 +1,10 @@
+harness/notes/h22wl/bp4_b7fix/b7_wl_fixture.exr : 1280 x  720, 4 channel, half openexr
+    Stats Min: 0.000000 0.000000 0.000000 0.000000 (float)
+    Stats Max: 0.452881 0.452881 0.452881 1.000000 (float)
+    Stats Avg: 0.013786 0.013786 0.013786 0.035123 (float)
+    Stats StdDev: 0.064185 0.064185 0.064185 0.164010 (float)
+    Stats NanCount: 0 0 0 0 
+    Stats InfCount: 0 0 0 0 
+    Stats FiniteCount: 921600 921600 921600 921600 
+    Constant: No
+    Monochrome: No

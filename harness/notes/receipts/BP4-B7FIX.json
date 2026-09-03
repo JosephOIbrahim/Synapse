@@ -1,0 +1,62 @@
+{
+  "leg": "BP4-B7FIX",
+  "status": "green_with_findings",
+  "product_head": "b3e24d147099d12ef02ec6684aa737ca3375f31c",
+  "base": "28a0e183c628b9057a887bd6a64441c23a57afb5",
+  "build": "22.0.400",
+  "acceptance": [
+    {
+      "predicate": "probe-script diff limited to the B-7 block + --only plumbing",
+      "verdict": "pass",
+      "evidence": "git diff 28a0e183 -- harness/probes/synapse_blueprint_probes.py = 3 hunks, all inside b7() + main() --only plumbing (PROBE_DEPS/_resolve_run_set/NOT_RUN); 54 insertions, 9 deletions; no other probe's logic changed"
+    },
+    {
+      "predicate": "bp4_b7fix/stdout.txt exists with the hython build line (22.0.400) and the B-7 block",
+      "verdict": "pass",
+      "evidence": "harness/notes/h22wl/bp4_b7fix/stdout.txt:5 'Houdini: 22.0.400'; :68 B-7 block header; :70 'authored light: domelight::3.0'; :71 'render camera bound: camera = /cameras/wl_cam'"
+    },
+    {
+      "predicate": "EXR stats recorded with the command; D2.4 verdict pass|fail|UNKNOWN with anchor",
+      "verdict": "pass",
+      "d2_4_verdict": "PASS",
+      "evidence": "cmd: oiiotool --stats harness/notes/h22wl/bp4_b7fix/b7_wl_fixture.exr -> RGB max 0.452881 / avg 0.013786 (non-zero; BP3 flat 0.0); ttfp 0.662s < 30s (exr_info.txt husk:render_stats); Karma XPU Converged. Anchors: exr_stats.txt + review doc section 13.3/13.5"
+    },
+    {
+      "predicate": "R-1 status stated (triggered|clear|UNKNOWN) with anchor in the appended section",
+      "verdict": "pass",
+      "r1_status": "CLEAR",
+      "evidence": "R-1 empty-EXR signal refuted: 500k-pt splat renders non-zero in Karma XPU with camera+light. Anchor: review doc section 13.5 + exr_stats.txt + exr_info.txt husk point.total 500000 / render_stage Converged"
+    }
+  ],
+  "findings": [
+    {
+      "severity": "nit",
+      "claim": "Re-run splat renders lit but UNCOLOURED: RGB max/avg/stddev identical to 6 d.p. and shader_calls.surface=0 -> splat Points catch dome light as neutral geometry; per-point SH-DC colour (f_dc_*) not shaded on the naive usdrender_rop path. D2.4 (non-zero pixels) PASSES and R-1 (won't render) CLEARS regardless; full splat beauty/colour is a separate open question.",
+      "anchor": "harness/notes/h22wl/bp4_b7fix/exr_stats.txt + exr_info.txt (husk:render_stats shader_calls) + review section 13.5 nit"
+    },
+    {
+      "severity": "info",
+      "claim": "Collider (purpose=proxy) is excluded from the render purpose (geometry_counts.polygon.total=0); only the 500k-pt splat (purpose=render) contributes the non-zero pixels. Expected per component sec.2.5; recorded so the pixels are not mis-read as the collider.",
+      "anchor": "harness/notes/h22wl/bp4_b7fix/exr_info.txt husk:render_stats geometry_counts + stdout.txt B-6 stage dump"
+    }
+  ],
+  "for_ruling": [
+    "Promote D2.4: BP3 FAIL -> PASS on BP4 evidence (non-zero EXR max 0.4529, ttfp 0.662s < 30s). D-1's word.",
+    "Promote R-1: BP3 TRIGGERED -> CLEAR (empty-EXR signal refuted). D-1's word.",
+    "Blueprint sec.8 Open Q2 (splat colour/beauty path) remains OPEN: naive usdrender_rop renders splat lit-but-uncoloured; native Bake GSplat / Labs Rasterize (B-5) untested."
+  ],
+  "spawn": [
+    {
+      "id": "BP4-B7SPLAT-COLOR",
+      "band": "BUILD",
+      "class": "build",
+      "tier": "reasoning",
+      "name": "Settle blueprint Open Q2: render the WL splat component via the native Bake GSplat / Labs Rasterize path and verify per-point SH-DC colour appears (naive usdrender_rop renders lit-but-uncoloured)",
+      "note": "BP4-B7FIX cleared D2.4/R-1 (splat renders non-zero) but found surface shader_calls=0 + identical RGB channels -> SH-DC colour not shaded on the naive path. Native tools exist (B-5: bakegsplat, labs::relight_gsplats::1.0/1.1, rasterizegsplats). Build a B-7b variant routing the splat through the native path; re-measure EXR colour variance (expect non-monochrome).",
+      "touches": ["harness/probes/synapse_blueprint_probes.py", "harness/notes/h22wl/", "docs/reviews/bp3-h22-worldlabs-probes-2026-09-03.md"],
+      "readonly": false,
+      "deps": ["BP4-B7FIX"],
+      "spawn_classes": []
+    }
+  ]
+}
