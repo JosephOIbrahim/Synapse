@@ -8,7 +8,7 @@
 
 <p align="center">SYNAPSE lives in Houdini's own Python interpreter and calls <code>hou.*</code> directly.<br>No external bridge, no RPC hop, no second copy of the scene.</p>
 
-<p align="center"><sub>v5.60.0 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6<br>tags: v5.59.0 is latest · vNEXT tags only via the release ritual (g-receipts are human acts)</sub></p>
+<p align="center"><sub>v5.60.0 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 · USD 0.26.5 · PySide6<br>tags: v5.60.0 is Latest · vNEXT tags only via the release ritual (g-receipts are human acts)</sub></p>
 
 ---
 
@@ -19,17 +19,13 @@
 **It asks first** before anything risky, and **says UNKNOWN** instead of guessing.
 **It tells you what doesn't work** — [Known limitations](#known-limitations) is the most-read section on purpose.
 
-**New in v5.52.0 — the weak domains became lookups:**
+**Right now — 3 September 2026.** Three things to know, newest first:
 
-- **APEX stopped being guesswork.** 2,286 callbacks enumerated from the *live* runtime, a 441-cell wire-typing matrix, and panel recipes migrated off node names that never existed. It regenerates per build, so it can't quietly go stale.
-- **The parm gate got teeth.** A phantom parameter name is now rejected *before* anything mutates — and answered with the real one (`code` → suggests `kernelcode`).
-- **Cook results can't fake success.** No measurement, no promotion: anything unmeasured stays UNKNOWN instead of defaulting to fine.
-- **Production hardening opened.** A seven-blueprint audit indexed **112 findings** — 3 critical — each with a file:line anchor and first-hand evidence. The critical ones are published, not buried.
+- **v5.60.0 is live** — the panel breathes and the harness pays its own bill: every agent leg's token spend is metered and settled at close, or reads UNKNOWN. v5.59.0 before it was the day the numbers replaced the guesses.
+- **A new wave is in the repo, not on `master` yet.** Wave BP3 took a first-principles blueprint — H22 Solaris depth from Rob Pieke's HIVE talk, a World Labs → Solaris bridge, a spatial-intelligence lane — and ran it as seven agent legs against the live build. Zero verdicts BROKEN. Results sit on `bp3/*` branches until the human reads the crucible and says merge, per leg. What they found: [Wave BP3, one picture](#wave-bp3-one-picture).
+- **Read before trusting:** [Known limitations](#known-limitations). Still the most-read section on purpose.
 
-[Release notes →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.52.0)
-
-**Shipped in v5.51.0 — close the tab, keep the session:**
-**Closing the panel no longer kills your session.** The heartbeat moved out of the panel into a process-lifetime owner, closing the tab is a deliberate detach (not a fake freeze), and reopening reconnects to the *same* session with chat history intact. Also live: the CURIOUS / EXPERT / ML switcher actually switches profiles, the shelf grew icons + tooltips, chat text breathes (+0.75pt), and the Token tab counts real spend on the selected model — or says UNKNOWN. Two more red gauges turned green (runtime heartbeat R.2, shelf currency R.7); the ones still red are listed honestly below.
+[Release notes v5.60.0 →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.60.0)
 
 ### The shape of it — two pictures
 
@@ -55,7 +51,7 @@ flowchart LR
 
 **Still on board, from v5.50.0 — the knowledge layer stops guessing:** retrieval repair lands. Scout finally sees the node corpus, ambiguous type names disambiguate by context, datasheets carry real internal parm names + channels, and the dense path can honestly say "not found" — 0/25 confident-wrong on fresh adversarial probes. Under it: a build-freshness release gate, a single-writer ingest ledger, and a parameterized help-archive pin. [Release notes →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.50.0)
 
-**Jump to:** [Artists](#for-artists--the-one-minute-version) · [Demo](#watch-it-work) · [Limitations](#known-limitations) · [Install](#install) · [First prompt](#first-prompt) · [Verify it yourself](#verifying-any-of-this)
+**Jump to:** [Artists](#for-artists--the-one-minute-version) · [Wave BP3](#wave-bp3-one-picture) · [Demo](#watch-it-work) · [Limitations](#known-limitations) · [Install](#install) · [First prompt](#first-prompt) · [Verify it yourself](#verifying-any-of-this)
 
 ---
 
@@ -176,6 +172,9 @@ flowchart TD
     S --> S2["connectivity_22.json<br/>lop_solaris_knowledge_22.json"]
     N --> N1["rag/corpus/h22_nodes.json<br/>603 live types, 22.0.368"]
     P --> P1["rag/skills/houdini21-reference<br/>H21 documentation"]
+    K --> I[H22 Solaris + World Labs intake]
+    I --> I1["docs/intake/blueprint-h22-worldlabs-intent.md<br/>tiered claims · 22 probes · ratified:false"]
+    I1 --> PEND["probed on 22.0.400 · on bp3/* branches<br/>pending human rulings"]
     S1 --> OK["verified against the running build<br/>gate goes STALE if they diverge"]
     S2 --> OK
     N1 --> OK
@@ -189,6 +188,42 @@ flowchart TD
 **Prose is H21.** The retrieval corpus is Houdini 21 documentation, accurately labelled as such. If you ask a how-to question, SYNAPSE may answer from H21 material and tell you so.
 
 **And the Copernicus gap is now closed on the node axis.** It was the sharpest hole in this diagram — Copernicus barely existed in H21, so prose could never cover it. Ask about `chromakey` or `grunge_rust` by name and you get a build-pinned answer. Ask *how to composite* and you still get H21 prose.
+
+**And the newest layer is honest about its state.** The H22 Solaris + World Labs intake is *probed*, not merged — see below.
+
+---
+
+## Wave BP3, one picture
+
+The blueprint said three things must be true, each on its own layer, with the demo only borrowing from them. The wave probed the build instead of trusting docs. Nothing here is merged yet; every line has a receipt on a `bp3/*` branch.
+
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#4d4d4d','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000000','lineColor':'#000000','textColor':'#FFFFFF','secondaryColor':'#404040','tertiaryColor':'#333333','clusterBkg':'#333333','clusterBorder':'#000000','edgeLabelBackground':'#333333','nodeTextColor':'#FFFFFF'}}}%%
+flowchart LR
+    subgraph intents [three intents · independent layers]
+        I1["1 · SYNAPSE speaks H22 Solaris"]
+        I2["2 · World Labs worlds land in Solaris"]
+        I3["3 · SYNAPSE reads a space<br/>floor · walls · openings · frustum"]
+    end
+    D["demo layer<br/>references, never demands"] -.-> I1
+    D -.-> I2
+    D -.-> I3
+    I1 --> W["wave BP3 · 7 legs · 0 BROKEN"]
+    I2 --> W
+    I3 --> W
+    W --> R["22 rulings + 7 merge words<br/>human + CTO · verdict read first"]
+```
+
+What the probes proved on 22.0.400, in six and a half seconds:
+
+- **Rob Pieke's SOP-side `USD Create Component` exists.** The world component was built through it, not around it.
+- **Splat tooling is native on this build.** The "no way to render splats" risk is clear.
+- **World Labs' collider is 46,993 triangles**, not the 100–200k their docs state. Docs refuted by fixture.
+- **App exports carry no scale or ground metadata.** SYNAPSE derives them — the case the blueprint planned for.
+- **One black render is a probe bug, not a Karma verdict** — the camera was never assigned. It stays UNKNOWN until re-run. Written here so nobody promotes it.
+- **The panel's problem is adoption, not tokens** — token system 8.5/10, panel-wide adoption 3.5/10 (492 hardcoded px, 168 off-palette colours across 34 modules). Five substitutions shipped, stylesheet byte-identical.
+
+Blueprint: [`docs/intake/blueprint-h22-worldlabs-intent.md`](docs/intake/blueprint-h22-worldlabs-intent.md) · probes: [`harness/probes/synapse_blueprint_probes.py`](harness/probes/synapse_blueprint_probes.py) · handoff: [`harness/notes/CAPSULE_2026-09-03_EOD.md`](harness/notes/CAPSULE_2026-09-03_EOD.md)
 
 ---
 
