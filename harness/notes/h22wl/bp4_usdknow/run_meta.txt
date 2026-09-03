@@ -1,0 +1,7 @@
+launch_utc=2026-09-03T22:18:31Z
+hython=C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe
+pref_dir=C:/Users/User/OneDrive/Documents/houdini22.0
+b6_usdc=C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe/harness/notes/h22wl/bp3_probes/b6_wl_component.usdc
+b6_exists=yes
+exit_code=0
+finish_utc=2026-09-03T22:18:34Z
