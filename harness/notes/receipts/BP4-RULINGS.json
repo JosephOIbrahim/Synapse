@@ -1,0 +1,43 @@
+{
+  "leg": "BP4-RULINGS",
+  "status": "green",
+  "product_head": "ff3d6f73a098ad71b32ca7639a44a2441cda57da",
+  "acceptance": [
+    {
+      "predicate": "table row count equals for_ruling total; count line present",
+      "verdict": "pass",
+      "evidence": "harness/notes/CTO_RULINGS_BP3.md: 21 rows extracted from BP3 receipts; RECON 3, PANEL 1, PROBE 5, CORPUS 7, STUBS 2, TIDY 3; count line includes delta note (CRUX 0)"
+    },
+    {
+      "predicate": "every row has claim + anchor + recommendation cells; every ruling cell is PENDING",
+      "verdict": "pass",
+      "evidence": "harness/notes/CTO_RULINGS_BP3.md summary table: all 21 rows have claim (verbatim from for_ruling), anchor (receipt file path), recommendation (from findings or 'none stated'), CTO ruling (all PENDING)"
+    },
+    {
+      "predicate": "bus finding posted with the row count and the file anchor",
+      "verdict": "pass",
+      "evidence": "battleplan bus record: n=18d1ef4f2f56f2b8, ts=2026-09-03T18:14:10, frm=BP4-RULINGS, claim='rulings table compiled: 21 rows', anchor='harness/notes/CTO_RULINGS_BP3.md'"
+    },
+    {
+      "predicate": "capsule recommendations mapped to table rows or 'no matching row' noted",
+      "verdict": "pass",
+      "evidence": "harness/notes/CTO_RULINGS_BP3.md T2 section: M-1 (row 1), M-2 (row 2), D-DEP-03 (row 3), PANEL scope (row 4), TIDY-R1 (row 19) all matched; no unmatched capsule items"
+    }
+  ],
+  "findings": [
+    {
+      "claim": "CRUX count mismatch: expected 1 item from BP3-CRUX_verdicts.md, found 0 distinct for_ruling entries",
+      "anchor": "harness/battleplan/notes/BP3-CRUX_verdicts.md (read in full; contains 5 verdict sections on receipts, no new for_ruling array)"
+    },
+    {
+      "claim": "All 21 claims extracted verbatim from source receipt for_ruling arrays; no paraphrasing",
+      "anchor": "harness/notes/receipts/BP3-{RECON,PANEL,PROBE,CORPUS,STUBS,TIDY}.json; harness/notes/CTO_RULINGS_BP3.md full details section"
+    },
+    {
+      "claim": "Ratification flags set per brief criteria: M-1, M-2, D-DEP-03, D3.1, D3.2 marked yes; all others no",
+      "anchor": "harness/notes/CTO_RULINGS_BP3.md summary table, ratification column"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": []
+}
