@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "synapse-houdini"
-version = "5.60.0"
+version = "5.61.0"
 description = "AI copilot inside Houdini: chat in plain English and it builds in your live scene over a self-healing WebSocket bridge — undo-wrapped, provenance-recorded. Scene mutations are undo-wrapped and reversible. Filesystem and network effects of executed code are not."
 readme = "README.md"
 license = {text = "MIT"}
