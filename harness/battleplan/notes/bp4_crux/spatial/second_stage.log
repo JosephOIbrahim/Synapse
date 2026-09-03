@@ -1,0 +1,16 @@
+<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+==== S1_lop_sphere ====
+  describe -> SUCCESS raised=None 0.0004s
+  classify -> UNAVAILABLE raised=None 0.0001s
+  frustum -> UNAVAILABLE raised=None 0.0000s
+==== S2_sopimport_box_grid ====
+  describe -> SUCCESS raised=None 0.0001s
+  classify -> SUCCESS raised=None 0.0355s
+  frustum -> SUCCESS raised=None 0.0005s
+==== S3_solaris_basic ====
+  describe -> UNAVAILABLE raised=None 0.0003s
+  classify -> UNAVAILABLE raised=None 0.0001s
+  frustum -> UNAVAILABLE raised=None 0.0001s
+READONLY S2 unchanged: True
+WROTE C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/second_stage_out.json
+EXIT=0

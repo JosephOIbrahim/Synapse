@@ -1,0 +1,4 @@
+<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+synapse: C:\Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-bp4-crux/a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56/scratchpad/s/python\synapse\__init__.py
+SPATIAL: C:\Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-bp4-crux/a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56/scratchpad/s/python\synapse\spatial\__init__.py
+EXPORTS: ['synapse_spatial_classify', 'synapse_spatial_describe', 'synapse_spatial_frustum']

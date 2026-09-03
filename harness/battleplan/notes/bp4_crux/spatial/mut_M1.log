@@ -1,0 +1,110 @@
+##################### SPATIAL-M1 #####################
+-- baseline (already green: 14 passed) --
+-- MUTATE: floor_mask = a < thr   ->   a < (thr + 1.0)  [queries.py:278] --
+ python/synapse/spatial/queries.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+278:    floor_mask = a < (thr + 1.0)  # crux-M1
+
+-- pytest -k classify --
+    def test_classify_collider_matches_S2_anchor(collider_stage, thr):
+        """classify on the 46,993-tri GLB collider == S-2 published counts."""
+        stage, mesh = collider_stage
+        r = synapse_spatial_classify(stage, prim_path=mesh, max_angle_deg=thr,
+                                     up=RAW_UP)
+        assert r["status"] == "SUCCESS"
+        assert r["triangles"] == 46993
+        exp_floor, exp_wall, exp_ceil, exp_slope = S2_COUNTS[thr]
+        c = r["counts"]
+        # validated byte-exact live 2026-09-03; ±5 faces guards env variance only
+>       assert c["floor"] == pytest.approx(exp_floor, abs=5)
+E       assert 7886 == 7733 ± 5
+E         
+E         comparison failed
+E         Obtained: 7886
+E         Expected: 7733 ± 5
+
+tests\test_spatial_lane.py:308: AssertionError
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============== needs_houdini deselected (NOT silently dropped) ===============
+NEEDS_HOUDINI  tests/test_spatial_lane.py  [7 test(s)]  -- needs a Houdini runtime: this module requires `pxr` (OpenUSD -- not installed on stock CI runners)
+7 test(s) in 1 module(s) deselected by -m 'not needs_houdini'. Run the full suite under hython (pytest tests/, no -m filter) to execute them.
+=========================== short test summary info ===========================
+FAILED tests/test_spatial_lane.py::test_classify_collider_matches_S2_anchor[20]
+FAILED tests/test_spatial_lane.py::test_classify_collider_matches_S2_anchor[35]
+FAILED tests/test_spatial_lane.py::test_classify_collider_matches_S2_anchor[45]
+3 failed, 4 passed, 7 deselected, 1 warning in 2.05s
+
+-- crux T-C exact S-2 comparison under the mutation --
+CLASSIFY 20 {
+  "floor": 5060,
+  "wall": 26900,
+  "ceiling": 350,
+  "slope": 14683
+  "floor": 4919,
+  "wall": 26900,
+  "ceiling": 350,
+  "floor": 4919,
+  "wall": 26900,
+  "ceiling": 350,
+ "delta_tool_vs_S2": {
+  "floor": 141,
+  "wall": 0,
+  "ceiling": 0,
+  "floor": 0,
+  "wall": 0,
+  "ceiling": 0,
+ "exact_tool_vs_S2": false,
+ "sum_equals_total": true,
+CLASSIFY 35 {
+  "floor": 6527,
+  "wall": 34415,
+  "ceiling": 963,
+  "slope": 5088
+  "floor": 6414,
+  "wall": 34415,
+  "ceiling": 963,
+  "floor": 6414,
+  "wall": 34415,
+  "ceiling": 963,
+ "delta_tool_vs_S2": {
+  "floor": 113,
+  "wall": 0,
+  "ceiling": 0,
+  "floor": 0,
+  "wall": 0,
+  "ceiling": 0,
+ "exact_tool_vs_S2": false,
+ "sum_equals_total": true,
+CLASSIFY 45 {
+  "floor": 7886,
+  "wall": 37441,
+  "ceiling": 1819,
+  "slope": 0
+  "floor": 7733,
+  "wall": 37441,
+  "ceiling": 1819,
+  "floor": 7733,
+  "wall": 37441,
+  "ceiling": 1819,
+ "delta_tool_vs_S2": {
+  "floor": 153,
+  "wall": 0,
+  "ceiling": 0,
+  "floor": 0,
+  "wall": 0,
+  "ceiling": 0,
+ "exact_tool_vs_S2": false,
+ "sum_equals_total": false,
+-- RESTORE M1 --
+git status --short (tracked):
+  [empty above == tracked tree clean]
+-- re-green full file --
+..............                                                           [100%]
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+14 passed, 1 warning in 4.06s

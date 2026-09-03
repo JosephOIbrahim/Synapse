@@ -1,0 +1,262 @@
+<frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.
+BINDING {
+ "synapse_spatial_file": "C:\\Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-bp4-crux/a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56/scratchpad/s/python\\synapse\\spatial\\__init__.py",
+ "under_scratch": true,
+ "queries_file": "C:\\Users/User/AppData/Local/Temp/claude/C--Users-User-SYNAPSE--claude-worktrees-bp4-crux/a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56/scratchpad/s/python\\synapse\\spatial\\queries.py"
+}
+DESCRIBE {
+ "prim_path": "/wl_import/WL_fixture/geo/proxy",
+ "bounds_m": [
+  [
+   -5.339412212371826,
+   -5.957127571105957,
+   -19.709951400756836
+  ],
+  [
+   2.660879135131836,
+   0.6965872645378113,
+   21.51317024230957
+  ]
+ ],
+ "size_m": [
+  8.000291347503662,
+  6.653714835643768,
+  41.223121643066406
+ ],
+ "center_m": [
+  -1.3392665386199951,
+  -2.630270153284073,
+  0.9016094207763672
+ ],
+ "up_axis": "Y",
+ "tool_seconds": 0.005499399998370791,
+ "wall_seconds": 0.005672199997206917,
+ "delta_vs_B3_min": [
+  0.0,
+  0.0,
+  0.0
+ ],
+ "delta_vs_B3_max": [
+  0.0,
+  0.0,
+  0.0
+ ],
+ "delta_vs_B3_worst": 0.0,
+ "within_1e_3": true,
+ "crux_own_bbox_gf": [
+  [
+   -5.339412212371826,
+   -5.957127571105957,
+   -19.709951400756836
+  ],
+  [
+   2.660879135131836,
+   0.6965872645378113,
+   21.51317024230957
+  ]
+ ],
+ "crux_own_meshes": 3,
+ "crux_own_seconds": 0.0010648999996192288,
+ "crux_own_worst_vs_B3": 0.0,
+ "crux_own_vs_tool_worst": 0.0
+}
+STAGE built in 0.05s; meshes=[('/crux_wl_col/geometry_0', 46993)]; picked /crux_wl_col/geometry_0
+CRUX GATHER tris=46993 faces=46993 in 0.460s
+CLASSIFY 20 {
+ "tool_counts": {
+  "floor": 4919,
+  "wall": 26900,
+  "ceiling": 350,
+  "slope": 14824
+ },
+ "tool_triangles": 46993,
+ "tool_faces": 46993,
+ "tool_seconds": 0.04187409999940428,
+ "wall_seconds": 0.08385959999941406,
+ "crux_oracle": {
+  "floor": 4919,
+  "wall": 26900,
+  "ceiling": 350,
+  "other": 14824
+ },
+ "published_S2": {
+  "floor": 4919,
+  "wall": 26900,
+  "ceiling": 350,
+  "other": 14824
+ },
+ "delta_tool_vs_S2": {
+  "floor": 0,
+  "wall": 0,
+  "ceiling": 0,
+  "other": 0
+ },
+ "delta_crux_vs_S2": {
+  "floor": 0,
+  "wall": 0,
+  "ceiling": 0,
+  "other": 0
+ },
+ "exact_tool_vs_S2": true,
+ "sum_equals_total": true,
+ "ground_y": 0.6012205084164938,
+ "dominant_floor_bin": {
+  "lo": 0.5635304276148476,
+  "hi": 0.6660848458607992,
+  "width": 0.10255441824595124,
+  "faces": 2846,
+  "axis_index": 1
+ },
+ "floor_area_m2": 63.498638568364726
+}
+CLASSIFY 35 {
+ "tool_counts": {
+  "floor": 6414,
+  "wall": 34415,
+  "ceiling": 963,
+  "slope": 5201
+ },
+ "tool_triangles": 46993,
+ "tool_faces": 46993,
+ "tool_seconds": 0.0013242000022728462,
+ "wall_seconds": 0.04328480000185664,
+ "crux_oracle": {
+  "floor": 6414,
+  "wall": 34415,
+  "ceiling": 963,
+  "other": 5201
+ },
+ "published_S2": {
+  "floor": 6414,
+  "wall": 34415,
+  "ceiling": 963,
+  "other": 5201
+ },
+ "delta_tool_vs_S2": {
+  "floor": 0,
+  "wall": 0,
+  "ceiling": 0,
+  "other": 0
+ },
+ "delta_crux_vs_S2": {
+  "floor": 0,
+  "wall": 0,
+  "ceiling": 0,
+  "other": 0
+ },
+ "exact_tool_vs_S2": true,
+ "sum_equals_total": true,
+ "ground_y": 0.6007620394229889,
+ "dominant_floor_bin": {
+  "lo": 0.5609323112169902,
+  "hi": 0.6738268136978149,
+  "width": 0.11289450248082478,
+  "faces": 3030,
+  "axis_index": 1
+ },
+ "floor_area_m2": 77.43435060754702
+}
+CLASSIFY 45 {
+ "tool_counts": {
+  "floor": 7733,
+  "wall": 37441,
+  "ceiling": 1819,
+  "slope": 0
+ },
+ "tool_triangles": 46993,
+ "tool_faces": 46993,
+ "tool_seconds": 0.0012467999986256473,
+ "wall_seconds": 0.04274219999933848,
+ "crux_oracle": {
+  "floor": 7733,
+  "wall": 37441,
+  "ceiling": 1819,
+  "other": 0
+ },
+ "published_S2": {
+  "floor": 7733,
+  "wall": 37441,
+  "ceiling": 1819,
+  "other": 0
+ },
+ "delta_tool_vs_S2": {
+  "floor": 0,
+  "wall": 0,
+  "ceiling": 0,
+  "other": 0
+ },
+ "delta_crux_vs_S2": {
+  "floor": 0,
+  "wall": 0,
+  "ceiling": 0,
+  "other": 0
+ },
+ "exact_tool_vs_S2": true,
+ "sum_equals_total": true,
+ "ground_y": 0.5996328194936116,
+ "dominant_floor_bin": {
+  "lo": 0.5540458067258198,
+  "hi": 0.6738268136978149,
+  "width": 0.11978100697199512,
+  "faces": 3188,
+  "axis_index": 1
+ },
+ "floor_area_m2": 88.15359642306444
+}
+COVERAGE {
+ "max_angle_deg": 35,
+ "floor_triangles": 6414,
+ "floor_z_min": -19.636457443237305,
+ "floor_z_max": 21.23605728149414,
+ "floor_z_span": 40.872514724731445,
+ "B3_z_extent": 41.223121643066406,
+ "floor_z_span_fraction_of_extent": 0.9914948964474181,
+ "lane_covered_gt_0p8": true,
+ "wall_x_negative_count": 22664,
+ "wall_x_positive_count": 11751,
+ "walls_both_sides": true,
+ "crux_dominant_floor_y": 0.6007620394229889,
+ "crux_bin_width": 0.11289450248082478,
+ "crux_bin_lo": 0.5609323112169902,
+ "crux_bin_hi": 0.6738268136978149,
+ "crux_bin_faces": 3030,
+ "tool_ground_y": 0.6007620394229889,
+ "abs_diff_tool_vs_crux": 0.0,
+ "within_one_bin_width": true
+}
+FRUSTUM {
+ "eye": [
+  -1.3392665386199951,
+  -0.9992379605770112,
+  0.9016094207763672
+ ],
+ "forward": [
+  0,
+  0,
+  1
+ ],
+ "half_fov_deg": 45.0,
+ "aspect": 0.5625,
+ "tool_inside": 20146,
+ "tool_total": 46993,
+ "tool_fraction": 0.4287021471282957,
+ "tool_seconds": 0.0007678000001760665,
+ "wall_seconds": 0.04703719999815803,
+ "crux_oracle_inside": 20146,
+ "abs_diff": 0,
+ "two_pct_of_total": 939.86,
+ "within_2pct": true,
+ "exact_match": true
+}
+TIMING {
+ "describe_tool_seconds": 0.005499399998370791,
+ "describe_wall_seconds": 0.005672199997206917,
+ "classify45_tool_seconds": 0.0012467999986256473,
+ "classify45_wall_seconds": 0.04274219999933848,
+ "frustum_tool_seconds": 0.0007678000001760665,
+ "frustum_wall_seconds": 0.04703719999815803,
+ "budget_s": 5.0,
+ "all_wall_under_budget": true
+}
+WROTE C:/Users/User/SYNAPSE/.claude/worktrees/bp4-crux/harness/battleplan/notes/bp4_crux/spatial/capture_out.json
+EXIT=0

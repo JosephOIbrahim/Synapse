@@ -1,0 +1,30 @@
+C:\Users\User\AppData\Roaming\Python\Python314\site-packages\torch\cuda\__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-8.4.2, pluggy-1.6.0 -- C:\Python314\python.exe
+hypothesis profile 'default'
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp4-crux\a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56\scratchpad\p
+configfile: pyproject.toml
+plugins: hydra-core-1.3.2, jaxtyping-0.3.9, asyncio-0.26.0, cov-5.0.0, torchtyping-0.1.5, typeguard-2.13.3, anyio-4.12.1, hypothesis-6.151.2, benchmark-5.2.3
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 6 items
+
+tests/test_panel_typography.py::test_qss_stylesheet_source_has_no_literal_typography PASSED [ 16%]
+tests/test_panel_typography.py::test_type_roles_use_weight_tokens PASSED [ 33%]
+tests/test_panel_typography.py::test_floor_constant_has_provenance PASSED [ 50%]
+tests/test_panel_typography.py::test_no_size_token_below_floor PASSED    [ 66%]
+tests/test_panel_typography.py::test_type_scale_is_at_most_five_sizes PASSED [ 83%]
+tests/test_panel_typography.py::test_probe_script_present_and_read_only PASSED [100%]
+
+============================== warnings summary ===============================
+tests\conftest.py:507
+  C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp4-crux\a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56\scratchpad\p\tests\conftest.py:507: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\AppData\Local\Temp\claude\C--Users-User-SYNAPSE--claude-worktrees-bp4-crux\a00ff7a0-7b7c-4065-9c79-a29ba9d1bc56\scratchpad\p\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+    from synapse.inspector import reset_transport as _inspector_reset_transport
+
+tests/test_panel_typography.py::test_qss_stylesheet_source_has_no_literal_typography
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\pytest_asyncio\plugin.py:1216: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    return asyncio.get_event_loop_policy()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 6 passed, 2 warnings in 0.32s ========================
