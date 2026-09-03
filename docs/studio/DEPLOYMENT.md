@@ -153,6 +153,7 @@ Read only by the test suite â€” never by production code:
 | `SYNAPSE_INTEGRATION` | Enables integration tests | `tests/test_e2e_tops.py`, `tests/test_phase1_rungs.py` |
 | `SYNAPSE_LOAD_TEST` | Enables the load test | `tests/test_load.py` |
 | `SYNAPSE_INSPECTOR_LIVE_TRANSPORT_MODULE` | Live Inspector transport for tests | `tests/test_inspect_live.py` |
+| `SYNAPSE_SPATIAL_LANE` | BP4-SPATIAL (Mile 2): registers the three read-only spatial query tools (describe / classify / frustum) only when set to `1`; the lane is `ratified:false`, so the default is off and unregistered (rule D-1) | unset (off) | `python/synapse/spatial/__init__.py` | Both: leave unset until the spatial lane is ratified |
 
 #### SYNAPSE_MARSHAL_GUARD: why `warn` is the default
 
@@ -221,7 +222,6 @@ mutation â€” a real per-op cost floor on large production stages.
 | `SYNAPSE_STAGE_HASH_PRIM_THRESHOLD` | Prim-count gate above which the bridge stops running the full `Flatten()`+sha256 per hash and switches to the mode selected by `SYNAPSE_STAGE_HASH_LARGE_MODE`. At/below the threshold the hash is byte-identical to the original `Flatten()` algorithm. Non-negative ints only; a bad value falls back to the default. | `10000` (measured â€” `scripts/probe_stage_hash_floor.py`) | `shared/bridge.py` |
 | `SYNAPSE_STAGE_HASH_VOLUME_THRESHOLD` | Authored-array-volume gate (total array elements x authored time samples, counted by a bounded probe that never reads element values). Trips the same `SYNAPSE_STAGE_HASH_LARGE_MODE` switch when a stage is prim-light but value-heavy â€” the H10 class (a 4-prim PointInstancer @ 2M instances cost 2017.9 ms/op while staying under the prim gate). The hash is full-`Flatten()` only when BOTH gates pass. Non-negative ints only; a bad value falls back to the default. | `500000` (measured 2026-08-02 â€” see the H10 constants block in `shared/bridge.py`) | `shared/bridge.py` |
 | `SYNAPSE_STAGE_HASH_LARGE_MODE` | What runs ABOVE the threshold. `reduced` (default) â€” a cheap reduced-detail signature (topology, typing, property structure, relationship targets; **no attribute values, no time samples, no metadata**), recorded honestly on the IntegrityBlock as `stage_hash_mode="reduced"` / `stage_hash_full_fidelity=false`. `structural` â€” the COMPLETE structural signature (every mutation class incl. values + time samples; measured NOT faster than `Flatten()`, a memory choice not a speed one). `full` â€” never degrade: `Flatten()` everywhere, the always-full override. | `reduced` | `shared/bridge.py` |
-| `SYNAPSE_SPATIAL_LANE` | BP4-SPATIAL (Mile 2): registers the three read-only spatial query tools (describe / classify / frustum) only when set to `1`; the lane is `ratified:false`, so the default is off and unregistered (rule D-1) | unset (off) | `python/synapse/spatial/__init__.py` | Both: leave unset until the spatial lane is ratified |
 
 > **The gate is real since 2026-08-01** (BRIDGE-FLOOR). Measured on the dev
 > workstation (pxr 0.26.5, median of 3): the per-op `Flatten()` envelope (2
