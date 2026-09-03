@@ -1,0 +1,95 @@
+{
+  "leg": "BP3-PANEL",
+  "status": "green_with_findings",
+  "branch": "bp3/panel",
+  "product_head": "1276fed014c96eae53252c395b34a3e5d8d79978",
+  "base": "c6c4fb86b17f59d3d3171ecea9ee630f2a88ce78",
+  "summary": "Design-system audit of python/synapse/panel/ (harness/battleplan/notes/BP3_PANEL_AUDIT.md, audit shape: summary+score / naming / token coverage w/ file:line / component completeness / ranked priority actions) + a whitespace-and-token-only change set confined to designsystem/qss.py. 5 hardcoded-value->existing-token substitutions (rows A-E), each value-identical, so the rendered stylesheet is BYTE-IDENTICAL at every font scale (sha256[:16] unchanged for scale in {1.0,1.15,1.25,1.4,1.6}). Zero new widget/signal/timer/import/behaviour; synapse_panel.py not in the diff. Panel+design-guard tests 123 passed/25 skipped/0 failed before AND after. The larger out-of-designsystem surface (styles.py 127px, ~30 inline-styled feature modules, 69 token-equal + 168 off-palette hexes) is audited + ranked + spawned, mirroring BP2's territory boundary.",
+  "acceptance": [
+    {
+      "predicate": "BP3_PANEL_AUDIT.md exists in the audit shape with file:line instances per token category",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP3_PANEL_AUDIT.md (committed 1276fed0): section1 Summary+score, section2 Naming Consistency, section3 Token Coverage (37-file table + colors/spacing/typography with file:line: agent_health.py:177, performance_profiler.py:352, qss.py:124/164/188/232/382, context_bar.py pt hotspot), section5 Component Completeness (18 #Ds* classes with states/variants/docs ticks), section6 Priority Actions ranked by instances-per-edit"
+    },
+    {
+      "predicate": "diff touches only designsystem/manifests/qss/layout files; synapse_panel.py lifecycle/timer ranges unchanged",
+      "verdict": "pass",
+      "evidence": "git diff --stat master..1276fed0 -- python/synapse/panel/ => only python/synapse/panel/designsystem/qss.py (5 insertions/5 deletions); git diff -- synapse_panel.py => EMPTY (file not in the diff at all, so no lifecycle/timer line is touched)"
+    },
+    {
+      "predicate": "panel test target green before and after",
+      "verdict": "pass",
+      "evidence": "python -m pytest tests/panel tests/test_rope_density.py tests/test_rope_design_conformance.py tests/test_rope_expert_pin.py tests/test_bp2_paneldesign_density.py -q => 123 passed / 25 skipped / 0 failed BEFORE (2.48s) and AFTER (2.08s). The 25 skips are pre-existing gui_required tests (skip != pass). Full local suite baseline is green (BP2 receipt: 6921 passed); scoped here for iteration speed."
+    },
+    {
+      "predicate": "before/after screenshots show only spacing/typography/colour-token changes",
+      "verdict": "UNKNOWN",
+      "evidence": "gui_required, unobtainable headless -> recorded UNKNOWN, never a pass. STRUCTURAL PROOF the delta is zero: the rendered stylesheet string is byte-for-byte identical after the substitutions at all five font scales (sha256[:16] 1779b114/7a1a99e7/e7d4298e/be8d2aaa/c99024cd unchanged before and after), so no screenshot delta is physically possible from this change. Live-capture steps for Joe in capture_steps."
+    }
+  ],
+  "capture_steps": [
+    "1. In Houdini 22.0.400, open the SYNAPSE panel (New Pane Tab Type -> SYNAPSE).",
+    "2. On MASTER: screenshot the tab strip pills (DsPill), the verb rail (DsVerb), the palette chips (DsChip), the composer input (DsInput), and a scrollbar handle across curious/expert/ml profiles.",
+    "3. Checkout bp3/panel, restart Houdini (panel reload), repeat the same shots.",
+    "4. Expected: PIXEL-IDENTICAL. The 5 edits are value-identical token substitutions (SPACE_12=12, SIZE_SMALL=11, SIZE_MICRO=10, SPACE_MD=16, SPACE_LG=24); the generated QSS is proven byte-identical, so any visible difference would indicate an unrelated regression, not this change."
+  ],
+  "findings": [
+    {
+      "claim": "The design system is authoritative in its OWN module and under-adopted everywhere else. designsystem/qss.py is ~99% tokenised (now 100% for substitutable values after this leg); the wider panel holds 492 literal px, 168 off-palette hexes, 69 token-equal inline hexes, 14 literal pt across 34 legacy/feature modules. This is the two-token-system / non-native-fit gap in SYNAPSE_PANEL_DESIGN_REVIEW_H22_LENS.md sec 2.2. The fix is migration, not more tokens.",
+      "anchor": "harness/battleplan/notes/BP3_PANEL_AUDIT.md section1, section3"
+    },
+    {
+      "claim": "Byte-identical stylesheet is the leg's core evidence: every token replacing a literal has that literal's exact value, so qss.stylesheet(scale) is unchanged for all five scale steps. This makes the change unfalsifiably non-visual and lets every existing snapshot/density/conformance test stay green trivially.",
+      "anchor": "receipt acceptance[3].evidence"
+    },
+    {
+      "claim": "Naming debt (documented, not fixed - out of designsystem-only territory): SIZE_LABEL is a back-compat alias of SIZE_MICRO (both=10) preferred at 21+ call sites over the canonical (tokens.py:316); OK_SOFT (tokens.py:272) and RADIUS_PILL=14 (tokens.py:488) are defined but have zero live consumers; styles.py imports the LEGACY panel/tokens.py (t.HOVER) alongside designsystem (_ds) - two token authorities. BP2 ruled 'leave the pair' (8+3 pinned importers).",
+      "anchor": "harness/battleplan/notes/BP3_PANEL_AUDIT.md section2"
+    },
+    {
+      "claim": "1px hairlines in qss.py (8+ sites: :39,:43,:53,:61,:66,:70,:119,:147,:206,:231,:377,:388) were NOT substituted: there is no numeric width token for 1, and inventing one is a NEW token (outside T3's 'existing token' rule). The rhythm spec sec 2 treats 'hairline 1px, never 2px' as a design constant, so a HAIRLINE/BORDER_PX=1 additive token is a good candidate for a future rhythm-extension leg (spawn), not this pass.",
+      "anchor": "harness/battleplan/notes/BP3_PANEL_AUDIT.md section4 (Explicitly NOT changed), section6 item 6"
+    }
+  ],
+  "for_ruling": [
+    {
+      "item": "Scope interpretation of 'layout files': the change set was confined to designsystem/qss.py (the token-authority stylesheet). synapse_panel.py (a layout module) and the ~30 inline-styled feature modules were AUDITED but not edited - synapse_panel.py because its lifecycle/timer ranges are untouchable and its 13 px are layout margins better migrated with objectNames (BP2 follow-up), and the feature modules because they are outside designsystem/ authority and BP2's 'leave the pair' ruling covers styles.py. If the intended scope was broader (touch feature-module inline styles), that is BP3-INLINE-HEX / BP3-STYLES-MIGRATE, held below.",
+      "context": "T4 acceptance names 'designsystem/manifests/qss/layout files'; the safe, byte-identical, in-authority reading is designsystem/qss.py. Best achievable verdict is SOUND-WITH-NITS regardless (the gui_required acceptance is structurally UNKNOWN, crucible criterion 4)."
+    }
+  ],
+  "spawn": [
+    {
+      "id": "BP3-STYLES-MIGRATE",
+      "class": "build",
+      "disposition": "held (class outside spawn_classes=[] -> Joe's word)",
+      "band": "BUILD",
+      "note": "Retire the literals in legacy panel/styles.py (127 px + 39 font-sizes + 7 rgba). Durable fix = migrate its 3 pinned consumers (chat_display, chat_panel, gate_widget) onto designsystem/qss.py objectNames rather than editing the legacy sheet. deps: none. ~173 instances.",
+      "touches": ["python/synapse/panel/styles.py", "python/synapse/panel/chat_display.py", "python/synapse/panel/chat_panel.py", "python/synapse/panel/gate_widget.py", "python/synapse/panel/designsystem/qss.py"]
+    },
+    {
+      "id": "BP3-INLINE-HEX",
+      "class": "build",
+      "disposition": "held (class outside spawn_classes=[] -> Joe's word)",
+      "band": "BUILD",
+      "note": "Replace 69 token-equal inline hexes across feature modules with token references (agent_health.py:177 #00E676/#FFAB00/#FF3D71 -> GROW/WARN/ERROR; performance_profiler.py:352 #2a2a2a -> PANEL; apex_explainer.py:825/835 -> PANEL/BONE). Pure substitutions but inline-styled HTML/QSS. Separately, 168 off-palette hexes need a per-colour design decision (map or add). deps: none.",
+      "touches": ["python/synapse/panel/agent_health.py", "python/synapse/panel/performance_profiler.py", "python/synapse/panel/apex_explainer.py", "python/synapse/panel/message_formatter.py", "python/synapse/panel/save_shot.py"]
+    },
+    {
+      "id": "BP3-NAME-CANON",
+      "class": "build",
+      "disposition": "held (class outside spawn_classes=[] -> Joe's word)",
+      "band": "BUILD",
+      "note": "Canonicalise SIZE_LABEL -> SIZE_MICRO at its 21+ call sites; retire the dead OK_SOFT and RADIUS_PILL tokens. Mechanical, cross-module (gate_widget, styles, message_formatter, context_bar, quick_actions). deps: none. ~24 references.",
+      "touches": ["python/synapse/panel/designsystem/tokens.py", "python/synapse/panel/gate_widget.py", "python/synapse/panel/message_formatter.py", "python/synapse/panel/context_bar.py", "python/synapse/panel/quick_actions.py"]
+    },
+    {
+      "id": "BP3-PT-HOTSPOT",
+      "class": "build",
+      "disposition": "held (class outside spawn_classes=[] -> Joe's word)",
+      "band": "BUILD",
+      "note": "De-hardcode the 14 literal pt sizes in context_bar.py (the only literal-pt hotspot; the font-floor migration W5L-PANEL never reached it). Route through the SIZE_*/host-floored font path. deps: none. 14 instances.",
+      "touches": ["python/synapse/panel/context_bar.py"]
+    }
+  ],
+  "notes": "Self-cap 20 turns; no refocus/halt received. Bus claim posted on python/synapse/panel/ + the audit note (n=18d1e334b8f12114); uncontested. Analyzer: scratchpad/audit_scan.py (read-only grep+token-map). Best achievable verdict is SOUND-WITH-NITS: the gui_required acceptance is structurally UNKNOWN (crucible criterion 4), so the leg is deliberately conservative + byte-identical rather than maximal."
+}
