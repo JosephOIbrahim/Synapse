@@ -315,6 +315,44 @@ SIZE_HERO   = 19   # panel title — present, not shouting
 # Back-compat alias (design/tokens.py name)
 SIZE_LABEL = SIZE_MICRO
 
+# ── the type FLOOR (BP4-PANELFONT) ────────────────────────────
+# Joe's law: "panel fonts consistent and no smaller than the Houdini default."
+# The default UI font size is a MEASURED, GUI-only fact — QApplication.font()
+# is meaningless under hython's app-less runtime — so it is read by
+# scripts/probe_ui_font.py and pasted from a live Houdini 22.0.400 shell, never
+# recalled from memory. Provenance ladder: measured GUI paste > a statement in
+# the local H22 help cache (DOC-STATED) > UNKNOWN.
+#
+# Current provenance: UNKNOWN. The local H22.0.400 help cache
+# (…/houdini22.0/config/Help/cache — ref, basics, hom searched 2026-09-03)
+# states no default UI font size. Per the mission fallback the floor is pinned
+# to the smallest size already shipped on master (SIZE_MICRO = 10), so this pass
+# lowers NOTHING; when the probe lands, a follow-up raises the floor to the
+# measured default and lifts any sub-floor role. The scale-comment recall that
+# the sizes "matched 9pt ≈ 12px, verified on H21.0.671/.729" is an H21
+# measurement, NOT an H22 one — deliberately not used as the floor.
+#
+# ONE constant, with a provenance string beside it (mission: "the floor lives
+# as ONE constant in the token module with a provenance string"). Kept
+# independent of SIZE_MICRO on purpose: coupling them would make the
+# "no size below the floor" test unable to catch SIZE_MICRO being lowered.
+FONT_FLOOR_PX = 10
+FONT_FLOOR_PROVENANCE = (
+    "UNKNOWN — the local H22.0.400 help cache states no default UI font size "
+    "(…/houdini22.0/config/Help/cache, ref+basics+hom searched 2026-09-03); "
+    "awaiting the scripts/probe_ui_font.py GUI paste. Floor pinned to the "
+    "smallest size shipped on master (SIZE_MICRO=10) per BP4-PANELFONT, so no "
+    "role is lowered."
+)
+
+# ── weight tokens (BP4-PANELFONT) ─────────────────────────────
+# The three CSS/Qt numeric weights the panel actually uses — named so the
+# stylesheet and the roles stop hardcoding the bare numbers. Values unchanged
+# (400/500/600), so every consumer sees the identical int it saw before.
+WEIGHT_REGULAR  = 400   # body / caption / code
+WEIGHT_MEDIUM   = 500   # label / status  (Qt QFont.Weight.Medium)
+WEIGHT_SEMIBOLD = 600   # display / title / buttons / badges
+
 # Roles: (family_css, size_px, weight, letter_spacing_px) — components read these.
 #
 # Mono is for CODE, sans is for everything else. Mono earns its place where the
@@ -325,13 +363,13 @@ SIZE_LABEL = SIZE_MICRO
 # terminal emulator rather than a tool. So `title` and `label` move to sans;
 # `code` and `status` stay mono, unchanged.
 TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
-    "display": (FONT_SANS_CSS, SIZE_HERO,  600, 0.5),
-    "title":   (FONT_SANS_CSS, SIZE_TITLE, 600, 1.0),
-    "body":    (FONT_SANS_CSS, SIZE_BODY,  400, 0.0),
-    "label":   (FONT_SANS_CSS, SIZE_UI,    500, 0.5),
-    "code":    (FONT_MONO_CSS, SIZE_BODY,  400, 0.0),
-    "caption": (FONT_SANS_CSS, SIZE_SMALL, 400, 0.0),
-    "status":  (FONT_MONO_CSS, SIZE_SMALL, 500, 0.5),
+    "display": (FONT_SANS_CSS, SIZE_HERO,  WEIGHT_SEMIBOLD, 0.5),
+    "title":   (FONT_SANS_CSS, SIZE_TITLE, WEIGHT_SEMIBOLD, 1.0),
+    "body":    (FONT_SANS_CSS, SIZE_BODY,  WEIGHT_REGULAR,  0.0),
+    "label":   (FONT_SANS_CSS, SIZE_UI,    WEIGHT_MEDIUM,   0.5),
+    "code":    (FONT_MONO_CSS, SIZE_BODY,  WEIGHT_REGULAR,  0.0),
+    "caption": (FONT_SANS_CSS, SIZE_SMALL, WEIGHT_REGULAR,  0.0),
+    "status":  (FONT_MONO_CSS, SIZE_SMALL, WEIGHT_MEDIUM,   0.5),
 }
 
 # v9 tracking map — em per role, RESTORED to the ratified comp values (the
