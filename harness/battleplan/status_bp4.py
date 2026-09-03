@@ -9,7 +9,7 @@ from pathlib import Path
 
 REPO = Path(r"C:\Users\User\SYNAPSE")
 AF = REPO / "harness" / "battleplan"
-LEGS = ["BP4-METER", "BP4-PANELTRUTH", "BP4-LATENCY", "BP4-STORE", "BP4-PANELDESIGN", "BP4-CRUX"]
+LEGS = ["BP4-INTAKE", "BP4-RULINGS", "BP4-B7FIX", "BP4-SPATIAL", "BP4-PANELFONT", "BP4-USDKNOW", "BP4-CRUX", "BP4-TIDY"]  # BP4 2026-09-03: was a BP2-era hardcode carried through two clones; dashboard_bp4.py reads the manifest, this list must match it
 
 def git(*args):
     r = subprocess.run(["git", "-C", str(REPO), *args], capture_output=True, text=True)
