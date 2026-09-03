@@ -1,0 +1,38 @@
+{
+  "leg": "BP4-INTAKE",
+  "status": "green",
+  "completed_at": "2026-09-03T18:11:00Z",
+  "head_sha": "03a4e43d",
+  "acceptance": [
+    {
+      "predicate": "MANIFEST.md has a row per present file with bytes + sha256 + role, and a 'missing' row per absent one",
+      "verdict": "pass",
+      "evidence": "docs/intake/src/MANIFEST.md: 2 present files + 2 missing rows documented with full provenance"
+    },
+    {
+      "predicate": "blueprint header gained exactly one Sources line; the diff vs master is confined to the header block",
+      "verdict": "pass",
+      "evidence": "git diff master..HEAD -- docs/intake/blueprint-h22-worldlabs-intent.md: 1 hunk, line 11 inserted in header, no scope changes"
+    },
+    {
+      "predicate": "bus finding posted with dossier_in_repo value and MANIFEST anchor",
+      "verdict": "pass",
+      "evidence": "bus.py post 2026-09-03T18:10:46Z: claim dossier_in_repo=true, anchor docs/intake/src/MANIFEST.md"
+    }
+  ],
+  "findings": [
+    {
+      "claim": "dossier_in_repo: true",
+      "anchor": "docs/intake/src/MANIFEST.md",
+      "summary": "Both extracted markdown sources (synapse_worldlabs_blueprint.md, synapse_worldlabs_coffee_shop_talk.md) now repository-resident with documented provenance and cross-checks.",
+      "cross_checks": {
+        "blueprint_sections": "6 sections present (1-6: Executive Summary, Substrate Split, Coordinate Normalization, OpenUSD Architecture, Spatial Intelligence Lane, Solaris Integration)",
+        "coffee_notes_sections": "4 sections present (1-4: Blind Spot of Generative Video, VFX Artists as AI Architects, Making SYNAPSE User-Friendly, Bridging Two Worlds)",
+        "cited_pointers_verified": 4,
+        "missing_docx_files": 2
+      }
+    }
+  ],
+  "for_ruling": [],
+  "spawn": []
+}
