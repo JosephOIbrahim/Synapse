@@ -8,6 +8,7 @@
 **Companions (same project):** `Dossier - H22 Solaris and Karma (SYNAPSE Intake).md` (claims register, probes P-1..P-9, buckets), `Coffee Shop Notes - Solaris and Karma in Houdini 22.md` (digest), `H22 - Solaris - Houdini 22 HIVE.md` (transcript), `frames/hires_t_MMSS.jpg` (parameter panes).
 **Sidecars (this drop):** `harness/probes/synapse_blueprint_probes.py` (P-0..P-9 + B-1..B-9 + S-1..S-3), `docs/intake/world_manifest.schema.json` (contract for Intent 3).
 **Repo landing (2026-09-03):** this file, the probe script and the schema were dropped into the SYNAPSE repo by the CTO seat for wave BP3. Paths above are the landing paths; every other path in this document is still V0 until BP3-RECON reconciles it.
+**Sources (intake):** docs/intake/src/synapse_worldlabs_blueprint.md (dossier), docs/intake/src/synapse_worldlabs_coffee_shop_talk.md (coffee notes), docs/intake/src/MANIFEST.md (file inventory and cross-check).
 
 ---
 
