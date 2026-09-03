@@ -103,3 +103,5 @@ leg to write anything after its receipt (W5H held CRUX at closing for it).
   This release publishes only if that waiver is re-signed by Joe's word.
 
 Handoff: `harness/notes/CAPSULE_2026-09-03_EOD.md`.
+
+**Published 2026-09-03 17:27 (Joe words: waiver + publish).** Waiver re-signed for the four standing RC blockers (mutation_fail_closed, hot_reload_gated, installer_host_targeted, ci_covers_shipping_surface); tag v5.61.0 at ad589fe5; R.R verdict regenerated 2026-09-03 17:22 live mode B with the same red set as 2026-09-01 (no regression); CI green on ad589fe5; BP3 legs 1-7 merged on Joe's word after the crucible was read.
