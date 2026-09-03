@@ -1,0 +1,248 @@
+{
+  "build": "22.0.400",
+  "generated_at": "2026-09-03",
+  "source_doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+  "decision_record": "docs/reviews/bp4-usd-composition-worldlabs.md",
+  "probe": "harness/probes/bp4_usd_composition_probes.py",
+  "probe_stdout": "harness/notes/h22wl/bp4_usdknow/stdout.txt",
+  "checker": "harness/battleplan/notes/bp4_usdknow_check.py",
+  "fixture": "b6_wl_component.usdc (SOP USD Create Component, 19.8 MB; gitignored, from BP3-PROBE bp3/probe)",
+  "vocabulary": [
+    "harness/battleplan/notes/skills/solaris-usd-composition.md",
+    "harness/battleplan/notes/skills/composition-deep-dive.md"
+  ],
+  "ratified": false,
+  "tiers": {
+    "VERIFIED-RUNTIME": "a probe stdout line proves it on hython 22.0.400 (pxr resolution)",
+    "FIXTURE-VERIFIED": "the b6 SOP component proves it on the actual file",
+    "DOC-STATED": "read from the blueprint / shipped skill text; unverified here",
+    "PROPOSED": "a design choice not present in the SOP build and not runtime-proven"
+  },
+  "checker_contract": "for every VERIFIED-RUNTIME/FIXTURE-VERIFIED row, anchor is 'stdout.txt:<N>' and BOTH 'arc=<arc>' and the 'verify' token appear verbatim on that line; PROPOSED/DOC-STATED rows carry a doc anchor (no stdout.txt:<N>) and are skipped.",
+  "rows": [
+    {
+      "id": "kind-component",
+      "topic": "kind=component on /WL_<world_id>",
+      "rule": "The world root prim is tagged kind=component: one Marble world is exactly one component model, the leaf of the model hierarchy (assembly > group > component). The SOP USD Create Component authors it on the wrapper Xform.",
+      "arc": "local",
+      "why": "kind is a local metadata opinion (not a composition arc). component (not assembly/group) because the world has no sub-model children to own; kind=component is what makes Usd.ModelAPI treeIteration and a spatial-lane organization walk (blueprint sec.3.3 I3.a/I3.b) stop at the world as one queryable unit.",
+      "anchor": "stdout.txt:30",
+      "verify": "kind=component",
+      "tier": "FIXTURE-VERIFIED"
+    },
+    {
+      "id": "purpose-collider-proxy",
+      "topic": "collider under purpose=proxy",
+      "rule": "The collider mesh subtree sits under a Scope authored purpose=proxy (/geo/proxy). Structure travels on the proxy purpose.",
+      "arc": "local",
+      "why": "purpose is an inherited-down local attribute, not a composition arc. proxy (not default/guide) so the viewport can draw the light collider (~47k tris on the lane fixture) while Karma consumes the render splat; prevents the viewport from moving 2M splat points every frame (viewport re-cook failure).",
+      "anchor": "stdout.txt:31",
+      "verify": "purpose=proxy",
+      "tier": "FIXTURE-VERIFIED"
+    },
+    {
+      "id": "purpose-render-scope",
+      "topic": "splat under purpose=render",
+      "rule": "The splat subtree sits under a Scope authored purpose=render (/geo/render). Appearance travels on the render purpose.",
+      "arc": "local",
+      "why": "render (not default) so the heavy splat is only realised at render time by the delegate that wants it; a viewer set to proxy purpose never realises it. Purpose is authored on the Scope, not the leaf (see purpose-splat-inherited).",
+      "anchor": "stdout.txt:32",
+      "verify": "purpose=render",
+      "tier": "FIXTURE-VERIFIED"
+    },
+    {
+      "id": "purpose-splat-inherited",
+      "topic": "splat Points purpose is inherited, not authored on the leaf",
+      "rule": "The Points prim /geo/render/points_0 authors NO purpose (authored=default) yet computes purpose=render, inherited down namespace from the /geo/render Scope.",
+      "arc": "local",
+      "why": "purpose is one of USD's inherited-down attributes: setting it once on the render Scope covers every leaf beneath it. Authoring purpose=render on each leaf would be redundant and drift-prone. The SOP build proves the inheritance path, correcting the blueprint sec.2.5 sketch which draws purpose on /splat itself.",
+      "anchor": "stdout.txt:33",
+      "verify": "computed_purpose=render",
+      "tier": "FIXTURE-VERIFIED"
+    },
+    {
+      "id": "payload-splat-collider",
+      "topic": "shot composes the world by payload (splat + collider together)",
+      "rule": "The shot references /WL_<world_id> by PAYLOAD, not reference. Payloading the real 19.8 MB component then Unload drops 9 prims; Load restores them.",
+      "arc": "payload",
+      "why": "payload = reference + unloadable. The 2M-splat SH data (~360 MB) must be droppable from an open stage so the shot opens and the layout tools work on the light collider without the appearance resident. FIXTURE-VERIFIED on the actual component file.",
+      "anchor": "stdout.txt:43",
+      "verify": "dropped=9",
+      "tier": "FIXTURE-VERIFIED"
+    },
+    {
+      "id": "payload-arc-present",
+      "topic": "the composed shot prim carries a payload arc",
+      "rule": "Usd.PrimCompositionQuery on the shot prim reports a payload composition arc (arcs: root,payload).",
+      "arc": "payload",
+      "why": "confirms the arc that composes the world into the shot is a payload, the mechanism unload/load acts on.",
+      "anchor": "stdout.txt:44",
+      "verify": "composed_payload_arc=True",
+      "tier": "FIXTURE-VERIFIED"
+    },
+    {
+      "id": "payload-vs-reference-unloadable",
+      "topic": "why payload and not reference",
+      "rule": "Runtime: stage.Unload on a payloaded prim removes its subtree (unloadable=True); the same Unload on a referenced prim does nothing (unloadable=False).",
+      "arc": "payload",
+      "why": "the neighbour arc is reference (identical namespace mapping, one step stronger in LIVRPS). Reference is rejected at the shot seam solely because it cannot be unloaded: a referenced 2M-splat world is resident for the life of the stage. This is the single property that decides payload over reference.",
+      "anchor": "stdout.txt:46",
+      "verify": "reference_unloadable=False",
+      "tier": "VERIFIED-RUNTIME"
+    },
+    {
+      "id": "variantsets-absent-in-sop-build",
+      "topic": "the SOP-built component authors zero variant sets",
+      "rule": "The USD Create Component output carries 0 variantSets across all prims. splatTier / surface / physics variants are PROPOSED authoring, not present in the fixture.",
+      "arc": "variant",
+      "why": "keeps the tiering honest: the blueprint sec.2.5 variant sets are a proposal; the shipped SOP path does not author them, so their rows below are PROPOSED, not FIXTURE-VERIFIED.",
+      "anchor": "stdout.txt:34",
+      "verify": "variantset_total=0",
+      "tier": "FIXTURE-VERIFIED"
+    },
+    {
+      "id": "customdata-worldlabs-absent-in-sop-build",
+      "topic": "the SOP-built component authors no customData:worldlabs",
+      "rule": "The component root customData holds only ['userDocBrief']; no worldlabs provenance key is present.",
+      "arc": "local",
+      "why": "again keeps tiering honest: customData:worldlabs provenance (blueprint sec.2.5) is PROPOSED, not authored by the SOP build. A later authoring step adds it.",
+      "anchor": "stdout.txt:35",
+      "verify": "customData_worldlabs=absent",
+      "tier": "FIXTURE-VERIFIED"
+    },
+    {
+      "id": "livrps-order",
+      "topic": "LIVRPS strength ladder on 22.0.400",
+      "rule": "One attribute carrying all six opinions resolves strong->weak as local>inherit>variant>reference>payload>specialize; composed value = the local opinion.",
+      "arc": "local",
+      "why": "the empirical ladder every arc choice in this record reasons from. Matches the shipped skill's stated order (solaris-usd-composition.md) -- confirmed, not recited.",
+      "anchor": "stdout.txt:60",
+      "verify": "order=local>inherit>variant>reference>payload>specialize",
+      "tier": "VERIFIED-RUNTIME"
+    },
+    {
+      "id": "livrps-reference-over-payload",
+      "topic": "reference beats payload",
+      "rule": "A reference opinion wins over a payload opinion on the same attribute (adjacent in the ladder).",
+      "arc": "reference",
+      "why": "explains why the world is authored as a self-contained payload TARGET and the shot uses the weaker payload seam: had the shot used reference, it would compose one step stronger AND be non-unloadable. The strength asymmetry and the unload asymmetry point the same way.",
+      "anchor": "stdout.txt:66",
+      "verify": "reference_beats_payload=True",
+      "tier": "VERIFIED-RUNTIME"
+    },
+    {
+      "id": "livrps-payload-over-specialize",
+      "topic": "payload beats specialize",
+      "rule": "A payload opinion wins over a specialize opinion on the same attribute.",
+      "arc": "payload",
+      "why": "bounds the ladder from below: only specialize is weaker than payload. Any per-world fallback you want the shot to override cheaply belongs on specialize, never on the payload.",
+      "anchor": "stdout.txt:67",
+      "verify": "payload_beats_specialize=True",
+      "tier": "VERIFIED-RUNTIME"
+    },
+    {
+      "id": "livrps-specialize-weakest",
+      "topic": "specialize is the weakest arc",
+      "rule": "Specialize loses to every other opinion; it supplies fallbacks that any stronger arc overrides.",
+      "arc": "specialize",
+      "why": "the correct reading of the arc the deep-dive got wrong. Use specialize for base templates whose values must always yield to a real opinion, never for something that must survive an override.",
+      "anchor": "stdout.txt:68",
+      "verify": "specialize_rank=weakest",
+      "tier": "VERIFIED-RUNTIME"
+    },
+    {
+      "id": "livrps-local-over-specialize-refutes-deepdive",
+      "topic": "REFUTES composition-deep-dive.md L138",
+      "rule": "spot1 with a local intensity=2.0 that specializes a base keeps 2.0 after the base changes to 0.5. The deep-dive's 'spot1 gets 0.5 (base is stronger)' is false; the prim's own local opinion wins over what it specializes.",
+      "arc": "local",
+      "why": "the CTO note flagged this line as deliberately wrong; the probe settles it. A local opinion always beats a specialized base -- specialize only fills in where the prim itself is silent.",
+      "anchor": "stdout.txt:76",
+      "verify": "deep_dive_L138=refuted",
+      "tier": "VERIFIED-RUNTIME"
+    },
+    {
+      "id": "inherit-liststrength-first-added-strongest",
+      "topic": "SETTLES composition-deep-dive.md L201",
+      "rule": "For inherit list-editing, the first-added inherit is the strongest: /Obj inheriting A(=10) then B(=20) composes to 10.0.",
+      "arc": "inherit",
+      "why": "the CTO note left this 'unverified'; on 22.0.400 the claim holds (default AddInherit prepends at the back of the prepend list, so earlier adds sit in front / stronger). Recorded VERIFIED-RUNTIME, not assumed.",
+      "anchor": "stdout.txt:83",
+      "verify": "first_added_strongest=True",
+      "tier": "VERIFIED-RUNTIME"
+    },
+    {
+      "id": "variantset-splattier",
+      "topic": "variantSet splatTier { full | low }",
+      "rule": "PROPOSED: a splatTier variant set on /WL_<world_id> selecting the 2M-splat full tier vs the 500k low tier.",
+      "arc": "variant",
+      "why": "variant (not two separate payloads, not reference swap) because a variant selection switches representation without recomposing the stack or re-opening a file, and rides ABOVE reference/payload in the ladder so the shot's selection wins over anything the component ships. Not present in the SOP build (see variantsets-absent-in-sop-build); this is proposed authoring.",
+      "anchor": "docs/intake/blueprint-h22-worldlabs-intent.md#2.5",
+      "verify": "PROPOSED",
+      "tier": "PROPOSED"
+    },
+    {
+      "id": "variantset-physics",
+      "topic": "variantSet physics { none | collision }",
+      "rule": "PROPOSED (gated G-1): a physics variant set applying UsdPhysicsCollisionAPI to /geo/collider under the collision variant, none otherwise.",
+      "arc": "variant",
+      "why": "variant so a sim-ready export toggles the collision schema without a second asset; kept OFF the critical path behind gate G-1 (blueprint sec.9) -- no Isaac Sim evidence sought here. Not authored by the SOP build.",
+      "anchor": "docs/intake/blueprint-h22-worldlabs-intent.md#2.8-D2.7",
+      "verify": "PROPOSED",
+      "tier": "PROPOSED"
+    },
+    {
+      "id": "customdata-worldlabs-provenance",
+      "topic": "customData:worldlabs provenance block",
+      "rule": "PROPOSED: customData:worldlabs = {world_id, model, frame, semantics_metadata, source_urls, applied} on /WL_<world_id>.",
+      "arc": "local",
+      "why": "customData (a local metadata dict) not a typed schema, because the provenance is SYNAPSE-private, travels with the prim through reference/payload, and must not collide with vendor USD schemas. The 'applied' sub-block is what makes the frame conversion idempotent (see transforms-baked-not-xform). Not authored by the SOP build (see customdata-worldlabs-absent-in-sop-build).",
+      "anchor": "docs/intake/blueprint-h22-worldlabs-intent.md#2.5",
+      "verify": "PROPOSED",
+      "tier": "PROPOSED"
+    },
+    {
+      "id": "instanceable-false",
+      "topic": "instanceable = false on /WL_<world_id>",
+      "rule": "PROPOSED: the world component is NOT marked instanceable.",
+      "arc": "local",
+      "why": "instanceable=true would collapse the prim to a shared prototype: (1) there is exactly one instance of each world, so instancing buys nothing; (2) an instanceable prim cannot carry per-instance variant selection (splatTier/surface) or per-instance overrides, which the shot needs; (3) instance proxies complicate the payload unload path. instanceable is a local metadata flag; default false is correct. No runtime anchor -- a design decision.",
+      "anchor": "reasoning: blueprint sec.2.5 (one world = one component) + LIVRPS ladder",
+      "verify": "PROPOSED",
+      "tier": "PROPOSED"
+    },
+    {
+      "id": "transforms-baked-not-xform",
+      "topic": "metric / ground / chirality transforms live baked in the file, not as an Xform on the payload",
+      "rule": "PROPOSED: the metric+ground and axis (chirality) conversions are BAKED into the exported splat/collider geometry and recorded in customData:worldlabs.applied; they are NOT re-applied as an Xform op on /WL_<world_id> in the shot layer.",
+      "arc": "local",
+      "why": "the failure this prevents is the DOUBLE TRANSFORM: a file already converted to metric+Y-up, then wrapped in a live Xform that converts again, is scaled and flipped twice. Baking once + an 'applied' ledger (idempotent per blueprint I2.d) means a re-open never re-converts. A live Xform op would also be a local opinion the shot could clobber. Placement Xforms (positioning the world in the shot) are a SEPARATE, legitimate Xform in the shot layer.",
+      "anchor": "docs/intake/blueprint-h22-worldlabs-intent.md#2.5-property1 + #2.7",
+      "verify": "PROPOSED",
+      "tier": "PROPOSED"
+    },
+    {
+      "id": "frame-conversion-order",
+      "topic": "frame conversion order",
+      "rule": "DOC-STATED: convert in the order metric+ground -> axis (180 about X) -> Houdini Y-up; 'applied' flags make it idempotent (blueprint sec.2.7, WL-API-03).",
+      "arc": "local",
+      "why": "order is a vendor claim (WL-API-03), not a preference: metric+ground operate in the raw OpenCV frame, the axis flip comes after. Recorded DOC-STATED -- not runtime-verified in this leg (no fixture round-trip through the full conversion here).",
+      "anchor": "docs/intake/blueprint-h22-worldlabs-intent.md#2.7",
+      "verify": "DOC-STATED",
+      "tier": "DOC-STATED"
+    },
+    {
+      "id": "payload-heavy-rationale",
+      "topic": "why the world is heavy enough to payload",
+      "rule": "DOC-STATED: a 2M-splat world carries ~45 floats/point of spherical harmonics (~360 MB at 2M, ~90 MB at 500k); this is the weight that makes payload (not reference) mandatory.",
+      "arc": "payload",
+      "why": "blueprint sec.2.5 property 3. The SH payload size is the physical reason the appearance must be unloadable; the runtime unload asymmetry (payload-vs-reference-unloadable) is the mechanism that delivers it.",
+      "anchor": "docs/intake/blueprint-h22-worldlabs-intent.md#2.5-property3",
+      "verify": "DOC-STATED",
+      "tier": "DOC-STATED"
+    }
+  ],
+  "proposed_final_destination": {
+    "note": "RECON T1 names the LOP-knowledge home. When ratified, this seed moves there. UNEXECUTED -- do not run; D-1 is a human+CTO act.",
+    "git_mv": "git mv harness/bench/corpus/usd/usd_composition_worldlabs_22.0.400.json harness/notes/verified_lop_solaris_knowledge_22.0.400.json"
+  }
+}

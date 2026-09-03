@@ -1,0 +1,63 @@
+{
+  "leg": "BP4-USDKNOW",
+  "status": "green_with_findings",
+  "build": "22.0.400",
+  "product_head": "a0cc33b1",
+  "branch": "bp4/usdknow",
+  "checker_exit": 0,
+  "acceptance": [
+    {
+      "predicate": "decision record covers every sec.2/sec.4 choice with arc + LIVRPS reason + tier + anchor",
+      "verdict": "pass",
+      "evidence": "docs/reviews/bp4-usd-composition-worldlabs.md §2.1-2.8 covers all 8 enumerated choices (payload, purpose split, splatTier variant, physics variant, kind=component, customData:worldlabs, instanceable, frame-transform placement) each with arc + why-not-each-neighbour + failure-prevented + tier + anchor; §3 covers sec.4 (demo adds no arc; beat 3 + F-1 confirm collider substrate)."
+    },
+    {
+      "predicate": "seed JSON parses; every VERIFIED-RUNTIME / FIXTURE-VERIFIED anchor greps; bp4_usdknow_check.py exits 0 on the committed seed",
+      "verdict": "pass",
+      "evidence": "python -c json.load -> parses, 22 rows, ratified=False; python harness/battleplan/notes/bp4_usdknow_check.py -> RESULT: PASS (15 promotable rows anchor clean), exit 0. Self-test: strip-anchor / promote-PROPOSED / change-arc / flip-ratified each exit 1."
+    },
+    {
+      "predicate": "probe stdout has the per-prim arc listing for b6_wl_component.usdc, the payload round trip counts, and the LIVRPS winner table",
+      "verdict": "pass",
+      "evidence": "harness/notes/h22wl/bp4_usdknow/stdout.txt: per-prim type/kind/purpose/arcs at :18-28; payload round trip loaded=10 unloaded=1 reloaded=10 at :41-43; reference non-unloadable at :45-46; LIVRPS order local>inherit>variant>reference>payload>specialize at :59-60 with adjacent-pair winners :61-68."
+    },
+    {
+      "predicate": "no edit under python/synapse/; ratified:false present in the seed",
+      "verdict": "pass",
+      "evidence": "git status --short -- python/synapse/ -> 0 lines; git diff master..HEAD -- python/synapse/ empty; seed usd_composition_worldlabs_22.0.400.json ratified:false (checker also fails closed if ratified is truthy)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-1",
+      "claim": "Fixture diverges from the blueprint sec.2.5 sketch: the SOP USD Create Component authors purpose on the /geo/proxy and /geo/render Scopes and inherits it down; the splat Points leaf authors NO purpose (authored=default) yet computes render. The record follows runtime, not the sketch.",
+      "anchor": "harness/notes/h22wl/bp4_usdknow/stdout.txt:33"
+    },
+    {
+      "id": "F-2",
+      "claim": "splatTier / surface / physics variant sets and customData:worldlabs are NOT present in the SOP build (0 variant sets; customData root has only userDocBrief). They are PROPOSED authoring, not FIXTURE-VERIFIED. A human must not read them as verified.",
+      "anchor": "harness/notes/h22wl/bp4_usdknow/stdout.txt:34-35"
+    },
+    {
+      "id": "F-3",
+      "claim": "composition-deep-dive.md L138 (Specialize 'base is stronger') is REFUTED by runtime: a local opinion (spot1=2.0) wins over what it specializes even after the base changes to 0.5. L201 (inherit 'first added = strongest') is CONFIRMED true on 22.0.400. If that skill is promoted to corpus, L138 must be fixed first.",
+      "anchor": "harness/notes/h22wl/bp4_usdknow/stdout.txt:76,83"
+    }
+  ],
+  "for_ruling": [
+    "D-1 (two keys): promotion of any seed row's tier is a human + CTO act; nothing is promoted here.",
+    "The seed's proposed final destination (git mv to harness/notes/verified_lop_solaris_knowledge_22.0.400.json, the RECON LOP-knowledge home) is recorded UNEXECUTED; run it only on ratification. RECON flagged no 22.0.400 knowledge file exists yet.",
+    "composition-deep-dive.md:138 is factually wrong (CTO honesty-by-design note confirmed by probe). Recommend fixing before that skill text is ever promoted into a live corpus."
+  ],
+  "spawn": [
+    {
+      "id": "BP5-USDKNOW-AUTHOR",
+      "band": "BUILD",
+      "class": "build",
+      "tier": "reasoning",
+      "name": "Author the PROPOSED composition (splatTier + surface + physics variant sets, customData:worldlabs provenance, instanceable=false) onto a real World Labs component and FIXTURE-VERIFY each row, moving them from PROPOSED toward FIXTURE-VERIFIED in the seed",
+      "note": "Held for Joe (spawn_classes empty on BP4-USDKNOW). Directly extends this seed: the SOP USD Create Component authors none of the variant sets or the worldlabs customData, so those rows are PROPOSED. A leg that authors them (SOP or LOP), re-probes with bp4_usd_composition_probes.py-style evidence, and re-runs bp4_usdknow_check.py would promote 4-5 rows. Depends on: this seed; a component with the variants authored. Rule D-1 still applies (propose, do not ratify).",
+      "reason": "related forward value, not chased per constitution"
+    }
+  ]
+}
