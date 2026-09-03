@@ -1,0 +1,14 @@
+launch_utc=2026-09-03T18:48:56Z
+finish_utc=2026-09-03T18:49:05Z
+exit_code=0
+hython=C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe
+pref_dir=C:/Users/User/OneDrive/Documents/houdini22.0
+ply=C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe/harness/fixtures/worldlabs/narrow_european_cobblestone_lane/narrow_european_cobblestone_lane_500k.ply
+glb=C:/Users/User/SYNAPSE/.claude/worktrees/bp3-probe/harness/fixtures/worldlabs/narrow_european_cobblestone_lane/narrow_european_cobblestone_lane_collider.glb
+
+--- uncommitted binary artifacts (recorded, deliberately unstaged; reproducible from stdout+probe script) ---
+b6_wl_component.usdc bytes=19756921
+b7_wl_fixture.exr bytes=189224
+synapse_blueprint_probes.hip bytes=563258
+--- fixtures (recorded by SHA256 in the review doc §3; unstaged) ---
+harness/fixtures/worldlabs/narrow_european_cobblestone_lane/ : 500k.ply 34000416 / collider.glb 959216 / pano.png 4213568
