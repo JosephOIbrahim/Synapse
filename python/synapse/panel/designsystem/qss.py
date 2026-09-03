@@ -121,7 +121,7 @@ QWidget#DsTabRow {{
 QPushButton#DsPill {{
     background: none; color: {t.TEXT_TERTIARY};
     border: none; border-bottom: 2px solid transparent; border-radius: 0;
-    padding: 0 0 12px 0;
+    padding: 0 0 {t.SPACE_12}px 0;
 }}
 QPushButton#DsPill:hover  {{ color: {t.TEXT_BRIGHT}; }}
 QPushButton#DsPill:disabled {{ color: {t.TEXT_DISABLED}; }}
@@ -161,7 +161,7 @@ QLabel#DsKHint[prominence="quiet"] {{ color: {t.TEXT_DISABLED}; border-color: {t
 QPushButton#DsVerb {{
     background: transparent; border: none; padding: 2px 0;
     color: {t.TEXT_SECONDARY};
-    font-size: {s(11)}px;
+    font-size: {s(t.SIZE_SMALL)}px;
 }}
 QPushButton#DsVerb:hover {{ color: {t.TEXT_ACCENT}; }}
 QPushButton#DsVerb[tone="ok"]     {{ color: {t.CONIFEROUS}; }}
@@ -185,7 +185,7 @@ QPushButton#DsChip {{
     background: transparent; color: {t.MUSHROOM};
     border: none; border-left: {t.STROKE_PX:.0f}px solid transparent;
     border-radius: 0px; padding: 3px 8px 3px 7px;
-    font-size: {s(10)}px;
+    font-size: {s(t.SIZE_MICRO)}px;
 }}
 QPushButton#DsChip:hover {{ color: {t.TEXT_SECONDARY}; }}
 QPushButton#DsChip[active="true"] {{
@@ -229,7 +229,7 @@ QLabel#DsBadge[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 QTextEdit#DsInput, QLineEdit#DsField {{
     background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
     border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
-    padding: 16px 15px; font-size: {s(t.SIZE_UI)}px;
+    padding: {t.SPACE_MD}px 15px; font-size: {s(t.SIZE_UI)}px;
     selection-background-color: {t.SIGNAL_TINT_STRONG};
 }}
 QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}
@@ -379,7 +379,7 @@ QWidget#DsActs {{
 
 /* ---- scrollbars (quiet) -------------------------------------- */
 QScrollBar:vertical {{ background: transparent; width: {t.SPACE_SM}px; margin: 0; }}
-QScrollBar::handle:vertical {{ background: {t.RAISED}; border-radius: {t.RADIUS_SM}px; min-height: 24px; }}
+QScrollBar::handle:vertical {{ background: {t.RAISED}; border-radius: {t.RADIUS_SM}px; min-height: {t.SPACE_LG}px; }}
 QScrollBar::handle:vertical:hover {{ background: {t.BORDER_STRONG}; }}
 QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
 QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
