@@ -1,0 +1,50 @@
+{
+  "id": "BP3-PANEL",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "reasoning",
+  "name": "Design-system pass on the SYNAPSE Python panel: audit (tokens, spacing scale, naming, typography) then a whitespace-and-token-only change set traceable row-by-row to the audit; no new widgets, no behaviour",
+  "note": "Tier: reasoning. Self-cap: 20 turns (progress every 5) - this is the roadmap's 2h timebox; at 80% post wrap_up and ship what is clean. You own python/synapse/panel/ this wave (designsystem/, manifests/, qss, layout modules). synapse_panel.py lifecycle and timer ranges are untouchable (BP2-CRUX rule). Continue from the accepted result: read the BP2-PANELDESIGN receipt and `git log master -- python/synapse/panel/` first; do not re-derive what landed. Design-system audit shape: Summary (components reviewed, issues, score) / Naming Consistency / Token Coverage (colors, spacing, typography: defined vs hardcoded instances) / Component Completeness (states, variants, docs) / Priority Actions. Reference rhythm: docs/PANEL_RHYTHM_SPEC.md; design review: docs/SYNAPSE_PANEL_DESIGN_REVIEW_H22_LENS.md.",
+  "targets": [
+    "T1) Read first: harness/notes/receipts/BP2-PANELDESIGN.json, docs/PANEL_RHYTHM_SPEC.md, docs/SYNAPSE_PANEL_DESIGN_REVIEW_H22_LENS.md, `git log --oneline -15 master -- python/synapse/panel/`. Post a bus claim on python/synapse/panel/ before any edit.",
+    "T2) Audit (read-only): harness/battleplan/notes/BP3_PANEL_AUDIT.md in the design-system audit shape. Token Coverage table must count hardcoded px/pt/hex/rgb/font-size instances per file (grep, cite file:line). Naming table: token names that disagree with the rhythm spec. Component table: each panel widget class with states/variants/docs ticks. Priority Actions ranked by instances fixed per edit.",
+    "T3) Change set: ONLY substitutions from the audit - hardcoded value -> existing token; off-scale spacing -> nearest rhythm-spec step; inconsistent token name -> canonical name (with every reference updated). No new widget, signal, slot, timer, import of new modules, or behaviour change. Every diff hunk cites its audit row in the commit message body.",
+    "T4) Evidence: headless - the panel test target (RECON's finding or `python -m pytest tests -k panel -q`) green before and after; `git diff --stat master..HEAD -- python/synapse/panel/` lists only designsystem/manifests/qss/layout files; `git diff master..HEAD -- python/synapse/panel/synapse_panel.py` shows no line inside the lifecycle/timer functions. Visual before/after is gui_required -> UNKNOWN headless; write the exact steps for Joe to capture it."
+  ],
+  "touches": [
+    "python/synapse/panel/",
+    "harness/battleplan/notes/BP3_PANEL_AUDIT.md"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "every diff hunk maps to an audit row (the crucible builds the map itself)",
+    "mutations: re-introduce one hardcoded hex/px -> the crucible's grep-based token checker reddens; add a QWidget subclass or a new signal -> whitespace-only checker reddens; touch a timer range -> red",
+    "panel tests green in a fresh checkout",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "roadmap P5 panel spacing pass (docs/PANEL_RHYTHM_SPEC.md); blueprint v0.3 sec.0.3 rule D-2 (verified over pretty)"
+  },
+  "acceptance": [
+    {
+      "predicate": "BP3_PANEL_AUDIT.md exists in the audit shape with file:line instances per token category",
+      "evidence": "check"
+    },
+    {
+      "predicate": "diff touches only designsystem/manifests/qss/layout files; synapse_panel.py lifecycle/timer ranges unchanged",
+      "evidence": "check"
+    },
+    {
+      "predicate": "panel test target green before and after",
+      "evidence": "test"
+    },
+    {
+      "predicate": "before/after screenshots show only spacing/typography/colour-token changes",
+      "evidence": "gui_probe",
+      "gui_required": true
+    }
+  ]
+}

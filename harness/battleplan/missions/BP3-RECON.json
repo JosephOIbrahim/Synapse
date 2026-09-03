@@ -1,0 +1,43 @@
+{
+  "id": "BP3-RECON",
+  "band": "TRUTH",
+  "class": "truth",
+  "tier": "reasoning",
+  "name": "Reconcile every V0 path in the H22/World Labs blueprint against the live repo; locate hython + pref dir; list prior H22 probe artifacts - writes one notes file, creates nothing",
+  "note": "Tier: reasoning. Self-cap: 15 turns (progress every 5). First leg of BP3; PROBE/STUBS/CORPUS consume your bus finding live. Blueprint sec.0.0 reading map: read sec.0.3, sec.6, sec.2.6, sec.2.7 only. Never mkdir to make the blueprint true - a 'no match' row is the finding. Known environment facts (memory, verify before relying): GUI Houdini is 22.0.400, hython may be 22.0.417 - pin whichever hython reports; the live H22 prefs dir is C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - hython launched from an agent lane has looked in the old Documents path before; set HOUDINI_USER_PREF_DIR explicitly. Long hython runs: detach and poll, never foreground-wait past 4 minutes.",
+  "targets": [
+    "T1) Reconcile every V0 repo path named in the blueprint (sec.1.3, sec.2.8, sec.3.2, sec.3.7, sec.6 step 2): intake dir, reviews dir, probe dir, authoring_domains.json, verified_lop_solaris_knowledge_*.json, h22_doc_candidates.json, scene_recipes.py, handlers_material.py, any D-track spatial/bbox helper, the JSON-schema home (if any), the fixtures home, the panel dir (python/synapse/panel/ + designsystem/manifests/qss). Write harness/battleplan/notes/BP3_RECON.md with a table `V0 path | actual path | evidence (Test-Path / git ls-files line)`; rows with no match stay 'no match'.",
+    "T2) Locate the hython SYNAPSE uses (path; build via `hython -c \"import hou;print(hou.applicationVersionString())\"`), the .synapse/hytest.py shim discipline, and the HOUDINI_USER_PREF_DIR that makes hython see the H22 prefs (verify the OneDrive path in the note). Post ONE bus finding addressed to * the moment it is known: {\"hython\": path, \"build\": str, \"pref_dir\": path, \"fixtures_dir\": path, \"reviews_dir\": path, \"notes_dir\": path, \"schema_home\": path-or-none, \"spatial_helpers\": [paths]} with anchor = BP3_RECON.md.",
+    "T3) List prior H22 Solaris probe artifacts already in the repo (N-3, N-5, N-6, N-7, KAR-04/07/12, SOL-03; verified_lop_solaris_knowledge_22.0.368.json; anything under harness/notes/h22/ or docs/reviews/ naming scatterinstances, blocker, orderedImageFilters, UsdRender.Pass) so CORPUS and PROBE re-check existence only and never re-derive (blueprint sec.1.2).",
+    "T4) Report whether docs/intake/ contains the dossier (`Dossier - H22 Solaris and Karma (SYNAPSE Intake)`) and the coffee notes; if absent, say so in the finding (`\"dossier_in_repo\": false`) - CORPUS falls back to blueprint pointers and Joe drops the files on his word."
+  ],
+  "touches": [
+    "harness/battleplan/notes/BP3_RECON.md"
+  ],
+  "readonly": false,
+  "deps": [],
+  "crucible_criteria": [
+    "every 'actual path' row must Test-Path true in a fresh checkout; every 'no match' row must Test-Path false",
+    "no directory or file created outside touches (git status in the worktree shows only BP3_RECON.md + receipt)",
+    "every verdict row carries the crucible's own anchor"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "v0.3 sec.6 steps 1-3; sec.0.0 reading map; sec.1.2 not-to-be-re-derived list"
+  },
+  "acceptance": [
+    {
+      "predicate": "BP3_RECON.md has one row per blueprint V0 path with an evidence column; no row invented",
+      "evidence": "check"
+    },
+    {
+      "predicate": "bus finding posted with hython path, build string, pref_dir, fixtures/reviews/notes dirs, schema_home, spatial_helpers, dossier_in_repo",
+      "evidence": "receipt"
+    },
+    {
+      "predicate": "prior-artifact list with repo paths for N-3/N-5/N-7/KAR-04/SOL-03 (or 'not found' per id)",
+      "evidence": "check"
+    }
+  ]
+}

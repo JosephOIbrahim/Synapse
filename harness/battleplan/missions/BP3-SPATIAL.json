@@ -1,0 +1,54 @@
+{
+  "id": "BP3-SPATIAL",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "reasoning",
+  "name": "Mile 2 (HELD until Joe's word after CRUX): implement the three read-only spatial query tools on the fixture component (D3.3/D3.4) - unregistered, tested, timed; no authoring",
+  "note": "Tier: reasoning. Self-cap: 30 turns (progress every 5). HELD in the manifest; flips ready on Joe's word after BP3-CRUX verdicts are read (blueprint sec.5 gate check). Consumes PROBE's b6_wl_component.usdc + stdout numbers and STUBS' schema/example. Rule D-1: tools stay unregistered (no mcp_server import, or behind a flag defaulting off) because the lane is ratified:false. D-DEP-03: use pxr or hou to match RECON's spatial_helpers finding; say which.",
+  "targets": [
+    "T1) Implement synapse_spatial_describe, synapse_spatial_classify (max_angle_deg default = the scatter Up Axis mask default from P-5), synapse_spatial_frustum in the reconciled module home (RECON's finding; else python/synapse/spatial/ with a note). Read-only: no prim authored, no file written by the tools.",
+    "T2) Tests on PROBE's b6_wl_component.usdc: describe bounds == B-3 bbox within 1e-3; classify floor fraction covers the lane, walls present on both sides (sign of x), dominant floor height == S-2 dominant bin within the bin width; frustum count == S-3 count within 2% for the same eye/fov. Each call timed; < 5 s on the collider, recorded in docs/reviews/bp3-spatial-lane-probes-<date>.md.",
+    "T3) D3.4: run the three tools on one existing SYNAPSE test stage (fixtures/solaris.basic.json or RECON's pick) without code change; record outputs.",
+    "T4) Do not register. If the house style requires a registry entry, add it behind SYNAPSE_SPATIAL_LANE=1 defaulting off, and cite the line."
+  ],
+  "touches": [
+    "python/synapse/spatial/",
+    "tests/test_spatial_lane.py",
+    "docs/reviews/bp3-spatial-lane-probes-*.md"
+  ],
+  "readonly": false,
+  "deps": [
+    "BP3-PROBE",
+    "BP3-STUBS"
+  ],
+  "crucible_criteria": [
+    "correctness anchors are PROBE's stdout numbers, re-read by the crucible",
+    "timing lines present per call",
+    "registry off: grep shows no default-on registration",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "v0.3 sec.3.4 tools; sec.3.7 D3.3/D3.4; sec.5 Mile 2; rule D-1"
+  },
+  "acceptance": [
+    {
+      "predicate": "three tools return correct answers on the fixture per T2 tolerances",
+      "evidence": "test"
+    },
+    {
+      "predicate": "each call < 5 s on the 200k-tri collider, recorded",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "tools run on a second stage without code change (D3.4)",
+      "evidence": "test"
+    },
+    {
+      "predicate": "no default-on registration in mcp_server / tool registries",
+      "evidence": "check"
+    }
+  ]
+}

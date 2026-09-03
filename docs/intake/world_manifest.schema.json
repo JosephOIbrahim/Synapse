@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "synapse/world_manifest/v0",
+  "title": "SYNAPSE world manifest (v0, ratified:false)",
+  "description": "Contract between Intent 2 (world in) and Intent 3 (spatial lane). Every numeric field carries provenance. Nothing here is a fact until the provenance says probed or vendor.",
+  "type": "object",
+  "required": ["manifest_version", "world", "assets", "frame", "provenance"],
+  "properties": {
+    "manifest_version": { "const": "0" },
+
+    "world": {
+      "type": "object",
+      "required": ["id", "source"],
+      "properties": {
+        "id":            { "type": "string", "description": "Marble world UUID, or a local slug for non-Marble stages" },
+        "source":        { "enum": ["marble_app_export", "marble_api", "fixture", "other"] },
+        "model":         { "type": ["string", "null"], "description": "V0 - app/API naming differs (WL-API-07)" },
+        "prompt":        { "type": ["string", "null"] },
+        "world_url":     { "type": ["string", "null"] },
+        "generated_at":  { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+
+    "assets": {
+      "type": "object",
+      "properties": {
+        "splat_full": { "$ref": "#/$defs/splatAsset" },
+        "splat_low":  { "$ref": "#/$defs/splatAsset" },
+        "collider":   { "$ref": "#/$defs/meshAsset", "description": "GLB, 100-200k tris (WL-EX-03). The structure half. Substrate for every recipe and spatial answer (BLU-03)." },
+        "hq_mesh":    { "$ref": "#/$defs/meshAsset", "description": "Optional. textured (~600k) or vertexcolor (~1M) (WL-EX-04)." },
+        "pano":       { "$ref": "#/$defs/imageAsset", "description": "Equirect PNG 2560x1280 (WL-EX-01). Reference / dome texture in the shot layer only." }
+      }
+    },
+
+    "frame": {
+      "type": "object",
+      "description": "Conversion state. Order is a claim (WL-API-03): metric+ground, then axis. `applied` makes conversion idempotent (I2.d).",
+      "required": ["native", "applied"],
+      "properties": {
+        "native":               { "enum": ["marble_raw_opencv", "y_up_metric", "unknown"], "description": "Frame of the files as they sit on disk NOW." },
+        "metric_scale_factor":  { "$ref": "#/$defs/provenancedNumber", "description": "raw units -> meters (WL-API-02). Vendor for API worlds; derived or null for app exports until B-4." },
+        "ground_plane_offset":  { "$ref": "#/$defs/provenancedNumber", "description": "subtract from centers.y to put ground at y=0 (WL-API-02). Centers only, never sizes." },
+        "axis_fix":             { "enum": ["rotX180", "scaleY-1Z-1", "none"], "default": "rotX180", "description": "OpenCV (+y down, +z fwd) -> Y-up (WL-EX-05, WL-API-03)." },
+        "handedness_checked":   { "type": "boolean", "default": false, "description": "B-2 manual: lane not mirrored." },
+        "applied": {
+          "type": "object",
+          "description": "Per asset, which steps have been baked into the file on disk.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "metric": { "type": "boolean" }, "ground": { "type": "boolean" }, "axis": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+
+    "space": {
+      "type": "object",
+      "description": "Derived by Intent 3 read-only tools. Always in the Y-up metric frame. Never authored by hand.",
+      "properties": {
+        "bounds_m":        { "type": "array", "items": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 }, "minItems": 2, "maxItems": 2 },
+        "up_axis":         { "const": "+Y" },
+        "ground_y":        { "$ref": "#/$defs/provenancedNumber" },
+        "floor_area_m2":   { "$ref": "#/$defs/provenancedNumber" },
+        "surface_classes": { "type": "object", "description": "fractions by class at the Max Angle used", "properties": { "max_angle_deg": { "type": "number" }, "floor": { "type": "number" }, "wall": { "type": "number" }, "ceiling": { "type": "number" }, "slope": { "type": "number" } } },
+        "openings":        { "type": "array", "description": "CANDIDATES only (I3.e)", "items": { "type": "object", "properties": { "center_m": { "type": "array" }, "width_m": { "type": "number" }, "height_m": { "type": "number" }, "confidence": { "type": "number" } } } },
+        "spawn":           { "type": "object", "properties": { "position_m": { "type": "array" }, "look": { "type": "array" }, "source": { "enum": ["vendor", "derived", "manual"] } } }
+      }
+    },
+
+    "houdini": {
+      "type": "object",
+      "description": "Where this world lives on a stage. All paths V0 until B-6.",
+      "properties": {
+        "build":          { "type": "string", "description": "hou.applicationVersionString() at import" },
+        "component_prim": { "type": "string", "description": "/WL_<id> (BLU-01)" },
+        "splat_prim":     { "type": "string" },
+        "collider_prim":  { "type": "string" },
+        "purposes":       { "type": "object", "properties": { "splat": { "const": "render" }, "collider": { "const": "proxy" } } },
+        "arc":            { "enum": ["payload", "reference"], "default": "payload" },
+        "variants":       { "type": "object", "properties": { "splatTier": { "enum": ["full", "low"] }, "surface": { "enum": ["splat", "hqmesh"] } } },
+        "hip":            { "type": ["string", "null"] }
+      }
+    },
+
+    "provenance": {
+      "type": "object",
+      "required": ["compiled_at", "compiled_by", "probes"],
+      "properties": {
+        "compiled_at": { "type": "string", "format": "date-time" },
+        "compiled_by": { "type": "string" },
+        "probes":      { "type": "array", "items": { "type": "string" }, "description": "probe IDs whose output backs this manifest, e.g. [\"B-1\",\"B-3\",\"S-2\"]" },
+        "sha256":      { "type": "object", "additionalProperties": { "type": "string" }, "description": "per asset path" },
+        "ratified":    { "const": false }
+      }
+    }
+  },
+
+  "$defs": {
+    "tier": { "enum": ["vendor", "derived", "probed", "manual", "unknown"] },
+    "provenancedNumber": {
+      "type": "object",
+      "required": ["value", "tier"],
+      "properties": {
+        "value":  { "type": ["number", "null"] },
+        "tier":   { "$ref": "#/$defs/tier" },
+        "method": { "type": ["string", "null"], "description": "e.g. semantics_metadata | S-2 dominant floor y | doorway-heuristic" },
+        "probe":  { "type": ["string", "null"] }
+      }
+    },
+    "splatAsset": {
+      "type": "object",
+      "required": ["path", "format"],
+      "properties": {
+        "path":   { "type": "string" },
+        "format": { "enum": ["ply", "spz"] },
+        "count":  { "type": ["integer", "null"], "description": "from B-1; ~2M full, ~500k low (WL-EX-02)" },
+        "attribs":{ "type": "array", "items": { "type": "string" }, "description": "point attribute names from B-1" }
+      }
+    },
+    "meshAsset": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string" },
+        "format": { "enum": ["glb", "gltf", "usd", "bgeo"] },
+        "tris": { "type": ["integer", "null"] },
+        "kind": { "enum": ["collider", "textured", "vertexcolor", null] }
+      }
+    },
+    "imageAsset": {
+      "type": "object",
+      "required": ["path"],
+      "properties": { "path": { "type": "string" }, "width": { "type": "integer" }, "height": { "type": "integer" } }
+    }
+  }
+}

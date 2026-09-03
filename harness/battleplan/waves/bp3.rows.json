@@ -1,0 +1,164 @@
+[
+  {
+    "id": "BP3-CORPUS",
+    "name": "Corpus seed from probe truth: merge worksheet (D1.2), scatterinstances parm surface JSON (D1.4), promotion proposal ratified:false (D1.3), open-question ledger (D1.6) - plus a checker that reddens any promotion without an anchor",
+    "state": "ready",
+    "receipt": "BP3-CORPUS.json",
+    "branch": "bp3/corpus",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp3-corpus",
+    "prompt": "harness/battleplan/prompts/BP3-CORPUS.md",
+    "deps": [
+      "BP3-PROBE"
+    ],
+    "readonly": false,
+    "touches": [
+      "docs/reviews/bp3-h22-merge-worksheet.md",
+      "docs/reviews/bp3-h22-promotion-proposal.md",
+      "harness/notes/scatterinstances_parms_*.json",
+      "harness/battleplan/notes/bp3_promotion_check.py"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: v0.3 sec.1.3 D1.2/D1.3/D1.4/D1.6; sec.6 step 6-7; rule D-1. Tier: reasoning. Self-cap: 25 turns (progress every 5). Blocked until BP3-PROBE's stdout finding. Rule D-1: you PROPOSE promotions, you never flip a tier in any corpus file; the only new corpus artifact you write is the scatterinstances parm JSON (a seed, provenance-stamped). If RECON reported dossier_in_repo:false, build the worksheet rows from the blueprint's claim-ID pointers (sec.1.2, sec.1.4, sec.2.3, sec.7) and say so in the doc header. Token-saver: read stdout.txt by grep and line ranges, never whole.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP3-CRUX",
+    "name": "Adversarial crucible for wave BP3 - audits RECON/PROBE/CORPUS/STUBS/PANEL receipts, re-runs the probes itself, authors its own mutations, builds nothing",
+    "state": "ready",
+    "receipt": "BP3-CRUX.json",
+    "branch": "bp3/crux",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp3-crux",
+    "prompt": "harness/battleplan/prompts/BP3-CRUX.md",
+    "deps": [
+      "BP3-RECON",
+      "BP3-PROBE",
+      "BP3-CORPUS",
+      "BP3-STUBS",
+      "BP3-PANEL"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: v0.3 rule D-1 two keys; docs/BATTLEPLAN.md sec.12 R-5/R-6 crucible precedent. Tier: referee (claude-fable-5 via rails; if the launch falls back to reasoning the ledger row says so). Read-only. Blocked until the five builder receipts exist. A BROKEN verdict means that leg does not ride. A green CRUX receipt is a PRECONDITION for Joe's merge words, never a substitute - verdicts are READ before merge words fire. Self-cap: 25 turns (progress every 5). Known environment facts (memory, verify before relying): GUI Houdini is 22.0.400, hython may be 22.0.417 - pin whichever hython reports; the live H22 prefs dir is C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - hython launched from an agent lane has looked in the old Documents path before; set HOUDINI_USER_PREF_DIR explicitly. Long hython runs: detach and poll, never foreground-wait past 4 minutes.",
+    "tier": "referee"
+  },
+  {
+    "id": "BP3-PANEL",
+    "name": "Design-system pass on the SYNAPSE Python panel: audit (tokens, spacing scale, naming, typography) then a whitespace-and-token-only change set traceable row-by-row to the audit; no new widgets, no behaviour",
+    "state": "ready",
+    "receipt": "BP3-PANEL.json",
+    "branch": "bp3/panel",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp3-panel",
+    "prompt": "harness/battleplan/prompts/BP3-PANEL.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "python/synapse/panel/",
+      "harness/battleplan/notes/BP3_PANEL_AUDIT.md"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: roadmap P5 panel spacing pass (docs/PANEL_RHYTHM_SPEC.md); blueprint v0.3 sec.0.3 rule D-2 (verified over pretty). Tier: reasoning. Self-cap: 20 turns (progress every 5) - this is the roadmap's 2h timebox; at 80% post wrap_up and ship what is clean. You own python/synapse/panel/ this wave (designsystem/, manifests/, qss, layout modules). synapse_panel.py lifecycle and timer ranges are untouchable (BP2-CRUX rule). Continue from the accepted result: read the BP2-PANELDESIGN receipt and `git log master -- python/synapse/panel/` first; do not re-derive what landed. Design-system audit shape: Summary (components reviewed, issues, score) / Naming Consistency / Token Coverage (colors, spacing, typography: defined vs hardcoded instances) / Component Completeness (states, variants, docs) / Priority Actions. Reference rhythm: docs/PANEL_RHYTHM_SPEC.md; design review: docs/SYNAPSE_PANEL_DESIGN_REVIEW_H22_LENS.md.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP3-PROBE",
+    "name": "Fixture download + hython run of harness/probes/synapse_blueprint_probes.py (P/B/S, 22 probes) + review doc with D1.1, D2.1-D2.4 verdicts, gate and risk evidence",
+    "state": "ready",
+    "receipt": "BP3-PROBE.json",
+    "branch": "bp3/probe",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp3-probe",
+    "prompt": "harness/battleplan/prompts/BP3-PROBE.md",
+    "deps": [
+      "BP3-RECON"
+    ],
+    "readonly": false,
+    "touches": [
+      "harness/notes/h22wl/",
+      "docs/reviews/bp3-h22-worldlabs-probes-*.md",
+      "fixtures/worldlabs/"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: v0.3 sec.6 steps 3-5, 7; sec.2.6 fixtures; sec.2.8 D2.1-D2.4; sec.9 gates; sec.10 risks. Tier: reasoning. Self-cap: 30 turns (progress every 5). Blocked until BP3-RECON's finding (hython, pref_dir, fixtures_dir, reviews_dir). NEVER edit harness/probes/synapse_blueprint_probes.py to make a probe pass - a wrong probe is a finding on the bus, the defect goes in the review doc. A raising probe is BLOCKED with traceback and the run continues (the script does this). gui_required rows (B-2 handedness, B-9 visual, viewport display-purpose default) are UNKNOWN headless. Rule D-1: you report evidence found/not found for gates G-1..G-4; you never write OPEN. Known environment facts (memory, verify before relying): GUI Houdini is 22.0.400, hython may be 22.0.417 - pin whichever hython reports; the live H22 prefs dir is C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - hython launched from an agent lane has looked in the old Documents path before; set HOUDINI_USER_PREF_DIR explicitly. Long hython runs: detach and poll, never foreground-wait past 4 minutes.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP3-RECON",
+    "name": "Reconcile every V0 path in the H22/World Labs blueprint against the live repo; locate hython + pref dir; list prior H22 probe artifacts - writes one notes file, creates nothing",
+    "state": "ready",
+    "receipt": "BP3-RECON.json",
+    "branch": "bp3/recon",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp3-recon",
+    "prompt": "harness/battleplan/prompts/BP3-RECON.md",
+    "deps": [],
+    "readonly": false,
+    "touches": [
+      "harness/battleplan/notes/BP3_RECON.md"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: v0.3 sec.6 steps 1-3; sec.0.0 reading map; sec.1.2 not-to-be-re-derived list. Tier: reasoning. Self-cap: 15 turns (progress every 5). First leg of BP3; PROBE/STUBS/CORPUS consume your bus finding live. Blueprint sec.0.0 reading map: read sec.0.3, sec.6, sec.2.6, sec.2.7 only. Never mkdir to make the blueprint true - a 'no match' row is the finding. Known environment facts (memory, verify before relying): GUI Houdini is 22.0.400, hython may be 22.0.417 - pin whichever hython reports; the live H22 prefs dir is C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - hython launched from an agent lane has looked in the old Documents path before; set HOUDINI_USER_PREF_DIR explicitly. Long hython runs: detach and poll, never foreground-wait past 4 minutes.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP3-SPATIAL",
+    "name": "Mile 2 (HELD until Joe's word after CRUX): implement the three read-only spatial query tools on the fixture component (D3.3/D3.4) - unregistered, tested, timed; no authoring",
+    "state": "ready",
+    "receipt": "BP3-SPATIAL.json",
+    "branch": "bp3/spatial",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp3-spatial",
+    "prompt": "harness/battleplan/prompts/BP3-SPATIAL.md",
+    "deps": [
+      "BP3-PROBE",
+      "BP3-STUBS"
+    ],
+    "readonly": false,
+    "touches": [
+      "python/synapse/spatial/",
+      "tests/test_spatial_lane.py",
+      "docs/reviews/bp3-spatial-lane-probes-*.md"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: v0.3 sec.3.4 tools; sec.3.7 D3.3/D3.4; sec.5 Mile 2; rule D-1. Tier: reasoning. Self-cap: 30 turns (progress every 5). HELD in the manifest; flips ready on Joe's word after BP3-CRUX verdicts are read (blueprint sec.5 gate check). Consumes PROBE's b6_wl_component.usdc + stdout numbers and STUBS' schema/example. Rule D-1: tools stay unregistered (no mcp_server import, or behind a flag defaulting off) because the lane is ratified:false. D-DEP-03: use pxr or hou to match RECON's spatial_helpers finding; say which.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP3-STUBS",
+    "name": "Scaffold, not implement: three NEW_MCP_TOOL candidates as signatures + preconditions (D1.5); spatial lane entry as an UNAPPLIED diff (D3.1); world_manifest schema homed + example manifest that validates (D3.2)",
+    "state": "ready",
+    "receipt": "BP3-STUBS.json",
+    "branch": "bp3/stubs",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp3-stubs",
+    "prompt": "harness/battleplan/prompts/BP3-STUBS.md",
+    "deps": [
+      "BP3-RECON"
+    ],
+    "readonly": false,
+    "touches": [
+      "docs/intake/h22-tool-candidates-*.md",
+      "harness/battleplan/notes/BP3_lane_spatial.diff",
+      "harness/battleplan/notes/BP3_lane_spatial.proposed.json",
+      "docs/intake/world_manifest.schema.json",
+      "docs/intake/world_manifest.example.json",
+      "docs/intake/blueprint-h22-worldlabs-intent.md"
+    ],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: v0.3 sec.1.3 D1.5; sec.3.7 D3.1/D3.2; sec.3.2 lane declaration; rule D-3. Tier: reasoning. Self-cap: 20 turns (progress every 5). Blocked until BP3-RECON's finding (schema_home, notes_dir, authoring_domains.json path). Reads BP3-PROBE's finding if present but does not wait for it. Nothing you write is registered, imported by mcp_server, or applied: the lane is ratified:false and the tools are signatures. Mirror an existing tool's signature shape from mcp_tools_render.py / mcp_tools_usd.py so the stubs read like the house style. Rule D-3: the blueprint gains no scope; the only blueprint edit allowed is the sidecar path line if the schema moves.",
+    "tier": "reasoning"
+  },
+  {
+    "id": "BP3-TIDY",
+    "name": "House cleaning, proposal-only: worktree census with prune commands (unusable-only standard), receipt-order and named-file-commit checks on every BP3 leg, UNKNOWN-discipline grep, docs/ scratch census - removes nothing",
+    "state": "ready",
+    "receipt": "BP3-TIDY.json",
+    "branch": "bp3/tidy",
+    "base": "master",
+    "worktree": ".claude/worktrees/bp3-tidy",
+    "prompt": "harness/battleplan/prompts/BP3-TIDY.md",
+    "deps": [
+      "BP3-CRUX"
+    ],
+    "readonly": true,
+    "touches": [],
+    "note": "BATTLEPLAN docs/intake/blueprint-h22-worldlabs-intent.md :: v0.3 rule D-4 dependency hygiene; harness constitution: unusable-only prune standard, commit-before-receipt, named-file commits. Tier: mechanical (Haiku 4.5). Read-only by design: you PROPOSE every removal with an exact command and the evidence triple (merged into master? worktree clean? usable?); Joe or the CTO runs the prune. 'Unusable only' is the prune standard, not 'clean'. Runs after BP3-CRUX so nothing you read is moving. Self-cap: 12 turns (progress every 4).",
+    "tier": "mechanical"
+  }
+]

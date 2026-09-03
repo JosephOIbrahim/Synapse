@@ -1,0 +1,44 @@
+{
+  "id": "BP3-TIDY",
+  "band": "TRUST",
+  "class": "tidy",
+  "tier": "mechanical",
+  "name": "House cleaning, proposal-only: worktree census with prune commands (unusable-only standard), receipt-order and named-file-commit checks on every BP3 leg, UNKNOWN-discipline grep, docs/ scratch census - removes nothing",
+  "note": "Tier: mechanical (Haiku 4.5). Read-only by design: you PROPOSE every removal with an exact command and the evidence triple (merged into master? worktree clean? usable?); Joe or the CTO runs the prune. 'Unusable only' is the prune standard, not 'clean'. Runs after BP3-CRUX so nothing you read is moving. Self-cap: 12 turns (progress every 4).",
+  "targets": [
+    "T1) Worktree census: for every row of `git worktree list` - branch, HEAD, merged into master (git branch --merged), dirty (git -C <wt> status --short count), usable (dir exists, HEAD resolves), proposed action + exact `git worktree remove <path>` / `git branch -d <branch>` command ONLY when merged AND clean AND (unusable OR older than the BP2 merge); otherwise 'keep' with the reason. bp2/nits is BROKEN-carried: keep, say so.",
+    "T2) Receipt order: for each BP3 leg branch with a receipt, verify the receipt's stated product HEAD sha exists on the branch before the receipt commit (CRX0 / W5H); verify no `git add -A` footprint (no unrelated files in the branch diff vs master); list violations with shas.",
+    "T3) UNKNOWN discipline: grep BP3 review docs and receipts for numeric zeros or 'pass' on rows whose probe status is BLOCKED or gui_required; list hits with file:line.",
+    "T4) docs/ scratch census: count *.txt probe scratch files at docs/ root (the cop_*/copnet_*/_apex_* family), total bytes, newest/oldest mtime; propose `git mv` to docs/scratch/<yyyy-mm>/ as ONE command list; touch nothing.",
+    "T5) Write harness/battleplan/notes/BP3_TIDY.md with the four tables; post one bus finding with the path."
+  ],
+  "touches": [],
+  "readonly": true,
+  "deps": [
+    "BP3-CRUX"
+  ],
+  "crucible_criteria": [
+    "every proposed prune row carries the merged/clean/usable evidence triple with the command that produced it",
+    "the leg's branch diff vs master contains only BP3_TIDY.md and its receipt",
+    "every verdict row carries the crucible's own anchor"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "v0.3 rule D-4 dependency hygiene; harness constitution: unusable-only prune standard, commit-before-receipt, named-file commits"
+  },
+  "acceptance": [
+    {
+      "predicate": "worktree table row count equals `git worktree list` row count; each row has the evidence triple",
+      "evidence": "check"
+    },
+    {
+      "predicate": "receipt-order check row per BP3 leg with shas",
+      "evidence": "check"
+    },
+    {
+      "predicate": "no file removed or moved by this leg (branch diff = notes + receipt only)",
+      "evidence": "check"
+    }
+  ]
+}

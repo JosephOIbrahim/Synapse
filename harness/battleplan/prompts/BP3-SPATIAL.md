@@ -1,13 +1,66 @@
-# {ID} — {NAME}
+# BP3-SPATIAL — Mile 2 (HELD until Joe's word after CRUX): implement the three read-only spatial query tools on the fixture component (D3.3/D3.4) - unregistered, tested, timed; no authoring
 
-You are a SYNAPSE BATTLEPLAN wave agent on branch `{BRANCH}` in worktree
-`{WORKTREE}`. Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This
+You are a SYNAPSE BATTLEPLAN wave agent on branch `bp3/spatial` in worktree
+`.claude/worktrees/bp3-spatial`. Model: Opus 4.8, dispatched by harness/orchestrate.ps1. This
 brief is complete; if any part reads truncated, STOP and say so.
 
 ## Mission (validated work order)
 
 ```json
-{MISSION_JSON}
+{
+  "id": "BP3-SPATIAL",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "reasoning",
+  "name": "Mile 2 (HELD until Joe's word after CRUX): implement the three read-only spatial query tools on the fixture component (D3.3/D3.4) - unregistered, tested, timed; no authoring",
+  "note": "Tier: reasoning. Self-cap: 30 turns (progress every 5). HELD in the manifest; flips ready on Joe's word after BP3-CRUX verdicts are read (blueprint sec.5 gate check). Consumes PROBE's b6_wl_component.usdc + stdout numbers and STUBS' schema/example. Rule D-1: tools stay unregistered (no mcp_server import, or behind a flag defaulting off) because the lane is ratified:false. D-DEP-03: use pxr or hou to match RECON's spatial_helpers finding; say which.",
+  "targets": [
+    "T1) Implement synapse_spatial_describe, synapse_spatial_classify (max_angle_deg default = the scatter Up Axis mask default from P-5), synapse_spatial_frustum in the reconciled module home (RECON's finding; else python/synapse/spatial/ with a note). Read-only: no prim authored, no file written by the tools.",
+    "T2) Tests on PROBE's b6_wl_component.usdc: describe bounds == B-3 bbox within 1e-3; classify floor fraction covers the lane, walls present on both sides (sign of x), dominant floor height == S-2 dominant bin within the bin width; frustum count == S-3 count within 2% for the same eye/fov. Each call timed; < 5 s on the collider, recorded in docs/reviews/bp3-spatial-lane-probes-<date>.md.",
+    "T3) D3.4: run the three tools on one existing SYNAPSE test stage (fixtures/solaris.basic.json or RECON's pick) without code change; record outputs.",
+    "T4) Do not register. If the house style requires a registry entry, add it behind SYNAPSE_SPATIAL_LANE=1 defaulting off, and cite the line."
+  ],
+  "touches": [
+    "python/synapse/spatial/",
+    "tests/test_spatial_lane.py",
+    "docs/reviews/bp3-spatial-lane-probes-*.md"
+  ],
+  "readonly": false,
+  "deps": [
+    "BP3-PROBE",
+    "BP3-STUBS"
+  ],
+  "crucible_criteria": [
+    "correctness anchors are PROBE's stdout numbers, re-read by the crucible",
+    "timing lines present per call",
+    "registry off: grep shows no default-on registration",
+    "every verdict row carries the crucible's own anchor",
+    "a leg with any UNKNOWN acceptance is at best SOUND-WITH-NITS, never SOUND"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "v0.3 sec.3.4 tools; sec.3.7 D3.3/D3.4; sec.5 Mile 2; rule D-1"
+  },
+  "acceptance": [
+    {
+      "predicate": "three tools return correct answers on the fixture per T2 tolerances",
+      "evidence": "test"
+    },
+    {
+      "predicate": "each call < 5 s on the 200k-tri collider, recorded",
+      "evidence": "probe"
+    },
+    {
+      "predicate": "tools run on a second stage without code change (D3.4)",
+      "evidence": "test"
+    },
+    {
+      "predicate": "no default-on registration in mcp_server / tool registries",
+      "evidence": "check"
+    }
+  ]
+}
 ```
 
 ## Constitution (non-negotiable)
@@ -43,23 +96,23 @@ relative call from your worktree writes a FRAGMENTED bus nobody reads: your
 claims become invisible and two agents will edit one file.
 
 1. **Before touching any file in `touches`** — post a claim:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post {WAVE} {ID} claim '{\"files\": [\"<paths>\"]}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp3 BP3-SPATIAL claim '{\"files\": [\"<paths>\"]}'`
    Then read open claims:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py claims {WAVE}`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py claims bp3`
    If a peer holds an overlapping open claim: STOP, post a `block`, work
    another target until it releases. No intra-wave shared seam by design.
    Territory for THIS wave: each mission's `touches` is its writable surface and its `note` names ownership; anything outside your `touches` is read-only to you. Consumption is VIA THE BUS the moment a peer posts an artifact path.
 2. **Findings** as you go — and the moment an evidence artifact lands, post its
    path so peers consume it live (this is the wave's dynamic handoff):
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post {WAVE} {ID} finding '{\"claim\": \"...\", \"anchor\": \"file:line-or-artifact-path\"}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp3 BP3-SPATIAL finding '{\"claim\": \"...\", \"anchor\": \"file:line-or-artifact-path\"}'`
 3. **Release** when done editing:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post {WAVE} {ID} status '{\"release\": [\"<same paths>\"]}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp3 BP3-SPATIAL status '{\"release\": [\"<same paths>\"]}'`
 4. **Read before you act** on any shared seam, and poll for peer artifacts your
    mission consumes:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py read {WAVE} {ID}`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py read bp3 BP3-SPATIAL`
 5. **Progress** every 5 turns - the on-target signal the orchestrator's drift
    check reads. Cite the target you are on and the evidence path if one exists:
-   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post {WAVE} {ID} progress '{\"target\": \"T1\", \"evidence_path\": \"<path-or-none>\"}'`
+   `python C:\Users\User\SYNAPSE\harness\battleplan\bus.py post bp3 BP3-SPATIAL progress '{\"target\": \"T1\", \"evidence_path\": \"<path-or-none>\"}'`
    A `refocus` message addressed to you carries your own mission targets
    verbatim: answer it by naming the target you return to, not with a new idea.
    A `halt` message means rails stopped the wave: commit what is named-file
@@ -90,8 +143,8 @@ sha in it. A receipt at ahead:0 asserts commit-state that does not exist.
 Full sequence: product commit → verify ahead >= 1 → write the receipt stating
 the product HEAD sha → commit the receipt as your closing commit.
 
-Write `harness/notes/receipts/{RECEIPT}` **inside your worktree**:
-`{{"leg": "{ID}", "status": "green|green_with_findings|blocked",
+Write `harness/notes/receipts/BP3-SPATIAL.json` **inside your worktree**:
+`{{"leg": "BP3-SPATIAL", "status": "green|green_with_findings|blocked",
   "acceptance": [{{"predicate", "verdict": "pass|fail|UNKNOWN", "evidence"}}...],
   "findings": [...], "for_ruling": [...], "spawn": [...]}}`
 `spawn[]` entries are mission-schema-shaped proposals; classes outside your

@@ -1,0 +1,51 @@
+{
+  "id": "BP3-STUBS",
+  "band": "BUILD",
+  "class": "build",
+  "tier": "reasoning",
+  "name": "Scaffold, not implement: three NEW_MCP_TOOL candidates as signatures + preconditions (D1.5); spatial lane entry as an UNAPPLIED diff (D3.1); world_manifest schema homed + example manifest that validates (D3.2)",
+  "note": "Tier: reasoning. Self-cap: 20 turns (progress every 5). Blocked until BP3-RECON's finding (schema_home, notes_dir, authoring_domains.json path). Reads BP3-PROBE's finding if present but does not wait for it. Nothing you write is registered, imported by mcp_server, or applied: the lane is ratified:false and the tools are signatures. Mirror an existing tool's signature shape from mcp_tools_render.py / mcp_tools_usd.py so the stubs read like the house style. Rule D-3: the blueprint gains no scope; the only blueprint edit allowed is the sidecar path line if the schema moves.",
+  "targets": [
+    "T1) D1.5: docs/intake/h22-tool-candidates-<yyyy-mm-dd>.md - for synapse_author_light_blocker, synapse_author_image_filters, synapse_author_render_pass_chain: signature (name, params with types/defaults), preconditions from blueprint sec.1.4 (Karma delegate; Husk raster product; husk --pass present; one product per file), the exact refusal/warning text SYNAPSE returns when a precondition fails, source claim IDs, and 'implementation: none (D1.5)'. Add the two RECIPE_CHANGE rows (scatter recipe, textured material) as 'change proposal' entries with the parm-name dependency on P-5/P-2.",
+    "T2) D3.1: harness/battleplan/notes/BP3_lane_spatial.diff - a unified diff against the reconciled authoring_domains.json adding the sec.3.2 lane entry verbatim (ratified:false, non_goals verbatim). `git apply --check` must pass; the diff is NOT applied. If authoring_domains.json does not exist, write the entry as BP3_lane_spatial.proposed.json and say so.",
+    "T3) D3.2: move docs/intake/world_manifest.schema.json to RECON's schema_home (git mv; if schema_home is none, leave it and record that). Validate: `python -c \"import json; json.load(open(p))\"` at minimum; `jsonschema` if importable. Write docs/intake/world_manifest.example.json - a fixture-shaped instance (world.source=fixture, frame.native=marble_raw_opencv, applied flags false, provenance.probes from PROBE's finding if available else []) that validates against the schema; paste the validation command + result in the receipt.",
+    "T4) If the schema moved, edit ONLY the 'Sidecars' line of docs/intake/blueprint-h22-worldlabs-intent.md to the new path. No other blueprint edit."
+  ],
+  "touches": [
+    "docs/intake/h22-tool-candidates-*.md",
+    "harness/battleplan/notes/BP3_lane_spatial.diff",
+    "harness/battleplan/notes/BP3_lane_spatial.proposed.json",
+    "docs/intake/world_manifest.schema.json",
+    "docs/intake/world_manifest.example.json",
+    "docs/intake/blueprint-h22-worldlabs-intent.md"
+  ],
+  "readonly": false,
+  "deps": [
+    "BP3-RECON"
+  ],
+  "crucible_criteria": [
+    "grep mcp_server.py and every mcp_tools_*.py on the branch for the three tool names - zero hits",
+    "authoring_domains.json byte-identical to master on the branch (diff not applied)",
+    "mutations: remove `required` from the schema -> example validation must change outcome; add a body to a stub -> a 'no implementation' checker or the crucible's grep reddens; apply the diff -> authoring_domains differs from master -> red",
+    "every verdict row carries the crucible's own anchor"
+  ],
+  "spawn_classes": [],
+  "source": {
+    "doc": "docs/intake/blueprint-h22-worldlabs-intent.md",
+    "anchor": "v0.3 sec.1.3 D1.5; sec.3.7 D3.1/D3.2; sec.3.2 lane declaration; rule D-3"
+  },
+  "acceptance": [
+    {
+      "predicate": "three candidates each with signature, preconditions, refusal text, claim IDs, implementation: none",
+      "evidence": "check"
+    },
+    {
+      "predicate": "BP3_lane_spatial.diff passes `git apply --check` and authoring_domains.json is unchanged vs master",
+      "evidence": "check"
+    },
+    {
+      "predicate": "world_manifest.example.json validates against the schema (command + result in receipt)",
+      "evidence": "test"
+    }
+  ]
+}
