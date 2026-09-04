@@ -110,3 +110,5 @@ registration pin, checker token boundary, `-k panel` gate, causal sentence).
 Eighteen worktree prunes proposed by TIDY, none executed (unusable-only standard).
 
 Handoff: `harness/notes/CAPSULE_2026-09-03_BP4.md`.
+
+**Published 2026-09-03 20:24 (Joe words: waiver + publish).** Waiver re-signed for the four standing RC blockers (mutation_fail_closed, hot_reload_gated, installer_host_targeted, ci_covers_shipping_surface); R.R verdict identical to v5.61.0, no regression. Tag v5.62.0 at 8bd4fee5, Latest. Push of the bump commit and the tag each under a single scoped Gate C override.
