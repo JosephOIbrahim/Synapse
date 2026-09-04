@@ -1,0 +1,42 @@
+{
+  "leg": "BP4-TIDY",
+  "status": "green",
+  "product_head": "d0a92ba5a2c837cf033f5508adb9c9277147e8b7",
+  "acceptance": [
+    {
+      "predicate": "census row count equals `git worktree list` row count; each row has merged/clean/usable triple + command or keep reason",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP4_TIDY.md T1 table: 30 rows match 30 worktrees; all carry triple + action"
+    },
+    {
+      "predicate": "receipt-order row per BP4 leg with shas",
+      "verdict": "pass",
+      "evidence": "harness/battleplan/notes/BP4_TIDY.md T2 table: 7 BP4 legs verified (bp4/b7fix, bp4/crux, bp4/intake, bp4/panelfont, bp4/rulings, bp4/spatial, bp4/usdknow) with receipt/product shas"
+    },
+    {
+      "predicate": "no file removed or moved by this leg (branch diff = BP4_TIDY.md + receipt only)",
+      "verdict": "pass",
+      "evidence": "git diff master..HEAD -- python/ docs/ harness/ (excluding this receipt path) = BP4_TIDY.md only; no removals"
+    }
+  ],
+  "findings": [
+    {
+      "claim": "All four census targets complete with zero blockers",
+      "anchor": "harness/battleplan/notes/BP4_TIDY.md section 'Cross-Leg Bus Finding'"
+    },
+    {
+      "claim": "18 merged-and-clean worktrees ready for prune (subject to Joe's review)",
+      "anchor": "harness/battleplan/notes/BP4_TIDY.md T1 table"
+    },
+    {
+      "claim": "3 dirty-but-merged worktrees hold local changes pending manual inspection",
+      "anchor": "harness/battleplan/notes/BP4_TIDY.md T1 summary (bp3/probe, bp3/tidy, bp4/b7fix)"
+    },
+    {
+      "claim": "51 h22 log artifacts + 8 temp scripts + 339 docs/*.txt ready for cleanup (proposals for Joe's closing batch)",
+      "anchor": "harness/battleplan/notes/BP4_TIDY.md T4 table"
+    }
+  ],
+  "for_ruling": [],
+  "spawn": []
+}
