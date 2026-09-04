@@ -1,0 +1,18 @@
+# BRIEF — ACCEPTANCE stream (C6 one command · gate ledger · bench)
+
+You are the ACCEPTANCE worker in a six-agent swarm implementing `docs/SOLARIS_RECIPES_H22_BLUEPRINT_V3.md`. Read, in order: `docs/solaris_v3/SWARM_CONTRACT.md`, `python/synapse/recipes/contracts.py`, then blueprint pages 10, 11, 12. Your worktree is the current working directory; branch `bp5/solaris-acceptance`. Work only inside your exclusive write set.
+
+## Principle
+Keep the GATE / CAPABILITY / BENCH vocabulary but never confuse a target gate with a measured status. Every acceptance row starts `NOT_RUN`. Only evidence produced by the bound code and host promotes it. A skipped, host-less, or wrong-path test is `NOT_RUN`/`UNKNOWN` — never a product pass.
+
+## Deliverables
+
+1. **`harness/solaris_v3/GATES.json`** — G0–G6 rows (p10) and T1–T12 rows (p11), each `{"id","goalpost","status":"NOT_RUN","evidence":null,"tier":"pure|hython|gui","last_run":null}`. Include a `promotion_rule` block stating what evidence promotes a row (receipt id + commit + build + runner command + log path + artifact hashes). Add a schema-check test.
+2. **`scripts/solaris_v3_accept.py`** — the one repeatable acceptance command. Tiers: `pure` (plain `python -m pytest` over `tests/test_recipe_*.py` + `tests/test_worker_policy_demo*.py` + `tests/test_solaris_v3_*.py`), `hython` (runs only if a hython is bound — resolve via `SYNAPSE_HYTHON` first, else the repo's existing hytest shim; host now has both 22.0.400 and 22.0.429, pin 22.0.400 — and marks rows NOT_RUN with the reason if not), `gui` (always NOT_RUN from this command; states that the artist walk is a human step). It **binds to the actual imported checkout**: records commit (`git rev-parse HEAD` of the checkout it imports from), the loaded `synapse` module path (`import synapse; synapse.__file__`) and refuses to report if that path is not inside the checkout it was launched from (the editable-install `.pth` trap is documented in `pyproject.toml` `[tool.pytest.ini_options]`), Houdini build, runner command, log paths, artifact hashes. Writes `harness/solaris_v3/runs/<timestamp>/ledger.json` and updates `GATES.json` **only** for rows whose tier actually ran; prints a compact table. Exit code non-zero if any row that ran failed.
+3. **`harness/solaris_v3/bench.py`** — measurement scaffolding (p10 BENCH): build-to-stage latency, render cold/warm latency, peak memory/VRAM (via whatever the repo already uses for VRAM — search `python/synapse/` for nvml/`nvidia-smi` helpers), cancellation time, fifteen-minute-walk completion (manual timer input). Pinned frame/seed/engine/asset set recorded. Reports distributions across repeats (min/median/p95, n). Every metric defaults to `UNMEASURED`; nothing is inferred from cook duration. Runnable headless with all rows UNMEASURED.
+4. **`tests/test_solaris_v3_acceptance*.py`** — tests of the runner itself: a skipped test cannot promote a row; a row for a tier that did not run stays NOT_RUN; wrong-checkout binding refuses; ledger schema; exit code semantics; bench UNMEASURED default and distribution math on synthetic samples.
+5. **`docs/solaris_v3/ACCEPTANCE.md`** — how to run it (ADHD-friendly per repo README convention: short blocks, one idea each), what each tier proves, the pass rule verbatim from p11, and the Sep 4–13 window table from p12 with an `exit evidence` column pointing at GATES rows.
+
+## Notes
+- Other streams' test files may not exist on your branch yet; the runner must tolerate absent globs (report `NOT_RUN: no tests collected for <glob>`), never crash, never count absence as pass.
+- Status lines to `harness/solaris_v3/STATUS_ACCEPTANCE.md`; final report `docs/solaris_v3/REPORT_ACCEPTANCE.md`.
