@@ -1,0 +1,45 @@
+{
+  "run": "orch_20260903-193455",
+  "date": "2026-09-03",
+  "cap": {
+    "turns": 2,
+    "tokens": 25000000
+  },
+  "status": "open",
+  "reason": null,
+  "enforced_unit": "tokens",
+  "token_meter": "measured",
+  "totals": {
+    "turns": 1,
+    "tokens_in": 8794023,
+    "tokens_out": 56799
+  },
+  "remaining": {
+    "turns": 1,
+    "tokens": 16149178
+  },
+  "legs": [
+    {
+      "leg": "BP4-TIDY",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": 8794023,
+      "tokens_out": 56799,
+      "wall_ms": 697310,
+      "cap": {
+        "turns": 2,
+        "tokens": 25000000
+      },
+      "remaining": {
+        "turns": 1,
+        "tokens": 16149178
+      },
+      "enforced_unit": "tokens",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp4-tidy\\5cfb40c2-1b43-42c7-ac6b-38d0ad3835bf.jsonl",
+      "settled": true
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+}

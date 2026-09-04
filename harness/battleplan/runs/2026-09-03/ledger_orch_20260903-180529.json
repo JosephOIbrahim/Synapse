@@ -1,0 +1,158 @@
+{
+  "run": "orch_20260903-180529",
+  "date": "2026-09-03",
+  "cap": {
+    "turns": 12,
+    "tokens": 105000000
+  },
+  "status": "blocked",
+  "reason": "budget",
+  "enforced_unit": "tokens",
+  "token_meter": "UNKNOWN",
+  "totals": {
+    "turns": 7,
+    "tokens_in": "UNKNOWN",
+    "tokens_out": "UNKNOWN"
+  },
+  "remaining": {
+    "turns": 5,
+    "tokens": "UNKNOWN"
+  },
+  "legs": [
+    {
+      "leg": "BP4-B7FIX",
+      "model": "claude-opus-4-8",
+      "tokens_in": 14807663,
+      "tokens_out": 369880,
+      "wall_ms": 1631946,
+      "cap": {
+        "turns": 12,
+        "tokens": 105000000
+      },
+      "remaining": {
+        "turns": 6,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp4-b7fix\\497c6b0d-3929-4e2c-a241-ff94501f20de.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP4-INTAKE",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": 9546646,
+      "tokens_out": 36968,
+      "wall_ms": 2252932,
+      "cap": {
+        "turns": 12,
+        "tokens": 105000000
+      },
+      "remaining": {
+        "turns": 5,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "tokens",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp4-intake\\ff398b73-edef-4f54-ac22-0bc39caf9a4d.jsonl",
+      "settled": true,
+      "note": "HALT: measured spend 105897811 tokens crossed the ceiling 105000000 at settle - the dispatch already ran; nothing further dispatches"
+    },
+    {
+      "leg": "BP4-PANELFONT",
+      "model": "claude-opus-4-8",
+      "tokens_in": 20027958,
+      "tokens_out": 429908,
+      "wall_ms": 1812023,
+      "cap": {
+        "turns": 12,
+        "tokens": 105000000
+      },
+      "remaining": {
+        "turns": 6,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp4-panelfont\\d0e1cf6d-6c6c-40dc-8c3c-9672c30c7403.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP4-RULINGS",
+      "model": "claude-haiku-4-5-20251001",
+      "tokens_in": 9512646,
+      "tokens_out": 54660,
+      "wall_ms": 553371,
+      "cap": {
+        "turns": 12,
+        "tokens": 105000000
+      },
+      "remaining": {
+        "turns": 6,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp4-rulings\\885a5e14-3970-458e-9fea-a5495823dd83.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP4-SPATIAL",
+      "model": "claude-opus-4-8",
+      "tokens_in": 31979817,
+      "tokens_out": 481809,
+      "wall_ms": 2182594,
+      "cap": {
+        "turns": 12,
+        "tokens": 105000000
+      },
+      "remaining": {
+        "turns": 5,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp4-spatial\\b2b17a88-68e5-4105-9576-5564fa71b1d5.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP4-USDKNOW",
+      "model": "claude-opus-4-8",
+      "tokens_in": 18353124,
+      "tokens_out": 296732,
+      "wall_ms": 1435761,
+      "cap": {
+        "turns": 12,
+        "tokens": 105000000
+      },
+      "remaining": {
+        "turns": 6,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true,
+      "transcript": "C:\\Users\\User\\.claude\\projects\\C--Users-User-SYNAPSE--claude-worktrees-bp4-usdknow\\349882f5-c483-4ab2-b686-667835b0b79b.jsonl",
+      "settled": true
+    },
+    {
+      "leg": "BP4-CRUX",
+      "model": "claude-fable-5-1",
+      "tokens_in": "UNKNOWN",
+      "tokens_out": "UNKNOWN",
+      "wall_ms": "UNKNOWN",
+      "cap": {
+        "turns": 12,
+        "tokens": 105000000
+      },
+      "remaining": {
+        "turns": 5,
+        "tokens": "UNKNOWN"
+      },
+      "enforced_unit": "turns",
+      "admitted": true
+    }
+  ],
+  "generated_by": "harness/rails.py",
+  "seam": "harness\\rails_exec.json",
+  "note": "This ledger IS the receipt (BP1-RAILS). Every token field is MEASURED from transcript message.usage or the literal UNKNOWN; no field is an estimate. A turns floor guarantees the cap can never fall back to unlimited. One turn = one leg DISPATCH (not a conversational turn; BP2-METER T4, sec.12 R-3). Status 'open' = the wave is still live, 'complete' = a finalised close, 'blocked' = a budget halt."
+}
