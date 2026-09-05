@@ -27,7 +27,7 @@ Layout per blueprint §2. Nothing here moves existing evidence — the Rulebook 
 |---|---|---|
 | `manifest.json` | index | the machine truth — sections, rules, statuses, bindings, provenance, checksums |
 | `VERSION` | semver | Rulebook version, independent of code |
-| `surfaces/<build>/` | **harvested** | regenerable only via `scripts/rulebook_harvest.py`; **never hand-edit** (meta-test 3) |
+| `surfaces/<build>/` | **harvested** | regenerable only via `scripts/rulebook_harvest.py`; **never hand-edit** (meta-test 3). **Status 2026-09-05 (CTO B2): empty — `.gitkeep` only — and the harvest script is not yet written.** Interim authority until it lands: the introspected symbol table `python/synapse/cognitive/tools/data/h22_symbol_table.json` (`hython host/introspect_runtime.py`; `hou.*`/`pdg.*`/`pxr.*` existence) + the live node catalogue `rag/catalog/h22.0.400/` (`scripts/build_node_catalog.py`; node types per context) |
 | `phantoms.json` | quarantine | confirmed-absent symbols; referencing one anywhere in `python/synapse/` fails CI (meta-test 5) |
 | `failures/` | registry | failure classes; `SF-N` numbering preserved |
 | `contracts/` | **normative law** | human-ratified; edits are amendment-locked (meta-test 4) |
@@ -35,7 +35,7 @@ Layout per blueprint §2. Nothing here moves existing evidence — the Rulebook 
 | `goldens/` | evidence | captured WS / Dispatcher envelopes (blueprint §6) |
 | `fixtures/` | builders | deterministic programmatic scenes; no binary `.hip` |
 
-Before touching any `hou.*` surface: check `surfaces/<build>/` and `phantoms.json` first (also in the CLAUDE.md stanza).
+Before touching any `hou.*` surface: check `surfaces/<build>/` and `phantoms.json` first (also in the CLAUDE.md stanza). While `surfaces/` is empty, check the interim authority instead: `python/synapse/cognitive/tools/data/h22_symbol_table.json` for symbol existence (the `synapse_scout` tool reads it; `exists_in_runtime=null` means the loaded table is not stamped for the running build — regenerate, never guess) and `rag/catalog/h22.0.400/` for node types. Neither replaces `phantoms.json`.
 
 ## How to CITE
 

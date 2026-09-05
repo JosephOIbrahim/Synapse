@@ -270,3 +270,67 @@ class TransactionTests(unittest.TestCase):
         self.assertEqual(txn.execute().outcome, "failed")
         self.assertIsNone(txn.result.revision_after)
         self.assertEqual(txn.recover(), RecoveryVerdict.RESTORED)
+
+
+class _FakeUndos:
+    """Stands in for the hou.undos SWIG namespace (all four members live-verified
+    on 22.0.400 and carried by the committed h22 symbol table)."""
+    def __init__(self, enabled=True):
+        self.enabled = enabled
+        self.labels = []
+        self.performed = 0
+        self.groups = []
+
+    def areEnabled(self):
+        return self.enabled
+
+    def undoLabels(self):
+        return tuple(reversed(self.labels))
+
+    @contextmanager
+    def group(self, label):
+        self.groups.append(label)
+        yield
+        self.labels.append(label)
+
+    def performUndo(self):
+        self.performed += 1
+        self.labels.pop()
+
+
+class HoudiniUndoDriverTests(unittest.TestCase):
+    """CTO B2: transaction.py is bound to hou.undos (its docstring refusal is gone)."""
+
+    def test_driver_maps_every_backend_undo_method_onto_hou_undos(self):
+        from synapse.recipes.transaction import HoudiniUndoDriver
+        undos = _FakeUndos()
+        driver = HoudiniUndoDriver(undos=undos)
+        self.assertIs(driver.undo_enabled(), True)
+        self.assertEqual(driver.undo_labels(), ())
+        with driver.undo_group("SYNAPSE recipe x"):
+            pass
+        self.assertEqual(undos.groups, ["SYNAPSE recipe x"])
+        self.assertEqual(driver.undo_labels(), ("SYNAPSE recipe x",))
+        driver.perform_undo()
+        self.assertEqual(undos.performed, 1)
+        self.assertEqual(driver.undo_labels(), ())
+
+    def test_driver_reports_unknown_not_false_when_hou_undos_is_absent(self):
+        from synapse.recipes.transaction import HoudiniUndoDriver
+        driver = HoudiniUndoDriver(resolve=lambda: None)   # no hou in this process
+        self.assertIsNone(driver.undo_enabled())     # None => the transaction refuses before any write
+        self.assertIsNone(driver.undo_labels())
+        with self.assertRaises(RuntimeError):
+            with driver.undo_group("x"):
+                pass
+
+    def test_driver_none_evidence_refuses_transaction_before_write(self):
+        from synapse.recipes.transaction import HoudiniUndoDriver
+        scene = Backend()
+        driver = HoudiniUndoDriver(resolve=lambda: None)
+        scene.undo_enabled = driver.undo_enabled
+        scene.undo_labels = driver.undo_labels
+        result = scene.transaction().execute()
+        self.assertEqual(result.outcome, "failed")
+        self.assertIn("UNAVAILABLE", result.reason)
+        self.assertEqual(scene.apply_calls, 0)
