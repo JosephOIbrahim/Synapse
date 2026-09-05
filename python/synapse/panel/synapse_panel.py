@@ -621,7 +621,14 @@ class SynapsePanel(QtWidgets.QWidget):
         chat = getattr(self, "_chat", None)
         if chat is not None and hasattr(chat, "_apply_turn_rhythm"):
             chat._apply_turn_rhythm()
-        self._regate_stop()
+        # Stop is state-gated to working only; the compositor just applied the
+        # manifest's visible=True to it. Re-assert the runtime gate inline
+        # (the same rule as _regate_stop; written with getattr because this
+        # method is also executed against duck-typed panels by the rope and
+        # rhythm tests).
+        stop = getattr(self, "_stop_btn", None)
+        if stop is not None:
+            stop.setVisible(bool(getattr(self, "_was_busy", False)))
         managed = {root.itemAt(i).widget() for i in range(root.count())}
         hidden = set()
         for _item, wdg, _stretch in prev:
