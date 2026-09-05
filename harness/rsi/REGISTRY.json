@@ -22,6 +22,7 @@
       "id": "A1",
       "name": "EpochAdapter -- router tier-threshold adaptation",
       "origin": "july-audit",
+      "status": "LIVE",
       "surfaces": [
         "python/synapse/routing/adaptation.py",
         "python/synapse/routing/router.py"
@@ -73,12 +74,9 @@
       "id": "A2",
       "name": "OutcomeTracker -- agent reward signal (RETIRED)",
       "origin": "july-audit",
+      "status": "RETIRED",
       "disposition": "RETIRED-2026-08-01",
-      "surfaces": [
-        "python/synapse/agent/executor.py",
-        "python/synapse/agent/__init__.py"
-      ],
-      "_deleted_surface": "python/synapse/agent/learning.py -- deleted in this commit. It was A2's primary surface; the path is kept here so a future reader can find it in git history (last live at 38aba50).",
+      "surfaces": [],
       "rungs_proven": [],
       "blocked_at": "L0",
       "verification": "verified-at-head",
@@ -104,55 +102,58 @@
       "reversal_note": "Retirement is reversed by reverting this commit -- the deletion is the whole change and it is atomic. The mechanism has no persisted state anywhere to unwind: it never wrote a FEEDBACK memory outside pytest temp directories, so nothing on disk depends on it.",
       "human_ratified": false,
       "_human_ratified_note": "false is correct and not a gap. P8 gates rungs at L4+; this loop is at no rung. The RETIREMENT itself was human-ratified on 2026-08-01 (the wire-or-delete call that CHAMPION.md and LOG.md recorded as an open human gate). Ratification of a subtraction is not a rung flip.",
-      "benefit": null
+      "benefit": null,
+      "_deleted_surfaces": [
+        "python/synapse/agent/learning.py -- deleted 2026-08-01 (loop A2 retirement, 175732b). It was A2's primary surface; last live at 38aba50.",
+        "python/synapse/agent/executor.py and python/synapse/agent/__init__.py -- deleted 2026-08-01 with the whole python/synapse/agent/ package (RL-3 AGENT CUT, 758f5b7; protocol.py alone survives). They were listed here as live surfaces for a month after; corrected 2026-09-05 (CTO B7, P10). Last live at 38aba50."
+      ]
     },
     {
       "id": "A3",
-      "name": "memory evolution (charmander/charmeleon) -- detector and converter",
+      "name": "memory evolution (charmander/charmeleon) -- detector and converter (RETIRED)",
       "origin": "july-audit",
-      "surfaces": [
-        "python/synapse/memory/evolution.py",
-        "python/synapse/memory/store.py",
-        "python/synapse/memory/scene_memory.py",
-        "python/synapse/server/handlers_memory.py"
-      ],
-      "rungs_proven": [
-        "L0",
-        "L1",
-        "L2"
-      ],
-      "blocked_at": "L3",
-      "verification": "audit-cited",
-      "blocker": "The detector fires; the converter does not. Both automatic call sites invoke only check_evolution and then log: store.py:530-547 emits 'Memory evolution triggered: ...' and does not convert; scene_memory.py:486-500 runs on a background thread and logs '... Call synapse_evolve_memory to upgrade' and does not convert. The converter evolve_to_charmeleon (evolution.py:217) has exactly one caller in the tree -- handlers_memory.py:263, inside _handle_evolve_memory, reachable only through the explicit synapse_evolve_memory tool and gated behind dry_run which DEFAULTS TO TRUE at handlers_memory.py:252. No automatic path can reach it. No memory.usd artifact exists anywhere outside pytest temp directories.",
+      "status": "RETIRED",
+      "surfaces": [],
+      "rungs_proven": [],
+      "blocked_at": "L0",
+      "verification": "retired-at-head",
+      "blocker": "RETIRED 2026-09-05 (CTO B7 tombstone for a deletion that happened 2026-08-05). The mechanism is no longer in the tree: 7f7bbc39 renamed python/synapse/memory/evolution.py to evolution.py.deprecated and removed every caller -- the automatic check_evolution sites in store.py/scene_memory.py and the evolve_to_charmeleon path in handlers_memory.py. The registry carried A3 at L0-L2 for a month afterwards, and CHAMPION.md named it the highest rung anywhere; that was stale, not a demotion on evidence, and it is corrected here without stigma (CHAMPION.md rule 6). WHY IT WENT: the module's own docstring declared it SUPERSEDED by the Moneta backend and forbade extension; loop C's ratification (human_ratified=true, moneta the live substrate on every production init in harness/rsi/briefs/C-L2-log-receipt-2026-09-05.json) removed the only branch it was still live on. The consolidation it was meant to perform lives in Moneta's run_sleep_pass (synapse_sleep_pass). A retired loop sits at no rung, so rungs_proven is []. PRIOR STATE, for the record: the detector fired and the converter did not -- both automatic call sites invoked only check_evolution and then logged; evolve_to_charmeleon had exactly one caller, behind the explicit synapse_evolve_memory tool with dry_run defaulting True; no memory.usd artifact ever existed outside pytest temp directories. WHAT WOULD HAVE TO BE TRUE TO REVIVE IT: loop C reversed (SYNAPSE_MEMORY_BACKEND back to jsonl as the live substrate) AND a decision to run a second USD memory model beside Moneta, which the module itself ruled out. Absent both, reviving it re-creates a detector whose converter nothing calls.",
       "evidence": {
-        "L0": [
-          "python/synapse/memory/evolution.py:217"
+        "_note": "Rungs are [] -- the 'historical' block records what was proven while the mechanism existed, pinned to a3439f89 (the last commit where evolution.py was live), so P10 checks it against that tree and never against HEAD. It is not a rung claim. The 'retirement' block is what is true at HEAD.",
+        "historical": [
+          "python/synapse/memory/evolution.py:217 (at a3439f89) -- def evolve_to_charmeleon, the converter (was L0).",
+          "L1 (was): the detector observed real accumulated memory state rather than a literal; it could report should_evolve False.",
+          "python/synapse/memory/store.py:525 (at a3439f89) -- 'if self._add_count % self._EVOLUTION_CHECK_INTERVAL == 0:' the automatic check_evolution call site; :165 (at a3439f89) _EVOLUTION_CHECK_INTERVAL = 10 (was L2).",
+          "python/synapse/memory/store.py:901 (at a3439f89) -- SYNAPSE_MEMORY_BACKEND defaulted to jsonl, the branch the detector lived on (was L2; the earlier citation ':810' pointed at a docstring line after the file grew and is corrected here).",
+          "Audit probe Q6 (harness/notes/RSI_SURFACE_AUDIT.md): 2 check_evolution calls per 25 add() calls on the live default backend, with a jsonl negative control and a moneta zero-arm (was L2)."
         ],
-        "L1": [
-          "Detector observes real accumulated memory state rather than a literal; it can report should_evolve False."
-        ],
-        "L2": [
-          "Audit probe Q6: 2 check_evolution calls per 25 add() calls on the live default backend, with a jsonl negative control and a moneta zero-arm.",
-          "python/synapse/memory/store.py:525",
-          "python/synapse/memory/store.py:165 (_EVOLUTION_CHECK_INTERVAL = 10)",
-          "python/synapse/memory/store.py:810 (SYNAPSE_MEMORY_BACKEND defaults to jsonl, and is unset on this machine)"
+        "retirement": [
+          "python/synapse/memory/evolution.py.deprecated:1-16 -- the module's own deprecation docstring: 'SUPERSEDED by the Moneta backend, whose run_sleep_pass consolidation + time-decay does this properly. Two USD memory models must not coexist ... Do not extend it.'",
+          "7f7bbc39 (2026-08-05) -- git rename evolution.py => evolution.py.deprecated (similarity 100%); the same commit removed 25 lines from python/synapse/memory/store.py (the check_evolution site) and reworked python/synapse/memory/scene_memory.py and python/synapse/server/handlers_memory.py.",
+          "Tree-wide grep at HEAD 2026-09-05: 'check_evolution|evolve_to_charmeleon|memory.evolution|from .evolution' over python/synapse/ (excluding _vendor) returns nothing. The only survivor is python/synapse/memory/scene_memory.py:1308 get_evolution_stage(), a read-only stage LABEL (charmander/charmeleon/charizard) with no detector and no converter behind it -- not a loop.",
+          "tests/test_moneta_crucible.py:301 test_moneta_backend_never_fires_evolution -- the substrate loop C ratified (human_ratified=true) is the one this module said must never coexist with it.",
+          "verify.py P10 (added 2026-09-05) turned red on the stale citations evolution.py:217 and store.py:525 -- the mechanism had been gone for a month while the registry still carried it at L2 and CHAMPION.md called it the highest rung anywhere."
         ]
       },
-      "danger_if_closed_now": "MEDIUM. evolution.py documents itself as SUPERSEDED by the Moneta backend and says 'do not extend it'. Its own stated removal condition -- that SYNAPSE_MEMORY_BACKEND defaults to moneta -- has NOT been met, so the deprecated mechanism is live by default. Closing L3 here would deepen investment in a module marked for removal. Line C (convergence) should decide the substrate before this loop is closed.",
+      "danger_if_closed_now": "N/A -- retired, not closed. Residual risk runs the other way: a reader of the pre-2026-09-05 CHAMPION.md ('highest rung anywhere: A3 at L2') investing in evolution.py.deprecated, or a future agent re-adding check_evolution to the store because the old registry entry described it as reachable.",
       "reversal": {
-        "persisted": true,
-        "versioned": false,
-        "bounded": false,
-        "rollback": false
+        "persisted": "n/a",
+        "versioned": true,
+        "bounded": "n/a",
+        "rollback": "git -- rename evolution.py.deprecated back to evolution.py and revert the 7f7bbc39 hunks in store.py/scene_memory.py/handlers_memory.py. Nothing on disk depends on it: no memory.usd was ever produced outside pytest temp directories (audit Q6), so there is no evolved artifact to unwind."
       },
-      "reversal_note": "Conversion writes a durable artifact; there is no documented un-evolve path. CLAUDE.md requires memory evolution to be lossless or aborted, which is a guard, not a rollback.",
+      "reversal_note": "The old note ('conversion writes a durable artifact; there is no documented un-evolve path') described a converter that never ran in production. Retirement is reversed by git alone.",
       "human_ratified": false,
-      "benefit": null
+      "benefit": null,
+      "_deleted_surface": "python/synapse/memory/evolution.py -- renamed to python/synapse/memory/evolution.py.deprecated in 7f7bbc39 (2026-08-05, the Moneta production harness), which also removed the check_evolution call sites in store.py (-25 lines) and scene_memory.py and reworked handlers_memory.py so nothing imports the module. Last live at a3439f89. The .deprecated file is inert text in the tree, not code.",
+      "disposition": "RETIRED-2026-09-05",
+      "_human_ratified_note": "false is correct and not a gap: P8 gates rungs at L4+ and this loop sits at no rung. The tombstone flips no rung; it records a deletion already merged to master on 2026-08-05 (7f7bbc39). Item B7 was pre-approved by Joe on 2026-09-05."
     },
     {
       "id": "R",
       "name": "render-farm learning -- handlers_render memory guard",
       "origin": "june-harness",
+      "status": "LIVE",
       "surfaces": [
         "python/synapse/server/handlers_render.py"
       ],
@@ -191,6 +192,7 @@
       "id": "O",
       "name": "section-16 observability -- RecommendationHistory into agent health",
       "origin": "june-harness",
+      "status": "LIVE",
       "surfaces": [
         "shared/router.py",
         "shared/bridge.py",
@@ -231,6 +233,7 @@
       "id": "S",
       "name": "science registry to substrate -- apex verify deposit",
       "origin": "june-harness",
+      "status": "LIVE",
       "surfaces": [
         "python/synapse/",
         "scripts/run_apex_verify.py",
@@ -271,6 +274,7 @@
       "id": "F",
       "name": "router fast-path session promotion",
       "origin": "june-harness",
+      "status": "RETIRED",
       "surfaces": [
         "shared/router.py",
         "shared/constants.py",
@@ -285,8 +289,8 @@
       "evidence": {
         "_note": "Evidence retained from the pre-retirement entry. It is what established DORMANCY and what makes this subtraction auditable and reversible. The rungs it once supported are withdrawn (rungs_proven=[]) because a retired loop sits at no rung; the facts below are not withdrawn.",
         "dormancy": [
-          "NOTHING CALLED record_outcome(): tree-wide grep at RL-2c HEAD, re-confirmed in the retiring worktree. The only record_outcome hits outside shared/router.py are python/synapse/agent/executor.py:286,294,297 -- loop A2's unrelated method of the same name, not this one.",
-          "MOERouter.route() had exactly ONE non-test call site: python/synapse/panel/tool_filter.py:245, inside filter_tools(). The other two '.route(' hits in the tree are DIFFERENT routers -- handlers.py:1626 is TieredRouter (constructed :1625) and planner.py:277 is an injected routing_cascade (:172).",
+          "NOTHING CALLED record_outcome(): tree-wide grep at RL-2c HEAD, re-confirmed in the retiring worktree. The only record_outcome hits outside shared/router.py are python/synapse/agent/executor.py:286,294,297 (at 38aba50) -- loop A2's unrelated method of the same name, not this one.",
+          "MOERouter.route() had exactly ONE non-test call site: python/synapse/panel/tool_filter.py:245 (at eca11ef), inside filter_tools(). The other two '.route(' hits in the tree are DIFFERENT routers -- handlers.py:1626 is TieredRouter (constructed :1625) and planner.py:277 is an injected routing_cascade (:172).",
           "filter_tools() had ZERO references repo-wide: grep -rn 'filter_tools|_AGENT_TOOL_MAP|_BASE_TOOLS|_get_router|_ROUTER_AVAILABLE' --include=*.py . excluding tool_filter.py itself and the unrelated agent/ tree returned NOTHING.",
           "apply_learned_fast_paths() had ZERO callers: confirmed here and independently at docs/reviews/synapse-review-2026-08-01.md:1111,1120,1864.",
           "CORROBORATION written independently of this harness: docs/RFC_agent_usd_ledger.md:307 ('DEFER -- theater... the dead panel/tool_filter.filter_tools (no caller)') and docs/SCIENCE_HARNESS_LEDGER.md:256 (DORMANT)."
@@ -319,6 +323,7 @@
       "id": "E",
       "name": "FORGE build loop -- fix application and validation counters",
       "origin": "june-harness",
+      "status": "LIVE",
       "surfaces": [
         "forge/engine/orchestrator.py",
         "forge/engine/metrics.py",
@@ -368,6 +373,7 @@
       "id": "C",
       "name": "convergence -- two-tier Moneta substrate (subtractive)",
       "origin": "june-harness",
+      "status": "LIVE",
       "surfaces": [
         "python/synapse/memory/",
         "python/synapse/memory/store.py"
@@ -381,7 +387,7 @@
       ],
       "blocked_at": null,
       "verification": "verified-at-head",
-      "blocker": "RATIFY-AND-STABILIZE adopted 2026-08-01. Moneta IS the live substrate (21/21 production inits, 159 rows across restarts). C-0 address bug fixed (PR #60). Backend fallback is loud. All rungs are met in practice. Awaiting human ratification to flip human_ratified=true.",
+      "blocker": "RATIFY-AND-STABILIZE adopted 2026-08-01. Moneta IS the live substrate (21/21 production inits, 159 rows across restarts). C-0 address bug fixed (PR #60). Backend fallback is loud. All rungs are met in practice. human_ratified flipped true 2026-08-05. UPDATE 2026-09-05 (CTO B7): the L2/L4 log evidence was re-derived as a fingerprinted receipt (harness/rsi/briefs/C-L2-log-receipt-2026-09-05.json, P5); the raw '59 lines' grep is retracted.",
       "evidence": {
         "L0": [
           "python/synapse/memory/store.py:810",
@@ -396,8 +402,8 @@
         "L2": [
           "python/synapse/memory/store.py:932 -- MonetaBackedStore.from_storage_dir(storage_dir) is the live construction site, called by _make_store() when SYNAPSE_MEMORY_BACKEND=moneta.",
           "python/synapse/memory/moneta_store.py:183-243 -- MonetaBackedStore.from_storage_dir() builds a durable project-scoped store with snapshot+WAL under <storage_dir>/.moneta/, atexit-registered close() for clean-shutdown durability.",
-          "59 'Memory backend: moneta' log lines across 3 rotated log files (synapse.log:26, synapse.log.1:24, synapse.log.3:9) -- every production store construction since 2026-07-27.",
-          "Earliest moneta init: 2026-07-27 08:36:42 (synapse.log.3:9885). Latest: 2026-08-05 10:14:25 (synapse.log:21659). Continuous production use spanning 9 days."
+          "harness/rsi/briefs/C-L2-log-receipt-2026-09-05.json -- FINGERPRINTED log receipt (producer: python harness/rsi/log_receipt.py). 78 production 'Memory backend: moneta' store constructions across the 3 rotated log files under ~/.synapse/logs, 2026-08-02 12:36:25 .. 2026-09-04 20:37:50. Each marker line is attributed to the 'Initialized for project:' line that follows it; 30 pytest-authored records are EXCLUDED by the test-only path fingerprint (pytest tmp_path factory, pytest_shipping_* scratch, test_<fn> leaf dirs); 0 unattributed. Negative control: the exclusion removes 30 records on this machine, so it is not vacuous.",
+          "Production project paths in the receipt: 75 inits under $HOUDINI_TEMP_DIR/untitled (unsaved-scene Houdini sessions, each preceded in the log by [synapse.hwebserver]/[synapse.scene_memory] records) + 3 inits from saved .hiplc projects. The earlier figure here -- '59 lines since 2026-07-27' -- was a raw grep with no test exclusion and is retracted (P5); the rotated logs no longer reach 2026-07-27, so the receipt's window is the honest one."
         ],
         "L3": [
           "python/synapse/memory/moneta_store.py:326-328 -- count() reads ecs.n, the live entity count. 159 rows are served across process restarts, consumed by memory query/recall tools (synapse_recall, synapse_memory_query) which call store.search() and store.get().",
@@ -407,7 +413,7 @@
         ],
         "L4": [
           "159 rows survive process restarts: the moneta snapshot.json is written by save() (moneta_store.py:364-372) and read by from_storage_dir() via Moneta.hydrate() (moneta_store.py:228). A process restart reloads the snapshot, and the entity count (ecs.n) reflects the persisted rows, not a fresh start.",
-          "59 'Memory backend: moneta' log lines across 3 rotated log files spanning 2026-07-27 to 2026-08-05 -- each is a separate process start that successfully reloaded the moneta store. The store survives Houdini restarts, log rotation, and daily use.",
+          "harness/rsi/briefs/C-L2-log-receipt-2026-09-05.json -- each of the 78 fingerprinted production inits (see L2) is a separate process start that constructed the store over the existing snapshot; the restarts are the L4 event, the snapshot round-trip above is the durability claim. Pytest-authored inits are excluded by the same fingerprint, so restart counts are not inflated by the suite.",
           "Corpus snapshot at C:\\Users\\User\\SYNAPSE\\.synapse\\corpus\\.moneta\\snapshot.json carries 39 rows in the corpus moneta store (a separate project-scoped store from the production one). The production store's 159 rows are in the project's own .moneta/snapshot.json under the HIP file's storage directory.",
           "Two-run proof: a memory deposited in session A (moneta init at T1) is readable in session B (moneta init at T2 after process restart). The atexit-registered close() (moneta_store.py:241-242) snapshots on clean shutdown; the next process hydrate() reloads it."
         ]
@@ -423,5 +429,7 @@
       "human_ratified": true,
       "benefit": "Moneta is the live memory substrate — 21/21 production inits, 159 rows across restarts, 10 days without complaint. C-0 address bug fixed. Backend fallback is loud. All rungs L0-L4 met in practice."
     }
-  ]
+  ],
+  "_p10_note": "P10 (added 2026-09-05, CTO B7): every repo path cited in a loop's 'surfaces' or 'evidence' must exist at HEAD, and every cited line number must be inside the file. A citation suffixed '(at <sha>)' is historical by declaration and is checked against that commit's tree instead. Shorthand like 'router.py:293' names no repo path and is not checked. Retired loops keep deleted paths only under '_deleted_surface(s)' or pinned citations.",
+  "_status_note": "status: LIVE | RETIRED. A RETIRED loop's mechanism is gone from the tree; it sits at no rung (rungs_proven [], blocked_at L0) and its 'disposition' carries the date. Added 2026-09-05 (CTO B7)."
 }

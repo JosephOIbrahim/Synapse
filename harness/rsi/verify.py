@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """RSI closure harness — verify.py
 
-The bar. Nine acceptance predicates from SPEC.md, each checked headlessly (no
-`hou`, no live bridge, no network). Every PASS comes from an actual check; this
+The bar. Ten acceptance predicates from SPEC.md, each checked headlessly (no
+`hou`, no live bridge, no network; P10 reads local git history only). Every PASS comes from an actual check; this
 file never returns PASS without evidence. Statuses: PASS / FAIL / PENDING.
 
   P1  registry completeness    every RSI mechanism in the tree is registered
@@ -14,6 +14,9 @@ file never returns PASS without evidence. Statuses: PASS / FAIL / PENDING.
   P7  reversal exists          every loop at L3+ documents a rollback path
   P8  human gate intact        no loop at L4+ without human_ratified
   P9  reconciliation           both prior efforts are represented, once each
+  P10 cited-path liveness      every path[:line] cited in evidence/surfaces exists
+                               at HEAD (or, when pinned "(at <sha>)", at that commit)
+                               and every cited line number is inside the file
 
 P4 is deliberately self-updating. It does not read a human-maintained status
 field to decide whether the router's reward signal is honest — it greps
@@ -31,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -71,6 +75,18 @@ SWEEP_ROOTS = ["python", "shared"]
 SWEEP_SKIP = {"_vendor", "__pycache__", "tests", "test", ".git", "node_modules"}
 
 PASS, FAIL, PENDING = "PASS", "FAIL", "PENDING"
+
+# P10 -- a repo-relative citation inside an evidence string. Anchored on a path
+# with at least one '/', optionally followed by ':N', ':N-M' and comma-joined
+# continuations (':293, :462' / ',1120,1864'), optionally pinned to a commit
+# with '(at <sha>)'. A pinned citation is HISTORICAL by declaration: it is
+# checked against that commit's tree, never against HEAD.
+CITATION_RE = re.compile(
+    r"(?<![\w./\\:<>$\-])"
+    r"((?:[A-Za-z0-9_.\-]+/)+[A-Za-z0-9_.\-]+)"
+    r"((?::\d+(?:-\d+)?)(?:,\s*:?\d+(?:-\d+)?)*)?"
+    r"(?:\s*\(at\s+([0-9a-fA-F]{7,40})\))?"
+)
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────
@@ -333,6 +349,100 @@ def p9(data):
     return FAIL, "; ".join(parts)
 
 
+def _git_blob(sha, rel):
+    """Text of <rel> at <sha>, None if absent; raises OSError if git is unusable."""
+    try:
+        cp = subprocess.run(["git", "cat-file", "-p", f"{sha}:{rel}"],
+                            cwd=REPO, capture_output=True, timeout=20)
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        raise OSError(str(e))
+    if cp.returncode != 0:
+        return None
+    return cp.stdout.decode("utf-8", errors="replace")
+
+
+def cited_paths(data):
+    """Yield (loop_id, field, path, [line numbers], sha_or_None) for every
+    repo-relative citation in a loop's `surfaces` list and `evidence` strings.
+
+    A citation is repo-relative when its first segment is a directory at the
+    repo root; shorthand like 'router.py:293' or 'server/metrics.py:62' is not
+    checked (it names no repo path). Trailing sentence punctuation is stripped.
+    """
+    for loop in data["loops"]:
+        lid = loop.get("id", "?")
+        for s in loop.get("surfaces") or []:
+            rel = str(s).replace("\\", "/").strip().rstrip("/")
+            if rel:
+                yield lid, "surfaces", rel, [], None
+        ev = loop.get("evidence") or {}
+        for rung, items in ev.items():
+            if isinstance(items, str):
+                items = [items]
+            for e in items or []:
+                for m in CITATION_RE.finditer(str(e)):
+                    rel = m.group(1).rstrip(".,;:")
+                    if "/" not in rel or not (REPO / rel.split("/", 1)[0]).is_dir():
+                        continue
+                    nums = []
+                    for a, b in re.findall(r"(\d+)(?:-(\d+))?", m.group(2) or ""):
+                        nums.append(int(b or a))
+                    yield lid, rung, rel, nums, m.group(3)
+
+
+def p10(data):
+    """Every repo path cited in evidence/surfaces is alive where it claims to be.
+
+    Unpinned citations must exist at HEAD; '(at <sha>)' citations must exist at
+    that commit. Line numbers must not exceed the file's length. A registry that
+    cites a deleted module as a live surface is stale by definition.
+    """
+    dead, git_down, n_checked, n_pinned = [], [], 0, 0
+    seen = set()
+    for lid, field, rel, nums, sha in cited_paths(data):
+        key = (lid, field, rel, tuple(nums), sha)
+        if key in seen:
+            continue
+        seen.add(key)
+        n_checked += 1
+        label = f"{lid}:{field} {rel}" + (f":{','.join(map(str, nums))}" if nums else "")
+        if sha:
+            n_pinned += 1
+            try:
+                text = _git_blob(sha, rel)
+            except OSError as e:
+                git_down.append(f"{label} (at {sha}): {e}")
+                continue
+            if text is None:
+                dead.append(f"{label} absent at {sha}")
+                continue
+            n_lines = text.count("\n") + (0 if text.endswith("\n") else 1)
+        else:
+            p = REPO / rel
+            if not p.exists():
+                dead.append(f"{label} absent at HEAD")
+                continue
+            if p.is_dir():
+                if nums:
+                    dead.append(f"{label} is a directory but cites line numbers")
+                continue
+            txt = _read(p)
+            if txt is None:
+                dead.append(f"{label} unreadable")
+                continue
+            n_lines = txt.count("\n") + (0 if txt.endswith("\n") else 1)
+        over = [n for n in nums if n > n_lines]
+        if over:
+            dead.append(f"{label} cites line {max(over)} but the file has {n_lines}")
+    if dead:
+        return FAIL, f"{len(dead)} dead citation(s): {'; '.join(dead[:4])}"
+    if git_down:
+        return PENDING, (f"{n_checked - len(git_down)} citation(s) live; {len(git_down)} pinned "
+                         f"citation(s) unverifiable -- {git_down[0]}")
+    return PASS, (f"all {n_checked} cited path(s) live -- {n_checked - n_pinned} at HEAD, "
+                  f"{n_pinned} pinned to a commit and verified via git")
+
+
 PREDICATES = [
     ("P1", "registry completeness", p1),
     ("P2", "rung honesty (evidence present)", p2),
@@ -343,6 +453,7 @@ PREDICATES = [
     ("P7", "reversal exists at L3+", p7),
     ("P8", "human gate intact at L4+", p8),
     ("P9", "two-effort reconciliation", p9),
+    ("P10", "cited-path liveness", p10),
 ]
 
 

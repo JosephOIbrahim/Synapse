@@ -106,6 +106,7 @@ board.
 | **P7** | Reversal exists — every loop at L3+ documents persisted / versioned / bounded / rollback | the Q5 gap: today *nothing* reverses a bad adaptation |
 | **P8** | Human gate intact — no loop sits at L4+ without `human_ratified: true` | the anti-runaway anchor; agents may propose any rung, flip none above L3 |
 | **P9** | Two-effort reconciliation — every June line and every July mechanism appears exactly once | `{R,O,S,F,E,C}` ∪ `{A1,A2,A3}` ⊆ registry ids, no duplicates |
+| **P10** | Cited-path liveness — every repo path cited in `surfaces`/`evidence` exists at HEAD and every cited line is inside the file | *post-ratification addendum, 2026-09-05 (CTO B7, pre-approved).* Citations pinned `(at <sha>)` are historical by declaration and are checked against that commit via `git cat-file`; shorthand without a repo-root segment is not checked. Pinned by `tests/rsi/test_verify_paths.py` |
 
 ---
 
@@ -161,6 +162,7 @@ Failures that would prove this approach wrong:
 | P7 | L1 (field presence) + L3 (semantic: is the rollback real or aspirational?) | No |
 | P8 | L1 (flag check) + L4 (crucible: try to make an agent flip it) | No |
 | P9 | L1 (set comparison) | No |
+| P10 | L1 (path + line-count check at HEAD; `git cat-file` for pinned citations) | No |
 | Two-run | L4 (crucible) — closure claims re-tested across two fresh processes | **Yes** → replicate before promoting |
 
 ---
