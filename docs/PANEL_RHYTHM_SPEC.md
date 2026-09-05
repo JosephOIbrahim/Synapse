@@ -75,14 +75,25 @@ provide text-transform/letter-spacing in its documented property list:
 [QFont capitalization and tracking](https://doc.qt.io/qt-6/qfont.html).
 No fontload change or family registration policy change.
 
-**Docking:** 380 px width in all three densities. The ratified YAML
-`.synapse/contracts/docking-minimums.yaml` requires no overflow at 400 px tall
-and no child's hard minimum height above 200 px. The current `PANEL_MIN_HEIGHT`
-token is 420, so the test takes the stricter YAML 400 rather than copying the
-420 token. Horizontal minimum demand must be <=380; assembled vertical minimum
-demand <=400; non-root hard minimum heights <=200. Test actual constructed
-regions and all reachable faces, plus the five generic patterns. A generic
-pattern fitting does not certify its downstream migrated region.
+**Docking (landing r3, CTO RULING-2A/2B):** the width CONTRACT is
+`tokens.PANEL_MIN_WIDTH = 280` - what `synapse_panel.py` promises the host. The
+PD wave's 380 px is an interim bound written into
+`.synapse/contracts/docking-minimums.yaml` as a feature and read from there by
+`tests/test_panel_rhythm_docking.py` like the heights - never a literal. The
+same YAML requires no overflow at 400 px tall and no child's hard minimum height
+above 200 px (the `PANEL_MIN_HEIGHT` token is 420; the test takes the stricter
+YAML 400). No width counts unless the bundled fonts are loaded: the docking
+worker calls `fontload.load_application_fonts()` after `QApplication` and exits
+`78 -> pytest.fail` (never skip) on an empty font database, printing runner and
+resolved family into every `PD_QT` receipt line. Test actual constructed
+regions and all reachable faces, plus the generic patterns; a generic pattern
+fitting does not certify its downstream migrated region. `HealthStrip` cells
+are `Ignored` horizontally (full text in the tooltip) so the shipped rail elides
+instead of forcing the pane. `quick_actions.QuickActionPills` and
+`chat_panel.SynapseChatPanel` are exempt while unshipped - premise pinned by
+`tests/test_panel_alt_entry_unshipped.py`, which returns them to the list the
+day it fails. Regions that fit 380 but not 280 carry a dated follow-up here,
+not an exemption: see `docs/panel_pd/INTEGRATION.md` (landing r3 receipts).
 
 PySide absence produces explicit skips, recorded as NOT_RUN in the receipt.
 Recall has its own absence skip until CAMERA supplies it. A live Houdini GUI is

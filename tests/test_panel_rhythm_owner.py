@@ -292,6 +292,12 @@ class _Widget:
     def widget(self):
         return self
 
+    def _regate_stop(self):
+        # The real _recompose re-asserts the Stop state gate after compose
+        # (landing r3); the Qt-bound pin for that is
+        # tests/test_panel_faces.py::test_stop_gated_to_working_state.
+        pass
+
 
 def test_unknown_role_density_and_removed_role(caplog):
     rhythm._WARNED.clear()

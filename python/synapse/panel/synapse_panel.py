@@ -518,6 +518,7 @@ class SynapsePanel(QtWidgets.QWidget):
             try:
                 compose(self, root, get_manifest(profile))
                 built = True
+                self._regate_stop()
             except ManifestError:
                 logger.exception(
                     "layout manifest %r invalid — using the v5.42.0 wiring",
@@ -620,6 +621,7 @@ class SynapsePanel(QtWidgets.QWidget):
         chat = getattr(self, "_chat", None)
         if chat is not None and hasattr(chat, "_apply_turn_rhythm"):
             chat._apply_turn_rhythm()
+        self._regate_stop()
         managed = {root.itemAt(i).widget() for i in range(root.count())}
         hidden = set()
         for _item, wdg, _stretch in prev:
@@ -627,6 +629,21 @@ class SynapsePanel(QtWidgets.QWidget):
                 wdg.hide()  # dropped by the new manifest — hidden, not deleted
                 hidden.add(wdg)
         self._recompose_hidden = hidden
+
+    def _regate_stop(self):
+        """Re-assert the Stop state gate after a compose.
+
+        Stop is state-gated to working only (``_set_busy``). The manifests list
+        it as PRESENT in the rail and the compositor applies ``visible=True`` to
+        every listed widget, which un-hid the disabled Stop at rest after every
+        compose - pinned red by tests/test_panel_faces.py::
+        test_stop_gated_to_working_state, and the 64px that pushed the header
+        row past the docking bound (landing r3, RULING-2B). Presence in a
+        profile and runtime state are two different things.
+        """
+        stop = getattr(self, "_stop_btn", None)
+        if stop is not None:
+            stop.setVisible(bool(getattr(self, "_was_busy", False)))
 
     def _build_rail(self):
         """The persistent rail (Pentagram pass, Mile 1).
@@ -642,7 +659,14 @@ class SynapsePanel(QtWidgets.QWidget):
         col = QtWidgets.QVBoxLayout(w)
         # The owning widget's role supplies margins and inherited row gaps.
         # [mark]·12·[SYNAPSE] ··· [state] [author▾] [meter] [⌘K] [⋯] [Stop*]
-        top = QtWidgets.QHBoxLayout()
+        # The header row is a toolbar: a `stack` owner of its own (gap 4/6/3,
+        # RULING-4a lists the header rail among the stack sites) inside the
+        # `shell` rail. Twelve chrome items - five of them zero-width Ignored
+        # labels - each pay one gap, so the row's gap is what decides whether
+        # the rail fits the docking bound with the gutter back.
+        row = self._section()
+        row.setProperty("rhythm_role", "stack")
+        top = QtWidgets.QHBoxLayout(row)
         self._mark = c.MarkDot("idle", diameter=16)
         # brand word — 14px/TEXT_BRIGHT (comp .word); tracking lives on the
         # QFont (Qt QSS has no letter-spacing), colour in the sheet.
@@ -795,7 +819,7 @@ class SynapsePanel(QtWidgets.QWidget):
         for label in (self._header_status, self._foot_label, self._meter_lbl,
                       self._palette_hint, self._author_lbl):
             label.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
-        col.addLayout(bot)
+        col.addWidget(row)   # the stack-owned header row
 
         # line 3 — persistent health strip (P0.3 / readiness §4.1): connection ·
         # memory backend · project · active job. Every cell is FACT-sourced or

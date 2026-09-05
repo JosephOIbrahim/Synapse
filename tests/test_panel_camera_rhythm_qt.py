@@ -65,10 +65,18 @@ def probe(density):
             layout = region.layout()
             assert layout.spacing() == t.gap(rhythm.ROLE_GAPS[region.property("rhythm_role")], density)
         header = panel._region_cache["_build_rail"]
-        row = header.layout().itemAt(0).layout()
-        assert row.spacing() == header.layout().spacing()
+        # Landing r3: the header row is a stack-owned toolbar (gap 4/6/3) inside
+        # the shell rail; twelve chrome items each pay one gap, so this owner
+        # is what keeps the rail inside the docking bound with the gutter back.
+        row_owner = header.layout().itemAt(0).widget()
+        assert row_owner.property("rhythm_role") == "stack"
+        row = row_owner.layout()
+        assert row.spacing() == t.gap(rhythm.ROLE_GAPS["stack"], density)
+        assert header.layout().spacing() == t.gap(rhythm.ROLE_GAPS["shell"], density)
         assert sum(header.layout().itemAt(i).layout() is not None
-                   for i in range(header.layout().count())) == 1
+                   for i in range(header.layout().count())) == 0
+        # Stop is state-gated to working only; a compose must not un-hide it.
+        assert panel._stop_btn.isHidden()
         assert panel._help_btn.text() == "?"
         # RULING-4b: profile pills are tags (battleplan section 4), not rows.
         assert all(p.property("rhythm_role") == "tag" for p in panel._profile_pills.values())

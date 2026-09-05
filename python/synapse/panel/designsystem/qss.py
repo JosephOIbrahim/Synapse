@@ -887,6 +887,10 @@ QLabel#workingIndicatorDot[working_state="busy"],
 QLabel#workingIndicatorText[working_state="busy"] {{ color: {t.STATUS["working"][0]}; }}
 QLabel#workingIndicatorDot[working_state="stalled"],
 QLabel#workingIndicatorText[working_state="stalled"] {{ color: {t.STATUS["warning"][0]}; }}
+
+/* ---- landing r3 (RULING-1b): health_strip cells - one rule replaces the
+   per-label inline sheet; the mono family travels by QFont (fontload). */
+#health_strip QLabel {{ font-size: {s(t.SIZE_SMALL)}px; background: transparent; }}
 """
 
 

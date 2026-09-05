@@ -27,25 +27,64 @@ EXPECTED = {"label": (18, 12, 9), "row": (18, 12, 9),
             "parm_row": (6, 4, 3), "group": (24, 16, 12),
             # landing r3 roles (RULING-3 / RULING-4a): 16*..., 4*..., 0
             "shell": (24, 16, 12), "stack": (6, 4, 3), "band": (0, 0, 0)}
-ALTERNATE_REGIONS = (
+# DOCKING EXEMPTION - unshipped alternate entry (CTO RULING-2B, 2026-09-05):
+# quick_actions.QuickActionPills and chat_panel.SynapseChatPanel are the legacy
+# Chat/HDA alternate entry. No .pypanel under houdini/python_panels builds them
+# (synapse_panel.pypanel builds synapse.panel.synapse_panel only) and
+# synapse.panel.synapse_panel does not import chat_panel or quick_actions;
+# tests/test_panel_alt_entry_unshipped.py pins that premise and this module
+# returns both regions to the docking list the day it fails (see
+# ALTERNATE_REGIONS below). Their width drivers (five full-label pills in one
+# row; a connection frame showing the raw ws:// URL, HALT and a 100px Connect)
+# are scheduled for the single-panel collapse and the voice rules
+# (SYNAPSE_PANEL_REDESIGN.md section 2 decision 1, section 3 Voice). This is
+# not a PD docking accept for those widgets; it is a statement that no artist
+# can dock them.
+DOCKING_EXEMPT_UNSHIPPED = (
+    ("quick_actions.QuickActionPills",
+     "five full-label pills in one row; unshipped alternate entry"),
+    ("chat_panel.SynapseChatPanel",
+     "connection frame shows the raw ws:// URL + HALT + 100px Connect; unshipped alternate entry"),
+)
+_ALWAYS_MEASURED = (
     "face_work.FaceWork", "face_review.FaceReview", "gate_widget.GateWidget",
-    "context_bar.ContextChips", "quick_actions.QuickActionPills",
+    "context_bar.ContextChips",
     "hda_views.DescribeView", "hda_views.BuildingView", "hda_views.ResultView",
     "tool_palette.ToolPalette", "command_palette.CommandPaletteWidget",
     "working_indicator.WorkingIndicator", "health_infographic.HealthInfographic",
     "integrity_readout.IntegrityReadout", "health_strip.HealthStrip",
-    "context_bar.build_context_bar_widget", "chat_panel.SynapseChatPanel",
+    "context_bar.build_context_bar_widget",
 )
+
+
+def _regions_under_measure():
+    """The exemption is conditional: a region whose module becomes reachable
+    from the shipped panel is measured again automatically."""
+    # The worker runs this file as __main__ under -I, where tests/ is not on
+    # sys.path; the sibling pin lives next to this file.
+    if str(Path(__file__).resolve().parent) not in sys.path:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from test_panel_alt_entry_unshipped import reachable_panel_modules
+
+    reachable = reachable_panel_modules()
+    returned = tuple(region for region, _ in DOCKING_EXEMPT_UNSHIPPED
+                     if region.split(".")[0] in reachable)
+    return _ALWAYS_MEASURED + returned
+
+
+ALTERNATE_REGIONS = _regions_under_measure()
 
 
 def _bounds():
     text = CONTRACT.read_text(encoding="utf-8")
     # Read the actual YAML descriptions; do not silently follow the conflicting
     # 420px token. These constrained fields need no optional YAML dependency.
+    # The width is the YAML's interim PD feature (RULING-2A), never a literal.
+    widths = re.findall(r'minimumSizeHint\(\)\.width\(\) <= (\d+)px wide', text)
     heights = re.findall(r'without overflow at (\d+)px tall', text)
     children = re.findall(r'No child sets a hard minimum height above (\d+)px', text)
-    assert len(heights) == len(children) == 1, "docking contract shape changed"
-    return 380, int(heights[0]), int(children[0])
+    assert len(widths) == len(heights) == len(children) == 1, "docking contract shape changed"
+    return int(widths[0]), int(heights[0]), int(children[0])
 
 
 def test_docking_bounds_read_the_contract_not_panel_height_token():
@@ -63,11 +102,18 @@ def _run(case, density="standard", detail=""):
                PYTHONDONTWRITEBYTECODE="1")
     # TEMP/TMP are set by the command in REPORT. Refuse a GUI platform even if
     # the outer suite's environment changes after collection.
+    # -I drops hython's stdlib bootstrap ('No module named encodings'); the
+    # isolation flag is for a plain CPython runner only (RULING-2A).
+    isolate = [] if "hython" in Path(sys.executable).name.lower() else ["-I"]
     result = subprocess.run(
-        [sys.executable, "-I", str(Path(__file__).resolve()), case, density, detail],
+        [sys.executable, *isolate, str(Path(__file__).resolve()), case, density, detail],
         cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
     if result.returncode == 77:
         pytest.skip(result.stdout.strip() or "PySide unavailable; real Qt probe NOT_RUN")
+    if result.returncode == 78:
+        # A width measured with no font is not a measurement (RULING-2A):
+        # this is a failure of the runner, never a skip.
+        pytest.fail(result.stdout.strip() or "NOT_RUN: empty font database")
     assert result.returncode == 0, result.stdout + result.stderr
     lines = [line for line in result.stdout.splitlines() if line.startswith("PD_QT=")]
     assert len(lines) == 1, result.stdout + result.stderr
@@ -343,6 +389,18 @@ if __name__ == "__main__":
     widgets = _qt()
     case, density, detail = sys.argv[1:4]
     app = widgets.QApplication.instance() or widgets.QApplication([])
+    # RULING-2A: measure with the design's own fonts or not at all.
+    gui = importlib.import_module(widgets.__name__.rsplit(".", 1)[0] + ".QtGui")
+    from synapse.panel.designsystem import fontload
+    fontload.load_application_fonts()
+    families = list(gui.QFontDatabase.families())
+    if not families:
+        sys.stdout.write("NOT_RUN: empty font database (runner %s); widths without a "
+                         "font are not measurements\n" % sys.executable)
+        raise SystemExit(78)
+    provenance = {"runner": sys.executable,
+                  "family": gui.QFontInfo(app.font()).family(),
+                  "families": len(families)}
     if case == "available":
         result = {"binding": widgets.__name__}
     elif case == "spacing":
@@ -354,4 +412,5 @@ if __name__ == "__main__":
     else:
         assert case in ("panel", "recall")
         result = _panel(widgets, density, recall=case == "recall")
+    result.update(provenance)
     sys.stdout.write("PD_QT=" + json.dumps(result, sort_keys=True) + "\n")
