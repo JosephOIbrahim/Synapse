@@ -124,6 +124,8 @@ def _run(region):
         cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
     if process.returncode == 77:
         pytest.skip(process.stdout.strip())
+    if process.returncode == 78:
+        pytest.fail(process.stdout.strip() or "NOT_RUN: empty font database")
     assert process.returncode == 0, process.stdout + process.stderr
     lines = [line for line in process.stdout.splitlines() if line.startswith("SWEEP_B_QT=")]
     assert len(lines) == 1, process.stdout
@@ -150,6 +152,27 @@ def _qt():
     raise SystemExit(77)
 
 
+def owned_layouts(child, widget_type):
+    """(owner, layout) pairs the module marks: the child itself and every
+    descendant widget carrying a rhythm_role.
+
+    Walked top-down over the widget tree, never via findChildren(QLayout):
+    that also returns the sub-layouts of Qt-internal widgets (a combo box's
+    popup container, scroll-area internals) which Qt rebuilds on polish, so
+    their wrappers die between two calls and used to abort the probe before
+    geometry() ran (CRUX R2-05). Those internals are not the sweep's owners;
+    the host's unmarked probe layout is the negative control instead.
+    """
+    pairs, stack = [], [child]
+    while stack:
+        widget = stack.pop()
+        if widget is child or widget.property("rhythm_role"):
+            if widget.layout() is not None:
+                pairs.append((widget, widget.layout()))
+        stack.extend(c for c in widget.children() if isinstance(c, widget_type))
+    return pairs
+
+
 def _worker(region, widgets, gui):
     from synapse.panel import compositor
     from synapse.panel.designsystem import qss, rhythm, tokens
@@ -162,9 +185,20 @@ def _worker(region, widgets, gui):
     box = widgets.QVBoxLayout(parent)
     child = getattr(source, name)(parent)
     box.addWidget(child)
+    # Negative control: an UNMARKED sibling in the host with its own layout
+    # values; rhythm.apply must never touch it.
+    probe = widgets.QWidget()
+    probe_box = widgets.QVBoxLayout(probe)
+    probe_box.setSpacing(7)
+    probe_box.setContentsMargins(1, 2, 3, 4)
+    box.addWidget(probe)
     # Fractions worked independently: group 16*(3/2,3/4,1,3/2),
-    # parameter row 4*(3/2,3/4,1,3/2); no values copied from ROLE_GAPS.
+    # parameter row / stack 4*(3/2,3/4,1,3/2); no values copied from ROLE_GAPS.
+    independent_bases = {"group": 16, "stack": 4, "parm_row": 4, "card": 16,
+                         "tag": 16, "row": 12, "label": 12}
     expected = (24, 12, 16, 24) if OWNER_ROLES[region] == "group" else (6, 3, 4, 6)
+    owned_layouts_seen = 0
+    popup_minimums = []
     levels = ("airy", "tight", "standard", "airy")
     measurements = []
 
@@ -183,7 +217,19 @@ def _worker(region, widgets, gui):
             assert 0 < minimum.width() <= 380, (region, "minimum width", minimum.width())
             assert 0 < minimum.height() <= 400, (region, "minimum height", minimum.height())
         assert parent.width() <= 380 and parent.height() <= 400
-        assert all(widget.minimumHeight() <= 200 for widget in parent.findChildren(widgets.QWidget))
+        # The 200px rule is about DOCKED children forcing the dock column open
+        # (docking-minimums.yaml). A popup WINDOW (ToolPalette / CommandPalette
+        # carry window flags) gets Qt's SetDefaultConstraint on show(): its own
+        # layout minimum becomes its hard minimum - that is the window sizing
+        # itself, not a docked child, and its fit against the opener's dock is
+        # the (parent, child) bound asserted above. Windows are reported, not
+        # counted against the docked-child rule.
+        for widget in parent.findChildren(widgets.QWidget):
+            if widget.isWindow():
+                popup_minimums.append([widget.objectName() or type(widget).__name__,
+                                       widget.minimumWidth(), widget.minimumHeight()])
+                continue
+            assert widget.minimumHeight() <= 200, (region, widget.objectName(), widget.minimumHeight())
 
     try:
         for density, gap in zip(levels, expected):
@@ -195,12 +241,23 @@ def _worker(region, widgets, gui):
                 child.show()  # real showEvent re-reads the changed parent profile
                 assert child.property("density") == density
             assert child.layout().spacing() == gap
-            for layout in child.findChildren(widgets.QLayout):
-                if module == "command_palette" and layout is not child.layout():
-                    assert layout.spacing() == dict(airy=6, standard=4, tight=3)[density]
-                elif layout is not child.layout():
-                    # Nested layouts inherit the owning QWidget's marked layout.
-                    assert layout.spacing() == gap, (region, type(layout).__name__, layout.spacing())
+            # Landing r3 (CRUX R2-05): the role gap is asserted on layouts an
+            # owning widget MARKS - the child itself, or a descendant carrying
+            # its own rhythm_role (its gap is its own role's, worked from the
+            # same independent fractions). Qt-internal layouts (objectName
+            # 'qt_*') and the host's unmarked probe layout are the negative
+            # control: rhythm.apply must leave them byte-equal.
+            fraction = dict(airy=1.5, standard=1.0, tight=0.75)[density]
+            owned = owned_layouts(child, widgets.QWidget)
+            assert owned
+            owned_layouts_seen = max(owned_layouts_seen, len(owned))
+            for owner, layout in owned:
+                role = owner.property("rhythm_role")
+                assert layout.spacing() == round(independent_bases[role] * fraction), (
+                    region, type(layout).__name__, role, layout.spacing())
+            probe_before = (probe_box.spacing(), probe_box.contentsMargins())
+            rhythm.apply(parent, density)
+            assert (probe_box.spacing(), probe_box.contentsMargins()) == probe_before
             geometry()
             before = child.layout().contentsMargins()
             assert (before.left(), before.top(), before.right(), before.bottom()) == (0, 0, 0, 0)
@@ -300,7 +357,9 @@ def _worker(region, widgets, gui):
         rhythm.apply(parent, "tight")
         assert child.layout().spacing() == saved
         return {"densities": levels, "spacing": measurements,
-                "states_checked": True, "role_removal_preserves_spacing": True}
+                "states_checked": True, "role_removal_preserves_spacing": True,
+                "runner": sys.executable, "owned_layouts": owned_layouts_seen,
+                "popup_minimums": popup_minimums}
     finally:
         child.close()
         parent.close()
@@ -312,5 +371,15 @@ if __name__ == "__main__":
     sys.path.insert(0, str(ROOT / "python"))
     widgets, gui = _qt()
     app = widgets.QApplication.instance() or widgets.QApplication([])
+    # RULING-2A: geometry counts only with the design's own fonts loaded; an
+    # empty font database is a runner failure (78 -> pytest.fail), never a skip.
+    from synapse.panel.designsystem import fontload
+    fontload.load_application_fonts()
+    families = list(gui.QFontDatabase.families())
+    if not families:
+        sys.stdout.write("NOT_RUN: empty font database (runner %s); widths without a "
+                         "font are not measurements\n" % sys.executable)
+        raise SystemExit(78)
     result = _worker(sys.argv[1], widgets, gui)
+    result.update({"family": gui.QFontInfo(app.font()).family(), "families": len(families)})
     sys.stdout.write("SWEEP_B_QT=" + json.dumps(result, sort_keys=True) + "\n")
