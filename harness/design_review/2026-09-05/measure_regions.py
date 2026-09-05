@@ -25,6 +25,13 @@ p.setStyleSheet(qss.stylesheet())
 p.resize(340, 760)
 p.show()
 app.processEvents()
+# J4 (harness/cto/runs/2026-09-05/RULING_JOE_FIVE.md): the UI profile switch is
+# retired and SynapsePanel() composes `expert` whatever the persisted profile
+# says, so the probe recomposes explicitly - the machinery path
+# tests/panel/test_bc_wave.py::_panel uses - to measure curious / ml.
+if profile != getattr(p, "_layout_profile", profile):
+    p._recompose(profile)
+    app.processEvents()
 p._set_face("direct"); p._converse_stack.setCurrentIndex(0)
 app.processEvents()
 
