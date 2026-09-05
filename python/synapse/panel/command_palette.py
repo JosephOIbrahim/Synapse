@@ -22,11 +22,10 @@ from typing import List, Optional
 
 try:
     from PySide6.QtWidgets import (  # type: ignore[import-untyped]
-        QWidget, QVBoxLayout, QLineEdit, QListWidget, QListWidgetItem,
-        QLabel, QHBoxLayout, QFrame,
+        QWidget, QVBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QFrame,
     )
     from PySide6.QtCore import Qt, Signal  # type: ignore[import-untyped]
-    from PySide6.QtGui import QFont, QColor, QPalette, QKeyEvent  # type: ignore[import-untyped]
+    from PySide6.QtGui import QColor, QKeyEvent  # type: ignore[import-untyped]
     _QT_AVAILABLE = True
 except ImportError:
     try:
@@ -35,7 +34,7 @@ except ImportError:
             QLabel, QHBoxLayout, QFrame,
         )
         from PySide2.QtCore import Qt, Signal  # type: ignore[import-untyped]
-        from PySide2.QtGui import QFont, QColor, QPalette, QKeyEvent  # type: ignore[import-untyped]
+        from PySide2.QtGui import QColor, QKeyEvent  # type: ignore[import-untyped]
         _QT_AVAILABLE = True
     except ImportError:
         _QT_AVAILABLE = False
@@ -44,21 +43,16 @@ except ImportError:
 # Design tokens
 # ---------------------------------------------------------------------------
 
-# Palette from the design system, panel-specific text aliases from the bridge.
-# The former `except ImportError` arm carried a private palette (#00D4FF and
+# Palette and text roles from the single vendored design system.
+# The former `except ImportError` arm carried a private palette (SIGNAL and
 # five neutrals that matched neither authority) and was REACHABLE by a by-path
 # load -- a live third authority, removed rather than corrected.
 from synapse.panel.designsystem import tokens as _ds
-from synapse.panel import tokens as _t
+from synapse.panel.designsystem import qss
 
 _SIGNAL = _ds.SIGNAL
-_TEXT = _t.TEXT
-_TEXT_DIM = _t.TEXT_DIM
-_VOID = _ds.VOID
-_CARBON = _ds.CARBON
-_GRAPHITE = _ds.GRAPHITE
-_NEAR_BLACK = _ds.NEAR_BLACK
-_FONT_SANS = _ds.FONT_SANS
+_TEXT = _ds.TEXT_PRIMARY
+_TEXT_DIM = _ds.TEXT_SECONDARY
 
 
 # ===================================================================
@@ -386,10 +380,10 @@ _BADGE_MAP = {
 # Badge colors per category
 _BADGE_COLORS = {
     "command": _SIGNAL,
-    "recipe": "#00E676",
-    "apex": "#FF6B35",
-    "vex": "#FFAB00",
-    "recent": "#888888",
+    "recipe": _ds.TEXT_SECONDARY,
+    "apex": _ds.TEXT_SECONDARY,
+    "vex": _ds.TEXT_SECONDARY,
+    "recent": _ds.TEXT_TERTIARY,
 }
 
 
@@ -418,41 +412,39 @@ if _QT_AVAILABLE:
                 Qt.WindowType.FramelessWindowHint | Qt.WindowType.Popup
             )
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-            self.setFixedWidth(520)
+            self.setObjectName("DsRoot")
+            self.setProperty("rhythm_role", "group")
+            self.setProperty("panel_popup", "command")
+            self._scale = getattr(parent, "_font_scale", _ds.FONT_SCALE_DEFAULT)
+            self.resize(_ds.PANEL_PREF_WIDTH, _ds.PANEL_MIN_HEIGHT - _ds.SPACE_LG)
             self.setMaximumHeight(400)
 
             # -- Container (for rounded-corner background) --
             container = QFrame(self)
             container.setObjectName("PaletteContainer")
-            container.setStyleSheet(self._container_style())
+            container.setProperty("rhythm_role", "parm_row")
 
             outer = QVBoxLayout(self)
-            outer.setContentsMargins(0, 0, 0, 0)
             outer.addWidget(container)
 
             layout = QVBoxLayout(container)
-            layout.setContentsMargins(12, 10, 12, 10)
-            layout.setSpacing(6)
 
             # -- Search field --
             self._search = QLineEdit()
             self._search.setPlaceholderText("Type to search commands...")
-            self._search.setStyleSheet(self._search_style())
-            font = QFont(_FONT_SANS, 12)
-            self._search.setFont(font)
+            self._search.setObjectName("DsCommandSearch")
             layout.addWidget(self._search)
 
             # -- Separator line --
             sep = QFrame()
             sep.setFrameShape(QFrame.Shape.HLine)
-            sep.setStyleSheet(f"color: {_NEAR_BLACK};")
+            sep.setObjectName("DsCommandDivider")
             sep.setFixedHeight(1)
             layout.addWidget(sep)
 
             # -- Results list --
             self._list = QListWidget()
-            self._list.setStyleSheet(self._list_style())
-            self._list.setFont(QFont(_FONT_SANS, 10))
+            self._list.setObjectName("DsCommandResults")
             self._list.setHorizontalScrollBarPolicy(
                 Qt.ScrollBarPolicy.ScrollBarAlwaysOff
             )
@@ -463,53 +455,11 @@ if _QT_AVAILABLE:
             self._list.itemActivated.connect(self._on_select)
             self._search.installEventFilter(self)
 
-        # ----- Styles -------------------------------------------------------
+            qss.prepare_sweep_b_popup(self, self._scale)
 
-        @staticmethod
-        def _container_style() -> str:
-            return (
-                "QFrame#PaletteContainer {"
-                f"  background-color: rgba(26, 26, 26, 242);"  # ~95% opacity
-                "  border-radius: 8px;"
-                f"  border: 1px solid {_NEAR_BLACK};"
-                "}"
-            )
-
-        @staticmethod
-        def _search_style() -> str:
-            return (
-                "QLineEdit {"
-                f"  background: {_GRAPHITE};"
-                f"  color: {_TEXT};"
-                "  border: none;"
-                "  border-radius: 4px;"
-                "  padding: 8px 10px;"
-                "}"
-                "QLineEdit:focus {"
-                f"  border: 1px solid {_SIGNAL};"
-                "}"
-            )
-
-        @staticmethod
-        def _list_style() -> str:
-            return (
-                "QListWidget {"
-                "  background: transparent;"
-                f"  color: {_TEXT};"
-                "  border: none;"
-                "  outline: none;"
-                "}"
-                "QListWidget::item {"
-                "  padding: 5px 8px;"
-                "  border-radius: 3px;"
-                "}"
-                "QListWidget::item:selected {"
-                f"  background: {_NEAR_BLACK};"
-                "}"
-                "QListWidget::item:hover {"
-                f"  background: {_CARBON};"
-                "}"
-            )
+        def showEvent(self, event):
+            qss.prepare_sweep_b_popup(self, self._scale)
+            super().showEvent(event)
 
         # ----- Public API ----------------------------------------------------
 

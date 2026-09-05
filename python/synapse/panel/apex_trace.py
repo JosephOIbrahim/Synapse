@@ -17,6 +17,8 @@ an empty trace immediately.
 
 from __future__ import annotations
 
+from synapse.panel.designsystem import tokens as _ds
+
 import html
 from collections import deque
 from dataclasses import dataclass, field
@@ -627,14 +629,14 @@ def trace_apex_graph(invoke_path: str) -> ApexGraphTrace:
 # ============================================================================
 
 _CATEGORY_COLORS: Dict[str, str] = {
-    "transform": "#6ABF69",   # green
-    "attribute": "#7AB4CC",   # blue
-    "math": "#B9B06A",        # yellow
-    "control": "#E8922E",     # orange
-    "solver": "#CC6A9E",      # pink
-    "constraint": "#9E7ACC",  # purple
-    "io": "#888888",          # gray
-    "other": "#AAAAAA",       # light gray
+    "transform": _ds.TEXT_SECONDARY,
+    "attribute": _ds.TEXT_SECONDARY,
+    "math": _ds.TEXT_SECONDARY,
+    "control": _ds.TEXT_SECONDARY,
+    "solver": _ds.TEXT_SECONDARY,
+    "constraint": _ds.TEXT_SECONDARY,
+    "io": _ds.TEXT_TERTIARY,
+    "other": _ds.TEXT_SECONDARY,
 }
 
 
@@ -642,7 +644,7 @@ def format_apex_trace_html(trace: ApexGraphTrace) -> str:
     """Format an ApexGraphTrace as HTML for the panel's QTextEdit."""
     if not trace.nodes:
         return (
-            f"<p style='color:#888;'>APEX Trace: "
+            f"<p style='color:{_ds.TEXT_TERTIARY};'>APEX Trace: "
             f"<b>{html.escape(trace.invoke_path)}</b><br/>"
             f"{html.escape(trace.summary)}</p>"
         )
@@ -656,7 +658,7 @@ def format_apex_trace_html(trace: ApexGraphTrace) -> str:
         f"{html.escape(trace.graph_name)}</h3>"
     )
     lines.append(
-        f"<p style='color:#AAA; margin:2px 0;'>"
+        f"<p style='color:{_ds.TEXT_SECONDARY}; margin:2px 0;'>"
         f"Source: {html.escape(trace.invoke_path)} | "
         f"{trace.node_count} nodes</p>"
     )
@@ -665,11 +667,11 @@ def format_apex_trace_html(trace: ApexGraphTrace) -> str:
     lines.append("<h4 style='margin:8px 0 4px 0;'>Execution Order</h4>")
 
     for idx, node in enumerate(trace.nodes, start=1):
-        cat_color = _CATEGORY_COLORS.get(node.category, "#AAAAAA")
+        cat_color = _CATEGORY_COLORS.get(node.category, _ds.TEXT_SECONDARY)
         is_critical = node.name in critical_set
 
-        border_color = "#E8922E" if is_critical else "#555555"
-        bg = "background:#2A2520;" if is_critical else ""
+        border_color = _ds.SIGNAL if is_critical else _ds.BORDER
+        bg = f"background:{_ds.SIGNAL_TINT};" if is_critical else ""
 
         lines.append(
             f"<div style='border-left:3px solid {border_color}; "
@@ -681,13 +683,13 @@ def format_apex_trace_html(trace: ApexGraphTrace) -> str:
             f"<b>{idx}.</b> "
             f"<b>{html.escape(node.name)}</b> "
             f"<span style='color:{cat_color};'>[{html.escape(node.node_type)}]</span> "
-            f"<span style='color:#666;'>({html.escape(node.category)})</span>"
+            f"<span style='color:{_ds.TEXT_TERTIARY};'>({html.escape(node.category)})</span>"
         )
 
         # Description
         if node.description:
             lines.append(
-                f"<br/><span style='color:#AAA;'>"
+                f"<br/><span style='color:{_ds.TEXT_SECONDARY};'>"
                 f"{html.escape(node.description)}</span>"
             )
 
@@ -695,17 +697,17 @@ def format_apex_trace_html(trace: ApexGraphTrace) -> str:
         if node.inputs:
             inp_str = ", ".join(html.escape(str(i)) for i in node.inputs)
             lines.append(
-                f"<br/><span style='color:#7AB;'>Inputs: {inp_str}</span>"
+                f"<br/><span style='color:{_ds.TEXT_SECONDARY};'>Inputs: {inp_str}</span>"
             )
         if node.outputs:
             out_str = ", ".join(html.escape(str(o)) for o in node.outputs)
             lines.append(
-                f"<br/><span style='color:#B9B;'>Outputs: {out_str}</span>"
+                f"<br/><span style='color:{_ds.TEXT_SECONDARY};'>Outputs: {out_str}</span>"
             )
 
         if is_critical:
             lines.append(
-                "<br/><span style='color:#E8922E;'>** critical path **</span>"
+                f"<br/><span style='color:{_ds.SIGNAL};'>** critical path **</span>"
             )
 
         lines.append("</div>")
@@ -713,7 +715,7 @@ def format_apex_trace_html(trace: ApexGraphTrace) -> str:
     # Connection diagram (text flow)
     if trace.data_flow:
         lines.append("<h4 style='margin:8px 0 4px 0;'>Data Flow</h4>")
-        lines.append("<div style='padding:4px 8px; color:#AAA; font-family:monospace;'>")
+        lines.append(f"<div style='padding:4px 8px; color:{_ds.TEXT_SECONDARY}; font-family:monospace;'>")
         for src, dst, port in trace.data_flow:
             port_label = f" ({html.escape(port)})" if port else ""
             lines.append(
@@ -725,7 +727,7 @@ def format_apex_trace_html(trace: ApexGraphTrace) -> str:
         lines.append("<h4 style='margin:8px 0 4px 0;'>Critical Path</h4>")
         flow = " -> ".join(html.escape(n) for n in trace.critical_path)
         lines.append(
-            f"<div style='padding:4px 8px; color:#E8922E; "
+            f"<div style='padding:4px 8px; color:{_ds.SIGNAL}; "
             f"font-family:monospace;'>{flow}</div>"
         )
 

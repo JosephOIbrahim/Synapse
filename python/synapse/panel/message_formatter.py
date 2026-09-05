@@ -5,7 +5,7 @@ The human voice carries a single signal-blue hairline rule and brighter text;
 the agent voice is plain, dimmer body copy with no chrome. Node references
 render as **artifact chips** — a node mark + mono path, a thing you can click,
 not a sentence. Signal blue is the one chromatic event; it comes from the
-vendored design system (#8FB3D9), not the legacy cyan.
+vendored design system (SIGNAL), not the legacy cyan.
 
 Public surface is unchanged (chat_display.py depends on it):
 ``format_response``, ``format_user_message``, ``format_synapse_message``,
@@ -30,8 +30,8 @@ _TEXT_DIM    = _t.TEXT_TERTIARY   # system lines / captions
 # Speaker dots. Coniferous for the human, warm coral for the agent - the two
 # ends of the palette's natural/synthetic split, used here to make the speaker
 # pre-attentive rather than something the reader compares greys to work out.
-_CONIFEROUS  = getattr(_t, "CONIFEROUS", "#6E8F72")
-_WARM        = getattr(_t, "WARM", "#FF7759")
+_CONIFEROUS  = _t.CONIFEROUS
+_WARM        = _t.WARM
 _GROUND      = _t.GROUND          # chip + code-block inset
 _LINE        = _t.GRAPHITE        # hairline borders
 _ERROR       = _t.ERROR
@@ -275,7 +275,7 @@ def _speaker_label(who, timestamp, font_scale):
     beside it, and nothing repeated on continuations.
 
     Measured 2026-07-27, the only thing separating the two voices was tone —
-    #DEDEDE for the human, #C5C5C5 for the agent, plus a 2px rule on the human
+    TEXT_BRIGHT for the human, TEXT_PRIMARY for the agent, plus a 2px rule on the human
     side. Twenty-five points of grey on a dim panel is not a speaker signal.
     The v9 design said "type and the rule tell the speaker apart"; in practice
     the reader has to infer, every message.

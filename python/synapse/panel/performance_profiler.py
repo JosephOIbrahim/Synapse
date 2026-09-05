@@ -15,6 +15,8 @@ returns an empty report immediately.
 
 from __future__ import annotations
 
+from synapse.panel.designsystem import tokens as _ds
+
 import html as html_mod
 import time
 from dataclasses import dataclass, field
@@ -340,16 +342,16 @@ def format_profile_html(report: ProfileReport) -> str:
     """
     if not report.entries:
         return (
-            "<div style='color:#aaa; padding:12px;'>"
+            f"<div style='color:{_ds.TEXT_SECONDARY}; padding:12px;'>"
             f"{html_mod.escape(report.summary)}</div>"
         )
 
     lines: list[str] = []
-    lines.append("<div style='font-family:monospace; font-size:13px; color:#ccc;'>")
+    lines.append(f"<div style='font-family:monospace; font-size:13px; color:{_ds.TEXT_PRIMARY};'>")
 
     # Summary header.
     lines.append(
-        f"<div style='padding:8px 12px; background:#2a2a2a; border-radius:6px; "
+        f"<div style='padding:8px 12px; background:{_ds.SURFACE}; border-radius:6px; "
         f"margin-bottom:10px; font-size:14px;'>"
         f"<b>Profile:</b> {html_mod.escape(report.network_path)}<br/>"
         f"{html_mod.escape(report.summary)}</div>"
@@ -364,9 +366,9 @@ def format_profile_html(report: ProfileReport) -> str:
         bar_pct = (entry.cook_time_ms / max_cook * 100.0) if max_cook > 0 else 0
         bar_pct = min(bar_pct, 100.0)
 
-        bg_color = "#e8a020" if entry.is_bottleneck else "#4a90d9"
-        border_color = "#d4881a" if entry.is_bottleneck else "#3a7bc8"
-        row_bg = "rgba(232,160,32,0.08)" if entry.is_bottleneck else "transparent"
+        bg_color = _ds.WARN if entry.is_bottleneck else _ds.SIGNAL
+        border_color = _ds.WARN if entry.is_bottleneck else _ds.SIGNAL_PRESS
+        row_bg = _ds.rgba(_ds.WARN, 0.08) if entry.is_bottleneck else "transparent"
 
         node_name = entry.node_path.rsplit("/", 1)[-1]
         escaped_name = html_mod.escape(node_name)
@@ -378,13 +380,13 @@ def format_profile_html(report: ProfileReport) -> str:
             f"align-items:center;'>"
             f"    <span style='min-width:160px;'>"
             f"      <b>{escaped_name}</b> "
-            f"      <span style='color:#888; font-size:11px;'>({escaped_type})</span>"
+            f"      <span style='color:{_ds.TEXT_TERTIARY}; font-size:11px;'>({escaped_type})</span>"
             f"    </span>"
             f"    <span style='min-width:80px; text-align:right;'>"
             f"      {entry.cook_time_ms:.1f}ms ({entry.cook_pct:.0f}%)"
             f"    </span>"
             f"  </div>"
-            f"  <div style='background:#1a1a1a; border-radius:3px; height:8px; "
+            f"  <div style='background:{_ds.GROUND}; border-radius:3px; height:8px; "
             f"margin-top:3px;'>"
             f"    <div style='background:{bg_color}; border:1px solid {border_color}; "
             f"border-radius:3px; height:100%; width:{bar_pct:.1f}%;'></div>"
@@ -394,7 +396,7 @@ def format_profile_html(report: ProfileReport) -> str:
         if entry.suggestion:
             escaped_hint = html_mod.escape(entry.suggestion)
             lines.append(
-                f"  <div style='color:#e8a020; font-size:11px; margin:3px 0 0 8px;'>"
+                f"  <div style='color:{_ds.WARN}; font-size:11px; margin:3px 0 0 8px;'>"
                 f"    Tip: {escaped_hint}"
                 f"  </div>"
             )
@@ -403,7 +405,7 @@ def format_profile_html(report: ProfileReport) -> str:
 
     # Geometry summary.
     lines.append(
-        f"<div style='padding:8px 12px; margin-top:8px; color:#888; font-size:11px;'>"
+        f"<div style='padding:8px 12px; margin-top:8px; color:{_ds.TEXT_TERTIARY}; font-size:11px;'>"
         f"Total points: {report.total_points:,} | "
         f"Nodes profiled: {len(report.entries)}"
         f"</div>"
@@ -412,8 +414,8 @@ def format_profile_html(report: ProfileReport) -> str:
     # Apply suggestions prompt.
     if report.suggestions:
         lines.append(
-            "<div style='padding:8px 12px; margin-top:6px; background:#2a2a2a; "
-            "border-radius:6px; color:#e8a020;'>"
+            f"<div style='padding:8px 12px; margin-top:6px; background:{_ds.SURFACE}; "
+            f"border-radius:6px; color:{_ds.WARN};'>"
             f"<b>{len(report.suggestions)} optimization suggestion"
             f"{'s' if len(report.suggestions) != 1 else ''} available.</b> "
             "Ask me to apply them or explain further."
