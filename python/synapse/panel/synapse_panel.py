@@ -922,6 +922,10 @@ class SynapsePanel(QtWidgets.QWidget):
 
         # shell: the rail is an edge container - GUTTER inset, SPACE_SM air.
         w.setProperty("rhythm_role", "shell")
+        # J5 (Joe, 2026-09-05): the rail meets the pane's top edge, so it takes
+        # the shell role's top-edge air (rhythm._EDGE_TOP: SPACE_MD, scaled
+        # by density) - the value lives in the role table, not here.
+        w.setProperty("rhythm_edge", "top")
         # One type applier per widget (RULING-4c): the header controls are
         # verbs and take the LABEL tracked font (mono) - the same applier as
         # _verb and the CHAT / TOKEN pills - so the chrome siblings match

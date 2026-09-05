@@ -83,11 +83,17 @@ def probe(density):
         direct_face = panel._recall_card.parentWidget()
         # bc-wave BC-5: no tab row - the pills ride the ribbon shell.
         assert not panel.findChildren(QtWidgets.QWidget, "DsTabRow")
+        # RULING_JOE_FIVE J5 (2026-09-05): the header meets the pane's top
+        # edge and carries the shell role's top-edge condition
+        # (rhythm_edge="top") - SPACE_MD air, density-scaled through
+        # tokens.gap - so the wordmark is not choked by the edge. The role's
+        # default is unchanged: the ribbon and the faces keep SPACE_SM.
         for shell in (header, ribbon, direct_face):
             assert shell.property("rhythm_role") == "shell", shell.objectName()
             m = shell.layout().contentsMargins()
+            top = t.gap(t.SPACE_MD, density) if shell is header else t.SPACE_SM
             assert (m.left(), m.top(), m.right(), m.bottom()) == (
-                t.GUTTER, t.SPACE_SM, t.GUTTER, t.SPACE_SM), shell.objectName()
+                t.GUTTER, top, t.GUTTER, t.SPACE_SM), shell.objectName()
         assert panel.layout().spacing() == 0
         rm = panel.layout().contentsMargins()
         assert (rm.left(), rm.top(), rm.right(), rm.bottom()) == (0, 0, 0, 0)
