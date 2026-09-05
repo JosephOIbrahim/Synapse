@@ -9,6 +9,8 @@ One file, one test per spec item, each committed RED before its fix:
   BC-3  slash-palette rows breathe on the grid.
   BC-4  one signal per fact at boot; beats on the grid.
   BC-5  the profile row folds into the overflow; the conversation takes >= 50%.
+        (J4, Joe's five 2026-09-05, superseded the fold with retire: the
+        overflow carries no Profile either - see test_profile_row_retired.)
   BC-6a consent card in the panel's own vocabulary; turn receipt offers revert.
   BC-6b consent surfaces inline on CHAT (gated on the human G3 edit).
 
@@ -522,16 +524,31 @@ def test_composer_telling_reads_whole_at_340():
 
 
 # --------------------------------------------------------------------- BC-5
-def test_profile_row_folded():
-    """Ruling item 6: the profile row folds into the overflow so the
-    conversation holds a majority of the pane. No DsTabRow in the composed
-    tree; the overflow's 'Profile >' holds three checkable actions with
-    exactly one checked (the saved profile); triggering another recomposes
-    live (root density changes, _layout_profile follows); the ribbon carries
-    the CHAT / TOKEN pills; and the measured goal: chat.h / 760 >= 0.5 in
-    curious, expert and ml at 340x760."""
+def _overflow_actions(menu):
+    """Every QAction reachable from ``menu``, submenus included."""
+    out = []
+    for act in menu.actions():
+        out.append(act)
+        sub = act.menu()
+        if sub is not None:
+            out.extend(_overflow_actions(sub))
+    return out
+
+
+def test_profile_row_retired():
+    """Ruling item 6 (BC-5) folded the profile row into the overflow so the
+    conversation holds a majority of the pane. RULING_JOE_FIVE J4 (2026-09-05)
+    supersedes the fold with retire: the profile switch leaves the UI, so
+    the overflow carries no submenu titled 'Profile' and no profile action
+    anywhere (retargeted from the 'Profile >' / three checkable actions /
+    trigger-recomposes-live pins - moved with the ruling, not weakened).
+    Held from BC-5: no DsTabRow in the composed tree; the ribbon carries the
+    CHAT / TOKEN pills; and the measured goal chat.h / 760 >= 0.5 in every
+    density at 340x760 - still driven per density through _panel(profile)
+    -> _recompose, which is machinery, not an artist-reachable switch."""
     from synapse.panel.synapse_panel import SynapsePanel
     assert not hasattr(SynapsePanel, "_build_mode_bar"), "the tab strip builder must be gone"
+    assert not hasattr(SynapsePanel, "_build_profile_actions"), "the overflow actions must be gone (J4)"
     for profile in PROFILES:
         p = _panel(profile)
         try:
@@ -541,16 +558,13 @@ def test_profile_row_folded():
             for key in ("direct", "token"):
                 assert lay.indexOf(p._face_pills[key]) != -1, key
             menu = p._build_overflow_menu()
-            # Reach the submenu through its parent (findChildren keeps C++
+            # Reach submenus through the parent (findChildren keeps C++
             # ownership with the menu; a bare QAction.menu() wrapper does not).
-            prof = next((m for m in menu.findChildren(QtWidgets.QMenu)
-                         if m.title() == "Profile"), None)
-            assert prof is not None, [a.text() for a in menu.actions()]
-            acts = [a for a in prof.actions() if a.isCheckable()]
-            assert len(acts) == 3, [a.text() for a in acts]
-            checked = [a for a in acts if a.isChecked()]
-            assert len(checked) == 1 and checked[0].data() == p._layout_profile, (
-                [(a.text(), a.isChecked()) for a in acts], p._layout_profile)
+            titles = [m.title() for m in menu.findChildren(QtWidgets.QMenu)]
+            assert "Profile" not in titles, titles
+            leaks = [(a.text(), a.data()) for a in _overflow_actions(menu)
+                     if a.isCheckable() and a.data() in PROFILES]
+            assert not leaks, leaks
             # The conversation takes the majority at rest. Two readings, both
             # honest: (a) at first run L5-22 opens the composer divider at half
             # the space the chat and the prompt share (settings
@@ -567,16 +581,6 @@ def test_profile_row_folded():
             _app().processEvents()
             share = p._chat.height() / H
             assert share >= 0.5, (profile, p._chat.height(), share)
-            # A different profile recomposes live.
-            # `profile` is what _panel() composed; _layout_profile is the boot
-            # pick - choose a third so both the density and the pick move.
-            other = next(a for a in acts if a.data() not in (p._layout_profile, profile))
-            before = (p.property("density"), p._layout_profile)
-            other.trigger()
-            _app().processEvents()
-            assert p._layout_profile == other.data()
-            assert p.property("density") != before[0], (before, p.property("density"))
-            assert [a for a in acts if a.isChecked()] == [other]
         finally:
             p.close()
 
