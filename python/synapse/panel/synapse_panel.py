@@ -146,7 +146,13 @@ class _GrowingInput(QtWidgets.QTextEdit):
         super().__init__(parent)
         self.setObjectName("DsInput")
         self.setAcceptRichText(False)
-        self.setPlaceholderText("Ask SYNAPSE…    ·    / for commands")
+        # The composer's one '/' telling (BC-4; G3 pins it here). bc-wave
+        # repair (CRUX 2026-09-05): it has to read WHOLE at 340 - the text
+        # width the viewport paints a placeholder in is ~182px, and the old
+        # 'Ask SYNAPSE…    ·    / for commands' advanced 245 and wrapped
+        # behind the send margin as 'Ask SYNAPSE…  ·  / for'. Pinned by
+        # tests/panel/test_bc_wave.py::test_composer_telling_reads_whole_at_340.
+        self.setPlaceholderText("Ask SYNAPSE… · / commands")
         # L5-22: no constant first-run height (the v9 132 landed the divider
         # above centre in every tall pane — Joe re-dragged it each session).
         # The height settles exactly once, via settle_height: the artist's
