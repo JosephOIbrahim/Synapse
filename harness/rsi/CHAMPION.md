@@ -3,23 +3,30 @@
 *Current best proven rung per loop. A rung is recorded here **only** after evidence gathered at HEAD. Never
 promoted on a carried claim, a memory note, or a prior harness's numbering.*
 
-**Framed 2026-08-01 at `f427320` · SPEC RATIFIED 2026-08-01 · last updated by `RL-3` (A2 + F retirements)**
+**Framed 2026-08-01 at `f427320` · SPEC RATIFIED 2026-08-01 · last updated 2026-09-05 by `CTO B7` (A3 retirement · P10 cited-path liveness · C receipt)**
 
 ---
 
 ## Read this before reading the numbers
 
-`harness/rsi/verify.py` reports **9 PASS / 0 FAIL**. That means **the registry is honest about the code** —
-not that anything is closed. The scoreboard below is the closure measure, and it reads:
+`harness/rsi/verify.py` reports **10 PASS / 0 FAIL** (P10 cited-path liveness added 2026-09-05). That means
+**the registry is honest about the code** — not that anything is closed. The scoreboard below is the closure
+measure, and it reads:
 
-> **0 of 8 live loops beneficial. 0 of 8 even reach L3 CONSUMED. Nothing in this codebase has yet improved
-> itself. One loop was retired rather than closed.**
+> **0 of 6 live loops beneficial. 1 of 6 reaches L3+ — `C`, at L4 DURABLE, human-ratified 2026-08-05.
+> Nothing in this codebase has yet improved itself. Three loops were retired rather than closed.**
 
 Both statements are true at once, and conflating them is the failure this file exists to prevent.
 
-**9 registered, 7 live.** `A2` and `F` are **RETIRED**, not blocked — their mechanisms are deleted;
+*Between 2026-08-05 and 2026-09-05 this block read "9 PASS", "0 of 8", "0 reach L3" and named `A3` the
+highest rung — while `verify.py` read 8/1, `A3`'s module had been renamed `.deprecated` and `C` sat at L4 in the
+registry. The board had stopped reading the registry. P10 exists so that a citation to a deleted file turns the
+bar red instead of the board stale.*
+
+**9 registered, 6 live.** `A2`, `A3` and `F` are **RETIRED**, not blocked — their mechanisms are deleted;
 the registry entries survive because `P9` requires all nine ids present exactly once, and each carries a
-disposition naming what was deleted, why it was dormant, and what would revive it.
+disposition naming what was deleted, why, and what would revive it. Deleted paths live only under
+`_deleted_surface(s)` or as `(at <sha>)`-pinned citations, which `P10` checks against that commit's tree.
 
 ---
 
@@ -29,15 +36,19 @@ disposition naming what was deleted, why it was dormant, and what would revive i
 |---|---|---|---|---|
 | **A1** | EpochAdapter router adaptation | **L1** | L2 | LOW at L1 — nothing consumes the adapter; **FAST is still structurally 1.0** (documented, not fixed); CRITICAL still applies at L3 |
 | **A2** | ~~OutcomeTracker reward signal~~ | **RETIRED** | — | **NONE — deleted 2026-08-01.** Residual risk runs the other way: re-creating it before a live `AgentExecutor` exists |
-| **A3** | memory evolution (charmander) | **L2** | L3 | MEDIUM — deepens a module marked for removal |
-| **R** | render-farm learning | — | L0 | LOW — recording an unverified rung is itself the risk |
-| **O** | §16 observability | — | L0 | LOW — same |
-| **S** | science registry → substrate | — | L0 | UNKNOWN — retirement **REFUSED** 2026-08-01; the seam has a live caller and deposits |
+| **A3** | ~~memory evolution (charmander)~~ | **RETIRED-2026-09-05** | — | N/A — the mechanism left the tree 2026-08-05 (`7f7bbc39`, `evolution.py` → `.deprecated`, callers removed); tombstoned a month late when `P10` caught the dead citations |
+| **R** | render-farm learning | **L1** | L2 | LOW mechanically; EPISTEMIC — a passing eval proves the path works when driven, not that it is driven |
+| **O** | §16 observability | **L0** | L1 | MEDIUM — advice surfaced to a human from a partly failure-blind input (`_third_door_note`) |
+| **S** | science registry → substrate | **L0** | L1 | UNKNOWN — retirement **REFUSED** 2026-08-01; the seam has a live caller and deposits |
 | **F** | ~~router fast-path promotion~~ | **RETIRED-2026-08-01** | — | N/A — the mechanism is deleted from the tree |
 | **E** | FORGE build counters | **L1** | L2 | **HIGH** — would compound unvalidated fixes |
-| **C** | Moneta convergence | — | L0 | MEDIUM — relocates every loop's substrate at once |
+| **C** | Moneta convergence | **L4** (human-ratified 2026-08-05) | L5 | MEDIUM — relocates every loop's substrate at once; L2/L4 log evidence is a fingerprinted receipt as of 2026-09-05 |
 
-**Highest rung anywhere: `A3` at L2 REACHABLE.** It fires on every 10th memory write and ends in a log line.
+**Highest rung anywhere: `C` at L4 DURABLE**, human-ratified 2026-08-05. Its L2 no longer rests on a raw log grep:
+`harness/rsi/briefs/C-L2-log-receipt-2026-09-05.json` (producer `harness/rsi/log_receipt.py`) attributes every
+`Memory backend: moneta` line to the project path that follows it — **78 production inits, 30 pytest-authored
+records excluded, 0 unattributed**, 2026-08-02 → 2026-09-04. The previous holder, `A3` at L2, was retired
+2026-09-05; its mechanism had been gone since 2026-08-05.
 `A1` reached **L1 HONEST** on 2026-08-01 (`RL-2`) — its signal can now represent failure. That is one rung,
 not a closure: nothing consumes it and no production traffic has exercised it.
 
@@ -252,6 +263,32 @@ There is nothing in `forge/engine` to cross-check *against* — no apply stage, 
 stage, no execution surface — so any check it performed would be a self-assertion in a
 different costume. The engine no longer manufactures counts on its own authority; that is
 the whole of what this rung claims. The rest needs the real verifier that also blocks L2.
+
+---
+
+## `A3` RETIRED — the tombstone the registry slept through
+
+**2026-09-05, `CTO B7`.** `A3` was not advanced, stalled, or demoted on evidence — it was **already gone**.
+`7f7bbc39` (2026-08-05, the Moneta production harness) renamed `python/synapse/memory/evolution.py` to
+`evolution.py.deprecated` and removed every caller: the automatic `check_evolution` sites in `store.py` and
+`scene_memory.py`, and the `evolve_to_charmeleon` path in `handlers_memory.py`. Only `get_evolution_stage()`
+survives — a read-only stage label, not a loop. For a month the registry kept citing `evolution.py:217` and
+`store.py:525` as live L0/L2 evidence and this board called it the highest rung anywhere.
+
+**How it was caught.** `P10` (cited-path liveness) went red on the first run: six dead citations, four of them
+in retired loops whose deleted surfaces were still listed as live (`A2`'s `agent/` package went with the RL-3
+AGENT CUT), two of them `A3`'s. Historical citations now carry `(at <sha>)` and are checked against that
+commit; unpinned citations must exist at HEAD. `tests/rsi/test_verify_paths.py` pins it — shown failing on the
+pre-fix registry (1 failed / 9 passed), green after.
+
+**Why retire rather than re-cite.** The module's own docstring: *SUPERSEDED by the Moneta backend … two USD
+memory models must not coexist … do not extend it.* `C` is ratified and live on every production init. The
+branch `A3` lived on (jsonl as the substrate) is the branch `C` closed. Reviving it would mean running the second
+USD memory model the module forbade.
+
+**Rule 6 applies without stigma; rule 7 applies retroactively.** This is a subtraction that happened outside
+the harness and was recorded late. The lesson is the board's, not the loop's: a scoreboard is read off the
+registry every time, and the registry is read off the tree every time — `P10` makes the second half automatic.
 
 ---
 
