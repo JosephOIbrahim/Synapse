@@ -22,7 +22,7 @@ SHA-256 values below identify the tested files.
 | T7, p11 | `tests/test_recipe_verify.py:172` and new assessor test `test_recipe_assessor_t7_camera_valid_but_render_branch_removed`. Removing branch fails with camera still valid; cached ready/pass claims cannot rescue it. |
 | T8, p11 | `tests/test_recipe_verify.py:264`, `:273`, `:286`. Old file, copied old bytes with new stat identity, and a fresh nonblack wrong-color scene rejected separately. |
 | T9, p11 | `tests/test_recipe_verify.py:163`. Stage unavailable => P2/P3 UNKNOWN with original diagnosis. |
-| Hython real-path tests | Implemented in `tests/test_recipe_verify_hython.py`; four tests skip explicitly without resident real hou. Real H22 headless graph/USD/material/readiness/composition paths run when available; no GUI or render qualification claimed. |
+| Hython real-path tests | Implemented in `tests/test_recipe_verify_hython.py`; four tests skip explicitly without resident real hou. Real H22 headless graph/USD/material/readiness/composition paths run when available; no GUI or render qualification claimed. **Run on hython 22.0.400 on 2026-09-05 — see "P4 receipt" below (4 passed after the anon-layer fix).** |
 | Candidate tolerances | `docs/solaris_v3/VERIFY_TOLERANCES.md` documents starting 64x64/1 sample, reference-derived half-open regions, luminance/coverage/color candidates, limitations and measurement protocol. |
 | Milestone status/commits | Status appended in `harness/solaris_v3/STATUS_VERIFY.md`. Commit attempts blocked by `index.lock: Permission denied`; no branch/history workaround attempted. |
 
@@ -317,3 +317,98 @@ Final source hashes matched the recorded test inputs.
   "needs_human": []
 }
 ```
+
+---
+
+## P4 receipt — hython 22.0.400, 2026-09-05 (CTO forge item B3)
+
+**Verdict: P4 CompositionVerifier now PASSES on a live LOP stage; the four
+headless host adapter tests are RUN, not skipped.** Base master `792fb06c`.
+
+### What was wrong
+
+Every live LOP stage is composed from anonymous in-memory layers
+(`anon:...:LOP:rootlayer`, `anon:...:LOP:rootlayer-session.usda`, one
+`anon:...:LOP` per contributing node, plus Houdini's `Solo Lights` /
+`Purpose` / `Viewport State` / ... session sublayers).
+`UsdUtils.ComputeAllDependencies(layer.identifier)` on the root and session
+layers reports those anonymous sublayers as **unresolved** — they are not
+files, so the resolver cannot open them. `python/synapse/recipes/verify.py`
+(composition branch) forwarded every unresolved entry into `missing_assets`,
+so P4 returned `FAIL / 'missing assets'` on every live stage, including one
+with zero file references.
+
+Live probe on hython 22.0.400 (a `pythonscript` LOP defining one Sphere):
+14 used layers, all `layer.anonymous == True`, `realPath == ''`;
+the root layer reported 4 unresolved `anon:` identifiers and the session layer 8.
+
+### Fix
+
+`verify.py`: new pure helpers `_is_anonymous_layer_identifier` (delegates to
+`Sdf.Layer.IsAnonymousLayerIdentifier` when `pxr` is importable, `anon:`
+prefix otherwise) and `_missing_file_assets(unresolved)`. The composition
+branch now keeps only file-backed unresolved dependencies in `missing_assets`
+and records the dropped in-memory identifiers under a new additive evidence
+key `ignored_anonymous_dependencies`. Layers are **not** skipped wholesale:
+an anonymous LOP layer that references a missing file still reports that file.
+
+Live proof that real missing files survive the filter (same probe, adding
+`AddReference('C:/definitely/missing/asset_b3.usd')`):
+
+```text
+COMPOSITION_ERRORS ['Could not open asset @C:/definitely/missing/asset_b3.usd@ for reference introduced by @anon:...:LOP@</ref>.']
+LAYER 'anon:...:LOP:rootlayer'               unresolved_total=4 non_anon=[]
+LAYER 'anon:...:LOP:rootlayer-session.usda'  unresolved_total=8 non_anon=[]
+LAYER 'anon:...:LOP'                         unresolved_total=1 non_anon=['C:/definitely/missing/asset_b3.usd']
+```
+
+Symbols introduced (`pxr.Sdf.Layer.IsAnonymousLayerIdentifier`,
+`pxr.Sdf.Layer.anonymous`) are present in
+`python/synapse/cognitive/tools/data/h22_symbol_table.json` and were exercised
+live in the probe above.
+
+### Receipt
+
+Command (from the checkout root, PowerShell; Git Bash needs the same
+`PYTHONPATH='python;.'` and `QT_QPA_PLATFORM=offscreen`):
+
+```text
+$env:PYTHONPATH='python;.'; $env:QT_QPA_PLATFORM='offscreen'
+& "C:\Program Files\Side Effects Software\Houdini 22.0.400\bin\hython.exe" -m pytest tests/test_recipe_verify_hython.py -q -p no:cacheprovider
+```
+
+| State | Result |
+|---|---|
+| Before fix (base `792fb06c`) | `1 failed, 3 passed` — `test_hython_real_stage_material_surface_and_composition`, `CheckResult(check=P4, status=FAIL, reason='missing assets')`, exit 1 |
+| After fix | `4 passed, 5 warnings in 0.40s`, exit 0 |
+| Mutant (`_missing_file_assets` returns every unresolved entry) | hython: `1 failed, 3 passed` (same P4 failure); pure: `test_p4_missing_assets_ignore_anonymous_layer_identifiers` fails. Mutant reverted. |
+
+Pure control: `python -m pytest tests/test_recipe_verify.py -q -p no:cacheprovider`
+→ `77 passed` (76 prior + the new anon-identifier control).
+`hou.applicationVersionString()` on the runner = `22.0.400`.
+
+The 5 warnings are pre-existing: OpenSSL legacy provider, and
+`hou.expandString` deprecation at `solaris_compose_tools.py:611` (4x). Neither
+is touched here.
+
+### Running the hython tier through the acceptance command
+
+`scripts/solaris_v3_accept.py` already accepts `--tier hython` (pinned-host
+discovery via `.synapse/hytest.py` filtered to 22.0.400, or an explicit
+`SYNAPSE_HYTHON`):
+
+```text
+$env:SYNAPSE_HYTHON = 'C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe'
+python scripts/solaris_v3_accept.py --tier hython
+```
+
+Today that tier reports `NOT_RUN: no reviewed hython test bindings` because
+`harness/solaris_v3/GATES.json` → `promotion_rule.bindings` is empty. Binding
+the four `tests/test_recipe_verify_hython.py` node IDs to the hython rows
+(G1/G4/T1–T3/T7–T10) is a reviewed-gate change, deliberately **not** made in
+this item; until it lands, the direct pytest command above is the P4 receipt
+path. No runner code change was needed.
+
+Still unqualified by this receipt: GUI undo/panel freshness, any render or
+reference-EXR path, and the golden HIP — this is an adapter-path pass on a
+synthetic headless scene.

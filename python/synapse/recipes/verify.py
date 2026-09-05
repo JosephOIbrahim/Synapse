@@ -33,11 +33,31 @@ except ImportError:
     HOU_AVAILABLE = False
 
 try:
-    from pxr import UsdShade, UsdUtils
+    from pxr import Sdf, UsdShade, UsdUtils
     PXR_AVAILABLE = True
 except ImportError:
-    UsdShade = UsdUtils = None
+    Sdf = UsdShade = UsdUtils = None
     PXR_AVAILABLE = False
+
+
+def _is_anonymous_layer_identifier(identifier: str) -> bool:
+    """True for in-memory (``anon:``) layer identifiers; false for anything file-backed."""
+    if Sdf is not None:
+        return bool(Sdf.Layer.IsAnonymousLayerIdentifier(identifier))
+    return identifier.startswith("anon:")
+
+
+def _missing_file_assets(unresolved) -> list:
+    """Keep only file-backed unresolved dependencies.
+
+    Every live LOP stage is built from anonymous layers (``anon:...:LOP:rootlayer``,
+    the session layer, per-node ``anon:...:LOP`` layers). ``UsdUtils.ComputeAllDependencies``
+    reports the anonymous sublayers of those root/session layers as *unresolved*
+    because they are not files -- they are not missing assets (VERIFIED-RUNTIME
+    hython 22.0.400, 2026-09-05). A real missing file referenced from an anonymous
+    LOP layer still surfaces here by its file path, so it is not dropped.
+    """
+    return [str(path) for path in unresolved if not _is_anonymous_layer_identifier(str(path))]
 
 
 class EvidenceUnavailable(RuntimeError):
@@ -708,10 +728,13 @@ class HostObserver:
             # Compute dependencies under the stage's bound resolver context.
             from pxr import Ar
             with Ar.ResolverContextBinder(stage.GetPathResolverContext()):
-                missing = []
+                missing, ignored_anonymous = [], []
                 for layer in stage.GetUsedLayers():
                     _layers, _assets, unresolved = UsdUtils.ComputeAllDependencies(layer.identifier)
-                    missing.extend(str(path) for path in unresolved)
+                    file_backed = _missing_file_assets(unresolved)
+                    missing.extend(file_backed)
+                    ignored_anonymous.extend(
+                        str(path) for path in unresolved if str(path) not in file_backed)
             errors = {}
             for path in instance.owned_node_ids.values():
                 relevant = hou.node(path)
@@ -721,6 +744,7 @@ class HostObserver:
             return {**base, "composition_errors": [str(e) for e in stage.GetCompositionErrors()],
                     "node_errors": errors, "dependencies_checked": True,
                     "missing_assets": sorted(set(missing)),
+                    "ignored_anonymous_dependencies": sorted(set(ignored_anonymous)),
                     "payloads": [{"path": str(p.GetPath()), "loaded": bool(p.IsLoaded())}
                                  for p in prims if p.HasPayload()]}
         raise EvidenceUnavailable("no host observation adapter for " + kind)
