@@ -133,3 +133,68 @@ def test_verb_rail_retired_and_verbs_reachable():
             assert not clipped, (profile, clipped)
         finally:
             p.close()
+
+
+# --------------------------------------------------------------------- BC-2
+def _rail(panel):
+    return panel._region_cache["_build_rail"]
+
+
+def _in_a_layout(w):
+    parent = w.parentWidget()
+    lay = parent.layout() if parent is not None else None
+    return lay is not None and lay.indexOf(w) != -1
+
+
+def test_rail_one_state_sentence_never_elides():
+    from synapse.panel.designsystem import tokens as t
+    bounds = {"curious": 400, "expert": 380, "ml": 380}
+    for profile in PROFILES:
+        p = _panel(profile)
+        try:
+            rail = _rail(p)
+            # Exactly one visible text label on the rail besides the wordmark.
+            labels = [w for w in rail.findChildren(QtWidgets.QLabel)
+                      if w.isVisible() and w.text() and w is not p._wordmark]
+            assert labels == [p._header_status], [(w.objectName(), w.text()) for w in labels]
+            sentence = p._header_status
+            assert sentence.width() >= sentence.sizeHint().width(), (
+                profile, sentence.text(), sentence.width(), sentence.sizeHint().width())
+            # One truth at boot: not connected (headless), said once.
+            assert sentence.text() == t.STATUS["disconnected"][2]
+            assert p._mark._state == "disconnected"
+            # Nothing on the rail gives way silently (no Ignored policy).
+            ignored = [w.objectName() or type(w).__name__
+                       for w in rail.findChildren(QtWidgets.QWidget)
+                       if w.isVisible()
+                       and w.sizePolicy().horizontalPolicy() == QtWidgets.QSizePolicy.Policy.Ignored]
+            assert not ignored, ignored
+            # Working: Stop shows, Connect hides, the sentence follows STATUS and
+            # ignores tool chatter (the Work face's plan already carries it).
+            p._set_busy(True)
+            _app().processEvents()
+            assert p._stop_btn.isVisible() and not p._connect_btn.isVisible()
+            assert sentence.text() == t.STATUS["working"][2]
+            p._on_tool_status("houdini_render", "running", "")
+            assert sentence.text() == t.STATUS["working"][2]
+            p._on_stop()
+            assert sentence.text().startswith("Stopping")
+            assert sentence.width() >= sentence.sizeHint().width()
+            p._set_busy(False)
+            _app().processEvents()
+            assert sentence.text() == "Result ready"
+            assert p._connect_btn.isVisible() and not p._stop_btn.isVisible()
+            # The rail fits the docking bound for its density.
+            assert rail.minimumSizeHint().width() <= bounds[profile], (
+                profile, rail.minimumSizeHint().width())
+            # The chrome that left the rail is read through the overflow.
+            texts = [a.text() for a in p._build_overflow_menu().actions()]
+            for want in ("Palette", "Ground the corpus", "Health", "Help"):
+                assert any(x.startswith(want) for x in texts), (want, texts)
+            # Hidden owners: constructed for their writers, in no layout.
+            for name in ("_foot_label", "_meter_lbl", "_palette_hint", "_author_lbl"):
+                w = getattr(p, name)
+                assert not w.isVisible() and not _in_a_layout(w), name
+            assert not hasattr(p, "_observe")
+        finally:
+            p.close()
