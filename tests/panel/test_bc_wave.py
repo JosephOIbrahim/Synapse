@@ -336,3 +336,43 @@ def test_palette_rows_breathe():
                 pal.close()
         finally:
             root.close()
+
+
+# --------------------------------------------------------------------- BC-4
+def test_one_signal_per_fact_at_boot():
+    """Ruling item 5 (ADHD spacing, light touch): outside the transcript the
+    CHAT face says its idle state ONCE (the rail sentence) - the ribbon is
+    absence, not 'no scene context'; the composer tells '/' exactly once
+    (the placeholder G3 pins) and its legend sits at the chrome floor; the
+    composer is a `stack` (grip / input / legend at 4/6/3); the recall card
+    is a `band` through the applier, with no exemption lines left."""
+    import io
+    from synapse.panel.designsystem import tokens as t, rhythm
+    src = open(os.path.join(_ROOT, "python", "synapse", "panel", "recall_card.py"),
+               encoding="utf-8").read()
+    assert "rhythm-exempt" not in src, "recall_card.py still carries exemption lines"
+    for profile in PROFILES:
+        p = _panel(profile)
+        try:
+            density = DENSITY[profile]
+            assert p._ctx_label.text() == "", (profile, p._ctx_label.text())
+            khint = p._khint
+            assert QtGui.QFontInfo(khint.font()).pixelSize() >= t.scaled(t.SIZE_SMALL, p._chrome_scale), (
+                profile, QtGui.QFontInfo(khint.font()).pixelSize())
+            tellings = p._input.placeholderText().count("/") + khint.text().count("/")
+            assert tellings == 1, (profile, p._input.placeholderText(), khint.text())
+            composer = p._input.parentWidget()
+            assert composer.property("rhythm_role") == "stack"
+            assert composer.layout().spacing() == t.gap(t.SPACE_XS, density), (
+                profile, composer.layout().spacing())
+            # No hand-added spacer between the input row and the legend.
+            assert all(composer.layout().itemAt(i).spacerItem() is None
+                       for i in range(composer.layout().count()))
+            card = p._recall_card
+            assert card.property("rhythm_role") == "band"
+            rhythm.apply(card, density)
+            m = card.layout().contentsMargins()
+            assert card.layout().spacing() == 0
+            assert (m.left(), m.top(), m.right(), m.bottom()) == (0, 0, 0, 0)
+        finally:
+            p.close()
