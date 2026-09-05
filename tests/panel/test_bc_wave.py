@@ -436,3 +436,118 @@ def test_profile_row_folded():
             assert [a for a in acts if a.isChecked()] == [other]
         finally:
             p.close()
+
+
+# -------------------------------------------------------------------- BC-6a
+def _proposal(level):
+    return {"proposal_id": "p-%s" % level, "level": level,
+            "operation": "delete_node" if level == "review" else "submit_render",
+            "agent_id": "HANDS", "description": "bc-wave probe", "created_at": ""}
+
+
+def _verbs(card):
+    return {b.text(): b for b in card.findChildren(QtWidgets.QPushButton, "DsVerb")}
+
+
+def _tags(card):
+    return [w for w in card.findChildren(QtWidgets.QLabel)
+            if w.property("rhythm_role") == "tag" and w.isVisible()]
+
+
+def test_consent_card_vocabulary():
+    """F4: the consent card speaks the panel's own vocabulary - a DsCard with
+    the three bands, the level as a `tag` (HOT_SOFT only via status=BLOCKED
+    for CRITICAL), DsVerb verbs at the 26px / SPACE_32 target floor, APPROVE
+    the one accented thing on the card, REJECT hot; REVIEW gets '<- REVERT'
+    (CLAUDE.md 1.2: REVIEW continues unless rejected, so the verb after the
+    fact is a revert); a decision reads as a tag, never a hue."""
+    import inspect
+    from synapse.panel import gate_widget as gw
+    from synapse.panel.designsystem import tokens as t, rhythm
+    src = inspect.getsource(gw)
+    assert "_LEVEL_COLORS" not in src, "level hues must be gone from the module"
+    for density in DENSITIES:
+        root = _ds_root(density, h=760)
+        try:
+            cards = {}
+            for level in ("review", "approve", "critical"):
+                card = gw._ProposalCard(_proposal(level), parent=root)
+                root.layout() or QtWidgets.QVBoxLayout(root)
+                root.layout().addWidget(card)
+                cards[level] = card
+            rhythm.apply(root, density)
+            root.show()
+            _app().processEvents()
+            for level, card in cards.items():
+                assert card.objectName() == "DsCard", level
+                assert card.property("rhythm_role") == "band", level
+                assert card.layout().spacing() == 0
+                for band in ("DsCardHeader", "DsCardBody", "DsCardFooter"):
+                    assert card.findChildren(QtWidgets.QWidget, band), (level, band)
+                verbs = _verbs(card)
+                if level == "review":
+                    assert list(verbs) == ["← REVERT"], list(verbs)
+                    assert verbs["← REVERT"].property("tone") in (None, ""), level
+                else:
+                    assert set(verbs) == {"REJECT", "APPROVE"}, list(verbs)
+                    assert verbs["REJECT"].property("tone") == "hot"
+                    assert verbs["APPROVE"].property("tone") == "accent"
+                accented = [w for w in card.findChildren(QtWidgets.QWidget)
+                            if w.property("tone") == "accent"]
+                assert accented == ([verbs["APPROVE"]] if level != "review" else []), level
+                for text, v in verbs.items():
+                    assert v.isVisible(), (level, text)
+                    assert min(v.width(), v.height()) >= 26, (level, text, v.width(), v.height())
+                    assert v.height() >= t.SPACE_32, (level, text, v.height())
+                level_tags = [w for w in _tags(card) if w.text() == level.upper()]
+                assert len(level_tags) == 1, (level, [w.text() for w in _tags(card)])
+                assert (level_tags[0].property("status") == "BLOCKED") == (level == "critical"), level
+            # A decision is a tag, never a hue: verbs hide, the card disables.
+            card = cards["approve"]
+            card.mark_decided("rejected")
+            _app().processEvents()
+            assert all(not v.isVisible() for v in _verbs(card).values())
+            decided = [w for w in _tags(card) if w.text() == "REJECTED"]
+            assert decided and decided[0].property("status") == "BLOCKED"
+            assert not card.isEnabled()
+            # Not recorded: a tag too, and the card stays live (RULING 18).
+            card = cards["critical"]
+            card.mark_gate_unreachable()
+            _app().processEvents()
+            assert card.isEnabled() and all(v.isVisible() for v in _verbs(card).values())
+            assert any(w.text() == "NOT RECORDED" and w.property("status") == "BLOCKED"
+                       for w in _tags(card))
+        finally:
+            root.close()
+
+
+def test_turn_receipt_offers_revert_on_chat():
+    """F11: after a quiet turn that changed the scene, the CHAT surface offers
+    an artist-clickable REVERT (the turn receipt in the consent slot); it is
+    gone again once the artist sends the next message."""
+    for profile in PROFILES:
+        p = _panel(profile)
+        try:
+            p._start_worker = lambda: None     # the seam under test is the UI, not the worker
+            p._set_busy(True)
+            p._on_tool_status("houdini_create_node", "running", "/obj/geo1")
+            p._on_tool_status("houdini_create_node", "done", "/obj/geo1")
+            p._on_done()
+            _app().processEvents()
+            assert p._faces.currentIndex() == 0, profile
+            face = _chat_face(p)
+            reverts = [b for b in face.findChildren(QtWidgets.QAbstractButton)
+                       if b.isVisible() and "REVERT" in b.text()]
+            assert len(reverts) == 1, (profile, [b.text() for b in reverts])
+            assert p._consent_slot.isVisible()
+            assert p._consent_slot.property("rhythm_role") == "card"
+            badge = [w for w in p._consent_slot.findChildren(QtWidgets.QLabel)
+                     if w.isVisible() and "CHANGE" in w.text()]
+            assert badge and badge[0].property("rhythm_role") == "tag", profile
+            p._send("x")
+            _app().processEvents()
+            assert not any(b.isVisible() and "REVERT" in b.text()
+                           for b in face.findChildren(QtWidgets.QAbstractButton)), profile
+            assert not p._consent_slot.isVisible()
+        finally:
+            p.close()
