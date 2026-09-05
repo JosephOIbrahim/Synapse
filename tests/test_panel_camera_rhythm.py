@@ -138,7 +138,9 @@ def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
                 if isinstance(n, ast.FunctionDef) and n.name == "__init__"]
     current = constructors(_source("synapse_panel.py"))
     original = constructors(_source("synapse_panel.py", _panel_base()))
-    assert [re.sub(r"  # rhythm-exempt:[^\n]*", "", s) for s in current] == original
+    # The annotation is allowed on BOTH sides (the base now carries it too).
+    strip = lambda src: re.sub(r"  # rhythm-exempt:[^\n]*", "", src)
+    assert [strip(s) for s in current] == [strip(s) for s in original]
 
 
 @pytest.mark.parametrize("name", ["refresh_from_probe", "_refresh_usage", "measure_static"])
