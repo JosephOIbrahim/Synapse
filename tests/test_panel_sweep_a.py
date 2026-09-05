@@ -110,13 +110,31 @@ def test_every_former_widget_layout_owner_has_a_role_in_its_own_scope(filename):
             assert owner in role_owners, (filename, scope, owner)
 
 
+
+
+def _outside_rhythm_block(text):
+    """The QSS module text with the LEVER role block (_rhythm_stylesheet) blanked.
+
+    Landing r3 (CTO 2026-09-05, RULING-4e): that one function is the upstream
+    region the landing edits under a written ruling (the dead 0.72x / 0.68x
+    ratios). Everything else before the first sweep marker stays byte-identical
+    to ce04dcb0, which is what "append-only" protects.
+    """
+    tree = ast.parse(text)
+    node = next(n for n in ast.walk(tree)
+                if isinstance(n, ast.FunctionDef) and n.name == "_rhythm_stylesheet")
+    lines = text.splitlines()
+    return "\n".join(lines[:node.lineno - 1] + lines[node.end_lineno:]).rstrip()
+
+
 def test_qss_is_append_only_and_every_style_key_has_rules():
     from synapse.panel.designsystem import qss
 
     source = (PANEL / "designsystem/qss.py").read_text(encoding="utf-8")
     original = _base("python/synapse/panel/designsystem/qss.py")
-    assert source.startswith(original)
-    added = source[len(original):]
+    marker = "# --- SWEEP_A (chat_panel.py)"
+    prefix, added = source[:source.index(marker)], source[source.index(marker):]
+    assert _outside_rhythm_block(prefix) == _outside_rhythm_block(original)
     # Landing r3 (CTO 2026-09-05, R2-03): SWEEP_A owns exactly its own marked
     # block; later sweeps append their own blocks after it, so the pin is
     # fence-scoped to SWEEP_A's block instead of the whole tail.
@@ -241,7 +259,7 @@ def _layout_sequence(widgets, host, child, density):
     assert owners
     roles = [w.property("rhythm_role") for w in owners]
     # Independently chosen component bases, not copied from ROLE_GAPS.
-    bases = {"group": 16, "parm_row": 4, "card": 16}
+    bases = {"group": 16, "parm_row": 4, "card": 16, "stack": 4}
     identities = [id(w) for w in owners]
     for level in (density, "tight", "airy", "standard", density):
         rhythm.apply(child, level)

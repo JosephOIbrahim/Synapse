@@ -233,7 +233,7 @@ class FaceReview(QtWidgets.QWidget):
         self._locator.setObjectName("DsSection")
         self._locator.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         loc = QtWidgets.QHBoxLayout(self._locator)
-        self._locator.setProperty("rhythm_role", "parm_row")
+        self._locator.setProperty("rhythm_role", "stack")
 
         self._locator_meta = c.label("", role="code")
         self._locator_meta.setWordWrap(True)
@@ -255,7 +255,7 @@ class FaceReview(QtWidgets.QWidget):
         credit_wrap.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         credit_wrap.setMaximumWidth(440)     # reading measure (WIDE DOCKS rule)
         self._credit_grid = QtWidgets.QGridLayout(credit_wrap)
-        credit_wrap.setProperty("rhythm_role", "parm_row")
+        credit_wrap.setProperty("rhythm_role", "stack")
         self._credit_grid.setColumnMinimumWidth(0, 64)
         self._credit_grid.setColumnStretch(1, 1)
 
@@ -277,7 +277,7 @@ class FaceReview(QtWidgets.QWidget):
         self._receipt_wrap.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._receipt_wrap.setMaximumWidth(440)   # reading measure (WIDE DOCKS rule)
         self._receipt_box = QtWidgets.QVBoxLayout(self._receipt_wrap)
-        self._receipt_wrap.setProperty("rhythm_role", "parm_row")
+        self._receipt_wrap.setProperty("rhythm_role", "stack")
 
         self._receipt_wrap.setVisible(False)
         col.addWidget(self._receipt_wrap, 0, Qt.AlignmentFlag.AlignLeft)
@@ -290,7 +290,7 @@ class FaceReview(QtWidgets.QWidget):
         self._detail.setObjectName("DsSection")
         self._detail.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         dcol = QtWidgets.QVBoxLayout(self._detail)
-        self._detail.setProperty("rhythm_role", "parm_row")
+        self._detail.setProperty("rhythm_role", "stack")
 
         self._via_box = QtWidgets.QVBoxLayout()
         self._via_box.setSpacing(1)  # rhythm-exempt: nested provenance layout has no widget owner; wrapping changes the hierarchy

@@ -228,7 +228,7 @@ if _QT_AVAILABLE:
 
             row = QtWidgets.QHBoxLayout(self)
             self.setObjectName("DsWorkingIndicator")
-            self.setProperty("rhythm_role", "parm_row")
+            self.setProperty("rhythm_role", "stack")
             self._dot = QtWidgets.QLabel("●", self)   # ● status dot
             self._dot.setObjectName("workingIndicatorDot")
             self._text = QtWidgets.QLabel("", self)

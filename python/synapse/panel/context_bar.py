@@ -387,7 +387,7 @@ if _QT_AVAILABLE:
         qss.sweep_a_style(root, "context_root")
 
         outer = QtWidgets.QVBoxLayout(root)
-        root.setProperty("rhythm_role", "parm_row")
+        root.setProperty("rhythm_role", "stack")
 
 
         # -- Row 1: breadcrumb | stretch | memory badge | health dot --
@@ -434,7 +434,7 @@ if _QT_AVAILABLE:
         actions_container.setObjectName("ctx_actions")
         qss.sweep_a_style(actions_container, "context_actions")
         actions_layout = QtWidgets.QHBoxLayout(actions_container)
-        actions_container.setProperty("rhythm_role", "parm_row")
+        actions_container.setProperty("rhythm_role", "stack")
         for label, command in state.quick_actions:
             btn = QtWidgets.QPushButton(label)
             btn.setProperty("command", command)

@@ -357,16 +357,16 @@ def _rhythm_stylesheet(scale):
 
     Layout-bearing row/tag containers get padding from rhythm's fixed margins;
     leaf labels/buttons get QSS padding. Never apply both to one component.
-    The caller's scale is the host chrome scale, so role ratios cannot push
-    labels below either the BP4 constant or that supplied host body floor.
+    Label and tag type is BODY size: the type-floor gate (body is the floor)
+    made the old 0.72x / 0.68x ratios unreachable, so they were a lie in the
+    sheet (landing r3, RULING-4e). Contrast comes from case, tracking, colour.
     """
     s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
-    role_size = lambda ratio: max(s(t.SIZE_BODY), s(t.SIZE_BODY * ratio))  # noqa: E731
     base = f"""
 /* ---- PD generic rhythm patterns ------------------------------ */
 #DsRoot [rhythm_role="label"] {{
     color: {t.TEXT_SECONDARY}; border: none;
-    font-size: {role_size(0.72)}px; font-weight: {t.WEIGHT_MEDIUM};
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_MEDIUM};
     padding: 0;
     margin-top: {t.SPACE_LG}px; margin-bottom: {t.SPACE_12}px;
 }}
@@ -387,7 +387,7 @@ def _rhythm_stylesheet(scale):
 }}
 #DsRoot [rhythm_role="tag"], #DsRoot QLabel#DsBadge[rhythm_role="tag"] {{
     color: {t.TEXT_SECONDARY}; background: {t.SURFACE};
-    font-size: {role_size(0.68)}px; font-weight: {t.WEIGHT_MEDIUM};
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_MEDIUM};
     border: none; border-radius: {t.RADIUS_ROUND}px; padding: 0;
     margin-left: {t.SPACE_MD}px;
 }}

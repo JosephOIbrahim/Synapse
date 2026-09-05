@@ -62,9 +62,10 @@ All dimensions below use existing `designsystem/tokens.py` vocabulary:
 (`git show 81f3fb08 --stat`). Ratios and arithmetic on these values are component
 rules, not new tokens. No literal font size or family is introduced.
 
-Label/tag nominal sizes are body x0.72/x0.68, rounded and clamped to
-`FONT_FLOOR_PX` and the supplied host body scale, so a smaller nominal role never
-undercuts that floor. QSS uses `WEIGHT_MEDIUM`; row/card/parameter content uses
+Label/tag type is body size; contrast comes by case, tracking and colour. (The
+type-floor gate - body is the floor - made any sub-body ratio unreachable by this
+spec's own rule, so the former 0.72x / 0.68x line was retired at landing r3,
+RULING-4e.) QSS uses `WEIGHT_MEDIUM`; row/card/parameter content uses
 `WEIGHT_REGULAR`. Mono uses the existing `fontload.apply_family(..., mono=True)`
 path. Uppercase and tracking use QFont capitalization/PercentageSpacing in
 rhythm, after QSS polish, without rewriting widget text. Tracking is +0.08 em
@@ -104,6 +105,9 @@ margins below are (left, top, right, bottom); they never scale.
 | parm_row: between rows/cells | 4 | 6 | 4 | 3 | (0,0,0,0) |
 | group: between groups | 16 | 24 | 16 | 12 | (0,0,0,0) |
 | parameter section head (label QSS override) | 32 | 48 | 32 | 24 | unchanged |
+| shell: panel edge container (landing r3) | 16 | 24 | 16 | 12 | (GUTTER,SPACE_SM,GUTTER,SPACE_SM) = (30,8,30,8) |
+| stack: flush utility stack (landing r3) | 4 | 6 | 4 | 3 | (0,0,0,0) |
+| band: chrome bands owning their hairlines (landing r3) | 0 | 0 | 0 | 0 | (0,0,0,0) |
 
 1. **Label.** Set `rhythm_role="label"` on section text: muted mono, upper,
    tracked, 24 above/12 below via QSS. No border on the label. Use the existing
@@ -138,6 +142,21 @@ margins below are (left, top, right, bottom); they never scale.
    scoped to prevent leaking onto unrelated labels. A two-column source remains
    two columns; no control is invented. UNKNOWN stays a value string. Groups
    use `group` (16), section headers use the 32-px label override.
+6. **Shell / stack / band** (landing r3, CTO rulings 2026-09-05). `shell` is a
+   panel edge container - the rail, the context ribbon, the tab row and the
+   direct face - and is the one consumer of `tokens.GUTTER` (30px inset, SPACE_SM
+   air); a token with zero consumers is a lie in the design system. `stack` is
+   a flush utility stack (toolbars, input rows, card interiors): gap 4, no
+   margins, no QSS, no type - `parm_row` is reserved for real label/value
+   grids (`face_token.py`). `band` is a chrome band that owns its own hairline
+   (the panel root; act + divider + input): gap 0, margins 0.
+
+**Label doctrine (landing r3, RULING-4d).** `rhythm_role="label"` is the
+section eyebrow (mono, upper, tracked - Cohere lesson 1, battleplan section 4).
+`TYPE_ROLES['label']` (`c.label(role="label")`) is UI label text (sans, BP4).
+Different things, never both on one widget; `tests/test_panel_camera_rhythm.py`
+pins that no source line pair applies both. Renaming the rhythm role to
+`eyebrow` waits for tokens.py to next open under a ratified change.
 
 ### CENSUS region map / migration handoff
 

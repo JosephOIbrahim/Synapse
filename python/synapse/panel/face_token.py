@@ -396,7 +396,7 @@ class FaceToken(QtWidgets.QWidget):
         return max(t.FONT_FLOOR_PX, t.scaled(token, self._scale))
 
     def _eyebrow(self, text):
-        lbl = c.label(text, role="label", scale=self._scale)
+        lbl = c.label(text, scale=self._scale)   # eyebrow type comes from the rhythm label role alone
         lbl.setObjectName("DsParmSection")
         lbl.setProperty("rhythm_role", "label")
         return lbl

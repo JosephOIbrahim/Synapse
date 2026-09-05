@@ -23,7 +23,8 @@ REGIONS = (
     "tool_palette.ToolPalette", "command_palette.CommandPaletteWidget",
     "working_indicator.WorkingIndicator",
 )
-OWNER_ROLES = dict(zip(REGIONS, ("parm_row", "group", "parm_row", "parm_row", "group", "parm_row")))
+# landing r3 (RULING-4a): the flush utility stacks are stack, not parm_row.
+OWNER_ROLES = dict(zip(REGIONS, ("stack", "group", "stack", "stack", "group", "stack")))
 
 
 def _base(path):
@@ -58,12 +59,31 @@ def test_each_real_constructor_declares_its_layout_role(region, role):
                and all(isinstance(arg, ast.Constant) for arg in node.args))
 
 
+
+
+def _outside_rhythm_block(text):
+    """The QSS module text with the LEVER role block (_rhythm_stylesheet) blanked.
+
+    Landing r3 (CTO 2026-09-05, RULING-4e): that one function is the upstream
+    region the landing edits under a written ruling (the dead 0.72x / 0.68x
+    ratios). Everything else before the first sweep marker stays byte-identical
+    to ce04dcb0, which is what "append-only" protects.
+    """
+    tree = ast.parse(text)
+    node = next(n for n in ast.walk(tree)
+                if isinstance(n, ast.FunctionDef) and n.name == "_rhythm_stylesheet")
+    lines = text.splitlines()
+    return "\n".join(lines[:node.lineno - 1] + lines[node.end_lineno:]).rstrip()
+
+
 def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
     from synapse.panel.designsystem import qss, tokens
     path = "python/synapse/panel/designsystem/qss.py"
     source = (ROOT / path).read_text(encoding="utf-8")
-    assert source.startswith(_base(path)), "QSS edit outside append-only block"
-    tail = source[len(_base(path)):]
+    first = "# --- SWEEP_A (chat_panel.py)"
+    prefix, tail = source[:source.index(first)], source[source.index(first):]
+    assert _outside_rhythm_block(prefix) == _outside_rhythm_block(_base(path)), (
+        "QSS edit outside append-only block")
     # Landing r3 (CTO 2026-09-05, R2-03): the tail carries SWEEP_A's block
     # first; SWEEP_B's guarantees are fence-scoped to its own marked block.
     start, end = "# --- SWEEP_B (", "# --- END SWEEP_B"

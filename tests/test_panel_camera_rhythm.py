@@ -170,6 +170,42 @@ def test_camera_residual_cannot_regrow():
             assert "rhythm-exempt:" in (ROOT / file["path"]).read_text(encoding="utf-8").splitlines()[site["line"] - 1]
 
 
+def test_no_widget_takes_both_label_type_appliers():
+    """RULING-4d doctrine: rhythm_role="label" is the section eyebrow (mono,
+    upper, tracked); TYPE_ROLES['label'] via c.label(role="label") is UI label
+    text (sans, BP4). Different things - never both on one widget."""
+    offenders = []
+    for path in sorted((ROOT / "python/synapse/panel").glob("*.py")):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        for index, line in enumerate(lines):
+            applier = '.setProperty("rhythm_role", "label")'
+            if applier not in line:
+                continue
+            target = line.split(applier)[0].strip()
+            window = [near.split("  #")[0] for near in lines[max(0, index - 3):index + 4]]
+            if any(target + " = c.label(" in near and 'role="label"' in near for near in window):
+                offenders.append((path.name, index + 1))
+    assert not offenders, offenders
+
+
+def test_shell_role_consumes_the_gutter_token_and_ratios_are_gone():
+    """RULING-3: the 30px gutter is a role margin, so tokens.GUTTER has a
+    consumer and the four edge containers carry it. RULING-4e: no ratio."""
+    from synapse.panel.designsystem import rhythm, tokens as t
+
+    assert rhythm._MARGINS["shell"] == (t.GUTTER, t.SPACE_SM, t.GUTTER, t.SPACE_SM)
+    assert rhythm.ROLE_GAPS["band"] == 0 and rhythm.ROLE_GAPS["stack"] == t.SPACE_GRID[0]
+    panel_source = _source("synapse_panel.py")
+    assert panel_source.count('setProperty("rhythm_role", "shell")') == 4
+    assert 'setProperty("rhythm_role", "band")' in panel_source
+    qss_source = (ROOT / "python/synapse/panel/designsystem/qss.py").read_text(encoding="utf-8")
+    assert "role_size" not in qss_source
+    for name in ("chat_panel.py", "gate_widget.py", "context_bar.py", "face_review.py",
+                 "hda_views.py", "quick_actions.py", "tool_palette.py",
+                 "working_indicator.py", "command_palette.py", "recall_card.py"):
+        assert '"rhythm_role", "parm_row"' not in _source(name), name
+
+
 def test_new_card_has_no_capability_or_background_work():
     source = _source("recall_card.py")
     tree = ast.parse(source)

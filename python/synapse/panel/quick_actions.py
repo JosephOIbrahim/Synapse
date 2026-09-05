@@ -116,7 +116,7 @@ try:
 
         def _build_ui(self):
             self._outer_layout = QtWidgets.QHBoxLayout(self)
-            self.setProperty("rhythm_role", "parm_row")
+            self.setProperty("rhythm_role", "stack")
 
 
             # Chevron toggle
@@ -132,7 +132,7 @@ try:
             # Pills container
             self._pills_container = QtWidgets.QWidget(self)
             self._pills_layout = QtWidgets.QHBoxLayout(self._pills_container)  # docking-exempt: five full action labels occupy one row; wrapping or scrolling changes the hierarchy
-            self._pills_container.setProperty("rhythm_role", "parm_row")
+            self._pills_container.setProperty("rhythm_role", "stack")
 
 
             for action in QUICK_ACTIONS:

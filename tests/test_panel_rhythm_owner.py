@@ -312,6 +312,7 @@ def test_unknown_role_density_and_removed_role(caplog):
     ("label", (18, 9, 12)), ("row", (18, 9, 12)),
     ("tag", (24, 12, 16)), ("card", (24, 12, 16)),
     ("parm_row", (6, 3, 4)), ("group", (24, 12, 16)),
+    ("shell", (24, 12, 16)), ("stack", (6, 3, 4)), ("band", (0, 0, 0)),
 ])
 def test_recorded_layout_sequence_is_derived_from_base_not_current(monkeypatch, role, expected):
     # Recording protocol only, not a Qt measurement. Real QFont and QLayout
@@ -320,7 +321,7 @@ def test_recorded_layout_sequence_is_derived_from_base_not_current(monkeypatch, 
     node = _Widget(role)
     unmarked = _Widget()
     node.kids.append(unmarked)
-    margins = {"row": (16, 12, 16, 12), "tag": (10, 6, 10, 6)}
+    margins = {"row": (16, 12, 16, 12), "tag": (10, 6, 10, 6), "shell": (30, 8, 30, 8)}
     for index, density in enumerate(("airy", "tight", "standard", "airy")):
         assert rhythm.apply(node, density) == 1
         assert node.box.spacing == expected[index % 3]

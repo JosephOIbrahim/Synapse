@@ -497,7 +497,10 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _build_ui(self):
         root = QtWidgets.QVBoxLayout(self)
-        self.setProperty("rhythm_role", "group")
+        # band: the regions are chrome bands that own their own hairlines
+        # (#DsHeader / #DsTabRow rules), so the root stack pays no gap and no
+        # inset (RULING-3; the B4 composer cap holds).
+        self.setProperty("rhythm_role", "band")
 
         # Persistent rail (Mile 1) → context ribbon → switcher → the two faces.
         # v9: the ENGINE pill bar left the chrome — the rail author token is the
@@ -778,10 +781,16 @@ class SynapsePanel(QtWidgets.QWidget):
         # Model picker rides the action row, right edge -- same line as
         # Connect/Corpus/Help, opposite side (Joe): actions left, choice right.
         bot.addWidget(self._author_lbl)
-        w.setProperty("rhythm_role", "parm_row")
+        # shell: the rail is an edge container - GUTTER inset, SPACE_SM air.
+        w.setProperty("rhythm_role", "shell")
+        # One type applier per widget (RULING-4c): the header controls are
+        # verbs and take the LABEL tracked font (mono) - the same applier as
+        # _verb and the CHAT / TOKEN pills - so the chrome siblings match
+        # byte-for-byte; no rhythm_role="label" on top of it.
         for control in (self._connect_btn, self._corpus_btn, self._help_btn, overflow):
             control.setObjectName("DsVerb")
-            control.setProperty("rhythm_role", "label")
+            control.setFont(fontload.tracked_font(
+                "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
         overflow.setFixedWidth(t.SPACE_LG)
         for label in (self._header_status, self._foot_label, self._meter_lbl,
                       self._palette_hint, self._author_lbl):
@@ -947,11 +956,13 @@ class SynapsePanel(QtWidgets.QWidget):
         if cached is not None:                     # L5-4: recompose reuse
             return cached
         w = self._section()
+        w.setProperty("rhythm_role", "shell")   # edge container: GUTTER inset
         lay = QtWidgets.QHBoxLayout(w)
-        # The section role owns the ribbon's spacing.
+        # The shell role owns the ribbon's spacing. The context label is UI
+        # label text (TYPE_ROLES['label'], sans, BP4) - not a section eyebrow,
+        # so it carries no rhythm_role="label" (RULING-4c/4d).
         self._ctx_label = c.label("no scene context", role="label", scale=self._chrome_scale)
         self._ctx_label.setObjectName("DsContextLabel")
-        self._ctx_label.setProperty("rhythm_role", "label")
         self._ctx_label.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
         lay.addWidget(self._ctx_label, 1)
         self._region_cache["_build_context_ribbon"] = w
@@ -1008,6 +1019,7 @@ class SynapsePanel(QtWidgets.QWidget):
             return cached
         w = self._section()
         w.setObjectName("DsTabRow")
+        w.setProperty("rhythm_role", "shell")   # edge container: GUTTER inset
         lay = QtWidgets.QHBoxLayout(w)
         navigation = self._build_context_ribbon().layout()
         self._face_pills = {}
@@ -1040,9 +1052,12 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:  # pragma: no cover - settings ships with the panel
             _profiles = ("curious", "expert", "ml")
         self._profile_pills = {}
+        lay.addStretch(1)   # right-aligned: profile is chrome, the faces are the surface
         for pid in _profiles:
             p = c.Pill(pid.upper())
-            p.setProperty("rhythm_role", "row")
+            # Pills are tags in this system's own table (battleplan section 4);
+            # row is list-item vocabulary and its 44px box was never the design.
+            p.setProperty("rhythm_role", "tag")
             p.setFont(fontload.tracked_font(
                 "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
             p.clicked.connect(lambda _=False, pid=pid: self._select_profile(pid))
@@ -1113,18 +1128,24 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _build_direct_face(self):
         """Direct — converse + quick actions + input. The artist's surface.
-        The face carries the comp's GUTTER/24 content padding; inner rows are
-        flush (their old horizontal margins would double it)."""
+        The face is a shell (GUTTER inset via the role, never an imperative
+        margin); act + divider + input sit in one band so the hairline is not
+        paid a group gap on both sides."""
         page = self._section()
+        page.setProperty("rhythm_role", "shell")
         col = QtWidgets.QVBoxLayout(page)
         col.addWidget(self._build_converse(), 1)   # chat | Build-HDA inner stack
         from synapse.panel.recall_card import RecallCard
         self._recall_card = RecallCard()
         self._recall_card.hide()
         col.addWidget(self._recall_card)
-        col.addWidget(self._build_act())
-        col.addWidget(c.divider())
-        col.addWidget(self._build_input())
+        band = self._section()
+        band.setProperty("rhythm_role", "band")
+        stack = QtWidgets.QVBoxLayout(band)
+        stack.addWidget(self._build_act())
+        stack.addWidget(c.divider())
+        stack.addWidget(self._build_input())
+        col.addWidget(band)
         return page
 
     def _build_work_face(self):
@@ -1827,7 +1848,7 @@ class SynapsePanel(QtWidgets.QWidget):
         {None, 'ok', 'hot', 'accent'} selects the semantic color via property."""
         btn = QtWidgets.QPushButton(text)
         btn.setObjectName("DsVerb")
-        btn.setProperty("rhythm_role", "label")
+        # One type applier per widget (RULING-4c): no rhythm_role="label" here.
         # L5-17: verbs carry the tab pills' tracking (same LABEL role, mono)
         # so they read as chrome siblings of CHAT/TOKEN, not body text.
         btn.setFont(fontload.tracked_font(

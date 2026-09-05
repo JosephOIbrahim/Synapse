@@ -167,7 +167,7 @@ class ToolPalette(QtWidgets.QWidget):
         except (TypeError, ValueError):
             scale = t.FONT_SCALE_DEFAULT
         self._scale = scale
-        self.setProperty("rhythm_role", "parm_row")
+        self.setProperty("rhythm_role", "stack")
         self.setProperty("panel_popup", "tool")
         # Preferred size only: fixed minima made the popup wider than its dock.
         self.resize(t.PANEL_PREF_WIDTH, t.PANEL_MIN_HEIGHT - t.SPACE_LG)

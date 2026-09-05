@@ -17,7 +17,10 @@ if __name__ != "__main__":
         env = dict(os.environ, QT_QPA_PLATFORM="offscreen", SYNAPSE_REDUCED_MOTION="1",
                    PYTHONDONTWRITEBYTECODE="1")
         bound = os.environ.get("SYNAPSE_HYTHON")
-        command = [bound] if bound else [sys.executable, "-I"]
+        # -I drops hython's stdlib bootstrap ('No module named encodings'), so
+        # the isolation flag is passed only to a plain CPython runner.
+        isolate = [] if "hython" in Path(sys.executable).name.lower() else ["-I"]
+        command = [bound] if bound else [sys.executable, *isolate]
         run = subprocess.run([*command, str(Path(__file__).resolve()), density],
                              cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
         if run.returncode == 77:
@@ -67,7 +70,47 @@ def probe(density):
         assert sum(header.layout().itemAt(i).layout() is not None
                    for i in range(header.layout().count())) == 1
         assert panel._help_btn.text() == "?"
-        assert all(p.property("rhythm_role") == "row" for p in panel._profile_pills.values())
+        # RULING-4b: profile pills are tags (battleplan section 4), not rows.
+        assert all(p.property("rhythm_role") == "tag" for p in panel._profile_pills.values())
+        # RULING-3: the four shell regions carry the GUTTER inset; the root
+        # band pays no gap and no inset (the B4 composer cap holds).
+        ribbon = panel._region_cache["_build_context_ribbon"]
+        tab_row = panel._region_cache["_build_mode_bar"]
+        direct_face = panel._recall_card.parentWidget()
+        for shell in (header, ribbon, tab_row, direct_face):
+            assert shell.property("rhythm_role") == "shell", shell.objectName()
+            m = shell.layout().contentsMargins()
+            assert (m.left(), m.top(), m.right(), m.bottom()) == (
+                t.GUTTER, t.SPACE_SM, t.GUTTER, t.SPACE_SM), shell.objectName()
+        assert panel.layout().spacing() == 0
+        rm = panel.layout().contentsMargins()
+        assert (rm.left(), rm.top(), rm.right(), rm.bottom()) == (0, 0, 0, 0)
+        band = panel._font_btn.parentWidget().parentWidget()
+        assert band.property("rhythm_role") == "band" and band.layout().spacing() == 0
+        # RULING-4c: one type applier per widget - CHAT, TOKEN, every verb of
+        # the act bar (_verb) and every rail control share pixel size and
+        # tracking byte-for-byte. (FaceReview / RecallCard verbs keep their own
+        # ratified L5 type; the ruling names the panel's two sites.)
+        chat_pill, token_pill = panel._face_pills["direct"], panel._face_pills["token"]
+        act_bar = panel._font_btn.parentWidget()
+        verbs = (act_bar.findChildren(QtWidgets.QPushButton, "DsVerb")
+                 + header.findChildren(QtWidgets.QPushButton, "DsVerb"))
+        assert len(verbs) >= 6, [v.text() for v in verbs]
+        reference = (QtGui.QFontInfo(chat_pill.font()).pixelSize(), chat_pill.font().letterSpacing())
+        for widget in [token_pill, *verbs]:
+            assert (QtGui.QFontInfo(widget.font()).pixelSize(),
+                    widget.font().letterSpacing()) == reference, widget.text()
+        # RULING-4b: a tag pill is not a 44px row - it sits at the CHAT pill's height.
+        for pill in panel._profile_pills.values():
+            assert pill.height() <= chat_pill.height() + 2, (pill.text(), pill.height(), chat_pill.height())
+        # RULING-4d: the context label is UI label text (sans); the recall
+        # header is the section eyebrow (mono). Two things, two treatments.
+        from synapse.panel.designsystem import fontload
+        sans = QtGui.QFontInfo(fontload.apply_family(QtGui.QFont())).family()
+        mono = QtGui.QFontInfo(fontload.apply_family(QtGui.QFont(), mono=True)).family()
+        assert sans != mono
+        assert QtGui.QFontInfo(panel._ctx_label.font()).family() == sans
+        assert QtGui.QFontInfo(panel._recall_card.header.font()).family() == mono
         active = panel._profile_pills["expert"]
         active.setProperty("active", True)
         compositor._repolish_tree(panel)

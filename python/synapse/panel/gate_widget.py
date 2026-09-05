@@ -158,7 +158,7 @@ class _ProposalCard(QtWidgets.QWidget):
         self._apply_card_style(level_color)
 
         layout = QtWidgets.QVBoxLayout(self)
-        self.setProperty("rhythm_role", "parm_row")
+        self.setProperty("rhythm_role", "stack")
 
 
         # Top row: badge + operation name + agent
@@ -374,7 +374,7 @@ class GateWidget(QtWidgets.QWidget):
     def _build_ui(self):
         """Build the collapsible container with proposals list + integrity row."""
         layout = QtWidgets.QVBoxLayout(self)
-        self.setProperty("rhythm_role", "parm_row")
+        self.setProperty("rhythm_role", "stack")
 
         # -- Chevron toggle header --
         self._header = QtWidgets.QPushButton(self)
@@ -389,7 +389,7 @@ class GateWidget(QtWidgets.QWidget):
         self._body.setVisible(False)
         qss.sweep_a_style(self._body, "gate_body")
         body_layout = QtWidgets.QVBoxLayout(self._body)
-        self._body.setProperty("rhythm_role", "parm_row")
+        self._body.setProperty("rhythm_role", "stack")
 
 
         # Proposals container (direct layout — no QScrollArea, which eats
@@ -407,7 +407,7 @@ class GateWidget(QtWidgets.QWidget):
         self._integrity_row = QtWidgets.QWidget(self._body)
         qss.sweep_a_style(self._integrity_row, "gate_integrity")
         integrity_layout = QtWidgets.QHBoxLayout(self._integrity_row)
-        self._integrity_row.setProperty("rhythm_role", "parm_row")
+        self._integrity_row.setProperty("rhythm_role", "stack")
 
 
         # Neither the dot's color nor the label's text is named here. Both come

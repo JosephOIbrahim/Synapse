@@ -24,7 +24,9 @@ PROFILES = {"airy": "curious", "standard": "expert", "tight": "ml"}
 # 12*(3/2,1,3/4)=(18,12,9); 16*...=(24,16,12); 4*...=(6,4,3).
 EXPECTED = {"label": (18, 12, 9), "row": (18, 12, 9),
             "tag": (24, 16, 12), "card": (24, 16, 12),
-            "parm_row": (6, 4, 3), "group": (24, 16, 12)}
+            "parm_row": (6, 4, 3), "group": (24, 16, 12),
+            # landing r3 roles (RULING-3 / RULING-4a): 16*..., 4*..., 0
+            "shell": (24, 16, 12), "stack": (6, 4, 3), "band": (0, 0, 0)}
 ALTERNATE_REGIONS = (
     "face_work.FaceWork", "face_review.FaceReview", "gate_widget.GateWidget",
     "context_bar.ContextChips", "quick_actions.QuickActionPills",
@@ -149,7 +151,10 @@ def _spacing(widgets, density, role):
     compositor._repolish_tree(root)
     assert rhythm.apply(root, density) == 1
     first = box.spacing(), _margins(box)
-    expected_margins = {"row": (16, 12, 16, 12), "tag": (10, 6, 10, 6)}
+    # shell = (GUTTER, SPACE_SM, GUTTER, SPACE_SM): the one consumer of the
+    # 30px gutter token; worked from tokens.py, not from _MARGINS.
+    expected_margins = {"row": (16, 12, 16, 12), "tag": (10, 6, 10, 6),
+                        "shell": (30, 8, 30, 8)}
     assert first[1] == expected_margins.get(role, (0, 0, 0, 0))
     assert (parent.spacing(), _margins(parent)) == (unmarked_spacing, unmarked_margins)
     rhythm.apply(root, density)

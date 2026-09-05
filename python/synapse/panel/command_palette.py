@@ -422,7 +422,7 @@ if _QT_AVAILABLE:
             # -- Container (for rounded-corner background) --
             container = QFrame(self)
             container.setObjectName("PaletteContainer")
-            container.setProperty("rhythm_role", "parm_row")
+            container.setProperty("rhythm_role", "stack")
 
             outer = QVBoxLayout(self)
             outer.addWidget(container)

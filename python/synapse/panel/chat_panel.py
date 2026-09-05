@@ -383,7 +383,7 @@ class SynapseChatPanel:
         qss.sweep_a_style(container, "chat_input_container")
 
         outer_layout = QtWidgets.QVBoxLayout(container)
-        container.setProperty("rhythm_role", "parm_row")
+        container.setProperty("rhythm_role", "stack")
 
 
         # Context chips row (above input)
@@ -606,7 +606,7 @@ class SynapseChatPanel:
         frame.setObjectName("connection_frame")
         qss.sweep_a_style(frame, "chat_connection")
         layout = QtWidgets.QHBoxLayout(frame)
-        frame.setProperty("rhythm_role", "parm_row")
+        frame.setProperty("rhythm_role", "stack")
 
 
         # Status dot
@@ -705,7 +705,7 @@ class SynapseChatPanel:
         toolbar = QtWidgets.QWidget(self._root)
         qss.sweep_a_style(toolbar, "chat_toolbar")
         layout = QtWidgets.QHBoxLayout(toolbar)
-        toolbar.setProperty("rhythm_role", "parm_row")
+        toolbar.setProperty("rhythm_role", "stack")
 
 
         self._mode_chat_btn = QtWidgets.QPushButton("Chat")

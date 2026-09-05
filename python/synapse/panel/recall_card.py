@@ -113,7 +113,9 @@ if QtWidgets is not None:
             bands = QtWidgets.QVBoxLayout(self)
             bands.setContentsMargins(0, 0, 0, 0)  # rhythm-exempt: fixed DsCard band seam; supplied roles describe collections, not the interior
             bands.setSpacing(0)  # rhythm-exempt: bands touch at their shared hairlines; card role would separate them
-            self.header = c.label("what I remember", role="label")
+            # The eyebrow: rhythm_role="label" is the one type applier here
+            # (mono, upper, tracked); TYPE_ROLES['label'] is a different thing.
+            self.header = c.label("what I remember")
             self.header.setObjectName("DsCardHeader")
             self.header.setProperty("rhythm_role", "label")
             self.body = QtWidgets.QTextBrowser()
@@ -126,7 +128,7 @@ if QtWidgets is not None:
             self.body.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
             footer = QtWidgets.QWidget()
             footer.setObjectName("DsCardFooter")
-            footer.setProperty("rhythm_role", "parm_row")
+            footer.setProperty("rhythm_role", "stack")
             footer.setAttribute(QtCore.Qt.WA_StyledBackground, True)
             row = QtWidgets.QHBoxLayout(footer)
             self.action = c.Button("Copy", variant="ghost")

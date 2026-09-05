@@ -28,7 +28,7 @@ class DescribeView(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DescribeView")
-        self.setProperty("rhythm_role", "parm_row")
+        self.setProperty("rhythm_role", "stack")
         self._build_ui()
         rhythm.apply(self)
 
@@ -238,7 +238,7 @@ class ResultView(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("ResultView")
-        self.setProperty("rhythm_role", "parm_row")
+        self.setProperty("rhythm_role", "stack")
         self._build_ui()
         rhythm.apply(self)
 
