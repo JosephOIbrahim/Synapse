@@ -87,8 +87,14 @@ def _make_widget():
 
 
 def _dot_color(widget):
-    """The colour the fidelity dot is actually painted, from its stylesheet."""
-    return widget._fidelity_dot.styleSheet()
+    """The colour the fidelity dot is actually painted.
+
+    Landing r3 (CTO 2026-09-05, R2-02): SWEEP_A moved the dot's paint from an
+    inline sheet to the scoped QSS rule `[sweep_a_style="gate_fidelity_dot"]`
+    selected by the `sweep_a_color` property (gate_widget._render_fidelity ->
+    qss.sweep_a_style). The property IS the seam the rule keys on.
+    """
+    return widget._fidelity_dot.property("sweep_a_color") or ""
 
 
 # ── (a) constructed, never updated ───────────────────────────────

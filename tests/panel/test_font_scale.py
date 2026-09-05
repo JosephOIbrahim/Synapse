@@ -104,8 +104,9 @@ def test_aa_scales_content_only_chrome_frozen():
         return QtGui.QFontInfo(w.font()).pixelSize() if w is not None else None
 
     def _input_px():
-        m = re.search(r"font-size:\s*(\d+)px", p._input.styleSheet() or "")
-        return int(m.group(1)) if m else None
+        # Landing r3 (STD-06): the prompt size lives on the composer's document
+        # default font (synapse_panel._set_prompt_font), not a widget sheet.
+        return p._input.document().defaultFont().pixelSize()
 
     p._set_scale(1.0)
     chrome_a = {n: _px(n) for n in chrome}
