@@ -19,7 +19,7 @@ except ImportError:
     from PySide2.QtCore import Signal, Slot, QTimer
 
 from synapse.panel.designsystem import tokens as t
-from synapse.panel.designsystem import qss
+from synapse.panel.designsystem import fontload, qss
 
 logger = logging.getLogger(__name__)
 
@@ -166,10 +166,15 @@ class _ProposalCard(QtWidgets.QWidget):
         top_row.setSpacing(8)  # rhythm-exempt: nested badge-operation row has no widget owner; wrapping changes the hierarchy
 
         badge = QtWidgets.QLabel(self._level.upper())
+        # Landing r3 repair (F-C1): families travel by QFont, never by QSS -
+        # the badge / operation / countdown / Reject / Approve are the mono
+        # labels-tags-ids of battleplan section 4, as master rendered them.
+        badge.setFont(fontload.apply_family(badge.font(), mono=True))
         qss.sweep_a_style(badge, "gate_badge", level_color)
         top_row.addWidget(badge)
 
         op_label = QtWidgets.QLabel(proposal_data.get("operation", "unknown"))
+        op_label.setFont(fontload.apply_family(op_label.font(), mono=True))
         qss.sweep_a_style(op_label, "gate_operation")
         top_row.addWidget(op_label, stretch=1)
 
@@ -202,6 +207,8 @@ class _ProposalCard(QtWidgets.QWidget):
 
             # Countdown label
             self._countdown_label = QtWidgets.QLabel("")
+            self._countdown_label.setFont(
+                fontload.apply_family(self._countdown_label.font(), mono=True))
             qss.sweep_a_style(self._countdown_label, "gate_countdown")
             btn_row.addWidget(self._countdown_label)
 
@@ -209,6 +216,7 @@ class _ProposalCard(QtWidgets.QWidget):
 
             # Store as instance vars to prevent GC before layout takes ownership
             self._reject_btn = QtWidgets.QPushButton("Reject")
+            self._reject_btn.setFont(fontload.apply_family(self._reject_btn.font(), mono=True))
             qss.sweep_a_style(self._reject_btn, "gate_reject")
             self._reject_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
             self._reject_btn.clicked.connect(
@@ -217,6 +225,7 @@ class _ProposalCard(QtWidgets.QWidget):
             btn_row.addWidget(self._reject_btn)
 
             self._approve_btn = QtWidgets.QPushButton("Approve")
+            self._approve_btn.setFont(fontload.apply_family(self._approve_btn.font(), mono=True))
             qss.sweep_a_style(self._approve_btn, "gate_approve")
             self._approve_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
             self._approve_btn.clicked.connect(self._on_approve_clicked)
@@ -379,6 +388,10 @@ class GateWidget(QtWidgets.QWidget):
         # -- Chevron toggle header --
         self._header = QtWidgets.QPushButton(self)
         self._header.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        # Landing r3 repair (F-C1): the mono family rides the QFont (the QSS
+        # family declarations were purged); header, fidelity, counts and
+        # violations are the ids master rendered in Space Mono.
+        self._header.setFont(fontload.apply_family(self._header.font(), mono=True))
         qss.sweep_a_style(self._header, "gate_header")
         self._update_header_text()
         self._header.clicked.connect(self._toggle)
@@ -417,6 +430,7 @@ class GateWidget(QtWidgets.QWidget):
         integrity_layout.addWidget(self._fidelity_dot)
 
         self._fidelity_label = QtWidgets.QLabel()
+        self._fidelity_label.setFont(fontload.apply_family(self._fidelity_label.font(), mono=True))
         qss.sweep_a_style(self._fidelity_label, "gate_fidelity_label")
         integrity_layout.addWidget(self._fidelity_label)
 
@@ -428,6 +442,7 @@ class GateWidget(QtWidgets.QWidget):
         integrity_layout.addWidget(sep1)
 
         self._ops_label = QtWidgets.QLabel("0 ops")
+        self._ops_label.setFont(fontload.apply_family(self._ops_label.font(), mono=True))
         qss.sweep_a_style(self._ops_label, "gate_counts")
         integrity_layout.addWidget(self._ops_label)
 
@@ -436,6 +451,8 @@ class GateWidget(QtWidgets.QWidget):
         integrity_layout.addWidget(sep2)
 
         self._violations_label = QtWidgets.QLabel("0 violations")
+        self._violations_label.setFont(
+            fontload.apply_family(self._violations_label.font(), mono=True))
         qss.sweep_a_style(self._violations_label, "gate_violations", t.SLATE)
         integrity_layout.addWidget(self._violations_label)
 

@@ -452,6 +452,13 @@ QWidget#DsCard {{
 # --- SWEEP_A (chat_panel.py)
 # The existing generator above is immutable for this leg. Compose the sweep's
 # scoped rules at this seam so downstream sweep blocks can compose in turn.
+#
+# Type (landing r3 repair, F-C1): no rule below names a family. Families ride
+# the QFont - fontload.apply_family / tracked_font / rhythm._apply_type - and
+# gate_widget.py (shipped) applies the mono family that way. The SWEEP_A
+# widgets nothing ships (chat_panel, context_bar, quick_actions, hda_views)
+# render in the QApplication font (Houdini's UI face) until they are wired
+# into the shipped panel; at that seam they take the family by QFont too.
 _sweep_a_base_stylesheet = stylesheet
 _sweep_a_builders = []
 
