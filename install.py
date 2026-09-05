@@ -63,7 +63,9 @@ def _detect_houdini_prefs():
 
     Search order:
       1. $HOUDINI_USER_PREF_DIR (if set)
-      2. Platform-specific defaults for Houdini 21.x, 20.x, 19.x
+      2. Platform-specific defaults for Houdini 22.x, 21.x, 20.x, 19.x
+         (newest first -- so a wired houdini21.0 next to the live
+         houdini22.0 no longer wins; B10 2026-09-05)
     """
     # Check environment variable first
     env_prefs = os.environ.get("HOUDINI_USER_PREF_DIR")
@@ -82,9 +84,9 @@ def _detect_houdini_prefs():
     else:  # Linux
         search_root = home
 
-    # Search for houdini21.x, 20.x, etc. (newest first)
+    # Search for houdini22.x, 21.x, etc. (newest first)
     candidates = []
-    for major in [21, 20, 19]:
+    for major in [22, 21, 20, 19]:
         for minor in range(9, -1, -1):
             if system == "Windows":
                 path = os.path.join(search_root, f"houdini{major}.{minor}")
