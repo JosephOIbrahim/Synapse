@@ -22,7 +22,7 @@ import re
 # -- Design tokens ------------------------------------------------------------
 # The palette comes from the design system; only the panel-specific text
 # aliases come from the panel bridge. There used to be an `except ImportError`
-# arm here holding a private copy of the palette (#00D4FF / #00E676 / DM Sans).
+# arm here holding a private copy of the palette (a cyan, a green, DM Sans).
 # That arm was REACHABLE -- loading this file by path outside the package ran
 # it -- so it was not dead code, it was a third colour authority quietly
 # painting a different design system into the chat transcript. Removed rather
@@ -717,7 +717,7 @@ def search_apex_recipes(query):
 _DIFFICULTY_COLORS = {
     "beginner": _SUCCESS,
     "intermediate": _WARNING,
-    "advanced": "#FF6B6B",
+    "advanced": _ds.ERROR,
 }
 
 

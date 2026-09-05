@@ -14,6 +14,9 @@ MIGRATED = (
     "hda_views", "tool_palette", "command_palette", "working_indicator",
     "vex_tutor", "apex_trace", "apex_explainer", "scene_doctor",
     "performance_profiler", "network_trace", "cross_scene", "message_formatter",
+    # landing r3 (RULING-1d): the side modules
+    "bookmarks", "dependency_map", "apex_recipes", "save_shot", "session_integrity",
+    "recipe_book", "error_translator", "session_journal", "styles",
 )
 HEX = re.compile(r"(?<!&)#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})(?![0-9a-zA-Z_])")
 TABLE = ROOT / "docs/panel_pd/HEX_MAPPING_SWEEP_B.md"

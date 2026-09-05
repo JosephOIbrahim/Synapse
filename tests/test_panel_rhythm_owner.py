@@ -25,7 +25,7 @@ from synapse.panel.manifests import get_manifest
 ROOT = Path(__file__).resolve().parents[1]
 PANEL = ROOT / "python/synapse/panel"
 RESIDUAL = "harness/panel_pd/RESIDUAL.json"
-CENSUS = "harness/panel_pd/runs/2026-09-04/rhythm_census.json"
+CENSUS = "harness/panel_pd/runs/2026-09-05/rhythm_census.json"
 METHODS = {
     "setSpacing": "spacing", "setContentsMargins": "spacing",
     "setStyleSheet": "inline_styles",
@@ -90,7 +90,7 @@ def _seed(census):
     return allowed
 
 
-def _check(sites, allowed, ceiling, grid_ceiling=4):
+def _check(sites, allowed, ceiling, grid_ceiling=4, exact=False):
     untagged = Counter(key for key, _, exempt in sites if not exempt)
     novel = untagged - allowed
     assert not novel, "new untagged rhythm owners: %r" % list(novel)
@@ -98,6 +98,12 @@ def _check(sites, allowed, ceiling, grid_ceiling=4):
     residual = len(sites) - grid
     assert residual <= ceiling, "residual %d exceeds ceiling %d" % (residual, ceiling)
     assert grid <= grid_ceiling, "grid residual exceeds its separate ceiling"
+    if exact:
+        # Landing r3 (RULING-1e): cap == count, zero slack. A deleted owner
+        # cannot return under the ceiling; the ceiling moves only by a
+        # re-seed that commits the new census.
+        assert residual == ceiling, "residual %d != cap %d (zero slack)" % (residual, ceiling)
+        assert grid == grid_ceiling, "grid residual %d != cap %d" % (grid, grid_ceiling)
 
 
 def _check_ceiling(current, previous):
@@ -121,7 +127,9 @@ def test_panel_rhythm_owner_ratchet():
             sites.extend(_scan(path.read_text(encoding="utf-8"),
                                path.relative_to(ROOT).as_posix()))
     _check(sites, _seed(census), limits["allowed_residual"],
-           limits["allowed_grid_residual"])
+           limits["allowed_grid_residual"], exact=True)
+    untagged = [(key[0], line) for key, line, exempt in sites if not exempt]
+    assert not untagged, "every remaining site carries a rhythm-exempt reason: %r" % untagged
 
 
 def test_residual_cannot_increase_against_git_history():
@@ -131,6 +139,7 @@ def test_residual_cannot_increase_against_git_history():
     revisions = subprocess.check_output(
         ["git", "log", "-2", "--format=%H", "--", RESIDUAL], cwd=ROOT,
         text=True).splitlines()
+    assert revisions, "RESIDUAL.json has no git history here: NOT_RUN"
     for rev in revisions:
         previous = json.loads(subprocess.check_output(
             ["git", "show", "%s:%s" % (rev, RESIDUAL)], cwd=ROOT, text=True))

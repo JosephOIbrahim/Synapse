@@ -5,9 +5,9 @@ unbound materials, missing lights, etc.) BEFORE submitting to the farm.
 
 Usage inside Houdini::
 
-    from synapse.panel.render_preflight import run_preflight, format_preflight_html
+    from synapse.panel.render_preflight import run_preflight
     report = run_preflight()           # auto-detect render node
-    html   = format_preflight_html(report)
+    report.ready, report.summary, report.checks   # the panel renders these
 
 Each check is self-contained: one check raising an exception never
 prevents the others from running.
@@ -854,79 +854,3 @@ def run_preflight(render_node: str = "") -> PreflightReport:
 
     report._build_summary()
     return report
-
-
-# =====================================================================
-# HTML formatter
-# =====================================================================
-
-
-_STATUS_ICONS = {
-    "pass": ("&#10004;", "#4CAF50"),  # checkmark, green
-    "fail": ("&#10008;", "#F44336"),  # cross, red
-    "warn": ("&#9888;", "#FF9800"),   # warning triangle, orange
-}
-
-
-def format_preflight_html(report: PreflightReport) -> str:
-    """Format a :class:`PreflightReport` as HTML for a QTextEdit widget.
-
-    Groups checks by status: failures first, then warnings, then passes.
-    """
-    lines: list[str] = []
-    lines.append("<div style='font-family: monospace; font-size: 13px;'>")
-
-    # Header
-    if report.render_node:
-        lines.append(
-            f"<p style='color: #AAA; margin: 4px 0;'>"
-            f"Render node: <b>{report.render_node}</b></p>"
-        )
-
-    # Status banner
-    if report.ready:
-        lines.append(
-            "<p style='color: #4CAF50; font-size: 16px; font-weight: bold; "
-            "margin: 8px 0;'>&#10004; Ready to render</p>"
-        )
-    else:
-        n_fail = sum(1 for c in report.checks if c.status == "fail")
-        lines.append(
-            f"<p style='color: #F44336; font-size: 16px; font-weight: bold; "
-            f"margin: 8px 0;'>&#10008; {n_fail} issue{'s' if n_fail != 1 else ''} "
-            f"to fix before rendering</p>"
-        )
-
-    lines.append(f"<p style='color: #888; margin: 2px 0;'>{report.summary}</p>")
-    lines.append("<hr style='border-color: #555;'>")
-
-    # Group by status
-    ordered = sorted(report.checks, key=lambda c: {"fail": 0, "warn": 1, "pass": 2}.get(c.status, 3))
-
-    for check in ordered:
-        icon, color = _STATUS_ICONS.get(check.status, ("?", "#888"))
-        lines.append(
-            f"<p style='margin: 6px 0 2px 0;'>"
-            f"<span style='color: {color}; font-size: 15px;'>{icon}</span> "
-            f"<b>{check.name}</b>: {check.message}</p>"
-        )
-        if check.detail:
-            # Escape HTML in detail and preserve newlines
-            detail_escaped = (
-                check.detail.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\n", "<br>")
-            )
-            lines.append(
-                f"<p style='color: #999; margin: 0 0 4px 24px; font-size: 12px;'>"
-                f"{detail_escaped}</p>"
-            )
-        if check.fix_available:
-            lines.append(
-                f"<p style='color: #00D4FF; margin: 0 0 4px 24px; font-size: 12px;'>"
-                f"[Auto-fix available]</p>"
-            )
-
-    lines.append("</div>")
-    return "\n".join(lines)

@@ -1,12 +1,12 @@
 {
-  "allowed_grid_residual": 2,
-  "allowed_residual": 226,
-  "census": "harness/panel_pd/runs/2026-09-04/rhythm_census.json",
-  "policy": "Ceilings may only decrease. New untagged site identities are forbidden even below the ceiling. Exemptions require a real same-line comment with a nonempty reason.",
+  "allowed_grid_residual": 0,
+  "allowed_residual": 17,
+  "census": "harness/panel_pd/runs/2026-09-05/rhythm_census.json",
+  "policy": "Ceilings may only decrease. New untagged site identities are forbidden even below the ceiling. Exemptions require a real same-line comment with a nonempty reason. Landing r3 (CTO RULING-1e, 2026-09-05): the cap equals the measured residual exactly (zero slack) and every site is tagged; a re-seed that lowers the cap must commit the census it points at.",
   "schema_version": 1,
   "seed_counts": {
-    "hex_raw_sites": 135,
-    "inline_stylesheet_sites": 106,
-    "spacing_sites": 107
+    "hex_raw_sites": 0,
+    "inline_stylesheet_sites": 1,
+    "spacing_sites": 16
   }
 }

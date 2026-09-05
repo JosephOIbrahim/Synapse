@@ -120,3 +120,65 @@ Existing speaker-dot semantics in message_formatter stay unchanged.
 | `python/synapse/panel/command_palette.py` | 390 | `#FF6B35` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
 | `python/synapse/panel/command_palette.py` | 391 | `#FFAB00` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
 | `python/synapse/panel/command_palette.py` | 392 | `#888888` | `TEXT_TERTIARY` | muted: secondary label/comment/source metadata |
+
+## Landing r3 (2026-09-05) - the side modules (CTO RULING-1d)
+
+Same revision, same method, same authority: every remaining raw colour in the
+nine side modules (bookmarks, dependency_map, apex_recipes, save_shot,
+session_integrity, recipe_book, error_translator, session_journal, styles) maps
+to an existing `designsystem/tokens.py` name by role; the five comment-only
+hits are reworded so no hex survives in prose either. agent_health's
+`format_agent_health_html` and render_preflight's `format_preflight_html` +
+`_STATUS_ICONS` (20 sites) were DELETED - no caller, no test - so they carry no
+rows: deleting dead code is cheaper than tagging it.
+
+| file | line | hex | token | role rationale |
+|---|---|---|---|---|
+| `python/synapse/panel/bookmarks.py` | 164 | `#888` | `TEXT_TERTIARY` | muted: secondary label/comment/source metadata |
+| `python/synapse/panel/bookmarks.py` | 175 | `#aaa` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
+| `python/synapse/panel/bookmarks.py` | 196 | `#444` | `SURFACE` | surface: neutral container/category badge, not active/success/error state |
+| `python/synapse/panel/bookmarks.py` | 196 | `#ccc` | `TEXT_PRIMARY` | ink: readable body/data from host-seeded ramp |
+| `python/synapse/panel/bookmarks.py` | 209 | `#3C3C3C` | `BORDER` | surface: existing hairline role |
+| `python/synapse/panel/bookmarks.py` | 210 | `#E0E0E0` | `TEXT_BRIGHT` | ink: heading/identifier emphasis from host-seeded ramp |
+| `python/synapse/panel/bookmarks.py` | 212 | `#777` | `TEXT_TERTIARY` | muted: secondary label/comment/source metadata |
+| `python/synapse/panel/bookmarks.py` | 213 | `#999` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
+| `python/synapse/panel/bookmarks.py` | 238 | `#665500` | `SIGNAL_TINT` | signal: subtle accent wash (search-match background) |
+| `python/synapse/panel/bookmarks.py` | 238 | `#FFD700` | `SIGNAL` | signal: search-match emphasis, the one accent |
+| `python/synapse/panel/dependency_map.py` | 420 | `#4CAF50` | `GROW` | status: success/verified state |
+| `python/synapse/panel/dependency_map.py` | 421 | `#F44336` | `ERROR` | status: error state |
+| `python/synapse/panel/dependency_map.py` | 422 | `#FFC107` | `WARN` | status: warning/caution state |
+| `python/synapse/panel/dependency_map.py` | 423 | `#FFC107` | `WARN` | status: warning/caution state |
+| `python/synapse/panel/dependency_map.py` | 440 | `#999` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
+| `python/synapse/panel/dependency_map.py` | 466 | `#DDD` | `TEXT_BRIGHT` | ink: heading/identifier emphasis from host-seeded ramp |
+| `python/synapse/panel/dependency_map.py` | 479 | `#444` | `BORDER` | surface: existing hairline role |
+| `python/synapse/panel/dependency_map.py` | 481 | `#CCC` | `TEXT_PRIMARY` | ink: readable body/data from host-seeded ramp |
+| `python/synapse/panel/dependency_map.py` | 482 | `#999` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
+| `python/synapse/panel/dependency_map.py` | 483 | `#888` | `TEXT_TERTIARY` | muted: secondary label/comment/source metadata |
+| `python/synapse/panel/dependency_map.py` | 491 | `#AAA` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
+| `python/synapse/panel/dependency_map.py` | 491 | `#555` | `BORDER_STRONG` | surface: separator rule |
+| `python/synapse/panel/apex_recipes.py` | 25 | `#00D4FF` | `SIGNAL` | signal: actionable/type emphasis from vendored authority; documentation comment reworded |
+| `python/synapse/panel/apex_recipes.py` | 25 | `#00E676` | `GROW` | status: success/verified state; documentation comment reworded |
+| `python/synapse/panel/apex_recipes.py` | 720 | `#FF6B6B` | `ERROR` | status: error/advanced difficulty, existing error role |
+| `python/synapse/panel/save_shot.py` | 378 | `#4a9` | `GROW` | status: success/verified state (saved snapshot) |
+| `python/synapse/panel/save_shot.py` | 378 | `#2a2a2a` | `SURFACE` | surface: neutral container/category badge, not active/success/error state |
+| `python/synapse/panel/save_shot.py` | 379 | `#4a9` | `GROW` | status: success/verified state (saved snapshot) |
+| `python/synapse/panel/save_shot.py` | 381 | `#ccc` | `TEXT_PRIMARY` | ink: readable body/data from host-seeded ramp |
+| `python/synapse/panel/save_shot.py` | 382 | `#aaa` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
+| `python/synapse/panel/save_shot.py` | 388 | `#aaa` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
+| `python/synapse/panel/save_shot.py` | 393 | `#888` | `TEXT_TERTIARY` | muted: secondary label/comment/source metadata |
+| `python/synapse/panel/save_shot.py` | 394 | `#666` | `TEXT_TERTIARY` | muted: secondary label/comment/source metadata |
+| `python/synapse/panel/save_shot.py` | 456 | `#888` | `TEXT_TERTIARY` | muted: secondary label/comment/source metadata |
+| `python/synapse/panel/save_shot.py` | 463 | `#aaa` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
+| `python/synapse/panel/save_shot.py` | 473 | `#3C3C3C` | `BORDER` | surface: existing hairline role |
+| `python/synapse/panel/save_shot.py` | 474 | `#E0E0E0` | `TEXT_BRIGHT` | ink: heading/identifier emphasis from host-seeded ramp |
+| `python/synapse/panel/save_shot.py` | 475 | `#777` | `TEXT_TERTIARY` | muted: secondary label/comment/source metadata |
+| `python/synapse/panel/save_shot.py` | 476 | `#999` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
+| `python/synapse/panel/session_integrity.py` | 203 | `#FFAB00` | `WARN` | status: warning/caution state (exact existing token) |
+| `python/synapse/panel/session_integrity.py` | 214 | `#FF6B35` | `FIRE` | status: execution/active warning (exact existing token) |
+| `python/synapse/panel/session_integrity.py` | 220 | `#4ECDC4` | `SIGNAL` | signal: actionable recommendation from vendored authority |
+| `python/synapse/panel/recipe_book.py` | 27 | `#00D4FF` | `SIGNAL` | signal: actionable/type emphasis from vendored authority; documentation comment reworded |
+| `python/synapse/panel/recipe_book.py` | 761 | `#FF6B6B` | `ERROR` | status: error/advanced difficulty, existing error role |
+| `python/synapse/panel/error_translator.py` | 19 | `#00D4FF` | `SIGNAL` | signal: actionable/type emphasis from vendored authority; documentation comment reworded |
+| `python/synapse/panel/session_journal.py` | 249 | `#aaa` | `TEXT_SECONDARY` | muted: explanatory text/category/data, not an accent or status |
+| `python/synapse/panel/session_journal.py` | 268 | `#f0a030` | `WARN` | status: warning/caution emphasis (search match) |
+| `python/synapse/panel/styles.py` | 9 | `#8FB3D9` | `SIGNAL` | signal: the SIGNAL value itself; documentation comment reworded |
