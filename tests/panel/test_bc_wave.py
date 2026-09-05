@@ -247,3 +247,83 @@ def test_author_token_visible_top_right():
             assert tok.sizeHint().height() >= 26, tok.sizeHint().height()
         finally:
             p.close()
+
+
+# --------------------------------------------------------------------- BC-3
+DENSITIES = ("airy", "standard", "tight")
+
+
+def _ds_root(density, w=W, h=396):
+    """A DsRoot stamped with a density - the opener the popups read."""
+    from synapse.panel.designsystem import qss
+    root = QtWidgets.QWidget()
+    root.setObjectName("DsRoot")
+    root.setProperty("density", density)
+    root.setStyleSheet(qss.stylesheet())
+    root.resize(w, h)
+    root.show()
+    _app().processEvents()
+    return root
+
+
+def _open_palettes(root):
+    from synapse.panel.tool_palette import ToolPalette
+    from synapse.panel.command_palette import CommandPaletteWidget
+    tp = ToolPalette(root)
+    tp.resize(W, 396)
+    tp.show()
+    cp = CommandPaletteWidget(root)
+    cp.show_palette()
+    cp.resize(W, 396)
+    _app().processEvents()
+    return tp, cp
+
+
+def _heads_and_rows(lst):
+    items = [lst.item(i) for i in range(lst.count())]
+    sel = QtCore.Qt.ItemFlag.ItemIsSelectable
+    return ([it for it in items if not (it.flags() & sel)],
+            [it for it in items if it.flags() & sel], items)
+
+
+def test_palette_rows_breathe():
+    """Ruling item 3: the option list gets real vertical rhythm from the roles.
+
+    Rows are SPACE_XL (40) boxes on a 48/52/46 pitch (the list is a `stack`
+    consumer: view spacing 4/6/3 paid on both sides = gap(SPACE_SM) between
+    rows), group heads are SPACE_48 cells wearing the rhythm-label eyebrow
+    (mono, upper, SEND +0.08em), and at least five options read whole at
+    340x396 standard - for the slash palette AND the Ctrl+K palette."""
+    from synapse.panel.designsystem import tokens as t
+    _app()
+    for density in DENSITIES:
+        root = _ds_root(density)
+        try:
+            for pal in _open_palettes(root):
+                name = type(pal).__name__
+                lst = pal._list
+                heads, rows, items = _heads_and_rows(lst)
+                assert heads and len(rows) >= 5, (name, len(heads), len(rows))
+                gap = t.gap(t.SPACE_XS, density)
+                assert lst.spacing() == gap, (name, density, lst.spacing(), gap)
+                # Row box and pitch: the first two adjacent option rows.
+                pair = next((items[i], items[i + 1]) for i in range(len(items) - 1)
+                            if items[i] in rows and items[i + 1] in rows)
+                r0, r1 = lst.visualItemRect(pair[0]), lst.visualItemRect(pair[1])
+                assert r0.height() == t.SPACE_XL, (name, density, r0.height())
+                assert r1.y() - r0.y() == t.SPACE_XL + 2 * gap, (name, density, r1.y() - r0.y())
+                # Group head: one SPACE_48 cell, the eyebrow type.
+                h0 = lst.visualItemRect(heads[0])
+                assert h0.height() == t.SPACE_48, (name, density, h0.height())
+                f = heads[0].font()
+                assert f.capitalization() == QtGui.QFont.Capitalization.AllUppercase, name
+                assert abs(f.letterSpacing() - 108.0) < 0.05, (name, f.letterSpacing())
+                if density == "standard":
+                    vp_h = lst.viewport().height()
+                    full = [it for it in rows
+                            if lst.visualItemRect(it).top() >= 0
+                            and lst.visualItemRect(it).bottom() < vp_h]
+                    assert len(full) >= 5, (name, vp_h, len(full))
+                pal.close()
+        finally:
+            root.close()
