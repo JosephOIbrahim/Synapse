@@ -90,3 +90,20 @@ def test_which_prints_selected_hython_and_launches_nothing(host, capsys):
     assert rc == 0
     assert out.out.strip() == installs["22.0.400"]
     assert "22.0.400" in out.err and "symbol-table" in out.err
+
+
+def test_candidates_yield_plain_path_strings(host):
+    """Consumer contract: scripts/solaris_v3_accept.py:hython_candidates does
+    `str(p) for p in module._candidates()` and passes the result to
+    subprocess.run as the executable. Every item must therefore be a bare
+    path string, never a (path, reason) tuple (B10 repair, 2026-09-05)."""
+    hytest, installs, _ = host
+    items = list(hytest._candidates())
+    assert items, "fake host yielded no candidates"
+    for item in items:
+        assert isinstance(item, str), f"_candidates() yielded a non-path: {item!r}"
+        assert item in installs.values(), item
+    # The reasoned view is a separate generator with the same ordering.
+    reasoned = list(hytest._candidates_with_reason())
+    assert [p for p, _r in reasoned] == items
+    assert all(isinstance(r, str) and r for _p, r in reasoned)

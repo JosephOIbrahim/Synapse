@@ -85,6 +85,17 @@ def _installed():
 
 
 def _candidates():
+    """Yield bare hython paths in resolution order (see module docstring).
+
+    Consumer contract: scripts/solaris_v3_accept.py:hython_candidates iterates
+    this and hands each item to subprocess.run as the executable -- so this
+    must yield plain path strings, never tuples. The reasoned view lives in
+    _candidates_with_reason()."""
+    for path, _reason in _candidates_with_reason():
+        yield path
+
+
+def _candidates_with_reason():
     """Yield (path, reason) in resolution order (see module docstring)."""
     pinned = os.environ.get("SYNAPSE_HYTHON")
     if pinned:
@@ -121,7 +132,7 @@ def _usable(hython):
 
 def find_hython_with_reason():
     seen = set()
-    for cand, reason in _candidates():
+    for cand, reason in _candidates_with_reason():
         if not cand or cand in seen:
             continue
         seen.add(cand)

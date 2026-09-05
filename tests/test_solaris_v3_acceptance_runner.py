@@ -229,6 +229,13 @@ class AcceptanceControls(unittest.TestCase):
         candidates = accept.hython_candidates(accept.ROOT, {})
         self.assertTrue(all("22.0.400" in p for p in candidates))
         self.assertFalse(any("22.0.429" in p for p in candidates))
+        # A substring check alone is fake-green: a stringified (path, reason)
+        # tuple still contains "22.0.400" but is not an executable path
+        # (B10 repair, 2026-09-05). Each candidate must be a plain hython path.
+        for p in candidates:
+            self.assertFalse(p.startswith("("), f"candidate is not a plain path: {p!r}")
+            self.assertTrue(p.replace("\\", "/").endswith(("/bin/hython.exe", "/bin/hython")),
+                            f"candidate is not a hython path: {p!r}")
 
     def test_exit_semantics(self):
         self.assertEqual(accept.exit_code([self.tier], [self.assess()]), 0)
