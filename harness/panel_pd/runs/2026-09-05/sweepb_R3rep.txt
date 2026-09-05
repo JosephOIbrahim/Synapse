@@ -1,0 +1,17 @@
+runner: C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe
+tree: a196b55514c039b845e8d69fac5223db456455ec
+============================= test session starts =============================
+platform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\User\SYNAPSE\.claude\worktrees\pd-r3
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 18 items
+
+tests\test_panel_sweep_b_widgets.py ..................                   [100%]
+
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 18 passed, 1 warning in 3.46s ========================

@@ -1,0 +1,5 @@
+runner: C:\Python314\python.exe (stock)
+tree: a196b55514c039b845e8d69fac5223db456455ec pd/panel-integrate-r3  date: 2026-09-05
+MUTATION 1: restore self._dot.setStyleSheet(...) in working_indicator.py::_apply -> python -m pytest tests/test_panel_rhythm_owner.py -q -> 1 failed, 26 passed; reverted
+MUTATION 2: append 'from synapse.panel import chat_panel' to synapse_panel.py -> python -m pytest tests/test_panel_alt_entry_unshipped.py -q -> 2 failed, 2 passed ('exemption premise broken: [chat_panel, quick_actions] is reachable from the shipped panel'); reverted
+MUTATION 3 (camera base literal): a line added to synapse_panel.py::_on_done -> python -m pytest tests/test_panel_camera_rhythm.py -k lifecycle -> 1 failed, 13 passed; reverted

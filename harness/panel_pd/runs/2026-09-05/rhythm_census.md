@@ -213,9 +213,9 @@ Flags describe direct source evidence in the listed scopes, not every child. Fac
 
 | Region | Status | Named | Inline styled | Layout owned | Owners |
 |---|---|---|---|---|---|
-| Profile tab strip | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1041 SynapsePanel._build_mode_bar |
-| Header/ribbon | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:655 SynapsePanel._build_rail; python/synapse/panel/synapse_panel.py:985 SynapsePanel._build_context_ribbon |
-| Chat transcript | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1002 SynapsePanel._build_converse; python/synapse/panel/synapse_panel.py:1160 SynapsePanel._build_direct_face; python/synapse/panel/chat_display.py:80 ChatDisplay |
-| Verb rail | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1894 SynapsePanel._build_act; python/synapse/panel/synapse_panel.py:1876 SynapsePanel._verb |
+| Profile tab strip | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1048 SynapsePanel._build_mode_bar |
+| Header/ribbon | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:655 SynapsePanel._build_rail; python/synapse/panel/synapse_panel.py:992 SynapsePanel._build_context_ribbon |
+| Chat transcript | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1009 SynapsePanel._build_converse; python/synapse/panel/synapse_panel.py:1167 SynapsePanel._build_direct_face; python/synapse/panel/chat_display.py:80 ChatDisplay |
+| Verb rail | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1901 SynapsePanel._build_act; python/synapse/panel/synapse_panel.py:1883 SynapsePanel._verb |
 | Recall result | VERIFIED_STATIC | True | False | True | python/synapse/panel/recall_card.py:1 <module> |
-| TOKEN face | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1115 SynapsePanel._build_token_face; python/synapse/panel/face_token.py:295 FaceToken; python/synapse/panel/face_token.py:59 TokenField; python/synapse/panel/token_readout.py:1 <module> |
+| TOKEN face | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1122 SynapsePanel._build_token_face; python/synapse/panel/face_token.py:295 FaceToken; python/synapse/panel/face_token.py:59 TokenField; python/synapse/panel/token_readout.py:1 <module> |

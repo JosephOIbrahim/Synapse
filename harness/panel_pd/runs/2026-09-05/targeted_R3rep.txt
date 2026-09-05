@@ -1,0 +1,28 @@
+runner: C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe
+tree: a196b55514c039b845e8d69fac5223db456455ec
+============================= test session starts =============================
+platform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\User\SYNAPSE\.claude\worktrees\pd-r3
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 24 items
+
+tests\panel\test_docking.py ..                                           [  8%]
+tests\panel\test_gate_fidelity_unknown.py ........                       [ 41%]
+tests\panel\test_font_scale.py ........                                  [ 75%]
+tests\panel\test_gate_widget_type.py ...                                 [ 87%]
+tests\test_panel_camera_rhythm_qt.py ...                                 [100%]
+
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+
+tests/panel/test_docking.py::test_send_never_clips_below_the_pane_at_min_height
+tests/panel/test_gate_widget_type.py::test_gate_badge_in_the_composed_panel_is_the_bundled_mono
+tests/panel/test_gate_widget_type.py::test_every_master_mono_gate_element_is_still_mono
+tests/panel/test_gate_widget_type.py::test_gate_families_survive_a_state_transition
+  C:\Users\User\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py:1014: RuntimeWarning: process-wide FreezeChain left ARMED by this test and shut down by the conftest net (R310a zombie class) -- add shutdown_freeze_chain() to the test's teardown
+    next(it)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 24 passed, 5 warnings in 14.46s =======================

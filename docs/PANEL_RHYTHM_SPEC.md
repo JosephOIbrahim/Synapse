@@ -79,7 +79,9 @@ No fontload change or family registration policy change.
 `tokens.PANEL_MIN_WIDTH = 280` - what `synapse_panel.py` promises the host. The
 PD wave's 380 px is an interim bound written into
 `.synapse/contracts/docking-minimums.yaml` as a feature and read from there by
-`tests/test_panel_rhythm_docking.py` like the heights - never a literal. The
+`tests/test_panel_rhythm_docking.py` like the heights - never a literal, one
+figure per density (repair round 2026-09-05: the composed AIRY panel at 393 is
+Joe's word, editable as that one figure; every density is 380 until it lands). The
 same YAML requires no overflow at 400 px tall and no child's hard minimum height
 above 200 px (the `PANEL_MIN_HEIGHT` token is 420; the test takes the stricter
 YAML 400). No width counts unless the bundled fonts are loaded: the docking

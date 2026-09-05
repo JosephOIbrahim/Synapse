@@ -302,3 +302,68 @@ qt_R3.txt (hython tests/panel), docking_R3.txt (python313 docking, PD_QT
 provenance), g3_R3.txt (audit_panel --strict), fullsuite_R3.txt (stock full
 suite), crux_r3.json (round 3), rhythm_census.json / .md; design/rhythm_pd/after_r3/
 PNG sets per profile with manifest.json.
+
+## Repair round - CRUX round 3 must-fix (2026-09-05)
+
+CRUX round 3 ruled the landing tree BROKEN on five items. Four are fixed at
+their seams on this branch; the fifth is the open word, now a one-figure edit.
+Every fix carries a test shown red before the source change.
+
+1. **Settings-path pin read the live override** -
+   tests/test_panel_settings.py::test_settings_path_is_repo_dot_synapse went
+   red under the gate's own ENV line (SYNAPSE_PANEL_SETTINGS=<scratch>). Fixed:
+   monkeypatch.delenv before the call; sibling test pins that the override IS
+   honoured and that a blank one falls back. Red 1 failed -> 9 passed.
+2. **Camera lifecycle pins compared the tree to itself** -
+   _panel_base() ran `git merge-base master HEAD`, which is HEAD the day this
+   lands (vacuous; errors without a local master ref). Fixed: literal
+   _PANEL_BASE = "e8913f83". Non-vacuity shown by mutation: a line added to
+   _on_done -> 1 failed, 13 passed; reverted.
+3. **Gate widget type regression (F-C1)** - d26d2703 purged the QSS families
+   on the claim "families travel by QFont", but GateWidget applied none: every
+   gate element rendered in the app font (Courier offscreen) where master
+   rendered Space Mono. Fixed: fontload.apply_family(mono=True) at the nine
+   elements master rendered mono (badge, operation, countdown, Reject,
+   Approve; header, fidelity label, counts, violations); agent / description /
+   critical carried no family on master and stay on the host face.
+   tests/panel/test_gate_widget_type.py (hython) pins gate_badge and the other
+   eight in the composed panel across a state transition: 3 failed -> 3 passed.
+   The unshipped SWEEP_A widgets (chat_panel, context_bar, quick_actions,
+   hda_views; none reachable from synapse.panel.synapse_panel) render in the
+   QApplication font until wired, and take a family by QFont at that seam -
+   stated in qss.py's SWEEP_A header.
+4. **WORK and REVIEW faces flush at x=0** - SWEEP_A gave both faces role
+   'group' (no _MARGINS entry -> 0,0,0,0) where master had a 26px inset.
+   Fixed: rhythm_role="shell" on the FaceWork / FaceReview column owner (the
+   RULING-3 mechanism; census unchanged at 17/17/0). The Qt pin covers both
+   faces at (GUTTER, SPACE_SM, GUTTER, SPACE_SM) at every density: 3 failed ->
+   3 passed. Both faces fit the docking bound with the inset at every density
+   (python313 docking, face_work / face_review 6/6 green).
+5. **R3-01, the composed AIRY panel at 393 > 380** - the open word. The forge's
+   part: (a) the brand never elides - synapse_panel.py gives the wordmark a
+   hard minimum from its own hint (Qt takes width from the biggest items
+   first below a layout's minimum; the wordmark was the biggest and drew as
+   'SYNAPS' at PANEL_PREF_WIDTH under airy; the Ignored chrome labels give way
+   instead). Pin: wordmark.width() >= sizeHint at 340 in every density, red
+   (0, 69) -> green (69/69). (b) the docking width contract now carries one
+   figure per density (.synapse/contracts/docking-minimums.yaml; _bounds
+   (density) in the test), every density still at the ratified 380, so the
+   word is one figure in one YAML line: option (a) accept 393 at airy; (b) a
+   tighter verb-rail role at airy vs battleplan T2; (c) GUTTER 26 (still 385).
+   Until it lands test_every_composed_region_and_face_at_docking_bound[airy]
+   stays red on purpose under both runners - protect green, never move the
+   bar by hand. Its visible face at 340/airy after the wordmark fix: the verbs
+   elide (design/rhythm_pd/after_r3/curious/panel_direct_chat.png).
+
+Receipts on tree a196b555 (harness/panel_pd/runs/2026-09-05/*_R3rep.txt):
+qt_R3rep.txt hython tests/panel 1 failed (test_dead_verb_hidden, master
+baseline) / 120 passed; docking_R3rep.txt python313 1 failed (airy composed)
+/ 90 passed, PD_QT family Space Grotesk; docking_hython_R3rep.txt hython
+composed/alternate 1 failed (same) / 44 passed, 0 encodings errors;
+g3_R3rep.txt pass, 1 WARN (3 targets under 26px, master baseline);
+stock_R3rep.txt 332 passed / 54 skipped; sweepb_R3rep.txt python313 18
+passed; targeted_R3rep.txt hython 24 passed; mutations_R3rep.txt both red
+and reverted; census 17 residual / 17 tagged / 0 grid, cap == measured;
+design/rhythm_pd/after_r3/{curious,expert,ml} regenerated 16/16 each. The
+full suite was not re-run this round (assignment: acceptance commands and
+targeted files only); fullsuite_R3.txt on cd98b5c6 is the last full receipt.

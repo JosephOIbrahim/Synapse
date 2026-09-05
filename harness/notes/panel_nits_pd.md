@@ -33,22 +33,27 @@ DsHdaGenerate -> DsHdaAction.
 
 ## Open word (not a waiver, not fixed by the forge)
 
-- **Composed panel at AIRY: 393 > 380** (2026-09-05). Driver: the verb rail - five
-  verbs (237px) + four `group` gaps at 24 + the 30px gutter both sides. Master's
-  own geometry (`setSpacing(24)` + GUTTER = 393); fits at standard (361) and
-  tight (345). The ratified T2 verb-rail rhythm and RULING-3's gutter conflict
-  with the interim 380 bound at airy. Options for the word: (a) accept the
-  design's own number and write the YAML interim feature per density; (b) a
-  tighter verb-rail role (departs from battleplan T2); (c) GUTTER 26 (still
-  385). Producer: `python313 -m pytest tests/test_panel_rhythm_docking.py`
-  -> test_every_composed_region_and_face_at_docking_bound[airy].
-- **Verb rail at PANEL_PREF_WIDTH 340** (2026-09-05). panel_shot.py renders at
-  the preferred width 340; at standard the verb rail needs 361 (237 + 4x16 +
-  60), so OPTIMIZE / BUILD HDA elide in design/rhythm_pd/after_r3/expert/
-  panel_direct_chat.png (and airy at 393). The 'before' set shows the same
-  rail clipped worse (master's 24px gaps + a visible Stop + a clipped strip).
-  Same root as the item above: the verb rail's five verbs and the gutter
-  against a 340-380 pane. One word settles both.
+- **Composed panel at AIRY: 393 > 380** (2026-09-05; repair round state). Driver:
+  the verb rail - five verbs (237px) + four `group` gaps at 24 + the 30px
+  gutter both sides. Master's own geometry (`setSpacing(24)` + GUTTER = 393);
+  fits at standard (361) and tight (345). The ratified T2 verb-rail rhythm
+  and RULING-3's gutter conflict with the interim 380 bound at airy. The word
+  is now ONE FIGURE: .synapse/contracts/docking-minimums.yaml carries a width
+  per density and tests/test_panel_rhythm_docking.py::_bounds(density) reads
+  it - (a) edit "380px wide at airy" to 393; (b) a tighter verb-rail role at
+  airy (departs from battleplan T2); (c) GUTTER 26 (still 385). Every density
+  is still at 380 on this branch, so
+  test_every_composed_region_and_face_at_docking_bound[airy] is red under
+  both runners on purpose (protect green; the forge does not move the bar).
+  Producer: `python313 -m pytest tests/test_panel_rhythm_docking.py`.
+- **Verb rail at PANEL_PREF_WIDTH 340** (2026-09-05; repair round state). The
+  brand no longer elides: the wordmark carries a hard minimum from its own
+  hint (synapse_panel.py _build_rail; pin in tests/test_panel_camera_rhythm_qt.py),
+  so the Ignored chrome labels give way first. What still elides at 340 is the
+  verb rail itself (EXPLAIN / OPTIMIZE / BUILD HDA clip in
+  design/rhythm_pd/after_r3/curious/panel_direct_chat.png; at standard the
+  rail needs 361) and the header buttons overflow past the pane - the same
+  root as the item above, one word settles both.
 - **280 contract follow-ups** (RULING-2A: regions that fit 380 but not 280 carry
   a dated follow-up, not an exemption). The verb rail needs 345 at tight, the
   header row 334; the face at 393/361/345. Dated 2026-09-05; owner: the
