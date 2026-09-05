@@ -109,3 +109,32 @@ def test_usable_at_min_height():
         "(Design §2.3). Halve the hard minimums so it is usable at the floor."
         % (composed, floor)
     )
+
+
+def test_send_never_clips_below_the_pane_at_min_height():
+    """CTO B4 ruling 2026-09-05 - the G3 'input not clipped' probe as a test.
+    A composer settled on a taller pane (or persisted from one) is capped
+    to the pane it is docked in; Send's bottom edge stays inside the panel.
+    Needs PySide (skips under stock CPython like the rest of this module)."""
+    from synapse.panel.designsystem import tokens as t
+    try:
+        from PySide6 import QtWidgets
+        from PySide6.QtCore import QPoint
+    except ImportError:
+        from PySide2 import QtWidgets
+        from PySide2.QtCore import QPoint
+    panel = _make_panel()
+    app = QtWidgets.QApplication.instance()
+    panel.resize(t.PANEL_MIN_WIDTH, 900)
+    panel.show()
+    app.processEvents()
+    panel._input.set_user_height(514)          # the artist's tall-dock drag
+    app.processEvents()
+    panel.resize(t.PANEL_MIN_WIDTH, t.PANEL_MIN_HEIGHT)
+    app.processEvents()
+    send = panel._send_btn
+    by = send.mapTo(panel, QPoint(0, send.height())).y()
+    assert by <= panel.height(), (
+        "Send bottom %dpx is below the %dpx pane - composer not capped"
+        % (by, panel.height()))
+    assert panel._input._user_h == 514, "the artist's answer must survive the cap (L6)"
