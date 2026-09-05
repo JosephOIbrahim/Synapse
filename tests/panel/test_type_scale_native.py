@@ -32,3 +32,16 @@ def test_default_scale_at_least_native():
     assert t.scaled(t.SIZE_BODY, t.FONT_SCALE_DEFAULT) >= 12
     # the default must be one of the cycle steps so the Aa control can index it
     assert t.FONT_SCALE_DEFAULT in t.FONT_SCALE_STEPS
+
+
+def test_wordmark_lockup_tokens():
+    """Joe's addendum (2026-09-05): the wordmark is 15px (was 14) and sits
+    WORDMARK_GAP (5px) farther from the mark than the identity row's stack
+    gap. The size rides the widget's tracked_font call (F9 lists it as a
+    literal); the gap is a token, never a literal in the widget."""
+    assert t.WORDMARK_GAP == 5
+    src = open(os.path.join(_ROOT, "python", "synapse", "panel", "synapse_panel.py"),
+               encoding="utf-8").read()
+    assert 'tracked_font("WORDMARK", 15' in src
+    assert 'tracked_font("WORDMARK", 14' not in src
+    assert "t.WORDMARK_GAP" in src

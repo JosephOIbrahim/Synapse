@@ -554,3 +554,29 @@ def test_turn_receipt_offers_revert_on_chat():
             assert not p._consent_slot.isVisible()
         finally:
             p.close()
+
+
+# ---------------------------------------------------------------------- W7
+def test_wordmark_lockup_measured():
+    """Joe's addendum: 'The SYNAPSE title needs to be 1pt larger and 5px
+    farther to the right of the orange circle.' Measured at PANEL_PREF_WIDTH
+    in every density: the wordmark renders at 15px (chrome scale applied),
+    the mark-to-wordmark gap is the identity row's stack gap + WORDMARK_GAP,
+    and the wordmark still never elides."""
+    from synapse.panel.designsystem import tokens as t
+    for profile in PROFILES:
+        p = _panel(profile)
+        try:
+            density = DENSITY[profile]
+            rail = _rail(p)
+            wm, mark = p._wordmark, p._mark
+            assert QtGui.QFontInfo(wm.font()).pixelSize() == round(15 * p._chrome_scale), (
+                profile, QtGui.QFontInfo(wm.font()).pixelSize())
+            mx = mark.mapTo(rail, QtCore.QPoint(0, 0)).x() + mark.width()
+            wx = wm.mapTo(rail, QtCore.QPoint(0, 0)).x()
+            assert wx - mx == t.gap(t.SPACE_XS, density) + t.WORDMARK_GAP, (
+                profile, wx - mx, t.gap(t.SPACE_XS, density), t.WORDMARK_GAP)
+            assert wm.minimumWidth() >= wm.sizeHint().width()
+            assert wm.width() >= wm.sizeHint().width(), (profile, wm.width(), wm.sizeHint().width())
+        finally:
+            p.close()
