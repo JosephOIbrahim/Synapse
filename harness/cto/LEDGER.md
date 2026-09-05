@@ -8,3 +8,5 @@
 | 2026-09-05 | full suite @74dc0219 | - | 7604 passed / 0 failed / 331 skipped | - | - | open=2 |
 | 2026-09-05 | release v5.64.0 | tag 2865f009 | gate 7604/0/331 | pushed + GitHub release | - | - |
 | 2026-09-05 | wf_ba511072-76f (bierut) | 5 lenses x2 + scaffold + synth | 19 findings (4 blocker / 10 major / 4 minor / 1 praise) | - | - | 14 (D-*) |
+| 2026-09-05 | wf_8f783cb0-689 (B+C wave) | spec + forge + 2 crux + repair (re-crux hit session limit; CTO Addendum 3 by hand) | landed 90c9fda2 + f41c6694 | 7 rulings | - | live-verified |
+| 2026-09-05 | release v5.65.0 | tag 4becb1cf | gate 7605/0/346 | pushed + GitHub release (first attempt undone: gh created a gate-less tag) | - | - |

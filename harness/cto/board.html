@@ -66,21 +66,21 @@ td.sha{font-family:"Space Mono",monospace;font-size:12px;color:var(--ink-2);whit
 <header>
   <div>
     <div class="eyebrow">SYNAPSE · CTO board · 2026-09-05</div>
-    <h1>v5.64.0 released, panel rework inside</h1>
+    <h1>v5.65.0 released, the panel is the conversation</h1>
   </div>
   <div class="meta">
-    <span>master <b class="mono">2865f009</b> · tag <b class="mono">v5.64.0</b></span>
+    <span>master <b class="mono">4becb1cf</b> · tag <b class="mono">v5.65.0</b></span>
     <span>pushed <b>yes</b>, GitHub release live</span>
     <span>Houdini <b>22.0.400</b></span>
-    <span>bridge <b>headless hython server</b> on 9999</span>
+    <span>bridge <b>Joe's live Houdini</b> on 9999</span>
   </div>
 </header>
 
 <div class="strip">
-  <div class="tile"><div class="k">GitHub CI</div><div class="v"><span class="pill good">green</span></div><div class="s">on e8913f83, first green master run since July 29. A new run is on 2865f009 (the release bump plus the panel merge).</div></div>
-  <div class="tile"><div class="k">Full suite, local</div><div class="v mono">7604 / 0 / 331</div><div class="s">passed / failed / skipped at 74dc0219, the first zero-failure full run on record. Skips rose from 199 because the panel wave's PySide tests skip under stock Python and run under hython (211 pass there). v5.63.0 gate was 7431 / 1 / 198.</div></div>
+  <div class="tile"><div class="k">GitHub CI</div><div class="v"><span class="pill good">green</span></div><div class="s">on e8913f83, first green master run since July 29. New runs queued for 4becb1cf (v5.65.0).</div></div>
+  <div class="tile"><div class="k">Full suite, local</div><div class="v mono">7605 / 0 / 346</div><div class="s">passed / failed / skipped at f41c6694, the v5.65.0 gate. Panel tier under hython: 228 passed, 1 pre-existing (D1 dead verb). G3 strict pass, 0 warnings.</div></div>
   <div class="tile"><div class="k">Review backlog</div><div class="v mono">10 of 25</div><div class="s">closed by predicate. Open: B9 partial, B11 verb rail, and 14 design items from the Bierut review (4 blockers: verb rail clipped at 340, panel cannot say its state, docking is a patch, consent card speaks another colour grammar).</div></div>
-  <div class="tile"><div class="k">Panel rework</div><div class="v"><span class="pill good">merged</span></div><div class="s">74dc0219: 202 files, +37.5k lines. CRUX round 3 closed all six referee items; the last, airy width, ruled R3-01. Your eyes next.</div></div>
+  <div class="tile"><div class="k">Panel rework</div><div class="v"><span class="pill good">B+C live</span></div><div class="s">90c9fda2: composer-first, consent inline, palette breathing room, model token provider/model top right (LIVE 414 px, was 0). Reloaded in your Houdini; live shots on the canvas. Your eyes next.</div></div>
   <div class="tile"><div class="k">Repo hygiene</div><div class="v mono">7 worktrees</div><div class="s">from 45. 18 branches deleted (10 dead + 8 landed pd/*), SHAs on file. Worktree disk 8.2 GB to about 2 GB.</div></div>
 </div>
 
@@ -98,9 +98,9 @@ td.sha{font-family:"Space Mono",monospace;font-size:12px;color:var(--ink-2);whit
   </section>
 
   <section class="block">
-    <h2>Panel support team · done</h2>
+    <h2>Panel waves · done</h2>
     <div class="stage">
-      <div class="done">AUDIT</div><div class="done">BRIEF</div><div class="done">FORGE</div><div class="done">CRUX 3</div><div class="done">MERGE</div><div class="live">YOUR EYES</div>
+      <div class="done">PD LANDED</div><div class="done">BIERUT</div><div class="done">B+C FORGE</div><div class="done">CRUX + REPAIR</div><div class="done">LIVE RELOAD</div><div class="live">YOUR EYES</div>
     </div>
     <div class="list">
       <div class="item"><span class="word">audit</span><div><div class="t">Pentagram bar: does not meet as it sat, landable after nine fixes</div><div class="d">Reach was real (spacing sites 107 to 18, raw hex 135 to 42) but the gutter token was deleted rather than applied, two type appliers ran on the same widgets, profile pills became 116 by 70 blocks, and the census was gamed to hit raw-zero.</div></div></div>
@@ -109,7 +109,7 @@ td.sha{font-family:"Space Mono",monospace;font-size:12px;color:var(--ink-2);whit
       <div class="item"><span class="word">ruling 3</span><div><div class="t">HDA Result stays dark</div><div class="d">The "before" image was an unstyled Fusion render; the ratified style sheet already specified the dark table and SIGNAL fill.</div></div></div>
       <div class="item"><span class="word">crux 3</span><div><div class="t">Both referees said broken, then the repairs closed them</div><div class="d">Gate widget had fallen to Courier after a font purge; WORK and REVIEW faces lost their 26px inset; two test-hygiene pins. All fixed and pinned. The last item, airy width 393 against 380, was ruled: airy 400 as an interim, wordmark never elides, verb-rail collapse queued as B11.</div></div></div><div class="item"><span class="word">gates</span><div><div class="t">On the merged tree, Houdini 22.0.400 offscreen</div><div class="d">Docking 91 passed under python313. Docking plus tests/panel under hython: 211 passed, 1 pre-existing dead-verb red. G3 strict: pass, 1 pre-existing warn. Census: 17 sites, all tagged, 0 raw hex.</div></div></div>
     </div>
-    <p class="note">Bierut review done: HOLD as the design reference until four blockers close. Canvas: <a href="https://claude.ai/code/artifact/6abe327a-a174-4f34-a0a8-415f0dc0e893">SYNAPSE Panel, the Bierut Review</a>. 4 blockers + 10 majors are in the backlog as D-F1..D-F14, gated joe/crux.</p>
+    <p class="note">B+C wave landed and released as v5.65.0; two live-found fixes rode with it (floating window, composer cap). Bierut review: Canvas: <a href="https://claude.ai/code/artifact/6abe327a-a174-4f34-a0a8-415f0dc0e893">SYNAPSE Panel, the Bierut Review</a>. 4 blockers + 10 majors are in the backlog as D-F1..D-F14, gated joe/crux.</p>
   </section>
 </div>
 
@@ -126,6 +126,7 @@ td.sha{font-family:"Space Mono",monospace;font-size:12px;color:var(--ink-2);whit
     <tr><td class="id"><span class="sev high"></span>B7</td><td>RSI registry honest again: cited-path liveness check, A3 retired, loop C evidence corrected, champion counts fixed.</td><td>verify.py 0 FAIL including the new P10.</td><td class="sha">5e14d253</td></tr>
     <tr><td class="id"><span class="sev high"></span>B8</td><td>README, release note, capsule and CLAUDE.md brought to v5.63.0 truth; the three 09-04 predicates recorded OPEN; acceptance receipt no longer hashes missing files.</td><td>Predicate green; a fresh pure-tier acceptance run committed.</td><td class="sha">3fe131b5</td></tr>
     <tr><td class="id"><span class="sev medium"></span>B10</td><td>Houdini build pin: hytest prefers the build matching the symbol table and prints its choice; SYNAPSE_HYTHON documented; deploy skill on houdini22.0.</td><td>hytest --which prints 22.0.400.</td><td class="sha">8021bbc0</td></tr>
+    <tr><td class="id">B+C</td><td>Direction B+C wave: verb rail and profile row to the palette/overflow, consent inline with REVERT, palette on the grid at composer width, one state sentence, wordmark 15px, model token provider/model top right. Plus the floating-window fix and the composer cap fix.</td><td>Referees + repair + Addendum 3; hython panel tier 228/1 pre-existing; G3 pass 0 WARN; LIVE reload measured.</td><td class="sha">90c9fda2</td></tr>
     <tr><td class="id">panel</td><td>Panel PD wave landed: one owner of rhythm and colour, five camera regions on roles, recall card, 18 modules migrated, docking measured with real fonts, gate widget in Space Mono, faces on the shell inset, wordmark non-shrinking.</td><td>Census 107/106/135 to 17/0/0 all tagged. hython panel tier 211 pass / 1 pre-existing.</td><td class="sha">74dc0219</td></tr>
     <tr><td class="id">ratchet</td><td>SYNAPSE_PANEL_SETTINGS documented; F3 escalation test anchored to state instead of a 0.6 s sleep.</td><td>Both suite reds cleared.</td><td class="sha">e8913f83</td></tr>
     <tr><td class="id">loop</td><td>CTO review loop scaffolded: harness/cto with predicates the next crank re-runs; cto-review workflow; cto-orchestrator agent.</td><td>Operator's card at harness/cto/OPERATOR_CARD.md.</td><td class="sha">007d30df</td></tr>
@@ -153,8 +154,8 @@ td.sha{font-family:"Space Mono",monospace;font-size:12px;color:var(--ink-2);whit
 </div>
 
 <div class="foot">
-  <span>Agents today: 15 review + 16 forge + 10 panel + 12 design review = 53</span>
-  <span>Subagent tokens: 1.62M + 2.14M + 2.38M + 1.93M = 8.1M</span>
+  <span>Agents today: 15 review + 16 forge + 10 panel + 12 design review + 7 B+C wave = 60</span>
+  <span>Subagent tokens: 1.62M + 2.14M + 2.38M + 1.93M + 1.68M = 9.8M</span>
   <span>Next crank: run the cto-orchestrator agent</span>
 </div>
 </div>
