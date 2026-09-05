@@ -180,7 +180,14 @@ class _GrowingInput(QtWidgets.QTextEdit):
         divider is never re-centred - but a composer taller than the pane
         it sits in clipped Send below the dock edge (G3 'input not clipped',
         red since 1ce31c99). ``None`` lifts the cap when the pane grows."""
-        cap = None if cap is None else max(self._floor, int(cap))
+        # Live-found 2026-09-05 (Joe's Houdini, chrome scale 2.25): a cap of
+        # 114px left a 21px viewport under a 27px font and clipped the
+        # placeholder. The cap's floor is one readable line above the Send
+        # margin, whatever the scale - never the bare logical floor.
+        if cap is not None:
+            line_floor = (self.viewportMargins().bottom()
+                          + self.fontMetrics().height() + 12)
+            cap = max(self._floor, line_floor, int(cap))
         if cap != self._cap:
             self._cap = cap
             self._autosize()
@@ -1609,15 +1616,41 @@ class SynapsePanel(QtWidgets.QWidget):
         if inp is None or not inp._height_settled:
             return
         lay = self.layout()
-        if lay is not None:
-            lay.activate()
+        # Live-found 2026-09-05: the old "relax by the room below the
+        # composer" branch could never recover the artist's height, because
+        # the transcript stretch absorbs every pixel the pane gains - a cap
+        # taken while the pane was transiently small (reload, first show)
+        # stuck for the session. Idempotent form: start from the artist's
+        # height, lay out, cap only by the measured overflow.
+        def _relayout():
+            # Nested layouts (faces stack -> direct face -> composer) settle
+            # through posted LayoutRequest events; activate() alone measures
+            # stale geometry. Flush them so the measurement is the truth.
+            if lay is not None:
+                lay.activate()
+            try:
+                QtWidgets.QApplication.sendPostedEvents(
+                    None, QtCore.QEvent.Type.LayoutRequest)
+            except Exception:
+                pass
+            if lay is not None:
+                lay.activate()
+        before = inp._cap
+        if inp._cap is not None:
+            inp.cap_height(None)
+        _relayout()
         bottom = inp.mapTo(self, QtCore.QPoint(0, inp.height())).y()
         room = self.height() - bottom
         if room < 0:
             inp.cap_height(inp.height() + room)
-        elif inp._cap is not None and room > 0:
-            new = inp._cap + room
-            inp.cap_height(None if new >= inp._max_h else new)
+        # Nested layouts converge over event-loop turns, not in one call: a
+        # pass that moved the cap schedules one more, until the cap is stable
+        # (bounded - never a loop that outlives the resize).
+        if inp._cap != before and getattr(self, "_fit_rounds", 0) < 8:
+            self._fit_rounds = getattr(self, "_fit_rounds", 0) + 1
+            QTimer.singleShot(0, self._fit_composer_to_pane)
+        else:
+            self._fit_rounds = 0
 
     def showEvent(self, e):
         super().showEvent(e)
