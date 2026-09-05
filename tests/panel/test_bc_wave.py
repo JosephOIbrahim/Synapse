@@ -192,9 +192,57 @@ def test_rail_one_state_sentence_never_elides():
             for want in ("Palette", "Ground the corpus", "Health", "Help"):
                 assert any(x.startswith(want) for x in texts), (want, texts)
             # Hidden owners: constructed for their writers, in no layout.
-            for name in ("_foot_label", "_meter_lbl", "_palette_hint", "_author_lbl"):
+            # (Joe's Addendum 2: the model token is NOT one of them - it
+            # stays visible top right; see test_author_token_visible_top_right.)
+            for name in ("_foot_label", "_foot_dot", "_meter_lbl", "_palette_hint",
+                         "_corpus_btn", "_help_btn"):
                 w = getattr(p, name)
                 assert not w.isVisible() and not _in_a_layout(w), name
             assert not hasattr(p, "_observe")
+            assert not hasattr(p, "_health_strip")
+        finally:
+            p.close()
+
+
+def test_author_token_visible_top_right():
+    """Joe's Addendum 2 (2026-09-05): the MODEL is always visible, top right.
+
+    The active provider/model is the one fact the artist must never lose. It
+    sits top right of the panel at rest, in every profile and density, at
+    PANEL_PREF_WIDTH 340: Space Mono (the data voice), DATA tracking, at or
+    above the type floor, never elided (a hard minimum from its own hint),
+    never in the overflow; it names the live provider/model and click opens
+    the existing picker."""
+    from synapse.panel.designsystem import tokens as t, fontload
+    mono = QtGui.QFontInfo(fontload.apply_family(QtGui.QFont(), mono=True)).family()
+    for profile in PROFILES:
+        p = _panel(profile)
+        try:
+            rail = _rail(p)
+            tok = p._author_lbl
+            assert tok.isVisible() and _in_a_layout(tok), profile
+            assert tok.text() and tok.text() == p._author_token(), tok.text()
+            assert tok.minimumWidth() >= tok.sizeHint().width(), (
+                profile, tok.minimumWidth(), tok.sizeHint().width())
+            assert tok.width() >= tok.sizeHint().width(), (
+                profile, tok.text(), tok.width(), tok.sizeHint().width())
+            # Top right of the rail: right edge inside the rail's gutter, on
+            # the wordmark's row (the identity row), right of the panel's midline.
+            tl = tok.mapTo(rail, QtCore.QPoint(0, 0))
+            wl = p._wordmark.mapTo(rail, QtCore.QPoint(0, 0))
+            assert tl.x() + tok.width() <= rail.width() - t.GUTTER + 1, (
+                profile, tl.x(), tok.width(), rail.width())
+            assert tl.x() > rail.width() // 2, (profile, tl.x())
+            assert abs((tl.y() + tok.height() // 2) - (wl.y() + p._wordmark.height() // 2))                 <= p._wordmark.height(), (profile, tl.y(), wl.y())
+            # The data voice at the floor, tracked as DATA.
+            f = tok.font()
+            assert QtGui.QFontInfo(f).family() == mono
+            assert QtGui.QFontInfo(f).pixelSize() >= t.scaled(t.SIZE_SMALL, p._chrome_scale)
+            assert abs(f.letterSpacing() - (100.0 + t.TRACKING_EM["DATA"] * 100.0)) < 0.05
+            # Never in the overflow.
+            texts = [a.text() for a in p._build_overflow_menu().actions()]
+            assert tok.text() not in texts
+            # G3 target floor: the token is a click target >= 26px tall.
+            assert tok.sizeHint().height() >= 26, tok.sizeHint().height()
         finally:
             p.close()
