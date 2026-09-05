@@ -102,6 +102,17 @@ def probe(density):
             m = face.layout().contentsMargins()
             assert (m.left(), m.top(), m.right(), m.bottom()) == (
                 t.GUTTER, t.SPACE_SM, t.GUTTER, t.SPACE_SM), type(face).__name__
+        # Repair round (CRUX r3): the brand never elides. At PANEL_PREF_WIDTH
+        # the composed layout can be below its minimum (airy: 393); Qt then
+        # takes from the biggest items first, and the wordmark was the biggest.
+        # The Ignored chrome labels give way; the wordmark holds its own hint.
+        panel.resize(t.PANEL_PREF_WIDTH, 760)
+        app.processEvents()
+        word = panel._wordmark
+        assert word.minimumWidth() >= word.sizeHint().width(), (word.minimumWidth(), word.sizeHint().width())
+        assert word.width() >= word.sizeHint().width(), (word.width(), word.sizeHint().width())
+        panel.resize(380, 760)
+        app.processEvents()
         band = panel._font_btn.parentWidget().parentWidget()
         assert band.property("rhythm_role") == "band" and band.layout().spacing() == 0
         # RULING-4c: one type applier per widget - CHAT, TOKEN, every verb of

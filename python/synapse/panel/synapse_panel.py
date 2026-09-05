@@ -703,6 +703,13 @@ class SynapsePanel(QtWidgets.QWidget):
         word.setProperty("role", "title")
         word.setFont(fontload.tracked_font("WORDMARK", 14, scale=self._chrome_scale,
                                            weight=600))
+        # The brand never elides (landing r3 repair). Below the layout's
+        # minimum Qt takes width from the biggest items first, and the tracked
+        # wordmark was the biggest: at PANEL_PREF_WIDTH under airy it drew as
+        # 'SYNAPS'. A hard minimum is the one floor Qt's engine cannot cross;
+        # the Ignored chrome labels (status / meter / khint / author) give
+        # way instead. Chrome is FROZEN on Aa, so the hint is set once here.
+        word.setMinimumWidth(word.sizeHint().width())
         self._wordmark = word
         self._header_status = c.label("Standing by", role="caption", scale=self._chrome_scale)
         self._header_status.setProperty("role", "label")
