@@ -32,7 +32,13 @@ features:
   # width counts unless the bundled fonts are loaded: the worker refuses an
   # empty font database (NOT_RUN -> pytest.fail, never skip) and prints the
   # runner and the resolved family into every PD_QT receipt line.
-  - description: "Every docking region minimumSizeHint().width() <= 380px wide at airy/standard/tight with bundled fonts loaded (interim PD bound; contract floor is PANEL_MIN_WIDTH 280)"
+  # One width per density (landing r3 repair, R3-01): the composed panel at
+  # AIRY measures 393 (verb rail 237 + four group gaps at 24 + the 30px
+  # gutter both sides) against this 380. That figure is Joe's word, not the
+  # forge's - option (a) is editing the airy figure below; (b) a tighter
+  # verb-rail role at airy; (c) a narrower GUTTER (26 still gives 385). The
+  # test reads each density's figure from this line, so the word is one edit.
+  - description: "Every docking region minimumSizeHint().width() <= 380px wide at airy, <= 380px wide at standard, <= 380px wide at tight, with bundled fonts loaded (interim PD bound; contract floor is PANEL_MIN_WIDTH 280)"
     verify: "\"C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe\" -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider"
     passing: false
 stop_when: "all features passing OR sessions exhausted OR budget reached"

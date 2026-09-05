@@ -75,26 +75,31 @@ def _regions_under_measure():
 ALTERNATE_REGIONS = _regions_under_measure()
 
 
-def _bounds():
+def _bounds(density="standard"):
     text = CONTRACT.read_text(encoding="utf-8")
     # Read the actual YAML descriptions; do not silently follow the conflicting
     # 420px token. These constrained fields need no optional YAML dependency.
-    # The width is the YAML's interim PD feature (RULING-2A), never a literal.
-    widths = re.findall(r'minimumSizeHint\(\)\.width\(\) <= (\d+)px wide', text)
-    heights = re.findall(r'without overflow at (\d+)px tall', text)
-    children = re.findall(r'No child sets a hard minimum height above (\d+)px', text)
-    assert len(widths) == len(heights) == len(children) == 1, "docking contract shape changed"
-    return int(widths[0]), int(heights[0]), int(children[0])
+    # The width is the YAML's interim PD feature (RULING-2A), never a literal,
+    # and there is one figure per density (landing r3 repair, R3-01) so the
+    # word on the composed AIRY panel is a one-figure edit of the contract.
+    widths = {name: int(px) for px, name in re.findall(
+        r"<= (\d+)px wide at (airy|standard|tight)", text)}
+    heights = re.findall(r"without overflow at (\d+)px tall", text)
+    children = re.findall(r"No child sets a hard minimum height above (\d+)px", text)
+    assert set(widths) == set(DENSITIES), "docking contract shape changed: one width per density"
+    assert len(heights) == len(children) == 1, "docking contract shape changed"
+    return widths[density], int(heights[0]), int(children[0])
 
 
 def test_docking_bounds_read_the_contract_not_panel_height_token():
     from synapse.panel.designsystem import tokens
-    width, height, child_height = _bounds()
-    assert height <= tokens.PANEL_MIN_HEIGHT
-    command = re.search(r'max-min-height python/synapse/panel (\d+)',
-                        CONTRACT.read_text(encoding="utf-8"))
-    assert command and int(command[1]) == child_height
-    assert 0 < child_height < height and tokens.PANEL_MIN_WIDTH <= width
+    for density in DENSITIES:
+        width, height, child_height = _bounds(density)
+        assert height <= tokens.PANEL_MIN_HEIGHT
+        command = re.search(r"max-min-height python/synapse/panel (\d+)",
+                            CONTRACT.read_text(encoding="utf-8"))
+        assert command and int(command[1]) == child_height
+        assert 0 < child_height < height and tokens.PANEL_MIN_WIDTH <= width
 
 
 def _run(case, density="standard", detail=""):
@@ -225,8 +230,8 @@ def _spacing(widgets, density, role):
     return {"spacing": first[0], "idempotent": True, "removed_role_preserved": True}
 
 
-def _measure(root, widgets):
-    width, height, child_height = _bounds()
+def _measure(root, widgets, density="standard"):
+    width, height, child_height = _bounds(density)
     root.ensurePolished()
     root.resize(width, height)
     root.show()  # offscreen only; never a live Houdini window
@@ -287,7 +292,7 @@ def _pattern(widgets, density, pattern):
                 bands.addWidget(band)
     compositor._repolish_tree(root)
     rhythm.apply(root, density)
-    measured = _measure(root, widgets)
+    measured = _measure(root, widgets, density)
     if pattern == "parm_row":
         assert item.findChild(widgets.QLabel, "DsParmLabel").width() == 128
         assert item.findChild(widgets.QLabel, "DsParmValue").width() == 64
@@ -312,7 +317,7 @@ def _panel(widgets, density, recall=False):
                      if type(w).__module__.endswith(".recall_card")]
             assert cards, "recall module exists but its widget is not wired into the panel"
             for card in cards:
-                _measure(card, widgets)
+                _measure(card, widgets, density)
             return {"within_bounds": True}
         measurements = []
         for state in ("direct", "work", "done", "token", "hda"):
@@ -323,16 +328,16 @@ def _panel(widgets, density, recall=False):
                 panel._set_work_substate("cook")
             elif state == "hda":
                 panel._set_direct_view("hda")
-            measurements.append(_measure(panel, widgets))
+            measurements.append(_measure(panel, widgets, density))
             for builder in compositor.REGION_BUILDERS.values():
                 region = panel._region_cache[builder]
                 minimum = region.minimumSizeHint().expandedTo(region.minimumSize())
-                assert minimum.width() <= _bounds()[0], (builder, minimum.width())
-                assert minimum.height() <= _bounds()[1], (builder, minimum.height())
+                assert minimum.width() <= _bounds(density)[0], (builder, minimum.width())
+                assert minimum.height() <= _bounds(density)[1], (builder, minimum.height())
         # Real source widget identities for the five currently present cameras.
         for region in (panel._chat, panel._font_btn.parentWidget(), panel._faces.widget(2)):
             assert region is not None
-            assert region.minimumSizeHint().width() <= _bounds()[0]
+            assert region.minimumSizeHint().width() <= _bounds(density)[0]
         return {"regions": list(compositor.REGION_BUILDERS),
                 "camera_regions": ["profile_tab_strip", "header_ribbon", "chat_transcript",
                                    "verb_rail", "token_face"],
@@ -368,13 +373,13 @@ def _alternate(widgets, density, region):
     compositor._repolish_tree(root)
     rhythm.apply(root, density)
     try:
-        measured = _measure(root, widgets)
+        measured = _measure(root, widgets, density)
         # Alternate Chat/HDA entry also has a stacked page; inspect every page
         # through its existing container, without activating its live bridge.
         if controller is not None:
             for index in range(controller._mode_stack.count()):
                 controller._mode_stack.setCurrentIndex(index)
-                _measure(root, widgets)
+                _measure(root, widgets, density)
         return measured
     finally:
         if controller is not None:
