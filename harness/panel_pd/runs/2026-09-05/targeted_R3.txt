@@ -1,0 +1,6 @@
+runner: /c/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe
+tree: cd98b5c6b60a67e3852e7d2f66c0bed9584372aa
+cmd: hython -m pytest tests/panel/test_docking.py::test_send_never_clips_below_the_pane_at_min_height tests/panel/test_docking.py::test_usable_at_min_height tests/panel/test_gate_fidelity_unknown.py tests/panel/test_font_scale.py tests/test_panel_camera_rhythm_qt.py -q -p no:cacheprovider
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 21 passed, 2 warnings in 10.63s =======================

@@ -3,6 +3,7 @@
   "round": 3,
   "date": "2026-09-05",
   "reviewed_commit": "365f8c39",
+  "post_review_fix": "cd98b5c6 - the full-suite receipt on 3dfba227 found five reds in tests/test_rope_switcher_wires_profile.py (its _FakePanel execs the live _recompose, which now called _regate_stop); the gate is expressed inline with getattr in _recompose. Re-verified on cd98b5c6 by every receipt in this directory (qt_R3, docking_R3, docking_hython_R3, g3_R3, sweepb_R3, stock_R3, targeted_R3, acceptance_greps_R3, fullsuite_R3). M5's expectation (Stop-at-rest pin red when the gate is removed) still holds for the inline form: the camera_qt pin runs _recompose.",
   "branch": "pd/panel-integrate-r3",
   "merge_base_master": "e8913f83",
   "referee": "FORGE self-referee. No separate referee agent was available in this session; the round-2 protocol was run by the forge in a fresh checkout (git clone --shared of the r3 worktree at 365f8c39, local master ref, pytest pythonpath binds the clone's own python/). Read this as a reproduction of the accepts plus mutations, not as an independent pair of eyes - the CTO/Joe are the independent eyes.",

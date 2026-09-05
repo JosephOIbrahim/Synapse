@@ -1,0 +1,15 @@
+runner: C:\Python314\python.exe (stock)
+tree: cd98b5c6b60a67e3852e7d2f66c0bed9584372aa
+cmd: python -m pytest tests/ -q -p no:cacheprovider
+tests/test_undo_redo.py::TestRedoHandler::test_redo_handler_calls_performRedo
+tests/test_undo_redo.py::TestRedoHandler::test_redo_returns_status
+tests/test_undo_redo.py::TestRedoHandler::test_redo_registered_in_handlers
+    import synapse  # noqa: F811
+
+tests/test_vendored_deps.py::TestVendorPathActivation::test_prepend_is_idempotent
+    _bootstrap._exec(spec, module)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_f3_emergency_net.py::test_escalation_routes_ws_halt_when_no_haltable_bridge
+==== 1 failed, 7602 passed, 328 skipped, 625 warnings in 254.21s (0:04:14) ====

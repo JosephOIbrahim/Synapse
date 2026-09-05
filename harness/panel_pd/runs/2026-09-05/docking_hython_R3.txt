@@ -1,0 +1,7 @@
+runner: /c/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe
+tree: cd98b5c6b60a67e3852e7d2f66c0bed9584372aa
+cmd: hython -m pytest tests/test_panel_rhythm_docking.py -q -p no:cacheprovider -k 'composed or alternate'
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_panel_rhythm_docking.py::test_every_composed_region_and_face_at_docking_bound[airy]
+===== 1 failed, 44 passed, 46 deselected, 1 warning in 103.64s (0:01:43) ======

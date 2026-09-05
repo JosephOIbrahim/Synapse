@@ -1,0 +1,8 @@
+runner: /c/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe
+tree: cd98b5c6b60a67e3852e7d2f66c0bed9584372aa
+cmd: python313 -m pytest tests/test_panel_sweep_b_widgets.py -q -p no:cacheprovider
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 18 passed, 1 warning in 3.46s ========================
+receipt (ToolPalette worker):
+SWEEP_B_QT={"densities": ["airy", "tight", "standard", "airy"], "families": 2, "family": "Space Grotesk", "owned_layouts": 1, "popup_minimums": [["DsRoot", 188, 302], ["DsRoot", 170, 278], ["DsRoot", 176, 286], ["DsRoot", 188, 302]], "role_removal_preserves_spacing": true, "runner": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.400\\python313\\python.exe", "spacing": [6, 3, 4, 6], "states_checked": true}

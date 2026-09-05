@@ -42,6 +42,13 @@ DsHdaGenerate -> DsHdaAction.
   tighter verb-rail role (departs from battleplan T2); (c) GUTTER 26 (still
   385). Producer: `python313 -m pytest tests/test_panel_rhythm_docking.py`
   -> test_every_composed_region_and_face_at_docking_bound[airy].
+- **Verb rail at PANEL_PREF_WIDTH 340** (2026-09-05). panel_shot.py renders at
+  the preferred width 340; at standard the verb rail needs 361 (237 + 4x16 +
+  60), so OPTIMIZE / BUILD HDA elide in design/rhythm_pd/after_r3/expert/
+  panel_direct_chat.png (and airy at 393). The 'before' set shows the same
+  rail clipped worse (master's 24px gaps + a visible Stop + a clipped strip).
+  Same root as the item above: the verb rail's five verbs and the gutter
+  against a 340-380 pane. One word settles both.
 - **280 contract follow-ups** (RULING-2A: regions that fit 380 but not 280 carry
   a dated follow-up, not an exemption). The verb rail needs 345 at tight, the
   header row 334; the face at 393/361/345. Dated 2026-09-05; owner: the
