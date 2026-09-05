@@ -1,0 +1,26 @@
+{
+  "evidence_dir": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T001306.845967Z-20617ffd\\pure\\evidence",
+  "log_path": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T001306.845967Z-20617ffd\\pure.log",
+  "result_file": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T001306.845967Z-20617ffd\\pure-observations.json",
+  "root": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance",
+  "run_id": "20260905T001306.845967Z-20617ffd",
+  "runner_command": [
+    "C:\\Python314\\python.exe",
+    "-m",
+    "pytest",
+    "tests/test_solaris_v3_acceptance_bench.py",
+    "tests/test_solaris_v3_acceptance_runner.py",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "-p",
+    "scripts.solaris_v3_accept",
+    "--basetemp",
+    "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T001306.845967Z-20617ffd\\pure\\tmp"
+  ],
+  "test_source_hashes": {
+    "tests/test_solaris_v3_acceptance_bench.py": "faf9f6378fab8ee801d92781a9957d546ff0bccad96fd0098a1a2575cdba134c",
+    "tests/test_solaris_v3_acceptance_runner.py": "c972c0c5fe2e15b695a50ccf98b6b25ad685b66d6067ff0ea26ab9f993e8b6c9"
+  },
+  "tier": "pure"
+}

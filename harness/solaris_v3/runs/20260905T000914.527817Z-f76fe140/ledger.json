@@ -1,0 +1,1159 @@
+{
+  "checkout": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance",
+  "could_not_verify": [
+    "G0: artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+    "G1: NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+    "G2: artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+    "G3: artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+    "G4: NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+    "G5: artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+    "G6: artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+    "T1: NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+    "T2: NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+    "T3: NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+    "T4: no reviewed exact test binding; suite results do not promote product gates",
+    "T5: no reviewed exact test binding; suite results do not promote product gates",
+    "T6: no reviewed exact test binding; suite results do not promote product gates",
+    "T7: NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+    "T8: NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+    "T9: NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+    "T10: NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+    "T11: artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+    "T12: artist walk, undo and panel freshness are human GUI steps; this command never runs them"
+  ],
+  "created_at": "2026-09-05T00:09:19.222673+00:00",
+  "exit_code": 0,
+  "gate_definition_hash": "e6d91ffad28cea20fa27b2ac4723e59ab50663c593b823d31198f14f9ccc8226",
+  "host_probes": [
+    {
+      "artifact_hashes": {
+        "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\hython-probe-0.log": "3b1ad1976f122fafca219b8cbe8eff438fba2ec5812989919bbc161a7543b130"
+      },
+      "exit_code": 2,
+      "log_path": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\hython-probe-0.log",
+      "reason": "hython binding/pytest unavailable; see probe log",
+      "runner_command": [
+        "C:/Program Files/Side Effects Software\\Houdini 22.0.400\\bin\\hython.exe",
+        "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\scripts\\solaris_v3_accept.py",
+        "--probe",
+        "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\hython-probe-0.json"
+      ]
+    }
+  ],
+  "missing_globs": [
+    "NOT_RUN: no tests collected for tests/test_recipe_*.py",
+    "NOT_RUN: no tests collected for tests/test_worker_policy_demo*.py"
+  ],
+  "requested_tiers": [
+    "pure",
+    "hython",
+    "gui"
+  ],
+  "rows": [
+    {
+      "evidence": null,
+      "goalpost": "Panel phrase \u2192 action \u2192 dispatch \u2192 owned node provenance.",
+      "id": "G0",
+      "last_run": null,
+      "reason": "artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Build/catalog/dependencies agree; reconstructed golden graph passes.",
+      "id": "G1",
+      "last_run": null,
+      "reason": "NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Generic writers denied; render approval retained at final dispatch.",
+      "id": "G2",
+      "last_run": null,
+      "reason": "artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Artist state preserved; conflicts refuse; rollback/cancel measured.",
+      "id": "G3",
+      "last_run": null,
+      "reason": "artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Graph + USD + approved render proof; cache and stale-file controls pass.",
+      "id": "G4",
+      "last_run": null,
+      "reason": "NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Registry/card parity; blocked reason; stale evidence visibly invalidated.",
+      "id": "G5",
+      "last_run": null,
+      "reason": "artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Two owner rehearsals for demo; separate external-artist beta test.",
+      "id": "G6",
+      "last_run": null,
+      "reason": "artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Same canonical semantic state; second apply is observed no-op.",
+      "id": "T1",
+      "last_run": null,
+      "reason": "NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Rebuild refuses conflict; unrelated node and authored opinion survive.",
+      "id": "T2",
+      "last_run": null,
+      "reason": "NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Only allowlisted shader/light fields change; bindings/topology stable.",
+      "id": "T3",
+      "last_run": null,
+      "reason": "NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Full request rejected or clarified before any mutation dispatch.",
+      "id": "T4",
+      "last_run": null,
+      "reason": "no reviewed exact test binding; suite results do not promote product gates",
+      "status": "NOT_RUN",
+      "tier": "pure"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Dispatch denies it even when advertisement/filter is bypassed.",
+      "id": "T5",
+      "last_run": null,
+      "reason": "no reviewed exact test binding; suite results do not promote product gates",
+      "status": "NOT_RUN",
+      "tier": "pure"
+    },
+    {
+      "evidence": null,
+      "goalpost": "No render/export starts; wrapper cannot authorize itself.",
+      "id": "T6",
+      "last_run": null,
+      "reason": "no reviewed exact test binding; suite results do not promote product gates",
+      "status": "NOT_RUN",
+      "tier": "pure"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Topology check fails; camera binding alone cannot pass readiness.",
+      "id": "T7",
+      "last_run": null,
+      "reason": "NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Fresh-file and scene-content checks reject stale or irrelevant pixels.",
+      "id": "T8",
+      "last_run": null,
+      "reason": "NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "UNKNOWN, no success fallback; diagnosis retained.",
+      "id": "T9",
+      "last_run": null,
+      "reason": "NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Terminal state established before rollback/retry; residue measured.",
+      "id": "T10",
+      "last_run": null,
+      "reason": "NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "New request rebuilds; lost-response retry does not duplicate effects.",
+      "id": "T11",
+      "last_run": null,
+      "reason": "artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Card evidence goes stale/unknown; reapproval when scope changes.",
+      "id": "T12",
+      "last_run": null,
+      "reason": "artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+      "status": "NOT_RUN",
+      "tier": "gui"
+    }
+  ],
+  "run_id": "20260905T000914.527817Z-f76fe140",
+  "runner_command": [
+    "C:\\Python314\\python.exe",
+    "scripts/solaris_v3_accept.py",
+    "--tier",
+    "all"
+  ],
+  "runner_hash": "66c71fd9dbeaf70ef4d16859692a73ae803b3437c1e17b5d6ebbf521c54d77c7",
+  "schema_version": 1,
+  "tiers": [
+    {
+      "artifact_hashes": {
+        "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\pure-context.json": "ae00082fe3202d6497d4d6a2847d50a77f46ad25114b21213c401e65b1e02e61",
+        "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\pure-observations.json": "55c0b4c3a2b10fdb93f1f9339cd5c9a2c0b12f2093eaaabfd47a0098a7e37c18",
+        "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\pure.log": "62b0ce881c0d0bbc9d09b2e6735b96082e88e6459e3a69b2ee8dce038791b92d"
+      },
+      "exit_code": 0,
+      "log_path": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\pure.log",
+      "observation": {
+        "binding_error": null,
+        "exit_code": 0,
+        "identity": {
+          "build": "UNAVAILABLE: pure Python (no host qualification)",
+          "checkout": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance",
+          "commit": "83ec6330857b7305e5b9ee74e74e6d92d4155200",
+          "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "dirty": false,
+          "hou_module_path": null,
+          "module_path": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\__init__.py"
+        },
+        "loaded_module_hashes": {
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\__init__.py": "fb71189bd2f953613ea63a0895db1d82e1abb7b990f857ef74e30dcdddb5dd28",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\cognitive\\__init__.py": "83e02c117e11cd267029442a8d607ea6976613aef0f5ec2a2ca033e7a2f644bf",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\cognitive\\dispatcher.py": "f520f0a709c1fa2e0933853e7e0577b4fe907608e9dadba3d5a5deaa2716982c",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\cognitive\\tools\\__init__.py": "46a9f24a03aa41661f199c586f93fde18df44d8297afe8b439b06ddafd3fe34c",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\cognitive\\tools\\apply_fixture.py": "2d868c4f7cc6b916b7976c2ebf04eca371e26aba47184f32bb0c0ad2526ecf3a",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\cognitive\\tools\\inspect_stage.py": "c56ac13ec2b091b64866cf5a26c4dc325e6d06287390d67c1e7dd16b60c88b7b",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\cognitive\\tools\\write_report.py": "fa3b56afbe14e89e54585221379d0d547a36177c75964419a7996f9134f13e4b",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\cognitive\\tools\\ws_passthrough.py": "5660333eba3b62929409d784179f70dac4a6278f1a1c9abf3bb3ad9c6c3af45f",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\core\\__init__.py": "1dd7cc30cd0bd61c274b15ec0dd26bf41bcce02ec563beba5fcc967694b3e1d7",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\core\\aliases.py": "977bd70b95acb0dfe3671f9c048009b583a3fc3ab4561d0df320863adc63c025",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\core\\audit.py": "1c9186d5dc1b45a64f651a9c2a5f44413f2765eb390b9171f12cd75f51a1f8f3",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\core\\crypto.py": "6f613675d334ae8312d559cd2e17bf7559cf8a987ffeb4039fbc23bb06d99b78",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\core\\determinism.py": "4d8c164c08d9e756509c3b12297c5904ffd9a10750fe70fd4c54eb3d740acf3d",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\core\\errors.py": "66e3fdf3865033d8a2aae0b3609050832856415d9f3ef6a7d7a811bb31336400",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\core\\gates.py": "a2115644bcea8e3eda9510a5b107c87607bb98a2918572945a504949c9617503",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\core\\protocol.py": "b2a2e8c064ce2aaeecf8ec8d0caafa7d12c22e0fbb798d4adc2367919b4284a0",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\core\\queue.py": "63a043f9160a994e475ac76be2fae687b94140345910f79cd88a7c7b4afa1cae",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\core\\usd_punycode.py": "b932fb2f17c87404316f5e9eb0208193c42c69b678e1d800b89093533be278ce",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\inspector\\__init__.py": "4458b8ff5e48ede8f8d26d7e13eb5ecf5dbb31d7a0022a73305b7d8520871d95",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\inspector\\exceptions.py": "52f749970d6ee0de182356ec6563ba27d2806f53d592cf90884f1563b8e90be2",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\inspector\\models.py": "2a322e1be1cdcd3808134c6509003bfda52c101b9b8285c730b3b49548fc29e0",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\inspector\\tool_inspect_stage.py": "b2f3f076f4463d0857893c8408eb3ddace205cbad8db44f51b73407cad1be61b",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\inspector\\transport.py": "3b97dcf5b08f531ae7f23e7b5425d7440e09b3798a25017f82293a4ef3698f87",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\memory\\__init__.py": "ee5790389efc0951b2f216ebca297736fb1bccdaaeb26a6485df35ba8b9d2f9e",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\memory\\context.py": "9b99d411769ca031636d5e1cb6e700b94c0ca57aed2cf8e44c654bd95627a517",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\memory\\embedding.py": "73af8a4c6dae67fae678d1688ab6cffcf01bb909278be7440c0446013f7fe388",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\memory\\markdown.py": "0f08baab33c1b43ecb80ae348908873d3a2095d49ec41aa506bed58bd23f1e93",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\memory\\models.py": "237f60ebcb0629cfb701f8f9a2b2f752af0681cb2506ce3561cc7ebbb9fa8a97",
+          "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\python\\synapse\\memory\\store.py": "cf2f54606df560b119105ab2b9a993b3e70cb024ad798af77f901ca1d38e6cc6"
+        },
+        "tests": {
+          "tests/test_solaris_v3_acceptance_bench.py::test_absent_gpu_is_unknown_not_zero": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_bench.py::test_condition_and_report_mutations_do_not_relabel_samples": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_bench.py::test_distribution_is_independently_hand_computed": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_bench.py::test_failed_or_incomplete_operation_never_records_latency": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_bench.py::test_headless_defaults_are_unmeasured": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_bench.py::test_invalid_samples_refuse": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_bench.py::test_peak_sampling_requires_stable_identity_and_complete_reads": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_bench.py::test_pins_and_provenance_are_required": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_bench.py::test_successful_endpoint_and_cold_warm_separation": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_bench.py::test_vram_probe_queries_used_not_total_and_converts_mib": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_bench.py::test_walk_time_is_not_completion": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_a_missing_bound_test_cannot_promote": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_a_missing_teardown_cannot_promote": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_absent_globs_are_explicit_not_run": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_commit_is_read_at_actual_imported_checkout": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_emitter_rejects_old_external_artifacts": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_empty_collection_is_an_unrun_tier_even_with_identity": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_empty_provenance_and_invalid_timestamp_cannot_validate_green": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_exact_bound_completed_control_can_promote": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_existing_shim_candidates_are_filtered_to_pinned_build": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_exit_semantics": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_explicit_hython_is_not_replaced_by_newest": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_gate_schema_and_independent_page_coverage": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_gate_schema_rejects_duplicate_missing_and_false_green": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_initial_unbound_rows_never_claim_product_pass": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_invalid_timeout_refuses": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_ledger_schema_and_unrun_promotion_rejection": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_real_pytest_reports_skip_fail_wrong_path_and_evidence": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_second_run_skip_clears_prior_pass_only_in_executed_tier": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_skip_does_not_hide_an_actual_failure": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_skipped_phase_never_promotes_even_with_evidence": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_suite_green_without_binding_never_promotes": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_tier_that_did_not_run_stays_not_run": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_wrong_checkout_refuses_before_git_lookup": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_wrong_path_missing_receipt_and_changed_artifact_are_unknown": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          },
+          "tests/test_solaris_v3_acceptance_runner.py::AcceptanceControls::test_xfail_and_xpass_are_not_product_passes": {
+            "evidence": [],
+            "reports": [
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "setup"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "call"
+              },
+              {
+                "outcome": "passed",
+                "reason": "",
+                "wasxfail": false,
+                "when": "teardown"
+              }
+            ]
+          }
+        }
+      },
+      "ran": true,
+      "reason": "",
+      "runner_command": [
+        "C:\\Python314\\python.exe",
+        "-m",
+        "pytest",
+        "tests/test_solaris_v3_acceptance_bench.py",
+        "tests/test_solaris_v3_acceptance_runner.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-p",
+        "scripts.solaris_v3_accept",
+        "--basetemp",
+        "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\pure\\tmp"
+      ],
+      "status": "PASS",
+      "tier": "pure"
+    },
+    {
+      "artifact_hashes": {},
+      "exit_code": null,
+      "log_path": null,
+      "observation": {},
+      "ran": false,
+      "reason": "NOT_RUN: no bound hython with pytest on 22.0.400; see host probes",
+      "runner_command": [],
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "artifact_hashes": {},
+      "exit_code": null,
+      "log_path": null,
+      "observation": {},
+      "ran": false,
+      "reason": "artist walk, undo and panel freshness are human GUI steps; this command never runs them",
+      "runner_command": [],
+      "status": "NOT_RUN",
+      "tier": "gui"
+    }
+  ]
+}

@@ -1,0 +1,1200 @@
+{
+  "actions": [
+    {
+      "action_id": "solaris.spine",
+      "effect_scope": "graph",
+      "permission": "review",
+      "phrases": [
+        "build the solaris spine"
+      ],
+      "required_checks": [
+        "P1",
+        "P2",
+        "P4",
+        "P6"
+      ],
+      "slots": []
+    },
+    {
+      "action_id": "solaris.iterate.light",
+      "effect_scope": "field",
+      "permission": "review",
+      "phrases": [
+        "set the key light exposure to {exposure}"
+      ],
+      "required_checks": [
+        "P1",
+        "P2",
+        "P4",
+        "P6"
+      ],
+      "slots": [
+        {
+          "binding": "key_light.xn__inputsexposure_vya",
+          "key": "exposure",
+          "max": 10.0,
+          "min": -10.0,
+          "type": "float"
+        }
+      ]
+    },
+    {
+      "action_id": "solaris.iterate.material",
+      "effect_scope": "field",
+      "permission": "review",
+      "phrases": [
+        "make the hero {color}"
+      ],
+      "required_checks": [
+        "P1",
+        "P2",
+        "P4",
+        "P6"
+      ],
+      "slots": [
+        {
+          "binding": "hero_shader.base_color",
+          "key": "color",
+          "max": 1.0,
+          "min": 0.0,
+          "type": "color3"
+        }
+      ]
+    },
+    {
+      "action_id": "solaris.render.karma",
+      "effect_scope": "render",
+      "permission": "approve",
+      "phrases": [
+        "render the spine"
+      ],
+      "required_checks": [
+        "P2",
+        "P3",
+        "P4",
+        "P5"
+      ],
+      "slots": [
+        {
+          "binding": "render_settings.resolution",
+          "enum": [
+            "64x64",
+            "128x128",
+            "256x256"
+          ],
+          "key": "resolution",
+          "type": "enum"
+        },
+        {
+          "binding": "render_settings.pathtracedsamples",
+          "key": "samples",
+          "max": 64,
+          "min": 1,
+          "type": "int"
+        },
+        {
+          "binding": "render_settings.engine",
+          "enum": [
+            "cpu"
+          ],
+          "key": "engine",
+          "type": "enum"
+        }
+      ]
+    }
+  ],
+  "canonicalizer": "recipes-graph-v1+c3",
+  "catalog_digest": "1b0c813933374e2f61b1f3ba906c9ee91e3e27319920ca146841ad4e71e33d40",
+  "connections": [
+    {
+      "dst_id": "ground",
+      "dst_input": 0,
+      "src_id": "hero",
+      "src_output": 0
+    },
+    {
+      "dst_id": "materials",
+      "dst_input": 0,
+      "src_id": "ground",
+      "src_output": 0
+    },
+    {
+      "dst_id": "bindings",
+      "dst_input": 0,
+      "src_id": "materials",
+      "src_output": 0
+    },
+    {
+      "dst_id": "dome_light",
+      "dst_input": 0,
+      "src_id": "bindings",
+      "src_output": 0
+    },
+    {
+      "dst_id": "key_light",
+      "dst_input": 0,
+      "src_id": "dome_light",
+      "src_output": 0
+    },
+    {
+      "dst_id": "camera",
+      "dst_input": 0,
+      "src_id": "key_light",
+      "src_output": 0
+    },
+    {
+      "dst_id": "render_settings",
+      "dst_input": 0,
+      "src_id": "camera",
+      "src_output": 0
+    },
+    {
+      "dst_id": "output",
+      "dst_input": 0,
+      "src_id": "render_settings",
+      "src_output": 0
+    },
+    {
+      "dst_id": "render",
+      "dst_input": 0,
+      "src_id": "render_settings",
+      "src_output": 0
+    },
+    {
+      "dst_id": "hero_material",
+      "dst_input": 0,
+      "dst_port": "surfaceshader",
+      "src_id": "hero_shader",
+      "src_output": 0,
+      "src_port": "out"
+    },
+    {
+      "dst_id": "ground_material",
+      "dst_input": 0,
+      "dst_port": "surfaceshader",
+      "src_id": "ground_shader",
+      "src_output": 0,
+      "src_port": "out"
+    }
+  ],
+  "golden_reference": {
+    "dependency_record": null,
+    "hip": null,
+    "reference_render": null,
+    "status": "PENDING_HUMAN"
+  },
+  "layout_digest": "b1646f8f3c864fe37cf82b3912c7321267e43e349b7f07f1431332cc5f1f3b7f",
+  "nodes": [
+    {
+      "category": "Lop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": false,
+        "render": false
+      },
+      "id": "hero",
+      "parent_id": null,
+      "parms": {
+        "primpath": {
+          "type": "str",
+          "value": "/World/hero"
+        },
+        "radius": {
+          "type": "float",
+          "value": 1.0
+        },
+        "radius_control": {
+          "type": "str",
+          "value": "set"
+        },
+        "t": {
+          "type": "float3",
+          "value": [
+            0.0,
+            1.0,
+            0.0
+          ]
+        }
+      },
+      "position": [
+        0.0,
+        0.0
+      ],
+      "role": "hero",
+      "type": "sphere"
+    },
+    {
+      "category": "Lop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": false,
+        "render": false
+      },
+      "id": "ground",
+      "parent_id": null,
+      "parms": {
+        "axis": {
+          "type": "enum",
+          "value": "Y"
+        },
+        "length": {
+          "type": "float",
+          "value": 12.0
+        },
+        "primpath": {
+          "type": "str",
+          "value": "/World/ground"
+        },
+        "width": {
+          "type": "float",
+          "value": 12.0
+        }
+      },
+      "position": [
+        0.0,
+        -1.0
+      ],
+      "role": "ground",
+      "type": "plane"
+    },
+    {
+      "category": "Lop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": false,
+        "render": false
+      },
+      "id": "materials",
+      "parent_id": null,
+      "parms": {
+        "assign1": {
+          "type": "bool",
+          "value": false
+        },
+        "assign2": {
+          "type": "bool",
+          "value": false
+        },
+        "materials": {
+          "type": "int",
+          "value": 2
+        },
+        "matnode1": {
+          "type": "str",
+          "value": "hero_material"
+        },
+        "matnode2": {
+          "type": "str",
+          "value": "ground_material"
+        },
+        "matpath1": {
+          "type": "str",
+          "value": "/materials/hero"
+        },
+        "matpath2": {
+          "type": "str",
+          "value": "/materials/ground"
+        },
+        "matpathprefix": {
+          "type": "str",
+          "value": "/materials/"
+        }
+      },
+      "position": [
+        0.0,
+        -2.0
+      ],
+      "role": "materials",
+      "type": "materiallibrary"
+    },
+    {
+      "category": "Vop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": false,
+        "render": false
+      },
+      "id": "hero_shader",
+      "parent_id": "materials",
+      "parms": {
+        "base_color": {
+          "type": "color3",
+          "value": [
+            0.05,
+            0.2,
+            0.8
+          ]
+        }
+      },
+      "ports": {
+        "inputs": [
+          {
+            "data_type": "float",
+            "index": 0,
+            "name": "base"
+          },
+          {
+            "data_type": "color",
+            "index": 1,
+            "name": "base_color"
+          },
+          {
+            "data_type": "float",
+            "index": 2,
+            "name": "diffuse_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 3,
+            "name": "metalness"
+          },
+          {
+            "data_type": "float",
+            "index": 4,
+            "name": "specular"
+          },
+          {
+            "data_type": "color",
+            "index": 5,
+            "name": "specular_color"
+          },
+          {
+            "data_type": "float",
+            "index": 6,
+            "name": "specular_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 7,
+            "name": "specular_IOR"
+          },
+          {
+            "data_type": "float",
+            "index": 8,
+            "name": "specular_anisotropy"
+          },
+          {
+            "data_type": "float",
+            "index": 9,
+            "name": "specular_rotation"
+          },
+          {
+            "data_type": "float",
+            "index": 10,
+            "name": "transmission"
+          },
+          {
+            "data_type": "color",
+            "index": 11,
+            "name": "transmission_color"
+          },
+          {
+            "data_type": "float",
+            "index": 12,
+            "name": "transmission_depth"
+          },
+          {
+            "data_type": "color",
+            "index": 13,
+            "name": "transmission_scatter"
+          },
+          {
+            "data_type": "float",
+            "index": 14,
+            "name": "transmission_scatter_anisotropy"
+          },
+          {
+            "data_type": "float",
+            "index": 15,
+            "name": "transmission_dispersion"
+          },
+          {
+            "data_type": "float",
+            "index": 16,
+            "name": "transmission_extra_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 17,
+            "name": "subsurface"
+          },
+          {
+            "data_type": "color",
+            "index": 18,
+            "name": "subsurface_color"
+          },
+          {
+            "data_type": "color",
+            "index": 19,
+            "name": "subsurface_radius"
+          },
+          {
+            "data_type": "float",
+            "index": 20,
+            "name": "subsurface_scale"
+          },
+          {
+            "data_type": "float",
+            "index": 21,
+            "name": "subsurface_anisotropy"
+          },
+          {
+            "data_type": "float",
+            "index": 22,
+            "name": "sheen"
+          },
+          {
+            "data_type": "color",
+            "index": 23,
+            "name": "sheen_color"
+          },
+          {
+            "data_type": "float",
+            "index": 24,
+            "name": "sheen_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 25,
+            "name": "coat"
+          },
+          {
+            "data_type": "color",
+            "index": 26,
+            "name": "coat_color"
+          },
+          {
+            "data_type": "float",
+            "index": 27,
+            "name": "coat_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 28,
+            "name": "coat_anisotropy"
+          },
+          {
+            "data_type": "float",
+            "index": 29,
+            "name": "coat_rotation"
+          },
+          {
+            "data_type": "float",
+            "index": 30,
+            "name": "coat_IOR"
+          },
+          {
+            "data_type": "vector",
+            "index": 31,
+            "name": "coat_normal"
+          },
+          {
+            "data_type": "float",
+            "index": 32,
+            "name": "coat_affect_color"
+          },
+          {
+            "data_type": "float",
+            "index": 33,
+            "name": "coat_affect_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 34,
+            "name": "thin_film_thickness"
+          },
+          {
+            "data_type": "float",
+            "index": 35,
+            "name": "thin_film_IOR"
+          },
+          {
+            "data_type": "float",
+            "index": 36,
+            "name": "emission"
+          },
+          {
+            "data_type": "color",
+            "index": 37,
+            "name": "emission_color"
+          },
+          {
+            "data_type": "color",
+            "index": 38,
+            "name": "opacity"
+          },
+          {
+            "data_type": "int",
+            "index": 39,
+            "name": "thin_walled"
+          },
+          {
+            "data_type": "vector",
+            "index": 40,
+            "name": "normal"
+          },
+          {
+            "data_type": "vector",
+            "index": 41,
+            "name": "tangent"
+          }
+        ],
+        "outputs": [
+          {
+            "data_type": "surface",
+            "index": 0,
+            "name": "out"
+          }
+        ]
+      },
+      "position": [
+        -2.0,
+        0.0
+      ],
+      "role": "hero_shader",
+      "type": "mtlxstandard_surface"
+    },
+    {
+      "category": "Vop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": true,
+        "render": false
+      },
+      "id": "hero_material",
+      "parent_id": "materials",
+      "parms": {},
+      "ports": {
+        "inputs": [
+          {
+            "data_type": "surface",
+            "index": 0,
+            "name": "surfaceshader"
+          },
+          {
+            "data_type": "surface",
+            "index": 1,
+            "name": "backsurfaceshader"
+          },
+          {
+            "data_type": "displacement",
+            "index": 2,
+            "name": "displacementshader"
+          }
+        ],
+        "outputs": [
+          {
+            "data_type": "material",
+            "index": 0,
+            "name": "out"
+          }
+        ]
+      },
+      "position": [
+        -2.0,
+        -1.0
+      ],
+      "role": "hero_material",
+      "type": "mtlxsurfacematerial"
+    },
+    {
+      "category": "Vop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": false,
+        "render": false
+      },
+      "id": "ground_shader",
+      "parent_id": "materials",
+      "parms": {
+        "base_color": {
+          "type": "color3",
+          "value": [
+            0.35,
+            0.35,
+            0.35
+          ]
+        }
+      },
+      "ports": {
+        "inputs": [
+          {
+            "data_type": "float",
+            "index": 0,
+            "name": "base"
+          },
+          {
+            "data_type": "color",
+            "index": 1,
+            "name": "base_color"
+          },
+          {
+            "data_type": "float",
+            "index": 2,
+            "name": "diffuse_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 3,
+            "name": "metalness"
+          },
+          {
+            "data_type": "float",
+            "index": 4,
+            "name": "specular"
+          },
+          {
+            "data_type": "color",
+            "index": 5,
+            "name": "specular_color"
+          },
+          {
+            "data_type": "float",
+            "index": 6,
+            "name": "specular_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 7,
+            "name": "specular_IOR"
+          },
+          {
+            "data_type": "float",
+            "index": 8,
+            "name": "specular_anisotropy"
+          },
+          {
+            "data_type": "float",
+            "index": 9,
+            "name": "specular_rotation"
+          },
+          {
+            "data_type": "float",
+            "index": 10,
+            "name": "transmission"
+          },
+          {
+            "data_type": "color",
+            "index": 11,
+            "name": "transmission_color"
+          },
+          {
+            "data_type": "float",
+            "index": 12,
+            "name": "transmission_depth"
+          },
+          {
+            "data_type": "color",
+            "index": 13,
+            "name": "transmission_scatter"
+          },
+          {
+            "data_type": "float",
+            "index": 14,
+            "name": "transmission_scatter_anisotropy"
+          },
+          {
+            "data_type": "float",
+            "index": 15,
+            "name": "transmission_dispersion"
+          },
+          {
+            "data_type": "float",
+            "index": 16,
+            "name": "transmission_extra_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 17,
+            "name": "subsurface"
+          },
+          {
+            "data_type": "color",
+            "index": 18,
+            "name": "subsurface_color"
+          },
+          {
+            "data_type": "color",
+            "index": 19,
+            "name": "subsurface_radius"
+          },
+          {
+            "data_type": "float",
+            "index": 20,
+            "name": "subsurface_scale"
+          },
+          {
+            "data_type": "float",
+            "index": 21,
+            "name": "subsurface_anisotropy"
+          },
+          {
+            "data_type": "float",
+            "index": 22,
+            "name": "sheen"
+          },
+          {
+            "data_type": "color",
+            "index": 23,
+            "name": "sheen_color"
+          },
+          {
+            "data_type": "float",
+            "index": 24,
+            "name": "sheen_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 25,
+            "name": "coat"
+          },
+          {
+            "data_type": "color",
+            "index": 26,
+            "name": "coat_color"
+          },
+          {
+            "data_type": "float",
+            "index": 27,
+            "name": "coat_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 28,
+            "name": "coat_anisotropy"
+          },
+          {
+            "data_type": "float",
+            "index": 29,
+            "name": "coat_rotation"
+          },
+          {
+            "data_type": "float",
+            "index": 30,
+            "name": "coat_IOR"
+          },
+          {
+            "data_type": "vector",
+            "index": 31,
+            "name": "coat_normal"
+          },
+          {
+            "data_type": "float",
+            "index": 32,
+            "name": "coat_affect_color"
+          },
+          {
+            "data_type": "float",
+            "index": 33,
+            "name": "coat_affect_roughness"
+          },
+          {
+            "data_type": "float",
+            "index": 34,
+            "name": "thin_film_thickness"
+          },
+          {
+            "data_type": "float",
+            "index": 35,
+            "name": "thin_film_IOR"
+          },
+          {
+            "data_type": "float",
+            "index": 36,
+            "name": "emission"
+          },
+          {
+            "data_type": "color",
+            "index": 37,
+            "name": "emission_color"
+          },
+          {
+            "data_type": "color",
+            "index": 38,
+            "name": "opacity"
+          },
+          {
+            "data_type": "int",
+            "index": 39,
+            "name": "thin_walled"
+          },
+          {
+            "data_type": "vector",
+            "index": 40,
+            "name": "normal"
+          },
+          {
+            "data_type": "vector",
+            "index": 41,
+            "name": "tangent"
+          }
+        ],
+        "outputs": [
+          {
+            "data_type": "surface",
+            "index": 0,
+            "name": "out"
+          }
+        ]
+      },
+      "position": [
+        2.0,
+        0.0
+      ],
+      "role": "ground_shader",
+      "type": "mtlxstandard_surface"
+    },
+    {
+      "category": "Vop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": true,
+        "render": false
+      },
+      "id": "ground_material",
+      "parent_id": "materials",
+      "parms": {},
+      "ports": {
+        "inputs": [
+          {
+            "data_type": "surface",
+            "index": 0,
+            "name": "surfaceshader"
+          },
+          {
+            "data_type": "surface",
+            "index": 1,
+            "name": "backsurfaceshader"
+          },
+          {
+            "data_type": "displacement",
+            "index": 2,
+            "name": "displacementshader"
+          }
+        ],
+        "outputs": [
+          {
+            "data_type": "material",
+            "index": 0,
+            "name": "out"
+          }
+        ]
+      },
+      "position": [
+        2.0,
+        -1.0
+      ],
+      "role": "ground_material",
+      "type": "mtlxsurfacematerial"
+    },
+    {
+      "category": "Lop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": false,
+        "render": false
+      },
+      "id": "bindings",
+      "parent_id": null,
+      "parms": {
+        "matspecmethod1": {
+          "type": "enum",
+          "value": "path"
+        },
+        "matspecmethod2": {
+          "type": "enum",
+          "value": "path"
+        },
+        "matspecpath1": {
+          "type": "str",
+          "value": "/materials/hero"
+        },
+        "matspecpath2": {
+          "type": "str",
+          "value": "/materials/ground"
+        },
+        "nummaterials": {
+          "type": "int",
+          "value": 2
+        },
+        "primpattern1": {
+          "type": "str",
+          "value": "/World/hero"
+        },
+        "primpattern2": {
+          "type": "str",
+          "value": "/World/ground"
+        }
+      },
+      "position": [
+        0.0,
+        -3.0
+      ],
+      "role": "bindings",
+      "type": "assignmaterial"
+    },
+    {
+      "category": "Lop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": false,
+        "render": false
+      },
+      "id": "dome_light",
+      "parent_id": null,
+      "parms": {
+        "primpath": {
+          "type": "str",
+          "value": "/lights/dome"
+        },
+        "xn__inputsexposure_control_wcb": {
+          "type": "str",
+          "value": "set"
+        },
+        "xn__inputsexposure_vya": {
+          "type": "float",
+          "value": 0.0
+        }
+      },
+      "position": [
+        0.0,
+        -4.0
+      ],
+      "role": "dome_light",
+      "type": "domelight::3.0"
+    },
+    {
+      "category": "Lop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": false,
+        "render": false
+      },
+      "id": "key_light",
+      "parent_id": null,
+      "parms": {
+        "primpath": {
+          "type": "str",
+          "value": "/lights/key"
+        },
+        "r": {
+          "type": "float3",
+          "value": [
+            -35.0,
+            30.0,
+            0.0
+          ]
+        },
+        "t": {
+          "type": "float3",
+          "value": [
+            3.0,
+            5.0,
+            4.0
+          ]
+        },
+        "xn__inputsexposure_control_wcb": {
+          "type": "str",
+          "value": "set"
+        },
+        "xn__inputsexposure_vya": {
+          "type": "float",
+          "value": 3.0
+        }
+      },
+      "position": [
+        0.0,
+        -5.0
+      ],
+      "role": "key_light",
+      "type": "light::2.0"
+    },
+    {
+      "category": "Lop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": false,
+        "render": false
+      },
+      "id": "camera",
+      "parent_id": null,
+      "parms": {
+        "primpath": {
+          "type": "str",
+          "value": "/cameras/main"
+        },
+        "r": {
+          "type": "float3",
+          "value": [
+            -12.0,
+            0.0,
+            0.0
+          ]
+        },
+        "t": {
+          "type": "float3",
+          "value": [
+            0.0,
+            3.0,
+            8.0
+          ]
+        }
+      },
+      "position": [
+        0.0,
+        -6.0
+      ],
+      "role": "camera",
+      "type": "camera"
+    },
+    {
+      "category": "Lop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": false,
+        "render": false
+      },
+      "id": "render_settings",
+      "parent_id": null,
+      "parms": {
+        "camera": {
+          "type": "str",
+          "value": "/cameras/main"
+        },
+        "engine": {
+          "type": "enum",
+          "value": "cpu"
+        },
+        "pathtracedsamples": {
+          "type": "int",
+          "value": 1
+        },
+        "picture": {
+          "type": "path",
+          "value": "$HIP/render/solaris_spine_contract.exr"
+        },
+        "primpath": {
+          "type": "str",
+          "value": "/Render/spine"
+        },
+        "resolution": {
+          "type": "int2",
+          "value": [
+            64,
+            64
+          ]
+        }
+      },
+      "position": [
+        0.0,
+        -7.0
+      ],
+      "role": "render_settings",
+      "type": "karmarendersettings"
+    },
+    {
+      "category": "Lop",
+      "flags": {
+        "bypass": false,
+        "display": false,
+        "material": false,
+        "render": false
+      },
+      "id": "render",
+      "parent_id": null,
+      "parms": {
+        "loppath": {
+          "type": "str",
+          "value": ""
+        },
+        "rendersettings": {
+          "type": "str",
+          "value": "/Render/spine"
+        },
+        "trange": {
+          "type": "enum",
+          "value": "off"
+        }
+      },
+      "position": [
+        2.0,
+        -8.0
+      ],
+      "role": "render",
+      "type": "usdrender_rop"
+    },
+    {
+      "category": "Lop",
+      "flags": {
+        "bypass": false,
+        "display": true,
+        "material": false,
+        "render": false
+      },
+      "id": "output",
+      "parent_id": null,
+      "parms": {},
+      "position": [
+        0.0,
+        -8.0
+      ],
+      "role": "output",
+      "type": "null"
+    }
+  ],
+  "presentation": {
+    "canonicalizer_digest": "458b010221ac579a50ca3b3a493020b50b517c0ea0a4c70bec93fbeeb33c059b",
+    "contract_only": true,
+    "provenance": {
+      "epistemics": "Types, parameter interfaces and VOP port identities are catalog-verified. Topology, parameter values, flags, positions, CPU engine selection and slot limits are curated design choices, NOT golden-HIP capture or runtime verification. Catalog availability proves no USD/material/render behavior.",
+      "golden_capture": "NOT_RUN: Joe has not built the golden HIP. The human code-stream override allows this contract-only definition.",
+      "output_policy": "picture is a contract default. Trusted render lifecycle must replace it with an approved run-specific output; this file grants no render/export approval.",
+      "resolution_policy": "Frozen SlotSchema has no int2: resolution uses a bounded enum with explicit typed int2 presets; trusted lifecycle applies the selected tuple to the exact catalog parm resolution. No guessed component parameter names.",
+      "type_and_parameter_evidence": "rag/catalog/h22.0.400/Lop.json; rag/catalog/h22.0.400/Vop.json",
+      "vop_port_evidence": "Vop.json types.<exact_type>.wire_signature, instantiated=true; full names, indices and data types retained"
+    },
+    "resolution_presets": {
+      "128x128": [
+        128,
+        128
+      ],
+      "256x256": [
+        256,
+        256
+      ],
+      "64x64": [
+        64,
+        64
+      ]
+    },
+    "stage_canonicalization": {
+      "dependency_identity": null,
+      "frame": null,
+      "layers": null,
+      "load_rules": null,
+      "resolver_identity": null,
+      "status": "NOT_RUN",
+      "time": null,
+      "version": "recipes-stage-v1+c3"
+    },
+    "title": "Solaris spine",
+    "vop_catalog_digest": "f3912e8a68527a76259b3514c018f3897f71decc52e44b17bb0f6831ad310cf4"
+  },
+  "recipe_id": "solaris.spine",
+  "schema_version": "2",
+  "semantic_digest": "8f2f9082c812f6b2f6ee0f4a254e30db7a873a42b4c96c1777ac4d188a899cfe",
+  "supported_build": "22.0.400",
+  "version": "0.1.0"
+}

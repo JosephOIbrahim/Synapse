@@ -1,0 +1,13 @@
+
+tests/test_vendored_deps.py::TestVendorPathActivation::test_prepend_is_idempotent
+  C:\Python314\Lib\importlib\__init__.py:129: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\.claude\worktrees\bp5-solaris-integrate\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+    _bootstrap._exec(spec, module)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_backfill.py::test_backup_is_taken_and_source_intact - Asser...
+FAILED tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented
+FAILED tests/test_pkg_bootstrap_invariant.py::test_r310_shapes_leave_no_runtime_divergence
+FAILED tests/test_worker_tool_policy.py::test_unknown_env_value_falls_back_to_standard
+==== 4 failed, 7407 passed, 198 skipped, 625 warnings in 250.58s (0:04:10) ====
+exit 0

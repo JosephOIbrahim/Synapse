@@ -1,0 +1,185 @@
+{
+  "promotion_rule": {
+    "binding_format": {
+      "ROW_ID": [
+        {
+          "intended_path": "reviewed execution path",
+          "nodeid": "tests/test_example.py::test_real_path"
+        }
+      ]
+    },
+    "bindings": {},
+    "required_evidence": [
+      "receipt_id",
+      "commit",
+      "build",
+      "runner_command",
+      "log_path",
+      "artifact_hashes"
+    ],
+    "rule": "Promote only a configured exact test binding that ran on its intended path in the bound checkout and tier. Every required test must pass setup, call and teardown, emit a fresh receipt with matching intended_path and nonempty hashed artifacts, and have no skip/xfail. Verify module paths and commit in the pytest process. Hython requires measured build 22.0.400. Missing bindings, missing host, missing evidence, deselection, skip and wrong path never promote. GUI is always NOT_RUN in this command. Suite success alone never promotes a product row."
+  },
+  "rows": [
+    {
+      "evidence": null,
+      "goalpost": "Panel phrase \u2192 action \u2192 dispatch \u2192 owned node provenance.",
+      "id": "G0",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Build/catalog/dependencies agree; reconstructed golden graph passes.",
+      "id": "G1",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Generic writers denied; render approval retained at final dispatch.",
+      "id": "G2",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Artist state preserved; conflicts refuse; rollback/cancel measured.",
+      "id": "G3",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Graph + USD + approved render proof; cache and stale-file controls pass.",
+      "id": "G4",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Registry/card parity; blocked reason; stale evidence visibly invalidated.",
+      "id": "G5",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Two owner rehearsals for demo; separate external-artist beta test.",
+      "id": "G6",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Same canonical semantic state; second apply is observed no-op.",
+      "id": "T1",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Rebuild refuses conflict; unrelated node and authored opinion survive.",
+      "id": "T2",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Only allowlisted shader/light fields change; bindings/topology stable.",
+      "id": "T3",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Full request rejected or clarified before any mutation dispatch.",
+      "id": "T4",
+      "last_run": null,
+      "reason": "no reviewed exact test binding; suite results do not promote product gates",
+      "status": "NOT_RUN",
+      "tier": "pure"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Dispatch denies it even when advertisement/filter is bypassed.",
+      "id": "T5",
+      "last_run": null,
+      "reason": "no reviewed exact test binding; suite results do not promote product gates",
+      "status": "NOT_RUN",
+      "tier": "pure"
+    },
+    {
+      "evidence": null,
+      "goalpost": "No render/export starts; wrapper cannot authorize itself.",
+      "id": "T6",
+      "last_run": null,
+      "reason": "no reviewed exact test binding; suite results do not promote product gates",
+      "status": "NOT_RUN",
+      "tier": "pure"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Topology check fails; camera binding alone cannot pass readiness.",
+      "id": "T7",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Fresh-file and scene-content checks reject stale or irrelevant pixels.",
+      "id": "T8",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "UNKNOWN, no success fallback; diagnosis retained.",
+      "id": "T9",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Terminal state established before rollback/retry; residue measured.",
+      "id": "T10",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "hython"
+    },
+    {
+      "evidence": null,
+      "goalpost": "New request rebuilds; lost-response retry does not duplicate effects.",
+      "id": "T11",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "gui"
+    },
+    {
+      "evidence": null,
+      "goalpost": "Card evidence goes stale/unknown; reapproval when scope changes.",
+      "id": "T12",
+      "last_run": null,
+      "status": "NOT_RUN",
+      "tier": "gui"
+    }
+  ],
+  "schema_version": 1,
+  "vocabulary": {
+    "BENCH": "Measurements with pinned conditions; no inferred performance or product verdict.",
+    "CAPABILITY": "C6: one repeatable acceptance command using existing test infrastructure.",
+    "GATE": "Shipping conditions; a target is not a measured status."
+  }
+}
