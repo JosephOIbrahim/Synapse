@@ -181,7 +181,10 @@ class FaceWork(QtWidgets.QWidget):
         self._steps = []   # ordered [name, phase] — the live plan-with-progress
 
         col = QtWidgets.QVBoxLayout(self)
-        self.setProperty("rhythm_role", "group")   # comp face padding
+        # shell: the face is an edge container like the direct face - the
+        # GUTTER inset and SPACE_SM air come from the role (one point of
+        # view across faces; RULING-3 mechanism, landing r3 repair).
+        self.setProperty("rhythm_role", "shell")
 
 
         # — activity + current tool status —

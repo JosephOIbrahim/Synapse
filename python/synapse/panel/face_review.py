@@ -201,7 +201,10 @@ class FaceReview(QtWidgets.QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         col = QtWidgets.QVBoxLayout(self)
-        self.setProperty("rhythm_role", "group")   # comp face padding
+        # shell: the face is an edge container like the direct face - the
+        # GUTTER inset and SPACE_SM air come from the role (one point of
+        # view across faces; RULING-3 mechanism, landing r3 repair).
+        self.setProperty("rhythm_role", "shell")
 
 
         # — the done sub-state shows the same cook bar, full (comp) —

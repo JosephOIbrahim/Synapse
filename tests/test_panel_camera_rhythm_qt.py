@@ -93,6 +93,15 @@ def probe(density):
         assert panel.layout().spacing() == 0
         rm = panel.layout().contentsMargins()
         assert (rm.left(), rm.top(), rm.right(), rm.bottom()) == (0, 0, 0, 0)
+        # Repair round (CRUX r3): the WORK and REVIEW faces are the same
+        # structural whitespace as the direct face (REDESIGN section 3 'Space -
+        # load-bearing') - shells with the GUTTER inset, not margin-less groups.
+        for face in (panel._work_face, panel._review_face):
+            assert face is not None
+            assert face.property("rhythm_role") == "shell", type(face).__name__
+            m = face.layout().contentsMargins()
+            assert (m.left(), m.top(), m.right(), m.bottom()) == (
+                t.GUTTER, t.SPACE_SM, t.GUTTER, t.SPACE_SM), type(face).__name__
         band = panel._font_btn.parentWidget().parentWidget()
         assert band.property("rhythm_role") == "band" and band.layout().spacing() == 0
         # RULING-4c: one type applier per widget - CHAT, TOKEN, every verb of
