@@ -778,11 +778,13 @@ class SynapsePanel(QtWidgets.QWidget):
         #   weight   400 -> 700  (a weight the reference ships)
         #   tracking BRAND 0.286em -> WORDMARK 0.16em  (~2.2px at 14px)
         #   colour   TEXT_PRIMARY -> TEXT_BRIGHT
-        # Size holds at 14px. Position still carries hierarchy; weight now
-        # carries presence.
+        # Size held at 14px until Joe's addendum (2026-09-05, the review
+        # canvas): "1pt larger and 5px farther to the right of the orange
+        # circle" - 15px, and t.WORDMARK_GAP beyond the row's stack gap.
+        # Position still carries hierarchy; weight now carries presence.
         word = c.label("SYNAPSE", role="body")
         word.setProperty("role", "title")
-        word.setFont(fontload.tracked_font("WORDMARK", 14, scale=self._chrome_scale,
+        word.setFont(fontload.tracked_font("WORDMARK", 15, scale=self._chrome_scale,
                                            weight=600))
         # The brand never elides (landing r3 repair): a hard minimum is the
         # one floor Qt's engine cannot cross. Chrome is FROZEN on Aa, so the
@@ -807,6 +809,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._author_lbl.clicked.connect(self._open_author_menu)
         self._refresh_engine_selector()      # text + never-elide floor
         top.addWidget(self._mark)
+        top.addSpacing(t.WORDMARK_GAP)       # the lockup: mark ·stack gap + 5· SYNAPSE
         top.addWidget(word)
         top.addStretch(1)
         top.addWidget(self._author_lbl)

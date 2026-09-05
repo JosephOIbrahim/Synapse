@@ -383,14 +383,15 @@ try:
         panel._set_scale(_saved_scale)
 
     READABLE_FLOOR = 11  # px — chrome must clear this
-    # v9: the wordmark is the 14px BRAND word (demoted from the 19px hero).
+    # v9: the wordmark is the BRAND word (demoted from the 19px hero).
     # 2026-07-27 (7780f649, Joe's call): it carries its own WORDMARK tracking
     # (0.16em), not BRAND's 0.286em. The audit pins the token the widget
     # actually uses, so a design move never leaves the gate red by itself.
+    # 2026-09-05 (Joe's addendum on the review canvas, bc-wave W7): 14 -> 15px.
     wm = chrome_a.get("_wordmark")
     _wmf = panel._wordmark.font()
     _want_pct = 100 + t.TRACKING_EM["WORDMARK"] * 100
-    wm_brand = (wm == round(14 * panel._chrome_scale)
+    wm_brand = (wm == round(15 * panel._chrome_scale)
                 and _wmf.letterSpacingType() == type(_wmf).PercentageSpacing
                 and abs(_wmf.letterSpacing() - _want_pct) < 0.05)
     print(f"   wordmark is brand    : {wm}px @ tracking {_wmf.letterSpacing():.1f}%  "

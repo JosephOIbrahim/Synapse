@@ -484,6 +484,12 @@ SPACE_32 = 32   # parm-row section-head gap
 SPACE_48 = 48   # doubled group gap (verb rail); 2 × SPACE_LG
 SPACE_GRID = (SPACE_XS, SPACE_SM, SPACE_12, SPACE_MD, SPACE_LG, SPACE_32, SPACE_48)
 
+# The wordmark lockup (Joe, 2026-09-05, on the review canvas: "1pt larger and
+# 5px farther to the right of the orange circle"). The px the wordmark sits
+# beyond the identity row's stack gap from the mark - a dimension of the
+# lockup, not a gap rung; the one token the addendum admitted this wave.
+WORDMARK_GAP = 5
+
 # Density is ONE panel-wide rhythm (L5-18): GAPS scale, PADDINGS stay fixed
 # (sec.7). The compositor stamps `density` on #DsRoot and repolishes the whole
 # tree (08-04, proven by PANELTRUTH); the QSS generator bakes the three stepped
