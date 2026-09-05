@@ -1,0 +1,62 @@
+{
+  "schema": "panel_pd/crux/v1",
+  "round": 3,
+  "date": "2026-09-05",
+  "reviewed_commit": "365f8c39",
+  "branch": "pd/panel-integrate-r3",
+  "merge_base_master": "e8913f83",
+  "referee": "FORGE self-referee. No separate referee agent was available in this session; the round-2 protocol was run by the forge in a fresh checkout (git clone --shared of the r3 worktree at 365f8c39, local master ref, pytest pythonpath binds the clone's own python/). Read this as a reproduction of the accepts plus mutations, not as an independent pair of eyes - the CTO/Joe are the independent eyes.",
+  "scratch_tree": "C:/Users/User/pd-r3-scratch/crux_clone (detached, crux_r3 branch at 365f8c39)",
+  "runners": {
+    "stock": "C:/Python314 python 3.14.2 (no PySide; Qt probes skip explicitly)",
+    "python313": "C:/Program Files/Side Effects Software/Houdini 22.0.400/python313/python.exe (PySide6 6.8.3)",
+    "hython": "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe"
+  },
+  "gui": "NOT AVAILABLE (bridge down). Every item only Joe's eyes can judge is under needs_human, never claimed.",
+  "accepts": {
+    "census": {"residual": 17, "tagged": 17, "untagged": 0, "hex": 0, "grid": 0, "measurement_complete": true, "errors": [],
+               "camera": {"synapse_panel.py": [0, 1, 0], "recall_card.py": [2, 0, 0], "face_token.py": [0, 0, 0], "token_readout.py": [0, 0, 0], "chat_display.py": [0, 0, 0]}},
+    "residual_cap": {"allowed_residual": 17, "measured": 17, "allowed_grid_residual": 0, "census": "harness/panel_pd/runs/2026-09-05/rhythm_census.json"},
+    "stock_guard_set": "331 passed, 54 skipped (owner, sweep_a, sweep_b_hex, sweep_b_widgets, camera, chat_panel, census, rope_density, design_system, typography, hda_panel, settings, alt_entry_unshipped)",
+    "python313_qt_tier": "tests/test_panel_rhythm_docking.py + test_panel_sweep_b_widgets.py + test_panel_camera_rhythm_qt.py -> 111 passed, 1 failed (test_every_composed_region_and_face_at_docking_bound[airy]: DsRoot width 393 > 380)",
+    "hython_tier": "tests/panel + test_panel_camera_rhythm_qt.py + test_panel_faces.py::test_stop_gated_to_working_state -> 121 passed, 1 failed (tests/panel/test_failure_trail.py::test_dead_verb_hidden, pre-existing on master)",
+    "g3": "hython audit_panel.py --strict -> exit 0, pass, 1 WARN (interactive targets: 3 under 26px, master baseline); 'no bundled font in QSS: clean', 'input not clipped: send bottom 410px / panel 420px', 'wordmark is brand', 'chrome FROZEN on Aa', 'content scales on Aa: prompt 12->19px'",
+    "docking_provenance": "PD_QT lines carry runner=python313, family='Space Grotesk', families=2; under hython the worker starts (no 'encodings' error)"
+  },
+  "mutations": [
+    {"id": "M1", "mutation": "restore self._dot.setStyleSheet(sheet) in working_indicator._apply", "expect": "test_panel_rhythm_owner_ratchet red", "result": "1 failed - 'new untagged rhythm owners: [working_indicator.py inline_styles WorkingIndicator._apply ...]'", "verdict": "RED as required"},
+    {"id": "M2", "mutation": "from synapse.panel import chat_panel at the top of synapse_panel.py", "expect": "test_panel_alt_entry_unshipped red", "result": "2 failed (shipped panel reaches the alternate entry; exemption premise broken), 2 passed", "verdict": "RED as required"},
+    {"id": "M3", "mutation": "rhythm.apply removed from compositor.compose", "expect": "owner test's compose/recompose sequence red", "result": "1 failed, 26 passed", "verdict": "RED as required"},
+    {"id": "M4", "mutation": "one raw hex appended to a migrated module (bookmarks.py)", "expect": "sweep_b_hex + owner ratchet red", "result": "2 failed, 27 passed", "verdict": "RED as required"},
+    {"id": "M5", "mutation": "_regate_stop() calls removed after compose", "expect": "camera_qt Stop-at-rest pin red", "result": "3 failed (all three densities)", "verdict": "RED as required"},
+    {"id": "M6", "mutation": "profile pills back to rhythm_role='row'", "expect": "camera_qt tag/height pins red", "result": "3 failed", "verdict": "RED as required"},
+    {"id": "M7", "mutation": "shell margins zeroed (the gutter deleted again)", "expect": "stock shell-consumes-GUTTER pin red", "result": "1 failed", "verdict": "RED as required"}
+  ],
+  "verdicts": {
+    "RESIDUAL (RULING-1)": {"verdict": "SOUND", "chain_broken_at": null, "evidence": ["census 17/17 tagged/0 hex/0 grid", "RESIDUAL.json cap == 17 exact", "M1 red", "M4 red", "48 mapping rows from ce04dcb0 source, same-hex-same-token"]},
+    "DOCKING (RULING-2A/2B)": {"verdict": "SOUND-WITH-NITS", "chain_broken_at": null, "evidence": ["YAML width feature read by _bounds()", "PD_QT provenance families=2 family='Space Grotesk'", "hython worker starts", "HealthStrip Ignored cells + group role", "ResultView 260 with fonts (388 without)", "M2 red"],
+      "nits": ["The composed panel at AIRY only measures 393 > 380: the verb rail (five verbs 237px + four group gaps at 24 + GUTTER 30 both sides) - master's own geometry (setSpacing(24) + GUTTER = 393) surfaced by a valid measurement. Fits standard 361 / tight 345. Recorded as an open word in INTEGRATION.md and panel_nits_pd.md, not weakened, not waived by the forge."]},
+    "HDA PARITY (RULING-2C)": {"verdict": "SOUND", "chain_broken_at": null, "evidence": ["KEEP with the written exemption in INTEGRATION.md + panel_nits_pd.md", "no source change", "GUI-gate: single accent on ResultView"]},
+    "GUTTER (RULING-3)": {"verdict": "SOUND", "chain_broken_at": null, "evidence": ["shell role (30,8,30,8) on rail/ribbon/tab row/direct face, pinned in real Qt under both runners", "root band gap 0", "G3 'input not clipped' 410/420 (was 444)", "M7 red"]},
+    "ROLES + LABEL DOCTRINE (RULING-4)": {"verdict": "SOUND", "chain_broken_at": null, "evidence": ["0 parm_row outside face_token", "role_size gone", "CHAT/TOKEN/verb/rail-control type parity pinned", "tag pills at CHAT height", "sans context label vs mono eyebrow pinned", "no-double-applier stock pin", "M6 red"]},
+    "ORACLES (R2-02/03, STD-06)": {"verdict": "SOUND", "chain_broken_at": null, "evidence": ["chat CSS pins on the sweep_a_style seam + scoped rule body", "gate dot on sweep_a_color", "prompt px on the document default font", "camera/sweep pins fence-scoped; LEVER role block carve-out stated"]},
+    "SWEEP_B PROBES (R2-05)": {"verdict": "SOUND", "chain_broken_at": null, "evidence": ["18 passed under python313", "geometry() and second-action branches executed for all six regions", "owned layouts by widget walk, unmarked probe negative control", "popup window minimums reported (ToolPalette 176x286 std)"]},
+    "STOP REGATE (found in passing)": {"verdict": "SOUND", "chain_broken_at": null, "evidence": ["tests/test_panel_faces.py::test_stop_gated_to_working_state was RED under hython on the merged tree (pre-existing master defect: compositor applied visible=True to the state-gated Stop); green now", "M5 red"]}
+  },
+  "chain_broken_at": null,
+  "for_ruling": [
+    {"id": "R3-01", "item": "Composed panel at airy 393 > 380 (verb rail rhythm x gutter vs the interim bound). Options: (a) accept the design's own number, write the YAML interim feature per density; (b) tighter verb-rail role (departs from battleplan T2); (c) GUTTER 26 (still 385). None fits the 280 contract at any density (345 min) - dated follow-up either way."}
+  ],
+  "needs_human": [
+    "GUI-GATE 1: composed panel after step 4 in three profiles - 30px gutter back, root bands with zero gap and their own hairlines, act/divider/input as one band; does rail -> ribbon -> tab row read as one rhythm, divider on the verbs?",
+    "GUI-GATE 2: one-row header/ribbon merge (T6) - CHAT/TOKEN in the ribbon, profile pills right-aligned as tags in the tab row.",
+    "GUI-GATE 3: verb rail at the LABEL tracked font matching CHAT/TOKEN (11px / 115%); header row now a 4px stack at 334/346/370 min vs master's 125px-tall rail.",
+    "GUI-GATE 4: recall card eyebrow (mono upper tracked) beside the context label (sans) - one point of view, or a terminal line?",
+    "GUI-GATE 5: drag the pane inward; HealthStrip cells elide (Ignored, tooltip carries the text) - where does it become unreadable, does the panel stop at 280?",
+    "GUI-GATE 6: HDA ResultView single accent (SIGNAL fill on 'Create Another HDA' vs GROW status); revert is hda_views.py DsHdaGenerate -> DsHdaAction.",
+    "GUI-GATE 7: three-profile before/after PNG pairs under design/rhythm_pd/{before,after_r3}.",
+    "GUI-GATE 8: the G3 WARN '3 interactive targets under 26px' is master's baseline - its own leg or reportable debt."
+  ],
+  "merge_eligible": "NOT YET - Joe's eyes on the eight GUI-gate items and a word on R3-01; the merge word is Joe's.",
+  "pre_existing_reds_carried": ["tests/panel/test_failure_trail.py::test_dead_verb_hidden", "tests/test_backfill.py::test_backup_is_taken_and_source_intact (master baseline per harness/notes/h22/pytest_v5630_master.txt)"]
+}
