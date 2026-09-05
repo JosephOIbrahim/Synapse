@@ -228,3 +228,8 @@ harness/notes/scratch/
 # Probe outputs from wave legs (phase-1 debris ruled 2026-08-18):
 # regenerable evidence — relocated out of docs/ so the public repo carries no probe noise.
 harness/notes/h22/probes/
+
+# CTO B9 2026-09-05: run artefacts and scratch that kept landing untracked on master
+_temp_*.json
+harness/**/*.err
+harness/battleplan/board*.html
