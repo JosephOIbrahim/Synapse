@@ -218,6 +218,25 @@ def test_p4_reports_assets_payloads_and_errors_separately():
     assert result.evidence["composition_errors"] == ["unresolved reference"]
 
 
+def test_p4_missing_assets_ignore_anonymous_layer_identifiers():
+    """Live LOP stages sublayer ``anon:`` layers; those are in-memory, not missing files.
+
+    ComputeAllDependencies reports them as unresolved on every LOP root/session
+    layer (hython 22.0.400, 2026-09-05). A real file path must still be kept.
+    """
+    unresolved = [
+        "anon:00000000499F4400:LOP:Solo Lights",
+        "anon:00000000499F2100:LOP:rootlayer",
+        "anon:00000000499F6700:LOP",
+        "C:/definitely/missing/asset.usd",
+        "missing.tx",
+    ]
+    assert v._missing_file_assets(unresolved) == ["C:/definitely/missing/asset.usd", "missing.tx"]
+    assert v._missing_file_assets([]) == []
+    assert v._is_anonymous_layer_identifier("anon:0000000041AF3C80:LOP:rootlayer-session.usda")
+    assert not v._is_anonymous_layer_identifier("/shots/sh010/asset.usd")
+
+
 @pytest.mark.parametrize("key", ["dependencies_checked", "payloads", "missing_assets", "node_errors"])
 def test_p4_unmeasured_channel_unknown(key):
     instance, spec = scene()
