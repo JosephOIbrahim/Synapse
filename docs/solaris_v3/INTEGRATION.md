@@ -72,6 +72,6 @@ Anything that needs the hand-built golden HIP: golden extraction and rebuild (T1
 
 1. ~~Joe rules on the unknown-mode fallback~~ ruled, applied.
 2. Joe builds and saves the golden sphere/ground scene on H22.0.400 (blueprint p12, first session).
-3. Live probe of the four `hou.undos` symbols; LIFECYCLE backend bound.
+3. ~~Live probe of the four `hou.undos` symbols~~ DONE 2026-09-04 20:50 on the live 22.0.400 session: all nine `hou.undos` members exist (`group(label, editor=None)`, `areEnabled()`, `undoLabels()`, `redoLabels()`, `performUndo() -> bool`, `performRedo()`, `disabler()`, `clear()`, `memoryUsage()`), `hou.ui` present, `hdefereval` has `executeInMainThreadWithResult` + `executeDeferred` only, `UsdRender.Settings.GetCameraRel` present. Evidence: `harness/solaris_v3/runs/live_probe_h22.0.400_undos.json`. Remaining: bind the LIFECYCLE `TransactionBackend` to these (LIFECYCLE write set) and regenerate the h22 symbol table so scout stops flagging them.
 4. Hookups applied under review; T4–T12 bindings added to the acceptance runner.
 5. Merge word for `bp5/solaris-integrate`.

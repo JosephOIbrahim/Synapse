@@ -1,0 +1,26 @@
+{
+  "probe": "hou.undos + hdefereval + UsdRender live introspection",
+  "when": "2026-09-04 20:50 local",
+  "how": "houdini_execute_python over the live SYNAPSE bridge (read-only introspection: getattr + inspect.signature), atomic=false",
+  "build": "22.0.400",
+  "hip": "C:/Users/User/untitled.hip",
+  "hou_undos": {
+    "group": {"exists": true, "sig": "(label: 'char const *', editor: 'NetworkEditor' = None) -> 'HOM_UndosGroup *'"},
+    "areEnabled": {"exists": true, "sig": "() -> 'bool'"},
+    "undoLabels": {"exists": true, "sig": "() -> 'std::vector<std::string>'"},
+    "redoLabels": {"exists": true, "sig": "() -> 'std::vector<std::string>'"},
+    "performUndo": {"exists": true, "sig": "() -> 'bool'"},
+    "performRedo": {"exists": true, "sig": "() -> 'bool'"},
+    "disabler": {"exists": true, "sig": "() -> 'HOM_UndosDisabler *'"},
+    "clear": {"exists": true, "sig": "() -> 'void'"},
+    "memoryUsage": {"exists": true, "sig": "() -> 'size_t'"}
+  },
+  "undos_enabled_at_probe": true,
+  "undo_stack_at_probe": [],
+  "hou_ui_present": true,
+  "hdefereval": ["executeInMainThreadWithResult", "executeDeferred"],
+  "hdefereval_executeInMainThread": "absent (known phantom, unchanged)",
+  "UsdRender.Settings.GetCameraRel": true,
+  "verdict": "LIFECYCLE deferral #2 is lifted: all four hou.undos symbols it refused to call exist on the live 22.0.400 runtime with the signatures above. The committed h22 symbol table's omission is a table gap, not a runtime gap.",
+  "follow_up": "bind LIFECYCLE TransactionBackend to hou.undos (group/areEnabled/undoLabels/performUndo) behind the import guard; regenerate the h22 symbol table per docs/studio/UPGRADE.md so scout stops reporting these as unverified."
+}
