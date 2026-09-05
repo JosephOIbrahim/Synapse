@@ -1042,7 +1042,10 @@ class SynapsePanel(QtWidgets.QWidget):
         # The shell role owns the ribbon's spacing. The context label is UI
         # label text (TYPE_ROLES['label'], sans, BP4) - not a section eyebrow,
         # so it carries no rhythm_role="label" (RULING-4c/4d).
-        self._ctx_label = c.label("no scene context", role="label", scale=self._chrome_scale)
+        # BC-4: boot text is '' - absence, not 'no scene context'. The rail
+        # sentence is the one idle telling; _apply_context fills this when a
+        # context arrives (F14).
+        self._ctx_label = c.label("", role="label", scale=self._chrome_scale)
         self._ctx_label.setObjectName("DsContextLabel")
         self._ctx_label.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
         lay.addWidget(self._ctx_label, 1)
@@ -1940,6 +1943,9 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _build_input(self):
         w = self._section()
+        # bc-wave BC-4: the composer is a flush `stack` - grip / input row /
+        # legend at 4/6/3 - one beat on the grid, no hand-added spacer.
+        w.setProperty("rhythm_role", "stack")
         col = QtWidgets.QVBoxLayout(w)
         self._input = _GrowingInput()
         # Aa scales document text; the inherited root sheet owns the chrome.
@@ -1969,11 +1975,13 @@ class SynapsePanel(QtWidgets.QWidget):
         row.addWidget(self._input, 1)
         row.addWidget(attach)
         col.addLayout(row)
-        # khint — the composer's quiet key legend (comp .khint)
-        self._khint = c.label("↵ send · ⇧↵ newline · / commands", role="caption")
+        # khint — the composer's quiet key legend (comp .khint). BC-4: it tells
+        # the two keys and nothing else - '/' is told once, in the placeholder
+        # (the telling G3 pins) - at the chrome floor (SIZE_SMALL, DATA mono,
+        # TEXT_SECONDARY via the label colour role), one signal per fact.
+        self._khint = c.label("↵ send · ⇧↵ newline", role="label")
         self._khint.setFont(fontload.tracked_font(
-            "DATA", t.SIZE_MICRO, scale=self._chrome_scale, mono=True))
-        col.addSpacing(t.SPACE_SM)          # +XS layout spacing ⇒ the comp's 12
+            "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
         col.addWidget(self._khint)
         return w
 

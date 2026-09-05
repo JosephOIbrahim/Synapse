@@ -110,9 +110,11 @@ if QtWidgets is not None:
         def __init__(self, parent=None):
             super().__init__(parent=parent)
             self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+            # bc-wave BC-4: the card is a `band` - the three DsCard bands touch
+            # at their shared hairlines (gap 0, margins 0 through the applier),
+            # a role instead of two exemption lines (F16).
+            self.setProperty("rhythm_role", "band")
             bands = QtWidgets.QVBoxLayout(self)
-            bands.setContentsMargins(0, 0, 0, 0)  # rhythm-exempt: fixed DsCard band seam; supplied roles describe collections, not the interior
-            bands.setSpacing(0)  # rhythm-exempt: bands touch at their shared hairlines; card role would separate them
             # The eyebrow: rhythm_role="label" is the one type applier here
             # (mono, upper, tracked); TYPE_ROLES['label'] is a different thing.
             self.header = c.label("what I remember")
