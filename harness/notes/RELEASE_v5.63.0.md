@@ -49,8 +49,11 @@ without touching it; no stream asked for a change.
   fog" is refused, not dropped); approval binding rechecked before start;
   per-turn terminal hard stop; `handlers_recipe.py` mixin, unregistered.
 - **VERIFY** — P1–P6 verifiers; the stage assessor now resolves the intended
-  RenderSettings prim explicitly and reads the camera as a relationship
-  (`GetCameraRel`), counts two authored lights and the render-input branch.
+  RenderSettings prim explicitly (new in this wave) and counts two authored
+  lights and the render-input branch. Reading the camera as a relationship
+  (`GetCameraRel`) is **pre-existing** — `server/solaris_compose_tools.py:522`,
+  in the tree since `f6934e19` (2026-05-30) — not a v5.63.0 change. *(Amended
+  2026-09-05, CTO B8; the draft credited the wave with both.)*
 - **LIFECYCLE** — instance lifecycle with STALE/CONFLICT refusal, a build
   transaction that establishes terminal state before any recovery and performs
   global undo only when provably on top of the stack, a render job that never
@@ -107,8 +110,11 @@ branch; integration report `docs/panel_pd/INTEGRATION.md`.
 
 ## Tests
 
-Full suite on merged master `b246b78e` (Python 3.14.2, no `hou`, 3 m 49 s):
+Full suite on merged master `b246b78e` (stock Python 3.14.2, no `hou`, 3 m 49 s):
 **7431 passed, 1 failed, 198 skipped** (`harness/notes/h22/pytest_v5630_master.txt`).
+Two interpreters, two meanings: **3.13 is the Houdini runtime** (hython — what ships);
+**3.14 is the stock gate** (system Python, vendored SDK inactive). The hython tier was
+not re-run for this release; its last numbers are v5.5x-era (README, "Two test numbers").
 Base `6e3dd963` was 6941 passed / 1 failed / 192 skipped: +490 passing tests,
 same single failure. That failure
 (`tests/test_backfill.py::test_backup_is_taken_and_source_intact`) predates
@@ -126,6 +132,15 @@ T1–T3, P2–P5 on a real stage, image smoke, render latency and VRAM. Binding 
 LIFECYCLE undo backend to the now-probed `hou.undos` symbols. Regenerating the
 h22 symbol table so scout stops flagging them. Test-to-row bindings for the
 acceptance command. GUI sign-off on the five camera regions.
+
+**The three things the 09-04 plan defined as "closed" for this release — none
+shipped** (added 2026-09-05, CTO B8; the draft above did not say so):
+SPATIAL lane default-on + `ratified:true` + fresh-clone green (still
+`SYNAPSE_SPATIAL_LANE` opt-in, `ratified:false`); panel measured `FONT_FLOOR_PX`
++ zero typography literals (provenance still `UNKNOWN`, sweeps held under CRUX
+BROKEN); splat colour in the EXR (no B-8 probe, no §14 — last render grey).
+Per-item evidence: `harness/notes/CAPSULE_2026-09-05_BP5.md` → "What the 09-04
+plan defined as closed, and its status". All three: OPEN, carried.
 
 ## Standing RC blockers — waiver carried
 
