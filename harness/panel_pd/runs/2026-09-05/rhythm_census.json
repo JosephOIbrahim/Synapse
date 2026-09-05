@@ -8504,7 +8504,7 @@
     },
     {
       "path": "python/synapse/panel/synapse_panel.py",
-      "sha256": "eef4c1994be4ebba08ee4dee8ae86d283406950c9db43c54ef214620deb333ae",
+      "sha256": "fc1243b4fde8d596530624801824eaa7ad13f74a28e01a38104ce08179f5ae4d",
       "errors": [],
       "spacing": [],
       "grid_spacing": [],
@@ -9030,7 +9030,7 @@
         {
           "scope": "SynapsePanel",
           "line": 333,
-          "end_line": 3065
+          "end_line": 3085
         },
         {
           "scope": "SynapsePanel.__init__",
@@ -9375,232 +9375,232 @@
         {
           "scope": "SynapsePanel._wire_gate",
           "line": 2080,
-          "end_line": 2108
+          "end_line": 2118
         },
         {
           "scope": "SynapsePanel._on_gate_raised",
-          "line": 2110,
-          "end_line": 2124
+          "line": 2120,
+          "end_line": 2144
         },
         {
           "scope": "SynapsePanel._show_overflow",
-          "line": 2126,
-          "end_line": 2128
+          "line": 2146,
+          "end_line": 2148
         },
         {
           "scope": "SynapsePanel._build_overflow_menu",
-          "line": 2130,
-          "end_line": 2223
+          "line": 2150,
+          "end_line": 2243
         },
         {
           "scope": "SynapsePanel._run_direct_tool",
-          "line": 2230,
-          "end_line": 2250
+          "line": 2250,
+          "end_line": 2270
         },
         {
           "scope": "SynapsePanel._display_recall_result",
-          "line": 2252,
-          "end_line": 2256
-        },
-        {
-          "scope": "SynapsePanel._on_direct_tool_done",
-          "line": 2258,
+          "line": 2272,
           "end_line": 2276
         },
         {
-          "scope": "SynapsePanel._on_direct_tool_failed",
+          "scope": "SynapsePanel._on_direct_tool_done",
           "line": 2278,
-          "end_line": 2284
+          "end_line": 2296
+        },
+        {
+          "scope": "SynapsePanel._on_direct_tool_failed",
+          "line": 2298,
+          "end_line": 2304
         },
         {
           "scope": "SynapsePanel._on_cancel_cook",
-          "line": 2286,
-          "end_line": 2303
+          "line": 2306,
+          "end_line": 2323
         },
         {
           "scope": "SynapsePanel._on_emergency_halt",
-          "line": 2305,
-          "end_line": 2309
+          "line": 2325,
+          "end_line": 2329
         },
         {
           "scope": "SynapsePanel._set_scale",
-          "line": 2311,
-          "end_line": 2317
+          "line": 2331,
+          "end_line": 2337
         },
         {
           "scope": "SynapsePanel._apply_content_scale",
-          "line": 2319,
-          "end_line": 2336
+          "line": 2339,
+          "end_line": 2356
         },
         {
           "scope": "SynapsePanel._set_prompt_font",
-          "line": 2339,
-          "end_line": 2350
+          "line": 2359,
+          "end_line": 2370
         },
         {
           "scope": "SynapsePanel._cycle_font_scale",
-          "line": 2352,
-          "end_line": 2357
+          "line": 2372,
+          "end_line": 2377
         },
         {
           "scope": "SynapsePanel._open_palette",
-          "line": 2359,
-          "end_line": 2373
+          "line": 2379,
+          "end_line": 2393
         },
         {
           "scope": "SynapsePanel._position_popup",
-          "line": 2375,
-          "end_line": 2424
+          "line": 2395,
+          "end_line": 2444
         },
         {
           "scope": "SynapsePanel._on_tool_picked",
-          "line": 2426,
-          "end_line": 2429
+          "line": 2446,
+          "end_line": 2449
         },
         {
           "scope": "SynapsePanel._on_submit",
-          "line": 2431,
-          "end_line": 2435
+          "line": 2451,
+          "end_line": 2455
         },
         {
           "scope": "SynapsePanel._send",
-          "line": 2437,
-          "end_line": 2457
+          "line": 2457,
+          "end_line": 2477
         },
         {
           "scope": "SynapsePanel._announce_parked",
-          "line": 2459,
-          "end_line": 2467
+          "line": 2479,
+          "end_line": 2487
         },
         {
           "scope": "SynapsePanel._restore_previous_session",
-          "line": 2469,
-          "end_line": 2488
+          "line": 2489,
+          "end_line": 2508
         },
         {
           "scope": "SynapsePanel._build_system_prompt",
-          "line": 2490,
-          "end_line": 2525
+          "line": 2510,
+          "end_line": 2545
         },
         {
           "scope": "SynapsePanel._start_worker",
-          "line": 2527,
-          "end_line": 2578
-        },
-        {
-          "scope": "SynapsePanel._on_token",
-          "line": 2580,
+          "line": 2547,
           "end_line": 2598
         },
         {
-          "scope": "SynapsePanel._on_done",
+          "scope": "SynapsePanel._on_token",
           "line": 2600,
-          "end_line": 2656
+          "end_line": 2618
+        },
+        {
+          "scope": "SynapsePanel._on_done",
+          "line": 2620,
+          "end_line": 2676
         },
         {
           "scope": "SynapsePanel._refresh_token_surfaces",
-          "line": 2658,
-          "end_line": 2677
+          "line": 2678,
+          "end_line": 2697
         },
         {
           "scope": "SynapsePanel._on_error",
-          "line": 2679,
-          "end_line": 2690
+          "line": 2699,
+          "end_line": 2710
         },
         {
           "scope": "SynapsePanel._on_tool_status",
-          "line": 2692,
-          "end_line": 2716
+          "line": 2712,
+          "end_line": 2736
         },
         {
           "scope": "SynapsePanel._on_stop",
-          "line": 2724,
-          "end_line": 2741
+          "line": 2744,
+          "end_line": 2761
         },
         {
           "scope": "SynapsePanel._set_busy",
-          "line": 2743,
-          "end_line": 2772
+          "line": 2763,
+          "end_line": 2792
         },
         {
           "scope": "SynapsePanel._render_state",
-          "line": 2774,
-          "end_line": 2796
+          "line": 2794,
+          "end_line": 2816
         },
         {
           "scope": "SynapsePanel._set_header",
-          "line": 2798,
-          "end_line": 2806
+          "line": 2818,
+          "end_line": 2826
         },
         {
           "scope": "SynapsePanel._update_context",
-          "line": 2808,
-          "end_line": 2841
+          "line": 2828,
+          "end_line": 2861
         },
         {
           "scope": "SynapsePanel._apply_context",
-          "line": 2843,
-          "end_line": 2899
+          "line": 2863,
+          "end_line": 2919
         },
         {
           "scope": "SynapsePanel._update_health_strip",
-          "line": 2901,
-          "end_line": 2912
+          "line": 2921,
+          "end_line": 2932
         },
         {
           "scope": "SynapsePanel._on_help",
-          "line": 2914,
-          "end_line": 2921
+          "line": 2934,
+          "end_line": 2941
         },
         {
           "scope": "SynapsePanel._open_doc",
-          "line": 2923,
-          "end_line": 2952
+          "line": 2943,
+          "end_line": 2972
         },
         {
           "scope": "SynapsePanel._register_selection_cb",
-          "line": 2954,
-          "end_line": 2968
+          "line": 2974,
+          "end_line": 2988
         },
         {
           "scope": "SynapsePanel._on_selection_changed",
-          "line": 2970,
-          "end_line": 2976
+          "line": 2990,
+          "end_line": 2996
         },
         {
           "scope": "SynapsePanel.closeEvent",
-          "line": 2978,
-          "end_line": 3011
+          "line": 2998,
+          "end_line": 3031
         },
         {
           "scope": "SynapsePanel.dragEnterEvent",
-          "line": 3014,
-          "end_line": 3020
+          "line": 3034,
+          "end_line": 3040
         },
         {
           "scope": "SynapsePanel.dragMoveEvent",
-          "line": 3022,
-          "end_line": 3023
+          "line": 3042,
+          "end_line": 3043
         },
         {
           "scope": "SynapsePanel.dropEvent",
-          "line": 3025,
-          "end_line": 3045
-        },
-        {
-          "scope": "SynapsePanel._on_node_clicked",
-          "line": 3047,
-          "end_line": 3054
-        },
-        {
-          "scope": "SynapsePanel._copy_conversation",
-          "line": 3056,
+          "line": 3045,
           "end_line": 3065
         },
         {
+          "scope": "SynapsePanel._on_node_clicked",
+          "line": 3067,
+          "end_line": 3074
+        },
+        {
+          "scope": "SynapsePanel._copy_conversation",
+          "line": 3076,
+          "end_line": 3085
+        },
+        {
           "scope": "onCreateInterface",
-          "line": 3068,
-          "end_line": 3070
+          "line": 3088,
+          "end_line": 3090
         }
       ],
       "hex_sites": [],
