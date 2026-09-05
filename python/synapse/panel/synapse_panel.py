@@ -796,8 +796,18 @@ class SynapsePanel(QtWidgets.QWidget):
             "— idempotent."
         )
         self._corpus_btn.clicked.connect(self._on_corpus)
-        self._observe = QtWidgets.QWidget()
+        # Parented to the rail on purpose (Joe, 2026-09-05): this widget is
+        # retired from the layout and lives hidden, but a PARENTLESS QWidget
+        # that anything shows becomes a top-level window - and the profile
+        # manifests' `activity_meter` entry did exactly that through the
+        # compositor, floating an empty 3px "houdini" window beside the
+        # panel at launch. With a parent it can never be a window.
+        # Pinned by tests/panel/test_single_window.py.
+        self._observe = QtWidgets.QWidget(w)
         self._observe.setObjectName("DsRailMeter")
+        # Retired: the compositor leaves it alone (compositor._apply_spec);
+        # the manifests keep `activity_meter` so no profile hides a capability.
+        self._observe.setProperty("retired", True)
         self._observe.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._observe.setFixedHeight(3)
         # Idle/busy styling lives in qss.py (#DsRailMeter, the [busy] property).

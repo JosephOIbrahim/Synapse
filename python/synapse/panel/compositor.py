@@ -161,7 +161,18 @@ def _apply_spec(widget, spec, what):
     next switch — the friction J4.4 measured (density switch-back never
     re-expanded folded readouts)."""
     try:
-        widget.setVisible(bool(spec["visible"]))
+        # A widget the panel has RETIRED (property "retired" = True) keeps its
+        # manifest entry - the manifests are the capability contract and no
+        # profile hides anything - but the compositor must never SHOW it (collapse and
+        # prominence still apply, so the two-way fold contract J4.4 holds). The
+        # rail meter was retired from the header and left parentless; the
+        # manifest's `visible` flipped it into a floating, empty top-level
+        # "houdini" window at launch (Joe, 2026-09-05). Pinned by
+        # tests/panel/test_single_window.py.
+        _prop = getattr(widget, "property", None)      # duck-typed: test fakes
+        retired = bool(_prop("retired")) if callable(_prop) else False
+        if not retired:
+            widget.setVisible(bool(spec["visible"]))
         widget.setMaximumHeight(0 if spec["collapsed"] else _QWIDGETSIZE_MAX)
         widget.setProperty("prominence", spec["prominence"])
         style = widget.style()
