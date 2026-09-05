@@ -1630,33 +1630,26 @@ class SynapsePanel(QtWidgets.QWidget):
         self._fit_composer_to_pane()
 
     def _author_token(self):
-        """Best-effort display signature of the active engine's model, e.g.
-        ``claude-sonnet-4-6`` → ``sonnet-4.6``; ``gemini-3.5-flash`` shown as-is.
-        DISPLAY ONLY — it is never authored to USD."""
+        """The model token: ``<provider>/<model short id>`` - who is thinking.
+        Joe's ruling 2026-09-05 (RULING_DIRECTION_BC.md Addendum 2 + 3.2):
+        ``ollama/deepseek-v4-flash``, ``claude/fable-5.1``, ``gemini/3.5-flash``.
+        Provider is the local-vs-cloud and cost signal, so it is never dropped.
+        Lowercase mono data; the curated display label lives in the picker.
+        DISPLAY ONLY - it is never authored to USD."""
         m = self._active_model()
         if not m:
             return ""
-        # Prefer the registry's curated short label — it handles Haiku's dated id
-        # (claude-haiku-4-5-20251001 → 'Haiku 4.5'), the long slash-bearing NVIDIA
-        # ids, AND an unknown Ollama live tag (glm-5.2:cloud → 'GLM 5.2', never the
-        # raw ':tag'). model_label returns the id verbatim only for an unknown
-        # non-Ollama id → then fall back to the claude- string surgery below.
-        try:
-            from synapse.panel.providers.registry import model_label
-            pid = getattr(self, "_provider_id", "claude")
-            lbl = model_label(pid, m)
-            if lbl and lbl != m:
-                return lbl
-        except Exception:
-            pass
-        if m.startswith("claude-"):
-            m = m[len("claude-"):]
-            for fam in ("opus", "sonnet", "haiku"):
-                if m.startswith(fam):
-                    rest = m[len(fam):].lstrip("-").replace("-", ".")
-                    return ("%s-%s" % (fam, rest)) if rest else fam
-            return m
-        return m
+        pid = (getattr(self, "_provider_id", "claude") or "claude").strip().lower()
+        ident = str(m).strip()
+        ident = ident.split("/")[-1]            # nvidia/nemotron-... -> nemotron-...
+        ident = ident.split(":")[0]             # glm-5.2:cloud -> glm-5.2
+        if ident.lower().startswith("claude-"):
+            ident = ident[len("claude-"):]      # claude-fable-5-1 -> fable-5.1
+            parts = ident.split("-")
+            if len(parts) >= 3 and parts[-1].isdigit() and parts[-2].isdigit():
+                ident = "-".join(parts[:-2]) + "-" + parts[-2] + "." + parts[-1]
+        ident = ident.lower()
+        return f"{pid}/{ident}"
 
     def _set_provider(self, provider_id):
         """Switch the active chat engine. Takes effect on the NEXT message; the
@@ -1865,6 +1858,15 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_revert(self):
         # Reversibility: route an undo through the proven agent/bridge path
         # rather than touching the substrate from the panel.
+        # Addendum 3.6: REVERT is state-gated like Stop - not while streaming.
+        w = getattr(self, "_worker", None)
+        if w is not None and hasattr(w, "isRunning") and w.isRunning():
+            try:
+                self._chat.append_system_message(
+                    "Still working - Stop the current turn before reverting.")
+            except Exception:
+                pass
+            return
         try:
             self._chat.append_system_message("Reverting the last change…")
         except Exception:
@@ -2545,6 +2547,17 @@ class SynapsePanel(QtWidgets.QWidget):
         return (base + "\n\n" + overlay) if overlay else base
 
     def _start_worker(self):
+        # Addendum 3.6 (2026-09-05): never a second worker into the same
+        # transcript. While one streams, a new turn (send, revert) waits.
+        w = getattr(self, "_worker", None)
+        if w is not None and hasattr(w, "isRunning") and w.isRunning():
+            logger.warning("panel: _start_worker refused - a turn is still streaming")
+            try:
+                self._chat.append_system_message(
+                    "Still working on the last turn - Stop it first, or wait.")
+            except Exception:
+                pass
+            return False
         if ClaudeWorker is None:
             try:
                 self._chat.append_system_message(

@@ -62,11 +62,15 @@ def test_mapping_targets_exist_in_unchanged_vendored_tokens():
     # Compile the source inventory without importing the host theme seam.
     import ast
     path = PANEL + "designsystem/tokens.py"
-    before = _base(path)
-    assert (ROOT / path).read_text(encoding="utf-8") == before, "a token was added or changed"
+    # Landing receipt narrowed (CTO 2026-09-05, RULING_DIRECTION_BC.md
+    # Addendum 3): the byte-freeze of tokens.py against ce04dcb0 proved the
+    # SWEEP_B landing added no token; later waves add tokens under written
+    # rulings (W7 wordmark gap). The pin keeps its substance: every mapping
+    # target exists in the vendored tokens as shipped.
+    current = (ROOT / path).read_text(encoding="utf-8")
     assignments = {
         target.id
-        for node in ast.walk(ast.parse(before)) if isinstance(node, ast.Assign)
+        for node in ast.walk(ast.parse(current)) if isinstance(node, ast.Assign)
         for target in node.targets if isinstance(target, ast.Name)
     }
     assert {row[3] for row in _rows(TABLE.read_text(encoding="utf-8"))} <= assignments

@@ -98,8 +98,10 @@ def test_diff_vs_expert_moves_only_prominence_collapse_density_overlay():
             assert "visible" not in deltas, (p, wid)
             assert "stretch" not in deltas, (p, wid)
     assert all_knobs <= {"collapsed", "prominence"}
-    # and specifically: curious folds (collapse) + re-emphasises, ml re-emphasises
-    assert "collapsed" in set(dve["curious"]["widget_knobs_that_moved"])
+    # bc-wave, direction B (2026-09-05): the telemetry chrome curious used to
+    # FOLD is now a hidden owner in every profile (the overflow reads it), so
+    # curious no longer collapses anything - both profiles only re-emphasise.
+    assert dve["curious"]["widget_knobs_that_moved"] == ["prominence"]
     assert dve["ml"]["widget_knobs_that_moved"] == ["prominence"]
 
 

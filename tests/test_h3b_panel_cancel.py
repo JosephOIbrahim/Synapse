@@ -218,7 +218,11 @@ def test_on_stop_still_only_aborts_the_loop_and_never_claims_idle():
     """The brief forbids replacing _on_stop. Pin its two load-bearing lines."""
     src = _panel_source()
     assert "self._worker.abort()" in src
-    assert "Stopping — waiting on" in src
+    # BC-2 (2026-09-05): the phrase is the _STOPPING_PHRASE constant on the
+    # state sentence; the pin keeps its intent - abort the loop, say
+    # "Stopping", never claim idle.
+    assert "_STOPPING_PHRASE" in src and "Stopping" in src
+    assert 'self._set_header("idle"' not in src.split("def _on_stop(")[1].split("\n    def ")[0]
 
 
 def test_cancel_cook_and_emergency_halt_are_separate_handlers():

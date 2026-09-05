@@ -60,14 +60,13 @@ WIDGET_ATTRS = {
     "wordmark": "_wordmark",
     "header_status": "_header_status",
     "author_token": "_author_lbl",
-    "token_meter": "_meter_lbl",
-    "palette_hint": "_palette_hint",
     "stop": "_stop_btn",
-    "connection_dot": "_foot_dot",
-    "connection_label": "_foot_label",
     "connect": "_connect_btn",
-    "corpus": "_corpus_btn",
-    "activity_meter": "_observe",
+    # bc-wave BC-2 (2026-09-05, direction B): token_meter, palette_hint,
+    # connection_dot, connection_label and corpus are hidden data owners the
+    # overflow reads - constructed, never composed, so no manifest names
+    # them; activity_meter (the retired rail meter) is gone. The vocabulary
+    # is what the manifests can place; the capability pin compares the two.
     # context_ribbon
     "context_label": "_ctx_label",
     # context_ribbon (bc-wave BC-5: the pills moved here from the mode bar)
@@ -162,7 +161,18 @@ def _apply_spec(widget, spec, what):
     next switch — the friction J4.4 measured (density switch-back never
     re-expanded folded readouts)."""
     try:
-        widget.setVisible(bool(spec["visible"]))
+        # A widget the panel has RETIRED (property "retired" = True) keeps its
+        # manifest entry - the manifests are the capability contract and no
+        # profile hides anything - but the compositor must never SHOW it (collapse and
+        # prominence still apply, so the two-way fold contract J4.4 holds). The
+        # rail meter was retired from the header and left parentless; the
+        # manifest's `visible` flipped it into a floating, empty top-level
+        # "houdini" window at launch (Joe, 2026-09-05). Pinned by
+        # tests/panel/test_single_window.py.
+        _prop = getattr(widget, "property", None)      # duck-typed: test fakes
+        retired = bool(_prop("retired")) if callable(_prop) else False
+        if not retired:
+            widget.setVisible(bool(spec["visible"]))
         widget.setMaximumHeight(0 if spec["collapsed"] else _QWIDGETSIZE_MAX)
         widget.setProperty("prominence", spec["prominence"])
         style = widget.style()
