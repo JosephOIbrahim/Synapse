@@ -129,16 +129,22 @@ QPushButton#DsPill[active="true"] {{
 
 /* ---- rail author token — THE engine+model click target (v9) ----
    Mono/DATA family+tracking live on the QFont; hover underline + pointing
-   hand carry discoverability (the comp shows no ▾). */
+   hand carry discoverability (the comp shows no ▾).
+   bc-wave repair (CRUX 2026-09-05, 'second hue at rest'): the token is
+   identity data - who is thinking - not an action and not a verdict, so it
+   speaks in the text ramp (TEXT_SECONDARY; the mono/DATA QFont already
+   carries the data voice) and never the verified/ok green. Hover brightens
+   and underlines (TEXT_BRIGHT), the same discoverability with no second hue:
+   the CHAT face at rest measures 3 hue buckets again (mark + SEND accent). */
 QPushButton#DsAuthor {{
     background: transparent; border: none;
     /* bc-wave BC-2 (Addendum 2): the token is a click target, not a glyph -
        SPACE_LG content + SPACE_XS air clears the 26px floor G3 measures. */
     min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_XS}px;
-    color: {t.CONIFEROUS};
+    color: {t.TEXT_SECONDARY};
 }}
 QPushButton#DsAuthor:hover {{
-    color: {t.GROW}; text-decoration: underline;
+    color: {t.TEXT_BRIGHT}; text-decoration: underline;
 }}
 
 /* ---- rail token meter (tokens only, never $) + ⌘K chip -------- */
