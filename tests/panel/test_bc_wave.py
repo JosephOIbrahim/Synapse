@@ -376,3 +376,46 @@ def test_one_signal_per_fact_at_boot():
             assert (m.left(), m.top(), m.right(), m.bottom()) == (0, 0, 0, 0)
         finally:
             p.close()
+
+
+# --------------------------------------------------------------------- BC-5
+def test_profile_row_folded():
+    """Ruling item 6: the profile row folds into the overflow so the
+    conversation holds a majority of the pane. No DsTabRow in the composed
+    tree; the overflow's 'Profile >' holds three checkable actions with
+    exactly one checked (the saved profile); triggering another recomposes
+    live (root density changes, _layout_profile follows); the ribbon carries
+    the CHAT / TOKEN pills; and the measured goal: chat.h / 760 >= 0.5 in
+    curious, expert and ml at 340x760."""
+    from synapse.panel.synapse_panel import SynapsePanel
+    assert not hasattr(SynapsePanel, "_build_mode_bar"), "the tab strip builder must be gone"
+    for profile in PROFILES:
+        p = _panel(profile)
+        try:
+            assert not p.findChildren(QtWidgets.QWidget, "DsTabRow"), profile
+            ribbon = p._region_cache["_build_context_ribbon"]
+            lay = ribbon.layout()
+            for key in ("direct", "token"):
+                assert lay.indexOf(p._face_pills[key]) != -1, key
+            menu = p._build_overflow_menu()
+            prof = next((a.menu() for a in menu.actions()
+                         if a.menu() is not None and a.text().startswith("Profile")), None)
+            assert prof is not None, [a.text() for a in menu.actions()]
+            acts = [a for a in prof.actions() if a.isCheckable()]
+            assert len(acts) == 3, [a.text() for a in acts]
+            checked = [a for a in acts if a.isChecked()]
+            assert len(checked) == 1 and checked[0].data() == p._layout_profile, (
+                [(a.text(), a.isChecked()) for a in acts], p._layout_profile)
+            # The conversation takes the majority at rest.
+            share = p._chat.height() / H
+            assert share >= 0.5, (profile, p._chat.height(), share)
+            # A different profile recomposes live.
+            other = next(a for a in acts if a.data() != p._layout_profile)
+            before = (p.property("density"), p._layout_profile)
+            other.trigger()
+            _app().processEvents()
+            assert p._layout_profile == other.data()
+            assert p.property("density") != before[0], (before, p.property("density"))
+            assert [a for a in acts if a.isChecked()] == [other]
+        finally:
+            p.close()
