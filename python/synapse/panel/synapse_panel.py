@@ -2086,6 +2086,16 @@ class SynapsePanel(QtWidgets.QWidget):
         gate = getattr(self, "_gate", None)
         if gate is not None:
             try:
+                # bc-wave BC-6b (direction C): consent cards land in the CHAT
+                # consent slot - where the talking happens - and the slot
+                # re-syncs on every card landing / decision. The Work-face
+                # GateWidget keeps its fold header + integrity row.
+                slot = getattr(self, "_consent_slot", None)
+                if slot is not None:
+                    gate.set_card_host(slot.layout(), self._sync_consent_slot)
+            except Exception:
+                logger.warning("consent slot host failed to wire", exc_info=True)
+            try:
                 # bc-wave BC-6a: REVIEW's '<- REVERT' on a card asks for the undo.
                 gate.revert_requested.connect(lambda _pid=None: self._on_revert())
             except Exception:
@@ -2108,11 +2118,22 @@ class SynapsePanel(QtWidgets.QWidget):
                 logger.warning("gate proposal relay failed to wire", exc_info=True)
 
     def _on_gate_raised(self, proposal):
-        """An actionable gate proposal arrived → AUTO-SURFACE Work's done sub-state
-        (v9.1 · Option A: consent comes to the artist). Noisy INFORM is skipped.
-        This is the one revision to the same-pane law: consent surfaces itself;
-        quiet state (busy / tool status / a plain answer) still never moves the
-        view. Accept/revert hand back to chat; commit stays forward."""
+        """An actionable gate proposal arrived → consent surfaces INLINE on the
+        CHAT face (bc-wave BC-6b, direction C, Joe's ruling item 2): the card
+        is already in the consent slot (GateWidget.set_card_host), so the view
+        never moves - the artist decides where they were talking. Noisy INFORM
+        is skipped. Work's done payoff is still readied (verdict + provenance)
+        for the artist who goes looking; the rail sentence follows STATUS,
+        never a gate. Quiet state (busy / tool status / a plain answer) never
+        moved the view before and still does not.
+
+        v9.1 (Option A) used to switch to the Work face here; G3 invariant #2
+        (audit_panel.py) and tests/test_panel_faces.py::
+        test_gate_raised_auto_surfaces_work pin that MECHANISM. The INTENT -
+        consent must be seen; quiet state never moves the view - is met by
+        the inline card; the one-line intent edit to the audit is a human
+        edit (RULING_DIRECTION_BC.md escalation), so this commit is held
+        behind it."""
         if isinstance(proposal, dict):
             level = proposal.get("level", "")
         else:
@@ -2120,8 +2141,7 @@ class SynapsePanel(QtWidgets.QWidget):
         if level and level != "inform":
             self._populate_review()
             self._set_work_substate("done")
-            self._set_header("done", "Result ready")
-            self._set_face("work")          # consent auto-surfaces (Option A)
+            self._sync_consent_slot()
 
     def _show_overflow(self):
         menu = self._build_overflow_menu()
