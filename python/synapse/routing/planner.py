@@ -700,7 +700,7 @@ def _build_solaris_scene_pipeline(
             "rs = stage.createNode('karmarendersettings', 'render_settings')",
             "rs.setInput(0, prev)",
             "prev = rs",
-            "karma = stage.createNode('karma', 'karma')",
+            "karma = stage.createNode('usdrender_rop', 'karma')",
             "karma.setInput(0, prev)",
             "prev = karma",
         ]

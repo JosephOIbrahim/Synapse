@@ -260,7 +260,7 @@ def register_scene_recipes(registry):
     # --- Color Correction Setup (COPs) ---
     registry.register(Recipe(
         name="color_correction_setup",
-        description="Create a color correction chain (color_correct -> grade -> null merge point)",
+        description="Create a color correction chain (colorcorrect -> hsv saturation trim)",
         triggers=[
             r"^(?:set up|setup|create)\s+(?:a\s+)?color\s+correct(?:ion)?(?:\s+(?:chain|setup|stack))?(?:\s+(?:at|in|under)\s+(?P<parent>.+))?$",
         ],
@@ -277,21 +277,25 @@ def register_scene_recipes(registry):
                 },
                 gate_level=GateLevel.REVIEW,
             ),
+            # CTO B6: the former grade type is in no H22.0.400 catalog category (Cop/Cop2/Sop);
+            # the real saturation node is 'hsv' (Cop + Cop2, deprecated=false,
+            # parm 'satscale'). 'colorcorrect' has no 'saturation' parm in
+            # either category, so the trim moved onto the node that owns it.
             RecipeStep(
-                action="set_parm",
+                action="create_node",
                 payload_template={
-                    "node": "{parent}/color_correct1",
-                    "parm": "saturation",
-                    "value": 1.0,
+                    "type": "hsv",
+                    "name": "hsv1",
+                    "parent": "{parent}",
                 },
                 gate_level=GateLevel.REVIEW,
             ),
             RecipeStep(
-                action="create_node",
+                action="set_parm",
                 payload_template={
-                    "type": "grade",
-                    "name": "grade1",
-                    "parent": "{parent}",
+                    "node": "{parent}/hsv1",
+                    "parm": "satscale",
+                    "value": 1.0,
                 },
                 gate_level=GateLevel.REVIEW,
             ),
@@ -299,7 +303,7 @@ def register_scene_recipes(registry):
                 action="connect_nodes",
                 payload_template={
                     "source": "{parent}/color_correct1",
-                    "target": "{parent}/grade1",
+                    "target": "{parent}/hsv1",
                 },
                 gate_level=GateLevel.REVIEW,
             ),

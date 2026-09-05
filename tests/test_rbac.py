@@ -246,3 +246,23 @@ class TestRoleHierarchy:
 
     def test_artist_not_at_least_lead(self):
         assert role_at_least(Role.ARTIST, Role.LEAD) is False
+
+
+# =========================================================================
+# run_recipe (CTO B6) -- lead-and-above, artist denied
+# =========================================================================
+#
+# The recipe proposal handler (handlers_recipe.py) is not yet a dispatched
+# command; the row is pre-registered so the day it is wired the RBAC verdict
+# is already pinned rather than defaulting open through a wildcard.
+
+
+class TestRunRecipePermission:
+    @pytest.mark.parametrize("role,expected", [
+        (Role.VIEWER, False),
+        (Role.ARTIST, False),
+        (Role.LEAD, True),
+        (Role.ADMIN, True),
+    ])
+    def test_run_recipe_gate(self, role, expected):
+        assert check_permission(role, "run_recipe") is expected

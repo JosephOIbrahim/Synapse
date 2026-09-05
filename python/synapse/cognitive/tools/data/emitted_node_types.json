@@ -1,6 +1,6 @@
 {
   "schema": "emitted_node_types/v1",
-  "generated_from_commit": "ab4ac7a26133f8ea2c686a19ce6b99385c3051d9",
+  "generated_from_commit": "a4d86ce43936445f66baf87d2a6d9acb3d03a8b0",
   "entries": [
     {
       "category": "apex_seed",
@@ -138,7 +138,7 @@
       ]
     },
     {
-      "category": "createNode_literal",
+      "category": "createNode_literal+recipe_payload",
       "type_name": "attribwrangle",
       "source_files": [
         "python/synapse/routing/planner.py",
@@ -176,17 +176,19 @@
       ]
     },
     {
-      "category": "createNode_literal",
+      "category": "createNode_literal+recipe_payload",
       "type_name": "cam",
       "source_files": [
         "python/synapse/panel/scene_doctor.py",
-        "python/synapse/routing/recipes/render_recipes.py"
+        "python/synapse/routing/recipes/render_recipes.py",
+        "python/synapse/routing/recipes/scene_recipes.py"
       ]
     },
     {
       "category": "createNode_literal",
       "type_name": "camera",
       "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/scene_template.py",
         "python/synapse/routing/planner.py",
         "python/synapse/routing/recipes/pipeline_recipes.py",
         "python/synapse/routing/recipes/render_recipes.py"
@@ -200,24 +202,58 @@
       ]
     },
     {
-      "category": "createNode_literal",
+      "category": "createNode_literal+recipe_payload",
       "type_name": "colorcorrect",
       "source_files": [
         "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/routing/recipes/scene_recipes.py",
         "python/synapse/server/handlers_cops.py"
       ]
     },
     {
-      "category": "setdressing_verified",
+      "category": "createNode_literal",
+      "type_name": "componentbuilder",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/component_builder.py"
+      ]
+    },
+    {
+      "category": "createNode_literal+recipe_payload+setdressing_verified",
       "type_name": "componentgeometry",
       "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/component_builder.py",
+        "python/synapse/mcp/tool_impls/solaris/create_variants.py",
+        "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
+        "python/synapse/routing/recipes/scene_recipes.py",
+        "python/synapse/validation/solaris/verify_set_purpose.py",
         "tests/test_setdressing_recipe.py"
       ]
     },
     {
-      "category": "setdressing_verified",
+      "category": "createNode_literal",
+      "type_name": "componentgeometryvariants",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/create_variants.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "componentmaterial",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/component_builder.py",
+        "python/synapse/mcp/tool_impls/solaris/create_variants.py",
+        "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
+        "python/synapse/validation/solaris/verify_set_purpose.py"
+      ]
+    },
+    {
+      "category": "createNode_literal+recipe_payload+setdressing_verified",
       "type_name": "componentoutput",
       "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/component_builder.py",
+        "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
+        "python/synapse/routing/recipes/scene_recipes.py",
+        "python/synapse/validation/solaris/verify_set_purpose.py",
         "tests/test_setdressing_recipe.py"
       ]
     },
@@ -230,15 +266,23 @@
     },
     {
       "category": "createNode_literal",
+      "type_name": "configureprimitive",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/set_purpose.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
       "type_name": "cop2net",
       "source_files": [
         "python/synapse/routing/recipes/pipeline_recipes.py"
       ]
     },
     {
-      "category": "setdressing_verified",
+      "category": "recipe_payload+setdressing_verified",
       "type_name": "copytopoints",
       "source_files": [
+        "python/synapse/routing/recipes/scene_recipes.py",
         "tests/test_setdressing_recipe.py"
       ]
     },
@@ -260,7 +304,16 @@
       "category": "createNode_literal",
       "type_name": "domelight",
       "source_files": [
+        "python/synapse/blocks/plan.py",
+        "python/synapse/blocks/runtime.py",
         "python/synapse/routing/recipes/render_recipes.py"
+      ]
+    },
+    {
+      "category": "recipe_payload",
+      "type_name": "domelight::2.0",
+      "source_files": [
+        "python/synapse/routing/hda_recipes.py"
       ]
     },
     {
@@ -289,6 +342,20 @@
       "type_name": "edgedetect",
       "source_files": [
         "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "recipe_payload",
+      "type_name": "edit",
+      "source_files": [
+        "python/synapse/routing/recipes/pipeline_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "explorevariants",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/create_variants.py"
       ]
     },
     {
@@ -374,18 +441,32 @@
       ]
     },
     {
-      "category": "createNode_literal",
-      "type_name": "karma",
+      "category": "recipe_payload",
+      "type_name": "hlight",
       "source_files": [
-        "python/synapse/routing/planner.py",
-        "python/synapse/routing/recipes/pipeline_recipes.py",
         "python/synapse/routing/recipes/render_recipes.py"
       ]
     },
     {
-      "category": "createNode_literal",
-      "type_name": "karmarenderproperties",
+      "category": "recipe_payload",
+      "type_name": "hsv",
       "source_files": [
+        "python/synapse/routing/recipes/scene_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "karmaphysicalsky",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/scene_template.py"
+      ]
+    },
+    {
+      "category": "createNode_literal+recipe_payload",
+      "type_name": "karmarendersettings",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/scene_template.py",
+        "python/synapse/routing/hda_recipes.py",
         "python/synapse/routing/planner.py",
         "python/synapse/routing/recipes/render_recipes.py"
       ]
@@ -442,6 +523,13 @@
       ]
     },
     {
+      "category": "recipe_payload",
+      "type_name": "light::2.0",
+      "source_files": [
+        "python/synapse/routing/hda_recipes.py"
+      ]
+    },
+    {
       "category": "createNode_literal",
       "type_name": "limit",
       "source_files": [
@@ -466,8 +554,17 @@
     },
     {
       "category": "createNode_literal",
+      "type_name": "matchsize",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/import_megascans.py"
+      ]
+    },
+    {
+      "category": "createNode_literal+recipe_payload",
       "type_name": "materiallibrary",
       "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/scene_template.py",
+        "python/synapse/routing/hda_recipes.py",
         "python/synapse/routing/planner.py",
         "python/synapse/routing/recipes/pipeline_recipes.py",
         "python/synapse/routing/recipes/render_recipes.py",
@@ -475,12 +572,14 @@
       ]
     },
     {
-      "category": "createNode_literal+setdressing_verified",
+      "category": "createNode_literal+recipe_payload+setdressing_verified",
       "type_name": "merge",
       "source_files": [
+        "python/synapse/routing/hda_recipes.py",
         "python/synapse/routing/recipes/fx_recipes.py",
         "python/synapse/routing/recipes/pipeline_recipes.py",
         "python/synapse/routing/recipes/render_recipes.py",
+        "python/synapse/routing/recipes/scene_recipes.py",
         "tests/test_setdressing_recipe.py"
       ]
     },
@@ -499,6 +598,13 @@
       ]
     },
     {
+      "category": "recipe_payload",
+      "type_name": "mountain",
+      "source_files": [
+        "python/synapse/routing/hda_recipes.py"
+      ]
+    },
+    {
       "category": "createNode_literal",
       "type_name": "noise",
       "source_files": [
@@ -506,9 +612,11 @@
       ]
     },
     {
-      "category": "createNode_literal",
+      "category": "createNode_literal+recipe_payload",
       "type_name": "null",
       "source_files": [
+        "python/synapse/blocks/plan.py",
+        "python/synapse/routing/hda_recipes.py",
         "python/synapse/routing/planner.py",
         "python/synapse/routing/recipes/fx_recipes.py",
         "python/synapse/routing/recipes/pipeline_recipes.py",
@@ -582,6 +690,20 @@
     },
     {
       "category": "createNode_literal",
+      "type_name": "polyreduce",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/import_megascans.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "primitive",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/scene_template.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
       "type_name": "pyrosolver",
       "source_files": [
         "python/synapse/routing/planner.py",
@@ -646,6 +768,7 @@
       "category": "createNode_literal",
       "type_name": "reference",
       "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
         "python/synapse/server/handlers_usd.py"
       ]
     },
@@ -671,19 +794,23 @@
       ]
     },
     {
-      "category": "createNode_literal",
+      "category": "createNode_literal+recipe_payload",
       "type_name": "scatter",
       "source_files": [
+        "python/synapse/routing/hda_recipes.py",
         "python/synapse/routing/planner.py",
-        "python/synapse/routing/recipes/fx_recipes.py"
+        "python/synapse/routing/recipes/fx_recipes.py",
+        "python/synapse/routing/recipes/scene_recipes.py"
       ]
     },
     {
-      "category": "createNode_literal+setdressing_verified",
+      "category": "createNode_literal+recipe_payload+setdressing_verified",
       "type_name": "sopimport",
       "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/scene_template.py",
         "python/synapse/routing/recipes/pipeline_recipes.py",
         "python/synapse/routing/recipes/render_recipes.py",
+        "python/synapse/routing/recipes/scene_recipes.py",
         "tests/test_setdressing_recipe.py"
       ]
     },
@@ -706,6 +833,8 @@
       "category": "createNode_literal",
       "type_name": "subnet",
       "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/component_builder.py",
+        "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
         "python/synapse/routing/recipes/pipeline_recipes.py",
         "python/synapse/routing/recipes/render_recipes.py",
         "python/synapse/server/handlers_hda.py"
@@ -723,6 +852,23 @@
       "type_name": "topnet",
       "source_files": [
         "python/synapse/server/handlers_tops/render_sequence.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "usdimport",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/import_megascans.py"
+      ]
+    },
+    {
+      "category": "createNode_literal+recipe_payload",
+      "type_name": "usdrender_rop",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/scene_template.py",
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/routing/recipes/render_recipes.py"
       ]
     },
     {
@@ -789,6 +935,13 @@
       "type_name": "whitewatersource",
       "source_files": [
         "python/synapse/routing/planner.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "xform",
+      "source_files": [
+        "python/synapse/mcp/tool_impls/solaris/import_megascans.py"
       ]
     }
   ]

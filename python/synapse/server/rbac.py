@@ -76,6 +76,11 @@ _ARTIST_COMMANDS: FrozenSet[str] = frozenset({
 _LEAD_COMMANDS: FrozenSet[str] = frozenset({
     "manage_users",
     "list_sessions",
+    # CTO B6 -- recipe proposal (handlers_recipe.py). Lead and above; the
+    # artist allow set + wildcards never match it, so artist is denied
+    # without a ROLE_DENIALS row. Not yet a dispatched command: the verdict
+    # is pinned ahead of wiring so it cannot default open later.
+    "run_recipe",
 })
 
 # Server configuration commands available to ADMIN only

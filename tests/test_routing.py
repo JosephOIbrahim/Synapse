@@ -564,13 +564,16 @@ class TestRecipeRegistry:
         assert len(commands) == 4
         assert commands[0].type == "create_node"
         assert commands[0].payload["type"] == "colorcorrect"
-        assert commands[1].type == "set_parm"
-        assert commands[1].payload["parm"] == "saturation"
-        assert commands[2].type == "create_node"
-        assert commands[2].payload["type"] == "grade"
+        # CTO B6: 'grade' was a phantom (no H22.0.400 catalog category);
+        # 'hsv' is the real saturation node and owns 'satscale'.
+        assert commands[1].type == "create_node"
+        assert commands[1].payload["type"] == "hsv"
+        assert commands[2].type == "set_parm"
+        assert commands[2].payload["node"] == "/img/hsv1"
+        assert commands[2].payload["parm"] == "satscale"
         assert commands[3].type == "connect_nodes"
         assert commands[3].payload["source"] == "/img/color_correct1"
-        assert commands[3].payload["target"] == "/img/grade1"
+        assert commands[3].payload["target"] == "/img/hsv1"
 
     def test_color_correction_no_parent(self):
         match = self.registry.match("set up color correction")
