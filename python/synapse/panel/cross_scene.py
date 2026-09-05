@@ -8,6 +8,8 @@ Thread-safe, works with or without Houdini (hou).
 
 from __future__ import annotations
 
+from synapse.panel.designsystem import tokens as _ds
+
 import logging
 import os
 import re
@@ -412,12 +414,12 @@ def gather_project_context(
 # ---------------------------------------------------------------------------
 
 _CATEGORY_COLORS = {
-    CAT_DECISION: "#5B9BD5",
-    CAT_MATERIAL: "#A5D6A7",
-    CAT_WEDGE: "#CE93D8",
-    CAT_RENDER: "#FFB74D",
-    CAT_WARNING: "#EF9A9A",
-    CAT_CONVENTION: "#80CBC4",
+    CAT_DECISION: _ds.SURFACE,
+    CAT_MATERIAL: _ds.SURFACE,
+    CAT_WEDGE: _ds.SURFACE,
+    CAT_RENDER: _ds.SURFACE,
+    CAT_WARNING: _ds.SURFACE,
+    CAT_CONVENTION: _ds.SURFACE,
 }
 
 
@@ -431,12 +433,12 @@ def format_project_context_html(
     with source scene and category badge.
     """
     if not insights:
-        return "<p style='color:#888;'>No project context available.</p>"
+        return f"<p style='color:{_ds.TEXT_TERTIARY};'>No project context available.</p>"
 
     shown = insights[:limit]
     scenes = {i.source_scene for i in insights}
     header = (
-        f"<p style='color:#AAA; margin:4px 0;'>"
+        f"<p style='color:{_ds.TEXT_SECONDARY}; margin:4px 0;'>"
         f"Project context loaded: <b>{len(insights)}</b> insight"
         f"{'s' if len(insights) != 1 else ''} from "
         f"<b>{len(scenes)}</b> scene{'s' if len(scenes) != 1 else ''}.</p>"
@@ -444,9 +446,9 @@ def format_project_context_html(
 
     items: List[str] = []
     for ins in shown:
-        color = _CATEGORY_COLORS.get(ins.category, "#888")
+        color = _CATEGORY_COLORS.get(ins.category, _ds.SURFACE)
         badge = (
-            f"<span style='background:{color}; color:#111; "
+            f"<span style='background:{color}; color:{_ds.TEXT_SECONDARY}; "
             f"padding:1px 6px; border-radius:3px; font-size:11px;'>"
             f"{html_escape(ins.category)}</span>"
         )
@@ -455,7 +457,7 @@ def format_project_context_html(
         items.append(
             f"<li style='margin:3px 0;'>"
             f"{badge} {summary} "
-            f"<span style='color:#666; font-size:11px;'>(from {source})</span>"
+            f"<span style='color:{_ds.TEXT_TERTIARY}; font-size:11px;'>(from {source})</span>"
             f"</li>"
         )
 

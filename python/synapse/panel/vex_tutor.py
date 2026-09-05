@@ -10,6 +10,8 @@ Key principle: never just give code, always explain WHY.
 
 from __future__ import annotations
 
+from synapse.panel.designsystem import tokens as _ds
+
 import re
 from typing import Any
 
@@ -814,15 +816,15 @@ def _highlight_vex_html(code: str) -> str:
     def _replace_token(m: re.Match[str]) -> str:
         token = m.group(0)
         if token in _VEX_TYPES:
-            return f'<span style="color:#6db3f2;">{token}</span>'
+            return f'<span style="color:{_ds.SIGNAL};">{token}</span>'
         if token in _VEX_KEYWORDS:
-            return f'<span style="color:#c586c0;">{token}</span>'
+            return f'<span style="color:{_ds.SIGNAL};">{token}</span>'
         return token
 
     # Highlight @attributes.
     code = re.sub(
         r"@\w+",
-        lambda m: f'<span style="color:#dcdcaa;">{m.group(0)}</span>',
+        lambda m: f'<span style="color:{_ds.TEXT_BRIGHT};">{m.group(0)}</span>',
         code,
     )
     # Highlight keywords and types.
@@ -834,20 +836,20 @@ def _highlight_vex_html(code: str) -> str:
     # Highlight comments.
     code = re.sub(
         r"//.*$",
-        lambda m: f'<span style="color:#6a9955;">{m.group(0)}</span>',
+        lambda m: f'<span style="color:{_ds.TEXT_TERTIARY};">{m.group(0)}</span>',
         code,
         flags=re.MULTILINE,
     )
     # Highlight string literals.
     code = re.sub(
         r'"[^"]*"',
-        lambda m: f'<span style="color:#ce9178;">{m.group(0)}</span>',
+        lambda m: f'<span style="color:{_ds.TEXT_SECONDARY};">{m.group(0)}</span>',
         code,
     )
     # Highlight numbers.
     code = re.sub(
         r"\b(\d+\.?\d*)\b",
-        lambda m: f'<span style="color:#b5cea8;">{m.group(0)}</span>',
+        lambda m: f'<span style="color:{_ds.TEXT_PRIMARY};">{m.group(0)}</span>',
         code,
     )
     return code
@@ -875,20 +877,20 @@ def format_vex_reference_html(func_name: str, ref: dict[str, str]) -> str:
     category = ref.get("category", "")
 
     html = f"""<div style="font-family: 'Consolas', 'Courier New', monospace; padding: 8px;">
-  <div style="font-size: 14px; color: #cccccc; margin-bottom: 4px;">
-    <span style="color: #808080;">[{category}]</span>
-    <b style="color: #e0e0e0;">{func_name}</b>
+  <div style="font-size: 14px; color: {_ds.TEXT_PRIMARY}; margin-bottom: 4px;">
+    <span style="color: {_ds.TEXT_TERTIARY};">[{category}]</span>
+    <b style="color: {_ds.TEXT_BRIGHT};">{func_name}</b>
   </div>
-  <div style="background: #1e1e1e; padding: 6px 10px; border-radius: 4px; margin-bottom: 6px;">
-    <code style="color: #d4d4d4; font-size: 13px;">{sig_html}</code>
+  <div style="background: {_ds.GROUND}; padding: 6px 10px; border-radius: 4px; margin-bottom: 6px;">
+    <code style="color: {_ds.TEXT_PRIMARY}; font-size: 13px;">{sig_html}</code>
   </div>
-  <div style="color: #b0b0b0; font-size: 12px; margin-bottom: 6px;">
+  <div style="color: {_ds.TEXT_SECONDARY}; font-size: 12px; margin-bottom: 6px;">
     {description}
   </div>
-  <div style="background: #1e1e1e; padding: 6px 10px; border-radius: 4px; margin-bottom: 6px;">
-    <code style="color: #d4d4d4; font-size: 12px;">{example_html}</code>
+  <div style="background: {_ds.GROUND}; padding: 6px 10px; border-radius: 4px; margin-bottom: 6px;">
+    <code style="color: {_ds.TEXT_PRIMARY}; font-size: 12px;">{example_html}</code>
   </div>
-  <div style="color: #8a8a5c; font-size: 11px; font-style: italic;">
+  <div style="color: {_ds.TEXT_TERTIARY}; font-size: 11px; font-style: italic;">
     Tip: {tip}
   </div>
 </div>"""

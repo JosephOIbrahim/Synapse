@@ -437,7 +437,7 @@ def format_trace_html(report: TraceReport) -> str:
     """Render a TraceReport as HTML for the Synapse panel QTextEdit."""
     if not report.steps:
         return (
-            f"<p style='color:#888;'>No trace data for "
+            f"<p style='color:{_ds.TEXT_TERTIARY};'>No trace data for "
             f"<b>{html.escape(report.network_path)}</b>: "
             f"{html.escape(report.summary)}</p>"
         )
@@ -455,7 +455,7 @@ def format_trace_html(report: TraceReport) -> str:
         is_trivial = step.cook_time_ms < 1.0
 
         # Design-system hues, not a private palette. These six were hardcoded
-        # (#E8922E / #666666 / #888888 / #AAAAAA / #6ABF69 / #E05555) -- a
+        # (HOT_SOFT / TEXT_DISABLED / TEXT_TERTIARY / TEXT_SECONDARY / CONIFEROUS / NO_SOFT) -- a
         # seventh colour authority living inside one function, with its own
         # green and its own red. They map onto the muted status family, which
         # exists for exactly this: a quiet verdict grammar.
@@ -485,13 +485,13 @@ def format_trace_html(report: TraceReport) -> str:
         lines.append(
             f"<b>Step {step.index}:</b> "
             f"<b>{html.escape(step.node_label)}</b> "
-            f"<span style='color:#888;'>({html.escape(step.node_type)})</span>"
+            f"<span style='color:{_ds.TEXT_TERTIARY};'>({html.escape(step.node_type)})</span>"
         )
 
         # Description
         if step.description:
             lines.append(
-                f"<br/><span style='color:#AAA;'>"
+                f"<br/><span style='color:{_ds.TEXT_SECONDARY};'>"
                 f"{html.escape(step.description)}</span>"
             )
 
@@ -510,26 +510,26 @@ def format_trace_html(report: TraceReport) -> str:
                 for p in step.key_parms
             ]
             lines.append(
-                f"<br/><span style='color:#7AB;'>Parms: "
+                f"<br/><span style='color:{_ds.TEXT_SECONDARY};'>Parms: "
                 f"{', '.join(parm_strs)}</span>"
             )
 
         # Attrib delta
         if step.attrib_delta and step.attrib_delta != "no change":
             lines.append(
-                f"<br/><span style='color:#B9B;'>Attribs: "
+                f"<br/><span style='color:{_ds.TEXT_SECONDARY};'>Attribs: "
                 f"{html.escape(step.attrib_delta)}</span>"
             )
 
         # Errors / warnings
         for err in step.errors:
             lines.append(
-                f"<br/><span style='color:#E05555;'>Error: "
+                f"<br/><span style='color:{_ds.NO_SOFT};'>Error: "
                 f"{html.escape(err)}</span>"
             )
         for warn in step.warnings:
             lines.append(
-                f"<br/><span style='color:#E8922E;'>Warning: "
+                f"<br/><span style='color:{_ds.WARN};'>Warning: "
                 f"{html.escape(warn)}</span>"
             )
 
@@ -545,7 +545,7 @@ def format_trace_html(report: TraceReport) -> str:
     if report.bottleneck and report.bottleneck_pct > 80:
         bn_label = report.bottleneck.rsplit("/", 1)[-1]
         lines.append(
-            f"<p style='color:#E8922E;'><b>Bottleneck:</b> "
+            f"<p style='color:{_ds.WARN};'><b>Bottleneck:</b> "
             f"{html.escape(bn_label)} takes {report.bottleneck_pct:.0f}% "
             f"of cook time. Consider optimizing.</p>"
         )

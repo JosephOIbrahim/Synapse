@@ -64,6 +64,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from synapse.panel.designsystem import tokens as t
+from synapse.panel.designsystem import qss, rhythm
 
 # ── Qt guard (PySide6 primary, PySide2 fallback, None standalone) ─────────
 # The pure-data core below imports with none of these, so every state / render
@@ -226,15 +227,17 @@ if _QT_AVAILABLE:
             self._budget_s = None
 
             row = QtWidgets.QHBoxLayout(self)
-            row.setContentsMargins(0, 0, 0, 0)
-            row.setSpacing(getattr(t, "SPACE_XS", 4))
+            self.setObjectName("DsWorkingIndicator")
+            self.setProperty("rhythm_role", "parm_row")
             self._dot = QtWidgets.QLabel("●", self)   # ● status dot
             self._dot.setObjectName("workingIndicatorDot")
             self._text = QtWidgets.QLabel("", self)
             self._text.setObjectName("workingIndicatorText")
+            self._text.setWordWrap(True)
             row.addWidget(self._dot)
             row.addWidget(self._text)
             row.addStretch(1)
+            rhythm.apply(self)
             self._apply(STATE_IDLE)
 
         # -- fed by the panel (event-driven, no timer) --------------------
@@ -270,10 +273,8 @@ if _QT_AVAILABLE:
                 self._text.setText("")
                 self.setVisible(False)
                 return
-            color = spec["color"]
-            sheet = ("color: %s;" % color) if color else ""
-            self._dot.setStyleSheet(sheet)
-            self._text.setStyleSheet(sheet)
+            for label in (self._dot, self._text):
+                qss.set_sweep_b_state(label, "working_state", state)
             self._text.setText(spec["label"])
             self.setVisible(True)
 
