@@ -1,242 +1,166 @@
-# Panel Rhythm — the sec.7 spacing pass (BP2-PANELDESIGN, Session A spec)
+# Panel Rhythm v2 - PD-LEVER
 
-> **What this is.** The handoff spec the implement session (Session B) builds from:
-> the token table, the per-region QSS rules, the density multipliers, and
-> before/after measurements in px for the five camera regions. It **adds rhythm,
-> not colour** — zero new colours, zero new widgets, zero new font families.
->
-> **Provenance.** Derived from `docs/BATTLEPLAN.md` §7 (the rhythm rules), the
-> merged `BP2-PANELTRUTH` finding `harness/battleplan/runs/2026-09-01/profile_diff.json`
-> (what actually differs per profile: density + prompt overlay + prominence — the
-> widget-id set is identical in all three profiles, L5), and a first-person read
-> of the live panel code (`python/synapse/panel/`, cited file:line throughout).
->
-> **The referee catch, up front (honesty · runtime is truth).** sec.7 describes an
-> aspirational surface. Measured against the live code, three of the five regions
-> are only *partly* reachable through the design system alone (`designsystem/` +
-> QSS + tokens, this leg's territory). Each region below carries a **Reachability**
-> line stating exactly what this leg lands vs. what is a documented follow-up. No
-> region is claimed done that is not.
+Hand-authored 2026-09-04 from `docs/PANEL_BATTLEPLAN_PD.md` sections 1, 3 and 4;
+`/design` is unavailable in this runtime. This is the implementation spec for
+LEVER, followed by CAMERA and the sweeps. Structural reference:
+`docs/panel_pd/COHERE_REFERENCE.md`; no reference branding, palette or family
+enters the panel. No token is added and `designsystem/fontload.py` is unchanged.
 
----
+## 1 - Scope and measured input
 
-## 1 · What differs per profile (the input finding)
+CENSUS source base: `a5b975c1`, production base `6e3dd963`. Producers:
+`docs/PANEL_REGION_MAP.md` and
+`harness/panel_pd/runs/2026-09-04/rhythm_census.json`.
+The latter records 107 spacing calls, 106 inline sheets, 135 raw six-digit hex
+occurrences (75 distinct), zero exemptions, and four additional grid-spacing
+calls. These are source sites, not runtime widget counts. Including factories,
+24 distinct Ds names occur at 40 sites. Recall is ABSENT, not a measured widget.
 
-From `profile_diff.json` (base prompt sha `d06fd7e21aa6f4f3`, identical in all three):
+The ownership table in `docs/panel_pd/SWARM_CONTRACT.md` controls writes.
+LEVER builds the two appliers and their tests; adding properties to existing
+regions belongs to CAMERA/SWEEP_A/SWEEP_B. Existing unmarked widgets retain
+imperative layout values. This leg does not claim camera migration is complete.
 
-| Profile | density | prompt overlay | prominence deltas |
-|---|---|---|---|
-| **curious** | `airy` | gentle-narration (1137 chars) | activity_meter/token_meter collapsed+quiet; token_pill quiet |
-| **expert** | `standard` | none | none — the v5.42.0 baseline |
-| **ml** | `tight` | terse-technical (350 chars) | author_token/token_meter/token_pill → hero |
+## 2 - One property, two appliers
 
-**The capability (widget-id set) is identical in all three; every widget stays
-`visible=True`.** So the rhythm pass is a pure *density* story: one panel-wide
-`density` dynamic property on `#DsRoot`, three values, driving descendant QSS.
-Curious gets the airy multiplier; Expert reads the same tokens at ×1; ML gets
-tight. Nothing about *what* is shown changes — only *how much air*.
+`rhythm_role` on a QWidget chooses the component pattern. QSS owns paint,
+leaf padding, minimum dimensions and outer margins. `rhythm.apply(root, density)`
+walks the QObject tree (including the root and through non-widget children),
+changes only marked widget layouts, and derives inter-item spacing from the
+role's base via `tokens.gap`. Layout content margins are fixed per role.
+No QApplication or Qt import is required merely to import the rhythm module.
 
----
+`compose()` stamps density before building, then repolishes the complete tree
+and applies rhythm after all region builders return. `SynapsePanel._recompose`
+already calls this same function on cached widgets. One shared call site serves
+both initial compose and recompose; moving repolish after construction avoids
+missing first-build descendants. No lifecycle edits or extra refresh path.
 
-## 2 · Token table — the 4-pt grid mapped onto the existing `SPACE_*` names
+Repeated apply computes from bases, never from current spacing. Switching
+airy -> tight -> standard -> airy restores exact values. Removing a role leaves
+the current spacing and contents margins unchanged on subsequent calls; it does
+not restore constructor values. Unmarked child layouts are never recursively
+overwritten just because an ancestor is marked: mark each layout's owning widget.
 
-sec.7 grid: `SPACE  4 · 8 · 12 · 16 · 24 · 32 · 48`. The existing scale
-(`designsystem/tokens.py:431-435`) is `XS=4 · SM=8 · MD=16 · LG=24 · XL=40` —
-heavily consumed (SM ×44, XS ×25, MD ×23, LG ×9 call sites in `panel/`), so the
-existing names keep their values **verbatim, never renamed**. The three grid
-stops the ladder adds (12 / 32 / 48) are **new, additive** tokens named by px so
-the spec and QSS read unambiguously. `SPACE_XL=40` is retained as a fixed
-card-band height (a dimension, off the gap ladder).
+Unknown nonempty role: warn once per distinct value and use group base 16 at
+STANDARD density with zero contents margins. This is the stricter interpretation
+of "unknown role -> standard" (not requested-density styling of an unknown role).
+Unknown density supplied directly to apply: warn once and use standard;
+manifest validation continues to reject unknown densities before composition.
 
-| grid px | token | status |
+## 3 - Density, type and docking bounds
+
+Curious = airy x1.5; Expert = standard x1; ML = tight x0.75.
+Only gaps scale. Standard emits no density selector. All density-selected QSS
+declarations are margin or margin-*; the seven inherited density-padding blocks
+are removed. Existing unconditional padding stays fixed. The existing BP2
+DsTabRow/DsVerb/DsHeader gap rules remain for unmigrated widgets.
+
+All dimensions below use existing `designsystem/tokens.py` vocabulary:
+`SPACE_GRID=(4,8,12,16,24,32,48)`, `ROW_MIN_H`, `RADIUS_MD`, `RADIUS_CARD`,
+`RADIUS_ROUND`, `SPACE_XL`, `FONT_FLOOR_PX`, and weight tokens from BP4-PANELFONT
+(`git show 81f3fb08 --stat`). Ratios and arithmetic on these values are component
+rules, not new tokens. No literal font size or family is introduced.
+
+Label/tag nominal sizes are body x0.72/x0.68, rounded and clamped to
+`FONT_FLOOR_PX` and the supplied host body scale, so a smaller nominal role never
+undercuts that floor. QSS uses `WEIGHT_MEDIUM`; row/card/parameter content uses
+`WEIGHT_REGULAR`. Mono uses the existing `fontload.apply_family(..., mono=True)`
+path. Uppercase and tracking use QFont capitalization/PercentageSpacing in
+rhythm, after QSS polish, without rewriting widget text. Tracking is +0.08 em
+for labels and +0.06 em for tags; neither varies by density. Qt QSS does not
+provide text-transform/letter-spacing in its documented property list:
+[Qt QSS reference](https://doc.qt.io/qt-6/stylesheet-reference.html),
+[QFont capitalization and tracking](https://doc.qt.io/qt-6/qfont.html).
+No fontload change or family registration policy change.
+
+**Docking:** 380 px width in all three densities. The ratified YAML
+`.synapse/contracts/docking-minimums.yaml` requires no overflow at 400 px tall
+and no child's hard minimum height above 200 px. The current `PANEL_MIN_HEIGHT`
+token is 420, so the test takes the stricter YAML 400 rather than copying the
+420 token. Horizontal minimum demand must be <=380; assembled vertical minimum
+demand <=400; non-root hard minimum heights <=200. Test actual constructed
+regions and all reachable faces, plus the five generic patterns. A generic
+pattern fitting does not certify its downstream migrated region.
+
+PySide absence produces explicit skips, recorded as NOT_RUN in the receipt.
+Recall has its own absence skip until CAMERA supplies it. A live Houdini GUI is
+never used by these tests. Screenshots require bound hython; no stand-in PNGs.
+Host font floor provenance remains UNKNOWN until Joe's H22.0.400 GUI probe.
+
+## 4 - Role table and the five component patterns
+
+Pixel arithmetic: airy = base *3/2; standard = base; tight = base *3/4.
+All bases belong to SPACE_GRID, hence these products are integral. Contents
+margins below are (left, top, right, bottom); they never scale.
+
+| role / gap owner | base | airy | standard | tight | fixed layout margins |
+|---|---:|---:|---:|---:|---|
+| label: contents / below | 12 | 18 | 12 | 9 | (0,0,0,0) |
+| label: outer above (QSS) | 24 | 36 | 24 | 18 | unchanged |
+| row: between contents/items | 12 | 18 | 12 | 9 | (16,12,16,12) |
+| tag: from label / contents | 16 | 24 | 16 | 12 | (10,6,10,6) |
+| card: between cards in a collection | 16 | 24 | 16 | 12 | (0,0,0,0) |
+| parm_row: between rows/cells | 4 | 6 | 4 | 3 | (0,0,0,0) |
+| group: between groups | 16 | 24 | 16 | 12 | (0,0,0,0) |
+| parameter section head (label QSS override) | 32 | 48 | 32 | 24 | unchanged |
+
+1. **Label.** Set `rhythm_role="label"` on section text: muted mono, upper,
+   tracked, 24 above/12 below via QSS. No border on the label. Use the existing
+   DsDivider under the group; no new divider widget class. A parameter section
+   label named `DsParmSection` gets the 32-px section-head base.
+2. **Row.** Set `rhythm_role="row"` on an item/container. Body normal-weight,
+   minimum height 44, radius 8, one-pixel BORDER hairline. QWidget containers
+   receive fixed 12/16 padding as layout margins; leaf labels/buttons get it
+   through QSS, never both on the same component. A child named `DsRowGlyph`
+   reserves a 44-by-44 cell with a right hairline. Parent collection spacing
+   owns the between-row gap; no extra per-row bottom margin compounds it.
+3. **Tag.** `rhythm_role="tag"`: neutral SURFACE, TEXT_SECONDARY, mono upper,
+   tracked, radius RADIUS_ROUND, padding 6/10 (derived from existing rungs).
+   Leaf padding is QSS; layout-bearing tag containers use fixed layout margins.
+   The QSS leading margin has base 16; do not also add an explicit spacer before
+   it. `status="BLOCKED"` selects HOT_SOFT. HIT/NO HIT/UNAVAILABLE stay neutral;
+   UNKNOWN is text. No success-green tag. Existing DsBadge/tag combinations
+   receive explicit role rules so old kind/prominence colors cannot win.
+4. **Card.** `rhythm_role="card"` belongs to a collection whose layout separates
+   cards by 16. The existing `DsCard` is the individual surface, radius 10.
+   Its direct children are `DsCardHeader`, `DsCardBody`, `DsCardFooter`: header
+   band 40, body padding 16, footer band 40, one-pixel hairlines below header
+   and body. Header/footer content is inset 16 horizontally. The fixed-band
+   interior is not a card collection: downstream construction must keep its
+   inter-band spacing at zero (a reasoned structural exemption if necessary),
+   instead of stamping the collection role on it. Footer text action left,
+   neutral status tag right. This leg supplies rules, not the recall widget.
+5. **Parameter row.** `rhythm_role="parm_row"`: body, minimum row height 24;
+   direct child ids `DsParmLabel` and `DsParmValue` have widths 128/64
+   (`SPACE_32*4`, `SPACE_32*2`). Optional `DsParmControl` fills remaining space
+   through layout stretch supplied by the caller. Nested names are direct-child
+   scoped to prevent leaking onto unrelated labels. A two-column source remains
+   two columns; no control is invented. UNKNOWN stays a value string. Groups
+   use `group` (16), section headers use the 32-px label override.
+
+### CENSUS region map / migration handoff
+
+Full authoritative source-site inventory: `docs/PANEL_REGION_MAP.md`, including
+all 107 primary spacing calls, four grid calls, alternate/HTML surfaces and
+unassigned regions. This compact mapping preserves its six camera regions:
+
+| region | current ids / source owner | role target / remaining work |
 |---|---|---|
-| 4  | `SPACE_XS` | existing — kept |
-| 8  | `SPACE_SM` | existing — kept |
-| 12 | `SPACE_12` | **NEW** — row-breath / label-below rung |
-| 16 | `SPACE_MD` | existing — kept |
-| 24 | `SPACE_LG` | existing — kept |
-| 32 | `SPACE_32` | **NEW** — parm-row section-head gap |
-| 48 | `SPACE_48` | **NEW** — doubled group gap (verb rail); 2 × `SPACE_LG` |
-| (40) | `SPACE_XL` | existing — kept (card-band height, off the gap ladder) |
+| Profile strip | DsTabRow, DsPill; synapse_panel.py:994-995 | group container, row pills; CAMERA removes 28-px gap |
+| Header/ribbon | DsHeader / unnamed ribbon label; synapse_panel.py:622,935 | group / label / tag; sibling ribbon is not reached by header selector |
+| Chat transcript | unnamed ChatDisplay; synapse_panel.py:944,1104; chat_display.py | group turns, label headers; HTML is not a QWidget tree |
+| Verb rail | DsVerb; synapse_panel.py:1809,1813 | group rail, label actions; group hairline in CAMERA |
+| Recall result | ABSENT in census | DsCard bands / card collection / tag; CAMERA creates recall_card.py |
+| TOKEN face | DsSection field, unnamed key/value grid; face_token.py:337,447-449 | parm_row / group / label; no pre-existing third control column |
 
-`SPACE_GRID = (4, 8, 12, 16, 24, 32, 48)` is added as the documented ladder.
-
-**Fixed dimensions (sec.7, additive, never scaled by density):**
-
-| role | token | px | note |
-|---|---|---|---|
-| list-row min height / glyph cell | `ROW_MIN_H` | 44 | glyph cell 44×44, hairline right |
-| row radius | `RADIUS_MD` (exists) | 8 | sec.7 "8 rows" |
-| card radius | `RADIUS_CARD` | 10 | **NEW** — sec.7 "10 cards" |
-| pill radius | `RADIUS_ROUND` | 999 | **NEW** — sec.7 "999 pills" (fully rounded) |
-| hairline | `BORDER` token | 1 px | never 2 px, never a shadow |
-
-Colour: **none added.** Every rule references an existing token
-(`SIGNAL`, `HOT_SOFT`, `CONIFEROUS`, `BORDER`, `HAIR`, `TEXT_*` — most
-host-seeded via `_derive_palette`, so referenced by name, never as a hex).
-
----
-
-## 3 · Density multipliers — GAPS only, paddings fixed
-
-sec.7: `airy ×1.5 · standard ×1 · tight ×0.75 — GAPS only, paddings fixed`.
-
-```
-DENSITY_GAP_SCALE = {"airy": 1.5, "standard": 1.0, "tight": 0.75}
-gap(base, density) = round(base × DENSITY_GAP_SCALE[density])   # integer px
-```
-
-All gap bases are multiples of 4, so every stepped value is an exact integer:
-
-| base | tight ×0.75 | **standard ×1** | airy ×1.5 |
-|---|---|---|---|
-| 4  | 3  | 4  | 6  |
-| 8  | 6  | 8  | 12 |
-| 12 | 9  | 12 | 18 |
-| 16 | 12 | 16 | 24 |
-| 24 | 18 | 24 | 36 |
-| 32 | 24 | 32 | 48 |
-| 48 | 36 | 48 | 72 |
-
-**Mechanism (already proven by PANELTRUTH, 08-04).** The compositor stamps
-`density` on `#DsRoot` (`compositor.py:242`) then repolishes the whole tree
-(`compositor.py:248 _repolish_tree`) so `#DsRoot[density="airy"] <descendant>`
-rules actually repaint. **Standard has no rule on purpose** — it is the
-unconditional base, so `'density="standard"'` never appears in the sheet
-(`test_rope_density.py:95`). airy/tight blocks carry **only** `margin`/`padding`
-declarations (`test_rope_density.py:100`). This leg scales **gaps as `margin`**;
-paddings stay in the base rules, fixed.
-
-**Reachability of "gaps" in pure QSS (stated honestly).** Qt QSS can set a
-widget's `margin`/`padding` but **cannot** set `QLayout.setSpacing()`. The live
-inter-item gaps of these regions live in Python `setSpacing()` calls inside
-`synapse_panel.py` (28 px tab row, 24 px verb rail, 18 px token rows) — outside
-this leg's `designsystem/`-only territory and unreachable by QSS. So the density
-rhythm this leg lands scales the **QSS-reachable outer/group margins** of the
-reachable region widgets; the exact composite pixel result (QSS margin + the
-residual Python layout spacing) is what the **GUI sign-off (Joe, gui_required)**
-arbitrates. Zeroing the Python `setSpacing()` so QSS owns the gap outright is a
-one-line-each panel-module follow-up, noted per region.
-
----
-
-## 4 · The five camera regions — before / after, in order (stop at five)
-
-Colour tokens below are host-seeded (`_derive_palette`, `tokens.py:123-166`) and
-named by role, not hex — only `SIGNAL #8FB3D9` / `HOT_SOFT #D08A57` are literal.
-
-### Region 1 — Profile tab strip · `DsTabRow` / `DsPill`
-*sec.7: pill toggles, one active in SIGNAL (Setup/Style/Render idiom).*
-
-**Build:** `synapse_panel.py:981 _build_mode_bar()` — one `QHBoxLayout` on
-`#DsTabRow` carrying CHAT·TOKEN face pills (left) + CURIOUS·EXPERT·ML profile
-pills (right), split by `addStretch`. Same `DsPill` class for both groups.
-
-| | before (Expert ×1, live) | after (sec.7 rhythm) |
-|---|---|---|
-| row contentsMargins | 30, 24, 30, 0 (Python) | unchanged (Python; GUTTER-aligned) |
-| inter-pill gap | `setSpacing(28)` (Python) | **follow-up**: zero it, let QSS own it |
-| pill padding | `0 0 12 0` (QSS `qss.py:124`) | fixed (padding — never scales) |
-| active marker | 2 px `SIGNAL` underline (`qss.py:129`) | **kept** — underline, *not* a fill (filled pill was retired `qss.py:113-116`; "one active in SIGNAL" = the underline) |
-| row group gap (below) | none | **THIS LEG**: `#DsTabRow` `margin-bottom` = `gap(SPACE_MD=16, density)` → tight 12 / std 16 / airy 24 |
-
-**Reachability:** ✅ group gap lands as a density-scaled `margin` on `#DsTabRow`.
-The inter-pill 28 px is Python-layout (follow-up). Active-in-SIGNAL already
-satisfied by the underline — no change, and **not** reverted to a fill.
-
-### Region 2 — Verb rail · `DsVerb`
-*sec.7: EXPLAIN / FIX / OPTIMIZE / BUILD HDA → label style, doubled gaps kept, hairline under the group.*
-
-**Build:** `synapse_panel.py:1804 _build_act()` — `QHBoxLayout` on a `DsSection`
-container; verbs are flat mono `#DsVerb` buttons (`qss.py:161`), uppercased,
-`TEXT_SECONDARY`. Inter-verb `setSpacing(24)` = `SPACE_LG`, the deliberate
-"doubled" rung (L5-21). Container top margin 16 (`synapse_panel.py:1809`).
-
-| | before (Expert ×1, live) | after (sec.7 rhythm) |
-|---|---|---|
-| label style | flat mono LABEL 11px, `TEXT_SECONDARY`, uppercased | **kept** |
-| inter-verb gap | `setSpacing(24)` "doubled" (Python) | **kept doubled**; QSS follow-up to own it |
-| verb padding | `2 0` (QSS `qss.py:163`) | fixed |
-| group vertical gap | container top 16 (Python) | **THIS LEG**: `#DsVerb` `margin-top`/`margin-bottom` = `gap(SPACE_SM=8, density)` → tight 6 / std 8 / airy 12 |
-| hairline under the group | **none today** (container is plain `DsSection`) | **follow-up**: needs a unique objectName on the rail container (a panel-module change) to hang `border-bottom: 1px HAIR` — the idiom exists (`#DsActs`, `qss.py:345`) but on a different region |
-
-**Reachability:** ✅ group breathing lands as density-scaled `#DsVerb` margins.
-❌ the group hairline needs a container objectName (panel edit) — follow-up.
-The 24 px doubled inter-verb gap is kept as sec.7 requires.
-
-### Region 3 — Recall card (the beat) · **GREENFIELD**
-*sec.7: three-band card (header/body/footer, hairlines between); footer carries one text action left + one status pill right; footer pill mirrors `HIT` / `NO HIT` / `UNAVAILABLE` / `BLOCKED` in the label style; never a colour for HIT; `HOT_SOFT` only for BLOCKED.*
-
-**Build:** **does not exist.** No card, and the strings `HIT / NO HIT /
-UNAVAILABLE / BLOCKED` appear nowhere in `panel/` or `tests/` (verified). The
-only memory-status surface today is `health_strip.py` (a backend cell:
-moneta/jsonl/fallback), a different grain from a per-query recall result.
-
-**Target spec (for the build):**
-
-| band | height / pad | radius | hairline |
-|---|---|---|---|
-| header | 40 (`SPACE_XL`) | card `RADIUS_CARD=10` | 1 px `BORDER` under |
-| body | pad 16 (`SPACE_MD`), fixed | — | 1 px `BORDER` under |
-| footer | 40 (`SPACE_XL`) | — | — |
-
-- Footer text-action left → `#DsVerb` (`qss.py:161`).
-- Footer status pill right → **label style**, `RADIUS_ROUND=999` (pill), padding 6/10:
-  - `HIT` → label style, **no colour** (`TEXT_SECONDARY` / `DsBadge` default) — sec.7 explicit "never a colour for HIT".
-  - `NO HIT` → label style, quiet (`TEXT_TERTIARY` / `DsBadge[prominence=quiet]`).
-  - `UNAVAILABLE` → the honest-UNKNOWN calm grey (`SLATE`, mirroring `health_strip` UNKNOWN → never green).
-  - `BLOCKED` → **the only coloured pill**: `HOT_SOFT #D08A57` (already wired as `DsVerb[tone="hot"]`, `qss.py:168`).
-- Bands separated by `divider()` / `#DsDivider` 1 px `BORDER` hairlines (`components.py:327`).
-- Density: body pad fixed; inter-band gap = `gap(SPACE_SM=8, density)` margins.
-
-**Reachability:** ⛔ the card is a **net-new widget** → violates this leg's
-"zero new widgets" + lands outside `designsystem/` territory. The **tokens are
-provisioned** (`RADIUS_CARD`, `RADIUS_ROUND`, `HOT_SOFT`, `CONIFEROUS`,
-`SPACE_XL`) so the build inherits the rhythm. The build itself is a **held
-`spawn`** (see receipt).
-
-### Region 4 — TOKEN face · parameter rows
-*sec.7: parameter rows (label · value · bar); UNKNOWN rendered as text in the value column, never a bar at zero.*
-
-**Build:** `face_token.py:444 _kv_block()` — a `QGridLayout` of **label (col0) ·
-value (col1)**; there is **no bar/control column**. `hSpacing=18`, `vSpacing=6`,
-no fixed column widths, no fixed row height. Rows are styled **inline**
-(`setStyleSheet` per `QLabel`) with **no objectNames**.
-
-| | before (live) | after (sec.7 target) |
-|---|---|---|
-| columns | content-sized label, stretch value (no fixed widths) | label col 128 · value 64 · control fills |
-| row gap | `vSpacing(6)` (Python) | row 24, group gap 16, section head 32 |
-| UNKNOWN | `set_row` → `"unknown"` text, never 0 (`face_token.py:480-485`) | **already correct** — text in the value column, never a bar at zero |
-
-**Reachability:** ✅ **UNKNOWN-as-text is already honoured** (verified
-`face_token.py:480-485`; the `TokenField` viz also stays empty-ground for a
-`≤0`/None segment, never a zero-width fill). ❌ the parm-row grid rhythm (fixed
-columns, row/section gaps) is **not QSS-reachable**: the rows have no objectNames
-and are inline-styled, so QSS descendant rules cannot key on them. Adding
-objectNames is a `face_token.py` panel-module change (outside territory) —
-**follow-up**. The token scale + `gap()` are ready for it.
-
-### Region 5 — `.hip` ribbon + header status line
-*sec.7: one row, label style, the `?` glyph opens docs (08-04 decision).*
-
-**Build:** ribbon `synapse_panel.py:927 _build_context_ribbon()` — one
-`QHBoxLayout` on a `DsSection`, single `_ctx_label` (role `label`) + stretch.
-Header status `synapse_panel.py:659 _header_status` (role `caption`) sits in the
-rail's line-1 (`#DsHeader`).
-
-| | before (Expert ×1, live) | after (sec.7 rhythm) |
-|---|---|---|
-| ribbon row | one label + stretch (label style) | **kept** — matches "one row, label style" |
-| ribbon margins | 30, 8, 16, 8 (Python) | GUTTER-aligned; group gap density-scaled |
-| header vertical | `#DsHeader` airy padding `SPACE_XS` (`qss.py:296`) | **THIS LEG**: extend to multiplier — `#DsHeader`/`#DsTabRow`-style `margin` group gaps by density |
-| `?` glyph → docs | **none** — a text "Help" button (`synapse_panel.py:727`), in the rail not the ribbon | **follow-up**: the glyph affordance is unbuilt (panel-module change) |
-
-**Reachability:** ✅ the ribbon is already "one row, label style"; header/ribbon
-group gaps land as density-scaled `margin`. ❌ the `?` glyph is unbuilt (a text
-"Help" button exists instead) — a panel-module follow-up.
-
----
+Remaining widget surfaces map to group/row/label/tag/parm_row as recorded in the
+region map: chat/HDA alternate entry, Work/Review, gate cards, context bar,
+quick actions, HDA views, palettes, working indicator, health and integrity.
+The eight rich-text generators and the unassigned HTML producers need HTML
+styling at their own seam; a Qt dynamic property cannot reach document spans.
+Header/ribbon visual ownership is synapse_panel.py. The external
+houdini/scripts/python/synapse_shelf.py launcher is protected and untouched.
 
 ## 5 · What Session B lands vs. follow-ups (the honest ledger)
 
@@ -260,29 +184,42 @@ group gaps land as density-scaled `margin`. ❌ the `?` glyph is unbuilt (a text
 - **Zero the Python `setSpacing()`** on the tab row / verb rail / token rows so
   QSS owns the inter-item gap outright (28/24/18 currently compound).
 
-## 6 · Chore (theme-seed-tokens split, sec.5)
+### v2 extension - PD-LEVER (the v1 ledger above is preserved verbatim)
 
-`python .synapse/verify.py no-importers python/synapse/panel/tokens.py python/synapse/panel`
-→ **does not pass**: legacy `panel/tokens.py` has 8 live importers (apex_recipes,
-chat_panel, command_palette, context_bar, error_translator, hda_views,
-quick_actions, recipe_book) beyond `styles.py`, and `panel/styles.py` has 3
-production importers (chat_display, chat_panel, gate_widget). The delete premise
-("only styles.py imports tokens.py and nothing imports styles.py") is **false** →
-**leave the pair, name the importers** (bus finding + receipt). Host-scheme
-seeding stays parked.
+- LEVER supplies opt-in layout rhythm, role QSS, guard and real-Qt docking tests.
+  It does not mark camera/sweep widgets or claim their residual has fallen.
+- QSS never owned QLayout inter-item spacing: v1's "so QSS owns" follow-up now
+  means the rhythm Python applier; both read the same role and density.
+- The old density-padding blocks are removed, resolving the CENSUS finding.
+  Gaps alone vary; no new colors, type families, tokens, widgets or profile knobs.
+- Residual seed: 107+106+135 = 348, plus separately guarded four grid sites.
+  `harness/panel_pd/RESIDUAL.json` is explicitly authorized by the LEVER brief,
+  despite omission from the ownership-table row. The guard rejects novel
+  untagged sites by comparing normalized site identities to the committed census,
+  as well as enforcing the checked-in ceiling. Removed sites cannot buy room for
+  new untagged owners. Empty/fake comment tags do not exempt anything.
+- The ceiling may only decrease relative to its latest committed version.
+  CAMERA/sweeps must report reductions for the orchestrator to ratchet it down;
+  the generic seed is not the final wave acceptance of <=20 tagged sites.
+- CENSUS found 46 sites in twelve UNASSIGNED files, already above that wave goal.
+  Ownership must be resolved by the orchestrator, not silently widened here.
+- Font floor provenance, screenshots, runtime docking and independent CRUX
+  remain unverified until the corresponding substrate/run supplies evidence.
+  The Expert pin is structural/manifest-only, never pixel equivalence.
 
-## 7 · Acceptance mapping
+## 6 - Validation and delivery
 
-| predicate | how met |
-|---|---|
-| spec exists, px per region, token table, density multipliers | this file (§2–§4) |
-| QSS/token diff: no colour token, no hex string | §5.1–2; grep attached at receipt |
-| headless: gap tokens step by density multipliers per profile | §3 + the new test (T3) |
-| `test_expert_resolved_equals_v5420_snapshot` green + `pytest -q` green | manifests untouched (pin is manifest-only, `test_rope_expert_pin.py:106`) |
-| importer chore posted as a bus finding | §6 (leave the pair) |
-| GUI sign-off on the five regions (Joe, Thu/Fri) | **gui_required → UNKNOWN** headless; Joe's eyes |
+`tests/test_panel_rhythm_owner.py`: census-based monotonic guard, independent
+fixtures and negative controls, margin-only density, typography/pattern rules,
+import without Qt, compositor initial/recompose sequencing.
+`tests/test_panel_rhythm_docking.py`: real QWidget role spacing, idempotence,
+role-removal negative control, font behavior, five component patterns and actual
+panel regions at 380x400 in every density; explicit absence skips.
+Required pins: tests/test_rope_expert_pin.py and tests/test_bp2_paneldesign_density.py.
+Run the full suite once; compare counts against harness/panel_pd/BASELINE.md.
+Mutate the implementation/fixtures and record red controls before restoring.
 
-*Crucible pins honoured: no new hex (BROKEN), no new QFont family (BROKEN), no
-structural change to the Expert manifest (BROKEN — manifests untouched), paddings
-fixed / only gaps scale, no hardcoded pt size (font floor derives from the host,
-W5L-PANEL T1 — this pass touches no font size).*
+Evidence and limitations: docs/panel_pd/REPORT_LEVER.md.
+Dated milestone handoff: harness/panel_pd/STATUS_LEVER.md. No separate bus under
+this wave contract. Commit subject pd(lever): and required Codex trailer; no
+merge, push, master write, release action or live Houdini GUI access.

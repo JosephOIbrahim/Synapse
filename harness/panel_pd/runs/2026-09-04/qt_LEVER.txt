@@ -1,0 +1,12 @@
+ERROR tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-tool_palette.ToolPalette]
+ERROR tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-command_palette.CommandPaletteWidget]
+ERROR tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-working_indicator.WorkingIndicator]
+ERROR tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-health_infographic.HealthInfographic]
+ERROR tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-integrity_readout.IntegrityReadout]
+ERROR tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-health_strip.HealthStrip]
+ERROR tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-context_bar.build_context_bar_widget]
+ERROR tests/test_panel_rhythm_docking.py::test_alternate_census_widget_regions[tight-chat_panel.SynapseChatPanel]
+ERROR tests/test_panel_rhythm_docking.py::test_recall_region_when_camera_has_built_it[airy]
+ERROR tests/test_panel_rhythm_docking.py::test_recall_region_when_camera_has_built_it[standard]
+ERROR tests/test_panel_rhythm_docking.py::test_recall_region_when_camera_has_built_it[tight]
+============= 1 failed, 49 passed, 1 warning, 87 errors in 2.60s ==============

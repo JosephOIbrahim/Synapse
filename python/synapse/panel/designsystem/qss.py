@@ -273,47 +273,8 @@ QLabel[role="accent"]  {{ color: {t.TEXT_ACCENT}; }}
 QLabel[prominence="hero"]  {{ color: {t.TEXT_BRIGHT}; }}
 QLabel[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
 
-/* ---- density (set by the profile compositor) -- L5-18 -------- */
-/* The second profile axis: ONE panel-wide rhythm, keyed on the root's
-   `density` dynamic property and driving descendants -- never a
-   per-widget spacing spec. Two rules ONLY (airy / tight). Standard has
-   NO rule ON PURPOSE: the unstyled sheet IS the standard rhythm, so
-   expert == v5.42.0 exactly (L5-5) -- an unconditional spacing rule
-   here would move that pin. Every value is a rung of the existing
-   tokens.py scale (SPACE_XS 4 / SPACE_SM 8 / SPACE_MD 16 / SPACE_LG
-   24): airy steps a surface ONE rung up from its rest value, tight ONE
-   rung down. Surfaces resting at zero (the chat viewport, the rail and
-   tab-row shells) have no rung below them, so tight omits them rather
-   than invent a negative; off-scale literals (DsSend 9/15, DsPill 12)
-   do not step -- stepping them would mean inventing a number. Spacing
-   only: no colour, size, weight, font, radius or border may ever
-   appear in this block. */
-/* airy — Curious: one rung more air. The chat surface answers Joe's
-   seat call directly: replies get more vertical room to breathe. */
-#DsRoot[density="airy"] QTextBrowser {{
-    padding-top: {t.SPACE_XS}px; padding-bottom: {t.SPACE_XS}px;
-}}
-#DsRoot[density="airy"] QWidget#DsHeader {{
-    padding-top: {t.SPACE_XS}px; padding-bottom: {t.SPACE_XS}px;
-}}
-#DsRoot[density="airy"] QWidget#DsTabRow {{
-    padding-top: {t.SPACE_XS}px; padding-bottom: {t.SPACE_XS}px;
-}}
-#DsRoot[density="airy"] QPushButton#DsButton {{
-    padding: {t.SPACE_MD}px {t.SPACE_LG}px;
-}}
-#DsRoot[density="airy"] QTextEdit#DsInput,
-#DsRoot[density="airy"] QLineEdit#DsField {{
-    padding-top: {t.SPACE_LG}px; padding-bottom: {t.SPACE_LG}px;
-}}
-/* tight — ML: one rung less. Only surfaces with a rung below rest. */
-#DsRoot[density="tight"] QPushButton#DsButton {{
-    padding: {t.SPACE_XS}px {t.SPACE_SM}px;
-}}
-#DsRoot[density="tight"] QTextEdit#DsInput,
-#DsRoot[density="tight"] QLineEdit#DsField {{
-    padding-top: {t.SPACE_SM}px; padding-bottom: {t.SPACE_SM}px;
-}}
+/* PD-LEVER: inherited density-padding rules removed. Padding is fixed;
+   only outer margins below and role layout gaps respond to density. */
 
 /* ---- sec.7 five-camera-region rhythm (BP2-PANELDESIGN) -------- */
 /* The spacing pass — docs/PANEL_RHYTHM_SPEC.md. Extends the density lever to
@@ -388,4 +349,101 @@ QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
 QMenu {{ background: {t.SURFACE}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.BORDER}; padding: {t.SPACE_SM}px; }}
 QMenu::item {{ padding: {t.SPACE_SM}px {t.SPACE_MD}px; border-radius: {t.RADIUS_SM}px; }}
 QMenu::item:selected {{ background: {t.HOVER_BG}; color: {t.TEXT_ACCENT}; }}
+""" + _rhythm_stylesheet(scale)
+
+
+def _rhythm_stylesheet(scale):
+    """Generic opt-in patterns. QFont owns mono/case/tracking in rhythm.py.
+
+    Layout-bearing row/tag containers get padding from rhythm's fixed margins;
+    leaf labels/buttons get QSS padding. Never apply both to one component.
+    The caller's scale is the host chrome scale, so role ratios cannot push
+    labels below either the BP4 constant or that supplied host body floor.
+    """
+    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
+    role_size = lambda ratio: max(s(t.SIZE_BODY), s(t.SIZE_BODY * ratio))  # noqa: E731
+    base = f"""
+/* ---- PD generic rhythm patterns ------------------------------ */
+#DsRoot [rhythm_role="label"] {{
+    color: {t.TEXT_SECONDARY}; border: none;
+    font-size: {role_size(0.72)}px; font-weight: {t.WEIGHT_MEDIUM};
+    padding: 0;
+    margin-top: {t.SPACE_LG}px; margin-bottom: {t.SPACE_12}px;
+}}
+#DsRoot [rhythm_role="label"]#DsParmSection {{ margin-top: {t.SPACE_32}px; }}
+#DsRoot [rhythm_role="row"] {{
+    color: {t.TEXT_PRIMARY}; background: {t.PANEL};
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_REGULAR};
+    min-height: {t.ROW_MIN_H}px; border-radius: {t.RADIUS_MD}px;
+    border: 1px solid {t.BORDER}; padding: 0;
+}}
+#DsRoot QLabel[rhythm_role="row"], #DsRoot QPushButton[rhythm_role="row"] {{
+    padding: {t.SPACE_12}px {t.SPACE_MD}px;
+}}
+#DsRoot [rhythm_role="row"] > #DsRowGlyph {{
+    min-width: {t.ROW_MIN_H - 1}px; max-width: {t.ROW_MIN_H - 1}px;
+    min-height: {t.ROW_MIN_H}px; max-height: {t.ROW_MIN_H}px;
+    border: none; border-right: 1px solid {t.BORDER}; padding: 0; margin: 0;
+}}
+#DsRoot [rhythm_role="tag"], #DsRoot QLabel#DsBadge[rhythm_role="tag"] {{
+    color: {t.TEXT_SECONDARY}; background: {t.SURFACE};
+    font-size: {role_size(0.68)}px; font-weight: {t.WEIGHT_MEDIUM};
+    border: none; border-radius: {t.RADIUS_ROUND}px; padding: 0;
+    margin-left: {t.SPACE_MD}px;
+}}
+#DsRoot QLabel[rhythm_role="tag"], #DsRoot QPushButton[rhythm_role="tag"],
+#DsRoot QLabel#DsBadge[rhythm_role="tag"] {{
+    padding: {t.SPACE_12 // 2}px {t.SPACE_SM + t.SPACE_XS // 2}px;
+}}
+#DsRoot [rhythm_role="tag"][status="BLOCKED"],
+#DsRoot QLabel#DsBadge[rhythm_role="tag"][status="BLOCKED"] {{ color: {t.HOT_SOFT}; }}
+
+/* The collection role owns inter-card gaps. Individual cards keep their
+   fixed-band interior separate from that collection layout. */
+QWidget#DsCard {{
+    border-radius: {t.RADIUS_CARD}px;
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_REGULAR};
+}}
+#DsCard > #DsCardHeader {{
+    min-height: {t.SPACE_XL - 1}px; max-height: {t.SPACE_XL - 1}px;
+    padding: 0 {t.SPACE_MD}px; margin: 0;
+    border: none; border-bottom: 1px solid {t.BORDER};
+}}
+#DsCard > #DsCardBody {{
+    padding: {t.SPACE_MD}px; margin: 0;
+    border: none; border-bottom: 1px solid {t.BORDER};
+}}
+#DsCard > #DsCardFooter {{
+    min-height: {t.SPACE_XL}px; max-height: {t.SPACE_XL}px;
+    padding: 0 {t.SPACE_MD}px; margin: 0; border: none;
+}}
+#DsRoot [rhythm_role="parm_row"] {{
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_REGULAR};
+    min-height: {t.SPACE_LG}px; padding: 0; margin: 0;
+}}
+#DsRoot [rhythm_role="parm_row"] > #DsParmLabel {{
+    min-width: {t.SPACE_32 * 4}px; max-width: {t.SPACE_32 * 4}px;
+    color: {t.TEXT_SECONDARY}; padding: 0; margin: 0;
+}}
+#DsRoot [rhythm_role="parm_row"] > #DsParmValue {{
+    min-width: {t.SPACE_32 * 2}px; max-width: {t.SPACE_32 * 2}px;
+    color: {t.TEXT_PRIMARY}; padding: 0; margin: 0;
+}}
+#DsRoot [rhythm_role="parm_row"] > #DsParmControl {{ padding: 0; margin: 0; }}
 """
+    # Only margins in these blocks; standard is the unconditional base above.
+    for density in ("airy", "tight"):
+        base += f"""
+#DsRoot[density="{density}"] [rhythm_role="label"] {{
+    margin-top: {t.gap(t.SPACE_LG, density)}px;
+    margin-bottom: {t.gap(t.SPACE_12, density)}px;
+}}
+#DsRoot[density="{density}"] [rhythm_role="label"]#DsParmSection {{
+    margin-top: {t.gap(t.SPACE_32, density)}px;
+}}
+#DsRoot[density="{density}"] [rhythm_role="tag"],
+#DsRoot[density="{density}"] QLabel#DsBadge[rhythm_role="tag"] {{
+    margin-left: {t.gap(t.SPACE_MD, density)}px;
+}}
+"""
+    return base
