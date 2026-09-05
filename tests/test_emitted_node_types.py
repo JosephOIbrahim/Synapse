@@ -115,3 +115,98 @@ def test_source_files_exist():
             assert (_PROJECT_ROOT / rel).is_file(), (
                 f"{entry['type_name']}: source file {rel} does not exist"
             )
+
+
+# ===========================================================================
+# 4. Catalog audit (CTO B6) — no phantom / deprecated emitted node types
+# ===========================================================================
+#
+# ``rag/catalog/h22.0.400/`` is the authority. ``karma`` is a deprecated LOP
+# there (live only as the /out ROP in Driver.json); ``grade`` is in no
+# category at all. Both were emitted by live recipes until B6.
+
+_CATALOG_DIR = _PROJECT_ROOT / "rag" / "catalog" / "h22.0.400"
+
+
+def _index() -> dict:
+    index = extractor.load_catalog_index(_CATALOG_DIR)
+    assert index, f"catalog index empty — {_CATALOG_DIR} missing?"
+    return index
+
+
+def test_recipe_payload_types_are_harvested():
+    payload = extractor.scan_recipe_payload_types()
+    assert "colorcorrect" in payload, "recipe payload harvest lost the COP color_correction_setup step"
+    assert "usdrender_rop" in payload, "recipe payload harvest lost the planner render step"
+    # The TOPs wedge attribute dict carries a data type, not a node type.
+    assert "float" not in payload
+
+
+def test_recipe_payload_types_land_in_committed_artifact():
+    entries = {e["type_name"]: e for e in _committed()["entries"]}
+    for type_name in extractor.scan_recipe_payload_types():
+        assert type_name in entries, f"recipe payload type {type_name!r} missing from the artifact"
+        assert "recipe_payload" in entries[type_name]["category"].split("+")
+
+
+def test_live_tree_emits_no_phantom_or_deprecated_node_types():
+    violations = extractor.audit_tree(catalog_dir=_CATALOG_DIR)
+    assert violations == [], "\n".join(
+        f"{v['verdict']}: {v['type_name']} {v.get('categories') or 'absent'} <- {v['source_files']}"
+        for v in violations
+    )
+
+
+def test_committed_artifact_emits_no_phantom_or_deprecated_node_types():
+    """The artifact the drop-day probe reads must carry the same verdict."""
+    type_files = {e["type_name"]: e["source_files"] for e in _committed()["entries"]}
+    lop = extractor.scan_lop_createnode_literals(_PKG / "synapse")
+    violations = extractor.catalog_audit(type_files, lop, _index())
+    assert violations == [], [(v["verdict"], v["type_name"]) for v in violations]
+
+
+def test_lop_receiver_scan_is_a_subset_of_the_raw_scan():
+    raw = extractor.scan_createnode_literals(_PKG / "synapse")
+    lop = extractor.scan_lop_createnode_literals(_PKG / "synapse")
+    assert lop, "no stage.createNode literals found — recipes moved off the /stage handle?"
+    assert set(lop) <= set(raw)
+
+
+def test_known_phantom_allowlist_is_still_absent_from_catalog():
+    """A stale allowlist entry is a lie about the catalog — fail loud."""
+    index = _index()
+    for type_name in extractor.KNOWN_PHANTOMS:
+        assert type_name not in index, (
+            f"{type_name!r} is now in the catalog ({index[type_name]}) — drop it from KNOWN_PHANTOMS"
+        )
+
+
+def test_audit_flags_phantom_and_deprecated_verdicts():
+    """The auditor itself can fail: synthetic phantom, LOP-deprecated, all-deprecated."""
+    index = {
+        "karma": {"Lop": True, "Driver": False},
+        "karmarenderproperties": {"Lop": True},
+        "duplicate": {"Lop": False, "Sop": True},
+        "null": {"Lop": False, "Sop": False},
+    }
+    type_files = {
+        "grade": ["x.py"],                  # phantom
+        "karma": ["x.py"],                  # live in Driver -> not flagged by the global rule
+        "karmarenderproperties": ["x.py"],  # deprecated everywhere
+        "duplicate": ["x.py"],              # mixed, receiver unknown -> not flagged
+        "null": ["x.py"],
+    }
+    lop_files = {"karma": ["x.py"]}         # stage.createNode('karma') -> Lop verdict
+    verdicts = {(v["verdict"], v["type_name"], v.get("receiver"))
+                for v in extractor.catalog_audit(type_files, lop_files, index, allow={})}
+    assert verdicts == {
+        ("phantom", "grade", None),
+        ("deprecated", "karmarenderproperties", None),
+        ("deprecated", "karma", "stage"),
+    }
+    # The allowlist exempts phantoms only, never a deprecated verdict.
+    allowed = {(v["verdict"], v["type_name"])
+               for v in extractor.catalog_audit(type_files, lop_files, index,
+                                                allow={"grade": "r", "karma": "r"})}
+    assert ("phantom", "grade") not in allowed
+    assert ("deprecated", "karma") in allowed
