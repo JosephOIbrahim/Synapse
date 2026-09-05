@@ -723,3 +723,53 @@ def test_wordmark_lockup_measured():
             assert wm.width() >= wm.sizeHint().width(), (profile, wm.width(), wm.sizeHint().width())
         finally:
             p.close()
+
+
+# -------------------------------------------------------------------- BC-6b
+def test_consent_inline_on_chat():
+    """Direction C: consent surfaces where the talking happens. A raised
+    actionable gate lands its card in the CHAT consent slot and never moves
+    the view; quiet state (busy, tool status) shows no card and never moves
+    it either; INFORM is ignored; a decision that landed hides the card and
+    the slot."""
+    for profile in PROFILES:
+        p = _panel(profile)
+        try:
+            gate = p._gate
+            assert p._faces.currentIndex() == 0
+            # Quiet state first: nothing surfaces, nothing switches.
+            p._set_busy(True)
+            p._on_tool_status("houdini_render", "running", "")
+            _app().processEvents()
+            assert p._faces.currentIndex() == 0
+            assert not p._consent_slot.isVisible()
+            p._set_busy(False)
+            # INFORM is noise: no card.
+            gate._add_proposal_card({"proposal_id": "p-inform", "level": "inform",
+                                     "operation": "create_node"})
+            p._on_gate_raised({"proposal_id": "p-inform", "level": "inform",
+                               "operation": "create_node"})
+            _app().processEvents()
+            assert "p-inform" not in gate._cards and not p._consent_slot.isVisible()
+            # An actionable gate: the card is on CHAT, inside the slot, with
+            # its APPROVE verb; the face does not switch.
+            prop = {"proposal_id": "p-x", "level": "approve", "operation": "submit_render",
+                    "agent_id": "CONDUCTOR", "description": "render to disk"}
+            gate._add_proposal_card(prop)
+            p._on_gate_raised(prop)
+            _app().processEvents()
+            assert p._faces.currentIndex() == 0, profile
+            card = gate._cards["p-x"]
+            assert card.objectName() == "DsCard"
+            assert p._consent_slot.isAncestorOf(card), profile
+            assert p._consent_slot.isVisible() and card.isVisible()
+            approve = [b for b in card.findChildren(QtWidgets.QPushButton, "DsVerb")
+                       if b.text() == "APPROVE"]
+            assert approve and approve[0].isVisible()
+            # The decision landed (a remote/recorded approval): card + slot hide.
+            gate._on_remote_decision("p-x", "approved")
+            _app().processEvents()
+            assert not card.isVisible() and not p._consent_slot.isVisible(), profile
+            assert p._faces.currentIndex() == 0
+        finally:
+            p.close()
