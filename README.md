@@ -8,7 +8,7 @@
 
 <p align="center">SYNAPSE lives in Houdini's own Python interpreter and calls <code>hou.*</code> directly.<br>No external bridge, no RPC hop, no second copy of the scene.</p>
 
-<p align="center"><sub>v5.64.0 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 = the Houdini runtime (hython) · 3.14 = the stock test gate · USD 0.26.5 · PySide6<br>tags: v5.64.0 is Latest · vNEXT tags only via the release ritual (g-receipts are human acts)</sub></p>
+<p align="center"><sub>v5.65.0 · Houdini 22.0.400 (doc pin — the symbol gate re-stamps per running build) · Python 3.13 = the Houdini runtime (hython) · 3.14 = the stock test gate · USD 0.26.5 · PySide6<br>tags: v5.65.0 is Latest · vNEXT tags only via the release ritual (g-receipts are human acts)</sub></p>
 
 ---
 
@@ -19,13 +19,13 @@
 **It asks first** before anything risky, and **says UNKNOWN** instead of guessing.
 **It tells you what doesn't work** — [Known limitations](#known-limitations) is the most-read section on purpose.
 
-**Right now — 5 September 2026, evening.** Three things to know, newest first:
+**Right now — 5 September 2026, night.** Three things to know, newest first:
 
-- **v5.64.0 is live** — the Panel PD design wave landed (`74dc0219`): one owner of rhythm and colour (`designsystem/rhythm.py` + role rules in `qss.py`), five camera regions on roles, the recall card, 18 modules migrated. Panel-wide imperative spacing 107 → 17 sites (all tagged), inline sheets 106 → 0, raw hex 135 → 0. Landed after a CTO review swarm, a second forge pass (R2-01..06) and a CRUX round 3 that both referees closed; the one open figure (composed panel at airy, 393 px) was ruled as an interim per-density bound. **GUI sign-off on H22.0.400 in three profiles is still Joe's eyes — see Known limitations.** *Producer: `harness/notes/RELEASE_v5.64.0.md`.*
-- **The CTO review loop exists** (`harness/cto/`): a first crank on v5.63.0 found 61 confirmed findings, closed 10 of 11 by re-running each item's closure predicate on master (CI green for the first time since July; phantom checker walks Houdini namespaces; Solaris v3 verifier no longer fails on every live stage; backfill dual-write bug fixed; four recipes off the deprecated `karma` LOP). Open: B9 hygiene tail, B11 verb-rail collapse toward the 280 px contract.
+- **v5.65.0 is live** — the panel is the conversation now. The verb rail and the profile row left the header (they live in the `/` palette and the overflow); consent cards land inline in the chat; the model you are talking to reads `provider/model` in the top right, always (LIVE-measured in Joe's Houdini: 414 px wide where it was 0). Built the same afternoon Joe ruled direction B + C from the Bierut review, under referees, then reloaded live. *Producer: `harness/notes/RELEASE_v5.65.0.md`.*
+- **v5.64.0 landed the Panel PD design wave** (one owner of rhythm and colour, 107 → 17 spacing sites, raw hex 135 → 0) and the CTO review loop (`harness/cto/`) closed nine of its eleven findings the same day. *Producer: `harness/notes/RELEASE_v5.64.0.md`.*
 - **Read before trusting:** [Known limitations](#known-limitations). Still the most-read section on purpose.
 
-[Release notes v5.64.0 →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.64.0)
+[Release notes v5.65.0 →](https://github.com/JosephOIbrahim/Synapse/releases/tag/v5.65.0)
 
 ### The shape of it — two pictures
 
@@ -490,8 +490,8 @@ It does **not** roll back when something raises. On the exception path a partial
 
 | | interpreter | result |
 |---|---|---|
-| **Gate** | stock Python 3.14.2 (no `hou`) | 7,604 passed · 0 failed · 331 skipped *(2026-09-05, master `74dc0219` — `harness/notes/h22/pytest_v5640_master.txt`; skips rose from 198 because the panel wave's PySide-bound tests skip here and run under hython)* |
-| **Shipping** | `hython3.13` — the Houdini runtime | full run 4,048 passed · 110 failed · 771 errors *(2026-08-02; not re-run for v5.64.0)*; panel tier `tests/panel` + docking on H22.0.400 offscreen: 211 passed · 1 failed (the D1 render-view dead verb, pre-existing) *(2026-09-05, `74dc0219`)* |
+| **Gate** | stock Python 3.14.2 (no `hou`) | 7,605 passed · 0 failed · 346 skipped *(2026-09-05, master `f41c6694` — `harness/notes/h22/pytest_v5650_master.txt`; PySide-bound panel tests skip here and run under hython)* |
+| **Shipping** | `hython3.13` — the Houdini runtime | full run 4,048 passed · 110 failed · 771 errors *(2026-08-02; not re-run for v5.64.0)*; panel tier `tests/panel` + docking on H22.0.400 offscreen: 228 passed · 1 failed (the D1 render-view dead verb, pre-existing) *(2026-09-05, `f41c6694`)* |
 
 The gate has no failures for the first time on record; `test_backfill` was a real Moneta dual-write bug (CTO B5, fixed `b435cc26`), not flake.
 

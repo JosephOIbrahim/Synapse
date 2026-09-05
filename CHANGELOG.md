@@ -2,6 +2,10 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.65.0 — the panel became the conversation, and the model got its name back
+
+*2026-09-05 (night): the panel direction B + C wave (`design/bc-wave`, merged `90c9fda2`) - verb rail and profile row leave the header for the `/` palette and the overflow, consent cards inline in the chat with a REVERT verb, the `/` palette on the spacing grid at the composer's width, one state sentence that never gives way, the wordmark at 15 px, and the model token `provider/model` always visible top right (LIVE: 414 px, was 0). Two live-found fixes: the floating empty "houdini" window at launch (a parentless retired widget) and the composer clipping its placeholder on tall high-DPI panes. Full gate **7605 passed / 0 failed / 346 skipped**. GUI sign-off in three profiles is Joe's eyes. Full notes with receipts: `harness/notes/RELEASE_v5.65.0.md`.*
+
 ## v5.64.0 — the panel landed, and the loop learned to check itself
 
 *2026-09-05 (evening): the Panel PD design wave that v5.63.0 held back is on master (`74dc0219`, 202 files) after a Pentagram-bar audit, a second forge pass and a CRUX round 3 that both referees closed; one owner of rhythm and colour, 107 → 17 spacing sites (all tagged), raw hex 135 → 0. A closure-first CTO review loop (`harness/cto/`) landed nine of its eleven findings the same day: GitHub CI green for the first time since July, the phantom checker walks Houdini namespaces, the Solaris v3 verifier no longer fails on every live stage, backfill dual-write fixed, four recipes off the deprecated `karma` LOP. Full gate **7604 passed / 0 failed / 331 skipped**. GUI sign-off in three profiles is still Joe's eyes. Full notes with receipts: `harness/notes/RELEASE_v5.64.0.md`.*
