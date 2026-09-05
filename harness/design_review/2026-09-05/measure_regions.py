@@ -39,9 +39,7 @@ def geo(w):
 cache = p._region_cache
 rail = cache.get("_build_rail"); ribbon = cache.get("_build_context_ribbon"); tabs = cache.get("_build_mode_bar")
 composer = p._input.parentWidget()           # the _build_input section (DsSection)
-act = p._font_btn.parentWidget()             # the _build_act section
-band = composer.parentWidget()               # act + divider + input band
-face = band.parentWidget()                   # direct face shell
+face = composer.parentWidget()               # direct face shell (bc-wave BC-1: no act band)
 out = {
     "profile": getattr(p, "_layout_profile", None),
     "density": p.property("density"),
@@ -54,11 +52,10 @@ out = {
                      sizeHint_w=p._wordmark.sizeHint().width()),
     "mark": geo(p._mark),
     "rail": geo(rail), "ribbon": geo(ribbon), "tab_row": geo(tabs),
-    "direct_face": geo(face), "chat": geo(p._chat), "act_band": geo(band), "verb_rail": geo(act),
+    "direct_face": geo(face), "chat": geo(p._chat),
     "composer": geo(composer), "input": geo(p._input), "send": geo(p._send_btn), "khint": geo(p._khint),
     "pills": {k: geo(v) for k, v in p._face_pills.items()},
     "profile_pills": {k: geo(v) for k, v in p._profile_pills.items()},
-    "verbs": [dict(geo(b), text=b.text()) for b in act.findChildren(QtWidgets.QPushButton) if b.objectName() == "DsVerb"],
     "chrome_scale": getattr(p, "_chrome_scale", None),
 }
 with open(os.path.join(HERE, "regions_%s.json" % profile), "w", encoding="utf-8") as f:

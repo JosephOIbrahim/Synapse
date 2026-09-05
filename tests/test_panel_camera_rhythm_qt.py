@@ -58,8 +58,7 @@ def probe(density):
     try:
         # Existing layout owners, including nested anonymous rows, all inherit
         # their owner's spacing. These are geometry checks, not source guesses.
-        regions = [panel._region_cache["_build_mode_bar"],
-                   panel._font_btn.parentWidget(), panel._token_face]
+        regions = [panel._region_cache["_build_mode_bar"], panel._token_face]
         for region in regions:
             assert region.minimumSizeHint().width() <= 380, (region.objectName(), region.minimumSizeHint())
             layout = region.layout()
@@ -113,17 +112,19 @@ def probe(density):
         assert word.width() >= word.sizeHint().width(), (word.width(), word.sizeHint().width())
         panel.resize(380, 760)
         app.processEvents()
-        band = panel._font_btn.parentWidget().parentWidget()
-        assert band.property("rhythm_role") == "band" and band.layout().spacing() == 0
-        # RULING-4c: one type applier per widget - CHAT, TOKEN, every verb of
-        # the act bar (_verb) and every rail control share pixel size and
-        # tracking byte-for-byte. (FaceReview / RecallCard verbs keep their own
-        # ratified L5 type; the ruling names the panel's two sites.)
+        # bc-wave BC-1 (direction B): the act band and its divider are gone;
+        # the composer sits directly in the direct-face shell, whose own gap
+        # is the transcript->composer beat.
+        composer = panel._input.parentWidget()
+        assert composer.parentWidget() is direct_face
+        assert not direct_face.findChildren(QtWidgets.QWidget, "DsDivider")
+        assert not hasattr(panel, "_font_btn")
+        # RULING-4c: one type applier per widget - CHAT, TOKEN and every rail
+        # control (DsVerb) share pixel size and tracking byte-for-byte.
+        # (FaceReview / RecallCard verbs keep their own ratified L5 type.)
         chat_pill, token_pill = panel._face_pills["direct"], panel._face_pills["token"]
-        act_bar = panel._font_btn.parentWidget()
-        verbs = (act_bar.findChildren(QtWidgets.QPushButton, "DsVerb")
-                 + header.findChildren(QtWidgets.QPushButton, "DsVerb"))
-        assert len(verbs) >= 6, [v.text() for v in verbs]
+        verbs = header.findChildren(QtWidgets.QPushButton, "DsVerb")
+        assert len(verbs) >= 2, [v.text() for v in verbs]
         reference = (QtGui.QFontInfo(chat_pill.font()).pixelSize(), chat_pill.font().letterSpacing())
         for widget in [token_pill, *verbs]:
             assert (QtGui.QFontInfo(widget.font()).pixelSize(),

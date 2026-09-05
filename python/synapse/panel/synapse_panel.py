@@ -1165,10 +1165,12 @@ class SynapsePanel(QtWidgets.QWidget):
         return self._faces
 
     def _build_direct_face(self):
-        """Direct — converse + quick actions + input. The artist's surface.
-        The face is a shell (GUTTER inset via the role, never an imperative
-        margin); act + divider + input sit in one band so the hairline is not
-        paid a group gap on both sides."""
+        """Direct — converse + input. The artist's surface (direction B,
+        bc-wave: composer-first). The face is a shell (GUTTER inset via the
+        role, never an imperative margin) whose own gap is the beat between
+        the transcript and the composer. The verb rail and the hairline that
+        divided it from the composer left with it (F1 / F16): EXPLAIN / FIX /
+        OPTIMIZE are slash-palette rows and BUILD HDA is an overflow action."""
         page = self._section()
         page.setProperty("rhythm_role", "shell")
         col = QtWidgets.QVBoxLayout(page)
@@ -1177,13 +1179,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._recall_card = RecallCard()
         self._recall_card.hide()
         col.addWidget(self._recall_card)
-        band = self._section()
-        band.setProperty("rhythm_role", "band")
-        stack = QtWidgets.QVBoxLayout(band)
-        stack.addWidget(self._build_act())
-        stack.addWidget(c.divider())
-        stack.addWidget(self._build_input())
-        col.addWidget(band)
+        col.addWidget(self._build_input())
         return page
 
     def _build_work_face(self):
@@ -1898,25 +1894,6 @@ class SynapsePanel(QtWidgets.QWidget):
         btn.clicked.connect(on_click)
         return btn
 
-    def _build_act(self):
-        w = self._section()
-        lay = QtWidgets.QHBoxLayout(w)
-        # The group role owns inter-verb gaps; DsVerb remains the text action.
-        for label_text, prompt in _QUICK_ACTIONS:
-            lay.addWidget(self._verb(
-                label_text.upper(), lambda _=False, p=prompt: self._send(p)))
-        # Build HDA: demoted from a top-level face into a Direct verb (+ ⌘K).
-        lay.addWidget(self._verb(
-            "BUILD HDA", lambda _=False: self._set_direct_view("hda")))
-        lay.addStretch(1)
-        self._font_btn = self._verb(
-            "Aa", lambda _=False: self._cycle_font_scale())
-        self._font_btn.setToolTip("Font size — click to cycle")
-        lay.addWidget(self._font_btn)
-        # ⌘K is folded into the input ("/" opens it; Ctrl+K still works) — no
-        # separate, unintuitive glyph button in the bar.
-        return w
-
     def _build_input(self):
         w = self._section()
         col = QtWidgets.QVBoxLayout(w)
@@ -2021,8 +1998,19 @@ class SynapsePanel(QtWidgets.QWidget):
             self._set_face("work")          # consent auto-surfaces (Option A)
 
     def _show_overflow(self):
+        menu = self._build_overflow_menu()
+        menu.exec(QtGui.QCursor.pos()) if hasattr(menu, "exec") else menu.exec_(QtGui.QCursor.pos())
+
+    def _build_overflow_menu(self):
+        """The overflow QMenu, built without exec so a test can read it.
+
+        bc-wave (direction B): the chrome that left the composed panel at rest
+        lives here - Build HDA (was a verb on the retired rail), the text-size
+        pair (the 'Aa' verb duplicated them, F10), the halt controls (H3b)."""
         menu = QtWidgets.QMenu(self)
         menu.addAction("Copy conversation", self._copy_conversation)
+        # Build HDA: the form is unchanged; only the way in moved (BC-1).
+        menu.addAction("Build HDA…", lambda: self._set_direct_view("hda"))
         menu.addSeparator()
         # — engine switch (multi-provider). Display/telemetry only; the worker
         # for the NEXT message is built with the selected provider. —
@@ -2038,7 +2026,7 @@ class SynapsePanel(QtWidgets.QWidget):
             menu.addSeparator()
         except Exception:
             pass
-        menu.addAction("Larger text", lambda: self._set_scale(t.next_font_scale(getattr(self, "_font_scale", t.FONT_SCALE_DEFAULT), getattr(self, "_chrome_scale", t.FONT_SCALE_DEFAULT))))
+        menu.addAction("Larger text", self._cycle_font_scale)
         menu.addAction("Default text", lambda: self._set_scale(self._chrome_scale))
 
         # ── H3b · interruption controls (R29 §2: the halt belongs in the
@@ -2067,8 +2055,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 "Cancel PDG cooks under /obj and capture a session report. "
                 "Does NOT stop background renders — those are reported back "
                 "so you can stop them explicitly.")
-
-        menu.exec(QtGui.QCursor.pos()) if hasattr(menu, "exec") else menu.exec_(QtGui.QCursor.pos())
+        return menu
 
     # ── H3b · cook cancel + emergency halt ──────────────────────────────
     # These are DISTINCT from _on_stop, which is unchanged and stays as
@@ -2198,7 +2185,10 @@ class SynapsePanel(QtWidgets.QWidget):
         inp.setCurrentFont(font)
 
     def _cycle_font_scale(self):
-        """The 'Aa' button — step through the font-scale presets live."""
+        """Step through the font-scale presets live. The overflow's 'Larger
+        text' is its one surface (bc-wave BC-1: the 'Aa' verb was a duplicate
+        signal and left with the verb rail; tests/panel/test_font_scale.py
+        pins the stepping rule, so the method stays)."""
         self._set_scale(t.next_font_scale(getattr(self, "_font_scale", t.FONT_SCALE_DEFAULT), getattr(self, "_chrome_scale", t.FONT_SCALE_DEFAULT)))
 
     def _open_palette(self):

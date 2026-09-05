@@ -139,6 +139,20 @@ def _load_entries():
                             send="Render the current scene at %s quality (render_progressively)." % tier,
                             destructive=False, verb="render", context="Karma"))
 
+    # d) the quick actions (bc-wave BC-1): EXPLAIN / FIX / OPTIMIZE left the
+    #    retired verb rail and live here as rows. synapse_panel._QUICK_ACTIONS
+    #    stays their one source; the palette only reads it (lazy import: the
+    #    panel is already loaded whenever the palette opens).
+    try:
+        from synapse.panel.synapse_panel import _QUICK_ACTIONS
+        for label, prompt in _QUICK_ACTIONS:
+            verb, ctx = _classify(label.lower(), label, prompt)
+            entries.append(dict(domain="Commands", title=label, desc=prompt,
+                                send=prompt, destructive=False,
+                                verb=verb, context=ctx))
+    except Exception:
+        pass
+
     # grouped by context (where), then verb (what), then title
     entries.sort(key=lambda e: (_ctx_rank(e["context"]), e["verb"], e["title"]))
     return entries
