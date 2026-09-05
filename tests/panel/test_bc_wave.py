@@ -382,6 +382,59 @@ def test_palette_rows_breathe():
             root.close()
 
 
+def _assert_rows_fit(lst, name):
+    """No row is cut mid-word: nothing scrolls sideways, every row's rect sits
+    inside the viewport (so a title wider than the view elides right - the
+    view's mode - instead of widening the list), and a row whose full title
+    exceeds the view carries that title whole on its tooltip. The fit is
+    exercised, not vacuous: the data set holds rows wider than 340."""
+    vp = lst.viewport().width()
+    fm = QtGui.QFontMetrics(lst.font())
+    rows = [it for it in (lst.item(i) for i in range(lst.count()))
+            if it.flags() & QtCore.Qt.ItemFlag.ItemIsSelectable]
+    assert rows, name
+    assert lst.horizontalScrollBar().maximum() == 0, (name, lst.horizontalScrollBar().maximum())
+    assert lst.textElideMode() == QtCore.Qt.TextElideMode.ElideRight, name
+    over = [it for it in rows if fm.horizontalAdvance(it.text()) > vp]
+    assert over, (name, vp, "no row wider than the view - the elision would be unexercised")
+    for it in rows:
+        r = lst.visualItemRect(it)
+        assert 0 < r.width() <= vp, (name, it.text(), r.width(), vp)
+    for it in over:
+        assert it.text().strip() in it.toolTip(), (name, it.text(), it.toolTip())
+
+
+def test_palette_rows_never_cut_at_340():
+    """CRUX repair (2026-09-05, 'palette rows cut mid-word' - the wave's own
+    item 3, blocker F1's class): as the panel opens it at 340 the slash
+    palette takes the dock's width - not the 256px sizeHint adjustSize()
+    shrank it to - sits inside the dock horizontally, and no row is cut
+    mid-word behind a horizontal scrollbar: a row wider than the view elides
+    right with its whole title on the tooltip. The Ctrl+K palette is under
+    the same rule."""
+    from synapse.panel.command_palette import CommandPaletteWidget
+    for profile in PROFILES:
+        p = _panel(profile)
+        try:
+            p._open_palette()
+            _app().processEvents()
+            pal = p._palette
+            assert pal.isVisible(), profile
+            assert pal.width() == p.width(), (profile, pal.width(), p.width())
+            left = p.mapToGlobal(QtCore.QPoint(0, 0)).x()
+            assert left <= pal.x() and pal.x() + pal.width() <= left + p.width(), (
+                profile, pal.x(), pal.width(), left, p.width())
+            _assert_rows_fit(pal._list, type(pal).__name__)
+            pal.close()
+            cp = CommandPaletteWidget(p)
+            cp.show_palette()
+            _app().processEvents()
+            _assert_rows_fit(cp._list, type(cp).__name__)
+            cp.close()
+        finally:
+            p.close()
+
+
 # --------------------------------------------------------------------- BC-4
 def test_one_signal_per_fact_at_boot():
     """Ruling item 5 (ADHD spacing, light touch): outside the transcript the
