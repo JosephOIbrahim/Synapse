@@ -267,14 +267,14 @@ def _ds_root(density, w=W, h=396):
 
 
 def _open_palettes(root):
+    """Both palettes as the opener shows them (ToolPalette grows toward the
+    opener until six rungs show; CommandPaletteWidget is capped at 400)."""
     from synapse.panel.tool_palette import ToolPalette
     from synapse.panel.command_palette import CommandPaletteWidget
     tp = ToolPalette(root)
-    tp.resize(W, 396)
     tp.show()
     cp = CommandPaletteWidget(root)
     cp.show_palette()
-    cp.resize(W, 396)
     _app().processEvents()
     return tp, cp
 
@@ -297,7 +297,8 @@ def test_palette_rows_breathe():
     from synapse.panel.designsystem import tokens as t
     _app()
     for density in DENSITIES:
-        root = _ds_root(density)
+        # The opener is the panel at the wave's docking size (340x760).
+        root = _ds_root(density, h=H)
         try:
             for pal in _open_palettes(root):
                 name = type(pal).__name__
@@ -305,6 +306,20 @@ def test_palette_rows_breathe():
                 heads, rows, items = _heads_and_rows(lst)
                 assert heads and len(rows) >= 5, (name, len(heads), len(rows))
                 gap = t.gap(t.SPACE_XS, density)
+                # Five options read whole at the size the opener shows the
+                # popup (a 396 ToolPalette holds a head + three: the search,
+                # two axis grids and the legend own the rest, so it grows
+                # toward the opener - never past it - until six rungs show).
+                if density == "standard":
+                    vp_h = lst.viewport().height()
+                    full = [it for it in rows
+                            if lst.visualItemRect(it).top() >= 0
+                            and lst.visualItemRect(it).bottom() < vp_h]
+                    assert len(full) >= 5, (name, pal.height(), vp_h, len(full))
+                    assert pal.height() <= root.height() - t.SPACE_LG, (name, pal.height())
+                # Row box and pitch, measured at the design size 340x396.
+                pal.resize(W, 396)
+                _app().processEvents()
                 assert lst.spacing() == gap, (name, density, lst.spacing(), gap)
                 # Row box and pitch: the first two adjacent option rows.
                 pair = next((items[i], items[i + 1]) for i in range(len(items) - 1)
@@ -318,12 +333,6 @@ def test_palette_rows_breathe():
                 f = heads[0].font()
                 assert f.capitalization() == QtGui.QFont.Capitalization.AllUppercase, name
                 assert abs(f.letterSpacing() - 108.0) < 0.05, (name, f.letterSpacing())
-                if density == "standard":
-                    vp_h = lst.viewport().height()
-                    full = [it for it in rows
-                            if lst.visualItemRect(it).top() >= 0
-                            and lst.visualItemRect(it).bottom() < vp_h]
-                    assert len(full) >= 5, (name, vp_h, len(full))
                 pal.close()
         finally:
             root.close()

@@ -201,7 +201,14 @@ QListWidget#DsList {{
     background: transparent; color: {t.TEXT_PRIMARY};
     border: none; outline: none;
 }}
-QListWidget#DsList::item {{ padding: {t.SPACE_XS}px {t.SPACE_SM}px; border-radius: {t.RADIUS_SM}px; }}
+/* bc-wave BC-3: ONE row rule for both palettes. min-height is content-box
+   (probed, Qt 6.8.3), so SPACE_LG content + 2 x SPACE_SM padding renders a
+   SPACE_XL (40) row - the card-band dimension; the gap between rows is the
+   `stack` role's view spacing (rhythm.apply), paid on both sides. */
+QListWidget#DsList::item, QListWidget#DsCommandResults::item {{
+    min-height: {t.SPACE_LG}px; padding: {t.SPACE_SM}px {t.SPACE_MD}px;
+    border-radius: {t.RADIUS_SM}px;
+}}
 QListWidget#DsList::item:selected {{ background: {t.SIGNAL_TINT}; color: {t.TEXT_ACCENT}; }}
 
 /* ---- cards & drawers ----------------------------------------- */
@@ -875,9 +882,7 @@ QListWidget#DsCommandResults {{
     background: transparent; color: {t.TEXT_PRIMARY};
     border: none; outline: none; font-size: {s(t.SIZE_BODY)}px;
 }}
-QListWidget#DsCommandResults::item {{
-    padding: {t.SPACE_XS}px {t.SPACE_SM}px; border-radius: {t.RADIUS_SM}px;
-}}
+/* ::item box + padding: the shared DsList / DsCommandResults rule (BC-3). */
 QListWidget#DsCommandResults::item:selected {{ background: {t.SIGNAL_TINT}; }}
 QListWidget#DsCommandResults::item:hover {{ background: {t.HOVER_BG}; }}
 

@@ -105,5 +105,16 @@ def apply(root, density="standard"):
             layout.setSpacing(tokens.gap(ROLE_GAPS[role], level))
             layout.setContentsMargins(*_MARGINS.get(role, (0, 0, 0, 0)))
             applied += 1
+        else:
+            # bc-wave BC-3: a marked item VIEW (a QListView - no layout of
+            # its own, but a viewport and setSpacing) takes the role's gap as
+            # its view spacing. Duck-typed, no Qt import. The view pays the
+            # spacing on both sides of every item, so `stack` (4/6/3) puts
+            # rows gap(SPACE_SM) = 8/12/6 apart - arithmetic on the grid,
+            # not a new role.
+            set_spacing = getattr(widget, "setSpacing", None)
+            if callable(set_spacing) and callable(getattr(widget, "viewport", None)):
+                set_spacing(tokens.gap(ROLE_GAPS[role], level))
+                applied += 1
         _apply_type(widget, role)
     return applied
