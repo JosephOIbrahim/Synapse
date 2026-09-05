@@ -16,7 +16,7 @@ STD_CRUX = [
     "the crucible flips no contract feature and edits no product file",
 ]
 HYTHON_NOTE = ("Environment truths (capsule 2026-09-03, demonstrated): five hythons are installed and SYNAPSE_HYTHON must be pinned to 22.0.400 "
-               "(22.0.429 fails the hytest usability gate); the hython path and the pref dir are recorded in harness/battleplan/notes/BP3_RECON.md T2 - read them, never re-derive; "
+               "(22.0.429 PASSES the hytest usability gate - `import pytest, PySide6` rc=0 - and was the newest install, so the pre-B10 newest-first shim selected it, a build with no committed symbol table; since B10 the shim prefers the h22 stamp 22.0.400 but the explicit pin stays the rule); the hython path and the pref dir are recorded in harness/battleplan/notes/BP3_RECON.md T2 - read them, never re-derive; "
                "H22 prefs live at C:\\Users\\User\\OneDrive\\Documents\\houdini22.0 (OneDrive known-folder redirect) - set HOUDINI_USER_PREF_DIR explicitly; "
                "long hython runs: detach and poll a log file, never foreground-wait past 4 minutes; a fresh deep-path clone needs `git config core.longpaths true`.")
 FENCE_NOTE = ("Permission fence: your settings profile allows scoped `git add` + `git commit`; push/merge/checkout/reset are denied; "

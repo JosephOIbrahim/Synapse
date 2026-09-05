@@ -8,7 +8,7 @@ CI, and a stale doc row fails CI.
 
 Mechanism: a mechanical source scan, NOT grep. The scanner recognizes two read
 shapes over python/synapse/**/*.py + **/*.pypanel (excluding _vendor) +
-mcp_server.py + install.py:
+mcp_server.py + install.py + .synapse/hytest.py (the build-pin shim; B10):
 
   1. DIRECT -- a quoted ``SYNAPSE_*`` literal adjacent to env-call syntax
      (os.environ.get/[]/getenv/setdefault, hou.getenv). Quoted-literal
@@ -79,6 +79,9 @@ def _scan_files():
             files.append(path)
     files.append(REPO_ROOT / "mcp_server.py")
     files.append(REPO_ROOT / "install.py")
+    # B10: the hytest shim reads SYNAPSE_HYTHON (the Houdini build pin);
+    # documenting it in DEPLOYMENT.md needs the scanner to see the read.
+    files.append(REPO_ROOT / ".synapse" / "hytest.py")
     return files
 
 
