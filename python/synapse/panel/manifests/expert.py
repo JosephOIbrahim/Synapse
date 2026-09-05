@@ -1,7 +1,8 @@
 """EXPERT — the v5.42.0 surface, exactly (Law L5).
 
-This manifest declares the panel as it ships today: the same four regions in
-the same order, every widget visible at standard prominence, faces dominant
+This manifest declares the panel as it ships today: the same three regions in
+the same order (rail, context ribbon, faces - bc-wave BC-5 folded the profile
+row into the overflow), every widget visible at standard prominence, faces dominant
 (stretch 1), no system-prompt overlay. A diff between this file and the other
 profiles IS the profile system — capability never varies, only prominence,
 density and the prompt overlay do. Density "standard" is the unstyled
@@ -30,19 +31,20 @@ MANIFEST = {
     },
     "system_prompt_overlay": "",
     "regions": [
-        {   # mark · brand · author · Stop (+ connection / corpus / activity)
+        {   # bc-wave BC-2: two identities (mark+wordmark / model token), one
+            # state sentence, Connect|Stop. The rail's other chrome reads
+            # through the overflow; its hidden owners are NOT listed here
+            # (the compositor applies visible=True to every listed id).
             "id": "rail",
             "widgets": [
                 "mark", "wordmark", "header_status", "author_token",
-                "token_meter", "palette_hint", "stop",
-                "connection_dot", "connection_label", "connect", "corpus",
-                "activity_meter",
+                "stop", "connect",
             ],
         },
-        {"id": "context_ribbon", "widgets": ["context_label"]},
-        {   # the CHAT surface label (v9.1)
-            "id": "mode_bar",
-            "widgets": ["chat_pill", "token_pill"],
+        {   # context + the CHAT / TOKEN pills (bc-wave BC-5: the profile
+            # tab strip folded into the overflow; the pills ride the ribbon)
+            "id": "context_ribbon",
+            "widgets": ["context_label", "chat_pill", "token_pill"],
         },
         {   # dominant — the stacked faces
             "id": "faces",

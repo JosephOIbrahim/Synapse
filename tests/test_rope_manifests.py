@@ -29,14 +29,18 @@ from synapse.panel.manifests import (
 )
 
 PROFILES = ("curious", "expert", "ml")
-V5420_REGION_ORDER = ["rail", "context_ribbon", "mode_bar", "faces"]
+# bc-wave BC-5: three regions - the profile tab strip (mode_bar) folded into
+# the overflow and the CHAT / TOKEN pills ride the context ribbon.
+V5420_REGION_ORDER = ["rail", "context_ribbon", "faces"]
 
 # Declared folds per profile (L5-19). A collapsed widget is present in the
 # layout at zero height and one click away — paced, never withheld. Expert
 # is untouched and declares none. A new fold must be added here
 # deliberately, never smuggled.
+# bc-wave BC-2: curious no longer folds anything - the token meter and the
+# activity meter left the rail for the overflow in every profile.
 DECLARED_FOLDS = {
-    "curious": {("rail", "token_meter"), ("rail", "activity_meter")},
+    "curious": set(),
 }
 
 
@@ -76,8 +80,7 @@ def test_expert_is_the_v5420_wiring():
     plan = compositor.resolve(get_manifest("expert"))
     assert plan["system_prompt_overlay"] == ""
     stretches = {r["id"]: r["stretch"] for r in plan["regions"]}
-    assert stretches == {"rail": 0, "context_ribbon": 0, "mode_bar": 0,
-                         "faces": 1}
+    assert stretches == {"rail": 0, "context_ribbon": 0, "faces": 1}
     for spec in (s for r in plan["regions"] for s in r["widgets"]):
         assert spec["prominence"] == "standard"
 

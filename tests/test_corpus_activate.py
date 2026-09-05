@@ -65,7 +65,7 @@ def test_panel_wires_corpus_button():
         "def _on_corpus",
         "def _refresh_corpus_state",
         "scout_ingest.activate",
-        "bot.addWidget(self._corpus_btn)",
+        'addAction("Ground the corpus", self._on_corpus)',   # bc-wave BC-2: the overflow action
     ):
         assert marker in src, marker
 

@@ -48,38 +48,24 @@ V5420_EXPERT_RESOLVED = {
                  "prominence": "standard", "id": "header_status"},
                 {"visible": True, "collapsed": False, "stretch": 0,
                  "prominence": "standard", "id": "author_token"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "token_meter"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "palette_hint"},
+                # bc-wave BC-2: the rail is [mark][wordmark][state sentence]
+                # [model token] + Connect|Stop; the token meter, palette hint,
+                # connection pair, Corpus and activity meter are hidden
+                # owners read through the overflow, so they are not listed.
                 {"visible": True, "collapsed": False, "stretch": 0,
                  "prominence": "standard", "id": "stop"},
                 {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "connection_dot"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "connection_label"},
-                {"visible": True, "collapsed": False, "stretch": 0,
                  "prominence": "standard", "id": "connect"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "corpus"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "activity_meter"},
             ],
         },
-        {
+        {   # bc-wave BC-5: the CHAT / TOKEN pills ride the ribbon; the
+            # profile tab strip (mode_bar) folded into the overflow.
             "id": "context_ribbon", "builder": "_build_context_ribbon",
             "visible": True, "collapsed": False, "stretch": 0,
             "prominence": "standard",
             "widgets": [
                 {"visible": True, "collapsed": False, "stretch": 0,
                  "prominence": "standard", "id": "context_label"},
-            ],
-        },
-        {
-            "id": "mode_bar", "builder": "_build_mode_bar",
-            "visible": True, "collapsed": False, "stretch": 0,
-            "prominence": "standard",
-            "widgets": [
                 {"visible": True, "collapsed": False, "stretch": 0,
                  "prominence": "standard", "id": "chat_pill"},
                 {"visible": True, "collapsed": False, "stretch": 0,
@@ -111,7 +97,7 @@ def test_snapshot_orders_pinned_explicitly():
     readable one-line diff when only ordering drifts."""
     plan = compositor.resolve(get_manifest("expert"))
     assert [r["id"] for r in plan["regions"]] == [
-        "rail", "context_ribbon", "mode_bar", "faces"]
+        "rail", "context_ribbon", "faces"]
     assert {r["id"]: [w["id"] for w in r["widgets"]]
             for r in plan["regions"]} == {
         rid: wids for rid, wids in (

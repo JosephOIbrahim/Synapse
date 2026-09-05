@@ -81,7 +81,13 @@ def test_rail_meter_is_parented_and_hidden():
     it has a parent (never a top-level) and stays hidden at rest."""
     app, panel, _ = _build()
     try:
-        meter = panel._observe
+        meter = getattr(panel, "_observe", None)
+        if meter is None:
+            # bc-wave (design/bc-wave, 2026-09-05) removed the retired meter
+            # outright: no widget, no window. The fence is the first test.
+            assert not [w for w in QtWidgets.QApplication.allWidgets()
+                        if w.objectName() == "DsRailMeter"], "a DsRailMeter widget still exists"
+            return
         assert meter.parent() is not None, "DsRailMeter has no parent: any setVisible(True) makes it a window"
         assert not meter.isVisible(), "DsRailMeter is visible at rest; it was retired from the header"
         assert not meter.isWindow()

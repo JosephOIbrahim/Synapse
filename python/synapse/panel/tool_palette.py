@@ -23,6 +23,7 @@ except ImportError:  # pragma: no cover - Houdini ships PySide6
 from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import components as c
 from synapse.panel.designsystem import qss
+from synapse.panel.designsystem import fontload
 
 try:
     from synapse.panel.tool_filter import (
@@ -49,6 +50,49 @@ def _classify(name, title, desc):
         return classify_tool(name, title, desc)
     except Exception:
         return "build", None
+
+def group_head_item(text, scale=t.FONT_SCALE_DEFAULT):
+    """A palette group head (bc-wave BC-3): one SPACE_48 cell wearing the
+    rhythm-label eyebrow - mono, uppercase, SEND (+0.08em, the tracking
+    rhythm.label borrows), TEXT_TERTIARY - with the text sitting at the
+    bottom of the cell (the label doctrine's 24 above / 12 below inside one
+    48 rung). Not selectable, not a row. Shared by both palettes."""
+    head = QtWidgets.QListWidgetItem(str(text).upper())
+    head.setFlags(Qt.ItemFlag.NoItemFlags)
+    head.setSizeHint(QtCore.QSize(0, t.SPACE_48))
+    head.setTextAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
+    font = fontload.tracked_font("SEND", t.SIZE_SMALL, scale=scale, mono=True)
+    font.setCapitalization(type(font).AllUppercase)
+    head.setFont(font)
+    try:
+        head.setForeground(QColor(t.TEXT_TERTIARY))
+    except Exception:
+        pass
+    return head
+
+
+class _FitRowsDelegate(QtWidgets.QStyledItemDelegate):
+    """Rows never widen the view (bc-wave repair, CRUX 2026-09-05: 'palette
+    rows cut mid-word'). A QListView in list mode lays every row out as wide
+    as its widest hint, so one long recipe title put a horizontal scrollbar
+    under the whole list and cut every row mid-word. The hint is height only
+    (the group head already is - QSize(0, SPACE_48)): the view then makes each
+    row as wide as its viewport and the style elides the title right (the
+    view's default mode), with the whole title on the tooltip. The row height
+    stays the sheet's (::item min-height + padding = SPACE_XL)."""
+
+    def sizeHint(self, option, index):
+        size = super().sizeHint(option, index)
+        size.setWidth(0)
+        return size
+
+
+def fit_rows(view):
+    """Give a palette list the fit-rows rule. Shared by both palettes."""
+    view.setTextElideMode(Qt.TextElideMode.ElideRight)
+    view.setItemDelegate(_FitRowsDelegate(view))
+    return view
+
 
 _MATERIAL_PRESETS = [
     "glass", "mirror", "rough_metal", "polished_metal", "skin",
@@ -139,6 +183,20 @@ def _load_entries():
                             send="Render the current scene at %s quality (render_progressively)." % tier,
                             destructive=False, verb="render", context="Karma"))
 
+    # d) the quick actions (bc-wave BC-1): EXPLAIN / FIX / OPTIMIZE left the
+    #    retired verb rail and live here as rows. synapse_panel._QUICK_ACTIONS
+    #    stays their one source; the palette only reads it (lazy import: the
+    #    panel is already loaded whenever the palette opens).
+    try:
+        from synapse.panel.synapse_panel import _QUICK_ACTIONS
+        for label, prompt in _QUICK_ACTIONS:
+            verb, ctx = _classify(label.lower(), label, prompt)
+            entries.append(dict(domain="Commands", title=label, desc=prompt,
+                                send=prompt, destructive=False,
+                                verb=verb, context=ctx))
+    except Exception:
+        pass
+
     # grouped by context (where), then verb (what), then title
     entries.sort(key=lambda e: (_ctx_rank(e["context"]), e["verb"], e["title"]))
     return entries
@@ -193,13 +251,19 @@ class ToolPalette(QtWidgets.QWidget):
 
         self._list = QtWidgets.QListWidget()
         self._list.setObjectName("DsList")
+        # bc-wave BC-3: the list is a `stack` consumer - rhythm.apply gives
+        # the view its spacing (4/6/3, paid both sides -> rows 8/12/6 apart);
+        # the row box (SPACE_XL) is the shared ::item rule in the sheet.
+        self._list.setProperty("rhythm_role", "stack")
+        fit_rows(self._list)            # rows elide right, never scroll sideways
         self._list.itemActivated.connect(self._choose)
         self._list.itemClicked.connect(self._choose)
         lay.addWidget(self._list, 1)
 
-        hint = c.label("↑↓ navigate · Enter run · Esc close · filter by DO × WHERE · "
-                       "destructive items are gated", role="caption")
-        hint.setWordWrap(True)
+        # One line (BC-3): the legend gives its rows back to the options.
+        # DO x WHERE and the destructive gate are told where they act (chip
+        # tags, the warn row tint + tooltip), not repeated here.
+        hint = c.label("\u2191\u2193 navigate \u00b7 Enter run \u00b7 Esc close", role="caption")
         lay.addWidget(hint)
 
         self._populate(self._rows)
@@ -216,7 +280,7 @@ class ToolPalette(QtWidgets.QWidget):
         row.addWidget(tag, 0, 0)
         chips = self._verb_chips if kind == "verb" else self._ctx_chips
         values = [None] + list(PALETTE_VERBS if kind == "verb" else PALETTE_CONTEXTS)
-        for index, v in enumerate(values, start=1):
+        for index, v in enumerate(values):
             text = "All" if v is None else (v.title() if kind == "verb" else v)
             btn = QtWidgets.QPushButton(text)
             btn.setObjectName("DsChip")
@@ -224,13 +288,40 @@ class ToolPalette(QtWidgets.QWidget):
             btn.setFlat(True)
             btn.clicked.connect(lambda _=False, k=kind, val=v: self._set_axis(k, val))
             chips[v] = btn
-            row.addWidget(btn, index // 3, index % 3)
+            # BC-3: the tag owns column 0; six chips fill three columns
+            # beside it in two rows (was three rows), so the axis grids give
+            # one row each back to the options. Same chips, same order.
+            row.addWidget(btn, index // 3, index % 3 + 1)
         return row
 
     def showEvent(self, event):
         # Re-read the opener's profile on every opening, including cached popups.
         qss.prepare_sweep_b_popup(self, self._scale)
         super().showEvent(event)
+        self._fit_rungs()
+
+    def _fit_rungs(self):
+        """Grow toward the opener until the option list shows six rungs - a
+        group head plus five options at the SPACE_48 pitch (BC-3: options
+        read one at a time). The preferred height stays PANEL_MIN_HEIGHT -
+        SPACE_LG (the search, two axis grids and the legend leave that size
+        a head + three rows); the popup takes more only when its opener has
+        it, never past opener.height() - SPACE_LG, so it cannot outgrow the
+        dock it was opened from."""
+        opener = self.parentWidget()
+        if opener is None or self.layout() is None:
+            return
+        self.layout().activate()
+        # Six rungs as the view lays them out: the view's spacing above the
+        # first item, a SPACE_48 head cell and five SPACE_XL option cells,
+        # each paying the spacing on both sides.
+        gap = self._list.spacing()
+        want = gap + (t.SPACE_48 + 2 * gap) + 5 * (t.SPACE_XL + 2 * gap)
+        have = self._list.viewport().height()
+        room = opener.height() - t.SPACE_LG - self.height()
+        grow = min(want - have, room)
+        if grow > 0:
+            self.resize(self.width(), self.height() + grow)
 
     def _set_axis(self, kind, value):
         """Set (or toggle off) the active filter on one axis, then re-filter."""
@@ -268,19 +359,16 @@ class ToolPalette(QtWidgets.QWidget):
         for e in rows:
             group = _ctx_label(e.get("context"))
             if group != last_domain:
-                head = QtWidgets.QListWidgetItem(group.upper())
-                head.setFlags(Qt.ItemFlag.NoItemFlags)
-                try:
-                    head.setForeground(QColor(t.TEXT_TERTIARY))
-                except Exception:
-                    pass
-                self._list.addItem(head)
+                self._list.addItem(group_head_item(group, self._scale))
                 last_domain = group
             label = ("  ⚠ " if e["destructive"] else "  ") + e["title"]
             item = QtWidgets.QListWidgetItem(label)
             item.setData(Qt.ItemDataRole.UserRole, e["send"])
-            item.setToolTip("%s%s" % (
-                e["desc"],
+            # The whole title first (a row wider than the view elides right -
+            # fit_rows - so the tooltip is where it reads whole), then the
+            # description / prompt.
+            item.setToolTip("%s\n%s%s" % (
+                e["title"], e["desc"],
                 "\n\n(destructive — will ask before running)" if e["destructive"] else ""))
             if e["destructive"]:
                 try:

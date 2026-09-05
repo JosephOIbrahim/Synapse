@@ -37,6 +37,18 @@ def _widgets(plan):
 
 # ---------------------------------------------------------------- resolve --
 
+# bc-wave BC-2: the rail's token meter, palette hint, connection dot/label,
+# Corpus and activity meter are HIDDEN OWNERS - constructed for their writers
+# and read through the overflow, in no layout, listed by no manifest (the
+# compositor applies visible=True to every listed id). Their ids stay in the
+# compositor vocabulary (WIDGET_ATTRS is unchanged), so the drift check below
+# is "everything known, minus exactly these".
+RAIL_OVERFLOW_OWNERS = frozenset({
+    "token_meter", "palette_hint", "connection_dot", "connection_label",
+    "corpus", "activity_meter",
+})
+
+
 class TestResolveCleanly:
     @pytest.mark.parametrize("name", sorted(PROFILES))
     def test_validates_and_resolves(self, name):
@@ -54,7 +66,7 @@ class TestResolveCleanly:
         be exactly the compositor's registry, nothing dropped, nothing extra.
         """
         plan = _plan(PROFILES[name])
-        assert set(_widgets(plan)) == set(compositor.known_widget_ids())
+        assert set(_widgets(plan)) == set(compositor.known_widget_ids()) - RAIL_OVERFLOW_OWNERS
 
 
 # ------------------------------------------------- capability invariant --
@@ -88,12 +100,17 @@ class TestExpertUntouched:
 
 
 class TestCuriousFolds:
-    def test_curious_collapses_at_least_one_widget(self):
+    def test_curious_folds_nothing_since_the_rail_chrome_left(self):
+        """bc-wave BC-2: the readouts curious used to fold (token meter,
+        activity meter) left the rail for the overflow in every profile, so
+        there is nothing left to fold - and nothing may be smuggled back in
+        as a fold. The Curious diff is the quiet TOKEN pill alone."""
         collapsed = {
             wid for wid, spec in _widgets(_plan(curious.MANIFEST)).items()
             if spec["collapsed"]
         }
-        assert collapsed, "curious must fold at least one readout"
+        assert collapsed == set(), collapsed
+        assert _widgets(_plan(curious.MANIFEST))["token_pill"]["prominence"] == "quiet"
 
     def test_collapsed_readouts_stay_present_and_reachable(self):
         """Collapsed widgets remain in the plan (visible=True, height-folded)
@@ -121,7 +138,9 @@ class TestMLEconomics:
         """The rail readout pair carries the numbers on the always-visible
         surface: pinned visible, promoted hero (L5-19)."""
         widgets = _widgets(_plan(ml.MANIFEST))
-        for wid in ("author_token", "token_meter", "token_pill"):
+        # bc-wave BC-2: the token meter left the rail (overflow); the model
+        # token (Addendum 2) and the TOKEN pill carry the economics.
+        for wid in ("author_token", "token_pill"):
             assert widgets[wid]["visible"] is True, wid
             assert widgets[wid]["collapsed"] is False, wid
             assert widgets[wid]["prominence"] == "hero", wid

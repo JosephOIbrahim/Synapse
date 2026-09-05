@@ -25,7 +25,12 @@ BASE = "ce04dcb0"
 # lifecycle pins plus the constructor pin would compare the tree to itself,
 # green regardless of edits to _on_done (the isolated-green class R2-03 named);
 # a checkout without a local `master` ref would error instead of measuring.
-_PANEL_BASE = "e8913f83"
+# Re-anchored 2026-09-05 at the bc-wave landing (CTO, RULING_DIRECTION_BC.md
+# Addendum 3): _on_done / _start_worker / _on_stop / _set_busy and the composer
+# constructor changed under written rulings (busy guard, state sentence, one
+# '/' telling). The pin keeps its job for the NEXT wave: lifecycle methods are
+# byte-identical to this landing unless a ruling says otherwise.
+_PANEL_BASE = "47ffea0e"
 
 
 def _panel_base():
@@ -133,7 +138,9 @@ def test_constructor_lifecycle_is_unchanged_except_root_sheet_annotation():
                 if isinstance(n, ast.FunctionDef) and n.name == "__init__"]
     current = constructors(_source("synapse_panel.py"))
     original = constructors(_source("synapse_panel.py", _panel_base()))
-    assert [re.sub(r"  # rhythm-exempt:[^\n]*", "", s) for s in current] == original
+    # The annotation is allowed on BOTH sides (the base now carries it too).
+    strip = lambda src: re.sub(r"  # rhythm-exempt:[^\n]*", "", src)
+    assert [strip(s) for s in current] == [strip(s) for s in original]
 
 
 @pytest.mark.parametrize("name", ["refresh_from_probe", "_refresh_usage", "measure_static"])
@@ -144,7 +151,8 @@ def test_token_measurement_paths_are_unchanged(name):
 def test_token_readout_worker_fontload_and_shelf_unchanged():
     paths = ["python/synapse/panel/token_readout.py", "python/synapse/panel/claude_worker.py",
              "python/synapse/panel/designsystem/fontload.py",
-             "python/synapse/panel/designsystem/tokens.py",
+             # tokens.py left this list 2026-09-05: W7 (Joe's wordmark
+             # addendum) adds a token under a written ruling.
              "houdini/scripts/python/synapse_shelf.py"]
     assert subprocess.check_output(["git", "diff", BASE, "--", *paths], cwd=ROOT) == b""
 
@@ -166,7 +174,9 @@ def test_camera_residual_cannot_regrow():
     for file in files:
         assert not file["hex_sites"]
         assert not file["grid_spacing"]
-        expected = {"synapse_panel.py": (0, 1), "recall_card.py": (2, 0)}.get(
+        # bc-wave (2026-09-05): recall_card's two tagged spacing sites went
+        # with the rail; the ceiling follows the census down, never up.
+        expected = {"synapse_panel.py": (0, 1), "recall_card.py": (0, 0)}.get(
             Path(file["path"]).name, (0, 0))
         assert (len(file["spacing"]), len(file["inline_styles"])) == expected
         for site in file["spacing"] + file["inline_styles"]:
@@ -199,7 +209,10 @@ def test_shell_role_consumes_the_gutter_token_and_ratios_are_gone():
     assert rhythm._MARGINS["shell"] == (t.GUTTER, t.SPACE_SM, t.GUTTER, t.SPACE_SM)
     assert rhythm.ROLE_GAPS["band"] == 0 and rhythm.ROLE_GAPS["stack"] == t.SPACE_GRID[0]
     panel_source = _source("synapse_panel.py")
-    assert panel_source.count('setProperty("rhythm_role", "shell")') == 4
+    # bc-wave BC-1 (2026-09-05): the verb rail's edge container retired with
+    # the rail, so three edge containers carry the gutter (rail, ribbon,
+    # direct face); the tab row folded into the overflow in BC-5.
+    assert panel_source.count('setProperty("rhythm_role", "shell")') == 3
     assert 'setProperty("rhythm_role", "band")' in panel_source
     qss_source = (ROOT / "python/synapse/panel/designsystem/qss.py").read_text(encoding="utf-8")
     assert "role_size" not in qss_source

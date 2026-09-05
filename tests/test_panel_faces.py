@@ -156,18 +156,22 @@ def test_state_persists_across_tab_switch():
     assert p._work_stack.currentIndex() == 1
 
 
-def test_gate_raised_auto_surfaces_work():
-    # v9.1 (Option A): an actionable gate proposal AUTO-SURFACES Work's done
-    # sub-state — consent comes to the artist (revised same-pane law: consent
-    # surfaces; quiet state does not). Accept/revert hand back to chat.
+def test_gate_raised_surfaces_consent_inline_on_chat():
+    # Direction C (Joe's ruling 2026-09-05, Addendum 3.1) supersedes v9.1
+    # Option A: an actionable gate proposal lands its card INLINE in the CHAT
+    # consent slot and never moves the visible face. Quiet state does not
+    # move it either. Accept keeps the artist in the conversation.
     p = _make_panel()
     p._set_face("direct")
-    p._on_gate_raised({"level": "approve"})
-    assert _idx(p) == 1, "an actionable gate must auto-surface the Work face"
-    assert p._work_substate == "done"
-    assert p._mark._state == "done"
+    gate = {"proposal_id": "faces-approve", "level": "approve",
+            "operation": "create_node"}
+    p._gate._add_proposal_card(dict(gate))
+    p._on_gate_raised(dict(gate))
+    assert _idx(p) == 0, "an actionable gate must NOT switch the face (direction C)"
+    assert not p._consent_slot.isHidden(), "the consent card must surface inline on CHAT"
+    assert "faces-approve" in p._gate._cards
     p._on_accept()
-    assert _idx(p) == 0, "accept must hand back to the conversation"
+    assert _idx(p) == 0, "accept keeps the artist in the conversation"
 
 
 def test_inform_gate_is_ignored():
@@ -438,12 +442,14 @@ def test_tracked_font_uses_bundled_families():
 
 
 def test_wordmark_carries_brand_tracking():
-    # v9 — the wordmark QFont carries BRAND PercentageSpacing (QSS can't track).
+    # The wordmark QFont carries WORDMARK PercentageSpacing (QSS can't track).
+    # 7780f649 (2026-07-27, Joe's call) moved the lockup from BRAND 0.286em to
+    # its own WORDMARK 0.16em; this pin had kept BRAND and was red since.
     from synapse.panel.designsystem import tokens as t
     p = _make_panel()
     f = p._wordmark.font()
     assert f.letterSpacingType() == type(f).PercentageSpacing
-    assert abs(f.letterSpacing() - (100 + t.TRACKING_EM["BRAND"] * 100)) < 0.05
+    assert abs(f.letterSpacing() - (100 + t.TRACKING_EM["WORDMARK"] * 100)) < 0.05
 
 
 def test_rail_author_token_shows():

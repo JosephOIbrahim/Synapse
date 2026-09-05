@@ -28,9 +28,10 @@ PROFILE_DENSITY = {"curious": "airy", "expert": "standard", "ml": "tight"}
 # each one's group-gap margin scales from. (Region 3 recall card is greenfield
 # and Region 4 token-face rows are inline-styled with no objectNames — neither
 # is QSS-reachable this leg; see the spec §5 ledger.)
+# bc-wave BC-5: the profile tab strip (DsTabRow) is retired - its group gap
+# rule left the sheet with it.
 REGION_GAP_BASE = {
-    "DsTabRow": t.SPACE_MD,   # Region 1 — profile tab strip, group gap below
-    "DsVerb":   t.SPACE_SM,   # Region 2 — verb rail, group vertical breathing
+    "DsVerb":   t.SPACE_SM,   # Region 2 — verbs (review acts / rail controls), vertical breathing
     "DsHeader": t.SPACE_SM,   # Region 5 — .hip ribbon + header, group gap below
 }
 
@@ -117,8 +118,8 @@ class TestRegionRhythmStepsByDensity:
         for profile, density in PROFILE_DENSITY.items():
             resolved = compositor.resolve(get_manifest(profile))
             assert resolved["density"] == density, profile
-            # the tab-strip gap the panel would render for this profile:
-            base = REGION_GAP_BASE["DsTabRow"]
+            # the header gap the panel would render for this profile:
+            base = REGION_GAP_BASE["DsHeader"]
             assert t.gap(base, density) == round(
                 base * t.DENSITY_GAP_SCALE[density])
 
@@ -163,4 +164,4 @@ class TestGuardrails:
         resolved = compositor.resolve(get_manifest("expert"))
         assert resolved["density"] == "standard"
         assert [r["id"] for r in resolved["regions"]] == [
-            "rail", "context_ribbon", "mode_bar", "faces"]
+            "rail", "context_ribbon", "faces"]

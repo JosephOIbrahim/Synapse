@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+import html as _html
 from typing import List, Optional
 
 # ---------------------------------------------------------------------------
@@ -377,6 +378,15 @@ _BADGE_MAP = {
     "recent": "RCT",
 }
 
+# Group heads for the unsearched list (bc-wave BC-3), keyed like _BADGE_MAP.
+_CATEGORY_HEADS = {
+    "command": "Commands",
+    "recipe": "Recipes",
+    "apex": "APEX Rigging",
+    "vex": "VEX",
+    "recent": "Recent",
+}
+
 # Badge colors per category
 _BADGE_COLORS = {
     "command": _SIGNAL,
@@ -445,9 +455,17 @@ if _QT_AVAILABLE:
             # -- Results list --
             self._list = QListWidget()
             self._list.setObjectName("DsCommandResults")
+            # bc-wave BC-3: same list rhythm as the slash palette - a `stack`
+            # consumer (view spacing 4/6/3 from rhythm.apply) under the shared
+            # ::item row rule (SPACE_XL boxes).
+            self._list.setProperty("rhythm_role", "stack")
             self._list.setHorizontalScrollBarPolicy(
                 Qt.ScrollBarPolicy.ScrollBarAlwaysOff
             )
+            # bc-wave repair: rows elide right instead of running off the
+            # edge (the hidden scrollbar used to clip them mid-word).
+            from synapse.panel.tool_palette import fit_rows
+            fit_rows(self._list)
             layout.addWidget(self._list)
 
             # -- Connections --
@@ -511,9 +529,24 @@ if _QT_AVAILABLE:
             self.hide()
 
         def _populate_list(self, entries: list[PaletteEntry]) -> None:
-            """Fill the QListWidget with palette entries."""
+            """Fill the QListWidget with palette entries.
+
+            bc-wave BC-3: the full (unsearched) list reads in category
+            groups under SPACE_48 eyebrow heads - the same head treatment as
+            the slash palette - in _BADGE_MAP order; a ranked search result
+            keeps its rank order and carries no heads."""
             self._list.clear()
+            grouped = not self._search.text().strip()
+            if grouped:
+                order = {cat: i for i, cat in enumerate(_BADGE_MAP)}
+                entries = sorted(entries, key=lambda e: order.get(e.category, len(order)))
+            from synapse.panel.tool_palette import group_head_item
+            last_category = None
             for entry in entries:
+                if grouped and entry.category != last_category:
+                    self._list.addItem(group_head_item(
+                        _CATEGORY_HEADS.get(entry.category, entry.category), self._scale))
+                    last_category = entry.category
                 badge = _BADGE_MAP.get(entry.category, "???")
                 badge_color = _BADGE_COLORS.get(entry.category, _TEXT_DIM)
 
@@ -527,17 +560,35 @@ if _QT_AVAILABLE:
                 item = QListWidgetItem(f"[{badge}]  {display}")
                 item.setData(Qt.ItemDataRole.UserRole, entry.command)
                 item.setForeground(QColor(_TEXT))
-                # Tint badge portion via tooltip (simple approach)
+                # Tint badge portion via tooltip (simple approach). The label
+                # and description are escaped (bc-wave repair): a title such
+                # as 'solaris sets-dressing at <parent>' used to lose its
+                # '<parent>' to the HTML parser, and the tooltip is where a
+                # row that elides must read whole.
                 item.setToolTip(
                     f"<b style='color:{badge_color}'>[{badge}]</b> "
-                    f"<span style='color:{_TEXT}'>{entry.label}</span><br/>"
-                    f"<span style='color:{_TEXT_DIM}'>{entry.description}</span>"
+                    f"<span style='color:{_TEXT}'>{_html.escape(entry.label)}</span><br/>"
+                    f"<span style='color:{_TEXT_DIM}'>{_html.escape(entry.description)}</span>"
                 )
                 self._list.addItem(item)
 
-            # Select first item
+            # Select the first OPTION (heads are not rows)
             if self._list.count() > 0:
-                self._list.setCurrentRow(0)
+                self._list.setCurrentRow(self._step_row(-1, +1))
+
+        def _step_row(self, start, delta):
+            """The next selectable row from ``start`` in ``delta`` direction;
+            group heads (NoItemFlags) are skipped. Returns ``start`` when
+            nothing selectable lies that way."""
+            n = self._list.count()
+            row = start
+            for _ in range(n):
+                row += delta
+                if row < 0 or row >= n:
+                    return start
+                if self._list.item(row).flags() & Qt.ItemFlag.ItemIsSelectable:
+                    return row
+            return start
 
         # ----- Event handling ------------------------------------------------
 
@@ -559,10 +610,8 @@ if _QT_AVAILABLE:
                     count = self._list.count()
                     if count == 0:
                         return False
-                    if key == Qt.Key.Key_Down:
-                        new_row = min(current + 1, count - 1)
-                    else:
-                        new_row = max(current - 1, 0)
+                    # BC-3: step over group heads, never onto them.
+                    new_row = self._step_row(current, +1 if key == Qt.Key.Key_Down else -1)
                     self._list.setCurrentRow(new_row)
                     return True
                 if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):

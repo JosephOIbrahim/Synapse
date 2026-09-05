@@ -82,8 +82,14 @@ def test_qss_preserves_inherited_bytes_and_uses_only_existing_tokens():
     source = (ROOT / path).read_text(encoding="utf-8")
     first = "# --- SWEEP_A (chat_panel.py)"
     prefix, tail = source[:source.index(first)], source[source.index(first):]
-    assert _outside_rhythm_block(prefix) == _outside_rhythm_block(_base(path)), (
-        "QSS edit outside append-only block")
+    # Landing receipt retired (CTO 2026-09-05, RULING_DIRECTION_BC.md Addendum
+    # 3): the byte-freeze of the prefix against ce04dcb0 proved SWEEP_B's own
+    # landing touched nothing upstream - that proof is in the history. Later
+    # design waves edit the sheet under written rulings (bc-wave: DsAuthor
+    # colour to the text ramp, rail rules), so the pin keeps the STRUCTURE:
+    # the SWEEP_B block still exists, still sits at the tail, still uses only
+    # tokens, and the prefix still parses as one module.
+    assert _outside_rhythm_block(prefix), "QSS prefix vanished"
     # Landing r3 (CTO 2026-09-05, R2-03): the tail carries SWEEP_A's block
     # first; SWEEP_B's guarantees are fence-scoped to its own marked block.
     start, end = "# --- SWEEP_B (", "# --- END SWEEP_B"
@@ -111,7 +117,11 @@ def test_no_widget_constructors_added():
             if name.startswith("Q") and not name.endswith("Layout"):
                 result[name] += 1
         return result
-    for name in MODULES:
+    # Landing receipt narrowed (CTO 2026-09-05): tool_palette and
+    # command_palette were extended by the bc-wave under RULING (palette
+    # breathing room, dock-wide popup); the constructor-count freeze keeps
+    # guarding the two modules no later wave has touched.
+    for name in [m for m in MODULES if m not in ("tool_palette", "command_palette")]:
         path = "python/synapse/panel/" + name + ".py"
         assert not (constructors((ROOT / path).read_text(encoding="utf-8")) - constructors(_base(path)))
 

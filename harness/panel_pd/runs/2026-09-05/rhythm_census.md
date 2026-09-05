@@ -4,7 +4,7 @@ Source-only; no host or Qt imports. Counts are source sites, including dormant m
 
 Measurement complete: **True**. Date: 2026-09-05.
 
-Totals: **16** spacing; **1** inline sheets; **0** raw hex / **0** distinct; **17** exemption tags. Additional grid-spacing sites: **0**.
+Totals: **12** spacing; **1** inline sheets; **0** raw hex / **0** distinct; **13** exemption tags. Additional grid-spacing sites: **0**.
 
 Hex means every six-digit source occurrence outside designsystem/, including comments and token-valued fallbacks; case folded. Calls are AST calls (comments/string lookalikes excluded). Exemptions are Python comments only, associated with sites on their starting line. Values preserve expressions without evaluation. See JSON for every site, owner, line and hash.
 
@@ -37,7 +37,7 @@ Hex means every six-digit source occurrence outside designsystem/, including com
 | face_token.py | 0 | 0 | 0 / 0 | 11 / 6 | 0 |
 | face_work.py | 2 | 0 | 0 / 0 | 3 / 2 | 2 |
 | gate_stamp.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
-| gate_widget.py | 2 | 0 | 0 / 0 | 0 / 0 | 2 |
+| gate_widget.py | 0 | 0 | 0 / 0 | 1 / 1 | 0 |
 | hda_controller.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
 | hda_views.py | 0 | 0 | 0 / 0 | 18 / 16 | 0 |
 | health_infographic.py | 0 | 0 | 0 / 0 | 1 / 1 | 0 |
@@ -64,7 +64,7 @@ Hex means every six-digit source occurrence outside designsystem/, including com
 | providers/probe.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
 | providers/registry.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
 | quick_actions.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
-| recall_card.py | 2 | 0 | 0 / 0 | 4 / 4 | 2 |
+| recall_card.py | 0 | 0 | 0 / 0 | 4 / 4 | 0 |
 | recipe_book.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
 | recipe_card.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
 | render_preflight.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
@@ -80,7 +80,7 @@ Hex means every six-digit source occurrence outside designsystem/, including com
 | settings.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
 | shot_login.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
 | styles.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
-| synapse_panel.py | 0 | 1 | 0 / 0 | 17 / 15 | 1 |
+| synapse_panel.py | 0 | 1 | 0 / 0 | 16 / 14 | 1 |
 | system_prompt.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
 | token_readout.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
 | tokens.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
@@ -97,40 +97,20 @@ Hex means every six-digit source occurrence outside designsystem/, including com
 | working_indicator.py | 0 | 0 | 0 / 0 | 1 / 1 | 0 |
 | ws_bridge.py | 0 | 0 | 0 / 0 | 0 / 0 | 0 |
 
-Outside designsystem/: 76 Ds naming sites, 49 names. Including designsystem/: 83 sites, 55 names. Runtime Ds widget count: UNKNOWN: source sites may execute zero, one, or many times.
+Outside designsystem/: 76 Ds naming sites, 47 names. Including designsystem/: 83 sites, 53 names. Runtime Ds widget count: UNKNOWN: source sites may execute zero, one, or many times.
 
 ## Density QSS (source templates)
 
 ```json
 {
   "path": "python/synapse/panel/designsystem/qss.py",
-  "rule_blocks": 9,
-  "selectors": 10,
-  "margin_rule_blocks": 9,
+  "rule_blocks": 7,
+  "selectors": 8,
+  "margin_rule_blocks": 7,
   "padding_rule_blocks": 0,
   "rules": [
     {
-      "line": 297,
-      "selectors": [
-        "#DsRoot[density=\"airy\"] QWidget#DsTabRow"
-      ],
-      "properties": [
-        "margin-bottom"
-      ],
-      "body_template": "margin-bottom: EXPRpx;"
-    },
-    {
-      "line": 298,
-      "selectors": [
-        "#DsRoot[density=\"tight\"] QWidget#DsTabRow"
-      ],
-      "properties": [
-        "margin-bottom"
-      ],
-      "body_template": "margin-bottom: EXPRpx;"
-    },
-    {
-      "line": 303,
+      "line": 314,
       "selectors": [
         "#DsRoot[density=\"airy\"] QPushButton#DsVerb"
       ],
@@ -141,7 +121,7 @@ Outside designsystem/: 76 Ds naming sites, 49 names. Including designsystem/: 83
       "body_template": "margin-top: EXPRpx; margin-bottom: EXPRpx;"
     },
     {
-      "line": 304,
+      "line": 315,
       "selectors": [
         "#DsRoot[density=\"tight\"] QPushButton#DsVerb"
       ],
@@ -152,7 +132,7 @@ Outside designsystem/: 76 Ds naming sites, 49 names. Including designsystem/: 83
       "body_template": "margin-top: EXPRpx; margin-bottom: EXPRpx;"
     },
     {
-      "line": 308,
+      "line": 319,
       "selectors": [
         "#DsRoot[density=\"airy\"] QWidget#DsHeader"
       ],
@@ -162,7 +142,7 @@ Outside designsystem/: 76 Ds naming sites, 49 names. Including designsystem/: 83
       "body_template": "margin-bottom: EXPRpx;"
     },
     {
-      "line": 309,
+      "line": 320,
       "selectors": [
         "#DsRoot[density=\"tight\"] QWidget#DsHeader"
       ],
@@ -213,9 +193,9 @@ Flags describe direct source evidence in the listed scopes, not every child. Fac
 
 | Region | Status | Named | Inline styled | Layout owned | Owners |
 |---|---|---|---|---|---|
-| Profile tab strip | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1048 SynapsePanel._build_mode_bar |
-| Header/ribbon | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:655 SynapsePanel._build_rail; python/synapse/panel/synapse_panel.py:992 SynapsePanel._build_context_ribbon |
-| Chat transcript | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1009 SynapsePanel._build_converse; python/synapse/panel/synapse_panel.py:1167 SynapsePanel._build_direct_face; python/synapse/panel/chat_display.py:80 ChatDisplay |
-| Verb rail | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1901 SynapsePanel._build_act; python/synapse/panel/synapse_panel.py:1883 SynapsePanel._verb |
+| Profile tab strip | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | ABSENT |
+| Header/ribbon | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:725 SynapsePanel._build_rail; python/synapse/panel/synapse_panel.py:1074 SynapsePanel._build_context_ribbon |
+| Chat transcript | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1118 SynapsePanel._build_converse; python/synapse/panel/synapse_panel.py:1216 SynapsePanel._build_direct_face; python/synapse/panel/chat_display.py:80 ChatDisplay |
+| Verb rail | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | python/synapse/panel/synapse_panel.py:1995 SynapsePanel._verb |
 | Recall result | VERIFIED_STATIC | True | False | True | python/synapse/panel/recall_card.py:1 <module> |
-| TOKEN face | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1122 SynapsePanel._build_token_face; python/synapse/panel/face_token.py:295 FaceToken; python/synapse/panel/face_token.py:59 TokenField; python/synapse/panel/token_readout.py:1 <module> |
+| TOKEN face | VERIFIED_STATIC | True | False | True | python/synapse/panel/synapse_panel.py:1171 SynapsePanel._build_token_face; python/synapse/panel/face_token.py:295 FaceToken; python/synapse/panel/face_token.py:59 TokenField; python/synapse/panel/token_readout.py:1 <module> |

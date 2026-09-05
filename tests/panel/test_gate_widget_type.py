@@ -94,12 +94,16 @@ def _mono_and_default():
 
 
 def _card_elements(card):
-    by_key = {}
-    for w in card.findChildren(QtWidgets.QWidget):
-        key = w.property("sweep_a_style")
-        if key:
-            by_key[key] = w
-    return by_key
+    """bc-wave BC-6a: the card is a DsCard in the panel's own vocabulary; its
+    elements are reached by attribute (the sweep_a keys it used to carry are
+    gone with the level hues)."""
+    return {
+        "gate_badge": card._badge,
+        "gate_operation": card._op_label,
+        "gate_countdown": card._countdown_label,
+        "gate_reject": card._reject_btn,
+        "gate_approve": card._approve_btn,
+    }
 
 
 def test_gate_badge_in_the_composed_panel_is_the_bundled_mono(composed_gate):

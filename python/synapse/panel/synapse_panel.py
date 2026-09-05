@@ -104,6 +104,29 @@ _VERSION = "9.1.0"  # v9 re-layout: 2 tabs (Review folded into Work), bundled ty
 
 # Context-aware quick actions (prompt macros). Network-agnostic defaults; the
 # context ribbon refines them per network type at runtime.
+# The state sentence's vocabulary (bc-wave BC-2). Every string the rail's one
+# sentence can show: the STATUS phrases (tokens.py) plus the two turn phrases.
+# _build_rail floors the sentence at the widest of these in its own font, so
+# it never elides - the wordmark's rule, no px literal.
+_DONE_PHRASE = "Result ready"
+_STOPPING_PHRASE = "Stopping\u2026"
+
+
+def _state_phrases():
+    return [row[2] for row in t.STATUS.values()] + [_DONE_PHRASE, _STOPPING_PHRASE]
+
+
+def _houdini_build_label():
+    """'Houdini 22.0.400' from the running host, else plain 'Houdini' - the
+    corpus copy names the build it grounds in, never a hard-coded major."""
+    try:
+        import hou
+        ver = hou.applicationVersionString()
+        return "Houdini %s" % ver if ver else "Houdini"
+    except Exception:
+        return "Houdini"
+
+
 _QUICK_ACTIONS = [
     ("Explain", "Explain what the selected nodes do and how they connect."),
     ("Fix", "Diagnose any problems with the current scene and propose fixes."),
@@ -123,7 +146,13 @@ class _GrowingInput(QtWidgets.QTextEdit):
         super().__init__(parent)
         self.setObjectName("DsInput")
         self.setAcceptRichText(False)
-        self.setPlaceholderText("Ask SYNAPSE…    ·    / for commands")
+        # The composer's one '/' telling (BC-4; G3 pins it here). bc-wave
+        # repair (CRUX 2026-09-05): it has to read WHOLE at 340 - the text
+        # width the viewport paints a placeholder in is ~182px, and the old
+        # 'Ask SYNAPSE…    ·    / for commands' advanced 245 and wrapped
+        # behind the send margin as 'Ask SYNAPSE…  ·  / for'. Pinned by
+        # tests/panel/test_bc_wave.py::test_composer_telling_reads_whole_at_340.
+        self.setPlaceholderText("Ask SYNAPSE… · / commands")
         # L5-22: no constant first-run height (the v9 132 landed the divider
         # above centre in every tall pane — Joe re-dragged it each session).
         # The height settles exactly once, via settle_height: the artist's
@@ -498,8 +527,8 @@ class SynapsePanel(QtWidgets.QWidget):
     def _build_ui(self):
         root = QtWidgets.QVBoxLayout(self)
         # band: the regions are chrome bands that own their own hairlines
-        # (#DsHeader / #DsTabRow rules), so the root stack pays no gap and no
-        # inset (RULING-3; the B4 composer cap holds).
+        # (the #DsHeader rule), so the root stack pays no gap and no inset
+        # (RULING-3; the B4 composer cap holds).
         self.setProperty("rhythm_role", "band")
 
         # Persistent rail (Mile 1) → context ribbon → switcher → the two faces.
@@ -513,6 +542,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # invalid manifest falls back to that wiring hard-coded (the panel
         # always builds).
         profile = getattr(self, "_layout_profile", DEFAULT_PROFILE)
+        self._build_profile_actions()
         built = False
         if compose is not None:
             try:
@@ -525,11 +555,37 @@ class SynapsePanel(QtWidgets.QWidget):
                     profile,
                 )
         if not built:
-            root.addWidget(self._build_rail())          # mark · brand · author · Stop
-            root.addWidget(self._build_context_ribbon())
-            root.addWidget(self._build_mode_bar())      # the CHAT surface label (v9.1)
+            root.addWidget(self._build_rail())          # identity + state
+            root.addWidget(self._build_context_ribbon())   # context + CHAT / TOKEN
             root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
         self._set_face("direct")                    # rest on the CHAT surface
+
+    def _build_profile_actions(self):
+        """The profile choice as three exclusive checkable QActions (bc-wave
+        BC-5): CURIOUS / EXPERT / ML select the layout manifest (L5-2) from
+        the overflow's 'Profile >' submenu instead of a 47px tab strip. A
+        trigger writes through settings (SwitcherState) and recomposes LIVE
+        (_select_profile); boot checks the saved profile. The actions live
+        on the panel and are added to every overflow menu built, so the
+        checked state survives the menu. `_profile_pills` keeps its name:
+        pid -> QAction (was pid -> Pill)."""
+        try:
+            from synapse.panel.settings import PROFILES as _profiles
+        except Exception:  # pragma: no cover - settings ships with the panel
+            _profiles = ("curious", "expert", "ml")
+        _QAction = getattr(QtGui, "QAction", None) or QtWidgets.QAction
+        _QActionGroup = getattr(QtGui, "QActionGroup", None) or QtWidgets.QActionGroup
+        group = _QActionGroup(self)
+        group.setExclusive(True)
+        self._profile_pills = {}
+        for pid in _profiles:
+            act = _QAction(pid.upper() if len(pid) <= 2 else pid.title(), self)
+            act.setCheckable(True)
+            act.setData(pid)
+            act.triggered.connect(lambda _=False, pid=pid: self._select_profile(pid))
+            group.addAction(act)
+            self._profile_pills[pid] = act
+        self._mark_profile_pill(getattr(self, "_layout_profile", DEFAULT_PROFILE))
 
     # ------------------------------------------------- profile switcher (L5-4)
     def _select_profile(self, profile):
@@ -556,10 +612,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._recompose(profile)
 
     def _mark_profile_pill(self, profile):
-        """Active-mark the selected profile pill (the _set_face idiom)."""
-        for pid, pill in getattr(self, "_profile_pills", {}).items():
-            pill.setProperty("active", pid == profile)
-            c.repolish(pill)
+        """Check the selected profile action (name kept - the switcher test
+        drives it; bc-wave BC-5 made the pills QActions)."""
+        for pid, act in getattr(self, "_profile_pills", {}).items():
+            try:
+                act.setChecked(pid == profile)
+            except Exception:
+                pass
 
     def _recompose(self, profile):
         """Re-run the compositor for ``profile`` on the LIVE panel.
@@ -626,9 +685,13 @@ class SynapsePanel(QtWidgets.QWidget):
         # (the same rule as _regate_stop; written with getattr because this
         # method is also executed against duck-typed panels by the rope and
         # rhythm tests).
+        busy = bool(getattr(self, "_was_busy", False))
         stop = getattr(self, "_stop_btn", None)
         if stop is not None:
-            stop.setVisible(bool(getattr(self, "_was_busy", False)))
+            stop.setVisible(busy)
+        connect = getattr(self, "_connect_btn", None)   # bc-wave BC-2: one slot
+        if connect is not None:
+            connect.setVisible(not busy)
         managed = {root.itemAt(i).widget() for i in range(root.count())}
         hidden = set()
         for _item, wdg, _stretch in prev:
@@ -648,15 +711,41 @@ class SynapsePanel(QtWidgets.QWidget):
         row past the docking bound (landing r3, RULING-2B). Presence in a
         profile and runtime state are two different things.
         """
+        busy = bool(getattr(self, "_was_busy", False))
         stop = getattr(self, "_stop_btn", None)
         if stop is not None:
-            stop.setVisible(bool(getattr(self, "_was_busy", False)))
+            stop.setVisible(busy)
+        # bc-wave BC-2: Connect and Stop share one slot on the state row -
+        # Connect at rest, Stop while working - so the compositor's
+        # visible=True on both must be re-gated together.
+        connect = getattr(self, "_connect_btn", None)
+        if connect is not None:
+            connect.setVisible(not busy)
 
     def _build_rail(self):
-        """The persistent rail (Pentagram pass, Mile 1).
+        """The persistent rail (bc-wave BC-2): one truth, two identities.
 
-        One row of existing identity/actions, with the persistent health strip
-        beneath it. Termination and live state never scroll away.
+        Row 1 is IDENTITY - the mark + wordmark (who is speaking) left, the
+        model token (who is thinking) right. Joe's Addendum 2, 2026-09-05:
+        the active provider/model is the one fact the artist must never
+        lose, so the token never elides and never folds into the overflow.
+        Row 2 is STATE - one sentence of what the panel is doing (the STATUS
+        phrases, given the wordmark's never-elide floor) left; Connect / Stop
+        and the overflow right. Nothing else is on the rail.
+
+        Why two rows: at PANEL_PREF_WIDTH the interior is 280 (340 - 2 x
+        GUTTER). A never-eliding sentence (~83-90) and a never-eliding
+        17-character model id (~112) beside the mark, the wordmark, Connect
+        and the overflow need ~330+ on one row; both rows here fit inside 280
+        in every density, so nothing on the rail gives way and no child
+        carries an Ignored policy any more (F2).
+
+        The chrome that used to ride here - token meter, palette hint,
+        connection dot / label, Corpus, Help, the health strip - is read
+        through the overflow (_build_overflow_menu). Its data owners are
+        still constructed for their writers (_note_usage, the shortcut hint,
+        _refresh_corpus_state) and for G3's chrome-floor walk, but they sit
+        in no layout and are hidden.
         """
         cached = self._region_cache.get("_build_rail")
         if cached is not None:                     # L5-4: recompose reuse
@@ -664,18 +753,16 @@ class SynapsePanel(QtWidgets.QWidget):
         w = self._section()
         w.setObjectName("DsHeader")          # flat PANEL + 1px HAIR bottom rule
         col = QtWidgets.QVBoxLayout(w)
-        # The owning widget's role supplies margins and inherited row gaps.
-        # [mark]·12·[SYNAPSE] ··· [state] [author▾] [meter] [⌘K] [⋯] [Stop*]
-        # The header row is a toolbar: a `stack` owner of its own (gap 4/6/3,
-        # RULING-4a lists the header rail among the stack sites) inside the
-        # `shell` rail. Twelve chrome items - five of them zero-width Ignored
-        # labels - each pay one gap, so the row's gap is what decides whether
-        # the rail fits the docking bound with the gutter back.
-        row = self._section()
-        row.setProperty("rhythm_role", "stack")
-        top = QtWidgets.QHBoxLayout(row)
-        self._mark = c.MarkDot("idle", diameter=16)
-        # brand word — 14px/TEXT_BRIGHT (comp .word); tracking lives on the
+
+        # -- row 1 - identity: [mark][SYNAPSE] ... [model token] -------------
+        # A `stack` owner (gap 4/6/3, RULING-4a) inside the `shell` rail.
+        ident = self._section()
+        ident.setProperty("rhythm_role", "stack")
+        top = QtWidgets.QHBoxLayout(ident)
+        # Boot truth is one string: not connected (headless / bridge down).
+        # MarkDot accepts 'disconnected' as a resting state (components._RESTING).
+        self._mark = c.MarkDot("disconnected", diameter=16)
+        # brand word - 14px/TEXT_BRIGHT (comp .word); tracking lives on the
         # QFont (Qt QSS has no letter-spacing), colour in the sheet.
         #
         # The v9 rule was weight 400: "hierarchy comes from the ~4px BRAND
@@ -686,149 +773,146 @@ class SynapsePanel(QtWidgets.QWidget):
         #     "Cohere Text has three weights (BOLD, reg, light) plus italics."
         #
         # Bold is one of three shipped weights, and the wordmark itself is
-        # "carefully crafted using the Cohere typeface" — a designed lockup, not
+        # "carefully crafted using the Cohere typeface" - a designed lockup, not
         # tracked-out body text. So weight was never off the table; the rule was
         # an interpretation that hardened into a prohibition.
         #
         # Joe's call, 2026-07-27: the mark read thin and needed to sit as a
-        # SOLID element at the same size. Weight alone would not do it — at 14px
+        # SOLID element at the same size. Weight alone would not do it - at 14px
         # bold with 4px tracking reads HEAVY AND SPARSE, individually bold
         # letters visually apart. Solidity is weight PLUS density:
         #   weight   400 -> 700  (a weight the reference ships)
         #   tracking BRAND 0.286em -> WORDMARK 0.16em  (~2.2px at 14px)
         #   colour   TEXT_PRIMARY -> TEXT_BRIGHT
-        # Size holds at 14px. Position still carries hierarchy; weight now
-        # carries presence.
+        # Size held at 14px until Joe's addendum (2026-09-05, the review
+        # canvas): "1pt larger and 5px farther to the right of the orange
+        # circle" - 15px, and t.WORDMARK_GAP beyond the row's stack gap.
+        # Position still carries hierarchy; weight now carries presence.
         word = c.label("SYNAPSE", role="body")
         word.setProperty("role", "title")
-        word.setFont(fontload.tracked_font("WORDMARK", 14, scale=self._chrome_scale,
+        word.setFont(fontload.tracked_font("WORDMARK", 15, scale=self._chrome_scale,
                                            weight=600))
-        # The brand never elides (landing r3 repair). Below the layout's
-        # minimum Qt takes width from the biggest items first, and the tracked
-        # wordmark was the biggest: at PANEL_PREF_WIDTH under airy it drew as
-        # 'SYNAPS'. A hard minimum is the one floor Qt's engine cannot cross;
-        # the Ignored chrome labels (status / meter / khint / author) give
-        # way instead. Chrome is FROZEN on Aa, so the hint is set once here.
+        # The brand never elides (landing r3 repair): a hard minimum is the
+        # one floor Qt's engine cannot cross. Chrome is FROZEN on Aa, so the
+        # hint is set once here. The same rule now guards the model token
+        # and the state sentence below - the three things on the rail that
+        # must be read whole.
         word.setMinimumWidth(word.sizeHint().width())
         self._wordmark = word
-        self._header_status = c.label("Standing by", role="caption", scale=self._chrome_scale)
-        self._header_status.setProperty("role", "label")
-        # author token — THE engine+model click target (v9): a flat button whose
+        # model token - THE engine+model click target (v9): a flat button whose
         # text is _author_token(); click opens the engine menu. Discoverability =
-        # pointing-hand + hover underline + tooltip (comp shows no ▾).
+        # pointing-hand + hover underline + tooltip (comp shows no arrow).
+        # Addendum 2: Space Mono at DATA tracking (the data voice), at the
+        # type floor, never elided (_refresh_engine_selector re-floors it on
+        # every model switch), top right in every profile and density.
         self._author_lbl = QtWidgets.QPushButton()
         self._author_lbl.setObjectName("DsAuthor")
         self._author_lbl.setFlat(True)
         self._author_lbl.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._author_lbl.setToolTip("Engine & model — click to switch")
+        self._author_lbl.setToolTip("Engine & model - click to switch")
         self._author_lbl.setFont(fontload.tracked_font(
             "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        self._author_lbl.setText(self._author_token())
         self._author_lbl.clicked.connect(self._open_author_menu)
-        # token meter — TOKENS ONLY, never $ (metering-deferred D4). Providers
-        # don't surface usage yet, so it stays EMPTY until real usage arrives —
-        # never estimated. _format_tokens is the one display rule.
-        self._meter_lbl = c.label("", role="caption")
-        self._meter_lbl.setObjectName("DsMeter")
-        self._meter_lbl.setFont(fontload.tracked_font(
-            "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        self._session_tokens = 0
-        # quiet ⌘K affordance — the palette is already bound (QShortcut); this
-        # only makes it discoverable, restyled as a bordered chip (comp .cmdk;
-        # 11px = the L2 chrome floor). Its text is set from the ACTUAL bound
-        # QKeySequence after the shortcut is created (platform-correct, never
-        # lies about the key).
-        self._palette_hint = c.label("", role="caption")
-        self._palette_hint.setObjectName("DsKHint")
-        self._palette_hint.setFont(fontload.tracked_font(
-            "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        overflow = c.Button("⋯", variant="ghost")
-        overflow.setFixedWidth(32)
+        self._refresh_engine_selector()      # text + never-elide floor
+        top.addWidget(self._mark)
+        top.addSpacing(t.WORDMARK_GAP)       # the lockup: mark ·stack gap + 5· SYNAPSE
+        top.addWidget(word)
+        top.addStretch(1)
+        top.addWidget(self._author_lbl)
+        col.addWidget(ident)
+
+        # -- row 2 - state + action: [sentence] ... [Connect | Stop][overflow] --
+        row = self._section()
+        row.setProperty("rhythm_role", "stack")
+        bot = QtWidgets.QHBoxLayout(row)
+        # The ONE state sentence (F2). Its text is always a STATUS phrase, or
+        # the two turn phrases (_DONE_PHRASE / _STOPPING_PHRASE); its floor is
+        # the widest of them measured in its own font - the wordmark's rule
+        # applied to the sentence, no px literal. Never Ignored, never elided.
+        self._header_status = c.label(t.STATUS["disconnected"][2], role="caption",
+                                      scale=self._chrome_scale)
+        self._header_status.setProperty("role", "label")
+        self._header_status.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                          QtWidgets.QSizePolicy.Preferred)
+        fm = self._header_status.fontMetrics()
+        self._header_status.setMinimumWidth(
+            max(fm.horizontalAdvance(phrase) for phrase in _state_phrases()))
+        overflow = c.Button("\u22ef", variant="ghost")
+        overflow.setAccessibleName("More")
+        overflow.setToolTip("Palette, corpus, engine, profile, health, help, text size, halt")
         overflow.clicked.connect(self._show_overflow)
         self._stop_btn = c.Button("Stop", variant="danger")
         # L5-20: the mark (MarkDot.set_halt_handler) and this button are two
         # surfaces of ONE Stop -- #DsStop paints it in the mark's warm note,
         # not the danger outline, so the pair reads as a single control.
         self._stop_btn.setObjectName("DsStop")
-        self._stop_btn.setMinimumWidth(64)
+        self._stop_btn.setMinimumWidth(t.SPACE_48)
         self._stop_btn.clicked.connect(self._on_stop)
         self._stop_btn.setEnabled(False)
         self._stop_btn.setVisible(False)   # state-gated: shown only while working
-        top.addWidget(self._mark)
-        top.addWidget(word)
-        top.addStretch(1)
-        top.addWidget(self._header_status)
-        top.addWidget(self._meter_lbl)
-        top.addWidget(self._palette_hint)
-        top.addWidget(overflow)
-        top.addWidget(self._stop_btn)     # termination never scrolls away
-
-        # Existing connection/corpus controls join the same header row.
-        bot = top  # one header row; the persistent health strip remains below
-        self._foot_dot = c.StatusDot("disconnected")
-        self._foot_label = c.label("Not connected", role="caption", scale=self._chrome_scale)
-        self._foot_label.setProperty("role", "caption")
         # Force-connect the bridge server (the hwebserver serving /synapse for
         # external MCP clients + the /mcp endpoint the tool executor uses). The
         # panel's chat runs in-process, but tools + external tools need this up,
-        # and it does NOT auto-start — this button is the one-click way to force
-        # it without dropping into Houdini's Python Shell.
-        # Houdini-help convention: the doc is a control, not a path to go
-        # find. Ghost so it reads as chrome; opens in the OS browser.
-        self._help_btn = c.Button("?", variant="ghost")
-        self._help_btn.setAccessibleName("Open documentation")
-        self._help_btn.setToolTip("Open docs/studio/UPGRADE.md")
-        self._help_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._help_btn.clicked.connect(self._on_help)
+        # and it does NOT auto-start - this button is the one-click way to force
+        # it without dropping into Houdini's Python Shell. Connect and Stop
+        # share one slot: Connect at rest, Stop while working (_set_busy).
         self._connect_btn = c.Button("Connect", variant="primary")
         self._connect_btn.setToolTip(
             "Start the Synapse bridge server (port 9999) so external / MCP tools "
-            "can reach Houdini. Safe to click anytime — idempotent."
+            "can reach Houdini. Safe to click anytime - idempotent."
         )
         self._connect_btn.clicked.connect(self._on_connect)
-        # Activate the H21 documentation corpus so Solaris assembly grounds in
-        # real Houdini-21 docs (verified node types / parm names) instead of
-        # phantom APIs. Mirrors the Connect button; idempotent.
-        self._corpus_btn = c.Button("Corpus", variant="primary")
+        bot.addWidget(self._header_status)
+        bot.addStretch(1)
+        bot.addWidget(self._connect_btn)
+        bot.addWidget(self._stop_btn)     # termination never scrolls away
+        bot.addWidget(overflow)
+        col.addWidget(row)
+
+        # -- hidden owners: constructed, written to, read by the overflow;
+        #    in NO layout, never shown. ----------------------------------
+        # token meter - TOKENS ONLY, never $ (metering-deferred D4). Providers
+        # don't surface usage yet, so it stays EMPTY until real usage arrives -
+        # never estimated. _format_tokens is the one display rule.
+        self._meter_lbl = c.label("", role="caption", parent=w)
+        self._meter_lbl.setObjectName("DsMeter")
+        self._meter_lbl.setFont(fontload.tracked_font(
+            "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        self._session_tokens = 0
+        # palette affordance - the palette is already bound (QShortcut); its
+        # text is set from the ACTUAL bound QKeySequence after the shortcut is
+        # created (platform-correct, never lies about the key) and the
+        # overflow's 'Palette' action reads it.
+        self._palette_hint = c.label("", role="caption", parent=w)
+        self._palette_hint.setObjectName("DsKHint")
+        self._palette_hint.setFont(fontload.tracked_font(
+            "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        # connection dot / label - the connection truth now reads through the
+        # state sentence (_render_state); these mirror it for the overflow.
+        self._foot_dot = c.StatusDot("disconnected", parent=w)
+        self._foot_label = c.label(t.STATUS["disconnected"][2], role="caption",
+                                   scale=self._chrome_scale, parent=w)
+        self._foot_label.setProperty("role", "caption")
+        # Houdini-help convention: the doc is a control, not a path to go
+        # find. Reached as the overflow's 'Help'.
+        self._help_btn = c.Button("?", variant="ghost", parent=w)
+        self._help_btn.setAccessibleName("Open documentation")
+        self._help_btn.setToolTip("Open docs/studio/UPGRADE.md")
+        self._help_btn.clicked.connect(self._on_help)
+        # Activate the documentation corpus so Solaris assembly grounds in the
+        # running build's real docs (verified node types / parm names) instead
+        # of phantom APIs. Reached as the overflow's 'Ground the corpus'.
+        self._corpus_btn = c.Button("Corpus", variant="primary", parent=w)
         self._corpus_btn.setToolTip(
-            "Connect the Houdini-21 documentation corpus so Solaris assembly "
-            "grounds in real H21 docs (not phantom parms). Safe to click anytime "
-            "— idempotent."
+            "Connect the %s documentation corpus so Solaris assembly grounds "
+            "in real docs (not phantom parms). Safe to click anytime - "
+            "idempotent." % _houdini_build_label()
         )
         self._corpus_btn.clicked.connect(self._on_corpus)
-        # Parented to the rail on purpose (Joe, 2026-09-05): this widget is
-        # retired from the layout and lives hidden, but a PARENTLESS QWidget
-        # that anything shows becomes a top-level window - and the profile
-        # manifests' `activity_meter` entry did exactly that through the
-        # compositor, floating an empty 3px "houdini" window beside the
-        # panel at launch. With a parent it can never be a window.
-        # Pinned by tests/panel/test_single_window.py.
-        self._observe = QtWidgets.QWidget(w)
-        self._observe.setObjectName("DsRailMeter")
-        # Retired: the compositor leaves it alone (compositor._apply_spec);
-        # the manifests keep `activity_meter` so no profile hides a capability.
-        self._observe.setProperty("retired", True)
-        self._observe.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self._observe.setFixedHeight(3)
-        # Idle/busy styling lives in qss.py (#DsRailMeter, the [busy] property).
-        self._observe.setProperty("busy", False)
-        c.repolish(self._observe)
-        bot.addWidget(self._foot_dot)
-        bot.addWidget(self._foot_label)
-        # Order is task order: connect, then ground the corpus, then read up.
-        bot.addWidget(self._connect_btn)
-        bot.addWidget(self._corpus_btn)
-        bot.addWidget(self._help_btn)
-        # The rail meter is retired from the header: the mark already fills
-        # and rotates, the status reads "Working on it", and Stop is present
-        # — a full-width warm rule was a fourth signal for one state (Joe).
-        # The widget stays constructed so _set_busy and the compositor keep
-        # their referent; it is simply never shown.
-        self._observe.setVisible(False)
-        bot.addStretch(1)
-        # Model picker rides the action row, right edge -- same line as
-        # Connect/Corpus/Help, opposite side (Joe): actions left, choice right.
-        bot.addWidget(self._author_lbl)
+        for owner in (self._meter_lbl, self._palette_hint, self._foot_dot,
+                      self._foot_label, self._help_btn, self._corpus_btn):
+            owner.setVisible(False)
+
         # shell: the rail is an edge container - GUTTER inset, SPACE_SM air.
         w.setProperty("rhythm_role", "shell")
         # One type applier per widget (RULING-4c): the header controls are
@@ -839,27 +923,11 @@ class SynapsePanel(QtWidgets.QWidget):
             control.setObjectName("DsVerb")
             control.setFont(fontload.tracked_font(
                 "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        overflow.setFixedWidth(t.SPACE_LG)
-        for label in (self._header_status, self._foot_label, self._meter_lbl,
-                      self._palette_hint, self._author_lbl):
-            label.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
-        col.addWidget(row)   # the stack-owned header row
-
-        # line 3 — persistent health strip (P0.3 / readiness §4.1): connection ·
-        # memory backend · project · active job. Every cell is FACT-sourced or
-        # renders UNKNOWN — the doctor is honest and this makes the panel honest
-        # too. Initial cells are all-UNKNOWN (nothing measured yet); the 2 s
-        # _update_context tick fills them from cheap in-process reads. It adds NO
-        # main-thread I/O and never calls the doctor (the 648 ms hold), so it
-        # cannot become the next paint stall.
-        try:
-            from synapse.panel import health_strip as _hs
-            self._health_strip = _hs.build_health_strip_widget(
-                _hs.build_cells(_hs.StripSnapshot()), parent=w)
-            col.addWidget(self._health_strip)
-        except Exception:
-            self._health_strip = None
-
+        # The overflow is a click target, not a glyph: SPACE_32 clears the
+        # 26px floor G3 measures (the 24 it had was the audit's one WARN).
+        overflow.setFixedWidth(t.SPACE_32)
+        self._overflow_btn = overflow
+        self._regate_stop()
         self._region_cache["_build_rail"] = w
         return w
 
@@ -961,8 +1029,9 @@ class SynapsePanel(QtWidgets.QWidget):
             if hits:
                 self._announce_bridge(
                     "Corpus active (%s, probe hit %d docs incl. %s) — Solaris "
-                    "builds will ground in real H21 docs."
-                    % (cnt, len(hits), hits[0].get("source", "?")))
+                    "builds will ground in real %s docs."
+                    % (cnt, len(hits), hits[0].get("source", "?"),
+                       _houdini_build_label()))
             else:
                 self._announce_bridge(
                     "Corpus loaded (%s) but a known probe returned no hits — the "
@@ -996,6 +1065,9 @@ class SynapsePanel(QtWidgets.QWidget):
         if lbl is not None:
             try:
                 lbl.setText(self._author_token())
+                # Addendum 2: the token never elides. Re-floor on every model
+                # switch (the text changed; chrome type is frozen on Aa).
+                lbl.setMinimumWidth(lbl.sizeHint().width())
             except Exception:
                 pass
 
@@ -1009,10 +1081,37 @@ class SynapsePanel(QtWidgets.QWidget):
         # The shell role owns the ribbon's spacing. The context label is UI
         # label text (TYPE_ROLES['label'], sans, BP4) - not a section eyebrow,
         # so it carries no rhythm_role="label" (RULING-4c/4d).
-        self._ctx_label = c.label("no scene context", role="label", scale=self._chrome_scale)
+        # BC-4: boot text is '' - absence, not 'no scene context'. The rail
+        # sentence is the one idle telling; _apply_context fills this when a
+        # context arrives (F14).
+        self._ctx_label = c.label("", role="label", scale=self._chrome_scale)
         self._ctx_label.setObjectName("DsContextLabel")
         self._ctx_label.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
         lay.addWidget(self._ctx_label, 1)
+        # bc-wave BC-5: the ribbon is [context label, stretch][CHAT][TOKEN] -
+        # the two face pills ride the ribbon's right edge at the shell gap;
+        # the profile row they shared (DsTabRow) is gone, profile choice is
+        # the overflow's 'Profile >' menu. v9.1 (Option A): there is one
+        # surface, CHAT, and consent/review auto-surfaces when actionable;
+        # clicking CHAT is the manual way back. The internal face keys stay
+        # "direct"/"work" - the invariants key on those, not the label.
+        self._face_pills = {}
+        pill = c.Pill("CHAT")
+        pill.setFont(fontload.tracked_font(
+            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        pill.clicked.connect(lambda _=False: self._set_face("direct"))
+        self._face_pills["direct"] = pill      # the idle default marks it active
+        lay.addWidget(pill)
+        # TOKEN - the economist read-out (R167). v9.1 removed DIRECT / WORK
+        # because actionable state should AUTO-SURFACE rather than wait for
+        # a click; token economics is DIAGNOSTIC, and a thing you go looking
+        # for is what a tab is for.
+        tok = c.Pill("TOKEN")
+        tok.setFont(fontload.tracked_font(
+            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        tok.clicked.connect(lambda _=False: self._show_token_face())
+        self._face_pills["token"] = tok
+        lay.addWidget(tok)
         self._region_cache["_build_context_ribbon"] = w
         return w
 
@@ -1054,66 +1153,6 @@ class SynapsePanel(QtWidgets.QWidget):
 
     # the two tabs, in switcher order (v9: Review folded into Work's done state)
     _FACE_INDEX = {"direct": 0, "work": 1, "token": 2}
-
-    def _build_mode_bar(self):
-        """The home surface's label. v9.1 (Option A): the DIRECT · WORK tabs are
-        gone — there is one surface, **CHAT**, and consent/review AUTO-SURFACES
-        when it's actionable (a raised gate brings the Work face forward, then
-        accept/revert hands back). Clicking CHAT is the manual way back to the
-        conversation. `#DsTabRow` still carries the 1px BORDER rule; the internal
-        face keys stay "direct"/"work" — the invariants key on those, not the label."""
-        cached = self._region_cache.get("_build_mode_bar")
-        if cached is not None:                     # L5-4: recompose reuse
-            return cached
-        w = self._section()
-        w.setObjectName("DsTabRow")
-        w.setProperty("rhythm_role", "shell")   # edge container: GUTTER inset
-        lay = QtWidgets.QHBoxLayout(w)
-        navigation = self._build_context_ribbon().layout()
-        self._face_pills = {}
-        pill = c.Pill("CHAT")
-        pill.setFont(fontload.tracked_font(
-            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        pill.clicked.connect(lambda _=False: self._set_face("direct"))
-        self._face_pills["direct"] = pill      # the idle default marks it active
-        navigation.addWidget(pill)
-
-        # TOKEN — the economist read-out (R167).
-        #
-        # v9.1 removed DIRECT · WORK because actionable state should AUTO-SURFACE
-        # rather than wait for a click. That reasoning does not reach this one:
-        # Work surfaces ITSELF because it is actionable; token economics is
-        # DIAGNOSTIC, and a thing you go looking for is what a tab is for.
-        tok = c.Pill("TOKEN")
-        tok.setFont(fontload.tracked_font(
-            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        tok.clicked.connect(lambda _=False: self._show_token_face())
-        self._face_pills["token"] = tok
-        navigation.addWidget(tok)
-
-        # L5-4: the profile tab strip — CURIOUS · EXPERT · ML select the layout
-        # manifest (L5-2). A click writes through settings (SwitcherState) and
-        # recomposes LIVE; boot restores the saved tab. Right-aligned: profile
-        # is chrome, the faces are the surface.
-        try:
-            from synapse.panel.settings import PROFILES as _profiles
-        except Exception:  # pragma: no cover - settings ships with the panel
-            _profiles = ("curious", "expert", "ml")
-        self._profile_pills = {}
-        lay.addStretch(1)   # right-aligned: profile is chrome, the faces are the surface
-        for pid in _profiles:
-            p = c.Pill(pid.upper())
-            # Pills are tags in this system's own table (battleplan section 4);
-            # row is list-item vocabulary and its 44px box was never the design.
-            p.setProperty("rhythm_role", "tag")
-            p.setFont(fontload.tracked_font(
-                "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-            p.clicked.connect(lambda _=False, pid=pid: self._select_profile(pid))
-            self._profile_pills[pid] = p
-            lay.addWidget(p)
-        self._mark_profile_pill(getattr(self, "_layout_profile", DEFAULT_PROFILE))
-        self._region_cache["_build_mode_bar"] = w
-        return w
 
     def _show_token_face(self):
         """Bring TOKEN forward and refresh it from the probe layer.
@@ -1175,26 +1214,88 @@ class SynapsePanel(QtWidgets.QWidget):
         return self._faces
 
     def _build_direct_face(self):
-        """Direct — converse + quick actions + input. The artist's surface.
-        The face is a shell (GUTTER inset via the role, never an imperative
-        margin); act + divider + input sit in one band so the hairline is not
-        paid a group gap on both sides."""
+        """Direct — converse + input. The artist's surface (direction B,
+        bc-wave: composer-first). The face is a shell (GUTTER inset via the
+        role, never an imperative margin) whose own gap is the beat between
+        the transcript and the composer. The verb rail and the hairline that
+        divided it from the composer left with it (F1 / F16): EXPLAIN / FIX /
+        OPTIMIZE are slash-palette rows and BUILD HDA is an overflow action."""
         page = self._section()
         page.setProperty("rhythm_role", "shell")
         col = QtWidgets.QVBoxLayout(page)
         col.addWidget(self._build_converse(), 1)   # chat | Build-HDA inner stack
+        # bc-wave BC-6a: the consent slot - a `card` collection (16/24/12,
+        # whitespace between cards) between the transcript and the composer.
+        # It holds the turn receipt ('{n} CHANGES' + '<- REVERT' after a quiet
+        # turn that changed the scene, F11) and, once the gate lends its
+        # cards here (set_card_host, BC-6b), the consent cards themselves.
+        # Hidden while empty (_sync_consent_slot).
+        self._consent_slot = self._section()
+        self._consent_slot.setProperty("rhythm_role", "card")
+        slot = QtWidgets.QVBoxLayout(self._consent_slot)
+        self._turn_receipt = self._build_turn_receipt()
+        slot.addWidget(self._turn_receipt)
+        self._consent_slot.hide()
+        col.addWidget(self._consent_slot)
         from synapse.panel.recall_card import RecallCard
         self._recall_card = RecallCard()
         self._recall_card.hide()
         col.addWidget(self._recall_card)
-        band = self._section()
-        band.setProperty("rhythm_role", "band")
-        stack = QtWidgets.QVBoxLayout(band)
-        stack.addWidget(self._build_act())
-        stack.addWidget(c.divider())
-        stack.addWidget(self._build_input())
-        col.addWidget(band)
+        col.addWidget(self._build_input())
         return page
+
+    def _build_turn_receipt(self):
+        """The quiet turn's receipt: a `stack` row - '{n} CHANGES' as a `tag`
+        + '<- REVERT' (the panel's own verb) -> _on_revert. Shown by _on_done
+        when the turn's evidence holds a successful mutator, hidden at the top
+        of the next _send. One signal, one destination (F11)."""
+        w = self._section()
+        w.setProperty("rhythm_role", "stack")
+        row = QtWidgets.QHBoxLayout(w)
+        self._receipt_badge = c.Badge("")
+        self._receipt_badge.setProperty("rhythm_role", "tag")
+        self._receipt_badge.setFont(fontload.apply_family(self._receipt_badge.font(), mono=True))
+        row.addWidget(self._receipt_badge)
+        row.addStretch(1)
+        self._receipt_revert = self._verb("\u2190 REVERT", lambda _=False: self._on_revert())
+        row.addWidget(self._receipt_revert)
+        w.hide()
+        return w
+
+    def _sync_consent_slot(self):
+        """Show the consent slot iff something in it is live: the turn receipt
+        or an undecided consent card (a decided card is hidden - the ledger
+        already announced it in the chat; an unrecorded one stays, RULING 18)."""
+        slot = getattr(self, "_consent_slot", None)
+        if slot is None:
+            return
+        lay = slot.layout()
+        live = False
+        for i in range(lay.count()):
+            w = lay.itemAt(i).widget()
+            if w is None:
+                continue
+            if hasattr(w, "_proposal_id") and not w.isEnabled():
+                w.hide()
+            if not w.isHidden():
+                live = True
+        slot.setVisible(live)
+
+    def _show_turn_receipt(self, count):
+        badge = getattr(self, "_receipt_badge", None)
+        if badge is not None:
+            badge.setText("%d CHANGE%s" % (count, "" if count == 1 else "S"))
+            c.repolish(badge)
+        receipt = getattr(self, "_turn_receipt", None)
+        if receipt is not None:
+            receipt.show()
+        self._sync_consent_slot()
+
+    def _hide_turn_receipt(self):
+        receipt = getattr(self, "_turn_receipt", None)
+        if receipt is not None:
+            receipt.hide()
+        self._sync_consent_slot()
 
     def _build_work_face(self):
         """Work — the walk-away glance AND the payoff, on one surface (v9 fold).
@@ -1529,33 +1630,26 @@ class SynapsePanel(QtWidgets.QWidget):
         self._fit_composer_to_pane()
 
     def _author_token(self):
-        """Best-effort display signature of the active engine's model, e.g.
-        ``claude-sonnet-4-6`` → ``sonnet-4.6``; ``gemini-3.5-flash`` shown as-is.
-        DISPLAY ONLY — it is never authored to USD."""
+        """The model token: ``<provider>/<model short id>`` - who is thinking.
+        Joe's ruling 2026-09-05 (RULING_DIRECTION_BC.md Addendum 2 + 3.2):
+        ``ollama/deepseek-v4-flash``, ``claude/fable-5.1``, ``gemini/3.5-flash``.
+        Provider is the local-vs-cloud and cost signal, so it is never dropped.
+        Lowercase mono data; the curated display label lives in the picker.
+        DISPLAY ONLY - it is never authored to USD."""
         m = self._active_model()
         if not m:
             return ""
-        # Prefer the registry's curated short label — it handles Haiku's dated id
-        # (claude-haiku-4-5-20251001 → 'Haiku 4.5'), the long slash-bearing NVIDIA
-        # ids, AND an unknown Ollama live tag (glm-5.2:cloud → 'GLM 5.2', never the
-        # raw ':tag'). model_label returns the id verbatim only for an unknown
-        # non-Ollama id → then fall back to the claude- string surgery below.
-        try:
-            from synapse.panel.providers.registry import model_label
-            pid = getattr(self, "_provider_id", "claude")
-            lbl = model_label(pid, m)
-            if lbl and lbl != m:
-                return lbl
-        except Exception:
-            pass
-        if m.startswith("claude-"):
-            m = m[len("claude-"):]
-            for fam in ("opus", "sonnet", "haiku"):
-                if m.startswith(fam):
-                    rest = m[len(fam):].lstrip("-").replace("-", ".")
-                    return ("%s-%s" % (fam, rest)) if rest else fam
-            return m
-        return m
+        pid = (getattr(self, "_provider_id", "claude") or "claude").strip().lower()
+        ident = str(m).strip()
+        ident = ident.split("/")[-1]            # nvidia/nemotron-... -> nemotron-...
+        ident = ident.split(":")[0]             # glm-5.2:cloud -> glm-5.2
+        if ident.lower().startswith("claude-"):
+            ident = ident[len("claude-"):]      # claude-fable-5-1 -> fable-5.1
+            parts = ident.split("-")
+            if len(parts) >= 3 and parts[-1].isdigit() and parts[-2].isdigit():
+                ident = "-".join(parts[:-2]) + "-" + parts[-2] + "." + parts[-1]
+        ident = ident.lower()
+        return f"{pid}/{ident}"
 
     def _set_provider(self, provider_id):
         """Switch the active chat engine. Takes effect on the NEXT message; the
@@ -1764,6 +1858,15 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_revert(self):
         # Reversibility: route an undo through the proven agent/bridge path
         # rather than touching the substrate from the panel.
+        # Addendum 3.6: REVERT is state-gated like Stop - not while streaming.
+        w = getattr(self, "_worker", None)
+        if w is not None and hasattr(w, "isRunning") and w.isRunning():
+            try:
+                self._chat.append_system_message(
+                    "Still working - Stop the current turn before reverting.")
+            except Exception:
+                pass
+            return
         try:
             self._chat.append_system_message("Reverting the last change…")
         except Exception:
@@ -1820,6 +1923,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._hda_ctx.addItems(["SOP", "LOP", "DOP", "COP", "TOP"])
         row.addWidget(self._hda_ctx)
         self._hda_help = QtWidgets.QCheckBox("Include help text")
+        self._hda_help.setObjectName("DsHdaOption")   # the SWEEP_B option rule (target floor)
         self._hda_help.setChecked(True)
         row.addWidget(self._hda_help)
         row.addStretch(1)
@@ -1908,27 +2012,11 @@ class SynapsePanel(QtWidgets.QWidget):
         btn.clicked.connect(on_click)
         return btn
 
-    def _build_act(self):
-        w = self._section()
-        lay = QtWidgets.QHBoxLayout(w)
-        # The group role owns inter-verb gaps; DsVerb remains the text action.
-        for label_text, prompt in _QUICK_ACTIONS:
-            lay.addWidget(self._verb(
-                label_text.upper(), lambda _=False, p=prompt: self._send(p)))
-        # Build HDA: demoted from a top-level face into a Direct verb (+ ⌘K).
-        lay.addWidget(self._verb(
-            "BUILD HDA", lambda _=False: self._set_direct_view("hda")))
-        lay.addStretch(1)
-        self._font_btn = self._verb(
-            "Aa", lambda _=False: self._cycle_font_scale())
-        self._font_btn.setToolTip("Font size — click to cycle")
-        lay.addWidget(self._font_btn)
-        # ⌘K is folded into the input ("/" opens it; Ctrl+K still works) — no
-        # separate, unintuitive glyph button in the bar.
-        return w
-
     def _build_input(self):
         w = self._section()
+        # bc-wave BC-4: the composer is a flush `stack` - grip / input row /
+        # legend at 4/6/3 - one beat on the grid, no hand-added spacer.
+        w.setProperty("rhythm_role", "stack")
         col = QtWidgets.QVBoxLayout(w)
         self._input = _GrowingInput()
         # Aa scales document text; the inherited root sheet owns the chrome.
@@ -1958,11 +2046,13 @@ class SynapsePanel(QtWidgets.QWidget):
         row.addWidget(self._input, 1)
         row.addWidget(attach)
         col.addLayout(row)
-        # khint — the composer's quiet key legend (comp .khint)
-        self._khint = c.label("↵ send · ⇧↵ newline · / commands", role="caption")
+        # khint — the composer's quiet key legend (comp .khint). BC-4: it tells
+        # the two keys and nothing else - '/' is told once, in the placeholder
+        # (the telling G3 pins) - at the chrome floor (SIZE_SMALL, DATA mono,
+        # TEXT_SECONDARY via the label colour role), one signal per fact.
+        self._khint = c.label("↵ send · ⇧↵ newline", role="label")
         self._khint.setFont(fontload.tracked_font(
-            "DATA", t.SIZE_MICRO, scale=self._chrome_scale, mono=True))
-        col.addSpacing(t.SPACE_SM)          # +XS layout spacing ⇒ the comp's 12
+            "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
         col.addWidget(self._khint)
         return w
 
@@ -1998,6 +2088,21 @@ class SynapsePanel(QtWidgets.QWidget):
         gate = getattr(self, "_gate", None)
         if gate is not None:
             try:
+                # bc-wave BC-6b (direction C): consent cards land in the CHAT
+                # consent slot - where the talking happens - and the slot
+                # re-syncs on every card landing / decision. The Work-face
+                # GateWidget keeps its fold header + integrity row.
+                slot = getattr(self, "_consent_slot", None)
+                if slot is not None:
+                    gate.set_card_host(slot.layout(), self._sync_consent_slot)
+            except Exception:
+                logger.warning("consent slot host failed to wire", exc_info=True)
+            try:
+                # bc-wave BC-6a: REVIEW's '<- REVERT' on a card asks for the undo.
+                gate.revert_requested.connect(lambda _pid=None: self._on_revert())
+            except Exception:
+                logger.warning("gate revert relay failed to wire", exc_info=True)
+            try:
                 gate._proposal_received.connect(self._on_gate_raised)
             except Exception:
                 # Guarded, but never silent. If this relay fails to wire, a
@@ -2015,11 +2120,22 @@ class SynapsePanel(QtWidgets.QWidget):
                 logger.warning("gate proposal relay failed to wire", exc_info=True)
 
     def _on_gate_raised(self, proposal):
-        """An actionable gate proposal arrived → AUTO-SURFACE Work's done sub-state
-        (v9.1 · Option A: consent comes to the artist). Noisy INFORM is skipped.
-        This is the one revision to the same-pane law: consent surfaces itself;
-        quiet state (busy / tool status / a plain answer) still never moves the
-        view. Accept/revert hand back to chat; commit stays forward."""
+        """An actionable gate proposal arrived → consent surfaces INLINE on the
+        CHAT face (bc-wave BC-6b, direction C, Joe's ruling item 2): the card
+        is already in the consent slot (GateWidget.set_card_host), so the view
+        never moves - the artist decides where they were talking. Noisy INFORM
+        is skipped. Work's done payoff is still readied (verdict + provenance)
+        for the artist who goes looking; the rail sentence follows STATUS,
+        never a gate. Quiet state (busy / tool status / a plain answer) never
+        moved the view before and still does not.
+
+        v9.1 (Option A) used to switch to the Work face here; G3 invariant #2
+        (audit_panel.py) and tests/test_panel_faces.py::
+        test_gate_raised_auto_surfaces_work pin that MECHANISM. The INTENT -
+        consent must be seen; quiet state never moves the view - is met by
+        the inline card; the one-line intent edit to the audit is a human
+        edit (RULING_DIRECTION_BC.md escalation), so this commit is held
+        behind it."""
         if isinstance(proposal, dict):
             level = proposal.get("level", "")
         else:
@@ -2027,12 +2143,39 @@ class SynapsePanel(QtWidgets.QWidget):
         if level and level != "inform":
             self._populate_review()
             self._set_work_substate("done")
-            self._set_header("done", "Result ready")
-            self._set_face("work")          # consent auto-surfaces (Option A)
+            self._sync_consent_slot()
 
     def _show_overflow(self):
+        menu = self._build_overflow_menu()
+        menu.exec(QtGui.QCursor.pos()) if hasattr(menu, "exec") else menu.exec_(QtGui.QCursor.pos())
+
+    def _build_overflow_menu(self):
+        """The overflow QMenu, built without exec so a test can read it.
+
+        bc-wave (direction B): the chrome that left the composed panel at rest
+        lives here - Build HDA (was a verb on the retired rail), the text-size
+        pair (the 'Aa' verb duplicated them, F10), the halt controls (H3b)."""
         menu = QtWidgets.QMenu(self)
         menu.addAction("Copy conversation", self._copy_conversation)
+        # Build HDA: the form is unchanged; only the way in moved (BC-1).
+        menu.addAction("Build HDA…", lambda: self._set_direct_view("hda"))
+        # BC-2: the rail's chrome reads here. Palette names the ACTUAL bound
+        # key (the hidden owner's text is set from the QShortcut, never a
+        # guess); Ground the corpus is checked once the store is built.
+        key = getattr(self, "_palette_hint", None)
+        key_txt = key.text() if key is not None else ""
+        menu.addAction("Palette   %s" % key_txt if key_txt else "Palette",
+                       self._open_palette)
+        try:
+            self._refresh_corpus_state()
+        except Exception:
+            pass
+        corpus_act = menu.addAction("Ground the corpus", self._on_corpus)
+        corpus_act.setCheckable(True)
+        corpus_btn = getattr(self, "_corpus_btn", None)
+        corpus_act.setChecked(bool(corpus_btn is not None
+                                   and corpus_btn.text().endswith("\u2713")))
+        corpus_act.setToolTip(corpus_btn.toolTip() if corpus_btn is not None else "")
         menu.addSeparator()
         # — engine switch (multi-provider). Display/telemetry only; the worker
         # for the NEXT message is built with the selected provider. —
@@ -2045,11 +2188,33 @@ class SynapsePanel(QtWidgets.QWidget):
                 act.setCheckable(True)
                 act.setChecked(pid == cur)
                 act.triggered.connect(lambda _=False, p=pid: self._set_provider(p))
-            menu.addSeparator()
         except Exception:
             pass
-        menu.addAction("Larger text", lambda: self._set_scale(t.next_font_scale(getattr(self, "_font_scale", t.FONT_SCALE_DEFAULT), getattr(self, "_chrome_scale", t.FONT_SCALE_DEFAULT))))
+        # Profile (BC-5): the layout manifest choice, checkable + exclusive;
+        # the actions are the panel's own (_build_profile_actions), so the
+        # check state is the saved profile every time the menu opens.
+        prof = menu.addMenu("Profile")
+        for act in getattr(self, "_profile_pills", {}).values():
+            prof.addAction(act)
+        # Health: the four strip cells (connection · memory · project · job)
+        # as disabled facts, built from the same producer the strip used
+        # (health_strip.build_cells over the last context facts + O(1)
+        # in-process reads). Never the doctor, never a main-thread hold.
+        try:
+            from synapse.panel import health_strip as _hs
+            conn, proj = getattr(self, "_health_facts", (_hs.UNMEASURED, _hs.UNMEASURED))
+            health = menu.addMenu("Health")
+            for cell in _hs.build_cells(_hs.gather_snapshot(connection=conn, project=proj)):
+                fact = health.addAction("%s   %s" % (cell.label, cell.value))
+                fact.setEnabled(False)
+                if cell.reason:
+                    fact.setToolTip(cell.reason)
+        except Exception:
+            pass
+        menu.addSeparator()
+        menu.addAction("Larger text", self._cycle_font_scale)
         menu.addAction("Default text", lambda: self._set_scale(self._chrome_scale))
+        menu.addAction("Help", self._on_help)
 
         # ── H3b · interruption controls (R29 §2: the halt belongs in the
         # overflow, NOT in the rail competing with Stop). Stop aborts the agent
@@ -2077,8 +2242,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 "Cancel PDG cooks under /obj and capture a session report. "
                 "Does NOT stop background renders — those are reported back "
                 "so you can stop them explicitly.")
-
-        menu.exec(QtGui.QCursor.pos()) if hasattr(menu, "exec") else menu.exec_(QtGui.QCursor.pos())
+        return menu
 
     # ── H3b · cook cancel + emergency halt ──────────────────────────────
     # These are DISTINCT from _on_stop, which is unchanged and stays as
@@ -2208,7 +2372,10 @@ class SynapsePanel(QtWidgets.QWidget):
         inp.setCurrentFont(font)
 
     def _cycle_font_scale(self):
-        """The 'Aa' button — step through the font-scale presets live."""
+        """Step through the font-scale presets live. The overflow's 'Larger
+        text' is its one surface (bc-wave BC-1: the 'Aa' verb was a duplicate
+        signal and left with the verb rail; tests/panel/test_font_scale.py
+        pins the stepping rule, so the method stays)."""
         self._set_scale(t.next_font_scale(getattr(self, "_font_scale", t.FONT_SCALE_DEFAULT), getattr(self, "_chrome_scale", t.FONT_SCALE_DEFAULT)))
 
     def _open_palette(self):
@@ -2236,6 +2403,14 @@ class SynapsePanel(QtWidgets.QWidget):
         sz = popup.size()
         if sz.width() < popup.minimumWidth() or sz.height() < popup.minimumHeight():
             sz = popup.minimumSize()
+        # bc-wave repair (CRUX 2026-09-05, 'palette rows cut mid-word'):
+        # adjustSize() shrinks the palette to its sizeHint (~256, the
+        # QAbstractScrollArea default) - narrower than the dock that opened
+        # it, so rows lost 80px for nothing. The popup takes the panel's
+        # width (prepare_sweep_b_popup still caps it at the opener on show).
+        if sz.width() < self.width():
+            sz = QtCore.QSize(self.width(), sz.height())
+            popup.resize(sz)
         ref = anchor if anchor is not None else self
         try:
             screen = ref.screen()
@@ -2258,6 +2433,10 @@ class SynapsePanel(QtWidgets.QWidget):
             y = tl.y() - sz.height() - 6            # open above the button
             if y < avail.top():
                 y = tl.y() + anchor.height() + 6    # no room above → below
+            # a dock-wide popup anchored at the input's x would spill past
+            # the dock's right edge by the gutter: keep it inside the panel.
+            right = self.mapToGlobal(QtCore.QPoint(self.width(), 0)).x()
+            x = max(self.mapToGlobal(QtCore.QPoint(0, 0)).x(), min(x, right - sz.width()))
         else:
             cur = QtGui.QCursor.pos()
             x, y = cur.x(), cur.y()
@@ -2283,7 +2462,9 @@ class SynapsePanel(QtWidgets.QWidget):
         if (text or "").strip().lower() in ("/restore-session", "/restore_session"):
             self._restore_previous_session()
             return
-        # Submitting is the artist handing off — drop input focus.
+        # Submitting is the artist handing off — drop input focus. The last
+        # turn's receipt goes with it (bc-wave BC-6a): a new turn, a new record.
+        self._hide_turn_receipt()
         if getattr(self, "_input", None) is not None:
             self._input.clearFocus()
         display = text
@@ -2366,6 +2547,17 @@ class SynapsePanel(QtWidgets.QWidget):
         return (base + "\n\n" + overlay) if overlay else base
 
     def _start_worker(self):
+        # Addendum 3.6 (2026-09-05): never a second worker into the same
+        # transcript. While one streams, a new turn (send, revert) waits.
+        w = getattr(self, "_worker", None)
+        if w is not None and hasattr(w, "isRunning") and w.isRunning():
+            logger.warning("panel: _start_worker refused - a turn is still streaming")
+            try:
+                self._chat.append_system_message(
+                    "Still working on the last turn - Stop it first, or wait.")
+            except Exception:
+                pass
+            return False
         if ClaudeWorker is None:
             try:
                 self._chat.append_system_message(
@@ -2476,6 +2668,19 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
         self._set_busy(False)
+        # bc-wave BC-6a (F11): a quiet turn that CHANGED the scene leaves an
+        # artist-clickable REVERT on the CHAT surface - the turn receipt,
+        # counted from the same evidence the Work face credits.
+        # Best-effort like every seam in this method: a completion must never
+        # fail on the receipt (duck-typed completions carry no slot).
+        try:
+            credit = self._turn_evidence()[0]
+            if credit:
+                self._show_turn_receipt(len(credit))
+            else:
+                self._hide_turn_receipt()
+        except Exception:
+            pass
         # BP2-PANELTRUTH T2 / W5-PANEL item 3: the completed task's real token
         # receipt (usage_sink) now lands on the TOKEN face + the rail meter/pill
         # — event-driven from completion here, NEVER a QTimer (V3: a probe must
@@ -2537,7 +2742,8 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._turn_tools.append((name, verb, _detail))
             except Exception:
                 pass
-        self._set_header("working", "%s %s" % (name, verb))
+        # bc-wave BC-2: tool names no longer write the rail sentence - the
+        # Work face's plan already carries them; the rail says one truth.
         wf = getattr(self, "_work_face", None)
         if wf is not None:
             wf.set_tool_status(name, verb, _detail)   # feed the plan-with-progress
@@ -2559,21 +2765,27 @@ class SynapsePanel(QtWidgets.QWidget):
         if self._worker is not None:
             self._worker.abort()
         self._stop_btn.setEnabled(False)    # the press registered — avoid a confusing re-press
-        self._set_header("working", "Stopping — waiting on %s…" % (self._last_tool or "the current tool"))
+        # bc-wave BC-2: the sentence says 'Stopping…' (inside its floor); the
+        # in-flight tool it waits on is named in the sentence's tooltip and
+        # on the Work face's plan, never as rail text that would elide.
+        self._stopping = True
+        self._header_status.setToolTip(
+            "Waiting on %s" % (self._last_tool or "the current tool"))
+        self._set_header("working", _STOPPING_PHRASE)
 
     def _set_busy(self, busy):
         self._send_btn.setEnabled(not busy)
         self._stop_btn.setEnabled(busy)
         self._stop_btn.setVisible(busy)   # Stop is state-gated to working only
-        self._observe.setProperty("busy", busy)
-        c.repolish(self._observe)
+        self._connect_btn.setVisible(not busy)   # Connect | Stop share one slot
         # state→Work-sub-state edges. Quiet state never moves the visible face
         # (v9.1 · only an ACTIONABLE consent gate auto-surfaces — see
         # _on_gate_raised). A new work cycle shows the cook sub-state; finishing
         # fills the done payoff and lifts the RAIL MARK to 'done' as the quiet
         # ready-result signal (a plain answer never changes the view).
         if busy and not self._was_busy:
-            self._set_header("working", "Working on it")
+            self._stopping = False
+            self._turn_state = "working"
             self._set_work_substate("cook")
         elif not busy and self._was_busy:
             # FRZ probe 4 (REVIEW). Last main-thread work of the turn and the only
@@ -2583,16 +2795,48 @@ class SynapsePanel(QtWidgets.QWidget):
             with _timed_phase("review"):
                 self._populate_review()  # fill verdict + provenance for the payoff
             self._set_work_substate("done")
-            self._set_header("done", "Result ready")
+            self._stopping = False
+            self._turn_state = "done"
         elif busy:
-            self._set_header("working", "Working on it")
+            self._turn_state = "working"
         else:
-            self._set_header("idle", "Standing by")
+            self._turn_state = "idle"
         self._was_busy = busy
+        self._render_state()
 
-    def _set_header(self, status, phrase):
+    def _render_state(self):
+        """The rail's one sentence, from the panel's state (bc-wave BC-2).
+
+        Precedence: a turn in flight (working / stopping) > a finished turn
+        (done: 'Result ready') > the connection truth at rest (disconnected
+        'Not connected' / warning 'Worth a look' / connected 'Ready'). The
+        idle phrase is never shown on its own - at rest the truth IS the
+        connection, so boot reads exactly STATUS['disconnected'] and nothing
+        else says 'nothing yet' (F14). Every phrase is inside the sentence's
+        floor, so it never elides."""
+        if getattr(self, "_was_busy", False):
+            if getattr(self, "_stopping", False):
+                self._set_header("working", _STOPPING_PHRASE)
+            else:
+                self._set_header("working")
+            return
+        if getattr(self, "_turn_state", "idle") == "done":
+            self._set_header("done", _DONE_PHRASE)
+            return
+        conn = getattr(self, "_conn_state", "disconnected")
+        if conn not in t.STATUS:
+            conn = "disconnected"
+        self._set_header(conn)
+
+    def _set_header(self, status, phrase=None):
+        """Low-level writer: the mark takes ``status``; the sentence takes
+        ``phrase`` (default: the STATUS phrase for ``status``)."""
+        if phrase is None:
+            phrase = t.STATUS.get(status, ("", "", ""))[2]
         self._mark.set_state(status)
         self._header_status.setText(phrase)
+        if status != "working":
+            self._header_status.setToolTip("")
 
     def _update_context(self):
         """Refresh the context ribbon + connection footer — OFF the Qt/main thread.
@@ -2666,18 +2910,23 @@ class SynapsePanel(QtWidgets.QWidget):
             self._ctx_label.setText(txt)
             if self._gate_stale_reason:
                 # M3-A: a disarmed phantom-API gate must be LOUD, not a
-                # one-line console warning the week API drift peaks.
+                # one-line console warning the week API drift peaks. The
+                # sentence says 'Worth a look'; the reason rides its tooltip.
+                self._conn_state = "warning"
                 self._foot_dot.set_status("warning")
-                self._foot_label.setText(
-                    "Houdini · API gate stale"
-                )
+                self._foot_label.setText("Houdini · API gate stale")
                 conn = "warning"
             else:
+                self._conn_state = "connected"
                 self._foot_dot.set_status("connected")
                 self._foot_label.setText("Houdini")
                 conn = "ok"
-            if self._header_status.text() in ("Standing by", ""):
-                self._set_header("idle", "Ready")
+            # bc-wave BC-2: the connection truth reads through the ONE state
+            # sentence (precedence in _render_state), not a second label.
+            self._render_state()
+            if conn == "warning" and not self._was_busy:
+                self._header_status.setToolTip(
+                    "API gate stale: %s" % self._gate_stale_reason)
         except Exception:
             pass
         self._update_health_strip(conn, proj)
@@ -2690,15 +2939,10 @@ class SynapsePanel(QtWidgets.QWidget):
         This never calls the doctor or ``get_health`` — the strip must not become
         a main-thread hold. Best-effort: any failure leaves the last-rendered
         cells untouched (never a fabricated green)."""
-        strip = getattr(self, "_health_strip", None)
-        if strip is None:
-            return
-        try:
-            from synapse.panel import health_strip as _hs
-            snap = _hs.gather_snapshot(connection=connection, project=project)
-            _hs.update_health_strip_widget(strip, _hs.build_cells(snap))
-        except Exception:
-            pass
+        # bc-wave BC-2: the strip left the rail; the facts it was fed are kept
+        # here and the overflow's 'Health' submenu builds its four cells from
+        # them at open time (same producer, same honesty, no rail pixels).
+        self._health_facts = (connection, project)
 
     def _on_help(self):
         """Context-sensitive help, the way Houdini's own F1 behaves.

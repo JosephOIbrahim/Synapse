@@ -183,7 +183,7 @@ try:
 
     texts = [b.text() for b in btns if b.text()]
     # v9.1 (Option A): the DIRECT · WORK tabs are gone — one home surface, CHAT;
-    # consent auto-surfaces the Work face when actionable (invariant #2 below).
+    # consent surfaces inline on CHAT when actionable (invariant #2 below; direction C).
     faces = [f for f in ("CHAT",) if f in texts]
     print(f"   home label (CHAT)   : {faces} · WORK gone={'WORK' not in texts}  "
           + tag(faces == ["CHAT"] and "WORK" not in texts))
@@ -322,10 +322,13 @@ try:
     print(f"   body matches host   : body {body_px}px vs host {host_px}px  "
           + tag(body_px >= host_px - 1))
 
-    # --- the author token shows a SHORT label, not the long raw model id ---
-    chip_short = (author is not None and "/" not in author.text()
-                  and 0 < len(author.text()) < 30)
-    print(f"   token short-label   : {a_txt}  " + tag(chip_short))
+    # --- the model token reads <provider>/<model short id> (Addendum 3.2,
+    #     Joe 2026-09-05): one slash, no ':tag', provider first, short ---
+    def _tok_ok(txt, pid):
+        return (isinstance(txt, str) and txt.count("/") == 1 and ":" not in txt
+                and txt.startswith(pid + "/") and 0 < len(txt) < 40)
+    chip_short = author is not None and _tok_ok(author.text(), getattr(panel, "_provider_id", "claude"))
+    print(f"   token provider/model : {a_txt}  " + tag(chip_short))
 
     # --- ⌘K folded into the input ("/" opens palette; no bar glyph button) ---
     inp = getattr(panel, "_input", None)
@@ -383,14 +386,15 @@ try:
         panel._set_scale(_saved_scale)
 
     READABLE_FLOOR = 11  # px — chrome must clear this
-    # v9: the wordmark is the 14px BRAND word (demoted from the 19px hero).
+    # v9: the wordmark is the BRAND word (demoted from the 19px hero).
     # 2026-07-27 (7780f649, Joe's call): it carries its own WORDMARK tracking
     # (0.16em), not BRAND's 0.286em. The audit pins the token the widget
     # actually uses, so a design move never leaves the gate red by itself.
+    # 2026-09-05 (Joe's addendum on the review canvas, bc-wave W7): 14 -> 15px.
     wm = chrome_a.get("_wordmark")
     _wmf = panel._wordmark.font()
     _want_pct = 100 + t.TRACKING_EM["WORDMARK"] * 100
-    wm_brand = (wm == round(14 * panel._chrome_scale)
+    wm_brand = (wm == round(15 * panel._chrome_scale)
                 and _wmf.letterSpacingType() == type(_wmf).PercentageSpacing
                 and abs(_wmf.letterSpacing() - _want_pct) < 0.05)
     print(f"   wordmark is brand    : {wm}px @ tracking {_wmf.letterSpacing():.1f}%  "
@@ -411,16 +415,14 @@ try:
     panel._set_provider("nemotron")
     nemo_tok = panel._author_lbl.text()
     panel._set_provider("claude")
-    print(f"   token short (nemotron): {nemo_tok!r}  "
-          + tag("/" not in nemo_tok and 0 < len(nemo_tok) < 30))
+    print(f"   token nemotron       : {nemo_tok!r}  " + tag(_tok_ok(nemo_tok, "nemotron")))
 
     # --- same for Ollama — the registry label ('GLM 5'), never the raw
     #     tag-bearing id ('glm-5:cloud') ---
     panel._set_provider("ollama")
     oll_tok = panel._author_lbl.text()
     panel._set_provider("claude")
-    print(f"   token short (ollama)  : {oll_tok!r}  "
-          + tag("/" not in oll_tok and ":" not in oll_tok and 0 < len(oll_tok) < 30))
+    print(f"   token ollama         : {oll_tok!r}  " + tag(_tok_ok(oll_tok, "ollama")))
 except (Exception, SystemExit) as e:
     WARNS.append(1)
     print(f"   [skip] live build unavailable here: {type(e).__name__}: {e}")
@@ -448,19 +450,30 @@ else:
                 offenders.append(os.path.basename(f))
         print(f"   no pane spawn (scan) : {offenders or 'clean'}  " + tag(not offenders))
 
-        # 2 · consent auto-surfaces; quiet state does NOT (v9.1 · Option A).
-        # A raised actionable gate brings Work forward (consent must be seen);
-        # busy + tool-status are quiet state and never move the visible face.
+        # 2 · consent surfaces INLINE on CHAT (direction C, Joe's ruling
+        # 2026-09-05, RULING_DIRECTION_BC.md Addendum 3.1 - supersedes v9.1
+        # Option A "a gate raises Work"). A raised actionable gate lands its
+        # card in the CHAT consent slot and never moves the visible face;
+        # busy + tool-status are quiet state, show no card and move nothing.
         panel._set_face("direct")
         idx_chat = panel._faces.currentIndex()
         panel._set_busy(True)
         panel._on_tool_status("houdini_render", "running", "")
-        quiet_ok = panel._faces.currentIndex() == idx_chat
-        panel._on_gate_raised({"level": "approve"})
-        surfaced = panel._faces.currentIndex() == panel._FACE_INDEX["work"]
+        app.processEvents()
+        quiet_ok = (panel._faces.currentIndex() == idx_chat
+                    and not panel._consent_slot.isVisible())
+        panel._set_busy(False)
+        _g3_gate = {"proposal_id": "g3-approve", "level": "approve",
+                    "operation": "create_node"}
+        panel._gate._add_proposal_card(dict(_g3_gate))
+        panel._on_gate_raised(dict(_g3_gate))
+        app.processEvents()
+        inline = (panel._faces.currentIndex() == idx_chat
+                  and panel._consent_slot.isVisible()
+                  and "g3-approve" in panel._gate._cards)
         panel._set_face("direct")
-        print(f"   consent auto-surfaces: quiet={quiet_ok} gate->work={surfaced}  "
-              + tag(quiet_ok and surfaced))
+        print(f"   consent inline on CHAT: quiet={quiet_ok} gate->inline={inline}  "
+              + tag(quiet_ok and inline))
 
         # 3 · mark-as-status — the rail mark tracks agent state
         panel._set_busy(False)

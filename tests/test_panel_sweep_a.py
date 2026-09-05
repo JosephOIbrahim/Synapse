@@ -55,7 +55,18 @@ def test_no_new_structure_and_every_residual_is_reasoned(filename):
 
     path = "python/synapse/panel/" + filename
     source = (PANEL / filename).read_text(encoding="utf-8")
-    assert _structure(source) == _structure(_base(path))
+    if filename == "gate_widget.py":
+        # bc-wave BC-6a (RULING_DIRECTION_BC.md item 2; REVIEW.md F4): the
+        # proposal card was REBUILT in the panel's own vocabulary (a DsCard
+        # `band`, tag badges, DsVerb verbs), so SWEEP_A's structural freeze
+        # of this file ends there. What the sweep receipt still proves: the
+        # card carries no inline styling (no sweep_a_style, no level hues)
+        # and every spacing residual is reasoned (below).
+        card = source[source.index("class _ProposalCard"):source.index("class GateWidget")]
+        assert "sweep_a_style" not in card and "setStyleSheet" not in card
+        assert "_LEVEL_COLORS" not in source
+    else:
+        assert _structure(source) == _structure(_base(path))
     for key, line, exempt in _scan(source, path):
         assert key[1] == "spacing" and exempt, (filename, line, key)
     assert 'setProperty("rhythm_role",' in source
@@ -127,6 +138,34 @@ def _outside_rhythm_block(text):
     return "\n".join(lines[:node.lineno - 1] + lines[node.end_lineno:]).rstrip()
 
 
+# bc-wave (RULING_DIRECTION_BC.md, 2026-09-05): the upstream sheet regions the
+# wave edited under Joe's ruling - the same carve-out precedent as RULING-4e
+# above, keyed by selector. BC-2: #DsAuthor (Addendum 2 target floor),
+# #DsRailMeter retired; BC-3: the shared DsList / DsCommandResults row rule;
+# BC-5: the #DsTabRow band and its density margins retired.
+BC_WAVE_RULED_SELECTORS = (
+    "QWidget#DsTabRow", "QPushButton#DsAuthor", "QListWidget#DsList::item",
+    "QWidget#DsRailMeter",
+)
+
+
+def _outside_ruled_regions(text):
+    """_outside_rhythm_block, then the bc-wave ruled rule blocks and every
+    comment blanked, whitespace normalised - what 'append-only' still
+    protects is everything else in the upstream sheet."""
+    text = _outside_rhythm_block(text)
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    for selector in BC_WAVE_RULED_SELECTORS:
+        # The selector line (anything up to the first brace), then the
+        # f-string rule body {{ ... }} through the end of its line. Built
+        # from chr() so no escape sequence rides through a shell heredoc.
+        nl, tab = chr(10), chr(9)
+        pattern = ("^[^" + nl + "{]*" + re.escape(selector) + "[^" + nl + "]*?"
+                   + re.escape("{{") + ".*?" + re.escape("}}") + "[ " + tab + "]*" + nl)
+        text = re.sub(pattern, "", text, flags=re.S | re.M)
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def test_qss_is_append_only_and_every_style_key_has_rules():
     from synapse.panel.designsystem import qss
 
@@ -134,7 +173,7 @@ def test_qss_is_append_only_and_every_style_key_has_rules():
     original = _base("python/synapse/panel/designsystem/qss.py")
     marker = "# --- SWEEP_A (chat_panel.py)"
     prefix, added = source[:source.index(marker)], source[source.index(marker):]
-    assert _outside_rhythm_block(prefix) == _outside_rhythm_block(original)
+    assert _outside_ruled_regions(prefix) == _outside_ruled_regions(original)
     # Landing r3 (CTO 2026-09-05, R2-03): SWEEP_A owns exactly its own marked
     # block; later sweeps append their own blocks after it, so the pin is
     # fence-scoped to SWEEP_A's block instead of the whole tail.
@@ -259,7 +298,7 @@ def _layout_sequence(widgets, host, child, density):
     assert owners
     roles = [w.property("rhythm_role") for w in owners]
     # Independently chosen component bases, not copied from ROLE_GAPS.
-    bases = {"group": 16, "parm_row": 4, "card": 16, "stack": 4}
+    bases = {"group": 16, "parm_row": 4, "card": 16, "stack": 4, "band": 0}
     identities = [id(w) for w in owners]
     for level in (density, "tight", "airy", "standard", density):
         rhythm.apply(child, level)
@@ -297,22 +336,28 @@ def _states(widgets, host, child, controller, factory):
             painted(child._fidelity_dot, expected)
         child.handle_ws_proposal({"proposal_id": "late", "level": "review"})
         card = child._cards["late"]
-        assert card.layout().spacing() == tokens.gap(4, "airy")
+        # bc-wave BC-6a: the card is a `band` (bands touch); its header row
+        # is the `stack` that carries the density gap.
+        assert card.layout().spacing() == 0
+        assert card._badge.parentWidget().layout().spacing() == tokens.gap(4, "airy")
         child.update_integrity({"operations_total": 1, "anchor_violations": 1})
         painted(child._violations_label, tokens.ERROR)
         child.update_integrity({"operations_total": 1, "anchor_violations": 0})
         painted(child._violations_label, tokens.SLATE)
     elif factory == "gate_widget._ProposalCard":
+        # bc-wave BC-6a: outcomes read as tags (never a hue); the card is a
+        # DsCard, no sweep_a state.
         buttons = child._approve_btn, child._reject_btn
         child.mark_gate_unreachable()
         assert child.isEnabled() and all(not b.isHidden() for b in buttons)
-        assert "NOT RECORDED" in child._countdown_label.text()
+        assert child._decision_tag.text() == "NOT RECORDED"
+        assert child._decision_tag.property("status") == "BLOCKED"
         child.mark_decided("approved")
-        assert child._countdown_label.text() == "APPROVED"
-        painted(child._countdown_label, tokens.GROW)
-        child._end_flash()
+        assert child._decision_tag.text() == "APPROVED"
+        assert child._decision_tag.property("status") == ""
+        assert all(b.isHidden() for b in buttons)
         assert not child.isEnabled()
-        assert child.property("sweep_a_style") == "gate_card"
+        assert child.objectName() == "DsCard"
     elif factory == "context_bar.ContextChips":
         from synapse.panel.context_bar import ContextBarState, update_context_bar_widget
 

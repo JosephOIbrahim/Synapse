@@ -111,6 +111,10 @@ backup/
 # exemption: this one directory, produced by harness/notes/panel_shot.py.
 !design/repair_h4/**/*.png
 !design/rhythm_pd/**/*.png
+# bc-wave (CRUX repair 2026-09-05): the sixteen-view canvas set per profile
+# is the acceptance's 'screenshots for Joe's canvas' and the F4 hue-predicate
+# evidence (gate_widget.png) - reviewable from a clean checkout or not at all.
+!design/bc_wave/**/*.png
 
 # Claude Code local settings (permissions, session-specific)
 .claude/settings.local.json

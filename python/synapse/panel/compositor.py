@@ -46,7 +46,8 @@ logger = logging.getLogger(__name__)
 REGION_BUILDERS = {
     "rail": "_build_rail",
     "context_ribbon": "_build_context_ribbon",
-    "mode_bar": "_build_mode_bar",
+    # bc-wave BC-5: 'mode_bar' (the profile tab strip) is gone - the CHAT /
+    # TOKEN pills ride the context ribbon, profile choice is the overflow.
     "faces": "_build_faces",
 }
 
@@ -59,17 +60,16 @@ WIDGET_ATTRS = {
     "wordmark": "_wordmark",
     "header_status": "_header_status",
     "author_token": "_author_lbl",
-    "token_meter": "_meter_lbl",
-    "palette_hint": "_palette_hint",
     "stop": "_stop_btn",
-    "connection_dot": "_foot_dot",
-    "connection_label": "_foot_label",
     "connect": "_connect_btn",
-    "corpus": "_corpus_btn",
-    "activity_meter": "_observe",
+    # bc-wave BC-2 (2026-09-05, direction B): token_meter, palette_hint,
+    # connection_dot, connection_label and corpus are hidden data owners the
+    # overflow reads - constructed, never composed, so no manifest names
+    # them; activity_meter (the retired rail meter) is gone. The vocabulary
+    # is what the manifests can place; the capability pin compares the two.
     # context_ribbon
     "context_label": "_ctx_label",
-    # mode_bar
+    # context_ribbon (bc-wave BC-5: the pills moved here from the mode bar)
     "chat_pill": "_face_pills.direct",
     "token_pill": "_face_pills.token",
     # faces

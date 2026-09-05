@@ -113,11 +113,9 @@ QPushButton#DsStop:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISAB
 /* ---- tabs: underline on a baseline track (v9 call 1) --------- */
 /* Retires the filled-pill active state: tabs read as text on a shared 2px
    baseline; the active tab lights its rule + text (TEXT_BRIGHT per comp).
-   Font family/size/tracking live on the QFont (LABEL role), never here. */
-QWidget#DsTabRow {{
-    background: {t.PANEL};
-    border-bottom: 1px solid {t.BORDER};
-}}
+   Font family/size/tracking live on the QFont (LABEL role), never here.
+   bc-wave BC-5: the #DsTabRow band is retired - the pills ride the context
+   ribbon; profile choice is the overflow's menu. */
 QPushButton#DsPill {{
     background: none; color: {t.TEXT_TERTIARY};
     border: none; border-bottom: 2px solid transparent; border-radius: 0;
@@ -131,13 +129,22 @@ QPushButton#DsPill[active="true"] {{
 
 /* ---- rail author token — THE engine+model click target (v9) ----
    Mono/DATA family+tracking live on the QFont; hover underline + pointing
-   hand carry discoverability (the comp shows no ▾). */
+   hand carry discoverability (the comp shows no ▾).
+   bc-wave repair (CRUX 2026-09-05, 'second hue at rest'): the token is
+   identity data - who is thinking - not an action and not a verdict, so it
+   speaks in the text ramp (TEXT_SECONDARY; the mono/DATA QFont already
+   carries the data voice) and never the verified/ok green. Hover brightens
+   and underlines (TEXT_BRIGHT), the same discoverability with no second hue:
+   the CHAT face at rest measures 3 hue buckets again (mark + SEND accent). */
 QPushButton#DsAuthor {{
-    background: transparent; border: none; padding: 0 {t.SPACE_XS}px;
-    color: {t.CONIFEROUS};
+    background: transparent; border: none;
+    /* bc-wave BC-2 (Addendum 2): the token is a click target, not a glyph -
+       SPACE_LG content + SPACE_XS air clears the 26px floor G3 measures. */
+    min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_XS}px;
+    color: {t.TEXT_SECONDARY};
 }}
 QPushButton#DsAuthor:hover {{
-    color: {t.GROW}; text-decoration: underline;
+    color: {t.TEXT_BRIGHT}; text-decoration: underline;
 }}
 
 /* ---- rail token meter (tokens only, never $) + ⌘K chip -------- */
@@ -198,7 +205,14 @@ QListWidget#DsList {{
     background: transparent; color: {t.TEXT_PRIMARY};
     border: none; outline: none;
 }}
-QListWidget#DsList::item {{ padding: {t.SPACE_XS}px {t.SPACE_SM}px; border-radius: {t.RADIUS_SM}px; }}
+/* bc-wave BC-3: ONE row rule for both palettes. min-height is content-box
+   (probed, Qt 6.8.3), so SPACE_LG content + 2 x SPACE_SM padding renders a
+   SPACE_XL (40) row - the card-band dimension; the gap between rows is the
+   `stack` role's view spacing (rhythm.apply), paid on both sides. */
+QListWidget#DsList::item, QListWidget#DsCommandResults::item {{
+    min-height: {t.SPACE_LG}px; padding: {t.SPACE_SM}px {t.SPACE_MD}px;
+    border-radius: {t.RADIUS_SM}px;
+}}
 QListWidget#DsList::item:selected {{ background: {t.SIGNAL_TINT}; color: {t.TEXT_ACCENT}; }}
 
 /* ---- cards & drawers ----------------------------------------- */
@@ -293,9 +307,6 @@ QLabel[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
    objectNames) are not QSS-reachable this leg — see the spec's §5 ledger. */
 
 /* Region 1 — profile tab strip: the row's group gap below its hairline rule. */
-QWidget#DsTabRow {{ margin-bottom: {t.SPACE_MD}px; }}
-#DsRoot[density="airy"] QWidget#DsTabRow {{ margin-bottom: {t.gap(t.SPACE_MD, "airy")}px; }}
-#DsRoot[density="tight"] QWidget#DsTabRow {{ margin-bottom: {t.gap(t.SPACE_MD, "tight")}px; }}
 
 /* Region 2 — verb rail: the verb group's vertical breathing (the doubled
    inter-verb gap itself stays Python setSpacing(24), kept per sec.7). */
@@ -320,17 +331,6 @@ QProgressBar#DsCookBar {{
     background: {t.GROUND}; border: none; border-radius: 2px;
 }}
 QProgressBar#DsCookBar::chunk {{ background: {t.RAISED}; border-radius: 2px; }}
-
-/* ---- rail meter (rail .observe): 3px strip, 2px-on-3px per the
-   cook bar above; idle SIGNAL_TINT, busy WARM via [busy] -------- */
-QWidget#DsRailMeter {{
-    background: {t.SIGNAL_TINT}; border: none; border-radius: 2px;
-}}
-/* prominence (L5-13): hero lifts the idle tint to full SIGNAL -- the
-   accent this strip already carries in tint form. Placed before [busy]
-   so the busy WARM state still wins the tie. */
-QWidget#DsRailMeter[prominence="hero"] {{ background: {t.SIGNAL}; }}
-QWidget#DsRailMeter[busy="true"] {{ background: {t.WARM}; }}
 
 /* ---- Work-face acts row (comp .acts): quiet HAIR top rule ----- */
 QWidget#DsActs {{
@@ -623,60 +623,14 @@ _sweep_a_builders.append(_sweep_a_face_review_stylesheet)
 
 # --- SWEEP_A (gate_widget.py)
 def _sweep_a_gate_widget_stylesheet():
+    # bc-wave BC-6a: the proposal CARD rules (badge / operation / agent /
+    # description / critical / countdown / reject / approve / card /
+    # unreachable / flash / decision countdown - twelve hue buckets, F4) are
+    # gone; the card is a DsCard dressed by the design-system sheet. What
+    # stays is the Work-face fold: header, body, integrity row.
     rules = []
-    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
-                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
-        rules.append(_sweep_a_rule("gate_badge", f"""
-background: {_sweep_a_legacy_argb(color, "20")} ; color: {color}; border: 1px solid {_sweep_a_legacy_argb(color, "40")} ; border-radius: 3px; padding: 1px 6px;  font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};
-""", color=color))
-    rules.append(_sweep_a_rule("gate_operation", f"""
-color: {t.BONE};  font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR}; border: none;
-"""))
-    rules.append(_sweep_a_rule("gate_agent", f"""
-color: {t.SLATE}; font-size: {t.SIZE_LABEL}px; border: none;
-"""))
-    rules.append(_sweep_a_rule("gate_description", f"""
-color: {t.SILVER}; font-size: {t.SIZE_LABEL}px; border: none;
-"""))
-    rules.append(_sweep_a_rule("gate_critical", f"""
-color: {t.ERROR}; font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR}; border: none;
-"""))
-    rules.append(_sweep_a_rule("gate_countdown", f"""
-color: {t.SLATE}; font-size: {t.SIZE_LABEL}px;  border: none;
-"""))
-    rules.append(_sweep_a_rule("gate_reject", f"""
-QPushButton {{  background: transparent;  color: {t.ERROR};  border: 1px solid {t.ERROR};  border-radius: 3px;  padding: 3px 12px; font-size: {t.SIZE_LABEL}px;}}
-QPushButton:hover {{  background: {_sweep_a_legacy_argb(t.ERROR, "20")} ;}}
-QPushButton:pressed {{  background: {_sweep_a_legacy_argb(t.ERROR, "40")} ;}}
-"""))
-    rules.append(_sweep_a_rule("gate_approve", f"""
-QPushButton {{  background: transparent;  color: {t.GROW};  border: 1px solid {t.GROW};  border-radius: 3px;  padding: 3px 12px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};}}
-QPushButton:hover {{  background: {_sweep_a_legacy_argb(t.GROW, "20")} ;}}
-QPushButton:pressed {{  background: {_sweep_a_legacy_argb(t.GROW, "40")} ;}}
-"""))
-    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
-                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
-        rules.append(_sweep_a_rule("gate_card", f"""
-background: {t.SURFACE}; border: none; border-left: 3px solid {color}; border-radius: 4px; margin: 2px 0;
-""", color=color))
-    rules.append(_sweep_a_rule("gate_unreachable", f"""
-background: {_sweep_a_legacy_argb(t.WARN, "30")} ; border: none; border-left: 4px solid {t.WARN}; border-radius: 4px; margin: 2px 0;
-"""))
-    rules.append(_sweep_a_rule("gate_unreachable_countdown", f"""
-color: {t.WARN}; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};
-"""))
-    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
-                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
-        rules.append(_sweep_a_rule("gate_flash", f"""
-background: {_sweep_a_legacy_argb(color, "30")} ; border: none; border-left: 4px solid {color}; border-radius: 4px; margin: 2px 0;
-""", color=color))
-    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
-                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
-        rules.append(_sweep_a_rule("gate_decision_countdown", f"""
-color: {color}; font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  border: none;
-""", color=color))
     rules.append(_sweep_a_rule("gate_header", f"""
-QPushButton {{  background: transparent; color: {t.SLATE}; border: none; text-align: left; padding: 4px 8px;  font-size: {t.SIZE_LABEL}px; }}
+QPushButton {{  background: transparent; color: {t.SLATE}; border: none; text-align: left; min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_SM}px;  font-size: {t.SIZE_LABEL}px; }}
 QPushButton:hover {{  color: {t.SIGNAL}; }}
 """))
     rules.append(_sweep_a_rule("gate_body", f"""
@@ -805,7 +759,7 @@ def _sweep_b_stylesheet(scale):
 QLabel#DsHdaContextLabel, QLabel#DsHdaDetail, QLabel#DsHdaValidation {{
     color: {t.TEXT_TERTIARY}; font-size: {s(t.SIZE_SMALL)}px;
 }}
-QCheckBox#DsHdaOption {{ color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_BODY)}px; }}
+QCheckBox#DsHdaOption {{ color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_BODY)}px; min-height: {t.SPACE_32}px; }}
 QLabel#DsHdaStage, QLabel#DsHdaStatus {{
     color: {t.TEXT_PRIMARY}; font-size: {s(t.SIZE_TITLE)}px;
     font-weight: {t.WEIGHT_SEMIBOLD};
@@ -883,9 +837,7 @@ QListWidget#DsCommandResults {{
     background: transparent; color: {t.TEXT_PRIMARY};
     border: none; outline: none; font-size: {s(t.SIZE_BODY)}px;
 }}
-QListWidget#DsCommandResults::item {{
-    padding: {t.SPACE_XS}px {t.SPACE_SM}px; border-radius: {t.RADIUS_SM}px;
-}}
+/* ::item box + padding: the shared DsList / DsCommandResults rule (BC-3). */
 QListWidget#DsCommandResults::item:selected {{ background: {t.SIGNAL_TINT}; }}
 QListWidget#DsCommandResults::item:hover {{ background: {t.HOVER_BG}; }}
 
