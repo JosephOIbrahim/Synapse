@@ -19,17 +19,16 @@ except ImportError:
     from PySide2.QtCore import Signal, Slot, QTimer
 
 from synapse.panel.designsystem import tokens as t
+from synapse.panel.designsystem import components as c
 from synapse.panel.designsystem import fontload, qss
 
 logger = logging.getLogger(__name__)
 
-# Gate level -> color mapping
-_LEVEL_COLORS = {
-    "inform": t.SIGNAL,     # blue accent
-    "review": t.WARN,       # amber
-    "approve": t.FIRE,      # orange
-    "critical": t.ERROR,    # red
-}
+# bc-wave BC-6a (REVIEW.md F4): the level is never a hue. A consent card is a
+# DsCard in the panel's own vocabulary - the level is a `tag`, the decision is
+# a `tag`, the verbs are DsVerb type; the only warm note is HOT_SOFT through
+# status=BLOCKED (CRITICAL's tag, REJECT, a rejected / unrecorded decision)
+# and the only accent is APPROVE - the artist's next action.
 
 # Gate level -> timeout seconds
 _LEVEL_TIMEOUTS = {
@@ -130,134 +129,166 @@ def _fidelity_text(fidelity):
     return "Fidelity {f:.1f}".format(f=fidelity)
 
 
-class _ProposalCard(QtWidgets.QWidget):
-    """Single gate proposal card with level badge and action buttons.
+def _verb(text, on_click, tone=None, scale=t.FONT_SCALE_DEFAULT):
+    """The panel's type-set verb idiom (synapse_panel._verb) for the card:
+    QPushButton#DsVerb, LABEL tracked mono, flat; ``tone`` in {None, 'hot',
+    'accent'} selects the semantic colour via the canonical DsVerb rule."""
+    btn = QtWidgets.QPushButton(text)
+    btn.setObjectName("DsVerb")
+    btn.setFont(fontload.tracked_font("LABEL", t.SIZE_SMALL, scale=scale, mono=True))
+    btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+    btn.setFlat(True)
+    if tone:
+        btn.setProperty("tone", tone)
+    btn.clicked.connect(on_click)
+    return btn
 
-    Uses QWidget (not QFrame) to avoid Houdini's global QFrame styles
-    that can intercept mouse events and block button clicks in PySide6.
+
+def _tag(text, blocked=False):
+    """A rhythm `tag` badge (mono, upper, +0.06em through rhythm.apply;
+    RADIUS_ROUND, TEXT_SECONDARY); ``blocked`` paints it HOT_SOFT - the one
+    warm note the card may carry."""
+    badge = c.Badge(text)
+    badge.setProperty("rhythm_role", "tag")
+    badge.setFont(fontload.apply_family(badge.font(), mono=True))
+    if blocked:
+        badge.setProperty("status", "BLOCKED")
+    return badge
+
+
+def _band(name, parent):
+    """One of the three DsCard bands (#DsCard > #DsCardHeader / Body /
+    Footer - qss.py dresses them); its interior is a `stack` row."""
+    band = QtWidgets.QWidget(parent)
+    band.setObjectName(name)
+    band.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground, True)
+    band.setProperty("rhythm_role", "stack")
+    return band
+
+
+class _ProposalCard(c.Card):
+    """One gate proposal, in the panel's own vocabulary (bc-wave BC-6a).
+
+    A DsCard (no tone - the level is never a border hue) whose three bands
+    touch (`band`, 0/0 through the applier):
+
+      header  level `tag` + operation (mono DATA, TEXT_PRIMARY) + agent (mono,
+              TEXT_TERTIARY); CRITICAL's tag is the one BLOCKED (HOT_SOFT)
+      body    the description in sans body text; CRITICAL adds the line
+              'Arbitrary code execution' in body text - no hue, no pulse
+      footer  countdown (mono DATA, TEXT_SECONDARY; timed levels only) left,
+              verbs right - REJECT tone=hot and APPROVE tone=accent for
+              APPROVE / CRITICAL (APPROVE is the one accented thing on the
+              card); REVIEW gets '<- REVERT' with no tone: REVIEW 'continues
+              unless rejected' (CLAUDE.md 1.2, shared/bridge.py), so the
+              reject after the fact IS a revert - the verb emits
+              reject_clicked (the ledger) AND revert_requested (the undo the
+              panel routes to _on_revert).
+
+    A decision reads as a `tag` in the footer's left slot - APPROVED
+    (neutral) or REJECTED (BLOCKED) - with the verbs hidden and the card
+    disabled; a decision that never reached the gate reads NOT RECORDED
+    (BLOCKED) with the card still live (RULING 18). Uses QWidget parents (not
+    QFrame) so Houdini's global QFrame styles cannot intercept clicks.
     """
 
-    approve_clicked = Signal(str)  # proposal_id
-    reject_clicked = Signal(str)   # proposal_id
+    approve_clicked = Signal(str)   # proposal_id
+    reject_clicked = Signal(str)    # proposal_id
+    revert_requested = Signal(str)  # proposal_id (REVIEW's verb)
 
     def __init__(self, proposal_data, parent=None):
-        super().__init__(parent)
-        self.setAutoFillBackground(True)
+        super().__init__(parent=parent)
+        self.setProperty("rhythm_role", "band")
         self._proposal_id = proposal_data.get("proposal_id", "")
         self._level = proposal_data.get("level", "review")
         self._timeout = _LEVEL_TIMEOUTS.get(self._level, 0)
         self._created_at = proposal_data.get("created_at", "")
         self._operation = proposal_data.get("operation", "unknown")
-        self._pulse_on = False
         self._reject_btn = None
         self._approve_btn = None
+        self._revert_btn = None
+        self._decision = None
 
-        level_color = _LEVEL_COLORS.get(self._level, t.SIGNAL)
-        # Use object-name-qualified selector to prevent cascade to children
-        self.setObjectName("gateCard")
-        self._apply_card_style(level_color)
+        bands = QtWidgets.QVBoxLayout(self)
 
-        layout = QtWidgets.QVBoxLayout(self)
-        self.setProperty("rhythm_role", "stack")
-
-
-        # Top row: badge + operation name + agent
-        top_row = QtWidgets.QHBoxLayout()
-        top_row.setSpacing(8)  # rhythm-exempt: nested badge-operation row has no widget owner; wrapping changes the hierarchy
-
-        badge = QtWidgets.QLabel(self._level.upper())
-        # Landing r3 repair (F-C1): families travel by QFont, never by QSS -
-        # the badge / operation / countdown / Reject / Approve are the mono
-        # labels-tags-ids of battleplan section 4, as master rendered them.
-        badge.setFont(fontload.apply_family(badge.font(), mono=True))
-        qss.sweep_a_style(badge, "gate_badge", level_color)
-        top_row.addWidget(badge)
-
-        op_label = QtWidgets.QLabel(proposal_data.get("operation", "unknown"))
-        op_label.setFont(fontload.apply_family(op_label.font(), mono=True))
-        qss.sweep_a_style(op_label, "gate_operation")
-        top_row.addWidget(op_label, stretch=1)
-
+        # -- header: [level tag][operation .................][agent] --------
+        header = _band("DsCardHeader", self)
+        hrow = QtWidgets.QHBoxLayout(header)
+        self._badge = _tag(self._level.upper(), blocked=(self._level == "critical"))
+        hrow.addWidget(self._badge)
+        self._op_label = c.label(self._operation, role="body")
+        self._op_label.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, mono=True))
+        hrow.addWidget(self._op_label, 1)
+        self._agent_label = None
         agent_id = proposal_data.get("agent_id", "")
         if agent_id:
-            agent_label = QtWidgets.QLabel(agent_id)
-            qss.sweep_a_style(agent_label, "gate_agent")
-            top_row.addWidget(agent_label)
+            self._agent_label = c.label(agent_id, role="caption")
+            self._agent_label.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, mono=True))
+            hrow.addWidget(self._agent_label)
+        bands.addWidget(header)
 
-        layout.addLayout(top_row)
-
-        # Description
+        # -- body: the description (sans body); CRITICAL says so in words ---
+        body = _band("DsCardBody", self)
+        brow = QtWidgets.QVBoxLayout(body)
         desc = proposal_data.get("description", "")
-        if desc:
-            desc_label = QtWidgets.QLabel(desc)
-            desc_label.setWordWrap(True)
-            qss.sweep_a_style(desc_label, "gate_description")
-            layout.addWidget(desc_label)
-
-        # CRITICAL header
+        self._desc_label = c.label(desc, role="body")
+        self._desc_label.setWordWrap(True)
+        brow.addWidget(self._desc_label)
+        self._critical_label = None
         if self._level == "critical":
-            crit_label = QtWidgets.QLabel("CRITICAL -- Arbitrary code execution")
-            qss.sweep_a_style(crit_label, "gate_critical")
-            layout.addWidget(crit_label)
+            self._critical_label = c.label("Arbitrary code execution", role="body")
+            self._critical_label.setWordWrap(True)
+            brow.addWidget(self._critical_label)
+        if not desc and self._critical_label is None:
+            body.hide()
+        bands.addWidget(body)
 
-        # Action buttons for APPROVE / CRITICAL
-        if self._level in ("approve", "critical"):
-            btn_row = QtWidgets.QHBoxLayout()
-            btn_row.setSpacing(8)  # rhythm-exempt: nested decision row has no widget owner; wrapping changes the hierarchy
-
-            # Countdown label
-            self._countdown_label = QtWidgets.QLabel("")
-            self._countdown_label.setFont(
-                fontload.apply_family(self._countdown_label.font(), mono=True))
-            qss.sweep_a_style(self._countdown_label, "gate_countdown")
-            btn_row.addWidget(self._countdown_label)
-
-            btn_row.addStretch()
-
+        # -- footer: [countdown | decision tag] ........ [verbs] ------------
+        footer = _band("DsCardFooter", self)
+        frow = QtWidgets.QHBoxLayout(footer)
+        self._countdown_label = c.label("", role="label")
+        self._countdown_label.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, mono=True))
+        frow.addWidget(self._countdown_label)
+        self._decision_tag = _tag("")
+        self._decision_tag.hide()
+        frow.addWidget(self._decision_tag)
+        frow.addStretch(1)
+        if self._level == "review":
+            self._revert_btn = _verb("\u2190 REVERT", self._on_revert_clicked)
+            frow.addWidget(self._revert_btn)
+        elif self._level in ("approve", "critical"):
             # Store as instance vars to prevent GC before layout takes ownership
-            self._reject_btn = QtWidgets.QPushButton("Reject")
-            self._reject_btn.setFont(fontload.apply_family(self._reject_btn.font(), mono=True))
-            qss.sweep_a_style(self._reject_btn, "gate_reject")
-            self._reject_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-            self._reject_btn.clicked.connect(
-                partial(self._emit_reject, self._proposal_id)
-            )
-            btn_row.addWidget(self._reject_btn)
+            self._reject_btn = _verb("REJECT", partial(self._emit_reject, self._proposal_id),
+                                     tone="hot")
+            frow.addWidget(self._reject_btn)
+            self._approve_btn = _verb("APPROVE", self._on_approve_clicked, tone="accent")
+            frow.addWidget(self._approve_btn)
+        bands.addWidget(footer)
 
-            self._approve_btn = QtWidgets.QPushButton("Approve")
-            self._approve_btn.setFont(fontload.apply_family(self._approve_btn.font(), mono=True))
-            qss.sweep_a_style(self._approve_btn, "gate_approve")
-            self._approve_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-            self._approve_btn.clicked.connect(self._on_approve_clicked)
-            btn_row.addWidget(self._approve_btn)
+        if self._timeout > 0 and self._level in ("approve", "critical"):
+            self._remaining = self._timeout
+            self._countdown_timer = QTimer(self)
+            self._countdown_timer.timeout.connect(self._tick_countdown)
+            self._countdown_timer.setInterval(1000)
+            self._countdown_timer.start()
+            self._update_countdown_text()
+        else:
+            self._countdown_label.hide()
 
-            layout.addLayout(btn_row)
-
-            # Start countdown timer
-            if self._timeout > 0:
-                self._remaining = self._timeout
-                self._countdown_timer = QTimer(self)
-                self._countdown_timer.timeout.connect(self._tick_countdown)
-                self._countdown_timer.setInterval(1000)
-                self._countdown_timer.start()
-                self._update_countdown_text()
-
-        # Pulse timer for CRITICAL cards
-        if self._level == "critical":
-            self._pulse_timer = QTimer(self)
-            self._pulse_timer.timeout.connect(self._toggle_pulse)
-            self._pulse_timer.setInterval(800)
-            self._pulse_timer.start()
-
-    def _apply_card_style(self, level_color):
-        """Apply card stylesheet. Uses property-only (no type selector) to
-        avoid cascading to child widgets like QPushButtons."""
-        from synapse.panel.designsystem import tokens as t
-        qss.sweep_a_style(self, "gate_card", level_color)
+    # -- verbs ---------------------------------------------------------------
+    def _verbs(self):
+        return [b for b in (self._reject_btn, self._approve_btn, self._revert_btn)
+                if b is not None]
 
     def _emit_reject(self, proposal_id, checked=False):
         """Slot for reject button. Accepts checked arg from clicked(bool)."""
         self.reject_clicked.emit(proposal_id)
+
+    def _on_revert_clicked(self, checked=False):
+        """REVIEW's verb: the rejection goes to the ledger, the undo goes to
+        the panel (revert_requested -> _on_revert)."""
+        self.reject_clicked.emit(self._proposal_id)
+        self.revert_requested.emit(self._proposal_id)
 
     def _on_approve_clicked(self, checked=False):
         """Handle approve click. CRITICAL requires confirmation."""
@@ -273,6 +304,7 @@ class _ProposalCard(QtWidgets.QWidget):
                 return
         self.approve_clicked.emit(self._proposal_id)
 
+    # -- countdown -----------------------------------------------------------
     def _tick_countdown(self):
         """Decrement countdown each second."""
         self._remaining -= 1
@@ -288,70 +320,42 @@ class _ProposalCard(QtWidgets.QWidget):
         secs = self._remaining % 60
         self._countdown_label.setText("{m}:{s:02d}".format(m=mins, s=secs))
 
-    def _toggle_pulse(self):
-        """Toggle CRITICAL card border for pulsing effect."""
-        self._pulse_on = not self._pulse_on
-        color = t.ERROR if self._pulse_on else t.GRAPHITE
-        self._apply_card_style(color)
+    def _stop_timers(self):
+        timer = getattr(self, "_countdown_timer", None)
+        if timer is not None:
+            timer.stop()
 
+    def _show_decision_tag(self, text, blocked):
+        self._countdown_label.hide()
+        self._decision_tag.setText(text)
+        self._decision_tag.setProperty("status", "BLOCKED" if blocked else "")
+        self._decision_tag.show()
+        c.repolish(self._decision_tag)
+
+    # -- outcomes ------------------------------------------------------------
     def mark_gate_unreachable(self):
         """The decision did NOT reach the gate. Say so, and stay undecided.
 
-        RULING 18. The card must not dim, must not read APPROVED or REJECTED, and must not
-        look settled — because nothing was settled. The proposal is still live and still
-        needs a decision that lands.
+        RULING 18. The card must not dim, must not read APPROVED or REJECTED,
+        and must not look settled - because nothing was settled. The proposal
+        is still live and still needs a decision that lands: the verbs stay,
+        the card stays enabled, the footer says NOT RECORDED.
         """
-        if hasattr(self, "_countdown_timer"):
-            self._countdown_timer.stop()
-        if hasattr(self, "_pulse_timer"):
-            self._pulse_timer.stop()
-
-        qss.sweep_a_style(self, "gate_unreachable")
-        if hasattr(self, "_countdown_label"):
-            self._countdown_label.setText("NOT RECORDED - GATE UNREACHABLE")
-            qss.sweep_a_style(self._countdown_label, "gate_unreachable_countdown")
+        self._stop_timers()
+        self._show_decision_tag("NOT RECORDED", blocked=True)
 
     def mark_decided(self, decision):
-        """Visually mark the card as decided with triple feedback:
-        1. Green/red flash on the card background
-        2. Status text replacing countdown
-        3. Card dims after flash (chat message handled by GateWidget)
-        """
-        # Stop timers
-        if hasattr(self, "_countdown_timer"):
-            self._countdown_timer.stop()
-        if hasattr(self, "_pulse_timer"):
-            self._pulse_timer.stop()
-
-        is_approved = decision == "approved"
-        color = t.GROW if is_approved else t.ERROR
-        label = "APPROVED" if is_approved else "REJECTED"
-
-        # 1. Flash: bright background pulse
-        qss.sweep_a_style(self, "gate_flash", color)
-
-        # 2. Status text replacing countdown
-        if hasattr(self, "_countdown_label"):
-            self._countdown_label.setText(label)
-            qss.sweep_a_style(self._countdown_label, "gate_decision_countdown", color)
-
-        # Hide buttons
-        if self._approve_btn:
-            self._approve_btn.setVisible(False)
-        if self._reject_btn:
-            self._reject_btn.setVisible(False)
-
-        # 3. Dim after 600ms flash
+        """The decision landed: the verbs go, the footer's left slot becomes
+        the decision tag - APPROVED (neutral) or REJECTED (BLOCKED) - and the
+        card disables. A tag, never a hue (F4); the chat message is the
+        GateWidget's."""
+        self._stop_timers()
         self._decision = decision
-        self._flash_timer = QTimer(self)
-        self._flash_timer.setSingleShot(True)
-        self._flash_timer.timeout.connect(self._end_flash)
-        self._flash_timer.start(600)
-
-    def _end_flash(self):
-        """Dim the card after the flash."""
-        color = t.GROW if self._decision == "approved" else t.ERROR
-        self._apply_card_style(color)
+        is_approved = decision == "approved"
+        for verb in self._verbs():
+            verb.setVisible(False)
+        self._show_decision_tag("APPROVED" if is_approved else "REJECTED",
+                                blocked=not is_approved)
         self.setEnabled(False)
 
 
@@ -369,11 +373,15 @@ class GateWidget(QtWidgets.QWidget):
 
     # Public signal for chat panel to show decision messages
     decision_announced = Signal(str, str, str)  # operation, decision, level
+    # bc-wave BC-6a: REVIEW's '<- REVERT' asks the panel for the undo.
+    revert_requested = Signal(str)  # proposal_id
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._expanded = False
         self._cards = {}  # proposal_id -> _ProposalCard
+        self._card_host = None          # a QLayout the panel lends (BC-6b), else own
+        self._card_host_changed = None  # callback after a card lands / decides
 
         self._build_ui()
         self._register_gate_callbacks()
@@ -503,6 +511,25 @@ class GateWidget(QtWidgets.QWidget):
         dec = decision.value if hasattr(decision, "value") else str(decision)
         self._decision_made.emit(pid, dec)
 
+    def set_card_host(self, layout, on_change=None):
+        """Lend the cards a home (bc-wave BC-6a/6b): new proposal cards insert
+        into ``layout`` (the panel's CHAT consent slot) instead of this
+        widget's own fold; ``on_change`` is called after a card lands or
+        decides so the host can re-sync its visibility. ``None`` restores
+        the default (this widget's container)."""
+        self._card_host = layout
+        self._card_host_changed = on_change
+
+    def _notify_host(self):
+        # getattr: the consent-honesty tests drive the handlers on a bare
+        # GateWidget.__new__ that carries only what they touch.
+        cb = getattr(self, "_card_host_changed", None)
+        if callable(cb):
+            try:
+                cb()
+            except Exception:
+                logger.debug("consent host callback failed", exc_info=True)
+
     @Slot(object)
     def _add_proposal_card(self, proposal_data):
         """Add a proposal card to the widget (Qt main thread)."""
@@ -522,21 +549,27 @@ class GateWidget(QtWidgets.QWidget):
         if proposal_id in self._cards:
             return
 
-        card = _ProposalCard(data, parent=self._proposals_container)
+        host = getattr(self, "_card_host", None)
+        card = _ProposalCard(data, parent=None if host is not None else self._proposals_container)
         card.approve_clicked.connect(self._on_approve)
         card.reject_clicked.connect(self._on_reject)
+        card.revert_requested.connect(self.revert_requested)
 
-        # Insert before the stretch
-        count = self._proposals_layout.count()
-        self._proposals_layout.insertWidget(max(0, count - 1), card)
+        if host is not None:
+            host.addWidget(card)             # the panel's consent slot (BC-6b)
+        else:
+            # Insert before the stretch
+            count = self._proposals_layout.count()
+            self._proposals_layout.insertWidget(max(0, count - 1), card)
         self._cards[proposal_id] = card
         qss.sweep_a_refresh_rhythm(card)
 
-        # Auto-expand when a proposal arrives
-        if not self._expanded:
+        # Auto-expand when a proposal arrives in the fold
+        if host is None and not self._expanded:
             self._toggle()
 
         self._update_header_text()
+        self._notify_host()
 
     def _on_approve(self, proposal_id):
         """Handle approve button click.
@@ -568,6 +601,7 @@ class GateWidget(QtWidgets.QWidget):
                 getattr(card, '_operation', op), "approved", card._level
             )
         self._update_header_text()
+        self._notify_host()
 
     def _on_reject(self, proposal_id):
         """Handle reject button click (or timeout auto-reject).
@@ -596,6 +630,7 @@ class GateWidget(QtWidgets.QWidget):
                 getattr(card, '_operation', op), "rejected", card._level
             )
         self._update_header_text()
+        self._notify_host()
 
     @Slot(str, str)
     def _on_remote_decision(self, proposal_id, decision):
@@ -604,6 +639,7 @@ class GateWidget(QtWidgets.QWidget):
         if card:
             card.mark_decided(decision)
         self._update_header_text()
+        self._notify_host()
 
     def _render_fidelity(self, fidelity):
         """Paint the dot + label from an observed fidelity, or ``None``.

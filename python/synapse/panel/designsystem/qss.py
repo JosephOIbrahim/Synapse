@@ -617,58 +617,12 @@ _sweep_a_builders.append(_sweep_a_face_review_stylesheet)
 
 # --- SWEEP_A (gate_widget.py)
 def _sweep_a_gate_widget_stylesheet():
+    # bc-wave BC-6a: the proposal CARD rules (badge / operation / agent /
+    # description / critical / countdown / reject / approve / card /
+    # unreachable / flash / decision countdown - twelve hue buckets, F4) are
+    # gone; the card is a DsCard dressed by the design-system sheet. What
+    # stays is the Work-face fold: header, body, integrity row.
     rules = []
-    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
-                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
-        rules.append(_sweep_a_rule("gate_badge", f"""
-background: {_sweep_a_legacy_argb(color, "20")} ; color: {color}; border: 1px solid {_sweep_a_legacy_argb(color, "40")} ; border-radius: 3px; padding: 1px 6px;  font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};
-""", color=color))
-    rules.append(_sweep_a_rule("gate_operation", f"""
-color: {t.BONE};  font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR}; border: none;
-"""))
-    rules.append(_sweep_a_rule("gate_agent", f"""
-color: {t.SLATE}; font-size: {t.SIZE_LABEL}px; border: none;
-"""))
-    rules.append(_sweep_a_rule("gate_description", f"""
-color: {t.SILVER}; font-size: {t.SIZE_LABEL}px; border: none;
-"""))
-    rules.append(_sweep_a_rule("gate_critical", f"""
-color: {t.ERROR}; font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR}; border: none;
-"""))
-    rules.append(_sweep_a_rule("gate_countdown", f"""
-color: {t.SLATE}; font-size: {t.SIZE_LABEL}px;  border: none;
-"""))
-    rules.append(_sweep_a_rule("gate_reject", f"""
-QPushButton {{  background: transparent;  color: {t.ERROR};  border: 1px solid {t.ERROR};  border-radius: 3px;  padding: 3px 12px; font-size: {t.SIZE_LABEL}px;}}
-QPushButton:hover {{  background: {_sweep_a_legacy_argb(t.ERROR, "20")} ;}}
-QPushButton:pressed {{  background: {_sweep_a_legacy_argb(t.ERROR, "40")} ;}}
-"""))
-    rules.append(_sweep_a_rule("gate_approve", f"""
-QPushButton {{  background: transparent;  color: {t.GROW};  border: 1px solid {t.GROW};  border-radius: 3px;  padding: 3px 12px; font-size: {t.SIZE_LABEL}px;  font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};}}
-QPushButton:hover {{  background: {_sweep_a_legacy_argb(t.GROW, "20")} ;}}
-QPushButton:pressed {{  background: {_sweep_a_legacy_argb(t.GROW, "40")} ;}}
-"""))
-    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
-                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
-        rules.append(_sweep_a_rule("gate_card", f"""
-background: {t.SURFACE}; border: none; border-left: 3px solid {color}; border-radius: 4px; margin: 2px 0;
-""", color=color))
-    rules.append(_sweep_a_rule("gate_unreachable", f"""
-background: {_sweep_a_legacy_argb(t.WARN, "30")} ; border: none; border-left: 4px solid {t.WARN}; border-radius: 4px; margin: 2px 0;
-"""))
-    rules.append(_sweep_a_rule("gate_unreachable_countdown", f"""
-color: {t.WARN}; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};
-"""))
-    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
-                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
-        rules.append(_sweep_a_rule("gate_flash", f"""
-background: {_sweep_a_legacy_argb(color, "30")} ; border: none; border-left: 4px solid {color}; border-radius: 4px; margin: 2px 0;
-""", color=color))
-    for color in (t.SIGNAL, t.GROW, t.ERROR, t.WARN, t.FIRE, t.SLATE,
-                  t.GRAPHITE, t.TEXT_SECONDARY, t.TEXT_TERTIARY, t.TEXT_BRIGHT):
-        rules.append(_sweep_a_rule("gate_decision_countdown", f"""
-color: {color}; font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  border: none;
-""", color=color))
     rules.append(_sweep_a_rule("gate_header", f"""
 QPushButton {{  background: transparent; color: {t.SLATE}; border: none; text-align: left; min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_SM}px;  font-size: {t.SIZE_LABEL}px; }}
 QPushButton:hover {{  color: {t.SIGNAL}; }}

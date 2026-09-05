@@ -525,6 +525,8 @@ def test_turn_receipt_offers_revert_on_chat():
     """F11: after a quiet turn that changed the scene, the CHAT surface offers
     an artist-clickable REVERT (the turn receipt in the consent slot); it is
     gone again once the artist sends the next message."""
+    from unittest import mock
+    from synapse.server import session_store
     for profile in PROFILES:
         p = _panel(profile)
         try:
@@ -532,7 +534,8 @@ def test_turn_receipt_offers_revert_on_chat():
             p._set_busy(True)
             p._on_tool_status("houdini_create_node", "running", "/obj/geo1")
             p._on_tool_status("houdini_create_node", "done", "/obj/geo1")
-            p._on_done()
+            with mock.patch.object(session_store, "save_conversation", lambda *a, **k: True):
+                p._on_done()               # never the artist's session store
             _app().processEvents()
             assert p._faces.currentIndex() == 0, profile
             face = _chat_face(p)

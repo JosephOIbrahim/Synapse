@@ -1215,12 +1215,78 @@ class SynapsePanel(QtWidgets.QWidget):
         page.setProperty("rhythm_role", "shell")
         col = QtWidgets.QVBoxLayout(page)
         col.addWidget(self._build_converse(), 1)   # chat | Build-HDA inner stack
+        # bc-wave BC-6a: the consent slot - a `card` collection (16/24/12,
+        # whitespace between cards) between the transcript and the composer.
+        # It holds the turn receipt ('{n} CHANGES' + '<- REVERT' after a quiet
+        # turn that changed the scene, F11) and, once the gate lends its
+        # cards here (set_card_host, BC-6b), the consent cards themselves.
+        # Hidden while empty (_sync_consent_slot).
+        self._consent_slot = self._section()
+        self._consent_slot.setProperty("rhythm_role", "card")
+        slot = QtWidgets.QVBoxLayout(self._consent_slot)
+        self._turn_receipt = self._build_turn_receipt()
+        slot.addWidget(self._turn_receipt)
+        self._consent_slot.hide()
+        col.addWidget(self._consent_slot)
         from synapse.panel.recall_card import RecallCard
         self._recall_card = RecallCard()
         self._recall_card.hide()
         col.addWidget(self._recall_card)
         col.addWidget(self._build_input())
         return page
+
+    def _build_turn_receipt(self):
+        """The quiet turn's receipt: a `stack` row - '{n} CHANGES' as a `tag`
+        + '<- REVERT' (the panel's own verb) -> _on_revert. Shown by _on_done
+        when the turn's evidence holds a successful mutator, hidden at the top
+        of the next _send. One signal, one destination (F11)."""
+        w = self._section()
+        w.setProperty("rhythm_role", "stack")
+        row = QtWidgets.QHBoxLayout(w)
+        self._receipt_badge = c.Badge("")
+        self._receipt_badge.setProperty("rhythm_role", "tag")
+        self._receipt_badge.setFont(fontload.apply_family(self._receipt_badge.font(), mono=True))
+        row.addWidget(self._receipt_badge)
+        row.addStretch(1)
+        self._receipt_revert = self._verb("\u2190 REVERT", lambda _=False: self._on_revert())
+        row.addWidget(self._receipt_revert)
+        w.hide()
+        return w
+
+    def _sync_consent_slot(self):
+        """Show the consent slot iff something in it is live: the turn receipt
+        or an undecided consent card (a decided card is hidden - the ledger
+        already announced it in the chat; an unrecorded one stays, RULING 18)."""
+        slot = getattr(self, "_consent_slot", None)
+        if slot is None:
+            return
+        lay = slot.layout()
+        live = False
+        for i in range(lay.count()):
+            w = lay.itemAt(i).widget()
+            if w is None:
+                continue
+            if hasattr(w, "_proposal_id") and not w.isEnabled():
+                w.hide()
+            if not w.isHidden():
+                live = True
+        slot.setVisible(live)
+
+    def _show_turn_receipt(self, count):
+        badge = getattr(self, "_receipt_badge", None)
+        if badge is not None:
+            badge.setText("%d CHANGE%s" % (count, "" if count == 1 else "S"))
+            c.repolish(badge)
+        receipt = getattr(self, "_turn_receipt", None)
+        if receipt is not None:
+            receipt.show()
+        self._sync_consent_slot()
+
+    def _hide_turn_receipt(self):
+        receipt = getattr(self, "_turn_receipt", None)
+        if receipt is not None:
+            receipt.hide()
+        self._sync_consent_slot()
 
     def _build_work_face(self):
         """Work — the walk-away glance AND the payoff, on one surface (v9 fold).
@@ -2011,6 +2077,11 @@ class SynapsePanel(QtWidgets.QWidget):
         gate = getattr(self, "_gate", None)
         if gate is not None:
             try:
+                # bc-wave BC-6a: REVIEW's '<- REVERT' on a card asks for the undo.
+                gate.revert_requested.connect(lambda _pid=None: self._on_revert())
+            except Exception:
+                logger.warning("gate revert relay failed to wire", exc_info=True)
+            try:
                 gate._proposal_received.connect(self._on_gate_raised)
             except Exception:
                 # Guarded, but never silent. If this relay fails to wire, a
@@ -2348,7 +2419,9 @@ class SynapsePanel(QtWidgets.QWidget):
         if (text or "").strip().lower() in ("/restore-session", "/restore_session"):
             self._restore_previous_session()
             return
-        # Submitting is the artist handing off — drop input focus.
+        # Submitting is the artist handing off — drop input focus. The last
+        # turn's receipt goes with it (bc-wave BC-6a): a new turn, a new record.
+        self._hide_turn_receipt()
         if getattr(self, "_input", None) is not None:
             self._input.clearFocus()
         display = text
@@ -2541,6 +2614,17 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
         self._set_busy(False)
+        # bc-wave BC-6a (F11): a quiet turn that CHANGED the scene leaves an
+        # artist-clickable REVERT on the CHAT surface - the turn receipt,
+        # counted from the same evidence the Work face credits.
+        try:
+            credit = self._turn_evidence()[0]
+        except Exception:
+            credit = []
+        if credit:
+            self._show_turn_receipt(len(credit))
+        else:
+            self._hide_turn_receipt()
         # BP2-PANELTRUTH T2 / W5-PANEL item 3: the completed task's real token
         # receipt (usage_sink) now lands on the TOKEN face + the rail meter/pill
         # — event-driven from completion here, NEVER a QTimer (V3: a probe must
