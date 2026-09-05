@@ -226,10 +226,13 @@ _OVERLAY = {
     "expert": expert.MANIFEST["system_prompt_overlay"],
     "ml": ml.MANIFEST["system_prompt_overlay"],
 }
-# token_pill / token_meter prominence — distinct across all three, and reset in
-# BOTH directions (unlike collapse, which _apply_spec applies one-way).
+# token_pill / author_token prominence — distinct across profiles, and reset
+# in BOTH directions (unlike collapse, which _apply_spec applies one-way).
+# bc-wave BC-2: the token meter left the rail (a hidden owner read through
+# the overflow, listed by no manifest); the model token (Addendum 2, always
+# visible top right) carries ML's hero step in its place.
 _TOKEN_PILL_PROM = {"curious": "quiet", "expert": "standard", "ml": "hero"}
-_TOKEN_METER_PROM = {"curious": "quiet", "expert": "standard", "ml": "hero"}
+_AUTHOR_TOKEN_PROM = {"curious": "standard", "expert": "standard", "ml": "hero"}
 
 
 def _make_panel():
@@ -250,7 +253,7 @@ def _assert_active(panel, profile):
     assert panel._system_prompt_overlay == _OVERLAY[profile], "system-prompt overlay"
     assert panel._profile_state.profile == profile, "persisted selection"
     assert panel.prominence("token_pill") == _TOKEN_PILL_PROM[profile], "token_pill prominence"
-    assert panel.prominence("token_meter") == _TOKEN_METER_PROM[profile], "token_meter prominence"
+    assert panel.prominence("author_token") == _AUTHOR_TOKEN_PROM[profile], "author_token prominence"
 
 
 # --------------------------------------------------------------------------- #

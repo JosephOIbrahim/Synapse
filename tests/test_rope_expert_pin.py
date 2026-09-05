@@ -48,22 +48,14 @@ V5420_EXPERT_RESOLVED = {
                  "prominence": "standard", "id": "header_status"},
                 {"visible": True, "collapsed": False, "stretch": 0,
                  "prominence": "standard", "id": "author_token"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "token_meter"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "palette_hint"},
+                # bc-wave BC-2: the rail is [mark][wordmark][state sentence]
+                # [model token] + Connect|Stop; the token meter, palette hint,
+                # connection pair, Corpus and activity meter are hidden
+                # owners read through the overflow, so they are not listed.
                 {"visible": True, "collapsed": False, "stretch": 0,
                  "prominence": "standard", "id": "stop"},
                 {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "connection_dot"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "connection_label"},
-                {"visible": True, "collapsed": False, "stretch": 0,
                  "prominence": "standard", "id": "connect"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "corpus"},
-                {"visible": True, "collapsed": False, "stretch": 0,
-                 "prominence": "standard", "id": "activity_meter"},
             ],
         },
         {

@@ -35,8 +35,10 @@ V5420_REGION_ORDER = ["rail", "context_ribbon", "mode_bar", "faces"]
 # layout at zero height and one click away — paced, never withheld. Expert
 # is untouched and declares none. A new fold must be added here
 # deliberately, never smuggled.
+# bc-wave BC-2: curious no longer folds anything - the token meter and the
+# activity meter left the rail for the overflow in every profile.
 DECLARED_FOLDS = {
-    "curious": {("rail", "token_meter"), ("rail", "activity_meter")},
+    "curious": set(),
 }
 
 

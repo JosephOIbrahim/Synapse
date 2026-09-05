@@ -45,16 +45,15 @@ MANIFEST = {
             "id": "rail",
             "widgets": [
                 "mark", "wordmark", "header_status",
-                # Economics promotion (L5-19): the rail readout pair is the
-                # always-visible surface the numbers live on — pinned
-                # visible and hero so they read without a click.
+                # Economics promotion (L5-19): the model token is the
+                # always-visible surface the model lives on — pinned visible
+                # and hero so it reads without a click. bc-wave BC-2: the
+                # token meter / palette hint / connection pair / Corpus /
+                # activity meter left the rail for the overflow (hidden
+                # owners are not listed - the compositor shows every id).
                 {"id": "author_token", "visible": True,
                  "prominence": "hero"},
-                {"id": "token_meter", "visible": True,
-                 "prominence": "hero"},
-                "palette_hint", "stop",
-                "connection_dot", "connection_label", "connect", "corpus",
-                "activity_meter",
+                "stop", "connect",
             ],
         },
         {"id": "context_ribbon", "widgets": ["context_label"]},

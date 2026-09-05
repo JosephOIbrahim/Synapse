@@ -72,24 +72,17 @@ MANIFEST = {
         {
             "id": "rail",
             "widgets": [
+                # bc-wave BC-2: the rail is two identities (mark + wordmark,
+                # model token - Addendum 2: always visible, top right), one
+                # state sentence and Connect | Stop. The L5-19 economics /
+                # telemetry folds are moot: the token meter, palette hint,
+                # connection pair, Corpus and the activity meter left the
+                # rail for the overflow in every profile (hidden owners are
+                # not listed - the compositor shows every listed id).
                 "mark", "wordmark", "header_status",
-                # Economics fold (L5-19): readouts a first-session artist
-                # cannot yet act on. Collapsed, never removed — the full
-                # numbers stay one click away behind the visible TOKEN pill.
                 "author_token",
-                {"id": "token_meter", "collapsed": True,
-                 "prominence": "quiet"},
-                # Teaching hint (L5-19): the palette hint is how commands are
-                # discovered — full visibility, not quiet chrome.
-                "palette_hint",
                 "stop",
-                "connection_dot", "connection_label",
                 "connect",
-                "corpus",
-                # Telemetry fold (L5-19): activity chrome, same treatment as
-                # the economics pair.
-                {"id": "activity_meter", "collapsed": True,
-                 "prominence": "quiet"},
             ],
         },
         {"id": "context_ribbon", "widgets": ["context_label"]},

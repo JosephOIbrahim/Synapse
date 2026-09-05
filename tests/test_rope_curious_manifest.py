@@ -27,9 +27,10 @@ from synapse.panel.manifests import get_manifest, validate_manifest
 # palette_hint no longer carry a Curious-only prominence (L5-23 gives them
 # the same button treatment in every profile), and activity_meter joins
 # token_meter as quiet alongside its L5-19 fold.
+# bc-wave BC-2: the rail's token meter and activity meter left the rail (they
+# read through the overflow in every profile), so curious carries no rail
+# delta any more; the TOKEN pill's quiet step is the whole diff.
 EXPECTED_PROMINENCE_DELTAS = {
-    ("rail", "token_meter"): ("standard", "quiet"),
-    ("rail", "activity_meter"): ("standard", "quiet"),
     ("mode_bar", "token_pill"): ("standard", "quiet"),
 }
 
@@ -37,10 +38,7 @@ EXPECTED_PROMINENCE_DELTAS = {
 # telemetry folds). Collapsed means present in the layout at zero height,
 # never withheld: `visible` stays strict below. A new fold must be added
 # here deliberately, never smuggled.
-EXPECTED_COLLAPSE_DELTAS = {
-    ("rail", "token_meter"),
-    ("rail", "activity_meter"),
-}
+EXPECTED_COLLAPSE_DELTAS = set()   # bc-wave BC-2: nothing left to fold
 
 # L5-18: density is a manifest lever (airy / standard / tight) resolved at
 # the top of the plan. Padding is presentation, not capability, so the

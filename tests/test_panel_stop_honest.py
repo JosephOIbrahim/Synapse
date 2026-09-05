@@ -36,9 +36,13 @@ def test_stop_holds_busy_says_stopping_and_does_not_lie_idle():
 
     fake._worker.abort.assert_called_once()                 # the loop is aborted
     fake._stop_btn.setEnabled.assert_called_once_with(False)  # press registered
-    # Header says we're stopping and names the in-flight tool.
+    # Header says we're stopping; the in-flight tool it waits on is named in
+    # the sentence's tooltip (bc-wave BC-2: the rail sentence stays inside its
+    # never-elide floor, so the tool name rides the tooltip + the Work plan).
     state, text = fake._set_header.call_args[0]
-    assert state == "working" and "Stopping" in text and "tops_cook_node" in text
+    assert state == "working" and "Stopping" in text
+    (tip,), _ = fake._header_status.setToolTip.call_args
+    assert "tops_cook_node" in tip
     # The dishonest immediate idle-flip is GONE — busy stays until real completion.
     fake._set_busy.assert_not_called()
 

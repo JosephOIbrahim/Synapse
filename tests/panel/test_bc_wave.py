@@ -214,6 +214,7 @@ def test_author_token_visible_top_right():
     never in the overflow; it names the live provider/model and click opens
     the existing picker."""
     from synapse.panel.designsystem import tokens as t, fontload
+    _app()   # a QFont before the QApplication is a silent hython abort
     mono = QtGui.QFontInfo(fontload.apply_family(QtGui.QFont(), mono=True)).family()
     for profile in PROFILES:
         p = _panel(profile)

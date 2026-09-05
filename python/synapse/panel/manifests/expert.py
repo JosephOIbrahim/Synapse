@@ -30,13 +30,14 @@ MANIFEST = {
     },
     "system_prompt_overlay": "",
     "regions": [
-        {   # mark · brand · author · Stop (+ connection / corpus / activity)
+        {   # bc-wave BC-2: two identities (mark+wordmark / model token), one
+            # state sentence, Connect|Stop. The rail's other chrome reads
+            # through the overflow; its hidden owners are NOT listed here
+            # (the compositor applies visible=True to every listed id).
             "id": "rail",
             "widgets": [
                 "mark", "wordmark", "header_status", "author_token",
-                "token_meter", "palette_hint", "stop",
-                "connection_dot", "connection_label", "connect", "corpus",
-                "activity_meter",
+                "stop", "connect",
             ],
         },
         {"id": "context_ribbon", "widgets": ["context_label"]},

@@ -133,7 +133,10 @@ QPushButton#DsPill[active="true"] {{
    Mono/DATA family+tracking live on the QFont; hover underline + pointing
    hand carry discoverability (the comp shows no ▾). */
 QPushButton#DsAuthor {{
-    background: transparent; border: none; padding: 0 {t.SPACE_XS}px;
+    background: transparent; border: none;
+    /* bc-wave BC-2 (Addendum 2): the token is a click target, not a glyph -
+       SPACE_LG content + SPACE_XS air clears the 26px floor G3 measures. */
+    min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_XS}px;
     color: {t.CONIFEROUS};
 }}
 QPushButton#DsAuthor:hover {{
@@ -320,17 +323,6 @@ QProgressBar#DsCookBar {{
     background: {t.GROUND}; border: none; border-radius: 2px;
 }}
 QProgressBar#DsCookBar::chunk {{ background: {t.RAISED}; border-radius: 2px; }}
-
-/* ---- rail meter (rail .observe): 3px strip, 2px-on-3px per the
-   cook bar above; idle SIGNAL_TINT, busy WARM via [busy] -------- */
-QWidget#DsRailMeter {{
-    background: {t.SIGNAL_TINT}; border: none; border-radius: 2px;
-}}
-/* prominence (L5-13): hero lifts the idle tint to full SIGNAL -- the
-   accent this strip already carries in tint form. Placed before [busy]
-   so the busy WARM state still wins the tie. */
-QWidget#DsRailMeter[prominence="hero"] {{ background: {t.SIGNAL}; }}
-QWidget#DsRailMeter[busy="true"] {{ background: {t.WARM}; }}
 
 /* ---- Work-face acts row (comp .acts): quiet HAIR top rule ----- */
 QWidget#DsActs {{
@@ -676,7 +668,7 @@ background: {_sweep_a_legacy_argb(color, "30")} ; border: none; border-left: 4px
 color: {color}; font-size: {t.SIZE_LABEL}px; font-weight: {t.WEIGHT_SEMIBOLD + t.WEIGHT_MEDIUM - t.WEIGHT_REGULAR};  border: none;
 """, color=color))
     rules.append(_sweep_a_rule("gate_header", f"""
-QPushButton {{  background: transparent; color: {t.SLATE}; border: none; text-align: left; padding: 4px 8px;  font-size: {t.SIZE_LABEL}px; }}
+QPushButton {{  background: transparent; color: {t.SLATE}; border: none; text-align: left; min-height: {t.SPACE_LG}px; padding: {t.SPACE_XS}px {t.SPACE_SM}px;  font-size: {t.SIZE_LABEL}px; }}
 QPushButton:hover {{  color: {t.SIGNAL}; }}
 """))
     rules.append(_sweep_a_rule("gate_body", f"""
@@ -805,7 +797,7 @@ def _sweep_b_stylesheet(scale):
 QLabel#DsHdaContextLabel, QLabel#DsHdaDetail, QLabel#DsHdaValidation {{
     color: {t.TEXT_TERTIARY}; font-size: {s(t.SIZE_SMALL)}px;
 }}
-QCheckBox#DsHdaOption {{ color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_BODY)}px; }}
+QCheckBox#DsHdaOption {{ color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_BODY)}px; min-height: {t.SPACE_32}px; }}
 QLabel#DsHdaStage, QLabel#DsHdaStatus {{
     color: {t.TEXT_PRIMARY}; font-size: {s(t.SIZE_TITLE)}px;
     font-weight: {t.WEIGHT_SEMIBOLD};
