@@ -1,0 +1,172 @@
+<!doctype html><html><head><meta charset="utf-8"><script src="./support.js"></script></head><body><x-dc><helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap"><style>
+body { margin: 0; background: #2A2A2A; color: #C5C5C5; font-family: "Space Grotesk", "DM Sans", "Segoe UI", sans-serif; }
+.cap { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 9px; line-height: 12px; color: #868686; letter-spacing: 0.03em; }
+.note { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 11px; line-height: 15px; color: #A0A0A0; }
+.eyebrow { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #868686; }
+.sev { font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; padding: 2px 0; width: 64px; flex-shrink: 0; }
+.sev.b { color: #8FB3D9; border-top: 1.5px solid #8FB3D9; }
+.sev.m { color: #DEDEDE; border-top: 1px solid #DEDEDE; }
+.sev.n { color: #868686; border-top: 1px solid #868686; }
+.sev.p { color: #A0A0A0; border-top: 1px dashed #A0A0A0; }
+.f { display: flex; gap: 14px; padding: 7px 0; border-bottom: 1px solid #303030; align-items: flex-start; }
+.t { font-size: 12px; font-weight: 600; color: #DEDEDE; letter-spacing: 0.2px; line-height: 15px; }
+.lens { font-family: "Space Mono", monospace; font-size: 9px; color: #868686; letter-spacing: 0.06em; }
+.gate { font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #8FB3D9; width: 40px; flex-shrink: 0; text-align: right; padding-top: 2px; }
+.fix { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 10.5px; line-height: 14px; color: #C5C5C5; }
+.fix b { color: #DEDEDE; font-weight: 500; }
+</style></helmet>
+<div style="width: 880px; min-height: 1100px; box-sizing: border-box; padding: 40px 48px 32px 48px; display: flex; flex-direction: column; gap: 14px; background: #2A2A2A;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="eyebrow">Findings &middot; synthesis to the CTO &middot; 2026-09-05 &middot; master 74dc0219</div>
+    <div style="font-size: 24px; line-height: 28px; font-weight: 600; letter-spacing: 0.3px; color: #DEDEDE; max-width: 780px;">The idea is sound and measurably held; the style has started substituting for it at four seams. Not the reference panel yet.</div>
+    <div class="note" style="max-width: 780px;">Verdict: <b style="color:#DEDEDE; font-weight:500;">HOLD as design reference until the four blockers close.</b> At its own preferred width (340) in every density the panel clips its verbs, cannot say its state, promises a docking width it never offers the host, and speaks another colour grammar at the one moment the artist decides to trust it. The restraint half (0.84% chromatic, one warm mark, a wordmark that never elides) is real and is the floor nothing below may touch.</div>
+    <div class="cap">Five lenses, two rounds, 139 bus posts, 21 findings after dedupe. Measured with hython 22.0.400 offscreen at 340&#215;760 (regions_*, census_*, use_*, type_census_*, probe_*.json in this directory) and on design/rhythm_pd/after_r3/&lt;profile&gt;/panel_direct_chat.png.</div>
+  </div>
+
+  <div style="border-left: 2px solid #8FB3D9; padding: 6px 0 6px 14px; display: flex; flex-direction: column; gap: 4px;">
+    <div class="eyebrow" style="color:#8FB3D9;">The one point of view</div>
+    <div style="font-size: 13px; line-height: 18px; color: #DEDEDE; max-width: 760px;">A conversation with a capable studio partner, docked at 340 in a dark host. One voice for words (sans) and one for data (mono); one accent, and it means <i>the artist's next action</i>; one sentence of state that never gives way, exactly as the wordmark never gives way; and nothing on screen the artist cannot read at the width the panel asks for. Everything that is not the conversation, its state, its verbs, or its consent is chrome, and chrome earns its place at 340 or leaves.</div>
+    <div class="cap">REDESIGN.md:43 (the sentence) &middot; REDESIGN.md:59 CONVERSE dominant &middot; tokens.py:357-363 (mono is for code) &middot; BATTLEPLAN_PD.md:185 (accent: SIGNAL family, no other colour points) &middot; synapse_panel.py:706-712 (the never-elide floor)</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column;">
+    <div style="display:flex; gap:14px; padding: 2px 0 4px 0;"><div class="eyebrow" style="width:64px;">Severity</div><div class="eyebrow" style="flex:1;">Finding &middot; lenses &middot; evidence &middot; fix</div><div class="eyebrow" style="width:40px; text-align:right;">Gate</div></div>
+
+    <div class="f"><div class="sev b">Blocker</div><div style="flex:1;">
+      <div class="t">F1 &middot; The type-set verb rail is cut mid-word at 340 in three of three profiles</div>
+      <div class="lens">IDEA-04 &middot; T2 &middot; S3 &middot; USE-01 &mdash; four independent measurements agree</div>
+      <div class="cap">Natural rail width 333 / 301 / 285 (airy/standard/tight, gaps 24/16/12) vs the 280 interior. Rendered w/hint: expert OPTIMIZE 59/65, BUILD HDA 58/73; curious EXPLAIN 48/57, OPTIMIZE 47/65, BUILD HDA 48/73; ml BUILD HDA 68/73 (census_*.json, verb_tracking.json). Same clip in before/. synapse_panel.py:1901-1916; the wordmark's floor at :712 was never given to the verbs.</div>
+      <div class="fix"><b>Ruling:</b> the airy number wins the fix argument. No mono tracking fits five words at 24px gaps (0em = 304); sans 12 sentence-case lands at exactly 280; three verbs fit every profile with margin. Conformance now: verbs never elide (setMinimumWidth(sizeHint), :712 rule). Decision for Joe: three words on a rail (Direction A) or no rail (Direction B). B11 icon collapse is retired as an option.</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev b">Blocker</div><div style="flex:1;">
+      <div class="t">F2 &middot; At 340 the panel cannot say what it is doing, and its two truths at boot are both invisible</div>
+      <div class="lens">USE-02 &middot; S1 &middot; S2 &middot; SYS-8 &middot; IDEA-07 (fold)</div>
+      <div class="cap">_header_status, _meter_lbl, _palette_hint, _author_lbl, _foot_label all w=0 in airy/standard/tight (hints 66/7/67/81/83 = 304px painted at 0; census rail_labels; QSizePolicy.Ignored at synapse_panel.py:833-835, no breakpoint token anywhere). Boot: header 'Standing by' AND foot 'Not connected' (use_*.json boot_truth; :768-769, :2580). Health strip 280&#215;16 of four 0-width 'unknown' cells (:846-853). With a gate up, 'Result ready' is also 0px.</div>
+      <div class="fix"><b>One state string</b> from STATUS (tokens.py:601-608; disconnected wins over idle) with the wordmark's hard minimum; author token, Ctrl+K and the health strip move to the overflow where the Engine submenu already lives (:2032). Rail 84 &rarr; 52. Delete the five Ignored labels and DsRailMeter (:799-800, never shown).</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev b">Blocker</div><div style="flex:1;">
+      <div class="t">F3 &middot; Docking is a patch: 280 promised, 393/361/345 measured, 400/380/380 written in YAML prose and read back by regex</div>
+      <div class="lens">SYS-6 &middot; corroborated T [88], USE [93], S [108]</div>
+      <div class="cap">tokens.py:622 PANEL_MIN_WIDTH=280; probe_*.json panel_minimumSizeHint [393,353]/[361,337]/[345,329]; .synapse/contracts/docking-minimums.yaml:42-45 carries the bound as a feature string; tests/test_panel_rhythm_docking.py:85-86 re.findall(r'&lt;= (\d+)px wide at (airy|standard|tight)'). 0 hits for breakpoint|reappear in tokens.py, synapse_panel.py, RHYTHM_SPEC, REGION_MAP.</div>
+      <div class="fix"><b>Decide what gives way at 340</b> and write it where the next designer looks: per-density floors beside PANEL_MIN_WIDTH, one DOCK_COLLAPSE_PX, a reappear rule for anything that hides. Either 280 becomes true or it is deleted. The test reads tokens, not prose.</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev b">Blocker</div><div style="flex:1;">
+      <div class="t">F4 &middot; The consent card speaks another colour grammar, and at REVIEW level offers no verb</div>
+      <div class="lens">IDEA-06 &middot; USE-04 &middot; SYS-10 &middot; USE-08 (targets)</div>
+      <div class="cap">gate_widget.png 5562 chromatic px = 3.15% across 12 hue buckets vs chat 2181 / 0.84% / 3 buckets. Hues read directly from GATE_LEVELS (tokens.py:611-616) at gate_widget.py:28-31 and GROW/ERROR at :327,:353 (SYSTEM's trace wins: styles.py:714-790 has 0 consumers). Buttons only for approve/critical (:204); a REVIEW card is 280&#215;19 with buttons [] (use_review_expert.json); Reject 62&#215;23, Approve 68&#215;23, fold toggle 280&#215;23. face_review.py:328-335 proves consent verbs already exist in the muted set.</div>
+      <div class="fix"><b>GateWidget takes the panel's own vocabulary:</b> DsCard bands, DsVerb tone verbs, tag badges; every auto-surfaced card carries a verb (REVIEW: reject, per CLAUDE.md 1.2 'continues unless rejected'); Approve is the one accented thing; all consent targets at the 36px verb height. Hue map for four levels inside the muted set is proposed to Joe with WCAG numbers, not invented. Direction C sketches it.</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev m">Major</div><div style="flex:1;">
+      <div class="t">F5 &middot; The profile row is a density switch wearing a persona name; it costs the conversation its majority and brings a second selector vocabulary</div>
+      <div class="lens">IDEA-01 &middot; IDEA-03 &middot; S5 &middot; USE-06 &middot; SYS-3 &middot; SYS-4 &middot; SYS-5 &middot; T7</div>
+      <div class="cap">Chat 282/338/366 px = 37/44/48% of 760; chrome before the first word 193/177/169. DsTabRow (47px) holds only CURIOUS/EXPERT/ML; compositor.py:252-268 walks identical builders. CHAT/TOKEN = underline tabs 11px/115%/400; profile chips = filled squares 12px/106%/500/caps via three appliers (:1099-1100 dead; qss.py:388-392; rhythm.py:55-71). RADIUS_ROUND 999 renders square: Qt drops r &gt; half the box (probe_radius.json; boundary 14.5 on 29px). Curious clips its own name 'URIOUS'.</div>
+      <div class="fix"><b>Fold the row into the overflow;</b> a CHAT pill with only TOKEN as sibling is a label, so one TOKEN toggle at the ribbon edge. +47px: expert 338 &rarr; 385 = 51%. Retire RADIUS_ROUND or define it as half the target box (crux). The three-applier fight dissolves by removal.</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev m">Major</div><div style="flex:1;">
+      <div class="t">F6 &middot; Two-thirds of the voice is typewriter against the system's own doctrine; four primary buttons are repainted as verbs</div>
+      <div class="lens">T3 &middot; IDEA-05 &middot; T [89]</div>
+      <div class="cap">type_census_expert_340.json family_hist: Space Mono 61 (64%), Space Grotesk 26, host 8 of 95 visible text widgets; tokens.py:357-363 'mono is for CODE, sans is for everything else'. Connect/Corpus c.Button(variant='primary') at synapse_panel.py:783,792, re-objectNamed DsVerb + tracked_font at :828-831; tokens.py:239 still says SIGNAL_DEEP = 'Connect / Corpus / SEND'.</div>
+      <div class="fix"><b>Space Grotesk for anything read as words</b> (verbs, Connect, pills, captions, khint); Space Mono for ids, paths, counts, code, eyebrow. Build rail controls with _verb() once and delete the re-name loop; update tokens.py:239. This one move also resolves F1 at standard and most of F7.</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev m">Major</div><div style="flex:1;">
+      <div class="t">F7 &middot; Ten tracking values through four mechanisms; the token doctrine's reason is false on this host</div>
+      <div class="lens">T4 &middot; SYS-13 &middot; SYS-11 answer</div>
+      <div class="cap">spacing_hist 100/115/106/108/116/103/122/112% + abs 0.5/1.0px. QFont percent, QFont abs, QSS letter-spacing (qss.py:533,537,560,584,587), HTML (message_formatter.py:302). tokens.py:378 'Qt QSS has no letter-spacing': probe_qss_letterspacing.json 63 &rarr; 108px and QSS silently overrides a QFont percentage. BRAND and BODY have 0 consumers.</div>
+      <div class="fix"><b>Three values, one owner.</b> TRACKING_EM = WORDMARK 0.16, EYEBROW ~0.10 (label and tag), DATA 0.03; QFont owns it; delete the five QSS sites (all in SWEEP_A blocks that ship nothing) and the TYPE_ROLES abs-px column; correct the sentence at tokens.py:378.</div>
+    </div><div class="gate">crux</div></div>
+
+    <div class="f"><div class="sev m">Major</div><div style="flex:1;">
+      <div class="t">F8 &middot; SEMIBOLD is a name without a face; the same token draws 500 or 700 by code path</div>
+      <div class="lens">T5</div>
+      <div class="cap">Bundled Space Grotesk registers Light/Regular/Medium/Bold; WEIGHT_SEMIBOLD=600 (tokens.py:354) &rarr; setBold at components.py:45 / fontload.py:176-177 = 700, QSS font-weight 600 = Medium. qss.py writes 700 as SEMIBOLD+MEDIUM-REGULAR eleven times (:533 ...). weight_hist 400&#215;71, 500&#215;17, 700&#215;5.</div>
+      <div class="fix"><b>Name what the bundle has:</b> REGULAR 400, MEDIUM 500, BOLD 700; replace SEMIBOLD site by site with the weight that already renders; delete the arithmetic. Keep near-zero bolding; it is working.</div>
+    </div><div class="gate">crux</div></div>
+
+    <div class="f"><div class="sev m">Major</div><div style="flex:1;">
+      <div class="t">F9 &middot; The ladder on paper is not the ladder on screen; four floors; six 10px widgets the audit never sees, one of them the only instruction on how to send</div>
+      <div class="lens">T1 &middot; T8 &middot; USE-07 &middot; S11</div>
+      <div class="cap">TYPE_ROLES 19/15/12/11(+10); rendered 12&#215;43, 11&#215;41, 10&#215;6, 14&#215;4, 15&#215;1, no 19 anywhere; 14 and 21 are literals (synapse_panel.py:704, face_review.py:227). scaled() min 8, FONT_FLOOR_PX 10 'provenance UNKNOWN' (tokens.py:337-345), READABLE_FLOOR 11 on a 7-name tuple (audit_panel.py:377), BODY_FLOOR 12. khint DATA 10px mono TERTIARY 3.9:1 (synapse_panel.py:1952-1954), outside the tuple. G3 'chrome floor &gt;= 11 [ok]' is true of its list, false of the panel.</div>
+      <div class="fix"><b>One floor (11 until the GUI probe lands),</b> consumed by scaled(), every tracked_font and the audit; the audit walks visible text widgets, not a tuple (auto). Promote 14/21 into the ladder or retire them; SIZE_HERO/display, BRAND, BODY, LABEL_SM, DISPLAY go on the no-list, but each is test-pinned so retirement is Joe's edit.</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev m">Major</div><div style="flex:1;">
+      <div class="t">F10 &middot; The composer's biggest glyph is its least-used control, and it says '/' three times</div>
+      <div class="lens">IDEA-08 &middot; USE-05 &middot; S8 &middot; S4</div>
+      <div class="cap">attach 52&#215;54 = 2808px&#178; (setIconSize 36 on a 24 grid, synapse_panel.py:1931-1935) vs SEND 60&#215;32 = 1920px&#178;; input 212 of 280; placeholder 'Ask SYNAPSE&hellip; &middot; / for commands' wraps in all three shots; khint repeats '/ commands' at 10px; Ctrl+K chip is a third telling at 0 width. SEND carries 79-87% of all accent pixels.</div>
+      <div class="fix"><b>Attach as a 24px ghost glyph inside the well;</b> SEND the single raised element; placeholder 'Ask SYNAPSE&hellip;'; one legend (khint at caption 11 SECONDARY, or delete it and put Shift+Enter in the tooltip). ~28% more input width; drag-drop and the palette already reach _on_attach.</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev m">Major</div><div style="flex:1;">
+      <div class="t">F11 &middot; Undo after a quiet turn has no control on the CHAT surface</div>
+      <div class="lens">USE-03 &middot; IDEA [118] &middot; S [114]</div>
+      <div class="cap">REVERT only at face_review.py:328-329; the only _set_face('work') is synapse_panel.py:2021, gated level != inform; INFORM ops (create_node, set_parameter, connect_nodes) never raise a gate; chat_display.py has no per-tool receipt. 'Every action reversible and recorded' is the product's stated differentiator.</div>
+      <div class="fix"><b>A per-turn revert in the transcript footer</b> for turns whose _turn_tools include a mutator (data exists :1657-1672), or the MarkDot done-state as a click target into Work. One signal, one destination. Direction C sketches the footer.</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev m">Major</div><div style="flex:1;">
+      <div class="t">F12 &middot; Nine rhythm roles resolve to two gap sizes; row is dead; parm_row is a column-width hook; three things are named 'label'</div>
+      <div class="lens">SYS-1 &middot; SYS-2 &middot; T12</div>
+      <div class="cap">rhythm.py:26-36: shell=group=card 24/16/12, stack=parm_row 6/4/3, band 0 (probe_*.json applied_gaps_by_role). rhythm_role row: 0 set-sites, qss.py:374-387 still ships its box. 22/24 parm_row stamps sit on layout-less QLabels; effect is qss.py:424-431 SPACE_32&#215;4/2. TYPE_ROLES 'label', TRACKING_EM 'LABEL', rhythm_role 'label' are three different things (RULING-4d defers the rename).</div>
+      <div class="fix"><b>Fewer roles that mean more:</b> shell, group, stack, band, plus eyebrow and tag; card aliases group or gets its own margin; delete the row block; parm columns become named dimension tokens. Design Director's call on the collapse; the code lives in designsystem/.</div>
+    </div><div class="gate">crux</div></div>
+
+    <div class="f"><div class="sev m">Major</div><div style="flex:1;">
+      <div class="t">F13 &middot; A second pypanel entry point is dead but not gone, and the sheet carries type for surfaces that do not ship</div>
+      <div class="lens">SYS-12 &middot; T11 &middot; SYS-9 (downgraded)</div>
+      <div class="cap">packages/synapse.json hpath &rarr; houdini/python_panels/synapse_panel.pypanel:45; python/synapse/panel/synapse_chat.pypanel:35-41 launches chat_panel (no compositor) off hpath. qss.py:459-461 admits SWEEP_A ships nothing, yet :530-782 ships pt units, 18/14px derived sizes, 10px on a primary button. after_r3 manifests still render hda_* and context_bar as review views; three lenses reviewed them as shipped.</div>
+      <div class="fix"><b>Delete the alternate entry and the SWEEP_A blocks with their modules,</b> or mark them unshipped so census and screenshot manifests skip them. tests/test_panel_alt_entry_unshipped.py already pins the reachability half. Make rhythm.apply require a density (SYS-9).</div>
+    </div><div class="gate">crux</div></div>
+
+    <div class="f"><div class="sev m">Major</div><div style="flex:1;">
+      <div class="t">F14 &middot; The idle panel says 'nothing yet' eight ways; the Work face shows five at once</div>
+      <div class="lens">IDEA-07 &middot; T [87] &middot; S [104]</div>
+      <div class="cap">'Standing by' (:714; face_work.py:196), 'Not connected' (:769), 'no scene context' (:1002), 'Ready. What are we building?' (:1024), 'waiting for work' (face_work.py:215), 'no steps yet' (:333), 'Awaiting telemetry&hellip;' (health_infographic.py:113, a QPainter literal outside TYPE_ROLES), 'no operations tracked yet' (integrity_readout.py:63). panel_work.png: five on one face.</div>
+      <div class="fix"><b>One idle line per face.</b> The chat face already has the right one (it is voice, not status). Empty sub-sections render as absence, not as labels announcing absence.</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev n">Minor</div><div style="flex:1;">
+      <div class="t">F15 &middot; The written idea exists in two versions and reviewers read the older one first</div>
+      <div class="lens">IDEA-02 (downgraded) &middot; IDEA-11</div>
+      <div class="cap">REDESIGN.md:45-46 names cyan #00D4FF, DM Sans/JetBrains, a four-hue status grammar and 'SIGNAL for intelligence/connectivity'; shipped truth is tokens.py:29 #8FB3D9, Space Grotesk/Mono, BATTLEPLAN_PD.md:185 'SIGNAL family only (active tab, SEND, hero)'. On screen the accent consistently means the next action; 0 accent px on the connection ring.</div>
+      <div class="fix"><b>One line at the top of REDESIGN.md &sect;3</b> marking it superseded by tokens.py + BATTLEPLAN &sect;4, and one sentence at tokens.py:29 stating what SIGNAL means. Keep &sect;1's sentence and &sect;4's shape; they are the idea.</div>
+    </div><div class="gate">auto</div></div>
+
+    <div class="f"><div class="sev n">Minor</div><div style="flex:1;">
+      <div class="t">F16 &middot; Four vocabularies for 'this is where a band ends'; the grid has no hairline rung</div>
+      <div class="lens">IDEA-09 &middot; SYS-7</div>
+      <div class="cap">HAIR rule (qss.py:39, :338), BORDER rule (:119; components.py:333; :410), the '&middot; &middot; &middot;' grip, and a bare tone step at y=185. Six off-ladder setSpacing(1|2) literals behind exemptions that say 'no role expresses 1px'; nested QLayouts can never carry a role (rhythm.py:86-108 walks widgets).</div>
+      <div class="fix"><b>HAIR for chrome boundaries</b> (elevation table tokens.py:137-141); drop the divider between verbs and composer; add a seam rung (0-1px) so IntegrityReadout and the recall card stop being exceptions; keep the grip because it is an affordance.</div>
+    </div><div class="gate">crux</div></div>
+
+    <div class="f"><div class="sev n">Minor</div><div style="flex:1;">
+      <div class="t">F17 &middot; A third family leaks in: eight widgets carry no family at all</div>
+      <div class="lens">T10</div>
+      <div class="cap">ChatDisplay widget font, DsInput, HDA QTextEdit/QComboBox/QCheckBox, DsButton Generate HDA / Main menu resolve to the host face (Courier offscreen). chat_display.py:157-162 fonts the document, not the widget; qss.py:21 'no font-family'.</div>
+      <div class="fix"><b>One decision either way:</b> apply fontload.apply_family on the eight at construction, or declare body = host face in TYPE_ROLES.</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev n">Minor</div><div style="flex:1;">
+      <div class="t">F18 &middot; Small click targets on the rail and verb row</div>
+      <div class="lens">USE-08 &middot; S6 &middot; S7</div>
+      <div class="cap">'?' 9&#215;36 (hint 9), Aa 17&#215;36, overflow 24&#215;36, FIX 25&#215;36 in all three profiles (use_*.json small_targets); G3 measures sizeHint height only (audit_panel.py:181). Corpus tooltip cites the H21 corpus on an H22.0.400 host (:791-796).</div>
+      <div class="fix"><b>Fold ? and Aa into the overflow</b> (Aa is already there); Corpus folds into Connect ('connect, then ground the corpus' :810); surviving verbs get a 32px minimum width. The consent targets are F4.</div>
+    </div><div class="gate">joe</div></div>
+
+    <div class="f"><div class="sev p">Praise</div><div style="flex:1;">
+      <div class="t">P1 &middot; The restraint half of the idea is real: 0.82-0.84% chromatic, three hue buckets, identical in all three profiles; the wordmark never gives way</div>
+      <div class="lens">IDEA-10 &middot; T9 &middot; USE-09 &middot; S10 &middot; SYS-11 &mdash; five lenses reproduced the numbers</div>
+      <div class="cap">2175 / 2181 / 2121 chromatic px of 258,400. Wordmark w=hint=min=69 at 340 in every density and at 280; Space Grotesk 700, 14px, 116% (synapse_panel.py:706-712). One property drives one grid through one sheet: 0 raw hex outside designsystem/, every role gap steps exactly round(base &#215; 1.5/1.0/0.75). Stop is state-gated (:737-738); the rail meter was retired as 'a fourth signal for one state' (:815-820). Contrast PRIMARY 8.3:1, seeded worst 5.3:1.</div>
+      <div class="fix">Protect this as the floor. Every finding above is the other half of the same idea and none of them touches what already works.</div>
+    </div><div class="gate">&nbsp;</div></div>
+  </div>
+
+  <div class="cap" style="padding-top: 4px;">Gate: auto = doc/test-only &middot; crux = code inside designsystem/ &middot; joe = anything that changes what the artist sees. Closure predicates for every finding are in REVIEW.md and in the returned object. Directions A/B/C (row 3 of the canvas) are options for Joe, not deliverables.</div>
+</div>
+</x-dc></body></html>

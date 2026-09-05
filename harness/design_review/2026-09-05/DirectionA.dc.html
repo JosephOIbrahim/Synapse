@@ -1,0 +1,75 @@
+<!doctype html><html><head><meta charset="utf-8"><script src="./support.js"></script></head><body><x-dc><helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap"><style>
+body { margin: 0; background: #FFFFFF; color: #111111; font-family: "Space Grotesk", "DM Sans", "Segoe UI", sans-serif; }
+.eyebrow { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #111111; }
+.cap { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 9px; line-height: 12px; color: #555555; letter-spacing: 0.03em; }
+.note { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 11.5px; line-height: 16px; color: #222222; }
+.bx { position: absolute; box-sizing: border-box; border: 1px solid #111111; background: #FFFFFF; }
+.lb { position: absolute; font-family: "Space Grotesk", sans-serif; font-size: 10px; color: #111111; white-space: nowrap; }
+.mo { font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 0.08em; color: #111111; }
+.sig { color: #8FB3D9; }
+.sigbg { background: #8FB3D9; }
+.dim { position: absolute; right: -60px; width: 52px; font-family: "Space Mono", monospace; font-size: 9px; color: #555555; text-align: left; }
+</style></helmet>
+<div style="width: 720px; min-height: 800px; box-sizing: border-box; padding: 28px 32px 24px 32px; display: flex; flex-direction: column; gap: 14px; background: #FFFFFF;">
+
+  <div style="display: flex; flex-direction: column; gap: 5px;">
+    <div class="eyebrow">Direction A &middot; axis: fewer words on a rail that never elides</div>
+    <div style="font-size: 22px; line-height: 26px; font-weight: 600; letter-spacing: 0.2px; color: #111111;">Three verbs, one voice</div>
+    <div class="note" style="max-width: 640px;"><b>Motivation.</b> The verb rail is the one place below the wordmark where "type, not chrome" is visible (qss.py:159-165). Keep it, but hold it to the wordmark's rule: a hard minimum from its own hint, never elide. Three words in Space Grotesk sentence case fit every density with margin (verb_tracking.json: sans 12 = 248 for five; three words &asymp; 190 at 24px gaps). The profile row folds into the overflow; the rail carries one state sentence.</div>
+    <div class="note" style="max-width: 640px;"><b>Tradeoff.</b> OPTIMIZE and Aa leave the rail (OPTIMIZE gains /optimize; Aa is already in the overflow). The rail keeps 52px (36 + 16 gap) that Direction B returns to the transcript. The mono-caps voice on verbs is given up in favour of the doctrine at tokens.py:357-363.</div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 340px 1fr; gap: 56px;">
+    <div style="position: relative; width: 340px; height: 560px; border: 1px solid #111111; box-sizing: border-box; background: #FFFFFF;">
+      <!-- rail 52 -->
+      <div class="bx" style="left:0; top:0; width:340px; height:52px; border-width:0 0 1px 0;"></div>
+      <div style="position:absolute; left:30px; top:18px; width:16px; height:16px; border-radius:999px; border:1.5px solid #111111;"></div>
+      <div class="lb" style="left:54px; top:19px; font-weight:700; letter-spacing:0.16em; font-size:14px;">SYNAPSE</div>
+      <div class="lb" style="left:142px; top:21px; color:#555555;">Not connected</div>
+      <div class="lb" style="left:250px; top:21px;">Connect</div>
+      <div class="mo" style="position:absolute; left:298px; top:20px;">&middot;&middot;&middot;</div>
+      <div class="dim" style="top:18px;">52</div>
+      <!-- ribbon 46 -->
+      <div class="bx" style="left:0; top:52px; width:340px; height:46px; border-width:0 0 1px 0;"></div>
+      <div class="lb" style="left:30px; top:68px; color:#555555;">no scene context</div>
+      <div class="lb" style="left:268px; top:66px; border-bottom:2px solid #111111; padding-bottom:8px;">TOKEN</div>
+      <div class="dim" style="top:66px;">46</div>
+      <!-- chat -->
+      <div class="bx" style="left:0; top:98px; width:340px; height:266px; border-width:0; background:#F2F2F2;"></div>
+      <div class="lb" style="left:30px; top:114px; font-size:12px; color:#111111;">Ready. What are we building?</div>
+      <div class="lb" style="left:30px; top:330px; font-size:9px; color:#555555; font-family:'Space Mono',monospace; letter-spacing:0.06em;">CONVERSATION &middot; 385 of 760 = 51%</div>
+      <div class="dim" style="top:220px;">385</div>
+      <!-- verb rail 36 -->
+      <div class="bx" style="left:0; top:364px; width:340px; height:36px; border-width:1px 0 0 0;"></div>
+      <div class="lb" style="left:30px; top:375px; font-size:12px;">Explain</div>
+      <div class="lb" style="left:98px; top:375px; font-size:12px;">Fix</div>
+      <div class="lb" style="left:142px; top:375px; font-size:12px;">Build HDA</div>
+      <div class="dim" style="top:375px;">36</div>
+      <!-- composer 160 -->
+      <div class="bx" style="left:0; top:400px; width:340px; height:160px; border-width:1px 0 0 0;"></div>
+      <div class="bx" style="left:30px; top:416px; width:280px; height:110px; border:1px solid #111111; background:#F2F2F2;"></div>
+      <div class="lb" style="left:40px; top:426px; color:#555555;">Ask SYNAPSE&hellip;</div>
+      <div style="position:absolute; left:40px; top:498px; width:16px; height:16px; border:1px solid #555555; border-radius:2px;"></div>
+      <div class="sigbg" style="position:absolute; left:240px; top:488px; width:60px; height:30px;"></div>
+      <div class="lb" style="left:255px; top:497px; color:#FFFFFF; font-weight:500; font-size:11px;">SEND</div>
+      <div class="dim" style="top:470px;">160</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 4px;">
+      <div class="eyebrow">What moved</div>
+      <div class="note">Rail 84 &rarr; 52: five Ignored labels, DsRailMeter and the health strip deleted; author token, Ctrl+K, ?, Corpus to the overflow. One state string ('Not connected' / 'Working on it' / 'Result ready') with setMinimumWidth(sizeHint).</div>
+      <div class="note">Profile row (47) folded into the overflow; CHAT pill retired; one TOKEN underline tab at the ribbon edge.</div>
+      <div class="note">Verbs: Explain &middot; Fix &middot; Build HDA, Space Grotesk 12, sentence case, 0em, never elide. Rail width demand &asymp; 190 at airy vs 280.</div>
+      <div class="note">Composer: attach 24px ghost inside the well; khint gone (Shift+Enter in the tooltip); SEND the single raised element.</div>
+      <div class="eyebrow" style="padding-top:6px;">Numbers at 340&#215;760, expert</div>
+      <div class="cap">chat 338 &rarr; 385 (+47 tab row) &rarr; ~430 with khint and rail trims (57%)<br>rail 84 &rarr; 52 &middot; ribbon 46 &middot; verbs 36 &middot; composer 176 &rarr; ~153<br>chrome before the first word 177 &rarr; 98</div>
+      <div class="eyebrow" style="padding-top:6px;">Closes</div>
+      <div class="cap">F1 (count + never-elide) &middot; F2 &middot; F5 &middot; F6 (verbs) &middot; F10 &middot; F18<br>Leaves F3 (docking token), F4 (consent), F11 (undo) to their own fixes.</div>
+      <div class="eyebrow" style="padding-top:6px;">Lens votes</div>
+      <div class="cap">IDEA (keep a rail, fewer words) &middot; TYPE (sans, sentence case)<br>USE and SUBTRACT prefer Direction B.</div>
+    </div>
+  </div>
+
+  <div class="cap">Low-fi. Black/white plus SIGNAL only. Boxes at measured proportions from regions_expert.json; projected heights are arithmetic on those measurements, not a probe. Not a deliverable; an option for Joe.</div>
+</div>
+</x-dc></body></html>

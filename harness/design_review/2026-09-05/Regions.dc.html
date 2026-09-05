@@ -1,0 +1,73 @@
+<!doctype html><html><head><meta charset="utf-8"><script src="./support.js"></script></head><body><x-dc><helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap"><style>
+body { margin: 0; background: #2A2A2A; color: #C5C5C5; font-family: "Space Grotesk", "DM Sans", "Segoe UI", sans-serif; }
+a { color: #8FB3D9; } a:hover { color: #A9C7E6; }
+.cap { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 9px; line-height: 12px; color: #868686; letter-spacing: 0.03em; }
+.note { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 12px; line-height: 17px; color: #A0A0A0; }
+.eyebrow { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #868686; }
+.num { width: 20px; height: 20px; border-radius: 999px; border: 1.5px solid #8FB3D9; color: #8FB3D9; font-family: "Space Mono", monospace; font-size: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rg { position: absolute; left: 0; width: 340px; box-sizing: border-box; border: 1px dashed rgba(143,179,217,0.55); }
+.lbl { position: absolute; font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 0.12em; color: #8FB3D9; background: #2A2A2A; padding: 0 3px; }
+.cardh { display: flex; flex-direction: row; gap: 10px; align-items: flex-start; }
+.ct { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: #DEDEDE; }
+</style></helmet>
+<div style="width: 880px; min-height: 700px; box-sizing: border-box; padding: 40px 48px 32px 48px; display: flex; flex-direction: column; gap: 16px; background: #2A2A2A;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="eyebrow">Regions · the camera review order</div>
+    <div style="font-size: 26px; line-height: 30px; font-weight: 600; letter-spacing: 0.5px; color: #DEDEDE;">The five camera regions, plus the TOKEN face</div>
+    <div class="note" style="max-width: 760px;">Diagram at 340&#215;640. Bands are placed from the standard-density measurement of the landed panel (regions_expert.json, 340&#215;760); the chat transcript is the stretch region, so it is shortened by 120px here and nothing else moves. Build order is rail, ribbon, tab row, then faces.</div>
+    <div class="cap">docs/PANEL_REGION_MAP.md:13-26 (six rows, review order) · docs/PANEL_BATTLEPLAN_PD.md &#167;4 last line · synapse_panel.py:498-532 _build_ui · compositor.py:45</div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 340px 1fr; gap: 40px;">
+    <div style="position: relative; width: 340px; height: 640px; background: #2A2A2A; border: 1px solid #3C3C3C; box-sizing: border-box; overflow: hidden;">
+      <div style="position: absolute; left: 0; top: 0; width: 340px; height: 84px; background: #2A2A2A; border-bottom: 1px solid #303030; box-sizing: border-box;"></div>
+      <div style="position: absolute; left: 30px; top: 8px; height: 36px; display: flex; flex-direction: row; align-items: center; gap: 4px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#FF7759" stroke-width="1.5"><circle cx="10" cy="10" r="7"></circle></svg>
+        <div style="font-size: 14px; font-weight: 700; letter-spacing: 0.16em; color: #DEDEDE;">SYNAPSE</div>
+      </div>
+      <div style="position: absolute; right: 30px; top: 8px; height: 36px; display: flex; flex-direction: row; align-items: center; gap: 4px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.03em; color: #868686;"><span>&#8943;</span><span style="border: 1px solid #363636; border-radius: 4px; padding: 3px 7px;">&#8984;K</span></div>
+      <div style="position: absolute; left: 30px; top: 52px; font-family: 'Space Mono', monospace; font-size: 11px; color: #868686;">Connect &#160; Corpus &#160; ?</div>
+
+      <div style="position: absolute; left: 0; top: 84px; width: 340px; height: 46px; box-sizing: border-box;"></div>
+      <div style="position: absolute; left: 30px; top: 100px; font-size: 12px; font-weight: 500; letter-spacing: 0.5px; color: #A0A0A0;">no scene context</div>
+      <div style="position: absolute; left: 220px; top: 92px; height: 30px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.15em; color: #DEDEDE; border-bottom: 2px solid #8FB3D9; padding: 0 0 12px 0;">CHAT</div>
+      <div style="position: absolute; left: 269px; top: 92px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.15em; color: #868686;">TOKEN</div>
+
+      <div style="position: absolute; left: 0; top: 130px; width: 340px; height: 47px; border-bottom: 1px solid #363636; box-sizing: border-box;"></div>
+      <div style="position: absolute; left: 58px; top: 139px; display: flex; flex-direction: row; gap: 16px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.15em; color: #A0A0A0;">
+        <span style="background: #363636; border-radius: 999px; padding: 6px 10px;">CURIOUS</span><span style="background: #363636; border-radius: 999px; padding: 6px 10px; color: #DEDEDE;">EXPERT</span><span style="background: #363636; border-radius: 999px; padding: 6px 10px;">ML</span>
+      </div>
+
+      <div style="position: absolute; left: 30px; top: 185px; width: 280px; height: 218px; background: #1F1F1F;"></div>
+      <div style="position: absolute; left: 30px; top: 196px; width: 280px; text-align: center; font-size: 12px; font-style: italic; color: #868686;">Ready. What are we building?</div>
+
+      <div style="position: absolute; left: 30px; top: 419px; width: 280px; height: 36px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.15em; color: #A0A0A0;"><span>EXPLAIN</span><span>FIX</span><span>OPTIMIZE</span><span>BUILD HDA</span><span>Aa</span></div>
+      <div style="position: absolute; left: 30px; top: 455px; width: 280px; height: 1px; background: #303030;"></div>
+
+      <div style="position: absolute; left: 30px; top: 482px; width: 212px; height: 111px; background: #1F1F1F; border: 1px solid #363636; border-radius: 4px; box-sizing: border-box;"></div>
+      <div style="position: absolute; left: 46px; top: 498px; font-family: 'Space Mono', monospace; font-size: 12px; color: #868686;">Ask SYNAPSE&#8230;</div>
+      <div style="position: absolute; left: 172px; top: 551px; width: 60px; height: 32px; background: #627A93; color: #0F1F2B; border-radius: 4px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.08em; font-weight: 500; display: flex; align-items: center; justify-content: center;">SEND</div>
+      <svg style="position: absolute; left: 266px; top: 514px;" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#868686" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 8"></path></svg>
+      <div style="position: absolute; left: 30px; top: 617px; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.03em; color: #868686;">&#8629; send &#183; &#8679;&#8629; newline &#183; / commands</div>
+
+      <div class="rg" style="top: 130px; height: 47px;"></div><div class="lbl" style="left: 6px; top: 124px;">1 PROFILE TAB STRIP</div>
+      <div class="rg" style="top: 0px; height: 130px;"></div><div class="lbl" style="left: 6px; top: 76px;">2 HEADER / RIBBON</div>
+      <div class="rg" style="top: 185px; height: 218px; left: 30px; width: 280px;"></div><div class="lbl" style="left: 36px; top: 179px;">3 CHAT TRANSCRIPT</div>
+      <div class="rg" style="top: 419px; height: 36px; left: 30px; width: 280px;"></div><div class="lbl" style="left: 36px; top: 413px;">4 VERB RAIL</div>
+      <div class="rg" style="top: 403px; height: 16px; left: 30px; width: 280px; border-color: rgba(255,119,89,0.5);"></div><div class="lbl" style="left: 36px; top: 397px; color: #FF7759;">5 RECALL CARD (hidden at rest)</div>
+      <div class="rg" style="top: 456px; height: 176px; left: 30px; width: 280px; border-color: rgba(160,160,160,0.5);"></div><div class="lbl" style="left: 36px; top: 450px; color: #A0A0A0;">COMPOSER</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div class="cardh"><div class="num">1</div><div style="display: flex; flex-direction: column; gap: 2px;"><div class="ct">Profile tab strip</div><div class="note">#DsTabRow, shell role; CURIOUS / EXPERT / ML are tag pills, right-aligned; the 1px BORDER rule under. Height 47 at every density.</div><div class="cap">synapse_panel.py:1058-1104 · qss.py:117-130, 296-298 · PANEL_REGION_MAP.md:21 · regions_expert.json tab_row y=130 h=47</div></div></div>
+      <div class="cardh"><div class="num">2</div><div style="display: flex; flex-direction: column; gap: 2px;"><div class="ct">Header / ribbon</div><div class="note">Rail #DsHeader (mark, wordmark, status, author, meter, &#8984;K, overflow, Stop when working; Connect / Corpus / ? row) over a 1px HAIR rule; the context ribbon carries the sans label and the CHAT / TOKEN pills. Rail 84 + ribbon 46 at standard.</div><div class="cap">synapse_panel.py:655-780, 992-1007 · qss.py:37-40, 307-309 · PANEL_REGION_MAP.md:22, 28-54 · regions_expert.json rail h=84, ribbon h=46</div></div></div>
+      <div class="cardh"><div class="num">3</div><div style="display: flex; flex-direction: column; gap: 2px;"><div class="ct">Chat transcript</div><div class="note">#DsChatTranscript on GROUND, inside the direct face shell (GUTTER 30 both sides). The one stretch region: 338 tall at 760, drawn 218 here.</div><div class="cap">synapse_panel.py:1009, 1167-1187 · qss.py:34 · chat_display.py:456 _apply_leading · PANEL_REGION_MAP.md:23 · regions_expert.json chat x=30 w=280 h=338</div></div></div>
+      <div class="cardh"><div class="num">4</div><div style="display: flex; flex-direction: column; gap: 2px;"><div class="ct">Verb rail</div><div class="note">Five #DsVerb type-set actions (EXPLAIN FIX OPTIMIZE BUILD HDA Aa), group gap 16/24/12, then a divider; act + divider + input share one band.</div><div class="cap">synapse_panel.py:1901-1918, 1883-1899 · qss.py:161-176, 302-304 · PANEL_REGION_MAP.md:24 · regions_expert.json verb_rail y=539 h=36</div></div></div>
+      <div class="cardh"><div class="num">5</div><div style="display: flex; flex-direction: column; gap: 2px;"><div class="ct">Recall card</div><div class="note">RecallCard sits between the transcript and the act band and is hidden at rest; ABSENT from the 09-04 census, built by CAMERA since. Three bands, footer status tag.</div><div class="cap">synapse_panel.py:1176-1179 · python/synapse/panel/recall_card.py · PANEL_REGION_MAP.md:25 · PANEL_RHYTHM_SPEC.md:142-150</div></div></div>
+      <div class="cardh"><div class="num">6</div><div style="display: flex; flex-direction: column; gap: 2px;"><div class="ct">TOKEN face</div><div class="note">A stacked face behind the TOKEN pill, not a band in this view: parm_row key/value grids (label 128 / value 64), refreshed on open.</div><div class="cap">synapse_panel.py:1077-1082, 1108-1122 · face_token.py:337, 447-449 · PANEL_REGION_MAP.md:26 · qss.py:420-432</div></div></div>
+      <div class="cap" style="border-top: 1px solid #303030; padding-top: 8px;">Composer (not a camera region): #DsInput FIELD_INSET, 1px BORDER, radius 4, padding 16px 15px; SEND 60&#215;32 SIGNAL_DEEP embedded bottom-right; attach glyph 36px; key legend 10px mono · synapse_panel.py:1920-1957 · qss.py:229-248 · regions_expert.json composer y=576 h=176</div>
+    </div>
+  </div>
+</div>
+</x-dc></body></html>

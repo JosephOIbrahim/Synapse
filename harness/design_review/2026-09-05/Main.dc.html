@@ -1,0 +1,116 @@
+<!doctype html><html><head><meta charset="utf-8"><script src="./support.js"></script></head><body><x-dc><helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap"><style>
+body { margin: 0; background: #2A2A2A; color: #C5C5C5; font-family: "Space Grotesk", "DM Sans", "Segoe UI", sans-serif; }
+a { color: #8FB3D9; } a:hover { color: #A9C7E6; }
+.cap { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 9px; line-height: 12px; color: #868686; letter-spacing: 0.03em; }
+.note { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 12px; line-height: 17px; color: #A0A0A0; }
+.eyebrow { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #868686; }
+.sw { width: 44px; height: 44px; border-radius: 4px; border: 1px solid #363636; }
+</style></helmet>
+<div style="width: 880px; min-height: 700px; box-sizing: border-box; padding: 40px 48px 32px 48px; display: flex; flex-direction: column; gap: 22px; background: #2A2A2A;">
+
+  <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: flex-end; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div class="eyebrow">Design review · 2026-09-05 · master 74dc0219 · Panel PD wave landed</div>
+      <div style="font-size: 30px; line-height: 34px; font-weight: 600; letter-spacing: 0.5px; color: #DEDEDE;">SYNAPSE Panel Design System</div>
+      <div class="note" style="max-width: 520px;">Scaffold only. Every value on these boards is lifted from source and captioned with its path:line. Screenshots are the landed panel rendered offscreen on hython 22.0.400.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+      <div class="eyebrow">Organizing idea</div>
+      <div style="font-size: 15px; line-height: 21px; font-weight: 600; letter-spacing: 1px; color: #DEDEDE; max-width: 300px; text-align: right;">&#8220;Monochrome restraint + one intelligent accent. Warmth through type and voice, not decoration.&#8221;</div>
+      <div class="cap">docs/design/SYNAPSE_PANEL_REDESIGN.md:43</div>
+      <div class="note" style="max-width: 300px; text-align: right;">The Pentagram bar as written: &#8220;one point of view, ruthless restraint, every pixel earns its place&#8221;</div>
+      <div class="cap">docs/design/SYNAPSE_PANEL_REDESIGN.md:4-5</div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 8px; background: #1F1F1F; border: 1px solid #303030; border-radius: 4px; padding: 16px 18px;">
+      <div class="eyebrow">Wordmark · as shipped</div>
+      <div style="display: flex; flex-direction: row; align-items: center; gap: 4px; height: 36px; border-bottom: 1px solid #303030;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#FF7759" stroke-width="1.5"><circle cx="10" cy="10" r="7"></circle></svg>
+        <div style="font-family: 'Space Grotesk', 'DM Sans', 'Segoe UI', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.16em; color: #DEDEDE;">SYNAPSE</div>
+      </div>
+      <div class="cap">family Space Grotesk · 14px · tracked_font("WORDMARK", 14, weight=600) &#8594; setBold(True) &#8594; Qt weight 700 measured · synapse_panel.py:702-705 · fontload.py:174-175</div>
+      <div class="cap">TRACKING_EM["WORDMARK"] = 0.16 em (letterSpacing 116% measured) · tokens.py:396 · colour TEXT_BRIGHT #DEDEDE via role="title" · qss.py:251</div>
+      <div class="cap">mark: c.MarkDot("idle", diameter=16) at x=30 (GUTTER), wordmark x=54 at standard · synapse_panel.py:677 · regions_expert.json</div>
+      <div class="cap">never elides: setMinimumWidth(sizeHint) = 69px · synapse_panel.py:712 · rhythm role "stack" gap 4/6/3 on the header row · :675</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px; background: #1F1F1F; border: 1px solid #303030; border-radius: 4px; padding: 16px 18px;">
+      <div class="eyebrow">Accent rule</div>
+      <div style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+        <div class="sw" style="background: #8FB3D9; width: 28px; height: 28px;"></div>
+        <div class="note" style="color: #C5C5C5;">SIGNAL family only: active tab, SEND, hero.</div>
+      </div>
+      <div style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+        <div class="sw" style="background: #FF7759; width: 28px; height: 28px;"></div>
+        <div class="note" style="color: #C5C5C5;">WARM for the human (thinking toy, hero verbs, the mark).</div>
+      </div>
+      <div style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+        <div class="sw" style="background: #D08A57; width: 28px; height: 28px;"></div>
+        <div class="note" style="color: #C5C5C5;">HOT_SOFT for BLOCKED / Stop. No other colour points.</div>
+      </div>
+      <div class="cap">docs/PANEL_BATTLEPLAN_PD.md &#167;4 "Accent" line · tokens.py:225 two-accent ceiling (SIGNAL + WARM) · tokens.py:229-231 SIGNAL fails AA as body text, labels/links/icons only</div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div class="eyebrow">Canonical palette · tokens.py:29-42 (hardcoded, back-compat)</div>
+    <div style="display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #8FB3D9;"></div><div class="cap" style="color: #C5C5C5;">SIGNAL</div><div class="cap">#8FB3D9 accent · :29</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #0A0A0A;"></div><div class="cap" style="color: #C5C5C5;">VOID</div><div class="cap">#0A0A0A ground · :30</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #111111;"></div><div class="cap" style="color: #C5C5C5;">NEAR_BLACK</div><div class="cap">#111111 bg · :31</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #1A1A1A;"></div><div class="cap" style="color: #C5C5C5;">CARBON</div><div class="cap">#1A1A1A surface · :32</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #2A2A2A;"></div><div class="cap" style="color: #C5C5C5;">GRAPHITE</div><div class="cap">#2A2A2A border · :33</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #555555;"></div><div class="cap" style="color: #C5C5C5;">SLATE</div><div class="cap">#555555 tertiary · :34</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #999999;"></div><div class="cap" style="color: #C5C5C5;">SILVER</div><div class="cap">#999999 secondary · :35</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #CCCCCC;"></div><div class="cap" style="color: #C5C5C5;">BONE</div><div class="cap">#CCCCCC primary · :36</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #F0F0F0;"></div><div class="cap" style="color: #C5C5C5;">WHITE</div><div class="cap">#F0F0F0 bright · :37</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #FF6B35;"></div><div class="cap" style="color: #C5C5C5;">FIRE</div><div class="cap">#FF6B35 active · :39</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #00E676;"></div><div class="cap" style="color: #C5C5C5;">GROW</div><div class="cap">#00E676 verified · :40</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #FFAB00;"></div><div class="cap" style="color: #C5C5C5;">WARN</div><div class="cap">#FFAB00 caution · :41</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #FF3D71;"></div><div class="cap" style="color: #C5C5C5;">ERROR</div><div class="cap">#FF3D71 error · :42</div></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div class="eyebrow">Seeded surfaces + solved text ramp · headless values from _FALLBACK_RGB (42,42,42) · tokens.py:113 · _derive_palette :123-158 · targets :118-121</div>
+    <div style="display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #1F1F1F;"></div><div class="cap" style="color: #C5C5C5;">GROUND</div><div class="cap">#1F1F1F &#8722;11 · :138</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #2A2A2A;"></div><div class="cap" style="color: #C5C5C5;">PANEL</div><div class="cap">#2A2A2A base · :138</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #363636;"></div><div class="cap" style="color: #C5C5C5;">SURFACE</div><div class="cap">#363636 +12 · :139</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #323232;"></div><div class="cap" style="color: #C5C5C5;">RAISED</div><div class="cap">#323232 +8 · :139</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #363636;"></div><div class="cap" style="color: #C5C5C5;">BORDER</div><div class="cap">#363636 +12 · :139</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #3C3C3C;"></div><div class="cap" style="color: #C5C5C5;">BORDER_STRONG</div><div class="cap">#3C3C3C +18 · :140</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #303030;"></div><div class="cap" style="color: #C5C5C5;">HAIR</div><div class="cap">#303030 +6 · :140</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #DEDEDE;"></div><div class="cap" style="color: #C5C5C5;">TEXT_BRIGHT</div><div class="cap">#DEDEDE 9.0:1 · :203</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #C5C5C5;"></div><div class="cap" style="color: #C5C5C5;">TEXT_PRIMARY</div><div class="cap">#C5C5C5 7.0:1 · :200</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #A0A0A0;"></div><div class="cap" style="color: #C5C5C5;">TEXT_SECONDARY</div><div class="cap">#A0A0A0 4.6:1 · :201</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #868686;"></div><div class="cap" style="color: #C5C5C5;">TEXT_TERTIARY</div><div class="cap">#868686 3.3:1 · :202</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #636363;"></div><div class="cap" style="color: #C5C5C5;">TEXT_DISABLED</div><div class="cap">#636363 2.0:1 · :205</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #92867A;"></div><div class="cap" style="color: #C5C5C5;">MUSHROOM</div><div class="cap">#92867A warm +12 · :227</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #0F1F2B;"></div><div class="cap" style="color: #C5C5C5;">TEXT_ON_ACCENT</div><div class="cap">#0F1F2B · :206</div></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div class="eyebrow">Interaction + second accent + muted verdicts · tokens.py:237-265</div>
+    <div style="display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #A9C7E6;"></div><div class="cap" style="color: #C5C5C5;">SIGNAL_HOVER</div><div class="cap">#A9C7E6 · :237</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #7398BE;"></div><div class="cap" style="color: #C5C5C5;">SIGNAL_PRESS</div><div class="cap">#7398BE · :238</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #627A93;"></div><div class="cap" style="color: #C5C5C5;">SIGNAL_DEEP</div><div class="cap">#627A93 SEND rest · :239</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: rgba(143,179,217,0.12);"></div><div class="cap" style="color: #C5C5C5;">SIGNAL_TINT</div><div class="cap">a 0.12 · :240</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #FF7759;"></div><div class="cap" style="color: #C5C5C5;">WARM</div><div class="cap">#FF7759 human · :248</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #FF8E72;"></div><div class="cap" style="color: #C5C5C5;">WARM_HOVER</div><div class="cap">#FF8E72 · :249</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #E5634A;"></div><div class="cap" style="color: #C5C5C5;">WARM_PRESS</div><div class="cap">#E5634A · :250</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #6E8F72;"></div><div class="cap" style="color: #C5C5C5;">CONIFEROUS</div><div class="cap">#6E8F72 verified · :263</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #D96975;"></div><div class="cap" style="color: #C5C5C5;">NO_SOFT</div><div class="cap">#D96975 · :264</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #D08A57;"></div><div class="cap" style="color: #C5C5C5;">HOT_SOFT</div><div class="cap">#D08A57 blocked · :265</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #202022;"></div><div class="cap" style="color: #C5C5C5;">PRESS_BG</div><div class="cap">#202022 · :275</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: rgba(255,255,255,0.09);"></div><div class="cap" style="color: #C5C5C5;">HOVER_WASH</div><div class="cap">white 0.09 · :242</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><div class="sw" style="background: #D07020;"></div><div class="cap" style="color: #C5C5C5;">HOU_ORANGE</div><div class="cap">#D07020 host · :44</div></div>
+    </div>
+  </div>
+
+  <div class="cap" style="border-top: 1px solid #303030; padding-top: 10px;">Families: FONT_SANS "Space Grotesk" (fallback DM Sans, Segoe UI) · FONT_MONO "Space Mono" (fallback JetBrains Mono, Consolas) · tokens.py:294-300 · bundled via QFontDatabase, fontload.py:28-29 · surfaces reseed from the live host pane grey (theme_source), the hexes above are the headless fallback · tokens.py:49-54</div>
+</div>
+</x-dc></body></html>

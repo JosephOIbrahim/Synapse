@@ -1,0 +1,242 @@
+{
+  "profile": "ml",
+  "density": "tight",
+  "panel": {
+    "w": 340,
+    "h": 760
+  },
+  "fonts": {
+    "ok": true,
+    "families": [
+      "Space Grotesk",
+      "Space Mono"
+    ],
+    "build_mismatch": false
+  },
+  "wordmark": {
+    "x": 53,
+    "y": 8,
+    "w": 69,
+    "h": 32,
+    "visible": true,
+    "objectName": "",
+    "rhythm_role": null,
+    "text": "SYNAPSE",
+    "pixelSize": 14,
+    "bold": true,
+    "weight": 700,
+    "family": "Space Grotesk",
+    "letterSpacing": 116.0,
+    "sizeHint_w": 69
+  },
+  "mark": {
+    "x": 30,
+    "y": 8,
+    "w": 20,
+    "h": 32,
+    "visible": true,
+    "objectName": "",
+    "rhythm_role": null
+  },
+  "rail": {
+    "x": 0,
+    "y": 0,
+    "w": 340,
+    "h": 76,
+    "visible": true,
+    "objectName": "DsHeader",
+    "rhythm_role": "shell"
+  },
+  "ribbon": {
+    "x": 0,
+    "y": 76,
+    "w": 340,
+    "h": 46,
+    "visible": true,
+    "objectName": "DsSection",
+    "rhythm_role": "shell"
+  },
+  "tab_row": {
+    "x": 0,
+    "y": 122,
+    "w": 340,
+    "h": 47,
+    "visible": true,
+    "objectName": "DsTabRow",
+    "rhythm_role": "shell"
+  },
+  "direct_face": {
+    "x": 0,
+    "y": 169,
+    "w": 340,
+    "h": 591,
+    "visible": true,
+    "objectName": "DsSection",
+    "rhythm_role": "shell"
+  },
+  "chat": {
+    "x": 30,
+    "y": 177,
+    "w": 280,
+    "h": 366,
+    "visible": true,
+    "objectName": "DsChatTranscript",
+    "rhythm_role": "group"
+  },
+  "act_band": {
+    "x": 30,
+    "y": 555,
+    "w": 280,
+    "h": 197,
+    "visible": true,
+    "objectName": "DsSection",
+    "rhythm_role": "band"
+  },
+  "verb_rail": {
+    "x": 30,
+    "y": 555,
+    "w": 280,
+    "h": 32,
+    "visible": true,
+    "objectName": "DsSection",
+    "rhythm_role": "group"
+  },
+  "composer": {
+    "x": 30,
+    "y": 588,
+    "w": 280,
+    "h": 164,
+    "visible": true,
+    "objectName": "DsSection",
+    "rhythm_role": "group"
+  },
+  "input": {
+    "x": 30,
+    "y": 610,
+    "w": 216,
+    "h": 107,
+    "visible": true,
+    "objectName": "DsInput",
+    "rhythm_role": null
+  },
+  "send": {
+    "x": 176,
+    "y": 675,
+    "w": 60,
+    "h": 32,
+    "visible": true,
+    "objectName": "DsSend",
+    "rhythm_role": null
+  },
+  "khint": {
+    "x": 30,
+    "y": 737,
+    "w": 280,
+    "h": 15,
+    "visible": true,
+    "objectName": "",
+    "rhythm_role": null
+  },
+  "pills": {
+    "direct": {
+      "x": 224,
+      "y": 84,
+      "w": 33,
+      "h": 30,
+      "visible": true,
+      "objectName": "DsPill",
+      "rhythm_role": null
+    },
+    "token": {
+      "x": 269,
+      "y": 84,
+      "w": 41,
+      "h": 30,
+      "visible": true,
+      "objectName": "DsPill",
+      "rhythm_role": null
+    }
+  },
+  "profile_pills": {
+    "curious": {
+      "x": 78,
+      "y": 131,
+      "w": 84,
+      "h": 29,
+      "visible": true,
+      "objectName": "DsPill",
+      "rhythm_role": "tag"
+    },
+    "expert": {
+      "x": 174,
+      "y": 131,
+      "w": 77,
+      "h": 29,
+      "visible": true,
+      "objectName": "DsPill",
+      "rhythm_role": "tag"
+    },
+    "ml": {
+      "x": 263,
+      "y": 130,
+      "w": 47,
+      "h": 31,
+      "visible": true,
+      "objectName": "DsPill",
+      "rhythm_role": "tag"
+    }
+  },
+  "verbs": [
+    {
+      "x": 30,
+      "y": 555,
+      "w": 57,
+      "h": 32,
+      "visible": true,
+      "objectName": "DsVerb",
+      "rhythm_role": null,
+      "text": "EXPLAIN"
+    },
+    {
+      "x": 99,
+      "y": 555,
+      "w": 25,
+      "h": 32,
+      "visible": true,
+      "objectName": "DsVerb",
+      "rhythm_role": null,
+      "text": "FIX"
+    },
+    {
+      "x": 136,
+      "y": 555,
+      "w": 65,
+      "h": 32,
+      "visible": true,
+      "objectName": "DsVerb",
+      "rhythm_role": null,
+      "text": "OPTIMIZE"
+    },
+    {
+      "x": 213,
+      "y": 555,
+      "w": 68,
+      "h": 32,
+      "visible": true,
+      "objectName": "DsVerb",
+      "rhythm_role": null,
+      "text": "BUILD HDA"
+    },
+    {
+      "x": 293,
+      "y": 555,
+      "w": 17,
+      "h": 32,
+      "visible": true,
+      "objectName": "DsVerb",
+      "rhythm_role": null,
+      "text": "Aa"
+    }
+  ],
+  "chrome_scale": 1.0
+}

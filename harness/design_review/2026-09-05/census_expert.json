@@ -1,0 +1,1384 @@
+{
+ "profile": "expert",
+ "density": "standard",
+ "visible_widgets": 47,
+ "visible_buttons": 17,
+ "visible_labels": 11,
+ "under26": [
+  {
+   "path": "DsHeader/DsSection/DsAuthor",
+   "text": "Sonnet 4.6",
+   "sizeHint_h": 16,
+   "actual": [
+    310,
+    8,
+    0,
+    36
+   ],
+   "visible": true
+  },
+  {
+   "path": "QStackedWidget/DsSection/QStackedWidget/DsSection/GateWidget/QPushButton",
+   "text": "\u25b6  Gates",
+   "sizeHint_h": 23,
+   "actual": [
+    0,
+    177,
+    100,
+    30
+   ],
+   "visible": false
+  },
+  {
+   "path": "QStackedWidget/DsSection/QStackedWidget/DsSection/QCheckBox",
+   "text": "Include help text",
+   "sizeHint_h": 19,
+   "actual": [
+    30,
+    185,
+    640,
+    480
+   ],
+   "visible": false
+  }
+ ],
+ "zero_size_visible": [
+  {
+   "path": "DsHeader/DsSection/QLabel",
+   "cls": "QLabel",
+   "text": "Standing by",
+   "geo": [
+    125,
+    8,
+    0,
+    36
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/DsMeter",
+   "cls": "QLabel",
+   "text": "",
+   "geo": [
+    129,
+    8,
+    0,
+    36
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/DsKHint",
+   "cls": "QLabel",
+   "text": "Ctrl+K",
+   "geo": [
+    133,
+    8,
+    0,
+    36
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/QLabel",
+   "cls": "QLabel",
+   "text": "Not connected",
+   "geo": [
+    179,
+    8,
+    0,
+    36
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/DsAuthor",
+   "cls": "QPushButton",
+   "text": "Sonnet 4.6",
+   "geo": [
+    310,
+    8,
+    0,
+    36
+   ]
+  },
+  {
+   "path": "DsHeader/health_strip/hs_connection",
+   "cls": "QLabel",
+   "text": "<span style=\"color:#555555;\">&#9679;</span> <span style=\"color:#A0A0A0;\">link: unknown</span>",
+   "geo": [
+    30,
+    60,
+    0,
+    16
+   ]
+  },
+  {
+   "path": "DsHeader/health_strip/hs_memory",
+   "cls": "QLabel",
+   "text": "<span style=\"color:#555555;\">&#9679;</span> <span style=\"color:#A0A0A0;\">mem: unknown</span>",
+   "geo": [
+    46,
+    60,
+    0,
+    16
+   ]
+  },
+  {
+   "path": "DsHeader/health_strip/hs_project",
+   "cls": "QLabel",
+   "text": "<span style=\"color:#555555;\">&#9679;</span> <span style=\"color:#A0A0A0;\">show: unknown</span>",
+   "geo": [
+    62,
+    60,
+    0,
+    16
+   ]
+  },
+  {
+   "path": "DsHeader/health_strip/hs_job",
+   "cls": "QLabel",
+   "text": "<span style=\"color:#555555;\">&#9679;</span> <span style=\"color:#A0A0A0;\">job: unknown</span>",
+   "geo": [
+    78,
+    60,
+    0,
+    16
+   ]
+  }
+ ],
+ "verbs": [
+  {
+   "text": "EXPLAIN",
+   "w": 57,
+   "hint_w": 57,
+   "clipped": false
+  },
+  {
+   "text": "FIX",
+   "w": 25,
+   "hint_w": 25,
+   "clipped": false
+  },
+  {
+   "text": "OPTIMIZE",
+   "w": 59,
+   "hint_w": 65,
+   "clipped": true
+  },
+  {
+   "text": "BUILD HDA",
+   "w": 58,
+   "hint_w": 73,
+   "clipped": true
+  },
+  {
+   "text": "Aa",
+   "w": 17,
+   "hint_w": 17,
+   "clipped": false
+  }
+ ],
+ "health_strip": {
+  "geo": [
+   30,
+   60,
+   280,
+   16
+  ],
+  "visible": true,
+  "cells": [
+   {
+    "cls": "QLabel",
+    "text": "<span style=\"color:#555555;\">&#9679;</span> <span style=\"color:#A0A0A0;\">link: unknown</span>",
+    "geo": [
+     30,
+     60,
+     0,
+     16
+    ],
+    "visible": true
+   },
+   {
+    "cls": "QLabel",
+    "text": "<span style=\"color:#555555;\">&#9679;</span> <span style=\"color:#A0A0A0;\">mem: unknown</span>",
+    "geo": [
+     46,
+     60,
+     0,
+     16
+    ],
+    "visible": true
+   },
+   {
+    "cls": "QLabel",
+    "text": "<span style=\"color:#555555;\">&#9679;</span> <span style=\"color:#A0A0A0;\">show: unknown</span>",
+    "geo": [
+     62,
+     60,
+     0,
+     16
+    ],
+    "visible": true
+   },
+   {
+    "cls": "QLabel",
+    "text": "<span style=\"color:#555555;\">&#9679;</span> <span style=\"color:#A0A0A0;\">job: unknown</span>",
+    "geo": [
+     78,
+     60,
+     0,
+     16
+    ],
+    "visible": true
+   }
+  ]
+ },
+ "rail_labels": {
+  "_header_status": {
+   "text": "Standing by",
+   "geo": [
+    125,
+    8,
+    0,
+    36
+   ],
+   "visible": true,
+   "hint_w": 66
+  },
+  "_meter_lbl": {
+   "text": "",
+   "geo": [
+    129,
+    8,
+    0,
+    36
+   ],
+   "visible": true,
+   "hint_w": 7
+  },
+  "_palette_hint": {
+   "text": "Ctrl+K",
+   "geo": [
+    133,
+    8,
+    0,
+    36
+   ],
+   "visible": true,
+   "hint_w": 67
+  },
+  "_author_lbl": {
+   "text": "Sonnet 4.6",
+   "geo": [
+    310,
+    8,
+    0,
+    36
+   ],
+   "visible": true,
+   "hint_w": 81
+  },
+  "_foot_label": {
+   "text": "Not connected",
+   "geo": [
+    179,
+    8,
+    0,
+    36
+   ],
+   "visible": true,
+   "hint_w": 83
+  },
+  "_ctx_label": {
+   "text": "no scene context",
+   "geo": [
+    30,
+    92,
+    174,
+    30
+   ],
+   "visible": true,
+   "hint_w": 109
+  },
+  "_khint": {
+   "text": "\u21b5 send \u00b7 \u21e7\u21b5 newline \u00b7 / commands",
+   "geo": [
+    30,
+    737,
+    280,
+    15
+   ],
+   "visible": true,
+   "hint_w": 204
+  }
+ },
+ "rows": [
+  {
+   "path": "DsHeader",
+   "cls": "QWidget",
+   "obj": "DsHeader",
+   "geo": [
+    0,
+    0,
+    340,
+    84
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    342,
+    84
+   ],
+   "role": "shell"
+  },
+  {
+   "path": "DsHeader/DsSection",
+   "cls": "QWidget",
+   "obj": "DsSection",
+   "geo": [
+    30,
+    8,
+    280,
+    36
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    282,
+    36
+   ],
+   "role": "stack"
+  },
+  {
+   "path": "DsHeader/DsSection/MarkDot",
+   "cls": "MarkDot",
+   "obj": "",
+   "geo": [
+    30,
+    8,
+    20,
+    36
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    -1,
+    -1
+   ],
+   "role": null
+  },
+  {
+   "path": "DsHeader/DsSection/QLabel",
+   "cls": "QLabel",
+   "obj": "",
+   "geo": [
+    54,
+    8,
+    69,
+    36
+   ],
+   "text": [
+    "text",
+    "SYNAPSE"
+   ],
+   "button": false,
+   "sizeHint": [
+    69,
+    18
+   ],
+   "role": null,
+   "font": [
+    "Space Grotesk",
+    14,
+    116.0
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/QLabel",
+   "cls": "QLabel",
+   "obj": "",
+   "geo": [
+    125,
+    8,
+    0,
+    36
+   ],
+   "text": [
+    "text",
+    "Standing by"
+   ],
+   "button": false,
+   "sizeHint": [
+    66,
+    14
+   ],
+   "role": null,
+   "font": [
+    "Space Grotesk",
+    11,
+    0.0
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/DsMeter",
+   "cls": "QLabel",
+   "obj": "DsMeter",
+   "geo": [
+    129,
+    8,
+    0,
+    36
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    7,
+    16
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    103.0
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/DsKHint",
+   "cls": "QLabel",
+   "obj": "DsKHint",
+   "geo": [
+    133,
+    8,
+    0,
+    36
+   ],
+   "text": [
+    "text",
+    "Ctrl+K"
+   ],
+   "button": false,
+   "sizeHint": [
+    67,
+    24
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    103.0
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/DsVerb",
+   "cls": "Button",
+   "obj": "DsVerb",
+   "geo": [
+    137,
+    8,
+    24,
+    36
+   ],
+   "text": [
+    "text",
+    "\u22ef"
+   ],
+   "button": true,
+   "sizeHint": [
+    13,
+    36
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    115.0
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/StatusDot",
+   "cls": "StatusDot",
+   "obj": "",
+   "geo": [
+    165,
+    8,
+    10,
+    36
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    -1,
+    -1
+   ],
+   "role": null
+  },
+  {
+   "path": "DsHeader/DsSection/QLabel",
+   "cls": "QLabel",
+   "obj": "",
+   "geo": [
+    179,
+    8,
+    0,
+    36
+   ],
+   "text": [
+    "text",
+    "Not connected"
+   ],
+   "button": false,
+   "sizeHint": [
+    83,
+    14
+   ],
+   "role": null,
+   "font": [
+    "Space Grotesk",
+    11,
+    0.0
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/DsVerb",
+   "cls": "Button",
+   "obj": "DsVerb",
+   "geo": [
+    183,
+    8,
+    57,
+    36
+   ],
+   "text": [
+    "text",
+    "Connect"
+   ],
+   "button": true,
+   "sizeHint": [
+    57,
+    36
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    115.0
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/DsVerb",
+   "cls": "Button",
+   "obj": "DsVerb",
+   "geo": [
+    244,
+    8,
+    49,
+    36
+   ],
+   "text": [
+    "text",
+    "Corpus"
+   ],
+   "button": true,
+   "sizeHint": [
+    49,
+    36
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    115.0
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/DsVerb",
+   "cls": "Button",
+   "obj": "DsVerb",
+   "geo": [
+    297,
+    8,
+    9,
+    36
+   ],
+   "text": [
+    "text",
+    "?"
+   ],
+   "button": true,
+   "sizeHint": [
+    9,
+    36
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    115.0
+   ]
+  },
+  {
+   "path": "DsHeader/DsSection/DsAuthor",
+   "cls": "QPushButton",
+   "obj": "DsAuthor",
+   "geo": [
+    310,
+    8,
+    0,
+    36
+   ],
+   "text": [
+    "text",
+    "Sonnet 4.6"
+   ],
+   "button": true,
+   "sizeHint": [
+    81,
+    16
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    103.0
+   ]
+  },
+  {
+   "path": "DsHeader/health_strip",
+   "cls": "HealthStrip",
+   "obj": "health_strip",
+   "geo": [
+    30,
+    60,
+    280,
+    16
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    48,
+    16
+   ],
+   "role": "group"
+  },
+  {
+   "path": "DsHeader/health_strip/hs_connection",
+   "cls": "QLabel",
+   "obj": "hs_connection",
+   "geo": [
+    30,
+    60,
+    0,
+    16
+   ],
+   "text": [
+    "text",
+    "<span style=\"color:#555555;\">&#9679;</span> <span style=\"col"
+   ],
+   "button": false,
+   "sizeHint": [
+    108,
+    16
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    0.0
+   ]
+  },
+  {
+   "path": "DsHeader/health_strip/hs_memory",
+   "cls": "QLabel",
+   "obj": "hs_memory",
+   "geo": [
+    46,
+    60,
+    0,
+    16
+   ],
+   "text": [
+    "text",
+    "<span style=\"color:#555555;\">&#9679;</span> <span style=\"col"
+   ],
+   "button": false,
+   "sizeHint": [
+    101,
+    16
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    0.0
+   ]
+  },
+  {
+   "path": "DsHeader/health_strip/hs_project",
+   "cls": "QLabel",
+   "obj": "hs_project",
+   "geo": [
+    62,
+    60,
+    0,
+    16
+   ],
+   "text": [
+    "text",
+    "<span style=\"color:#555555;\">&#9679;</span> <span style=\"col"
+   ],
+   "button": false,
+   "sizeHint": [
+    108,
+    16
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    0.0
+   ]
+  },
+  {
+   "path": "DsHeader/health_strip/hs_job",
+   "cls": "QLabel",
+   "obj": "hs_job",
+   "geo": [
+    78,
+    60,
+    0,
+    16
+   ],
+   "text": [
+    "text",
+    "<span style=\"color:#555555;\">&#9679;</span> <span style=\"col"
+   ],
+   "button": false,
+   "sizeHint": [
+    101,
+    16
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    0.0
+   ]
+  },
+  {
+   "path": "DsSection",
+   "cls": "QWidget",
+   "obj": "DsSection",
+   "geo": [
+    0,
+    84,
+    340,
+    46
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    166,
+    46
+   ],
+   "role": "shell"
+  },
+  {
+   "path": "DsSection/DsContextLabel",
+   "cls": "QLabel",
+   "obj": "DsContextLabel",
+   "geo": [
+    30,
+    92,
+    174,
+    30
+   ],
+   "text": [
+    "text",
+    "no scene context"
+   ],
+   "button": false,
+   "sizeHint": [
+    109,
+    16
+   ],
+   "role": null,
+   "font": [
+    "Space Grotesk",
+    12,
+    0.5
+   ]
+  },
+  {
+   "path": "DsSection/DsPill",
+   "cls": "Pill",
+   "obj": "DsPill",
+   "geo": [
+    220,
+    92,
+    33,
+    30
+   ],
+   "text": [
+    "text",
+    "CHAT"
+   ],
+   "button": true,
+   "sizeHint": [
+    33,
+    30
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    115.0
+   ]
+  },
+  {
+   "path": "DsSection/DsPill",
+   "cls": "Pill",
+   "obj": "DsPill",
+   "geo": [
+    269,
+    92,
+    41,
+    30
+   ],
+   "text": [
+    "text",
+    "TOKEN"
+   ],
+   "button": true,
+   "sizeHint": [
+    41,
+    30
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    115.0
+   ]
+  },
+  {
+   "path": "DsTabRow",
+   "cls": "QWidget",
+   "obj": "DsTabRow",
+   "geo": [
+    0,
+    130,
+    340,
+    47
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    312,
+    47
+   ],
+   "role": "shell"
+  },
+  {
+   "path": "DsTabRow/DsPill",
+   "cls": "Pill",
+   "obj": "DsPill",
+   "geo": [
+    58,
+    139,
+    88,
+    29
+   ],
+   "text": [
+    "text",
+    "CURIOUS"
+   ],
+   "button": true,
+   "sizeHint": [
+    88,
+    29
+   ],
+   "role": "tag",
+   "font": [
+    "Space Mono",
+    12,
+    106.0
+   ]
+  },
+  {
+   "path": "DsTabRow/DsPill",
+   "cls": "Pill",
+   "obj": "DsPill",
+   "geo": [
+    162,
+    138,
+    81,
+    31
+   ],
+   "text": [
+    "text",
+    "EXPERT"
+   ],
+   "button": true,
+   "sizeHint": [
+    81,
+    31
+   ],
+   "role": "tag",
+   "font": [
+    "Space Mono",
+    12,
+    106.0
+   ]
+  },
+  {
+   "path": "DsTabRow/DsPill",
+   "cls": "Pill",
+   "obj": "DsPill",
+   "geo": [
+    259,
+    139,
+    51,
+    29
+   ],
+   "text": [
+    "text",
+    "ML"
+   ],
+   "button": true,
+   "sizeHint": [
+    51,
+    29
+   ],
+   "role": "tag",
+   "font": [
+    "Space Mono",
+    12,
+    106.0
+   ]
+  },
+  {
+   "path": "QStackedWidget",
+   "cls": "QStackedWidget",
+   "obj": "",
+   "geo": [
+    0,
+    177,
+    340,
+    583
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    420,
+    318
+   ],
+   "role": null
+  },
+  {
+   "path": "QStackedWidget/DsSection",
+   "cls": "QWidget",
+   "obj": "DsSection",
+   "geo": [
+    0,
+    177,
+    340,
+    583
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    384,
+    269
+   ],
+   "role": "shell"
+  },
+  {
+   "path": "QStackedWidget/DsSection/QStackedWidget",
+   "cls": "QStackedWidget",
+   "obj": "",
+   "geo": [
+    30,
+    185,
+    280,
+    338
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    256,
+    359
+   ],
+   "role": null
+  },
+  {
+   "path": "QStackedWidget/DsSection/QStackedWidget/DsChatTranscript",
+   "cls": "ChatDisplay",
+   "obj": "DsChatTranscript",
+   "geo": [
+    30,
+    185,
+    280,
+    338
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    256,
+    192
+   ],
+   "role": "group"
+  },
+  {
+   "path": "QStackedWidget/DsSection/QStackedWidget/DsChatTranscript/qt_scrollarea_viewport",
+   "cls": "QWidget",
+   "obj": "qt_scrollarea_viewport",
+   "geo": [
+    30,
+    185,
+    280,
+    338
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    -1,
+    -1
+   ],
+   "role": null
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection",
+   "cls": "QWidget",
+   "obj": "DsSection",
+   "geo": [
+    30,
+    539,
+    280,
+    213
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    324,
+    213
+   ],
+   "role": "band"
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection",
+   "cls": "QWidget",
+   "obj": "DsSection",
+   "geo": [
+    30,
+    539,
+    280,
+    36
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    301,
+    36
+   ],
+   "role": "group"
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection/DsVerb",
+   "cls": "QPushButton",
+   "obj": "DsVerb",
+   "geo": [
+    30,
+    539,
+    57,
+    36
+   ],
+   "text": [
+    "text",
+    "EXPLAIN"
+   ],
+   "button": true,
+   "sizeHint": [
+    57,
+    36
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    115.0
+   ]
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection/DsVerb",
+   "cls": "QPushButton",
+   "obj": "DsVerb",
+   "geo": [
+    103,
+    539,
+    25,
+    36
+   ],
+   "text": [
+    "text",
+    "FIX"
+   ],
+   "button": true,
+   "sizeHint": [
+    25,
+    36
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    115.0
+   ]
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection/DsVerb",
+   "cls": "QPushButton",
+   "obj": "DsVerb",
+   "geo": [
+    144,
+    539,
+    59,
+    36
+   ],
+   "text": [
+    "text",
+    "OPTIMIZE"
+   ],
+   "button": true,
+   "sizeHint": [
+    65,
+    36
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    115.0
+   ]
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection/DsVerb",
+   "cls": "QPushButton",
+   "obj": "DsVerb",
+   "geo": [
+    219,
+    539,
+    58,
+    36
+   ],
+   "text": [
+    "text",
+    "BUILD HDA"
+   ],
+   "button": true,
+   "sizeHint": [
+    73,
+    36
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    115.0
+   ]
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection/DsVerb",
+   "cls": "QPushButton",
+   "obj": "DsVerb",
+   "geo": [
+    293,
+    539,
+    17,
+    36
+   ],
+   "text": [
+    "text",
+    "Aa"
+   ],
+   "button": true,
+   "sizeHint": [
+    17,
+    36
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    11,
+    115.0
+   ]
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsDivider",
+   "cls": "QWidget",
+   "obj": "DsDivider",
+   "geo": [
+    30,
+    575,
+    280,
+    1
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    -1,
+    -1
+   ],
+   "role": null
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection",
+   "cls": "QWidget",
+   "obj": "DsSection",
+   "geo": [
+    30,
+    576,
+    280,
+    176
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    324,
+    176
+   ],
+   "role": "group"
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection/DsGrip",
+   "cls": "_InputResizeGrip",
+   "obj": "DsGrip",
+   "geo": [
+    30,
+    576,
+    280,
+    10
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    -1,
+    -1
+   ],
+   "role": null
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection/DsInput",
+   "cls": "_GrowingInput",
+   "obj": "DsInput",
+   "geo": [
+    30,
+    602,
+    212,
+    111
+   ],
+   "text": [
+    "placeholderText",
+    "Ask SYNAPSE\u2026    \u00b7    / for commands"
+   ],
+   "button": false,
+   "sizeHint": [
+    256,
+    192
+   ],
+   "role": null
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection/DsInput/qt_scrollarea_viewport",
+   "cls": "QWidget",
+   "obj": "qt_scrollarea_viewport",
+   "geo": [
+    46,
+    619,
+    180,
+    43
+   ],
+   "text": null,
+   "button": false,
+   "sizeHint": [
+    -1,
+    -1
+   ],
+   "role": null
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection/DsInput/DsSend",
+   "cls": "QPushButton",
+   "obj": "DsSend",
+   "geo": [
+    172,
+    671,
+    60,
+    32
+   ],
+   "text": [
+    "text",
+    "SEND"
+   ],
+   "button": true,
+   "sizeHint": [
+    60,
+    32
+   ],
+   "role": null,
+   "font": [
+    "Space Grotesk",
+    11,
+    108.0
+   ]
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection/DsButton",
+   "cls": "Button",
+   "obj": "DsButton",
+   "geo": [
+    258,
+    630,
+    52,
+    54
+   ],
+   "text": [
+    "toolTip",
+    "Attach image / file as context"
+   ],
+   "button": true,
+   "sizeHint": [
+    74,
+    54
+   ],
+   "role": null,
+   "font": [
+    "Sans Serif",
+    12,
+    0.0
+   ]
+  },
+  {
+   "path": "QStackedWidget/DsSection/DsSection/DsSection/QLabel",
+   "cls": "QLabel",
+   "obj": "",
+   "geo": [
+    30,
+    737,
+    280,
+    15
+   ],
+   "text": [
+    "text",
+    "\u21b5 send \u00b7 \u21e7\u21b5 newline \u00b7 / commands"
+   ],
+   "button": false,
+   "sizeHint": [
+    204,
+    15
+   ],
+   "role": null,
+   "font": [
+    "Space Mono",
+    10,
+    103.0
+   ]
+  }
+ ]
+}

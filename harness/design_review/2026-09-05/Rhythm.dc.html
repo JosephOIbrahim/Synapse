@@ -1,0 +1,71 @@
+<!doctype html><html><head><meta charset="utf-8"><script src="./support.js"></script></head><body><x-dc><helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap"><style>
+body { margin: 0; background: #2A2A2A; color: #C5C5C5; font-family: "Space Grotesk", "DM Sans", "Segoe UI", sans-serif; }
+a { color: #8FB3D9; } a:hover { color: #A9C7E6; }
+.cap { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 9px; line-height: 12px; color: #868686; letter-spacing: 0.03em; }
+.note { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 12px; line-height: 17px; color: #A0A0A0; }
+.eyebrow { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #868686; }
+.c { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; color: #A0A0A0; }
+.cb { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; color: #DEDEDE; }
+.h { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: #868686; }
+.trow { display: grid; grid-template-columns: 76px 40px 40px 40px 40px 150px 1fr; gap: 10px; align-items: center; border-bottom: 1px solid #303030; padding: 5px 0; }
+.bar { height: 14px; background: #8FB3D9; border-radius: 0; }
+</style></helmet>
+<div style="width: 880px; min-height: 700px; box-sizing: border-box; padding: 40px 48px 32px 48px; display: flex; flex-direction: column; gap: 18px; background: #2A2A2A;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="eyebrow">Rhythm · one owner of spacing</div>
+    <div style="font-size: 26px; line-height: 30px; font-weight: 600; letter-spacing: 0.5px; color: #DEDEDE;">Grid, roles, gutter, docking</div>
+    <div class="note" style="max-width: 720px;">One 4-pt ladder is the whole vocabulary. Gaps scale with density (airy &#215;1.5 / standard &#215;1 / tight &#215;0.75); paddings, radii, hairlines and type never do. A rhythm_role property picks the pattern; QSS paints it, rhythm.apply() sets the QLayout spacing QSS cannot.</div>
+    <div class="cap">tokens.py:475-500 SPACE_GRID + DENSITY_GAP_SCALE + gap() · rhythm.py:15-43 ROLE_GAPS + _MARGINS · qss.py:366-449 role paint · docs/PANEL_RHYTHM_SPEC.md:105-123</div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 300px 1fr; gap: 32px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div class="eyebrow">SPACE_GRID · tokens.py:485</div>
+      <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;"><div class="cb" style="width: 70px;">SPACE_XS 4</div><div class="bar" style="width: 20px;"></div><div class="cap">:469</div></div>
+      <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;"><div class="cb" style="width: 70px;">SPACE_SM 8</div><div class="bar" style="width: 40px;"></div><div class="cap">:470</div></div>
+      <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;"><div class="cb" style="width: 70px;">SPACE_12 12</div><div class="bar" style="width: 60px;"></div><div class="cap">:482 row-breath</div></div>
+      <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;"><div class="cb" style="width: 70px;">SPACE_MD 16</div><div class="bar" style="width: 80px;"></div><div class="cap">:471</div></div>
+      <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;"><div class="cb" style="width: 70px;">SPACE_LG 24</div><div class="bar" style="width: 120px;"></div><div class="cap">:472</div></div>
+      <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;"><div class="cb" style="width: 70px;">SPACE_32 32</div><div class="bar" style="width: 160px;"></div><div class="cap">:483 section head</div></div>
+      <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;"><div class="cb" style="width: 70px;">SPACE_48 48</div><div class="bar" style="width: 240px;"></div><div class="cap">:484 2&#215;LG</div></div>
+      <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;"><div class="cb" style="width: 70px; color: #868686;">SPACE_XL 40</div><div class="bar" style="width: 200px; background: #363636;"></div><div class="cap">:473 card-band height, off the ladder :480</div></div>
+      <div class="cap" style="padding-top: 4px;">bars at 5px per unit · gap(base, density) = round(base &#215; {airy 1.5, standard 1.0, tight 0.75}) · tokens.py:491-500</div>
+      <div class="eyebrow" style="padding-top: 8px;">Radii + fixed dims · tokens.py:523-536</div>
+      <div style="display: flex; flex-direction: row; gap: 8px; align-items: flex-end;">
+        <div style="display: flex; flex-direction: column; gap: 3px; align-items: center;"><div style="width: 36px; height: 36px; border: 1px solid #A0A0A0; border-radius: 4px;"></div><div class="cap">SM 4</div></div>
+        <div style="display: flex; flex-direction: column; gap: 3px; align-items: center;"><div style="width: 36px; height: 36px; border: 1px solid #A0A0A0; border-radius: 8px;"></div><div class="cap">MD 8</div></div>
+        <div style="display: flex; flex-direction: column; gap: 3px; align-items: center;"><div style="width: 36px; height: 36px; border: 1px solid #A0A0A0; border-radius: 10px;"></div><div class="cap">CARD 10</div></div>
+        <div style="display: flex; flex-direction: column; gap: 3px; align-items: center;"><div style="width: 36px; height: 36px; border: 1px solid #A0A0A0; border-radius: 12px;"></div><div class="cap">LG 12</div></div>
+        <div style="display: flex; flex-direction: column; gap: 3px; align-items: center;"><div style="width: 36px; height: 36px; border: 1px solid #A0A0A0; border-radius: 14px;"></div><div class="cap">PILL 14</div></div>
+        <div style="display: flex; flex-direction: column; gap: 3px; align-items: center;"><div style="width: 52px; height: 24px; border: 1px solid #A0A0A0; border-radius: 999px;"></div><div class="cap">ROUND 999</div></div>
+      </div>
+      <div class="cap">ROW_MIN_H 44 :536 · ICON_GRID 24 / STROKE_PX 1.5 :544-545 · ATMOSPHERE_DELTA 4 :553 · motion 120/200/320ms OutCubic :572-575</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 0;">
+      <div class="eyebrow" style="padding-bottom: 6px;">Roles · rhythm.py:26-43 (gaps), qss.py:367-432 (paint) · airy / standard / tight</div>
+      <div class="trow"><div class="h">role</div><div class="h">base</div><div class="h">airy</div><div class="h">std</div><div class="h">tight</div><div class="h">margins l,t,r,b</div><div class="h">min-h · paint · where</div></div>
+      <div class="trow"><div class="cb">shell</div><div class="c">16</div><div class="c">24</div><div class="c">16</div><div class="c">12</div><div class="c">(30, 8, 30, 8)</div><div class="cap">GUTTER inset; rail, ribbon, tab row, direct face · rhythm.py:33, 42 · panel :997, 1060, 1173</div></div>
+      <div class="trow"><div class="cb">stack</div><div class="c">4</div><div class="c">6</div><div class="c">4</div><div class="c">3</div><div class="c">(0, 0, 0, 0)</div><div class="cap">flush utility stack, no QSS, no type; the header row · rhythm.py:34 · panel :675</div></div>
+      <div class="trow"><div class="cb">band</div><div class="c">0</div><div class="c">0</div><div class="c">0</div><div class="c">0</div><div class="c">(0, 0, 0, 0)</div><div class="cap">chrome bands own their hairlines; panel root, act+divider+input · rhythm.py:35 · panel :503, 1181</div></div>
+      <div class="trow"><div class="cb">group</div><div class="c">16</div><div class="c">24</div><div class="c">16</div><div class="c">12</div><div class="c">(0, 0, 0, 0)</div><div class="cap">any region; the DsSection default, verb rail · rhythm.py:32 · panel :494</div></div>
+      <div class="trow"><div class="cb">label</div><div class="c">12</div><div class="c">18</div><div class="c">12</div><div class="c">9</div><div class="c">(0, 0, 0, 0)</div><div class="cap">eyebrow: 24 above / 12 below via QSS, mono upper +0.08em · rhythm.py:27 · qss.py:367-372</div></div>
+      <div class="trow"><div class="cb">row</div><div class="c">12</div><div class="c">18</div><div class="c">12</div><div class="c">9</div><div class="c">(16, 12, 16, 12)</div><div class="cap">min-h 44, radius 8, 1px BORDER; DsRowGlyph 43&#215;44 cell · rhythm.py:28, 38 · qss.py:374-387</div></div>
+      <div class="trow"><div class="cb">tag</div><div class="c">16</div><div class="c">24</div><div class="c">16</div><div class="c">12</div><div class="c">(10, 6, 10, 6)</div><div class="cap">SURFACE, radius 999, margin-left 16, mono upper +0.06em · rhythm.py:29, 40 · qss.py:388-399</div></div>
+      <div class="trow"><div class="cb">card</div><div class="c">16</div><div class="c">24</div><div class="c">16</div><div class="c">12</div><div class="c">(0, 0, 0, 0)</div><div class="cap">DsCard radius 10; header 39+1, body pad 16, footer 40 · rhythm.py:30 · qss.py:403-419</div></div>
+      <div class="trow"><div class="cb">parm_row</div><div class="c">4</div><div class="c">6</div><div class="c">4</div><div class="c">3</div><div class="c">(0, 0, 0, 0)</div><div class="cap">min-h 24; DsParmLabel 128 / DsParmValue 64; section head 32 · rhythm.py:31 · qss.py:373, 420-432</div></div>
+      <div class="cap" style="padding-top: 8px;">Density-keyed QSS carries margins only (no colour, font, size, radius, border) · qss.py:295-309, 434-448 · Curious = airy, Expert = standard, ML = tight · docs/PANEL_RHYTHM_SPEC.md:53</div>
+
+      <div class="eyebrow" style="padding-top: 16px; padding-bottom: 6px;">Gutter + docking widths · tokens.py:622-625 · .synapse/contracts/docking-minimums.yaml</div>
+      <div style="display: flex; flex-direction: column; gap: 5px;">
+        <div style="display: flex; flex-direction: row; align-items: center; gap: 8px;"><div class="cb" style="width: 150px;">PANEL_MIN_WIDTH 280</div><div style="width: 280px; height: 14px; border: 1px solid #DEDEDE; box-sizing: border-box; display: flex;"><div style="width: 30px; height: 100%; background: #363636;"></div><div style="flex-grow: 1;"></div><div style="width: 30px; height: 100%; background: #363636;"></div></div><div class="cap">the contract · :622</div></div>
+        <div style="display: flex; flex-direction: row; align-items: center; gap: 8px;"><div class="cb" style="width: 150px;">PANEL_PREF_WIDTH 340</div><div style="width: 340px; height: 14px; border: 1px solid #8FB3D9; box-sizing: border-box; display: flex;"><div style="width: 30px; height: 100%; background: #363636;"></div><div style="flex-grow: 1;"></div><div style="width: 30px; height: 100%; background: #363636;"></div></div><div class="cap">shipped shots · :623</div></div>
+        <div style="display: flex; flex-direction: row; align-items: center; gap: 8px;"><div class="cb" style="width: 150px;">interim std / tight 380</div><div style="width: 380px; height: 14px; border: 1px dashed #A0A0A0; box-sizing: border-box;"></div><div class="cap">yaml, RULING-2A</div></div>
+        <div style="display: flex; flex-direction: row; align-items: center; gap: 8px;"><div class="cb" style="width: 150px;">interim airy 400</div><div style="width: 400px; height: 14px; border: 1px dashed #A0A0A0; box-sizing: border-box;"></div><div class="cap">yaml, RULING R3-01</div></div>
+      </div>
+      <div class="cap" style="padding-top: 6px;">bars at 1px per px; grey ends = GUTTER 30 each side (tokens.py:625, "26-36 is safe on a 280px-min panel") · composed minimumSizeHint measured: airy 393 / standard 361 / tight 345, driver = verb rail 237 + 4 gaps + 2&#215;30 · docs/panel_pd/INTEGRATION.md:159-169 · PANEL_MIN_HEIGHT 420, yaml takes 400 · tokens.py:624</div>
+    </div>
+  </div>
+</div>
+</x-dc></body></html>

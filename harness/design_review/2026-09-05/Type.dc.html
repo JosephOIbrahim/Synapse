@@ -1,0 +1,61 @@
+<!doctype html><html><head><meta charset="utf-8"><script src="./support.js"></script></head><body><x-dc><helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap"><style>
+body { margin: 0; background: #2A2A2A; color: #C5C5C5; font-family: "Space Grotesk", "DM Sans", "Segoe UI", sans-serif; }
+a { color: #8FB3D9; } a:hover { color: #A9C7E6; }
+.cap { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 9px; line-height: 12px; color: #868686; letter-spacing: 0.03em; }
+.note { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 12px; line-height: 17px; color: #A0A0A0; }
+.eyebrow { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #868686; }
+.sans { font-family: "Space Grotesk", "DM Sans", "Segoe UI", sans-serif; }
+.mono { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; }
+.row { display: grid; grid-template-columns: 200px 88px 44px 44px 60px 64px 1fr; gap: 12px; align-items: center; border-bottom: 1px solid #303030; padding: 7px 0; }
+.h { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: #868686; }
+.c { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; color: #A0A0A0; }
+</style></helmet>
+<div style="width: 880px; min-height: 700px; box-sizing: border-box; padding: 40px 48px 32px 48px; display: flex; flex-direction: column; gap: 18px; background: #2A2A2A;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="eyebrow">Type · the voice</div>
+    <div style="font-size: 26px; line-height: 30px; font-weight: 600; letter-spacing: 0.5px; color: #DEDEDE;">Type scale as shipped</div>
+    <div class="note" style="max-width: 720px;">Two families, one floor. Sans (Space Grotesk) for everything read as words; mono (Space Mono) where glyphs are data the eye aligns. Sizes are Qt pixel sizes; tracking is set on the QFont (Qt QSS has no letter-spacing). The Aa control scales content only; chrome is frozen at the host size.</div>
+    <div class="cap">tokens.py:294-300 families · :308-313 sizes · :339 FONT_FLOOR_PX = 10 (provenance UNKNOWN, :340-346) · :352-354 weights 400/500/600 · :356-364 mono-vs-sans doctrine · :412-413 FONT_SCALE_STEPS (1.0, 1.15, 1.25, 1.4, 1.6)</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 0;">
+    <div class="eyebrow" style="padding-bottom: 6px;">TYPE_ROLES · tokens.py:365-373 · (family, px, weight, letter-spacing px)</div>
+    <div class="row"><div class="h">specimen</div><div class="h">role</div><div class="h">px</div><div class="h">weight</div><div class="h">tracking</div><div class="h">case</div><div class="h">family · where used · source</div></div>
+    <div class="row"><div class="sans" style="font-size: 19px; font-weight: 600; letter-spacing: 0.5px; color: #DEDEDE;">Standing by</div><div class="c">display</div><div class="c">19</div><div class="c">600</div><div class="c">0.5px</div><div class="c">as written</div><div class="cap">sans · SIZE_HERO panel title / verdict · tokens.py:366</div></div>
+    <div class="row"><div class="sans" style="font-size: 15px; font-weight: 600; letter-spacing: 1.0px; color: #DEDEDE;">Describe the HDA you want</div><div class="c">title</div><div class="c">15</div><div class="c">600</div><div class="c">1.0px</div><div class="c">as written</div><div class="cap">sans · SIZE_TITLE section headers, colour TEXT_BRIGHT · tokens.py:367 · qss.py:251 · synapse_panel.py:1797</div></div>
+    <div class="row"><div class="sans" style="font-size: 12px; font-weight: 400; color: #C5C5C5;">Ready. What are we building?</div><div class="c">body</div><div class="c">12</div><div class="c">400</div><div class="c">0</div><div class="c">as written</div><div class="cap">sans · SIZE_BODY chat body, prompt · TEXT_PRIMARY · tokens.py:368 · qss.py:252 · +0.75pt leading in chat, :510</div></div>
+    <div class="row"><div class="sans" style="font-size: 12px; font-weight: 500; letter-spacing: 0.5px; color: #A0A0A0;">no scene context</div><div class="c">label</div><div class="c">12</div><div class="c">500</div><div class="c">0.5px</div><div class="c">as written</div><div class="cap">sans · SIZE_UI UI label text (the context ribbon), TEXT_SECONDARY · tokens.py:369 · qss.py:254 · synapse_panel.py:1002</div></div>
+    <div class="row"><div class="mono" style="font-size: 12px; font-weight: 400; color: #C5C5C5;">/obj/geo1/attribwrangle1</div><div class="c">code</div><div class="c">12</div><div class="c">400</div><div class="c">0</div><div class="c">as written</div><div class="cap">mono · node paths, VEX, tool names · tokens.py:370</div></div>
+    <div class="row"><div class="sans" style="font-size: 11px; font-weight: 400; color: #868686;">Not connected</div><div class="c">caption</div><div class="c">11</div><div class="c">400</div><div class="c">0</div><div class="c">as written</div><div class="cap">sans · SIZE_SMALL captions / metadata, TEXT_TERTIARY · tokens.py:371 · qss.py:253 · synapse_panel.py:714, 769</div></div>
+    <div class="row"><div class="mono" style="font-size: 11px; font-weight: 500; letter-spacing: 0.5px; color: #C5C5C5;">fidelity 1.0</div><div class="c">status</div><div class="c">11</div><div class="c">500</div><div class="c">0.5px</div><div class="c">as written</div><div class="cap">mono · SIZE_SMALL status readouts · tokens.py:372</div></div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 0;">
+    <div class="eyebrow" style="padding-bottom: 6px;">Tracked chrome fonts · fontload.tracked_font(role, px, weight) · TRACKING_EM tokens.py:389-398 · fontload.py:158-190</div>
+    <div class="row"><div class="h">specimen</div><div class="h">tracking role</div><div class="h">px</div><div class="h">weight</div><div class="h">em</div><div class="h">case</div><div class="h">family · where used · source</div></div>
+    <div class="row"><div class="sans" style="font-size: 14px; font-weight: 700; letter-spacing: 0.16em; color: #DEDEDE;">SYNAPSE</div><div class="c">WORDMARK</div><div class="c">14</div><div class="c">700</div><div class="c">0.16</div><div class="c">upper (literal)</div><div class="cap">sans · the rail lockup; weight=600 arg &#8594; setBold &#8594; 700 measured · synapse_panel.py:702-705 · tokens.py:396</div></div>
+    <div class="row"><div class="mono" style="font-size: 11px; font-weight: 400; letter-spacing: 0.15em; color: #DEDEDE;">CHAT&nbsp;&nbsp;<span style="color: #868686;">TOKEN</span></div><div class="c">LABEL</div><div class="c">11</div><div class="c">400</div><div class="c">0.15</div><div class="c">upper (literal)</div><div class="cap">mono · face pills CHAT / TOKEN · synapse_panel.py:1065-1066, 1078-1079 · active TEXT_BRIGHT + 2px SIGNAL rule, qss.py:121-130</div></div>
+    <div class="row"><div class="mono" style="font-size: 11px; font-weight: 400; letter-spacing: 0.15em; color: #A0A0A0;">CURIOUS EXPERT ML</div><div class="c">LABEL</div><div class="c">11</div><div class="c">400</div><div class="c">0.15</div><div class="c">upper (.upper())</div><div class="cap">mono · profile pills, rhythm_role="tag" (SURFACE fill, radius 999) · synapse_panel.py:1095-1100 · qss.py:388-397</div></div>
+    <div class="row"><div class="mono" style="font-size: 11px; font-weight: 400; letter-spacing: 0.15em; color: #A0A0A0;">EXPLAIN FIX OPTIMIZE</div><div class="c">LABEL</div><div class="c">11</div><div class="c">400</div><div class="c">0.15</div><div class="c">upper (.upper())</div><div class="cap">mono · verbs #DsVerb, TEXT_SECONDARY, hover TEXT_ACCENT · synapse_panel.py:1892-1893, 1905-1907 · qss.py:161-166</div></div>
+    <div class="row"><div class="mono" style="font-size: 11px; font-weight: 500; letter-spacing: 0.08em; color: #0F1F2B; background: #627A93; padding: 9px 15px; border-radius: 4px; width: max-content;">SEND</div><div class="c">SEND</div><div class="c">11</div><div class="c">500</div><div class="c">0.08</div><div class="c">upper (literal)</div><div class="cap">sans (no mono flag) · #DsSend SIGNAL_DEEP / TEXT_ON_ACCENT, padding 9px 15px · synapse_panel.py:1944-1945 · qss.py:241-248</div></div>
+    <div class="row"><div class="mono" style="font-size: 11px; font-weight: 400; letter-spacing: 0.03em; color: #6E8F72;">claude &#183; fable-5</div><div class="c">DATA</div><div class="c">11</div><div class="c">400</div><div class="c">0.03</div><div class="c">as written</div><div class="cap">mono · rail author token #DsAuthor CONIFEROUS, meter #DsMeter, &#8984;K chip #DsKHint TEXT_TERTIARY · synapse_panel.py:724-725, 733-734, 743-744 · qss.py:135-149</div></div>
+    <div class="row"><div class="mono" style="font-size: 10px; font-weight: 400; letter-spacing: 0.03em; color: #868686;">&#8629; send &#183; &#8679;&#8629; newline &#183; / commands</div><div class="c">DATA</div><div class="c">10</div><div class="c">400</div><div class="c">0.03</div><div class="c">as written</div><div class="cap">mono · composer key legend, SIZE_MICRO = the floor · synapse_panel.py:1952-1954 · tokens.py:308, 339</div></div>
+    <div class="row"><div class="mono" style="font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #A0A0A0;">Composition</div><div class="c">rhythm label</div><div class="c">12</div><div class="c">500</div><div class="c">0.08</div><div class="c">upper (QFont AllUppercase)</div><div class="cap">mono · section eyebrow rhythm_role="label": SEND em borrowed, 24 above / 12 below · rhythm.py:55-71 · qss.py:367-372</div></div>
+    <div class="row"><div class="mono" style="font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: #A0A0A0; background: #363636; padding: 6px 10px; border-radius: 999px; width: max-content;">hit</div><div class="c">rhythm tag</div><div class="c">12</div><div class="c">500</div><div class="c">0.06</div><div class="c">upper (QFont AllUppercase)</div><div class="cap">mono · rhythm_role="tag": DATA&#215;2 em, SURFACE, padding 6/10, radius RADIUS_ROUND 999; BLOCKED &#8594; HOT_SOFT · rhythm.py:68-69 · qss.py:388-399</div></div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; border-top: 1px solid #303030; padding-top: 12px;">
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div class="eyebrow">TRACKING_EM map · tokens.py:389-398</div>
+      <div class="c">EYEBROW 0.22 &#183; BRAND 0.286 &#183; LABEL 0.15 &#183; LABEL_SM 0.12 &#183; WORDMARK 0.16 &#183; DATA 0.03 &#183; SEND 0.08 &#183; DISPLAY &#8722;0.015 &#183; BODY 0</div>
+      <div class="cap">applied as QFont PercentageSpacing = 100 + em&#215;100 · fontload.py:184-188 · tracking_px(role, px) = em &#215; px · tokens.py:401-404</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div class="eyebrow">Label doctrine · two labels, never both on one widget</div>
+      <div class="note">TYPE_ROLES["label"] is UI label text (sans, BP4). rhythm_role="label" is the section eyebrow (mono, upper, tracked). Pinned by tests/test_panel_camera_rhythm.py.</div>
+      <div class="cap">docs/PANEL_RHYTHM_SPEC.md:167-172 (RULING-4d) · docs/PANEL_BATTLEPLAN_PD.md &#167;4 rows label / tag · rhythm.py:15-25</div>
+    </div>
+  </div>
+</div>
+</x-dc></body></html>

@@ -9,3 +9,13 @@ wave5/wxa 2ccdd0aa 2026-08-17
 wave5/wxb 619651f1 2026-08-17
 wave5/wxc 3fe5bf94 2026-08-17
 worktree-wf_3b183969-cdc-3 f3be38c3 2026-07-17
+
+# pd/* branches deleted 2026-09-05 (Joe's word), all ancestors of master 4c1a968c
+pd/panel-base 5e29bf9e
+pd/panel-camera da5aac31
+pd/panel-census a5b975c1
+pd/panel-integrate aca05ccb
+pd/panel-integrate-r3 8845848e
+pd/panel-lever ce04dcb0
+pd/panel-sweep_a 6567a723
+pd/panel-sweep_b ae046513

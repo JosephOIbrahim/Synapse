@@ -1,0 +1,302 @@
+{
+ "profile": "expert",
+ "density": "standard",
+ "min_hint": [
+  361,
+  337
+ ],
+ "rail_labels": {
+  "_header_status": {
+   "text": "Standing by",
+   "geo": [
+    125,
+    8,
+    0,
+    36
+   ],
+   "hint_w": 66
+  },
+  "_meter_lbl": {
+   "text": "",
+   "geo": [
+    129,
+    8,
+    0,
+    36
+   ],
+   "hint_w": 7
+  },
+  "_palette_hint": {
+   "text": "Ctrl+K",
+   "geo": [
+    133,
+    8,
+    0,
+    36
+   ],
+   "hint_w": 67
+  },
+  "_author_lbl": {
+   "text": "Sonnet 4.6",
+   "geo": [
+    310,
+    8,
+    0,
+    36
+   ],
+   "hint_w": 81
+  },
+  "_foot_label": {
+   "text": "Not connected",
+   "geo": [
+    179,
+    8,
+    0,
+    36
+   ],
+   "hint_w": 83
+  }
+ },
+ "boot_truth": {
+  "header": "Standing by",
+  "foot": "Not connected",
+  "mark_state": "idle"
+ },
+ "verbs": [
+  {
+   "text": "EXPLAIN",
+   "w": 57,
+   "hint_w": 57,
+   "geo": [
+    30,
+    539,
+    57,
+    36
+   ]
+  },
+  {
+   "text": "FIX",
+   "w": 25,
+   "hint_w": 25,
+   "geo": [
+    103,
+    539,
+    25,
+    36
+   ]
+  },
+  {
+   "text": "OPTIMIZE",
+   "w": 59,
+   "hint_w": 65,
+   "geo": [
+    144,
+    539,
+    59,
+    36
+   ]
+  },
+  {
+   "text": "BUILD HDA",
+   "w": 58,
+   "hint_w": 73,
+   "geo": [
+    219,
+    539,
+    58,
+    36
+   ]
+  },
+  {
+   "text": "Aa",
+   "w": 17,
+   "hint_w": 17,
+   "geo": [
+    293,
+    539,
+    17,
+    36
+   ]
+  }
+ ],
+ "verb_rail": {
+  "geo": [
+   30,
+   539,
+   280,
+   36
+  ],
+  "spacing": 16,
+  "natural": 301
+ },
+ "composer": {
+  "attach": [
+   258,
+   630,
+   52,
+   54
+  ],
+  "attach_icon": [
+   36,
+   36
+  ],
+  "send": [
+   172,
+   671,
+   60,
+   32
+  ],
+  "input": [
+   30,
+   602,
+   212,
+   111
+  ],
+  "placeholder": "Ask SYNAPSE\u2026    \u00b7    / for commands",
+  "khint": {
+   "text": "\u21b5 send \u00b7 \u21e7\u21b5 newline \u00b7 / commands",
+   "geo": [
+    30,
+    737,
+    280,
+    15
+   ],
+   "px": 10
+  }
+ },
+ "pills": [
+  {
+   "text": "CHAT",
+   "w": 33,
+   "hint_w": 33,
+   "geo": [
+    220,
+    92,
+    33,
+    30
+   ],
+   "px": 11
+  },
+  {
+   "text": "TOKEN",
+   "w": 41,
+   "hint_w": 41,
+   "geo": [
+    269,
+    92,
+    41,
+    30
+   ],
+   "px": 11
+  },
+  {
+   "text": "CURIOUS",
+   "w": 88,
+   "hint_w": 88,
+   "geo": [
+    58,
+    139,
+    88,
+    29
+   ],
+   "px": 12
+  },
+  {
+   "text": "EXPERT",
+   "w": 81,
+   "hint_w": 81,
+   "geo": [
+    162,
+    138,
+    81,
+    31
+   ],
+   "px": 12
+  },
+  {
+   "text": "ML",
+   "w": 51,
+   "hint_w": 51,
+   "geo": [
+    259,
+    139,
+    51,
+    29
+   ],
+   "px": 12
+  }
+ ],
+ "chat_top_y": 185,
+ "small_targets": [
+  {
+   "text": "\u22ef",
+   "geo": [
+    137,
+    8,
+    24,
+    36
+   ]
+  },
+  {
+   "text": "?",
+   "geo": [
+    297,
+    8,
+    9,
+    36
+   ]
+  },
+  {
+   "text": "FIX",
+   "geo": [
+    103,
+    539,
+    25,
+    36
+   ]
+  },
+  {
+   "text": "Aa",
+   "geo": [
+    293,
+    539,
+    17,
+    36
+   ]
+  }
+ ],
+ "gate": {
+  "fold_toggle": {
+   "text": "\u25b6  Gates",
+   "geo": [
+    0,
+    177,
+    100,
+    30
+   ],
+   "hint_h": 23
+  },
+  "review_card_buttons": [],
+  "approve_card_buttons": [
+   "Reject",
+   "Approve"
+  ],
+  "fold_toggle_after": [
+   0,
+   177,
+   100,
+   30
+  ]
+ },
+ "revert_controls": [
+  {
+   "text": "\u21b6 REVERT",
+   "visible_on_work": false
+  }
+ ],
+ "revert_visible_on_chat": [
+  false
+ ],
+ "hda_describe": null,
+ "chat_group_spacing": null
+}

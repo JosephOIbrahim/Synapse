@@ -1,0 +1,95 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "SYNAPSE Panel Design System",
+      "x": 0,
+      "y": 0,
+      "w": 880,
+      "h": 700
+    },
+    {
+      "file": "Type.dc.html",
+      "title": "Type scale",
+      "x": 960,
+      "y": 0,
+      "w": 880,
+      "h": 700
+    },
+    {
+      "file": "Rhythm.dc.html",
+      "title": "Rhythm + docking",
+      "x": 1920,
+      "y": 0,
+      "w": 880,
+      "h": 700
+    },
+    {
+      "file": "Regions.dc.html",
+      "title": "Camera regions 340x640",
+      "x": 2880,
+      "y": 0,
+      "w": 880,
+      "h": 700
+    },
+    {
+      "file": "Curious.dc.html",
+      "title": "Curious (airy)",
+      "x": 0,
+      "y": 820,
+      "w": 720,
+      "h": 800
+    },
+    {
+      "file": "Expert.dc.html",
+      "title": "Expert (standard)",
+      "x": 800,
+      "y": 820,
+      "w": 720,
+      "h": 800
+    },
+    {
+      "file": "ML.dc.html",
+      "title": "ML (tight)",
+      "x": 1600,
+      "y": 820,
+      "w": 720,
+      "h": 800
+    },
+    {
+      "file": "Findings.dc.html",
+      "title": "Findings (synthesis to the CTO)",
+      "x": 3840,
+      "y": 0,
+      "w": 880,
+      "h": 1100
+    },
+    {
+      "file": "DirectionA.dc.html",
+      "title": "Direction A: three verbs, one voice",
+      "x": 0,
+      "y": 1740,
+      "w": 720,
+      "h": 800
+    },
+    {
+      "file": "DirectionB.dc.html",
+      "title": "Direction B: composer-first, no rail",
+      "x": 800,
+      "y": 1740,
+      "w": 720,
+      "h": 800
+    },
+    {
+      "file": "DirectionC.dc.html",
+      "title": "Direction C: consent and undo in the conversation",
+      "x": 1600,
+      "y": 1740,
+      "w": 720,
+      "h": 800
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

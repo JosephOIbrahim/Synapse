@@ -1,0 +1,69 @@
+<!doctype html><html><head><meta charset="utf-8"><script src="./support.js"></script></head><body><x-dc><helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap"><style>
+body { margin: 0; background: #FFFFFF; color: #111111; font-family: "Space Grotesk", "DM Sans", "Segoe UI", sans-serif; }
+.eyebrow { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #111111; }
+.cap { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 9px; line-height: 12px; color: #555555; letter-spacing: 0.03em; }
+.note { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 11.5px; line-height: 16px; color: #222222; }
+.bx { position: absolute; box-sizing: border-box; border: 1px solid #111111; background: #FFFFFF; }
+.lb { position: absolute; font-family: "Space Grotesk", sans-serif; font-size: 10px; color: #111111; white-space: nowrap; }
+.mo { font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 0.08em; color: #111111; }
+.sigbg { background: #8FB3D9; }
+.dim { position: absolute; right: -60px; width: 52px; font-family: "Space Mono", monospace; font-size: 9px; color: #555555; text-align: left; }
+</style></helmet>
+<div style="width: 720px; min-height: 800px; box-sizing: border-box; padding: 28px 32px 24px 32px; display: flex; flex-direction: column; gap: 14px; background: #FFFFFF;">
+
+  <div style="display: flex; flex-direction: column; gap: 5px;">
+    <div class="eyebrow">Direction B &middot; axis: composer-first, no rail</div>
+    <div style="font-size: 22px; line-height: 26px; font-weight: 600; letter-spacing: 0.2px; color: #111111;">The conversation and the sentence you type</div>
+    <div class="note" style="max-width: 640px;"><b>Motivation.</b> From the docked seat no verb earns a permanent rail: /explain /fix /hda already exist (command_palette.py:86-96), Aa is in the overflow, OPTIMIZE is a one-line prompt macro. Retire the rail; selection verbs appear beside the selection context in the ribbon only when there is a selection. Every pixel not spent on chrome goes to the transcript: 338 &rarr; ~492 at 760 (+46%, S9).</div>
+    <div class="note" style="max-width: 640px;"><b>Tradeoff.</b> The typographic voice below the wordmark lives only in the state sentence and the ribbon verbs; the '/' palette is discovery, not voice (IDEA's objection). A new artist has to learn '/'. Selection-verbs-in-ribbon is a state the panel does not have today and needs its own probe.</div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 340px 1fr; gap: 56px;">
+    <div style="position: relative; width: 340px; height: 560px; border: 1px solid #111111; box-sizing: border-box; background: #FFFFFF;">
+      <!-- rail 52 -->
+      <div class="bx" style="left:0; top:0; width:340px; height:52px; border-width:0 0 1px 0;"></div>
+      <div style="position:absolute; left:30px; top:18px; width:16px; height:16px; border-radius:999px; border:1.5px solid #111111;"></div>
+      <div class="lb" style="left:54px; top:19px; font-weight:700; letter-spacing:0.16em; font-size:14px;">SYNAPSE</div>
+      <div class="lb" style="left:142px; top:21px; color:#555555;">Working on it</div>
+      <div class="lb" style="left:250px; top:21px;">Stop</div>
+      <div class="mo" style="position:absolute; left:298px; top:20px;">&middot;&middot;&middot;</div>
+      <div class="dim" style="top:18px;">52</div>
+      <!-- ribbon 46: selection context + verbs -->
+      <div class="bx" style="left:0; top:52px; width:340px; height:46px; border-width:0 0 1px 0;"></div>
+      <div class="lb" style="left:30px; top:68px; color:#555555;">/obj/geo1/scatter1</div>
+      <div class="lb" style="left:168px; top:68px;">Explain</div>
+      <div class="lb" style="left:216px; top:68px;">Fix</div>
+      <div class="lb" style="left:268px; top:66px; border-bottom:2px solid #111111; padding-bottom:8px;">TOKEN</div>
+      <div class="dim" style="top:66px;">46</div>
+      <!-- chat -->
+      <div class="bx" style="left:0; top:98px; width:340px; height:312px; border-width:0; background:#F2F2F2;"></div>
+      <div class="lb" style="left:30px; top:114px; font-size:12px;">Ready. What are we building?</div>
+      <div class="lb" style="left:30px; top:376px; font-size:9px; color:#555555; font-family:'Space Mono',monospace; letter-spacing:0.06em;">CONVERSATION &middot; ~492 of 760 = 65%</div>
+      <div class="dim" style="top:250px;">492</div>
+      <!-- composer 150 -->
+      <div class="bx" style="left:0; top:410px; width:340px; height:150px; border-width:1px 0 0 0;"></div>
+      <div class="bx" style="left:30px; top:426px; width:280px; height:110px; border:1px solid #111111; background:#F2F2F2;"></div>
+      <div class="lb" style="left:40px; top:436px; color:#555555;">Ask SYNAPSE&hellip; or / for verbs</div>
+      <div style="position:absolute; left:40px; top:508px; width:16px; height:16px; border:1px solid #555555; border-radius:2px;"></div>
+      <div class="sigbg" style="position:absolute; left:240px; top:498px; width:60px; height:30px;"></div>
+      <div class="lb" style="left:255px; top:507px; color:#FFFFFF; font-weight:500; font-size:11px;">SEND</div>
+      <div class="dim" style="top:480px;">150</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 4px;">
+      <div class="eyebrow">What moved</div>
+      <div class="note">Verb rail retired (36 + 16 gap). /optimize added to the palette so nothing is lost. Explain and Fix appear in the ribbon only when the ribbon has a selection to name; the ribbon already tracks 'no scene context' (:1002).</div>
+      <div class="note">Rail as in A: one state sentence with a hard minimum; Stop state-gated in the same slot as Connect (both never visible together).</div>
+      <div class="note">Profile row and CHAT pill gone; one TOKEN tab at the ribbon edge. Placeholder carries the single '/' legend.</div>
+      <div class="eyebrow" style="padding-top:6px;">Numbers at 340&#215;760, expert</div>
+      <div class="cap">chat 338 &rarr; ~492 (65%): +32 rail, +47 tab row, +23 khint, +52 rail<br>minimumSizeHint drops below 345 in every density (the rail was the widest child)<br>chrome before the first word 177 &rarr; 98</div>
+      <div class="eyebrow" style="padding-top:6px;">Closes</div>
+      <div class="cap">F1 (by removal) &middot; F2 &middot; F5 &middot; F10 &middot; F18 &middot; most of F3's width problem<br>Leaves F4 (consent), F11 (undo), F6 (family) to their own fixes.</div>
+      <div class="eyebrow" style="padding-top:6px;">Lens votes</div>
+      <div class="cap">USE (retire the rail) &middot; SUBTRACT (moved to USE's answer in round 2)<br>IDEA prefers Direction A; TYPE is neutral once the verbs are sans.</div>
+    </div>
+  </div>
+
+  <div class="cap">Low-fi. Black/white plus SIGNAL only. Selection-verbs-in-ribbon is a sketch, not a measured state. Not a deliverable; an option for Joe.</div>
+</div>
+</x-dc></body></html>

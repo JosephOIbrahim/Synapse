@@ -1,0 +1,92 @@
+{
+ "profile": "expert",
+ "face_after_review_gate": null,
+ "stack_index": 1,
+ "gate_expanded": true,
+ "fold_toggle": {
+  "text": "\u25bc  Gates (1 pending)",
+  "geo": [
+   30,
+   404,
+   280,
+   23
+  ],
+  "hint_h": 23,
+  "visible": true
+ },
+ "review_card": {
+  "geo": [
+   30,
+   431,
+   280,
+   19
+  ],
+  "buttons": [],
+  "labels": [
+   "REVIEW",
+   "delete_node"
+  ]
+ },
+ "revert": [
+  {
+   "text": "\u21b6 REVERT",
+   "visible": true,
+   "geo": [
+    93,
+    511,
+    65,
+    36
+   ]
+  }
+ ],
+ "accept": [
+  {
+   "text": "ACCEPT",
+   "visible": true,
+   "geo": [
+    30,
+    511,
+    47,
+    36
+   ]
+  }
+ ],
+ "approve_card": {
+  "geo": [
+   30,
+   466,
+   280,
+   46
+  ],
+  "buttons": [
+   {
+    "text": "Reject",
+    "geo": [
+     172,
+     489,
+     62,
+     23
+    ]
+   },
+   {
+    "text": "Approve",
+    "geo": [
+     242,
+     489,
+     68,
+     23
+    ]
+   }
+  ]
+ },
+ "header_status": {
+  "text": "Result ready",
+  "geo": [
+   125,
+   8,
+   0,
+   36
+  ]
+ },
+ "mark_state": "done"
+}

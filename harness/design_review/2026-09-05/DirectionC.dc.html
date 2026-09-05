@@ -1,0 +1,80 @@
+<!doctype html><html><head><meta charset="utf-8"><script src="./support.js"></script></head><body><x-dc><helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap"><style>
+body { margin: 0; background: #FFFFFF; color: #111111; font-family: "Space Grotesk", "DM Sans", "Segoe UI", sans-serif; }
+.eyebrow { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #111111; }
+.cap { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 9px; line-height: 12px; color: #555555; letter-spacing: 0.03em; }
+.note { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 11.5px; line-height: 16px; color: #222222; }
+.bx { position: absolute; box-sizing: border-box; border: 1px solid #111111; background: #FFFFFF; }
+.lb { position: absolute; font-family: "Space Grotesk", sans-serif; font-size: 10px; color: #111111; white-space: nowrap; }
+.mo { font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 0.08em; color: #111111; }
+.sig { color: #8FB3D9; }
+.sigbg { background: #8FB3D9; }
+.dim { position: absolute; right: -60px; width: 52px; font-family: "Space Mono", monospace; font-size: 9px; color: #555555; text-align: left; }
+</style></helmet>
+<div style="width: 720px; min-height: 800px; box-sizing: border-box; padding: 28px 32px 24px 32px; display: flex; flex-direction: column; gap: 14px; background: #FFFFFF;">
+
+  <div style="display: flex; flex-direction: column; gap: 5px;">
+    <div class="eyebrow">Direction C &middot; axis: consent and undo come to the conversation</div>
+    <div style="font-size: 22px; line-height: 26px; font-weight: 600; letter-spacing: 0.2px; color: #111111;">Trust where the talking happens</div>
+    <div class="note" style="max-width: 640px;"><b>Motivation.</b> The brief's third clause is "the means to trust it" (REDESIGN.md &sect;4), and measured it is where the identity gives way first: 12 hues on the gate card vs 3 on the chat, a REVIEW card with no verb, Approve at 23px, undo reachable only through a raised gate. Put the proposal card and the per-turn receipt inline in the transcript, in the panel's own vocabulary: DsCard band, one muted level badge, DsVerb tone verbs at 36px, the accent on Approve alone.</div>
+    <div class="note" style="max-width: 640px;"><b>Tradeoff.</b> The Work/Review face loses its reason to auto-surface, so the v9.1 'gate raises Work' law needs a new ruling. Inline cards spend transcript height while pending (a proposal card &asymp; 88px). Hue map for the four levels inside the muted set must be chosen with WCAG numbers; this sketch does not choose it.</div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 340px 1fr; gap: 56px;">
+    <div style="position: relative; width: 340px; height: 560px; border: 1px solid #111111; box-sizing: border-box; background: #FFFFFF;">
+      <!-- rail 52 -->
+      <div class="bx" style="left:0; top:0; width:340px; height:52px; border-width:0 0 1px 0;"></div>
+      <div style="position:absolute; left:30px; top:18px; width:16px; height:16px; border-radius:999px; border:1.5px solid #111111;"></div>
+      <div class="lb" style="left:54px; top:19px; font-weight:700; letter-spacing:0.16em; font-size:14px;">SYNAPSE</div>
+      <div class="lb" style="left:142px; top:21px; color:#555555;">Waiting for you</div>
+      <div class="mo" style="position:absolute; left:298px; top:20px;">&middot;&middot;&middot;</div>
+      <div class="dim" style="top:18px;">52</div>
+      <!-- ribbon 46 -->
+      <div class="bx" style="left:0; top:52px; width:340px; height:46px; border-width:0 0 1px 0;"></div>
+      <div class="lb" style="left:30px; top:68px; color:#555555;">/obj/geo1</div>
+      <div class="lb" style="left:268px; top:66px; border-bottom:2px solid #111111; padding-bottom:8px;">TOKEN</div>
+      <!-- chat with a turn, a receipt footer, and a proposal card -->
+      <div class="bx" style="left:0; top:98px; width:340px; height:302px; border-width:0; background:#F2F2F2;"></div>
+      <div class="lb" style="left:30px; top:112px; font-size:11px;">Scatter 2,000 points on geo1 and add noise.</div>
+      <div class="lb" style="left:30px; top:134px; font-size:11px; color:#333333;">Done: scatter1, attribnoise1 wired after box1.</div>
+      <!-- receipt footer (F11) -->
+      <div class="lb" style="left:30px; top:154px; font-size:9px; color:#555555; font-family:'Space Mono',monospace; letter-spacing:0.06em;">2 nodes created &middot; 1 wired</div>
+      <div class="lb" style="left:232px; top:152px; font-size:10px; border-bottom:1px solid #111111; padding-bottom:1px;">Revert this turn</div>
+      <!-- proposal card (F4) -->
+      <div class="bx" style="left:30px; top:186px; width:280px; height:88px; border:1px solid #111111; background:#FFFFFF;"></div>
+      <div class="mo" style="position:absolute; left:42px; top:196px;">REVIEW</div>
+      <div class="lb" style="left:100px; top:195px; font-size:11px;">delete_node /obj/geo1/box2</div>
+      <div class="lb" style="left:42px; top:214px; font-size:10px; color:#555555;">Continues in 8s unless you say no.</div>
+      <div class="bx" style="left:42px; top:234px; width:64px; height:30px; border:1px solid #111111;"></div>
+      <div class="lb" style="left:58px; top:243px; font-size:10px;">Reject</div>
+      <div class="sigbg" style="position:absolute; left:114px; top:234px; width:72px; height:30px;"></div>
+      <div class="lb" style="left:131px; top:243px; font-size:10px; color:#FFFFFF; font-weight:500;">Approve</div>
+      <div class="lb" style="left:200px; top:243px; font-size:10px; color:#555555;">Show diff</div>
+      <div class="dim" style="top:224px;">88</div>
+      <div class="lb" style="left:30px; top:376px; font-size:9px; color:#555555; font-family:'Space Mono',monospace; letter-spacing:0.06em;">CONVERSATION &middot; card lives here, not on a face</div>
+      <!-- composer -->
+      <div class="bx" style="left:0; top:400px; width:340px; height:160px; border-width:1px 0 0 0;"></div>
+      <div class="bx" style="left:30px; top:416px; width:280px; height:110px; border:1px solid #111111; background:#F2F2F2;"></div>
+      <div class="lb" style="left:40px; top:426px; color:#555555;">Ask SYNAPSE&hellip;</div>
+      <div style="position:absolute; left:40px; top:498px; width:16px; height:16px; border:1px solid #555555; border-radius:2px;"></div>
+      <div class="bx" style="left:240px; top:488px; width:60px; height:30px; border:1px solid #111111;"></div>
+      <div class="lb" style="left:256px; top:497px; font-size:11px; font-weight:500;">SEND</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 4px;">
+      <div class="eyebrow">What moved</div>
+      <div class="note">Proposal card inline in the transcript: DsCard band, one level badge (rhythm tag, muted), plain sentence of consequence, Reject / Approve / Show diff as DsVerb tone verbs at 30-36px. REVIEW gets Reject because CLAUDE.md 1.2 says 'continues unless rejected'.</div>
+      <div class="note">While a proposal is pending, the accent moves from SEND to Approve: one accent, one meaning, the artist's next action (BATTLEPLAN &sect;4). SEND is quiet until the decision is made.</div>
+      <div class="note">Every turn whose tools include a mutator ends with a one-line receipt and 'Revert this turn' (the data exists at synapse_panel.py:1657-1672). Undo no longer needs the Work face.</div>
+      <div class="note">The state sentence in the rail names the wait: 'Waiting for you' is the STATUS kind for a pending gate.</div>
+      <div class="eyebrow" style="padding-top:6px;">Numbers</div>
+      <div class="cap">gate_widget.png today: 5562 chromatic px, 3.15%, 12 hue buckets<br>target: &le; 3 hue buckets on any face, accent on one control at a time<br>consent targets: 23 &rarr; 36px; a REVIEW card: 0 &rarr; 1 verb</div>
+      <div class="eyebrow" style="padding-top:6px;">Closes</div>
+      <div class="cap">F4 &middot; F11 &middot; part of F14 (Work face idle strings)<br>Composes with A or B; it does not choose between them.</div>
+      <div class="eyebrow" style="padding-top:6px;">Lens votes</div>
+      <div class="cap">IDEA's one thing &middot; USE-03/04 &middot; SYS-10<br>No lens objected; SUBTRACT asks that any card pass the S4 test (says what no neighbour says).</div>
+    </div>
+  </div>
+
+  <div class="cap">Low-fi. Black/white plus SIGNAL only. Card height and verb sizes are proposals, not measurements. Not a deliverable; an option for Joe.</div>
+</div>
+</x-dc></body></html>

@@ -1,0 +1,234 @@
+
+######## expert_340 density standard host {'family': 'Courier', 'px': 12} n(w>0) = 95
+px       {'12': 43, '11': 41, '10': 6, '14': 4, '15': 1}
+family   {'Space Mono': 61, 'Space Grotesk': 26, 'Courier': 8}
+weight   {'400': 71, '500': 17, '700': 5, '600': 2}
+spacing  {'0:115.0': 34, '0:0.0': 29, '0:106.0': 12, '0:108.0': 5, '0:116.0': 4, '1:0.5': 4, '0:103.0': 4, '1:1.0': 1, '0:122.0': 1, '0:112.0': 1}
+caps     {'mixed': 55, 'literalUPPER': 25, 'AllUpper': 15}
+per-face px: {'direct_chat': [10, 11, 12, 14], 'direct_hda': [10, 11, 12, 14, 15], 'work': [10, 11, 12, 14], 'token': [11, 12, 14]}
+wordmark {'w': 69, 'hint_w': 69, 'min_w': 69, 'px': 14, 'weight': 700, 'spacing': 116.0}
+CLIPPED (w>0): 7
+   direct_chat  QPushButton  DsVerb         'OPTIMIZE'                   w= 59 hint= 65 px=11 sp=115.0
+   direct_chat  QPushButton  DsVerb         'BUILD HDA'                  w= 58 hint= 73 px=11 sp=115.0
+   direct_chat  _GrowingInput DsInput        'Ask SYNAPSE…    ·    / for c' w=212 hint=256 px=12 sp=0.0
+   direct_hda   QPushButton  DsVerb         'OPTIMIZE'                   w= 59 hint= 65 px=11 sp=115.0
+   direct_hda   QPushButton  DsVerb         'BUILD HDA'                  w= 58 hint= 73 px=11 sp=115.0
+   direct_hda   _GrowingInput DsInput        'Ask SYNAPSE…    ·    / for c' w=212 hint=256 px=12 sp=0.0
+   token        QLabel       DsTokenNote    'The field fills only as far ' w=332 hint=468 px=11 sp=0.0
+-- 10px rows:
+   direct_chat  QLabel                      '↵ send · ⇧↵ newline · / comm' fam=Space Mono sp=103.0
+   direct_hda   QLabel                      '↵ send · ⇧↵ newline · / comm' fam=Space Mono sp=103.0
+   work         QLabel                      'waiting for work'           fam=Space Mono sp=103.0
+   work         QLabel                      'PLAN'                       fam=Space Mono sp=122.0
+   work         QLabel                      '<span style="color:#868686; ' fam=Space Mono sp=112.0
+   work         QLabel                      '<span style="color:#555555;"' fam=Space Mono sp=103.0
+-- 14/15px rows:
+   direct_chat  QLabel                      'SYNAPSE'                    fam=Space Grotesk w=700 sp=116.0
+   direct_hda   QLabel                      'SYNAPSE'                    fam=Space Grotesk w=700 sp=116.0
+   direct_hda   QLabel                      'Describe the HDA you want'  fam=Space Grotesk w=700 sp=1.0
+   work         QLabel                      'SYNAPSE'                    fam=Space Grotesk w=700 sp=116.0
+   token        QLabel                      'SYNAPSE'                    fam=Space Grotesk w=700 sp=116.0
+-- host-family (Courier) rows = widgets with NO family applied:
+   direct_chat  ChatDisplay  DsChatTranscript 'Ready. What are we building?' px=12
+   direct_chat  _GrowingInput DsInput        'Ask SYNAPSE…    ·    / for c' px=12
+   direct_hda   QTextEdit    DsInput        'e.g. a scatter tool with den' px=12
+   direct_hda   QComboBox                   'SOP'                        px=12
+   direct_hda   QCheckBox                   'Include help text'          px=12
+   direct_hda   Button       DsButton       'Generate HDA'               px=12
+   direct_hda   Button       DsButton       'Main menu'                  px=12
+   direct_hda   _GrowingInput DsInput        'Ask SYNAPSE…    ·    / for c' px=12
+-- weight 600/700 rows:
+   direct_chat  QLabel                      'SYNAPSE'                    px=14 w=700
+   direct_hda   QLabel                      'SYNAPSE'                    px=14 w=700
+   direct_hda   QLabel                      'Describe the HDA you want'  px=15 w=700
+   direct_hda   Button       DsButton       'Generate HDA'               px=12 w=600
+   direct_hda   Button       DsButton       'Main menu'                  px=12 w=600
+   work         QLabel                      'SYNAPSE'                    px=14 w=700
+   token        QLabel                      'SYNAPSE'                    px=14 w=700
+-- spacing_type 1 (Absolute) rows:
+   direct_chat  QLabel       DsContextLabel 'no scene context'           px=12 sp=0.5
+   direct_hda   QLabel       DsContextLabel 'no scene context'           px=12 sp=0.5
+   direct_hda   QLabel                      'Describe the HDA you want'  px=15 sp=1.0
+   work         QLabel       DsContextLabel 'no scene context'           px=12 sp=0.5
+   token        QLabel       DsContextLabel 'no scene context'           px=12 sp=0.5
+PROBES {
+ "qss_letter_spacing": {
+  "plain_hint_w": 56,
+  "qss_5px_hint_w": 96,
+  "font_spacing_after_qss": 5.0
+ },
+ "html_letter_spacing": {
+  "plain_ideal_w": 64.0,
+  "html_5px_ideal_w": 104.0,
+  "fragment_spacing": [
+   5.0
+  ]
+ },
+ "tracking_cost_px": {
+  "BODY": {
+   "OPTIMIZE": 56,
+   "BUILD HDA": 63,
+   "CURIOUS": 49,
+   "EXPLAIN": 49
+  },
+  "DATA": {
+   "OPTIMIZE": 58,
+   "BUILD HDA": 65,
+   "CURIOUS": 50,
+   "EXPLAIN": 50
+  },
+  "SEND": {
+   "OPTIMIZE": 60,
+   "BUILD HDA": 68,
+   "CURIOUS": 53,
+   "EXPLAIN": 53
+  },
+  "LABEL_SM": {
+   "OPTIMIZE": 63,
+   "BUILD HDA": 70,
+   "CURIOUS": 55,
+   "EXPLAIN": 55
+  },
+  "LABEL": {
+   "OPTIMIZE": 64,
+   "BUILD HDA": 72,
+   "CURIOUS": 56,
+   "EXPLAIN": 56
+  },
+  "WORDMARK": {
+   "OPTIMIZE": 65,
+   "BUILD HDA": 73,
+   "CURIOUS": 57,
+   "EXPLAIN": 57
+  },
+  "EYEBROW": {
+   "OPTIMIZE": 68,
+   "BUILD HDA": 77,
+   "CURIOUS": 60,
+   "EXPLAIN": 60
+  },
+  "BRAND": {
+   "OPTIMIZE": 72,
+   "BUILD HDA": 81,
+   "CURIOUS": 63,
+   "EXPLAIN": 63
+  }
+ },
+ "verb_rail_demand": {
+  "sum_verb_hints": 365,
+  "sum_verb_widths": 355,
+  "content_w": 280
+ },
+ "weight_resolution_space_grotesk": {
+  "600_demibold": {
+   "requested": 600,
+   "resolved": 600,
+   "style": "Medium",
+   "family": "Space Grotesk"
+  },
+  "setBold": {
+   "requested": 700,
+   "resolved": 700,
+   "style": "Bold",
+   "family": "Space Grotesk"
+  },
+  "500_medium": {
+   "requested": 500,
+   "resolved": 500,
+   "style": "Medium",
+   "family": "Space Grotesk"
+  },
+  "400": {
+   "requested": 400,
+   "resolved": 400,
+   "style": "Regular",
+   "family": "Space Grotesk"
+  }
+ }
+}
+
+######## curious_340 density airy host {'family': 'Courier', 'px': 12} n(w>0) = 95
+px       {'12': 43, '11': 41, '10': 6, '14': 4, '15': 1}
+family   {'Space Mono': 61, 'Space Grotesk': 26, 'Courier': 8}
+weight   {'400': 71, '500': 17, '700': 5, '600': 2}
+spacing  {'0:115.0': 34, '0:0.0': 29, '0:106.0': 12, '0:108.0': 5, '0:116.0': 4, '1:0.5': 4, '0:103.0': 4, '1:1.0': 1, '0:122.0': 1, '0:112.0': 1}
+caps     {'mixed': 55, 'literalUPPER': 25, 'AllUpper': 15}
+per-face px: {'direct_chat': [10, 11, 12, 14], 'direct_hda': [10, 11, 12, 14, 15], 'work': [10, 11, 12, 14], 'token': [11, 12, 14]}
+wordmark {'w': 69, 'hint_w': 69, 'min_w': 69, 'px': 14, 'weight': 700, 'spacing': 116.0}
+CLIPPED (w>0): 22
+   direct_chat  Button       DsVerb         'Connect'                    w= 51 hint= 57 px=11 sp=115.0
+   direct_chat  Pill         DsPill         'CURIOUS'                    w= 86 hint= 96 px=12 sp=106.0
+   direct_chat  Pill         DsPill         'EXPERT'                     w= 87 hint= 89 px=12 sp=106.0
+   direct_chat  QPushButton  DsVerb         'EXPLAIN'                    w= 48 hint= 57 px=11 sp=115.0
+   direct_chat  QPushButton  DsVerb         'OPTIMIZE'                   w= 47 hint= 65 px=11 sp=115.0
+   direct_chat  QPushButton  DsVerb         'BUILD HDA'                  w= 48 hint= 73 px=11 sp=115.0
+   direct_chat  _GrowingInput DsInput        'Ask SYNAPSE…    ·    / for c' w=204 hint=256 px=12 sp=0.0
+   direct_hda   Button       DsVerb         'Connect'                    w= 51 hint= 57 px=11 sp=115.0
+   direct_hda   Pill         DsPill         'CURIOUS'                    w= 86 hint= 96 px=12 sp=106.0
+   direct_hda   Pill         DsPill         'EXPERT'                     w= 87 hint= 89 px=12 sp=106.0
+   direct_hda   QCheckBox                   'Include help text'          w=136 hint=144 px=12 sp=0.0
+   direct_hda   QPushButton  DsVerb         'EXPLAIN'                    w= 48 hint= 57 px=11 sp=115.0
+   direct_hda   QPushButton  DsVerb         'OPTIMIZE'                   w= 47 hint= 65 px=11 sp=115.0
+   direct_hda   QPushButton  DsVerb         'BUILD HDA'                  w= 48 hint= 73 px=11 sp=115.0
+   direct_hda   _GrowingInput DsInput        'Ask SYNAPSE…    ·    / for c' w=204 hint=256 px=12 sp=0.0
+   work         Button       DsVerb         'Connect'                    w= 51 hint= 57 px=11 sp=115.0
+   work         Pill         DsPill         'CURIOUS'                    w= 86 hint= 96 px=12 sp=106.0
+   work         Pill         DsPill         'EXPERT'                     w= 87 hint= 89 px=12 sp=106.0
+   token        Button       DsVerb         'Connect'                    w= 51 hint= 57 px=11 sp=115.0
+   token        Pill         DsPill         'CURIOUS'                    w= 86 hint= 96 px=12 sp=106.0
+   token        Pill         DsPill         'EXPERT'                     w= 87 hint= 89 px=12 sp=106.0
+   token        QLabel       DsTokenNote    'The field fills only as far ' w=332 hint=468 px=11 sp=0.0
+
+######## ml_340 density tight host {'family': 'Courier', 'px': 12} n(w>0) = 95
+px       {'12': 43, '11': 41, '10': 6, '14': 4, '15': 1}
+family   {'Space Mono': 61, 'Space Grotesk': 26, 'Courier': 8}
+weight   {'400': 71, '500': 17, '700': 5, '600': 2}
+spacing  {'0:115.0': 34, '0:0.0': 29, '0:106.0': 12, '0:108.0': 5, '0:116.0': 4, '1:0.5': 4, '0:103.0': 4, '1:1.0': 1, '0:122.0': 1, '0:112.0': 1}
+caps     {'mixed': 55, 'literalUPPER': 25, 'AllUpper': 15}
+per-face px: {'direct_chat': [10, 11, 12, 14], 'direct_hda': [10, 11, 12, 14, 15], 'work': [10, 11, 12, 14], 'token': [11, 12, 14]}
+wordmark {'w': 69, 'hint_w': 69, 'min_w': 69, 'px': 14, 'weight': 700, 'spacing': 116.0}
+CLIPPED (w>0): 5
+   direct_chat  QPushButton  DsVerb         'BUILD HDA'                  w= 68 hint= 73 px=11 sp=115.0
+   direct_chat  _GrowingInput DsInput        'Ask SYNAPSE…    ·    / for c' w=216 hint=256 px=12 sp=0.0
+   direct_hda   QPushButton  DsVerb         'BUILD HDA'                  w= 68 hint= 73 px=11 sp=115.0
+   direct_hda   _GrowingInput DsInput        'Ask SYNAPSE…    ·    / for c' w=216 hint=256 px=12 sp=0.0
+   token        QLabel       DsTokenNote    'The field fills only as far ' w=332 hint=468 px=11 sp=0.0
+
+######## expert_280 density standard host {'family': 'Courier', 'px': 12} n(w>0) = 95
+px       {'12': 43, '11': 41, '10': 6, '14': 4, '15': 1}
+family   {'Space Mono': 61, 'Space Grotesk': 26, 'Courier': 8}
+weight   {'400': 71, '500': 17, '700': 5, '600': 2}
+spacing  {'0:115.0': 34, '0:0.0': 29, '0:106.0': 12, '0:108.0': 5, '0:116.0': 4, '1:0.5': 4, '0:103.0': 4, '1:1.0': 1, '0:122.0': 1, '0:112.0': 1}
+caps     {'mixed': 55, 'literalUPPER': 25, 'AllUpper': 15}
+per-face px: {'direct_chat': [10, 11, 12, 14], 'direct_hda': [10, 11, 12, 14, 15], 'work': [10, 11, 12, 14], 'token': [11, 12, 14]}
+wordmark {'w': 69, 'hint_w': 69, 'min_w': 69, 'px': 14, 'weight': 700, 'spacing': 116.0}
+CLIPPED (w>0): 29
+   direct_chat  Button       DsVerb         'Connect'                    w= 38 hint= 57 px=11 sp=115.0
+   direct_chat  Button       DsVerb         'Corpus'                     w= 37 hint= 49 px=11 sp=115.0
+   direct_chat  Pill         DsPill         'CURIOUS'                    w= 68 hint= 88 px=12 sp=106.0
+   direct_chat  Pill         DsPill         'EXPERT'                     w= 69 hint= 81 px=12 sp=106.0
+   direct_chat  ChatDisplay  DsChatTranscript 'Ready. What are we building?' w=220 hint=256 px=12 sp=0.0
+   direct_chat  QPushButton  DsVerb         'EXPLAIN'                    w= 38 hint= 57 px=11 sp=115.0
+   direct_chat  QPushButton  DsVerb         'OPTIMIZE'                   w= 38 hint= 65 px=11 sp=115.0
+   direct_chat  QPushButton  DsVerb         'BUILD HDA'                  w= 38 hint= 73 px=11 sp=115.0
+   direct_chat  _GrowingInput DsInput        'Ask SYNAPSE…    ·    / for c' w=152 hint=256 px=12 sp=0.0
+   direct_hda   Button       DsVerb         'Connect'                    w= 38 hint= 57 px=11 sp=115.0
+   direct_hda   Button       DsVerb         'Corpus'                     w= 37 hint= 49 px=11 sp=115.0
+   direct_hda   Pill         DsPill         'CURIOUS'                    w= 68 hint= 88 px=12 sp=106.0
+   direct_hda   Pill         DsPill         'EXPERT'                     w= 69 hint= 81 px=12 sp=106.0
+   direct_hda   QLabel                      'Describe the HDA you want'  w=220 hint=225 px=15 sp=1.0
+   direct_hda   QTextEdit    DsInput        'e.g. a scatter tool with den' w=220 hint=256 px=12 sp=0.0
+   direct_hda   QCheckBox                   'Include help text'          w= 92 hint=144 px=12 sp=0.0
+   direct_hda   QPushButton  DsVerb         'EXPLAIN'                    w= 38 hint= 57 px=11 sp=115.0
+   direct_hda   QPushButton  DsVerb         'OPTIMIZE'                   w= 38 hint= 65 px=11 sp=115.0
+   direct_hda   QPushButton  DsVerb         'BUILD HDA'                  w= 38 hint= 73 px=11 sp=115.0
+   direct_hda   _GrowingInput DsInput        'Ask SYNAPSE…    ·    / for c' w=152 hint=256 px=12 sp=0.0
+   work         Button       DsVerb         'Connect'                    w= 38 hint= 57 px=11 sp=115.0
+   work         Button       DsVerb         'Corpus'                     w= 37 hint= 49 px=11 sp=115.0
+   work         Pill         DsPill         'CURIOUS'                    w= 68 hint= 88 px=12 sp=106.0
+   work         Pill         DsPill         'EXPERT'                     w= 69 hint= 81 px=12 sp=106.0
+   token        Button       DsVerb         'Connect'                    w= 38 hint= 57 px=11 sp=115.0
+   token        Button       DsVerb         'Corpus'                     w= 37 hint= 49 px=11 sp=115.0
+   token        Pill         DsPill         'CURIOUS'                    w= 68 hint= 88 px=12 sp=106.0
+   token        Pill         DsPill         'EXPERT'                     w= 69 hint= 81 px=12 sp=106.0
+   token        QLabel       DsTokenNote    'The field fills only as far ' w=272 hint=468 px=11 sp=0.0

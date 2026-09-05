@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><script src="./support.js"></script></head><body><x-dc><helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap"><style>
+body { margin: 0; background: #2A2A2A; color: #C5C5C5; font-family: "Space Grotesk", "DM Sans", "Segoe UI", sans-serif; }
+a { color: #8FB3D9; } a:hover { color: #A9C7E6; }
+.cap { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 9px; line-height: 12px; color: #868686; letter-spacing: 0.03em; }
+.note { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 12px; line-height: 17px; color: #A0A0A0; }
+.eyebrow { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #868686; }
+.fact { display: grid; grid-template-columns: 118px 52px 1fr; gap: 8px; align-items: baseline; border-bottom: 1px solid #303030; padding: 5px 0; }
+.k { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 10px; color: #A0A0A0; }
+.v { font-family: "Space Mono", "JetBrains Mono", Consolas, monospace; font-size: 13px; color: #DEDEDE; }
+</style></helmet>
+<div style="width: 720px; min-height: 800px; box-sizing: border-box; padding: 24px 28px 20px 28px; display: flex; flex-direction: column; gap: 14px; background: #2A2A2A;">
+  <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: flex-end; gap: 16px;">
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div class="eyebrow">Landed panel · profile Curious · density airy</div>
+      <div style="font-size: 22px; line-height: 26px; font-weight: 600; letter-spacing: 0.5px; color: #DEDEDE;">Curious at 340&#215;760</div>
+    </div>
+    <div class="cap" style="text-align: right; max-width: 300px;">hython 22.0.400 offscreen · QT_QPA_PLATFORM=offscreen · SYNAPSE_REDUCED_MOTION=1 · SYNAPSE_PANEL_SETTINGS={"profile": "curious"}</div>
+  </div>
+  <div style="display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start;">
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <img src="shot_curious.png" width="340" height="760" style="width: 340px; height: 760px; display: block; border: 1px solid #3C3C3C; image-rendering: pixelated;">
+      <div class="cap">design/rhythm_pd/after_r3/curious/panel_direct_chat.png · 340&#215;760 px, native · re-saved via Pillow to shot_curious.png (16423 bytes) · producer harness/notes/panel_shot.py, receipt harness/panel_pd/runs/2026-09-05/shots_R3rep.txt</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div class="eyebrow" style="padding-bottom: 4px;">Measured facts · measure_regions.py (same build path as panel_shot.py) &#8594; regions_curious.json</div>
+      <div class="fact"><div class="k">density</div><div class="v">airy</div><div class="cap">gaps x1.5 · tokens.py:491 · regions_curious.json density</div></div><div class="fact"><div class="k">rail (DsHeader)</div><div class="v">100px</div><div class="cap">y=0 · shell (30,8,30,8) + stack row + Connect row · regions_curious.json rail</div></div><div class="fact"><div class="k">ribbon</div><div class="v">46px</div><div class="cap">y=100 · shell; label + CHAT/TOKEN pills · regions_curious.json ribbon</div></div><div class="fact"><div class="k">tab row (DsTabRow)</div><div class="v">47px</div><div class="cap">y=146 · shell; 3 tag pills · regions_curious.json tab_row</div></div><div class="fact"><div class="k">chat transcript</div><div class="v">282px</div><div class="cap">y=201 x=30 w=280 · the stretch region · regions_curious.json chat</div></div><div class="fact"><div class="k">verb rail</div><div class="v">44px</div><div class="cap">y=507 · verbs w: EXPLAIN:48 FIX:25 OPTIMIZE:47 BUILD HDA:48 Aa:17 · regions_curious.json verbs</div></div><div class="fact"><div class="k">composer</div><div class="v">200px</div><div class="cap">y=552 x=30 w=280 · grip + input 204x119 + legend · regions_curious.json composer</div></div><div class="fact"><div class="k">SEND</div><div class="v">60x32</div><div class="cap">x=164 y=663 · #DsSend padding 9px 15px · qss.py:241-248</div></div><div class="fact"><div class="k">wordmark x</div><div class="v">56px</div><div class="cap">mark x=30 w=20 + stack gap; wordmark w=69 (sizeHint 69) · regions_curious.json wordmark</div></div><div class="fact"><div class="k">wordmark font</div><div class="v">14 / 700</div><div class="cap">Space Grotesk · letterSpacing 116.0% = 0.16em · synapse_panel.py:704-705</div></div><div class="fact"><div class="k">fonts loaded</div><div class="v">Space Grotesk, Space Mono</div><div class="cap">build_mismatch=False · fontload.load_application_fonts · regions_curious.json fonts</div></div>
+      <div class="note" style="padding-top: 8px;">Numbers are QWidget geometry mapped to the panel origin after show + processEvents at 340&#215;760; the direct chat face is current. Chrome scale 1.0 (no host font read offscreen).</div>
+    </div>
+  </div>
+</div>
+</x-dc></body></html>

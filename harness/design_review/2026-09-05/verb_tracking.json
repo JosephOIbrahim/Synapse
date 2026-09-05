@@ -1,0 +1,89 @@
+{
+ "BODY": {
+  "em": 0.0,
+  "advance": {
+   "EXPLAIN": 49,
+   "FIX": 21,
+   "OPTIMIZE": 56,
+   "BUILD HDA": 63,
+   "Aa": 14
+  },
+  "demand_px": 272,
+  "content_w": 280,
+  "fits": true
+ },
+ "DATA": {
+  "em": 0.03,
+  "advance": {
+   "EXPLAIN": 50,
+   "FIX": 22,
+   "OPTIMIZE": 58,
+   "BUILD HDA": 65,
+   "Aa": 14
+  },
+  "demand_px": 278,
+  "content_w": 280,
+  "fits": true
+ },
+ "SEND": {
+  "em": 0.08,
+  "advance": {
+   "EXPLAIN": 53,
+   "FIX": 23,
+   "OPTIMIZE": 60,
+   "BUILD HDA": 68,
+   "Aa": 15
+  },
+  "demand_px": 288,
+  "content_w": 280,
+  "fits": false
+ },
+ "LABEL_SM": {
+  "em": 0.12,
+  "advance": {
+   "EXPLAIN": 55,
+   "FIX": 23,
+   "OPTIMIZE": 63,
+   "BUILD HDA": 70,
+   "Aa": 16
+  },
+  "demand_px": 296,
+  "content_w": 280,
+  "fits": false
+ },
+ "LABEL": {
+  "em": 0.15,
+  "advance": {
+   "EXPLAIN": 56,
+   "FIX": 24,
+   "OPTIMIZE": 64,
+   "BUILD HDA": 72,
+   "Aa": 16
+  },
+  "demand_px": 301,
+  "content_w": 280,
+  "fits": false
+ },
+ "sans_11px_titlecase": {
+  "advance": {
+   "EXPLAIN": 39,
+   "FIX": 16,
+   "OPTIMIZE": 47,
+   "BUILD HDA": 50,
+   "Aa": 13
+  },
+  "demand_px": 234,
+  "fits": true
+ },
+ "sans_12px_titlecase": {
+  "advance": {
+   "EXPLAIN": 42,
+   "FIX": 16,
+   "OPTIMIZE": 51,
+   "BUILD HDA": 55,
+   "Aa": 15
+  },
+  "demand_px": 248,
+  "fits": true
+ }
+}

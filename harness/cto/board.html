@@ -79,16 +79,16 @@ td.sha{font-family:"Space Mono",monospace;font-size:12px;color:var(--ink-2);whit
 <div class="strip">
   <div class="tile"><div class="k">GitHub CI</div><div class="v"><span class="pill good">green</span></div><div class="s">on e8913f83, first green master run since July 29. A new run is on 2865f009 (the release bump plus the panel merge).</div></div>
   <div class="tile"><div class="k">Full suite, local</div><div class="v mono">7604 / 0 / 331</div><div class="s">passed / failed / skipped at 74dc0219, the first zero-failure full run on record. Skips rose from 199 because the panel wave's PySide tests skip under stock Python and run under hython (211 pass there). v5.63.0 gate was 7431 / 1 / 198.</div></div>
-  <div class="tile"><div class="k">Review backlog</div><div class="v mono">9 of 11 closed</div><div class="s">Closed by re-running each item's predicate on master, not by receipt. B9 is partial; B11 (verb rail collapse) opened by the R3-01 ruling.</div></div>
+  <div class="tile"><div class="k">Review backlog</div><div class="v mono">10 of 25</div><div class="s">closed by predicate. Open: B9 partial, B11 verb rail, and 14 design items from the Bierut review (4 blockers: verb rail clipped at 340, panel cannot say its state, docking is a patch, consent card speaks another colour grammar).</div></div>
   <div class="tile"><div class="k">Panel rework</div><div class="v"><span class="pill good">merged</span></div><div class="s">74dc0219: 202 files, +37.5k lines. CRUX round 3 closed all six referee items; the last, airy width, ruled R3-01. Your eyes next.</div></div>
-  <div class="tile"><div class="k">Repo hygiene</div><div class="v mono">11 worktrees</div><div class="s">from 45. 10 dead branches deleted, SHAs on file. Worktree disk 8.2 GB to about 2 GB.</div></div>
+  <div class="tile"><div class="k">Repo hygiene</div><div class="v mono">7 worktrees</div><div class="s">from 45. 18 branches deleted (10 dead + 8 landed pd/*), SHAs on file. Worktree disk 8.2 GB to about 2 GB.</div></div>
 </div>
 
 <div class="cols">
   <section class="block">
     <h2>Stops at Joe</h2>
     <div class="list">
-      <div class="item"><span class="word">"delete pd branches"</span><div><div class="t">Clear the five landed panel branches</div><div class="d">camera, lever, sweep_a, sweep_b, integrate are on master and on GitHub now. Local copies only; safe to clear.</div></div></div>
+      <div class="item"><span class="word">"direction A / B / C"</span><div><div class="t">Pick the next panel wave's direction</div><div class="d">A: three sans verbs, one voice, a rail that never elides. B: composer-first, no rail. C: consent and undo come to the conversation (composes with A or B). Sketches on the review canvas; each carries its motivation and its tradeoff.</div></div></div>
       <div class="item"><span class="word">"rule: recipes"</span><div><div class="t">Which "recipe" the panel teaches</div><div class="d">62 routing recipes, Solaris v3, or the 7 in recipe_book. And whether route_chat gets a real command channel or is proposal-only.</div><div class="why">Until ruled, no recipe executes for an artist. Deprecated-node fixes already landed.</div></div></div>
       <div class="item"><span class="word">"rule: point release"</span><div><div class="t">Verifier pin: exact 22.0.400 or major.minor plus catalog digest</div><div class="d">Left untouched in contracts.py.</div></div></div>
       <div class="item"><span class="word">golden HIP</span><div><div class="t">Solaris v3 golden scene</div><div class="d">The one non-delegable blocker. Nothing in v3 runs end to end without it.</div></div></div>
@@ -109,7 +109,7 @@ td.sha{font-family:"Space Mono",monospace;font-size:12px;color:var(--ink-2);whit
       <div class="item"><span class="word">ruling 3</span><div><div class="t">HDA Result stays dark</div><div class="d">The "before" image was an unstyled Fusion render; the ratified style sheet already specified the dark table and SIGNAL fill.</div></div></div>
       <div class="item"><span class="word">crux 3</span><div><div class="t">Both referees said broken, then the repairs closed them</div><div class="d">Gate widget had fallen to Courier after a font purge; WORK and REVIEW faces lost their 26px inset; two test-hygiene pins. All fixed and pinned. The last item, airy width 393 against 380, was ruled: airy 400 as an interim, wordmark never elides, verb-rail collapse queued as B11.</div></div></div><div class="item"><span class="word">gates</span><div><div class="t">On the merged tree, Houdini 22.0.400 offscreen</div><div class="d">Docking 91 passed under python313. Docking plus tests/panel under hython: 211 passed, 1 pre-existing dead-verb red. G3 strict: pass, 1 pre-existing warn. Census: 17 sites, all tagged, 0 raw hex.</div></div></div>
     </div>
-    <p class="note">Now running: the Bierut design review, five lenses on a shared bus, output as a design canvas.</p>
+    <p class="note">Bierut review done: HOLD as the design reference until four blockers close. Canvas: <a href="https://claude.ai/code/artifact/6abe327a-a174-4f34-a0a8-415f0dc0e893">SYNAPSE Panel, the Bierut Review</a>. 4 blockers + 10 majors are in the backlog as D-F1..D-F14, gated joe/crux.</p>
   </section>
 </div>
 
@@ -153,8 +153,8 @@ td.sha{font-family:"Space Mono",monospace;font-size:12px;color:var(--ink-2);whit
 </div>
 
 <div class="foot">
-  <span>Agents today: 15 review + 16 forge + 10 panel + design review running</span>
-  <span>Subagent tokens: 1.62M + 2.14M + 2.38M + running</span>
+  <span>Agents today: 15 review + 16 forge + 10 panel + 12 design review = 53</span>
+  <span>Subagent tokens: 1.62M + 2.14M + 2.38M + 1.93M = 8.1M</span>
   <span>Next crank: run the cto-orchestrator agent</span>
 </div>
 </div>
