@@ -1,0 +1,15 @@
+
+tests/test_undo_redo.py::TestUndoHandler::test_undo_handler_calls_performUndo
+tests/test_undo_redo.py::TestUndoHandler::test_undo_returns_status
+tests/test_undo_redo.py::TestUndoHandler::test_undo_registered_in_handlers
+tests/test_undo_redo.py::TestRedoHandler::test_redo_handler_calls_performRedo
+tests/test_undo_redo.py::TestRedoHandler::test_redo_returns_status
+tests/test_undo_redo.py::TestRedoHandler::test_redo_registered_in_handlers
+
+tests/test_vendored_deps.py::TestVendorPathActivation::test_prepend_is_idempotent
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_backfill.py::test_backup_is_taken_and_source_intact - Asser...
+==== 1 failed, 7431 passed, 198 skipped, 625 warnings in 229.12s (0:03:49) ====
+exit 0
