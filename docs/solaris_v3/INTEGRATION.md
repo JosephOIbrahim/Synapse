@@ -31,7 +31,7 @@ python -m pytest tests -q -p no:cacheprovider
 | `tests/test_worker_tool_policy.py::test_unknown_env_value_falls_back_to_standard` | behaviour change | **needs Joe's ruling** (below) |
 | `tests/test_pkg_bootstrap_invariant.py::test_r310_shapes_leave_no_runtime_divergence` | runs the R310 subset, which contains the test above | collapses into the ruling; goes green with it |
 
-After the doc fix the branch stands at 3 failures, two of which are the same ruling.
+After the doc fix and the ruling the branch stands at 1 failure: the pre-existing test_backfill one.
 
 ## Ruling needed: unknown worker-tool mode
 
@@ -43,7 +43,7 @@ Options:
 2. **Keep legacy fallback for MODE, fail closed only for `demo`/profile conflicts.** Smaller behaviour change; two code paths to reason about.
 3. **Revert** to the base behaviour and drop the fail-closed rule from the brief.
 
-Not applied from a tick. The test stays red until ruled.
+**Ruled 2026-09-04 20:36 by Joe: option 1, accept fail-closed.** `tests/test_worker_tool_policy.py::test_unknown_env_value_falls_back_to_standard` renamed to `test_unknown_env_value_fails_closed_to_strict` and asserts strict; the R310 bootstrap-invariant test is green again. The branch now stands at exactly one failure, the pre-existing test_backfill one.
 
 ## Acceptance command (ACCEPTANCE stream)
 
@@ -70,7 +70,7 @@ Anything that needs the hand-built golden HIP: golden extraction and rebuild (T1
 
 ## Next actions, in order
 
-1. Joe rules on the unknown-mode fallback (one line). The orchestrator updates the one test accordingly.
+1. ~~Joe rules on the unknown-mode fallback~~ ruled, applied.
 2. Joe builds and saves the golden sphere/ground scene on H22.0.400 (blueprint p12, first session).
 3. Live probe of the four `hou.undos` symbols; LIFECYCLE backend bound.
 4. Hookups applied under review; T4–T12 bindings added to the acceptance runner.

@@ -216,11 +216,14 @@ def test_strict_still_allows_read_only():
     assert allowed is True
 
 
-def test_unknown_env_value_falls_back_to_standard():
+def test_unknown_env_value_fails_closed_to_strict():
+    # Joe DECIDE 2026-09-04 (bp5 AUTHORITY, blueprint v3 p06): an explicit
+    # unknown mode value fails CLOSED to strict (read-only), never falls back
+    # to standard. Absent value -> standard (legacy default) is unchanged.
     os.environ[_ENV_VAR] = "bogus_mode"
-    # Standard behavior: execute_python denied, create_node allowed.
     assert is_tool_allowed_for_worker("houdini_execute_python")[0] is False
-    assert is_tool_allowed_for_worker("houdini_create_node")[0] is True
+    assert is_tool_allowed_for_worker("houdini_create_node")[0] is False
+    assert is_tool_allowed_for_worker("synapse_ping")[0] is True
 
 
 # ===========================================================================
