@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+import html as _html
 from typing import List, Optional
 
 # ---------------------------------------------------------------------------
@@ -461,6 +462,10 @@ if _QT_AVAILABLE:
             self._list.setHorizontalScrollBarPolicy(
                 Qt.ScrollBarPolicy.ScrollBarAlwaysOff
             )
+            # bc-wave repair: rows elide right instead of running off the
+            # edge (the hidden scrollbar used to clip them mid-word).
+            from synapse.panel.tool_palette import fit_rows
+            fit_rows(self._list)
             layout.addWidget(self._list)
 
             # -- Connections --
@@ -555,11 +560,15 @@ if _QT_AVAILABLE:
                 item = QListWidgetItem(f"[{badge}]  {display}")
                 item.setData(Qt.ItemDataRole.UserRole, entry.command)
                 item.setForeground(QColor(_TEXT))
-                # Tint badge portion via tooltip (simple approach)
+                # Tint badge portion via tooltip (simple approach). The label
+                # and description are escaped (bc-wave repair): a title such
+                # as 'solaris sets-dressing at <parent>' used to lose its
+                # '<parent>' to the HTML parser, and the tooltip is where a
+                # row that elides must read whole.
                 item.setToolTip(
                     f"<b style='color:{badge_color}'>[{badge}]</b> "
-                    f"<span style='color:{_TEXT}'>{entry.label}</span><br/>"
-                    f"<span style='color:{_TEXT_DIM}'>{entry.description}</span>"
+                    f"<span style='color:{_TEXT}'>{_html.escape(entry.label)}</span><br/>"
+                    f"<span style='color:{_TEXT_DIM}'>{_html.escape(entry.description)}</span>"
                 )
                 self._list.addItem(item)
 

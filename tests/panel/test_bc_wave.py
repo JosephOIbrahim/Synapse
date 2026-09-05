@@ -400,8 +400,23 @@ def _assert_rows_fit(lst, name):
     for it in rows:
         r = lst.visualItemRect(it)
         assert 0 < r.width() <= vp, (name, it.text(), r.width(), vp)
+    # Every word of a row that elides is readable whole on its tooltip (the
+    # Ctrl+K tooltip is HTML: read it as the plain text it shows).
+    import re
+    rich = (getattr(getattr(QtGui, "Qt", None), "mightBeRichText", None)
+            or getattr(QtCore.Qt, "mightBeRichText"))      # PySide 6.8: QtGui.Qt
     for it in over:
-        assert it.text().strip() in it.toolTip(), (name, it.text(), it.toolTip())
+        tip = it.toolTip()
+        if rich(tip):                           # what QToolTip itself decides
+            doc = QtGui.QTextDocument()
+            doc.setHtml(tip)
+            tip = doc.toPlainText()
+        plain = tip
+        # '.' stays out of the token class: the Ctrl+K row shapes its own
+        # description as desc[:52] + '...' (a prefix the tooltip completes).
+        words = [w for w in re.findall(r"[\w/:-]+", it.text()) if re.search(r"\w", w)]
+        missing = [w for w in words if w not in plain]
+        assert words and not missing, (name, it.text(), missing, plain)
 
 
 def test_palette_rows_never_cut_at_340():
@@ -421,9 +436,16 @@ def test_palette_rows_never_cut_at_340():
             pal = p._palette
             assert pal.isVisible(), profile
             assert pal.width() == p.width(), (profile, pal.width(), p.width())
+            # Inside the dock horizontally, client rect against client rect.
+            # Qt places an unshown window by its FRAME, and the offscreen QPA
+            # charges the frameless popup the 2px frame it never gets (the
+            # panel's own client sits at frame + 2 for the same reason), so
+            # that platform offset is the tolerance - 0 on a real seat.
             left = p.mapToGlobal(QtCore.QPoint(0, 0)).x()
-            assert left <= pal.x() and pal.x() + pal.width() <= left + p.width(), (
-                profile, pal.x(), pal.width(), left, p.width())
+            tol = p.geometry().x() - p.frameGeometry().x()
+            pal_left = pal.mapToGlobal(QtCore.QPoint(0, 0)).x()
+            assert left <= pal_left and pal_left + pal.width() <= left + p.width() + tol, (
+                profile, pal_left, pal.width(), left, p.width(), tol)
             _assert_rows_fit(pal._list, type(pal).__name__)
             pal.close()
             cp = CommandPaletteWidget(p)

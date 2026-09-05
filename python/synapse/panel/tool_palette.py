@@ -71,6 +71,29 @@ def group_head_item(text, scale=t.FONT_SCALE_DEFAULT):
     return head
 
 
+class _FitRowsDelegate(QtWidgets.QStyledItemDelegate):
+    """Rows never widen the view (bc-wave repair, CRUX 2026-09-05: 'palette
+    rows cut mid-word'). A QListView in list mode lays every row out as wide
+    as its widest hint, so one long recipe title put a horizontal scrollbar
+    under the whole list and cut every row mid-word. The hint is height only
+    (the group head already is - QSize(0, SPACE_48)): the view then makes each
+    row as wide as its viewport and the style elides the title right (the
+    view's default mode), with the whole title on the tooltip. The row height
+    stays the sheet's (::item min-height + padding = SPACE_XL)."""
+
+    def sizeHint(self, option, index):
+        size = super().sizeHint(option, index)
+        size.setWidth(0)
+        return size
+
+
+def fit_rows(view):
+    """Give a palette list the fit-rows rule. Shared by both palettes."""
+    view.setTextElideMode(Qt.TextElideMode.ElideRight)
+    view.setItemDelegate(_FitRowsDelegate(view))
+    return view
+
+
 _MATERIAL_PRESETS = [
     "glass", "mirror", "rough_metal", "polished_metal", "skin",
     "cloth", "plastic", "ceramic", "wax", "rubber",
@@ -232,6 +255,7 @@ class ToolPalette(QtWidgets.QWidget):
         # the view its spacing (4/6/3, paid both sides -> rows 8/12/6 apart);
         # the row box (SPACE_XL) is the shared ::item rule in the sheet.
         self._list.setProperty("rhythm_role", "stack")
+        fit_rows(self._list)            # rows elide right, never scroll sideways
         self._list.itemActivated.connect(self._choose)
         self._list.itemClicked.connect(self._choose)
         lay.addWidget(self._list, 1)
@@ -340,8 +364,11 @@ class ToolPalette(QtWidgets.QWidget):
             label = ("  ⚠ " if e["destructive"] else "  ") + e["title"]
             item = QtWidgets.QListWidgetItem(label)
             item.setData(Qt.ItemDataRole.UserRole, e["send"])
-            item.setToolTip("%s%s" % (
-                e["desc"],
+            # The whole title first (a row wider than the view elides right -
+            # fit_rows - so the tooltip is where it reads whole), then the
+            # description / prompt.
+            item.setToolTip("%s\n%s%s" % (
+                e["title"], e["desc"],
                 "\n\n(destructive — will ask before running)" if e["destructive"] else ""))
             if e["destructive"]:
                 try:

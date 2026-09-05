@@ -2381,6 +2381,14 @@ class SynapsePanel(QtWidgets.QWidget):
         sz = popup.size()
         if sz.width() < popup.minimumWidth() or sz.height() < popup.minimumHeight():
             sz = popup.minimumSize()
+        # bc-wave repair (CRUX 2026-09-05, 'palette rows cut mid-word'):
+        # adjustSize() shrinks the palette to its sizeHint (~256, the
+        # QAbstractScrollArea default) - narrower than the dock that opened
+        # it, so rows lost 80px for nothing. The popup takes the panel's
+        # width (prepare_sweep_b_popup still caps it at the opener on show).
+        if sz.width() < self.width():
+            sz = QtCore.QSize(self.width(), sz.height())
+            popup.resize(sz)
         ref = anchor if anchor is not None else self
         try:
             screen = ref.screen()
@@ -2403,6 +2411,10 @@ class SynapsePanel(QtWidgets.QWidget):
             y = tl.y() - sz.height() - 6            # open above the button
             if y < avail.top():
                 y = tl.y() + anchor.height() + 6    # no room above → below
+            # a dock-wide popup anchored at the input's x would spill past
+            # the dock's right edge by the gutter: keep it inside the panel.
+            right = self.mapToGlobal(QtCore.QPoint(self.width(), 0)).x()
+            x = max(self.mapToGlobal(QtCore.QPoint(0, 0)).x(), min(x, right - sz.width()))
         else:
             cur = QtGui.QCursor.pos()
             x, y = cur.x(), cur.y()
