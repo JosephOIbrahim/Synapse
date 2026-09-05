@@ -14,18 +14,21 @@ from synapse.panel.recall_card import latest_recall_result, recall_view
 ROOT = Path(__file__).resolve().parents[1]
 BASE = "ce04dcb0"
 # Landing r3 (CTO 2026-09-05, R2-03 / F-A3): synapse_panel.py's protected
-# lifecycle methods are compared against the master merge-base, because master's
-# B4 (composer cap) edited showEvent / _GrowingInput.__init__ after ce04dcb0 and
-# the merge inherits those bytes. Every other CAMERA-frozen file stays pinned
-# to ce04dcb0: `git diff --stat ce04dcb0 master -- <them>` is empty.
-_PANEL_BASE = None
+# lifecycle methods are compared against the master merge-base of the landing,
+# because master's B4 (composer cap) edited showEvent / _GrowingInput.__init__
+# after ce04dcb0 and the merge inherits those bytes. Every other CAMERA-frozen
+# file stays pinned to ce04dcb0: `git diff --stat ce04dcb0 master -- <them>`
+# is empty.
+#
+# A LITERAL, like BASE above - never `git merge-base master HEAD` (CRUX round 3):
+# the day this lands, merge-base(master, HEAD) == HEAD and the thirteen
+# lifecycle pins plus the constructor pin would compare the tree to itself,
+# green regardless of edits to _on_done (the isolated-green class R2-03 named);
+# a checkout without a local `master` ref would error instead of measuring.
+_PANEL_BASE = "e8913f83"
 
 
 def _panel_base():
-    global _PANEL_BASE
-    if _PANEL_BASE is None:
-        _PANEL_BASE = subprocess.check_output(
-            ["git", "merge-base", "master", "HEAD"], cwd=ROOT).decode().strip()
     return _PANEL_BASE
 CAMERA = ("synapse_panel.py", "face_token.py", "token_readout.py",
           "chat_display.py", "recall_card.py")
