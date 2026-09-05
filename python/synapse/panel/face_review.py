@@ -23,7 +23,7 @@ except ImportError:  # pragma: no cover - Houdini ships PySide6
 
 from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import components as c
-from synapse.panel.designsystem import fontload
+from synapse.panel.designsystem import fontload, qss
 
 try:
     from synapse.panel.gate_widget import GateWidget
@@ -201,8 +201,8 @@ class FaceReview(QtWidgets.QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         col = QtWidgets.QVBoxLayout(self)
-        col.setContentsMargins(26, 20, 26, 20)   # comp face padding
-        col.setSpacing(t.SPACE_SM)
+        self.setProperty("rhythm_role", "group")   # comp face padding
+
 
         # — the done sub-state shows the same cook bar, full (comp) —
         self._cookbar = QtWidgets.QProgressBar()
@@ -220,7 +220,7 @@ class FaceReview(QtWidgets.QWidget):
         # — taut benefit verdict (comp .verdict: 21px/500, ~360px measure) —
         self._verdict = c.label("", role="title")
         self._verdict.setWordWrap(True)
-        self._verdict.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
+        qss.sweep_a_style(self._verdict, "review_verdict")
         self._verdict.setFont(fontload.tracked_font("DISPLAY", 21, weight=500))
         self._verdict.setMaximumWidth(360)
         col.addWidget(self._verdict, 0, Qt.AlignmentFlag.AlignLeft)
@@ -233,11 +233,11 @@ class FaceReview(QtWidgets.QWidget):
         self._locator.setObjectName("DsSection")
         self._locator.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         loc = QtWidgets.QHBoxLayout(self._locator)
-        loc.setContentsMargins(0, 0, 0, 0)
-        loc.setSpacing(t.SPACE_SM)
+        self._locator.setProperty("rhythm_role", "parm_row")
+
         self._locator_meta = c.label("", role="code")
         self._locator_meta.setWordWrap(True)
-        self._locator_meta.setStyleSheet("color:%s; font-size:10px;" % t.TEXT_TERTIARY)
+        qss.sweep_a_style(self._locator_meta, "review_meta")
         loc.addWidget(self._locator_meta, 1)
         loc.addWidget(_verb("⤢ open in render view",
                             lambda _=False: self.open_render_requested.emit()))
@@ -255,17 +255,17 @@ class FaceReview(QtWidgets.QWidget):
         credit_wrap.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         credit_wrap.setMaximumWidth(440)     # reading measure (WIDE DOCKS rule)
         self._credit_grid = QtWidgets.QGridLayout(credit_wrap)
-        self._credit_grid.setContentsMargins(0, 0, 0, 0)
+        credit_wrap.setProperty("rhythm_role", "parm_row")
         self._credit_grid.setColumnMinimumWidth(0, 64)
         self._credit_grid.setColumnStretch(1, 1)
-        self._credit_grid.setVerticalSpacing(8)
-        self._credit_grid.setHorizontalSpacing(0)
+
+
         col.addWidget(credit_wrap, 0, Qt.AlignmentFlag.AlignLeft)
         self._rebuild_credit()
 
         # — quality flags / status dots (preflight + BL-007 / BL-008) —
         self._flags_box = QtWidgets.QVBoxLayout()
-        self._flags_box.setSpacing(1)
+        self._flags_box.setSpacing(1)  # rhythm-exempt: nested flags layout has no widget owner; wrapping changes the hierarchy
         col.addLayout(self._flags_box)
 
         # — RETINA render receipt (T0 file-truth): the real perception verdict,
@@ -277,8 +277,8 @@ class FaceReview(QtWidgets.QWidget):
         self._receipt_wrap.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._receipt_wrap.setMaximumWidth(440)   # reading measure (WIDE DOCKS rule)
         self._receipt_box = QtWidgets.QVBoxLayout(self._receipt_wrap)
-        self._receipt_box.setContentsMargins(0, 0, 0, 0)
-        self._receipt_box.setSpacing(1)
+        self._receipt_wrap.setProperty("rhythm_role", "parm_row")
+
         self._receipt_wrap.setVisible(False)
         col.addWidget(self._receipt_wrap, 0, Qt.AlignmentFlag.AlignLeft)
 
@@ -290,14 +290,14 @@ class FaceReview(QtWidgets.QWidget):
         self._detail.setObjectName("DsSection")
         self._detail.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         dcol = QtWidgets.QVBoxLayout(self._detail)
-        dcol.setContentsMargins(0, 0, 0, 0)
-        dcol.setSpacing(1)
+        self._detail.setProperty("rhythm_role", "parm_row")
+
         self._via_box = QtWidgets.QVBoxLayout()
-        self._via_box.setSpacing(1)
+        self._via_box.setSpacing(1)  # rhythm-exempt: nested provenance layout has no widget owner; wrapping changes the hierarchy
         dcol.addLayout(self._via_box)
         self._paths = c.label("", role="code")
         self._paths.setWordWrap(True)
-        self._paths.setStyleSheet("color:%s; font-size:10px;" % t.TEXT_TERTIARY)
+        qss.sweep_a_style(self._paths, "review_meta")
         dcol.addWidget(self._paths)
         self._detail.setVisible(False)
         self._detail_expanded = False
@@ -318,8 +318,8 @@ class FaceReview(QtWidgets.QWidget):
         acts_wrap.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         acts_wrap.setMaximumWidth(440)       # reading measure (WIDE DOCKS rule)
         acts = QtWidgets.QHBoxLayout(acts_wrap)
-        acts.setContentsMargins(0, 20, 0, 0)  # QSS padding can't move children
-        acts.setSpacing(22)
+        acts_wrap.setProperty("rhythm_role", "group")  # QSS padding can't move children
+
         _acts_font = fontload.tracked_font("LABEL_SM", 11, mono=True)
         for verb in (
             _verb("ACCEPT", lambda _=False: self.accepted.emit(), tone="ok"),
@@ -365,7 +365,7 @@ class FaceReview(QtWidgets.QWidget):
         """Col-0 key: 11px mono LABEL_SM, tertiary, pre-uppercased."""
         key = QtWidgets.QLabel(str(label).upper())
         key.setFont(fontload.tracked_font("LABEL_SM", 11, mono=True))
-        key.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+        qss.sweep_a_style(key, "review_key")
         key.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         return key
 

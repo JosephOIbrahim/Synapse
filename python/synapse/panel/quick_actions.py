@@ -98,8 +98,7 @@ try:
         from PySide2 import QtWidgets, QtCore, QtGui
         from PySide2.QtCore import Signal
 
-    from synapse.panel.designsystem import tokens as _ds
-    from synapse.panel import tokens as _t   # panel-specific: TEXT_DIM, HOVER
+    from synapse.panel.designsystem import qss
 
     class QuickActionPills(QtWidgets.QWidget):
         """Collapsible row of pill-shaped quick action chips.
@@ -117,8 +116,8 @@ try:
 
         def _build_ui(self):
             self._outer_layout = QtWidgets.QHBoxLayout(self)
-            self._outer_layout.setContentsMargins(8, 6, 8, 6)
-            self._outer_layout.setSpacing(0)
+            self.setProperty("rhythm_role", "parm_row")
+
 
             # Chevron toggle
             self._chevron = QtWidgets.QPushButton(self)
@@ -127,26 +126,20 @@ try:
             self._chevron.setToolTip("Toggle quick actions")
             self._chevron.clicked.connect(self._toggle)
             self._update_chevron()
-            self._chevron.setStyleSheet(
-                "QPushButton {{ background: transparent; border: none; "
-                "color: {fg}; font-size: 14px; }}"
-                "QPushButton:hover {{ color: {hover}; }}".format(
-                    fg=_t.TEXT_DIM, hover=_ds.SIGNAL,
-                )
-            )
+            qss.sweep_a_style(self._chevron, "quick_chevron")
             self._outer_layout.addWidget(self._chevron)
 
             # Pills container
             self._pills_container = QtWidgets.QWidget(self)
-            self._pills_layout = QtWidgets.QHBoxLayout(self._pills_container)
-            self._pills_layout.setContentsMargins(4, 0, 0, 0)
-            self._pills_layout.setSpacing(6)
+            self._pills_layout = QtWidgets.QHBoxLayout(self._pills_container)  # docking-exempt: five full action labels occupy one row; wrapping or scrolling changes the hierarchy
+            self._pills_container.setProperty("rhythm_role", "parm_row")
+
 
             for action in QUICK_ACTIONS:
                 pill = QtWidgets.QPushButton(action["label"], self._pills_container)
                 pill.setToolTip(action.get("tooltip", ""))
                 pill.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-                pill.setStyleSheet(self._pill_stylesheet())
+                qss.sweep_a_style(pill, "quick_pill")
                 pill.clicked.connect(
                     lambda checked=False, a=action: self.action_triggered.emit(a)
                 )
@@ -156,38 +149,7 @@ try:
             self._pills_layout.addStretch()
             self._outer_layout.addWidget(self._pills_container, stretch=1)
 
-        def _pill_stylesheet(self):
-            """Stylesheet for a quick action pill chip."""
-            return (
-                "QPushButton {{"
-                "  background: {bg};"
-                "  color: {fg};"
-                "  border: 1px solid {border};"
-                "  border-radius: 14px;"
-                # 4px vertical was claustrophobic — the words sat against the
-                # pill's own border, and the row's 4px margin gave them nothing
-                # outside it either. 7px inside + 6px outside is the "tiny bit
-                # more" that lets the type breathe without moving the row.
-                # Horizontal stays at 12: the crowding was vertical only.
-                "  padding: 7px 12px;"
-                "  font-family: '{mono}', 'Consolas', monospace;"
-                "  font-size: {sz}px;"
-                "}}"
-                "QPushButton:hover {{"
-                "  background: {hover};"
-                "  border-color: {accent};"
-                "  color: {white};"
-                "}}"
-                "QPushButton:pressed {{"
-                "  background: rgba(0, 212, 255, 0.15);"
-                "  border-color: {accent};"
-                "  color: {accent};"
-                "}}".format(
-                    bg=_ds.CARBON, fg=_ds.BONE, border=_ds.GRAPHITE,
-                    sz=_ds.SIZE_LABEL, hover=_t.HOVER,
-                    accent=_ds.SIGNAL, white=_ds.WHITE, mono=_ds.FONT_MONO,
-                )
-            )
+
 
         def _update_chevron(self):
             """Update chevron arrow direction."""

@@ -41,7 +41,7 @@ except ImportError:
 # Palette from the design system, panel-specific aliases from the bridge.
 #
 # The former `except ImportError` arm was the WORST of the private palettes:
-# FIRE #e8833a, GROW #4caf50, WARN #ff9800, ERROR #f44336 -- a Material-ish set
+# Historical FIRE/GROW/WARN/ERROR values were a Material-like palette
 # matching NEITHER of the other two authorities. It was reachable by a by-path
 # load, so a context bar rendered under it showed a status grammar from a
 # design system that exists nowhere else in the product. Removed, not corrected.
@@ -51,6 +51,7 @@ except ImportError:
 # miniature. These names exist on the bridge; if one ever does not, an
 # AttributeError is the honest outcome.
 from synapse.panel.designsystem import tokens as _ds
+from synapse.panel.designsystem import qss
 from synapse.panel import tokens as _t
 
 FIRE = _ds.FIRE
@@ -355,24 +356,7 @@ def _health_label(state: ContextBarState) -> str:
     return "Ready"
 
 
-def _btn_stylesheet() -> str:
-    """Stylesheet for compact action buttons."""
-    return (
-        "QPushButton {{"
-        "  background: {bg}; color: {fg}; border: 1px solid {border};"
-        "  border-radius: 4px; padding: 2px 8px;"
-        "  font-size: 9pt; font-family: '{mono}', Consolas, monospace;"
-        "}}"
-        "QPushButton:hover {{"
-        "  background: {hover}; border-color: {accent};"
-        "}}"
-        "QPushButton:pressed {{"
-        "  background: {pressed};"
-        "}}"
-    ).format(
-        bg=NEAR_BLACK, fg=TEXT, border=CARBON, mono=FONT_MONO,
-        hover=HOVER, accent=FIRE, pressed=GRAPHITE,
-    )
+
 
 
 # ======================================================================
@@ -400,27 +384,19 @@ if _QT_AVAILABLE:
         """
         root = QtWidgets.QWidget(parent)
         root.setObjectName("context_bar_v2")
-        root.setStyleSheet(
-            "QWidget#context_bar_v2 {{"
-            "  background: transparent;"
-            "}}".format()
-        )
+        qss.sweep_a_style(root, "context_root")
 
         outer = QtWidgets.QVBoxLayout(root)
-        outer.setContentsMargins(16, SPACE_XS, 16, SPACE_XS)
-        outer.setSpacing(SPACE_XS)
+        root.setProperty("rhythm_role", "parm_row")
+
 
         # -- Row 1: breadcrumb | stretch | memory badge | health dot --
         row1 = QtWidgets.QHBoxLayout()
-        row1.setSpacing(SPACE_SM)
+        row1.setSpacing(SPACE_SM)  # rhythm-exempt: nested breadcrumb-status row has no widget owner; wrapping changes the hierarchy
 
         breadcrumb = QtWidgets.QLabel(_breadcrumb_text(state))
         breadcrumb.setObjectName("ctx_breadcrumb")
-        breadcrumb.setStyleSheet(
-            "color: {fg}; font-size: 10pt;"
-            " font-family: '{mono}', Consolas, monospace;"
-            " background: transparent;".format(fg=SIGNAL, mono=FONT_MONO)
-        )
+        qss.sweep_a_style(breadcrumb, "context_breadcrumb")
         row1.addWidget(breadcrumb)
 
         row1.addStretch()
@@ -430,13 +406,7 @@ if _QT_AVAILABLE:
         mem_text = _MEMORY_ICONS.get(state.memory_stage, "")
         memory_label = QtWidgets.QLabel(mem_text)
         memory_label.setObjectName("ctx_memory")
-        memory_label.setStyleSheet(
-            "color: {fg}; font-size: 9pt;"
-            " font-family: '{mono}', Consolas, monospace;"
-            " background: transparent; padding: 0 4px;".format(
-                fg=mem_color, mono=FONT_MONO,
-            )
-        )
+        qss.sweep_a_style(memory_label, "context_memory", mem_color)
         if not mem_text:
             memory_label.setVisible(False)
         row1.addWidget(memory_label)
@@ -451,34 +421,27 @@ if _QT_AVAILABLE:
             )
         )
         health_label.setObjectName("ctx_health")
-        health_label.setStyleSheet(
-            "color: {fg}; font-size: 9pt;"
-            " font-family: '{mono}', Consolas, monospace;"
-            " background: transparent;".format(fg=health_color, mono=FONT_MONO)
-        )
+        qss.sweep_a_style(health_label, "context_health", health_color)
         row1.addWidget(health_label)
 
         outer.addLayout(row1)
 
         # -- Row 2: quick actions | stretch | frame number ------------
         row2 = QtWidgets.QHBoxLayout()
-        row2.setSpacing(SPACE_XS)
+        row2.setSpacing(SPACE_XS)  # rhythm-exempt: nested actions-frame row has no widget owner; wrapping changes the hierarchy
 
         actions_container = QtWidgets.QWidget()
         actions_container.setObjectName("ctx_actions")
-        actions_container.setStyleSheet("background: transparent;")
+        qss.sweep_a_style(actions_container, "context_actions")
         actions_layout = QtWidgets.QHBoxLayout(actions_container)
-        actions_layout.setContentsMargins(0, 0, 0, 0)
-        actions_layout.setSpacing(SPACE_XS)
-
-        btn_style = _btn_stylesheet()
+        actions_container.setProperty("rhythm_role", "parm_row")
         for label, command in state.quick_actions:
             btn = QtWidgets.QPushButton(label)
             btn.setProperty("command", command)
             btn.setObjectName(
                 "ctx_action_" + label.lower().replace(" ", "_")
             )
-            btn.setStyleSheet(btn_style)
+            qss.sweep_a_style(btn, "context_action")
             btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
             actions_layout.addWidget(btn)
 
@@ -487,11 +450,7 @@ if _QT_AVAILABLE:
 
         frame_label = QtWidgets.QLabel("frame {f}".format(f=state.frame))
         frame_label.setObjectName("ctx_frame")
-        frame_label.setStyleSheet(
-            "color: {fg}; font-size: 9pt;"
-            " font-family: '{mono}', Consolas, monospace;"
-            " background: transparent;".format(fg=TEXT_DIM, mono=FONT_MONO)
-        )
+        qss.sweep_a_style(frame_label, "context_frame")
         row2.addWidget(frame_label)
 
         outer.addLayout(row2)
@@ -518,13 +477,7 @@ if _QT_AVAILABLE:
             mem_text = _MEMORY_ICONS.get(state.memory_stage, "")
             mem_color = _MEMORY_COLORS.get(state.memory_stage, TEXT_DIM)
             memory.setText(mem_text)
-            memory.setStyleSheet(
-                "color: {fg}; font-size: 9pt;"
-                " font-family: '{mono}', Consolas, monospace;"
-                " background: transparent; padding: 0 4px;".format(
-                    fg=mem_color, mono=FONT_MONO,
-                )
-            )
+            qss.sweep_a_style(memory, "context_memory", mem_color)
             memory.setVisible(bool(mem_text))
 
         # Health
@@ -537,13 +490,7 @@ if _QT_AVAILABLE:
                     dot=health_color, txt=health_text,
                 )
             )
-            health.setStyleSheet(
-                "color: {fg}; font-size: 9pt;"
-                " font-family: '{mono}', Consolas, monospace;"
-                " background: transparent;".format(
-                    fg=health_color, mono=FONT_MONO,
-                )
-            )
+            qss.sweep_a_style(health, "context_health", health_color)
 
         # Frame
         frame_lbl = widget.findChild(QtWidgets.QLabel, "ctx_frame")
@@ -565,14 +512,13 @@ if _QT_AVAILABLE:
                         w.deleteLater()
 
                 # Add new buttons
-                btn_style = _btn_stylesheet()
                 for label, command in state.quick_actions:
                     btn = QtWidgets.QPushButton(label)
                     btn.setProperty("command", command)
                     btn.setObjectName(
                         "ctx_action_" + label.lower().replace(" ", "_")
                     )
-                    btn.setStyleSheet(btn_style)
+                    qss.sweep_a_style(btn, "context_action")
                     btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
                     layout.addWidget(btn)
 
@@ -592,7 +538,7 @@ if _QT_AVAILABLE:
             self._state = ContextBarState()
             self._inner = build_context_bar_widget(self._state, self)
             lay = QtWidgets.QVBoxLayout(self)
-            lay.setContentsMargins(0, 0, 0, 0)
+            self.setProperty("rhythm_role", "group")
             lay.addWidget(self._inner)
 
         def _refresh(self):

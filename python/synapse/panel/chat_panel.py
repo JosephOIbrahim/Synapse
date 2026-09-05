@@ -43,22 +43,8 @@ from synapse.panel.quick_actions import (
 )
 from synapse.panel.hda_views import DescribeView, BuildingView, ResultView
 from synapse.panel.gate_widget import GateWidget
-from synapse.panel.styles import (
-    get_hda_stylesheet,
-    animate_stack_transition,
-    get_growing_input_stylesheet,
-    get_send_button_stylesheet,
-    get_connect_button_stylesheet,
-    get_ws_url_button_stylesheet,
-    get_status_dot_stylesheet,
-    get_status_label_stylesheet,
-    get_root_widget_stylesheet,
-    get_section_container_stylesheet,
-    get_connection_frame_stylesheet,
-    get_mode_toolbar_stylesheet,
-    get_font_size_button_stylesheet,
-    get_halt_button_stylesheet,
-)
+from synapse.panel.styles import animate_stack_transition
+from synapse.panel.designsystem import qss
 from synapse.panel.designsystem import tokens as _ds
 from synapse.panel import tokens as t   # panel-specific: CHAT_*, HOVER, FONT_SCALE_*
 
@@ -157,11 +143,12 @@ class SynapseChatPanel:
             The root widget for the Houdini panel.
         """
         self._root = QtWidgets.QWidget()
-        self._root.setStyleSheet(get_root_widget_stylesheet())
+        self._root.setObjectName("DsRoot")
+        qss.sweep_a_style(self._root, "chat_root")
 
         main_layout = QtWidgets.QVBoxLayout(self._root)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
+        self._root.setProperty("rhythm_role", "group")
+
 
         # -- Mode toggle toolbar ----------------------------------------
         toolbar = self._build_mode_toolbar()
@@ -174,8 +161,8 @@ class SynapseChatPanel:
         # Index 0: Chat mode
         self._chat_widget = QtWidgets.QWidget()
         chat_layout = QtWidgets.QVBoxLayout(self._chat_widget)
-        chat_layout.setContentsMargins(0, 0, 0, 0)
-        chat_layout.setSpacing(0)
+        self._chat_widget.setProperty("rhythm_role", "group")
+
 
         # 1. Chat display (expanding)
         self._chat = ChatDisplay(self._chat_widget)
@@ -202,10 +189,10 @@ class SynapseChatPanel:
         self._hda_container = QtWidgets.QWidget()
         self._hda_container.setObjectName("HdaModeWidget")
         hda_layout = QtWidgets.QVBoxLayout(self._hda_container)
-        hda_layout.setContentsMargins(0, 0, 0, 0)
-        hda_layout.setSpacing(0)
+        self._hda_container.setProperty("rhythm_role", "group")
 
-        self._hda_stack = QtWidgets.QStackedWidget()
+
+        self._hda_stack = QtWidgets.QStackedWidget()  # docking-exempt: child HDA view minimums belong to SWEEP_B
         self.describe_view = DescribeView()
         self.building_view = BuildingView()
         self.result_view = ResultView()
@@ -214,7 +201,7 @@ class SynapseChatPanel:
         self._hda_stack.addWidget(self.result_view)      # index 2
 
         hda_layout.addWidget(self._hda_stack)
-        self._hda_container.setStyleSheet(get_hda_stylesheet())
+        qss.sweep_a_style(self._hda_container, "chat_hda")
         self._mode_stack.addWidget(self._hda_container)  # index 1
 
         main_layout.addWidget(self._mode_stack, stretch=1)
@@ -257,6 +244,7 @@ class SynapseChatPanel:
             "Ready. What shall we work on?"
         )
 
+        qss.install_sweep_a_root(self._root)
         return self._root
 
     def onActivateInterface(self):
@@ -392,11 +380,11 @@ class SynapseChatPanel:
     def _build_input_area(self):
         """Build the merged context chips + growing input + send button + font control."""
         container = QtWidgets.QWidget(self._root)
-        container.setStyleSheet(get_section_container_stylesheet())
+        qss.sweep_a_style(container, "chat_input_container")
 
         outer_layout = QtWidgets.QVBoxLayout(container)
-        outer_layout.setContentsMargins(8, 6, 8, 8)
-        outer_layout.setSpacing(4)
+        container.setProperty("rhythm_role", "parm_row")
+
 
         # Context chips row (above input)
         self._context_chips = ContextChips(container)
@@ -404,12 +392,12 @@ class SynapseChatPanel:
 
         # Input row: QTextEdit + font button + send button
         input_row = QtWidgets.QHBoxLayout()
-        input_row.setSpacing(8)
+        input_row.setSpacing(8)  # rhythm-exempt: nested layout has no widget owner; wrapping changes the hierarchy
 
         # Growing text input (replaces QLineEdit)
         self._input = QtWidgets.QTextEdit(container)
         self._input.setPlaceholderText("Type a message...")
-        self._input.setStyleSheet(get_growing_input_stylesheet())
+        qss.sweep_a_style(self._input, "chat_input")
         self._input.setMinimumHeight(t.CHAT_INPUT_MIN_H)
         self._input.setMaximumHeight(t.CHAT_INPUT_MAX_H)
         self._input.setAcceptRichText(False)
@@ -420,7 +408,7 @@ class SynapseChatPanel:
 
         # Right-side controls (vertical stack: font icon on top, send below)
         controls_layout = QtWidgets.QVBoxLayout()
-        controls_layout.setSpacing(4)
+        controls_layout.setSpacing(4)  # rhythm-exempt: nested layout has no widget owner; wrapping changes the hierarchy
 
         # Reading size — three A's on a line, each drawn at the size it sets.
         #
@@ -434,8 +422,8 @@ class SynapseChatPanel:
         # active one is bright; the others recede.
         self._font_btns = []
         size_row = QtWidgets.QHBoxLayout()
-        size_row.setSpacing(2)
-        size_row.setContentsMargins(0, 0, 0, 0)
+        size_row.setSpacing(2)  # rhythm-exempt: fixed font-choice cluster has no separate widget owner
+        size_row.setContentsMargins(0, 0, 0, 0)  # rhythm-exempt: fixed font-choice cluster has no separate widget owner
         for label_px, scale, name in self._SIZE_STEPS:
             b = QtWidgets.QPushButton("A", container)
             b.setFixedSize(18, 22)
@@ -454,7 +442,7 @@ class SynapseChatPanel:
         # Send button
         self._send_btn = QtWidgets.QPushButton("Send", container)
         self._send_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self._send_btn.setStyleSheet(get_send_button_stylesheet())
+        qss.sweep_a_style(self._send_btn, "chat_send")
         self._send_btn.clicked.connect(self._send_message)
         controls_layout.addWidget(self._send_btn)
 
@@ -496,9 +484,7 @@ class SynapseChatPanel:
         designsystem directly is what the rest of this module already does."""
         for b, scale in getattr(self, "_font_btns", []):
             live = abs(scale - self._font_scale) < 1e-6
-            b.setStyleSheet(
-                "QPushButton{border:none;background:transparent;padding:0;"
-                "color:%s;}" % (_ds.TEXT_BRIGHT if live else _ds.TEXT_TERTIARY))
+            qss.sweep_a_style(b, "chat_font", _ds.TEXT_BRIGHT if live else _ds.TEXT_TERTIARY)
 
     def _adjust_input_height(self):
         """Auto-grow the QTextEdit based on content, up to max height."""
@@ -526,12 +512,7 @@ class SynapseChatPanel:
     def _show_context_menu(self, pos):
         """Build and show context menu on right-click in chat display."""
         menu = QtWidgets.QMenu(self._chat)
-        menu.setStyleSheet(
-            "QMenu {{ background: {bg}; color: {fg}; border: 1px solid {border}; }}"
-            "QMenu::item:selected {{ background: {hover}; }}".format(
-                bg=_ds.CARBON, fg=_ds.BONE, border=_ds.GRAPHITE, hover=t.HOVER,
-            )
-        )
+        qss.sweep_a_style(menu, "chat_menu")
 
         # Quick actions
         for action in QUICK_ACTIONS:
@@ -623,28 +604,28 @@ class SynapseChatPanel:
 
         frame = QtWidgets.QWidget(self._root)
         frame.setObjectName("connection_frame")
-        frame.setStyleSheet(get_connection_frame_stylesheet())
+        qss.sweep_a_style(frame, "chat_connection")
         layout = QtWidgets.QHBoxLayout(frame)
-        layout.setContentsMargins(12, 6, 12, 6)
-        layout.setSpacing(8)
+        frame.setProperty("rhythm_role", "parm_row")
+
 
         # Status dot
         self._conn_dot = QtWidgets.QLabel("\u25CF")
         self._conn_dot.setObjectName("status_dot")
-        self._conn_dot.setStyleSheet(get_status_dot_stylesheet(_ERROR_COLOR))
+        qss.sweep_a_style(self._conn_dot, "chat_dot", _ERROR_COLOR)
         layout.addWidget(self._conn_dot)
 
         # Status label
         self._conn_label = QtWidgets.QLabel("Disconnected")
         self._conn_label.setObjectName("status_label")
-        self._conn_label.setStyleSheet(get_status_label_stylesheet(_ERROR_COLOR))
+        qss.sweep_a_style(self._conn_label, "chat_status", _ERROR_COLOR)
         layout.addWidget(self._conn_label)
 
         layout.addStretch()
 
         # Emergency halt button (next to disconnect for quick access)
         self._halt_btn = QtWidgets.QPushButton("HALT")
-        self._halt_btn.setStyleSheet(get_halt_button_stylesheet())
+        qss.sweep_a_style(self._halt_btn, "chat_halt")
         self._halt_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
         self._halt_btn.setToolTip("Emergency halt -- cancel all agent operations")
         self._halt_btn.clicked.connect(self._on_emergency_halt)
@@ -654,7 +635,7 @@ class SynapseChatPanel:
         self._conn_btn = QtWidgets.QPushButton("Connect")
         self._conn_btn.setObjectName("connect_button")
         self._conn_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self._conn_btn.setStyleSheet(get_connect_button_stylesheet())
+        qss.sweep_a_style(self._conn_btn, "chat_connect")
         self._conn_btn.clicked.connect(self._on_connect_toggle)
         layout.addWidget(self._conn_btn)
 
@@ -662,12 +643,12 @@ class SynapseChatPanel:
         ws_btn = QtWidgets.QPushButton(self._ws_url)
         ws_btn.setObjectName("ws_path_button")
         ws_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        ws_btn.setStyleSheet(get_ws_url_button_stylesheet())
+        qss.sweep_a_style(ws_btn, "chat_url")
         ws_btn.setToolTip("Copy WebSocket URL to clipboard")
         ws_btn.clicked.connect(self._on_copy_ws_url)
         layout.addWidget(ws_btn)
 
-        frame.setFixedHeight(44)
+        frame.setFixedHeight(44)  # docking-exempt: connection actions and full URL share one fixed row; structural wrapping is out of scope
         return frame
 
     def _on_connect_toggle(self):
@@ -679,11 +660,9 @@ class SynapseChatPanel:
         else:
             self._ensure_server()
             if self._bridge is not None:
-                self._conn_dot.setStyleSheet(get_status_dot_stylesheet(_SIGNAL))
+                qss.sweep_a_style(self._conn_dot, "chat_dot", _SIGNAL)
                 self._conn_label.setText("Connecting...")
-                self._conn_label.setStyleSheet(
-                    get_status_label_stylesheet(_SIGNAL)
-                )
+                qss.sweep_a_style(self._conn_label, "chat_status", _SIGNAL)
                 self._conn_btn.setText("Cancel")
                 self._conn_btn.setEnabled(True)
                 self._chat.append_system_message(
@@ -724,10 +703,10 @@ class SynapseChatPanel:
     def _build_mode_toolbar(self):
         """Build the Chat / Create HDA mode toggle toolbar."""
         toolbar = QtWidgets.QWidget(self._root)
-        toolbar.setStyleSheet(get_mode_toolbar_stylesheet())
+        qss.sweep_a_style(toolbar, "chat_toolbar")
         layout = QtWidgets.QHBoxLayout(toolbar)
-        layout.setContentsMargins(8, 4, 8, 4)
-        layout.setSpacing(6)
+        toolbar.setProperty("rhythm_role", "parm_row")
+
 
         self._mode_chat_btn = QtWidgets.QPushButton("Chat")
         self._mode_chat_btn.setObjectName("ModeToggleActive")
@@ -930,16 +909,16 @@ class SynapseChatPanel:
 
         if connected:
             _sc = _GROW
-            self._conn_dot.setStyleSheet(get_status_dot_stylesheet(_sc))
+            qss.sweep_a_style(self._conn_dot, "chat_dot", _sc)
             self._conn_label.setText("Connected")
-            self._conn_label.setStyleSheet(get_status_label_stylesheet(_sc))
+            qss.sweep_a_style(self._conn_label, "chat_status", _sc)
             self._conn_btn.setText("Disconnect")
             self._chat.append_system_message("Connected to SYNAPSE server.")
         else:
             _sc = _ERROR_COLOR
-            self._conn_dot.setStyleSheet(get_status_dot_stylesheet(_sc))
+            qss.sweep_a_style(self._conn_dot, "chat_dot", _sc)
             self._conn_label.setText("Disconnected")
-            self._conn_label.setStyleSheet(get_status_label_stylesheet(_sc))
+            qss.sweep_a_style(self._conn_label, "chat_status", _sc)
             self._conn_btn.setText("Connect")
 
     @Slot(str)
