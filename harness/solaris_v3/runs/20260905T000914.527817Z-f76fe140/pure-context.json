@@ -1,0 +1,22 @@
+{
+  "evidence_dir": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\pure\\evidence",
+  "log_path": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\pure.log",
+  "result_file": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\pure-observations.json",
+  "root": "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance",
+  "run_id": "20260905T000914.527817Z-f76fe140",
+  "runner_command": [
+    "C:\\Python314\\python.exe",
+    "-m",
+    "pytest",
+    "tests/test_solaris_v3_acceptance_bench.py",
+    "tests/test_solaris_v3_acceptance_runner.py",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "-p",
+    "scripts.solaris_v3_accept",
+    "--basetemp",
+    "C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\bp5-solaris-acceptance\\harness\\solaris_v3\\runs\\20260905T000914.527817Z-f76fe140\\pure\\tmp"
+  ],
+  "tier": "pure"
+}

@@ -484,13 +484,17 @@ _GPRIM_TYPES = {
 }
 
 
-def _assess_stage(stage, engine_hint=None, max_prims=5000) -> dict:
+def _assess_stage(stage, engine_hint=None, max_prims=5000,
+                  render_settings_path=None, render_input_branch=None) -> dict:
     """Pure-pxr readiness assessment over E3. Returns {ready, engine, clauses,
     details}. Separated from assess_render_ready so it is testable on an
     in-memory Usd.Stage (no Houdini)."""
-    from pxr import UsdShade, UsdRender
+    from pxr import UsdShade, UsdRender, UsdGeom, UsdLux
     import os
-    prims = list(stage.Traverse())
+    import itertools
+    strict = render_settings_path is not None
+    prims = (list(itertools.islice(stage.Traverse(), max_prims + 1))
+             if strict else list(stage.Traverse()))
     clauses, details = {}, {}
 
     def setc(name, passed, info=None):
@@ -498,8 +502,18 @@ def _assess_stage(stage, engine_hint=None, max_prims=5000) -> dict:
         if info is not None:
             details[name] = info
 
-    # 1. RenderSettings present + render camera resolves to a Camera prim.
-    rs_prims = [p for p in prims if p.GetTypeName() == "RenderSettings"]
+    # Explicit-path mode is the recipe contract. Legacy callers retain their
+    # older scope; they do not thereby satisfy the recipe P3 predicate.
+    if strict:
+        requested = stage.GetPrimAtPath(render_settings_path) if render_settings_path else None
+        rs_prims = ([requested] if requested and requested.IsValid()
+                    and requested.IsActive() and requested.IsDefined()
+                    and requested.GetTypeName() == "RenderSettings" else [])
+        details["render_settings_path"] = render_settings_path
+        setc("traversal_complete", len(prims) <= max_prims,
+             {"limit": max_prims, "observed": len(prims)})
+    else:
+        rs_prims = [p for p in prims if p.GetTypeName() == "RenderSettings"]
     if not rs_prims:
         setc("rendersettings", False, "no RenderSettings prim")
         setc("camera", False, "no RenderSettings -> no render camera")
@@ -510,7 +524,12 @@ def _assess_stage(stage, engine_hint=None, max_prims=5000) -> dict:
         cam_ok = False
         if tgts:
             cp = stage.GetPrimAtPath(tgts[0])
-            cam_ok = bool(cp and cp.IsValid() and cp.GetTypeName() == "Camera")
+            if strict:
+                cam_ok = bool(len(tgts) == 1 and cp and cp.IsValid()
+                              and cp.IsActive() and cp.IsDefined() and UsdGeom.Camera(cp))
+            else:
+                cam_ok = bool(cp and cp.IsValid() and cp.GetTypeName() == "Camera")
+        details["camera_targets"] = [str(x) for x in tgts]
         setc("camera", cam_ok, None if cam_ok else "render camera unresolved (targets=%s)" % [str(x) for x in tgts])
 
     # 2. No composition errors.
@@ -539,12 +558,47 @@ def _assess_stage(stage, engine_hint=None, max_prims=5000) -> dict:
     # 4. productName parent dir writable (RenderProduct prims and/or the
     #    self-contained karmarendersettings RenderSettings.productName attr).
     names = []
-    for p in prims:
+    product_prims = [p for p in prims if p.GetTypeName() == "RenderProduct"]
+    linked_vars = []
+    if strict:
+        products_rel = UsdRender.Settings(rs_prims[0]).GetProductsRel() if rs_prims else None
+        product_targets = list(products_rel.GetTargets()) if products_rel else []
+        product_prims = []
+        product_errors = []
+        for target in product_targets:
+            product = stage.GetPrimAtPath(target)
+            if not (product and product.IsActive() and product.IsDefined()
+                    and product.GetTypeName() == "RenderProduct"):
+                product_errors.append(str(target) + ": invalid RenderProduct")
+                continue
+            product_prims.append(product)
+            product_schema = UsdRender.Product(product)
+            output_attr = product_schema.GetProductNameAttr()
+            if not (output_attr and output_attr.HasAuthoredValueOpinion() and output_attr.Get()):
+                product_errors.append(str(target) + ": output not authored")
+            vars_rel = product_schema.GetOrderedVarsRel()
+            var_targets = list(vars_rel.GetTargets()) if vars_rel else []
+            if not var_targets:
+                product_errors.append(str(target) + ": no orderedVars")
+            for var_target in var_targets:
+                var = stage.GetPrimAtPath(var_target)
+                if not (var and var.IsActive() and var.IsDefined()
+                        and var.GetTypeName() == "RenderVar"):
+                    product_errors.append(str(var_target) + ": invalid RenderVar")
+                    continue
+                schema = UsdRender.Var(var)
+                attrs = (schema.GetSourceNameAttr(), schema.GetDataTypeAttr())
+                if not all(a and a.HasAuthoredValueOpinion() and a.Get() for a in attrs):
+                    product_errors.append(str(var_target) + ": sourceName/dataType not authored")
+                linked_vars.append(str(var_target))
+        setc("products_authored", bool(product_targets) and not product_errors,
+             {"targets": [str(x) for x in product_targets], "errors": product_errors})
+    for p in product_prims:
         if p.GetTypeName() == "RenderProduct":
             a = UsdRender.Product(p).GetProductNameAttr()
             if a and a.Get():
                 names.append(str(a.Get()))
-    for rsp in rs_prims:
+    for rsp in ([] if strict else rs_prims):
         a = rsp.GetAttribute("productName")
         if a and a.IsValid() and a.Get():
             names.append(str(a.Get()))
@@ -567,8 +621,28 @@ def _assess_stage(stage, engine_hint=None, max_prims=5000) -> dict:
         details["product_paths"] = names
 
     # 5. AOVs present as RenderVar prims.
-    rv = [str(p.GetPath()) for p in prims if p.GetTypeName() == "RenderVar"]
+    rv = linked_vars if strict else [str(p.GetPath()) for p in prims if p.GetTypeName() == "RenderVar"]
     setc("aovs", bool(rv), {"rendervars": rv} if rv else "no RenderVar prims (no AOVs configured)")
+
+    if strict:
+        lights = [str(p.GetPath()) for p in prims
+                  if p.IsActive() and p.IsDefined() and p.HasAPI(UsdLux.LightAPI)]
+        setc("two_authored_lights", len(lights) >= 2,
+             {"count": len(lights), "paths": lights, "minimum": 2})
+        branch = render_input_branch or {}
+        expected = branch.get("expected", [])
+        observed = branch.get("observed", [])
+        edge_keys = ("src_id", "src_output", "dst_id", "dst_input")
+        def edge_key(edge):
+            return tuple(edge[k] for k in edge_keys)
+        try:
+            missing = [e for e in expected if edge_key(e) not in {edge_key(o) for o in observed}]
+            branch_ok = bool(expected) and not missing and branch.get("complete") is True
+        except (KeyError, TypeError):
+            missing, branch_ok = list(expected), False
+        setc("render_input_branch", branch_ok,
+             {"expected": expected, "observed": observed, "missing": missing,
+              "complete": branch.get("complete", False)})
 
     # 6. No XPU-incompatible content under an XPU delegate. v1 detects the
     #    tractable subset (OSL shaders + Volume prims); nested-dielectric/SSS
@@ -617,11 +691,14 @@ def _resolve_read_stage(node):
     return sc.read_stage(node)
 
 
-def assess_render_ready(stage_node, engine_hint=None, max_prims=5000) -> dict:
+def assess_render_ready(stage_node, engine_hint=None, max_prims=5000,
+                        render_settings_path=None, render_input_branch=None) -> dict:
     """Render-readiness report over E3 (PRD 7.3 / GAP-3). Read-only -- composes
     nothing. Returns {ready, engine, clauses, details}; each false clause names
     the offending prim/path. Turns BL-007/008 from silent into a pre-flight report.
     """
     if not HOU_AVAILABLE:
         raise sc.ComposeError("hou unavailable -- assess_render_ready needs the live bridge")
-    return _assess_stage(_resolve_read_stage(stage_node), engine_hint=engine_hint, max_prims=max_prims)
+    return _assess_stage(_resolve_read_stage(stage_node), engine_hint=engine_hint,
+                         max_prims=max_prims, render_settings_path=render_settings_path,
+                         render_input_branch=render_input_branch)

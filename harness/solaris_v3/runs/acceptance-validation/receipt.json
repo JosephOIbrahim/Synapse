@@ -1,0 +1,94 @@
+{
+  "artifact_hashes": {
+    "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/ledger.json": "207d5cea218630a5244d02b3ff3f90ba1c83b96fc403d63ff16acf3a29774dd3",
+    "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/pure-observations.json": "aa3a29aab5b2516a9f00f5377fe3d1b644fb4bd00f0bf856859063071dacfced",
+    "harness/solaris_v3/runs/acceptance-validation/bench-default.json": "fd0369c885115cb6e4a5c46bb32fe23512e3c3e13a4f1ddffa6736618d726d41",
+    "harness/solaris_v3/runs/acceptance-validation/mutation_check.py": "1a684b08697c38840031323b20d585d509173903e14c6cb6a54a83c24b348a57"
+  },
+  "artifact_hashes_stripped_2026-09-05": {
+    "paths": [
+      "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/hython-probe-0.log",
+      "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/pure.log",
+      "harness/solaris_v3/runs/acceptance-validation/full-suite.log",
+      "harness/solaris_v3/runs/acceptance-validation/git-commit.log",
+      "harness/solaris_v3/runs/acceptance-validation/mutation-median.log",
+      "harness/solaris_v3/runs/acceptance-validation/mutation-skip.log",
+      "harness/solaris_v3/runs/acceptance-validation/runner.log",
+      "harness/solaris_v3/runs/acceptance-validation/targeted.log"
+    ],
+    "reason": "These 8 paths were hashed in the worker sandbox but never reached the repository: *.log is gitignored (.gitignore:87), so the receipt shipped hashes for files no reader could verify. Stripped by CTO B8 on 2026-09-05; the four committed artifacts (ledger.json, pure-observations.json, bench-default.json, mutation_check.py) keep their original digests. The numbers those logs backed (targeted 40 passed; full suite 7109 collected / 5 collection errors / exit 2) stay in results[] as the worker reported them, now unverifiable by hash."
+  },
+  "artifacts": [
+    "harness/solaris_v3/runs/acceptance-validation/bench-default.json",
+    "harness/solaris_v3/runs/acceptance-validation/mutation_check.py",
+    "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/ledger.json",
+    "harness/solaris_v3/runs/20260905T001306.845967Z-20617ffd/pure-observations.json"
+  ],
+  "commands": [
+    "python -m pytest tests/test_solaris_v3_acceptance_bench.py tests/test_solaris_v3_acceptance_runner.py -q -p no:cacheprovider",
+    "python -m pytest tests -q -p no:cacheprovider",
+    "python scripts/solaris_v3_accept.py --tier all",
+    "python harness/solaris_v3/bench.py",
+    "python harness/solaris_v3/runs/acceptance-validation/mutation_check.py skip",
+    "python harness/solaris_v3/runs/acceptance-validation/mutation_check.py median",
+    "git add -- scripts/solaris_v3_accept.py harness/solaris_v3/GATES.json harness/solaris_v3/bench.py tests/test_solaris_v3_acceptance_bench.py tests/test_solaris_v3_acceptance_runner.py docs/solaris_v3/ACCEPTANCE.md harness/solaris_v3/STATUS_ACCEPTANCE.md docs/solaris_v3/REPORT_ACCEPTANCE.md"
+  ],
+  "could_not_verify": [
+    "Full-suite pass floor: collection stopped because websockets was unavailable in five existing modules.",
+    "Hython graph/USD/render qualification: 22.0.400 probe could not import pytest; golden HIP and reviewed row bindings absent.",
+    "GUI entry/undo/freshness/artist walk and real latency/RSS/VRAM/cancellation measurements not run.",
+    "Atomic commits/worktree clean: git index.lock write denied by sandbox; no commits created.",
+    "Independent reviewer had normal shared tools; read-only review was requested but no tool fence was available."
+  ],
+  "created_at": "2026-09-05T00:14:03.181814+00:00",
+  "leg": "solaris_v3:C6:acceptance",
+  "needs_human": [],
+  "proved_it_bites": "In an isolated replay process, changing phase_status skip handling to PASS made test_skipped_phase_never_promotes_even_with_evidence fail (3 subtest failures, exit 1); replacing statistics.median(values) with values[0] made the hand-computed distribution control fail (exit 1). Source files were not modified during the full-suite run.",
+  "rerun_on_head_2026-09-05": {
+    "collected": 467,
+    "command": "python -X utf8 scripts/solaris_v3_accept.py --tier pure --timeout 400",
+    "dirty": false,
+    "exit_code": 0,
+    "failed": 0,
+    "head": "a4d86ce43936445f66baf87d2a6d9acb3d03a8b0",
+    "interpreter": "C:/Python314/python.exe (stock 3.14, no hou)",
+    "ledger": "harness/solaris_v3/runs/20260905T125351.258091Z-04606c37/ledger.json",
+    "note": "Exit 0 means no executed check failed; it does not mean ship-ready.",
+    "passed": 461,
+    "pure_tier": "PASS",
+    "rows": "G0-G6, T1-T12 all NOT_RUN (binding map still empty; hython/gui tiers not selected)",
+    "skipped": 6
+  },
+  "results": {
+    "acceptance": {
+      "exit_code": 0,
+      "product_NOT_RUN": 19,
+      "pure_tests": 40
+    },
+    "full_suite": {
+      "collected": 7109,
+      "collection_errors": 5,
+      "exit_code": 2,
+      "failed": 0,
+      "passed": 0,
+      "skipped": 3
+    },
+    "targeted": {
+      "exit_code": 0,
+      "failed": 0,
+      "passed": 40,
+      "skipped": 0
+    }
+  },
+  "touched": [
+    "scripts/solaris_v3_accept.py:82",
+    "harness/solaris_v3/GATES.json:1",
+    "harness/solaris_v3/bench.py:30",
+    "tests/test_solaris_v3_acceptance_runner.py:21",
+    "tests/test_solaris_v3_acceptance_bench.py:19",
+    "docs/solaris_v3/ACCEPTANCE.md:1",
+    "harness/solaris_v3/STATUS_ACCEPTANCE.md:1",
+    "docs/solaris_v3/REPORT_ACCEPTANCE.md:1"
+  ],
+  "verdict": "BLOCKED"
+}

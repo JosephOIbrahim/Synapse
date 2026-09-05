@@ -133,13 +133,28 @@ class _GrowingInput(QtWidgets.QTextEdit):
         self._floor, self._max_h = 64, 600
         self._user_h = self._floor
         self._height_settled = False     # flips on settle_height / drag
+        self._cap = None            # pane-imposed ceiling (CTO B4); never persisted
         self._send_widget = None    # the embedded Send (attach_send)
         self.setFixedHeight(self._user_h)
         self.textChanged.connect(self._autosize)
 
     def _autosize(self):
         content = int(self.document().size().height()) + 18
-        self.setFixedHeight(max(self._user_h, min(self._max_h, content)))
+        h = max(self._user_h, min(self._max_h, content))
+        if self._cap is not None:
+            h = max(self._floor, min(h, self._cap))
+        self.setFixedHeight(h)
+
+    def cap_height(self, cap):
+        """Pane-imposed ceiling (CTO B4 ruling 2026-09-05). The artist's
+        ``_user_h`` is untouched and un-persisted - L6 still holds, the
+        divider is never re-centred - but a composer taller than the pane
+        it sits in clipped Send below the dock edge (G3 'input not clipped',
+        red since 1ce31c99). ``None`` lifts the cap when the pane grows."""
+        cap = None if cap is None else max(self._floor, int(cap))
+        if cap != self._cap:
+            self._cap = cap
+            self._autosize()
 
     def settle_height(self, h):
         """One-shot first-run height (persisted restore or centred — the
@@ -1415,13 +1430,34 @@ class SynapsePanel(QtWidgets.QWidget):
             target = max(inp._floor, min(inp._max_h, shared // 2))
         inp.settle_height(target)
 
+    def _fit_composer_to_pane(self):
+        """CTO B4: after settle, the composer must fit the pane it is in.
+        Measures Send's bottom edge in panel coords (the exact G3 probe);
+        overflow caps the composer, headroom relaxes the cap. The artist's
+        height is preserved for the next tall dock (L6)."""
+        inp = getattr(self, "_input", None)
+        if inp is None or not inp._height_settled:
+            return
+        lay = self.layout()
+        if lay is not None:
+            lay.activate()
+        bottom = inp.mapTo(self, QtCore.QPoint(0, inp.height())).y()
+        room = self.height() - bottom
+        if room < 0:
+            inp.cap_height(inp.height() + room)
+        elif inp._cap is not None and room > 0:
+            new = inp._cap + room
+            inp.cap_height(None if new >= inp._max_h else new)
+
     def showEvent(self, e):
         super().showEvent(e)
         self._settle_composer_height()
+        self._fit_composer_to_pane()
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
         self._settle_composer_height()
+        self._fit_composer_to_pane()
 
     def _author_token(self):
         """Best-effort display signature of the active engine's model, e.g.

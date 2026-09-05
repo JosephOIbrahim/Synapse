@@ -121,3 +121,47 @@ def test_http_lists_registry_core_only():
     )
     leaked = sorted(http_names & set(_STDIO_LOCAL_TOOLS))
     assert not leaked, f"stdio-local tools leaked into the HTTP surface: {leaked}"
+
+
+# ── README release-truth slice (CTO B8, 2026-09-05) ───────────────────────────
+# README carried "115 tools" and "v5.60.0 is Latest" three releases past the
+# registry (128) and VERSION (5.63.0). Two more bindings so that class of drift
+# fails loud instead of ageing silently: README's tool number derives from the
+# registry (same authority as the CLAUDE.md banner above), and README's
+# "vX.Y.Z is Latest" tag line derives from VERSION (the canonical version file,
+# per test_phase0c_doc1_version_conformance.py).
+
+def _readme():
+    return (_ROOT / "README.md").read_text(encoding="utf-8")
+
+
+def test_readme_tool_count_matches_registry():
+    """FAILS IF: README's '**N tools, two paths.**' claim is not len(TOOL_DEFS)."""
+    m = re.search(r"\*\*(\d+) tools, two paths\.\*\*", _readme())
+    assert m, (
+        "README.md no longer carries the '**N tools, two paths.**' claim -- the "
+        "tool-count sentence moved or was reworded; re-pin it here."
+    )
+    documented = int(m.group(1))
+    actual = _registry_count()
+    assert documented == actual, (
+        f"README.md says '{documented} tools, two paths' but "
+        f"synapse.mcp._tool_registry.TOOL_DEFS has {actual} entries (DOC-1 / B8). "
+        "Update README to the registry count (or this test if the registry moved)."
+    )
+
+
+def test_readme_latest_tag_matches_version_file():
+    """FAILS IF: README's 'tags: vX.Y.Z is Latest' line names a version other
+    than VERSION. The GitHub 'Latest' badge is a human act at release time; the
+    README line must follow the canonical version, not lag it by three tags."""
+    canonical = (_ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    m = re.search(r"tags:\s*v(\d+\.\d+\.\d+) is Latest", _readme())
+    assert m, (
+        "README.md banner has no 'tags: vX.Y.Z is Latest' line -- the release "
+        "tag claim went missing (did the banner change shape?)."
+    )
+    assert m.group(1) == canonical, (
+        f"README.md says 'v{m.group(1)} is Latest' but VERSION is {canonical} (B8 "
+        "release-truth drift). Update the README banner with the release ritual."
+    )

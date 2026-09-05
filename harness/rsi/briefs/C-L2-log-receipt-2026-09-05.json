@@ -1,0 +1,71 @@
+{
+  "schema": "rsi_log_receipt/v1",
+  "loop": "C",
+  "rung": "L2",
+  "claim": "MonetaBackedStore is constructed by a live non-test path: real Houdini sessions log 'Memory backend: moneta' at store construction.",
+  "generated": "2026-09-05",
+  "producer": "python harness/rsi/log_receipt.py",
+  "log_dir": "C:\\Users\\User\\.synapse\\logs",
+  "marker": "Memory backend: moneta",
+  "fingerprint": {
+    "method": "each marker line is attributed to the next 'Initialized for project:' line within 5 lines; the project path decides the class",
+    "test_exclusion": "path matches /pytest|[\\\\/]test_[A-Za-z0-9_]+\\d*$/ (pytest tmp_path factory) => TEST, excluded from the production count",
+    "unattributed_rule": "no owner line in the window => UNATTRIBUTED, counted but never credited",
+    "negative_control": "the TEST bucket is non-empty on this machine, i.e. the exclusion actually removes records rather than matching nothing"
+  },
+  "counts": {
+    "production": 78,
+    "test": 30,
+    "unattributed": 0
+  },
+  "per_file": {
+    "synapse.log": {
+      "production": 10,
+      "test": 21,
+      "unattributed": 0
+    },
+    "synapse.log.1": {
+      "production": 34,
+      "test": 0,
+      "unattributed": 0
+    },
+    "synapse.log.3": {
+      "production": 34,
+      "test": 9,
+      "unattributed": 0
+    }
+  },
+  "production_projects": {
+    "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled": 75,
+    "D:\\HOUDINI_PROJECTS_2026\\SYNAPSE_SUMMER_2026\\SYNAPSE_TESTS_6.2026\\newProject\\scripts\\SYNAPSE_test_v0017.hiplc": 1,
+    "D:\\HOUDINI_PROJECTS_2026\\SYNAPSE_SUMMER_2026\\SYNAPSE_TESTS_6.2026\\newProject\\scripts\\SYNAPSE_test_v0019.hiplc": 2
+  },
+  "earliest_production_init": "2026-08-02 12:36:25",
+  "latest_production_init": "2026-09-04 20:37:50",
+  "samples": [
+    {
+      "file": "synapse.log",
+      "line_no": 10,
+      "line": "2026-08-31 19:54:35,446 [synapse.memory] INFO: Memory backend: moneta (minilm-l6-v2-d384)",
+      "project": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled"
+    },
+    {
+      "file": "synapse.log",
+      "line_no": 66,
+      "line": "2026-08-31 20:30:56,718 [synapse.memory] INFO: Memory backend: moneta (minilm-l6-v2-d384)",
+      "project": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled"
+    },
+    {
+      "file": "synapse.log",
+      "line_no": 110,
+      "line": "2026-09-01 12:01:17,222 [synapse.memory] INFO: Memory backend: moneta (minilm-l6-v2-d384)",
+      "project": "C:\\Users\\User\\AppData\\Local\\Temp\\houdini_temp\\untitled"
+    }
+  ],
+  "files_read": [
+    "synapse.log",
+    "synapse.log.1",
+    "synapse.log.3"
+  ],
+  "honesty": "This receipt proves the store is CONSTRUCTED by production processes (L2 REACHABLE). It does not by itself prove L3 CONSUMED or L4 DURABLE; those rungs cite code paths and the snapshot round-trip separately."
+}

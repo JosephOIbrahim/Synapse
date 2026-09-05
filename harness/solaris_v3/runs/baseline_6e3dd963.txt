@@ -1,0 +1,16 @@
+tests/test_undo_redo.py::TestUndoHandler::test_undo_registered_in_handlers
+tests/test_undo_redo.py::TestRedoHandler::test_redo_handler_calls_performRedo
+tests/test_undo_redo.py::TestRedoHandler::test_redo_returns_status
+tests/test_undo_redo.py::TestRedoHandler::test_redo_registered_in_handlers
+  C:\Users\User\SYNAPSE\.claude\worktrees\bp5-solaris-base\tests\test_undo_redo.py:81: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\.claude\worktrees\bp5-solaris-base\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+    import synapse  # noqa: F811
+
+tests/test_vendored_deps.py::TestVendorPathActivation::test_prepend_is_idempotent
+  C:\Python314\Lib\importlib\__init__.py:129: RuntimeWarning: SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under C:\Users\User\SYNAPSE\.claude\worktrees\bp5-solaris-base\python\synapse\_vendor ship cp311 + cp313 win_amd64 binaries, but this interpreter is Python 3.14.2 on Windows (no matching ABI). The vendor tree is INACTIVE on this Python, so SYNAPSE will rely on a real pip-installed pydantic/anthropic. If those are absent, the brain (agent loop) will fail later with a cryptic deep ImportError. Remediate by re-vendoring for this Python (see python/synapse/_vendor/README.md) or by using the out-of-process sidecar (see harness/notes/gate-0.1-sidecar-vs-abi3.md). Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.
+    _bootstrap._exec(spec, module)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_backfill.py::test_backup_is_taken_and_source_intact - Asser...
+==== 1 failed, 6941 passed, 192 skipped, 625 warnings in 247.82s (0:04:07) ====
+exit 0

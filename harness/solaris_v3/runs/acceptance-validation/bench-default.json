@@ -1,0 +1,81 @@
+{
+  "conditions": {
+    "asset_set": null,
+    "engine": null,
+    "frame": null,
+    "seed": null
+  },
+  "kind": "BENCH",
+  "limitations": [
+    "Sampled memory peaks may miss spikes between samples.",
+    "Device VRAM includes other processes; it is not per-render allocation.",
+    "BENCH measurements do not promote GATE rows."
+  ],
+  "metrics": {
+    "build_to_stage_s": {
+      "definition": "seconds: request start to verified stage availability",
+      "median": null,
+      "min": null,
+      "n": 0,
+      "p95": null,
+      "samples": [],
+      "status": "UNMEASURED"
+    },
+    "cancellation_s": {
+      "definition": "seconds: cancellation requested to confirmed terminal job state",
+      "median": null,
+      "min": null,
+      "n": 0,
+      "p95": null,
+      "samples": [],
+      "status": "UNMEASURED"
+    },
+    "peak_memory_bytes": {
+      "definition": "bytes: maximum observed process RSS in the measured interval",
+      "median": null,
+      "min": null,
+      "n": 0,
+      "p95": null,
+      "samples": [],
+      "status": "UNMEASURED"
+    },
+    "peak_vram_bytes": {
+      "definition": "bytes: maximum observed device memory.used in the measured interval",
+      "median": null,
+      "min": null,
+      "n": 0,
+      "p95": null,
+      "samples": [],
+      "status": "UNMEASURED"
+    },
+    "render_cold_s": {
+      "definition": "seconds: approved cold job start to terminal output validation",
+      "median": null,
+      "min": null,
+      "n": 0,
+      "p95": null,
+      "samples": [],
+      "status": "UNMEASURED"
+    },
+    "render_warm_s": {
+      "definition": "seconds: approved warm job start to terminal output validation",
+      "median": null,
+      "min": null,
+      "n": 0,
+      "p95": null,
+      "samples": [],
+      "status": "UNMEASURED"
+    },
+    "walk_completion_s": {
+      "definition": "seconds: manual walk timer; completion recorded separately",
+      "median": null,
+      "min": null,
+      "n": 0,
+      "p95": null,
+      "samples": [],
+      "status": "UNMEASURED"
+    }
+  },
+  "quantile_method": "nearest-rank: sorted[ceil(0.95*n)-1]",
+  "schema_version": 1
+}

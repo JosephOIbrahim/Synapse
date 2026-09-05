@@ -156,6 +156,15 @@ else:
 # ---------- B · live build ----------
 print("\n-- USABILITY · live offscreen build " + "-" * 31)
 panel = None
+# CTO B4 2026-09-05: the audit measures the DESIGN, not the artist's saved
+# picks. Unless the caller pins a settings file, build against a scratch one
+# so a persisted drag (or a corrupt file) can neither flip the verdict nor
+# be rewritten by the run. Set SYNAPSE_PANEL_SETTINGS to audit a real file.
+if not os.environ.get("SYNAPSE_PANEL_SETTINGS"):
+    import tempfile as _tf
+    os.environ["SYNAPSE_PANEL_SETTINGS"] = os.path.join(
+        _tf.mkdtemp(prefix="synapse_g3_"), "panel_settings.json")
+print(f"   settings under audit : {os.environ['SYNAPSE_PANEL_SETTINGS']}")
 try:
     import run_panel  # registers hou stub + path
     try:
@@ -375,11 +384,13 @@ try:
         panel._set_scale(_saved_scale)
 
     READABLE_FLOOR = 11  # px — chrome must clear this
-    # v9: the wordmark is the 14px/500 BRAND word (demoted from the 19px hero)
-    # and must carry BRAND tracking (PercentageSpacing 100 + em×100).
+    # v9: the wordmark is the 14px BRAND word (demoted from the 19px hero).
+    # 2026-07-27 (7780f649, Joe's call): it carries its own WORDMARK tracking
+    # (0.16em), not BRAND's 0.286em. The audit pins the token the widget
+    # actually uses, so a design move never leaves the gate red by itself.
     wm = chrome_a.get("_wordmark")
     _wmf = panel._wordmark.font()
-    _want_pct = 100 + t.TRACKING_EM["BRAND"] * 100
+    _want_pct = 100 + t.TRACKING_EM["WORDMARK"] * 100
     wm_brand = (wm == round(14 * panel._chrome_scale)
                 and _wmf.letterSpacingType() == type(_wmf).PercentageSpacing
                 and abs(_wmf.letterSpacing() - _want_pct) < 0.05)

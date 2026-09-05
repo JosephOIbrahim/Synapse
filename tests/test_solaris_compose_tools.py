@@ -186,3 +186,95 @@ def test_render_ready_xpu_osl_incompatible(tmp_path):
 def test_render_ready_cpu_skips_xpu_check(tmp_path):
     rep = t._assess_stage(_build_render_stage(tmp_path, engine="cpu", osl=True))
     assert rep["clauses"]["xpu_compatible"] == "n/a"
+
+
+
+# -- bp5: explicit-path recipe keys; existing legacy assertions unchanged --
+
+def _recipe_ready_stage(tmp_path):
+    stage = _build_render_stage(tmp_path, engine="cpu")
+    from pxr import UsdRender
+    settings = UsdRender.Settings(stage.GetPrimAtPath("/Render/rs"))
+    settings.CreateProductsRel().SetTargets(["/Render/Products/beauty"])
+    product = UsdRender.Product(stage.GetPrimAtPath("/Render/Products/beauty"))
+    product.CreateOrderedVarsRel().SetTargets(["/Render/rs/beauty"])
+    var = UsdRender.Var(stage.GetPrimAtPath("/Render/rs/beauty"))
+    var.CreateSourceNameAttr().Set("C")
+    var.CreateDataTypeAttr().Set("color3f")
+    stage.DefinePrim("/lights/key", "RectLight")
+    stage.DefinePrim("/lights/dome", "DomeLight")
+    return stage
+
+
+def _recipe_branch():
+    edge = {"src_id": "settings", "src_output": 0, "dst_id": "render", "dst_input": 0}
+    return {"expected": [edge], "observed": [dict(edge)], "complete": True}
+
+
+def test_recipe_assessor_explicit_path_lights_products_and_branch(tmp_path):
+    stage = _recipe_ready_stage(tmp_path)
+    report = t._assess_stage(stage, render_settings_path="/Render/rs", render_input_branch=_recipe_branch())
+    assert report["ready"], report
+    assert report["details"]["render_settings_path"] == "/Render/rs"
+    assert report["details"]["camera_targets"] == ["/cam"]
+    assert report["details"]["two_authored_lights"]["count"] == 2
+    assert report["clauses"]["products_authored"] == "pass"
+    assert report["clauses"]["render_input_branch"] == "pass"
+
+
+def test_recipe_assessor_missing_named_settings_does_not_use_first(tmp_path):
+    report = t._assess_stage(_recipe_ready_stage(tmp_path),
+                             render_settings_path="/Render/not_there", render_input_branch=_recipe_branch())
+    assert report["clauses"]["rendersettings"] == "fail"
+    assert report["clauses"]["camera"] == "fail"
+    assert report["clauses"]["products_authored"] == "fail"
+
+
+def test_recipe_assessor_t7_camera_valid_but_render_branch_removed(tmp_path):
+    branch = _recipe_branch()
+    branch["observed"] = []
+    report = t._assess_stage(_recipe_ready_stage(tmp_path),
+                             render_settings_path="/Render/rs", render_input_branch=branch)
+    assert report["clauses"]["camera"] == "pass"
+    assert report["clauses"]["render_input_branch"] == "fail"
+    assert not report["ready"]
+
+
+def test_recipe_assessor_second_settings_does_not_borrow_products(tmp_path):
+    pytest.importorskip("pxr")
+    from pxr import UsdRender
+    stage = _recipe_ready_stage(tmp_path)
+    second = stage.DefinePrim("/Render/second", "RenderSettings")
+    UsdRender.Settings(second).CreateCameraRel().SetTargets(["/cam"])
+    report = t._assess_stage(stage, render_settings_path="/Render/second", render_input_branch=_recipe_branch())
+    assert report["clauses"]["camera"] == "pass"
+    assert report["clauses"]["products_authored"] == "fail"
+    assert report["clauses"]["aovs"] == "fail"
+    assert report["clauses"]["output_path"] == "fail"
+
+
+def test_recipe_assessor_one_authored_light_fails(tmp_path):
+    stage = _recipe_ready_stage(tmp_path)
+    stage.GetPrimAtPath("/lights/dome").SetActive(False)
+    report = t._assess_stage(stage, render_settings_path="/Render/rs", render_input_branch=_recipe_branch())
+    assert report["clauses"]["two_authored_lights"] == "fail"
+    assert report["details"]["two_authored_lights"]["count"] == 1
+
+
+def test_recipe_assessor_unlinked_or_unauthored_var_fails(tmp_path):
+    stage = _recipe_ready_stage(tmp_path)
+    stage.GetPrimAtPath("/Render/rs/beauty").GetAttribute("sourceName").Clear()
+    report = t._assess_stage(stage, render_settings_path="/Render/rs", render_input_branch=_recipe_branch())
+    assert report["clauses"]["products_authored"] == "fail"
+
+
+def test_recipe_assessor_truncation_cannot_pass(tmp_path):
+    report = t._assess_stage(_recipe_ready_stage(tmp_path), max_prims=1,
+                             render_settings_path="/Render/rs", render_input_branch=_recipe_branch())
+    assert report["clauses"]["traversal_complete"] == "fail"
+
+
+def test_recipe_assessor_explicit_empty_path_is_not_legacy_mode(tmp_path):
+    report = t._assess_stage(_recipe_ready_stage(tmp_path), render_settings_path="",
+                             render_input_branch=_recipe_branch())
+    assert report["clauses"]["rendersettings"] == "fail"

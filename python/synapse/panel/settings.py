@@ -78,6 +78,12 @@ def _repo_root() -> Path:
 
 
 def settings_path() -> Path:
+    """Where the artist's picks live. ``SYNAPSE_PANEL_SETTINGS`` overrides
+    (audits and tests point it at a scratch file so a verdict never depends
+    on, or rewrites, the artist's state - CTO B4 2026-09-05)."""
+    override = os.environ.get("SYNAPSE_PANEL_SETTINGS", "").strip()
+    if override:
+        return Path(override)
     return _repo_root() / ".synapse" / "panel_settings.json"
 
 
@@ -180,15 +186,24 @@ def composer_start_height(persisted, shared_h,
     the composer share, so the divider lands equidistant between prompt and
     chat instead of at the old 132 constant. Both answers clamp to
     ``floor``..``max_h`` so a short pane still leaves room to type and a
-    tall one never swallows the chat. Pure and Qt-free: the panel measures,
-    this decides, the artist overrides.
+    tall one never swallows the chat, and a persisted drag from a taller
+    dock is capped to what THIS pane can hold. Pure and Qt-free: the panel
+    measures, this decides, the artist overrides.
     """
     if (isinstance(persisted, int) and not isinstance(persisted, bool)
             and persisted > 0):
         h = persisted
     else:
         h = int(shared_h) // 2
-    return max(floor, min(max_h, h))
+    # CTO B4 ruling 2026-09-05: the artist's answer wins, but never past
+    # the space this pane actually has. A drag persisted on a tall dock
+    # (514px) re-applied to a 420px dock pushed Send 441px below the pane
+    # (G3 'input not clipped' FAIL). The ceiling leaves the chat at least
+    # one floor's worth; on a pane too short for both, floor still wins.
+    ceiling = max_h
+    if int(shared_h) > 0:
+        ceiling = max(floor, min(max_h, int(shared_h) - floor))
+    return max(floor, min(ceiling, h))
 
 
 def _size_hint(model_id: str) -> float:

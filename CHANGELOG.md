@@ -2,6 +2,10 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.63.0 — the swarm shipped the seam, and the referee held the door
+
+*2026-09-05: two Codex swarms on gpt-6-astra, orchestrated from Claude Code. The Solaris Recipes v3 wave (six streams over one frozen seam) merged in full and ships dormant — `run_recipe` exists but is not registered. Of the Panel PD wave only CENSUS merged; LEVER, CAMERA, SWEEP_A and SWEEP_B are carried on `pd/panel-integrate` under the referee's BROKEN verdict. One behaviour change: an explicit unknown `SYNAPSE_WORKER_TOOL_MODE` now fails closed to `strict` (Joe DECIDE 2026-09-04). Full notes with receipts: `harness/notes/RELEASE_v5.63.0.md`. Entries for v5.58.0–v5.62.0 live in `harness/notes/RELEASE_v5.*.md`; this file resumes here.*
+
 ## v5.57.0 — the store stops having two owners
 
 *2026-08-22: `get_synapse_memory()` was an unlocked check-then-create, and under load it built one `SynapseMemory` per racing thread — each orphaned copy still holding a Moneta handle on the same storage dir. Now lock-guarded, with the release path fixed. **6,801 passing / 1 failing / 180 skipped** on Windows + Python 3.14.2 at `129598bb` (the one failure is `test_backup_is_taken_and_source_intact`, pre-existing, bisected to `e8b691de` — see Known) · Houdini 22.0.400 · blueprint §4 contract surface untouched.*

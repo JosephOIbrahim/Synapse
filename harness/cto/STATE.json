@@ -1,0 +1,18 @@
+{
+  "schema": "cto-review/1",
+  "spec_status": "DRAFT",
+  "autonomy": "amber",
+  "spawn_cap_per_run": 18,
+  "runs": 1,
+  "last_run_id": "wf_8a5d7c68-b43",
+  "last_run_date": "2026-09-05",
+  "lanes": [
+    "SCOUT",
+    "DESIGN",
+    "REVIEW",
+    "HEALTH",
+    "INTENT",
+    "RECIPES",
+    "RSI"
+  ]
+}

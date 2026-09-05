@@ -15,7 +15,10 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from synapse.recipes.contracts import Availability, RecipeSpec
 
 __all__ = [
     "FixtureError",
@@ -25,8 +28,10 @@ __all__ = [
     "fixture_path",
     "list_fixtures",
     "load_fixture",
+    "load_recipe_spec",
     "repo_root",
     "validate_fixture",
+    "validate_recipe_spec",
 ]
 
 
@@ -247,3 +252,31 @@ def declared_wires(fx: Dict[str, Any]) -> Dict[str, Dict[int, str]]:
 def declared_nodes(fx: Dict[str, Any]) -> List[Tuple[str, Dict[str, Any]]]:
     """``[(name, spec), ...]`` in definition order -- creation order matters."""
     return [(spec["name"], spec) for spec in fx["nodes"]]
+
+
+def load_recipe_spec(name: str) -> "RecipeSpec":
+    """Load a schema-v2 contract, including visible BLOCKED definitions.
+
+    The v1 loader is deliberately unchanged: it must never make a partial v2
+    outer graph executable by silently discarding its nested shader networks.
+    """
+    from synapse.recipes.spec import RecipeSpecError, recipe_spec_from_dict
+
+    path = fixture_path(name)
+    if not path.is_file():
+        raise FixtureNotFoundError("no recipe spec %r at %s" % (name, path))
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RecipeSpecError("could not read recipe spec %r: %s" % (name, exc)) from exc
+    spec = recipe_spec_from_dict(raw)
+    if spec.recipe_id != name:
+        raise RecipeSpecError("recipe id does not match fixture name")
+    return spec
+
+
+def validate_recipe_spec(spec: "RecipeSpec") -> "Availability":
+    """Validate a v2 seam object; return definition availability, not success."""
+    from synapse.recipes.spec import validate_recipe_spec as validate
+
+    return validate(spec)

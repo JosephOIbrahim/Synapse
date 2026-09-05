@@ -244,7 +244,12 @@ def test_escalation_routes_ws_halt_when_no_haltable_bridge(monkeypatch):
     chain = _chain()
     try:
         chain.heartbeat()
-        time.sleep(0.6)
+        # Anchor to the real state, not a fixed sleep: under a loaded host
+        # (full suite + hython probes in parallel) the watchdog thread can
+        # need more than 0.6 s to fire; a wall-clock guess flaked 2026-09-05.
+        deadline = time.monotonic() + 5.0
+        while not chain.escalated and time.monotonic() < deadline:
+            time.sleep(0.05)
         assert chain.escalated is True
         fired.assert_called_once()
         assert "no active /mcp bridge" in fired.call_args.kwargs["reason"]

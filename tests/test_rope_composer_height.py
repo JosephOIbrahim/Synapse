@@ -158,3 +158,24 @@ def test_autogrow_survives():
     auto = next(f for f in cls.body
                 if isinstance(f, ast.FunctionDef) and f.name == "_autosize")
     assert "_user_h" in ast.get_source_segment(PANEL_SRC, auto)
+
+
+# --- CTO B4 ruling 2026-09-05: a persisted drag never exceeds THIS pane ---
+
+def test_persisted_from_tall_dock_is_capped_to_short_pane():
+    """The G3 regression: composer_height 514 persisted on a tall dock,
+    re-applied at PANEL_MIN_HEIGHT where prompt+chat share ~356px, pushed
+    Send 441px below the pane. The answer is capped to shared - FLOOR so
+    the chat keeps at least one floor's worth."""
+    assert pset.composer_start_height(514, 356) == 356 - FLOOR
+    assert pset.composer_start_height(514, 356) < 356
+
+
+def test_cap_never_drops_below_floor_on_a_tiny_pane():
+    assert pset.composer_start_height(514, 100) == FLOOR
+    assert pset.composer_start_height(514, 0) == 514   # unmeasured pane: rails only
+
+
+def test_cap_leaves_tall_panes_alone():
+    assert pset.composer_start_height(514, 1000) == 514
+    assert pset.composer_start_height(None, 1000) == 500

@@ -14,7 +14,7 @@ Three artifacts, one relay:
 | Artifact | Role |
 |---|---|
 | `.claude/workflows/rsi-closure.js` | The engine — one dispatch per phase, agent teams inside |
-| `.claude/agents/rsi-closure-orchestrator.md` | The conductor — sequencing + gate discipline (registered next session; the main loop conducts until then) |
+| `.claude/agents/rsi-closure-orchestrator.md` | The conductor — sequencing + gate discipline (registered; conducts every dispatch) |
 | `harness/rsi/briefs/` | Where DECIDE briefs and CLOSE packages land (created on first write) |
 
 The bar is unchanged: `python harness/rsi/verify.py`. The board is unchanged:
@@ -81,5 +81,7 @@ Two consecutive such phases → stop the relay; do not write a third RSI harness
 - R's eval (`tests/rsi/eval_line_r_closure.py`) proves L3/L4 **properties under eval
   conditions**; run it with `python`, never pytest (`eval_` prefix collects zero — trap
   already burned once). L2 still requires non-eval evidence.
-- The orchestrator agent registers at the **next** session start; in the session that
-  built it, the main loop conducts directly.
+- The orchestrator agent registered at the session start after it was built (2026-08-01);
+  in the session that built it, the main loop conducted directly.
+- `P10` (cited-path liveness) was added to `verify.py` on 2026-09-05 by `CTO B7`, outside
+  this relay; `SPEC.md` carries the addendum row. The relay still adds no predicates itself.

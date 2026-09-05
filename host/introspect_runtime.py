@@ -7,17 +7,25 @@ runtime. Existence is a membership question and its authority is the runtime,
 not prose — this script emits the symbol table; scout *reads* it (so
 ``cognitive.tools.*`` stays zero-``hou``, boundary preserved).
 
-RUN IT INSIDE H21.0.671 (the interpreter scout grounds for):
+RUN IT INSIDE THE BUILD SCOUT GROUNDS FOR (per-major output, runway §1.4):
 
-    "C:/Program Files/Side Effects Software/Houdini 21.0.671/bin/hython.exe" \
+    "C:/Program Files/Side Effects Software/Houdini 22.0.400/bin/hython.exe" \
         host/introspect_runtime.py
 
 It walks ``hou`` / ``pdg`` / ``pxr`` to a bounded depth — modules + classes +
-class-level callables, no deeper — cycle-guarded (visited set), dunder/_private
-skipped, hard node cap (USD's binding graph is large and cyclic). Writes a
-version-stamped, BLAKE2b-checksummed JSON table to the committed package data
-dir (so the authority travels to CI / headless / hython 631 where ``hou`` and
-the gitignored ``.synapse`` store are both absent).
+class-level callables + SWIG namespace instances owned by the root
+(``hou.undos``, ``hou.hipFile``, ``hou.hda`` ...; CTO B2 2026-09-05), no
+deeper — cycle-guarded (visited set), dunder/_private skipped, hard node cap
+(USD's binding graph is large and cyclic). Writes a version-stamped,
+BLAKE2b-checksummed JSON table to the committed package data dir (so the
+authority travels to CI / headless / stock python where ``hou`` and the
+gitignored ``.synapse`` store are both absent).
+
+HEADLESS CAVEAT: a hython run omits the GUI submodules (``hou.ui``, ``hou.qt``,
+``hou.audio``, ``hou.desktop``, ``hou.viewportVisualizers``). The phantom lint
+unions them back in via ``harness/verify/checks.py::_GUI_HOU_ABSENT_HEADLESS``
+(pinned by ``tests/test_phantom_guardrail.py``) — regenerating here must not be
+read as certifying their absence.
 
 Why a file run, not the WS transport: multi-line code over the live ``/synapse``
 transport fails; a file run inside Houdini sidesteps it.
@@ -61,10 +69,41 @@ def _walk(obj, prefix, depth, max_depth, visited, out):
         out.add(sym)
         if len(out) >= NODE_CAP:
             return
-        # recurse ONLY into modules and classes — the spec's "modules + classes
-        # + class-level callables"; never chase instances / arbitrary objects.
-        if depth < max_depth and isinstance(child, (type, types.ModuleType)):
+        # recurse into modules, classes, and NAMESPACE INSTANCES owned by the
+        # walked root — the spec's "modules + classes + class-level callables"
+        # plus the SWIG namespaces (hou.undos, hou.hipFile, hou.hda, ... — 22 on
+        # 22.0.400) that are instances of a type defined in `hou`; never chase
+        # arbitrary foreign objects. See _is_namespace_instance.
+        if depth < max_depth and (isinstance(child, (type, types.ModuleType))
+                                  or _is_namespace_instance(child, prefix, depth)):
             _walk(child, sym, depth + 1, max_depth, visited, out)
+
+
+def _is_namespace_instance(obj, prefix: str, depth: int) -> bool:
+    """CTO B2 (2026-09-05): ``hou.undos`` is neither a class nor a module —
+    ``type(hou.undos).__name__ == 'undos'`` and ``__module__ == 'hou'``, a
+    SWIG namespace instance. Walking only ``(type, ModuleType)`` recorded the
+    bare ``hou.undos`` and none of its members, so scout certified
+    ``hou.undos.group`` as a phantom while 13 server files call it.
+
+    Rule: recurse when the object is a DIRECT child of the walked root module
+    (``depth == 0``) and its TYPE is defined in that root (``prefix`` is the
+    root name: ``hou`` / ``pdg``) — the 22 SWIG namespaces on 22.0.400
+    (undos, hipFile, hda, playbar, lop, ...). Instances whose type lives
+    elsewhere (``hou.cvar`` — builtins swigvarlink; ``hou.lopTraversalDemands``
+    — houpythonportion.lop) stay leaves. Deeper instances stay leaves too: an
+    enum value such as ``hou.nodeTypeFilter.Chop`` is a ``hou.EnumValue``
+    instance, and recursing it only adds per-value ``.name/.this/.thisown``
+    noise (+3,420 entries measured) with no membership value. pxr is
+    unaffected: its type modules are ``pxr.<Sub>``, never the bare root."""
+    if depth != 0 or "." in prefix:
+        return False
+    if isinstance(obj, (type, types.ModuleType)) or callable(obj):
+        return False
+    try:
+        return getattr(type(obj), "__module__", None) == prefix
+    except Exception:
+        return False
 
 
 def _data_path(major: int = 21) -> Path:
