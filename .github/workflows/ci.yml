@@ -107,3 +107,30 @@ jobs:
       # collects and runs the whole suite, which is what the receipts record.
       # See docs/CI_TWO_WORLDS.md.
       - run: python -m pytest tests/ -m "not needs_houdini" -v -rs --tb=short
+
+      - name: Exercise the production memory env (SYNAPSE_MEMORY_BACKEND=moneta)
+        # B5 (2026-09-05). packages/synapse.json ships SYNAPSE_MEMORY_BACKEND=moneta
+        # to every Houdini seat, and MonetaBackedStore.from_storage_dir gates its
+        # W3-STORE JSONL dual-write on exactly that value. The run above never sets
+        # it, so it was structurally blind to a data-safety bug the production env
+        # hits on every real backfill: the destination store opened on the SOURCE
+        # dir mirrored each deposit back into memory.jsonl (7 lines -> 14 per run;
+        # tests/test_backfill.py::test_backup_is_taken_and_source_intact was red
+        # on any workstation with the package env and green here). This step runs
+        # the backend-gated memory tests under the value production runs with.
+        #
+        # A scoped step, not a job-wide env, on purpose: SynapseMemory._make_store
+        # records a process-global fallback flag when the requested backend is
+        # not importable, and the doctor's moneta_substrate check flips from
+        # "skipped" to "fail" on it -- a job-wide value would rewrite the verdict
+        # of every unrelated test in the run above, not test them.
+        #
+        # Runs whether or not MONETA_DEPLOY_KEY is configured. Without the
+        # backend the Moneta-gated tests SKIP with a reason naming the import
+        # error (-rs prints every one), and
+        # test_backfill_without_moneta_degrades_loudly still runs on every leg:
+        # it pins that a real backfill RAISES when Moneta is absent instead of
+        # reporting a verified cutover against a store that does not exist.
+        env:
+          SYNAPSE_MEMORY_BACKEND: moneta
+        run: python -m pytest tests/test_backfill.py tests/test_moneta_store.py tests/test_store_backend_health.py tests/test_m3_env_conformance.py -m "not needs_houdini" -v -rs --tb=short
