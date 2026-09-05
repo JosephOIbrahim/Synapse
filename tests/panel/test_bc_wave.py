@@ -422,6 +422,30 @@ def test_one_signal_per_fact_at_boot():
             p.close()
 
 
+def test_composer_telling_reads_whole_at_340():
+    """CRUX repair (2026-09-05, "the only '/' telling is cut mid-sentence"):
+    the composer's one '/' telling is the placeholder (the telling G3 pins),
+    and a QTextEdit placeholder sits outside the labels no-elide predicate,
+    so this pins it directly. Held constant: nothing on screen the artist
+    cannot read at 340. In every profile at 340x760 the placeholder's advance
+    in the input's own font fits the viewport's text width (viewport minus the
+    document margin both sides - the rect QTextEdit paints it in), so it reads
+    whole on one line; and the composer still tells '/' exactly once."""
+    for profile in PROFILES:
+        p = _panel(profile)
+        try:
+            inp = p._input
+            text = inp.placeholderText()
+            fm = QtGui.QFontMetrics(inp.font())
+            margin = int(inp.document().documentMargin())
+            avail = inp.viewport().width() - 2 * margin
+            assert fm.horizontalAdvance(text) <= avail, (
+                profile, text, fm.horizontalAdvance(text), avail)
+            assert text.count("/") + p._khint.text().count("/") == 1, (text, p._khint.text())
+        finally:
+            p.close()
+
+
 # --------------------------------------------------------------------- BC-5
 def test_profile_row_folded():
     """Ruling item 6: the profile row folds into the overflow so the
