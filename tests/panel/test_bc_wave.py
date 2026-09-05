@@ -267,14 +267,22 @@ def _hue_buckets(widget):
             for r, g, b in colours if max(r, g, b) - min(r, g, b) > 24}
 
 
-def test_chat_face_monochrome_plus_one_accent():
-    """CRUX repair (2026-09-05, 'second hue at rest'): the model token is
-    identity data, not an action, so at rest it speaks in the text ramp
-    (TEXT_SECONDARY; hover TEXT_BRIGHT + underline) and never the verified /
-    ok green. Pentagram bar: monochrome plus ONE accent that means the next
-    action. Measured: the CHAT face at 340x760 holds <= 3 hue buckets in every
-    profile (the review's P1 baseline - the warm mark + the SEND accent), and
-    the DsAuthor rules name no status hue."""
+def test_chat_face_monochrome_one_accent_plus_state_marks():
+    """CRUX repair (2026-09-05, 'second hue at rest') retargeted under Joe's
+    word: RULING_JOE_FIVE.md J1 (2026-09-05) supersedes RULING_DIRECTION_BC.md
+    Addendum 3.3 ('the token is data, not a status light') - the model token
+    IS a status light, coloured by the engine's liveness from the panel's own
+    state signal. Unset it still speaks in the text ramp (TEXT_SECONDARY rest;
+    hover TEXT_BRIGHT + underline - the `(:hover)?` regex below does not match
+    the [liveness=...] blocks, so that half of the pin is unchanged), and its
+    three liveness blocks name exactly CONIFEROUS (live) / WARM (working) /
+    TEXT_DISABLED (off) and nothing else chromatic. Pentagram bar: monochrome
+    plus ONE accent for actions, plus the state marks. Measured at 340x760 in
+    every profile: the CHAT face holds <= 3 hue buckets at boot (disconnected:
+    the warm mark + the SEND accent; the token is grey) and <= 4 once
+    _apply_context connects, the one added bucket being 8 - CONIFEROUS, the
+    token's own. (The allowed rest set {0 WARM, 8 CONIFEROUS, 14 SIGNAL} is
+    what J3 later paints inside; it needs no edit here.)"""
     import re
     from synapse.panel.designsystem import tokens as t, qss
     sheet = qss.stylesheet()
@@ -286,12 +294,33 @@ def test_chat_face_monochrome_plus_one_accent():
             assert hue.lower() not in body, (name, hue)
     assert t.TEXT_SECONDARY.lower() in blocks["rest"], blocks["rest"]
     assert t.TEXT_BRIGHT.lower() in blocks[":hover"] and "underline" in blocks[":hover"], blocks[":hover"]
+    # J1: the liveness blocks - and only those - carry state colour.
+    live = {m.group(1): m.group(2).lower() for m in
+            re.finditer(r'QPushButton#DsAuthor\[liveness="(\w+)"\]\s*\{([^}]*)\}', sheet)}
+    assert set(live) == {"live", "working", "off"}, list(live)
+    assert t.CONIFEROUS.lower() in live["live"], live["live"]
+    assert t.WARM.lower() in live["working"], live["working"]
+    assert t.TEXT_DISABLED.lower() in live["off"], live["off"]
+    for name, body in live.items():
+        for hue in (t.GROW, t.SIGNAL, t.WARN, t.ERROR, t.FIRE):
+            assert hue.lower() not in body, (name, hue)
+    # Equal specificity in Qt QSS: source order decides, and hover must win.
+    assert sheet.rfind('QPushButton#DsAuthor[liveness=') < sheet.find("QPushButton#DsAuthor:hover")
     for profile in PROFILES:
         p = _panel(profile)
+        pid0 = p._provider_id
         try:
-            buckets = _hue_buckets(p)
-            assert len(buckets) <= 3, (profile, sorted(buckets))
+            rest = _hue_buckets(p)
+            assert len(rest) <= 3, (profile, sorted(rest))
+            p._set_provider("ollama")        # keyless engine: keyed without a secret
+            p._apply_context({"frame": 1, "selected_nodes": [], "scene_file": ""})
+            _app().processEvents()
+            connected = _hue_buckets(p)
+            assert len(connected) <= 4, (profile, sorted(connected))
+            assert connected - rest == {8}, (   # CONIFEROUS, the token's bucket
+                profile, sorted(rest), sorted(connected))
         finally:
+            p._set_provider(pid0)            # the module-wide scratch file stays on its pick
             p.close()
 
 
