@@ -249,6 +249,50 @@ def test_author_token_visible_top_right():
             p.close()
 
 
+def _hue_buckets(widget):
+    """The review's hue predicate (REVIEW.md, P1 / F4): 15-degree hue buckets
+    over every chromatic pixel (chroma > 24) of an offscreen grab of the
+    widget - the same arithmetic as the acceptance's Pillow line, on Qt."""
+    import colorsys
+    img = widget.grab().toImage().convertToFormat(QtGui.QImage.Format.Format_RGB888)
+    w, h, bpl = img.width(), img.height(), img.bytesPerLine()
+    raw = bytes(img.constBits())
+    colours = set()
+    for y in range(h):
+        row = raw[y * bpl:y * bpl + 3 * w]
+        colours.update(zip(row[0::3], row[1::3], row[2::3]))
+    return {int(colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)[0] * 360) // 15
+            for r, g, b in colours if max(r, g, b) - min(r, g, b) > 24}
+
+
+def test_chat_face_monochrome_plus_one_accent():
+    """CRUX repair (2026-09-05, 'second hue at rest'): the model token is
+    identity data, not an action, so at rest it speaks in the text ramp
+    (TEXT_SECONDARY; hover TEXT_BRIGHT + underline) and never the verified /
+    ok green. Pentagram bar: monochrome plus ONE accent that means the next
+    action. Measured: the CHAT face at 340x760 holds <= 3 hue buckets in every
+    profile (the review's P1 baseline - the warm mark + the SEND accent), and
+    the DsAuthor rules name no status hue."""
+    import re
+    from synapse.panel.designsystem import tokens as t, qss
+    sheet = qss.stylesheet()
+    blocks = {m.group(1) or "rest": m.group(2).lower() for m in
+              re.finditer(r"QPushButton#DsAuthor(:hover)?\s*\{([^}]*)\}", sheet)}
+    assert set(blocks) == {"rest", ":hover"}, list(blocks)
+    for name, body in blocks.items():
+        for hue in (t.CONIFEROUS, t.GROW, t.SIGNAL, t.WARN, t.ERROR, t.FIRE):
+            assert hue.lower() not in body, (name, hue)
+    assert t.TEXT_SECONDARY.lower() in blocks["rest"], blocks["rest"]
+    assert t.TEXT_BRIGHT.lower() in blocks[":hover"] and "underline" in blocks[":hover"], blocks[":hover"]
+    for profile in PROFILES:
+        p = _panel(profile)
+        try:
+            buckets = _hue_buckets(p)
+            assert len(buckets) <= 3, (profile, sorted(buckets))
+        finally:
+            p.close()
+
+
 # --------------------------------------------------------------------- BC-3
 DENSITIES = ("airy", "standard", "tight")
 
