@@ -134,7 +134,14 @@ def test_expert_rail_has_space_md_air_above_the_identity_row():
                 shell.objectName(), _margins(shell))
         assert _margins(ribbon) == (30, 8, 30, 8)
         # BC-5's measured goal still holds with the rail 8px taller: the
-        # conversation keeps a majority of the pane at 340x760.
+        # conversation keeps a majority of the pane at 340x760. Same reading
+        # as test_bc_wave.py / measure_regions.py - the composer at its floor
+        # (at first run L5-22 opens the divider at half; that is the
+        # artist's, not the chrome's).
+        p._input.set_user_height(p._input._floor)
+        _app().processEvents()                 # the composer's own LayoutRequest
+        p._faces.widget(0).layout().activate()  # then the face re-lays
+        _app().processEvents()
         share = p._chat.height() / H
         assert share >= 0.5, (p._chat.height(), share)
     finally:
