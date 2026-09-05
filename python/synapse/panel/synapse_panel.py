@@ -737,7 +737,8 @@ class SynapsePanel(QtWidgets.QWidget):
         The chrome that used to ride here - token meter, palette hint,
         connection dot / label, Corpus, Help, the health strip - is read
         through the overflow (_build_overflow_menu). Its data owners are
-        still constructed for their writers (_note_usage, the shortcut hint,
+        still constructed for their writers (_refresh_usage via token_readout,
+        the shortcut hint,
         _refresh_corpus_state) and for G3's chrome-floor walk, but they sit
         in no layout and are hidden.
         """
@@ -865,9 +866,10 @@ class SynapsePanel(QtWidgets.QWidget):
 
         # -- hidden owners: constructed, written to, read by the overflow;
         #    in NO layout, never shown. ----------------------------------
-        # token meter - TOKENS ONLY, never $ (metering-deferred D4). Providers
-        # don't surface usage yet, so it stays EMPTY until real usage arrives -
-        # never estimated. _format_tokens is the one display rule.
+        # token meter - TOKENS ONLY, never $ (metering-deferred D4). It stays
+        # EMPTY until a provider reports real usage (J2: every registered
+        # provider now does, through usage_sink) - never estimated;
+        # token_readout.refresh_surfaces is the one display rule.
         self._meter_lbl = c.label("", role="caption", parent=w)
         self._meter_lbl.setObjectName("DsMeter")
         self._meter_lbl.setFont(fontload.tracked_font(
