@@ -938,28 +938,6 @@ class SynapsePanel(QtWidgets.QWidget):
         self._region_cache["_build_rail"] = w
         return w
 
-    def _format_tokens(self, n):
-        """Token-count display rule for the rail meter — tokens only, no $:
-        812 · 18.0k · 1.2M. Pure formatting; the meter never estimates."""
-        n = int(n)
-        if n < 1000:
-            return "%d" % n
-        if n < 1_000_000:
-            return "%.1fk" % (n / 1000.0)
-        return "%.1fM" % (n / 1_000_000.0)
-
-    def _note_usage(self, total_tokens):
-        """Accumulate real provider-reported usage into the session meter.
-        No provider surfaces usage yet (the seam is a future providers/ slice);
-        until it lands the meter stays empty — never estimated."""
-        try:
-            self._session_tokens += int(total_tokens)
-        except Exception:
-            return
-        lbl = getattr(self, "_meter_lbl", None)
-        if lbl is not None:
-            lbl.setText(self._format_tokens(self._session_tokens))
-
     def _on_connect(self):
         """Force-start the Synapse bridge server — the hwebserver that serves the
         /synapse WS for external MCP clients and the /mcp endpoint the panel's

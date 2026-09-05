@@ -35,10 +35,14 @@ class StreamProvider:
 
     #: Token usage reported by the API for the MOST RECENT ``stream()`` call:
     #: a dict with any of ``input_tokens`` / ``cache_read_input_tokens`` /
-    #: ``cache_creation_input_tokens`` / ``output_tokens``, or ``None`` when
-    #: the provider observed no usage (never estimated). Additive to the
-    #: ``(stop_reason, content_blocks)`` contract — nothing unpacks it, so
-    #: providers that don't capture usage need no change.
+    #: ``cache_creation_input_tokens`` / ``output_tokens`` — Anthropic-shaped
+    #: names whatever the wire format (the OpenAI ``usage`` chunk and Gemini
+    #: ``usageMetadata`` are translated by their adapters, J2 2026-09-05) —
+    #: or ``None`` when the provider observed no usage (never estimated).
+    #: Every adapter resets it to ``None`` at the top of ``stream()`` and
+    #: publishes in a ``finally`` (abort-safe: those tokens were billed).
+    #: Additive to the ``(stop_reason, content_blocks)`` contract — nothing
+    #: unpacks it; the worker folds it into ``usage_sink`` after every call.
     last_usage: Optional[dict] = None
 
     @property
@@ -50,6 +54,24 @@ class StreamProvider:
     def label(self) -> str:
         """Short author-token label for the rail (defaults to the model id)."""
         return self.model_identity
+
+    def context_window(self) -> Optional[int]:
+        """The model's context window in tokens, or ``None`` = "not reported".
+
+        J2: the TOKEN face shows the share of the window the last prompt used;
+        ``None`` renders "context window not reported by <provider>" — never
+        a guess. Adapters may ask the provider (Ollama ``/api/show``, Gemini
+        ``models.get``) or a documented table (``model_facts``). The worker
+        calls this ONCE per task on its own QThread, never the Qt thread and
+        never from the face's on-open refresh (the freeze class).
+        """
+        return None
+
+    def context_window_source(self) -> Optional[str]:
+        """Where ``context_window()`` came from (``"ollama /api/show"``,
+        ``"gemini models.get"``, ``"model_facts"``) so the face can cite it;
+        ``None`` whenever the window is ``None``."""
+        return None
 
     def resolve_key(self) -> Optional[str]:
         """Provider-specific API-key resolution. ``None`` ⇒ unconfigured."""

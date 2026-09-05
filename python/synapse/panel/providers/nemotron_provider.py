@@ -21,6 +21,11 @@ stays clean). ``NVIDIA_EMIT_REASONING=true`` requests reasoning ON (no filter).
 Remote egress: ``integrate.api.nvidia.com:443`` by default (docs/studio/EGRESS.md).
 The API key leaves as the ``Authorization: Bearer`` header, never in the payload.
 No Qt, no hou. (Pattern ported from Comfy-Cozy ``agent/llm/_nvidia.py``.)
+
+J2 (2026-09-05): the request asks for the final ``usage`` chunk
+(``stream_options.include_usage``) and the parser lands it on ``last_usage``
+in the Anthropic-shaped vocabulary the worker's usage_sink reads; the model's
+context window comes from ``model_facts`` here (Ollama asks its daemon).
 """
 from __future__ import annotations
 
@@ -31,6 +36,7 @@ import os
 import ssl
 from urllib.parse import urlsplit
 
+from . import model_facts as _facts
 from .base import StreamProvider
 
 logger = logging.getLogger(__name__)
@@ -152,7 +158,24 @@ def _stringify(content):
     return "" if content is None else str(content)
 
 
+def _usage_from_openai(usage):
+    """OpenAI ``usage`` (``prompt_tokens`` / ``completion_tokens``) → the
+    Anthropic-shaped ``last_usage`` dict, or ``None`` when nothing genuine was
+    reported. Only ``int``-and-not-``bool`` values land (the anthropic
+    ``_merge_usage`` guard); a partial receipt keeps only its real fields."""
+    if not isinstance(usage, dict):
+        return None
+    out = {}
+    for src, dst in (("prompt_tokens", "input_tokens"),
+                     ("completion_tokens", "output_tokens")):
+        value = usage.get(src)
+        if isinstance(value, int) and not isinstance(value, bool):
+            out[dst] = value
+    return out or None
+
+
 _USE_DEFAULT_DIRECTIVE = object()   # sentinel: None is a real value ("no directive")
+_NOT_LOOKED_UP = object()           # J2: context facts not yet looked up on this instance
 
 
 def _to_openai_messages(messages, system, directive=_USE_DEFAULT_DIRECTIVE):
@@ -218,9 +241,22 @@ class NemotronProvider(StreamProvider):
 
     id = "nemotron"
 
+    #: J2: ask the endpoint to append a final ``usage`` chunk to the stream
+    #: (``stream_options: {include_usage: true}``). Ollama 0.33.2 honours it
+    #: (verified live 2026-09-05: the last chunk is ``{choices: [], usage:
+    #: {prompt_tokens, completion_tokens, total_tokens}}``; without it no chunk
+    #: carries usage). NVIDIA NIM honours it too — probed ONCE live on
+    #: 2026-09-05 (nvidia/nemotron-3-super-120b-a12b, max_tokens 4, real key):
+    #: HTTP 200, ``last_usage == {'input_tokens': 23, 'output_tokens': 4}``,
+    #: so the default holds for Nemotron. An endpoint that 400s on the field
+    #: gets ``False`` on its subclass, and the face then says
+    #: "prompt/completion not reported by <id>" instead of a number.
+    _SEND_STREAM_OPTIONS = True
+
     def __init__(self, model: str, max_tokens: int) -> None:
         self._model = model
         self._max_tokens = max_tokens
+        self._ctx_facts = _NOT_LOOKED_UP    # J2: (window, source) once looked up
 
     @property
     def model_identity(self) -> str:
@@ -269,10 +305,34 @@ class NemotronProvider(StreamProvider):
         return _REASONING_ON if _emit_reasoning() else _REASONING_OFF
 
     # ------------------------------------------------------------------
+    # J2: context window — worker thread only, once per instance
+    # ------------------------------------------------------------------
+
+    def _context_facts(self):
+        """``(window, source)`` or ``None``, looked up ONCE per instance.
+        Nemotron / Custom read the documented table (``model_facts``, keyed by
+        provider id + model id); Ollama overrides this to ask its daemon."""
+        if self._ctx_facts is _NOT_LOOKED_UP:
+            self._ctx_facts = _facts.context_window(self.id, self._model)
+        return self._ctx_facts
+
+    def context_window(self):
+        facts = self._context_facts()
+        return facts[0] if facts else None
+
+    def context_window_source(self):
+        facts = self._context_facts()
+        return facts[1] if facts else None
+
+    # ------------------------------------------------------------------
     # Streaming request
     # ------------------------------------------------------------------
 
     def stream(self, *, messages, tools, system, api_key, emit_token, should_abort):
+        # Reset the per-call usage record BEFORE the request so a failed call
+        # can never surface the previous call's numbers as its own (J2; the
+        # anthropic_provider idiom).
+        self.last_usage = None
         body = {
             "model": self._model,
             "max_tokens": self._max_tokens,
@@ -280,6 +340,9 @@ class NemotronProvider(StreamProvider):
             "messages": _to_openai_messages(
                 messages, system, directive=self._system_directive()),
         }
+        if self._SEND_STREAM_OPTIONS:
+            # J2: the final chunk then carries ``usage`` (with choices == []).
+            body["stream_options"] = {"include_usage": True}
         otools = _to_openai_tools(tools)
         if otools:
             body["tools"] = otools
@@ -329,42 +392,52 @@ class NemotronProvider(StreamProvider):
         text_acc = []
         tool_acc = {}   # index -> {"id","name","arguments"}
         finish = None
+        seen_usage = None   # J2: the usage chunk — last wins; it has choices == []
 
-        for raw_line in self._iter_lines(response, should_abort):
-            if should_abort():
-                break
-            line = raw_line.strip()
-            if not line.startswith("data:"):
-                continue
-            data_str = line[5:].strip()
-            if not data_str or data_str == "[DONE]":
-                continue
-            try:
-                data = json.loads(data_str)
-            except json.JSONDecodeError:
-                logger.debug("Skipping non-JSON NVIDIA SSE data: %s", data_str[:80])
-                continue
+        try:
+            for raw_line in self._iter_lines(response, should_abort):
+                if should_abort():
+                    break
+                line = raw_line.strip()
+                if not line.startswith("data:"):
+                    continue
+                data_str = line[5:].strip()
+                if not data_str or data_str == "[DONE]":
+                    continue
+                try:
+                    data = json.loads(data_str)
+                except json.JSONDecodeError:
+                    logger.debug("Skipping non-JSON NVIDIA SSE data: %s", data_str[:80])
+                    continue
 
-            for choice in data.get("choices", []) or []:
-                delta = choice.get("delta", {}) or {}
-                text = delta.get("content")
-                if text:
-                    visible = tfilter.feed(text)
-                    if visible:
-                        emit_token(visible)
-                        text_acc.append(visible)
-                for tc in delta.get("tool_calls", []) or []:
-                    idx = tc.get("index", 0)
-                    slot = tool_acc.setdefault(idx, {"id": "", "name": "", "arguments": ""})
-                    if tc.get("id"):
-                        slot["id"] = tc["id"]
-                    fn = tc.get("function", {}) or {}
-                    if fn.get("name"):
-                        slot["name"] = fn["name"]
-                    if fn.get("arguments"):
-                        slot["arguments"] += fn["arguments"]
-                if choice.get("finish_reason"):
-                    finish = choice["finish_reason"]
+                usage = data.get("usage")
+                if isinstance(usage, dict):
+                    seen_usage = usage
+                for choice in data.get("choices", []) or []:
+                    delta = choice.get("delta", {}) or {}
+                    text = delta.get("content")
+                    if text:
+                        visible = tfilter.feed(text)
+                        if visible:
+                            emit_token(visible)
+                            text_acc.append(visible)
+                    for tc in delta.get("tool_calls", []) or []:
+                        idx = tc.get("index", 0)
+                        slot = tool_acc.setdefault(idx, {"id": "", "name": "", "arguments": ""})
+                        if tc.get("id"):
+                            slot["id"] = tc["id"]
+                        fn = tc.get("function", {}) or {}
+                        if fn.get("name"):
+                            slot["name"] = fn["name"]
+                        if fn.get("arguments"):
+                            slot["arguments"] += fn["arguments"]
+                    if choice.get("finish_reason"):
+                        finish = choice["finish_reason"]
+        finally:
+            # J2: publish observed usage even on abort or a mid-stream error —
+            # those tokens were still billed. Nothing reported ⇒ None: "not
+            # measured" stays visible, never estimated (the anthropic idiom).
+            self.last_usage = _usage_from_openai(seen_usage)
 
         # Flush the filter: surface any held-back partial-tag tail; warn (don't
         # silently swallow) if the model left a <think> unclosed (truncation).
