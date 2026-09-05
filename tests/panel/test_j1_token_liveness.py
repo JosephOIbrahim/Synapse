@@ -46,6 +46,8 @@ import test_bc_wave as _bc          # the panel builder + the review's hue predi
 
 if not _bc._HAVE_QT:
     pytestmark = pytest.mark.skip(reason="PySide unavailable - run via hython")
+QtGui = getattr(_bc, "QtGui", None)
+QtCore = getattr(_bc, "QtCore", None)
 
 _CONTEXT = {"frame": 1, "selected_nodes": [], "scene_file": ""}
 _LIVE_BUCKET = 8      # CONIFEROUS #6E8F72 -> 127.3 deg // 15
@@ -65,9 +67,29 @@ def _token(panel):
     return panel._author_lbl
 
 
-def _buckets(widget):
+def _buckets(panel, widget=None):
+    """15-degree hue buckets (the review's predicate, test_bc_wave._hue_buckets
+    arithmetic) of the PANEL pixels under ``widget`` - an opaque composite
+    over PANEL grey, which preserves the painted hue exactly. The button's own
+    ``grab()`` is not used: it renders on a transparent pixmap, and the RGB888
+    conversion un-premultiplies its low-alpha edge pixels into phantom hues
+    (measured on this tree: CONIFEROUS text read {8, 10}, never {8})."""
+    import colorsys
     _bc._app().processEvents()
-    return _bc._hue_buckets(widget)
+    if widget is None:
+        pix = panel.grab()
+    else:
+        top = widget.mapTo(panel, QtCore.QPoint(0, 0))
+        pix = panel.grab(QtCore.QRect(top, widget.size()))
+    img = pix.toImage().convertToFormat(QtGui.QImage.Format.Format_RGB888)
+    w, h, bpl = img.width(), img.height(), img.bytesPerLine()
+    raw = bytes(img.constBits())
+    colours = set()
+    for y in range(h):
+        row = raw[y * bpl:y * bpl + 3 * w]
+        colours.update(zip(row[0::3], row[1::3], row[2::3]))
+    return {int(colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)[0] * 360) // 15
+            for r, g, b in colours if max(r, g, b) - min(r, g, b) > 24}
 
 
 def test_boot_disconnected_token_is_off_and_grey(scratch_settings):
@@ -79,7 +101,7 @@ def test_boot_disconnected_token_is_off_and_grey(scratch_settings):
         tok = _token(p)
         assert p._mark._state == "disconnected"
         assert tok.property("liveness") == "off", tok.property("liveness")
-        assert _buckets(tok) == set(), sorted(_buckets(tok))
+        assert _buckets(p, tok) == set(), sorted(_buckets(p, tok))
         assert "Not connected" in tok.toolTip(), tok.toolTip()
         assert tok.toolTip().startswith("Engine & model - click to switch")
     finally:
@@ -101,16 +123,16 @@ def test_connected_keyed_engine_is_live_then_working_then_live(scratch_settings)
         p._apply_context(dict(_CONTEXT))
         assert p._conn_state == "connected"
         assert tok.property("liveness") == "live", tok.property("liveness")
-        assert _buckets(tok) == {_LIVE_BUCKET}, sorted(_buckets(tok))
+        assert _buckets(p, tok) == {_LIVE_BUCKET}, sorted(_buckets(p, tok))
         assert tok.toolTip() == "Engine & model - click to switch", tok.toolTip()
 
         p._set_busy(True)
         assert tok.property("liveness") == "working", tok.property("liveness")
-        assert _buckets(tok) == {_WORKING_BUCKET}, sorted(_buckets(tok))
+        assert _buckets(p, tok) == {_WORKING_BUCKET}, sorted(_buckets(p, tok))
 
         p._set_busy(False)
         assert tok.property("liveness") == "live", tok.property("liveness")
-        assert _buckets(tok) == {_LIVE_BUCKET}, sorted(_buckets(tok))
+        assert _buckets(p, tok) == {_LIVE_BUCKET}, sorted(_buckets(p, tok))
     finally:
         p._set_provider(pid0)
         p.close()
@@ -132,7 +154,7 @@ def test_connected_unkeyed_engine_is_off_with_reason(scratch_settings):
         p._set_provider("custom")
         assert p._provider_id == "custom"
         assert tok.property("liveness") == "off", tok.property("liveness")
-        assert _buckets(tok) == set(), sorted(_buckets(tok))
+        assert _buckets(p, tok) == set(), sorted(_buckets(p, tok))
         assert "No key for custom" in tok.toolTip(), tok.toolTip()
     finally:
         p._set_provider(pid0)

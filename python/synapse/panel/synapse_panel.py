@@ -1067,7 +1067,14 @@ class SynapsePanel(QtWidgets.QWidget):
         """Repaint the engine/model selection readout — v9: the rail author
         token IS the selector (the ENGINE pill bar left the chrome; this keeps
         its name for the 4 call sites). A MODEL switch (not just a provider
-        switch) must update it. Idempotent; safe before the rail is built."""
+        switch) must update it. Idempotent; safe before the rail is built.
+
+        joe-five J1: this is also where the engine's KEYED truth is decided —
+        the provider builds and its own ``resolve_key()`` returns a value
+        (ollama's ``'not-needed'`` counts; an unconfigured Custom engine is
+        ``None``). Env / .env reads only, never a network probe. Runs at rail
+        build and on every provider / model switch, then re-renders the
+        token's liveness colour (``_render_token_state``)."""
         lbl = getattr(self, "_author_lbl", None)
         if lbl is not None:
             try:
@@ -1077,6 +1084,12 @@ class SynapsePanel(QtWidgets.QWidget):
                 lbl.setMinimumWidth(lbl.sizeHint().width())
             except Exception:
                 pass
+        try:
+            prov = self._make_provider()
+            self._engine_keyed = prov is not None and prov.resolve_key() is not None
+        except Exception:
+            self._engine_keyed = False
+        self._render_token_state()      # getattr-guarded: no-op before the rail
 
     def _build_context_ribbon(self):
         cached = self._region_cache.get("_build_context_ribbon")
@@ -2846,20 +2859,71 @@ class SynapsePanel(QtWidgets.QWidget):
         idle phrase is never shown on its own - at rest the truth IS the
         connection, so boot reads exactly STATUS['disconnected'] and nothing
         else says 'nothing yet' (F14). Every phrase is inside the sentence's
-        floor, so it never elides."""
+        floor, so it never elides.
+
+        joe-five J1: one status decision, then the two readouts that share
+        it — the mark + sentence (``_set_header``) and the model token's
+        liveness colour (``_render_token_state``). Every context tick lands
+        here, so the token can never hold a stale green."""
         if getattr(self, "_was_busy", False):
-            if getattr(self, "_stopping", False):
-                self._set_header("working", _STOPPING_PHRASE)
-            else:
-                self._set_header("working")
-            return
-        if getattr(self, "_turn_state", "idle") == "done":
-            self._set_header("done", _DONE_PHRASE)
+            status = "working"
+            phrase = _STOPPING_PHRASE if getattr(self, "_stopping", False) else None
+        elif getattr(self, "_turn_state", "idle") == "done":
+            status, phrase = "done", _DONE_PHRASE
+        else:
+            status = getattr(self, "_conn_state", "disconnected")
+            if status not in t.STATUS:
+                status = "disconnected"
+            phrase = None
+        self._set_header(status, phrase)
+        self._render_token_state()
+
+    def _render_token_state(self):
+        """The model token is a status light (Joe's word, RULING_JOE_FIVE.md
+        J1, 2026-09-05; supersedes RULING_DIRECTION_BC.md Addendum 3.3).
+
+        The token says WHICH engine is thinking; that is state, and state has
+        colour in this panel. Its colour is the engine's liveness, decided
+        from the panel's OWN state — the same signal the mark and Connect
+        read (``_apply_context`` → ``_render_state``, ``_set_busy`` →
+        ``_render_state``) — so it is never a stale green:
+
+          working  a turn is streaming            → WARM (the mark's busy note)
+          live     Houdini connected (or 'warning': reachable, gate stale)
+                   AND the engine is keyed         → CONIFEROUS
+          off      not connected, or no key for the engine → TEXT_DISABLED
+
+        'Keyed' is ``_engine_keyed`` from ``_refresh_engine_selector`` (the
+        provider's own ``resolve_key()``; env / .env only, never a network
+        probe — this is not a daemon liveness check). The state is written as
+        the dynamic property ``liveness`` (qss.py paints it); unpolish/polish
+        only when the value moves, so an idle context tick costs nothing. The
+        tooltip carries the reason when off. Display only — never authored
+        to USD. Safe before the rail exists (no-op)."""
+        lbl = getattr(self, "_author_lbl", None)
+        if lbl is None:
             return
         conn = getattr(self, "_conn_state", "disconnected")
-        if conn not in t.STATUS:
-            conn = "disconnected"
-        self._set_header(conn)
+        reachable = conn in ("connected", "warning")
+        if getattr(self, "_was_busy", False):
+            state, reason = "working", None
+        elif reachable and getattr(self, "_engine_keyed", False):
+            state, reason = "live", None
+        elif not reachable:
+            state, reason = "off", "Not connected"
+        else:
+            pid = (getattr(self, "_provider_id", "claude") or "claude").strip().lower()
+            state, reason = "off", "No key for %s" % pid
+        tip = "Engine & model - click to switch"
+        lbl.setToolTip(tip if reason is None else "%s\n%s" % (tip, reason))
+        if lbl.property("liveness") != state:
+            lbl.setProperty("liveness", state)
+            try:
+                st = lbl.style()
+                st.unpolish(lbl)
+                st.polish(lbl)
+            except Exception:
+                pass
 
     def _set_header(self, status, phrase=None):
         """Low-level writer: the mark takes ``status``; the sentence takes
