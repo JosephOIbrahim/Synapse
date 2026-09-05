@@ -138,3 +138,43 @@ def test_send_never_clips_below_the_pane_at_min_height():
         "Send bottom %dpx is below the %dpx pane - composer not capped"
         % (by, panel.height()))
     assert panel._input._user_h == 514, "the artist's answer must survive the cap (L6)"
+
+
+def test_composer_recovers_the_artist_height_when_the_pane_grows_back():
+    """Live-found 2026-09-05 in Joe's Houdini after a reload: a cap taken
+    while the pane was transiently small never relaxed, because the
+    transcript absorbs the room the pane gains. Shrink, grow, expect the
+    artist's height back (L6) - and a cap that still shows one line."""
+    from synapse.panel.designsystem import tokens as t
+    try:
+        from PySide6 import QtWidgets
+    except ImportError:
+        from PySide2 import QtWidgets
+    panel = _make_panel()
+    app = QtWidgets.QApplication.instance()
+    panel.resize(t.PANEL_MIN_WIDTH, 900)
+    panel.show()
+    app.processEvents()
+    panel._input.set_user_height(400)
+    app.processEvents()
+    panel.resize(t.PANEL_MIN_WIDTH, t.PANEL_MIN_HEIGHT)
+    app.processEvents()
+    capped = panel._input.height()
+    assert capped < 400, "the short pane must cap the composer"
+    line = panel._input.viewportMargins().bottom() + panel._input.fontMetrics().height() + 12
+    assert capped >= line, "a cap must leave one readable line above Send (%d < %d)" % (capped, line)
+    # Grow back part-way: the cap is recomputed from the artist's height and
+    # the TRUE overflow at this size (the transcript keeps its own minimum),
+    # so the composer must get taller than the short-pane cap...
+    panel.resize(t.PANEL_MIN_WIDTH, 900)
+    for _ in range(12):            # the fit converges over event-loop turns
+        app.processEvents()
+    mid = panel._input.height()
+    assert mid > capped, "the composer must relax as the pane grows (%d <= %d)" % (mid, capped)
+    # ...and a pane tall enough returns the artist's height exactly.
+    panel.resize(t.PANEL_MIN_WIDTH, 1400)
+    for _ in range(12):
+        app.processEvents()
+    assert panel._input.height() == 400, (
+        "the pane grew back but the composer stayed capped at %d" % panel._input.height())
+    assert panel._input._user_h == 400
