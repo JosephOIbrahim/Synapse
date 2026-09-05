@@ -1,0 +1,18 @@
+# CRUX verdict, round 1 (2026-09-04 21:49, reviewed revision ca0d29e3)
+
+Captured verbatim by the orchestrator from the Codex job log (task-mtnq0vq3-qqd1ue): the read-only sandbox could not write the verdict files. HEAD moved to c5c086cb (a receipt commit) during the audit, so CRUX stopped early; fresh-archive accepts and the five mutations were NOT_RUN.
+
+I’ll read the contract, plan, reference, and prior reports, then check what the read-only sandbox permits. I’ll report any blocked verification as NOT_RUN.
+The checkout is clean at `ca0d29e3` on `pd/panel-integrate`, not the dispatched `pd/panel-crux`. The session’s read-only policy prevents creating the archive scratch tree, writing receipts, or committing; those steps are NOT_RUN. I’ll continue the source audit. I’ve also read the using-superpowers skill for workflow selection.
+The committed integration log records 25 failures. Its traces show three state-color failures and four nested-layout spacing failures alongside docking failures. Three source assertions also assume their leg is the only appended change, which conflicts with the integration plan. I’ll trace those failures and independently recount the residual sites.
+I found a concrete merge defect at `0998cc9e`: SWEEP_B was inserted midway through `sweep_a_style`, leaving it without its unpolish/polish/update calls. The integrated function only sets properties, which explains the recorded state-color failures. The census also measures 62 residual sites against the plan’s limit of 20; the guard ceiling remains 226.
+HEAD changed externally during the audit, from `ca0d29e3` to `c5c086cb`. I’m stopping further verification so the evidence stays tied to the reviewed revision. The repolish defect is confirmed at `ca0d29e3`; no CRUX files, mutations, test runs, or commits were made.
+**Integration is BROKEN. CRUX delivery remains blocked.**
+`chain_broken_at`: merge `0998cc9e`, [qss.py:498](C:/Users/User/SYNAPSE/.claude/worktrees/pd-panel-integrate/python/synapse/panel/designsystem/qss.py:498). SWEEP_B was inserted inside `sweep_a_style`, removing its unpolish/polish/update calls. This explains the three state-color failures in the committed integration log.
+Other findings:
+- **Residual target missed:** independently measured **62 sites**—18 spacing, 2 sheets, 42 hex—with only 15 exemption tags. CAMERA is **2/1/0**, SWEEP_A **12/0/0**, SWEEP_B **0/0/0**. The [guard ceiling remains 226](C:/Users/User/SYNAPSE/.claude/worktrees/pd-panel-integrate/harness/panel_pd/RESIDUAL.json:3).
+- **Visual parity broken:** the committed HDA result [before](C:/Users/User/SYNAPSE/.claude/worktrees/pd-panel-integrate/design/rhythm_pd/before/hda_result.png) and [after](C:/Users/User/SYNAPSE/.claude/worktrees/pd-panel-integrate/design/rhythm_pd/after_integrate/hda_result.png) change table surfaces and button treatment beyond gaps/labels/tags.
+- Four SWEEP_B spacing tests fail **before** their geometry and second-action checks. Those checks remain unverified.
+- Static checks corroborated all **104 hex mappings**, unchanged protected files/methods, margin-only density templates, and the six-line compositor diff.
+**NOT_RUN:** fresh-archive acceptance tests, Expert pin, density tests, full suite, and all five mutations. This session’s read-only sandbox prohibits the required scratch tree and output writes. No CRUX artifacts or commits were created.
+The checkout was also `pd/panel-integrate`, not `pd/panel-crux`. HEAD changed externally during review from `ca0d29e3` to `c5c086cb`; verification stopped. That commit adds only a full-suite log, leaving the identified source defect unchanged. No completed per-leg certification is claimed.

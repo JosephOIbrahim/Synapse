@@ -499,117 +499,6 @@ def sweep_a_style(widget, name, color=None):
     """State transitions select prebuilt QSS rules, then repolish this widget."""
     widget.setProperty("sweep_a_style", name)
     widget.setProperty("sweep_a_color", color)
-# --- SWEEP_B (hda_views, tool_palette, command_palette, working_indicator)
-# Append-only: preserve LEVER's generator and chain any earlier sweep blocks.
-_sweep_b_base_stylesheet = stylesheet
-
-
-def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
-    return _sweep_b_base_stylesheet(scale) + _sweep_b_stylesheet(scale)
-
-
-def _sweep_b_stylesheet(scale):
-    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
-    return f"""
-/* ---- SWEEP_B: HDA views ------------------------------------- */
-QLabel#DsHdaContextLabel, QLabel#DsHdaDetail, QLabel#DsHdaValidation {{
-    color: {t.TEXT_TERTIARY}; font-size: {s(t.SIZE_SMALL)}px;
-}}
-QCheckBox#DsHdaOption {{ color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_BODY)}px; }}
-QLabel#DsHdaStage, QLabel#DsHdaStatus {{
-    color: {t.TEXT_PRIMARY}; font-size: {s(t.SIZE_TITLE)}px;
-    font-weight: {t.WEIGHT_SEMIBOLD};
-}}
-QLabel#DsHdaStatus[status="success"] {{ color: {t.GROW}; }}
-QLabel#DsHdaStatus[status="error"] {{ color: {t.ERROR}; }}
-QLabel#DsHdaStageDot {{ color: {t.TEXT_DISABLED}; font-size: {s(t.SIZE_LABEL)}px; }}
-QLabel#DsHdaStageDot[stage="complete"] {{ color: {t.GROW}; }}
-QLabel#DsHdaStageDot[stage="active"] {{ color: {t.FIRE}; font-size: {s(t.SIZE_SMALL)}px; }}
-QLabel#DsHdaPath {{
-    color: {t.TEXT_PRIMARY}; font-size: {s(t.SIZE_BODY)}px;
-    padding: {t.SPACE_SM}px {t.SPACE_12}px; border-radius: {t.RADIUS_SM}px;
-}}
-QLabel#DsHdaPath[status="success"] {{ color: {t.GROW}; background: {t.rgba(t.GROW, 0.06)}; }}
-QLabel#DsHdaPath[status="error"] {{ color: {t.ERROR}; background: {t.rgba(t.ERROR, 0.06)}; }}
-QTextEdit#DsHdaPrompt {{
-    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
-    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
-    padding: {t.SPACE_12}px; font-size: {s(t.SIZE_BODY)}px;
-    selection-background-color: {t.SIGNAL_TINT};
-}}
-QTextEdit#DsHdaPrompt:focus {{ border-color: {t.SIGNAL}; }}
-QComboBox#DsHdaContext {{
-    background: {t.SURFACE}; color: {t.TEXT_SECONDARY};
-    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
-    padding: {t.SPACE_XS}px {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
-}}
-QPushButton#DsHdaGenerate {{
-    background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT};
-    border: none; border-radius: {t.RADIUS_SM}px;
-    padding: {t.SPACE_SM}px {t.SPACE_LG}px;
-    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_SEMIBOLD};
-}}
-QPushButton#DsHdaGenerate:hover {{ background: {t.SIGNAL_HOVER}; }}
-QPushButton#DsHdaGenerate:pressed {{ background: {t.SIGNAL_PRESS}; }}
-QPushButton#DsHdaAction, QPushButton#DsHdaCancel {{
-    background: {t.SURFACE}; color: {t.TEXT_SECONDARY};
-    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
-    padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
-}}
-QPushButton#DsHdaCancel {{ background: transparent; color: {t.TEXT_TERTIARY}; }}
-QPushButton#DsHdaAction:hover, QPushButton#DsHdaCancel:hover {{
-    border-color: {t.SIGNAL}; color: {t.TEXT_PRIMARY};
-}}
-QProgressBar#DsHdaProgress {{ background: {t.GROUND}; border: none; border-radius: {t.RADIUS_SM}px; }}
-QProgressBar#DsHdaProgress::chunk {{ background: {t.FIRE}; border-radius: {t.RADIUS_SM}px; }}
-QTableWidget#DsHdaParameters {{
-    background: {t.SURFACE}; color: {t.TEXT_PRIMARY};
-    border: 1px solid {t.BORDER}; gridline-color: {t.BORDER}; font-size: {s(t.SIZE_BODY)}px;
-}}
-QTableWidget#DsHdaParameters::item {{ padding: {t.SPACE_XS}px; }}
-QTableWidget#DsHdaParameters QHeaderView::section {{
-    background: {t.RAISED}; color: {t.TEXT_PRIMARY};
-    padding: {t.SPACE_XS}px; border: none; font-weight: {t.WEIGHT_SEMIBOLD};
-}}
-
-/* ---- SWEEP_B: tool_palette ---------------------------------- */
-#DsRoot[panel_popup="tool"] {{ padding: {t.SPACE_SM}px; }}
-#DsRoot[panel_popup="tool"] QLabel#DsPaletteAxis {{ color: {t.TEXT_TERTIARY}; }}
-
-/* ---- SWEEP_B: command_palette ------------------------------- */
-#DsRoot[panel_popup="command"] {{ background: transparent; }}
-QFrame#PaletteContainer {{
-    background: {t.SURFACE}; border: 1px solid {t.BORDER};
-    border-radius: {t.RADIUS_MD}px; padding: {t.SPACE_SM}px;
-}}
-QLineEdit#DsCommandSearch {{
-    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
-    border: 1px solid transparent; border-radius: {t.RADIUS_SM}px;
-    padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
-}}
-QLineEdit#DsCommandSearch:focus {{ border-color: {t.SIGNAL}; }}
-QFrame#DsCommandDivider {{ color: {t.BORDER}; background: {t.BORDER}; border: none; }}
-QListWidget#DsCommandResults {{
-    background: transparent; color: {t.TEXT_PRIMARY};
-    border: none; outline: none; font-size: {s(t.SIZE_BODY)}px;
-}}
-QListWidget#DsCommandResults::item {{
-    padding: {t.SPACE_XS}px {t.SPACE_SM}px; border-radius: {t.RADIUS_SM}px;
-}}
-QListWidget#DsCommandResults::item:selected {{ background: {t.SIGNAL_TINT}; }}
-QListWidget#DsCommandResults::item:hover {{ background: {t.HOVER_BG}; }}
-
-/* ---- SWEEP_B: working_indicator (the existing STATUS grammar) */
-QLabel#workingIndicatorDot[working_state="busy"],
-QLabel#workingIndicatorText[working_state="busy"] {{ color: {t.STATUS["working"][0]}; }}
-QLabel#workingIndicatorDot[working_state="stalled"],
-QLabel#workingIndicatorText[working_state="stalled"] {{ color: {t.STATUS["warning"][0]}; }}
-"""
-
-
-def set_sweep_b_state(widget, name, value):
-    """Refresh a migrated leaf's QSS selector after a real state transition."""
-    widget.setProperty(name, value)
     style = widget.style()
     style.unpolish(widget)
     style.polish(widget)
@@ -891,6 +780,125 @@ QPushButton:pressed {{  background: rgba(0, 212, 255, 0.15);  border-color: {t.S
 
 _sweep_a_builders.append(_sweep_a_quick_actions_stylesheet)
 # --- END SWEEP_A
+
+
+# --- SWEEP_B (hda_views, tool_palette, command_palette, working_indicator)
+# Append-only: preserve LEVER's generator and chain any earlier sweep blocks.
+_sweep_b_base_stylesheet = stylesheet
+
+
+def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
+    return _sweep_b_base_stylesheet(scale) + _sweep_b_stylesheet(scale)
+
+
+def _sweep_b_stylesheet(scale):
+    s = lambda px: max(t.FONT_FLOOR_PX, t.scaled(px, scale))  # noqa: E731
+    return f"""
+/* ---- SWEEP_B: HDA views ------------------------------------- */
+QLabel#DsHdaContextLabel, QLabel#DsHdaDetail, QLabel#DsHdaValidation {{
+    color: {t.TEXT_TERTIARY}; font-size: {s(t.SIZE_SMALL)}px;
+}}
+QCheckBox#DsHdaOption {{ color: {t.TEXT_SECONDARY}; font-size: {s(t.SIZE_BODY)}px; }}
+QLabel#DsHdaStage, QLabel#DsHdaStatus {{
+    color: {t.TEXT_PRIMARY}; font-size: {s(t.SIZE_TITLE)}px;
+    font-weight: {t.WEIGHT_SEMIBOLD};
+}}
+QLabel#DsHdaStatus[status="success"] {{ color: {t.GROW}; }}
+QLabel#DsHdaStatus[status="error"] {{ color: {t.ERROR}; }}
+QLabel#DsHdaStageDot {{ color: {t.TEXT_DISABLED}; font-size: {s(t.SIZE_LABEL)}px; }}
+QLabel#DsHdaStageDot[stage="complete"] {{ color: {t.GROW}; }}
+QLabel#DsHdaStageDot[stage="active"] {{ color: {t.FIRE}; font-size: {s(t.SIZE_SMALL)}px; }}
+QLabel#DsHdaPath {{
+    color: {t.TEXT_PRIMARY}; font-size: {s(t.SIZE_BODY)}px;
+    padding: {t.SPACE_SM}px {t.SPACE_12}px; border-radius: {t.RADIUS_SM}px;
+}}
+QLabel#DsHdaPath[status="success"] {{ color: {t.GROW}; background: {t.rgba(t.GROW, 0.06)}; }}
+QLabel#DsHdaPath[status="error"] {{ color: {t.ERROR}; background: {t.rgba(t.ERROR, 0.06)}; }}
+QTextEdit#DsHdaPrompt {{
+    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_12}px; font-size: {s(t.SIZE_BODY)}px;
+    selection-background-color: {t.SIGNAL_TINT};
+}}
+QTextEdit#DsHdaPrompt:focus {{ border-color: {t.SIGNAL}; }}
+QComboBox#DsHdaContext {{
+    background: {t.SURFACE}; color: {t.TEXT_SECONDARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_XS}px {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
+}}
+QPushButton#DsHdaGenerate {{
+    background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT};
+    border: none; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_SM}px {t.SPACE_LG}px;
+    font-size: {s(t.SIZE_BODY)}px; font-weight: {t.WEIGHT_SEMIBOLD};
+}}
+QPushButton#DsHdaGenerate:hover {{ background: {t.SIGNAL_HOVER}; }}
+QPushButton#DsHdaGenerate:pressed {{ background: {t.SIGNAL_PRESS}; }}
+QPushButton#DsHdaAction, QPushButton#DsHdaCancel {{
+    background: {t.SURFACE}; color: {t.TEXT_SECONDARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
+}}
+QPushButton#DsHdaCancel {{ background: transparent; color: {t.TEXT_TERTIARY}; }}
+QPushButton#DsHdaAction:hover, QPushButton#DsHdaCancel:hover {{
+    border-color: {t.SIGNAL}; color: {t.TEXT_PRIMARY};
+}}
+QProgressBar#DsHdaProgress {{ background: {t.GROUND}; border: none; border-radius: {t.RADIUS_SM}px; }}
+QProgressBar#DsHdaProgress::chunk {{ background: {t.FIRE}; border-radius: {t.RADIUS_SM}px; }}
+QTableWidget#DsHdaParameters {{
+    background: {t.SURFACE}; color: {t.TEXT_PRIMARY};
+    border: 1px solid {t.BORDER}; gridline-color: {t.BORDER}; font-size: {s(t.SIZE_BODY)}px;
+}}
+QTableWidget#DsHdaParameters::item {{ padding: {t.SPACE_XS}px; }}
+QTableWidget#DsHdaParameters QHeaderView::section {{
+    background: {t.RAISED}; color: {t.TEXT_PRIMARY};
+    padding: {t.SPACE_XS}px; border: none; font-weight: {t.WEIGHT_SEMIBOLD};
+}}
+
+/* ---- SWEEP_B: tool_palette ---------------------------------- */
+#DsRoot[panel_popup="tool"] {{ padding: {t.SPACE_SM}px; }}
+#DsRoot[panel_popup="tool"] QLabel#DsPaletteAxis {{ color: {t.TEXT_TERTIARY}; }}
+
+/* ---- SWEEP_B: command_palette ------------------------------- */
+#DsRoot[panel_popup="command"] {{ background: transparent; }}
+QFrame#PaletteContainer {{
+    background: {t.SURFACE}; border: 1px solid {t.BORDER};
+    border-radius: {t.RADIUS_MD}px; padding: {t.SPACE_SM}px;
+}}
+QLineEdit#DsCommandSearch {{
+    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
+    border: 1px solid transparent; border-radius: {t.RADIUS_SM}px;
+    padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
+}}
+QLineEdit#DsCommandSearch:focus {{ border-color: {t.SIGNAL}; }}
+QFrame#DsCommandDivider {{ color: {t.BORDER}; background: {t.BORDER}; border: none; }}
+QListWidget#DsCommandResults {{
+    background: transparent; color: {t.TEXT_PRIMARY};
+    border: none; outline: none; font-size: {s(t.SIZE_BODY)}px;
+}}
+QListWidget#DsCommandResults::item {{
+    padding: {t.SPACE_XS}px {t.SPACE_SM}px; border-radius: {t.RADIUS_SM}px;
+}}
+QListWidget#DsCommandResults::item:selected {{ background: {t.SIGNAL_TINT}; }}
+QListWidget#DsCommandResults::item:hover {{ background: {t.HOVER_BG}; }}
+
+/* ---- SWEEP_B: working_indicator (the existing STATUS grammar) */
+QLabel#workingIndicatorDot[working_state="busy"],
+QLabel#workingIndicatorText[working_state="busy"] {{ color: {t.STATUS["working"][0]}; }}
+QLabel#workingIndicatorDot[working_state="stalled"],
+QLabel#workingIndicatorText[working_state="stalled"] {{ color: {t.STATUS["warning"][0]}; }}
+"""
+
+
+def set_sweep_b_state(widget, name, value):
+    """Refresh a migrated leaf's QSS selector after a real state transition."""
+    widget.setProperty(name, value)
+    style = widget.style()
+    style.unpolish(widget)
+    style.polish(widget)
+    widget.update()
+
+
 def prepare_sweep_b_popup(root, scale=t.FONT_SCALE_DEFAULT):
     """Central sheet installation for the two separate popup windows.
 
