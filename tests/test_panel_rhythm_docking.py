@@ -147,9 +147,8 @@ def test_component_pattern_at_docking_width(real_qt, pattern, density):
 @pytest.mark.parametrize("density", DENSITIES)
 def test_every_composed_region_and_face_at_docking_bound(real_qt, density):
     measured = _run("panel", density)
-    assert measured["regions"] == ["rail", "context_ribbon", "mode_bar", "faces"]
-    assert measured["camera_regions"] == ["profile_tab_strip", "header_ribbon",
-                                           "chat_transcript", "token_face"]
+    assert measured["regions"] == ["rail", "context_ribbon", "faces"]
+    assert measured["camera_regions"] == ["header_ribbon", "chat_transcript", "token_face"]
     assert measured["states"] == ["direct", "work", "done", "token", "hda"]
 
 
@@ -340,8 +339,7 @@ def _panel(widgets, density, recall=False):
             assert region is not None
             assert region.minimumSizeHint().width() <= _bounds(density)[0]
         return {"regions": list(compositor.REGION_BUILDERS),
-                "camera_regions": ["profile_tab_strip", "header_ribbon", "chat_transcript",
-                                   "token_face"],
+                "camera_regions": ["header_ribbon", "chat_transcript", "token_face"],
                 "states": ["direct", "work", "done", "token", "hda"],
                 "measurements": measurements}
     finally:

@@ -58,7 +58,7 @@ def probe(density):
     try:
         # Existing layout owners, including nested anonymous rows, all inherit
         # their owner's spacing. These are geometry checks, not source guesses.
-        regions = [panel._region_cache["_build_mode_bar"], panel._token_face]
+        regions = [panel._region_cache["_build_context_ribbon"], panel._token_face]
         for region in regions:
             assert region.minimumSizeHint().width() <= 380, (region.objectName(), region.minimumSizeHint())
             layout = region.layout()
@@ -77,14 +77,13 @@ def probe(density):
         # Stop is state-gated to working only; a compose must not un-hide it.
         assert panel._stop_btn.isHidden()
         assert panel._help_btn.text() == "?"
-        # RULING-4b: profile pills are tags (battleplan section 4), not rows.
-        assert all(p.property("rhythm_role") == "tag" for p in panel._profile_pills.values())
         # RULING-3: the four shell regions carry the GUTTER inset; the root
         # band pays no gap and no inset (the B4 composer cap holds).
         ribbon = panel._region_cache["_build_context_ribbon"]
-        tab_row = panel._region_cache["_build_mode_bar"]
         direct_face = panel._recall_card.parentWidget()
-        for shell in (header, ribbon, tab_row, direct_face):
+        # bc-wave BC-5: no tab row - the pills ride the ribbon shell.
+        assert not panel.findChildren(QtWidgets.QWidget, "DsTabRow")
+        for shell in (header, ribbon, direct_face):
             assert shell.property("rhythm_role") == "shell", shell.objectName()
             m = shell.layout().contentsMargins()
             assert (m.left(), m.top(), m.right(), m.bottom()) == (
@@ -129,9 +128,6 @@ def probe(density):
         for widget in [token_pill, *verbs]:
             assert (QtGui.QFontInfo(widget.font()).pixelSize(),
                     widget.font().letterSpacing()) == reference, widget.text()
-        # RULING-4b: a tag pill is not a 44px row - it sits at the CHAT pill's height.
-        for pill in panel._profile_pills.values():
-            assert pill.height() <= chat_pill.height() + 2, (pill.text(), pill.height(), chat_pill.height())
         # RULING-4d: the context label is UI label text (sans); the recall
         # header is the section eyebrow (mono). Two things, two treatments.
         from synapse.panel.designsystem import fontload
@@ -140,8 +136,7 @@ def probe(density):
         assert sans != mono
         assert QtGui.QFontInfo(panel._ctx_label.font()).family() == sans
         assert QtGui.QFontInfo(panel._recall_card.header.font()).family() == mono
-        active = panel._profile_pills["expert"]
-        active.setProperty("active", True)
+        chat_pill.setProperty("active", True)
         compositor._repolish_tree(panel)
         # The inherited active underline is SIGNAL. The sheet is the owner.
         assert t.SIGNAL in panel.styleSheet()

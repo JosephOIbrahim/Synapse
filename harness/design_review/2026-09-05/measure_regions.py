@@ -37,7 +37,8 @@ def geo(w):
             "rhythm_role": w.property("rhythm_role")}
 
 cache = p._region_cache
-rail = cache.get("_build_rail"); ribbon = cache.get("_build_context_ribbon"); tabs = cache.get("_build_mode_bar")
+rail = cache.get("_build_rail"); ribbon = cache.get("_build_context_ribbon")
+consent_slot = getattr(p, "_consent_slot", None)   # bc-wave BC-6a
 composer = p._input.parentWidget()           # the _build_input section (DsSection)
 face = composer.parentWidget()               # direct face shell (bc-wave BC-1: no act band)
 out = {
@@ -51,14 +52,20 @@ out = {
                      letterSpacing=p._wordmark.font().letterSpacing(),
                      sizeHint_w=p._wordmark.sizeHint().width()),
     "mark": geo(p._mark),
-    "rail": geo(rail), "ribbon": geo(ribbon), "tab_row": geo(tabs),
+    "rail": geo(rail), "ribbon": geo(ribbon), "consent_slot": geo(consent_slot),
+    "author": dict(geo(p._author_lbl), text=p._author_lbl.text(), hint_w=p._author_lbl.sizeHint().width()),
+    "state": dict(geo(p._header_status), text=p._header_status.text(), hint_w=p._header_status.sizeHint().width()),
     "direct_face": geo(face), "chat": geo(p._chat),
     "composer": geo(composer), "input": geo(p._input), "send": geo(p._send_btn), "khint": geo(p._khint),
     "pills": {k: geo(v) for k, v in p._face_pills.items()},
-    "profile_pills": {k: geo(v) for k, v in p._profile_pills.items()},
+    # bc-wave: every visible text widget on the CHAT face with its hint - the
+    # no-elide predicate (the one permitted elision is DsContextLabel).
+    "labels": [dict(objectName=w.objectName(), text=w.text(), w=w.width(), hint_w=w.sizeHint().width())
+               for w in (p.findChildren(QtWidgets.QLabel) + p.findChildren(QtWidgets.QAbstractButton))
+               if w.isVisible() and w.text().strip()],
     "chrome_scale": getattr(p, "_chrome_scale", None),
 }
 with open(os.path.join(HERE, "regions_%s.json" % profile), "w", encoding="utf-8") as f:
     json.dump(out, f, indent=2)
-sys.stdout.write(json.dumps({k: out[k] for k in ("profile", "density", "rail", "ribbon", "tab_row", "composer", "wordmark")}) + "\n")
+sys.stdout.write(json.dumps({k: out[k] for k in ("profile", "density", "rail", "ribbon", "chat", "composer", "wordmark")}) + "\n")
 p.close(); app.processEvents()

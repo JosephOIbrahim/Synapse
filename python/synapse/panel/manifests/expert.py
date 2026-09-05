@@ -1,7 +1,8 @@
 """EXPERT — the v5.42.0 surface, exactly (Law L5).
 
-This manifest declares the panel as it ships today: the same four regions in
-the same order, every widget visible at standard prominence, faces dominant
+This manifest declares the panel as it ships today: the same three regions in
+the same order (rail, context ribbon, faces - bc-wave BC-5 folded the profile
+row into the overflow), every widget visible at standard prominence, faces dominant
 (stretch 1), no system-prompt overlay. A diff between this file and the other
 profiles IS the profile system — capability never varies, only prominence,
 density and the prompt overlay do. Density "standard" is the unstyled
@@ -40,10 +41,10 @@ MANIFEST = {
                 "stop", "connect",
             ],
         },
-        {"id": "context_ribbon", "widgets": ["context_label"]},
-        {   # the CHAT surface label (v9.1)
-            "id": "mode_bar",
-            "widgets": ["chat_pill", "token_pill"],
+        {   # context + the CHAT / TOKEN pills (bc-wave BC-5: the profile
+            # tab strip folded into the overflow; the pills ride the ribbon)
+            "id": "context_ribbon",
+            "widgets": ["context_label", "chat_pill", "token_pill"],
         },
         {   # dominant — the stacked faces
             "id": "faces",

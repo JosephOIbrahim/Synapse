@@ -309,11 +309,13 @@ def test_reselecting_the_active_profile_is_a_noop():
 
 def test_profile_pills_are_connected_to_the_select_handler():
     src = _PANEL_SRC.read_text(encoding="utf-8")
-    # the pill loop connects each pill's clicked signal to _select_profile(pid).
+    # the profile loop connects each action's triggered signal (bc-wave
+    # BC-5: QActions in the overflow; was the pills' clicked) to
+    # _select_profile(pid).
     assert re.search(
-        r"\.clicked\.connect\(\s*lambda[^\n]*:\s*self\._select_profile\(",
+        r"\.(clicked|triggered)\.connect\(\s*lambda[^\n]*:\s*self\._select_profile\(",
         src,
-    ), "the CURIOUS/EXPERT/ML pills must wire clicked -> _select_profile"
+    ), "the CURIOUS/EXPERT/ML actions must wire triggered -> _select_profile"
     # and _select_profile must drive the live recompose (rides on the composer).
     handler = src[src.index("def _select_profile"):src.index("def _mark_profile_pill")]
     assert "self._recompose(" in handler, "_select_profile must call _recompose"

@@ -521,8 +521,8 @@ class SynapsePanel(QtWidgets.QWidget):
     def _build_ui(self):
         root = QtWidgets.QVBoxLayout(self)
         # band: the regions are chrome bands that own their own hairlines
-        # (#DsHeader / #DsTabRow rules), so the root stack pays no gap and no
-        # inset (RULING-3; the B4 composer cap holds).
+        # (the #DsHeader rule), so the root stack pays no gap and no inset
+        # (RULING-3; the B4 composer cap holds).
         self.setProperty("rhythm_role", "band")
 
         # Persistent rail (Mile 1) → context ribbon → switcher → the two faces.
@@ -536,6 +536,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # invalid manifest falls back to that wiring hard-coded (the panel
         # always builds).
         profile = getattr(self, "_layout_profile", DEFAULT_PROFILE)
+        self._build_profile_actions()
         built = False
         if compose is not None:
             try:
@@ -548,11 +549,37 @@ class SynapsePanel(QtWidgets.QWidget):
                     profile,
                 )
         if not built:
-            root.addWidget(self._build_rail())          # mark · brand · author · Stop
-            root.addWidget(self._build_context_ribbon())
-            root.addWidget(self._build_mode_bar())      # the CHAT surface label (v9.1)
+            root.addWidget(self._build_rail())          # identity + state
+            root.addWidget(self._build_context_ribbon())   # context + CHAT / TOKEN
             root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
         self._set_face("direct")                    # rest on the CHAT surface
+
+    def _build_profile_actions(self):
+        """The profile choice as three exclusive checkable QActions (bc-wave
+        BC-5): CURIOUS / EXPERT / ML select the layout manifest (L5-2) from
+        the overflow's 'Profile >' submenu instead of a 47px tab strip. A
+        trigger writes through settings (SwitcherState) and recomposes LIVE
+        (_select_profile); boot checks the saved profile. The actions live
+        on the panel and are added to every overflow menu built, so the
+        checked state survives the menu. `_profile_pills` keeps its name:
+        pid -> QAction (was pid -> Pill)."""
+        try:
+            from synapse.panel.settings import PROFILES as _profiles
+        except Exception:  # pragma: no cover - settings ships with the panel
+            _profiles = ("curious", "expert", "ml")
+        _QAction = getattr(QtGui, "QAction", None) or QtWidgets.QAction
+        _QActionGroup = getattr(QtGui, "QActionGroup", None) or QtWidgets.QActionGroup
+        group = _QActionGroup(self)
+        group.setExclusive(True)
+        self._profile_pills = {}
+        for pid in _profiles:
+            act = _QAction(pid.upper() if len(pid) <= 2 else pid.title(), self)
+            act.setCheckable(True)
+            act.setData(pid)
+            act.triggered.connect(lambda _=False, pid=pid: self._select_profile(pid))
+            group.addAction(act)
+            self._profile_pills[pid] = act
+        self._mark_profile_pill(getattr(self, "_layout_profile", DEFAULT_PROFILE))
 
     # ------------------------------------------------- profile switcher (L5-4)
     def _select_profile(self, profile):
@@ -579,10 +606,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._recompose(profile)
 
     def _mark_profile_pill(self, profile):
-        """Active-mark the selected profile pill (the _set_face idiom)."""
-        for pid, pill in getattr(self, "_profile_pills", {}).items():
-            pill.setProperty("active", pid == profile)
-            c.repolish(pill)
+        """Check the selected profile action (name kept - the switcher test
+        drives it; bc-wave BC-5 made the pills QActions)."""
+        for pid, act in getattr(self, "_profile_pills", {}).items():
+            try:
+                act.setChecked(pid == profile)
+            except Exception:
+                pass
 
     def _recompose(self, profile):
         """Re-run the compositor for ``profile`` on the LIVE panel.
@@ -1049,6 +1079,30 @@ class SynapsePanel(QtWidgets.QWidget):
         self._ctx_label.setObjectName("DsContextLabel")
         self._ctx_label.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
         lay.addWidget(self._ctx_label, 1)
+        # bc-wave BC-5: the ribbon is [context label, stretch][CHAT][TOKEN] -
+        # the two face pills ride the ribbon's right edge at the shell gap;
+        # the profile row they shared (DsTabRow) is gone, profile choice is
+        # the overflow's 'Profile >' menu. v9.1 (Option A): there is one
+        # surface, CHAT, and consent/review auto-surfaces when actionable;
+        # clicking CHAT is the manual way back. The internal face keys stay
+        # "direct"/"work" - the invariants key on those, not the label.
+        self._face_pills = {}
+        pill = c.Pill("CHAT")
+        pill.setFont(fontload.tracked_font(
+            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        pill.clicked.connect(lambda _=False: self._set_face("direct"))
+        self._face_pills["direct"] = pill      # the idle default marks it active
+        lay.addWidget(pill)
+        # TOKEN - the economist read-out (R167). v9.1 removed DIRECT / WORK
+        # because actionable state should AUTO-SURFACE rather than wait for
+        # a click; token economics is DIAGNOSTIC, and a thing you go looking
+        # for is what a tab is for.
+        tok = c.Pill("TOKEN")
+        tok.setFont(fontload.tracked_font(
+            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        tok.clicked.connect(lambda _=False: self._show_token_face())
+        self._face_pills["token"] = tok
+        lay.addWidget(tok)
         self._region_cache["_build_context_ribbon"] = w
         return w
 
@@ -1090,66 +1144,6 @@ class SynapsePanel(QtWidgets.QWidget):
 
     # the two tabs, in switcher order (v9: Review folded into Work's done state)
     _FACE_INDEX = {"direct": 0, "work": 1, "token": 2}
-
-    def _build_mode_bar(self):
-        """The home surface's label. v9.1 (Option A): the DIRECT · WORK tabs are
-        gone — there is one surface, **CHAT**, and consent/review AUTO-SURFACES
-        when it's actionable (a raised gate brings the Work face forward, then
-        accept/revert hands back). Clicking CHAT is the manual way back to the
-        conversation. `#DsTabRow` still carries the 1px BORDER rule; the internal
-        face keys stay "direct"/"work" — the invariants key on those, not the label."""
-        cached = self._region_cache.get("_build_mode_bar")
-        if cached is not None:                     # L5-4: recompose reuse
-            return cached
-        w = self._section()
-        w.setObjectName("DsTabRow")
-        w.setProperty("rhythm_role", "shell")   # edge container: GUTTER inset
-        lay = QtWidgets.QHBoxLayout(w)
-        navigation = self._build_context_ribbon().layout()
-        self._face_pills = {}
-        pill = c.Pill("CHAT")
-        pill.setFont(fontload.tracked_font(
-            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        pill.clicked.connect(lambda _=False: self._set_face("direct"))
-        self._face_pills["direct"] = pill      # the idle default marks it active
-        navigation.addWidget(pill)
-
-        # TOKEN — the economist read-out (R167).
-        #
-        # v9.1 removed DIRECT · WORK because actionable state should AUTO-SURFACE
-        # rather than wait for a click. That reasoning does not reach this one:
-        # Work surfaces ITSELF because it is actionable; token economics is
-        # DIAGNOSTIC, and a thing you go looking for is what a tab is for.
-        tok = c.Pill("TOKEN")
-        tok.setFont(fontload.tracked_font(
-            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-        tok.clicked.connect(lambda _=False: self._show_token_face())
-        self._face_pills["token"] = tok
-        navigation.addWidget(tok)
-
-        # L5-4: the profile tab strip — CURIOUS · EXPERT · ML select the layout
-        # manifest (L5-2). A click writes through settings (SwitcherState) and
-        # recomposes LIVE; boot restores the saved tab. Right-aligned: profile
-        # is chrome, the faces are the surface.
-        try:
-            from synapse.panel.settings import PROFILES as _profiles
-        except Exception:  # pragma: no cover - settings ships with the panel
-            _profiles = ("curious", "expert", "ml")
-        self._profile_pills = {}
-        lay.addStretch(1)   # right-aligned: profile is chrome, the faces are the surface
-        for pid in _profiles:
-            p = c.Pill(pid.upper())
-            # Pills are tags in this system's own table (battleplan section 4);
-            # row is list-item vocabulary and its 44px box was never the design.
-            p.setProperty("rhythm_role", "tag")
-            p.setFont(fontload.tracked_font(
-                "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-            p.clicked.connect(lambda _=False, pid=pid: self._select_profile(pid))
-            self._profile_pills[pid] = p
-            lay.addWidget(p)
-        self._mark_profile_pill(getattr(self, "_layout_profile", DEFAULT_PROFILE))
-        self._region_cache["_build_mode_bar"] = w
-        return w
 
     def _show_token_face(self):
         """Bring TOKEN forward and refresh it from the probe layer.
@@ -2094,6 +2088,12 @@ class SynapsePanel(QtWidgets.QWidget):
                 act.triggered.connect(lambda _=False, p=pid: self._set_provider(p))
         except Exception:
             pass
+        # Profile (BC-5): the layout manifest choice, checkable + exclusive;
+        # the actions are the panel's own (_build_profile_actions), so the
+        # check state is the saved profile every time the menu opens.
+        prof = menu.addMenu("Profile")
+        for act in getattr(self, "_profile_pills", {}).values():
+            prof.addAction(act)
         # Health: the four strip cells (connection · memory · project · job)
         # as disabled facts, built from the same producer the strip used
         # (health_strip.build_cells over the last context facts + O(1)

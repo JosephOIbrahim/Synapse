@@ -113,11 +113,9 @@ QPushButton#DsStop:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISAB
 /* ---- tabs: underline on a baseline track (v9 call 1) --------- */
 /* Retires the filled-pill active state: tabs read as text on a shared 2px
    baseline; the active tab lights its rule + text (TEXT_BRIGHT per comp).
-   Font family/size/tracking live on the QFont (LABEL role), never here. */
-QWidget#DsTabRow {{
-    background: {t.PANEL};
-    border-bottom: 1px solid {t.BORDER};
-}}
+   Font family/size/tracking live on the QFont (LABEL role), never here.
+   bc-wave BC-5: the #DsTabRow band is retired - the pills ride the context
+   ribbon; profile choice is the overflow's menu. */
 QPushButton#DsPill {{
     background: none; color: {t.TEXT_TERTIARY};
     border: none; border-bottom: 2px solid transparent; border-radius: 0;
@@ -303,9 +301,6 @@ QLabel[prominence="quiet"] {{ color: {t.TEXT_TERTIARY}; }}
    objectNames) are not QSS-reachable this leg — see the spec's §5 ledger. */
 
 /* Region 1 — profile tab strip: the row's group gap below its hairline rule. */
-QWidget#DsTabRow {{ margin-bottom: {t.SPACE_MD}px; }}
-#DsRoot[density="airy"] QWidget#DsTabRow {{ margin-bottom: {t.gap(t.SPACE_MD, "airy")}px; }}
-#DsRoot[density="tight"] QWidget#DsTabRow {{ margin-bottom: {t.gap(t.SPACE_MD, "tight")}px; }}
 
 /* Region 2 — verb rail: the verb group's vertical breathing (the doubled
    inter-verb gap itself stays Python setSpacing(24), kept per sec.7). */

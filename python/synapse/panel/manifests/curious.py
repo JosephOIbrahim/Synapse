@@ -85,10 +85,10 @@ MANIFEST = {
                 "connect",
             ],
         },
-        {"id": "context_ribbon", "widgets": ["context_label"]},
         {
-            "id": "mode_bar",
+            "id": "context_ribbon",
             "widgets": [
+                "context_label",
                 "chat_pill",
                 {"id": "token_pill", "prominence": "quiet"},
             ],

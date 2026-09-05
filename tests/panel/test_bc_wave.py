@@ -398,19 +398,36 @@ def test_profile_row_folded():
             for key in ("direct", "token"):
                 assert lay.indexOf(p._face_pills[key]) != -1, key
             menu = p._build_overflow_menu()
-            prof = next((a.menu() for a in menu.actions()
-                         if a.menu() is not None and a.text().startswith("Profile")), None)
+            # Reach the submenu through its parent (findChildren keeps C++
+            # ownership with the menu; a bare QAction.menu() wrapper does not).
+            prof = next((m for m in menu.findChildren(QtWidgets.QMenu)
+                         if m.title() == "Profile"), None)
             assert prof is not None, [a.text() for a in menu.actions()]
             acts = [a for a in prof.actions() if a.isCheckable()]
             assert len(acts) == 3, [a.text() for a in acts]
             checked = [a for a in acts if a.isChecked()]
             assert len(checked) == 1 and checked[0].data() == p._layout_profile, (
                 [(a.text(), a.isChecked()) for a in acts], p._layout_profile)
-            # The conversation takes the majority at rest.
+            # The conversation takes the majority at rest. Two readings, both
+            # honest: (a) at first run L5-22 opens the composer divider at half
+            # the space the chat and the prompt share (settings
+            # .composer_start_height), so the transcript is never smaller than
+            # the prompt; (b) with the composer at its floor - the state the
+            # ruling's instrument (measure_regions.py) reads - the transcript
+            # holds >= 50% of the 760 pane. Chrome (rail + ribbon + insets) is
+            # what BC-5 governs; the divider is the artist's (L6).
+            assert p._chat.height() >= p._input.height(), (
+                profile, p._chat.height(), p._input.height())
+            p._input.set_user_height(p._input._floor)
+            _app().processEvents()                 # the composer's own LayoutRequest
+            _chat_face(p).layout().activate()      # then the face re-lays
+            _app().processEvents()
             share = p._chat.height() / H
             assert share >= 0.5, (profile, p._chat.height(), share)
             # A different profile recomposes live.
-            other = next(a for a in acts if a.data() != p._layout_profile)
+            # `profile` is what _panel() composed; _layout_profile is the boot
+            # pick - choose a third so both the density and the pick move.
+            other = next(a for a in acts if a.data() not in (p._layout_profile, profile))
             before = (p.property("density"), p._layout_profile)
             other.trigger()
             _app().processEvents()

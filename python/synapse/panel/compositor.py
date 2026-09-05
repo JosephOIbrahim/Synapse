@@ -46,7 +46,8 @@ logger = logging.getLogger(__name__)
 REGION_BUILDERS = {
     "rail": "_build_rail",
     "context_ribbon": "_build_context_ribbon",
-    "mode_bar": "_build_mode_bar",
+    # bc-wave BC-5: 'mode_bar' (the profile tab strip) is gone - the CHAT /
+    # TOKEN pills ride the context ribbon, profile choice is the overflow.
     "faces": "_build_faces",
 }
 
@@ -69,7 +70,7 @@ WIDGET_ATTRS = {
     "activity_meter": "_observe",
     # context_ribbon
     "context_label": "_ctx_label",
-    # mode_bar
+    # context_ribbon (bc-wave BC-5: the pills moved here from the mode bar)
     "chat_pill": "_face_pills.direct",
     "token_pill": "_face_pills.token",
     # faces

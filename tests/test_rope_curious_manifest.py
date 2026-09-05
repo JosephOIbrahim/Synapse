@@ -31,7 +31,7 @@ from synapse.panel.manifests import get_manifest, validate_manifest
 # read through the overflow in every profile), so curious carries no rail
 # delta any more; the TOKEN pill's quiet step is the whole diff.
 EXPECTED_PROMINENCE_DELTAS = {
-    ("mode_bar", "token_pill"): ("standard", "quiet"),
+    ("context_ribbon", "token_pill"): ("standard", "quiet"),   # bc-wave BC-5: the pill rides the ribbon
 }
 
 # The complete allowed collapse diff vs expert (the L5-19 economics and
